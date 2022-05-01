@@ -555,7 +555,7 @@ stmt:
 | TBREAK opt_label_ident TSEMI         { $$ = buildGotoStmt(GOTO_BREAK, $2); }
 | TCONTINUE opt_label_ident TSEMI      { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
 | TLABEL ident_def stmt                { $$ = buildLabelStmt($2, $3); }
-| TYIELD expr TSEMI                    { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
+| TYIELD opt_try_expr TSEMI            { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
 | error TSEMI                          { $$ = buildErrorStandin(); }
 ;
 

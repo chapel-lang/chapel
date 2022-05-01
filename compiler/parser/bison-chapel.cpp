@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.8.2.  */
+/* A Bison parser, made by GNU Bison 3.5.1.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -34,10 +34,6 @@
 /* C LALR(1) parser skeleton written by Richard Stallman, by
    simplifying the original so-called "semantic" parser.  */
 
-/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
-   especially those whose name start with YY_ or yy_.  They are
-   private implementation details that can be changed or removed.  */
-
 /* All symbols defined below should begin with yy or YY, to avoid
    infringing on user name space.  This should be done even for local
    variables, as they might otherwise be expanded by user macros.
@@ -45,11 +41,14 @@
    define necessary library symbols; they are noted "INFRINGES ON
    USER NAME SPACE" below.  */
 
-/* Identify Bison output, and Bison version.  */
-#define YYBISON 30802
+/* Undocumented macros, especially those whose name start with YY_,
+   are private implementation details.  Do not rely on them.  */
 
-/* Bison version string.  */
-#define YYBISON_VERSION "3.8.2"
+/* Identify Bison output.  */
+#define YYBISON 1
+
+/* Bison version.  */
+#define YYBISON_VERSION "3.5.1"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -88,369 +87,401 @@
 #  endif
 # endif
 
-#include "bison-chapel.h"
-/* Symbol kind.  */
-enum yysymbol_kind_t
-{
-  YYSYMBOL_YYEMPTY = -2,
-  YYSYMBOL_YYEOF = 0,                      /* "end of file"  */
-  YYSYMBOL_YYerror = 1,                    /* error  */
-  YYSYMBOL_YYUNDEF = 2,                    /* "invalid token"  */
-  YYSYMBOL_TIDENT = 3,                     /* TIDENT  */
-  YYSYMBOL_TQUERIEDIDENT = 4,              /* TQUERIEDIDENT  */
-  YYSYMBOL_INTLITERAL = 5,                 /* INTLITERAL  */
-  YYSYMBOL_REALLITERAL = 6,                /* REALLITERAL  */
-  YYSYMBOL_IMAGLITERAL = 7,                /* IMAGLITERAL  */
-  YYSYMBOL_STRINGLITERAL = 8,              /* STRINGLITERAL  */
-  YYSYMBOL_BYTESLITERAL = 9,               /* BYTESLITERAL  */
-  YYSYMBOL_CSTRINGLITERAL = 10,            /* CSTRINGLITERAL  */
-  YYSYMBOL_EXTERNCODE = 11,                /* EXTERNCODE  */
-  YYSYMBOL_TALIGN = 12,                    /* TALIGN  */
-  YYSYMBOL_TAS = 13,                       /* TAS  */
-  YYSYMBOL_TATOMIC = 14,                   /* TATOMIC  */
-  YYSYMBOL_TBEGIN = 15,                    /* TBEGIN  */
-  YYSYMBOL_TBREAK = 16,                    /* TBREAK  */
-  YYSYMBOL_TBOOL = 17,                     /* TBOOL  */
-  YYSYMBOL_TBORROWED = 18,                 /* TBORROWED  */
-  YYSYMBOL_TBY = 19,                       /* TBY  */
-  YYSYMBOL_TBYTES = 20,                    /* TBYTES  */
-  YYSYMBOL_TCATCH = 21,                    /* TCATCH  */
-  YYSYMBOL_TCLASS = 22,                    /* TCLASS  */
-  YYSYMBOL_TCOBEGIN = 23,                  /* TCOBEGIN  */
-  YYSYMBOL_TCOFORALL = 24,                 /* TCOFORALL  */
-  YYSYMBOL_TCOMPLEX = 25,                  /* TCOMPLEX  */
-  YYSYMBOL_TCONFIG = 26,                   /* TCONFIG  */
-  YYSYMBOL_TCONST = 27,                    /* TCONST  */
-  YYSYMBOL_TCONTINUE = 28,                 /* TCONTINUE  */
-  YYSYMBOL_TDEFER = 29,                    /* TDEFER  */
-  YYSYMBOL_TDELETE = 30,                   /* TDELETE  */
-  YYSYMBOL_TDEPRECATED = 31,               /* TDEPRECATED  */
-  YYSYMBOL_TDMAPPED = 32,                  /* TDMAPPED  */
-  YYSYMBOL_TDO = 33,                       /* TDO  */
-  YYSYMBOL_TDOMAIN = 34,                   /* TDOMAIN  */
-  YYSYMBOL_TELSE = 35,                     /* TELSE  */
-  YYSYMBOL_TENUM = 36,                     /* TENUM  */
-  YYSYMBOL_TEXCEPT = 37,                   /* TEXCEPT  */
-  YYSYMBOL_TEXPORT = 38,                   /* TEXPORT  */
-  YYSYMBOL_TEXTERN = 39,                   /* TEXTERN  */
-  YYSYMBOL_TFALSE = 40,                    /* TFALSE  */
-  YYSYMBOL_TFOR = 41,                      /* TFOR  */
-  YYSYMBOL_TFORALL = 42,                   /* TFORALL  */
-  YYSYMBOL_TFOREACH = 43,                  /* TFOREACH  */
-  YYSYMBOL_TFORWARDING = 44,               /* TFORWARDING  */
-  YYSYMBOL_TIF = 45,                       /* TIF  */
-  YYSYMBOL_TIMAG = 46,                     /* TIMAG  */
-  YYSYMBOL_TIMPORT = 47,                   /* TIMPORT  */
-  YYSYMBOL_TIN = 48,                       /* TIN  */
-  YYSYMBOL_TINCLUDE = 49,                  /* TINCLUDE  */
-  YYSYMBOL_TINDEX = 50,                    /* TINDEX  */
-  YYSYMBOL_TINLINE = 51,                   /* TINLINE  */
-  YYSYMBOL_TINOUT = 52,                    /* TINOUT  */
-  YYSYMBOL_TINT = 53,                      /* TINT  */
-  YYSYMBOL_TITER = 54,                     /* TITER  */
-  YYSYMBOL_TINITEQUALS = 55,               /* TINITEQUALS  */
-  YYSYMBOL_TIMPLEMENTS = 56,               /* TIMPLEMENTS  */
-  YYSYMBOL_TINTERFACE = 57,                /* TINTERFACE  */
-  YYSYMBOL_TLABEL = 58,                    /* TLABEL  */
-  YYSYMBOL_TLAMBDA = 59,                   /* TLAMBDA  */
-  YYSYMBOL_TLET = 60,                      /* TLET  */
-  YYSYMBOL_TLIFETIME = 61,                 /* TLIFETIME  */
-  YYSYMBOL_TLOCAL = 62,                    /* TLOCAL  */
-  YYSYMBOL_TLOCALE = 63,                   /* TLOCALE  */
-  YYSYMBOL_TMANAGE = 64,                   /* TMANAGE  */
-  YYSYMBOL_TMINUSMINUS = 65,               /* TMINUSMINUS  */
-  YYSYMBOL_TMODULE = 66,                   /* TMODULE  */
-  YYSYMBOL_TNEW = 67,                      /* TNEW  */
-  YYSYMBOL_TNIL = 68,                      /* TNIL  */
-  YYSYMBOL_TNOINIT = 69,                   /* TNOINIT  */
-  YYSYMBOL_TNONE = 70,                     /* TNONE  */
-  YYSYMBOL_TNOTHING = 71,                  /* TNOTHING  */
-  YYSYMBOL_TON = 72,                       /* TON  */
-  YYSYMBOL_TONLY = 73,                     /* TONLY  */
-  YYSYMBOL_TOPERATOR = 74,                 /* TOPERATOR  */
-  YYSYMBOL_TOTHERWISE = 75,                /* TOTHERWISE  */
-  YYSYMBOL_TOUT = 76,                      /* TOUT  */
-  YYSYMBOL_TOVERRIDE = 77,                 /* TOVERRIDE  */
-  YYSYMBOL_TOWNED = 78,                    /* TOWNED  */
-  YYSYMBOL_TPARAM = 79,                    /* TPARAM  */
-  YYSYMBOL_TPLUSPLUS = 80,                 /* TPLUSPLUS  */
-  YYSYMBOL_TPRAGMA = 81,                   /* TPRAGMA  */
-  YYSYMBOL_TPRIMITIVE = 82,                /* TPRIMITIVE  */
-  YYSYMBOL_TPRIVATE = 83,                  /* TPRIVATE  */
-  YYSYMBOL_TPROC = 84,                     /* TPROC  */
-  YYSYMBOL_TPROTOTYPE = 85,                /* TPROTOTYPE  */
-  YYSYMBOL_TPUBLIC = 86,                   /* TPUBLIC  */
-  YYSYMBOL_TREAL = 87,                     /* TREAL  */
-  YYSYMBOL_TRECORD = 88,                   /* TRECORD  */
-  YYSYMBOL_TREDUCE = 89,                   /* TREDUCE  */
-  YYSYMBOL_TREF = 90,                      /* TREF  */
-  YYSYMBOL_TREQUIRE = 91,                  /* TREQUIRE  */
-  YYSYMBOL_TRETURN = 92,                   /* TRETURN  */
-  YYSYMBOL_TSCAN = 93,                     /* TSCAN  */
-  YYSYMBOL_TSELECT = 94,                   /* TSELECT  */
-  YYSYMBOL_TSERIAL = 95,                   /* TSERIAL  */
-  YYSYMBOL_TSHARED = 96,                   /* TSHARED  */
-  YYSYMBOL_TSINGLE = 97,                   /* TSINGLE  */
-  YYSYMBOL_TSPARSE = 98,                   /* TSPARSE  */
-  YYSYMBOL_TSTRING = 99,                   /* TSTRING  */
-  YYSYMBOL_TSUBDOMAIN = 100,               /* TSUBDOMAIN  */
-  YYSYMBOL_TSYNC = 101,                    /* TSYNC  */
-  YYSYMBOL_TTHEN = 102,                    /* TTHEN  */
-  YYSYMBOL_TTHIS = 103,                    /* TTHIS  */
-  YYSYMBOL_TTHROW = 104,                   /* TTHROW  */
-  YYSYMBOL_TTHROWS = 105,                  /* TTHROWS  */
-  YYSYMBOL_TTRUE = 106,                    /* TTRUE  */
-  YYSYMBOL_TTRY = 107,                     /* TTRY  */
-  YYSYMBOL_TTRYBANG = 108,                 /* TTRYBANG  */
-  YYSYMBOL_TTYPE = 109,                    /* TTYPE  */
-  YYSYMBOL_TUINT = 110,                    /* TUINT  */
-  YYSYMBOL_TUNDERSCORE = 111,              /* TUNDERSCORE  */
-  YYSYMBOL_TUNION = 112,                   /* TUNION  */
-  YYSYMBOL_TUNMANAGED = 113,               /* TUNMANAGED  */
-  YYSYMBOL_TUSE = 114,                     /* TUSE  */
-  YYSYMBOL_TVAR = 115,                     /* TVAR  */
-  YYSYMBOL_TVOID = 116,                    /* TVOID  */
-  YYSYMBOL_TWHEN = 117,                    /* TWHEN  */
-  YYSYMBOL_TWHERE = 118,                   /* TWHERE  */
-  YYSYMBOL_TWHILE = 119,                   /* TWHILE  */
-  YYSYMBOL_TWITH = 120,                    /* TWITH  */
-  YYSYMBOL_TYIELD = 121,                   /* TYIELD  */
-  YYSYMBOL_TZIP = 122,                     /* TZIP  */
-  YYSYMBOL_TALIAS = 123,                   /* TALIAS  */
-  YYSYMBOL_TAND = 124,                     /* TAND  */
-  YYSYMBOL_TASSIGN = 125,                  /* TASSIGN  */
-  YYSYMBOL_TASSIGNBAND = 126,              /* TASSIGNBAND  */
-  YYSYMBOL_TASSIGNBOR = 127,               /* TASSIGNBOR  */
-  YYSYMBOL_TASSIGNBXOR = 128,              /* TASSIGNBXOR  */
-  YYSYMBOL_TASSIGNDIVIDE = 129,            /* TASSIGNDIVIDE  */
-  YYSYMBOL_TASSIGNEXP = 130,               /* TASSIGNEXP  */
-  YYSYMBOL_TASSIGNLAND = 131,              /* TASSIGNLAND  */
-  YYSYMBOL_TASSIGNLOR = 132,               /* TASSIGNLOR  */
-  YYSYMBOL_TASSIGNMINUS = 133,             /* TASSIGNMINUS  */
-  YYSYMBOL_TASSIGNMOD = 134,               /* TASSIGNMOD  */
-  YYSYMBOL_TASSIGNMULTIPLY = 135,          /* TASSIGNMULTIPLY  */
-  YYSYMBOL_TASSIGNPLUS = 136,              /* TASSIGNPLUS  */
-  YYSYMBOL_TASSIGNREDUCE = 137,            /* TASSIGNREDUCE  */
-  YYSYMBOL_TASSIGNSL = 138,                /* TASSIGNSL  */
-  YYSYMBOL_TASSIGNSR = 139,                /* TASSIGNSR  */
-  YYSYMBOL_TBANG = 140,                    /* TBANG  */
-  YYSYMBOL_TBAND = 141,                    /* TBAND  */
-  YYSYMBOL_TBNOT = 142,                    /* TBNOT  */
-  YYSYMBOL_TBOR = 143,                     /* TBOR  */
-  YYSYMBOL_TBXOR = 144,                    /* TBXOR  */
-  YYSYMBOL_TCOLON = 145,                   /* TCOLON  */
-  YYSYMBOL_TCOMMA = 146,                   /* TCOMMA  */
-  YYSYMBOL_TDIVIDE = 147,                  /* TDIVIDE  */
-  YYSYMBOL_TDOT = 148,                     /* TDOT  */
-  YYSYMBOL_TDOTDOT = 149,                  /* TDOTDOT  */
-  YYSYMBOL_TDOTDOTDOT = 150,               /* TDOTDOTDOT  */
-  YYSYMBOL_TEQUAL = 151,                   /* TEQUAL  */
-  YYSYMBOL_TEXP = 152,                     /* TEXP  */
-  YYSYMBOL_TGREATER = 153,                 /* TGREATER  */
-  YYSYMBOL_TGREATEREQUAL = 154,            /* TGREATEREQUAL  */
-  YYSYMBOL_THASH = 155,                    /* THASH  */
-  YYSYMBOL_TIO = 156,                      /* TIO  */
-  YYSYMBOL_TLESS = 157,                    /* TLESS  */
-  YYSYMBOL_TLESSEQUAL = 158,               /* TLESSEQUAL  */
-  YYSYMBOL_TMINUS = 159,                   /* TMINUS  */
-  YYSYMBOL_TMOD = 160,                     /* TMOD  */
-  YYSYMBOL_TNOTEQUAL = 161,                /* TNOTEQUAL  */
-  YYSYMBOL_TOR = 162,                      /* TOR  */
-  YYSYMBOL_TPLUS = 163,                    /* TPLUS  */
-  YYSYMBOL_TQUESTION = 164,                /* TQUESTION  */
-  YYSYMBOL_TSEMI = 165,                    /* TSEMI  */
-  YYSYMBOL_TSHIFTLEFT = 166,               /* TSHIFTLEFT  */
-  YYSYMBOL_TSHIFTRIGHT = 167,              /* TSHIFTRIGHT  */
-  YYSYMBOL_TSTAR = 168,                    /* TSTAR  */
-  YYSYMBOL_TSWAP = 169,                    /* TSWAP  */
-  YYSYMBOL_TLCBR = 170,                    /* TLCBR  */
-  YYSYMBOL_TRCBR = 171,                    /* TRCBR  */
-  YYSYMBOL_TLP = 172,                      /* TLP  */
-  YYSYMBOL_TRP = 173,                      /* TRP  */
-  YYSYMBOL_TLSBR = 174,                    /* TLSBR  */
-  YYSYMBOL_TRSBR = 175,                    /* TRSBR  */
-  YYSYMBOL_TNOELSE = 176,                  /* TNOELSE  */
-  YYSYMBOL_TDOTDOTOPENHIGH = 177,          /* TDOTDOTOPENHIGH  */
-  YYSYMBOL_TUPLUS = 178,                   /* TUPLUS  */
-  YYSYMBOL_TUMINUS = 179,                  /* TUMINUS  */
-  YYSYMBOL_TLNOT = 180,                    /* TLNOT  */
-  YYSYMBOL_YYACCEPT = 181,                 /* $accept  */
-  YYSYMBOL_program = 182,                  /* program  */
-  YYSYMBOL_toplevel_stmt_ls = 183,         /* toplevel_stmt_ls  */
-  YYSYMBOL_toplevel_stmt = 184,            /* toplevel_stmt  */
-  YYSYMBOL_pragma_ls = 185,                /* pragma_ls  */
-  YYSYMBOL_stmt = 186,                     /* stmt  */
-  YYSYMBOL_tryable_stmt = 187,             /* tryable_stmt  */
-  YYSYMBOL_deprecated_decl_stmt = 188,     /* deprecated_decl_stmt  */
-  YYSYMBOL_deprecated_decl_base = 189,     /* deprecated_decl_base  */
-  YYSYMBOL_module_decl_start = 190,        /* module_decl_start  */
-  YYSYMBOL_module_decl_stmt = 191,         /* module_decl_stmt  */
-  YYSYMBOL_access_control = 192,           /* access_control  */
-  YYSYMBOL_opt_prototype = 193,            /* opt_prototype  */
-  YYSYMBOL_include_access_control = 194,   /* include_access_control  */
-  YYSYMBOL_include_module_stmt = 195,      /* include_module_stmt  */
-  YYSYMBOL_196_1 = 196,                    /* $@1  */
-  YYSYMBOL_block_stmt = 197,               /* block_stmt  */
-  YYSYMBOL_stmt_ls = 198,                  /* stmt_ls  */
-  YYSYMBOL_renames_ls = 199,               /* renames_ls  */
-  YYSYMBOL_use_renames_ls = 200,           /* use_renames_ls  */
-  YYSYMBOL_opt_only_ls = 201,              /* opt_only_ls  */
-  YYSYMBOL_use_access_control = 202,       /* use_access_control  */
-  YYSYMBOL_use_stmt = 203,                 /* use_stmt  */
-  YYSYMBOL_import_stmt = 204,              /* import_stmt  */
-  YYSYMBOL_import_expr = 205,              /* import_expr  */
-  YYSYMBOL_import_ls = 206,                /* import_ls  */
-  YYSYMBOL_require_stmt = 207,             /* require_stmt  */
-  YYSYMBOL_assignment_stmt = 208,          /* assignment_stmt  */
-  YYSYMBOL_opt_label_ident = 209,          /* opt_label_ident  */
-  YYSYMBOL_ident_fn_def = 210,             /* ident_fn_def  */
-  YYSYMBOL_ident_def = 211,                /* ident_def  */
-  YYSYMBOL_ident_use = 212,                /* ident_use  */
-  YYSYMBOL_internal_type_ident_def = 213,  /* internal_type_ident_def  */
-  YYSYMBOL_scalar_type = 214,              /* scalar_type  */
-  YYSYMBOL_reserved_type_ident_use = 215,  /* reserved_type_ident_use  */
-  YYSYMBOL_do_stmt = 216,                  /* do_stmt  */
-  YYSYMBOL_return_stmt = 217,              /* return_stmt  */
-  YYSYMBOL_manager_expr = 218,             /* manager_expr  */
-  YYSYMBOL_manager_expr_ls = 219,          /* manager_expr_ls  */
-  YYSYMBOL_manage_stmt = 220,              /* manage_stmt  */
-  YYSYMBOL_deprecated_class_level_stmt = 221, /* deprecated_class_level_stmt  */
-  YYSYMBOL_class_level_stmt = 222,         /* class_level_stmt  */
-  YYSYMBOL_223_2 = 223,                    /* @2  */
-  YYSYMBOL_private_decl = 224,             /* private_decl  */
-  YYSYMBOL_forwarding_stmt = 225,          /* forwarding_stmt  */
-  YYSYMBOL_extern_export_decl_stmt = 226,  /* extern_export_decl_stmt  */
-  YYSYMBOL_227_3 = 227,                    /* $@3  */
-  YYSYMBOL_228_4 = 228,                    /* $@4  */
-  YYSYMBOL_229_5 = 229,                    /* $@5  */
-  YYSYMBOL_230_6 = 230,                    /* $@6  */
-  YYSYMBOL_231_7 = 231,                    /* $@7  */
-  YYSYMBOL_232_8 = 232,                    /* $@8  */
-  YYSYMBOL_extern_block_stmt = 233,        /* extern_block_stmt  */
-  YYSYMBOL_loop_stmt = 234,                /* loop_stmt  */
-  YYSYMBOL_zippered_iterator = 235,        /* zippered_iterator  */
-  YYSYMBOL_if_stmt = 236,                  /* if_stmt  */
-  YYSYMBOL_ifvar = 237,                    /* ifvar  */
-  YYSYMBOL_interface_stmt = 238,           /* interface_stmt  */
-  YYSYMBOL_ifc_formal_ls = 239,            /* ifc_formal_ls  */
-  YYSYMBOL_ifc_formal = 240,               /* ifc_formal  */
-  YYSYMBOL_implements_type_ident = 241,    /* implements_type_ident  */
-  YYSYMBOL_implements_type_error_ident = 242, /* implements_type_error_ident  */
-  YYSYMBOL_implements_stmt = 243,          /* implements_stmt  */
-  YYSYMBOL_ifc_constraint = 244,           /* ifc_constraint  */
-  YYSYMBOL_defer_stmt = 245,               /* defer_stmt  */
-  YYSYMBOL_try_token = 246,                /* try_token  */
-  YYSYMBOL_try_stmt = 247,                 /* try_stmt  */
-  YYSYMBOL_catch_stmt_ls = 248,            /* catch_stmt_ls  */
-  YYSYMBOL_catch_stmt = 249,               /* catch_stmt  */
-  YYSYMBOL_catch_expr = 250,               /* catch_expr  */
-  YYSYMBOL_throw_stmt = 251,               /* throw_stmt  */
-  YYSYMBOL_select_stmt = 252,              /* select_stmt  */
-  YYSYMBOL_when_stmt_ls = 253,             /* when_stmt_ls  */
-  YYSYMBOL_when_stmt = 254,                /* when_stmt  */
-  YYSYMBOL_class_decl_stmt = 255,          /* class_decl_stmt  */
-  YYSYMBOL_class_tag = 256,                /* class_tag  */
-  YYSYMBOL_opt_inherit = 257,              /* opt_inherit  */
-  YYSYMBOL_class_level_stmt_ls = 258,      /* class_level_stmt_ls  */
-  YYSYMBOL_enum_decl_stmt = 259,           /* enum_decl_stmt  */
-  YYSYMBOL_enum_header = 260,              /* enum_header  */
-  YYSYMBOL_enum_ls = 261,                  /* enum_ls  */
-  YYSYMBOL_deprecated_enum_item = 262,     /* deprecated_enum_item  */
-  YYSYMBOL_enum_item = 263,                /* enum_item  */
-  YYSYMBOL_lambda_decl_expr = 264,         /* lambda_decl_expr  */
-  YYSYMBOL_265_9 = 265,                    /* $@9  */
-  YYSYMBOL_266_10 = 266,                   /* $@10  */
-  YYSYMBOL_linkage_spec = 267,             /* linkage_spec  */
-  YYSYMBOL_fn_decl_stmt = 268,             /* fn_decl_stmt  */
-  YYSYMBOL_269_11 = 269,                   /* $@11  */
-  YYSYMBOL_270_12 = 270,                   /* $@12  */
-  YYSYMBOL_fn_decl_stmt_inner = 271,       /* fn_decl_stmt_inner  */
-  YYSYMBOL_fn_decl_receiver_expr = 272,    /* fn_decl_receiver_expr  */
-  YYSYMBOL_fn_ident = 273,                 /* fn_ident  */
-  YYSYMBOL_op_ident = 274,                 /* op_ident  */
-  YYSYMBOL_assignop_ident = 275,           /* assignop_ident  */
-  YYSYMBOL_all_op_name = 276,              /* all_op_name  */
-  YYSYMBOL_opt_formal_ls = 277,            /* opt_formal_ls  */
-  YYSYMBOL_req_formal_ls = 278,            /* req_formal_ls  */
-  YYSYMBOL_formal_ls_inner = 279,          /* formal_ls_inner  */
-  YYSYMBOL_formal_ls = 280,                /* formal_ls  */
-  YYSYMBOL_formal = 281,                   /* formal  */
-  YYSYMBOL_opt_intent_tag = 282,           /* opt_intent_tag  */
-  YYSYMBOL_required_intent_tag = 283,      /* required_intent_tag  */
-  YYSYMBOL_opt_this_intent_tag = 284,      /* opt_this_intent_tag  */
-  YYSYMBOL_proc_iter_or_op = 285,          /* proc_iter_or_op  */
-  YYSYMBOL_opt_ret_tag = 286,              /* opt_ret_tag  */
-  YYSYMBOL_opt_throws_error = 287,         /* opt_throws_error  */
-  YYSYMBOL_opt_function_body_stmt = 288,   /* opt_function_body_stmt  */
-  YYSYMBOL_function_body_stmt = 289,       /* function_body_stmt  */
-  YYSYMBOL_query_expr = 290,               /* query_expr  */
-  YYSYMBOL_var_arg_expr = 291,             /* var_arg_expr  */
-  YYSYMBOL_opt_lifetime_where = 292,       /* opt_lifetime_where  */
-  YYSYMBOL_lifetime_components_expr = 293, /* lifetime_components_expr  */
-  YYSYMBOL_lifetime_expr = 294,            /* lifetime_expr  */
-  YYSYMBOL_lifetime_ident = 295,           /* lifetime_ident  */
-  YYSYMBOL_type_alias_decl_stmt = 296,     /* type_alias_decl_stmt  */
-  YYSYMBOL_type_alias_decl_stmt_inner = 297, /* type_alias_decl_stmt_inner  */
-  YYSYMBOL_opt_init_type = 298,            /* opt_init_type  */
-  YYSYMBOL_var_decl_type = 299,            /* var_decl_type  */
-  YYSYMBOL_var_decl_stmt = 300,            /* var_decl_stmt  */
-  YYSYMBOL_var_decl_stmt_inner_ls = 301,   /* var_decl_stmt_inner_ls  */
-  YYSYMBOL_var_decl_stmt_inner = 302,      /* var_decl_stmt_inner  */
-  YYSYMBOL_tuple_var_decl_component = 303, /* tuple_var_decl_component  */
-  YYSYMBOL_tuple_var_decl_stmt_inner_ls = 304, /* tuple_var_decl_stmt_inner_ls  */
-  YYSYMBOL_opt_init_expr = 305,            /* opt_init_expr  */
-  YYSYMBOL_ret_array_type = 306,           /* ret_array_type  */
-  YYSYMBOL_opt_ret_type = 307,             /* opt_ret_type  */
-  YYSYMBOL_opt_type = 308,                 /* opt_type  */
-  YYSYMBOL_array_type = 309,               /* array_type  */
-  YYSYMBOL_opt_formal_array_elt_type = 310, /* opt_formal_array_elt_type  */
-  YYSYMBOL_formal_array_type = 311,        /* formal_array_type  */
-  YYSYMBOL_opt_formal_type = 312,          /* opt_formal_type  */
-  YYSYMBOL_expr_ls = 313,                  /* expr_ls  */
-  YYSYMBOL_simple_expr_ls = 314,           /* simple_expr_ls  */
-  YYSYMBOL_tuple_component = 315,          /* tuple_component  */
-  YYSYMBOL_tuple_expr_ls = 316,            /* tuple_expr_ls  */
-  YYSYMBOL_opt_actual_ls = 317,            /* opt_actual_ls  */
-  YYSYMBOL_actual_ls = 318,                /* actual_ls  */
-  YYSYMBOL_actual_expr = 319,              /* actual_expr  */
-  YYSYMBOL_ident_expr = 320,               /* ident_expr  */
-  YYSYMBOL_type_level_expr = 321,          /* type_level_expr  */
-  YYSYMBOL_sub_type_level_expr = 322,      /* sub_type_level_expr  */
-  YYSYMBOL_for_expr = 323,                 /* for_expr  */
-  YYSYMBOL_cond_expr = 324,                /* cond_expr  */
-  YYSYMBOL_nil_expr = 325,                 /* nil_expr  */
-  YYSYMBOL_stmt_level_expr = 326,          /* stmt_level_expr  */
-  YYSYMBOL_opt_task_intent_ls = 327,       /* opt_task_intent_ls  */
-  YYSYMBOL_task_intent_clause = 328,       /* task_intent_clause  */
-  YYSYMBOL_task_intent_ls = 329,           /* task_intent_ls  */
-  YYSYMBOL_forall_intent_clause = 330,     /* forall_intent_clause  */
-  YYSYMBOL_forall_intent_ls = 331,         /* forall_intent_ls  */
-  YYSYMBOL_intent_expr = 332,              /* intent_expr  */
-  YYSYMBOL_shadow_var_prefix = 333,        /* shadow_var_prefix  */
-  YYSYMBOL_io_expr = 334,                  /* io_expr  */
-  YYSYMBOL_new_maybe_decorated = 335,      /* new_maybe_decorated  */
-  YYSYMBOL_new_expr = 336,                 /* new_expr  */
-  YYSYMBOL_let_expr = 337,                 /* let_expr  */
-  YYSYMBOL_expr = 338,                     /* expr  */
-  YYSYMBOL_opt_expr = 339,                 /* opt_expr  */
-  YYSYMBOL_opt_try_expr = 340,             /* opt_try_expr  */
-  YYSYMBOL_lhs_expr = 341,                 /* lhs_expr  */
-  YYSYMBOL_call_base_expr = 342,           /* call_base_expr  */
-  YYSYMBOL_call_expr = 343,                /* call_expr  */
-  YYSYMBOL_dot_expr = 344,                 /* dot_expr  */
-  YYSYMBOL_parenthesized_expr = 345,       /* parenthesized_expr  */
-  YYSYMBOL_bool_literal = 346,             /* bool_literal  */
-  YYSYMBOL_str_bytes_literal = 347,        /* str_bytes_literal  */
-  YYSYMBOL_literal_expr = 348,             /* literal_expr  */
-  YYSYMBOL_assoc_expr_ls = 349,            /* assoc_expr_ls  */
-  YYSYMBOL_binary_op_expr = 350,           /* binary_op_expr  */
-  YYSYMBOL_unary_op_expr = 351,            /* unary_op_expr  */
-  YYSYMBOL_reduce_expr = 352,              /* reduce_expr  */
-  YYSYMBOL_scan_expr = 353,                /* scan_expr  */
-  YYSYMBOL_reduce_scan_op_expr = 354       /* reduce_scan_op_expr  */
-};
-typedef enum yysymbol_kind_t yysymbol_kind_t;
+/* Enabling verbose error messages.  */
+#ifdef YYERROR_VERBOSE
+# undef YYERROR_VERBOSE
+# define YYERROR_VERBOSE 1
+#else
+# define YYERROR_VERBOSE 0
+#endif
 
+/* Use api.header.include to #include this header
+   instead of duplicating it here.  */
+#ifndef YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
+# define YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
+/* Debug traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 1
+#endif
+#if YYDEBUG
+extern int yydebug;
+#endif
+/* "%code requires" blocks.  */
+#line 33 "chapel.ypp"
+
+  #include <string>
+  extern int         captureTokens;
+  extern std::string captureString;
+#line 47 "chapel.ypp"
+
+  #ifndef _BISON_CHAPEL_DEFINES_0_
+  #define _BISON_CHAPEL_DEFINES_0_
+
+  #define YYLEX_NEWLINE                  -1
+  #define YYLEX_SINGLE_LINE_COMMENT      -2
+  #define YYLEX_BLOCK_COMMENT            -3
+
+  typedef void* yyscan_t;
+
+  int processNewline(yyscan_t scanner);
+  void stringBufferInit();
+
+  #endif
+#line 67 "chapel.ypp"
+
+  #ifndef _BISON_CHAPEL_DEFINES_1_
+  #define _BISON_CHAPEL_DEFINES_1_
+
+  #include "symbol.h"
+
+  #include "ImportStmt.h"
+
+  #include <cstdio>
+  #include <utility>
+  #include <vector>
+
+  class ArgSymbol;
+  class BlockStmt;
+  class CallExpr;
+  class DefExpr;
+  class EnumType;
+  class Expr;
+  class FnSymbol;
+  class NamedExpr;
+  class Type;
+
+  enum   ProcIterOp {
+    ProcIterOp_PROC,
+    ProcIterOp_ITER,
+    ProcIterOp_OP
+  };
+
+  struct PotentialRename {
+    enum{SINGLE, DOUBLE} tag;
+
+    union {
+      Expr*  elem;
+      std::pair<Expr*, Expr*>* renamed;
+    };
+  };
+
+  struct WhereAndLifetime {
+    Expr* where;
+    Expr* lifetime;
+  };
+  static inline
+  WhereAndLifetime makeWhereAndLifetime(Expr* w, Expr* lt) {
+    WhereAndLifetime ret;
+    ret.where = w;
+    ret.lifetime = lt;
+    return ret;
+  }
+
+  // The lexer only uses pch.
+  // The remaining types are for parser productions
+  union  YYSTYPE {
+    const char*               pch;
+
+    Vec<const char*>*         vpch;
+    RetTag                    retTag;
+    AggregateTag              aggrTag;
+    bool                      b;
+    IntentTag                 pt;
+    Expr*                     pexpr;
+    DefExpr*                  pdefexpr;
+    CallExpr*                 pcallexpr;
+    BlockStmt*                pblockstmt;
+    Type*                     ptype;
+    EnumType*                 penumtype;
+    std::vector<DefExpr*>*    pvecOfDefs;
+    FnSymbol*                 pfnsymbol;
+    ModuleSymbol*             pmodsymbol;
+    ImportStmt*               pimportstmt;
+    ProcIterOp                procIterOp;
+    FlagSet*                  flagSet;
+    ShadowVarSymbol*          pShadowVar;
+    ShadowVarPrefix           pShadowVarPref;
+    std::vector<PotentialRename*>* ponlylist;
+    std::set<Flag>*           pflagset;
+    WhereAndLifetime          lifetimeAndWhere;
+  };
+
+  #endif
+#line 152 "chapel.ypp"
+
+  #ifndef _BISON_CHAPEL_DEFINES_2_
+  #define _BISON_CHAPEL_DEFINES_2_
+
+  struct YYLTYPE {
+    int         first_line;
+    int         first_column;
+    int         last_line;
+    int         last_column;
+    const char* comment;
+    const char* prevModule;
+  };
+
+  #define YYLTYPE_IS_DECLARED 1
+  #define YYLTYPE_IS_TRIVIAL  1
+
+  #endif
+#line 175 "chapel.ypp"
+
+  #ifndef _BISON_CHAPEL_DEFINES_3_
+  #define _BISON_CHAPEL_DEFINES_3_
+
+  class ParserContext {
+  public:
+    ParserContext()
+    {
+      scanner       = 0;
+      latestComment = 0;
+      generatedStmt = 0;
+    }
+
+    ParserContext(yyscan_t scannerIn)
+    {
+      scanner       = scannerIn;
+      latestComment = 0;
+      generatedStmt = 0;
+    }
+
+    yyscan_t    scanner;
+    const char* latestComment;
+    BaseAST*    generatedStmt;
+  };
+
+  #endif
+
+#line 257 "bison-chapel.cpp"
+
+/* Token type.  */
+#ifndef YYTOKENTYPE
+# define YYTOKENTYPE
+  enum yytokentype
+  {
+    TIDENT = 258,
+    TQUERIEDIDENT = 259,
+    INTLITERAL = 260,
+    REALLITERAL = 261,
+    IMAGLITERAL = 262,
+    STRINGLITERAL = 263,
+    BYTESLITERAL = 264,
+    CSTRINGLITERAL = 265,
+    EXTERNCODE = 266,
+    TALIGN = 267,
+    TAS = 268,
+    TATOMIC = 269,
+    TBEGIN = 270,
+    TBREAK = 271,
+    TBOOL = 272,
+    TBORROWED = 273,
+    TBY = 274,
+    TBYTES = 275,
+    TCATCH = 276,
+    TCLASS = 277,
+    TCOBEGIN = 278,
+    TCOFORALL = 279,
+    TCOMPLEX = 280,
+    TCONFIG = 281,
+    TCONST = 282,
+    TCONTINUE = 283,
+    TDEFER = 284,
+    TDELETE = 285,
+    TDEPRECATED = 286,
+    TDMAPPED = 287,
+    TDO = 288,
+    TDOMAIN = 289,
+    TELSE = 290,
+    TENUM = 291,
+    TEXCEPT = 292,
+    TEXPORT = 293,
+    TEXTERN = 294,
+    TFALSE = 295,
+    TFOR = 296,
+    TFORALL = 297,
+    TFOREACH = 298,
+    TFORWARDING = 299,
+    TIF = 300,
+    TIMAG = 301,
+    TIMPORT = 302,
+    TIN = 303,
+    TINCLUDE = 304,
+    TINDEX = 305,
+    TINLINE = 306,
+    TINOUT = 307,
+    TINT = 308,
+    TITER = 309,
+    TINITEQUALS = 310,
+    TIMPLEMENTS = 311,
+    TINTERFACE = 312,
+    TLABEL = 313,
+    TLAMBDA = 314,
+    TLET = 315,
+    TLIFETIME = 316,
+    TLOCAL = 317,
+    TLOCALE = 318,
+    TMANAGE = 319,
+    TMINUSMINUS = 320,
+    TMODULE = 321,
+    TNEW = 322,
+    TNIL = 323,
+    TNOINIT = 324,
+    TNONE = 325,
+    TNOTHING = 326,
+    TON = 327,
+    TONLY = 328,
+    TOPERATOR = 329,
+    TOTHERWISE = 330,
+    TOUT = 331,
+    TOVERRIDE = 332,
+    TOWNED = 333,
+    TPARAM = 334,
+    TPLUSPLUS = 335,
+    TPRAGMA = 336,
+    TPRIMITIVE = 337,
+    TPRIVATE = 338,
+    TPROC = 339,
+    TPROTOTYPE = 340,
+    TPUBLIC = 341,
+    TREAL = 342,
+    TRECORD = 343,
+    TREDUCE = 344,
+    TREF = 345,
+    TREQUIRE = 346,
+    TRETURN = 347,
+    TSCAN = 348,
+    TSELECT = 349,
+    TSERIAL = 350,
+    TSHARED = 351,
+    TSINGLE = 352,
+    TSPARSE = 353,
+    TSTRING = 354,
+    TSUBDOMAIN = 355,
+    TSYNC = 356,
+    TTHEN = 357,
+    TTHIS = 358,
+    TTHROW = 359,
+    TTHROWS = 360,
+    TTRUE = 361,
+    TTRY = 362,
+    TTRYBANG = 363,
+    TTYPE = 364,
+    TUINT = 365,
+    TUNDERSCORE = 366,
+    TUNION = 367,
+    TUNMANAGED = 368,
+    TUSE = 369,
+    TVAR = 370,
+    TVOID = 371,
+    TWHEN = 372,
+    TWHERE = 373,
+    TWHILE = 374,
+    TWITH = 375,
+    TYIELD = 376,
+    TZIP = 377,
+    TALIAS = 378,
+    TAND = 379,
+    TASSIGN = 380,
+    TASSIGNBAND = 381,
+    TASSIGNBOR = 382,
+    TASSIGNBXOR = 383,
+    TASSIGNDIVIDE = 384,
+    TASSIGNEXP = 385,
+    TASSIGNLAND = 386,
+    TASSIGNLOR = 387,
+    TASSIGNMINUS = 388,
+    TASSIGNMOD = 389,
+    TASSIGNMULTIPLY = 390,
+    TASSIGNPLUS = 391,
+    TASSIGNREDUCE = 392,
+    TASSIGNSL = 393,
+    TASSIGNSR = 394,
+    TBANG = 395,
+    TBAND = 396,
+    TBNOT = 397,
+    TBOR = 398,
+    TBXOR = 399,
+    TCOLON = 400,
+    TCOMMA = 401,
+    TDIVIDE = 402,
+    TDOT = 403,
+    TDOTDOT = 404,
+    TDOTDOTDOT = 405,
+    TEQUAL = 406,
+    TEXP = 407,
+    TGREATER = 408,
+    TGREATEREQUAL = 409,
+    THASH = 410,
+    TIO = 411,
+    TLESS = 412,
+    TLESSEQUAL = 413,
+    TMINUS = 414,
+    TMOD = 415,
+    TNOTEQUAL = 416,
+    TOR = 417,
+    TPLUS = 418,
+    TQUESTION = 419,
+    TSEMI = 420,
+    TSHIFTLEFT = 421,
+    TSHIFTRIGHT = 422,
+    TSTAR = 423,
+    TSWAP = 424,
+    TLCBR = 425,
+    TRCBR = 426,
+    TLP = 427,
+    TRP = 428,
+    TLSBR = 429,
+    TRSBR = 430,
+    TNOELSE = 431,
+    TDOTDOTOPENHIGH = 432,
+    TUPLUS = 433,
+    TUMINUS = 434,
+    TLNOT = 435
+  };
+#endif
+
+/* Value type.  */
+
+/* Location type.  */
+#if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
+typedef struct YYLTYPE YYLTYPE;
+struct YYLTYPE
+{
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+};
+# define YYLTYPE_IS_DECLARED 1
+# define YYLTYPE_IS_TRIVIAL 1
+#endif
+
+
+
+#ifndef YYPUSH_MORE_DEFINED
+# define YYPUSH_MORE_DEFINED
+enum { YYPUSH_MORE = 4 };
+#endif
+
+typedef struct yypstate yypstate;
+
+int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLTYPE *pushed_loc, ParserContext* context);
+
+yypstate * yypstate_new (void);
+void yypstate_delete (yypstate *ps);
+/* "%code provides" blocks.  */
+#line 206 "chapel.ypp"
+
+  extern int yydebug;
+
+  void yyerror(YYLTYPE*       ignored,
+               ParserContext* context,
+               const char*    str);
+
+#line 483 "bison-chapel.cpp"
+
+#endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */
 
 
 /* Unqualified %code blocks.  */
@@ -525,7 +556,7 @@ typedef enum yysymbol_kind_t yysymbol_kind_t;
     fprintf(stderr, "\n");
   }
 
-#line 529 "bison-chapel.cpp"
+#line 560 "bison-chapel.cpp"
 
 #ifdef short
 # undef short
@@ -562,18 +593,6 @@ typedef __INT_LEAST16_TYPE__ yytype_int16;
 typedef int_least16_t yytype_int16;
 #else
 typedef short yytype_int16;
-#endif
-
-/* Work around bug in HP-UX 11.23, which defines these macros
-   incorrectly for preprocessor constants.  This workaround can likely
-   be removed in 2023, as HPE has promised support for HP-UX 11.23
-   (aka HP-UX 11i v2) only through the end of 2022; see Table 2 of
-   <https://h20195.www2.hpe.com/V2/getpdf.aspx/4AA4-7673ENW.pdf>.  */
-#ifdef __hpux
-# undef UINT_LEAST8_MAX
-# undef UINT_LEAST16_MAX
-# define UINT_LEAST8_MAX 255
-# define UINT_LEAST16_MAX 65535
 #endif
 
 #if defined __UINT_LEAST8_MAX__ && __UINT_LEAST8_MAX__ <= __INT_MAX__
@@ -635,7 +654,6 @@ typedef int yytype_uint16;
 
 #define YYSIZEOF(X) YY_CAST (YYPTRDIFF_T, sizeof (X))
 
-
 /* Stored state numbers (used for stacks). */
 typedef yytype_int16 yy_state_t;
 
@@ -653,7 +671,6 @@ typedef int yy_state_fast_t;
 #  define YY_(Msgid) Msgid
 # endif
 #endif
-
 
 #ifndef YY_ATTRIBUTE_PURE
 # if defined __GNUC__ && 2 < __GNUC__ + (96 <= __GNUC_MINOR__)
@@ -673,23 +690,17 @@ typedef int yy_state_fast_t;
 
 /* Suppress unused-variable warnings by "using" E.  */
 #if ! defined lint || defined __GNUC__
-# define YY_USE(E) ((void) (E))
+# define YYUSE(E) ((void) (E))
 #else
-# define YY_USE(E) /* empty */
+# define YYUSE(E) /* empty */
 #endif
 
+#if defined __GNUC__ && ! defined __ICC && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
 /* Suppress an incorrect diagnostic about yylval being uninitialized.  */
-#if defined __GNUC__ && ! defined __ICC && 406 <= __GNUC__ * 100 + __GNUC_MINOR__
-# if __GNUC__ * 100 + __GNUC_MINOR__ < 407
-#  define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                           \
-    _Pragma ("GCC diagnostic push")                                     \
-    _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")
-# else
-#  define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                           \
+# define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                            \
     _Pragma ("GCC diagnostic push")                                     \
     _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")              \
     _Pragma ("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
-# endif
 # define YY_IGNORE_MAYBE_UNINITIALIZED_END      \
     _Pragma ("GCC diagnostic pop")
 #else
@@ -718,7 +729,7 @@ typedef int yy_state_fast_t;
 
 #define YY_ASSERT(E) ((void) (0 && (E)))
 
-#if !defined yyoverflow
+#if ! defined yyoverflow || YYERROR_VERBOSE
 
 /* The parser invokes alloca or malloc; define the necessary symbols.  */
 
@@ -759,7 +770,8 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 #   endif
 #  endif
 # endif
-#endif /* !defined yyoverflow */
+#endif /* ! defined yyoverflow || YYERROR_VERBOSE */
+
 
 #if (! defined yyoverflow \
      && (! defined __cplusplus \
@@ -827,7 +839,7 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  3
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   21096
+#define YYLAST   21271
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  181
@@ -838,16 +850,14 @@ union yyalloc
 /* YYNSTATES -- Number of states.  */
 #define YYNSTATES  1290
 
-/* YYMAXUTOK -- Last valid token kind.  */
+#define YYUNDEFTOK  2
 #define YYMAXUTOK   435
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex, with out-of-bounds checking.  */
-#define YYTRANSLATE(YYX)                                \
-  (0 <= (YYX) && (YYX) <= YYMAXUTOK                     \
-   ? YY_CAST (yysymbol_kind_t, yytranslate[YYX])        \
-   : YYSYMBOL_YYUNDEF)
+#define YYTRANSLATE(YYX)                                                \
+  (0 <= (YYX) && (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
 
 /* YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex.  */
@@ -900,7 +910,7 @@ static const yytype_uint8 yytranslate[] =
 };
 
 #if YYDEBUG
-/* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
+  /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
        0,   518,   518,   523,   524,   530,   531,   536,   537,   542,
@@ -978,40 +988,33 @@ static const yytype_int16 yyrline[] =
 };
 #endif
 
-/** Accessing symbol of state STATE.  */
-#define YY_ACCESSING_SYMBOL(State) YY_CAST (yysymbol_kind_t, yystos[State])
-
-#if YYDEBUG || 0
-/* The user-facing name of the symbol whose (internal) number is
-   YYSYMBOL.  No bounds checking.  */
-static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
-
+#if YYDEBUG || YYERROR_VERBOSE || 0
 /* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "\"end of file\"", "error", "\"invalid token\"", "TIDENT",
-  "TQUERIEDIDENT", "INTLITERAL", "REALLITERAL", "IMAGLITERAL",
-  "STRINGLITERAL", "BYTESLITERAL", "CSTRINGLITERAL", "EXTERNCODE",
-  "TALIGN", "TAS", "TATOMIC", "TBEGIN", "TBREAK", "TBOOL", "TBORROWED",
-  "TBY", "TBYTES", "TCATCH", "TCLASS", "TCOBEGIN", "TCOFORALL", "TCOMPLEX",
-  "TCONFIG", "TCONST", "TCONTINUE", "TDEFER", "TDELETE", "TDEPRECATED",
-  "TDMAPPED", "TDO", "TDOMAIN", "TELSE", "TENUM", "TEXCEPT", "TEXPORT",
-  "TEXTERN", "TFALSE", "TFOR", "TFORALL", "TFOREACH", "TFORWARDING", "TIF",
-  "TIMAG", "TIMPORT", "TIN", "TINCLUDE", "TINDEX", "TINLINE", "TINOUT",
-  "TINT", "TITER", "TINITEQUALS", "TIMPLEMENTS", "TINTERFACE", "TLABEL",
-  "TLAMBDA", "TLET", "TLIFETIME", "TLOCAL", "TLOCALE", "TMANAGE",
-  "TMINUSMINUS", "TMODULE", "TNEW", "TNIL", "TNOINIT", "TNONE", "TNOTHING",
-  "TON", "TONLY", "TOPERATOR", "TOTHERWISE", "TOUT", "TOVERRIDE", "TOWNED",
-  "TPARAM", "TPLUSPLUS", "TPRAGMA", "TPRIMITIVE", "TPRIVATE", "TPROC",
-  "TPROTOTYPE", "TPUBLIC", "TREAL", "TRECORD", "TREDUCE", "TREF",
-  "TREQUIRE", "TRETURN", "TSCAN", "TSELECT", "TSERIAL", "TSHARED",
-  "TSINGLE", "TSPARSE", "TSTRING", "TSUBDOMAIN", "TSYNC", "TTHEN", "TTHIS",
-  "TTHROW", "TTHROWS", "TTRUE", "TTRY", "TTRYBANG", "TTYPE", "TUINT",
-  "TUNDERSCORE", "TUNION", "TUNMANAGED", "TUSE", "TVAR", "TVOID", "TWHEN",
-  "TWHERE", "TWHILE", "TWITH", "TYIELD", "TZIP", "TALIAS", "TAND",
-  "TASSIGN", "TASSIGNBAND", "TASSIGNBOR", "TASSIGNBXOR", "TASSIGNDIVIDE",
-  "TASSIGNEXP", "TASSIGNLAND", "TASSIGNLOR", "TASSIGNMINUS", "TASSIGNMOD",
+  "$end", "error", "$undefined", "TIDENT", "TQUERIEDIDENT", "INTLITERAL",
+  "REALLITERAL", "IMAGLITERAL", "STRINGLITERAL", "BYTESLITERAL",
+  "CSTRINGLITERAL", "EXTERNCODE", "TALIGN", "TAS", "TATOMIC", "TBEGIN",
+  "TBREAK", "TBOOL", "TBORROWED", "TBY", "TBYTES", "TCATCH", "TCLASS",
+  "TCOBEGIN", "TCOFORALL", "TCOMPLEX", "TCONFIG", "TCONST", "TCONTINUE",
+  "TDEFER", "TDELETE", "TDEPRECATED", "TDMAPPED", "TDO", "TDOMAIN",
+  "TELSE", "TENUM", "TEXCEPT", "TEXPORT", "TEXTERN", "TFALSE", "TFOR",
+  "TFORALL", "TFOREACH", "TFORWARDING", "TIF", "TIMAG", "TIMPORT", "TIN",
+  "TINCLUDE", "TINDEX", "TINLINE", "TINOUT", "TINT", "TITER",
+  "TINITEQUALS", "TIMPLEMENTS", "TINTERFACE", "TLABEL", "TLAMBDA", "TLET",
+  "TLIFETIME", "TLOCAL", "TLOCALE", "TMANAGE", "TMINUSMINUS", "TMODULE",
+  "TNEW", "TNIL", "TNOINIT", "TNONE", "TNOTHING", "TON", "TONLY",
+  "TOPERATOR", "TOTHERWISE", "TOUT", "TOVERRIDE", "TOWNED", "TPARAM",
+  "TPLUSPLUS", "TPRAGMA", "TPRIMITIVE", "TPRIVATE", "TPROC", "TPROTOTYPE",
+  "TPUBLIC", "TREAL", "TRECORD", "TREDUCE", "TREF", "TREQUIRE", "TRETURN",
+  "TSCAN", "TSELECT", "TSERIAL", "TSHARED", "TSINGLE", "TSPARSE",
+  "TSTRING", "TSUBDOMAIN", "TSYNC", "TTHEN", "TTHIS", "TTHROW", "TTHROWS",
+  "TTRUE", "TTRY", "TTRYBANG", "TTYPE", "TUINT", "TUNDERSCORE", "TUNION",
+  "TUNMANAGED", "TUSE", "TVAR", "TVOID", "TWHEN", "TWHERE", "TWHILE",
+  "TWITH", "TYIELD", "TZIP", "TALIAS", "TAND", "TASSIGN", "TASSIGNBAND",
+  "TASSIGNBOR", "TASSIGNBXOR", "TASSIGNDIVIDE", "TASSIGNEXP",
+  "TASSIGNLAND", "TASSIGNLOR", "TASSIGNMINUS", "TASSIGNMOD",
   "TASSIGNMULTIPLY", "TASSIGNPLUS", "TASSIGNREDUCE", "TASSIGNSL",
   "TASSIGNSR", "TBANG", "TBAND", "TBNOT", "TBOR", "TBXOR", "TCOLON",
   "TCOMMA", "TDIVIDE", "TDOT", "TDOTDOT", "TDOTDOTDOT", "TEQUAL", "TEXP",
@@ -1066,15 +1069,36 @@ static const char *const yytname[] =
   "literal_expr", "assoc_expr_ls", "binary_op_expr", "unary_op_expr",
   "reduce_expr", "scan_expr", "reduce_scan_op_expr", YY_NULLPTR
 };
-
-static const char *
-yysymbol_name (yysymbol_kind_t yysymbol)
-{
-  return yytname[yysymbol];
-}
 #endif
 
-#define YYPACT_NINF (-1109)
+# ifdef YYPRINT
+/* YYTOKNUM[NUM] -- (External) token number corresponding to the
+   (internal) symbol number NUM (which must be that of a token).  */
+static const yytype_int16 yytoknum[] =
+{
+       0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
+     265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
+     275,   276,   277,   278,   279,   280,   281,   282,   283,   284,
+     285,   286,   287,   288,   289,   290,   291,   292,   293,   294,
+     295,   296,   297,   298,   299,   300,   301,   302,   303,   304,
+     305,   306,   307,   308,   309,   310,   311,   312,   313,   314,
+     315,   316,   317,   318,   319,   320,   321,   322,   323,   324,
+     325,   326,   327,   328,   329,   330,   331,   332,   333,   334,
+     335,   336,   337,   338,   339,   340,   341,   342,   343,   344,
+     345,   346,   347,   348,   349,   350,   351,   352,   353,   354,
+     355,   356,   357,   358,   359,   360,   361,   362,   363,   364,
+     365,   366,   367,   368,   369,   370,   371,   372,   373,   374,
+     375,   376,   377,   378,   379,   380,   381,   382,   383,   384,
+     385,   386,   387,   388,   389,   390,   391,   392,   393,   394,
+     395,   396,   397,   398,   399,   400,   401,   402,   403,   404,
+     405,   406,   407,   408,   409,   410,   411,   412,   413,   414,
+     415,   416,   417,   418,   419,   420,   421,   422,   423,   424,
+     425,   426,   427,   428,   429,   430,   431,   432,   433,   434,
+     435
+};
+# endif
+
+#define YYPACT_NINF (-1092)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -1084,144 +1108,144 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 #define yytable_value_is_error(Yyn) \
   0
 
-/* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
-   STATE-NUM.  */
+  /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
+     STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-   -1109,   104,  3583, -1109,   -58,    62, -1109, -1109, -1109, -1109,
-   -1109, -1109, 12122,    -3,   135,    71, 15029,   205, 19777,    -3,
-   12122,   248,   400,   223,   135,  4983, 12122,  2152,  4983,   230,
-   20632, 12295,  8298,   277,  8992, 10557, 10557,  7427,  9165,   292,
-   -1109,   261, -1109,   406, 20719, 20719, 20719, -1109,  2915, 10730,
-     426, 12122, 12122,   241, -1109,   430,   431, 12122, -1109, 15029,
-   -1109, 12122,   319,   305,   532, 17341,   441, 20806, -1109, 10905,
-    8471, 12122, 10730, 15029, 12122,   398,   463,   378,  4983,   501,
-   12122,   514, -1109, -1109, 20719,   526, -1109, 15029, -1109,   563,
-    9165, 12122, -1109, 12122, -1109, 12122, -1109, -1109, 14544, 12122,
-   -1109, 12122, -1109, -1109, -1109,  3933,  7602,  9340, 12122, -1109,
-    4808, -1109, -1109, -1109, -1109,   462, -1109,   500, -1109, -1109,
-     162, -1109, -1109, -1109, -1109, -1109, -1109, -1109, -1109, -1109,
-   -1109, -1109, -1109, -1109, -1109, -1109, -1109,   585, -1109, -1109,
-   -1109, -1109,  7254, -1109, -1109, -1109, -1109, 20719, -1109, 20719,
-     275,    46, -1109, -1109,  2915, -1109,   477, -1109,   486, -1109,
-   -1109,   499,   507,   505, 12122,   516,   520, 19847,  1909,   274,
-     523,   525, -1109, -1109,   401, -1109, -1109, -1109, -1109, -1109,
-     439, -1109, -1109, -1109, 12122, 12122, 12122, 20719, -1109, 12122,
-   10905, 10905,   613,   415, -1109, -1109, -1109, -1109, 19847,   485,
-   -1109, -1109,   521,  4983, -1109, -1109,   527,   393,   524, 16855,
-   20719,  2915, -1109,   534, -1109,   -40, 19847, 17078, -1109, -1109,
-    9513,   198, 17767, -1109, -1109,   578,  8646,   617, 20893, 19847,
-     465,   384, -1109, 20980, 20719, -1109,   465, 20719,   535,    21,
-   16426,    11, 16386,    21, 16466,   210, -1109, 16618, 20719, 20719,
-     -14, 15626,   435,  8646, -1109, -1109, -1109, -1109, -1109, -1109,
-   -1109, -1109, -1109, -1109, -1109, -1109, -1109, -1109, -1109, -1109,
-   -1109, -1109, -1109, -1109, -1109, -1109, -1109, -1109,   536, -1109,
-     490,  4983,   539,  1498,   147,    87, -1109,  4983, -1109, -1109,
-   16895, -1109,    36, 17404,   750, -1109,   540,   542, -1109, 16895,
-     393,   750, -1109,  8646,  1262, -1109, -1109, -1109,   188, 19847,
-   12122, 12122, -1109, 19847,   554, 17511, -1109, 16895,   393, 19847,
-     544,  8646, -1109, 19847, 17556,   597,   560,   393,    21, 16895,
-   17596,   195,   195,  1927,   750,   750,   100, -1109, -1109,  4108,
-     136, -1109, 12122, -1109,   -54,   101, -1109,   -38,   -10, 17748,
-     106,  1927,   716, -1109,  4283, -1109,   660, 12122, 12122, 20719,
-   -1109, -1109,   586,   562, -1109, -1109, -1109, -1109,   190,   503,
-   -1109, 12122,   594, 12122, 12122, 12122, 10557, 10557, 12122,   504,
+   -1092,   107,  3583, -1092,   -48,    62, -1092, -1092, -1092, -1092,
+   -1092, -1092, 12122,    33,   236,   204, 15029,   215, 20720,    33,
+   12122,   248,   400,   223,   236,  4983, 12122,  2152,  4983,   181,
+   20807, 12295,  8298,   277,  8992, 10557, 10557,  7427,  9165,   292,
+   -1092,   261, -1092,   337, 20894, 20894, 20894, -1092,  2915, 10730,
+     406, 12122, 12122,   241, -1092,   426,   430, 12122, -1092, 15029,
+   -1092, 12122,   319,   305,   532, 17341,   431, 20981, -1092, 10905,
+    8471, 12122, 10730, 15029, 12122,   397,   442,   347,  4983,   472,
+   12122,   476, -1092, -1092, 20894,   494, -1092, 15029, -1092,   501,
+    9165,  9338, -1092, 12122, -1092, 12122, -1092, -1092, 14544, 12122,
+   -1092, 12122, -1092, -1092, -1092,  3933,  7602,  9513, 12122, -1092,
+    4808, -1092, -1092, -1092, -1092,   412, -1092,   523, -1092, -1092,
+      97, -1092, -1092, -1092, -1092, -1092, -1092, -1092, -1092, -1092,
+   -1092, -1092, -1092, -1092, -1092, -1092, -1092,   562, -1092, -1092,
+   -1092, -1092,  7254, -1092, -1092, -1092, -1092, 20894, -1092, 20894,
+     275,    46, -1092, -1092,  2915, -1092,   461, -1092,   468, -1092,
+   -1092,   464,   477,   485, 12122,   513,   520, 19843,  1909,   274,
+     528,   529, -1092, -1092,   401, -1092, -1092, -1092, -1092, -1092,
+     507, -1092, -1092, -1092, 12122, 12122, 12122, 20894, -1092, 12122,
+   10905, 10905,   603,   415, -1092, -1092, -1092, -1092, 19843,   447,
+   -1092, -1092,   503,  4983, -1092, -1092,   534,   125,   518, 16855,
+   20894,  2915, -1092,   540, -1092,   116, 19843, 17078, -1092, -1092,
+    9686,    38, 18207, -1092, -1092,   578,  8646,   619, 21068, 19843,
+     465,   384, -1092, 21155, 20894, -1092,   465, 20894,   536,    21,
+   16426,    11, 16386,    21, 16466,   210, -1092, 16618, 20894, 20894,
+     -31, 15626,   435,  8646, -1092, -1092, -1092, -1092, -1092, -1092,
+   -1092, -1092, -1092, -1092, -1092, -1092, -1092, -1092, -1092, -1092,
+   -1092, -1092, -1092, -1092, -1092, -1092, -1092, -1092,   539, -1092,
+     478,  4983,   542,  1498,   147,    87, -1092,  4983, -1092, -1092,
+   16895, -1092,    36, 17404,   750, -1092,   544,   547, -1092, 16895,
+     125,   750, -1092,  8646,  1262, -1092, -1092, -1092,   190, 19843,
+   12122, 12122, -1092, 19843,   557, 17511, -1092, 16895,   125, 19843,
+     552,  8646, -1092, 19843, 17556,   587,   560,   125,    21, 16895,
+     561,   195,   195,  1927,   750,   750,   -59, -1092, -1092,  4108,
+     266, -1092, 12122, -1092,   -54,   106, -1092,   -38,   -10, 17602,
+     101,  1927,   723, -1092,  4283, -1092,   666, 12122, 12122, 20894,
+   -1092, -1092,   597,   563, -1092, -1092, -1092, -1092,   259,   488,
+   -1092, 12122,   601, 12122, 12122, 12122, 10557, 10557, 12122,   510,
    12122, 12122, 12122, 12122, 12122,   449, 14544, 12122, 12122, 12122,
    12122, 12122, 12122, 12122, 12122, 12122, 12122, 12122, 12122, 12122,
-   12122, 12122, 12122,   664, -1109, -1109, -1109, -1109, -1109,  9686,
-    9686, -1109, -1109, -1109, -1109,  9686, -1109, -1109,  9686,  9686,
-    8646,  8646, 10557, 10557, 16935, 17087, 17788,   571,    43, 20719,
-    8125, -1109, -1109,  4458, -1109, 10557,    21,   580,   259, -1109,
-   12122, -1109, -1109, 12122,   624, -1109,   579,   618, -1109, -1109,
-   -1109, 20719, -1109,  2915, -1109, 20719, -1109, 20719,   602, 20719,
-   -1109,  2915,   721, 10905, -1109,  5158, 10557, -1109,   599, -1109,
-      21,  5333, 10557, -1109,    21, -1109, 10557, -1109,  7081,  7081,
-   -1109,   649,   650,  4983,   743,  4983, -1109,   749, 12122, -1109,
-   -1109,   500,   619,  8646, 20719, -1109, -1109,   242, -1109, -1109,
-    1498, -1109,   645,   623, -1109, 12468,   672, 12122,  2915, -1109,
-   -1109, 12122, -1109, 20531, 12122, 12122, -1109,   626, -1109, 10905,
-   -1109, 19847, 19847, -1109,    49, -1109,  8646,   627, -1109, 12641,
-     655, -1109, -1109, -1109, -1109, -1109, -1109, -1109,  9861, -1109,
-   17828,  7777, -1109,  7952, -1109,  4983,   631, 10557, 10036,  3758,
-     632, 12122, 11078, -1109, -1109,   434, -1109,  4633, 20719, -1109,
-     309, 17980,   315, 16658,   285,   781, 10905,   638, 20444,    44,
-   -1109, 18020, 20203, 20203,   481, -1109,   481, -1109,   481,  1100,
-     740,  1535,   424,   393,   195, -1109,   639, -1109, -1109, -1109,
-   -1109, -1109,  1927,  1290,   481, 14708, 14708, 20203, 14708, 14708,
-    1329,   195,  1290, 20283,  1329,   750,   750,   195,  1927,   651,
-     652,   654,   657,   658,   661,   637,   640, -1109,   481, -1109,
-     481, 12814, 10557, 12987, 10557, 12122,  8646, 10557, 15311,   642,
-      54, -1109, -1109, -1109,   124, -1109,  1735, 19999,   529,    -3,
-   18065, -1109, -1109, -1109, 19847, 18172,  8646, -1109,  8646, 20719,
-     586,   329, 20719,   662, 20719,   586, -1109,   586,   339, 12122,
-     129,  9165, 19847,    34, 17127,  8125, -1109,  9165, 19847,    23,
-   16703, -1109,    21, 16895, -1109, -1109, -1109, 12122,   531, 12122,
-     546,   551, -1109, -1109, -1109, -1109, -1109, -1109, -1109, -1109,
-   -1109, -1109, 12122, -1109, -1109, 10209, -1109, -1109,   559, -1109,
-     343, -1109, -1109, -1109, 18217,   682,   665, 12122, 12122,   796,
-    4983,   797, 18257,  4983, 17167,   768, -1109,   165, -1109,   168,
-   -1109,    64, -1109, -1109, -1109, -1109, -1109, -1109,  1025,   691,
-     667, -1109,  3199, -1109,   498,   668,  1498,   147,    45,    60,
-   12122, 12122,  6908, -1109, -1109,   533,  8819, -1109, 19847, -1109,
-   -1109, -1109, 20719, 18409, 18449, -1109, -1109, 19847,   671,   160,
-     674, -1109, -1109,   388, 20719, -1109, -1109, -1109, -1109, -1109,
-   -1109, -1109,  4983,   -15, 17319, -1109, -1109, 19847,  4983, 19847,
-   -1109, 18495, -1109, -1109, -1109, 12122, -1109,    73, 15384, 12122,
-   -1109, 11251,  7081,  7081, -1109,  8646,  2625, -1109,   692,  2346,
-     673, 19313,   723,   266, -1109, -1109,   760, -1109, -1109, -1109,
-   -1109,  3402,   678, -1109, -1109, -1109, -1109, -1109, -1109, -1109,
-   -1109, 12122,   819, 18601, 12122,   820, 18647,   176,   679, 18687,
-    8646, -1109, -1109,  8125, -1109, -1109, -1109, -1109, -1109, -1109,
-   -1109, -1109, -1109, -1109, -1109, -1109,    42, 10557, 10557,    21,
-      21, -1109, -1109, -1109, -1109,   586,   686, -1109,   586, -1109,
-     586,   688,   689, -1109, 16895, -1109, 15702,  5508, -1109,  5683,
-   -1109,   183, -1109, 15778,  5858, -1109,    21,  6033, -1109,    21,
-   -1109, -1109,  7081, -1109, 12122, -1109, 19847, 19847,  4983, -1109,
-    4983, 12122, -1109,  4983,   825, 20719,   696, 20719,   524, -1109,
-   -1109, 20719,  1259, -1109,  1498,   719,   776, -1109, -1109, -1109,
-      79, -1109, -1109,   672,   694,    50, -1109, -1109, -1109,   695,
-     702, -1109,  6208, 10905, -1109, -1109, -1109, -1109, -1109,  6383,
-     701,  6558,   703, -1109, 12122, -1109, -1109, -1109, -1109, -1109,
-   -1109, -1109, -1109, -1109, -1109,  7081, -1109, 18839,    95, 17359,
-     413,   712,   221, 20719, -1109,   737,   524,   713,  3063, -1109,
-   20719, -1109, 12122, 19545, -1109, -1109,   498,   711,   456,   738,
-     741,   745,   751,   746,   748,   753,   759,   756,   761,   764,
-     460,   773,   766,   767, 12122, -1109,   783,   785,   778,   711,
-   -1109,   711, -1109, -1109, 18879, 13160, 13333, 18919, 13506, 13679,
-   -1109, 13852, 14025,   227, -1109,   672,   246,   247, -1109, -1109,
-     757, -1109,   765,   769, -1109, -1109, -1109,  4983,  9165, 19847,
-    9165, 19847,  8125, -1109,  4983,  9165, 19847, -1109,  9165, 19847,
-   -1109, -1109, 19071, 19847, -1109, -1109, 19847,   881,  4983,   771,
-   -1109, -1109, -1109,   719, -1109,   770, 11426,   291, -1109,   161,
-   -1109, -1109, 10557, 15170,  8646,  8646,  4983, -1109,    40,  9165,
-   -1109, 19847,  4983,  9165, -1109, 19847,  4983, 19847,   271, 11599,
-    7081,  7081,  7081,  7081, -1109, -1109,   772,   774, 12122, -1109,
-   -1109,  1868, -1109,  1262, -1109,  1696, -1109, -1109, -1109, 19847,
-   -1109,    98,   242, -1109, 19111, -1109, 15543, -1109, -1109, 12122,
-   12122, 12122, 12122, 12122, 12122, 12122, 12122, -1109, -1109, -1109,
-   17984, -1109, -1109, 18420, 20003, 18257, 15854, 15930, -1109, 18257,
-   16006, 16082, 12122,  4983, -1109, -1109,   291,   719, 10384, -1109,
-   -1109, -1109,   155, 10905, -1109, -1109,   139, 12122,   -20, 19151,
-   -1109,   545,   779,   782,   578, -1109, 16158, -1109, 16234, -1109,
-   -1109, -1109, 19847,   421,   775,   437,   784, -1109,   524, 19847,
-    3351, -1109, -1109, -1109, 14198,   824,   786, -1109,   794,   801,
-     711,   711, 19303, 19343, 19383, 19535, 19575, 19615, 20094, -1109,
-   20161, 20230, -1109, -1109,  4983,  4983,  4983,  4983, 19847, -1109,
-   -1109, -1109,   291, 11774,    61, -1109, 19847, -1109,   108, -1109,
-     121, -1109,   636, 19767, -1109, -1109, -1109, 14025,   780,   792,
-    4983,  4983, -1109, -1109, -1109, -1109, -1109, -1109,  6733, -1109,
-   -1109,   234, -1109,   161, -1109, -1109, -1109, 12122, 12122, 12122,
-   12122, 12122, 12122, -1109, -1109, -1109, 18257, 18257, 18257, 18257,
-   -1109, -1109, -1109, -1109, -1109,   338, 10557, 14716, -1109, 12122,
-     139,   108,   108,   108,   108,   108,   108,   139,   595, -1109,
-   -1109, 18257, 18257,   787, 14371,    80,    -8, 19807, -1109, -1109,
-   19847, -1109, -1109, -1109, -1109, -1109, -1109, -1109,   800, -1109,
-   -1109,   340, 14888, -1109, -1109, -1109, 11949, -1109,   373, -1109
+   12122, 12122, 12122,   674, -1092, -1092, -1092, -1092, -1092,  9338,
+    9338, -1092, -1092, -1092, -1092,  9338, -1092, -1092,  9338,  9338,
+    8646,  8646, 10557, 10557, 16935, 17087, 17708,   573,    43, 20894,
+    8125, -1092, -1092,  4458, -1092, 10557,    21,   599,   309, -1092,
+   12122, -1092, -1092, 12122,   627, -1092,   594,   623, -1092, -1092,
+   -1092, 20894, -1092,  2915, -1092, 20894, -1092, 20894,   606, 20894,
+   -1092,  2915,   726, 10905, -1092,  5158, 10557, -1092,   612, -1092,
+      21,  5333, 10557, -1092,    21, -1092, 10557, -1092,  7081,  7081,
+   -1092,   650,   653,  4983,   756,  4983, -1092,   757, 12122, -1092,
+   -1092,   523,   624,  8646, 20894, -1092, -1092,   242, -1092, -1092,
+    1498, -1092,   654,   626, -1092, 12468,   671, 12122,  2915, -1092,
+   -1092, 12122, -1092, 20445, 12122, 12122, -1092,   628, -1092, 10905,
+   -1092, 19843, 19843, -1092,    49, -1092,  8646,   629, -1092, 12641,
+     660, -1092, -1092, -1092, -1092, -1092, -1092, -1092,  9861, -1092,
+   17754,  7777, -1092,  7952, -1092,  4983,   632, 10557, 10036,  3758,
+     633, 12122, 11078, -1092, -1092,    96, -1092,  4633, 20894, -1092,
+     315, 17794,   329, 16658,   285,   789, 10905,   641, 20358,   498,
+   -1092, 17946, 20190, 20190,   524, -1092,   524, -1092,   524,  1100,
+     740,  1535,   424,   125,   195, -1092,   642, -1092, -1092, -1092,
+   -1092, -1092,  1927,  1290,   524, 14708, 14708, 20190, 14708, 14708,
+    1329,   195,  1290, 17908,  1329,   750,   750,   195,  1927,   651,
+     652,   657,   658,   661,   662,   646,   640, -1092,   524, -1092,
+     524, 12814, 10557, 12987, 10557, 12122,  8646, 10557, 15311,   656,
+      37, -1092, -1092, -1092,   124, -1092,  1735, 19919,   531,    33,
+   17991, -1092, -1092, -1092, 19843, 18031,  8646, -1092,  8646, 20894,
+     597,   339, 20894,   665, 20894,   597, -1092,   597,   343, 12122,
+     129,  9165, 19843,    34, 17127,  8125, -1092,  9165, 19843,    23,
+   16703, -1092,    21, 16895, -1092, -1092, -1092, 12122,   546, 12122,
+     551,   568, -1092, -1092, -1092, -1092, -1092, -1092, -1092, -1092,
+   -1092, -1092, 12122, -1092, -1092, 10209, -1092, -1092,   588, -1092,
+     388, -1092, -1092, -1092, 18188,   685,   667, 12122, 12122,   799,
+    4983,   802, 18228,  4983, 17167,   772, -1092,   161, -1092,   165,
+   -1092,   174, -1092, -1092, -1092, -1092, -1092, -1092,  1025,   694,
+     668, -1092,  3199, -1092,   543,   669,  1498,   147,    45,    60,
+   12122, 12122,  6908, -1092, -1092,   533,  8819, -1092, 19843, -1092,
+   -1092, -1092, 20894, 18268, 18420, -1092, -1092, 19843,   673,   160,
+     675, -1092, -1092,   413, 20894, -1092, -1092, -1092, -1092, -1092,
+   -1092, -1092,  4983,   -15, 17319, -1092, -1092, 19843,  4983, 19843,
+   -1092, 18461, -1092, -1092, -1092, 12122, -1092,    73, 15384, 12122,
+   -1092, 11251,  7081,  7081, -1092,  8646,  2625, -1092,   701,  2346,
+     679, 20546,   727,   270, -1092, -1092,   761, -1092, -1092, -1092,
+   -1092,  3402,   680, -1092, -1092, -1092, -1092, -1092, -1092, -1092,
+   -1092, 12122,   821, 18502, 12122,   823, 18654,   168,   683, 18694,
+    8646, -1092, -1092,  8125, -1092, -1092, -1092, -1092, -1092, -1092,
+   -1092, -1092, -1092, -1092, -1092, -1092,    42, 10557, 10557,    21,
+      21, -1092, -1092, -1092, -1092,   597,   689, -1092,   597, -1092,
+     597,   690,   691, -1092, 16895, -1092, 15702,  5508, -1092,  5683,
+   -1092,   176, -1092, 15778,  5858, -1092,    21,  6033, -1092,    21,
+   -1092, -1092,  7081, -1092, 12122, -1092, 19843, 19843,  4983, -1092,
+    4983, 12122, -1092,  4983,   829, 20894,   702, 20894,   518, -1092,
+   -1092, 20894,  1259, -1092,  1498,   721,   779, -1092, -1092, -1092,
+      79, -1092, -1092,   671,   699,    50, -1092, -1092, -1092,   704,
+     705, -1092,  6208, 10905, -1092, -1092, -1092, -1092, -1092,  6383,
+     703,  6558,   707, -1092, 12122, -1092, -1092, -1092, -1092, -1092,
+   -1092, -1092, -1092, -1092, -1092,  7081, -1092, 18739,    95, 17359,
+     421,   718,   183, 20894, -1092,   739,   518,   715,  3063, -1092,
+   20894, -1092, 12122, 20633, -1092, -1092,   543,   717,   134,   743,
+     745,   746,   759,   748,   753,   764,   769,   765,   766,   767,
+     393,   776,   775,   777, 12122, -1092,   786,   787,   781,   717,
+   -1092,   717, -1092, -1092, 18846, 13160, 13333, 18922, 13506, 13679,
+   -1092, 13852, 14025,   221, -1092,   671,   227,   246, -1092, -1092,
+     734, -1092,   770,   771, -1092, -1092, -1092,  4983,  9165, 19843,
+    9165, 19843,  8125, -1092,  4983,  9165, 19843, -1092,  9165, 19843,
+   -1092, -1092, 19007, 19843, -1092, -1092, 19843,   899,  4983,   774,
+   -1092, -1092, -1092,   721, -1092,   762, 11426,    13, -1092,   148,
+   -1092, -1092, 10557, 15170,  8646,  8646,  4983, -1092,    40,  9165,
+   -1092, 19843,  4983,  9165, -1092, 19843,  4983, 19843,   271, 11599,
+    7081,  7081,  7081,  7081, -1092, -1092,   778,   763, 12122, -1092,
+   -1092,  1868, -1092,  1262, -1092,  1696, -1092, -1092, -1092, 19843,
+   -1092,    98,   242, -1092, 19083, -1092, 15543, -1092, -1092, 12122,
+   12122, 12122, 12122, 12122, 12122, 12122, 12122, -1092, -1092, -1092,
+   18658, -1092, -1092, 19862, 20014, 18228, 15854, 15930, -1092, 18228,
+   16006, 16082, 12122,  4983, -1092, -1092,    13,   721, 10384, -1092,
+   -1092, -1092,   155, 10905, -1092, -1092,   139, 12122,   -20, 19159,
+   -1092,   545,   773,   782,   578, -1092, 16158, -1092, 16234, -1092,
+   -1092, -1092, 19843,   437,   784,   439,   791, -1092,   518, 19843,
+    3351, -1092, -1092, -1092, 14198,   832,   785, -1092,   804,   807,
+     717,   717, 19235, 19311, 19387, 19463, 19539, 19615, 20081, -1092,
+   20150, 20217, -1092, -1092,  4983,  4983,  4983,  4983, 19843, -1092,
+   -1092, -1092,    13, 11774,    61, -1092, 19843, -1092,   131, -1092,
+     -21, -1092,   636, 19691, -1092, -1092, -1092, 14025,   788,   793,
+    4983,  4983, -1092, -1092, -1092, -1092, -1092, -1092,  6733, -1092,
+   -1092,   234, -1092,   148, -1092, -1092, -1092, 12122, 12122, 12122,
+   12122, 12122, 12122, -1092, -1092, -1092, 18228, 18228, 18228, 18228,
+   -1092, -1092, -1092, -1092, -1092,   338, 10557, 14716, -1092, 12122,
+     139,   131,   131,   131,   131,   131,   131,   139,   595, -1092,
+   -1092, 18228, 18228,   790, 14371,    80,    -8, 19767, -1092, -1092,
+   19843, -1092, -1092, -1092, -1092, -1092, -1092, -1092,   813, -1092,
+   -1092,   340, 14888, -1092, -1092, -1092, 11949, -1092,   373, -1092
 };
 
-/* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
-   Performed when YYTABLE does not specify something else to do.  Zero
-   means the default is an error.  */
+  /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
+     Performed when YYTABLE does not specify something else to do.  Zero
+     means the default is an error.  */
 static const yytype_int16 yydefact[] =
 {
        3,     0,     0,     1,     0,   119,   658,   659,   660,   654,
@@ -1355,33 +1379,33 @@ static const yytype_int16 yydefact[] =
      476,   610,   665,   419,   327,   420,   493,   477,   610,   500
 };
 
-/* YYPGOTO[NTERM-NUM].  */
+  /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-   -1109, -1109, -1109,     5,     3,  2281,   815, -1109,     2, -1109,
-   -1109, -1109,   467, -1109, -1109, -1109,   496,   606,  -475, -1109,
-    -763, -1109, -1109, -1109,   178, -1109, -1109, -1109,   937, -1109,
-    2622,   -25,  -793, -1109,  -943,  1929, -1074,   453, -1109, -1109,
-    -120,  -930, -1109,   -64, -1109, -1109, -1109, -1109, -1109, -1109,
-   -1109, -1109, -1109, -1109,   251, -1109,   877, -1109, -1109,    72,
-    2198, -1109, -1109, -1109, -1109, -1109, -1109, -1109, -1109,    22,
-   -1109, -1109, -1109, -1109, -1109, -1109,  -602,  -589, -1109, -1109,
-   -1109,    10,  -766,   843, -1109, -1109, -1109,    30, -1109, -1109,
-   -1109, -1109,  -119,  -790,  -122,  -737,  -958, -1109, -1109,  -116,
-      76,   252, -1109, -1109, -1109,    13, -1109, -1109,  -285,     8,
-   -1029,  -235,  -266,  -258,  -497, -1109,  -198, -1109,    -7,   956,
-    -137,   488, -1109,  -491,  -872, -1020, -1109,  -705,  -523, -1013,
-   -1108,  -980,   -42, -1109,   141, -1109,  -251,  -480,  -484,   643,
-    -344, -1109, -1109, -1109,   926, -1109,    -9, -1109, -1109,  -226,
-   -1109,  -631, -1109, -1109, -1109,   943,  1404,   -12,   969,    20,
-    1636, -1109,  1860,  1998, -1109, -1109, -1109, -1109, -1109, -1109,
-   -1109, -1109, -1109,  -419
+   -1092, -1092, -1092,     5,     3,  2281,   818, -1092,     2, -1092,
+   -1092, -1092,   470, -1092, -1092, -1092,   496,   608,  -475, -1092,
+    -763, -1092, -1092, -1092,   178, -1092, -1092, -1092,   940, -1092,
+    2622,   -25,  -793, -1092,  -943,  1929, -1074,   456, -1092, -1092,
+    -116,  -930, -1092,   -64, -1092, -1092, -1092, -1092, -1092, -1092,
+   -1092, -1092, -1092, -1092,   251, -1092,   883, -1092, -1092,    78,
+    2198, -1092, -1092, -1092, -1092, -1092, -1092, -1092, -1092,    24,
+   -1092, -1092, -1092, -1092, -1092, -1092,  -602,  -589, -1092, -1092,
+   -1092,    15,  -766,   843, -1092, -1092, -1092,   369, -1092, -1092,
+   -1092, -1092,  -120,  -790,  -122,  -737,  -958, -1092, -1092,  -113,
+      86,   252, -1092, -1092, -1092,    25, -1092, -1092,  -285,     8,
+   -1038,  -231,  -264,  -254,  -497, -1092,  -198, -1092,    -7,   963,
+    -137,   493, -1092,  -491,  -872,  -862, -1092,  -705,  -523, -1003,
+   -1091,  -980,   -42, -1092,   149, -1092,  -251,  -480,  -484,   643,
+    -344, -1092, -1092, -1092,   926, -1092,    -9, -1092, -1092,  -226,
+   -1092,  -631, -1092, -1092, -1092,   943,  1404,   -12,   971,    20,
+    1636, -1092,  1860,  1998, -1092, -1092, -1092, -1092, -1092, -1092,
+   -1092, -1092, -1092,  -419
 };
 
-/* YYDEFGOTO[NTERM-NUM].  */
+  /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int16 yydefgoto[] =
 {
-       0,     1,     2,   338,  1085,   711,   112,   113,   114,   115,
+      -1,     1,     2,   338,  1085,   711,   112,   113,   114,   115,
      116,   117,   356,   491,   118,   252,   119,   339,   705,   562,
      706,   120,   121,   122,   559,   560,   123,   124,   206,   985,
      284,   125,   279,   126,   743,   289,   127,   291,   292,   128,
@@ -1401,9 +1425,9 @@ static const yytype_int16 yydefgoto[] =
      177,   178,   179,   180
 };
 
-/* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
-   positive, shift that token.  If negative, reduce the rule whose
-   number is the opposite.  If YYTABLE_NINF, syntax error.  */
+  /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
+     positive, shift that token.  If negative, reduce the rule whose
+     number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int16 yytable[] =
 {
      198,   305,   492,   700,   207,   110,   762,   109,   209,   735,
@@ -1413,100 +1437,100 @@ static const yytype_int16 yytable[] =
      294,  1050,   760,   504,   287,   299,   419,   300,   856,   301,
      758,   946,   517,   861,   287,   862,   874,   309,   313,   315,
      317,   318,   319,  1126,  1205,   348,   323,   867,   324,   287,
-     527,   806,    70,   287,   438,   327,   585,   307,   329,   330,
-     504,   331,   468,   332,    70,  1244,   333,   334,   483,   335,
-     314,   627,   541,   309,   313,   349,   351,  1190,  1052,  1163,
-     364,  -270,   831,  1129,     3,   468,   440,   181,   110,  1246,
-     468,  1197,   899,   307,   343,   307,  -271,   202,  -253,   542,
-     365,   546,   550,   807,  -293,   441,   346,  -254,   627,   488,
-     366,   468,  1070,  1108,   808,   507,   548,   545,   205,  1269,
-    -484,  1005,  1197,   468,   832,  1031,   827,  1192,   504,   428,
-     433,  1161,   372,   809,   900,  1087,   433,  1283,   305,  -479,
-     929,   745,   433,  1240,   854,   549,  -293,  -484,  1071,   615,
+     527,   483,    70,   287,   438,   327,   585,   307,   329,   313,
+     504,   331,   468,   332,    70,   831,   333,   334,  1190,   335,
+     314,   627,   541,   309,   313,   349,   351,  1249,  1052,  1163,
+     364,  -270,  1244,  1129,   -54,   468,   181,     3,   110,  1246,
+     468,   330,   535,   307,   343,   307,  -271,   181,  -253,   542,
+     365,   546,   550,   -54,  -293,  1250,   346,   832,   627,   488,
+     366,   468,  1070,  1108,  1197,   507,   548,   545,   746,   433,
+    -484,  1005,  1197,   468,   357,  1031,   827,  1192,   504,   428,
+     433,  1161,   372,   202,  1240,  1087,  1269,  1283,   305,  -479,
+     929,   745,   433,  1133,   854,   549,  -293,  -484,  1071,   615,
      616,  -484,   424,   425,   426,  1135,   589,   323,   309,   349,
     1087,   433,   511,  1087,  1087,   763,   519,   505,  -484,   548,
     -479,   433,  1205,   433,  1088,  -484,   548,  -484,   307,   307,
-     436,   444,  1004,  -479,   433,  1049,   433,   548,   229,   357,
-     433,  1199,  1225,  1226,   313,  -484,  -479,   226,   628,   442,
-    -293,  1219,  1136,   453,   505,  1053,   548,   375,   444,   461,
-    1217,  1198,   253,   508,  1268,   922,  1247,    23,   211,  1249,
-     518,   313,  1199,  1164,  1280,   912,   638,   543,  1087,  -484,
-    1087,  1087,   552,  1010,  1191,  1282,  1012,   653,  1013,   295,
-     452,  -260,  1287,  -479,   -54,   181,   460,  1250,  -479,   721,
-     833,   535,  -484,  1289,   544,   519,   358,   923,   444,  1137,
-    -502,   553,   538,   -54,   376,   239,   241,   243,   377,    60,
+     436,   444,  1004,  -479,   433,  1049,   433,   548,   229,  1136,
+     433,   358,  1225,  1226,   313,  -484,  -479,   226,   628,   442,
+    -293,  1219,   899,   453,   505,  1053,   548,   375,   444,   461,
+    1217,  1198,   253,   508,  1199,   922,  1247,    23,   211,   205,
+     518,   313,  1199,  1164,  1268,   912,   638,   552,  1087,  -484,
+    1087,  1087,   543,  1010,  1191,  1282,  1012,   653,  1013,   295,
+    -254,   181,   440,  -479,   900,   379,  1137,   782,  -479,   721,
+     833,  -260,  -484,   385,  -113,   519,   553,   923,   444,   544,
+    -502,   441,  -119,  1289,   376,   239,   241,   243,   377,    60,
      722,   313,   505,  -484,   723,  -480,   444,   834,   521,   522,
-      68,  -502,   865,   987,  -259,  -502,   990,   539,  1154,   313,
-    1156,   648,  -484,   212,   897,   952,   651,   950,   724,   296,
-    1241,   725,   648,    62,   658,    88,  -480,   302,  -502,  1022,
-     540,   924,   726,  -268,   519,   379,   508,   297,   896,  -480,
-     383,   898,   110,   385,   537,   561,   563,   388,  -258,  1000,
-    1003,   727,  -480,   520,   298,   570,  1023,   110,   347,   571,
+      68,  -502,   865,   987,  -259,  -502,   990,   648,  1154,   313,
+    1156,   897,  -484,   212,   648,   952,   651,   950,   724,   296,
+    1241,   725,  1022,    62,   658,    88,  -480,   302,  -502,   648,
+     540,   924,   726,  -268,   896,   379,   519,   297,   898,  -480,
+     383,  1000,   110,   385,   537,   561,   563,   388,  -258,  1023,
+    1003,   727,  -480,   226,   298,   520,  1076,   110,   347,   571,
      591,   572,   573,   574,   576,   578,   579,   648,   580,   581,
-     582,   583,   584,   648,   592,   593,   594,   595,   596,   597,
+     582,   583,   584,  -589,   592,   593,   594,   595,   596,   597,
      598,   599,   600,   601,   602,   603,   604,   605,   606,   607,
-     608,  1118,  -589,  -588,  1076,   444,   444,   313,   313,  -480,
-    1107,  -472,   226,   313,  -480,   508,   313,   313,   313,   313,
-     618,   620,   963,  1045,   638,  -383,   746,   882,   637,  -589,
-    -588,   660,  1110,   640,   643,  1113,  1114,    23,   644,   610,
-     611,   645,  -472,   253,  -474,   612,   110,   964,   613,   614,
-    -575,  1133,  1150,   876,   879,  -472,   420,  -638,   421,  -638,
-     794,   309,   585,   662,   664,   785,   375,   795,  -472,   668,
-     670,   789,  -255,  -494,   673,  -474,   704,   704,   444,   586,
-    1068,   307,   454,   712,   786,   508,   714,   303,  -474,    60,
-     790,   313,  -262,   587,  -494,   508,  -266,  -263,  -494,   882,
-      68,  -474,    23,   455,   857,   748,   456,  -257,   320,   293,
-     728,   444,   753,   754,   863,  -472,   752,   757,   883,   210,
-    -472,  -494,   588,   376,   313,    88,    42,   377,   489,  -261,
-    1178,   490,  1180,  1181,   798,   906,   757,   756,   422,   313,
-    1140,   313,   423,   379,  -450,   774,   757,   777,  -474,   779,
-     781,   385,    58,  -474,    60,   288,   756,   930,   932,   343,
-     321,   343,   589,  -450,   309,    68,   756,  -267,   590,   882,
+     608,  1118,  -588,  -255,  1107,   444,   444,   313,   313,  -480,
+    -589,  -472,  1280,   313,  -480,   508,   313,   313,   313,   313,
+     618,   620,   538,  1045,   638,  -383,   963,   882,   637,  -588,
+    1287,   660,  1110,   640,   570,  1113,  1114,    23,   644,   610,
+     611,   645,  -472,   253,  -474,   612,   110,   539,   613,   614,
+    -575,   964,  1150,   876,   879,  -472,   420,  -638,   421,  -638,
+     794,   309,   585,   662,   664,   508,   375,   795,  -472,   668,
+     670,   785,  -262,  -494,   673,  -474,   704,   704,   444,   586,
+    1068,   307,   454,   712,   643,   789,   714,   303,  -474,    60,
+     786,   313,  -266,   587,  -494,   508,  -263,  -257,  -494,   508,
+      68,  -474,    23,   455,   790,   748,   456,   320,  -261,   293,
+     728,   444,   753,   754,   857,  -472,   752,   757,   863,   210,
+    -472,  -494,   588,   376,   313,    88,    42,   377,   489,   321,
+    1178,   490,  1180,  1181,   798,   806,   757,   756,  -267,   313,
+    1140,   313,  -269,  -115,   882,   774,   757,   777,  -474,   779,
+     781,  -120,    58,  -474,    60,   288,   756,   930,   932,   343,
+    -256,   343,   589,   883,   309,    68,   756,  -264,   590,  -450,
      110,   346,   537,   346,   379,   380,   927,   882,   288,   383,
-    -269,   384,   385,  -639,   307,  -639,   388,   907,  1074,   -83,
-      88,  -485,  -256,   882,   395,   355,  1212,  -638,   908,  -638,
-     399,   400,   401,  -489,  -485,  1153,  -113,  1155,   -54,   181,
-    -115,   444,  1214,   638,  -119,   782,  -489,   909,  -120,   662,
-     823,   668,   826,   712,   313,   829,   777,   -54,   848,  -264,
-    -713,   379,   423,   444,  -713,  -485,   383,   575,   577,   385,
-     849,   850,   354,   388,   313,  -714,   313,  -489,   361,  -714,
-    -715,   359,  -572,  -491,  -715,   156,   -83,   864,  -710,   866,
-     369,  -485,  -710,   637,   852,   873,  -491,  -635,  -485,  -635,
-     433,   371,   494,  -489,  -571,   331,   853,   332,   156,   429,
-    -489,   156,   370,   617,   619,  -637,  -636,  -637,  -636,  -485,
-     334,  -576,   768,   335,   770,  -577,   639,  -491,  -574,   991,
-    -573,  -489,   432,   430,   433,   886,   887,   443,  -485,   439,
-     915,  1248,  1132,  -485,   434,   450,  -485,   463,   493,  1141,
-    -489,   497,   514,  -491,   515,  -489,   526,   663,  -489,   523,
-    -491,   156,   529,   669,   554,   531,   558,   672,   319,   323,
-     349,   566,   568,   609,   313,   288,   288,   288,   288,   288,
-     288,  -491,   385,   626,   488,   642,   484,   487,   156,   646,
-     307,   488,   647,   156,  1272,  1273,  1274,  1275,  1276,  1277,
-    -491,  1251,   936,   591,   648,  -491,   917,   656,  -491,   659,
-     444,   665,   375,   561,   707,   708,   495,   947,   710,   949,
-     704,   704,   375,   313,   713,   156,   288,  1252,   288,  1253,
-    1254,   736,   716,  1255,  1256,   288,   737,   746,   773,   755,
-     761,   764,   796,  1142,  1143,   444,   772,   778,   799,   994,
-     819,   812,   997,   288,   830,   820,   813,   814,   313,   815,
-    1221,   637,   816,   817,   288,   288,   818,   859,   882,   376,
-     885,   888,   890,   377,   895,   576,   618,   902,   519,   376,
-     903,   911,   921,   377,   959,   150,   156,   926,   962,  1245,
-     965,   993,   995,   998,  1001,  1019,  1011,  1021,  1014,  1015,
-    1038,  1040,  1026,  1258,  1046,  1029,  1048,  1054,   150,  1051,
-    1032,   150,  1033,   822,  1055,   825,  1062,  1075,  1066,  1036,
-     379,  1058,  1078,  1092,  1080,   383,  -140,   384,   385,  -147,
-     379,  -116,   388,  -146,  -145,   383,  -142,   384,   385,  -114,
-     395,  -149,   388,  1245,  -150,   728,   399,   400,   401,  -144,
-     395,   309,  -148,  -117,  -143,  -151,  1123,  1061,   401,  1065,
-    1281,   150,  1067,  1095,   156,  -118,  1096,  1109,   161,  1222,
-     156,   307,   288,   704,  -113,  1111,  1125,  1157,  1288,  1112,
-    1213,  -115,  1245,  1127,  1259,   165,  1250,  1158,   150,  1215,
-    1089,   161,  1208,   150,   161,  1209,  1260,   360,   715,  1224,
-     557,   213,  1279,   935,   750,  1162,   288,   328,   165,  1041,
-     288,   165,  1094,  1090,  1171,  1077,  1166,  1170,  1044,  1091,
-     901,  1285,   156,  1019,  1021,   150,  1026,  1029,  1266,  1061,
-    1065,  1278,  1271,   246,   488,   488,   749,   156,   488,   488,
-     230,     0,     0,     0,   161,  1115,  1116,     0,  1117,     0,
+     906,   384,   385,  -639,   307,  -639,   388,   807,  -450,   -83,
+      88,  -485,   354,   882,   395,   882,  1074,  -638,   808,  -638,
+     399,   400,   401,  -489,  -485,  1153,   422,  1155,   -54,   452,
+     423,   444,  1212,   638,  1214,   460,  -489,   809,   355,   662,
+     823,   668,   826,   712,   313,   829,   777,   -54,   359,  -635,
+     848,  -635,   907,   444,   423,  -485,  -572,   575,   577,  -571,
+     849,   850,   369,   908,   313,  -713,   313,  -489,   361,  -713,
+    -714,   371,   370,  -491,  -714,   156,   -83,   864,   433,   866,
+     494,  -485,   909,   637,   852,   873,  -491,  -715,  -485,   429,
+    -637,  -715,  -637,  -489,   379,   331,   853,   332,   156,   383,
+    -489,   156,   385,   617,   619,   430,   388,  -710,  -576,  -485,
+     334,  -710,  -636,   335,  -636,  -577,   639,  -491,   433,   991,
+     768,  -489,   770,  -574,  -573,   886,   887,   443,  -485,   432,
+     915,  1248,  1132,  -485,   434,   439,  -485,   450,   463,  1141,
+    -489,   493,   529,  -491,   497,  -489,   514,   663,  -489,   515,
+    -491,   156,   523,   669,   526,   531,   534,   672,   319,   323,
+     349,   554,   558,   568,   313,   288,   288,   288,   288,   288,
+     288,  -491,   566,   609,   488,   626,   484,   487,   156,   385,
+     307,   488,   646,   156,  1272,  1273,  1274,  1275,  1276,  1277,
+    -491,  1251,   936,   591,   642,  -491,   917,   647,  -491,   648,
+     444,   656,   375,   561,   659,   707,   495,   947,   708,   949,
+     704,   704,   375,   313,   665,   156,   288,  1252,   288,  1253,
+    1254,   710,   713,  1255,  1256,   288,   746,   716,   773,   737,
+     736,   755,   761,  1142,  1143,   444,   764,   772,   778,   994,
+     796,   799,   997,   288,   812,   820,   813,   814,   313,   819,
+    1221,   637,   815,   816,   288,   288,   817,   818,   830,   376,
+     859,   882,   885,   377,   888,   576,   618,   890,   895,   376,
+     902,   903,   911,   377,   921,   150,   156,   519,   926,  1245,
+     959,   965,   962,   993,   995,  1019,   998,  1021,  1001,  1011,
+    1014,  1015,  1026,  1258,  1038,  1029,  1046,  1040,   150,  1048,
+    1032,   150,  1033,   822,  1051,   825,  1054,  1055,  1062,  1036,
+     379,  1058,  1066,  1075,  1078,   383,  1080,   384,   385,  1092,
+     379,  -140,   388,  -147,  -146,   383,  -145,   384,   385,  -116,
+     395,  -142,   388,  1245,  1109,   728,   399,   400,   401,  -114,
+     395,   309,  -149,  -150,  -144,  -148,  -117,  1061,   401,  1065,
+    1281,   150,  1067,  -143,   156,  -151,  1095,  -118,   161,  1096,
+     156,   307,   288,   704,  1123,  1127,  1158,  1222,  1288,  1125,
+    1111,  1112,  1245,  1157,  -113,   165,  1208,  -115,   150,  1213,
+    1089,   161,  1259,   150,   161,  1209,  1215,  1260,  1224,  1250,
+     360,   715,   557,   935,   213,  1279,   288,   750,   165,  1162,
+     288,   165,  1094,   328,  1171,  1041,  1170,  1077,  1090,  1166,
+     901,  1285,   156,  1019,  1021,   150,  1026,  1029,  1044,  1061,
+    1065,  1091,  1266,  1278,   488,   488,  1271,   156,   488,   488,
+     246,   749,   230,     0,   161,  1115,  1116,     0,  1117,     0,
      637,     0,  1119,  1120,     0,     0,  1121,     0,     0,   305,
        0,   165,     0,     0,   488,     0,   488,     0,     0,   444,
      444,   161,     0,     0,     0,     0,   161,     0,     0,     0,
@@ -2340,25 +2364,25 @@ static const yytype_int16 yytable[] =
        0,     0,     0,     0,    98,     0,     0,     0,     0,     0,
        0,     0,     0,     0,    99,     0,     0,   100,   101,   102,
        0,     0,     0,   104,     0,   190,     0,   106,     0,   191,
-       0,     0,   108,     5,   306,     6,     7,     8,     9,    10,
-      11,     0,     0,     0,    12,     0,     0,    15,    16,     0,
-      17,     0,   182,     0,     0,    21,     0,     0,     0,     0,
-       0,     0,     0,     0,    29,     0,   183,     0,     0,     0,
-      33,   184,   185,     0,     0,   186,    39,     0,     0,     0,
-      41,     0,     0,    43,     0,     0,   187,     0,     0,    47,
-      48,     0,     0,    50,     0,    52,     0,    53,    54,     0,
-      55,    56,     0,     0,     0,     0,     0,     0,    59,     0,
-      61,     0,    63,     0,     0,     0,     0,    66,   188,     0,
-       0,     0,     0,     0,     0,     0,    73,    74,    75,    76,
-      77,   189,     0,    79,     0,     0,    81,     0,     0,     0,
-      85,     0,     0,    87,     0,     0,    89,     0,     0,     0,
-       0,     0,   238,     0,    92,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-      93,    94,    95,    96,    97,     0,     0,     0,     0,    98,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    99,
-       0,     0,   100,   101,   102,     0,     0,     0,   104,     0,
-     190,     0,   106,     0,   191,     0,     5,   108,     6,     7,
-       8,   231,    10,    11,     0,     0,     0,    12,     0,     0,
+       0,     5,   108,     6,     7,     8,     9,    10,    11,     0,
+       0,     0,    12,     0,     0,    15,    16,     0,    17,     0,
+     182,     0,     0,    21,     0,     0,     0,     0,     0,     0,
+       0,     0,    29,     0,   183,     0,     0,     0,    33,   184,
+     185,     0,     0,   186,    39,     0,     0,     0,    41,     0,
+       0,    43,     0,     0,   187,     0,     0,    47,    48,     0,
+       0,    50,     0,    52,     0,    53,    54,     0,    55,    56,
+       0,     0,     0,     0,     0,     0,    59,     0,    61,     0,
+      63,     0,     0,     0,     0,    66,   188,     0,     0,     0,
+       0,     0,     0,     0,    73,    74,    75,    76,    77,   189,
+       0,    79,     0,     0,    81,   310,   311,     0,    85,     0,
+       0,    87,     0,     0,    89,     0,     0,     0,     0,     0,
+       0,     0,    92,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,    93,    94,
+      95,    96,    97,     0,     0,     0,     0,    98,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,    99,     0,     0,
+     100,   101,   102,     0,     0,     0,   104,     0,   190,     0,
+     106,     0,   191,     0,     0,   108,     5,   306,     6,     7,
+       8,     9,    10,    11,     0,     0,     0,    12,     0,     0,
       15,    16,     0,    17,     0,   182,     0,     0,    21,     0,
        0,     0,     0,     0,     0,     0,     0,    29,     0,   183,
        0,     0,     0,    33,   184,   185,     0,     0,   186,    39,
@@ -2366,16 +2390,16 @@ static const yytype_int16 yytable[] =
        0,     0,    47,    48,     0,     0,    50,     0,    52,     0,
       53,    54,     0,    55,    56,     0,     0,     0,     0,     0,
        0,    59,     0,    61,     0,    63,     0,     0,     0,     0,
-      66,   233,     0,     0,     0,     0,     0,     0,     0,    73,
+      66,   188,     0,     0,     0,     0,     0,     0,     0,    73,
       74,    75,    76,    77,   189,     0,    79,     0,     0,    81,
-       0,     0,   234,    85,     0,   235,    87,     0,     0,    89,
-       0,     0,     0,     0,     0,     0,     0,    92,     0,     0,
+       0,     0,     0,    85,     0,     0,    87,     0,     0,    89,
+       0,     0,     0,     0,     0,   238,     0,    92,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,    93,    94,    95,    96,    97,     0,     0,
        0,     0,    98,     0,     0,     0,     0,     0,     0,     0,
        0,     0,    99,     0,     0,   100,   101,   102,     0,     0,
        0,   104,     0,   190,     0,   106,     0,   191,     0,     5,
-     108,     6,     7,     8,     9,    10,    11,     0,     0,     0,
+     108,     6,     7,     8,   231,    10,    11,     0,     0,     0,
       12,     0,     0,    15,    16,     0,    17,     0,   182,     0,
        0,    21,     0,     0,     0,     0,     0,     0,     0,     0,
       29,     0,   183,     0,     0,     0,    33,   184,   185,     0,
@@ -2383,9 +2407,9 @@ static const yytype_int16 yytable[] =
        0,     0,   187,     0,     0,    47,    48,     0,     0,    50,
        0,    52,     0,    53,    54,     0,    55,    56,     0,     0,
        0,     0,     0,     0,    59,     0,    61,     0,    63,     0,
-       0,     0,     0,    66,   188,     0,     0,     0,     0,     0,
+       0,     0,     0,    66,   233,     0,     0,     0,     0,     0,
        0,     0,    73,    74,    75,    76,    77,   189,     0,    79,
-       0,     0,    81,   310,   311,     0,    85,     0,     0,    87,
+       0,     0,    81,     0,     0,   234,    85,     0,   235,    87,
        0,     0,    89,     0,     0,     0,     0,     0,     0,     0,
       92,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,    93,    94,    95,    96,
@@ -3166,36 +3190,80 @@ static const yytype_int16 yytable[] =
      399,   400,   401,     0,     0,   374,     0,     0,     0,     0,
        0,   402,     0,     0,     0,     0,     0,     0,   375,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-     376,     0,     0,     0,   377,     0,     0,     0,   373,     0,
-       0,     0,     0,     0,     0,   374,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,   375,     0,
-       0,     0,     0,     0,     0,   378,     0,     0,     0,     0,
+     376,     0,     0,     0,   377,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,   373,     0,     0,     0,     0,     0,
+       0,   374,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,   375,   378,     0,     0,     0,     0,
        0,     0,     0,     0,     0,   376,     0,     0,     0,   377,
        0,   379,   380,     0,   381,   382,   383,     0,   384,   385,
      386,     0,   387,   388,   389,   390,   391,     0,   392,   393,
      394,   395,   396,   397,   398,     0,     0,   399,   400,   401,
-     378,   524,     0,     0,     0,   376,     0,     0,   402,   377,
-       0,     0,     0,     0,     0,     0,   379,   380,     0,   381,
+     378,   524,     0,     0,     0,     0,     0,     0,   402,     0,
+       0,   376,     0,     0,     0,   377,   379,   380,     0,   381,
      382,   383,     0,   384,   385,   386,     0,   387,   388,   389,
      390,   391,     0,   392,   393,   394,   395,   396,   397,   398,
-     378,   528,   399,   400,   401,     0,     0,     0,     0,     0,
-       0,     0,     0,   402,     0,     0,   379,   380,     0,   381,
-     382,   383,     0,   384,   385,   386,     0,   387,   388,   389,
-     390,   391,     0,   392,   393,   394,   395,   396,   397,   398,
-     373,   534,   399,   400,   401,     0,     0,   374,     0,     0,
+     373,   528,   399,   400,   401,   551,   378,   374,     0,     0,
        0,     0,     0,   402,     0,     0,     0,     0,     0,     0,
+     375,     0,   379,   380,     0,   381,   382,   383,     0,   384,
+     385,   386,     0,   387,   388,   389,   390,   391,     0,   392,
+     393,   394,   395,   396,   397,   398,   373,     0,   399,   400,
+     401,     0,     0,   374,     0,     0,     0,     0,     0,   402,
+       0,     0,     0,     0,     0,     0,   375,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,   376,     0,     0,
+       0,   377,     0,     0,     0,     0,   373,   787,     0,     0,
+     625,     0,     0,   374,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,   375,     0,     0,     0,
+       0,     0,   378,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,   376,     0,     0,     0,   377,   379,   380,
+       0,   381,   382,   383,     0,   384,   385,   386,     0,   387,
+     388,   389,   390,   391,     0,   392,   393,   394,   395,   396,
+     397,   398,     0,     0,   399,   400,   401,     0,   378,     0,
+       0,     0,     0,   376,     0,   402,     0,   377,     0,     0,
+       0,     0,     0,     0,   379,   380,     0,   381,   382,   383,
+       0,   384,   385,   386,     0,   387,   388,   389,   390,   391,
+       0,   392,   393,   394,   395,   396,   397,   398,   378,     0,
+     399,   400,   401,     0,     0,     0,     0,   766,     0,     0,
+       0,   402,     0,     0,   379,   380,     0,   381,   382,   383,
+     375,   384,   788,   386,     0,   387,   388,   389,   390,   391,
+       0,   392,   393,   394,   395,   396,   397,   398,   373,     0,
+     399,   400,   401,     0,     0,   374,     0,     0,     0,     0,
+       0,   402,     0,     0,     0,     0,     0,     0,   375,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,   376,     0,     0,
+       0,   377,     0,   373,     0,     0,     0,     0,     0,     0,
+     374,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,   375,     0,     0,     0,     0,     0,     0,
+       0,     0,   378,     0,     0,   376,     0,     0,     0,   377,
+       0,     0,     0,   373,     0,     0,     0,     0,   379,   380,
+     374,   381,   382,   383,     0,   384,   385,   386,     0,   387,
+     388,   389,   390,   375,     0,   392,   393,   394,   395,   396,
+     378,   398,     0,     0,   399,   400,   401,     0,     0,     0,
+     376,     0,     0,     0,   377,   402,   379,   380,     0,   381,
+     382,   383,     0,   384,   385,   386,     0,   387,   388,   389,
+     390,   391,  -597,   392,   393,   394,   395,   396,   397,   398,
+       0,   202,   399,   400,   401,   378,     0,     0,     0,     0,
+     376,     0,     0,   402,   377,     0,     0,     0,     0,     0,
+       0,   379,   380,     0,   381,   382,   383,     0,   384,   385,
+     386,     0,   387,   388,   389,   390,   391,     0,   392,   393,
+     394,   395,   396,   397,   398,   378,     0,   399,   400,   401,
+       0,     0,     0,     0,     0,     0,     0,     0,   402,     0,
+       0,   379,   380,     0,   381,   382,   383,     0,   384,   385,
+     386,     0,   387,   388,   389,   390,   391,     0,   392,   393,
+     394,   395,   396,   397,   398,     0,   851,   399,   400,   401,
+     373,   884,     0,     0,     0,     0,     0,   374,   402,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
      375,     0,     0,     0,     0,     0,     0,     0,     0,   218,
        0,     0,     0,    22,    23,     0,     0,     0,     0,     0,
      373,     0,     0,   219,     0,    31,   220,   374,     0,     0,
        0,    37,     0,     0,     0,     0,     0,     0,    42,     0,
-     375,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+     375,     0,     0,   891,     0,     0,     0,     0,     0,     0,
        0,     0,     0,   -53,     0,     0,     0,   376,     0,     0,
      373,   377,     0,     0,    58,     0,    60,   374,     0,     0,
        0,     0,   -53,     0,     0,   223,     0,    68,     0,     0,
      375,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,   551,   378,     0,     0,     0,    84,   376,     0,    86,
+       0,     0,   378,     0,     0,     0,    84,   376,     0,    86,
        0,   377,    88,     0,     0,     0,     0,     0,   379,   380,
-     625,   381,   382,   383,     0,   384,   385,   386,     0,   387,
+       0,   381,   382,   383,     0,   384,   385,   386,     0,   387,
      388,   389,   390,   391,     0,   392,   393,   394,   395,   396,
      397,   398,   378,     0,   399,   400,   401,   376,     0,     0,
        0,   377,     0,     0,     0,   402,     0,     0,   379,   380,
@@ -3205,317 +3273,291 @@ static const yytype_int16 yytable[] =
        0,     0,     0,     0,     0,   402,     0,     0,   379,   380,
        0,   381,   382,   383,     0,   384,   385,   386,     0,   387,
      388,   389,   390,   391,     0,   392,   393,   394,   395,   396,
-     397,   398,   373,   787,   399,   400,   401,     0,     0,   374,
-       0,   766,     0,     0,     0,   402,   218,     0,     0,     0,
-      22,    23,   375,     0,     0,  1081,     0,     0,     0,     0,
-     219,     0,    31,   220,     0,     0,     0,     0,    37,     0,
-       0,     0,   373,     0,     0,    42,     0,     0,     0,   374,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+     397,   398,   373,     0,   399,   400,   401,     0,     0,   374,
+       0,   919,     0,     0,     0,   402,     0,     0,     0,     0,
        0,     0,   375,     0,     0,     0,     0,     0,     0,     0,
-       0,    58,     0,    60,     0,    62,     0,  1082,     0,   376,
-    1083,     0,   223,   377,    68,     0,     0,   373,     0,     0,
-       0,     0,     0,     0,   374,     0,     0,     0,     0,     0,
-       0,     0,     0,    84,     0,     0,    86,   375,     0,    88,
-       0,     0,     0,     0,   378,     0,     0,     0,     0,   376,
-       0,     0,     0,   377,     0,     0,     0,     0,     0,     0,
-     379,   380,     0,   381,   382,   383,     0,   384,   788,   386,
-       0,   387,   388,   389,   390,   391,     0,   392,   393,   394,
-     395,   396,   397,   398,   378,     0,   399,   400,   401,   103,
-       0,     0,     0,     0,   376,  1179,     0,   402,   377,     0,
-     379,   380,     0,   381,   382,   383,     0,   384,   385,   386,
-       0,   387,   388,   389,   390,   391,  -597,   392,   393,   394,
-     395,   396,   397,   398,   373,   202,   399,   400,   401,   378,
-       0,   374,     0,     0,     0,     0,     0,   402,     0,     0,
-       0,     0,     0,     0,   375,   379,   380,     0,   381,   382,
-     383,     0,   384,   385,   386,     0,   387,   388,   389,   390,
-     391,     0,   392,   393,   394,   395,   396,   397,   398,   373,
-     884,   399,   400,   401,     0,     0,   374,     0,     0,     0,
-       0,     0,   402,     0,     0,     0,     0,     0,     0,   375,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,   376,     0,     0,     0,   377,     0,     0,     0,   373,
-       0,     0,     0,     0,     0,     0,   374,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,   375,
-       0,     0,   891,     0,     0,     0,   378,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,   376,     0,     0,     0,
-     377,     0,   379,   380,     0,   381,   382,   383,     0,   384,
-     385,   386,     0,   387,   388,   389,   390,   391,     0,   392,
-     393,   394,   395,   396,   397,   398,     0,   851,   399,   400,
-     401,   378,     0,     0,     0,     0,   376,     0,     0,   402,
-     377,     0,     0,     0,     0,     0,     0,   379,   380,     0,
-     381,   382,   383,     0,   384,   385,   386,     0,   387,   388,
-     389,   390,   391,     0,   392,   393,   394,   395,   396,   397,
-     398,   378,     0,   399,   400,   401,     0,     0,     0,     0,
-       0,     0,     0,     0,   402,     0,     0,   379,   380,     0,
-     381,   382,   383,     0,   384,   385,   386,     0,   387,   388,
-     389,   390,   391,     0,   392,   393,   394,   395,   396,   397,
-     398,   373,     0,   399,   400,   401,     0,     0,   374,     0,
-       0,     0,     0,     0,   402,     0,     0,     0,     0,     0,
-       0,   375,   218,     0,     0,     0,    22,    23,     0,     0,
-       0,  1081,     0,     0,     0,     0,   219,     0,    31,   220,
-       0,   373,     0,     0,    37,     0,     0,     0,   374,     0,
-       0,    42,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,   375,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,    58,   376,    60,
-       0,    62,   377,  1082,     0,     0,  1083,   373,   223,     0,
-      68,     0,     0,     0,   374,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,   375,     0,    84,
-       0,     0,    86,   378,     0,    88,     0,     0,   376,     0,
-       0,     0,   377,     0,     0,     0,     0,     0,     0,   379,
-     380,     0,   381,   382,   383,     0,   384,   385,   386,     0,
-     387,   388,   389,   390,   391,     0,   392,   393,   394,   395,
-     396,   397,   398,   378,     0,   399,   400,   401,     0,     0,
-       0,     0,   919,     0,   376,   103,   402,     0,   377,   379,
-     380,  1182,   381,   382,   383,     0,   384,   385,   386,     0,
-     387,   388,   389,   390,   391,     0,   392,   393,   394,   395,
-     396,   397,   398,   373,     0,   399,   400,   401,   934,   378,
-     374,     0,   920,     0,     0,     0,   402,     0,     0,     0,
-       0,     0,     0,   375,   996,   379,   380,     0,   381,   382,
-     383,     0,   384,   385,   386,     0,   387,   388,   389,   390,
-     391,     0,   392,   393,   394,   395,   396,   397,   398,   373,
-       0,   399,   400,   401,     0,     0,   374,     0,     0,     0,
-       0,     0,   402,     0,     0,     0,     0,     0,     0,   375,
-     999,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-     376,     0,     0,     0,   377,     0,     0,     0,     0,   373,
-       0,     0,     0,     0,     0,     0,   374,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,   375,
-       0,     0,     0,     0,     0,   378,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,   376,     0,     0,     0,
-     377,   379,   380,     0,   381,   382,   383,     0,   384,   385,
-     386,     0,   387,   388,   389,   390,   391,     0,   392,   393,
-     394,   395,   396,   397,   398,     0,     0,   399,   400,   401,
-       0,   378,     0,     0,     0,     0,   376,     0,   402,     0,
-     377,     0,     0,     0,     0,     0,     0,   379,   380,     0,
-     381,   382,   383,     0,   384,   385,   386,     0,   387,   388,
-     389,   390,   391,     0,   392,   393,   394,   395,   396,   397,
-     398,   378,     0,   399,   400,   401,     0,     0,     0,     0,
-       0,     0,     0,     0,   402,     0,     0,   379,   380,     0,
-     381,   382,   383,     0,   384,   385,   386,     0,   387,   388,
-     389,   390,   391,     0,   392,   393,   394,   395,   396,   397,
-     398,   373,  1069,   399,   400,   401,     0,     0,   374,     0,
-       0,     0,  1002,     0,   402,     0,     0,     0,     0,     0,
-       0,   375,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,   373,     0,     0,     0,     0,     0,     0,   374,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,   375,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,   376,     0,
-       0,   373,   377,     0,     0,     0,     0,     0,   374,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,   375,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,   378,     0,     0,     0,     0,   376,     0,
-       0,     0,   377,     0,     0,     0,     0,     0,     0,   379,
-     380,  1099,   381,   382,   383,     0,   384,   385,   386,     0,
-     387,   388,   389,   390,   391,     0,   392,   393,   394,   395,
-     396,   397,   398,   378,     0,   399,   400,   401,   376,     0,
-       0,     0,   377,     0,     0,     0,   402,     0,     0,   379,
-     380,  1102,   381,   382,   383,     0,   384,   385,   386,     0,
-     387,   388,   389,   390,   391,     0,   392,   393,   394,   395,
-     396,   397,   398,   378,     0,   399,   400,   401,     0,     0,
-       0,     0,     0,     0,     0,     0,   402,     0,     0,   379,
-     380,     0,   381,   382,   383,     0,   384,   385,   386,     0,
-     387,   388,   389,   390,   391,     0,   392,   393,   394,   395,
-     396,   397,   398,   373,  1122,   399,   400,   401,     0,     0,
-     374,     0,     0,     0,     0,     0,   402,     0,     0,     0,
-       0,     0,     0,   375,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,   373,     0,     0,     0,     0,     0,     0,
      374,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,   375,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-     376,     0,     0,   373,   377,     0,     0,     0,     0,     0,
-     374,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,   375,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,   378,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   376,
+       0,     0,     0,   377,   373,     0,     0,     0,     0,     0,
+       0,   374,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,   375,   996,     0,     0,     0,     0,
+       0,     0,     0,     0,   378,     0,     0,     0,     0,     0,
      376,     0,     0,     0,   377,     0,     0,     0,     0,     0,
+     379,   380,     0,   381,   382,   383,     0,   384,   385,   386,
+       0,   387,   388,   389,   390,   391,     0,   392,   393,   394,
+     395,   396,   397,   398,   934,   378,   399,   400,   401,     0,
+       0,   376,     0,   920,     0,   377,     0,   402,     0,     0,
        0,   379,   380,     0,   381,   382,   383,     0,   384,   385,
      386,     0,   387,   388,   389,   390,   391,     0,   392,   393,
-     394,   395,   396,   397,   398,   378,     0,   399,   400,   401,
-     376,     0,     0,     0,   377,     0,     0,     0,   402,     0,
-       0,   379,   380,     0,   381,   382,   383,     0,   384,   385,
-     386,     0,   387,   388,   389,   390,   391,     0,   392,   393,
-     394,   395,   396,   397,   398,   378,     0,   399,   400,   401,
-       0,     0,     0,     0,  1167,     0,     0,     0,   402,     0,
-       0,   379,   380,     0,   381,   382,   383,     0,   384,   385,
-     386,     0,   387,   388,   389,   390,   391,     0,   392,   393,
-     394,   395,   396,   397,   398,   373,   254,   399,   400,   401,
-       0,   960,   374,     0,     0,     0,  1207,     0,   402,     0,
-     255,   256,     0,   257,     0,   375,     0,     0,   258,     0,
-       0,     0,     0,     0,     0,     0,     0,   259,     0,     0,
-       0,     0,     0,   260,     0,   373,     0,     0,     0,   261,
-       0,     0,   374,   262,     0,     0,   263,     0,     0,     0,
-       0,     0,     0,     0,     0,   375,   264,     0,     0,     0,
-       0,     0,     0,   265,   266,     0,     0,     0,     0,     0,
-       0,   267,   376,     0,     0,   373,   377,     0,     0,     0,
-     268,     0,   374,     0,     0,  1227,     0,     0,     0,   269,
-     270,     0,   271,     0,   272,   375,   273,     0,     0,   274,
-       0,     0,     0,   275,     0,     0,   276,   378,     0,   277,
-       0,     0,   376,     0,     0,     0,   377,     0,     0,     0,
-       0,     0,     0,   379,   380,  1228,   381,   382,   383,     0,
+     394,   395,   396,   397,   398,     0,   378,   399,   400,   401,
+       0,     0,     0,     0,     0,     0,     0,     0,   402,     0,
+       0,     0,   379,   380,     0,   381,   382,   383,     0,   384,
+     385,   386,     0,   387,   388,   389,   390,   391,     0,   392,
+     393,   394,   395,   396,   397,   398,   373,     0,   399,   400,
+     401,     0,     0,   374,     0,     0,     0,     0,     0,   402,
+     218,     0,     0,     0,    22,    23,   375,   999,     0,  1081,
+       0,     0,     0,     0,   219,     0,    31,   220,     0,     0,
+       0,     0,    37,     0,     0,     0,   373,     0,     0,    42,
+       0,     0,     0,   374,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,   375,     0,     0,     0,
+       0,     0,     0,     0,     0,    58,     0,    60,     0,    62,
+       0,  1082,     0,   376,  1083,     0,   223,   377,    68,     0,
+       0,   373,  1069,     0,     0,     0,     0,     0,   374,     0,
+       0,     0,     0,     0,     0,     0,     0,    84,     0,     0,
+      86,   375,     0,    88,     0,     0,     0,     0,   378,     0,
+       0,     0,     0,   376,     0,     0,     0,   377,     0,     0,
+       0,     0,     0,     0,   379,   380,     0,   381,   382,   383,
+       0,   384,   385,   386,     0,   387,   388,   389,   390,   391,
+       0,   392,   393,   394,   395,   396,   397,   398,   378,     0,
+     399,   400,   401,   103,     0,     0,     0,     0,   376,  1179,
+       0,   402,   377,     0,   379,   380,     0,   381,   382,   383,
+       0,   384,   385,   386,     0,   387,   388,   389,   390,   391,
+       0,   392,   393,   394,   395,   396,   397,   398,   373,     0,
+     399,   400,   401,   378,     0,   374,     0,     0,     0,  1002,
+       0,   402,     0,     0,     0,     0,     0,     0,   375,   379,
+     380,     0,   381,   382,   383,     0,   384,   385,   386,     0,
+     387,   388,   389,   390,   391,     0,   392,   393,   394,   395,
+     396,   397,   398,     0,     0,   399,   400,   401,     0,     0,
+       0,     0,     0,     0,     0,     0,   402,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,   373,   376,     0,     0,     0,   377,
+       0,   374,     0,     0,     0,     0,     0,     0,  1099,     0,
+       0,     0,     0,     0,   375,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+     378,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,   379,   380,     0,   381,
+     382,   383,     0,   384,   385,   386,     0,   387,   388,   389,
+     390,   391,     0,   392,   393,   394,   395,   396,   397,   398,
+       0,   376,   399,   400,   401,   377,     0,     0,     0,   373,
+    1122,     0,     0,   402,  1102,     0,   374,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   375,
+       0,     0,     0,     0,     0,     0,   378,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,   379,   380,     0,   381,   382,   383,     0,   384,
+     385,   386,     0,   387,   388,   389,   390,   391,     0,   392,
+     393,   394,   395,   396,   397,   398,     0,     0,   399,   400,
+     401,     0,     0,     0,     0,   373,   376,     0,     0,   402,
+     377,     0,   374,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,   375,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   378,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,   379,   380,     0,
+     381,   382,   383,     0,   384,   385,   386,     0,   387,   388,
+     389,   390,   391,     0,   392,   393,   394,   395,   396,   397,
+     398,   373,   376,   399,   400,   401,   377,     0,   374,     0,
+       0,     0,     0,     0,   402,     0,     0,     0,     0,     0,
+       0,   375,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,   378,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,   379,   380,     0,   381,   382,   383,     0,
      384,   385,   386,     0,   387,   388,   389,   390,   391,     0,
-     392,   393,   394,   395,   396,   397,   398,   378,     0,   399,
-     400,   401,   376,     0,     0,     0,   377,     0,     0,     0,
-     402,     0,     0,   379,   380,  1229,   381,   382,   383,     0,
-     384,   385,   386,     0,   387,   388,   389,   390,   391,     0,
-     392,   393,   394,   395,   396,   397,   398,   378,     0,   399,
-     400,   401,     0,     0,     0,     0,     0,     0,     0,     0,
-     402,     0,     0,   379,   380,     0,   381,   382,   383,     0,
-     384,   385,   386,     0,   387,   388,   389,   390,   391,     0,
-     392,   393,   394,   395,   396,   397,   398,   373,   254,   399,
-     400,   401,     0,     0,   374,     0,     0,     0,     0,     0,
-     402,     0,   255,   256,     0,   257,     0,   375,     0,     0,
-     258,     0,     0,     0,     0,     0,   801,     0,     0,   259,
-       0,     0,     0,     0,     0,   260,     0,   373,     0,     0,
-       0,   261,     0,     0,   374,   262,     0,     0,   263,     0,
-       0,     0,     0,     0,     0,     0,     0,   375,   264,     0,
-       0,     0,     0,     0,     0,   265,   266,     0,     0,     0,
-       0,     0,     0,   267,   376,     0,     0,   373,   377,     0,
-       0,     0,   268,     0,   374,     0,     0,  1230,     0,     0,
-       0,   269,   270,     0,   271,     0,   272,   375,   273,     0,
-       0,   274,     0,     0,     0,   275,     0,     0,   276,   378,
-       0,   277,     0,     0,   376,     0,     0,     0,   377,     0,
-       0,     0,     0,     0,     0,   379,   380,  1231,   381,   382,
-     383,     0,   384,   385,   386,     0,   387,   388,   389,   390,
-     391,     0,   392,   393,   394,   395,   396,   397,   398,   378,
-       0,   399,   400,   401,   376,     0,     0,     0,   377,     0,
-       0,     0,   402,     0,     0,   379,   380,  1232,   381,   382,
-     383,     0,   384,   385,   386,     0,   387,   388,   389,   390,
-     391,     0,   392,   393,   394,   395,   396,   397,   398,   378,
-       0,   399,   400,   401,     0,     0,     0,     0,     0,     0,
-       0,     0,   402,     0,     0,   379,   380,     0,   381,   382,
+     392,   393,   394,   395,   396,   397,   398,   373,   376,   399,
+     400,   401,   377,     0,   374,     0,  1167,     0,     0,     0,
+     402,     0,     0,     0,     0,     0,     0,   375,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,   378,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   379,
+     380,     0,   381,   382,   383,     0,   384,   385,   386,     0,
+     387,   388,   389,   390,   391,     0,   392,   393,   394,   395,
+     396,   397,   398,   373,   376,   399,   400,   401,   377,     0,
+     374,     0,     0,     0,  1207,     0,   402,  1227,     0,     0,
+       0,     0,     0,   375,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   378,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,   379,   380,     0,   381,   382,
      383,     0,   384,   385,   386,     0,   387,   388,   389,   390,
      391,     0,   392,   393,   394,   395,   396,   397,   398,   373,
-    -300,   399,   400,   401,     0,     0,   374,     0,     0,     0,
-       0,     0,   402,     0,  -300,  -300,     0,  -300,     0,   375,
-       0,     0,  -300,     0,     0,     0,     0,     0,     0,     0,
-       0,  -300,     0,     0,     0,     0,     0,  -300,     0,   373,
-       0,     0,     0,  -300,     0,     0,   374,  -300,  1257,     0,
-    -300,     0,     0,     0,     0,     0,     0,     0,     0,   375,
-    -300,     0,     0,     0,     0,     0,     0,  -300,  -300,     0,
-       0,     0,     0,     0,     0,  -300,   376,     0,     0,   373,
-     377,     0,     0,     0,  -300,     0,   374,     0,     0,     0,
-       0,     0,     0,  -300,  -300,     0,  -300,     0,  -300,   375,
-    -300,     0,     0,  -300,     0,     0,     0,  -300,     0,     0,
-    -300,   378,     0,  -300,     0,     0,   376,     0,     0,     0,
-     377,     0,     0,     0,     0,     0,     0,   379,   380,     0,
+     376,   399,   400,   401,   377,     0,   374,     0,     0,     0,
+       0,     0,   402,  1228,     0,     0,     0,     0,     0,   375,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,   378,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   379,   380,     0,   381,   382,   383,     0,   384,   385,
+     386,     0,   387,   388,   389,   390,   391,     0,   392,   393,
+     394,   395,   396,   397,   398,   373,   376,   399,   400,   401,
+     377,     0,   374,     0,     0,     0,     0,     0,   402,  1229,
+       0,     0,     0,     0,     0,   375,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   378,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,   379,   380,     0,
      381,   382,   383,     0,   384,   385,   386,     0,   387,   388,
      389,   390,   391,     0,   392,   393,   394,   395,   396,   397,
-     398,   378,     0,   399,   400,   401,   376,     0,     0,     0,
-     377,     0,     0,     0,   402,     0,     0,   379,   380,     0,
-     381,   382,   383,     0,   384,   385,   386,     0,   387,   388,
+     398,   373,   376,   399,   400,   401,   377,     0,   374,     0,
+       0,     0,     0,     0,   402,  1230,     0,     0,     0,     0,
+       0,   375,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,   378,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,   379,   380,     0,   381,   382,   383,     0,
+     384,   385,   386,     0,   387,   388,   389,   390,   391,     0,
+     392,   393,   394,   395,   396,   397,   398,   373,   376,   399,
+     400,   401,   377,     0,   374,     0,     0,     0,     0,     0,
+     402,  1231,     0,     0,     0,     0,     0,   375,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,   378,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   379,
+     380,     0,   381,   382,   383,     0,   384,   385,   386,     0,
+     387,   388,   389,   390,   391,     0,   392,   393,   394,   395,
+     396,   397,   398,   373,   376,   399,   400,   401,   377,     0,
+     374,     0,     0,     0,     0,     0,   402,  1232,     0,     0,
+       0,     0,     0,   375,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   378,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,  1257,     0,     0,   379,   380,     0,   381,   382,
+     383,     0,   384,   385,   386,     0,   387,   388,   389,   390,
+     391,     0,   392,   393,   394,   395,   396,   397,   398,   373,
+     376,   399,   400,   401,   377,     0,   374,     0,     0,     0,
+       0,     0,   402,     0,     0,     0,     0,     0,     0,   375,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,   378,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   379,   380,     0,   381,   382,   383,     0,   384,   385,
+     386,     0,   387,   388,   389,   390,   391,     0,   392,   393,
+     394,   395,   396,   397,   398,   373,   376,   399,   400,   401,
+     377,     0,   374,     0,     0,     0,     0,     0,   402,     0,
+       0,     0,     0,     0,     0,   375,     0,     0,     0,     0,
+       0,     0,     0,     0,   218,     0,     0,     0,    22,    23,
+       0,   378,     0,  1081,     0,     0,     0,     0,   219,     0,
+      31,   220,     0,     0,     0,     0,    37,   379,   380,     0,
+     381,   382,   383,    42,   384,   385,   386,     0,   387,   388,
      389,   390,   391,     0,   392,   393,   394,   395,   396,   397,
-     398,   378,     0,   399,   400,   401,     0,     0,     0,     0,
-       0,     0,  1286,     0,   402,     0,     0,   379,   380,     0,
-     381,   382,   383,     0,   384,   385,   386,     0,   387,   388,
-     389,   390,   391,     0,   392,   393,   394,   395,   396,   397,
-     398,   373,     0,   399,   400,   401,     0,     0,   374,     0,
-       0,     0,     0,     0,   402,   218,     0,     0,     0,    22,
-      23,   375,     0,     0,  1081,     0,     0,     0,     0,   219,
-       0,    31,   220,     0,     0,     0,     0,    37,     0,     0,
-       0,     0,     0,     0,    42,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-      58,     0,    60,     0,    62,     0,  1082,     0,   847,  1083,
-       0,   223,   377,    68,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,    84,     0,     0,    86,   218,     0,    88,     0,
+     398,   373,   376,   399,   400,   401,   377,     0,   374,    58,
+       0,    60,  1286,    62,   402,  1082,     0,     0,  1083,     0,
+     223,   375,    68,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,   378,     0,     0,
+       0,    84,     0,     0,    86,     0,     0,    88,     0,     0,
+       0,     0,     0,   379,   380,     0,   381,   382,   383,     0,
+     384,   385,   386,     0,   387,   388,   389,   390,   391,     0,
+     392,   393,   394,   395,   396,   397,   398,     0,   847,   399,
+     400,   401,   377,     0,     0,     0,     0,     0,     0,     0,
+     402,     0,     0,     0,     0,     0,     0,   103,     0,     0,
+       0,     0,     0,  1182,     0,     0,   218,     0,     0,     0,
       22,    23,     0,   378,     0,  1081,     0,     0,     0,     0,
      219,     0,    31,   220,     0,     0,     0,     0,    37,   379,
      380,     0,   381,   382,   383,    42,   384,   385,   386,     0,
      387,   388,   389,   390,   391,     0,   392,   393,   394,   395,
-     396,   397,   398,     0,     0,   399,   400,   401,   103,     0,
-       0,    58,     0,    60,  1183,    62,   402,  1082,     0,     0,
+     396,   397,   398,     0,     0,   399,   400,   401,     0,     0,
+       0,    58,     0,    60,     0,    62,   402,  1082,     0,     0,
     1083,     0,   223,   218,    68,     0,     0,    22,    23,     0,
        0,     0,  1081,     0,     0,     0,     0,   219,     0,    31,
      220,     0,     0,    84,     0,    37,    86,     0,     0,    88,
        0,     0,    42,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,   375,     0,     0,    58,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,    58,     0,
       60,     0,    62,     0,  1082,     0,     0,  1083,     0,   223,
        0,    68,   218,     0,     0,     0,    22,    23,     0,   103,
-       0,  1081,     0,     0,     0,  1233,   219,     0,    31,   220,
+       0,  1081,     0,     0,     0,  1183,   219,     0,    31,   220,
       84,     0,     0,    86,    37,     0,    88,     0,     0,     0,
        0,    42,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,   376,     0,     0,     0,   377,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,    58,     0,    60,
-       0,    62,     0,  1082,     0,   375,  1083,     0,   223,     0,
-      68,     0,     0,     0,     0,     0,   103,   378,     0,     0,
-       0,     0,  1234,     0,     0,     0,     0,     0,     0,    84,
-       0,     0,    86,   379,   380,    88,   381,   382,   383,     0,
-     384,   385,   386,     0,   387,   388,   389,   390,     0,     0,
-     392,   393,   394,   395,   396,   397,   398,     0,     0,   399,
-     400,   401,   376,     0,     0,     0,   377,     0,     0,     0,
-     402,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,   103,     0,     0,     0,     0,
-       0,  1235,     0,     0,     0,     0,     0,   378,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,   379,   380,     0,   381,   382,   383,     0,
-     384,   385,   386,     0,   387,   388,   389,   390,     0,     0,
-     392,   393,   394,   395,   396,   800,   398,   254,     0,   399,
-     400,   401,     0,     0,     0,     0,     0,     0,     0,     0,
-     402,   255,   256,     0,   257,     0,     0,     0,     0,   258,
-       0,     0,     0,     0,     0,   801,     0,     0,   259,     0,
+       0,     0,   375,     0,     0,     0,     0,    58,     0,    60,
+       0,    62,     0,  1082,     0,     0,  1083,     0,   223,   218,
+      68,     0,     0,    22,    23,     0,   103,     0,  1081,     0,
+       0,     0,  1233,   219,     0,    31,   220,     0,     0,    84,
+       0,    37,    86,     0,     0,    88,     0,     0,    42,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   376,
+       0,     0,     0,   377,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    58,     0,    60,     0,    62,     0,
+    1082,     0,     0,  1083,     0,   223,     0,    68,     0,     0,
+       0,     0,     0,     0,   378,   103,     0,     0,     0,     0,
+       0,  1234,     0,     0,     0,     0,    84,     0,     0,    86,
+     379,   380,    88,   381,   382,   383,     0,   384,   385,   386,
+       0,   387,   388,   389,   390,     0,     0,   392,   393,   394,
+     395,   396,   397,   398,     0,     0,   399,   400,   401,   800,
+       0,   254,     0,     0,     0,     0,     0,   402,     0,     0,
+       0,     0,     0,     0,     0,   255,   256,     0,   257,     0,
+       0,     0,   103,   258,     0,     0,     0,     0,  1235,   801,
+       0,     0,   259,     0,     0,     0,     0,     0,   260,     0,
+       0,     0,     0,     0,   261,     0,     0,     0,   262,     0,
+       0,   263,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   264,     0,     0,     0,     0,     0,     0,   265,   266,
+       0,     0,     0,     0,     0,     0,   267,     0,     0,     0,
+       0,     0,     0,     0,     0,   268,     0,     0,   254,     0,
+       0,     0,     0,     0,   269,   270,     0,   271,     0,   272,
+       0,   273,   255,   256,   274,   257,     0,     0,   275,     0,
+     258,   276,    23,     0,   277,     0,     0,     0,     0,   259,
+       0,     0,     0,     0,     0,   260,     0,     0,     0,     0,
+       0,   261,     0,     0,     0,   262,     0,     0,   263,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,   264,     0,
+       0,     0,     0,     0,     0,   265,   266,     0,     0,     0,
+       0,     0,     0,   267,    60,     0,     0,     0,     0,     0,
+       0,     0,   268,     0,     0,    68,     0,     0,     0,     0,
+       0,   269,   270,     0,   271,     0,   272,     0,   273,   254,
+       0,   274,     0,     0,   960,   275,     0,     0,   276,     0,
+      88,   277,     0,   255,   256,     0,   257,     0,     0,     0,
+       0,   258,     0,     0,     0,     0,     0,     0,     0,     0,
+     259,     0,     0,     0,     0,     0,   260,     0,     0,     0,
+       0,     0,   261,     0,     0,     0,   262,     0,     0,   263,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   264,
+       0,     0,     0,     0,     0,     0,   265,   266,     0,     0,
+       0,     0,     0,     0,   267,     0,     0,     0,     0,     0,
+       0,     0,     0,   268,     0,     0,   254,     0,     0,     0,
+       0,     0,   269,   270,     0,   271,     0,   272,     0,   273,
+     255,   256,   274,   257,     0,     0,   275,     0,   258,   276,
+       0,     0,   277,     0,   801,     0,     0,   259,     0,     0,
+       0,     0,     0,   260,     0,     0,     0,     0,     0,   261,
+       0,     0,     0,   262,     0,     0,   263,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,   264,     0,     0,     0,
+       0,     0,     0,   265,   266,     0,     0,     0,     0,     0,
+       0,   267,     0,     0,     0,     0,     0,     0,     0,     0,
+     268,     0,     0,  -300,     0,     0,     0,     0,     0,   269,
+     270,     0,   271,     0,   272,     0,   273,  -300,  -300,   274,
+    -300,     0,     0,   275,     0,  -300,   276,     0,     0,   277,
+       0,     0,     0,     0,  -300,     0,     0,     0,     0,     0,
+    -300,     0,     0,     0,     0,     0,  -300,     0,     0,     0,
+    -300,     0,     0,  -300,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,  -300,     0,     0,     0,     0,     0,     0,
+    -300,  -300,     0,     0,     0,     0,     0,     0,  -300,     0,
+       0,     0,     0,     0,     0,     0,     0,  -300,     0,     0,
+    -310,     0,     0,     0,     0,     0,  -300,  -300,     0,  -300,
+       0,  -300,     0,  -300,  -310,  -310,  -300,  -310,     0,     0,
+    -300,     0,  -310,  -300,     0,     0,  -300,     0,     0,     0,
+       0,  -310,     0,     0,     0,     0,     0,  -310,     0,     0,
+       0,     0,     0,  -310,     0,     0,     0,  -310,     0,     0,
+    -310,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+    -310,     0,     0,     0,     0,     0,     0,  -310,  -310,     0,
+       0,     0,     0,     0,     0,  -310,     0,     0,     0,     0,
+       0,     0,     0,     0,  -310,     0,     0,   254,     0,     0,
+       0,     0,     0,  -310,  -310,     0,  -310,     0,  -310,     0,
+    -310,   255,   256,  -310,   257,     0,     0,  -310,     0,   258,
+    -310,     0,     0,  -310,     0,     0,     0,     0,   259,     0,
        0,     0,     0,     0,   260,     0,     0,     0,     0,     0,
      261,     0,     0,     0,   262,     0,     0,   263,     0,     0,
        0,     0,     0,     0,     0,     0,     0,   264,     0,     0,
        0,     0,     0,     0,   265,   266,     0,     0,     0,     0,
        0,     0,   267,     0,     0,     0,     0,     0,     0,     0,
-       0,   268,     0,     0,   254,     0,     0,     0,     0,     0,
-     269,   270,     0,   271,     0,   272,     0,   273,   255,   256,
-     274,   257,     0,     0,   275,     0,   258,   276,    23,     0,
-     277,     0,     0,     0,     0,   259,     0,     0,     0,     0,
-       0,   260,     0,     0,     0,     0,     0,   261,     0,     0,
-       0,   262,     0,     0,   263,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,   264,     0,     0,     0,     0,     0,
-       0,   265,   266,     0,     0,     0,     0,     0,     0,   267,
-      60,     0,     0,     0,     0,     0,     0,     0,   268,     0,
-       0,    68,     0,     0,     0,     0,     0,   269,   270,     0,
-     271,     0,   272,     0,   273,  -310,     0,   274,     0,     0,
-       0,   275,     0,     0,   276,     0,    88,   277,     0,  -310,
-    -310,     0,  -310,     0,     0,     0,     0,  -310,     0,     0,
-       0,     0,     0,     0,     0,     0,  -310,     0,     0,     0,
-       0,     0,  -310,     0,     0,     0,     0,     0,  -310,     0,
-       0,     0,  -310,     0,     0,  -310,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,  -310,     0,     0,     0,     0,
-       0,     0,  -310,  -310,     0,     0,     0,     0,     0,     0,
-    -310,     0,     0,     0,     0,     0,     0,     0,     0,  -310,
-       0,     0,   254,     0,     0,     0,     0,     0,  -310,  -310,
-       0,  -310,     0,  -310,     0,  -310,   255,   256,  -310,   257,
-       0,     0,  -310,     0,   258,  -310,     0,     0,  -310,     0,
-       0,     0,     0,   259,     0,     0,     0,     0,     0,   260,
-       0,     0,     0,     0,     0,   261,     0,     0,     0,   262,
-       0,     0,   263,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,   264,     0,     0,     0,     0,     0,     0,   265,
-     266,     0,     0,     0,     0,     0,     0,   267,     0,     0,
-       0,     0,     0,     0,     0,     0,   268,     0,     0,  -301,
-       0,     0,     0,     0,     0,   269,   270,     0,   271,     0,
-     272,     0,   273,  -301,  -301,   274,  -301,     0,     0,   275,
-       0,  -301,   276,     0,     0,   277,     0,     0,     0,     0,
-    -301,     0,     0,     0,     0,     0,  -301,     0,     0,     0,
-       0,     0,  -301,     0,     0,     0,  -301,     0,     0,  -301,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,  -301,
-       0,     0,     0,     0,     0,     0,  -301,  -301,     0,     0,
+       0,   268,     0,     0,  -301,     0,     0,     0,     0,     0,
+     269,   270,     0,   271,     0,   272,     0,   273,  -301,  -301,
+     274,  -301,     0,     0,   275,     0,  -301,   276,     0,     0,
+     277,     0,     0,     0,     0,  -301,     0,     0,     0,     0,
+       0,  -301,     0,     0,     0,     0,     0,  -301,     0,     0,
+       0,  -301,     0,     0,  -301,     0,     0,     0,     0,     0,
        0,     0,     0,     0,  -301,     0,     0,     0,     0,     0,
-       0,     0,     0,  -301,     0,     0,  -193,     0,     0,     0,
-       0,     0,  -301,  -301,     0,  -301,     0,  -301,     0,  -301,
-    -193,  -193,  -301,  -193,     0,     0,  -301,     0,  -193,  -301,
-       0,     0,  -301,     0,     0,     0,     0,  -193,     0,     0,
-       0,     0,     0,  -193,     0,     0,     0,     0,     0,  -193,
-       0,     0,     0,  -193,     0,     0,  -193,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,  -193,     0,     0,     0,
-       0,     0,     0,  -193,  -193,     0,     0,     0,     0,     0,
+       0,  -301,  -301,     0,     0,     0,     0,     0,     0,  -301,
+       0,     0,     0,     0,     0,     0,     0,     0,  -301,     0,
+       0,  -193,     0,     0,     0,     0,     0,  -301,  -301,     0,
+    -301,     0,  -301,     0,  -301,  -193,  -193,  -301,  -193,     0,
+       0,  -301,     0,  -193,  -301,     0,     0,  -301,     0,     0,
+       0,     0,  -193,     0,     0,     0,     0,     0,  -193,     0,
+       0,     0,     0,     0,  -193,     0,     0,     0,  -193,     0,
        0,  -193,     0,     0,     0,     0,     0,     0,     0,     0,
-    -193,     0,     0,  -185,     0,     0,     0,     0,     0,  -193,
-    -193,     0,  -193,     0,  -193,     0,  -193,  -185,  -185,  -193,
-    -185,     0,     0,  -193,     0,  -185,  -193,     0,     0,  -193,
-       0,     0,     0,     0,  -185,     0,     0,     0,     0,     0,
-    -185,     0,     0,     0,     0,     0,  -185,     0,     0,     0,
-    -185,     0,     0,  -185,     0,     0,     0,     0,     0,     0,
+       0,  -193,     0,     0,     0,     0,     0,     0,  -193,  -193,
+       0,     0,     0,     0,     0,     0,  -193,     0,     0,     0,
+       0,     0,     0,     0,     0,  -193,     0,     0,  -185,     0,
+       0,     0,     0,     0,  -193,  -193,     0,  -193,     0,  -193,
+       0,  -193,  -185,  -185,  -193,  -185,     0,     0,  -193,     0,
+    -185,  -193,     0,     0,  -193,     0,     0,     0,     0,  -185,
+       0,     0,     0,     0,     0,  -185,     0,     0,     0,     0,
+       0,  -185,     0,     0,     0,  -185,     0,     0,  -185,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,  -185,     0,
+       0,     0,     0,     0,     0,  -185,  -185,     0,     0,     0,
        0,     0,     0,  -185,     0,     0,     0,     0,     0,     0,
-    -185,  -185,     0,     0,     0,     0,     0,     0,  -185,     0,
-       0,     0,     0,     0,     0,     0,     0,  -185,     0,     0,
-       0,     0,     0,     0,     0,     0,  -185,  -185,     0,  -185,
-       0,  -185,     0,  -185,     0,     0,  -185,     0,     0,     0,
-    -185,     0,     0,  -185,     0,     0,  -185
+       0,     0,  -185,     0,     0,     0,     0,     0,     0,     0,
+       0,  -185,  -185,     0,  -185,     0,  -185,     0,  -185,     0,
+       0,  -185,     0,     0,     0,  -185,     0,     0,  -185,     0,
+       0,  -185
 };
 
 static const yytype_int16 yycheck[] =
@@ -3527,100 +3569,100 @@ static const yytype_int16 yycheck[] =
       52,   913,   526,     1,    33,    57,   168,    59,   650,    61,
        1,   788,   303,   655,    33,   657,    33,    69,    70,    71,
       72,    73,    74,  1043,  1138,   107,    78,    33,    80,    33,
-     321,    27,    92,    33,   211,    87,     3,    69,    90,    91,
-       1,    93,   120,    95,    92,  1193,    98,    99,   102,   101,
-      70,    48,   146,   105,   106,   107,   108,  1126,    48,     1,
-      54,    56,    48,  1046,     0,   120,   146,   165,   105,    48,
-     120,     3,    48,   105,   106,   107,    56,   120,    56,   173,
-      74,   347,   348,    79,    75,   165,   106,    56,    48,   251,
-      84,   120,    37,  1005,    90,    48,   146,   175,     3,  1247,
-      61,   846,     3,   120,    90,   882,   626,  1127,     1,   191,
-     170,  1081,   164,   109,    90,  1085,   170,   165,   222,    61,
-     175,   505,   170,  1192,   648,   175,   117,   125,    73,   420,
+     321,   102,    92,    33,   211,    87,     3,    69,    90,    91,
+       1,    93,   120,    95,    92,    48,    98,    99,  1126,   101,
+      70,    48,   146,   105,   106,   107,   108,   118,    48,     1,
+      54,    56,  1193,  1046,    66,   120,   165,     0,   105,    48,
+     120,    91,   171,   105,   106,   107,    56,   165,    56,   173,
+      74,   347,   348,    85,    75,   146,   106,    90,    48,   251,
+      84,   120,    37,  1005,     3,    48,   146,   175,   125,   170,
+      61,   846,     3,   120,    47,   882,   626,  1127,     1,   191,
+     170,  1081,   164,   120,  1192,  1085,  1247,   165,   222,    61,
+     175,   505,   170,   150,   648,   175,   117,   125,    73,   420,
      421,    92,   184,   185,   186,  1047,   103,   189,   190,   191,
     1110,   170,   146,  1113,  1114,   529,   146,   145,   146,   146,
       92,   170,  1266,   170,   960,    48,   146,   118,   190,   191,
-     209,   226,   833,   105,   170,   910,   170,   146,   220,    47,
-     170,   103,  1170,  1171,   226,   173,   118,   172,   175,   217,
-     171,  1164,    61,   230,   145,   175,   146,    32,   253,   236,
-    1160,    92,   172,   146,  1247,    75,   175,    27,   245,   118,
-     304,   253,   103,   145,  1264,   736,   665,   146,  1178,   170,
+     209,   226,   833,   105,   170,   910,   170,   146,   220,    61,
+     170,   114,  1170,  1171,   226,   173,   118,   172,   175,   217,
+     171,  1164,    48,   230,   145,   175,   146,    32,   253,   236,
+    1160,    92,   172,   146,   103,    75,   175,    27,   245,     3,
+     304,   253,   103,   145,  1247,   736,   665,   146,  1178,   170,
     1180,  1181,   146,   855,  1126,   175,   858,   455,   860,    18,
-     230,    56,  1282,   165,    66,   165,   236,   146,   170,    27,
-     146,   171,   125,  1286,   173,   146,   114,   117,   303,   118,
-     125,   175,   146,    85,    89,    34,    35,    36,    93,    79,
+      56,   165,   146,   165,    90,   140,   118,   171,   170,    27,
+     146,    56,   125,   148,   140,   146,   175,   117,   303,   173,
+     125,   165,   148,  1286,    89,    34,    35,    36,    93,    79,
       48,   303,   145,   146,    52,    61,   321,   173,   310,   311,
-      90,   146,   173,  1096,    56,   150,  1096,   171,  1071,   321,
+      90,   146,   173,  1096,    56,   150,  1096,   146,  1071,   321,
     1073,   146,   165,    90,   146,   795,   453,   792,    76,    78,
     1192,    79,   146,    81,   461,   115,    92,     8,   173,   146,
-     342,   171,    90,    56,   146,   140,   146,    96,   173,   105,
+     342,   171,    90,    56,   173,   140,   146,    96,   173,   105,
      145,   173,   339,   148,   339,   357,   358,   152,    56,   173,
-     830,   109,   118,   165,   113,   165,   173,   354,   107,   371,
+     830,   109,   118,   172,   113,   165,   173,   354,   107,   371,
      385,   373,   374,   375,   376,   377,   378,   146,   380,   381,
      382,   383,   384,   146,   386,   387,   388,   389,   390,   391,
      392,   393,   394,   395,   396,   397,   398,   399,   400,   401,
-     402,  1022,   146,   146,   173,   420,   421,   409,   410,   165,
-     173,    61,   172,   415,   170,   146,   418,   419,   420,   421,
-     422,   423,   146,   904,   833,   173,   125,   146,   430,   173,
-     173,   463,  1011,   435,   165,  1014,  1015,    27,   440,   409,
+     402,  1022,   146,    56,   173,   420,   421,   409,   410,   165,
+     173,    61,  1264,   415,   170,   146,   418,   419,   420,   421,
+     422,   423,   146,   904,   833,   173,   146,   146,   430,   173,
+    1282,   463,  1011,   435,   165,  1014,  1015,    27,   440,   409,
      410,   443,    92,   172,    61,   415,   433,   171,   418,   419,
-     165,   150,   171,   669,   670,   105,   172,   172,   174,   174,
+     165,   171,   171,   669,   670,   105,   172,   172,   174,   174,
      165,   463,     3,   465,   466,   146,    32,   172,   118,   471,
      472,   146,    56,   125,   476,    92,   478,   479,   493,    20,
      945,   463,    88,   485,   165,   146,   488,   172,   105,    79,
      165,   493,    56,    34,   146,   146,    56,    56,   150,   146,
-      90,   118,    27,   109,   165,   507,   112,    56,   100,   511,
+      90,   118,    27,   109,   165,   507,   112,   100,    56,   511,
      497,   526,   514,   515,   165,   165,   513,   519,   165,   109,
-     170,   173,    63,    89,   526,   115,    51,    93,    83,    56,
-    1109,    86,  1111,  1112,   566,    27,   538,   519,    89,   541,
-    1053,   543,    93,   140,   146,   547,   548,   549,   165,   551,
+     170,   173,    63,    89,   526,   115,    51,    93,    83,   172,
+    1109,    86,  1111,  1112,   566,    27,   538,   519,    56,   541,
+    1053,   543,    56,   140,   146,   547,   548,   549,   165,   551,
      552,   148,    77,   170,    79,    49,   538,   773,   774,   541,
-     172,   543,   103,   165,   566,    90,   548,    56,   109,   146,
+      56,   543,   103,   165,   566,    90,   548,    56,   109,   146,
      557,   541,   557,   543,   140,   141,   764,   146,    72,   145,
-      56,   147,   148,   172,   566,   174,   152,    79,   165,    47,
-     115,    48,    56,   146,   160,    85,   165,   172,    90,   174,
-     166,   167,   168,    48,    61,  1070,   140,  1072,    66,   165,
-     140,   626,   165,  1022,   148,   171,    61,   109,   148,   621,
-     622,   623,   624,   625,   626,   627,   628,    85,    89,    56,
-      89,   140,    93,   648,    93,    92,   145,   376,   377,   148,
-     639,   640,   170,   152,   646,    89,   648,    92,   142,    93,
-      89,    56,   165,    48,    93,     2,   114,   659,    89,   661,
-     164,   118,    93,   665,   646,   667,    61,   172,   125,   174,
-     170,   156,   172,   118,   165,   677,   646,   679,    25,    56,
-     125,    28,   165,   422,   423,   172,   172,   174,   174,   146,
-     692,   165,   541,   695,   543,   165,   435,    92,   165,   811,
-     165,   146,   165,   172,   170,   707,   708,   119,   165,   165,
-     742,  1198,  1046,   170,   208,    88,   173,   172,   172,  1053,
-     165,   172,   172,   118,   172,   170,   172,   466,   173,   165,
-     125,    78,   125,   472,     8,   165,    66,   476,   740,   741,
-     742,   145,   170,    69,   746,   239,   240,   241,   242,   243,
-     244,   146,   148,   172,   866,   165,   250,   251,   105,   125,
-     742,   873,   173,   110,  1251,  1252,  1253,  1254,  1255,  1256,
-     165,   125,   787,   788,   146,   170,   746,   165,   173,    48,
-     795,   172,    32,   785,   125,   125,   280,   789,    35,   791,
-     792,   793,    32,   795,    35,   142,   290,   151,   292,   153,
-     154,   146,   173,   157,   158,   299,   173,   125,   547,   173,
-     173,   146,    21,  1054,  1055,   830,   175,   175,   170,   821,
-     173,   172,   824,   317,   172,   175,   165,   165,   830,   165,
-    1164,   833,   165,   165,   328,   329,   165,   165,   146,    89,
-     165,    35,    35,    93,    66,   847,   848,   146,   146,    89,
-     173,   173,   171,    93,   171,     2,   203,   173,   125,  1193,
-      90,   173,    33,    33,   175,   867,   170,   869,   170,   170,
-      35,   165,   874,  1207,   145,   877,    90,   172,    25,   175,
-     882,    28,   884,   622,   172,   624,   175,   165,   175,   891,
-     140,   923,   145,   172,   171,   145,   148,   147,   148,   148,
-     140,   140,   152,   148,   148,   145,   148,   147,   148,   140,
-     160,   148,   152,  1247,   148,   902,   166,   167,   168,   148,
-     160,   923,   148,   140,   148,   148,    35,   929,   168,   931,
-    1264,    78,   934,   140,   281,   140,   148,   170,     2,   105,
-     287,   923,   436,   945,   140,   170,   165,   165,  1282,   170,
-     165,   140,  1286,   173,   164,     2,   146,   173,   105,   165,
-     962,    25,   173,   110,    28,   173,   164,   142,   491,   173,
-     354,    24,   175,   785,   511,  1085,   470,    90,    25,   897,
-     474,    28,   984,   963,  1096,   953,  1092,  1096,   902,   966,
-     728,  1266,   339,   995,   996,   142,   998,   999,  1223,  1001,
-    1002,  1257,  1250,    37,  1116,  1117,   508,   354,  1120,  1121,
-      31,    -1,    -1,    -1,    78,  1017,  1018,    -1,  1020,    -1,
+      27,   147,   148,   172,   566,   174,   152,    79,   165,    47,
+     115,    48,   170,   146,   160,   146,   165,   172,    90,   174,
+     166,   167,   168,    48,    61,  1070,    89,  1072,    66,   230,
+      93,   626,   165,  1022,   165,   236,    61,   109,    85,   621,
+     622,   623,   624,   625,   626,   627,   628,    85,    56,   172,
+      89,   174,    79,   648,    93,    92,   165,   376,   377,   165,
+     639,   640,   164,    90,   646,    89,   648,    92,   142,    93,
+      89,   156,   165,    48,    93,     2,   114,   659,   170,   661,
+     172,   118,   109,   665,   646,   667,    61,    89,   125,    56,
+     172,    93,   174,   118,   140,   677,   646,   679,    25,   145,
+     125,    28,   148,   422,   423,   172,   152,    89,   165,   146,
+     692,    93,   172,   695,   174,   165,   435,    92,   170,   811,
+     541,   146,   543,   165,   165,   707,   708,   119,   165,   165,
+     742,  1198,  1046,   170,   208,   165,   173,    88,   172,  1053,
+     165,   172,   125,   118,   172,   170,   172,   466,   173,   172,
+     125,    78,   165,   472,   172,   165,   165,   476,   740,   741,
+     742,     8,    66,   170,   746,   239,   240,   241,   242,   243,
+     244,   146,   145,    69,   866,   172,   250,   251,   105,   148,
+     742,   873,   125,   110,  1251,  1252,  1253,  1254,  1255,  1256,
+     165,   125,   787,   788,   165,   170,   746,   173,   173,   146,
+     795,   165,    32,   785,    48,   125,   280,   789,   125,   791,
+     792,   793,    32,   795,   172,   142,   290,   151,   292,   153,
+     154,    35,    35,   157,   158,   299,   125,   173,   547,   173,
+     146,   173,   173,  1054,  1055,   830,   146,   175,   175,   821,
+      21,   170,   824,   317,   172,   175,   165,   165,   830,   173,
+    1164,   833,   165,   165,   328,   329,   165,   165,   172,    89,
+     165,   146,   165,    93,    35,   847,   848,    35,    66,    89,
+     146,   173,   173,    93,   171,     2,   203,   146,   173,  1193,
+     171,    90,   125,   173,    33,   867,    33,   869,   175,   170,
+     170,   170,   874,  1207,    35,   877,   145,   165,    25,    90,
+     882,    28,   884,   622,   175,   624,   172,   172,   175,   891,
+     140,   923,   175,   165,   145,   145,   171,   147,   148,   172,
+     140,   148,   152,   148,   148,   145,   148,   147,   148,   140,
+     160,   148,   152,  1247,   170,   902,   166,   167,   168,   140,
+     160,   923,   148,   148,   148,   148,   140,   929,   168,   931,
+    1264,    78,   934,   148,   281,   148,   140,   140,     2,   148,
+     287,   923,   436,   945,    35,   173,   173,   105,  1282,   165,
+     170,   170,  1286,   165,   140,     2,   173,   140,   105,   165,
+     962,    25,   164,   110,    28,   173,   165,   164,   173,   146,
+     142,   491,   354,   785,    24,   175,   470,   511,    25,  1085,
+     474,    28,   984,    90,  1096,   897,  1096,   953,   963,  1092,
+     728,  1266,   339,   995,   996,   142,   998,   999,   902,  1001,
+    1002,   966,  1223,  1257,  1116,  1117,  1250,   354,  1120,  1121,
+      37,   508,    31,    -1,    78,  1017,  1018,    -1,  1020,    -1,
     1022,    -1,  1024,  1025,    -1,    -1,  1028,    -1,    -1,  1083,
       -1,    78,    -1,    -1,  1146,    -1,  1148,    -1,    -1,  1054,
     1055,   105,    -1,    -1,    -1,    -1,   110,    -1,    -1,    -1,
@@ -4454,24 +4496,24 @@ static const yytype_int16 yycheck[] =
       -1,    -1,    -1,    -1,   149,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,   159,    -1,    -1,   162,   163,   164,
       -1,    -1,    -1,   168,    -1,   170,    -1,   172,    -1,   174,
-      -1,    -1,   177,     3,     4,     5,     6,     7,     8,     9,
-      10,    -1,    -1,    -1,    14,    -1,    -1,    17,    18,    -1,
-      20,    -1,    22,    -1,    -1,    25,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    34,    -1,    36,    -1,    -1,    -1,
-      40,    41,    42,    -1,    -1,    45,    46,    -1,    -1,    -1,
-      50,    -1,    -1,    53,    -1,    -1,    56,    -1,    -1,    59,
-      60,    -1,    -1,    63,    -1,    65,    -1,    67,    68,    -1,
-      70,    71,    -1,    -1,    -1,    -1,    -1,    -1,    78,    -1,
-      80,    -1,    82,    -1,    -1,    -1,    -1,    87,    88,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    96,    97,    98,    99,
-     100,   101,    -1,   103,    -1,    -1,   106,    -1,    -1,    -1,
-     110,    -1,    -1,   113,    -1,    -1,   116,    -1,    -1,    -1,
-      -1,    -1,   122,    -1,   124,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-     140,   141,   142,   143,   144,    -1,    -1,    -1,    -1,   149,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   159,
-      -1,    -1,   162,   163,   164,    -1,    -1,    -1,   168,    -1,
-     170,    -1,   172,    -1,   174,    -1,     3,   177,     5,     6,
+      -1,     3,   177,     5,     6,     7,     8,     9,    10,    -1,
+      -1,    -1,    14,    -1,    -1,    17,    18,    -1,    20,    -1,
+      22,    -1,    -1,    25,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    34,    -1,    36,    -1,    -1,    -1,    40,    41,
+      42,    -1,    -1,    45,    46,    -1,    -1,    -1,    50,    -1,
+      -1,    53,    -1,    -1,    56,    -1,    -1,    59,    60,    -1,
+      -1,    63,    -1,    65,    -1,    67,    68,    -1,    70,    71,
+      -1,    -1,    -1,    -1,    -1,    -1,    78,    -1,    80,    -1,
+      82,    -1,    -1,    -1,    -1,    87,    88,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    96,    97,    98,    99,   100,   101,
+      -1,   103,    -1,    -1,   106,   107,   108,    -1,   110,    -1,
+      -1,   113,    -1,    -1,   116,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   124,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   140,   141,
+     142,   143,   144,    -1,    -1,    -1,    -1,   149,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,   159,    -1,    -1,
+     162,   163,   164,    -1,    -1,    -1,   168,    -1,   170,    -1,
+     172,    -1,   174,    -1,    -1,   177,     3,     4,     5,     6,
        7,     8,     9,    10,    -1,    -1,    -1,    14,    -1,    -1,
       17,    18,    -1,    20,    -1,    22,    -1,    -1,    25,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    34,    -1,    36,
@@ -4482,8 +4524,8 @@ static const yytype_int16 yycheck[] =
       -1,    78,    -1,    80,    -1,    82,    -1,    -1,    -1,    -1,
       87,    88,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    96,
       97,    98,    99,   100,   101,    -1,   103,    -1,    -1,   106,
-      -1,    -1,   109,   110,    -1,   112,   113,    -1,    -1,   116,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,
+      -1,    -1,    -1,   110,    -1,    -1,   113,    -1,    -1,   116,
+      -1,    -1,    -1,    -1,    -1,   122,    -1,   124,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,   140,   141,   142,   143,   144,    -1,    -1,
       -1,    -1,   149,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
@@ -4499,7 +4541,7 @@ static const yytype_int16 yycheck[] =
       -1,    -1,    -1,    -1,    78,    -1,    80,    -1,    82,    -1,
       -1,    -1,    -1,    87,    88,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    96,    97,    98,    99,   100,   101,    -1,   103,
-      -1,    -1,   106,   107,   108,    -1,   110,    -1,    -1,   113,
+      -1,    -1,   106,    -1,    -1,   109,   110,    -1,   112,   113,
       -1,    -1,   116,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
      124,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,   140,   141,   142,   143,
@@ -5280,36 +5322,80 @@ static const yytype_int16 yycheck[] =
      166,   167,   168,    -1,    -1,    19,    -1,    -1,    -1,    -1,
       -1,   177,    -1,    -1,    -1,    -1,    -1,    -1,    32,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      89,    -1,    -1,    -1,    93,    -1,    -1,    -1,    12,    -1,
-      -1,    -1,    -1,    -1,    -1,    19,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    32,    -1,
-      -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,
+      89,    -1,    -1,    -1,    93,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    12,    -1,    -1,    -1,    -1,    -1,
+      -1,    19,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    32,   124,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    89,    -1,    -1,    -1,    93,
       -1,   140,   141,    -1,   143,   144,   145,    -1,   147,   148,
      149,    -1,   151,   152,   153,   154,   155,    -1,   157,   158,
      159,   160,   161,   162,   163,    -1,    -1,   166,   167,   168,
-     124,   170,    -1,    -1,    -1,    89,    -1,    -1,   177,    93,
-      -1,    -1,    -1,    -1,    -1,    -1,   140,   141,    -1,   143,
+     124,   170,    -1,    -1,    -1,    -1,    -1,    -1,   177,    -1,
+      -1,    89,    -1,    -1,    -1,    93,   140,   141,    -1,   143,
      144,   145,    -1,   147,   148,   149,    -1,   151,   152,   153,
      154,   155,    -1,   157,   158,   159,   160,   161,   162,   163,
-     124,   165,   166,   167,   168,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,   177,    -1,    -1,   140,   141,    -1,   143,
-     144,   145,    -1,   147,   148,   149,    -1,   151,   152,   153,
-     154,   155,    -1,   157,   158,   159,   160,   161,   162,   163,
-      12,   165,   166,   167,   168,    -1,    -1,    19,    -1,    -1,
+      12,   165,   166,   167,   168,   123,   124,    19,    -1,    -1,
       -1,    -1,    -1,   177,    -1,    -1,    -1,    -1,    -1,    -1,
+      32,    -1,   140,   141,    -1,   143,   144,   145,    -1,   147,
+     148,   149,    -1,   151,   152,   153,   154,   155,    -1,   157,
+     158,   159,   160,   161,   162,   163,    12,    -1,   166,   167,
+     168,    -1,    -1,    19,    -1,    -1,    -1,    -1,    -1,   177,
+      -1,    -1,    -1,    -1,    -1,    -1,    32,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    89,    -1,    -1,
+      -1,    93,    -1,    -1,    -1,    -1,    12,    13,    -1,    -1,
+     102,    -1,    -1,    19,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    32,    -1,    -1,    -1,
+      -1,    -1,   124,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    89,    -1,    -1,    -1,    93,   140,   141,
+      -1,   143,   144,   145,    -1,   147,   148,   149,    -1,   151,
+     152,   153,   154,   155,    -1,   157,   158,   159,   160,   161,
+     162,   163,    -1,    -1,   166,   167,   168,    -1,   124,    -1,
+      -1,    -1,    -1,    89,    -1,   177,    -1,    93,    -1,    -1,
+      -1,    -1,    -1,    -1,   140,   141,    -1,   143,   144,   145,
+      -1,   147,   148,   149,    -1,   151,   152,   153,   154,   155,
+      -1,   157,   158,   159,   160,   161,   162,   163,   124,    -1,
+     166,   167,   168,    -1,    -1,    -1,    -1,   173,    -1,    -1,
+      -1,   177,    -1,    -1,   140,   141,    -1,   143,   144,   145,
+      32,   147,   148,   149,    -1,   151,   152,   153,   154,   155,
+      -1,   157,   158,   159,   160,   161,   162,   163,    12,    -1,
+     166,   167,   168,    -1,    -1,    19,    -1,    -1,    -1,    -1,
+      -1,   177,    -1,    -1,    -1,    -1,    -1,    -1,    32,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    89,    -1,    -1,
+      -1,    93,    -1,    12,    -1,    -1,    -1,    -1,    -1,    -1,
+      19,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   124,    -1,    -1,    89,    -1,    -1,    -1,    93,
+      -1,    -1,    -1,    12,    -1,    -1,    -1,    -1,   140,   141,
+      19,   143,   144,   145,    -1,   147,   148,   149,    -1,   151,
+     152,   153,   154,    32,    -1,   157,   158,   159,   160,   161,
+     124,   163,    -1,    -1,   166,   167,   168,    -1,    -1,    -1,
+      89,    -1,    -1,    -1,    93,   177,   140,   141,    -1,   143,
+     144,   145,    -1,   147,   148,   149,    -1,   151,   152,   153,
+     154,   155,   156,   157,   158,   159,   160,   161,   162,   163,
+      -1,   120,   166,   167,   168,   124,    -1,    -1,    -1,    -1,
+      89,    -1,    -1,   177,    93,    -1,    -1,    -1,    -1,    -1,
+      -1,   140,   141,    -1,   143,   144,   145,    -1,   147,   148,
+     149,    -1,   151,   152,   153,   154,   155,    -1,   157,   158,
+     159,   160,   161,   162,   163,   124,    -1,   166,   167,   168,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   177,    -1,
+      -1,   140,   141,    -1,   143,   144,   145,    -1,   147,   148,
+     149,    -1,   151,   152,   153,   154,   155,    -1,   157,   158,
+     159,   160,   161,   162,   163,    -1,   165,   166,   167,   168,
+      12,    13,    -1,    -1,    -1,    -1,    -1,    19,   177,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    22,
       -1,    -1,    -1,    26,    27,    -1,    -1,    -1,    -1,    -1,
       12,    -1,    -1,    36,    -1,    38,    39,    19,    -1,    -1,
       -1,    44,    -1,    -1,    -1,    -1,    -1,    -1,    51,    -1,
-      32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      32,    -1,    -1,    35,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    66,    -1,    -1,    -1,    89,    -1,    -1,
       12,    93,    -1,    -1,    77,    -1,    79,    19,    -1,    -1,
       -1,    -1,    85,    -1,    -1,    88,    -1,    90,    -1,    -1,
       32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,   123,   124,    -1,    -1,    -1,   109,    89,    -1,   112,
+      -1,    -1,   124,    -1,    -1,    -1,   109,    89,    -1,   112,
       -1,    93,   115,    -1,    -1,    -1,    -1,    -1,   140,   141,
-     102,   143,   144,   145,    -1,   147,   148,   149,    -1,   151,
+      -1,   143,   144,   145,    -1,   147,   148,   149,    -1,   151,
      152,   153,   154,   155,    -1,   157,   158,   159,   160,   161,
      162,   163,   124,    -1,   166,   167,   168,    89,    -1,    -1,
       -1,    93,    -1,    -1,    -1,   177,    -1,    -1,   140,   141,
@@ -5319,291 +5405,221 @@ static const yytype_int16 yycheck[] =
       -1,    -1,    -1,    -1,    -1,   177,    -1,    -1,   140,   141,
       -1,   143,   144,   145,    -1,   147,   148,   149,    -1,   151,
      152,   153,   154,   155,    -1,   157,   158,   159,   160,   161,
-     162,   163,    12,    13,   166,   167,   168,    -1,    -1,    19,
-      -1,   173,    -1,    -1,    -1,   177,    22,    -1,    -1,    -1,
-      26,    27,    32,    -1,    -1,    31,    -1,    -1,    -1,    -1,
-      36,    -1,    38,    39,    -1,    -1,    -1,    -1,    44,    -1,
-      -1,    -1,    12,    -1,    -1,    51,    -1,    -1,    -1,    19,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+     162,   163,    12,    -1,   166,   167,   168,    -1,    -1,    19,
+      -1,   173,    -1,    -1,    -1,   177,    -1,    -1,    -1,    -1,
       -1,    -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    77,    -1,    79,    -1,    81,    -1,    83,    -1,    89,
-      86,    -1,    88,    93,    90,    -1,    -1,    12,    -1,    -1,
-      -1,    -1,    -1,    -1,    19,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,   109,    -1,    -1,   112,    32,    -1,   115,
-      -1,    -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,    89,
-      -1,    -1,    -1,    93,    -1,    -1,    -1,    -1,    -1,    -1,
-     140,   141,    -1,   143,   144,   145,    -1,   147,   148,   149,
-      -1,   151,   152,   153,   154,   155,    -1,   157,   158,   159,
-     160,   161,   162,   163,   124,    -1,   166,   167,   168,   165,
-      -1,    -1,    -1,    -1,    89,   171,    -1,   177,    93,    -1,
-     140,   141,    -1,   143,   144,   145,    -1,   147,   148,   149,
-      -1,   151,   152,   153,   154,   155,   156,   157,   158,   159,
-     160,   161,   162,   163,    12,   120,   166,   167,   168,   124,
-      -1,    19,    -1,    -1,    -1,    -1,    -1,   177,    -1,    -1,
-      -1,    -1,    -1,    -1,    32,   140,   141,    -1,   143,   144,
-     145,    -1,   147,   148,   149,    -1,   151,   152,   153,   154,
-     155,    -1,   157,   158,   159,   160,   161,   162,   163,    12,
-      13,   166,   167,   168,    -1,    -1,    19,    -1,    -1,    -1,
-      -1,    -1,   177,    -1,    -1,    -1,    -1,    -1,    -1,    32,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    89,    -1,    -1,    -1,    93,    -1,    -1,    -1,    12,
-      -1,    -1,    -1,    -1,    -1,    -1,    19,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    32,
-      -1,    -1,    35,    -1,    -1,    -1,   124,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    89,    -1,    -1,    -1,
-      93,    -1,   140,   141,    -1,   143,   144,   145,    -1,   147,
-     148,   149,    -1,   151,   152,   153,   154,   155,    -1,   157,
-     158,   159,   160,   161,   162,   163,    -1,   165,   166,   167,
-     168,   124,    -1,    -1,    -1,    -1,    89,    -1,    -1,   177,
-      93,    -1,    -1,    -1,    -1,    -1,    -1,   140,   141,    -1,
-     143,   144,   145,    -1,   147,   148,   149,    -1,   151,   152,
-     153,   154,   155,    -1,   157,   158,   159,   160,   161,   162,
-     163,   124,    -1,   166,   167,   168,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,   177,    -1,    -1,   140,   141,    -1,
-     143,   144,   145,    -1,   147,   148,   149,    -1,   151,   152,
-     153,   154,   155,    -1,   157,   158,   159,   160,   161,   162,
-     163,    12,    -1,   166,   167,   168,    -1,    -1,    19,    -1,
-      -1,    -1,    -1,    -1,   177,    -1,    -1,    -1,    -1,    -1,
-      -1,    32,    22,    -1,    -1,    -1,    26,    27,    -1,    -1,
-      -1,    31,    -1,    -1,    -1,    -1,    36,    -1,    38,    39,
-      -1,    12,    -1,    -1,    44,    -1,    -1,    -1,    19,    -1,
-      -1,    51,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    77,    89,    79,
-      -1,    81,    93,    83,    -1,    -1,    86,    12,    88,    -1,
-      90,    -1,    -1,    -1,    19,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    32,    -1,   109,
-      -1,    -1,   112,   124,    -1,   115,    -1,    -1,    89,    -1,
-      -1,    -1,    93,    -1,    -1,    -1,    -1,    -1,    -1,   140,
-     141,    -1,   143,   144,   145,    -1,   147,   148,   149,    -1,
-     151,   152,   153,   154,   155,    -1,   157,   158,   159,   160,
-     161,   162,   163,   124,    -1,   166,   167,   168,    -1,    -1,
-      -1,    -1,   173,    -1,    89,   165,   177,    -1,    93,   140,
-     141,   171,   143,   144,   145,    -1,   147,   148,   149,    -1,
-     151,   152,   153,   154,   155,    -1,   157,   158,   159,   160,
-     161,   162,   163,    12,    -1,   166,   167,   168,   123,   124,
-      19,    -1,   173,    -1,    -1,    -1,   177,    -1,    -1,    -1,
-      -1,    -1,    -1,    32,    33,   140,   141,    -1,   143,   144,
-     145,    -1,   147,   148,   149,    -1,   151,   152,   153,   154,
-     155,    -1,   157,   158,   159,   160,   161,   162,   163,    12,
-      -1,   166,   167,   168,    -1,    -1,    19,    -1,    -1,    -1,
-      -1,    -1,   177,    -1,    -1,    -1,    -1,    -1,    -1,    32,
-      33,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      89,    -1,    -1,    -1,    93,    -1,    -1,    -1,    -1,    12,
-      -1,    -1,    -1,    -1,    -1,    -1,    19,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    32,
-      -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    89,    -1,    -1,    -1,
-      93,   140,   141,    -1,   143,   144,   145,    -1,   147,   148,
-     149,    -1,   151,   152,   153,   154,   155,    -1,   157,   158,
-     159,   160,   161,   162,   163,    -1,    -1,   166,   167,   168,
-      -1,   124,    -1,    -1,    -1,    -1,    89,    -1,   177,    -1,
-      93,    -1,    -1,    -1,    -1,    -1,    -1,   140,   141,    -1,
-     143,   144,   145,    -1,   147,   148,   149,    -1,   151,   152,
-     153,   154,   155,    -1,   157,   158,   159,   160,   161,   162,
-     163,   124,    -1,   166,   167,   168,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,   177,    -1,    -1,   140,   141,    -1,
-     143,   144,   145,    -1,   147,   148,   149,    -1,   151,   152,
-     153,   154,   155,    -1,   157,   158,   159,   160,   161,   162,
-     163,    12,    13,   166,   167,   168,    -1,    -1,    19,    -1,
-      -1,    -1,   175,    -1,   177,    -1,    -1,    -1,    -1,    -1,
-      -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    12,    -1,    -1,    -1,    -1,    -1,    -1,    19,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    89,    -1,
-      -1,    12,    93,    -1,    -1,    -1,    -1,    -1,    19,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,    89,    -1,
-      -1,    -1,    93,    -1,    -1,    -1,    -1,    -1,    -1,   140,
-     141,   102,   143,   144,   145,    -1,   147,   148,   149,    -1,
-     151,   152,   153,   154,   155,    -1,   157,   158,   159,   160,
-     161,   162,   163,   124,    -1,   166,   167,   168,    89,    -1,
-      -1,    -1,    93,    -1,    -1,    -1,   177,    -1,    -1,   140,
-     141,   102,   143,   144,   145,    -1,   147,   148,   149,    -1,
-     151,   152,   153,   154,   155,    -1,   157,   158,   159,   160,
-     161,   162,   163,   124,    -1,   166,   167,   168,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   177,    -1,    -1,   140,
-     141,    -1,   143,   144,   145,    -1,   147,   148,   149,    -1,
-     151,   152,   153,   154,   155,    -1,   157,   158,   159,   160,
-     161,   162,   163,    12,    13,   166,   167,   168,    -1,    -1,
-      19,    -1,    -1,    -1,    -1,    -1,   177,    -1,    -1,    -1,
-      -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    12,    -1,    -1,    -1,    -1,    -1,    -1,
       19,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      89,    -1,    -1,    12,    93,    -1,    -1,    -1,    -1,    -1,
-      19,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    89,
+      -1,    -1,    -1,    93,    12,    -1,    -1,    -1,    -1,    -1,
+      -1,    19,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    32,    33,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,    -1,
       89,    -1,    -1,    -1,    93,    -1,    -1,    -1,    -1,    -1,
+     140,   141,    -1,   143,   144,   145,    -1,   147,   148,   149,
+      -1,   151,   152,   153,   154,   155,    -1,   157,   158,   159,
+     160,   161,   162,   163,   123,   124,   166,   167,   168,    -1,
+      -1,    89,    -1,   173,    -1,    93,    -1,   177,    -1,    -1,
       -1,   140,   141,    -1,   143,   144,   145,    -1,   147,   148,
      149,    -1,   151,   152,   153,   154,   155,    -1,   157,   158,
-     159,   160,   161,   162,   163,   124,    -1,   166,   167,   168,
-      89,    -1,    -1,    -1,    93,    -1,    -1,    -1,   177,    -1,
-      -1,   140,   141,    -1,   143,   144,   145,    -1,   147,   148,
-     149,    -1,   151,   152,   153,   154,   155,    -1,   157,   158,
-     159,   160,   161,   162,   163,   124,    -1,   166,   167,   168,
-      -1,    -1,    -1,    -1,   173,    -1,    -1,    -1,   177,    -1,
-      -1,   140,   141,    -1,   143,   144,   145,    -1,   147,   148,
-     149,    -1,   151,   152,   153,   154,   155,    -1,   157,   158,
-     159,   160,   161,   162,   163,    12,     3,   166,   167,   168,
-      -1,     8,    19,    -1,    -1,    -1,   175,    -1,   177,    -1,
-      17,    18,    -1,    20,    -1,    32,    -1,    -1,    25,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    34,    -1,    -1,
-      -1,    -1,    -1,    40,    -1,    12,    -1,    -1,    -1,    46,
-      -1,    -1,    19,    50,    -1,    -1,    53,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    32,    63,    -1,    -1,    -1,
-      -1,    -1,    -1,    70,    71,    -1,    -1,    -1,    -1,    -1,
-      -1,    78,    89,    -1,    -1,    12,    93,    -1,    -1,    -1,
-      87,    -1,    19,    -1,    -1,   102,    -1,    -1,    -1,    96,
-      97,    -1,    99,    -1,   101,    32,   103,    -1,    -1,   106,
-      -1,    -1,    -1,   110,    -1,    -1,   113,   124,    -1,   116,
-      -1,    -1,    89,    -1,    -1,    -1,    93,    -1,    -1,    -1,
-      -1,    -1,    -1,   140,   141,   102,   143,   144,   145,    -1,
+     159,   160,   161,   162,   163,    -1,   124,   166,   167,   168,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   177,    -1,
+      -1,    -1,   140,   141,    -1,   143,   144,   145,    -1,   147,
+     148,   149,    -1,   151,   152,   153,   154,   155,    -1,   157,
+     158,   159,   160,   161,   162,   163,    12,    -1,   166,   167,
+     168,    -1,    -1,    19,    -1,    -1,    -1,    -1,    -1,   177,
+      22,    -1,    -1,    -1,    26,    27,    32,    33,    -1,    31,
+      -1,    -1,    -1,    -1,    36,    -1,    38,    39,    -1,    -1,
+      -1,    -1,    44,    -1,    -1,    -1,    12,    -1,    -1,    51,
+      -1,    -1,    -1,    19,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    32,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    77,    -1,    79,    -1,    81,
+      -1,    83,    -1,    89,    86,    -1,    88,    93,    90,    -1,
+      -1,    12,    13,    -1,    -1,    -1,    -1,    -1,    19,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,   109,    -1,    -1,
+     112,    32,    -1,   115,    -1,    -1,    -1,    -1,   124,    -1,
+      -1,    -1,    -1,    89,    -1,    -1,    -1,    93,    -1,    -1,
+      -1,    -1,    -1,    -1,   140,   141,    -1,   143,   144,   145,
+      -1,   147,   148,   149,    -1,   151,   152,   153,   154,   155,
+      -1,   157,   158,   159,   160,   161,   162,   163,   124,    -1,
+     166,   167,   168,   165,    -1,    -1,    -1,    -1,    89,   171,
+      -1,   177,    93,    -1,   140,   141,    -1,   143,   144,   145,
+      -1,   147,   148,   149,    -1,   151,   152,   153,   154,   155,
+      -1,   157,   158,   159,   160,   161,   162,   163,    12,    -1,
+     166,   167,   168,   124,    -1,    19,    -1,    -1,    -1,   175,
+      -1,   177,    -1,    -1,    -1,    -1,    -1,    -1,    32,   140,
+     141,    -1,   143,   144,   145,    -1,   147,   148,   149,    -1,
+     151,   152,   153,   154,   155,    -1,   157,   158,   159,   160,
+     161,   162,   163,    -1,    -1,   166,   167,   168,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   177,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    12,    89,    -1,    -1,    -1,    93,
+      -1,    19,    -1,    -1,    -1,    -1,    -1,    -1,   102,    -1,
+      -1,    -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+     124,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   140,   141,    -1,   143,
+     144,   145,    -1,   147,   148,   149,    -1,   151,   152,   153,
+     154,   155,    -1,   157,   158,   159,   160,   161,   162,   163,
+      -1,    89,   166,   167,   168,    93,    -1,    -1,    -1,    12,
+      13,    -1,    -1,   177,   102,    -1,    19,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    32,
+      -1,    -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   140,   141,    -1,   143,   144,   145,    -1,   147,
+     148,   149,    -1,   151,   152,   153,   154,   155,    -1,   157,
+     158,   159,   160,   161,   162,   163,    -1,    -1,   166,   167,
+     168,    -1,    -1,    -1,    -1,    12,    89,    -1,    -1,   177,
+      93,    -1,    19,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   124,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,   140,   141,    -1,
+     143,   144,   145,    -1,   147,   148,   149,    -1,   151,   152,
+     153,   154,   155,    -1,   157,   158,   159,   160,   161,   162,
+     163,    12,    89,   166,   167,   168,    93,    -1,    19,    -1,
+      -1,    -1,    -1,    -1,   177,    -1,    -1,    -1,    -1,    -1,
+      -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,   140,   141,    -1,   143,   144,   145,    -1,
      147,   148,   149,    -1,   151,   152,   153,   154,   155,    -1,
-     157,   158,   159,   160,   161,   162,   163,   124,    -1,   166,
-     167,   168,    89,    -1,    -1,    -1,    93,    -1,    -1,    -1,
-     177,    -1,    -1,   140,   141,   102,   143,   144,   145,    -1,
-     147,   148,   149,    -1,   151,   152,   153,   154,   155,    -1,
-     157,   158,   159,   160,   161,   162,   163,   124,    -1,   166,
-     167,   168,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-     177,    -1,    -1,   140,   141,    -1,   143,   144,   145,    -1,
-     147,   148,   149,    -1,   151,   152,   153,   154,   155,    -1,
-     157,   158,   159,   160,   161,   162,   163,    12,     3,   166,
-     167,   168,    -1,    -1,    19,    -1,    -1,    -1,    -1,    -1,
-     177,    -1,    17,    18,    -1,    20,    -1,    32,    -1,    -1,
-      25,    -1,    -1,    -1,    -1,    -1,    31,    -1,    -1,    34,
-      -1,    -1,    -1,    -1,    -1,    40,    -1,    12,    -1,    -1,
-      -1,    46,    -1,    -1,    19,    50,    -1,    -1,    53,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    32,    63,    -1,
-      -1,    -1,    -1,    -1,    -1,    70,    71,    -1,    -1,    -1,
-      -1,    -1,    -1,    78,    89,    -1,    -1,    12,    93,    -1,
-      -1,    -1,    87,    -1,    19,    -1,    -1,   102,    -1,    -1,
-      -1,    96,    97,    -1,    99,    -1,   101,    32,   103,    -1,
-      -1,   106,    -1,    -1,    -1,   110,    -1,    -1,   113,   124,
-      -1,   116,    -1,    -1,    89,    -1,    -1,    -1,    93,    -1,
-      -1,    -1,    -1,    -1,    -1,   140,   141,   102,   143,   144,
-     145,    -1,   147,   148,   149,    -1,   151,   152,   153,   154,
-     155,    -1,   157,   158,   159,   160,   161,   162,   163,   124,
-      -1,   166,   167,   168,    89,    -1,    -1,    -1,    93,    -1,
-      -1,    -1,   177,    -1,    -1,   140,   141,   102,   143,   144,
-     145,    -1,   147,   148,   149,    -1,   151,   152,   153,   154,
-     155,    -1,   157,   158,   159,   160,   161,   162,   163,   124,
-      -1,   166,   167,   168,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,   177,    -1,    -1,   140,   141,    -1,   143,   144,
+     157,   158,   159,   160,   161,   162,   163,    12,    89,   166,
+     167,   168,    93,    -1,    19,    -1,   173,    -1,    -1,    -1,
+     177,    -1,    -1,    -1,    -1,    -1,    -1,    32,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   140,
+     141,    -1,   143,   144,   145,    -1,   147,   148,   149,    -1,
+     151,   152,   153,   154,   155,    -1,   157,   158,   159,   160,
+     161,   162,   163,    12,    89,   166,   167,   168,    93,    -1,
+      19,    -1,    -1,    -1,   175,    -1,   177,   102,    -1,    -1,
+      -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   124,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,   140,   141,    -1,   143,   144,
      145,    -1,   147,   148,   149,    -1,   151,   152,   153,   154,
      155,    -1,   157,   158,   159,   160,   161,   162,   163,    12,
-       3,   166,   167,   168,    -1,    -1,    19,    -1,    -1,    -1,
-      -1,    -1,   177,    -1,    17,    18,    -1,    20,    -1,    32,
-      -1,    -1,    25,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    34,    -1,    -1,    -1,    -1,    -1,    40,    -1,    12,
-      -1,    -1,    -1,    46,    -1,    -1,    19,    50,    61,    -1,
-      53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    32,
-      63,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    -1,
-      -1,    -1,    -1,    -1,    -1,    78,    89,    -1,    -1,    12,
-      93,    -1,    -1,    -1,    87,    -1,    19,    -1,    -1,    -1,
-      -1,    -1,    -1,    96,    97,    -1,    99,    -1,   101,    32,
-     103,    -1,    -1,   106,    -1,    -1,    -1,   110,    -1,    -1,
-     113,   124,    -1,   116,    -1,    -1,    89,    -1,    -1,    -1,
-      93,    -1,    -1,    -1,    -1,    -1,    -1,   140,   141,    -1,
+      89,   166,   167,   168,    93,    -1,    19,    -1,    -1,    -1,
+      -1,    -1,   177,   102,    -1,    -1,    -1,    -1,    -1,    32,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   140,   141,    -1,   143,   144,   145,    -1,   147,   148,
+     149,    -1,   151,   152,   153,   154,   155,    -1,   157,   158,
+     159,   160,   161,   162,   163,    12,    89,   166,   167,   168,
+      93,    -1,    19,    -1,    -1,    -1,    -1,    -1,   177,   102,
+      -1,    -1,    -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   124,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,   140,   141,    -1,
      143,   144,   145,    -1,   147,   148,   149,    -1,   151,   152,
      153,   154,   155,    -1,   157,   158,   159,   160,   161,   162,
-     163,   124,    -1,   166,   167,   168,    89,    -1,    -1,    -1,
-      93,    -1,    -1,    -1,   177,    -1,    -1,   140,   141,    -1,
-     143,   144,   145,    -1,   147,   148,   149,    -1,   151,   152,
+     163,    12,    89,   166,   167,   168,    93,    -1,    19,    -1,
+      -1,    -1,    -1,    -1,   177,   102,    -1,    -1,    -1,    -1,
+      -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,   140,   141,    -1,   143,   144,   145,    -1,
+     147,   148,   149,    -1,   151,   152,   153,   154,   155,    -1,
+     157,   158,   159,   160,   161,   162,   163,    12,    89,   166,
+     167,   168,    93,    -1,    19,    -1,    -1,    -1,    -1,    -1,
+     177,   102,    -1,    -1,    -1,    -1,    -1,    32,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   140,
+     141,    -1,   143,   144,   145,    -1,   147,   148,   149,    -1,
+     151,   152,   153,   154,   155,    -1,   157,   158,   159,   160,
+     161,   162,   163,    12,    89,   166,   167,   168,    93,    -1,
+      19,    -1,    -1,    -1,    -1,    -1,   177,   102,    -1,    -1,
+      -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   124,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    61,    -1,    -1,   140,   141,    -1,   143,   144,
+     145,    -1,   147,   148,   149,    -1,   151,   152,   153,   154,
+     155,    -1,   157,   158,   159,   160,   161,   162,   163,    12,
+      89,   166,   167,   168,    93,    -1,    19,    -1,    -1,    -1,
+      -1,    -1,   177,    -1,    -1,    -1,    -1,    -1,    -1,    32,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   140,   141,    -1,   143,   144,   145,    -1,   147,   148,
+     149,    -1,   151,   152,   153,   154,   155,    -1,   157,   158,
+     159,   160,   161,   162,   163,    12,    89,   166,   167,   168,
+      93,    -1,    19,    -1,    -1,    -1,    -1,    -1,   177,    -1,
+      -1,    -1,    -1,    -1,    -1,    32,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    22,    -1,    -1,    -1,    26,    27,
+      -1,   124,    -1,    31,    -1,    -1,    -1,    -1,    36,    -1,
+      38,    39,    -1,    -1,    -1,    -1,    44,   140,   141,    -1,
+     143,   144,   145,    51,   147,   148,   149,    -1,   151,   152,
      153,   154,   155,    -1,   157,   158,   159,   160,   161,   162,
-     163,   124,    -1,   166,   167,   168,    -1,    -1,    -1,    -1,
-      -1,    -1,   175,    -1,   177,    -1,    -1,   140,   141,    -1,
-     143,   144,   145,    -1,   147,   148,   149,    -1,   151,   152,
-     153,   154,   155,    -1,   157,   158,   159,   160,   161,   162,
-     163,    12,    -1,   166,   167,   168,    -1,    -1,    19,    -1,
-      -1,    -1,    -1,    -1,   177,    22,    -1,    -1,    -1,    26,
-      27,    32,    -1,    -1,    31,    -1,    -1,    -1,    -1,    36,
-      -1,    38,    39,    -1,    -1,    -1,    -1,    44,    -1,    -1,
-      -1,    -1,    -1,    -1,    51,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      77,    -1,    79,    -1,    81,    -1,    83,    -1,    89,    86,
-      -1,    88,    93,    90,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,   109,    -1,    -1,   112,    22,    -1,   115,    -1,
+     163,    12,    89,   166,   167,   168,    93,    -1,    19,    77,
+      -1,    79,   175,    81,   177,    83,    -1,    -1,    86,    -1,
+      88,    32,    90,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,
+      -1,   109,    -1,    -1,   112,    -1,    -1,   115,    -1,    -1,
+      -1,    -1,    -1,   140,   141,    -1,   143,   144,   145,    -1,
+     147,   148,   149,    -1,   151,   152,   153,   154,   155,    -1,
+     157,   158,   159,   160,   161,   162,   163,    -1,    89,   166,
+     167,   168,    93,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+     177,    -1,    -1,    -1,    -1,    -1,    -1,   165,    -1,    -1,
+      -1,    -1,    -1,   171,    -1,    -1,    22,    -1,    -1,    -1,
       26,    27,    -1,   124,    -1,    31,    -1,    -1,    -1,    -1,
       36,    -1,    38,    39,    -1,    -1,    -1,    -1,    44,   140,
      141,    -1,   143,   144,   145,    51,   147,   148,   149,    -1,
      151,   152,   153,   154,   155,    -1,   157,   158,   159,   160,
-     161,   162,   163,    -1,    -1,   166,   167,   168,   165,    -1,
-      -1,    77,    -1,    79,   171,    81,   177,    83,    -1,    -1,
+     161,   162,   163,    -1,    -1,   166,   167,   168,    -1,    -1,
+      -1,    77,    -1,    79,    -1,    81,   177,    83,    -1,    -1,
       86,    -1,    88,    22,    90,    -1,    -1,    26,    27,    -1,
       -1,    -1,    31,    -1,    -1,    -1,    -1,    36,    -1,    38,
       39,    -1,    -1,   109,    -1,    44,   112,    -1,    -1,   115,
       -1,    -1,    51,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    32,    -1,    -1,    77,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    77,    -1,
       79,    -1,    81,    -1,    83,    -1,    -1,    86,    -1,    88,
       -1,    90,    22,    -1,    -1,    -1,    26,    27,    -1,   165,
       -1,    31,    -1,    -1,    -1,   171,    36,    -1,    38,    39,
      109,    -1,    -1,   112,    44,    -1,   115,    -1,    -1,    -1,
       -1,    51,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    89,    -1,    -1,    -1,    93,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    77,    -1,    79,
-      -1,    81,    -1,    83,    -1,    32,    86,    -1,    88,    -1,
-      90,    -1,    -1,    -1,    -1,    -1,   165,   124,    -1,    -1,
-      -1,    -1,   171,    -1,    -1,    -1,    -1,    -1,    -1,   109,
-      -1,    -1,   112,   140,   141,   115,   143,   144,   145,    -1,
-     147,   148,   149,    -1,   151,   152,   153,   154,    -1,    -1,
-     157,   158,   159,   160,   161,   162,   163,    -1,    -1,   166,
-     167,   168,    89,    -1,    -1,    -1,    93,    -1,    -1,    -1,
-     177,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,   165,    -1,    -1,    -1,    -1,
-      -1,   171,    -1,    -1,    -1,    -1,    -1,   124,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,   140,   141,    -1,   143,   144,   145,    -1,
-     147,   148,   149,    -1,   151,   152,   153,   154,    -1,    -1,
-     157,   158,   159,   160,   161,     1,   163,     3,    -1,   166,
-     167,   168,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-     177,    17,    18,    -1,    20,    -1,    -1,    -1,    -1,    25,
-      -1,    -1,    -1,    -1,    -1,    31,    -1,    -1,    34,    -1,
-      -1,    -1,    -1,    -1,    40,    -1,    -1,    -1,    -1,    -1,
-      46,    -1,    -1,    -1,    50,    -1,    -1,    53,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    63,    -1,    -1,
-      -1,    -1,    -1,    -1,    70,    71,    -1,    -1,    -1,    -1,
-      -1,    -1,    78,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    87,    -1,    -1,     3,    -1,    -1,    -1,    -1,    -1,
-      96,    97,    -1,    99,    -1,   101,    -1,   103,    17,    18,
-     106,    20,    -1,    -1,   110,    -1,    25,   113,    27,    -1,
-     116,    -1,    -1,    -1,    -1,    34,    -1,    -1,    -1,    -1,
-      -1,    40,    -1,    -1,    -1,    -1,    -1,    46,    -1,    -1,
-      -1,    50,    -1,    -1,    53,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    63,    -1,    -1,    -1,    -1,    -1,
-      -1,    70,    71,    -1,    -1,    -1,    -1,    -1,    -1,    78,
-      79,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    87,    -1,
-      -1,    90,    -1,    -1,    -1,    -1,    -1,    96,    97,    -1,
-      99,    -1,   101,    -1,   103,     3,    -1,   106,    -1,    -1,
-      -1,   110,    -1,    -1,   113,    -1,   115,   116,    -1,    17,
-      18,    -1,    20,    -1,    -1,    -1,    -1,    25,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    34,    -1,    -1,    -1,
-      -1,    -1,    40,    -1,    -1,    -1,    -1,    -1,    46,    -1,
-      -1,    -1,    50,    -1,    -1,    53,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    63,    -1,    -1,    -1,    -1,
-      -1,    -1,    70,    71,    -1,    -1,    -1,    -1,    -1,    -1,
-      78,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    87,
-      -1,    -1,     3,    -1,    -1,    -1,    -1,    -1,    96,    97,
-      -1,    99,    -1,   101,    -1,   103,    17,    18,   106,    20,
-      -1,    -1,   110,    -1,    25,   113,    -1,    -1,   116,    -1,
-      -1,    -1,    -1,    34,    -1,    -1,    -1,    -1,    -1,    40,
-      -1,    -1,    -1,    -1,    -1,    46,    -1,    -1,    -1,    50,
-      -1,    -1,    53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    63,    -1,    -1,    -1,    -1,    -1,    -1,    70,
-      71,    -1,    -1,    -1,    -1,    -1,    -1,    78,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    87,    -1,    -1,     3,
-      -1,    -1,    -1,    -1,    -1,    96,    97,    -1,    99,    -1,
-     101,    -1,   103,    17,    18,   106,    20,    -1,    -1,   110,
-      -1,    25,   113,    -1,    -1,   116,    -1,    -1,    -1,    -1,
+      -1,    -1,    32,    -1,    -1,    -1,    -1,    77,    -1,    79,
+      -1,    81,    -1,    83,    -1,    -1,    86,    -1,    88,    22,
+      90,    -1,    -1,    26,    27,    -1,   165,    -1,    31,    -1,
+      -1,    -1,   171,    36,    -1,    38,    39,    -1,    -1,   109,
+      -1,    44,   112,    -1,    -1,   115,    -1,    -1,    51,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    89,
+      -1,    -1,    -1,    93,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    77,    -1,    79,    -1,    81,    -1,
+      83,    -1,    -1,    86,    -1,    88,    -1,    90,    -1,    -1,
+      -1,    -1,    -1,    -1,   124,   165,    -1,    -1,    -1,    -1,
+      -1,   171,    -1,    -1,    -1,    -1,   109,    -1,    -1,   112,
+     140,   141,   115,   143,   144,   145,    -1,   147,   148,   149,
+      -1,   151,   152,   153,   154,    -1,    -1,   157,   158,   159,
+     160,   161,   162,   163,    -1,    -1,   166,   167,   168,     1,
+      -1,     3,    -1,    -1,    -1,    -1,    -1,   177,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    17,    18,    -1,    20,    -1,
+      -1,    -1,   165,    25,    -1,    -1,    -1,    -1,   171,    31,
+      -1,    -1,    34,    -1,    -1,    -1,    -1,    -1,    40,    -1,
+      -1,    -1,    -1,    -1,    46,    -1,    -1,    -1,    50,    -1,
+      -1,    53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    63,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,
+      -1,    -1,    -1,    -1,    -1,    -1,    78,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    87,    -1,    -1,     3,    -1,
+      -1,    -1,    -1,    -1,    96,    97,    -1,    99,    -1,   101,
+      -1,   103,    17,    18,   106,    20,    -1,    -1,   110,    -1,
+      25,   113,    27,    -1,   116,    -1,    -1,    -1,    -1,    34,
+      -1,    -1,    -1,    -1,    -1,    40,    -1,    -1,    -1,    -1,
+      -1,    46,    -1,    -1,    -1,    50,    -1,    -1,    53,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    63,    -1,
+      -1,    -1,    -1,    -1,    -1,    70,    71,    -1,    -1,    -1,
+      -1,    -1,    -1,    78,    79,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    87,    -1,    -1,    90,    -1,    -1,    -1,    -1,
+      -1,    96,    97,    -1,    99,    -1,   101,    -1,   103,     3,
+      -1,   106,    -1,    -1,     8,   110,    -1,    -1,   113,    -1,
+     115,   116,    -1,    17,    18,    -1,    20,    -1,    -1,    -1,
+      -1,    25,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       34,    -1,    -1,    -1,    -1,    -1,    40,    -1,    -1,    -1,
       -1,    -1,    46,    -1,    -1,    -1,    50,    -1,    -1,    53,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    63,
@@ -5612,7 +5628,7 @@ static const yytype_int16 yycheck[] =
       -1,    -1,    -1,    87,    -1,    -1,     3,    -1,    -1,    -1,
       -1,    -1,    96,    97,    -1,    99,    -1,   101,    -1,   103,
       17,    18,   106,    20,    -1,    -1,   110,    -1,    25,   113,
-      -1,    -1,   116,    -1,    -1,    -1,    -1,    34,    -1,    -1,
+      -1,    -1,   116,    -1,    31,    -1,    -1,    34,    -1,    -1,
       -1,    -1,    -1,    40,    -1,    -1,    -1,    -1,    -1,    46,
       -1,    -1,    -1,    50,    -1,    -1,    53,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    63,    -1,    -1,    -1,
@@ -5627,13 +5643,57 @@ static const yytype_int16 yycheck[] =
       -1,    -1,    -1,    63,    -1,    -1,    -1,    -1,    -1,    -1,
       70,    71,    -1,    -1,    -1,    -1,    -1,    -1,    78,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    87,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    96,    97,    -1,    99,
-      -1,   101,    -1,   103,    -1,    -1,   106,    -1,    -1,    -1,
-     110,    -1,    -1,   113,    -1,    -1,   116
+       3,    -1,    -1,    -1,    -1,    -1,    96,    97,    -1,    99,
+      -1,   101,    -1,   103,    17,    18,   106,    20,    -1,    -1,
+     110,    -1,    25,   113,    -1,    -1,   116,    -1,    -1,    -1,
+      -1,    34,    -1,    -1,    -1,    -1,    -1,    40,    -1,    -1,
+      -1,    -1,    -1,    46,    -1,    -1,    -1,    50,    -1,    -1,
+      53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      63,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,    -1,
+      -1,    -1,    -1,    -1,    -1,    78,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    87,    -1,    -1,     3,    -1,    -1,
+      -1,    -1,    -1,    96,    97,    -1,    99,    -1,   101,    -1,
+     103,    17,    18,   106,    20,    -1,    -1,   110,    -1,    25,
+     113,    -1,    -1,   116,    -1,    -1,    -1,    -1,    34,    -1,
+      -1,    -1,    -1,    -1,    40,    -1,    -1,    -1,    -1,    -1,
+      46,    -1,    -1,    -1,    50,    -1,    -1,    53,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    63,    -1,    -1,
+      -1,    -1,    -1,    -1,    70,    71,    -1,    -1,    -1,    -1,
+      -1,    -1,    78,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    87,    -1,    -1,     3,    -1,    -1,    -1,    -1,    -1,
+      96,    97,    -1,    99,    -1,   101,    -1,   103,    17,    18,
+     106,    20,    -1,    -1,   110,    -1,    25,   113,    -1,    -1,
+     116,    -1,    -1,    -1,    -1,    34,    -1,    -1,    -1,    -1,
+      -1,    40,    -1,    -1,    -1,    -1,    -1,    46,    -1,    -1,
+      -1,    50,    -1,    -1,    53,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    63,    -1,    -1,    -1,    -1,    -1,
+      -1,    70,    71,    -1,    -1,    -1,    -1,    -1,    -1,    78,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    87,    -1,
+      -1,     3,    -1,    -1,    -1,    -1,    -1,    96,    97,    -1,
+      99,    -1,   101,    -1,   103,    17,    18,   106,    20,    -1,
+      -1,   110,    -1,    25,   113,    -1,    -1,   116,    -1,    -1,
+      -1,    -1,    34,    -1,    -1,    -1,    -1,    -1,    40,    -1,
+      -1,    -1,    -1,    -1,    46,    -1,    -1,    -1,    50,    -1,
+      -1,    53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    63,    -1,    -1,    -1,    -1,    -1,    -1,    70,    71,
+      -1,    -1,    -1,    -1,    -1,    -1,    78,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    87,    -1,    -1,     3,    -1,
+      -1,    -1,    -1,    -1,    96,    97,    -1,    99,    -1,   101,
+      -1,   103,    17,    18,   106,    20,    -1,    -1,   110,    -1,
+      25,   113,    -1,    -1,   116,    -1,    -1,    -1,    -1,    34,
+      -1,    -1,    -1,    -1,    -1,    40,    -1,    -1,    -1,    -1,
+      -1,    46,    -1,    -1,    -1,    50,    -1,    -1,    53,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    63,    -1,
+      -1,    -1,    -1,    -1,    -1,    70,    71,    -1,    -1,    -1,
+      -1,    -1,    -1,    78,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    87,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    96,    97,    -1,    99,    -1,   101,    -1,   103,    -1,
+      -1,   106,    -1,    -1,    -1,   110,    -1,    -1,   113,    -1,
+      -1,   116
 };
 
-/* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
-   state STATE-NUM.  */
+  /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
+     symbol of state STATE-NUM.  */
 static const yytype_int16 yystos[] =
 {
        0,   182,   183,     0,     1,     3,     5,     6,     7,     8,
@@ -5669,7 +5729,7 @@ static const yytype_int16 yystos[] =
      338,   338,     8,   172,   223,   224,     4,   290,   313,   338,
      107,   108,   165,   338,   340,   338,   216,   338,   338,   338,
      100,   172,   186,   338,   338,   211,   297,   338,   237,   338,
-     338,   338,   338,   338,   338,   338,     1,   171,   184,   198,
+     340,   338,   338,   338,   338,   338,     1,   171,   184,   198,
      313,   111,   150,   290,   315,   316,   340,   235,   313,   338,
      349,   338,    81,   186,   170,    85,   193,    47,   114,    56,
      187,   197,   211,   211,    54,    74,    84,   285,   301,   164,
@@ -5767,7 +5827,7 @@ static const yytype_int16 yystos[] =
      306,   321,   175,   165,   288,   289,   175,   306,   321,   310
 };
 
-/* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
+  /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_int16 yyr1[] =
 {
        0,   181,   182,   183,   183,   184,   184,   185,   185,   186,
@@ -5844,7 +5904,7 @@ static const yytype_int16 yyr1[] =
      354,   354,   354,   354,   354,   354
 };
 
-/* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
+  /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     1,     0,     2,     1,     2,     2,     3,     1,
@@ -5922,15 +5982,14 @@ static const yytype_int8 yyr2[] =
 };
 
 
-enum { YYENOMEM = -2 };
-
 #define yyerrok         (yyerrstatus = 0)
 #define yyclearin       (yychar = YYEMPTY)
+#define YYEMPTY         (-2)
+#define YYEOF           0
 
 #define YYACCEPT        goto yyacceptlab
 #define YYABORT         goto yyabortlab
 #define YYERROR         goto yyerrorlab
-#define YYNOMEM         goto yyexhaustedlab
 
 
 #define YYRECOVERING()  (!!yyerrstatus)
@@ -5952,9 +6011,10 @@ enum { YYENOMEM = -2 };
       }                                                           \
   while (0)
 
-/* Backward compatibility with an undocumented macro.
-   Use YYerror or YYUNDEF. */
-#define YYERRCODE YYUNDEF
+/* Error token number */
+#define YYTERROR        1
+#define YYERRCODE       256
+
 
 /* YYLLOC_DEFAULT -- Set CURRENT to span from RHS[1] to RHS[N].
    If N is 0, then set CURRENT to the empty location which ends
@@ -5998,19 +6058,12 @@ do {                                            \
 } while (0)
 
 
-/* YYLOCATION_PRINT -- Print the location on the stream.
+/* YY_LOCATION_PRINT -- Print the location on the stream.
    This macro was not mandated originally: define only if we know
    we won't break user code: when these are the locations we know.  */
 
-# ifndef YYLOCATION_PRINT
-
-#  if defined YY_LOCATION_PRINT
-
-   /* Temporary convenience wrapper in case some people defined the
-      undocumented and private YY_LOCATION_PRINT macros.  */
-#   define YYLOCATION_PRINT(File, Loc)  YY_LOCATION_PRINT(File, *(Loc))
-
-#  elif defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
+#ifndef YY_LOCATION_PRINT
+# if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
 
 /* Print *YYLOCP on YYO.  Private, do not rely on its existence. */
 
@@ -6038,32 +6091,24 @@ yy_location_print_ (FILE *yyo, YYLTYPE const * const yylocp)
         res += YYFPRINTF (yyo, "-%d", end_col);
     }
   return res;
-}
+ }
 
-#   define YYLOCATION_PRINT  yy_location_print_
+#  define YY_LOCATION_PRINT(File, Loc)          \
+  yy_location_print_ (File, &(Loc))
 
-    /* Temporary convenience wrapper in case some people defined the
-       undocumented and private YY_LOCATION_PRINT macros.  */
-#   define YY_LOCATION_PRINT(File, Loc)  YYLOCATION_PRINT(File, &(Loc))
-
-#  else
-
-#   define YYLOCATION_PRINT(File, Loc) ((void) 0)
-    /* Temporary convenience wrapper in case some people defined the
-       undocumented and private YY_LOCATION_PRINT macros.  */
-#   define YY_LOCATION_PRINT  YYLOCATION_PRINT
-
-#  endif
-# endif /* !defined YYLOCATION_PRINT */
+# else
+#  define YY_LOCATION_PRINT(File, Loc) ((void) 0)
+# endif
+#endif
 
 
-# define YY_SYMBOL_PRINT(Title, Kind, Value, Location)                    \
+# define YY_SYMBOL_PRINT(Title, Type, Value, Location)                    \
 do {                                                                      \
   if (yydebug)                                                            \
     {                                                                     \
       YYFPRINTF (stderr, "%s ", Title);                                   \
       yy_symbol_print (stderr,                                            \
-                  Kind, Value, Location, context); \
+                  Type, Value, Location, context); \
       YYFPRINTF (stderr, "\n");                                           \
     }                                                                     \
 } while (0)
@@ -6074,17 +6119,20 @@ do {                                                                      \
 `-----------------------------------*/
 
 static void
-yy_symbol_value_print (FILE *yyo,
-                       yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, ParserContext* context)
+yy_symbol_value_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, ParserContext* context)
 {
   FILE *yyoutput = yyo;
-  YY_USE (yyoutput);
-  YY_USE (yylocationp);
-  YY_USE (context);
+  YYUSE (yyoutput);
+  YYUSE (yylocationp);
+  YYUSE (context);
   if (!yyvaluep)
     return;
+# ifdef YYPRINT
+  if (yytype < YYNTOKENS)
+    YYPRINT (yyo, yytoknum[yytype], *yyvaluep);
+# endif
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-  YY_USE (yykind);
+  YYUSE (yytype);
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
@@ -6094,15 +6142,14 @@ yy_symbol_value_print (FILE *yyo,
 `---------------------------*/
 
 static void
-yy_symbol_print (FILE *yyo,
-                 yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, ParserContext* context)
+yy_symbol_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, ParserContext* context)
 {
   YYFPRINTF (yyo, "%s %s (",
-             yykind < YYNTOKENS ? "token" : "nterm", yysymbol_name (yykind));
+             yytype < YYNTOKENS ? "token" : "nterm", yytname[yytype]);
 
-  YYLOCATION_PRINT (yyo, yylocationp);
+  YY_LOCATION_PRINT (yyo, *yylocationp);
   YYFPRINTF (yyo, ": ");
-  yy_symbol_value_print (yyo, yykind, yyvaluep, yylocationp, context);
+  yy_symbol_value_print (yyo, yytype, yyvaluep, yylocationp, context);
   YYFPRINTF (yyo, ")");
 }
 
@@ -6135,8 +6182,7 @@ do {                                                            \
 `------------------------------------------------*/
 
 static void
-yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp,
-                 int yyrule, ParserContext* context)
+yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule, ParserContext* context)
 {
   int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
@@ -6148,9 +6194,9 @@ yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp,
     {
       YYFPRINTF (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr,
-                       YY_ACCESSING_SYMBOL (+yyssp[yyi + 1 - yynrhs]),
-                       &yyvsp[(yyi + 1) - (yynrhs)],
-                       &(yylsp[(yyi + 1) - (yynrhs)]), context);
+                       yystos[+yyssp[yyi + 1 - yynrhs]],
+                       &yyvsp[(yyi + 1) - (yynrhs)]
+                       , &(yylsp[(yyi + 1) - (yynrhs)])                       , context);
       YYFPRINTF (stderr, "\n");
     }
 }
@@ -6165,8 +6211,8 @@ do {                                    \
    multiple parsers can coexist.  */
 int yydebug;
 #else /* !YYDEBUG */
-# define YYDPRINTF(Args) ((void) 0)
-# define YY_SYMBOL_PRINT(Title, Kind, Value, Location)
+# define YYDPRINTF(Args)
+# define YY_SYMBOL_PRINT(Title, Type, Value, Location)
 # define YY_STACK_PRINT(Bottom, Top)
 # define YY_REDUCE_PRINT(Rule)
 #endif /* !YYDEBUG */
@@ -6187,7 +6233,261 @@ int yydebug;
 #ifndef YYMAXDEPTH
 # define YYMAXDEPTH 10000
 #endif
-/* Parser data structure.  */
+
+
+#if YYERROR_VERBOSE
+
+# ifndef yystrlen
+#  if defined __GLIBC__ && defined _STRING_H
+#   define yystrlen(S) (YY_CAST (YYPTRDIFF_T, strlen (S)))
+#  else
+/* Return the length of YYSTR.  */
+static YYPTRDIFF_T
+yystrlen (const char *yystr)
+{
+  YYPTRDIFF_T yylen;
+  for (yylen = 0; yystr[yylen]; yylen++)
+    continue;
+  return yylen;
+}
+#  endif
+# endif
+
+# ifndef yystpcpy
+#  if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
+#   define yystpcpy stpcpy
+#  else
+/* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
+   YYDEST.  */
+static char *
+yystpcpy (char *yydest, const char *yysrc)
+{
+  char *yyd = yydest;
+  const char *yys = yysrc;
+
+  while ((*yyd++ = *yys++) != '\0')
+    continue;
+
+  return yyd - 1;
+}
+#  endif
+# endif
+
+# ifndef yytnamerr
+/* Copy to YYRES the contents of YYSTR after stripping away unnecessary
+   quotes and backslashes, so that it's suitable for yyerror.  The
+   heuristic is that double-quoting is unnecessary unless the string
+   contains an apostrophe, a comma, or backslash (other than
+   backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
+   null, do not copy; instead, return the length of what the result
+   would have been.  */
+static YYPTRDIFF_T
+yytnamerr (char *yyres, const char *yystr)
+{
+  if (*yystr == '"')
+    {
+      YYPTRDIFF_T yyn = 0;
+      char const *yyp = yystr;
+
+      for (;;)
+        switch (*++yyp)
+          {
+          case '\'':
+          case ',':
+            goto do_not_strip_quotes;
+
+          case '\\':
+            if (*++yyp != '\\')
+              goto do_not_strip_quotes;
+            else
+              goto append;
+
+          append:
+          default:
+            if (yyres)
+              yyres[yyn] = *yyp;
+            yyn++;
+            break;
+
+          case '"':
+            if (yyres)
+              yyres[yyn] = '\0';
+            return yyn;
+          }
+    do_not_strip_quotes: ;
+    }
+
+  if (yyres)
+    return yystpcpy (yyres, yystr) - yyres;
+  else
+    return yystrlen (yystr);
+}
+# endif
+
+/* Copy into *YYMSG, which is of size *YYMSG_ALLOC, an error message
+   about the unexpected token YYTOKEN for the state stack whose top is
+   YYSSP.
+
+   Return 0 if *YYMSG was successfully written.  Return 1 if *YYMSG is
+   not large enough to hold the message.  In that case, also set
+   *YYMSG_ALLOC to the required number of bytes.  Return 2 if the
+   required number of bytes is too large to store.  */
+static int
+yysyntax_error (YYPTRDIFF_T *yymsg_alloc, char **yymsg,
+                yy_state_t *yyssp, int yytoken)
+{
+  enum { YYERROR_VERBOSE_ARGS_MAXIMUM = 5 };
+  /* Internationalized format string. */
+  const char *yyformat = YY_NULLPTR;
+  /* Arguments of yyformat: reported tokens (one for the "unexpected",
+     one per "expected"). */
+  char const *yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
+  /* Actual size of YYARG. */
+  int yycount = 0;
+  /* Cumulated lengths of YYARG.  */
+  YYPTRDIFF_T yysize = 0;
+
+  /* There are many possibilities here to consider:
+     - If this state is a consistent state with a default action, then
+       the only way this function was invoked is if the default action
+       is an error action.  In that case, don't check for expected
+       tokens because there are none.
+     - The only way there can be no lookahead present (in yychar) is if
+       this state is a consistent state with a default action.  Thus,
+       detecting the absence of a lookahead is sufficient to determine
+       that there is no unexpected or expected token to report.  In that
+       case, just report a simple "syntax error".
+     - Don't assume there isn't a lookahead just because this state is a
+       consistent state with a default action.  There might have been a
+       previous inconsistent state, consistent state with a non-default
+       action, or user semantic action that manipulated yychar.
+     - Of course, the expected token list depends on states to have
+       correct lookahead information, and it depends on the parser not
+       to perform extra reductions after fetching a lookahead from the
+       scanner and before detecting a syntax error.  Thus, state merging
+       (from LALR or IELR) and default reductions corrupt the expected
+       token list.  However, the list is correct for canonical LR with
+       one exception: it will still contain any token that will not be
+       accepted due to an error action in a later state.
+  */
+  if (yytoken != YYEMPTY)
+    {
+      int yyn = yypact[+*yyssp];
+      YYPTRDIFF_T yysize0 = yytnamerr (YY_NULLPTR, yytname[yytoken]);
+      yysize = yysize0;
+      yyarg[yycount++] = yytname[yytoken];
+      if (!yypact_value_is_default (yyn))
+        {
+          /* Start YYX at -YYN if negative to avoid negative indexes in
+             YYCHECK.  In other words, skip the first -YYN actions for
+             this state because they are default actions.  */
+          int yyxbegin = yyn < 0 ? -yyn : 0;
+          /* Stay within bounds of both yycheck and yytname.  */
+          int yychecklim = YYLAST - yyn + 1;
+          int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
+          int yyx;
+
+          for (yyx = yyxbegin; yyx < yyxend; ++yyx)
+            if (yycheck[yyx + yyn] == yyx && yyx != YYTERROR
+                && !yytable_value_is_error (yytable[yyx + yyn]))
+              {
+                if (yycount == YYERROR_VERBOSE_ARGS_MAXIMUM)
+                  {
+                    yycount = 1;
+                    yysize = yysize0;
+                    break;
+                  }
+                yyarg[yycount++] = yytname[yyx];
+                {
+                  YYPTRDIFF_T yysize1
+                    = yysize + yytnamerr (YY_NULLPTR, yytname[yyx]);
+                  if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
+                    yysize = yysize1;
+                  else
+                    return 2;
+                }
+              }
+        }
+    }
+
+  switch (yycount)
+    {
+# define YYCASE_(N, S)                      \
+      case N:                               \
+        yyformat = S;                       \
+      break
+    default: /* Avoid compiler warnings. */
+      YYCASE_(0, YY_("syntax error"));
+      YYCASE_(1, YY_("syntax error, unexpected %s"));
+      YYCASE_(2, YY_("syntax error, unexpected %s, expecting %s"));
+      YYCASE_(3, YY_("syntax error, unexpected %s, expecting %s or %s"));
+      YYCASE_(4, YY_("syntax error, unexpected %s, expecting %s or %s or %s"));
+      YYCASE_(5, YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s"));
+# undef YYCASE_
+    }
+
+  {
+    /* Don't count the "%s"s in the final size, but reserve room for
+       the terminator.  */
+    YYPTRDIFF_T yysize1 = yysize + (yystrlen (yyformat) - 2 * yycount) + 1;
+    if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
+      yysize = yysize1;
+    else
+      return 2;
+  }
+
+  if (*yymsg_alloc < yysize)
+    {
+      *yymsg_alloc = 2 * yysize;
+      if (! (yysize <= *yymsg_alloc
+             && *yymsg_alloc <= YYSTACK_ALLOC_MAXIMUM))
+        *yymsg_alloc = YYSTACK_ALLOC_MAXIMUM;
+      return 1;
+    }
+
+  /* Avoid sprintf, as that infringes on the user's name space.
+     Don't have undefined behavior even if the translation
+     produced a string with the wrong number of "%s"s.  */
+  {
+    char *yyp = *yymsg;
+    int yyi = 0;
+    while ((*yyp = *yyformat) != '\0')
+      if (*yyp == '%' && yyformat[1] == 's' && yyi < yycount)
+        {
+          yyp += yytnamerr (yyp, yyarg[yyi++]);
+          yyformat += 2;
+        }
+      else
+        {
+          ++yyp;
+          ++yyformat;
+        }
+  }
+  return 0;
+}
+#endif /* YYERROR_VERBOSE */
+
+/*-----------------------------------------------.
+| Release the memory associated to this symbol.  |
+`-----------------------------------------------*/
+
+static void
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, YYLTYPE *yylocationp, ParserContext* context)
+{
+  YYUSE (yyvaluep);
+  YYUSE (yylocationp);
+  YYUSE (context);
+  if (!yymsg)
+    yymsg = "Deleting";
+  YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
+
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+  YYUSE (yytype);
+  YY_IGNORE_MAYBE_UNINITIALIZED_END
+}
+
+
+
 struct yypstate
   {
     /* Number of syntax errors so far.  */
@@ -6197,59 +6497,64 @@ struct yypstate
     /* Number of tokens to shift before error messages enabled.  */
     int yyerrstatus;
 
-    /* Refer to the stacks through separate pointers, to allow yyoverflow
+    /* The stacks and their tools:
+       'yyss': related to states.
+       'yyvs': related to semantic values.
+       'yyls': related to locations.
+
+       Refer to the stacks through separate pointers, to allow yyoverflow
        to reallocate them elsewhere.  */
 
-    /* Their size.  */
-    YYPTRDIFF_T yystacksize;
-
-    /* The state stack: array, bottom, top.  */
+    /* The state stack.  */
     yy_state_t yyssa[YYINITDEPTH];
     yy_state_t *yyss;
     yy_state_t *yyssp;
 
-    /* The semantic value stack: array, bottom, top.  */
+    /* The semantic value stack.  */
     YYSTYPE yyvsa[YYINITDEPTH];
     YYSTYPE *yyvs;
     YYSTYPE *yyvsp;
 
-    /* The location stack: array, bottom, top.  */
+    /* The location stack.  */
     YYLTYPE yylsa[YYINITDEPTH];
     YYLTYPE *yyls;
     YYLTYPE *yylsp;
-    /* Whether this instance has not started parsing yet.
-     * If 2, it corresponds to a finished parsing.  */
+
+    /* The locations where the error started and ended.  */
+    YYLTYPE yyerror_range[3];
+
+    YYPTRDIFF_T yystacksize;
+    /* Used to determine if this is the first time this instance has
+       been used.  */
     int yynew;
   };
 
-
-
-
-
-
-/*-----------------------------------------------.
-| Release the memory associated to this symbol.  |
-`-----------------------------------------------*/
-
-static void
-yydestruct (const char *yymsg,
-            yysymbol_kind_t yykind, YYSTYPE *yyvaluep, YYLTYPE *yylocationp, ParserContext* context)
+/* Initialize the parser data structure.  */
+yypstate *
+yypstate_new (void)
 {
-  YY_USE (yyvaluep);
-  YY_USE (yylocationp);
-  YY_USE (context);
-  if (!yymsg)
-    yymsg = "Deleting";
-  YY_SYMBOL_PRINT (yymsg, yykind, yyvaluep, yylocationp);
-
-  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-  YY_USE (yykind);
-  YY_IGNORE_MAYBE_UNINITIALIZED_END
+  yypstate *yyps;
+  yyps = YY_CAST (yypstate *, malloc (sizeof *yyps));
+  if (!yyps)
+    return YY_NULLPTR;
+  yyps->yynew = 1;
+  return yyps;
 }
 
-
-
-
+void
+yypstate_delete (yypstate *yyps)
+{
+  if (yyps)
+    {
+#ifndef yyoverflow
+      /* If the stack was reallocated but the parse did not complete, then the
+         stack still needs to be freed.  */
+      if (!yyps->yynew && yyps->yyss != yyps->yyssa)
+        YYSTACK_FREE (yyps->yyss);
+#endif
+      free (yyps);
+    }
+}
 
 #define yynerrs yyps->yynerrs
 #define yystate yyps->yystate
@@ -6263,57 +6568,8 @@ yydestruct (const char *yymsg,
 #define yylsa yyps->yylsa
 #define yyls yyps->yyls
 #define yylsp yyps->yylsp
+#define yyerror_range yyps->yyerror_range
 #define yystacksize yyps->yystacksize
-
-/* Initialize the parser data structure.  */
-static void
-yypstate_clear (yypstate *yyps)
-{
-  yynerrs = 0;
-  yystate = 0;
-  yyerrstatus = 0;
-
-  yyssp = yyss;
-  yyvsp = yyvs;
-  yylsp = yyls;
-
-  /* Initialize the state stack, in case yypcontext_expected_tokens is
-     called before the first call to yyparse. */
-  *yyssp = 0;
-  yyps->yynew = 1;
-}
-
-/* Initialize the parser data structure.  */
-yypstate *
-yypstate_new (void)
-{
-  yypstate *yyps;
-  yyps = YY_CAST (yypstate *, YYMALLOC (sizeof *yyps));
-  if (!yyps)
-    return YY_NULLPTR;
-  yystacksize = YYINITDEPTH;
-  yyss = yyssa;
-  yyvs = yyvsa;
-  yyls = yylsa;
-  yypstate_clear (yyps);
-  return yyps;
-}
-
-void
-yypstate_delete (yypstate *yyps)
-{
-  if (yyps)
-    {
-#ifndef yyoverflow
-      /* If the stack was reallocated but the parse did not complete, then the
-         stack still needs to be freed.  */
-      if (yyss != yyssa)
-        YYSTACK_FREE (yyss);
-#endif
-      YYFREE (yyps);
-    }
-}
-
 
 
 /*---------------.
@@ -6321,10 +6577,9 @@ yypstate_delete (yypstate *yyps)
 `---------------*/
 
 int
-yypush_parse (yypstate *yyps,
-              int yypushed_char, YYSTYPE const *yypushed_val, YYLTYPE *yypushed_loc, ParserContext* context)
+yypush_parse (yypstate *yyps, int yypushed_char, YYSTYPE const *yypushed_val, YYLTYPE *yypushed_loc, ParserContext* context)
 {
-/* Lookahead token kind.  */
+/* The lookahead symbol.  */
 int yychar;
 
 
@@ -6343,19 +6598,20 @@ static YYLTYPE yyloc_default
 YYLTYPE yylloc = yyloc_default;
 
   int yyn;
-  /* The return value of yyparse.  */
   int yyresult;
-  /* Lookahead symbol kind.  */
-  yysymbol_kind_t yytoken = YYSYMBOL_YYEMPTY;
+  /* Lookahead token as an internal (translated) token number.  */
+  int yytoken = 0;
   /* The variables used to return semantic value and location from the
      action routines.  */
   YYSTYPE yyval;
   YYLTYPE yyloc;
 
-  /* The locations where the error started and ended.  */
-  YYLTYPE yyerror_range[3];
-
-
+#if YYERROR_VERBOSE
+  /* Buffer for error messages, and its allocated size.  */
+  char yymsgbuf[128];
+  char *yymsg = yymsgbuf;
+  YYPTRDIFF_T yymsg_alloc = sizeof yymsgbuf;
+#endif
 
 #define YYPOPSTACK(N)   (yyvsp -= (N), yyssp -= (N), yylsp -= (N))
 
@@ -6363,24 +6619,23 @@ YYLTYPE yylloc = yyloc_default;
      Keep to zero when no symbol should be popped.  */
   int yylen = 0;
 
-  switch (yyps->yynew)
+  if (!yyps->yynew)
     {
-    case 0:
       yyn = yypact[yystate];
       goto yyread_pushed_token;
-
-    case 2:
-      yypstate_clear (yyps);
-      break;
-
-    default:
-      break;
     }
+
+  yyssp = yyss = yyssa;
+  yyvsp = yyvs = yyvsa;
+  yylsp = yyls = yylsa;
+  yystacksize = YYINITDEPTH;
 
   YYDPRINTF ((stderr, "Starting parse\n"));
 
+  yystate = 0;
+  yyerrstatus = 0;
+  yynerrs = 0;
   yychar = YYEMPTY; /* Cause a token to be read.  */
-
   yylsp[0] = *yypushed_loc;
   goto yysetstate;
 
@@ -6403,11 +6658,10 @@ yysetstate:
   YY_IGNORE_USELESS_CAST_BEGIN
   *yyssp = YY_CAST (yy_state_t, yystate);
   YY_IGNORE_USELESS_CAST_END
-  YY_STACK_PRINT (yyss, yyssp);
 
   if (yyss + yystacksize - 1 <= yyssp)
 #if !defined yyoverflow && !defined YYSTACK_RELOCATE
-    YYNOMEM;
+    goto yyexhaustedlab;
 #else
     {
       /* Get the current used size of the three stacks, in elements.  */
@@ -6438,7 +6692,7 @@ yysetstate:
 # else /* defined YYSTACK_RELOCATE */
       /* Extend the stack our own way.  */
       if (YYMAXDEPTH <= yystacksize)
-        YYNOMEM;
+        goto yyexhaustedlab;
       yystacksize *= 2;
       if (YYMAXDEPTH < yystacksize)
         yystacksize = YYMAXDEPTH;
@@ -6449,11 +6703,11 @@ yysetstate:
           YY_CAST (union yyalloc *,
                    YYSTACK_ALLOC (YY_CAST (YYSIZE_T, YYSTACK_BYTES (yystacksize))));
         if (! yyptr)
-          YYNOMEM;
+          goto yyexhaustedlab;
         YYSTACK_RELOCATE (yyss_alloc, yyss);
         YYSTACK_RELOCATE (yyvs_alloc, yyvs);
         YYSTACK_RELOCATE (yyls_alloc, yyls);
-#  undef YYSTACK_RELOCATE
+# undef YYSTACK_RELOCATE
         if (yyss1 != yyssa)
           YYSTACK_FREE (yyss1);
       }
@@ -6472,7 +6726,6 @@ yysetstate:
         YYABORT;
     }
 #endif /* !defined yyoverflow && !defined YYSTACK_RELOCATE */
-
 
   if (yystate == YYFINAL)
     YYACCEPT;
@@ -6494,7 +6747,7 @@ yybackup:
 
   /* Not known => get a lookahead token if don't already have one.  */
 
-  /* YYCHAR is either empty, or end-of-input, or a valid lookahead.  */
+  /* YYCHAR is either YYEMPTY or YYEOF or a valid lookahead symbol.  */
   if (yychar == YYEMPTY)
     {
       if (!yyps->yynew)
@@ -6505,7 +6758,7 @@ yybackup:
         }
       yyps->yynew = 0;
 yyread_pushed_token:
-      YYDPRINTF ((stderr, "Reading a token\n"));
+      YYDPRINTF ((stderr, "Reading a token: "));
       yychar = yypushed_char;
       if (yypushed_val)
         yylval = *yypushed_val;
@@ -6515,20 +6768,8 @@ yyread_pushed_token:
 
   if (yychar <= YYEOF)
     {
-      yychar = YYEOF;
-      yytoken = YYSYMBOL_YYEOF;
+      yychar = yytoken = YYEOF;
       YYDPRINTF ((stderr, "Now at end of input.\n"));
-    }
-  else if (yychar == YYerror)
-    {
-      /* The scanner already issued an error message, process directly
-         to error recovery.  But do not keep the error token as
-         lookahead, it is too special and may lead us to an endless
-         loop in error recovery. */
-      yychar = YYUNDEF;
-      yytoken = YYSYMBOL_YYerror;
-      yyerror_range[1] = yylloc;
-      goto yyerrlab1;
     }
   else
     {
@@ -6601,145 +6842,145 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-  case 2: /* program: toplevel_stmt_ls  */
+  case 2:
 #line 518 "chapel.ypp"
                                        { yyblock = (yyval.pblockstmt); }
-#line 6608 "bison-chapel.cpp"
+#line 6849 "bison-chapel.cpp"
     break;
 
-  case 3: /* toplevel_stmt_ls: %empty  */
+  case 3:
 #line 523 "chapel.ypp"
                                        { (yyval.pblockstmt) = new BlockStmt(); resetTempID(); }
-#line 6614 "bison-chapel.cpp"
+#line 6855 "bison-chapel.cpp"
     break;
 
-  case 4: /* toplevel_stmt_ls: toplevel_stmt_ls toplevel_stmt  */
+  case 4:
 #line 524 "chapel.ypp"
                                        { (yyvsp[-1].pblockstmt)->appendChapelStmt((yyvsp[0].pblockstmt)); context->generatedStmt = (yyvsp[-1].pblockstmt); resetTempID(); }
-#line 6620 "bison-chapel.cpp"
+#line 6861 "bison-chapel.cpp"
     break;
 
-  case 6: /* toplevel_stmt: pragma_ls stmt  */
+  case 6:
 #line 531 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildPragmaStmt( (yyvsp[-1].vpch), (yyvsp[0].pblockstmt) ); }
-#line 6626 "bison-chapel.cpp"
+#line 6867 "bison-chapel.cpp"
     break;
 
-  case 7: /* pragma_ls: TPRAGMA STRINGLITERAL  */
+  case 7:
 #line 536 "chapel.ypp"
                                        { (yyval.vpch) = new Vec<const char*>(); (yyval.vpch)->add(astr((yyvsp[0].pch))); }
-#line 6632 "bison-chapel.cpp"
+#line 6873 "bison-chapel.cpp"
     break;
 
-  case 8: /* pragma_ls: pragma_ls TPRAGMA STRINGLITERAL  */
+  case 8:
 #line 537 "chapel.ypp"
                                        { (yyvsp[-2].vpch)->add(astr((yyvsp[0].pch))); }
-#line 6638 "bison-chapel.cpp"
+#line 6879 "bison-chapel.cpp"
     break;
 
-  case 22: /* stmt: TBREAK opt_label_ident TSEMI  */
+  case 22:
 #line 555 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildGotoStmt(GOTO_BREAK, (yyvsp[-1].pch)); }
-#line 6644 "bison-chapel.cpp"
+#line 6885 "bison-chapel.cpp"
     break;
 
-  case 23: /* stmt: TCONTINUE opt_label_ident TSEMI  */
+  case 23:
 #line 556 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildGotoStmt(GOTO_CONTINUE, (yyvsp[-1].pch)); }
-#line 6650 "bison-chapel.cpp"
+#line 6891 "bison-chapel.cpp"
     break;
 
-  case 24: /* stmt: TLABEL ident_def stmt  */
+  case 24:
 #line 557 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildLabelStmt((yyvsp[-1].pch), (yyvsp[0].pblockstmt)); }
-#line 6656 "bison-chapel.cpp"
+#line 6897 "bison-chapel.cpp"
     break;
 
-  case 25: /* stmt: TYIELD expr TSEMI  */
+  case 25:
 #line 558 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildPrimitiveStmt(PRIM_YIELD, (yyvsp[-1].pexpr)); }
-#line 6662 "bison-chapel.cpp"
+#line 6903 "bison-chapel.cpp"
     break;
 
-  case 26: /* stmt: error TSEMI  */
+  case 26:
 #line 559 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildErrorStandin(); }
-#line 6668 "bison-chapel.cpp"
+#line 6909 "bison-chapel.cpp"
     break;
 
-  case 33: /* tryable_stmt: stmt_level_expr TSEMI  */
+  case 33:
 #line 569 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildChapelStmt((yyvsp[-1].pexpr)); }
-#line 6674 "bison-chapel.cpp"
+#line 6915 "bison-chapel.cpp"
     break;
 
-  case 34: /* tryable_stmt: TBEGIN opt_task_intent_ls stmt  */
+  case 34:
 #line 570 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildBeginStmt((yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt)); }
-#line 6680 "bison-chapel.cpp"
+#line 6921 "bison-chapel.cpp"
     break;
 
-  case 35: /* tryable_stmt: TCOBEGIN opt_task_intent_ls block_stmt  */
+  case 35:
 #line 571 "chapel.ypp"
                                          { (yyval.pblockstmt) = buildCobeginStmt((yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt));  }
-#line 6686 "bison-chapel.cpp"
+#line 6927 "bison-chapel.cpp"
     break;
 
-  case 36: /* tryable_stmt: TDELETE simple_expr_ls TSEMI  */
+  case 36:
 #line 572 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildDeleteStmt((yyvsp[-1].pcallexpr)); }
-#line 6692 "bison-chapel.cpp"
+#line 6933 "bison-chapel.cpp"
     break;
 
-  case 37: /* tryable_stmt: TLOCAL expr do_stmt  */
+  case 37:
 #line 573 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildLocalStmt((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 6698 "bison-chapel.cpp"
+#line 6939 "bison-chapel.cpp"
     break;
 
-  case 38: /* tryable_stmt: TLOCAL do_stmt  */
+  case 38:
 #line 574 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildLocalStmt((yyvsp[0].pblockstmt)); }
-#line 6704 "bison-chapel.cpp"
+#line 6945 "bison-chapel.cpp"
     break;
 
-  case 39: /* tryable_stmt: TON expr do_stmt  */
+  case 39:
 #line 575 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildOnStmt((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 6710 "bison-chapel.cpp"
+#line 6951 "bison-chapel.cpp"
     break;
 
-  case 40: /* tryable_stmt: TSERIAL expr do_stmt  */
+  case 40:
 #line 576 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildSerialStmt((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 6716 "bison-chapel.cpp"
+#line 6957 "bison-chapel.cpp"
     break;
 
-  case 41: /* tryable_stmt: TSERIAL do_stmt  */
+  case 41:
 #line 577 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildSerialStmt(new SymExpr(gTrue), (yyvsp[0].pblockstmt)); }
-#line 6722 "bison-chapel.cpp"
+#line 6963 "bison-chapel.cpp"
     break;
 
-  case 42: /* tryable_stmt: TSYNC stmt  */
+  case 42:
 #line 578 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildSyncStmt((yyvsp[0].pblockstmt)); }
-#line 6728 "bison-chapel.cpp"
+#line 6969 "bison-chapel.cpp"
     break;
 
-  case 44: /* deprecated_decl_stmt: TDEPRECATED STRINGLITERAL deprecated_decl_base  */
+  case 44:
 #line 584 "chapel.ypp"
 { (yyval.pblockstmt) = buildDeprecated((yyvsp[0].pblockstmt), (yyvsp[-1].pch)); }
-#line 6734 "bison-chapel.cpp"
+#line 6975 "bison-chapel.cpp"
     break;
 
-  case 45: /* deprecated_decl_stmt: TDEPRECATED deprecated_decl_base  */
+  case 45:
 #line 586 "chapel.ypp"
 { (yyval.pblockstmt) = buildDeprecated((yyvsp[0].pblockstmt)); }
-#line 6740 "bison-chapel.cpp"
+#line 6981 "bison-chapel.cpp"
     break;
 
-  case 48: /* module_decl_start: access_control opt_prototype TMODULE ident_def  */
+  case 48:
 #line 596 "chapel.ypp"
     {
       (yyval.pmodsymbol) = buildModule((yyvsp[0].pch), currentModuleType, NULL, yyfilename, (yyvsp[-3].b), (yyvsp[-2].b), (yylsp[-3]).comment);
@@ -6750,329 +6991,329 @@ yyreduce:
       (yyloc).prevModule = currentModuleName;
       currentModuleName = (yyvsp[0].pch);
     }
-#line 6754 "bison-chapel.cpp"
+#line 6995 "bison-chapel.cpp"
     break;
 
-  case 49: /* module_decl_stmt: module_decl_start TLCBR TRCBR  */
+  case 49:
 #line 609 "chapel.ypp"
     { (yyvsp[-2].pmodsymbol)->block = new BlockStmt();
       (yyval.pblockstmt) = buildChapelStmt(new DefExpr((yyvsp[-2].pmodsymbol)));
       currentModuleName = (yylsp[-2]).prevModule;  // restore previous module name
     }
-#line 6763 "bison-chapel.cpp"
+#line 7004 "bison-chapel.cpp"
     break;
 
-  case 50: /* module_decl_stmt: module_decl_start TLCBR stmt_ls TRCBR  */
+  case 50:
 #line 614 "chapel.ypp"
     { (yyvsp[-3].pmodsymbol)->block = (yyvsp[-1].pblockstmt);
       (yyval.pblockstmt) = buildChapelStmt(new DefExpr((yyvsp[-3].pmodsymbol)));
       currentModuleName = (yylsp[-3]).prevModule;  // restore previous module name
     }
-#line 6772 "bison-chapel.cpp"
+#line 7013 "bison-chapel.cpp"
     break;
 
-  case 51: /* module_decl_stmt: module_decl_start TLCBR error TRCBR  */
+  case 51:
 #line 619 "chapel.ypp"
     { (yyvsp[-3].pmodsymbol)->block = buildErrorStandin();
       (yyval.pblockstmt) = buildChapelStmt(new DefExpr((yyvsp[-3].pmodsymbol)));
       currentModuleName = (yylsp[-3]).prevModule;  // restore previous module name
     }
-#line 6781 "bison-chapel.cpp"
+#line 7022 "bison-chapel.cpp"
     break;
 
-  case 52: /* access_control: %empty  */
+  case 52:
 #line 626 "chapel.ypp"
         { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
-#line 6787 "bison-chapel.cpp"
+#line 7028 "bison-chapel.cpp"
     break;
 
-  case 53: /* access_control: TPUBLIC  */
+  case 53:
 #line 627 "chapel.ypp"
           { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
-#line 6793 "bison-chapel.cpp"
+#line 7034 "bison-chapel.cpp"
     break;
 
-  case 54: /* access_control: TPRIVATE  */
+  case 54:
 #line 628 "chapel.ypp"
            { (yyval.b) = true; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
-#line 6799 "bison-chapel.cpp"
+#line 7040 "bison-chapel.cpp"
     break;
 
-  case 55: /* opt_prototype: %empty  */
+  case 55:
 #line 632 "chapel.ypp"
              { (yyval.b) = false; }
-#line 6805 "bison-chapel.cpp"
+#line 7046 "bison-chapel.cpp"
     break;
 
-  case 56: /* opt_prototype: TPROTOTYPE  */
+  case 56:
 #line 633 "chapel.ypp"
              { (yyval.b) = true;  }
-#line 6811 "bison-chapel.cpp"
+#line 7052 "bison-chapel.cpp"
     break;
 
-  case 57: /* include_access_control: %empty  */
+  case 57:
 #line 637 "chapel.ypp"
            { (yyval.b) = false; }
-#line 6817 "bison-chapel.cpp"
+#line 7058 "bison-chapel.cpp"
     break;
 
-  case 58: /* include_access_control: TPUBLIC  */
+  case 58:
 #line 638 "chapel.ypp"
            { (yyval.b) = false; }
-#line 6823 "bison-chapel.cpp"
+#line 7064 "bison-chapel.cpp"
     break;
 
-  case 59: /* include_access_control: TPRIVATE  */
+  case 59:
 #line 639 "chapel.ypp"
            { (yyval.b) = true; }
-#line 6829 "bison-chapel.cpp"
+#line 7070 "bison-chapel.cpp"
     break;
 
-  case 60: /* $@1: %empty  */
+  case 60:
 #line 644 "chapel.ypp"
   {
     (yylsp[0]).comment = context->latestComment;
     context->latestComment = NULL;
   }
-#line 6838 "bison-chapel.cpp"
+#line 7079 "bison-chapel.cpp"
     break;
 
-  case 61: /* include_module_stmt: TINCLUDE $@1 include_access_control opt_prototype TMODULE ident_def TSEMI  */
+  case 61:
 #line 649 "chapel.ypp"
  {
    (yyval.pblockstmt) = buildIncludeModule((yyvsp[-1].pch), (yyvsp[-4].b), (yyvsp[-3].b), (yylsp[-6]).comment);
  }
-#line 6846 "bison-chapel.cpp"
+#line 7087 "bison-chapel.cpp"
     break;
 
-  case 62: /* block_stmt: TLCBR TRCBR  */
+  case 62:
 #line 664 "chapel.ypp"
                                        { (yyval.pblockstmt) = new BlockStmt(); }
-#line 6852 "bison-chapel.cpp"
+#line 7093 "bison-chapel.cpp"
     break;
 
-  case 63: /* block_stmt: TLCBR stmt_ls TRCBR  */
+  case 63:
 #line 665 "chapel.ypp"
                                        { (yyval.pblockstmt) = (yyvsp[-1].pblockstmt);              }
-#line 6858 "bison-chapel.cpp"
+#line 7099 "bison-chapel.cpp"
     break;
 
-  case 64: /* block_stmt: TLCBR error TRCBR  */
+  case 64:
 #line 666 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildErrorStandin(); }
-#line 6864 "bison-chapel.cpp"
+#line 7105 "bison-chapel.cpp"
     break;
 
-  case 65: /* stmt_ls: toplevel_stmt  */
+  case 65:
 #line 671 "chapel.ypp"
                                        { (yyval.pblockstmt) = new BlockStmt(); (yyval.pblockstmt)->appendChapelStmt((yyvsp[0].pblockstmt)); }
-#line 6870 "bison-chapel.cpp"
+#line 7111 "bison-chapel.cpp"
     break;
 
-  case 66: /* stmt_ls: stmt_ls toplevel_stmt  */
+  case 66:
 #line 672 "chapel.ypp"
                                        { (yyvsp[-1].pblockstmt)->appendChapelStmt((yyvsp[0].pblockstmt)); }
-#line 6876 "bison-chapel.cpp"
+#line 7117 "bison-chapel.cpp"
     break;
 
-  case 67: /* renames_ls: expr  */
+  case 67:
 #line 677 "chapel.ypp"
                                        { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = (yyvsp[0].pexpr);
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6886 "bison-chapel.cpp"
+#line 7127 "bison-chapel.cpp"
     break;
 
-  case 68: /* renames_ls: all_op_name  */
+  case 68:
 #line 682 "chapel.ypp"
                                        { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = new UnresolvedSymExpr((yyvsp[0].pch));
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6896 "bison-chapel.cpp"
+#line 7137 "bison-chapel.cpp"
     break;
 
-  case 69: /* renames_ls: expr TAS expr  */
+  case 69:
 #line 687 "chapel.ypp"
                                        { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), (yyvsp[0].pexpr));
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6906 "bison-chapel.cpp"
+#line 7147 "bison-chapel.cpp"
     break;
 
-  case 70: /* renames_ls: renames_ls TCOMMA expr  */
+  case 70:
 #line 692 "chapel.ypp"
                                        { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = (yyvsp[0].pexpr);
                                          (yyvsp[-2].ponlylist)->push_back(cur); }
-#line 6915 "bison-chapel.cpp"
+#line 7156 "bison-chapel.cpp"
     break;
 
-  case 71: /* renames_ls: renames_ls TCOMMA all_op_name  */
+  case 71:
 #line 696 "chapel.ypp"
                                        { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = new UnresolvedSymExpr((yyvsp[0].pch));
                                          (yyvsp[-2].ponlylist)->push_back(cur); }
-#line 6924 "bison-chapel.cpp"
+#line 7165 "bison-chapel.cpp"
     break;
 
-  case 72: /* renames_ls: renames_ls TCOMMA expr TAS expr  */
+  case 72:
 #line 700 "chapel.ypp"
                                        { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), (yyvsp[0].pexpr));
                                          (yyvsp[-4].ponlylist)->push_back(cur); }
-#line 6933 "bison-chapel.cpp"
+#line 7174 "bison-chapel.cpp"
     break;
 
-  case 73: /* use_renames_ls: expr  */
+  case 73:
 #line 709 "chapel.ypp"
                                        { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = (yyvsp[0].pexpr);
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6943 "bison-chapel.cpp"
+#line 7184 "bison-chapel.cpp"
     break;
 
-  case 74: /* use_renames_ls: expr TAS expr  */
+  case 74:
 #line 714 "chapel.ypp"
                                        { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), (yyvsp[0].pexpr));
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6953 "bison-chapel.cpp"
+#line 7194 "bison-chapel.cpp"
     break;
 
-  case 75: /* use_renames_ls: expr TAS TUNDERSCORE  */
+  case 75:
 #line 719 "chapel.ypp"
                                        { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), new UnresolvedSymExpr("_"));
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6963 "bison-chapel.cpp"
+#line 7204 "bison-chapel.cpp"
     break;
 
-  case 76: /* use_renames_ls: use_renames_ls TCOMMA expr  */
+  case 76:
 #line 724 "chapel.ypp"
                                        { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = (yyvsp[0].pexpr);
                                          (yyvsp[-2].ponlylist)->push_back(cur); }
-#line 6972 "bison-chapel.cpp"
+#line 7213 "bison-chapel.cpp"
     break;
 
-  case 77: /* use_renames_ls: use_renames_ls TCOMMA expr TAS expr  */
+  case 77:
 #line 728 "chapel.ypp"
                                        { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), (yyvsp[0].pexpr));
                                          (yyvsp[-4].ponlylist)->push_back(cur); }
-#line 6981 "bison-chapel.cpp"
+#line 7222 "bison-chapel.cpp"
     break;
 
-  case 78: /* use_renames_ls: use_renames_ls TCOMMA expr TAS TUNDERSCORE  */
+  case 78:
 #line 732 "chapel.ypp"
                                              { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), new UnresolvedSymExpr("_"));
                                          (yyvsp[-4].ponlylist)->push_back(cur); }
-#line 6990 "bison-chapel.cpp"
+#line 7231 "bison-chapel.cpp"
     break;
 
-  case 79: /* opt_only_ls: %empty  */
+  case 79:
 #line 740 "chapel.ypp"
                                        { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = new UnresolvedSymExpr("");
                                          (yyval.ponlylist)->push_back(cur); }
-#line 7000 "bison-chapel.cpp"
+#line 7241 "bison-chapel.cpp"
     break;
 
-  case 81: /* use_access_control: %empty  */
+  case 81:
 #line 749 "chapel.ypp"
            { (yyval.b) = true; }
-#line 7006 "bison-chapel.cpp"
+#line 7247 "bison-chapel.cpp"
     break;
 
-  case 82: /* use_access_control: TPUBLIC  */
+  case 82:
 #line 750 "chapel.ypp"
            { (yyval.b) = false; }
-#line 7012 "bison-chapel.cpp"
+#line 7253 "bison-chapel.cpp"
     break;
 
-  case 83: /* use_access_control: TPRIVATE  */
+  case 83:
 #line 751 "chapel.ypp"
            { (yyval.b) = true; }
-#line 7018 "bison-chapel.cpp"
+#line 7259 "bison-chapel.cpp"
     break;
 
-  case 84: /* use_stmt: use_access_control TUSE use_renames_ls TSEMI  */
+  case 84:
 #line 755 "chapel.ypp"
                                                           { (yyval.pblockstmt) = buildUseStmt((yyvsp[-1].ponlylist), (yyvsp[-3].b)); }
-#line 7024 "bison-chapel.cpp"
+#line 7265 "bison-chapel.cpp"
     break;
 
-  case 85: /* use_stmt: use_access_control TUSE expr TEXCEPT renames_ls TSEMI  */
+  case 85:
 #line 756 "chapel.ypp"
                                                            { (yyval.pblockstmt) = buildUseStmt((yyvsp[-3].pexpr), "", (yyvsp[-1].ponlylist), true, (yyvsp[-5].b)); }
-#line 7030 "bison-chapel.cpp"
+#line 7271 "bison-chapel.cpp"
     break;
 
-  case 86: /* use_stmt: use_access_control TUSE expr TAS expr TEXCEPT renames_ls TSEMI  */
+  case 86:
 #line 757 "chapel.ypp"
                                                                     { (yyval.pblockstmt) = buildUseStmt((yyvsp[-5].pexpr), (yyvsp[-3].pexpr), (yyvsp[-1].ponlylist), true, (yyvsp[-7].b)); }
-#line 7036 "bison-chapel.cpp"
+#line 7277 "bison-chapel.cpp"
     break;
 
-  case 87: /* use_stmt: use_access_control TUSE expr TAS TUNDERSCORE TEXCEPT renames_ls TSEMI  */
+  case 87:
 #line 758 "chapel.ypp"
                                                                            { (yyval.pblockstmt) = buildUseStmt((yyvsp[-5].pexpr), new UnresolvedSymExpr("_"), (yyvsp[-1].ponlylist), true, (yyvsp[-7].b)); }
-#line 7042 "bison-chapel.cpp"
+#line 7283 "bison-chapel.cpp"
     break;
 
-  case 88: /* use_stmt: use_access_control TUSE expr TONLY opt_only_ls TSEMI  */
+  case 88:
 #line 759 "chapel.ypp"
                                                           { (yyval.pblockstmt) = buildUseStmt((yyvsp[-3].pexpr), "", (yyvsp[-1].ponlylist), false, (yyvsp[-5].b)); }
-#line 7048 "bison-chapel.cpp"
+#line 7289 "bison-chapel.cpp"
     break;
 
-  case 89: /* use_stmt: use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI  */
+  case 89:
 #line 760 "chapel.ypp"
                                                                    { (yyval.pblockstmt) = buildUseStmt((yyvsp[-5].pexpr), (yyvsp[-3].pexpr), (yyvsp[-1].ponlylist), false, (yyvsp[-7].b)); }
-#line 7054 "bison-chapel.cpp"
+#line 7295 "bison-chapel.cpp"
     break;
 
-  case 90: /* use_stmt: use_access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI  */
+  case 90:
 #line 761 "chapel.ypp"
                                                                           { (yyval.pblockstmt) = buildUseStmt((yyvsp[-5].pexpr), new UnresolvedSymExpr("_"), (yyvsp[-1].ponlylist), false, (yyvsp[-7].b)); }
-#line 7060 "bison-chapel.cpp"
+#line 7301 "bison-chapel.cpp"
     break;
 
-  case 91: /* import_stmt: use_access_control TIMPORT import_ls TSEMI  */
+  case 91:
 #line 765 "chapel.ypp"
                                              { (yyval.pblockstmt) = (yyvsp[-1].pblockstmt);
                                                setImportPrivacy((yyval.pblockstmt), (yyvsp[-3].b));}
-#line 7067 "bison-chapel.cpp"
+#line 7308 "bison-chapel.cpp"
     break;
 
-  case 92: /* import_expr: expr  */
+  case 92:
 #line 770 "chapel.ypp"
        { (yyval.pimportstmt) = buildImportStmt((yyvsp[0].pexpr)); }
-#line 7073 "bison-chapel.cpp"
+#line 7314 "bison-chapel.cpp"
     break;
 
-  case 93: /* import_expr: expr TDOT all_op_name  */
+  case 93:
 #line 771 "chapel.ypp"
                         { std::vector<PotentialRename*>* renames = new std::vector<PotentialRename*>();
                           PotentialRename* nameInMod = new PotentialRename();
@@ -7080,511 +7321,511 @@ yyreduce:
                           nameInMod->elem = new UnresolvedSymExpr((yyvsp[0].pch));
                           renames->push_back(nameInMod);
                           (yyval.pimportstmt) = buildImportStmt((yyvsp[-2].pexpr), renames); }
-#line 7084 "bison-chapel.cpp"
+#line 7325 "bison-chapel.cpp"
     break;
 
-  case 94: /* import_expr: expr TAS ident_use  */
+  case 94:
 #line 777 "chapel.ypp"
                      { (yyval.pimportstmt) = buildImportStmt((yyvsp[-2].pexpr), (yyvsp[0].pch)); }
-#line 7090 "bison-chapel.cpp"
+#line 7331 "bison-chapel.cpp"
     break;
 
-  case 95: /* import_expr: expr TDOT TLCBR renames_ls TRCBR  */
+  case 95:
 #line 778 "chapel.ypp"
                                    { (yyval.pimportstmt) = buildImportStmt((yyvsp[-4].pexpr), (yyvsp[-1].ponlylist)); }
-#line 7096 "bison-chapel.cpp"
+#line 7337 "bison-chapel.cpp"
     break;
 
-  case 96: /* import_ls: import_expr  */
+  case 96:
 #line 782 "chapel.ypp"
               { (yyval.pblockstmt) = buildChapelStmt((yyvsp[0].pimportstmt)); }
-#line 7102 "bison-chapel.cpp"
+#line 7343 "bison-chapel.cpp"
     break;
 
-  case 97: /* import_ls: import_ls TCOMMA import_expr  */
+  case 97:
 #line 783 "chapel.ypp"
                                { (yyval.pblockstmt) = (yyvsp[-2].pblockstmt); (yyval.pblockstmt)->insertAtTail((yyvsp[0].pimportstmt)); }
-#line 7108 "bison-chapel.cpp"
+#line 7349 "bison-chapel.cpp"
     break;
 
-  case 98: /* require_stmt: TREQUIRE expr_ls TSEMI  */
+  case 98:
 #line 787 "chapel.ypp"
                                        { (yyval.pblockstmt) = buildRequireStmt((yyvsp[-1].pcallexpr)); }
-#line 7114 "bison-chapel.cpp"
+#line 7355 "bison-chapel.cpp"
     break;
 
-  case 99: /* assignment_stmt: lhs_expr assignop_ident opt_try_expr TSEMI  */
+  case 99:
 #line 792 "chapel.ypp"
     { (yyval.pblockstmt) = buildAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr), (yyvsp[-2].pch));   }
-#line 7120 "bison-chapel.cpp"
+#line 7361 "bison-chapel.cpp"
     break;
 
-  case 100: /* assignment_stmt: lhs_expr TSWAP opt_try_expr TSEMI  */
+  case 100:
 #line 794 "chapel.ypp"
     { (yyval.pblockstmt) = buildAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr), "<=>"); }
-#line 7126 "bison-chapel.cpp"
+#line 7367 "bison-chapel.cpp"
     break;
 
-  case 101: /* assignment_stmt: lhs_expr TASSIGNREDUCE opt_try_expr TSEMI  */
+  case 101:
 #line 796 "chapel.ypp"
     { (yyval.pblockstmt) = buildAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr), PRIM_REDUCE_ASSIGN); }
-#line 7132 "bison-chapel.cpp"
+#line 7373 "bison-chapel.cpp"
     break;
 
-  case 102: /* assignment_stmt: lhs_expr TASSIGNLAND opt_try_expr TSEMI  */
+  case 102:
 #line 798 "chapel.ypp"
     { (yyval.pblockstmt) = buildLAndAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr));    }
-#line 7138 "bison-chapel.cpp"
+#line 7379 "bison-chapel.cpp"
     break;
 
-  case 103: /* assignment_stmt: lhs_expr TASSIGNLOR opt_try_expr TSEMI  */
+  case 103:
 #line 800 "chapel.ypp"
     { (yyval.pblockstmt) = buildLOrAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr));     }
-#line 7144 "bison-chapel.cpp"
+#line 7385 "bison-chapel.cpp"
     break;
 
-  case 104: /* assignment_stmt: lhs_expr TASSIGN TNOINIT TSEMI  */
+  case 104:
 #line 802 "chapel.ypp"
     { (yyval.pblockstmt) = buildAssignment((yyvsp[-3].pexpr), new SymExpr(gNoInit), "="); }
-#line 7150 "bison-chapel.cpp"
+#line 7391 "bison-chapel.cpp"
     break;
 
-  case 105: /* opt_label_ident: %empty  */
+  case 105:
 #line 808 "chapel.ypp"
          { (yyval.pch) = NULL; }
-#line 7156 "bison-chapel.cpp"
+#line 7397 "bison-chapel.cpp"
     break;
 
-  case 106: /* opt_label_ident: TIDENT  */
+  case 106:
 #line 809 "chapel.ypp"
          { (yyval.pch) = (yyvsp[0].pch); }
-#line 7162 "bison-chapel.cpp"
+#line 7403 "bison-chapel.cpp"
     break;
 
-  case 107: /* ident_fn_def: TIDENT  */
+  case 107:
 #line 813 "chapel.ypp"
                            { (yyval.pch) = (yyvsp[0].pch); }
-#line 7168 "bison-chapel.cpp"
+#line 7409 "bison-chapel.cpp"
     break;
 
-  case 108: /* ident_fn_def: TNONE  */
+  case 108:
 #line 814 "chapel.ypp"
                            { (yyval.pch) = "none"; redefiningReservedWordError((yyval.pch)); }
-#line 7174 "bison-chapel.cpp"
+#line 7415 "bison-chapel.cpp"
     break;
 
-  case 109: /* ident_fn_def: TTHIS  */
+  case 109:
 #line 815 "chapel.ypp"
                            { (yyval.pch) = "this"; }
-#line 7180 "bison-chapel.cpp"
+#line 7421 "bison-chapel.cpp"
     break;
 
-  case 110: /* ident_fn_def: TFALSE  */
+  case 110:
 #line 816 "chapel.ypp"
                            { (yyval.pch) = "false"; redefiningReservedWordError((yyval.pch)); }
-#line 7186 "bison-chapel.cpp"
+#line 7427 "bison-chapel.cpp"
     break;
 
-  case 111: /* ident_fn_def: TTRUE  */
+  case 111:
 #line 817 "chapel.ypp"
                            { (yyval.pch) = "true"; redefiningReservedWordError((yyval.pch)); }
-#line 7192 "bison-chapel.cpp"
+#line 7433 "bison-chapel.cpp"
     break;
 
-  case 112: /* ident_fn_def: internal_type_ident_def  */
+  case 112:
 #line 818 "chapel.ypp"
                            { (yyval.pch) = (yyvsp[0].pch); redefiningReservedTypeError((yyvsp[0].pch)); }
-#line 7198 "bison-chapel.cpp"
+#line 7439 "bison-chapel.cpp"
     break;
 
-  case 113: /* ident_def: TIDENT  */
+  case 113:
 #line 821 "chapel.ypp"
                            { (yyval.pch) = (yyvsp[0].pch); }
-#line 7204 "bison-chapel.cpp"
+#line 7445 "bison-chapel.cpp"
     break;
 
-  case 114: /* ident_def: TNONE  */
+  case 114:
 #line 822 "chapel.ypp"
                            { (yyval.pch) = "none"; redefiningReservedWordError((yyval.pch)); }
-#line 7210 "bison-chapel.cpp"
+#line 7451 "bison-chapel.cpp"
     break;
 
-  case 115: /* ident_def: TTHIS  */
+  case 115:
 #line 823 "chapel.ypp"
                            { (yyval.pch) = "this"; redefiningReservedWordError((yyval.pch)); }
-#line 7216 "bison-chapel.cpp"
+#line 7457 "bison-chapel.cpp"
     break;
 
-  case 116: /* ident_def: TFALSE  */
+  case 116:
 #line 824 "chapel.ypp"
                            { (yyval.pch) = "false"; redefiningReservedWordError((yyval.pch)); }
-#line 7222 "bison-chapel.cpp"
+#line 7463 "bison-chapel.cpp"
     break;
 
-  case 117: /* ident_def: TTRUE  */
+  case 117:
 #line 825 "chapel.ypp"
                            { (yyval.pch) = "true"; redefiningReservedWordError((yyval.pch)); }
-#line 7228 "bison-chapel.cpp"
+#line 7469 "bison-chapel.cpp"
     break;
 
-  case 118: /* ident_def: internal_type_ident_def  */
+  case 118:
 #line 826 "chapel.ypp"
                            { (yyval.pch) = (yyvsp[0].pch); redefiningReservedTypeError((yyvsp[0].pch)); }
-#line 7234 "bison-chapel.cpp"
+#line 7475 "bison-chapel.cpp"
     break;
 
-  case 119: /* ident_use: TIDENT  */
+  case 119:
 #line 838 "chapel.ypp"
                            { (yyval.pch) = (yyvsp[0].pch); }
-#line 7240 "bison-chapel.cpp"
+#line 7481 "bison-chapel.cpp"
     break;
 
-  case 120: /* ident_use: TTHIS  */
+  case 120:
 #line 839 "chapel.ypp"
                            { (yyval.pch) = "this"; }
-#line 7246 "bison-chapel.cpp"
+#line 7487 "bison-chapel.cpp"
     break;
 
-  case 121: /* internal_type_ident_def: TBOOL  */
+  case 121:
 #line 850 "chapel.ypp"
              { (yyval.pch) = "bool"; }
-#line 7252 "bison-chapel.cpp"
+#line 7493 "bison-chapel.cpp"
     break;
 
-  case 122: /* internal_type_ident_def: TINT  */
+  case 122:
 #line 851 "chapel.ypp"
              { (yyval.pch) = "int"; }
-#line 7258 "bison-chapel.cpp"
+#line 7499 "bison-chapel.cpp"
     break;
 
-  case 123: /* internal_type_ident_def: TUINT  */
+  case 123:
 #line 852 "chapel.ypp"
              { (yyval.pch) = "uint"; }
-#line 7264 "bison-chapel.cpp"
+#line 7505 "bison-chapel.cpp"
     break;
 
-  case 124: /* internal_type_ident_def: TREAL  */
+  case 124:
 #line 853 "chapel.ypp"
              { (yyval.pch) = "real"; }
-#line 7270 "bison-chapel.cpp"
+#line 7511 "bison-chapel.cpp"
     break;
 
-  case 125: /* internal_type_ident_def: TIMAG  */
+  case 125:
 #line 854 "chapel.ypp"
              { (yyval.pch) = "imag"; }
-#line 7276 "bison-chapel.cpp"
+#line 7517 "bison-chapel.cpp"
     break;
 
-  case 126: /* internal_type_ident_def: TCOMPLEX  */
+  case 126:
 #line 855 "chapel.ypp"
              { (yyval.pch) = "complex"; }
-#line 7282 "bison-chapel.cpp"
+#line 7523 "bison-chapel.cpp"
     break;
 
-  case 127: /* internal_type_ident_def: TBYTES  */
+  case 127:
 #line 856 "chapel.ypp"
              { (yyval.pch) = "bytes"; }
-#line 7288 "bison-chapel.cpp"
+#line 7529 "bison-chapel.cpp"
     break;
 
-  case 128: /* internal_type_ident_def: TSTRING  */
+  case 128:
 #line 857 "chapel.ypp"
              { (yyval.pch) = "string"; }
-#line 7294 "bison-chapel.cpp"
+#line 7535 "bison-chapel.cpp"
     break;
 
-  case 129: /* internal_type_ident_def: TSYNC  */
+  case 129:
 #line 858 "chapel.ypp"
              { (yyval.pch) = "sync"; }
-#line 7300 "bison-chapel.cpp"
+#line 7541 "bison-chapel.cpp"
     break;
 
-  case 130: /* internal_type_ident_def: TSINGLE  */
+  case 130:
 #line 859 "chapel.ypp"
              { (yyval.pch) = "single"; }
-#line 7306 "bison-chapel.cpp"
+#line 7547 "bison-chapel.cpp"
     break;
 
-  case 131: /* internal_type_ident_def: TOWNED  */
+  case 131:
 #line 860 "chapel.ypp"
              { (yyval.pch) = "owned"; }
-#line 7312 "bison-chapel.cpp"
+#line 7553 "bison-chapel.cpp"
     break;
 
-  case 132: /* internal_type_ident_def: TSHARED  */
+  case 132:
 #line 861 "chapel.ypp"
              { (yyval.pch) = "shared"; }
-#line 7318 "bison-chapel.cpp"
+#line 7559 "bison-chapel.cpp"
     break;
 
-  case 133: /* internal_type_ident_def: TBORROWED  */
+  case 133:
 #line 862 "chapel.ypp"
              { (yyval.pch) = "borrowed"; }
-#line 7324 "bison-chapel.cpp"
+#line 7565 "bison-chapel.cpp"
     break;
 
-  case 134: /* internal_type_ident_def: TUNMANAGED  */
+  case 134:
 #line 863 "chapel.ypp"
              { (yyval.pch) = "unmanaged"; }
-#line 7330 "bison-chapel.cpp"
+#line 7571 "bison-chapel.cpp"
     break;
 
-  case 135: /* internal_type_ident_def: TDOMAIN  */
+  case 135:
 #line 864 "chapel.ypp"
              { (yyval.pch) = "domain"; }
-#line 7336 "bison-chapel.cpp"
+#line 7577 "bison-chapel.cpp"
     break;
 
-  case 136: /* internal_type_ident_def: TINDEX  */
+  case 136:
 #line 865 "chapel.ypp"
              { (yyval.pch) = "index"; }
-#line 7342 "bison-chapel.cpp"
+#line 7583 "bison-chapel.cpp"
     break;
 
-  case 137: /* internal_type_ident_def: TLOCALE  */
+  case 137:
 #line 866 "chapel.ypp"
              { (yyval.pch) = "locale"; }
-#line 7348 "bison-chapel.cpp"
+#line 7589 "bison-chapel.cpp"
     break;
 
-  case 138: /* internal_type_ident_def: TNOTHING  */
+  case 138:
 #line 867 "chapel.ypp"
              { (yyval.pch) = "nothing"; }
-#line 7354 "bison-chapel.cpp"
+#line 7595 "bison-chapel.cpp"
     break;
 
-  case 139: /* internal_type_ident_def: TVOID  */
+  case 139:
 #line 868 "chapel.ypp"
              { (yyval.pch) = "void"; }
-#line 7360 "bison-chapel.cpp"
+#line 7601 "bison-chapel.cpp"
     break;
 
-  case 140: /* scalar_type: TBOOL  */
+  case 140:
 #line 872 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
-#line 7366 "bison-chapel.cpp"
+#line 7607 "bison-chapel.cpp"
     break;
 
-  case 141: /* scalar_type: TENUM  */
+  case 141:
 #line 873 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtAnyEnumerated->symbol); }
-#line 7372 "bison-chapel.cpp"
+#line 7613 "bison-chapel.cpp"
     break;
 
-  case 142: /* scalar_type: TINT  */
+  case 142:
 #line 874 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
-#line 7378 "bison-chapel.cpp"
+#line 7619 "bison-chapel.cpp"
     break;
 
-  case 143: /* scalar_type: TUINT  */
+  case 143:
 #line 875 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
-#line 7384 "bison-chapel.cpp"
+#line 7625 "bison-chapel.cpp"
     break;
 
-  case 144: /* scalar_type: TREAL  */
+  case 144:
 #line 876 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
-#line 7390 "bison-chapel.cpp"
+#line 7631 "bison-chapel.cpp"
     break;
 
-  case 145: /* scalar_type: TIMAG  */
+  case 145:
 #line 877 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol); }
-#line 7396 "bison-chapel.cpp"
+#line 7637 "bison-chapel.cpp"
     break;
 
-  case 146: /* scalar_type: TCOMPLEX  */
+  case 146:
 #line 878 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
-#line 7402 "bison-chapel.cpp"
+#line 7643 "bison-chapel.cpp"
     break;
 
-  case 147: /* scalar_type: TBYTES  */
+  case 147:
 #line 879 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtBytes->symbol); }
-#line 7408 "bison-chapel.cpp"
+#line 7649 "bison-chapel.cpp"
     break;
 
-  case 148: /* scalar_type: TSTRING  */
+  case 148:
 #line 880 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtString->symbol); }
-#line 7414 "bison-chapel.cpp"
+#line 7655 "bison-chapel.cpp"
     break;
 
-  case 149: /* scalar_type: TLOCALE  */
+  case 149:
 #line 881 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtLocale->symbol); }
-#line 7420 "bison-chapel.cpp"
+#line 7661 "bison-chapel.cpp"
     break;
 
-  case 150: /* scalar_type: TNOTHING  */
+  case 150:
 #line 882 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtNothing->symbol); }
-#line 7426 "bison-chapel.cpp"
+#line 7667 "bison-chapel.cpp"
     break;
 
-  case 151: /* scalar_type: TVOID  */
+  case 151:
 #line 883 "chapel.ypp"
            { (yyval.pexpr) = new SymExpr(dtVoid->symbol); }
-#line 7432 "bison-chapel.cpp"
+#line 7673 "bison-chapel.cpp"
     break;
 
-  case 152: /* reserved_type_ident_use: TSYNC  */
+  case 152:
 #line 890 "chapel.ypp"
              { (yyval.pch) = "_syncvar"; }
-#line 7438 "bison-chapel.cpp"
+#line 7679 "bison-chapel.cpp"
     break;
 
-  case 153: /* reserved_type_ident_use: TSINGLE  */
+  case 153:
 #line 891 "chapel.ypp"
              { (yyval.pch) = "_singlevar"; }
-#line 7444 "bison-chapel.cpp"
+#line 7685 "bison-chapel.cpp"
     break;
 
-  case 154: /* reserved_type_ident_use: TDOMAIN  */
+  case 154:
 #line 892 "chapel.ypp"
              { (yyval.pch) = "_domain"; }
-#line 7450 "bison-chapel.cpp"
+#line 7691 "bison-chapel.cpp"
     break;
 
-  case 155: /* reserved_type_ident_use: TINDEX  */
+  case 155:
 #line 893 "chapel.ypp"
              { (yyval.pch) = "_index"; }
-#line 7456 "bison-chapel.cpp"
+#line 7697 "bison-chapel.cpp"
     break;
 
-  case 156: /* do_stmt: TDO stmt  */
+  case 156:
 #line 897 "chapel.ypp"
               { (yyval.pblockstmt) = (yyvsp[0].pblockstmt); }
-#line 7462 "bison-chapel.cpp"
+#line 7703 "bison-chapel.cpp"
     break;
 
-  case 157: /* do_stmt: block_stmt  */
+  case 157:
 #line 898 "chapel.ypp"
               { (yyval.pblockstmt) = (yyvsp[0].pblockstmt); }
-#line 7468 "bison-chapel.cpp"
+#line 7709 "bison-chapel.cpp"
     break;
 
-  case 158: /* return_stmt: TRETURN TSEMI  */
+  case 158:
 #line 902 "chapel.ypp"
                               { (yyval.pblockstmt) = buildPrimitiveStmt(PRIM_RETURN); }
-#line 7474 "bison-chapel.cpp"
+#line 7715 "bison-chapel.cpp"
     break;
 
-  case 159: /* return_stmt: TRETURN opt_try_expr TSEMI  */
+  case 159:
 #line 903 "chapel.ypp"
                               { (yyval.pblockstmt) = buildPrimitiveStmt(PRIM_RETURN, (yyvsp[-1].pexpr)); }
-#line 7480 "bison-chapel.cpp"
+#line 7721 "bison-chapel.cpp"
     break;
 
-  case 160: /* manager_expr: expr TAS var_decl_type ident_def  */
+  case 160:
 #line 907 "chapel.ypp"
                                     { (yyval.pblockstmt) = buildManagerBlock((yyvsp[-3].pexpr), (yyvsp[-1].pflagset), (yyvsp[0].pch)); }
-#line 7486 "bison-chapel.cpp"
+#line 7727 "bison-chapel.cpp"
     break;
 
-  case 161: /* manager_expr: expr TAS ident_def  */
+  case 161:
 #line 908 "chapel.ypp"
                                     { (yyval.pblockstmt) = buildManagerBlock((yyvsp[-2].pexpr), NULL, (yyvsp[0].pch)); }
-#line 7492 "bison-chapel.cpp"
+#line 7733 "bison-chapel.cpp"
     break;
 
-  case 162: /* manager_expr: expr  */
+  case 162:
 #line 909 "chapel.ypp"
                                     { (yyval.pblockstmt) = buildManagerBlock((yyvsp[0].pexpr), NULL, NULL); }
-#line 7498 "bison-chapel.cpp"
+#line 7739 "bison-chapel.cpp"
     break;
 
-  case 163: /* manager_expr_ls: manager_expr  */
+  case 163:
 #line 913 "chapel.ypp"
                                         { (yyval.pblockstmt) = new BlockStmt(); (yyval.pblockstmt)->insertAtTail((yyvsp[0].pblockstmt)); }
-#line 7504 "bison-chapel.cpp"
+#line 7745 "bison-chapel.cpp"
     break;
 
-  case 164: /* manager_expr_ls: manager_expr_ls TCOMMA manager_expr  */
+  case 164:
 #line 914 "chapel.ypp"
                                         { (yyval.pblockstmt) = (yyvsp[-2].pblockstmt); (yyval.pblockstmt)->insertAtTail((yyvsp[0].pblockstmt)); }
-#line 7510 "bison-chapel.cpp"
+#line 7751 "bison-chapel.cpp"
     break;
 
-  case 165: /* manage_stmt: TMANAGE manager_expr_ls do_stmt  */
+  case 165:
 #line 918 "chapel.ypp"
                                   { (yyval.pblockstmt) = buildManageStmt((yyvsp[-1].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 7516 "bison-chapel.cpp"
+#line 7757 "bison-chapel.cpp"
     break;
 
-  case 167: /* deprecated_class_level_stmt: TDEPRECATED STRINGLITERAL class_level_stmt  */
+  case 167:
 #line 924 "chapel.ypp"
 { (yyval.pblockstmt) = buildDeprecated((yyvsp[0].pblockstmt), (yyvsp[-1].pch)); }
-#line 7522 "bison-chapel.cpp"
+#line 7763 "bison-chapel.cpp"
     break;
 
-  case 168: /* deprecated_class_level_stmt: TDEPRECATED class_level_stmt  */
+  case 168:
 #line 926 "chapel.ypp"
 { (yyval.pblockstmt) = buildDeprecated((yyvsp[0].pblockstmt)); }
-#line 7528 "bison-chapel.cpp"
+#line 7769 "bison-chapel.cpp"
     break;
 
-  case 169: /* class_level_stmt: TSEMI  */
+  case 169:
 #line 930 "chapel.ypp"
                         { (yyval.pblockstmt) = buildChapelStmt(new BlockStmt()); }
-#line 7534 "bison-chapel.cpp"
+#line 7775 "bison-chapel.cpp"
     break;
 
-  case 171: /* class_level_stmt: TPUBLIC private_decl  */
+  case 171:
 #line 932 "chapel.ypp"
                         { (yyval.pblockstmt) = (yyvsp[0].pblockstmt); }
-#line 7540 "bison-chapel.cpp"
+#line 7781 "bison-chapel.cpp"
     break;
 
-  case 172: /* @2: %empty  */
+  case 172:
 #line 942 "chapel.ypp"
            { (yyval.b) = parsingPrivate; parsingPrivate=true;}
-#line 7546 "bison-chapel.cpp"
+#line 7787 "bison-chapel.cpp"
     break;
 
-  case 173: /* class_level_stmt: TPRIVATE @2 private_decl  */
+  case 173:
 #line 943 "chapel.ypp"
                  { parsingPrivate=(yyvsp[-1].b); applyPrivateToBlock((yyvsp[0].pblockstmt)); (yyval.pblockstmt) = (yyvsp[0].pblockstmt); }
-#line 7552 "bison-chapel.cpp"
+#line 7793 "bison-chapel.cpp"
     break;
 
-  case 181: /* forwarding_stmt: TFORWARDING expr TSEMI  */
+  case 181:
 #line 957 "chapel.ypp"
                           { (yyval.pblockstmt) = buildForwardingStmt((yyvsp[-1].pexpr)); }
-#line 7558 "bison-chapel.cpp"
+#line 7799 "bison-chapel.cpp"
     break;
 
-  case 182: /* forwarding_stmt: TFORWARDING expr TEXCEPT renames_ls TSEMI  */
+  case 182:
 #line 958 "chapel.ypp"
                                              { (yyval.pblockstmt) = buildForwardingStmt((yyvsp[-3].pexpr), (yyvsp[-1].ponlylist), true); }
-#line 7564 "bison-chapel.cpp"
+#line 7805 "bison-chapel.cpp"
     break;
 
-  case 183: /* forwarding_stmt: TFORWARDING expr TONLY opt_only_ls TSEMI  */
+  case 183:
 #line 959 "chapel.ypp"
                                             { (yyval.pblockstmt) = buildForwardingStmt((yyvsp[-3].pexpr), (yyvsp[-1].ponlylist), false); }
-#line 7570 "bison-chapel.cpp"
+#line 7811 "bison-chapel.cpp"
     break;
 
-  case 184: /* forwarding_stmt: TFORWARDING var_decl_stmt  */
+  case 184:
 #line 960 "chapel.ypp"
                             { (yyval.pblockstmt) = buildForwardingDeclStmt((yyvsp[0].pblockstmt)); }
-#line 7576 "bison-chapel.cpp"
+#line 7817 "bison-chapel.cpp"
     break;
 
-  case 185: /* $@3: %empty  */
+  case 185:
 #line 965 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7585 "bison-chapel.cpp"
+#line 7826 "bison-chapel.cpp"
     break;
 
-  case 186: /* extern_export_decl_stmt: TEXTERN TRECORD $@3 ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR  */
+  case 186:
 #line 970 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
@@ -7595,19 +7836,19 @@ yyreduce:
                                              FLAG_EXTERN,
                                              (yylsp[-6]).comment));
     }
-#line 7599 "bison-chapel.cpp"
+#line 7840 "bison-chapel.cpp"
     break;
 
-  case 187: /* $@4: %empty  */
+  case 187:
 #line 981 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7608 "bison-chapel.cpp"
+#line 7849 "bison-chapel.cpp"
     break;
 
-  case 188: /* extern_export_decl_stmt: TEXTERN STRINGLITERAL TRECORD $@4 ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR  */
+  case 188:
 #line 986 "chapel.ypp"
     {
 
@@ -7619,19 +7860,19 @@ yyreduce:
                                              FLAG_EXTERN,
                                              (yylsp[-6]).comment));
     }
-#line 7623 "bison-chapel.cpp"
+#line 7864 "bison-chapel.cpp"
     break;
 
-  case 189: /* $@5: %empty  */
+  case 189:
 #line 998 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7632 "bison-chapel.cpp"
+#line 7873 "bison-chapel.cpp"
     break;
 
-  case 190: /* extern_export_decl_stmt: TEXTERN TUNION $@5 ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR  */
+  case 190:
 #line 1003 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
@@ -7642,19 +7883,19 @@ yyreduce:
                                              FLAG_EXTERN,
                                              (yylsp[-6]).comment));
     }
-#line 7646 "bison-chapel.cpp"
+#line 7887 "bison-chapel.cpp"
     break;
 
-  case 191: /* $@6: %empty  */
+  case 191:
 #line 1014 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7655 "bison-chapel.cpp"
+#line 7896 "bison-chapel.cpp"
     break;
 
-  case 192: /* extern_export_decl_stmt: TEXTERN STRINGLITERAL TUNION $@6 ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR  */
+  case 192:
 #line 1019 "chapel.ypp"
     {
 
@@ -7666,19 +7907,19 @@ yyreduce:
                                              FLAG_EXTERN,
                                              (yylsp[-6]).comment));
     }
-#line 7670 "bison-chapel.cpp"
+#line 7911 "bison-chapel.cpp"
     break;
 
-  case 193: /* $@7: %empty  */
+  case 193:
 #line 1031 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7679 "bison-chapel.cpp"
+#line 7920 "bison-chapel.cpp"
     break;
 
-  case 194: /* extern_export_decl_stmt: TEXPORT TRECORD $@7 ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR  */
+  case 194:
 #line 1036 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
@@ -7689,19 +7930,19 @@ yyreduce:
                                              FLAG_EXPORT,
                                              (yylsp[-6]).comment));
     }
-#line 7693 "bison-chapel.cpp"
+#line 7934 "bison-chapel.cpp"
     break;
 
-  case 195: /* $@8: %empty  */
+  case 195:
 #line 1046 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7702 "bison-chapel.cpp"
+#line 7943 "bison-chapel.cpp"
     break;
 
-  case 196: /* extern_export_decl_stmt: TEXPORT STRINGLITERAL TRECORD $@8 ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR  */
+  case 196:
 #line 1051 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
@@ -7712,26 +7953,26 @@ yyreduce:
                                              FLAG_EXPORT,
                                              (yylsp[-6]).comment));
     }
-#line 7716 "bison-chapel.cpp"
+#line 7957 "bison-chapel.cpp"
     break;
 
-  case 197: /* extern_export_decl_stmt: TEXTERN opt_expr fn_decl_stmt  */
+  case 197:
 #line 1062 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildExternExportFunctionDecl(FLAG_EXTERN, (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt));
     }
-#line 7724 "bison-chapel.cpp"
+#line 7965 "bison-chapel.cpp"
     break;
 
-  case 198: /* extern_export_decl_stmt: TEXPORT opt_expr fn_decl_stmt  */
+  case 198:
 #line 1066 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildExternExportFunctionDecl(FLAG_EXPORT, (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt));
     }
-#line 7732 "bison-chapel.cpp"
+#line 7973 "bison-chapel.cpp"
     break;
 
-  case 199: /* extern_export_decl_stmt: TEXTERN opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI  */
+  case 199:
 #line 1071 "chapel.ypp"
     {
       const char* comment = context->latestComment;
@@ -7740,10 +7981,10 @@ yyreduce:
       (yyvsp[-2].pflagset)->insert(FLAG_EXTERN);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), comment, (yyvsp[-2].pflagset), (yyvsp[-3].pexpr));
     }
-#line 7744 "bison-chapel.cpp"
+#line 7985 "bison-chapel.cpp"
     break;
 
-  case 200: /* extern_export_decl_stmt: TEXPORT opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI  */
+  case 200:
 #line 1079 "chapel.ypp"
     {
       const char* comment = context->latestComment;
@@ -7752,196 +7993,196 @@ yyreduce:
       (yyvsp[-2].pflagset)->insert(FLAG_EXPORT);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), comment, (yyvsp[-2].pflagset), (yyvsp[-3].pexpr));
     }
-#line 7756 "bison-chapel.cpp"
+#line 7997 "bison-chapel.cpp"
     break;
 
-  case 201: /* extern_block_stmt: TEXTERN EXTERNCODE  */
+  case 201:
 #line 1090 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildExternBlockStmt(astr((yyvsp[0].pch)));
     }
-#line 7764 "bison-chapel.cpp"
+#line 8005 "bison-chapel.cpp"
     break;
 
-  case 202: /* loop_stmt: TDO stmt TWHILE expr TSEMI  */
+  case 202:
 #line 1096 "chapel.ypp"
                                                 { (yyval.pblockstmt) = DoWhileStmt::build((yyvsp[-1].pexpr), (yyvsp[-3].pblockstmt)); }
-#line 7770 "bison-chapel.cpp"
+#line 8011 "bison-chapel.cpp"
     break;
 
-  case 203: /* loop_stmt: TWHILE expr do_stmt  */
+  case 203:
 #line 1097 "chapel.ypp"
                                                 { (yyval.pblockstmt) = WhileDoStmt::build((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 7776 "bison-chapel.cpp"
+#line 8017 "bison-chapel.cpp"
     break;
 
-  case 204: /* loop_stmt: TWHILE ifvar do_stmt  */
+  case 204:
 #line 1098 "chapel.ypp"
                                                 { (yyval.pblockstmt) = WhileDoStmt::build((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 7782 "bison-chapel.cpp"
+#line 8023 "bison-chapel.cpp"
     break;
 
-  case 205: /* loop_stmt: TCOFORALL expr TIN expr opt_task_intent_ls do_stmt  */
+  case 205:
 #line 1099 "chapel.ypp"
                                                                   { (yyval.pblockstmt) = buildCoforallLoopStmt((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt));       }
-#line 7788 "bison-chapel.cpp"
+#line 8029 "bison-chapel.cpp"
     break;
 
-  case 206: /* loop_stmt: TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt  */
+  case 206:
 #line 1100 "chapel.ypp"
                                                                   { (yyval.pblockstmt) = buildCoforallLoopStmt((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true); }
-#line 7794 "bison-chapel.cpp"
+#line 8035 "bison-chapel.cpp"
     break;
 
-  case 207: /* loop_stmt: TCOFORALL expr opt_task_intent_ls do_stmt  */
+  case 207:
 #line 1101 "chapel.ypp"
                                                                   { (yyval.pblockstmt) = buildCoforallLoopStmt(NULL, (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt));     }
-#line 7800 "bison-chapel.cpp"
+#line 8041 "bison-chapel.cpp"
     break;
 
-  case 208: /* loop_stmt: TFOR expr TIN expr do_stmt  */
+  case 208:
 #line 1102 "chapel.ypp"
                                                 { (yyval.pblockstmt) = ForLoop::buildForLoop(  (yyvsp[-3].pexpr), (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt), false, false); }
-#line 7806 "bison-chapel.cpp"
+#line 8047 "bison-chapel.cpp"
     break;
 
-  case 209: /* loop_stmt: TFOR expr TIN zippered_iterator do_stmt  */
+  case 209:
 #line 1103 "chapel.ypp"
                                                 { (yyval.pblockstmt) = ForLoop::buildForLoop(  (yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true, false); }
-#line 7812 "bison-chapel.cpp"
+#line 8053 "bison-chapel.cpp"
     break;
 
-  case 210: /* loop_stmt: TFOR expr do_stmt  */
+  case 210:
 #line 1104 "chapel.ypp"
                                                 { (yyval.pblockstmt) = ForLoop::buildForLoop(NULL, (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt), false, false); }
-#line 7818 "bison-chapel.cpp"
+#line 8059 "bison-chapel.cpp"
     break;
 
-  case 211: /* loop_stmt: TFOR zippered_iterator do_stmt  */
+  case 211:
 #line 1105 "chapel.ypp"
                                                 { (yyval.pblockstmt) = ForLoop::buildForLoop(NULL, (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true, false); }
-#line 7824 "bison-chapel.cpp"
+#line 8065 "bison-chapel.cpp"
     break;
 
-  case 212: /* loop_stmt: TFOR TPARAM ident_def TIN expr do_stmt  */
+  case 212:
 #line 1106 "chapel.ypp"
                                                 { (yyval.pblockstmt) = buildParamForLoopStmt((yyvsp[-3].pch), (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 7830 "bison-chapel.cpp"
+#line 8071 "bison-chapel.cpp"
     break;
 
-  case 213: /* loop_stmt: TFORALL expr TIN expr do_stmt  */
+  case 213:
 #line 1107 "chapel.ypp"
                                                                    { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-3].pexpr),   (yyvsp[-1].pexpr), NULL, (yyvsp[0].pblockstmt), false, false); }
-#line 7836 "bison-chapel.cpp"
+#line 8077 "bison-chapel.cpp"
     break;
 
-  case 214: /* loop_stmt: TFORALL expr TIN expr forall_intent_clause do_stmt  */
+  case 214:
 #line 1108 "chapel.ypp"
                                                                    { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pexpr),   (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), false, false); }
-#line 7842 "bison-chapel.cpp"
+#line 8083 "bison-chapel.cpp"
     break;
 
-  case 215: /* loop_stmt: TFORALL expr TIN zippered_iterator do_stmt  */
+  case 215:
 #line 1109 "chapel.ypp"
                                                                    { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-3].pexpr),   (yyvsp[-1].pcallexpr), NULL, (yyvsp[0].pblockstmt), true,  false); }
-#line 7848 "bison-chapel.cpp"
+#line 8089 "bison-chapel.cpp"
     break;
 
-  case 216: /* loop_stmt: TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt  */
+  case 216:
 #line 1110 "chapel.ypp"
                                                                    { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pexpr),   (yyvsp[-2].pcallexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), true,  false); }
-#line 7854 "bison-chapel.cpp"
+#line 8095 "bison-chapel.cpp"
     break;
 
-  case 217: /* loop_stmt: TFORALL expr do_stmt  */
+  case 217:
 #line 1111 "chapel.ypp"
                                                                    { (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-1].pexpr), NULL, (yyvsp[0].pblockstmt), false, false); }
-#line 7860 "bison-chapel.cpp"
+#line 8101 "bison-chapel.cpp"
     break;
 
-  case 218: /* loop_stmt: TFORALL expr forall_intent_clause do_stmt  */
+  case 218:
 #line 1112 "chapel.ypp"
                                                                    { (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), false, false); }
-#line 7866 "bison-chapel.cpp"
+#line 8107 "bison-chapel.cpp"
     break;
 
-  case 219: /* loop_stmt: TFORALL zippered_iterator do_stmt  */
+  case 219:
 #line 1113 "chapel.ypp"
                                                                    { (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-1].pcallexpr), NULL, (yyvsp[0].pblockstmt), true,  false); }
-#line 7872 "bison-chapel.cpp"
+#line 8113 "bison-chapel.cpp"
     break;
 
-  case 220: /* loop_stmt: TFORALL zippered_iterator forall_intent_clause do_stmt  */
+  case 220:
 #line 1114 "chapel.ypp"
                                                                    { (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-2].pcallexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), true,  false); }
-#line 7878 "bison-chapel.cpp"
+#line 8119 "bison-chapel.cpp"
     break;
 
-  case 221: /* loop_stmt: TFOREACH expr TIN expr do_stmt  */
+  case 221:
 #line 1115 "chapel.ypp"
                                                     { (yyval.pblockstmt) = ForLoop::buildForeachLoop(  (yyvsp[-3].pexpr), (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt), false, false); }
-#line 7884 "bison-chapel.cpp"
+#line 8125 "bison-chapel.cpp"
     break;
 
-  case 222: /* loop_stmt: TFOREACH expr TIN zippered_iterator do_stmt  */
+  case 222:
 #line 1116 "chapel.ypp"
                                                     { (yyval.pblockstmt) = ForLoop::buildForeachLoop(  (yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true, false); }
-#line 7890 "bison-chapel.cpp"
+#line 8131 "bison-chapel.cpp"
     break;
 
-  case 223: /* loop_stmt: TFOREACH expr do_stmt  */
+  case 223:
 #line 1117 "chapel.ypp"
                                                     { (yyval.pblockstmt) = ForLoop::buildForeachLoop(NULL, (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt), false, false); }
-#line 7896 "bison-chapel.cpp"
+#line 8137 "bison-chapel.cpp"
     break;
 
-  case 224: /* loop_stmt: TFOREACH zippered_iterator do_stmt  */
+  case 224:
 #line 1118 "chapel.ypp"
                                                     { (yyval.pblockstmt) = ForLoop::buildForeachLoop(NULL, (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true, false); }
-#line 7902 "bison-chapel.cpp"
+#line 8143 "bison-chapel.cpp"
     break;
 
-  case 225: /* loop_stmt: TLSBR expr_ls TIN expr TRSBR stmt  */
+  case 225:
 #line 1120 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pexpr), "invalid index expression");
       (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pexpr), NULL, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
-#line 7912 "bison-chapel.cpp"
+#line 8153 "bison-chapel.cpp"
     break;
 
-  case 226: /* loop_stmt: TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt  */
+  case 226:
 #line 1126 "chapel.ypp"
     {
       if ((yyvsp[-5].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-3].pexpr), "invalid index expression");
       (yyval.pblockstmt) = ForallStmt::build((yyvsp[-5].pcallexpr)->get(1)->remove(), (yyvsp[-3].pexpr), (yyvsp[-2].pcallexpr),   new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
-#line 7922 "bison-chapel.cpp"
+#line 8163 "bison-chapel.cpp"
     break;
 
-  case 227: /* loop_stmt: TLSBR expr_ls TIN zippered_iterator TRSBR stmt  */
+  case 227:
 #line 1132 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pcallexpr), "invalid index expression");
       (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pcallexpr), NULL, new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
-#line 7932 "bison-chapel.cpp"
+#line 8173 "bison-chapel.cpp"
     break;
 
-  case 228: /* loop_stmt: TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt  */
+  case 228:
 #line 1138 "chapel.ypp"
     {
       if ((yyvsp[-5].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-3].pcallexpr), "invalid index expression");
       (yyval.pblockstmt) = ForallStmt::build((yyvsp[-5].pcallexpr)->get(1)->remove(), (yyvsp[-3].pcallexpr), (yyvsp[-2].pcallexpr),   new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
-#line 7942 "bison-chapel.cpp"
+#line 8183 "bison-chapel.cpp"
     break;
 
-  case 229: /* loop_stmt: TLSBR expr_ls TRSBR stmt  */
+  case 229:
 #line 1144 "chapel.ypp"
     {
       if ((yyvsp[-2].pcallexpr)->argList.length > 1)
@@ -7949,10 +8190,10 @@ yyreduce:
       else
         (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-2].pcallexpr)->get(1)->remove(),                       NULL, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
-#line 7953 "bison-chapel.cpp"
+#line 8194 "bison-chapel.cpp"
     break;
 
-  case 230: /* loop_stmt: TLSBR expr_ls forall_intent_clause TRSBR stmt  */
+  case 230:
 #line 1151 "chapel.ypp"
     {
       if ((yyvsp[-3].pcallexpr)->argList.length > 1)
@@ -7960,428 +8201,428 @@ yyreduce:
       else
         (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-3].pcallexpr)->get(1)->remove(),                       (yyvsp[-2].pcallexpr), new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
-#line 7964 "bison-chapel.cpp"
+#line 8205 "bison-chapel.cpp"
     break;
 
-  case 231: /* loop_stmt: TLSBR zippered_iterator TRSBR stmt  */
+  case 231:
 #line 1158 "chapel.ypp"
     {
       (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-2].pcallexpr), NULL, new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
-#line 7972 "bison-chapel.cpp"
+#line 8213 "bison-chapel.cpp"
     break;
 
-  case 232: /* loop_stmt: TLSBR zippered_iterator forall_intent_clause TRSBR stmt  */
+  case 232:
 #line 1162 "chapel.ypp"
     {
       (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-3].pcallexpr), (yyvsp[-2].pcallexpr),   new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
-#line 7980 "bison-chapel.cpp"
+#line 8221 "bison-chapel.cpp"
     break;
 
-  case 233: /* zippered_iterator: TZIP TLP expr_ls TRP  */
+  case 233:
 #line 1168 "chapel.ypp"
                             { (yyval.pcallexpr) = new CallExpr(PRIM_ZIP, (yyvsp[-1].pcallexpr)); }
-#line 7986 "bison-chapel.cpp"
+#line 8227 "bison-chapel.cpp"
     break;
 
-  case 234: /* if_stmt: TIF expr TTHEN stmt  */
+  case 234:
 #line 1172 "chapel.ypp"
                                      { (yyval.pblockstmt) = buildIfStmt((yyvsp[-2].pexpr), (yyvsp[0].pblockstmt)); }
-#line 7992 "bison-chapel.cpp"
+#line 8233 "bison-chapel.cpp"
     break;
 
-  case 235: /* if_stmt: TIF expr block_stmt  */
+  case 235:
 #line 1173 "chapel.ypp"
                                      { (yyval.pblockstmt) = buildIfStmt((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 7998 "bison-chapel.cpp"
+#line 8239 "bison-chapel.cpp"
     break;
 
-  case 236: /* if_stmt: TIF expr TTHEN stmt TELSE stmt  */
+  case 236:
 #line 1174 "chapel.ypp"
                                      { (yyval.pblockstmt) = buildIfStmt((yyvsp[-4].pexpr), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 8004 "bison-chapel.cpp"
+#line 8245 "bison-chapel.cpp"
     break;
 
-  case 237: /* if_stmt: TIF expr block_stmt TELSE stmt  */
+  case 237:
 #line 1175 "chapel.ypp"
                                      { (yyval.pblockstmt) = buildIfStmt((yyvsp[-3].pexpr), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 8010 "bison-chapel.cpp"
+#line 8251 "bison-chapel.cpp"
     break;
 
-  case 238: /* if_stmt: TIF ifvar TTHEN stmt  */
+  case 238:
 #line 1177 "chapel.ypp"
                                       { (yyval.pblockstmt) = buildIfStmt((yyvsp[-2].pexpr), (yyvsp[0].pblockstmt)); }
-#line 8016 "bison-chapel.cpp"
+#line 8257 "bison-chapel.cpp"
     break;
 
-  case 239: /* if_stmt: TIF ifvar block_stmt  */
+  case 239:
 #line 1178 "chapel.ypp"
                                       { (yyval.pblockstmt) = buildIfStmt((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 8022 "bison-chapel.cpp"
+#line 8263 "bison-chapel.cpp"
     break;
 
-  case 240: /* if_stmt: TIF ifvar TTHEN stmt TELSE stmt  */
+  case 240:
 #line 1179 "chapel.ypp"
                                       { (yyval.pblockstmt) = buildIfStmt((yyvsp[-4].pexpr), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 8028 "bison-chapel.cpp"
+#line 8269 "bison-chapel.cpp"
     break;
 
-  case 241: /* if_stmt: TIF ifvar block_stmt TELSE stmt  */
+  case 241:
 #line 1180 "chapel.ypp"
                                       { (yyval.pblockstmt) = buildIfStmt((yyvsp[-3].pexpr), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 8034 "bison-chapel.cpp"
+#line 8275 "bison-chapel.cpp"
     break;
 
-  case 242: /* if_stmt: TIF expr assignop_ident expr TTHEN stmt  */
+  case 242:
 #line 1182 "chapel.ypp"
                                                          {
 (yyval.pblockstmt) = buildIfStmt(convertAssignmentAndWarn((yyvsp[-4].pexpr),(yyvsp[-3].pch),(yyvsp[-2].pexpr)), (yyvsp[0].pblockstmt)); }
-#line 8041 "bison-chapel.cpp"
+#line 8282 "bison-chapel.cpp"
     break;
 
-  case 243: /* if_stmt: TIF expr assignop_ident expr block_stmt  */
+  case 243:
 #line 1184 "chapel.ypp"
                                                          {
 (yyval.pblockstmt) = buildIfStmt(convertAssignmentAndWarn((yyvsp[-3].pexpr),(yyvsp[-2].pch),(yyvsp[-1].pexpr)), (yyvsp[0].pblockstmt)); }
-#line 8048 "bison-chapel.cpp"
+#line 8289 "bison-chapel.cpp"
     break;
 
-  case 244: /* if_stmt: TIF expr assignop_ident expr TTHEN stmt TELSE stmt  */
+  case 244:
 #line 1186 "chapel.ypp"
                                                          {
 (yyval.pblockstmt) = buildIfStmt(convertAssignmentAndWarn((yyvsp[-6].pexpr),(yyvsp[-5].pch),(yyvsp[-4].pexpr)), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 8055 "bison-chapel.cpp"
+#line 8296 "bison-chapel.cpp"
     break;
 
-  case 245: /* if_stmt: TIF expr assignop_ident expr block_stmt TELSE stmt  */
+  case 245:
 #line 1188 "chapel.ypp"
                                                          {
 (yyval.pblockstmt) = buildIfStmt(convertAssignmentAndWarn((yyvsp[-5].pexpr),(yyvsp[-4].pch),(yyvsp[-3].pexpr)), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 8062 "bison-chapel.cpp"
+#line 8303 "bison-chapel.cpp"
     break;
 
-  case 246: /* ifvar: TVAR ident_def TASSIGN expr  */
+  case 246:
 #line 1193 "chapel.ypp"
                                 { (yyval.pexpr) = buildIfVar((yyvsp[-2].pch), (yyvsp[0].pexpr), false); }
-#line 8068 "bison-chapel.cpp"
+#line 8309 "bison-chapel.cpp"
     break;
 
-  case 247: /* ifvar: TCONST ident_def TASSIGN expr  */
+  case 247:
 #line 1194 "chapel.ypp"
                                 { (yyval.pexpr) = buildIfVar((yyvsp[-2].pch), (yyvsp[0].pexpr), true);  }
-#line 8074 "bison-chapel.cpp"
+#line 8315 "bison-chapel.cpp"
     break;
 
-  case 248: /* interface_stmt: TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt  */
+  case 248:
 #line 1199 "chapel.ypp"
   { (yyval.pblockstmt) = buildChapelStmt(InterfaceSymbol::buildDef((yyvsp[-4].pch), (yyvsp[-2].pcallexpr), (yyvsp[0].pblockstmt))); }
-#line 8080 "bison-chapel.cpp"
+#line 8321 "bison-chapel.cpp"
     break;
 
-  case 249: /* interface_stmt: TINTERFACE ident_def block_stmt  */
+  case 249:
 #line 1201 "chapel.ypp"
   { // mimick ifc_formal_ls for a single formal "Self"
     DefExpr*  formal = InterfaceSymbol::buildFormal("Self", INTENT_TYPE);
     CallExpr* ls     = new CallExpr(PRIM_ACTUALS_LIST, formal);
     (yyval.pblockstmt) = buildChapelStmt(InterfaceSymbol::buildDef((yyvsp[-1].pch), ls, (yyvsp[0].pblockstmt))); }
-#line 8089 "bison-chapel.cpp"
+#line 8330 "bison-chapel.cpp"
     break;
 
-  case 250: /* ifc_formal_ls: ifc_formal  */
+  case 250:
 #line 1208 "chapel.ypp"
                                   { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pdefexpr)); }
-#line 8095 "bison-chapel.cpp"
+#line 8336 "bison-chapel.cpp"
     break;
 
-  case 251: /* ifc_formal_ls: ifc_formal_ls TCOMMA ifc_formal  */
+  case 251:
 #line 1209 "chapel.ypp"
                                   { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pdefexpr)); }
-#line 8101 "bison-chapel.cpp"
+#line 8342 "bison-chapel.cpp"
     break;
 
-  case 252: /* ifc_formal: ident_def  */
+  case 252:
 #line 1214 "chapel.ypp"
              { (yyval.pdefexpr) = InterfaceSymbol::buildFormal((yyvsp[0].pch), INTENT_TYPE); }
-#line 8107 "bison-chapel.cpp"
+#line 8348 "bison-chapel.cpp"
     break;
 
-  case 253: /* implements_type_ident: TIDENT  */
+  case 253:
 #line 1219 "chapel.ypp"
              { (yyval.pch) = (yyvsp[0].pch); }
-#line 8113 "bison-chapel.cpp"
+#line 8354 "bison-chapel.cpp"
     break;
 
-  case 254: /* implements_type_ident: TBOOL  */
+  case 254:
 #line 1220 "chapel.ypp"
              { (yyval.pch) = "bool"; }
-#line 8119 "bison-chapel.cpp"
+#line 8360 "bison-chapel.cpp"
     break;
 
-  case 255: /* implements_type_ident: TINT  */
+  case 255:
 #line 1221 "chapel.ypp"
              { (yyval.pch) = "int"; }
-#line 8125 "bison-chapel.cpp"
+#line 8366 "bison-chapel.cpp"
     break;
 
-  case 256: /* implements_type_ident: TUINT  */
+  case 256:
 #line 1222 "chapel.ypp"
              { (yyval.pch) = "uint"; }
-#line 8131 "bison-chapel.cpp"
+#line 8372 "bison-chapel.cpp"
     break;
 
-  case 257: /* implements_type_ident: TREAL  */
+  case 257:
 #line 1223 "chapel.ypp"
              { (yyval.pch) = "real"; }
-#line 8137 "bison-chapel.cpp"
+#line 8378 "bison-chapel.cpp"
     break;
 
-  case 258: /* implements_type_ident: TIMAG  */
+  case 258:
 #line 1224 "chapel.ypp"
              { (yyval.pch) = "imag"; }
-#line 8143 "bison-chapel.cpp"
+#line 8384 "bison-chapel.cpp"
     break;
 
-  case 259: /* implements_type_ident: TCOMPLEX  */
+  case 259:
 #line 1225 "chapel.ypp"
              { (yyval.pch) = "complex"; }
-#line 8149 "bison-chapel.cpp"
+#line 8390 "bison-chapel.cpp"
     break;
 
-  case 260: /* implements_type_ident: TBYTES  */
+  case 260:
 #line 1226 "chapel.ypp"
              { (yyval.pch) = "bytes"; }
-#line 8155 "bison-chapel.cpp"
+#line 8396 "bison-chapel.cpp"
     break;
 
-  case 261: /* implements_type_ident: TSTRING  */
+  case 261:
 #line 1227 "chapel.ypp"
              { (yyval.pch) = "string"; }
-#line 8161 "bison-chapel.cpp"
+#line 8402 "bison-chapel.cpp"
     break;
 
-  case 262: /* implements_type_ident: TLOCALE  */
+  case 262:
 #line 1228 "chapel.ypp"
              { (yyval.pch) = "locale"; }
-#line 8167 "bison-chapel.cpp"
+#line 8408 "bison-chapel.cpp"
     break;
 
-  case 263: /* implements_type_ident: TNOTHING  */
+  case 263:
 #line 1229 "chapel.ypp"
              { (yyval.pch) = "nothing"; }
-#line 8173 "bison-chapel.cpp"
+#line 8414 "bison-chapel.cpp"
     break;
 
-  case 264: /* implements_type_ident: TVOID  */
+  case 264:
 #line 1230 "chapel.ypp"
              { (yyval.pch) = "void"; }
-#line 8179 "bison-chapel.cpp"
+#line 8420 "bison-chapel.cpp"
     break;
 
-  case 265: /* implements_type_ident: implements_type_error_ident  */
+  case 265:
 #line 1232 "chapel.ypp"
   { (yyval.pch) = (yyvsp[0].pch);
     USR_FATAL_CONT("'%s' is not allowed to \"implement\" an interface", (yyvsp[0].pch)); }
-#line 8186 "bison-chapel.cpp"
+#line 8427 "bison-chapel.cpp"
     break;
 
-  case 266: /* implements_type_error_ident: TNONE  */
+  case 266:
 #line 1238 "chapel.ypp"
              { (yyval.pch) = "none"; }
-#line 8192 "bison-chapel.cpp"
+#line 8433 "bison-chapel.cpp"
     break;
 
-  case 267: /* implements_type_error_ident: TTHIS  */
+  case 267:
 #line 1239 "chapel.ypp"
              { (yyval.pch) = "this"; }
-#line 8198 "bison-chapel.cpp"
+#line 8439 "bison-chapel.cpp"
     break;
 
-  case 268: /* implements_type_error_ident: TFALSE  */
+  case 268:
 #line 1240 "chapel.ypp"
              { (yyval.pch) = "false"; }
-#line 8204 "bison-chapel.cpp"
+#line 8445 "bison-chapel.cpp"
     break;
 
-  case 269: /* implements_type_error_ident: TTRUE  */
+  case 269:
 #line 1241 "chapel.ypp"
              { (yyval.pch) = "true"; }
-#line 8210 "bison-chapel.cpp"
+#line 8451 "bison-chapel.cpp"
     break;
 
-  case 270: /* implements_type_error_ident: TDOMAIN  */
+  case 270:
 #line 1250 "chapel.ypp"
              { (yyval.pch) = "domain"; }
-#line 8216 "bison-chapel.cpp"
+#line 8457 "bison-chapel.cpp"
     break;
 
-  case 271: /* implements_type_error_ident: TINDEX  */
+  case 271:
 #line 1251 "chapel.ypp"
              { (yyval.pch) = "index"; }
-#line 8222 "bison-chapel.cpp"
+#line 8463 "bison-chapel.cpp"
     break;
 
-  case 272: /* implements_stmt: TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI  */
+  case 272:
 #line 1256 "chapel.ypp"
   { (yyval.pblockstmt) = buildChapelStmt(ImplementsStmt::build((yyvsp[-4].pch), (yyvsp[-2].pcallexpr), NULL)); }
-#line 8228 "bison-chapel.cpp"
+#line 8469 "bison-chapel.cpp"
     break;
 
-  case 273: /* implements_stmt: implements_type_ident TIMPLEMENTS ident_def TSEMI  */
+  case 273:
 #line 1258 "chapel.ypp"
   { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr((yyvsp[-3].pch)));
     (yyval.pblockstmt) = buildChapelStmt(ImplementsStmt::build((yyvsp[-1].pch), act, NULL)); }
-#line 8235 "bison-chapel.cpp"
+#line 8476 "bison-chapel.cpp"
     break;
 
-  case 274: /* implements_stmt: implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI  */
+  case 274:
 #line 1261 "chapel.ypp"
   { (yyvsp[-2].pcallexpr)->insertAtHead(new UnresolvedSymExpr((yyvsp[-6].pch)));
     (yyval.pblockstmt) = buildChapelStmt(ImplementsStmt::build((yyvsp[-4].pch), (yyvsp[-2].pcallexpr), NULL)); }
-#line 8242 "bison-chapel.cpp"
+#line 8483 "bison-chapel.cpp"
     break;
 
-  case 275: /* ifc_constraint: TIMPLEMENTS ident_def TLP actual_ls TRP  */
+  case 275:
 #line 1267 "chapel.ypp"
   { (yyval.pexpr) = IfcConstraint::build((yyvsp[-3].pch), (yyvsp[-1].pcallexpr)); }
-#line 8248 "bison-chapel.cpp"
+#line 8489 "bison-chapel.cpp"
     break;
 
-  case 276: /* ifc_constraint: implements_type_ident TIMPLEMENTS ident_def  */
+  case 276:
 #line 1269 "chapel.ypp"
   { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr((yyvsp[-2].pch)));
     (yyval.pexpr) = IfcConstraint::build((yyvsp[0].pch), act); }
-#line 8255 "bison-chapel.cpp"
+#line 8496 "bison-chapel.cpp"
     break;
 
-  case 277: /* ifc_constraint: implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP  */
+  case 277:
 #line 1272 "chapel.ypp"
   { (yyvsp[-1].pcallexpr)->insertAtHead(new UnresolvedSymExpr((yyvsp[-5].pch)));
     (yyval.pexpr) = IfcConstraint::build((yyvsp[-3].pch), (yyvsp[-1].pcallexpr)); }
-#line 8262 "bison-chapel.cpp"
+#line 8503 "bison-chapel.cpp"
     break;
 
-  case 278: /* defer_stmt: TDEFER stmt  */
+  case 278:
 #line 1277 "chapel.ypp"
                           { (yyval.pblockstmt) = DeferStmt::build((yyvsp[0].pblockstmt)); }
-#line 8268 "bison-chapel.cpp"
+#line 8509 "bison-chapel.cpp"
     break;
 
-  case 279: /* try_token: TTRY  */
+  case 279:
 #line 1280 "chapel.ypp"
            { (yyval.b) = false; }
-#line 8274 "bison-chapel.cpp"
+#line 8515 "bison-chapel.cpp"
     break;
 
-  case 280: /* try_token: TTRYBANG  */
+  case 280:
 #line 1281 "chapel.ypp"
            { (yyval.b) = true; }
-#line 8280 "bison-chapel.cpp"
+#line 8521 "bison-chapel.cpp"
     break;
 
-  case 281: /* try_stmt: try_token tryable_stmt  */
+  case 281:
 #line 1284 "chapel.ypp"
                          { (yyval.pblockstmt) = TryStmt::build((yyvsp[-1].b), (yyvsp[0].pblockstmt)); }
-#line 8286 "bison-chapel.cpp"
+#line 8527 "bison-chapel.cpp"
     break;
 
-  case 282: /* try_stmt: try_token block_stmt catch_stmt_ls  */
+  case 282:
 #line 1285 "chapel.ypp"
                                        { (yyval.pblockstmt) = TryStmt::build((yyvsp[-2].b), (yyvsp[-1].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 8292 "bison-chapel.cpp"
+#line 8533 "bison-chapel.cpp"
     break;
 
-  case 283: /* catch_stmt_ls: %empty  */
+  case 283:
 #line 1289 "chapel.ypp"
                            { (yyval.pblockstmt) = buildChapelStmt(); }
-#line 8298 "bison-chapel.cpp"
+#line 8539 "bison-chapel.cpp"
     break;
 
-  case 284: /* catch_stmt_ls: catch_stmt_ls catch_stmt  */
+  case 284:
 #line 1290 "chapel.ypp"
                            { (yyvsp[-1].pblockstmt)->insertAtTail((yyvsp[0].pexpr)); }
-#line 8304 "bison-chapel.cpp"
+#line 8545 "bison-chapel.cpp"
     break;
 
-  case 285: /* catch_stmt: TCATCH block_stmt  */
+  case 285:
 #line 1294 "chapel.ypp"
                                        { (yyval.pexpr) = CatchStmt::build((yyvsp[0].pblockstmt)); }
-#line 8310 "bison-chapel.cpp"
+#line 8551 "bison-chapel.cpp"
     break;
 
-  case 286: /* catch_stmt: TCATCH catch_expr block_stmt  */
+  case 286:
 #line 1295 "chapel.ypp"
                                        { (yyval.pexpr) = CatchStmt::build((yyvsp[-1].pdefexpr), (yyvsp[0].pblockstmt)); }
-#line 8316 "bison-chapel.cpp"
+#line 8557 "bison-chapel.cpp"
     break;
 
-  case 287: /* catch_stmt: TCATCH TLP catch_expr TRP block_stmt  */
+  case 287:
 #line 1296 "chapel.ypp"
                                        { (yyval.pexpr) = CatchStmt::build((yyvsp[-2].pdefexpr), (yyvsp[0].pblockstmt)); }
-#line 8322 "bison-chapel.cpp"
+#line 8563 "bison-chapel.cpp"
     break;
 
-  case 288: /* catch_expr: ident_def  */
+  case 288:
 #line 1300 "chapel.ypp"
                       { (yyval.pdefexpr) = new DefExpr(new VarSymbol((yyvsp[0].pch)), NULL, new UnresolvedSymExpr("Error")); }
-#line 8328 "bison-chapel.cpp"
+#line 8569 "bison-chapel.cpp"
     break;
 
-  case 289: /* catch_expr: ident_def TCOLON expr  */
+  case 289:
 #line 1301 "chapel.ypp"
                         { (yyval.pdefexpr) = new DefExpr(new VarSymbol((yyvsp[-2].pch)), NULL, (yyvsp[0].pexpr));   }
-#line 8334 "bison-chapel.cpp"
+#line 8575 "bison-chapel.cpp"
     break;
 
-  case 290: /* throw_stmt: TTHROW expr TSEMI  */
+  case 290:
 #line 1305 "chapel.ypp"
                     { (yyval.pblockstmt) = buildPrimitiveStmt(PRIM_THROW, (yyvsp[-1].pexpr)); }
-#line 8340 "bison-chapel.cpp"
+#line 8581 "bison-chapel.cpp"
     break;
 
-  case 291: /* select_stmt: TSELECT expr TLCBR when_stmt_ls TRCBR  */
+  case 291:
 #line 1309 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt(buildSelectStmt((yyvsp[-3].pexpr), (yyvsp[-1].pblockstmt))); }
-#line 8346 "bison-chapel.cpp"
+#line 8587 "bison-chapel.cpp"
     break;
 
-  case 292: /* select_stmt: TSELECT expr TLCBR error TRCBR  */
+  case 292:
 #line 1311 "chapel.ypp"
     { (yyval.pblockstmt) = buildErrorStandin(); }
-#line 8352 "bison-chapel.cpp"
+#line 8593 "bison-chapel.cpp"
     break;
 
-  case 293: /* when_stmt_ls: %empty  */
+  case 293:
 #line 1315 "chapel.ypp"
                           { (yyval.pblockstmt) = buildChapelStmt(); }
-#line 8358 "bison-chapel.cpp"
+#line 8599 "bison-chapel.cpp"
     break;
 
-  case 294: /* when_stmt_ls: when_stmt_ls when_stmt  */
+  case 294:
 #line 1316 "chapel.ypp"
                           { (yyvsp[-1].pblockstmt)->insertAtTail((yyvsp[0].pexpr)); }
-#line 8364 "bison-chapel.cpp"
+#line 8605 "bison-chapel.cpp"
     break;
 
-  case 295: /* when_stmt: TWHEN expr_ls do_stmt  */
+  case 295:
 #line 1321 "chapel.ypp"
     { (yyval.pexpr) = new CondStmt(new CallExpr(PRIM_WHEN, (yyvsp[-1].pcallexpr)), (yyvsp[0].pblockstmt)); }
-#line 8370 "bison-chapel.cpp"
+#line 8611 "bison-chapel.cpp"
     break;
 
-  case 296: /* when_stmt: TOTHERWISE stmt  */
+  case 296:
 #line 1323 "chapel.ypp"
     { (yyval.pexpr) = new CondStmt(new CallExpr(PRIM_WHEN), (yyvsp[0].pblockstmt)); }
-#line 8376 "bison-chapel.cpp"
+#line 8617 "bison-chapel.cpp"
     break;
 
-  case 297: /* when_stmt: TOTHERWISE TDO stmt  */
+  case 297:
 #line 1325 "chapel.ypp"
     { (yyval.pexpr) = new CondStmt(new CallExpr(PRIM_WHEN), (yyvsp[0].pblockstmt)); }
-#line 8382 "bison-chapel.cpp"
+#line 8623 "bison-chapel.cpp"
     break;
 
-  case 298: /* class_decl_stmt: class_tag ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR  */
+  case 298:
 #line 1332 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
@@ -8392,10 +8633,10 @@ yyreduce:
                                              FLAG_UNKNOWN,
                                              (yylsp[-5]).comment));
     }
-#line 8396 "bison-chapel.cpp"
+#line 8637 "bison-chapel.cpp"
     break;
 
-  case 299: /* class_decl_stmt: class_tag ident_def opt_inherit TLCBR error TRCBR  */
+  case 299:
 #line 1342 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
@@ -8406,70 +8647,70 @@ yyreduce:
                                              FLAG_UNKNOWN,
                                              (yylsp[-5]).comment));
     }
-#line 8410 "bison-chapel.cpp"
+#line 8651 "bison-chapel.cpp"
     break;
 
-  case 300: /* class_tag: TCLASS  */
+  case 300:
 #line 1355 "chapel.ypp"
            {
              (yyval.aggrTag)                     = AGGREGATE_CLASS;
              (yyloc).comment             = context->latestComment;
              context->latestComment = NULL;
            }
-#line 8420 "bison-chapel.cpp"
+#line 8661 "bison-chapel.cpp"
     break;
 
-  case 301: /* class_tag: TRECORD  */
+  case 301:
 #line 1360 "chapel.ypp"
            {
              (yyval.aggrTag)                     = AGGREGATE_RECORD;
              (yyloc).comment             = context->latestComment;
              context->latestComment = NULL;
            }
-#line 8430 "bison-chapel.cpp"
+#line 8671 "bison-chapel.cpp"
     break;
 
-  case 302: /* class_tag: TUNION  */
+  case 302:
 #line 1365 "chapel.ypp"
            {
              (yyval.aggrTag)                     = AGGREGATE_UNION;
              (yyloc).comment             = context->latestComment;
              context->latestComment = NULL;
            }
-#line 8440 "bison-chapel.cpp"
+#line 8681 "bison-chapel.cpp"
     break;
 
-  case 303: /* opt_inherit: %empty  */
+  case 303:
 #line 1373 "chapel.ypp"
                   { (yyval.pcallexpr) = NULL; }
-#line 8446 "bison-chapel.cpp"
+#line 8687 "bison-chapel.cpp"
     break;
 
-  case 304: /* opt_inherit: TCOLON expr_ls  */
+  case 304:
 #line 1374 "chapel.ypp"
                   { (yyval.pcallexpr) = (yyvsp[0].pcallexpr); }
-#line 8452 "bison-chapel.cpp"
+#line 8693 "bison-chapel.cpp"
     break;
 
-  case 305: /* class_level_stmt_ls: %empty  */
+  case 305:
 #line 1379 "chapel.ypp"
     { (yyval.pblockstmt) = new BlockStmt(); }
-#line 8458 "bison-chapel.cpp"
+#line 8699 "bison-chapel.cpp"
     break;
 
-  case 306: /* class_level_stmt_ls: class_level_stmt_ls deprecated_class_level_stmt  */
+  case 306:
 #line 1381 "chapel.ypp"
     { (yyvsp[-1].pblockstmt)->insertAtTail((yyvsp[0].pblockstmt)); }
-#line 8464 "bison-chapel.cpp"
+#line 8705 "bison-chapel.cpp"
     break;
 
-  case 307: /* class_level_stmt_ls: class_level_stmt_ls pragma_ls deprecated_class_level_stmt  */
+  case 307:
 #line 1383 "chapel.ypp"
     { (yyvsp[-2].pblockstmt)->insertAtTail(buildPragmaStmt((yyvsp[-1].vpch), (yyvsp[0].pblockstmt))); }
-#line 8470 "bison-chapel.cpp"
+#line 8711 "bison-chapel.cpp"
     break;
 
-  case 308: /* enum_decl_stmt: enum_header ident_def TLCBR enum_ls TRCBR  */
+  case 308:
 #line 1388 "chapel.ypp"
     {
       EnumType* pdt = (yyvsp[-4].penumtype);
@@ -8486,28 +8727,28 @@ yyreduce:
       (yyvsp[-4].penumtype)->symbol = pst;
       (yyval.pblockstmt) = buildChapelStmt(new DefExpr(pst));
     }
-#line 8490 "bison-chapel.cpp"
+#line 8731 "bison-chapel.cpp"
     break;
 
-  case 309: /* enum_decl_stmt: enum_header ident_def TLCBR error TRCBR  */
+  case 309:
 #line 1404 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildErrorStandin();
     }
-#line 8498 "bison-chapel.cpp"
+#line 8739 "bison-chapel.cpp"
     break;
 
-  case 310: /* enum_header: TENUM  */
+  case 310:
 #line 1411 "chapel.ypp"
     {
       (yyval.penumtype) = new EnumType();
       (yyloc).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 8508 "bison-chapel.cpp"
+#line 8749 "bison-chapel.cpp"
     break;
 
-  case 311: /* enum_ls: deprecated_enum_item  */
+  case 311:
 #line 1420 "chapel.ypp"
     {
       (yyval.pvecOfDefs) = new std::vector<DefExpr*>();
@@ -8516,68 +8757,68 @@ yyreduce:
       // start here for enabling documentation of enum constants
       //context->latestComment = NULL;
     }
-#line 8520 "bison-chapel.cpp"
+#line 8761 "bison-chapel.cpp"
     break;
 
-  case 312: /* enum_ls: enum_ls TCOMMA  */
+  case 312:
 #line 1428 "chapel.ypp"
     {
       (yyval.pvecOfDefs) = (yyvsp[-1].pvecOfDefs);
     }
-#line 8528 "bison-chapel.cpp"
+#line 8769 "bison-chapel.cpp"
     break;
 
-  case 313: /* enum_ls: enum_ls TCOMMA deprecated_enum_item  */
+  case 313:
 #line 1432 "chapel.ypp"
     {
       (yyvsp[-2].pvecOfDefs)->push_back((yyvsp[0].pdefexpr));
     }
-#line 8536 "bison-chapel.cpp"
+#line 8777 "bison-chapel.cpp"
     break;
 
-  case 315: /* deprecated_enum_item: TDEPRECATED STRINGLITERAL enum_item  */
+  case 315:
 #line 1440 "chapel.ypp"
 { (yyval.pdefexpr) = buildDeprecated((yyvsp[0].pdefexpr), (yyvsp[-1].pch)); }
-#line 8542 "bison-chapel.cpp"
+#line 8783 "bison-chapel.cpp"
     break;
 
-  case 316: /* deprecated_enum_item: TDEPRECATED enum_item  */
+  case 316:
 #line 1442 "chapel.ypp"
 { (yyval.pdefexpr) = buildDeprecated((yyvsp[0].pdefexpr)); }
-#line 8548 "bison-chapel.cpp"
+#line 8789 "bison-chapel.cpp"
     break;
 
-  case 317: /* enum_item: ident_def  */
+  case 317:
 #line 1446 "chapel.ypp"
                           { (yyval.pdefexpr) = new DefExpr(new EnumSymbol((yyvsp[0].pch))); }
-#line 8554 "bison-chapel.cpp"
+#line 8795 "bison-chapel.cpp"
     break;
 
-  case 318: /* enum_item: ident_def TASSIGN expr  */
+  case 318:
 #line 1447 "chapel.ypp"
                           { (yyval.pdefexpr) = new DefExpr(new EnumSymbol((yyvsp[-2].pch)), (yyvsp[0].pexpr)); }
-#line 8560 "bison-chapel.cpp"
+#line 8801 "bison-chapel.cpp"
     break;
 
-  case 319: /* $@9: %empty  */
+  case 319:
 #line 1452 "chapel.ypp"
     {
       captureTokens = 1;
       captureString.clear();
     }
-#line 8569 "bison-chapel.cpp"
+#line 8810 "bison-chapel.cpp"
     break;
 
-  case 320: /* $@10: %empty  */
+  case 320:
 #line 1457 "chapel.ypp"
     {
       captureTokens = 0;
       (yyvsp[0].pfnsymbol)->userString = astr(captureString);
     }
-#line 8578 "bison-chapel.cpp"
+#line 8819 "bison-chapel.cpp"
     break;
 
-  case 321: /* lambda_decl_expr: TLAMBDA $@9 req_formal_ls $@10 opt_ret_tag opt_type opt_lifetime_where function_body_stmt  */
+  case 321:
 #line 1462 "chapel.ypp"
     {
       (yyvsp[-5].pfnsymbol)->retTag = (yyvsp[-3].retTag);
@@ -8596,36 +8837,36 @@ yyreduce:
       (yyvsp[-5].pfnsymbol)->insertAtTail((yyvsp[0].pblockstmt));
       (yyval.pexpr) = new DefExpr(buildLambda((yyvsp[-5].pfnsymbol)));
     }
-#line 8600 "bison-chapel.cpp"
+#line 8841 "bison-chapel.cpp"
     break;
 
-  case 322: /* linkage_spec: %empty  */
+  case 322:
 #line 1484 "chapel.ypp"
                 {
                   (yyval.pfnsymbol) = new FnSymbol("");
                 }
-#line 8608 "bison-chapel.cpp"
+#line 8849 "bison-chapel.cpp"
     break;
 
-  case 323: /* linkage_spec: TINLINE  */
+  case 323:
 #line 1487 "chapel.ypp"
                 {
                   (yyval.pfnsymbol) = new FnSymbol("");
                   (yyval.pfnsymbol)->addFlag(FLAG_INLINE);
                 }
-#line 8617 "bison-chapel.cpp"
+#line 8858 "bison-chapel.cpp"
     break;
 
-  case 324: /* linkage_spec: TOVERRIDE  */
+  case 324:
 #line 1491 "chapel.ypp"
                 {
                   (yyval.pfnsymbol) = new FnSymbol("");
                   (yyval.pfnsymbol)->addFlag(FLAG_OVERRIDE);
                 }
-#line 8626 "bison-chapel.cpp"
+#line 8867 "bison-chapel.cpp"
     break;
 
-  case 325: /* $@11: %empty  */
+  case 325:
 #line 1499 "chapel.ypp"
     {
       // Capture the latest comment
@@ -8636,10 +8877,10 @@ yyreduce:
       captureTokens = 1;
       captureString.clear();
     }
-#line 8640 "bison-chapel.cpp"
+#line 8881 "bison-chapel.cpp"
     break;
 
-  case 326: /* $@12: %empty  */
+  case 326:
 #line 1509 "chapel.ypp"
     {
       // Stop capturing and save the result.
@@ -8647,10 +8888,10 @@ yyreduce:
 
       (yyvsp[0].pfnsymbol)->userString = astr(captureString);
     }
-#line 8651 "bison-chapel.cpp"
+#line 8892 "bison-chapel.cpp"
     break;
 
-  case 327: /* fn_decl_stmt: linkage_spec proc_iter_or_op $@11 fn_decl_stmt_inner $@12 opt_ret_tag opt_ret_type opt_throws_error opt_lifetime_where opt_function_body_stmt  */
+  case 327:
 #line 1516 "chapel.ypp"
     {
       FnSymbol* fn = (yyvsp[-6].pfnsymbol);
@@ -8681,388 +8922,388 @@ yyreduce:
       (yyval.pblockstmt) = buildFunctionDecl((yyvsp[-6].pfnsymbol), (yyvsp[-4].retTag), (yyvsp[-3].pexpr), (yyvsp[-2].b), (yyvsp[-1].lifetimeAndWhere).where, (yyvsp[-1].lifetimeAndWhere).lifetime, (yyvsp[0].pblockstmt), (yylsp[-8]).comment);
       context->latestComment = NULL;
     }
-#line 8685 "bison-chapel.cpp"
+#line 8926 "bison-chapel.cpp"
     break;
 
-  case 328: /* fn_decl_stmt_inner: opt_this_intent_tag fn_ident opt_formal_ls  */
+  case 328:
 #line 1549 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-2].pt), NULL);
     }
-#line 8693 "bison-chapel.cpp"
+#line 8934 "bison-chapel.cpp"
     break;
 
-  case 329: /* fn_decl_stmt_inner: opt_this_intent_tag assignop_ident opt_formal_ls  */
+  case 329:
 #line 1553 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-2].pt), NULL);
       (yyval.pfnsymbol)->addFlag(FLAG_ASSIGNOP);
     }
-#line 8702 "bison-chapel.cpp"
+#line 8943 "bison-chapel.cpp"
     break;
 
-  case 330: /* fn_decl_stmt_inner: opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls  */
+  case 330:
 #line 1558 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-4].pt), (yyvsp[-3].pexpr));
     }
-#line 8710 "bison-chapel.cpp"
+#line 8951 "bison-chapel.cpp"
     break;
 
-  case 331: /* fn_decl_stmt_inner: opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls  */
+  case 331:
 #line 1562 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-4].pt), (yyvsp[-3].pexpr));
       (yyval.pfnsymbol)->addFlag(FLAG_ASSIGNOP);
     }
-#line 8719 "bison-chapel.cpp"
+#line 8960 "bison-chapel.cpp"
     break;
 
-  case 332: /* fn_decl_stmt_inner: opt_this_intent_tag error opt_formal_ls  */
+  case 332:
 #line 1567 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), "dummy", INTENT_BLANK, NULL);
     }
-#line 8727 "bison-chapel.cpp"
+#line 8968 "bison-chapel.cpp"
     break;
 
-  case 334: /* fn_decl_receiver_expr: TLP expr TRP  */
+  case 334:
 #line 1574 "chapel.ypp"
                       { (yyval.pexpr) = (yyvsp[-1].pexpr); }
-#line 8733 "bison-chapel.cpp"
+#line 8974 "bison-chapel.cpp"
     break;
 
-  case 335: /* fn_ident: ident_fn_def  */
+  case 335:
 #line 1578 "chapel.ypp"
                   { (yyval.pch) = (yyvsp[0].pch); }
-#line 8739 "bison-chapel.cpp"
+#line 8980 "bison-chapel.cpp"
     break;
 
-  case 336: /* fn_ident: ident_def TBANG  */
+  case 336:
 #line 1579 "chapel.ypp"
                   { (yyval.pch) = astr((yyvsp[-1].pch), "!"); }
-#line 8745 "bison-chapel.cpp"
+#line 8986 "bison-chapel.cpp"
     break;
 
-  case 337: /* fn_ident: op_ident  */
+  case 337:
 #line 1580 "chapel.ypp"
                   { (yyval.pch) = (yyvsp[0].pch); }
-#line 8751 "bison-chapel.cpp"
+#line 8992 "bison-chapel.cpp"
     break;
 
-  case 338: /* op_ident: TBAND  */
+  case 338:
 #line 1584 "chapel.ypp"
                  { (yyval.pch) = "&"; }
-#line 8757 "bison-chapel.cpp"
+#line 8998 "bison-chapel.cpp"
     break;
 
-  case 339: /* op_ident: TBOR  */
+  case 339:
 #line 1585 "chapel.ypp"
                  { (yyval.pch) = "|"; }
-#line 8763 "bison-chapel.cpp"
+#line 9004 "bison-chapel.cpp"
     break;
 
-  case 340: /* op_ident: TBXOR  */
+  case 340:
 #line 1586 "chapel.ypp"
                  { (yyval.pch) = "^"; }
-#line 8769 "bison-chapel.cpp"
+#line 9010 "bison-chapel.cpp"
     break;
 
-  case 341: /* op_ident: TBNOT  */
+  case 341:
 #line 1587 "chapel.ypp"
                  { (yyval.pch) = "~"; }
-#line 8775 "bison-chapel.cpp"
+#line 9016 "bison-chapel.cpp"
     break;
 
-  case 342: /* op_ident: TEQUAL  */
+  case 342:
 #line 1588 "chapel.ypp"
                  { (yyval.pch) = "=="; }
-#line 8781 "bison-chapel.cpp"
+#line 9022 "bison-chapel.cpp"
     break;
 
-  case 343: /* op_ident: TNOTEQUAL  */
+  case 343:
 #line 1589 "chapel.ypp"
                  { (yyval.pch) = "!="; }
-#line 8787 "bison-chapel.cpp"
+#line 9028 "bison-chapel.cpp"
     break;
 
-  case 344: /* op_ident: TLESSEQUAL  */
+  case 344:
 #line 1590 "chapel.ypp"
                  { (yyval.pch) = "<="; }
-#line 8793 "bison-chapel.cpp"
+#line 9034 "bison-chapel.cpp"
     break;
 
-  case 345: /* op_ident: TGREATEREQUAL  */
+  case 345:
 #line 1591 "chapel.ypp"
                  { (yyval.pch) = ">="; }
-#line 8799 "bison-chapel.cpp"
+#line 9040 "bison-chapel.cpp"
     break;
 
-  case 346: /* op_ident: TLESS  */
+  case 346:
 #line 1592 "chapel.ypp"
                  { (yyval.pch) = "<"; }
-#line 8805 "bison-chapel.cpp"
+#line 9046 "bison-chapel.cpp"
     break;
 
-  case 347: /* op_ident: TGREATER  */
+  case 347:
 #line 1593 "chapel.ypp"
                  { (yyval.pch) = ">"; }
-#line 8811 "bison-chapel.cpp"
+#line 9052 "bison-chapel.cpp"
     break;
 
-  case 348: /* op_ident: TPLUS  */
+  case 348:
 #line 1594 "chapel.ypp"
                  { (yyval.pch) = "+"; }
-#line 8817 "bison-chapel.cpp"
+#line 9058 "bison-chapel.cpp"
     break;
 
-  case 349: /* op_ident: TMINUS  */
+  case 349:
 #line 1595 "chapel.ypp"
                  { (yyval.pch) = "-"; }
-#line 8823 "bison-chapel.cpp"
+#line 9064 "bison-chapel.cpp"
     break;
 
-  case 350: /* op_ident: TSTAR  */
+  case 350:
 #line 1596 "chapel.ypp"
                  { (yyval.pch) = "*"; }
-#line 8829 "bison-chapel.cpp"
+#line 9070 "bison-chapel.cpp"
     break;
 
-  case 351: /* op_ident: TDIVIDE  */
+  case 351:
 #line 1597 "chapel.ypp"
                  { (yyval.pch) = "/"; }
-#line 8835 "bison-chapel.cpp"
+#line 9076 "bison-chapel.cpp"
     break;
 
-  case 352: /* op_ident: TSHIFTLEFT  */
+  case 352:
 #line 1598 "chapel.ypp"
                  { (yyval.pch) = "<<"; }
-#line 8841 "bison-chapel.cpp"
+#line 9082 "bison-chapel.cpp"
     break;
 
-  case 353: /* op_ident: TSHIFTRIGHT  */
+  case 353:
 #line 1599 "chapel.ypp"
                  { (yyval.pch) = ">>"; }
-#line 8847 "bison-chapel.cpp"
+#line 9088 "bison-chapel.cpp"
     break;
 
-  case 354: /* op_ident: TMOD  */
+  case 354:
 #line 1600 "chapel.ypp"
                  { (yyval.pch) = "%"; }
-#line 8853 "bison-chapel.cpp"
+#line 9094 "bison-chapel.cpp"
     break;
 
-  case 355: /* op_ident: TEXP  */
+  case 355:
 #line 1601 "chapel.ypp"
                  { (yyval.pch) = "**"; }
-#line 8859 "bison-chapel.cpp"
+#line 9100 "bison-chapel.cpp"
     break;
 
-  case 356: /* op_ident: TBANG  */
+  case 356:
 #line 1602 "chapel.ypp"
                  { (yyval.pch) = "!"; }
-#line 8865 "bison-chapel.cpp"
+#line 9106 "bison-chapel.cpp"
     break;
 
-  case 357: /* op_ident: TBY  */
+  case 357:
 #line 1603 "chapel.ypp"
                  { (yyval.pch) = "chpl_by"; }
-#line 8871 "bison-chapel.cpp"
+#line 9112 "bison-chapel.cpp"
     break;
 
-  case 358: /* op_ident: THASH  */
+  case 358:
 #line 1604 "chapel.ypp"
                  { (yyval.pch) = "#"; }
-#line 8877 "bison-chapel.cpp"
+#line 9118 "bison-chapel.cpp"
     break;
 
-  case 359: /* op_ident: TALIGN  */
+  case 359:
 #line 1605 "chapel.ypp"
                  { (yyval.pch) = "chpl_align"; }
-#line 8883 "bison-chapel.cpp"
+#line 9124 "bison-chapel.cpp"
     break;
 
-  case 360: /* op_ident: TSWAP  */
+  case 360:
 #line 1606 "chapel.ypp"
                  { (yyval.pch) = "<=>"; }
-#line 8889 "bison-chapel.cpp"
+#line 9130 "bison-chapel.cpp"
     break;
 
-  case 361: /* op_ident: TIO  */
+  case 361:
 #line 1607 "chapel.ypp"
                  { (yyval.pch) = "<~>"; }
-#line 8895 "bison-chapel.cpp"
+#line 9136 "bison-chapel.cpp"
     break;
 
-  case 362: /* op_ident: TINITEQUALS  */
+  case 362:
 #line 1608 "chapel.ypp"
                  { (yyval.pch) = "init="; }
-#line 8901 "bison-chapel.cpp"
+#line 9142 "bison-chapel.cpp"
     break;
 
-  case 363: /* op_ident: TCOLON  */
+  case 363:
 #line 1609 "chapel.ypp"
                  { (yyval.pch) = ":"; }
-#line 8907 "bison-chapel.cpp"
+#line 9148 "bison-chapel.cpp"
     break;
 
-  case 364: /* assignop_ident: TASSIGN  */
+  case 364:
 #line 1613 "chapel.ypp"
                  { (yyval.pch) = "="; }
-#line 8913 "bison-chapel.cpp"
+#line 9154 "bison-chapel.cpp"
     break;
 
-  case 365: /* assignop_ident: TASSIGNPLUS  */
+  case 365:
 #line 1614 "chapel.ypp"
                  { (yyval.pch) = "+="; }
-#line 8919 "bison-chapel.cpp"
+#line 9160 "bison-chapel.cpp"
     break;
 
-  case 366: /* assignop_ident: TASSIGNMINUS  */
+  case 366:
 #line 1615 "chapel.ypp"
                  { (yyval.pch) = "-="; }
-#line 8925 "bison-chapel.cpp"
+#line 9166 "bison-chapel.cpp"
     break;
 
-  case 367: /* assignop_ident: TASSIGNMULTIPLY  */
+  case 367:
 #line 1616 "chapel.ypp"
                   { (yyval.pch) = "*="; }
-#line 8931 "bison-chapel.cpp"
+#line 9172 "bison-chapel.cpp"
     break;
 
-  case 368: /* assignop_ident: TASSIGNDIVIDE  */
+  case 368:
 #line 1617 "chapel.ypp"
                  { (yyval.pch) = "/="; }
-#line 8937 "bison-chapel.cpp"
+#line 9178 "bison-chapel.cpp"
     break;
 
-  case 369: /* assignop_ident: TASSIGNMOD  */
+  case 369:
 #line 1618 "chapel.ypp"
                  { (yyval.pch) = "%="; }
-#line 8943 "bison-chapel.cpp"
+#line 9184 "bison-chapel.cpp"
     break;
 
-  case 370: /* assignop_ident: TASSIGNEXP  */
+  case 370:
 #line 1619 "chapel.ypp"
                  { (yyval.pch) = "**="; }
-#line 8949 "bison-chapel.cpp"
+#line 9190 "bison-chapel.cpp"
     break;
 
-  case 371: /* assignop_ident: TASSIGNBAND  */
+  case 371:
 #line 1620 "chapel.ypp"
                  { (yyval.pch) = "&="; }
-#line 8955 "bison-chapel.cpp"
+#line 9196 "bison-chapel.cpp"
     break;
 
-  case 372: /* assignop_ident: TASSIGNBOR  */
+  case 372:
 #line 1621 "chapel.ypp"
                  { (yyval.pch) = "|="; }
-#line 8961 "bison-chapel.cpp"
+#line 9202 "bison-chapel.cpp"
     break;
 
-  case 373: /* assignop_ident: TASSIGNBXOR  */
+  case 373:
 #line 1622 "chapel.ypp"
                  { (yyval.pch) = "^="; }
-#line 8967 "bison-chapel.cpp"
+#line 9208 "bison-chapel.cpp"
     break;
 
-  case 374: /* assignop_ident: TASSIGNSR  */
+  case 374:
 #line 1623 "chapel.ypp"
                  { (yyval.pch) = ">>="; }
-#line 8973 "bison-chapel.cpp"
+#line 9214 "bison-chapel.cpp"
     break;
 
-  case 375: /* assignop_ident: TASSIGNSL  */
+  case 375:
 #line 1624 "chapel.ypp"
                  { (yyval.pch) = "<<="; }
-#line 8979 "bison-chapel.cpp"
+#line 9220 "bison-chapel.cpp"
     break;
 
-  case 376: /* all_op_name: op_ident  */
+  case 376:
 #line 1628 "chapel.ypp"
                  { (yyval.pch) = (yyvsp[0].pch); }
-#line 8985 "bison-chapel.cpp"
+#line 9226 "bison-chapel.cpp"
     break;
 
-  case 377: /* all_op_name: assignop_ident  */
+  case 377:
 #line 1629 "chapel.ypp"
                  { (yyval.pch) = (yyvsp[0].pch); }
-#line 8991 "bison-chapel.cpp"
+#line 9232 "bison-chapel.cpp"
     break;
 
-  case 378: /* opt_formal_ls: %empty  */
+  case 378:
 #line 1633 "chapel.ypp"
                      { (yyval.pfnsymbol) = new FnSymbol("_"); (yyval.pfnsymbol)->addFlag(FLAG_NO_PARENS); }
-#line 8997 "bison-chapel.cpp"
+#line 9238 "bison-chapel.cpp"
     break;
 
-  case 379: /* opt_formal_ls: TLP formal_ls TRP  */
+  case 379:
 #line 1634 "chapel.ypp"
                      { (yyval.pfnsymbol) = (yyvsp[-1].pfnsymbol); }
-#line 9003 "bison-chapel.cpp"
+#line 9244 "bison-chapel.cpp"
     break;
 
-  case 380: /* req_formal_ls: TLP formal_ls TRP  */
+  case 380:
 #line 1638 "chapel.ypp"
                      { (yyval.pfnsymbol) = (yyvsp[-1].pfnsymbol); }
-#line 9009 "bison-chapel.cpp"
+#line 9250 "bison-chapel.cpp"
     break;
 
-  case 381: /* formal_ls_inner: formal  */
+  case 381:
 #line 1642 "chapel.ypp"
                                  { (yyval.pfnsymbol) = buildFunctionFormal(NULL, (yyvsp[0].pdefexpr)); }
-#line 9015 "bison-chapel.cpp"
+#line 9256 "bison-chapel.cpp"
     break;
 
-  case 382: /* formal_ls_inner: formal_ls_inner TCOMMA formal  */
+  case 382:
 #line 1643 "chapel.ypp"
                                  { (yyval.pfnsymbol) = buildFunctionFormal((yyvsp[-2].pfnsymbol), (yyvsp[0].pdefexpr)); }
-#line 9021 "bison-chapel.cpp"
+#line 9262 "bison-chapel.cpp"
     break;
 
-  case 383: /* formal_ls: %empty  */
+  case 383:
 #line 1647 "chapel.ypp"
                            { (yyval.pfnsymbol) = buildFunctionFormal(NULL, NULL); }
-#line 9027 "bison-chapel.cpp"
+#line 9268 "bison-chapel.cpp"
     break;
 
-  case 384: /* formal_ls: formal_ls_inner  */
+  case 384:
 #line 1648 "chapel.ypp"
                            { (yyval.pfnsymbol) = (yyvsp[0].pfnsymbol); }
-#line 9033 "bison-chapel.cpp"
+#line 9274 "bison-chapel.cpp"
     break;
 
-  case 385: /* formal: opt_intent_tag ident_def opt_formal_type opt_init_expr  */
+  case 385:
 #line 1653 "chapel.ypp"
     { (yyval.pdefexpr) = buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), (yyvsp[0].pexpr), NULL); }
-#line 9039 "bison-chapel.cpp"
+#line 9280 "bison-chapel.cpp"
     break;
 
-  case 386: /* formal: pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr  */
+  case 386:
 #line 1655 "chapel.ypp"
     { (yyval.pdefexpr) = buildPragmaDefExpr((yyvsp[-4].vpch), buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), (yyvsp[0].pexpr), NULL)); }
-#line 9045 "bison-chapel.cpp"
+#line 9286 "bison-chapel.cpp"
     break;
 
-  case 387: /* formal: opt_intent_tag ident_def opt_formal_type var_arg_expr  */
+  case 387:
 #line 1657 "chapel.ypp"
     { (yyval.pdefexpr) = buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), NULL, (yyvsp[0].pexpr)); }
-#line 9051 "bison-chapel.cpp"
+#line 9292 "bison-chapel.cpp"
     break;
 
-  case 388: /* formal: pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr  */
+  case 388:
 #line 1659 "chapel.ypp"
     { (yyval.pdefexpr) = buildPragmaDefExpr((yyvsp[-4].vpch), buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), NULL, (yyvsp[0].pexpr))); }
-#line 9057 "bison-chapel.cpp"
+#line 9298 "bison-chapel.cpp"
     break;
 
-  case 389: /* formal: opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr  */
+  case 389:
 #line 1661 "chapel.ypp"
     { (yyval.pdefexpr) = buildTupleArgDefExpr((yyvsp[-5].pt), (yyvsp[-3].pblockstmt), (yyvsp[-1].pexpr), (yyvsp[0].pexpr)); }
-#line 9063 "bison-chapel.cpp"
+#line 9304 "bison-chapel.cpp"
     break;
 
-  case 390: /* formal: opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr  */
+  case 390:
 #line 1663 "chapel.ypp"
     {
       astlocMarker mark(chplLineno, yyfilename);
@@ -9070,338 +9311,338 @@ yyreduce:
       USR_FATAL(dummy, "variable-length argument may not be grouped "
                        "in a tuple");
     }
-#line 9074 "bison-chapel.cpp"
+#line 9315 "bison-chapel.cpp"
     break;
 
-  case 391: /* opt_intent_tag: %empty  */
+  case 391:
 #line 1672 "chapel.ypp"
                       { (yyval.pt) = INTENT_BLANK; }
-#line 9080 "bison-chapel.cpp"
+#line 9321 "bison-chapel.cpp"
     break;
 
-  case 392: /* opt_intent_tag: required_intent_tag  */
+  case 392:
 #line 1673 "chapel.ypp"
                       { (yyval.pt) = (yyvsp[0].pt); }
-#line 9086 "bison-chapel.cpp"
+#line 9327 "bison-chapel.cpp"
     break;
 
-  case 393: /* required_intent_tag: TIN  */
+  case 393:
 #line 1677 "chapel.ypp"
           { (yyval.pt) = INTENT_IN; }
-#line 9092 "bison-chapel.cpp"
+#line 9333 "bison-chapel.cpp"
     break;
 
-  case 394: /* required_intent_tag: TINOUT  */
+  case 394:
 #line 1678 "chapel.ypp"
           { (yyval.pt) = INTENT_INOUT; }
-#line 9098 "bison-chapel.cpp"
+#line 9339 "bison-chapel.cpp"
     break;
 
-  case 395: /* required_intent_tag: TOUT  */
+  case 395:
 #line 1679 "chapel.ypp"
           { (yyval.pt) = INTENT_OUT; }
-#line 9104 "bison-chapel.cpp"
+#line 9345 "bison-chapel.cpp"
     break;
 
-  case 396: /* required_intent_tag: TCONST  */
+  case 396:
 #line 1680 "chapel.ypp"
           { (yyval.pt) = INTENT_CONST; }
-#line 9110 "bison-chapel.cpp"
+#line 9351 "bison-chapel.cpp"
     break;
 
-  case 397: /* required_intent_tag: TCONST TIN  */
+  case 397:
 #line 1681 "chapel.ypp"
              { (yyval.pt) = INTENT_CONST_IN; }
-#line 9116 "bison-chapel.cpp"
+#line 9357 "bison-chapel.cpp"
     break;
 
-  case 398: /* required_intent_tag: TCONST TREF  */
+  case 398:
 #line 1682 "chapel.ypp"
               { (yyval.pt) = INTENT_CONST_REF; }
-#line 9122 "bison-chapel.cpp"
+#line 9363 "bison-chapel.cpp"
     break;
 
-  case 399: /* required_intent_tag: TPARAM  */
+  case 399:
 #line 1683 "chapel.ypp"
           { (yyval.pt) = INTENT_PARAM; }
-#line 9128 "bison-chapel.cpp"
+#line 9369 "bison-chapel.cpp"
     break;
 
-  case 400: /* required_intent_tag: TREF  */
+  case 400:
 #line 1684 "chapel.ypp"
           { (yyval.pt) = INTENT_REF; }
-#line 9134 "bison-chapel.cpp"
+#line 9375 "bison-chapel.cpp"
     break;
 
-  case 401: /* required_intent_tag: TTYPE  */
+  case 401:
 #line 1685 "chapel.ypp"
           { (yyval.pt) = INTENT_TYPE; }
-#line 9140 "bison-chapel.cpp"
+#line 9381 "bison-chapel.cpp"
     break;
 
-  case 402: /* opt_this_intent_tag: %empty  */
+  case 402:
 #line 1689 "chapel.ypp"
          { (yyval.pt) = INTENT_BLANK; }
-#line 9146 "bison-chapel.cpp"
+#line 9387 "bison-chapel.cpp"
     break;
 
-  case 403: /* opt_this_intent_tag: TPARAM  */
+  case 403:
 #line 1690 "chapel.ypp"
          { (yyval.pt) = INTENT_PARAM; }
-#line 9152 "bison-chapel.cpp"
+#line 9393 "bison-chapel.cpp"
     break;
 
-  case 404: /* opt_this_intent_tag: TREF  */
+  case 404:
 #line 1691 "chapel.ypp"
          { (yyval.pt) = INTENT_REF;   }
-#line 9158 "bison-chapel.cpp"
+#line 9399 "bison-chapel.cpp"
     break;
 
-  case 405: /* opt_this_intent_tag: TCONST TREF  */
+  case 405:
 #line 1692 "chapel.ypp"
                 { (yyval.pt) = INTENT_CONST_REF;   }
-#line 9164 "bison-chapel.cpp"
+#line 9405 "bison-chapel.cpp"
     break;
 
-  case 406: /* opt_this_intent_tag: TCONST  */
+  case 406:
 #line 1693 "chapel.ypp"
          { (yyval.pt) = INTENT_CONST;   }
-#line 9170 "bison-chapel.cpp"
+#line 9411 "bison-chapel.cpp"
     break;
 
-  case 407: /* opt_this_intent_tag: TTYPE  */
+  case 407:
 #line 1694 "chapel.ypp"
          { (yyval.pt) = INTENT_TYPE;  }
-#line 9176 "bison-chapel.cpp"
+#line 9417 "bison-chapel.cpp"
     break;
 
-  case 408: /* proc_iter_or_op: TPROC  */
+  case 408:
 #line 1698 "chapel.ypp"
          { (yyval.procIterOp) = ProcIterOp_PROC; }
-#line 9182 "bison-chapel.cpp"
+#line 9423 "bison-chapel.cpp"
     break;
 
-  case 409: /* proc_iter_or_op: TITER  */
+  case 409:
 #line 1699 "chapel.ypp"
          { (yyval.procIterOp) = ProcIterOp_ITER; }
-#line 9188 "bison-chapel.cpp"
+#line 9429 "bison-chapel.cpp"
     break;
 
-  case 410: /* proc_iter_or_op: TOPERATOR  */
+  case 410:
 #line 1700 "chapel.ypp"
             { (yyval.procIterOp) = ProcIterOp_OP; }
-#line 9194 "bison-chapel.cpp"
+#line 9435 "bison-chapel.cpp"
     break;
 
-  case 411: /* opt_ret_tag: %empty  */
+  case 411:
 #line 1704 "chapel.ypp"
               { (yyval.retTag) = RET_VALUE; }
-#line 9200 "bison-chapel.cpp"
+#line 9441 "bison-chapel.cpp"
     break;
 
-  case 412: /* opt_ret_tag: TCONST  */
+  case 412:
 #line 1705 "chapel.ypp"
               { (yyval.retTag) = RET_VALUE; }
-#line 9206 "bison-chapel.cpp"
+#line 9447 "bison-chapel.cpp"
     break;
 
-  case 413: /* opt_ret_tag: TCONST TREF  */
+  case 413:
 #line 1706 "chapel.ypp"
               { (yyval.retTag) = RET_CONST_REF; }
-#line 9212 "bison-chapel.cpp"
+#line 9453 "bison-chapel.cpp"
     break;
 
-  case 414: /* opt_ret_tag: TREF  */
+  case 414:
 #line 1707 "chapel.ypp"
               { (yyval.retTag) = RET_REF; }
-#line 9218 "bison-chapel.cpp"
+#line 9459 "bison-chapel.cpp"
     break;
 
-  case 415: /* opt_ret_tag: TPARAM  */
+  case 415:
 #line 1708 "chapel.ypp"
               { (yyval.retTag) = RET_PARAM; }
-#line 9224 "bison-chapel.cpp"
+#line 9465 "bison-chapel.cpp"
     break;
 
-  case 416: /* opt_ret_tag: TTYPE  */
+  case 416:
 #line 1709 "chapel.ypp"
               { (yyval.retTag) = RET_TYPE; }
-#line 9230 "bison-chapel.cpp"
+#line 9471 "bison-chapel.cpp"
     break;
 
-  case 417: /* opt_throws_error: %empty  */
+  case 417:
 #line 1713 "chapel.ypp"
           { (yyval.b) = false; }
-#line 9236 "bison-chapel.cpp"
+#line 9477 "bison-chapel.cpp"
     break;
 
-  case 418: /* opt_throws_error: TTHROWS  */
+  case 418:
 #line 1714 "chapel.ypp"
           { (yyval.b) = true;  }
-#line 9242 "bison-chapel.cpp"
+#line 9483 "bison-chapel.cpp"
     break;
 
-  case 419: /* opt_function_body_stmt: TSEMI  */
+  case 419:
 #line 1717 "chapel.ypp"
             { (yyval.pblockstmt) = NULL; }
-#line 9248 "bison-chapel.cpp"
+#line 9489 "bison-chapel.cpp"
     break;
 
-  case 422: /* function_body_stmt: return_stmt  */
+  case 422:
 #line 1723 "chapel.ypp"
                { (yyval.pblockstmt) = new BlockStmt((yyvsp[0].pblockstmt)); }
-#line 9254 "bison-chapel.cpp"
+#line 9495 "bison-chapel.cpp"
     break;
 
-  case 423: /* query_expr: TQUERIEDIDENT  */
+  case 423:
 #line 1727 "chapel.ypp"
                       { (yyval.pexpr) = buildQueriedExpr((yyvsp[0].pch)); }
-#line 9260 "bison-chapel.cpp"
+#line 9501 "bison-chapel.cpp"
     break;
 
-  case 424: /* var_arg_expr: TDOTDOTDOT  */
+  case 424:
 #line 1731 "chapel.ypp"
                          { (yyval.pexpr) = new SymExpr(gUninstantiated); }
-#line 9266 "bison-chapel.cpp"
+#line 9507 "bison-chapel.cpp"
     break;
 
-  case 425: /* var_arg_expr: TDOTDOTDOT expr  */
+  case 425:
 #line 1732 "chapel.ypp"
                          { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9272 "bison-chapel.cpp"
+#line 9513 "bison-chapel.cpp"
     break;
 
-  case 426: /* var_arg_expr: TDOTDOTDOT query_expr  */
+  case 426:
 #line 1733 "chapel.ypp"
                          { if (DefExpr* def = toDefExpr((yyvsp[0].pexpr))) {
                              def->sym->addFlag(FLAG_PARAM);
                            }
                            (yyval.pexpr) = (yyvsp[0].pexpr);
                          }
-#line 9282 "bison-chapel.cpp"
+#line 9523 "bison-chapel.cpp"
     break;
 
-  case 427: /* opt_lifetime_where: %empty  */
+  case 427:
 #line 1741 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(NULL, NULL); }
-#line 9288 "bison-chapel.cpp"
+#line 9529 "bison-chapel.cpp"
     break;
 
-  case 428: /* opt_lifetime_where: TWHERE expr  */
+  case 428:
 #line 1743 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].pexpr), NULL); }
-#line 9294 "bison-chapel.cpp"
+#line 9535 "bison-chapel.cpp"
     break;
 
-  case 429: /* opt_lifetime_where: TLIFETIME lifetime_components_expr  */
+  case 429:
 #line 1745 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(NULL, (yyvsp[0].pexpr)); }
-#line 9300 "bison-chapel.cpp"
+#line 9541 "bison-chapel.cpp"
     break;
 
-  case 430: /* opt_lifetime_where: TWHERE expr TLIFETIME lifetime_components_expr  */
+  case 430:
 #line 1747 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9306 "bison-chapel.cpp"
+#line 9547 "bison-chapel.cpp"
     break;
 
-  case 431: /* opt_lifetime_where: TLIFETIME lifetime_components_expr TWHERE expr  */
+  case 431:
 #line 1749 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 9312 "bison-chapel.cpp"
+#line 9553 "bison-chapel.cpp"
     break;
 
-  case 432: /* lifetime_components_expr: lifetime_expr  */
+  case 432:
 #line 1754 "chapel.ypp"
   { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9318 "bison-chapel.cpp"
+#line 9559 "bison-chapel.cpp"
     break;
 
-  case 433: /* lifetime_components_expr: lifetime_components_expr TCOMMA lifetime_expr  */
+  case 433:
 #line 1756 "chapel.ypp"
   { (yyval.pexpr) = new CallExpr(",", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9324 "bison-chapel.cpp"
+#line 9565 "bison-chapel.cpp"
     break;
 
-  case 434: /* lifetime_expr: lifetime_ident TASSIGN lifetime_ident  */
+  case 434:
 #line 1760 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr("=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9330 "bison-chapel.cpp"
+#line 9571 "bison-chapel.cpp"
     break;
 
-  case 435: /* lifetime_expr: lifetime_ident TLESS lifetime_ident  */
+  case 435:
 #line 1761 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr("<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9336 "bison-chapel.cpp"
+#line 9577 "bison-chapel.cpp"
     break;
 
-  case 436: /* lifetime_expr: lifetime_ident TLESSEQUAL lifetime_ident  */
+  case 436:
 #line 1762 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr("<=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9342 "bison-chapel.cpp"
+#line 9583 "bison-chapel.cpp"
     break;
 
-  case 437: /* lifetime_expr: lifetime_ident TEQUAL lifetime_ident  */
+  case 437:
 #line 1763 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr("==", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9348 "bison-chapel.cpp"
+#line 9589 "bison-chapel.cpp"
     break;
 
-  case 438: /* lifetime_expr: lifetime_ident TGREATER lifetime_ident  */
+  case 438:
 #line 1764 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr(">", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9354 "bison-chapel.cpp"
+#line 9595 "bison-chapel.cpp"
     break;
 
-  case 439: /* lifetime_expr: lifetime_ident TGREATEREQUAL lifetime_ident  */
+  case 439:
 #line 1765 "chapel.ypp"
                                               {(yyval.pexpr) = new CallExpr(">=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9360 "bison-chapel.cpp"
+#line 9601 "bison-chapel.cpp"
     break;
 
-  case 440: /* lifetime_expr: TRETURN lifetime_ident  */
+  case 440:
 #line 1766 "chapel.ypp"
                          { (yyval.pexpr) = new CallExpr(PRIM_RETURN, (yyvsp[0].pexpr)); }
-#line 9366 "bison-chapel.cpp"
+#line 9607 "bison-chapel.cpp"
     break;
 
-  case 441: /* lifetime_ident: TIDENT  */
+  case 441:
 #line 1771 "chapel.ypp"
   { (yyval.pexpr) = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr((yyvsp[0].pch))); }
-#line 9372 "bison-chapel.cpp"
+#line 9613 "bison-chapel.cpp"
     break;
 
-  case 442: /* lifetime_ident: TTHIS  */
+  case 442:
 #line 1773 "chapel.ypp"
   { (yyval.pexpr) = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr("this")); }
-#line 9378 "bison-chapel.cpp"
+#line 9619 "bison-chapel.cpp"
     break;
 
-  case 443: /* type_alias_decl_stmt: TTYPE type_alias_decl_stmt_inner TSEMI  */
+  case 443:
 #line 1778 "chapel.ypp"
     { (yyval.pblockstmt) = (yyvsp[-1].pblockstmt); }
-#line 9384 "bison-chapel.cpp"
+#line 9625 "bison-chapel.cpp"
     break;
 
-  case 444: /* type_alias_decl_stmt: TCONFIG TTYPE type_alias_decl_stmt_inner TSEMI  */
+  case 444:
 #line 1780 "chapel.ypp"
     { (yyval.pblockstmt) = handleConfigTypes((yyvsp[-1].pblockstmt)); }
-#line 9390 "bison-chapel.cpp"
+#line 9631 "bison-chapel.cpp"
     break;
 
-  case 445: /* type_alias_decl_stmt: TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI  */
+  case 445:
 #line 1782 "chapel.ypp"
     { (yyval.pblockstmt) = convertTypesToExtern((yyvsp[-1].pblockstmt)); }
-#line 9396 "bison-chapel.cpp"
+#line 9637 "bison-chapel.cpp"
     break;
 
-  case 446: /* type_alias_decl_stmt: TEXTERN STRINGLITERAL TTYPE type_alias_decl_stmt_inner TSEMI  */
+  case 446:
 #line 1784 "chapel.ypp"
     { (yyval.pblockstmt) = convertTypesToExtern((yyvsp[-1].pblockstmt), (yyvsp[-3].pch)); }
-#line 9402 "bison-chapel.cpp"
+#line 9643 "bison-chapel.cpp"
     break;
 
-  case 447: /* type_alias_decl_stmt_inner: ident_def opt_init_type  */
+  case 447:
 #line 1789 "chapel.ypp"
     {
       VarSymbol* var = new VarSymbol((yyvsp[-1].pch));
@@ -9415,10 +9656,10 @@ yyreduce:
 
       (yyval.pblockstmt) = buildChapelStmt(def);
     }
-#line 9419 "bison-chapel.cpp"
+#line 9660 "bison-chapel.cpp"
     break;
 
-  case 448: /* type_alias_decl_stmt_inner: ident_def opt_init_type TCOMMA type_alias_decl_stmt_inner  */
+  case 448:
 #line 1802 "chapel.ypp"
     {
       VarSymbol* var = new VarSymbol((yyvsp[-3].pch));
@@ -9433,278 +9674,278 @@ yyreduce:
       (yyvsp[0].pblockstmt)->insertAtHead(def);
       (yyval.pblockstmt) = buildChapelStmt((yyvsp[0].pblockstmt));
     }
-#line 9437 "bison-chapel.cpp"
+#line 9678 "bison-chapel.cpp"
     break;
 
-  case 449: /* opt_init_type: %empty  */
+  case 449:
 #line 1818 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 9443 "bison-chapel.cpp"
+#line 9684 "bison-chapel.cpp"
     break;
 
-  case 450: /* opt_init_type: TASSIGN type_level_expr  */
+  case 450:
 #line 1820 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9449 "bison-chapel.cpp"
+#line 9690 "bison-chapel.cpp"
     break;
 
-  case 451: /* opt_init_type: TASSIGN array_type  */
+  case 451:
 #line 1822 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExprFromArrayType((yyvsp[0].pcallexpr)); }
-#line 9455 "bison-chapel.cpp"
+#line 9696 "bison-chapel.cpp"
     break;
 
-  case 452: /* var_decl_type: TPARAM  */
+  case 452:
 #line 1826 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(FLAG_PARAM); }
-#line 9461 "bison-chapel.cpp"
+#line 9702 "bison-chapel.cpp"
     break;
 
-  case 453: /* var_decl_type: TCONST  */
+  case 453:
 #line 1827 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(FLAG_CONST); }
-#line 9467 "bison-chapel.cpp"
+#line 9708 "bison-chapel.cpp"
     break;
 
-  case 454: /* var_decl_type: TREF  */
+  case 454:
 #line 1828 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(FLAG_REF_VAR); }
-#line 9473 "bison-chapel.cpp"
+#line 9714 "bison-chapel.cpp"
     break;
 
-  case 455: /* var_decl_type: TCONST TREF  */
+  case 455:
 #line 1829 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(FLAG_CONST, FLAG_REF_VAR); }
-#line 9479 "bison-chapel.cpp"
+#line 9720 "bison-chapel.cpp"
     break;
 
-  case 456: /* var_decl_type: TVAR  */
+  case 456:
 #line 1830 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(); }
-#line 9485 "bison-chapel.cpp"
+#line 9726 "bison-chapel.cpp"
     break;
 
-  case 457: /* var_decl_stmt: TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI  */
+  case 457:
 #line 1835 "chapel.ypp"
     {
       (yyvsp[-2].pflagset)->insert(FLAG_CONFIG);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), context->latestComment, (yyvsp[-2].pflagset));
       context->latestComment = NULL;
     }
-#line 9495 "bison-chapel.cpp"
+#line 9736 "bison-chapel.cpp"
     break;
 
-  case 458: /* var_decl_stmt: var_decl_type var_decl_stmt_inner_ls TSEMI  */
+  case 458:
 #line 1841 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), context->latestComment, (yyvsp[-2].pflagset));
       context->latestComment = NULL;
     }
-#line 9504 "bison-chapel.cpp"
+#line 9745 "bison-chapel.cpp"
     break;
 
-  case 460: /* var_decl_stmt_inner_ls: var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner  */
+  case 460:
 #line 1850 "chapel.ypp"
     {
       for_alist(expr, (yyvsp[0].pblockstmt)->body)
         (yyvsp[-2].pblockstmt)->insertAtTail(expr->remove());
     }
-#line 9513 "bison-chapel.cpp"
+#line 9754 "bison-chapel.cpp"
     break;
 
-  case 461: /* var_decl_stmt_inner: ident_def opt_type opt_init_expr  */
+  case 461:
 #line 1858 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt(new DefExpr(new VarSymbol((yyvsp[-2].pch)), (yyvsp[0].pexpr), (yyvsp[-1].pexpr))); }
-#line 9519 "bison-chapel.cpp"
+#line 9760 "bison-chapel.cpp"
     break;
 
-  case 462: /* var_decl_stmt_inner: TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr  */
+  case 462:
 #line 1860 "chapel.ypp"
     { (yyval.pblockstmt) = buildTupleVarDeclStmt((yyvsp[-3].pblockstmt), (yyvsp[-1].pexpr), (yyvsp[0].pexpr)); }
-#line 9525 "bison-chapel.cpp"
+#line 9766 "bison-chapel.cpp"
     break;
 
-  case 463: /* tuple_var_decl_component: TUNDERSCORE  */
+  case 463:
 #line 1865 "chapel.ypp"
     { (yyval.pexpr) = new DefExpr(new VarSymbol("chpl__tuple_blank")); }
-#line 9531 "bison-chapel.cpp"
+#line 9772 "bison-chapel.cpp"
     break;
 
-  case 464: /* tuple_var_decl_component: ident_def  */
+  case 464:
 #line 1867 "chapel.ypp"
     { (yyval.pexpr) = new DefExpr(new VarSymbol((yyvsp[0].pch))); }
-#line 9537 "bison-chapel.cpp"
+#line 9778 "bison-chapel.cpp"
     break;
 
-  case 465: /* tuple_var_decl_component: TLP tuple_var_decl_stmt_inner_ls TRP  */
+  case 465:
 #line 1869 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[-1].pblockstmt); }
-#line 9543 "bison-chapel.cpp"
+#line 9784 "bison-chapel.cpp"
     break;
 
-  case 466: /* tuple_var_decl_stmt_inner_ls: tuple_var_decl_component  */
+  case 466:
 #line 1874 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt((yyvsp[0].pexpr)); }
-#line 9549 "bison-chapel.cpp"
+#line 9790 "bison-chapel.cpp"
     break;
 
-  case 467: /* tuple_var_decl_stmt_inner_ls: tuple_var_decl_component TCOMMA  */
+  case 467:
 #line 1876 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt((yyvsp[-1].pexpr)); }
-#line 9555 "bison-chapel.cpp"
+#line 9796 "bison-chapel.cpp"
     break;
 
-  case 468: /* tuple_var_decl_stmt_inner_ls: tuple_var_decl_component TCOMMA tuple_var_decl_stmt_inner_ls  */
+  case 468:
 #line 1878 "chapel.ypp"
     { (yyval.pblockstmt) = ((yyvsp[0].pblockstmt)->insertAtHead((yyvsp[-2].pexpr)), (yyvsp[0].pblockstmt)); }
-#line 9561 "bison-chapel.cpp"
+#line 9802 "bison-chapel.cpp"
     break;
 
-  case 469: /* opt_init_expr: %empty  */
+  case 469:
 #line 1884 "chapel.ypp"
                         { (yyval.pexpr) = NULL; }
-#line 9567 "bison-chapel.cpp"
+#line 9808 "bison-chapel.cpp"
     break;
 
-  case 470: /* opt_init_expr: TASSIGN TNOINIT  */
+  case 470:
 #line 1885 "chapel.ypp"
                         { (yyval.pexpr) = new SymExpr(gNoInit); }
-#line 9573 "bison-chapel.cpp"
+#line 9814 "bison-chapel.cpp"
     break;
 
-  case 471: /* opt_init_expr: TASSIGN opt_try_expr  */
+  case 471:
 #line 1886 "chapel.ypp"
                         { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9579 "bison-chapel.cpp"
+#line 9820 "bison-chapel.cpp"
     break;
 
-  case 472: /* ret_array_type: TLSBR TRSBR type_level_expr  */
+  case 472:
 #line 1892 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9585 "bison-chapel.cpp"
+#line 9826 "bison-chapel.cpp"
     break;
 
-  case 473: /* ret_array_type: TLSBR TRSBR  */
+  case 473:
 #line 1894 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, NULL); }
-#line 9591 "bison-chapel.cpp"
+#line 9832 "bison-chapel.cpp"
     break;
 
-  case 474: /* ret_array_type: TLSBR expr_ls TRSBR type_level_expr  */
+  case 474:
 #line 1896 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr));
     }
-#line 9599 "bison-chapel.cpp"
+#line 9840 "bison-chapel.cpp"
     break;
 
-  case 475: /* ret_array_type: TLSBR expr_ls TRSBR  */
+  case 475:
 #line 1900 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-1].pcallexpr)), NULL);
     }
-#line 9607 "bison-chapel.cpp"
+#line 9848 "bison-chapel.cpp"
     break;
 
-  case 476: /* ret_array_type: TLSBR TRSBR ret_array_type  */
+  case 476:
 #line 1904 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9613 "bison-chapel.cpp"
+#line 9854 "bison-chapel.cpp"
     break;
 
-  case 477: /* ret_array_type: TLSBR expr_ls TRSBR ret_array_type  */
+  case 477:
 #line 1906 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr));
     }
-#line 9621 "bison-chapel.cpp"
+#line 9862 "bison-chapel.cpp"
     break;
 
-  case 478: /* ret_array_type: TLSBR error TRSBR  */
+  case 478:
 #line 1910 "chapel.ypp"
     {
       (yyval.pexpr) = new CallExpr(PRIM_ERROR);
     }
-#line 9629 "bison-chapel.cpp"
+#line 9870 "bison-chapel.cpp"
     break;
 
-  case 479: /* opt_ret_type: %empty  */
+  case 479:
 #line 1917 "chapel.ypp"
                           { (yyval.pexpr) = NULL; }
-#line 9635 "bison-chapel.cpp"
+#line 9876 "bison-chapel.cpp"
     break;
 
-  case 480: /* opt_ret_type: TCOLON type_level_expr  */
+  case 480:
 #line 1918 "chapel.ypp"
                           { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9641 "bison-chapel.cpp"
+#line 9882 "bison-chapel.cpp"
     break;
 
-  case 481: /* opt_ret_type: TCOLON ret_array_type  */
+  case 481:
 #line 1919 "chapel.ypp"
                           { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9647 "bison-chapel.cpp"
+#line 9888 "bison-chapel.cpp"
     break;
 
-  case 482: /* opt_ret_type: TCOLON reserved_type_ident_use  */
+  case 482:
 #line 1920 "chapel.ypp"
                                  { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9653 "bison-chapel.cpp"
+#line 9894 "bison-chapel.cpp"
     break;
 
-  case 483: /* opt_ret_type: error  */
+  case 483:
 #line 1921 "chapel.ypp"
                           { (yyval.pexpr) = NULL; }
-#line 9659 "bison-chapel.cpp"
+#line 9900 "bison-chapel.cpp"
     break;
 
-  case 484: /* opt_type: %empty  */
+  case 484:
 #line 1926 "chapel.ypp"
                           { (yyval.pexpr) = NULL; }
-#line 9665 "bison-chapel.cpp"
+#line 9906 "bison-chapel.cpp"
     break;
 
-  case 485: /* opt_type: TCOLON type_level_expr  */
+  case 485:
 #line 1927 "chapel.ypp"
                           { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9671 "bison-chapel.cpp"
+#line 9912 "bison-chapel.cpp"
     break;
 
-  case 486: /* opt_type: TCOLON array_type  */
+  case 486:
 #line 1928 "chapel.ypp"
                           { (yyval.pexpr) = (yyvsp[0].pcallexpr); }
-#line 9677 "bison-chapel.cpp"
+#line 9918 "bison-chapel.cpp"
     break;
 
-  case 487: /* opt_type: TCOLON reserved_type_ident_use  */
+  case 487:
 #line 1929 "chapel.ypp"
                                  { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9683 "bison-chapel.cpp"
+#line 9924 "bison-chapel.cpp"
     break;
 
-  case 488: /* opt_type: error  */
+  case 488:
 #line 1930 "chapel.ypp"
                           { (yyval.pexpr) = NULL; }
-#line 9689 "bison-chapel.cpp"
+#line 9930 "bison-chapel.cpp"
     break;
 
-  case 489: /* array_type: TLSBR expr_ls TRSBR type_level_expr  */
+  case 489:
 #line 1951 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr));
     }
-#line 9697 "bison-chapel.cpp"
+#line 9938 "bison-chapel.cpp"
     break;
 
-  case 490: /* array_type: TLSBR expr_ls TRSBR array_type  */
+  case 490:
 #line 1955 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pcallexpr));
     }
-#line 9705 "bison-chapel.cpp"
+#line 9946 "bison-chapel.cpp"
     break;
 
-  case 491: /* array_type: TLSBR expr_ls TIN expr TRSBR type_level_expr  */
+  case 491:
 #line 1959 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
@@ -9713,408 +9954,408 @@ yyreduce:
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pexpr)), (yyvsp[0].pexpr), (yyvsp[-4].pcallexpr)->get(1)->remove(),
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pexpr)->copy()));
     }
-#line 9717 "bison-chapel.cpp"
+#line 9958 "bison-chapel.cpp"
     break;
 
-  case 492: /* array_type: TLSBR error TRSBR  */
+  case 492:
 #line 1967 "chapel.ypp"
     {
       (yyval.pcallexpr) = new CallExpr(PRIM_ERROR);
     }
-#line 9725 "bison-chapel.cpp"
+#line 9966 "bison-chapel.cpp"
     break;
 
-  case 493: /* opt_formal_array_elt_type: %empty  */
+  case 493:
 #line 1973 "chapel.ypp"
                         { (yyval.pexpr) = NULL; }
-#line 9731 "bison-chapel.cpp"
+#line 9972 "bison-chapel.cpp"
     break;
 
-  case 494: /* opt_formal_array_elt_type: type_level_expr  */
+  case 494:
 #line 1974 "chapel.ypp"
                         { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9737 "bison-chapel.cpp"
+#line 9978 "bison-chapel.cpp"
     break;
 
-  case 495: /* opt_formal_array_elt_type: query_expr  */
+  case 495:
 #line 1975 "chapel.ypp"
                         { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9743 "bison-chapel.cpp"
+#line 9984 "bison-chapel.cpp"
     break;
 
-  case 496: /* formal_array_type: TLSBR TRSBR opt_formal_array_elt_type  */
+  case 496:
 #line 1980 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9749 "bison-chapel.cpp"
+#line 9990 "bison-chapel.cpp"
     break;
 
-  case 497: /* formal_array_type: TLSBR expr_ls TRSBR opt_formal_array_elt_type  */
+  case 497:
 #line 1982 "chapel.ypp"
     { (yyval.pexpr) = buildFormalArrayType((yyvsp[-2].pcallexpr), (yyvsp[0].pexpr)); }
-#line 9755 "bison-chapel.cpp"
+#line 9996 "bison-chapel.cpp"
     break;
 
-  case 498: /* formal_array_type: TLSBR TRSBR formal_array_type  */
+  case 498:
 #line 1988 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9761 "bison-chapel.cpp"
+#line 10002 "bison-chapel.cpp"
     break;
 
-  case 499: /* formal_array_type: TLSBR expr_ls TRSBR formal_array_type  */
+  case 499:
 #line 1990 "chapel.ypp"
     { (yyval.pexpr) = buildFormalArrayType((yyvsp[-2].pcallexpr), (yyvsp[0].pexpr)); }
-#line 9767 "bison-chapel.cpp"
+#line 10008 "bison-chapel.cpp"
     break;
 
-  case 500: /* formal_array_type: TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type  */
+  case 500:
 #line 1992 "chapel.ypp"
     { (yyval.pexpr) = buildFormalArrayType((yyvsp[-2].pexpr), (yyvsp[0].pexpr), (yyvsp[-4].pcallexpr)); }
-#line 9773 "bison-chapel.cpp"
+#line 10014 "bison-chapel.cpp"
     break;
 
-  case 501: /* opt_formal_type: %empty  */
+  case 501:
 #line 1996 "chapel.ypp"
                             { (yyval.pexpr) = NULL; }
-#line 9779 "bison-chapel.cpp"
+#line 10020 "bison-chapel.cpp"
     break;
 
-  case 502: /* opt_formal_type: TCOLON type_level_expr  */
+  case 502:
 #line 1997 "chapel.ypp"
                             { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9785 "bison-chapel.cpp"
+#line 10026 "bison-chapel.cpp"
     break;
 
-  case 503: /* opt_formal_type: TCOLON query_expr  */
+  case 503:
 #line 1998 "chapel.ypp"
                             { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9791 "bison-chapel.cpp"
+#line 10032 "bison-chapel.cpp"
     break;
 
-  case 504: /* opt_formal_type: TCOLON reserved_type_ident_use  */
+  case 504:
 #line 1999 "chapel.ypp"
                                  { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9797 "bison-chapel.cpp"
+#line 10038 "bison-chapel.cpp"
     break;
 
-  case 505: /* opt_formal_type: TCOLON formal_array_type  */
+  case 505:
 #line 2000 "chapel.ypp"
                             { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9803 "bison-chapel.cpp"
+#line 10044 "bison-chapel.cpp"
     break;
 
-  case 506: /* expr_ls: expr  */
+  case 506:
 #line 2006 "chapel.ypp"
                              { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr)); }
-#line 9809 "bison-chapel.cpp"
+#line 10050 "bison-chapel.cpp"
     break;
 
-  case 507: /* expr_ls: query_expr  */
+  case 507:
 #line 2007 "chapel.ypp"
                              { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr)); }
-#line 9815 "bison-chapel.cpp"
+#line 10056 "bison-chapel.cpp"
     break;
 
-  case 508: /* expr_ls: expr_ls TCOMMA expr  */
+  case 508:
 #line 2008 "chapel.ypp"
                              { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9821 "bison-chapel.cpp"
+#line 10062 "bison-chapel.cpp"
     break;
 
-  case 509: /* expr_ls: expr_ls TCOMMA query_expr  */
+  case 509:
 #line 2009 "chapel.ypp"
                              { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9827 "bison-chapel.cpp"
+#line 10068 "bison-chapel.cpp"
     break;
 
-  case 510: /* simple_expr_ls: expr  */
+  case 510:
 #line 2013 "chapel.ypp"
                                    { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr));}
-#line 9833 "bison-chapel.cpp"
+#line 10074 "bison-chapel.cpp"
     break;
 
-  case 511: /* simple_expr_ls: simple_expr_ls TCOMMA expr  */
+  case 511:
 #line 2014 "chapel.ypp"
                                    { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9839 "bison-chapel.cpp"
+#line 10080 "bison-chapel.cpp"
     break;
 
-  case 512: /* tuple_component: TUNDERSCORE  */
+  case 512:
 #line 2018 "chapel.ypp"
                 { (yyval.pexpr) = new UnresolvedSymExpr("chpl__tuple_blank"); }
-#line 9845 "bison-chapel.cpp"
+#line 10086 "bison-chapel.cpp"
     break;
 
-  case 513: /* tuple_component: opt_try_expr  */
+  case 513:
 #line 2019 "chapel.ypp"
                 { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9851 "bison-chapel.cpp"
+#line 10092 "bison-chapel.cpp"
     break;
 
-  case 514: /* tuple_component: query_expr  */
+  case 514:
 #line 2020 "chapel.ypp"
                 { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9857 "bison-chapel.cpp"
+#line 10098 "bison-chapel.cpp"
     break;
 
-  case 515: /* tuple_expr_ls: tuple_component TCOMMA tuple_component  */
+  case 515:
 #line 2024 "chapel.ypp"
                                          { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9863 "bison-chapel.cpp"
+#line 10104 "bison-chapel.cpp"
     break;
 
-  case 516: /* tuple_expr_ls: tuple_expr_ls TCOMMA tuple_component  */
+  case 516:
 #line 2025 "chapel.ypp"
                                        { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9869 "bison-chapel.cpp"
+#line 10110 "bison-chapel.cpp"
     break;
 
-  case 517: /* opt_actual_ls: %empty  */
+  case 517:
 #line 2029 "chapel.ypp"
              { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST); }
-#line 9875 "bison-chapel.cpp"
+#line 10116 "bison-chapel.cpp"
     break;
 
-  case 519: /* actual_ls: actual_expr  */
+  case 519:
 #line 2034 "chapel.ypp"
                                 { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr)); }
-#line 9881 "bison-chapel.cpp"
+#line 10122 "bison-chapel.cpp"
     break;
 
-  case 520: /* actual_ls: actual_ls TCOMMA actual_expr  */
+  case 520:
 #line 2035 "chapel.ypp"
                                 { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9887 "bison-chapel.cpp"
+#line 10128 "bison-chapel.cpp"
     break;
 
-  case 521: /* actual_expr: ident_use TASSIGN query_expr  */
+  case 521:
 #line 2039 "chapel.ypp"
                                  { (yyval.pexpr) = buildNamedActual((yyvsp[-2].pch), (yyvsp[0].pexpr)); }
-#line 9893 "bison-chapel.cpp"
+#line 10134 "bison-chapel.cpp"
     break;
 
-  case 522: /* actual_expr: ident_use TASSIGN opt_try_expr  */
+  case 522:
 #line 2040 "chapel.ypp"
                                  { (yyval.pexpr) = buildNamedActual((yyvsp[-2].pch), (yyvsp[0].pexpr)); }
-#line 9899 "bison-chapel.cpp"
+#line 10140 "bison-chapel.cpp"
     break;
 
-  case 523: /* actual_expr: query_expr  */
+  case 523:
 #line 2041 "chapel.ypp"
                              { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9905 "bison-chapel.cpp"
+#line 10146 "bison-chapel.cpp"
     break;
 
-  case 524: /* actual_expr: opt_try_expr  */
+  case 524:
 #line 2042 "chapel.ypp"
                              { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9911 "bison-chapel.cpp"
+#line 10152 "bison-chapel.cpp"
     break;
 
-  case 525: /* ident_expr: ident_use  */
+  case 525:
 #line 2046 "chapel.ypp"
                  { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9917 "bison-chapel.cpp"
+#line 10158 "bison-chapel.cpp"
     break;
 
-  case 526: /* ident_expr: scalar_type  */
+  case 526:
 #line 2047 "chapel.ypp"
                  { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9923 "bison-chapel.cpp"
+#line 10164 "bison-chapel.cpp"
     break;
 
-  case 527: /* type_level_expr: sub_type_level_expr  */
+  case 527:
 #line 2059 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9929 "bison-chapel.cpp"
+#line 10170 "bison-chapel.cpp"
     break;
 
-  case 528: /* type_level_expr: sub_type_level_expr TQUESTION  */
+  case 528:
 #line 2061 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( PRIM_TO_NILABLE_CLASS_CHECKED, (yyvsp[-1].pexpr)); }
-#line 9935 "bison-chapel.cpp"
+#line 10176 "bison-chapel.cpp"
     break;
 
-  case 529: /* type_level_expr: TQUESTION  */
+  case 529:
 #line 2063 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(gUninstantiated); }
-#line 9941 "bison-chapel.cpp"
+#line 10182 "bison-chapel.cpp"
     break;
 
-  case 535: /* sub_type_level_expr: TSINGLE expr  */
+  case 535:
 #line 2074 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_singlevar", (yyvsp[0].pexpr)); }
-#line 9947 "bison-chapel.cpp"
+#line 10188 "bison-chapel.cpp"
     break;
 
-  case 536: /* sub_type_level_expr: TINDEX TLP opt_actual_ls TRP  */
+  case 536:
 #line 2076 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildIndexType", (yyvsp[-1].pcallexpr)); }
-#line 9953 "bison-chapel.cpp"
+#line 10194 "bison-chapel.cpp"
     break;
 
-  case 537: /* sub_type_level_expr: TDOMAIN TLP opt_actual_ls TRP  */
+  case 537:
 #line 2078 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), (yyvsp[-1].pcallexpr)); }
-#line 9959 "bison-chapel.cpp"
+#line 10200 "bison-chapel.cpp"
     break;
 
-  case 538: /* sub_type_level_expr: TSUBDOMAIN TLP opt_actual_ls TRP  */
+  case 538:
 #line 2080 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildSubDomainType", (yyvsp[-1].pcallexpr)); }
-#line 9965 "bison-chapel.cpp"
+#line 10206 "bison-chapel.cpp"
     break;
 
-  case 539: /* sub_type_level_expr: TSPARSE TSUBDOMAIN TLP actual_expr TRP  */
+  case 539:
 #line 2082 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildSparseDomainRuntimeTypeForParentDomain", (yyvsp[-1].pexpr)); }
-#line 9971 "bison-chapel.cpp"
+#line 10212 "bison-chapel.cpp"
     break;
 
-  case 540: /* sub_type_level_expr: TATOMIC expr  */
+  case 540:
 #line 2084 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__atomicType", (yyvsp[0].pexpr)); }
-#line 9977 "bison-chapel.cpp"
+#line 10218 "bison-chapel.cpp"
     break;
 
-  case 541: /* sub_type_level_expr: TSYNC expr  */
+  case 541:
 #line 2086 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_syncvar", (yyvsp[0].pexpr)); }
-#line 9983 "bison-chapel.cpp"
+#line 10224 "bison-chapel.cpp"
     break;
 
-  case 542: /* sub_type_level_expr: TOWNED  */
+  case 542:
 #line 2089 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("_owned"); }
-#line 9989 "bison-chapel.cpp"
+#line 10230 "bison-chapel.cpp"
     break;
 
-  case 543: /* sub_type_level_expr: TOWNED expr  */
+  case 543:
 #line 2091 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_owned", (yyvsp[0].pexpr)); }
-#line 9995 "bison-chapel.cpp"
+#line 10236 "bison-chapel.cpp"
     break;
 
-  case 544: /* sub_type_level_expr: TUNMANAGED  */
+  case 544:
 #line 2093 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtUnmanaged->symbol); }
-#line 10001 "bison-chapel.cpp"
+#line 10242 "bison-chapel.cpp"
     break;
 
-  case 545: /* sub_type_level_expr: TUNMANAGED expr  */
+  case 545:
 #line 2095 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( PRIM_TO_UNMANAGED_CLASS_CHECKED, (yyvsp[0].pexpr)); }
-#line 10007 "bison-chapel.cpp"
+#line 10248 "bison-chapel.cpp"
     break;
 
-  case 546: /* sub_type_level_expr: TSHARED  */
+  case 546:
 #line 2097 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("_shared"); }
-#line 10013 "bison-chapel.cpp"
+#line 10254 "bison-chapel.cpp"
     break;
 
-  case 547: /* sub_type_level_expr: TSHARED expr  */
+  case 547:
 #line 2099 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_shared", (yyvsp[0].pexpr)); }
-#line 10019 "bison-chapel.cpp"
+#line 10260 "bison-chapel.cpp"
     break;
 
-  case 548: /* sub_type_level_expr: TBORROWED  */
+  case 548:
 #line 2101 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtBorrowed->symbol); }
-#line 10025 "bison-chapel.cpp"
+#line 10266 "bison-chapel.cpp"
     break;
 
-  case 549: /* sub_type_level_expr: TBORROWED expr  */
+  case 549:
 #line 2103 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( PRIM_TO_BORROWED_CLASS_CHECKED, (yyvsp[0].pexpr)); }
-#line 10031 "bison-chapel.cpp"
+#line 10272 "bison-chapel.cpp"
     break;
 
-  case 550: /* sub_type_level_expr: TCLASS  */
+  case 550:
 #line 2106 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtAnyManagementNonNilable->symbol); }
-#line 10037 "bison-chapel.cpp"
+#line 10278 "bison-chapel.cpp"
     break;
 
-  case 551: /* sub_type_level_expr: TRECORD  */
+  case 551:
 #line 2108 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtAnyRecord->symbol); }
-#line 10043 "bison-chapel.cpp"
+#line 10284 "bison-chapel.cpp"
     break;
 
-  case 552: /* for_expr: TFOR expr TIN expr TDO expr  */
+  case 552:
 #line 2113 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10049 "bison-chapel.cpp"
+#line 10290 "bison-chapel.cpp"
     break;
 
-  case 553: /* for_expr: TFOR expr TIN zippered_iterator TDO expr  */
+  case 553:
 #line 2115 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), NULL, false, true); }
-#line 10055 "bison-chapel.cpp"
+#line 10296 "bison-chapel.cpp"
     break;
 
-  case 554: /* for_expr: TFOR expr TDO expr  */
+  case 554:
 #line 2117 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr(NULL, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10061 "bison-chapel.cpp"
+#line 10302 "bison-chapel.cpp"
     break;
 
-  case 555: /* for_expr: TFOR expr TIN expr TDO TIF expr TTHEN expr  */
+  case 555:
 #line 2119 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 10067 "bison-chapel.cpp"
+#line 10308 "bison-chapel.cpp"
     break;
 
-  case 556: /* for_expr: TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr  */
+  case 556:
 #line 2121 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pcallexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr), false, true); }
-#line 10073 "bison-chapel.cpp"
+#line 10314 "bison-chapel.cpp"
     break;
 
-  case 557: /* for_expr: TFOR expr TDO TIF expr TTHEN expr  */
+  case 557:
 #line 2123 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr(NULL, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 10079 "bison-chapel.cpp"
+#line 10320 "bison-chapel.cpp"
     break;
 
-  case 558: /* for_expr: TFORALL expr TIN expr TDO expr  */
+  case 558:
 #line 2125 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10085 "bison-chapel.cpp"
+#line 10326 "bison-chapel.cpp"
     break;
 
-  case 559: /* for_expr: TFORALL expr TIN zippered_iterator TDO expr  */
+  case 559:
 #line 2127 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), NULL, false, true); }
-#line 10091 "bison-chapel.cpp"
+#line 10332 "bison-chapel.cpp"
     break;
 
-  case 560: /* for_expr: TFORALL expr TDO expr  */
+  case 560:
 #line 2129 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr(NULL, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10097 "bison-chapel.cpp"
+#line 10338 "bison-chapel.cpp"
     break;
 
-  case 561: /* for_expr: TFORALL expr TIN expr TDO TIF expr TTHEN expr  */
+  case 561:
 #line 2131 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 10103 "bison-chapel.cpp"
+#line 10344 "bison-chapel.cpp"
     break;
 
-  case 562: /* for_expr: TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr  */
+  case 562:
 #line 2133 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pcallexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr), false, true); }
-#line 10109 "bison-chapel.cpp"
+#line 10350 "bison-chapel.cpp"
     break;
 
-  case 563: /* for_expr: TFORALL expr TDO TIF expr TTHEN expr  */
+  case 563:
 #line 2135 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr(NULL, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 10115 "bison-chapel.cpp"
+#line 10356 "bison-chapel.cpp"
     break;
 
-  case 564: /* for_expr: TLSBR expr_ls TRSBR expr  */
+  case 564:
 #line 2137 "chapel.ypp"
     {
       if ((yyvsp[-2].pcallexpr)->argList.length > 1)
@@ -10122,241 +10363,241 @@ yyreduce:
       else
         (yyval.pexpr) = buildForallLoopExpr(NULL, (yyvsp[-2].pcallexpr)->get(1)->remove(), (yyvsp[0].pexpr), NULL, true);
     }
-#line 10126 "bison-chapel.cpp"
+#line 10367 "bison-chapel.cpp"
     break;
 
-  case 565: /* for_expr: TLSBR expr_ls TIN expr TRSBR expr  */
+  case 565:
 #line 2144 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pexpr), (yyvsp[0].pexpr), NULL, true);
     }
-#line 10136 "bison-chapel.cpp"
+#line 10377 "bison-chapel.cpp"
     break;
 
-  case 566: /* for_expr: TLSBR expr_ls TIN zippered_iterator TRSBR expr  */
+  case 566:
 #line 2150 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pcallexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), NULL, false, true);
     }
-#line 10146 "bison-chapel.cpp"
+#line 10387 "bison-chapel.cpp"
     break;
 
-  case 567: /* for_expr: TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr  */
+  case 567:
 #line 2156 "chapel.ypp"
     {
       if ((yyvsp[-7].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-5].pexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pcallexpr)->get(1)->remove(), (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr));
     }
-#line 10156 "bison-chapel.cpp"
+#line 10397 "bison-chapel.cpp"
     break;
 
-  case 568: /* for_expr: TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr  */
+  case 568:
 #line 2162 "chapel.ypp"
     {
       if ((yyvsp[-7].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-5].pcallexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pcallexpr)->get(1)->remove(), (yyvsp[-5].pcallexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr), false, true);
     }
-#line 10166 "bison-chapel.cpp"
+#line 10407 "bison-chapel.cpp"
     break;
 
-  case 569: /* cond_expr: TIF expr TTHEN expr TELSE expr  */
+  case 569:
 #line 2171 "chapel.ypp"
     { (yyval.pexpr) = new IfExpr((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10172 "bison-chapel.cpp"
+#line 10413 "bison-chapel.cpp"
     break;
 
-  case 570: /* nil_expr: TNIL  */
+  case 570:
 #line 2180 "chapel.ypp"
             { (yyval.pexpr) = new SymExpr(gNil); }
-#line 10178 "bison-chapel.cpp"
+#line 10419 "bison-chapel.cpp"
     break;
 
-  case 578: /* stmt_level_expr: io_expr TIO expr  */
+  case 578:
 #line 2196 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("<~>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10184 "bison-chapel.cpp"
+#line 10425 "bison-chapel.cpp"
     break;
 
-  case 579: /* opt_task_intent_ls: %empty  */
+  case 579:
 #line 2200 "chapel.ypp"
                                 { (yyval.pcallexpr) = NULL; }
-#line 10190 "bison-chapel.cpp"
+#line 10431 "bison-chapel.cpp"
     break;
 
-  case 581: /* task_intent_clause: TWITH TLP task_intent_ls TRP  */
+  case 581:
 #line 2205 "chapel.ypp"
                                 { (yyval.pcallexpr) = (yyvsp[-1].pcallexpr); }
-#line 10196 "bison-chapel.cpp"
+#line 10437 "bison-chapel.cpp"
     break;
 
-  case 582: /* task_intent_ls: intent_expr  */
+  case 582:
 #line 2209 "chapel.ypp"
               { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST); addTaskIntent((yyval.pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 10202 "bison-chapel.cpp"
+#line 10443 "bison-chapel.cpp"
     break;
 
-  case 583: /* task_intent_ls: task_intent_ls TCOMMA intent_expr  */
+  case 583:
 #line 2210 "chapel.ypp"
                                                     { addTaskIntent((yyvsp[-2].pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 10208 "bison-chapel.cpp"
+#line 10449 "bison-chapel.cpp"
     break;
 
-  case 584: /* forall_intent_clause: TWITH TLP forall_intent_ls TRP  */
+  case 584:
 #line 2214 "chapel.ypp"
                                   { (yyval.pcallexpr) = (yyvsp[-1].pcallexpr); }
-#line 10214 "bison-chapel.cpp"
+#line 10455 "bison-chapel.cpp"
     break;
 
-  case 585: /* forall_intent_ls: intent_expr  */
+  case 585:
 #line 2218 "chapel.ypp"
               { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST); addForallIntent((yyval.pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 10220 "bison-chapel.cpp"
+#line 10461 "bison-chapel.cpp"
     break;
 
-  case 586: /* forall_intent_ls: forall_intent_ls TCOMMA intent_expr  */
+  case 586:
 #line 2219 "chapel.ypp"
                                                     { addForallIntent((yyvsp[-2].pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 10226 "bison-chapel.cpp"
+#line 10467 "bison-chapel.cpp"
     break;
 
-  case 587: /* intent_expr: shadow_var_prefix ident_expr opt_type opt_init_expr  */
+  case 587:
 #line 2224 "chapel.ypp"
     {
       (yyval.pShadowVar) = ShadowVarSymbol::buildForPrefix((yyvsp[-3].pShadowVarPref), (yyvsp[-2].pexpr), (yyvsp[-1].pexpr), (yyvsp[0].pexpr));
     }
-#line 10234 "bison-chapel.cpp"
+#line 10475 "bison-chapel.cpp"
     break;
 
-  case 588: /* intent_expr: reduce_scan_op_expr TREDUCE ident_expr  */
+  case 588:
 #line 2228 "chapel.ypp"
     {
       (yyval.pShadowVar) = ShadowVarSymbol::buildFromReduceIntent((yyvsp[0].pexpr), (yyvsp[-2].pexpr));
     }
-#line 10242 "bison-chapel.cpp"
+#line 10483 "bison-chapel.cpp"
     break;
 
-  case 589: /* intent_expr: expr TREDUCE ident_expr  */
+  case 589:
 #line 2232 "chapel.ypp"
     {
       (yyval.pShadowVar) = ShadowVarSymbol::buildFromReduceIntent((yyvsp[0].pexpr), (yyvsp[-2].pexpr));
     }
-#line 10250 "bison-chapel.cpp"
+#line 10491 "bison-chapel.cpp"
     break;
 
-  case 590: /* shadow_var_prefix: TCONST  */
+  case 590:
 #line 2238 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_CONST;     }
-#line 10256 "bison-chapel.cpp"
+#line 10497 "bison-chapel.cpp"
     break;
 
-  case 591: /* shadow_var_prefix: TIN  */
+  case 591:
 #line 2239 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_IN;        }
-#line 10262 "bison-chapel.cpp"
+#line 10503 "bison-chapel.cpp"
     break;
 
-  case 592: /* shadow_var_prefix: TCONST TIN  */
+  case 592:
 #line 2240 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_CONST_IN;  }
-#line 10268 "bison-chapel.cpp"
+#line 10509 "bison-chapel.cpp"
     break;
 
-  case 593: /* shadow_var_prefix: TREF  */
+  case 593:
 #line 2241 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_REF;       }
-#line 10274 "bison-chapel.cpp"
+#line 10515 "bison-chapel.cpp"
     break;
 
-  case 594: /* shadow_var_prefix: TCONST TREF  */
+  case 594:
 #line 2242 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_CONST_REF; }
-#line 10280 "bison-chapel.cpp"
+#line 10521 "bison-chapel.cpp"
     break;
 
-  case 595: /* shadow_var_prefix: TVAR  */
+  case 595:
 #line 2243 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_VAR;       }
-#line 10286 "bison-chapel.cpp"
+#line 10527 "bison-chapel.cpp"
     break;
 
-  case 597: /* io_expr: io_expr TIO expr  */
+  case 597:
 #line 2249 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("<~>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10292 "bison-chapel.cpp"
+#line 10533 "bison-chapel.cpp"
     break;
 
-  case 598: /* new_maybe_decorated: TNEW  */
+  case 598:
 #line 2254 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW); }
-#line 10298 "bison-chapel.cpp"
+#line 10539 "bison-chapel.cpp"
     break;
 
-  case 599: /* new_maybe_decorated: TNEW TOWNED  */
+  case 599:
 #line 2256 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtOwned->symbol))); }
-#line 10306 "bison-chapel.cpp"
+#line 10547 "bison-chapel.cpp"
     break;
 
-  case 600: /* new_maybe_decorated: TNEW TSHARED  */
+  case 600:
 #line 2260 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtShared->symbol))); }
-#line 10314 "bison-chapel.cpp"
+#line 10555 "bison-chapel.cpp"
     break;
 
-  case 601: /* new_maybe_decorated: TNEW TUNMANAGED  */
+  case 601:
 #line 2264 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtUnmanaged->symbol))); }
-#line 10322 "bison-chapel.cpp"
+#line 10563 "bison-chapel.cpp"
     break;
 
-  case 602: /* new_maybe_decorated: TNEW TBORROWED  */
+  case 602:
 #line 2268 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtBorrowed->symbol))); }
-#line 10330 "bison-chapel.cpp"
+#line 10571 "bison-chapel.cpp"
     break;
 
-  case 603: /* new_expr: new_maybe_decorated expr  */
+  case 603:
 #line 2276 "chapel.ypp"
     { (yyvsp[-1].pcallexpr)->insertAtTail((yyvsp[0].pexpr));
       (yyval.pexpr) = (yyvsp[-1].pcallexpr); }
-#line 10337 "bison-chapel.cpp"
+#line 10578 "bison-chapel.cpp"
     break;
 
-  case 604: /* new_expr: TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP  */
+  case 604:
 #line 2281 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtOwned->symbol)),
                         new CallExpr((yyvsp[-4].pexpr), (yyvsp[-1].pcallexpr)));
     }
-#line 10347 "bison-chapel.cpp"
+#line 10588 "bison-chapel.cpp"
     break;
 
-  case 605: /* new_expr: TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP  */
+  case 605:
 #line 2287 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtShared->symbol)),
                         new CallExpr((yyvsp[-4].pexpr), (yyvsp[-1].pcallexpr)));
     }
-#line 10357 "bison-chapel.cpp"
+#line 10598 "bison-chapel.cpp"
     break;
 
-  case 606: /* new_expr: TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION  */
+  case 606:
 #line 2293 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
@@ -10364,10 +10605,10 @@ yyreduce:
                         new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
                                      new CallExpr((yyvsp[-5].pexpr), (yyvsp[-2].pcallexpr))));
     }
-#line 10368 "bison-chapel.cpp"
+#line 10609 "bison-chapel.cpp"
     break;
 
-  case 607: /* new_expr: TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION  */
+  case 607:
 #line 2300 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
@@ -10375,570 +10616,570 @@ yyreduce:
                         new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
                                      new CallExpr((yyvsp[-5].pexpr), (yyvsp[-2].pcallexpr))));
     }
-#line 10379 "bison-chapel.cpp"
-    break;
-
-  case 608: /* let_expr: TLET var_decl_stmt_inner_ls TIN expr  */
-#line 2310 "chapel.ypp"
-    { (yyval.pexpr) = buildLetExpr((yyvsp[-2].pblockstmt), (yyvsp[0].pexpr)); }
-#line 10385 "bison-chapel.cpp"
-    break;
-
-  case 618: /* expr: TLP TDOTDOTDOT expr TRP  */
-#line 2327 "chapel.ypp"
-    { (yyval.pexpr) = new CallExpr(PRIM_TUPLE_EXPAND, (yyvsp[-1].pexpr)); }
-#line 10391 "bison-chapel.cpp"
-    break;
-
-  case 619: /* expr: expr TCOLON expr  */
-#line 2329 "chapel.ypp"
-    { (yyval.pexpr) = createCast((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10397 "bison-chapel.cpp"
-    break;
-
-  case 620: /* expr: expr TDOTDOT expr  */
-#line 2331 "chapel.ypp"
-    { (yyval.pexpr) = buildBoundedRange((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10403 "bison-chapel.cpp"
-    break;
-
-  case 621: /* expr: expr TDOTDOTOPENHIGH expr  */
-#line 2333 "chapel.ypp"
-    { (yyval.pexpr) = buildBoundedRange((yyvsp[-2].pexpr), (yyvsp[0].pexpr), false, true); }
-#line 10409 "bison-chapel.cpp"
-    break;
-
-  case 622: /* expr: expr TDOTDOT  */
-#line 2348 "chapel.ypp"
-    { (yyval.pexpr) = buildLowBoundedRange((yyvsp[-1].pexpr)); }
-#line 10415 "bison-chapel.cpp"
-    break;
-
-  case 623: /* expr: TDOTDOT expr  */
-#line 2350 "chapel.ypp"
-    { (yyval.pexpr) = buildHighBoundedRange((yyvsp[0].pexpr)); }
-#line 10421 "bison-chapel.cpp"
-    break;
-
-  case 624: /* expr: TDOTDOTOPENHIGH expr  */
-#line 2352 "chapel.ypp"
-    { (yyval.pexpr) = buildHighBoundedRange((yyvsp[0].pexpr), true); }
-#line 10427 "bison-chapel.cpp"
-    break;
-
-  case 625: /* expr: TDOTDOT  */
-#line 2354 "chapel.ypp"
-    { (yyval.pexpr) = buildUnboundedRange(); }
-#line 10433 "bison-chapel.cpp"
-    break;
-
-  case 626: /* opt_expr: %empty  */
-#line 2358 "chapel.ypp"
-                  { (yyval.pexpr) = NULL; }
-#line 10439 "bison-chapel.cpp"
-    break;
-
-  case 627: /* opt_expr: expr  */
-#line 2359 "chapel.ypp"
-                  { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 10445 "bison-chapel.cpp"
-    break;
-
-  case 628: /* opt_try_expr: TTRY expr  */
-#line 2363 "chapel.ypp"
-                  { (yyval.pexpr) = tryExpr((yyvsp[0].pexpr)); }
-#line 10451 "bison-chapel.cpp"
-    break;
-
-  case 629: /* opt_try_expr: TTRYBANG expr  */
-#line 2364 "chapel.ypp"
-                  { (yyval.pexpr) = tryBangExpr((yyvsp[0].pexpr)); }
-#line 10457 "bison-chapel.cpp"
-    break;
-
-  case 630: /* opt_try_expr: expr  */
-#line 2365 "chapel.ypp"
-                  { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 10463 "bison-chapel.cpp"
-    break;
-
-  case 635: /* call_base_expr: lhs_expr  */
-#line 2381 "chapel.ypp"
-                     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 10469 "bison-chapel.cpp"
-    break;
-
-  case 636: /* call_base_expr: expr TBANG  */
-#line 2382 "chapel.ypp"
-                     { (yyval.pexpr) = new CallExpr("postfix!", (yyvsp[-1].pexpr)); }
-#line 10475 "bison-chapel.cpp"
-    break;
-
-  case 637: /* call_base_expr: sub_type_level_expr TQUESTION  */
-#line 2383 "chapel.ypp"
-                                {(yyval.pexpr) = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, (yyvsp[-1].pexpr));}
-#line 10481 "bison-chapel.cpp"
-    break;
-
-  case 638: /* call_base_expr: lambda_decl_expr  */
-#line 2384 "chapel.ypp"
-                     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 10487 "bison-chapel.cpp"
-    break;
-
-  case 640: /* call_expr: call_base_expr TLP opt_actual_ls TRP  */
-#line 2389 "chapel.ypp"
-                                              { (yyval.pexpr) = new CallExpr((yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr)); }
-#line 10493 "bison-chapel.cpp"
-    break;
-
-  case 641: /* call_expr: call_base_expr TLSBR opt_actual_ls TRSBR  */
-#line 2390 "chapel.ypp"
-                                              { (yyval.pexpr) = buildSquareCallExpr((yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr)); }
-#line 10499 "bison-chapel.cpp"
-    break;
-
-  case 642: /* call_expr: TPRIMITIVE TLP opt_actual_ls TRP  */
-#line 2391 "chapel.ypp"
-                                        { (yyval.pexpr) = buildPrimitiveExpr((yyvsp[-1].pcallexpr)); }
-#line 10505 "bison-chapel.cpp"
-    break;
-
-  case 643: /* dot_expr: expr TDOT ident_use  */
-#line 2395 "chapel.ypp"
-                               { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), (yyvsp[0].pch)); }
-#line 10511 "bison-chapel.cpp"
-    break;
-
-  case 644: /* dot_expr: expr TDOT TTYPE  */
-#line 2396 "chapel.ypp"
-                               { (yyval.pexpr) = new CallExpr(PRIM_TYPEOF, (yyvsp[-2].pexpr)); }
-#line 10517 "bison-chapel.cpp"
-    break;
-
-  case 645: /* dot_expr: expr TDOT TDOMAIN  */
-#line 2397 "chapel.ypp"
-                               { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), "_dom"); }
-#line 10523 "bison-chapel.cpp"
-    break;
-
-  case 646: /* dot_expr: expr TDOT TLOCALE  */
-#line 2398 "chapel.ypp"
-                               { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), "locale"); }
-#line 10529 "bison-chapel.cpp"
-    break;
-
-  case 647: /* dot_expr: expr TDOT TBYTES TLP TRP  */
-#line 2399 "chapel.ypp"
-                               { (yyval.pexpr) = new CallExpr(buildDotExpr((yyvsp[-4].pexpr), "chpl_bytes")); }
-#line 10535 "bison-chapel.cpp"
-    break;
-
-  case 648: /* parenthesized_expr: TLP tuple_component TRP  */
-#line 2407 "chapel.ypp"
-                                    { (yyval.pexpr) = (yyvsp[-1].pexpr); }
-#line 10541 "bison-chapel.cpp"
-    break;
-
-  case 649: /* parenthesized_expr: TLP tuple_component TCOMMA TRP  */
-#line 2408 "chapel.ypp"
-                                    { (yyval.pexpr) = buildOneTuple((yyvsp[-2].pexpr)); }
-#line 10547 "bison-chapel.cpp"
-    break;
-
-  case 650: /* parenthesized_expr: TLP tuple_expr_ls TRP  */
-#line 2409 "chapel.ypp"
-                                    { (yyval.pexpr) = buildTuple((yyvsp[-1].pcallexpr)); }
-#line 10553 "bison-chapel.cpp"
-    break;
-
-  case 651: /* parenthesized_expr: TLP tuple_expr_ls TCOMMA TRP  */
-#line 2410 "chapel.ypp"
-                                    { (yyval.pexpr) = buildTuple((yyvsp[-2].pcallexpr)); }
-#line 10559 "bison-chapel.cpp"
-    break;
-
-  case 652: /* bool_literal: TFALSE  */
-#line 2414 "chapel.ypp"
-         { (yyval.pexpr) = new SymExpr(gFalse); }
-#line 10565 "bison-chapel.cpp"
-    break;
-
-  case 653: /* bool_literal: TTRUE  */
-#line 2415 "chapel.ypp"
-         { (yyval.pexpr) = new SymExpr(gTrue); }
-#line 10571 "bison-chapel.cpp"
-    break;
-
-  case 654: /* str_bytes_literal: STRINGLITERAL  */
-#line 2419 "chapel.ypp"
-                  { (yyval.pexpr) = buildStringLiteral((yyvsp[0].pch)); }
-#line 10577 "bison-chapel.cpp"
-    break;
-
-  case 655: /* str_bytes_literal: BYTESLITERAL  */
-#line 2420 "chapel.ypp"
-                  { (yyval.pexpr) = buildBytesLiteral((yyvsp[0].pch)); }
-#line 10583 "bison-chapel.cpp"
-    break;
-
-  case 658: /* literal_expr: INTLITERAL  */
-#line 2426 "chapel.ypp"
-                        { (yyval.pexpr) = buildIntLiteral((yyvsp[0].pch), yyfilename, chplLineno);    }
-#line 10589 "bison-chapel.cpp"
-    break;
-
-  case 659: /* literal_expr: REALLITERAL  */
-#line 2427 "chapel.ypp"
-                        { (yyval.pexpr) = buildRealLiteral((yyvsp[0].pch));   }
-#line 10595 "bison-chapel.cpp"
-    break;
-
-  case 660: /* literal_expr: IMAGLITERAL  */
-#line 2428 "chapel.ypp"
-                        { (yyval.pexpr) = buildImagLiteral((yyvsp[0].pch));   }
-#line 10601 "bison-chapel.cpp"
-    break;
-
-  case 661: /* literal_expr: CSTRINGLITERAL  */
-#line 2429 "chapel.ypp"
-                        { (yyval.pexpr) = buildCStringLiteral((yyvsp[0].pch)); }
-#line 10607 "bison-chapel.cpp"
-    break;
-
-  case 662: /* literal_expr: TNONE  */
-#line 2430 "chapel.ypp"
-                        { (yyval.pexpr) = new SymExpr(gNone); }
-#line 10613 "bison-chapel.cpp"
-    break;
-
-  case 663: /* literal_expr: TLCBR expr_ls TRCBR  */
-#line 2431 "chapel.ypp"
-                        { (yyval.pexpr) = new CallExpr("chpl__buildDomainExpr", (yyvsp[-1].pcallexpr),
-                                            new SymExpr(gTrue)); }
 #line 10620 "bison-chapel.cpp"
     break;
 
-  case 664: /* literal_expr: TLCBR expr_ls TCOMMA TRCBR  */
+  case 608:
+#line 2310 "chapel.ypp"
+    { (yyval.pexpr) = buildLetExpr((yyvsp[-2].pblockstmt), (yyvsp[0].pexpr)); }
+#line 10626 "bison-chapel.cpp"
+    break;
+
+  case 618:
+#line 2327 "chapel.ypp"
+    { (yyval.pexpr) = new CallExpr(PRIM_TUPLE_EXPAND, (yyvsp[-1].pexpr)); }
+#line 10632 "bison-chapel.cpp"
+    break;
+
+  case 619:
+#line 2329 "chapel.ypp"
+    { (yyval.pexpr) = createCast((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10638 "bison-chapel.cpp"
+    break;
+
+  case 620:
+#line 2331 "chapel.ypp"
+    { (yyval.pexpr) = buildBoundedRange((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10644 "bison-chapel.cpp"
+    break;
+
+  case 621:
+#line 2333 "chapel.ypp"
+    { (yyval.pexpr) = buildBoundedRange((yyvsp[-2].pexpr), (yyvsp[0].pexpr), false, true); }
+#line 10650 "bison-chapel.cpp"
+    break;
+
+  case 622:
+#line 2348 "chapel.ypp"
+    { (yyval.pexpr) = buildLowBoundedRange((yyvsp[-1].pexpr)); }
+#line 10656 "bison-chapel.cpp"
+    break;
+
+  case 623:
+#line 2350 "chapel.ypp"
+    { (yyval.pexpr) = buildHighBoundedRange((yyvsp[0].pexpr)); }
+#line 10662 "bison-chapel.cpp"
+    break;
+
+  case 624:
+#line 2352 "chapel.ypp"
+    { (yyval.pexpr) = buildHighBoundedRange((yyvsp[0].pexpr), true); }
+#line 10668 "bison-chapel.cpp"
+    break;
+
+  case 625:
+#line 2354 "chapel.ypp"
+    { (yyval.pexpr) = buildUnboundedRange(); }
+#line 10674 "bison-chapel.cpp"
+    break;
+
+  case 626:
+#line 2358 "chapel.ypp"
+                  { (yyval.pexpr) = NULL; }
+#line 10680 "bison-chapel.cpp"
+    break;
+
+  case 627:
+#line 2359 "chapel.ypp"
+                  { (yyval.pexpr) = (yyvsp[0].pexpr); }
+#line 10686 "bison-chapel.cpp"
+    break;
+
+  case 628:
+#line 2363 "chapel.ypp"
+                  { (yyval.pexpr) = tryExpr((yyvsp[0].pexpr)); }
+#line 10692 "bison-chapel.cpp"
+    break;
+
+  case 629:
+#line 2364 "chapel.ypp"
+                  { (yyval.pexpr) = tryBangExpr((yyvsp[0].pexpr)); }
+#line 10698 "bison-chapel.cpp"
+    break;
+
+  case 630:
+#line 2365 "chapel.ypp"
+                  { (yyval.pexpr) = (yyvsp[0].pexpr); }
+#line 10704 "bison-chapel.cpp"
+    break;
+
+  case 635:
+#line 2381 "chapel.ypp"
+                     { (yyval.pexpr) = (yyvsp[0].pexpr); }
+#line 10710 "bison-chapel.cpp"
+    break;
+
+  case 636:
+#line 2382 "chapel.ypp"
+                     { (yyval.pexpr) = new CallExpr("postfix!", (yyvsp[-1].pexpr)); }
+#line 10716 "bison-chapel.cpp"
+    break;
+
+  case 637:
+#line 2383 "chapel.ypp"
+                                {(yyval.pexpr) = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, (yyvsp[-1].pexpr));}
+#line 10722 "bison-chapel.cpp"
+    break;
+
+  case 638:
+#line 2384 "chapel.ypp"
+                     { (yyval.pexpr) = (yyvsp[0].pexpr); }
+#line 10728 "bison-chapel.cpp"
+    break;
+
+  case 640:
+#line 2389 "chapel.ypp"
+                                              { (yyval.pexpr) = new CallExpr((yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr)); }
+#line 10734 "bison-chapel.cpp"
+    break;
+
+  case 641:
+#line 2390 "chapel.ypp"
+                                              { (yyval.pexpr) = buildSquareCallExpr((yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr)); }
+#line 10740 "bison-chapel.cpp"
+    break;
+
+  case 642:
+#line 2391 "chapel.ypp"
+                                        { (yyval.pexpr) = buildPrimitiveExpr((yyvsp[-1].pcallexpr)); }
+#line 10746 "bison-chapel.cpp"
+    break;
+
+  case 643:
+#line 2395 "chapel.ypp"
+                               { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), (yyvsp[0].pch)); }
+#line 10752 "bison-chapel.cpp"
+    break;
+
+  case 644:
+#line 2396 "chapel.ypp"
+                               { (yyval.pexpr) = new CallExpr(PRIM_TYPEOF, (yyvsp[-2].pexpr)); }
+#line 10758 "bison-chapel.cpp"
+    break;
+
+  case 645:
+#line 2397 "chapel.ypp"
+                               { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), "_dom"); }
+#line 10764 "bison-chapel.cpp"
+    break;
+
+  case 646:
+#line 2398 "chapel.ypp"
+                               { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), "locale"); }
+#line 10770 "bison-chapel.cpp"
+    break;
+
+  case 647:
+#line 2399 "chapel.ypp"
+                               { (yyval.pexpr) = new CallExpr(buildDotExpr((yyvsp[-4].pexpr), "chpl_bytes")); }
+#line 10776 "bison-chapel.cpp"
+    break;
+
+  case 648:
+#line 2407 "chapel.ypp"
+                                    { (yyval.pexpr) = (yyvsp[-1].pexpr); }
+#line 10782 "bison-chapel.cpp"
+    break;
+
+  case 649:
+#line 2408 "chapel.ypp"
+                                    { (yyval.pexpr) = buildOneTuple((yyvsp[-2].pexpr)); }
+#line 10788 "bison-chapel.cpp"
+    break;
+
+  case 650:
+#line 2409 "chapel.ypp"
+                                    { (yyval.pexpr) = buildTuple((yyvsp[-1].pcallexpr)); }
+#line 10794 "bison-chapel.cpp"
+    break;
+
+  case 651:
+#line 2410 "chapel.ypp"
+                                    { (yyval.pexpr) = buildTuple((yyvsp[-2].pcallexpr)); }
+#line 10800 "bison-chapel.cpp"
+    break;
+
+  case 652:
+#line 2414 "chapel.ypp"
+         { (yyval.pexpr) = new SymExpr(gFalse); }
+#line 10806 "bison-chapel.cpp"
+    break;
+
+  case 653:
+#line 2415 "chapel.ypp"
+         { (yyval.pexpr) = new SymExpr(gTrue); }
+#line 10812 "bison-chapel.cpp"
+    break;
+
+  case 654:
+#line 2419 "chapel.ypp"
+                  { (yyval.pexpr) = buildStringLiteral((yyvsp[0].pch)); }
+#line 10818 "bison-chapel.cpp"
+    break;
+
+  case 655:
+#line 2420 "chapel.ypp"
+                  { (yyval.pexpr) = buildBytesLiteral((yyvsp[0].pch)); }
+#line 10824 "bison-chapel.cpp"
+    break;
+
+  case 658:
+#line 2426 "chapel.ypp"
+                        { (yyval.pexpr) = buildIntLiteral((yyvsp[0].pch), yyfilename, chplLineno);    }
+#line 10830 "bison-chapel.cpp"
+    break;
+
+  case 659:
+#line 2427 "chapel.ypp"
+                        { (yyval.pexpr) = buildRealLiteral((yyvsp[0].pch));   }
+#line 10836 "bison-chapel.cpp"
+    break;
+
+  case 660:
+#line 2428 "chapel.ypp"
+                        { (yyval.pexpr) = buildImagLiteral((yyvsp[0].pch));   }
+#line 10842 "bison-chapel.cpp"
+    break;
+
+  case 661:
+#line 2429 "chapel.ypp"
+                        { (yyval.pexpr) = buildCStringLiteral((yyvsp[0].pch)); }
+#line 10848 "bison-chapel.cpp"
+    break;
+
+  case 662:
+#line 2430 "chapel.ypp"
+                        { (yyval.pexpr) = new SymExpr(gNone); }
+#line 10854 "bison-chapel.cpp"
+    break;
+
+  case 663:
+#line 2431 "chapel.ypp"
+                        { (yyval.pexpr) = new CallExpr("chpl__buildDomainExpr", (yyvsp[-1].pcallexpr),
+                                            new SymExpr(gTrue)); }
+#line 10861 "bison-chapel.cpp"
+    break;
+
+  case 664:
 #line 2433 "chapel.ypp"
                                { (yyval.pexpr) = new CallExpr("chpl__buildDomainExpr", (yyvsp[-2].pcallexpr),
                                                    new SymExpr(gTrue)); }
-#line 10627 "bison-chapel.cpp"
+#line 10868 "bison-chapel.cpp"
     break;
 
-  case 665: /* literal_expr: TLSBR expr_ls TRSBR  */
+  case 665:
 #line 2435 "chapel.ypp"
                         { (yyval.pexpr) = new CallExpr("chpl__buildArrayExpr",  (yyvsp[-1].pcallexpr)); }
-#line 10633 "bison-chapel.cpp"
+#line 10874 "bison-chapel.cpp"
     break;
 
-  case 666: /* literal_expr: TLSBR expr_ls TCOMMA TRSBR  */
+  case 666:
 #line 2436 "chapel.ypp"
                                { (yyval.pexpr) = new CallExpr("chpl__buildArrayExpr",  (yyvsp[-2].pcallexpr)); }
-#line 10639 "bison-chapel.cpp"
+#line 10880 "bison-chapel.cpp"
     break;
 
-  case 667: /* literal_expr: TLSBR assoc_expr_ls TRSBR  */
+  case 667:
 #line 2438 "chapel.ypp"
     {
       (yyval.pexpr) = new CallExpr("chpl__buildAssociativeArrayExpr", (yyvsp[-1].pcallexpr));
     }
-#line 10647 "bison-chapel.cpp"
+#line 10888 "bison-chapel.cpp"
     break;
 
-  case 668: /* literal_expr: TLSBR assoc_expr_ls TCOMMA TRSBR  */
+  case 668:
 #line 2442 "chapel.ypp"
     {
       (yyval.pexpr) = new CallExpr("chpl__buildAssociativeArrayExpr", (yyvsp[-2].pcallexpr));
     }
-#line 10655 "bison-chapel.cpp"
-    break;
-
-  case 669: /* assoc_expr_ls: expr TALIAS expr  */
-#line 2449 "chapel.ypp"
-                                        { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10661 "bison-chapel.cpp"
-    break;
-
-  case 670: /* assoc_expr_ls: assoc_expr_ls TCOMMA expr TALIAS expr  */
-#line 2450 "chapel.ypp"
-                                        { (yyvsp[-4].pcallexpr)->insertAtTail((yyvsp[-2].pexpr)); (yyvsp[-4].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 10667 "bison-chapel.cpp"
-    break;
-
-  case 671: /* binary_op_expr: expr TPLUS expr  */
-#line 2454 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("+", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10673 "bison-chapel.cpp"
-    break;
-
-  case 672: /* binary_op_expr: expr TMINUS expr  */
-#line 2455 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("-", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10679 "bison-chapel.cpp"
-    break;
-
-  case 673: /* binary_op_expr: expr TSTAR expr  */
-#line 2456 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("*", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10685 "bison-chapel.cpp"
-    break;
-
-  case 674: /* binary_op_expr: expr TDIVIDE expr  */
-#line 2457 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("/", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10691 "bison-chapel.cpp"
-    break;
-
-  case 675: /* binary_op_expr: expr TSHIFTLEFT expr  */
-#line 2458 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("<<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10697 "bison-chapel.cpp"
-    break;
-
-  case 676: /* binary_op_expr: expr TSHIFTRIGHT expr  */
-#line 2459 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr(">>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10703 "bison-chapel.cpp"
-    break;
-
-  case 677: /* binary_op_expr: expr TMOD expr  */
-#line 2460 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("%", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10709 "bison-chapel.cpp"
-    break;
-
-  case 678: /* binary_op_expr: expr TEQUAL expr  */
-#line 2461 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("==", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10715 "bison-chapel.cpp"
-    break;
-
-  case 679: /* binary_op_expr: expr TNOTEQUAL expr  */
-#line 2462 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("!=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10721 "bison-chapel.cpp"
-    break;
-
-  case 680: /* binary_op_expr: expr TLESSEQUAL expr  */
-#line 2463 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("<=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10727 "bison-chapel.cpp"
-    break;
-
-  case 681: /* binary_op_expr: expr TGREATEREQUAL expr  */
-#line 2464 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr(">=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10733 "bison-chapel.cpp"
-    break;
-
-  case 682: /* binary_op_expr: expr TLESS expr  */
-#line 2465 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10739 "bison-chapel.cpp"
-    break;
-
-  case 683: /* binary_op_expr: expr TGREATER expr  */
-#line 2466 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr(">", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10745 "bison-chapel.cpp"
-    break;
-
-  case 684: /* binary_op_expr: expr TBAND expr  */
-#line 2467 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("&", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10751 "bison-chapel.cpp"
-    break;
-
-  case 685: /* binary_op_expr: expr TBOR expr  */
-#line 2468 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("|", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10757 "bison-chapel.cpp"
-    break;
-
-  case 686: /* binary_op_expr: expr TBXOR expr  */
-#line 2469 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("^", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10763 "bison-chapel.cpp"
-    break;
-
-  case 687: /* binary_op_expr: expr TAND expr  */
-#line 2470 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("&&", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10769 "bison-chapel.cpp"
-    break;
-
-  case 688: /* binary_op_expr: expr TOR expr  */
-#line 2471 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("||", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10775 "bison-chapel.cpp"
-    break;
-
-  case 689: /* binary_op_expr: expr TEXP expr  */
-#line 2472 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("**", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10781 "bison-chapel.cpp"
-    break;
-
-  case 690: /* binary_op_expr: expr TBY expr  */
-#line 2473 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("chpl_by", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10787 "bison-chapel.cpp"
-    break;
-
-  case 691: /* binary_op_expr: expr TALIGN expr  */
-#line 2474 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("chpl_align", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10793 "bison-chapel.cpp"
-    break;
-
-  case 692: /* binary_op_expr: expr THASH expr  */
-#line 2475 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("#", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10799 "bison-chapel.cpp"
-    break;
-
-  case 693: /* binary_op_expr: expr TDMAPPED expr  */
-#line 2476 "chapel.ypp"
-                           { (yyval.pexpr) = new CallExpr("chpl__distributed", (yyvsp[0].pexpr), (yyvsp[-2].pexpr),
-                                               new SymExpr(gTrue)); }
-#line 10806 "bison-chapel.cpp"
-    break;
-
-  case 694: /* unary_op_expr: TPLUS expr  */
-#line 2481 "chapel.ypp"
-                                  { (yyval.pexpr) = new CallExpr("+", (yyvsp[0].pexpr)); }
-#line 10812 "bison-chapel.cpp"
-    break;
-
-  case 695: /* unary_op_expr: TMINUS expr  */
-#line 2482 "chapel.ypp"
-                                  { (yyval.pexpr) = new CallExpr("-", (yyvsp[0].pexpr)); }
-#line 10818 "bison-chapel.cpp"
-    break;
-
-  case 696: /* unary_op_expr: TMINUSMINUS expr  */
-#line 2483 "chapel.ypp"
-                                  { (yyval.pexpr) = buildPreDecIncWarning((yyvsp[0].pexpr), '-'); }
-#line 10824 "bison-chapel.cpp"
-    break;
-
-  case 697: /* unary_op_expr: TPLUSPLUS expr  */
-#line 2484 "chapel.ypp"
-                                  { (yyval.pexpr) = buildPreDecIncWarning((yyvsp[0].pexpr), '+'); }
-#line 10830 "bison-chapel.cpp"
-    break;
-
-  case 698: /* unary_op_expr: TBANG expr  */
-#line 2485 "chapel.ypp"
-                                  { (yyval.pexpr) = new CallExpr("!", (yyvsp[0].pexpr)); }
-#line 10836 "bison-chapel.cpp"
-    break;
-
-  case 699: /* unary_op_expr: expr TBANG  */
-#line 2486 "chapel.ypp"
-                                  { (yyval.pexpr) = new CallExpr("postfix!", (yyvsp[-1].pexpr)); }
-#line 10842 "bison-chapel.cpp"
-    break;
-
-  case 700: /* unary_op_expr: TBNOT expr  */
-#line 2487 "chapel.ypp"
-                                  { (yyval.pexpr) = new CallExpr("~", (yyvsp[0].pexpr)); }
-#line 10848 "bison-chapel.cpp"
-    break;
-
-  case 701: /* reduce_expr: expr TREDUCE expr  */
-#line 2491 "chapel.ypp"
-                                                 { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10854 "bison-chapel.cpp"
-    break;
-
-  case 702: /* reduce_expr: expr TREDUCE zippered_iterator  */
-#line 2492 "chapel.ypp"
-                                                 { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10860 "bison-chapel.cpp"
-    break;
-
-  case 703: /* reduce_expr: reduce_scan_op_expr TREDUCE expr  */
-#line 2493 "chapel.ypp"
-                                                 { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10866 "bison-chapel.cpp"
-    break;
-
-  case 704: /* reduce_expr: reduce_scan_op_expr TREDUCE zippered_iterator  */
-#line 2494 "chapel.ypp"
-                                                 { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10872 "bison-chapel.cpp"
-    break;
-
-  case 705: /* scan_expr: expr TSCAN expr  */
-#line 2498 "chapel.ypp"
-                                               { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10878 "bison-chapel.cpp"
-    break;
-
-  case 706: /* scan_expr: expr TSCAN zippered_iterator  */
-#line 2499 "chapel.ypp"
-                                               { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10884 "bison-chapel.cpp"
-    break;
-
-  case 707: /* scan_expr: reduce_scan_op_expr TSCAN expr  */
-#line 2500 "chapel.ypp"
-                                               { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10890 "bison-chapel.cpp"
-    break;
-
-  case 708: /* scan_expr: reduce_scan_op_expr TSCAN zippered_iterator  */
-#line 2501 "chapel.ypp"
-                                               { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
 #line 10896 "bison-chapel.cpp"
     break;
 
-  case 709: /* reduce_scan_op_expr: TPLUS  */
-#line 2506 "chapel.ypp"
-         { (yyval.pexpr) = new UnresolvedSymExpr("SumReduceScanOp"); }
+  case 669:
+#line 2449 "chapel.ypp"
+                                        { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 10902 "bison-chapel.cpp"
     break;
 
-  case 710: /* reduce_scan_op_expr: TSTAR  */
-#line 2507 "chapel.ypp"
-         { (yyval.pexpr) = new UnresolvedSymExpr("ProductReduceScanOp"); }
+  case 670:
+#line 2450 "chapel.ypp"
+                                        { (yyvsp[-4].pcallexpr)->insertAtTail((yyvsp[-2].pexpr)); (yyvsp[-4].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
 #line 10908 "bison-chapel.cpp"
     break;
 
-  case 711: /* reduce_scan_op_expr: TAND  */
-#line 2508 "chapel.ypp"
-         { (yyval.pexpr) = new UnresolvedSymExpr("LogicalAndReduceScanOp"); }
+  case 671:
+#line 2454 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("+", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 10914 "bison-chapel.cpp"
     break;
 
-  case 712: /* reduce_scan_op_expr: TOR  */
-#line 2509 "chapel.ypp"
-         { (yyval.pexpr) = new UnresolvedSymExpr("LogicalOrReduceScanOp"); }
+  case 672:
+#line 2455 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("-", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 10920 "bison-chapel.cpp"
     break;
 
-  case 713: /* reduce_scan_op_expr: TBAND  */
-#line 2510 "chapel.ypp"
-         { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseAndReduceScanOp"); }
+  case 673:
+#line 2456 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("*", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 10926 "bison-chapel.cpp"
     break;
 
-  case 714: /* reduce_scan_op_expr: TBOR  */
-#line 2511 "chapel.ypp"
-         { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseOrReduceScanOp"); }
+  case 674:
+#line 2457 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("/", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 10932 "bison-chapel.cpp"
     break;
 
-  case 715: /* reduce_scan_op_expr: TBXOR  */
-#line 2512 "chapel.ypp"
-         { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseXorReduceScanOp"); }
+  case 675:
+#line 2458 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("<<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 10938 "bison-chapel.cpp"
     break;
 
+  case 676:
+#line 2459 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr(">>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10944 "bison-chapel.cpp"
+    break;
 
-#line 10942 "bison-chapel.cpp"
+  case 677:
+#line 2460 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("%", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10950 "bison-chapel.cpp"
+    break;
+
+  case 678:
+#line 2461 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("==", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10956 "bison-chapel.cpp"
+    break;
+
+  case 679:
+#line 2462 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("!=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10962 "bison-chapel.cpp"
+    break;
+
+  case 680:
+#line 2463 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("<=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10968 "bison-chapel.cpp"
+    break;
+
+  case 681:
+#line 2464 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr(">=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10974 "bison-chapel.cpp"
+    break;
+
+  case 682:
+#line 2465 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10980 "bison-chapel.cpp"
+    break;
+
+  case 683:
+#line 2466 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr(">", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10986 "bison-chapel.cpp"
+    break;
+
+  case 684:
+#line 2467 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("&", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10992 "bison-chapel.cpp"
+    break;
+
+  case 685:
+#line 2468 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("|", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 10998 "bison-chapel.cpp"
+    break;
+
+  case 686:
+#line 2469 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("^", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11004 "bison-chapel.cpp"
+    break;
+
+  case 687:
+#line 2470 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("&&", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11010 "bison-chapel.cpp"
+    break;
+
+  case 688:
+#line 2471 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("||", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11016 "bison-chapel.cpp"
+    break;
+
+  case 689:
+#line 2472 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("**", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11022 "bison-chapel.cpp"
+    break;
+
+  case 690:
+#line 2473 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("chpl_by", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11028 "bison-chapel.cpp"
+    break;
+
+  case 691:
+#line 2474 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("chpl_align", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11034 "bison-chapel.cpp"
+    break;
+
+  case 692:
+#line 2475 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("#", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11040 "bison-chapel.cpp"
+    break;
+
+  case 693:
+#line 2476 "chapel.ypp"
+                           { (yyval.pexpr) = new CallExpr("chpl__distributed", (yyvsp[0].pexpr), (yyvsp[-2].pexpr),
+                                               new SymExpr(gTrue)); }
+#line 11047 "bison-chapel.cpp"
+    break;
+
+  case 694:
+#line 2481 "chapel.ypp"
+                                  { (yyval.pexpr) = new CallExpr("+", (yyvsp[0].pexpr)); }
+#line 11053 "bison-chapel.cpp"
+    break;
+
+  case 695:
+#line 2482 "chapel.ypp"
+                                  { (yyval.pexpr) = new CallExpr("-", (yyvsp[0].pexpr)); }
+#line 11059 "bison-chapel.cpp"
+    break;
+
+  case 696:
+#line 2483 "chapel.ypp"
+                                  { (yyval.pexpr) = buildPreDecIncWarning((yyvsp[0].pexpr), '-'); }
+#line 11065 "bison-chapel.cpp"
+    break;
+
+  case 697:
+#line 2484 "chapel.ypp"
+                                  { (yyval.pexpr) = buildPreDecIncWarning((yyvsp[0].pexpr), '+'); }
+#line 11071 "bison-chapel.cpp"
+    break;
+
+  case 698:
+#line 2485 "chapel.ypp"
+                                  { (yyval.pexpr) = new CallExpr("!", (yyvsp[0].pexpr)); }
+#line 11077 "bison-chapel.cpp"
+    break;
+
+  case 699:
+#line 2486 "chapel.ypp"
+                                  { (yyval.pexpr) = new CallExpr("postfix!", (yyvsp[-1].pexpr)); }
+#line 11083 "bison-chapel.cpp"
+    break;
+
+  case 700:
+#line 2487 "chapel.ypp"
+                                  { (yyval.pexpr) = new CallExpr("~", (yyvsp[0].pexpr)); }
+#line 11089 "bison-chapel.cpp"
+    break;
+
+  case 701:
+#line 2491 "chapel.ypp"
+                                                 { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11095 "bison-chapel.cpp"
+    break;
+
+  case 702:
+#line 2492 "chapel.ypp"
+                                                 { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
+#line 11101 "bison-chapel.cpp"
+    break;
+
+  case 703:
+#line 2493 "chapel.ypp"
+                                                 { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11107 "bison-chapel.cpp"
+    break;
+
+  case 704:
+#line 2494 "chapel.ypp"
+                                                 { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
+#line 11113 "bison-chapel.cpp"
+    break;
+
+  case 705:
+#line 2498 "chapel.ypp"
+                                               { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11119 "bison-chapel.cpp"
+    break;
+
+  case 706:
+#line 2499 "chapel.ypp"
+                                               { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
+#line 11125 "bison-chapel.cpp"
+    break;
+
+  case 707:
+#line 2500 "chapel.ypp"
+                                               { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+#line 11131 "bison-chapel.cpp"
+    break;
+
+  case 708:
+#line 2501 "chapel.ypp"
+                                               { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
+#line 11137 "bison-chapel.cpp"
+    break;
+
+  case 709:
+#line 2506 "chapel.ypp"
+         { (yyval.pexpr) = new UnresolvedSymExpr("SumReduceScanOp"); }
+#line 11143 "bison-chapel.cpp"
+    break;
+
+  case 710:
+#line 2507 "chapel.ypp"
+         { (yyval.pexpr) = new UnresolvedSymExpr("ProductReduceScanOp"); }
+#line 11149 "bison-chapel.cpp"
+    break;
+
+  case 711:
+#line 2508 "chapel.ypp"
+         { (yyval.pexpr) = new UnresolvedSymExpr("LogicalAndReduceScanOp"); }
+#line 11155 "bison-chapel.cpp"
+    break;
+
+  case 712:
+#line 2509 "chapel.ypp"
+         { (yyval.pexpr) = new UnresolvedSymExpr("LogicalOrReduceScanOp"); }
+#line 11161 "bison-chapel.cpp"
+    break;
+
+  case 713:
+#line 2510 "chapel.ypp"
+         { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseAndReduceScanOp"); }
+#line 11167 "bison-chapel.cpp"
+    break;
+
+  case 714:
+#line 2511 "chapel.ypp"
+         { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseOrReduceScanOp"); }
+#line 11173 "bison-chapel.cpp"
+    break;
+
+  case 715:
+#line 2512 "chapel.ypp"
+         { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseXorReduceScanOp"); }
+#line 11179 "bison-chapel.cpp"
+    break;
+
+
+#line 11183 "bison-chapel.cpp"
 
       default: break;
     }
@@ -10953,10 +11194,11 @@ yyreduce:
      case of YYERROR or YYBACKUP, subsequent parser actions might lead
      to an incorrect destructor call or verbose syntax error message
      before the lookahead is translated.  */
-  YY_SYMBOL_PRINT ("-> $$ =", YY_CAST (yysymbol_kind_t, yyr1[yyn]), &yyval, &yyloc);
+  YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
 
   YYPOPSTACK (yylen);
   yylen = 0;
+  YY_STACK_PRINT (yyss, yyssp);
 
   *++yyvsp = yyval;
   *++yylsp = yyloc;
@@ -10981,15 +11223,50 @@ yyreduce:
 yyerrlab:
   /* Make sure we have latest lookahead translation.  See comments at
      user semantic actions for why this is necessary.  */
-  yytoken = yychar == YYEMPTY ? YYSYMBOL_YYEMPTY : YYTRANSLATE (yychar);
+  yytoken = yychar == YYEMPTY ? YYEMPTY : YYTRANSLATE (yychar);
+
   /* If not already recovering from an error, report this error.  */
   if (!yyerrstatus)
     {
       ++yynerrs;
+#if ! YYERROR_VERBOSE
       yyerror (&yylloc, context, YY_("syntax error"));
+#else
+# define YYSYNTAX_ERROR yysyntax_error (&yymsg_alloc, &yymsg, \
+                                        yyssp, yytoken)
+      {
+        char const *yymsgp = YY_("syntax error");
+        int yysyntax_error_status;
+        yysyntax_error_status = YYSYNTAX_ERROR;
+        if (yysyntax_error_status == 0)
+          yymsgp = yymsg;
+        else if (yysyntax_error_status == 1)
+          {
+            if (yymsg != yymsgbuf)
+              YYSTACK_FREE (yymsg);
+            yymsg = YY_CAST (char *, YYSTACK_ALLOC (YY_CAST (YYSIZE_T, yymsg_alloc)));
+            if (!yymsg)
+              {
+                yymsg = yymsgbuf;
+                yymsg_alloc = sizeof yymsgbuf;
+                yysyntax_error_status = 2;
+              }
+            else
+              {
+                yysyntax_error_status = YYSYNTAX_ERROR;
+                yymsgp = yymsg;
+              }
+          }
+        yyerror (&yylloc, context, yymsgp);
+        if (yysyntax_error_status == 2)
+          goto yyexhaustedlab;
+      }
+# undef YYSYNTAX_ERROR
+#endif
     }
 
   yyerror_range[1] = yylloc;
+
   if (yyerrstatus == 3)
     {
       /* If just tried and failed to reuse lookahead token after an
@@ -11022,7 +11299,6 @@ yyerrorlab:
      label yyerrorlab therefore never appears in user code.  */
   if (0)
     YYERROR;
-  ++yynerrs;
 
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYERROR.  */
@@ -11039,14 +11315,13 @@ yyerrorlab:
 yyerrlab1:
   yyerrstatus = 3;      /* Each real token shifted decrements this.  */
 
-  /* Pop stack until we find a state that shifts the error token.  */
   for (;;)
     {
       yyn = yypact[yystate];
       if (!yypact_value_is_default (yyn))
         {
-          yyn += YYSYMBOL_YYerror;
-          if (0 <= yyn && yyn <= YYLAST && yycheck[yyn] == YYSYMBOL_YYerror)
+          yyn += YYTERROR;
+          if (0 <= yyn && yyn <= YYLAST && yycheck[yyn] == YYTERROR)
             {
               yyn = yytable[yyn];
               if (0 < yyn)
@@ -11060,7 +11335,7 @@ yyerrlab1:
 
       yyerror_range[1] = *yylsp;
       yydestruct ("Error: popping",
-                  YY_ACCESSING_SYMBOL (yystate), yyvsp, yylsp, context);
+                  yystos[yystate], yyvsp, yylsp, context);
       YYPOPSTACK (1);
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -11071,11 +11346,13 @@ yyerrlab1:
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 
   yyerror_range[2] = yylloc;
-  ++yylsp;
-  YYLLOC_DEFAULT (*yylsp, yyerror_range, 2);
+  /* Using YYLLOC is tempting, but would change the location of
+     the lookahead.  YYLOC is available though.  */
+  YYLLOC_DEFAULT (yyloc, yyerror_range, 2);
+  *++yylsp = yyloc;
 
   /* Shift the error token.  */
-  YY_SYMBOL_PRINT ("Shifting", YY_ACCESSING_SYMBOL (yyn), yyvsp, yylsp);
+  YY_SYMBOL_PRINT ("Shifting", yystos[yyn], yyvsp, yylsp);
 
   yystate = yyn;
   goto yynewstate;
@@ -11086,7 +11363,7 @@ yyerrlab1:
 `-------------------------------------*/
 yyacceptlab:
   yyresult = 0;
-  goto yyreturnlab;
+  goto yyreturn;
 
 
 /*-----------------------------------.
@@ -11094,22 +11371,24 @@ yyacceptlab:
 `-----------------------------------*/
 yyabortlab:
   yyresult = 1;
-  goto yyreturnlab;
+  goto yyreturn;
 
 
-/*-----------------------------------------------------------.
-| yyexhaustedlab -- YYNOMEM (memory exhaustion) comes here.  |
-`-----------------------------------------------------------*/
+#if !defined yyoverflow || YYERROR_VERBOSE
+/*-------------------------------------------------.
+| yyexhaustedlab -- memory exhaustion comes here.  |
+`-------------------------------------------------*/
 yyexhaustedlab:
   yyerror (&yylloc, context, YY_("memory exhausted"));
   yyresult = 2;
-  goto yyreturnlab;
+  /* Fall through.  */
+#endif
 
 
-/*----------------------------------------------------------.
-| yyreturnlab -- parsing is finished, clean up and return.  |
-`----------------------------------------------------------*/
-yyreturnlab:
+/*-----------------------------------------------------.
+| yyreturn -- parsing is finished, return the result.  |
+`-----------------------------------------------------*/
+yyreturn:
   if (yychar != YYEMPTY)
     {
       /* Make sure we have latest lookahead translation.  See comments at
@@ -11125,30 +11404,23 @@ yyreturnlab:
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",
-                  YY_ACCESSING_SYMBOL (+*yyssp), yyvsp, yylsp, context);
+                  yystos[+*yyssp], yyvsp, yylsp, context);
       YYPOPSTACK (1);
     }
-  yyps->yynew = 2;
-  goto yypushreturn;
+#ifndef yyoverflow
+  if (yyss != yyssa)
+    YYSTACK_FREE (yyss);
+#endif
+  yyps->yynew = 1;
 
 
-/*-------------------------.
-| yypushreturn -- return.  |
-`-------------------------*/
+/*-----------------------------------------.
+| yypushreturn -- ask for the next token.  |
+`-----------------------------------------*/
 yypushreturn:
-
+#if YYERROR_VERBOSE
+  if (yymsg != yymsgbuf)
+    YYSTACK_FREE (yymsg);
+#endif
   return yyresult;
 }
-#undef yynerrs
-#undef yystate
-#undef yyerrstatus
-#undef yyssa
-#undef yyss
-#undef yyssp
-#undef yyvsa
-#undef yyvs
-#undef yyvsp
-#undef yylsa
-#undef yyls
-#undef yylsp
-#undef yystacksize
