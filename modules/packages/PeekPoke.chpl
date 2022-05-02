@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for directly accessing an 'atomic' variable's value.
+
    .. warning::
      This module is unstable and the API is likely to change over time.
 

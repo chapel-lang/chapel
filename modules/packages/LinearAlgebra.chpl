@@ -2587,7 +2587,7 @@ private proc epsilon(type t) param : real {
   return 0.0;
 }
 
-/* Linear Algebra Sparse Submodule
+/* Support for Linear Algebra routines involving sparse data.
 
 A high-level interface to linear algebra operations and procedures for sparse
 matrices (2D arrays).

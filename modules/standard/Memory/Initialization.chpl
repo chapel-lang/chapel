@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for move-initializing and deinitializing values.
+
   The :mod:`Initialization` module provides functions which enable users to
   move-initialize and deinitialize values.
 

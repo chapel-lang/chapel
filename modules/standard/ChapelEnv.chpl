@@ -24,7 +24,7 @@
 
 /*
 
-Access to Chapel Environment Variables
+Access to Chapel Environment Variables (deprecated)
 
 The values of Chapel's environment variables upon compile time are
 accessible through the built-in parameters shown below. This information

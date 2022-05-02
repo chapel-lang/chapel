@@ -348,8 +348,14 @@ void ModuleSymbol::printDocs(std::ostream* file,
       return;
     }
     *file << ".. module:: " << this->docsName() << std::endl;
-
-    if (this->doc != NULL) {
+    // Don't index internal modules since that will make them show up
+    // in the module index (chpl-modindex.html).  This has the side
+    // effect of making references to the :mod: tag for the module
+    // illegal, which is appropriate since the modules are not
+    // user-facing.
+    if (this->modTag == MOD_INTERNAL) {
+      *file << "   :noindex:" << std::endl;
+    } else if (this->doc != NULL) {
       this->printTabs(file, tabs + 1);
 
       *file << ":synopsis: ";

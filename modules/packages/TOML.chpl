@@ -18,11 +18,10 @@
  * limitations under the License.
  */
 
-/*
+/* Support for parsing and writing TOML files.
+
 Chapel's Library for `Tom's Obvious, Minimal Language (TOML)
 <https://github.com/toml-lang/toml>`_.
-This module provides support for parsing and writing toml files.
-
 
   .. note::
 

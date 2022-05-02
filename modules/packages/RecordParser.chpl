@@ -21,7 +21,7 @@
 
 /*
 
-Read records using regular expressions.
+Support for reading records using regular expressions.
 
 A general purpose record reader/parser for channels. Uses a regular expression
 to capture portions of the input, and then assigns each capture to each

@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/* Types for low-level system error integration
+/* Types for low-level system error integration.
 
    This module defines the error types :type:`syserr` and :type:`err_t`.
 

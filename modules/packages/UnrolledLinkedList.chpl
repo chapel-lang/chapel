@@ -19,7 +19,7 @@
  */
 
 /*
-  This module contains the implementation of the unrolledLinkedList type.
+  This module contains the implementation of the 'unrolledLinkedList' type.
 
   An unrolled linked list is a linked list of small arrays, all of the same size
   where each is so small that the insertion or deletion is fast and quick, but

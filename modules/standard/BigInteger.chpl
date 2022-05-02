@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Provides a 'bigint' type and supporting math operations.
+
 The ``bigint`` record supports arithmetic operations on arbitrary
 precision integers in a manner that is broadly consistent with
 the conventional operations on primitive fixed length integers.

@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Supports counting and reporting network communication operations.
+
   This module provides support for reporting and counting
   communication operations between network-connected locales.  The
   operations include various kinds of remote reads (GETs), remote

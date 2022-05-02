@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Provides routines for reasoning about memory usage.
+
   The :mod:`Diagnostics` module provides procedures which report information
   about memory usage.  With one exception, to use these procedures you
   must enable memory tracking.  Do this by setting one or more of the

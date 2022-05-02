@@ -18,9 +18,7 @@
  * limitations under the License.
  */
 
-/*
-  The :mod:`Memory` module provides submodules that contain operations
-  related to memory usage and memory initialization.
+/* Support for operations related to memory usage and initialization.
 */
 module Memory {
 

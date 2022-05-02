@@ -40,6 +40,12 @@
 The following documentation shows functions and methods used to
 manipulate and process Chapel strings.
 
+.. type:: string
+
+The :type:`string` type in Chapel represents a sequence of UTF-8
+characters and is most often used to represent textual data.
+
+
 Methods Available in Other Modules
 ----------------------------------
 
@@ -53,7 +59,7 @@ within strings.
 Casts from String to a Numeric Type
 -----------------------------------
 
-The :mod:`string <String>` type supports casting to numeric types. Such casts
+The :type:`string` type supports casting to numeric types. Such casts
 will convert the string to the numeric type and throw an error if the string is
 invalid. For example:
 
@@ -86,8 +92,8 @@ Non-Unicode Data and Chapel Strings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For doing string operations on non-Unicode or arbitrary data, consider using
-:mod:`bytes <Bytes>` instead of string. However, there may be cases where
-:mod:`string <String>` must be used with non-Unicode data. Examples of this are
+:type:`~Bytes.bytes` instead of string. However, there may be cases where
+:type:`string` must be used with non-Unicode data. Examples of this are
 file system and path operations on systems where UTF-8 file names are not
 enforced.
 
@@ -1233,10 +1239,10 @@ module String {
   }
 
   /*
-     Gets a version of the :mod:`string <String>` that is on the currently
+     Gets a version of the :type:`string` that is on the currently
      executing locale.
 
-     :returns: A shallow copy if the :mod:`string <String>` is already on the
+     :returns: A shallow copy if the :type:`string` is already on the
                current locale, otherwise a deep copy is performed.
   */
   inline proc string.localize() : string {
@@ -1249,11 +1255,11 @@ module String {
   }
 
   /*
-    Get a `c_string` from a :mod:`string <String>`.
+    Get a `c_string` from a :type:`string`.
 
     .. warning::
 
-        This can only be called safely on a :mod:`string <String>` whose home is
+        This can only be called safely on a :type:`string` whose home is
         the current locale.  This property can be enforced by calling
         :proc:`string.localize()` before :proc:`~string.c_str()`. If the
         string is remote, the program will halt.
@@ -1269,7 +1275,7 @@ module String {
 
     :returns:
         A `c_string` that points to the underlying buffer used by this
-        :mod:`string <String>`. The returned `c_string` is only valid when used
+        :type:`string`. The returned `c_string` is only valid when used
         on the same locale as the string.
    */
   inline proc string.c_str() : c_string {
@@ -1277,7 +1283,7 @@ module String {
   }
 
   /*
-    Returns a :mod:`bytes <Bytes>` from the given :mod:`string <String>`. If the
+    Returns a :type:`~Bytes.bytes` from the given :type:`string`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
 
@@ -1285,7 +1291,7 @@ module String {
                   data, `encodePolicy.unescape` recovers the escaped bytes
                   back.
 
-    :returns: :mod:`bytes <Bytes>`
+    :returns: :type:`~Bytes.bytes`
   */
   proc string.encode(policy=encodePolicy.pass) : bytes {
     var localThis: string = this.localize();
@@ -1759,8 +1765,8 @@ module String {
   }
 
   /*
-    Returns a new :mod:`string <String>`, which is the concatenation of all of
-    the :mod:`string <String>` passed in with the contents of the method
+    Returns a new :type:`string`, which is the concatenation of all of
+    the :type:`string` passed in with the contents of the method
     receiver inserted between them.
 
     .. code-block:: chapel
@@ -1768,17 +1774,17 @@ module String {
         var myString = "|".join("a","10","d");
         writeln(myString); // prints: "a|10|d"
 
-    :arg x: :mod:`string <String>` values to be joined
+    :arg x: :type:`string` values to be joined
 
-    :returns: A :mod:`string <String>`
+    :returns: A :type:`string`
   */
   inline proc string.join(const ref x: string ...) : string {
     return doJoin(this, x);
   }
 
   /*
-    Returns a new :mod:`string <String>`, which is the concatenation of all of
-    the :mod:`string <String>` passed in with the contents of the method
+    Returns a new :type:`string`, which is the concatenation of all of
+    the :type:`string` passed in with the contents of the method
     receiver inserted between them.
 
     .. code-block:: chapel
@@ -1790,9 +1796,9 @@ module String {
         var myJoinedArray = "|".join(["a","10","d"]);
         writeln(myJoinedArray); // prints: "a|10|d"
 
-    :arg x: An array or tuple of :mod:`string <String>` values to be joined
+    :arg x: An array or tuple of :type:`string` values to be joined
 
-    :returns: A :mod:`string <String>`
+    :returns: A :type:`string`
   */
   inline proc string.join(const ref x) : string {
     // this overload serves as a catch-all for unsupported types.

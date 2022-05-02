@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* This module provides a fast, scalable, fine-grained concurrent map.
+
   .. warning::
 
     This module relies on the :mod:`AtomicObjects` package module, which
@@ -34,7 +35,7 @@
 
     .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
 
-  This module provides a fast, scalable, fine-grained concurrent map. It was
+  This module was
   inspired by the Interlocked Hash Table [#]_. It allows large critical
   sections that access a single table element, and can easily support multikey
   atomic operations. At the time of its development, ConcurrentMap outperformed
