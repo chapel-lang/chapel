@@ -1,0 +1,111 @@
+.. default-domain:: chpl
+
+.. module:: operatorSecondaryMethods.doc
+
+operatorSecondaryMethods.doc
+============================
+**Usage**
+
+.. code-block:: chapel
+
+   use operatorSecondaryMethods.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import operatorSecondaryMethods.doc;
+
+.. class:: Foo
+
+   .. attribute:: var x: int
+
+.. class:: Foo2
+
+   .. attribute:: var x: bool
+
+.. method:: operator Foo.+(a: Foo, b: Foo)
+
+.. method:: operator Foo.chpl_align(r: range(?i), count: Foo)
+
+.. method:: operator Foo2.&(lhs: Foo2, rhs: Foo2)
+
+.. method:: operator Foo2.&=(ref lhs: Foo2, rhs: Foo2)
+
+.. method:: operator Foo.chpl_by(r: range(?i), count: Foo)
+
+.. method:: operator Foo.:(rhs: Foo, type t: Bar)
+
+.. method:: operator Foo.#(r: range(?i), count: Foo)
+
+.. method:: operator Foo./=(ref lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo./(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.==(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.**=(ref lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.**(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.>(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.>=(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.!=(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.<~>(const ref ch: channel, const x: Foo) const ref throws
+
+.. method:: operator Foo.<(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.<=(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.-=(ref lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.%(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.%=(ref lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.*(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.-(arg: Foo)
+
+.. method:: operator Foo2.!(arg: Foo2)
+
+.. method:: operator Foo2.|(lhs: Foo2, rhs: Foo2)
+
+.. method:: operator Foo2.|=(ref lhs: Foo2, rhs: Foo2)
+
+.. method:: operator Foo.+=(ref lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.+(arg: Foo)
+
+.. method:: operator Foo.<<(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.<<=(ref lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.>>(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.>>=(ref lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.-(lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.<=>(ref lhs: owned nilable Foo, ref rhs: owned nilable Foo)
+
+.. method:: operator Foo.*=(ref lhs: Foo, rhs: Foo)
+
+.. method:: operator Foo.~(arg: Foo)
+
+.. method:: operator Foo2.^(lhs: Foo2, rhs: Foo2)
+
+.. method:: operator Foo2.^=(ref lhs: Foo2, rhs: Foo2)
+
+.. record:: Bar
+
+   .. attribute:: var y: int
+
+.. method:: proc Bar.init=(other: Bar)
+
+.. method:: operator Bar.=(ref lhs: Bar, rhs: Bar)
+
