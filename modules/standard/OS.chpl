@@ -142,8 +142,8 @@ module OS {
       return __primitive("cast", t, x);
 
     /*
-       Explicit conversions between ``off_t`` and ``c_int`` are
-       also defined, to support usability.
+       Explicit conversions between ``off_t`` and ``c_int`` and
+       ``off_t`` and integral types are also defined, to support usability.
     */
     extern type off_t;
     pragma "no doc"
@@ -152,6 +152,13 @@ module OS {
     pragma "no doc"
     inline operator :(x:c_int, type t:off_t)
       return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:off_t, type t:integral)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:integral, type t:off_t)
+      return __primitive("cast", t, x);
+
 
     /*
        Explicit conversions between ``suseconds_t`` and ``c_int`` are
@@ -297,18 +304,18 @@ module OS {
     extern const O_DIRECTORY:c_int;
     extern const O_DSYNC:c_int;
     extern const O_EXCL:c_int;
-    extern const O_EXEC:c_int;
     extern const O_NOCTTY:c_int;
     extern const O_NOFOLLOW:c_int;
     extern const O_NONBLOCK:c_int;
     extern const O_RDONLY:c_int;
     extern const O_RDWR:c_int;
-    extern const O_RSYNC:c_int;
-    extern const O_SEARCH:c_int;
     extern const O_SYNC:c_int;
     extern const O_TRUNC:c_int;
-    extern const O_TTY_INIT:c_int;
     extern const O_WRONLY:c_int;
+    // Note: O_EXEC, O_SEARCH, O_TTY_INIT
+    // are documented in POSIX but don't seem to exist on linux
+    // Note: O_RSYNC
+    // is documented in POSIX but doesn't seem to exist on Mac OS
 
     extern proc creat(path:c_string, mode:mode_t = 0):c_int;
     inline proc open(path:c_string, oflag:c_int, mode:mode_t = 0:mode_t)
@@ -366,24 +373,69 @@ module OS {
     //
     // sys/stat.h
     //
-    extern const S_IRWXU: mode_t;
-    extern const S_IRUSR: mode_t;
-    extern const S_IWUSR: mode_t;
-    extern const S_IXUSR: mode_t;
+    inline proc S_IRWXU:mode_t {
+      extern proc chpl_os_posix_S_IRWXU():mode_t;
+      return chpl_os_posix_S_IRWXU();
+    }
+    inline proc S_IRUSR:mode_t {
+      extern proc chpl_os_posix_S_IRUSR():mode_t;
+      return chpl_os_posix_S_IRUSR();
+    }
+    inline proc S_IWUSR:mode_t {
+      extern proc chpl_os_posix_S_IWUSR():mode_t;
+      return chpl_os_posix_S_IWUSR();
+    }
+    inline proc S_IXUSR:mode_t {
+      extern proc chpl_os_posix_S_IXUSR():mode_t;
+      return chpl_os_posix_S_IXUSR();
+    }
 
-    extern const S_IRWXG: mode_t;
-    extern const S_IRGRP: mode_t;
-    extern const S_IWGRP: mode_t;
-    extern const S_IXGRP: mode_t;
+    inline proc S_IRWXG:mode_t {
+      extern proc chpl_os_posix_S_IRWXG():mode_t;
+      return chpl_os_posix_S_IRWXG();
+    }
+    inline proc S_IRGRP:mode_t {
+      extern proc chpl_os_posix_S_IRGRP():mode_t;
+      return chpl_os_posix_S_IRGRP();
+    }
+    inline proc S_IWGRP:mode_t {
+      extern proc chpl_os_posix_S_IWGRP():mode_t;
+      return chpl_os_posix_S_IWGRP();
+    }
+    inline proc S_IXGRP:mode_t {
+      extern proc chpl_os_posix_S_IXGRP():mode_t;
+      return chpl_os_posix_S_IXGRP();
+    }
 
-    extern const S_IRWXO: mode_t;
-    extern const S_IROTH: mode_t;
-    extern const S_IWOTH: mode_t;
-    extern const S_IXOTH: mode_t;
+    inline proc S_IRWXO:mode_t {
+      extern proc chpl_os_posix_S_IRWXO():mode_t;
+      return chpl_os_posix_S_IRWXO();
+    }
+    inline proc S_IROTH:mode_t {
+      extern proc chpl_os_posix_S_IROTH():mode_t;
+      return chpl_os_posix_S_IROTH();
+    }
+    inline proc S_IWOTH:mode_t {
+      extern proc chpl_os_posix_S_IWOTH():mode_t;
+      return chpl_os_posix_S_IWOTH();
+    }
+    inline proc S_IXOTH:mode_t {
+      extern proc chpl_os_posix_S_IXOTH():mode_t;
+      return chpl_os_posix_S_IXOTH();
+    }
 
-    extern const S_ISUID: mode_t;
-    extern const S_ISGID: mode_t;
-    extern const S_ISVTX: mode_t;
+    inline proc S_ISUID:mode_t {
+      extern proc chpl_os_posix_S_ISUID():mode_t;
+      return chpl_os_posix_S_ISUID();
+    }
+    inline proc S_ISGID:mode_t {
+      extern proc chpl_os_posix_S_ISGID():mode_t;
+      return chpl_os_posix_S_ISGID();
+    }
+    inline proc S_ISVTX:mode_t {
+      extern proc chpl_os_posix_S_ISVTX():mode_t;
+      return chpl_os_posix_S_ISVTX();
+    }
 
     extern 'struct chpl_os_posix_struct_stat' record struct_stat {
       var st_dev:dev_t;            // Device.
