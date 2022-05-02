@@ -46,7 +46,7 @@ proc main() {
         // within our begin when it does.  TPVs would help with
         // this.
         const seq = buf[seqStart..<end];
-        begin with (in nextSeqID, in seq)
+        begin with (in seq)
           revcomp(nextSeqID, seq);
         nextSeqID += 1;
         seqStart = end;
