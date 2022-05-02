@@ -688,9 +688,7 @@ static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
                                bool        namedOnCommandLine,
                                bool        include) {
-  bool useDynoParser = (ALWAYS_PARSE_WITH_DYNO || fDynoCompilerLibrary);
-
-  if (useDynoParser) {
+  if (ALWAYS_PARSE_WITH_DYNO || fDynoCompilerLibrary) {
     return dynoParseFile(path, modTag, namedOnCommandLine, include);
   } else {
     return oldParserParseFile(path, modTag, namedOnCommandLine, include);
@@ -703,9 +701,7 @@ static ModuleSymbol* oldParserParseFile(const char* path,
                                      bool        include) {
   ModuleSymbol* retval = NULL;
 
-  if (fDynoCompilerLibrary) {
-    INT_FATAL("Should not be possible!");
-  }
+  INT_ASSERT(!fDynoCompilerLibrary && !ALWAYS_PARSE_WITH_DYNO);
 
   // Make sure we haven't already parsed this file
   if (haveAlreadyParsed(path)) {
