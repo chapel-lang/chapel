@@ -45,8 +45,7 @@ proc main() {
         // sharing a domain with buf and possibly getting resized
         // within our begin when it does.  TPVs would help with
         // this.
-        const seq = buf[seqStart..<end];
-        begin with (in seq)
+        begin with (var seq = buf[seqStart..<end])
           revcomp(nextSeqID, seq);
         nextSeqID += 1;
         seqStart = end;
