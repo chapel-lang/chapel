@@ -27,13 +27,13 @@ or
 
 .. method:: operator Foo.+(a: Foo, b: Foo)
 
-.. method:: operator Foo.chpl_align(r: range(?i), count: Foo)
+.. method:: operator Foo.align(r: range(?i), count: Foo)
 
 .. method:: operator Foo2.&(lhs: Foo2, rhs: Foo2)
 
 .. method:: operator Foo2.&=(ref lhs: Foo2, rhs: Foo2)
 
-.. method:: operator Foo.chpl_by(r: range(?i), count: Foo)
+.. method:: operator Foo.by(r: range(?i), count: Foo)
 
 .. method:: operator Foo.:(rhs: Foo, type t: Bar)
 

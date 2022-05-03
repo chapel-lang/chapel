@@ -23,9 +23,9 @@ or
 
    .. method:: operator +(a: Foo, b: Foo)
 
-   .. method:: operator chpl_align(r: range(?i), count: Foo)
+   .. method:: operator align(r: range(?i), count: Foo)
 
-   .. method:: operator chpl_by(r: range(?i), count: Foo)
+   .. method:: operator by(r: range(?i), count: Foo)
 
    .. method:: operator :(rhs: Foo, type t: Bar)
 
