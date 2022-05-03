@@ -127,18 +127,17 @@ module Errors {
   }
 
   /*
-   A `MisalignedSliceError` is thrown if an attempt to slice a string with
+   A `CodepointSplittintError` is thrown if an attempt to slice a string with
    byteIndex-based ranges where the range boundaries does not align with
    codepoint boundaries.
    */
-  class MisalignedSliceError: Error {
+  class CodepointSplittingError: Error {
+    proc init(info: string) {
+      super.init(info);
+    }
 
-    var msg: string;
-
-    pragma "no doc"
     override proc message() {
-      return "Byte-based string slice is not aligned to codepoint boundaries. "
-             + msg;
+      return "Attempting to split a multi-byte codepoint. " + _msg;
     }
   }
 

@@ -395,18 +395,18 @@ module BytesStringCommon {
         if r.hasLowBound() &&
            x.byteIndices.boundsCheck(r.low:int) &&
            !isInitialByte(x.byte[r.low:int]) {
-          throw new MisalignedSliceError("The byte at low boundary " +
-                                         r.low:string +
-                                         " is not the first byte of a UTF-8 codepoint");
+          throw new CodepointSplittingError(
+            "Byte-based string slice is not aligned to codepoint boundaries. " +
+            "The byte at low boundary " + r.low:string + " is not the first byte of a UTF-8 codepoint");
         }
         // if the "high bound of the range plus one" is within the byteIndices
         // of the string, that index must be the initial byte of a codepoint
         if r.hasHighBound() &&
            x.byteIndices.boundsCheck(r.high:int+1) &&
            !isInitialByte(x.byte[r.high:int+1]) {
-          throw new MisalignedSliceError("The byte at high boundary " +
-                                         r.high:string +
-                                         " is not the first byte of a UTF-8 codepoint");
+          throw new CodepointSplittingError(
+            "Byte-based string slice is not aligned to codepoint boundaries. " +
+            "The byte at high boundary " + r.high:string + " is not the first byte of a UTF-8 codepoint");
         }
       }
       return simpleCaseHelper();
