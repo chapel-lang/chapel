@@ -1306,8 +1306,20 @@ module BytesStringCommon {
   }
 
   iter theseUTF8(const ref x: ?t) {
-    for c in x.items() do
-      yield c;
+    const localX = x.localize();
+
+    var i = 0;
+    while i < localX.buffLen {
+      const curPos = localX.buff+i;
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=localX.buff,
+                                                 buffLen=localX.buffLen,
+                                                 offset=i,
+                                                 allowEsc=true);
+      var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
+      yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
+
+      i += nBytes;
+    }
   }
 
   iter theseUTF8(param tag: iterKind, const ref x: ?t)
@@ -1315,11 +1327,7 @@ module BytesStringCommon {
 
     const localX = x.localize();
 
-    // leader chunks up blindly, follower will adjust for the codepoint
-    // boundaries
-    foreach i in theseBytes(tag, localX) do yield i;
-
-    foreach followThis in x.indices.these(tag) do yield followThis;
+    for followThis in x.indices.these(tag) do yield followThis;
   }
 
 
