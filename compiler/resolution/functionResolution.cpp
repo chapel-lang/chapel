@@ -1990,13 +1990,11 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
       return true;
     // Prefer bool/enum/int/uint cast to a default-sized real over another
     // size of real or complex.
-    /* Note: I've left out the aBoolEnum case that used to be here
-    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
+    if ((aBoolEnum || actualType == dtInt[INT_SIZE_DEFAULT]) &&
         f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
         (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
         f2Type != dtReal[FLOAT_SIZE_DEFAULT])
       return true;
-    */
     // Prefer bool/enum/int/uint cast to a default-sized complex over another
     // size of complex.
     if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
