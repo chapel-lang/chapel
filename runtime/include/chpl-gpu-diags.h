@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 #include "chpl-atomics.h"
+#include "chpl-comm.h"
 //#include "chpl-gpu.h"
 #include "error.h"
 
@@ -136,10 +137,10 @@ int chpl_gpu_diags_is_enabled(void) {
   } while(0)
 
 #define chpl_gpu_diags_verbose_launch(ln, fn, device_id)     \
-  chpl_gpu_diags_verbose_printf(false,                                  \
-                                 "%s:%d: kernel launch on device %d"    \
-                                 chpl_lookupFilename(fn), ln,           \
-                                 (int) device_id)
+  chpl_gpu_diags_verbose_printf(false,                               \
+                                "%s:%d: kernel launch on device %d",    \
+                                chpl_lookupFilename(fn), ln,           \
+                                (int) device_id)
 
 #define chpl_gpu_diags_incr(_ctr)                                           \
   do {                                                                       \
