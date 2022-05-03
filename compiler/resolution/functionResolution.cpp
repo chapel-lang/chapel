@@ -109,6 +109,7 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //# Global Variables
 //#
 
+bool verbose = false;
 bool                               resolved                  = false;
 int                                explainCallLine           = 0;
 
@@ -1041,17 +1042,17 @@ static bool canParamCoerce(Type*   actualType,
     // don't coerce bools to reals (per spec: "unintended by programmer")
 
     // coerce any integer type to maximum width real
-    if ((is_int_type(actualType) || is_uint_type(actualType))
-        && get_width(formalType) >= 64)
-      return true;
+    if (is_int_type(actualType) || is_uint_type(actualType)) {
+      if (get_width(formalType) >= 64)
+        return true;
 
-    // coerce integer types that are exactly representable
-    if (is_int_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
+      // coerce integer types that are exactly representable
+      if (get_width(actualType) < mantissa_width)
+        return true;
+
+      if (get_width(actualType) <= get_width(formalType))
+        return true;
+    }
 
     // coerce real from smaller size
     if (is_real_type(actualType) &&
@@ -1980,13 +1981,34 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
         !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
           f2Type == dtUInt[INT_SIZE_DEFAULT]))
       return true;
+    // For non-default-sized ints/uints, prefer smaller reals over larger
+    // ones.
+    if (aT == NUMERIC_TYPE_INT_UINT && verbose) {
+      printf("%d %d %d %d %d %d %d\n",
+             get_width(actualType),
+             get_width(f1Type),
+             get_width(f2Type),
+             INT_SIZE_DEFAULT,
+             aT == NUMERIC_TYPE_INT_UINT,
+             f1T == NUMERIC_TYPE_REAL,
+             f2T == NUMERIC_TYPE_REAL);
+    }
+           
+    if (aT == NUMERIC_TYPE_INT_UINT &&
+        get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT]) &&
+        f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
+        get_width(f1Type) < get_width(f2Type) &&
+        get_width(actualType) <= get_width(f1Type))
+      return true;
     // Prefer bool/enum/int/uint cast to a default-sized real over another
     // size of real or complex.
+    /* Note: I've left out the aBoolEnum case that used to be here 
     if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
         f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
         (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
         f2Type != dtReal[FLOAT_SIZE_DEFAULT])
       return true;
+    */
     // Prefer bool/enum/int/uint cast to a default-sized complex over another
     // size of complex.
     if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
@@ -5415,6 +5437,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       ResolutionCandidate* candidate2 = candidates.v[j];
 
       EXPLAIN("%s\n", toString(candidate2->fn));
+      if (DC.explain) {
+        verbose = true;
+      }
 
       int cmp = compareSpecificity(candidate1,
                                    candidate2,
@@ -5465,6 +5490,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
     }
   }
 
+  verbose = false;
+  
   return NULL;
 }
 
