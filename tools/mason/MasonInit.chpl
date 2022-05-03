@@ -214,7 +214,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool, inte
   }
 
   if toBeCreated.size == 0 && !interactive {
-      writeln("Library project has already been initialised.");
+      writeln("Library project has already been initialized.");
       return 0;
   }
 
