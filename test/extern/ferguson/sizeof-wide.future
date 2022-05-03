@@ -1,0 +1,2 @@
+bug: sizeof a wide class instance gets narrow size
+#6786
