@@ -103,7 +103,7 @@ proc masonInit(args: [] string) throws {
           if isFile('./src/' + moduleName) then rename('src/' + moduleName, 'src/' + newPackageName + '.chpl');
         }
         var isInitialized = validateInit('.', newPackageName, true, show, true);
-        writeln("Initialised new library project: " + newPackageName);
+        writeln("Initialized new library project: " + newPackageName);
       }
     }
     else {
