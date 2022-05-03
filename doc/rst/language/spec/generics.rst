@@ -162,9 +162,10 @@ this function at a call site. The formal argument is a parameter.
 Formal Arguments without Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the type of a formal argument is omitted, the type of the formal
-argument is taken to be the type of the actual argument passed to the
-function at the call site. A copy of the function is instantiated for
+If the type of a formal argument is omitted, and that formal is not
+declared with the ``out`` intent (:ref:`The_Out_Intent`), the type of the
+formal argument is taken to be the type of the actual argument passed to
+the function at the call site. A copy of the function is instantiated for
 each unique actual type.
 
    *Example (fillTuple2.chpl)*.
@@ -281,10 +282,12 @@ semantics of a type alias.
 Formal Arguments of Generic Type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the type of a formal argument is a generic type, there must exist an
-instantiation of that type that the actual argument can be implicitly
-coerced to (:ref:`Implicit_Conversions`). A copy of the function is
-instantiated for each unique instantiation of the formal’s type.
+If the type of a formal argument is a generic type, and that formal is
+not declared with the ``out`` intent (:ref:`The_Out_Intent`), there must
+exist an instantiation of that type that the actual argument can be
+implicitly coerced to (:ref:`Implicit_Conversions`). A copy of the
+function is instantiated for each unique instantiation of the formal’s
+type.
 
    *Example*.
 
@@ -335,7 +338,8 @@ identifier may be omitted.
 Formal Arguments of Partially Generic Type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The generic type for a formal argument may be specified with some
+For a formal not declared with the ``out`` intent (:ref:`The_Out_Intent`),
+the generic type for a formal argument may be specified with some
 queries or generic types and some concrete types or values. Using
 concrete types or values in this manner makes the argument *partially
 concrete* for the purpose of function resolution.
@@ -461,10 +465,11 @@ Formal Arguments of Generic Array Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If the type of a formal argument is an array where either the domain or
-the element type is queried or omitted, the type of the formal argument
-is taken to be the type of the actual argument passed to the function at
-the call site. If the domain is omitted, the domain of the formal
-argument is taken to be the domain of the actual argument.
+the element type is queried or omitted, and the formal is not declared
+with the ``out`` intent (:ref:`The_Out_Intent`), the type of the formal
+argument is taken to be the type of the actual argument passed to the
+function at the call site. If the domain is omitted, the domain of the
+formal argument is taken to be the domain of the actual argument.
 
 A queried domain may not be modified via the name to which it is bound
 (see :ref:`Association_of_Arrays_to_Domains` for rationale).

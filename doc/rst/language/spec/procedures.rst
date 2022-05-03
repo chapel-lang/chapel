@@ -475,6 +475,24 @@ value if one is supplied and can use the default value for the declared
 type if no initialization point is found. The formal argument can be
 modified within the function.
 
+Note that the way that type inference works with generic ``out`` formal
+arguments is very different from other formal arguments. In particular,
+the type of a generic ``out`` formal argument is inferred from the
+function body rather than from the call site.
+
+.. note::
+
+   If the type of an ``out`` argument needs to be inferred based upon the
+   call site, there are currently two approaches available:
+
+     * use a separate ``type`` argument to pass the type
+     * use the ``ref`` intent instead of the ``out`` intent
+
+   There is proposal that including a type query (e.g.  ``?t`` in an
+   ``out`` argument will cause the type to be inferred based upon the
+   call site. However this is not yet implemented, at the time of this
+   writing.
+
 .. _The_Inout_Intent:
 
 The Inout Intent
