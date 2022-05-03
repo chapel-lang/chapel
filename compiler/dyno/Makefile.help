@@ -45,8 +45,14 @@ else
 CLANG_CMAKE_DIR := $(LLVM_CMAKE_DIR)/..
 endif
 
-$(info CHPL_MAKE_LLVM_CONFIG $(CHPL_MAKE_LLVM_CONFIG))
-$(info CLANG_CMAKE_DIR $(CLANG_CMAKE_DIR))
+# Figure out the sdkroot set by chplenv scripts to get cmake
+# to use something consistent
+CHPL_SDKROOT := $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_llvm.py --sdkroot)
+ifeq ($(CHPL_SDKROOT),)
+SDKROOT_ARG :=
+else
+SDKROOT_ARG := -DCMAKE_OSX_SYSROOT=$(CHPL_SDKROOT)
+endif
 
 $(LIBCOMPILER_BUILD_DIR):
 	@echo "Configuring the compiler library..."
@@ -54,6 +60,7 @@ $(LIBCOMPILER_BUILD_DIR):
 	cd $(LIBCOMPILER_BUILD_DIR) && \
 	  $(CMAKE) $(CHPL_MAKE_HOME)/compiler/dyno \
 	    $(LIB_CMAKE_ARG) \
+	    $(SDKROOT_ARG) \
 	    -DCMAKE_C_COMPILER='$(CC)' \
 	    -DCMAKE_C_FLAGS='$(WARN_CFLAGS)' \
 	    -DCMAKE_CXX_COMPILER='$(CXX)' \
