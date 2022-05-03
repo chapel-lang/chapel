@@ -106,7 +106,6 @@ module GPUDiagnostics
     Start counting gpuunication operations across the whole program.
    */
   proc startGPUDiagnostics() {
-    compilerError("Not ready yet");
     chpl_gpu_startDiagnostics(gpuDiagsPrintUnstable);
   }
 
@@ -114,7 +113,6 @@ module GPUDiagnostics
     Stop counting gpuunication operations across the whole program.
    */
   proc stopGPUDiagnostics() {
-    compilerError("Not ready yet");
     chpl_gpu_stopDiagnostics();
   }
 
@@ -155,7 +153,7 @@ module GPUDiagnostics
     :returns: array of counts of gpu ops initiated on each locale
     :rtype: `[LocaleSpace] gpuDiagnostics`
    */
-  proc getgpuDiagnostics() {
+  proc getGPUDiagnostics() {
     var D: [LocaleSpace] gpuDiagnostics;
     for loc in Locales do on loc {
       D(loc.id) = getgpuDiagnosticsHere();

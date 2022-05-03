@@ -221,6 +221,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
   }
 
   chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc());
+  chpl_gpu_diags_incr(nLaunches);
 
   CHPL_GPU_DEBUG("Calling gpu function named %s\n", name);
 
