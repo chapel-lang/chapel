@@ -1305,8 +1305,6 @@ module BytesStringCommon {
     }
   }
 
-  config param debugUTF8Iterator = false;
-
   iter theseUTF8(const ref x: ?t) {
     for c in x.items() do
       yield c;
@@ -1320,6 +1318,8 @@ module BytesStringCommon {
     // leader chunks up blindly, follower will adjust for the codepoint
     // boundaries
     foreach i in theseBytes(tag, localX) do yield i;
+
+    foreach followThis in x.indices.these(tag) do yield followThis;
   }
 
 
@@ -1327,40 +1327,26 @@ module BytesStringCommon {
       where tag==iterKind.follower {
 
     const localX = x.localize();
+    const charRange = followThis[0];
 
-    proc adjustRangeForCodepointBoundaries(r) {
-      // adjust the low bound
-      var low = r.low;
-      if low != 0 {
-        while !isInitialByte(localX.buff[low]) {
-          low += 1;
-        }
+    // walk to the starting byte
+    var startingByte = 0:byteIndex;
+    var curIdx = 0;
+    for (cp, byteIdx, nBytes) in x._cpIndexLen() {
+      if curIdx == charRange.low {
+        startingByte = byteIdx;
+        break;
       }
-
-      // adjust the high bound
-      var high = r.high;
-      while high+1 != localX.buffLen-1 && !isInitialByte(localX.buff[high+1]) {
-        high += 1;
-      }
-
-      return (low..high,);
+      curIdx += 1;
     }
 
-    const rangeChunk = adjustRangeForCodepointBoundaries((...followThis));
-
-    if debugUTF8Iterator then
-      chpl_debug_writeln("<UTF8 Iterator> Adjusted chunk: ", rangeChunk[0]);
-
-    foreach i in localX.byteIndices.these(tag, rangeChunk) do
-      if isInitialByte(localX.buff[i]) {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=localX.buff,
-                                                   buffLen=localX.buffLen,
-                                                   offset=i,
-                                                   allowEsc=true);
-        var (newBuf, newSize) = bufferCopyLocal(localX.buff+i, nBytes);
-        yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
-
-      }
+    // actual yielding loop
+    foreach (cp, byteIdx, nBytes) in x._cpIndexLen(start=startingByte,
+                                                   numYields=charRange.size) {
+        var (newBuff, allocSize) = bufferCopyLocal(localX.buff+byteIdx,
+                                                   nBytes);
+        yield chpl_createStringWithOwnedBufferNV(newBuff, nBytes, allocSize, 1);
+    }
   }
 
   inline proc doEq(a: ?t1, b: ?t2) {

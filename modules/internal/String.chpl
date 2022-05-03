@@ -930,11 +930,14 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    iter _cpIndexLen(start = 0:byteIndex) {
+    iter _cpIndexLen(start = 0:byteIndex, numYields=max(int)) {
       const localThis = this.localize();
       var i = _findStartOfNextCodepointFromByte(localThis, start);
+      var curYields = 0;
       while i < localThis.buffLen {
         yield localThis._cpIndexLenHelpNoAdjustment(i);  // this increments i
+        curYields += 1;
+        if curYields == numYields then break;
       }
     }
 
