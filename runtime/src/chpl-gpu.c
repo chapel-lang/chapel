@@ -220,9 +220,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
     }
   }
 
-  CHPL_GPU_DEBUG("Calling gpu function named %s\n", name);
-
   chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc());
+
+  CHPL_GPU_DEBUG("Calling gpu function named %s\n", name);
 
   CUDA_CALL(cuLaunchKernel((CUfunction)function,
                            grd_dim_x, grd_dim_y, grd_dim_z,
