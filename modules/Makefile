@@ -170,6 +170,12 @@ DISTS_TO_DOCUMENT = \
 	layouts/LayoutCS.chpl \
 
 
+#
+# use absolute paths for internal modules so that the compiler can
+# determine that they're internal (and not just modules that happen to
+# live in a path named 'modules/internal/' so that they don't get
+# indexed like the user-facing modules.
+#
 INTERNAL_MODULES_TO_DOCUMENT =                        \
 	$(CHPL_MAKE_HOME)/modules/internal/Atomics.chpl       \
 	$(CHPL_MAKE_HOME)/modules/internal/Bytes.chpl         \

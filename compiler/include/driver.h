@@ -21,6 +21,7 @@
 #ifndef _driver_H_
 #define _driver_H_
 
+#include "arg.h"
 #include "chpl.h"
 #include "map.h"
 
@@ -90,7 +91,9 @@ extern bool fReportOptimizeForallUnordered;
 
 extern bool report_inlining;
 
+
 // Chapel Envs
+void setHome(const ArgumentDescription* desc, const char* arg);
 bool useDefaultEnv(std::string key);
 
 extern std::map<std::string, const char*> envMap;
