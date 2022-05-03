@@ -1,3 +1,0 @@
-<UTF8 Iterator> Adjusted chunk: 0..17
-<UTF8 Iterator> Adjusted chunk: 18..33
-warning: Setting number of threads in CHPL_TASKS=fifo can lead to deadlock
