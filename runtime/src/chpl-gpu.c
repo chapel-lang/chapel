@@ -161,7 +161,9 @@ bool chpl_gpu_running_on_gpu_locale() {
   return chpl_task_getRequestedSubloc()>=0;
 }
 
-static void chpl_gpu_launch_kernel_help(const char* fatbinData,
+static void chpl_gpu_launch_kernel_help(int ln,
+                                        int32_t fn,
+                                        const char* fatbinData,
                                         const char* name,
                                         int grd_dim_x,
                                         int grd_dim_y,
@@ -220,7 +222,7 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinData,
 
   CHPL_GPU_DEBUG("Calling gpu function named %s\n", name);
 
-  chpl_gpu_diags_verbose_launch(0, 0, chpl_task_getRequestedSubloc());
+  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc());
 
   CUDA_CALL(cuLaunchKernel((CUfunction)function,
                            grd_dim_x, grd_dim_y, grd_dim_z,
@@ -260,26 +262,30 @@ void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
 
-void chpl_gpu_launch_kernel(const char* fatbinData, const char* name,
+void chpl_gpu_launch_kernel(int ln, int32_t fn,
+                            const char* fatbinData, const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
                             int nargs, ...) {
   va_list args;
   va_start(args, nargs);
-  chpl_gpu_launch_kernel_help(fatbinData, name,
+  chpl_gpu_launch_kernel_help(ln, fn,
+                              fatbinData, name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
                               nargs, args);
   va_end(args);
 }
 
-void chpl_gpu_launch_kernel_flat(const char* fatbinData, const char* name,
+void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
+                                 const char* fatbinData, const char* name,
                                  int num_threads, int blk_dim, int nargs, ...) {
   int grd_dim = (num_threads+blk_dim-1)/blk_dim;
 
   va_list args;
   va_start(args, nargs);
-  chpl_gpu_launch_kernel_help(fatbinData, name,
+  chpl_gpu_launch_kernel_help(ln, fn,
+                              fatbinData, name,
                               grd_dim, 1, 1,
                               blk_dim, 1, 1,
                               nargs, args);
