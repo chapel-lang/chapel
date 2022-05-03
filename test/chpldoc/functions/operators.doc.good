@@ -27,13 +27,13 @@ or
 
 .. function:: operator +(a: Foo, b: Foo)
 
-.. function:: operator chpl_align(r: range(?i), count: Foo)
+.. function:: operator align(r: range(?i), count: Foo)
 
 .. function:: operator &(lhs: Foo2, rhs: Foo2)
 
 .. function:: operator &=(ref lhs: Foo2, rhs: Foo2)
 
-.. function:: operator chpl_by(r: range(?i), count: Foo)
+.. function:: operator by(r: range(?i), count: Foo)
 
 .. function:: operator :(rhs: Foo, type t: Bar)
 
