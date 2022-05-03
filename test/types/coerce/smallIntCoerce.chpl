@@ -18,12 +18,30 @@ proc baz(x: real(64)) {
   writeln("In baz64");
 }
 
+proc goo(x: complex(64)) {
+  writeln("In goo64");
+}
+
+proc goo(x: complex(128)) {
+  writeln("In goo128");
+}
+
+proc boo(x: complex(128)) {
+  writeln("In boo128");
+}
+
+proc boo(x: complex(64)) {
+  writeln("In boo64");
+}
+
 proc testit2(type t) {
   var x = 42: t;
   writeln(t:string);
   foo(x);
   bar(x);
   baz(x);
+  goo(x);
+  boo(x);
   writeln();
 }
 

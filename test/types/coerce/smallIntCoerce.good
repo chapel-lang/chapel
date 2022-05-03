@@ -2,29 +2,41 @@ int(32)
 In foo
 In bar32
 In baz32
+In goo64
+In boo64
 
 uint(32)
 In foo
 In bar32
 In baz32
+In goo64
+In boo64
 
 int(16)
 In foo
 In bar32
 In baz32
+In goo64
+In boo64
 
 uint(16)
 In foo
 In bar32
 In baz32
+In goo64
+In boo64
 
 int(8)
 In foo
 In bar32
 In baz32
+In goo64
+In boo64
 
 uint(8)
 In foo
 In bar32
 In baz32
+In goo64
+In boo64
 

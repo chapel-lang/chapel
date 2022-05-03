@@ -1040,8 +1040,8 @@ static bool canParamCoerce(Type*   actualType,
 
     // don't coerce bools to reals (per spec: "unintended by programmer")
 
-    // coerce any integer type to maximum width real
     if (is_int_type(actualType) || is_uint_type(actualType)) {
+      // coerce any integer type to maximum width real
       if (get_width(formalType) >= 64)
         return true;
 
@@ -1049,6 +1049,7 @@ static bool canParamCoerce(Type*   actualType,
       if (get_width(actualType) < mantissa_width)
         return true;
 
+      // coerce small integer types to similar-sized reals
       if (get_width(actualType) <= get_width(formalType))
         return true;
     }
@@ -1108,18 +1109,19 @@ static bool canParamCoerce(Type*   actualType,
 
     // don't coerce bools to complexes (per spec: "unintended by programmer")
 
-    // coerce any integer type to maximum width complex
-    if ((is_int_type(actualType) || is_uint_type(actualType)) &&
-        get_width(formalType) >= 128)
-      return true;
+    if (is_int_type(actualType) || is_uint_type(actualType)) {
+      // coerce any integer type to maximum width complex
+      if (get_width(formalType) >= 128)
+        return true;
 
-    // coerce integer types that are exactly representable
-    if (is_int_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
+      // coerce integer types that are exactly representable
+      if (get_width(actualType) < mantissa_width)
+        return true;
+
+      // coerce small integer types to real part of similar-sized complexes
+      if (get_width(actualType) <= get_width(formalType)/2)
+        return true;
+    }
 
     // coerce real/imag from smaller size
     if (is_real_type(actualType) &&
@@ -1980,28 +1982,34 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
         !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
           f2Type == dtUInt[INT_SIZE_DEFAULT]))
       return true;
-    // For non-default-sized ints/uints, prefer smaller reals over larger
-    // ones.
+    // For non-default-sized ints/uints...
     if (aT == NUMERIC_TYPE_INT_UINT &&
-        get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT]) &&
-        f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
-        get_width(f1Type) < get_width(f2Type) &&
-        get_width(actualType) <= get_width(f1Type))
-      return true;
-    // Prefer bool/enum/int/uint cast to a default-sized real over another
-    // size of real or complex.
-    if ((aBoolEnum || actualType == dtInt[INT_SIZE_DEFAULT]) &&
-        f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
-        (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
-        f2Type != dtReal[FLOAT_SIZE_DEFAULT])
-      return true;
-    // Prefer bool/enum/int/uint cast to a default-sized complex over another
-    // size of complex.
-    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
-        f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
-        f2T == NUMERIC_TYPE_COMPLEX &&
-        f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
-      return true;
+        get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT])) {
+      // ...prefer smaller reals over larger ones
+      if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
+          get_width(f1Type) < get_width(f2Type) &&
+          get_width(actualType) <= get_width(f1Type))
+        return true;
+      // ...prefer smaller complexes over larger ones
+      if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
+          get_width(f1Type) < get_width(f2Type) &&
+          get_width(actualType) <= get_width(f1Type)/2)
+        return true;
+    }
+    // Prefer bool/enum/int(64)/uint(64) cast to a default-sized real
+    // over another size of real or complex.
+    if ((aBoolEnum || actualType == dtInt[INT_SIZE_DEFAULT])) {
+      if (f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
+          (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
+          f2Type != dtReal[FLOAT_SIZE_DEFAULT])
+        return true;
+      // Prefer bool/enum/int/uint cast to a default-sized complex
+      // over another size of complex.
+      if (f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
+          f2T == NUMERIC_TYPE_COMPLEX &&
+          f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
+        return true;
+    }
     // Prefer real/imag cast to a same-sized complex over another size of
     // complex.
     if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
