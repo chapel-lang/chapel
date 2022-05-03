@@ -1,0 +1,30 @@
+int(32)
+In foo
+In bar32
+In baz32
+
+uint(32)
+In foo
+In bar32
+In baz32
+
+int(16)
+In foo
+In bar32
+In baz32
+
+uint(16)
+In foo
+In bar32
+In baz32
+
+int(8)
+In foo
+In bar32
+In baz32
+
+uint(8)
+In foo
+In bar32
+In baz32
+
