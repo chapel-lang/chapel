@@ -1333,19 +1333,15 @@ module BytesStringCommon {
     var startingByte = 0:byteIndex;
     var curIdx = 0;
     for (cp, byteIdx, nBytes) in x._cpIndexLen() {
-      if curIdx == charRange.low {
-        startingByte = byteIdx;
-        break;
-      }
-      curIdx += 1;
-    }
-
-    // actual yielding loop
-    foreach (cp, byteIdx, nBytes) in x._cpIndexLen(start=startingByte,
-                                                   numYields=charRange.size) {
+      // TODO: is this `break` good for performance because it cuts the
+      // iteration early, or bad because it prevents inlining (?)
+      if curIdx > charRange.high then break;
+      if charRange.contains(curIdx) {
         var (newBuff, allocSize) = bufferCopyLocal(localX.buff+byteIdx,
                                                    nBytes);
         yield chpl_createStringWithOwnedBufferNV(newBuff, nBytes, allocSize, 1);
+      }
+      curIdx += 1;
     }
   }
 
