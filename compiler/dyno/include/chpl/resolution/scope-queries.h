@@ -43,13 +43,10 @@ namespace resolution {
   const Scope* scopeForModule(Context* context, ID moduleId);
 
   /**
-    Given a Scope, compute the ResolvedVisibilityScope
-    by processing the use/import statements in order.
-
-    If the scope didn't have use/imports, returns nullptr.
+    Gather the IDs of Use/Import statements within a scope.
    */
-  const ResolvedVisibilityScope* resolveVisibilityStmts(Context* context,
-                                                        const Scope* scope);
+  const std::vector<ID>& findUseImportStmts(Context* context,
+                                            const Scope* scope);
 
   /**
     Given an AstNode and a Scope, return the things

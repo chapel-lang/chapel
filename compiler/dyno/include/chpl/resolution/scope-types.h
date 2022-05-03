@@ -294,6 +294,12 @@ class Scope {
 };
 
 /**
+  A path of which use/import statements are currently being resolved
+  (in order to support recursive use/import)
+ */
+using VisibilityPath = std::vector<ID>;
+
+/**
  This class supports both `use` and `import`.
  It stores a normalized form of the symbols made available
  by a use/import clause.
@@ -371,6 +377,11 @@ class VisibilitySymbols {
     std::swap(isPrivate_, other.isPrivate_);
   }
 
+  static bool update(VisibilitySymbols& keep,
+                     VisibilitySymbols& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
   void mark(Context* context) const {
     symbolId_.mark(context);
     for (auto p : names_) {
@@ -388,6 +399,7 @@ class VisibilitySymbols {
 // if the language design was that symbols available due to use/import
 // are only available after that statement (and in that case this analysis
 // could fold into the logic about variable declarations).
+#if 0
 class ResolvedVisibilityScope {
  private:
   const Scope* scope_;
@@ -432,6 +444,7 @@ class ResolvedVisibilityScope {
     }
   }
 };
+#endif
 
 enum {
   LOOKUP_DECLS = 1,
