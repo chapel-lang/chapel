@@ -416,7 +416,7 @@ record tcpListener {
 proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws {
   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
   var fdOut:fd_t;
-  var err_out:err_t = 0;
+  var err_out:qio_err_t = 0;
   // try accept
   err_out = sys_accept(socketFd, client_addr, fdOut);
   // if error is not about blocking, throw error
@@ -775,7 +775,7 @@ proc udpSocket.close throws {
 }
 
 pragma "no doc"
-private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):err_t;
+private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):qio_err_t;
 
 /*
   Reads upto `bufferLen` bytes from the socket, and
@@ -799,7 +799,7 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, fla
 */
 proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
                         flags:c_int = 0):(bytes, ipAddr) throws {
-  var err_out:err_t = 0;
+  var err_out:qio_err_t = 0;
   var buffer = c_calloc(c_uchar, bufferLen);
   var length:c_ssize_t;
   var addressStorage = new sys_sockaddr_t();
@@ -888,7 +888,7 @@ proc udpSocket.recv(bufferLen: int, timeout: real) throws {
 }
 
 pragma "no doc"
-private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):err_t;
+private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):qio_err_t;
 
 /*
   Send `data` over socket to the provided address and
@@ -913,7 +913,7 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
 */
 proc udpSocket.send(data: bytes, in address: ipAddr,
                     in timeout = new timeval(-1,0)):c_ssize_t throws {
-  var err_out:err_t = 0;
+  var err_out:qio_err_t = 0;
   var length:c_ssize_t;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
   if err_out == 0 {
