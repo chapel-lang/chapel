@@ -30,6 +30,11 @@ namespace resolution {
 ////// resolution basics
 
 /**
+  Resolve a module-level statement or variable declaration.
+ */
+const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id);
+
+/**
   Resolve the contents of a Module
  */
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id);

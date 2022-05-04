@@ -31,10 +31,11 @@ struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
-  const PoiScope* poiScope = nullptr;
+  const uast::AstNode* modStmt = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
   bool useGenericFormalDefaults = false;
   const TypedFnSignature* typedSignature = nullptr;
+  const PoiScope* poiScope = nullptr;
 
   // internal variables
   std::vector<const uast::Decl*> declStack;
@@ -66,7 +67,8 @@ struct Resolver {
            const uast::AstNode* symbol,
            ResolutionResultByPostorderID& byPostorder,
            const PoiScope* poiScope)
-    : context(context), symbol(symbol), poiScope(poiScope),
+    : context(context), symbol(symbol),
+      poiScope(poiScope),
       byPostorder(byPostorder), poiInfo(makePoiInfo(poiScope)) {
 
     enterScope(symbol);
@@ -75,8 +77,9 @@ struct Resolver {
 
   // set up Resolver to resolve a Module
   static Resolver
-  moduleResolver(Context* context, const uast::Module* mod,
-                 ResolutionResultByPostorderID& byPostorder);
+  moduleStmtResolver(Context* context, const uast::Module* mod,
+                     const uast::AstNode* modStmt,
+                     ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve a potentially generic Function signature
   static Resolver
