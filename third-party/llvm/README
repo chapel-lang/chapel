@@ -46,6 +46,12 @@ following patch necessary.
   llvm-src/CMakeLists.txt looks like the following:
 option(LLVM_INCLUDE_TESTS "Generate build targets for the LLVM unit tests." OFF)
 
+* The llvm-src/CMakeLists.txt file was also edited to set
+  LLVM_INCLUDE_BENCHMARKS to OFF by default instead of ON.
+  With this change made, the appropriate line in
+  llvm-src/CMakeLists.txt looks like the following:
+option(LLVM_INCLUDE_BENCHMARKS "Generate benchmark targets. If OFF, benchmarks can't be built." OFF)
+
 Upgrading LLVM versions
 =======================
 
@@ -53,21 +59,22 @@ The directory $CHPL_HOME/third-party/llvm/llvm-src/ contains the
 un-tarballed LLVM package contents.  Version updates should be done as
 follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
-1.  un-tarball the new LLVM version into the directory it specifies,
+1.  git rm -r llvm-src cmake
+2.  un-tarball the new LLVM version into the directory it specifies,
     for example llvm-14.0.0.src
-2.  un-tarball the new Clang version into the directory it specifies,
+3.  un-tarball the new Clang version into the directory it specifies,
     for example clang-14.0.0.src
-3.  mv clang-14.0.0.src llvm-14.0.0.src/tools/clang
-4.  git rm -r llvm-src
+4.  mv clang-14.0.0.src llvm-14.0.0.src/tools/clang
 5.  mv llvm-14.0.0.src llvm-src
 6.  rm -r llvm-src/test llvm-src/tools/clang/test
-7.  git add --force llvm-src
+7.  git add --force llvm-src cmake
     ('--force' is needed to ensure git adds all files in the subdirectory)
 8.  update the util/chplenv/chpl_llvm.py preferred_versions function
     to record that the new version is available.
 9.  update $CHPL_HOME/doc/rst/usingchapel/prereqs.rst for the new LLVM version
 10. update this README file
 11. commit
-12. edit llvm-src/CMakeLists.txt to set LLVM_INCLUDE_TESTS to OFF and check
-    above for any additional patches to apply 
+12. edit llvm-src/CMakeLists.txt to set LLVM_INCLUDE_TESTS to OFF,
+    set LLVM_INCLUDE_BENCHMARKS to OFF, and check above for any
+    additional patches to apply 
 13. PR, merge, etc.
