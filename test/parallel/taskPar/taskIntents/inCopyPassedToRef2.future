@@ -1,3 +1,6 @@
 bug: seg fault when passing 'in' task intent to 'ref' formal
 
-This code segfaults, but shouldn't.
+#19739
+
+Note that the .skipif for this test should be removed when
+this future is retired.
