@@ -1045,10 +1045,6 @@ static bool canParamCoerce(Type*   actualType,
       if (get_width(formalType) >= 64)
         return true;
 
-      // coerce integer types that are exactly representable
-      if (get_width(actualType) < mantissa_width)
-        return true;
-
       // coerce small integer types to similar-sized reals
       if (get_width(actualType) <= get_width(formalType))
         return true;
@@ -1063,7 +1059,10 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (is_int_type(actualType) || is_uint_type(actualType)) {
-          if (fits_in_mantissa(get_width(formalType), var->immediate)) {
+          // if this param fits in an 'int(n)' or 'uint(n)', permit it
+          // to param coerce to a 'real(n)'
+          if (fits_in_int(get_width(formalType), var->immediate) ||
+              fits_in_uint(get_width(formalType), var->immediate)) {
             *paramNarrows = true;
             return true;
           }
@@ -1114,10 +1113,6 @@ static bool canParamCoerce(Type*   actualType,
       if (get_width(formalType) >= 128)
         return true;
 
-      // coerce integer types that are exactly representable
-      if (get_width(actualType) < mantissa_width)
-        return true;
-
       // coerce small integer types to real part of similar-sized complexes
       if (get_width(actualType) <= get_width(formalType)/2)
         return true;
@@ -1140,7 +1135,10 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (is_int_type(actualType) || is_uint_type(actualType)) {
-          if (fits_in_mantissa(get_width(formalType)/2, var->immediate)) {
+          // if this param fits in an 'int(n)' or 'uint(n)', permit it
+          // to param coerce to a 'real(n)'
+          if (fits_in_int(get_width(formalType)/2, var->immediate) ||
+              fits_in_uint(get_width(formalType)/2, var->immediate)) {
             *paramNarrows = true;
             return true;
           }
