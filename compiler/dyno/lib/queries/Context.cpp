@@ -632,10 +632,10 @@ void Context::error(const resolution::TypedFnSignature* inFn,
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
-  if (enableDebugTrace) {
-    printf("RECOMPUTING IF NEEDED FOR %p %s\n", resultEntry,
-           resultEntry->parentQueryMap->queryName);
-  }
+  //if (enableDebugTrace) {
+  //  printf("RECOMPUTING IF NEEDED FOR %p %s\n", resultEntry,
+  //         resultEntry->parentQueryMap->queryName);
+  //}
 
   if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // No need to check the dependencies again.

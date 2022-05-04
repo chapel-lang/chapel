@@ -26,19 +26,8 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/queries/stringify-functions.h"
 
-#ifndef CHPL_QUERY_TIMING_ENABLED
-#define CHPL_QUERY_TIMING_ENABLED 1
-#endif
-
-#if CHPL_QUERY_TIMING_ENABLED
-
-#define QUERY_BEGIN_TIMING(mapbase)                                                \
-  auto QUERY_STOPWATCH = context->makeQueryTimingStopwatch(mapbase)
-
-#else
-
-#define QUERY_BEGIN_TIMING(mapbase)
-
+#ifndef CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+#define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 1
 #endif
 
 /**
@@ -193,13 +182,13 @@ Context::queryBeginGetMap(
     const char* traceQueryName,
     bool isInputQuery) {
 
-#if CHPL_QUERY_TIMING_ENABLED
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
   auto stopwatch = makePlainQueryTimingStopwatch(enableQueryTiming);
 #endif
 
   auto ret = getMap(queryFunc, tupleOfArgs, traceQueryName, isInputQuery);
 
-#if CHPL_QUERY_TIMING_ENABLED
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
   if (enableQueryTiming) {
     ret->timings.systemGetMap.update(stopwatch.elapsed());
   }
@@ -221,10 +210,10 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
   bool newElementWasAdded = pair.second;
 
   if (enableDebugTrace) {
-    if (newElementWasAdded)
-      printf("Added new result %p %s\n", savedElement, queryMap->queryName);
-    else
-      printf("Found result %p %s\n", savedElement, queryMap->queryName);
+    //if (newElementWasAdded)
+    //  printf("Added new result %p %s\n", savedElement, queryMap->queryName);
+    //else
+    //  printf("Found result %p %s\n", savedElement, queryMap->queryName);
   }
 
   if (newElementWasAdded == false && savedElement->lastChecked == -1) {
@@ -240,13 +229,13 @@ const QueryMapResult<ResultType, ArgTs...>*
 Context::queryBeginGetResult(QueryMap<ResultType, ArgTs...>* queryMap,
                              const std::tuple<ArgTs...>& tupleOfArgs) {
 
-#if CHPL_QUERY_TIMING_ENABLED
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
   auto stopwatch = makePlainQueryTimingStopwatch(enableQueryTiming);
 #endif
 
   auto ret = getResult(queryMap, tupleOfArgs);
 
-#if CHPL_QUERY_TIMING_ENABLED
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
   if (enableQueryTiming) {
     queryMap->timings.systemGetResult.update(stopwatch.elapsed());
   }
@@ -267,11 +256,11 @@ Context::queryUseSaved(
 
   if (enableDebugTrace) {
     if (useSaved) {
-      printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
-             traceQueryName, r);
+      //printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
+      //       traceQueryName, r);
       assert(r->lastChecked == this->currentRevisionNumber);
     } else {
-      printf("QUERY COMPUTING %s (...) %p\n", traceQueryName, r);
+      //printf("QUERY COMPUTING %s (...) %p\n", traceQueryName, r);
     }
   }
 
@@ -372,9 +361,9 @@ Context::queryEnd(
     queryArgsPrint(tupleOfArgs);
     printf(") %s %p\n", changed?"UPDATED":"NO CHANGE", r);
     assert(r->lastChecked == this->currentRevisionNumber);
-    for (auto dep : r->dependencies) {
-      printf("  with dependency %p %s\n", dep, dep->parentQueryMap->queryName);
-    }
+    //for (auto dep : r->dependencies) {
+    //  printf("  with dependency %p %s\n", dep, dep->parentQueryMap->queryName);
+    //}
   }
 
   endQueryHandleDependency(ret);
@@ -532,7 +521,6 @@ Context::querySetterUpdateResult(
   const char* BEGIN_QUERY_FUNC_NAME = #func; \
   assert(0 == strcmp(BEGIN_QUERY_FUNC_NAME, __func__)); \
   auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
-  context->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
   auto BEGIN_QUERY_MAP = context->queryBeginGetMap(BEGIN_QUERY_FUNCTION, \
                                                    BEGIN_QUERY_ARGS, \
                                                    BEGIN_QUERY_FUNC_NAME, \
@@ -548,6 +536,19 @@ Context::querySetterUpdateResult(
 #define QUERY_GET_SAVED() \
   (BEGIN_QUERY_CONTEXT->queryGetSaved(BEGIN_QUERY_FOUND))
 
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+
+#define QUERY_BEGIN_TIMING() \
+  context->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
+  auto QUERY_STOPWATCH = context->makeQueryTimingStopwatch(BEGIN_QUERY_MAP)
+
+#else
+
+#define QUERY_BEGIN_TIMING()
+
+#endif
+
+
 /**
   Use QUERY_BEGIN at the start of the implementation of a particular query.
   It checks to see if an earlier result can be used and in that event returns
@@ -561,7 +562,7 @@ Context::querySetterUpdateResult(
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
-  QUERY_BEGIN_TIMING(BEGIN_QUERY_MAP);
+  QUERY_BEGIN_TIMING();
 
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
@@ -572,7 +573,7 @@ Context::querySetterUpdateResult(
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
-  QUERY_BEGIN_TIMING(BEGIN_QUERY_MAP);
+  QUERY_BEGIN_TIMING();
 
 /**
   Returns a pointer to the partial result if the query is already running
