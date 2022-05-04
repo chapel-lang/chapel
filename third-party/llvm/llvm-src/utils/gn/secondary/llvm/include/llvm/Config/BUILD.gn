@@ -2,6 +2,7 @@ import("//llvm/lib/DebugInfo/PDB/enable_dia.gni")
 import("//llvm/lib/Target/targets.gni")
 import("//llvm/lib/Target/targets_with_asm_parsers.gni")
 import("//llvm/lib/Target/targets_with_disassemblers.gni")
+import("//llvm/lib/Target/targets_with_mcas.gni")
 import("//llvm/triples.gni")
 import("//llvm/utils/gn/build/buildflags.gni")
 import("//llvm/utils/gn/build/libs/edit/enable.gni")
@@ -45,6 +46,10 @@ declare_args() {
 
   # Iterate unordered llvm containers in reverse.
   llvm_enable_reverse_iteration = false
+
+  # glibc is at least 2.33 which has mallinfo2.
+  # TODO: remove this once nobody using the gn build is building against an old glibc.
+  llvm_have_mallinfo2 = false
 }
 
 write_cmake_config("abi-breaking") {
@@ -71,7 +76,7 @@ write_cmake_config("config") {
   input = "config.h.cmake"
   output = "$target_gen_dir/config.h"
   values = [
-    "BUG_REPORT_URL=https://bugs.llvm.org/",
+    "BUG_REPORT_URL=https://github.com/llvm/llvm-project/issues/",
     "ENABLE_BACKTRACES=1",
     "ENABLE_CRASH_OVERRIDES=1",
     "BACKTRACE_HEADER=execinfo.h",
@@ -88,7 +93,6 @@ write_cmake_config("config") {
     "HAVE_LIBPFM=",
     "HAVE_LIBPSAPI=",
     "HAVE_MALLCTL=",
-    "HAVE_MALLINFO2=",
     "HAVE_SIGNAL_H=1",
     "HAVE_STD_IS_TRIVIALLY_COPYABLE=1",
     "HAVE_STRERROR=1",
@@ -118,7 +122,8 @@ write_cmake_config("config") {
     "LLVM_TARGET_TRIPLE_ENV=",
     "LLVM_VERSION_INFO=",
     "LLVM_VERSION_PRINTER_SHOW_HOST_TARGET_INFO=1",
-    "PACKAGE_BUGREPORT=https://bugs.llvm.org/",
+    "LLVM_WINDOWS_PREFER_FORWARD_SLASH=",
+    "PACKAGE_BUGREPORT=https://github.com/llvm/llvm-project/issues/",
     "PACKAGE_NAME=LLVM",
     "PACKAGE_STRING=LLVM ${llvm_version}git",
     "PACKAGE_VERSION=${llvm_version}git",
@@ -130,6 +135,9 @@ write_cmake_config("config") {
     # This is both in llvm-config.h and config.h; llvm-config.h doesn't
     # define it if it's not set while config.h defines it to empty in that case.
     "LLVM_DEFAULT_TARGET_TRIPLE=$llvm_target_triple",
+
+    # FIXME: Set to 1 on mac once the 10.14 SDK is in common use.
+    "LLVM_SUPPORT_XCODE_SIGNPOSTS=",
   ]
 
   if (current_os == "linux" || current_os == "android") {
@@ -138,7 +146,6 @@ write_cmake_config("config") {
       "HAVE_LINK_H=1",
       "HAVE_LSEEK64=1",
       "HAVE_MALLINFO=1",
-      "HAVE_POSIX_FALLOCATE=1",
       "HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC=1",
     ]
   } else {
@@ -147,7 +154,6 @@ write_cmake_config("config") {
       "HAVE_LINK_H=",
       "HAVE_LSEEK64=",
       "HAVE_MALLINFO=",
-      "HAVE_POSIX_FALLOCATE=",
       "HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC=",
     ]
   }
@@ -162,6 +168,7 @@ write_cmake_config("config") {
       "HAVE_MALLOC_ZONE_STATISTICS=1",
       "HAVE_PROC_PID_RUSAGE=1",
       "HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC=1",
+      "HAVE_UNW_ADD_DYNAMIC_FDE=1",
     ]
   } else {
     values += [
@@ -173,6 +180,7 @@ write_cmake_config("config") {
       "HAVE_MALLOC_ZONE_STATISTICS=",
       "HAVE_PROC_PID_RUSAGE=",
       "HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC=",
+      "HAVE_UNW_ADD_DYNAMIC_FDE=",
     ]
   }
 
@@ -316,18 +324,26 @@ write_cmake_config("config") {
   } else {
     values += [ "LLVM_ENABLE_LIBXML2=" ]
   }
+
+  if (llvm_have_mallinfo2) {
+    values += [ "HAVE_MALLINFO2=1" ]
+  } else {
+    values += [ "HAVE_MALLINFO2=" ]
+  }
 }
 
 write_cmake_config("llvm-config") {
   input = "llvm-config.h.cmake"
   output = "$target_gen_dir/llvm-config.h"
   values = [
+    "LLVM_BUILD_LLVM_DYLIB=",
+    "LLVM_BUILD_SHARED_LIBS=",
     "LLVM_DEFAULT_TARGET_TRIPLE=$llvm_target_triple",
+    "LLVM_ENABLE_CURL=",
     "LLVM_ENABLE_DUMP=",
     "LLVM_ENABLE_NEW_PASS_MANAGER=1",
     "LLVM_FORCE_ENABLE_STATS=",
     "LLVM_HAS_ATOMICS=1",
-    "LLVM_HAVE_TF_AOT=",
     "LLVM_HAVE_TF_API=",
     "LLVM_HOST_TRIPLE=$llvm_current_triple",
     "LLVM_NATIVE_ARCH=$native_target",
@@ -337,10 +353,7 @@ write_cmake_config("llvm-config") {
     "LLVM_NATIVE_TARGET=1",
     "LLVM_NATIVE_TARGETINFO=1",
     "LLVM_NATIVE_TARGETMC=1",
-
-    # FIXME: Set to 1 on mac once the 10.14 SDK is in common use.
-    "LLVM_SUPPORT_XCODE_SIGNPOSTS=",
-
+    "LLVM_NATIVE_TARGETMCA=1",
     "LLVM_USE_INTEL_JITEVENTS=",
     "LLVM_USE_OPROFILE=",
     "LLVM_USE_PERF=",
@@ -431,6 +444,12 @@ write_target_def_file("Targets.def") {
   value = "LLVM_TARGET"
 }
 
+write_target_def_file("TargetMCAs.def") {
+  key = "LLVM_ENUM_TARGETMCAS"
+  value = "LLVM_TARGETMCA"
+  all_targets = targets_with_mcas
+}
+
 group("write_target_def_files") {
   visibility = [
     "//llvm/lib/Support",
@@ -440,6 +459,7 @@ group("write_target_def_files") {
     ":AsmParsers.def",
     ":AsmPrinters.def",
     ":Disassemblers.def",
+    ":TargetMCAs.def",
     ":Targets.def",
   ]
 }

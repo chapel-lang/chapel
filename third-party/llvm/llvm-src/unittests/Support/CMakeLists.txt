@@ -39,6 +39,7 @@ add_llvm_unittest(SupportTests
   FormatVariadicTest.cpp
   FSUniqueIDTest.cpp
   GlobPatternTest.cpp
+  HashBuilderTest.cpp
   Host.cpp
   IndexedAccessorTest.cpp
   InstructionCostTest.cpp
@@ -67,6 +68,7 @@ add_llvm_unittest(SupportTests
   ReplaceFileTest.cpp
   RISCVAttributeParserTest.cpp
   ScaledNumberTest.cpp
+  ScopedPrinterTest.cpp
   SHA256.cpp
   SourceMgrTest.cpp
   SpecialCaseListTest.cpp
@@ -91,6 +93,7 @@ add_llvm_unittest(SupportTests
   WithColorTest.cpp
   YAMLIOTest.cpp
   YAMLParserTest.cpp
+  buffer_ostream_test.cpp
   formatted_raw_ostream_test.cpp
   raw_fd_stream_test.cpp
   raw_ostream_test.cpp
@@ -127,3 +130,5 @@ if(NOT LLVM_INTEGRATED_CRT_ALLOC)
   # The test doesn't pass when using a custom allocator, PR47881.
   add_subdirectory(DynamicLibrary)
 endif()
+
+add_subdirectory(CommandLineInit)

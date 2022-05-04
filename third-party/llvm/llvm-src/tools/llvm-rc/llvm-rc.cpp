@@ -60,7 +60,7 @@ enum ID {
 #include "Opts.inc"
 #undef PREFIX
 
-static const opt::OptTable::Info InfoTable[] = {
+const opt::OptTable::Info InfoTable[] = {
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
                HELPTEXT, METAVAR, VALUES)                                      \
   {                                                                            \
@@ -90,7 +90,7 @@ enum Windres_ID {
 #include "WindresOpts.inc"
 #undef PREFIX
 
-static const opt::OptTable::Info WindresInfoTable[] = {
+const opt::OptTable::Info WindresInfoTable[] = {
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
                HELPTEXT, METAVAR, VALUES)                                      \
   {                                                                            \
@@ -111,7 +111,7 @@ static ExitOnError ExitOnErr;
 static FileRemover TempPreprocFile;
 static FileRemover TempResFile;
 
-LLVM_ATTRIBUTE_NORETURN static void fatalError(const Twine &Message) {
+[[noreturn]] static void fatalError(const Twine &Message) {
   errs() << Message << "\n";
   exit(1);
 }
