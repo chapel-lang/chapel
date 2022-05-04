@@ -1063,9 +1063,9 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (is_int_type(actualType) || is_uint_type(actualType)) {
-          if (fits_in_mantissa(mantissa_width, var->immediate)) {
-              *paramNarrows = true;
-              return true;
+          if (fits_in_mantissa(get_width(formalType), var->immediate)) {
+            *paramNarrows = true;
+            return true;
           }
         }
         if (is_real_type(actualType)) {
@@ -1140,7 +1140,7 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (is_int_type(actualType) || is_uint_type(actualType)) {
-          if (fits_in_mantissa(mantissa_width, var->immediate)) {
+          if (fits_in_mantissa(get_width(formalType)/2, var->immediate)) {
             *paramNarrows = true;
             return true;
           }
