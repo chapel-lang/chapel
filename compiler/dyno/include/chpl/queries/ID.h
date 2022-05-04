@@ -83,7 +83,7 @@ class ID final {
     the postorder traversal numbering, the ids contained appear before the node.
 
     The node with postorder traversal ID
-      postOrderId(Node) - numChildIds()
+      postOrderId() - numChildIds()
     is the first node contained within this node.
 
     E.g. in this notional AST:
