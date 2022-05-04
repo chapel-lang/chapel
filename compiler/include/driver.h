@@ -91,7 +91,6 @@ extern bool fReportOptimizeForallUnordered;
 
 extern bool report_inlining;
 
-
 // Chapel Envs
 void setHome(const ArgumentDescription* desc, const char* arg);
 bool useDefaultEnv(std::string key);
