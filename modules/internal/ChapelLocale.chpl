@@ -457,12 +457,6 @@ module ChapelLocale {
       return 0;
     }
 
-    pragma "no doc"
-    proc numGpus() : int {
-      HaltWrappers.pureVirtualMethodHalt();
-      return 0;
-    }
-
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildIndices() : int {
@@ -481,9 +475,14 @@ module ChapelLocale {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
+    // Return array of gpu sublocale
+    proc gpus {
+      return gpusImpl();
+    }
+
     pragma "no doc"
-    proc getGpu(idx:int) : locale {
-      HaltWrappers.pureVirtualMethodHalt();
+    proc gpusImpl() const ref {
+      return chpl_emptyLocales;
     }
 
     pragma "no doc"

@@ -1,6 +1,6 @@
 config const n = 10;
 
-on here.getGpu(0) {
+on here.gpus[0] {
   var a, b: [0..n] int;
   var value = 20;
 

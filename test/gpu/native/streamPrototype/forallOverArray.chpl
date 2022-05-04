@@ -1,7 +1,7 @@
 config const start = 1;
 config const end = 10;
 
-on here.getGpu(0) {
+on here.gpus[0] {
   var a: [start..end] int;
   var value = 20;
 

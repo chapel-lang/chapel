@@ -4,9 +4,9 @@ config const alpha = 10;
 
 config const writeArrays = true;
 
-writeln("Number of sublocales: ", here.getChildCount());
+writeln("Number of sublocales: ", here.gpus.size);
 
-for subloc in 1..here.getChildCount()-1 do on here.getChild(subloc) {
+for subloc in 0..<here.getChildCount() do on here.gpus[subloc] {
   var A: [1..n] int;
   var B: [1..n] int;
   var C: [1..n] int;

@@ -261,13 +261,14 @@ module LocaleModel {
     }
 
     override proc isGpu() : bool { return true; }
-    override proc numGpus() : int { return parent.numGpus(); }
-    override proc getGpu(idx:int) : locale { return parent.getGpu(idx); }
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
   pragma "unsafe"
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
+
+  pragma "unsafe"
+  const chpl_emptyLocalesModels: [chpl_emptyLocaleSpace] unmanaged AbstractLocaleModel;
 
   //
   // A concrete class representing the nodes in this architecture.
@@ -282,6 +283,9 @@ module LocaleModel {
 
     pragma "unsafe"
     var childLocales: [childSpace] unmanaged AbstractLocaleModel;
+
+    pragma "unsafe"
+    var gpuSublocales: [childSpace] locale;
 
     // This constructor must be invoked "on" the node
     // that it is intended to represent.  This trick is used
@@ -340,8 +344,6 @@ module LocaleModel {
 
     override proc getChildCount() return numSublocales;
 
-    override proc numGpus() : int { return getChildCount(); }
-
     iter getChildIndices() : int {
       for idx in {0..#numSublocales} do // chpl_emptyLocaleSpace do
         yield idx;
@@ -354,10 +356,9 @@ module LocaleModel {
       return new locale(childLocales[idx]);
     }
 
-    override proc getGpu(idx:int) : locale {
-      if (idx < 0) || (idx >= numGpus()) then
-        halt("gpu index out of bounds (",idx,")");
-      return getChild(idx + firstGpuSubLocId);
+    pragma "no doc"
+    override proc gpusImpl() const ref {
+      return gpuSublocales;
     }
 
     iter getChildren() : locale  {
@@ -366,7 +367,7 @@ module LocaleModel {
     }
 
     proc getChildArray() {
-      return [loc in childLocales] loc;
+      return childLocales;
     }
 
     //------------------------------------------------------------------------{

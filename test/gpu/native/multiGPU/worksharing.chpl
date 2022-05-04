@@ -1,6 +1,6 @@
 use Time;
 
-writeln("Number of sublocales: ", here.getChildCount());
+writeln("Number of sublocales: ", here.gpus.size);
 
 config const validate = true;
 config const printStats = false;
@@ -28,7 +28,7 @@ for i in 1..numIters {
     A = B + alpha * C;
   }
   else {
-    const numPUs = here.getChildCount(); 
+    const numPUs = here.gpus.size; 
     const numGPUs = numPUs-1;
     const chunkDiv = numGPUs+cpuToGpuRatio;
     var chunkSize = (n/chunkDiv):int;
@@ -40,7 +40,7 @@ for i in 1..numIters {
     cobegin {
       A[cpuRange] = B[cpuRange] + alpha * C[cpuRange];
 
-      coforall sublocID in 1..#numGPUs do on here.getChild(sublocID) {
+      coforall sublocID in 0..#numGPUs do on here.gpu[sublocID] {
         const myChunk = cpuSize+(sublocID-1)*gpuChunkSize..#gpuChunkSize;
         if debug then writeln(sublocID, ": ", myChunk);
 
