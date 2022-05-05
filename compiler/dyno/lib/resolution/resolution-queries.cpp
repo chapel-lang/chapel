@@ -48,38 +48,71 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+
+const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
+                                                       ID id) {
+  QUERY_BEGIN(resolveModuleStmt, context, id);
+
+  assert(id.postOrderId() >= 0);
+
+  // TODO: can we save space better here by having
+  // the ResolutionResultByPostorderID have a different offset
+  // (so it can contain only ids within the requested stmt) or
+  // maybe we can make it sparse with a hashtable or something?
+  ResolutionResultByPostorderID result;
+
+  ID moduleId = parsing::idToParentId(context, id);
+  auto moduleAst = parsing::idToAst(context, moduleId);
+  if (const Module* mod = moduleAst->toModule()) {
+    // Resolve just the requested statement
+    auto modStmt = parsing::idToAst(context, id);
+    auto visitor = Resolver::moduleStmtResolver(context, mod, modStmt, result);
+    modStmt->traverse(visitor);
+  }
+
+  return QUERY_END(result);
+}
+
+
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
 
-  ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
+  const AstNode* ast = parsing::idToAst(context, id);
+  assert(ast != nullptr);
 
-  auto ast = parsing::idToAst(context, id);
-  if (const Module* mod = ast->toModule()) {
-    auto visitor = Resolver::moduleResolver(context, mod, partialResult);
-    for (auto child: mod->children()) {
-      child->traverse(visitor);
+  ResolutionResultByPostorderID result;
+
+  if (ast != nullptr) {
+    if (const Module* mod = ast->toModule()) {
+      result.setupForSymbol(mod);
+      for (auto child: mod->children()) {
+        if (child->isComment() ||
+            child->isTypeDecl() ||
+            child->isFunction() ||
+            child->isUse() ||
+            child->isImport()) {
+          // ignore this statement since it is not relevant to
+          // the resolution of module initializers and module-level
+          // variables.
+        } else {
+          ID stmtId = child->id();
+          // resolve the statement
+          const ResolutionResultByPostorderID& resolved =
+            resolveModuleStmt(context, stmtId);
+
+          // copy results for children and the node itself
+          int firstId = stmtId.postOrderId() - stmtId.numContainedChildren();
+          int lastId = firstId + stmtId.numContainedChildren();
+          for (int i = firstId; i <= lastId; i++) {
+            ID exprId(stmtId.symbolPath(), i, 0);
+            result.byIdExpanding(exprId) = resolved.byId(exprId);
+          }
+        }
+      }
     }
-  } else {
-    assert(false && "case not handled");
   }
 
-  return QUERY_END_CURRENT_RESULT();
-}
-
-static
-const ResolutionResultByPostorderID& partiallyResolvedModule(Context* context,
-                                                             ID id) {
-
-  // check for a partial result from a running query
-  const ResolutionResultByPostorderID* r =
-    QUERY_RUNNING_PARTIAL_RESULT(resolveModule, context, id);
-  // if there was a partial result, return it
-  if (r != nullptr) {
-    return *r;
-  }
-
-  // otherwise, run the query to compute the full result
-  return resolveModule(context, id);
+  return QUERY_END(result);
 }
 
 const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
@@ -89,13 +122,8 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
 
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
-    // Find the parent scope for the ID - i.e. where the id is declared
-    ID parentSymbolId = id.parentSymbolId(context);
-    AstTag parentTag = parsing::idToTag(context, parentSymbolId);
-    if (asttags::isModule(parentTag)) {
-      auto& partial = partiallyResolvedModule(context, parentSymbolId);
-      result = partial.byId(id).type();
-    }
+    const auto& resolvedStmt = resolveModuleStmt(context, id);
+    result = resolvedStmt.byId(id).type();
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
     const Type* t = nullptr;

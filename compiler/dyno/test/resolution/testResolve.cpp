@@ -315,12 +315,65 @@ static void test5() {
   assert(fn->formalType(0).type() == IntType::get(context, 64));
 }
 
+// this test checks a particular incremental pattern
+// that crashed earlier versions
+static void test6() {
+  printf("test6\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+
+  {
+    printf("part 1\n");
+    context->advanceToNextRevision(true);
+    std::string contents = R""""(
+                              module M {
+                                var x = 1;
+                                proc f() { return x; }
+                              }
+                           )"""";
+
+    setFileText(context, path, contents);
+    const ModuleVec& vec = parse(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    resolveModule(context, m->id());
+
+    context->collectGarbage();
+  }
+
+  {
+    printf("part 2\n");
+    context->advanceToNextRevision(true);
+    std::string contents = R""""(
+                              module M {
+                                var x = 1;
+                                proc f() { return x; }
+                                f();
+                              }
+                           )"""";
+
+    setFileText(context, path, contents);
+    const ModuleVec& vec = parse(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+
+    resolveModule(context, m->id());
+
+    context->collectGarbage();
+  }
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }

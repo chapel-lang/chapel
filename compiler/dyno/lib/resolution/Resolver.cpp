@@ -95,9 +95,11 @@ struct GatherFieldsOrFormals {
 };
 
 Resolver
-Resolver::moduleResolver(Context* context, const Module* mod,
-                         ResolutionResultByPostorderID& byId) {
+Resolver::moduleStmtResolver(Context* context, const Module* mod,
+                             const AstNode* modStmt,
+                             ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, mod, byId, nullptr);
+  ret.modStmt = modStmt;
   ret.byPostorder.setupForSymbol(mod);
   return ret;
 }
@@ -841,7 +843,33 @@ bool Resolver::resolveSpecialCall(const Call* call) {
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // if the id is contained within this symbol,
   // get the type information from the resolution result.
-  if (id.symbolPath() == symbol->id().symbolPath() && id.postOrderId() >= 0) {
+  //
+  // when resolving a module statement, the resolution result only
+  // contains things within that statement.
+  bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
+                         id.postOrderId() >= 0);
+  bool error = false;
+  if (useLocalResult && modStmt != nullptr) {
+    if (modStmt->id().contains(id)) {
+      // OK, proceed using local result
+    } else {
+      useLocalResult = false;
+      // attempting to get a type for a value that has a later post-order ID
+      // than modStmt should result in an error since we want resolution to
+      // behave as though things are resolved in order.
+      if (id.postOrderId() > modStmt->id().postOrderId()) {
+        error = true;
+      }
+    }
+  }
+
+  if (error) {
+    context->error(modStmt, "Uses later variable, type not established");
+    auto unknownType = UnknownType::get(context);
+    return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+  }
+
+  if (useLocalResult) {
     QualifiedType ret = byPostorder.byId(id).type();
     auto g = Type::MAYBE_GENERIC;
     if (ret.hasTypePtr()) {
@@ -854,7 +882,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
       // the type of anything using this type (since it will change
       // on instantiation).
       auto unknownType = UnknownType::get(context);
-      ret = QualifiedType(ret.kind(), unknownType, nullptr);
+      ret = QualifiedType(ret.kind(), unknownType);
     }
 
     return ret;

@@ -198,6 +198,7 @@ int main(int argc, char** argv) {
   bool gc = false;
   Context context;
   Context* ctx = &context;
+  bool trace = false;
 
   std::vector<std::string> searchPath;
   int firstfile = 1;
@@ -210,7 +211,7 @@ int main(int argc, char** argv) {
       searchPath.push_back(argv[i+1]);
       i++;
     } else if (0 == strcmp(argv[i], "--trace")) {
-      ctx->setDebugTraceFlag(true);
+      trace = true;
     } else {
       firstfile = i;
       break;
@@ -223,6 +224,11 @@ int main(int argc, char** argv) {
     usage(argc, argv);
     return 0; // need this to return 0 for testing to be happy
   }
+
+  // Run this query first to make the other output more understandable
+  ctx->setDebugTraceFlag(false);
+  typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
+  ctx->setDebugTraceFlag(trace);
 
   while (true) {
     ctx->advanceToNextRevision(gc);
