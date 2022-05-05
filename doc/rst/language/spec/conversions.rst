@@ -8,7 +8,7 @@ Conversions
 
 A *conversion* converts an expression of one type to another type,
 possibly producing a new value. In certain cases noted below, the source
-expression can be a type expression. We refer to these two types the
+expression can be a type expression. We refer to these two types as the
 *source* and *target* types. Conversions can be either
 implicit (:ref:`Implicit_Conversions`) or
 explicit (:ref:`Explicit_Conversions`).
@@ -18,8 +18,8 @@ explicit (:ref:`Explicit_Conversions`).
 Implicit Conversions
 --------------------
 
-An *implicit conversion* is a conversion that occurs implicitly - that is -
-without an explicit specification in the program. Implicit conversions
+An *implicit conversion* is a conversion that occurs implicitly—that
+is, without an explicit operation within the program. Implicit conversions
 fall into the following categories:
 
  * implicit conversions for initialization and assignment
@@ -29,7 +29,7 @@ fall into the following categories:
  * implicit conversions for conditionals
    (:ref:`Implicit_Conversion_Conditionals`)
 
-If implicit conversion for a function call is allowed from type ``T1`` to
+If an implicit conversion for a function call is allowed from type ``T1`` to
 type ``T2`` then implicit conversion for initialization and assignment is
 allowed.
 
@@ -71,8 +71,8 @@ Implicit Numeric and Bool Conversions
 Implicit conversions among numeric types are allowed when all values
 representable in the source type can also be represented in the target
 type, retaining their full precision. In addition, implicit conversions
-are permitted from ``int(s)`` and ``uint(s)`` values to ``real(d)`` and
-``complex(2*d)`` when ``s`` is less than or equal to ``d``, even
+are permitted from ``int(s)`` and ``uint(s)`` values to ``real(t)`` and
+``complex(2*t)`` when ``s`` is less than or equal to ``t``, even
 though these cases may result in a loss of precision.
 
    *Rationale*.
@@ -80,8 +80,8 @@ though these cases may result in a loss of precision.
    We allow these additional conversions because they provide an
    important convenience for application programmers who want to mix
    integral and floating point values in mathematical expressions, and
-   for computing using values of a specific bit-width. For these
-   benefits, the loss of precision feels like a reasonable tradeoff,
+   for computing using values using a specific bit-width. For these
+   benefits, the loss of precision seemed like a reasonable tradeoff,
    particularly given that floating point types are approximate by
    nature.
 
@@ -94,13 +94,13 @@ converted to any integral type by representing ``false`` as 0 and
 
    We disallow implicit conversion of a boolean to a real, imaginary,
    or complex type because we expect that such conversions are most
-   likely to have been an unintended mistake by the programmer.
+   likely to be an unintended mistake by the programmer.
    Marking such cases as errors will draw the programmer’s attention
    to the issue, and if such a conversion is actually desired, a cast
-   :ref:`Explicit_Conversions` can be used.
+   can be used (see :ref:`Explicit_Conversions`).
 
 Legal implicit conversions with numeric and boolean types may thus be
-tabulated as follows:
+summarized as follows:
 
 ==================== ================= ================= ================ ================= ================= ====================
 \                                                                  **Destination Type**                                   
@@ -126,7 +126,7 @@ the target type. This rule does not allow conversions from ``real`` to
 ``imag``, or from ``complex`` to a non-``complex`` type. It does allow
 conversions from ``real`` or ``imag`` to ``complex``.  As with the
 implicit numeric conversions, integral ``param`` values can implicitly
-convert to ``real`` or ``complex`` of matching or larger sizes.
+convert to ``real`` of matching size or ``complex`` of larger sizes.
 
 .. _Implicit_Class_Conversions:
 
