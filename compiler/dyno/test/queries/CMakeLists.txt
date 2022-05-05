@@ -19,7 +19,6 @@ comp_unit_test(testRecursionFails)
 set_tests_properties(testRecursionFails PROPERTIES WILL_FAIL TRUE)
 
 comp_unit_test(testDependencies)
-comp_unit_test(testRecursiveQuery)
 comp_unit_test(testUniqueString)
 
 # Copy the moby.txt to the binary dir for use by testUniqueString
