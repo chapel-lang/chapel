@@ -1117,8 +1117,16 @@ struct Converter {
     }
   }
 
-  bool isLoopMaybeArrayType(const uast::IndexableLoop* node) {
-    return node->isBracketLoop() && !node->iterand()->isZip();
+  // Note that that expressions that appear in type bindings, e.g.,
+  // 'var x: [0..0] int' or 'type T = [0..0] int' use the
+  // 'convertArrayType()' instead, as there is no ambiguity about
+  // whether or not the bracket loop is a type.
+  bool isBracketLoopMaybeArrayType(const uast::BracketLoop* node) {
+    if (!node->isExpressionLevel()) return false;
+    if (node->iterand()->isZip()) return false;
+    if (node->numStmts() != 1) return false;
+    if (node->stmt(0)->isConditional()) return false;
+    return true;
   }
 
   Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {
@@ -1132,7 +1140,7 @@ struct Converter {
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     Expr* expr = nullptr;
     Expr* cond = nullptr;
-    bool maybeArrayType = isLoopMaybeArrayType(node);
+    bool maybeArrayType = isBracketLoopMaybeArrayType(node);
     bool zippered = node->iterand()->isZip();
 
     // Unpack things differently if body is a conditional.
@@ -1208,7 +1216,7 @@ struct Converter {
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     Expr* body = nullptr;
     Expr* cond = nullptr;
-    bool maybeArrayType = isLoopMaybeArrayType(node);
+    bool maybeArrayType = false;
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
 
@@ -1273,7 +1281,7 @@ struct Converter {
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     Expr* expr = nullptr;
     Expr* cond = nullptr;
-    bool maybeArrayType = isLoopMaybeArrayType(node);
+    bool maybeArrayType = false;
     bool zippered = node->iterand()->isZip();
 
       // Unpack things differently if body is a conditional.
