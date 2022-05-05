@@ -486,7 +486,11 @@ static void outlineGPUKernels() {
                 else {
                   if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
                     if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                        parent->isPrimitive(PRIM_GET_MEMBER)) {
+                        parent->isPrimitive(PRIM_GET_MEMBER) ||
+                        parent->isPrimitive(PRIM_SET_MEMBER) ||
+                        parent->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
+                        parent->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                        parent->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
                       if (symExpr == parent->get(2)) {  // this is a field
                         // do nothing
                       }
