@@ -7,7 +7,7 @@ Conversions
 ===========
 
 A *conversion* converts an expression of one type to another type,
-possibly producing a new value. In certain cases noted below the source
+possibly producing a new value. In certain cases noted below, the source
 expression can be a type expression. We refer to these two types the
 *source* and *target* types. Conversions can be either
 implicit (:ref:`Implicit_Conversions`) or
@@ -34,7 +34,7 @@ type ``T2`` then implicit conversion for initialization and assignment is
 allowed.
 
 In addition, an implicit conversion from a type to the same type is
-allowed for any type. Such conversion does not change the value of the
+allowed for any type. Such a conversion does not change the value of the
 expression.
 
 Implicit conversion is not transitive. That is, if an implicit
@@ -71,64 +71,62 @@ Implicit Numeric and Bool Conversions
 Implicit conversions among numeric types are allowed when all values
 representable in the source type can also be represented in the target
 type, retaining their full precision. In addition, implicit conversions
-from types ``int(64)`` and ``uint(64)`` to types ``real(64)`` and
-``complex(128)`` are allowed, even though they may result in a loss of
-precision.
+are permitted from ``int(s)`` and ``uint(s)`` values to ``real(d)`` and
+``complex(2*d)`` when ``s`` is less than or equal to ``d``, even
+though these cases may result in a loss of precision.
 
    *Rationale*.
 
-   We allow these additional conversions because they are an important
-   convenience for application programmers. Therefore we are willing to
-   lose precision in these cases. The largest real and complex types are
-   chosen to retain precision as often as as possible.
+   We allow these additional conversions because they provide an
+   important convenience for application programmers who want to mix
+   integral and floating point values in mathematical expressions, and
+   for computing using values of a specific bit-width. For these
+   benefits, the loss of precision feels like a reasonable tradeoff,
+   particularly given that floating point types are approximate by
+   nature.
 
 Any boolean type can be implicitly converted to any other boolean type,
 retaining the boolean value. Any boolean type can be implicitly
 converted to any integral type by representing ``false`` as 0 and
-``true`` as 1, except (if applicable) a boolean cannot be converted to
-``int(1)``.
+``true`` as 1.
 
    *Rationale*.
 
-   We disallow implicit conversion of a boolean to a real, imaginary, or
-   complex type because of the following. We expect that the cases where
-   such a conversion is needed will more likely be unintended by the
-   programmer. Marking those cases as errors will draw the programmer’s
-   attention. If such a conversion is actually desired, a cast
-   :ref:`Explicit_Conversions` can be inserted.
+   We disallow implicit conversion of a boolean to a real, imaginary,
+   or complex type because we expect that such conversions are most
+   likely to have been an unintended mistake by the programmer.
+   Marking such cases as errors will draw the programmer’s attention
+   to the issue, and if such a conversion is actually desired, a cast
+   :ref:`Explicit_Conversions` can be used.
 
 Legal implicit conversions with numeric and boolean types may thus be
 tabulated as follows:
 
-==================== ================= ================= ============================== ======================= ================= =========================
-\                                                                                                                                
-Source Type          bool(\ :math:`t`) uint(\ :math:`t`) int(\ :math:`t`)               real(\ :math:`t`)       imag(\ :math:`t`) complex(\ :math:`t`)
-\                                                                                                                                
-bool(\ :math:`s`)    all :math:`s,t`   all :math:`s,t`   all :math:`s`; :math:`2 \le t`                                          
-uint(\ :math:`s`)                      :math:`s \le t`   :math:`s < t`                  :math:`s \le mant(t)`                     :math:`s \le mant(t/2)`
-uint(64)                                                                                real(64)                                  complex(128)
-int(\ :math:`s`)                                         :math:`s \le t`                :math:`s \le mant(t)+1`                   :math:`s \le mant(t/2)+1`
-int(64)                                                                                 real(64)                                  complex(128)
-real(\ :math:`s`)                                                                       :math:`s \le t`                           :math:`s \le t/2`
-imag(\ :math:`s`)                                                                                               :math:`s \le t`   :math:`s \le t/2`
-complex(\ :math:`s`)                                                                                                              :math:`s \le t`
-==================== ================= ================= ============================== ======================= ================= =========================
+==================== ================= ================= ================ ================= ================= ====================
+\                                                                  **Destination Type**                                   
+-------------------- -------------------------------------------------------------------------------------------------------------
+**Source Type**      bool(\ :math:`t`) uint(\ :math:`t`) int(\ :math:`t`) real(\ :math:`t`) imag(\ :math:`t`) complex(\ :math:`t`)
+bool(\ :math:`s`)    all :math:`s,t`   all :math:`s,t`   all :math:`s,t`                                          
+uint(\ :math:`s`)                      :math:`s \le t`   :math:`s < t`    :math:`s \le t`                     :math:`s \le t/2`
+int(\ :math:`s`)                                         :math:`s \le t`  :math:`s \le t`                     :math:`s \le t/2`
+real(\ :math:`s`)                                                         :math:`s \le t`                     :math:`s \le t/2`
+imag(\ :math:`s`)                                                                           :math:`s \le t`   :math:`s \le t/2`
+complex(\ :math:`s`)                                                                                          :math:`s \le t`
+==================== ================= ================= ================ ================= ================= ====================
 
-Here, :math:`mant(i)` is the number of bits in the (unsigned) mantissa
-of the :math:`i`-bit floating-point type. [1]_ Conversions for the
-default integral and real types (``uint``, ``complex``, etc.) are the
-same as for their explicitly-sized counterparts.
 
 .. _Implicit_Compile_Time_Constant_Conversions:
 
 Implicit Compile-Time Constant Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A parameter of numeric type can be implicitly converted to any other
-numeric type if the value of the parameter can be represented exactly by
+A ``param`` of numeric type can be implicitly converted to any other
+numeric type if the value of the ``param`` can be represented exactly by
 the target type. This rule does not allow conversions from ``real`` to
-``imag``, or from ``complex`` to a non-complex type. It does allow
-conversions from ``real`` or ``imag`` to ``complex``.
+``imag``, or from ``complex`` to a non-``complex`` type. It does allow
+conversions from ``real`` or ``imag`` to ``complex``.  As with the
+implicit numeric conversions, integral ``param`` values can implicitly
+convert to ``real`` or ``complex`` of matching or larger sizes.
 
 .. _Implicit_Class_Conversions:
 
@@ -582,7 +580,7 @@ truncated to fit the new representation.
 When converting from a ``real`` type to a larger ``real`` type, the
 represented value is preserved. When converting from a ``real`` type to
 a smaller ``real`` type, the closest representation in the target type
-is chosen. [2]_
+is chosen. [1]_
 
 When converting to a ``real`` type from an integer type, integer types
 smaller than ``int`` are first converted to ``int``. Then, the closest
@@ -815,9 +813,6 @@ arguments: the value to convert and the type to convert it to.
 
 
 .. [1]
-   For the IEEE 754 format, :math:`mant(32)=24` and :math:`mant(64)=53`.
-
-.. [2]
    When converting to a smaller real type, a loss of precision is
    *expected*. Therefore, there is no reason to produce a run-time
    diagnostic.
