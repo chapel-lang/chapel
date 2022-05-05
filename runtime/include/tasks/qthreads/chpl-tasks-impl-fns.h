@@ -172,7 +172,7 @@ static inline
 void chpl_task_setSubloc(c_sublocid_t full_subloc)
 {
     qthread_shepherd_id_t curr_shep;
-  
+
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
     // model. This isn't currently used by the numa (or other locale) models.
     assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any ||
