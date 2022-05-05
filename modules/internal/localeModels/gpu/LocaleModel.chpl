@@ -267,9 +267,6 @@ module LocaleModel {
   pragma "unsafe"
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
-  pragma "unsafe"
-  const chpl_emptyLocalesModels: [chpl_emptyLocaleSpace] unmanaged AbstractLocaleModel;
-
   //
   // A concrete class representing the nodes in this architecture.
   //
@@ -367,7 +364,7 @@ module LocaleModel {
     }
 
     proc getChildArray() {
-      return childLocales;
+      return [loc in childLocales] loc;
     }
 
     //------------------------------------------------------------------------{
