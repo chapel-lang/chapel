@@ -90,12 +90,14 @@ static ModuleSymbol* parseFile(const char* fileName,
                                bool        namedOnCommandLine,
                                bool        include);
 
+static void maybePrintModuleFile(ModTag modTag, const char* path);
+
 static ModuleSymbol* oldParserParseFile(const char* fileName,
                                         ModTag      modTag,
                                         bool        namedOnCommandLine,
                                         bool        include);
 
-// Callback to configure the context error handler when converting to uAST.
+// Callback to configure how dyno error messages are displayed.
 static void dynoParseFileErrorHandler(const chpl::ErrorMessage& err);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
@@ -695,6 +697,18 @@ static ModuleSymbol* parseFile(const char* path,
   }
 }
 
+static void maybePrintModuleFile(ModTag modTag, const char* path) {
+  if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
+    if (sFirstFile) {
+      fprintf(stderr, "Parsing module files:\n");
+      sFirstFile = false;
+    }
+
+    auto msg = cleanFilename(path);
+    fprintf(stderr, "  %s\n", msg);
+  }
+}
+
 static ModuleSymbol* oldParserParseFile(const char* path,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine,
@@ -730,15 +744,8 @@ static ModuleSymbol* oldParserParseFile(const char* path,
       mainPreserveDelimiter = true;
     }
 
-    if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
-      if (sFirstFile) {
-        fprintf(stderr, "Parsing module files:\n");
+    maybePrintModuleFile(modTag, path);
 
-        sFirstFile = false;
-      }
-
-      fprintf(stderr, "  %s\n", cleanFilename(path));
-    }
 
     if (namedOnCommandLine == true) {
       startCountingFileTokens(path);
@@ -983,22 +990,12 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     lastModSym = got;
     numModSyms++;
 
-    if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
-      if (sFirstFile) {
-        fprintf(stderr, "Parsing module files:\n");
-
-        sFirstFile = false;
-      }
-
-      fprintf(stderr, "  %s\n", cleanFilename(path.c_str()));
-    }
     deinitializeGlobalParserState();
   }
 
-  // TODO (dlongnecke): We should not need this. New parser should report
-  // all errors that occurred. If we've reached this point, then the old
-  // AST should all be valid (at parse-time). When we remove this, add an
-  // assert that there are no errors.
+  maybePrintModuleFile(modTag, path.c_str());
+
+  // Try stopping one final time if there were any errors.
   USR_STOP();
 
   INT_ASSERT(lastModSym && numModSyms);
