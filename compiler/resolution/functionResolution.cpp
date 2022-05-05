@@ -169,7 +169,6 @@ static bool hasUserAssign(Type* type);
 static void resolveOther();
 static bool fits_in_int(int width, Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
-static bool fits_in_mantissa(int width, Immediate* imm);
 static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm, bool realPart=true);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType, bool* paramNarrows);
 static bool
@@ -2040,24 +2039,6 @@ static bool fits_in_twos_complement(int width, int64_t i) {
 
   int64_t min_neg = 1+max_pos;
   return -min_neg <= i && i <= max_pos;
-}
-
-// Does the integer in imm fit in a floating point format with 'width'
-// bits of mantissa?
-static bool fits_in_mantissa(int width, Immediate* imm) {
-  // is it between -2**width .. 2**width, inclusive?
-
-  if (imm->const_kind == NUM_KIND_INT) {
-    int64_t i = imm->int_value();
-    return fits_in_bits_no_sign(width, i);
-  } else if (imm->const_kind == NUM_KIND_UINT) {
-    uint64_t u = imm->uint_value();
-    if (u > INT64_MAX)
-      return false;
-    return fits_in_bits_no_sign(width, (int64_t)u);
-  }
-
-  return false;
 }
 
 static bool fits_in_mantissa_exponent(int mantissa_width,
