@@ -1596,6 +1596,9 @@ module String {
 
     :arg r: range of the indices the new string should be made from
 
+    :throws: `CodepointSplittingError` if slicing results in splitting a
+             multi-byte codepoint.
+
     :returns: a new string that is a substring within ``0..<string.size``. If
               the length of `r` is zero, an empty string is returned.
    */
