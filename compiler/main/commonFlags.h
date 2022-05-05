@@ -65,6 +65,9 @@ void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unu
 #define DRIVER_ARG_LICENSE \
   {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL}
 
+#define DRIVER_ARG_HOME \
+  {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome}
+
 #define DRIVER_ARG_PRINT_CHPL_HOME \
   {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, NULL,NULL}
 
