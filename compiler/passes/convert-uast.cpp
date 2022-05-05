@@ -47,6 +47,10 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 
+// If this is set then variables/formals will have their "qual" field set
+// now instead of later during resolution.
+#define ATTACH_QUALIFIED_TYPES_EARLY 0
+
 using namespace chpl;
 
 // TODO: Remove me after config changes.
@@ -1113,21 +1117,8 @@ struct Converter {
     }
   }
 
-  // Deduced by looking at 'buildForallLoopExpr' calls in for_expr:
   bool isLoopMaybeArrayType(const uast::IndexableLoop* node) {
-    return node->isBracketLoop() && !node->index() &&
-           !node->iterand()->isZip();
-    /*
-      Removed the check for conditionals here because of the following example,
-      taken from test/expressions/if-expr/inside-field.chpl:
-      ```
-      record R3 {
-      type T;
-      var multiple: [1..2] if !isClass(T) then 2*T
-                          else [1..2] if isClass(T) then owned T? else T;
-      }
-      ```
-    */
+    return node->isBracketLoop() && !node->iterand()->isZip();
   }
 
   Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {
@@ -2518,26 +2509,28 @@ struct Converter {
   }
 
   void attachSymbolStorage(const uast::IntentList kind, Symbol* vs) {
+    auto qual = QUAL_UNKNOWN;
+
     switch (kind) {
       case uast::IntentList::VAR:
-        vs->qual = QUAL_VAL;
+        qual = QUAL_VAL;
         break;
       case uast::IntentList::CONST_VAR:
         vs->addFlag(FLAG_CONST);
-        vs->qual = QUAL_CONST;
+        qual = QUAL_CONST;
         break;
       case uast::IntentList::CONST_REF:
         vs->addFlag(FLAG_CONST);
         vs->addFlag(FLAG_REF_VAR);
-        vs->qual = QUAL_CONST_REF;
+        qual = QUAL_CONST_REF;
         break;
       case uast::IntentList::REF:
         vs->addFlag(FLAG_REF_VAR);
-        vs->qual = QUAL_REF;
+        qual = QUAL_REF;
         break;
       case uast::IntentList::PARAM:
         vs->addFlag(FLAG_PARAM);
-        vs->qual = QUAL_PARAM;
+        qual = QUAL_PARAM;
         break;
       case uast::IntentList::TYPE:
         vs->addFlag(FLAG_TYPE_VARIABLE);
@@ -2547,6 +2540,10 @@ struct Converter {
         break;
       default:
         break;
+    }
+
+    if (ATTACH_QUALIFIED_TYPES_EARLY && qual != QUAL_UNKNOWN) {
+      vs->qual = qual;
     }
   }
 
