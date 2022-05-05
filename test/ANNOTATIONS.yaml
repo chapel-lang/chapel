@@ -1465,6 +1465,8 @@ memleaksfull:
     - DistributedMap and Aggregator tests added that had leaks (#19554)
   04/13/22:
     - Skip memleaks testing of DistributedMap (#19629)
+  04/24/22:
+    - Clean up unmanaged classes in a test (#19695)
 # End memleaksfull
 
 meteor:
@@ -2266,6 +2268,8 @@ arkouda: &arkouda-base
     - Tune int in1d threshold (Bears-R-Us/arkouda#1131)
   04/06/22:
     - Closes 1241 Use computeOnSegments for substringSearch (Bears-R-Us/arkouda#1248)
+  05/04/22:
+    - 846 refactor unique to handle groupby (Bears-R-Us/arkouda#1330)
 
 
 arkouda-string:
