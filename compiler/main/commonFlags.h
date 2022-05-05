@@ -38,6 +38,7 @@ extern bool fRunlldb;
 // Shared setter functions.
 void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused);
 void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unused);
+void setHome(const ArgumentDescription* desc, const char* arg);
 
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
