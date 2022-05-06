@@ -127,6 +127,21 @@ module Errors {
     }
   }
 
+  /*
+   A `CodepointSplittintError` is thrown if an attempt to slice a string with
+   byteIndex-based ranges where the range boundaries does not align with
+   codepoint boundaries.
+   */
+  class CodepointSplittingError: Error {
+    proc init(info: string) {
+      super.init(info);
+    }
+
+    override proc message() {
+      return "Attempting to split a multi-byte codepoint. " + _msg;
+    }
+  }
+
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
   // iterating over the errors concurrently. Errors

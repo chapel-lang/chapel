@@ -1018,7 +1018,7 @@ module String {
             chunkStart = i;
             inChunk = true;
             if i - 1 + nBytes > iEnd {
-              chunk = this[chunkStart..];
+              chunk = try! this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -1027,18 +1027,18 @@ module String {
             if cSpace {
               // last split under limit
               if limitSplits && splitCount >= maxsplit {
-                chunk = this[chunkStart..];
+                chunk = try! this[chunkStart..];
                 yieldChunk = true;
                 done = true;
               // no limit
               } else {
-                chunk = this[chunkStart..(i-1):byteIndex];
+                chunk = try! this[chunkStart..(i-1):byteIndex];
                 yieldChunk = true;
                 inChunk = false;
               }
             // out of chars
             } else if i - 1 + nBytes > iEnd {
-              chunk = this[chunkStart..];
+              chunk = try! this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -1094,7 +1094,7 @@ module String {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = pattern.buffLen;
-        const (view, _) = getView(this, indices);
+        const (view, _) = try! getView(this, indices, checkMisaligned=false);
         const thisLen = view.size;
 
         // Edge cases
@@ -1602,11 +1602,20 @@ module String {
 
     :arg r: range of the indices the new string should be made from
 
+    :throws: `CodepointSplittingError` if slicing results in splitting a
+             multi-byte codepoint.
+
     :returns: a new string that is a substring within ``0..<string.size``. If
               the length of `r` is zero, an empty string is returned.
    */
-  inline proc string.this(r: range(?)) : string {
+  inline proc string.this(r: range(?)): string throws where r.idxType == byteIndex {
     return getSlice(this, r);
+  }
+
+  pragma "no doc"
+  inline proc string.this(r: range(?)): string where r.idxType != byteIndex {
+    // codepoint-based slicing should never throw
+    return try! getSlice(this, r);
   }
 
   /*
@@ -1863,7 +1872,7 @@ module String {
         }
       }
 
-      return localThis[start..end];
+      return try! localThis[start..end];
     }
   }
 
