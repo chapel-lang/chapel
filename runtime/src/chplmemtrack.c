@@ -688,13 +688,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
     }
     if (chpl_verbose_mem) {
       char subloc_info[16];
-#ifdef HAS_GPU_LOCALE
-      if (subloc > 0) {
-        snprintf(subloc_info, 16, " (gpu %" PRI_c_sublocid_t ")", subloc);
-      }
-#else
-      char* subloc_info = "";
-#endif
+      chpl_track_gen_subloc_info(subloc_info, subloc);
       fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                           ": allocate %zuB of %s at %p\n",
               chpl_nodeID, subloc_info, (filename ? chpl_lookupFilename(filename) : "--"),
@@ -714,8 +708,8 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 // allocation size. This allows us to pass the initial size if we have it, but
 // otherwise we can ask the allocator for the size of a pointer if it supports
 // that query, which isn't free but is much cheaper than grabbing a lock.
-void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
-                     int32_t filename) {
+void chpl_track_free(void* memAlloc, size_t approximateSize,
+                     c_sublocid_t subloc, int32_t lineno, int32_t filename) {
   if (approximateSize == 0 || approximateSize > memThreshold) {
     memTableEntry* memEntry = NULL;
     if (chpl_memTrack) {
@@ -723,9 +717,12 @@ void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
       memEntry = removeMemTableEntry(memAlloc);
       if (memEntry) {
         if (chpl_verbose_mem) {
-          fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
+          char subloc_info[16];
+          chpl_track_gen_subloc_info(subloc_info, subloc);
+          fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                               ": free %zuB of %s at %p\n",
-                  chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+                  chpl_nodeID, subloc_info,
+                  (filename ? chpl_lookupFilename(filename) : "--"),
                   lineno, memEntry->number * memEntry->size,
                   chpl_mem_descString(memEntry->description), memAlloc);
         }
@@ -733,8 +730,11 @@ void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
       }
       memTrack_unlock();
     } else if (chpl_verbose_mem && !memEntry) {
-      fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
-              chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+      char subloc_info[16];
+      chpl_track_gen_subloc_info(subloc_info, subloc);
+      fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32 ": free at %p\n",
+              chpl_nodeID, subloc_info,
+              (filename ? chpl_lookupFilename(filename) : "--"),
               lineno, memAlloc);
     }
   }

@@ -398,6 +398,9 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
 
     CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
   }
+
+  chpl_track_free(memAlloc, 0, chpl_task_getRequestedSubloc(),
+                  lineno, filename);
 }
 
 #endif // HAS_GPU_LOCALE

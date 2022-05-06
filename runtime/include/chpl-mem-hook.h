@@ -100,7 +100,7 @@ void chpl_memhook_free_pre(void* memAlloc, size_t approximateSize,
   if (CHPL_MEMHOOKS_ACTIVE) {
     // call this one just to check heap is initialized.
     chpl_memhook_check_pre(0, 0, 0, lineno, filename);
-    chpl_track_free(memAlloc, approximateSize, lineno, filename);
+    chpl_track_free(memAlloc, approximateSize, c_sublocid_any, lineno, filename);
   }
 }
 
