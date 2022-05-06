@@ -2192,15 +2192,18 @@ static void lookupUseImport(const char*           name,
         // size() == 0, so we only need to do this check here because the
         // module case would hide it otherwise
         if (FnSymbol* fn = toFnSymbol(getScope(block))) {
-          // The next scope up from the block statement is a function
-          // symbol. That means that we need to check the arguments
-          if (Symbol* sym = inSymbolTable(name, fn)) {
-            // We found it in the arguments.  This should cause a conflict,
-            // because it is probably an error that the user had the same
-            // name as a module level variable.
-            USR_WARN(sym,
-                     "Module level symbol is hiding function argument '%s'",
-                     name);
+          // if there is no variable with the same name in the block
+          if (nullptr == inSymbolTable(name, block)) {
+            // The next scope up from the block statement is a function
+            // symbol. That means that we need to check the arguments
+            if (Symbol* sym = inSymbolTable(name, fn)) {
+              // We found it in the arguments.  This should cause a conflict,
+              // because it is probably an error that the user had the same
+              // name as a module level variable.
+              USR_WARN(sym,
+                       "Module level symbol is hiding function argument '%s'",
+                       name);
+            }
           }
         }
       }

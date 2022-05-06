@@ -1,2 +1,1 @@
-testIfModuleShadowsLocal.chpl:9: warning: Module level symbol is hiding function argument 'a'
 1.0 + 2.0i
