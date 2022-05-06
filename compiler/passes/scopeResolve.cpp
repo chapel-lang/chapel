@@ -1733,6 +1733,9 @@ static void eliminateLastResortSyms(std::vector<Symbol*>& symbols) {
       anyLastResort = true;
     else
       anyNotLastResort = true;
+
+    if (anyLastResort && anyNotLastResort)
+      break;
   }
 
   if (anyLastResort && anyNotLastResort) {
