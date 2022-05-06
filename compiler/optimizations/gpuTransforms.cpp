@@ -81,7 +81,7 @@ static void markGPUSuitableLoops();
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   LoopStmt* curLoop = LoopStmt::findEnclosingLoop(sym->defPoint);
 
-  while (curLoop != NULL) {
+  while (curLoop != nullptr) {
     if (curLoop == loop) {
       return true;
     }

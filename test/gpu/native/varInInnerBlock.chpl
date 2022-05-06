@@ -5,8 +5,6 @@ on here.getChild(1) {
   foreach a in A {
     for j in 1..10 {
       var x = j;  // this threw off the outliner as the enclosing loop is not
-                  // the loop that we are outlining. // this threw off the
-                  // outliner as the enclosing loop is not
                   // the loop that we are outlining.
       x *= 2;
 
