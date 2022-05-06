@@ -283,6 +283,12 @@ module MainModule {
     /* In contrast, defining a variable with the same name as something
        imported or brought in by ``public use`` leads to a multiple definition
        error. */
+    {
+      import ModToUse.bar;
+      var bar = 4.0;
+
+      // writeln(bar); // multiple definition error
+    }
 
     /* If a symbol cannot be resolved directly within the local scope, then
        the symbols provided by a ``private use`` / ```use`` statements are
