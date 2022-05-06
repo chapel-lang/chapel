@@ -1,19 +1,26 @@
 use GPUDiagnostics;
+use Memory.Diagnostics;
 
 writeln("Start");
 
 startVerboseGPU();
 startGPUDiagnostics();
+startVerboseMem();
+
+var A: [1..10] int = 1;
 
 on here.getChild(1) {
-  var A: [1..10] int;
-  foreach a in A {
+  var AonGPU = A;
+  foreach a in AonGPU {
     a += 1;
   }
 
-  writeln(A);
+  A = AonGPU;
 }
 
+writeln(A);
+
+stopVerboseMem();
 stopGPUDiagnostics();
 stopVerboseGPU();
 

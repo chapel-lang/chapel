@@ -206,7 +206,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
       // TODO pass the location info to this function and use a proper mem
       // desc
-      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
+      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size,
+                                             CHPL_RT_MD_GPU_KERNEL_ARG,
+                                             ln, fn);
 
       chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
 
@@ -322,6 +324,8 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
     CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning NULL (size was 0)\n");
   }
 
+  chpl_track_malloc((void*)ptr, 1, size, chpl_task_getRequestedSubloc(),
+                    description, lineno, filename);
 
   return (void*)ptr;
 

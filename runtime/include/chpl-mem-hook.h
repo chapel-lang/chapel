@@ -90,7 +90,7 @@ void chpl_memhook_malloc_post(void* memAlloc,
   if (CHPL_MEMHOOKS_ACTIVE || memAlloc == NULL)
     chpl_memhook_check_post(memAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)
-    chpl_track_malloc(memAlloc, number, size, description, lineno, filename);
+    chpl_track_malloc(memAlloc, number, size, c_sublocid_any, description, lineno, filename);
 }
 
 
@@ -124,8 +124,8 @@ void chpl_memhook_realloc_post(void* moreMemAlloc, void* memAlloc,
   if (CHPL_MEMHOOKS_ACTIVE || moreMemAlloc == NULL)
     chpl_memhook_check_post(moreMemAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)
-    chpl_track_realloc_post(moreMemAlloc, memAlloc, size, description,
-                       lineno, filename);
+    chpl_track_realloc_post(moreMemAlloc, memAlloc, size, c_sublocid_any,
+                            description, lineno, filename);
 }
 
 #ifdef __cplusplus

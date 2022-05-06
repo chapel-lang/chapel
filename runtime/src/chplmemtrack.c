@@ -68,6 +68,7 @@ extern void chpl_memTracking_returnConfigVals(chpl_bool* memTrack,
 typedef struct memTableEntry_struct { /* table entry */
   size_t number;
   size_t size;
+  c_sublocid_t subloc;
   chpl_mem_descInt_t description;
   void* memAlloc;
   int32_t lineno;
@@ -247,6 +248,7 @@ resizeTable(int direction) {
 }
 
 static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
+                             c_sublocid_t subloc,
                              chpl_mem_descInt_t description, int32_t lineno,
                              int32_t filename) {
   unsigned hashValue;
@@ -264,6 +266,7 @@ static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
   hashValue = hash(memAlloc, hashSize);
   memEntry->nextInBucket = memTable[hashValue];
   memTable[hashValue] = memEntry;
+  memEntry->subloc = subloc;
   memEntry->description = description;
   memEntry->memAlloc = memAlloc;
   memEntry->lineno = lineno;
@@ -663,20 +666,30 @@ void chpl_reportMemInfo() {
   }
 }
 
+#ifdef HAS_GPU_LOCALE
+#define PRI_locale PRI_c_nodeid_t " (gpu %" PRI_c_sublocid_t ")"
+#define localeID chpl_nodeID, subloc
+#else
+#define PRI_locale PRI_c_nodeid_t
+#define localeID chpl_nodeID
+#endif
+
 
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
+                       c_sublocid_t subloc,
                        chpl_mem_descInt_t description,
                        int32_t lineno, int32_t filename) {
   if (number * size > memThreshold) {
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
       memTrack_lock();
-      addMemTableEntry(memAlloc, number, size, description, lineno, filename);
+      addMemTableEntry(memAlloc, number, size, subloc, description,
+                       lineno, filename);
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {
-      fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
+      fprintf(memLogFile, "%" PRI_locale ": %s:%" PRId32
                           ": allocate %zuB of %s at %p\n",
-              chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+              chpl_nodeID, subloc, (filename ? chpl_lookupFilename(filename) : "--"),
               lineno, number * size, chpl_mem_descString(description),
               memAlloc);
     }
@@ -739,12 +752,13 @@ void chpl_track_realloc_pre(void* memAlloc, size_t size,
 
 void chpl_track_realloc_post(void* moreMemAlloc,
                          void* memAlloc, size_t size,
+                         c_sublocid_t subloc,
                          chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
   if (size > memThreshold) {
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
       memTrack_lock();
-      addMemTableEntry(moreMemAlloc, 1, size, description, lineno, filename);
+      addMemTableEntry(moreMemAlloc, 1, size, subloc, description, lineno, filename);
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {

@@ -60,6 +60,7 @@ void chpl_stopVerboseMemHere(void);
 ///// These entry points are the essential memory tracking interface, called
 //    at memory allocation and deallocation points.
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
+                       c_sublocid_t subloc,
                        chpl_mem_descInt_t description,
                        int32_t lineno, int32_t filename);
 void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
@@ -69,6 +70,7 @@ void chpl_track_realloc_pre(void* memAlloc, size_t size,
                          int32_t lineno, int32_t filename);
 void chpl_track_realloc_post(void* moreMemAlloc,
                          void* memAlloc, size_t size,
+                         c_sublocid_t subloc,
                          chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename);
 
