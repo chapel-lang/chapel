@@ -327,38 +327,68 @@ access a module's symbols from outside of the module.  For top-level modules, a
 ``use`` or ``import`` statement is required before referring to the module’s
 name or the symbols it contains within a given lexical scope.
 
-The names that are made visible by a ``use`` or ``import`` statement are
-inserted in to a new scope that immediately encloses the scope within which the
-statement appears.  This implies that the position of the ``use`` or ``import``
-statement within a scope has no effect on its behavior.  If a scope includes
-multiple ``use`` statements, multiple ``import`` statements, or a combination of
-``import`` and ``use`` statements, then the newly-visible names are inserted
-into a common enclosing scope.
+The ``use`` and ``import`` statements themselves are processed in order,
+so it is not possible to ``use`` a module that is only made available by
+a later ``use``.
+
+The other mentiones of a name made visible by a ``use`` or ``import``
+statement can be at any position relative to the ``use`` or ``import``.
+
+Private ``use`` statements -- for example ``use M`` or ``private use M``
+- make the contents of the module available in a scope just outside of
+the current one and the name of the module itself (``M`` in the xample)
+available in a second scope just outside of that. In contrast, ``import``
+as well as ``public use`` do not use these implicit scopes.
 
 .. _Use_And_Import_Conflicts:
 
 Conflicts
 +++++++++
 
-The implicit scope added by ``use`` and ``import`` described in the previous
-section follows the same rules about conflicting variables as other scopes (see
+Variable names available through ``use`` or ``import``
+follow the same rules about conflicting variables as other scopes (see
 :ref:`Variable_Conflicts`).  Thus an error will be signaled if multiple
 variables with the same name would be inserted into this enclosing scope and
 that name is accessed.  Remember that this does not apply to functions unless
 they are also indistinguishable in other ways, see :ref:`Function_Overloading`.
 
-Because symbols brought into scope by a ``use`` or ``import`` statement are
+Because symbols brought into scope by a ``private use`` statement are
 placed at a scope enclosing where the statement appears, such symbols will be
 shadowed by other symbols with the same name defined in the scope with the
 statement.  The symbols that are shadowed will only be accessible via
-:ref:`Explicit_Naming`.
+:ref:`Explicit_Naming`. For example:
 
-Symbols defined by public ``use`` or ``import`` statements can impact the scope
-they are inserted into in different ways (see :ref:`Public_Use` and
-:ref:`Reexporting` for more information on the ``public`` keyword).  Symbols
-that are brought in by a ``public use`` for unqualified access are treated as
-at successive distances relative to how many ``public use`` statements were
-necessary to obtain them.  For instance,
+   *Example (shadowing.chpl)*.
+
+   .. code-block:: chapel
+
+      module A {
+        var x: int;
+      }
+
+      module MainMod {
+        use A;
+        var x = "hello";
+
+        proc main() {
+          writeln(x);
+        }
+      }
+
+   This program will compile and print out ``hello`` because the use of
+   ``x`` refers to ``MainMod.x`` which shadows ``A.x`` because ``use A``,
+   which means the same as ``private use A``, introduces ``x`` in a scope
+   just outside of the scope of ``MainMod``.
+  
+   .. code-block:: printoutput
+
+      hello
+
+
+The ``public use`` and ``public import`` statements bring the names into
+a single scope (the scope containing the ``use``  or ``import``
+statement). Once that occurs, the original source of the names is
+irrelevant for the purpose of determining conflicts. For example:
 
    *Example (conflict1.chpl)*.
 
@@ -384,30 +414,14 @@ necessary to obtain them.  For instance,
         }
       }
 
-   This code demonstrates a module (MainMod) using two modules, B and C.  Module
-   C defines a symbol named x, while module B publicly uses another module, A,
-   which also defines a symbol named x.  The program as written will compile and
-   will print out the value of ``C.x``, which is ``false``, because A's x is
-   considered further away (it is made available to MainMod through `two` use
-   statements instead of just one).  Thus, it will generate the following
-   output:
-
+   This program does not compile because the use of ``x`` in ``main``
+   could refer to ``A.x`` or to ``C.x``.
+  
    .. code-block:: printoutput
 
       conflict1.chpl:2: error: symbol x is multiply defined
       conflict1.chpl:10: note: also defined here
 
-   If, however, C had been publicly used by another module D and that was used
-   by MainMod instead, then the compiler cannot determine which of ``C.x`` and
-   ``A.x`` was intended for ``writeln(x);``.  The program must use qualified
-   access to indicate which x to access.
-
-Symbols brought in directly by a ``public import`` are treated as though defined
-*at* the scope with the ``public import`` for the purpose of determining
-conflicts (see :ref:`Reexporting`).  This means that if the ``public use`` in
-module B of the previous example was instead replaced with a ``public import
-A.x``, A's x would conflict with ``C.x`` when resolving the ``main``
-procedure's body.
 
 .. _Using_Modules:
 
@@ -543,19 +557,9 @@ Use statements may be explicitly declared ``public`` or ``private``.
 By default, uses are ``private``.  Making a use ``public`` causes its
 symbols to be transitively visible: if module A uses module B, and
 module B contains a public use of a module or enumerated type C, then
-C’s public symbols will also be visible to A unless they are shadowed
-by symbols of the same name in B.  Conversely, if B's use of C is
+C’s public symbols will also be visible to A. Conversely, if B's use of C is
 ``private`` then A will not be able to see C's symbols due to that
 ``use``.
-
-This notion of transitivity extends to the case in which a scope
-imports symbols from multiple modules or constants from multiple
-enumeration types. For example if a module A uses modules B1, B2, B3
-and modules B1, B2, B3 publicly use modules C1, C2, C3 respectively,
-then all of the public symbols in B1, B2, B3 have the potential to
-shadow the public symbols of C1, C2, and C3. However an error is
-signaled if C1, C2, C3 have conflicting public module-level
-definitions of the same symbol.
 
 Making a use ``public`` additionally causes its symbols to be visible as though
 they were defined in the scope with the use.  This strategy is called
@@ -934,9 +938,7 @@ Re-exporting
 
 Making a use or import ``public`` causes the symbols brought in by that
 statement to be visible as though they were defined in the scope with the use or
-import, a strategy which will be referred to as `re-exporting`.  However,
-symbols with the same name in the scope with the use or import will still take
-precedence.
+import, a strategy which will be referred to as `re-exporting`.
 
    *Example (use-reexport1.chpl)*.
 
