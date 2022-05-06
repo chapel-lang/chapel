@@ -67,8 +67,6 @@ static ConversionsTable conversionsTable;
 
 static void resolveFormals(FnSymbol* fn);
 
-static void checkForUnsupportedOverload(FnSymbol* fn);
-
 static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn);
@@ -97,15 +95,15 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveSignature(FnSymbol* fn) {
-  // Don't resolve formals for concrete functions
-  // more often than necessary.
-  static std::set<FnSymbol*> done;
+    // Don't resolve formals for concrete functions
+    // more often than necessary.
+    static std::set<FnSymbol*> done;
 
-  if (done.find(fn) == done.end()) {
-    done.insert(fn);
+    if (done.find(fn) == done.end()) {
+      done.insert(fn);
 
-    resolveFormals(fn);
-  }
+      resolveFormals(fn);
+    }
 }
 
 /************************************* | **************************************
@@ -190,7 +188,6 @@ static void resolveFormals(FnSymbol* fn) {
       storeDefaultValuesForPython(fn, formal);
     }
   }
-  checkForUnsupportedOverload(fn);
 }
 
 // When compiling for Python interoperability, default values for arguments
@@ -608,28 +605,6 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
   }
 }
 
-static void checkForUnsupportedOverload(FnSymbol* fn) {
-  Type* toType = NULL;
-
-  if (fn->name == astrSassign) {
-    int i = 1;
-    if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
-    if (fn->getFormal(i)->hasFlag(FLAG_ARG_THIS)) i++;
-    toType = fn->getFormal(i)->getValType();
-
-    if (isClassLikeOrPtr(toType) ||
-        isClassLikeOrManaged(toType) ||
-        toType == dtNil) {
-      // don't allow '=' on these types to be defined
-      // outside of the standard/internal modules
-      if (fn->defPoint->getModule()->modTag == MOD_USER) {
-        USR_FATAL_CONT(fn->defPoint,
-                       "Can't overload assignments for class types");
-      }
-    }
-  }
-}
-
 static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 
   Type* toType = NULL;
@@ -718,9 +693,13 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     checkInitEq = false;
     checkCast = false;
 
-    // We already checked for '=' on classes in user modules in
-    // checkForUnsupportedOverload (called from resolveSignature).
-    // So, we don't need to check that here.
+    // However, don't allow '=' on these types to be defined
+    // outside of the standard/internal modules
+    if (have.assign != NULL &&
+        have.assign->defPoint->getModule()->modTag == MOD_USER) {
+      USR_FATAL_CONT(have.assign->defPoint,
+                     "Can't overload assignments for class types");
+    }
   }
 
   // Don't worry about checking for 'init=' for tuples or types
