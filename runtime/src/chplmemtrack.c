@@ -666,15 +666,6 @@ void chpl_reportMemInfo() {
   }
 }
 
-#ifdef HAS_GPU_LOCALE
-#define PRI_locale PRI_c_nodeid_t " (gpu %" PRI_c_sublocid_t ")"
-#define localeID chpl_nodeID, subloc
-#else
-#define PRI_locale PRI_c_nodeid_t
-#define localeID chpl_nodeID
-#endif
-
-
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        c_sublocid_t subloc,
                        chpl_mem_descInt_t description,
@@ -687,8 +678,8 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {
-      char subloc_info[16];
-      chpl_track_gen_subloc_info(subloc_info, subloc);
+      char subloc_info[16] = "";
+      /*chpl_track_gen_subloc_info(subloc_info, subloc);*/
       fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                           ": allocate %zuB of %s at %p\n",
               chpl_nodeID, subloc_info, (filename ? chpl_lookupFilename(filename) : "--"),
@@ -717,7 +708,7 @@ void chpl_track_free(void* memAlloc, size_t approximateSize,
       memEntry = removeMemTableEntry(memAlloc);
       if (memEntry) {
         if (chpl_verbose_mem) {
-          char subloc_info[16];
+          char subloc_info[16] = "";
           chpl_track_gen_subloc_info(subloc_info, subloc);
           fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                               ": free %zuB of %s at %p\n",
@@ -730,7 +721,7 @@ void chpl_track_free(void* memAlloc, size_t approximateSize,
       }
       memTrack_unlock();
     } else if (chpl_verbose_mem && !memEntry) {
-      char subloc_info[16];
+      char subloc_info[16] = "";
       chpl_track_gen_subloc_info(subloc_info, subloc);
       fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32 ": free at %p\n",
               chpl_nodeID, subloc_info,

@@ -85,22 +85,24 @@ void chpl_memhook_malloc_pre(size_t number, size_t size,
 static inline
 void chpl_memhook_malloc_post(void* memAlloc,
                               size_t number, size_t size,
+                              c_sublocid_t subloc,
                               chpl_mem_descInt_t description,
                               int32_t lineno, int32_t filename) {
   if (CHPL_MEMHOOKS_ACTIVE || memAlloc == NULL)
     chpl_memhook_check_post(memAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)
-    chpl_track_malloc(memAlloc, number, size, c_sublocid_any, description, lineno, filename);
+    chpl_track_malloc(memAlloc, number, size, subloc, description, lineno, filename);
 }
 
 
 static inline
 void chpl_memhook_free_pre(void* memAlloc, size_t approximateSize,
+                           c_sublocid_t subloc,
                            int32_t lineno, int32_t filename) {
   if (CHPL_MEMHOOKS_ACTIVE) {
     // call this one just to check heap is initialized.
     chpl_memhook_check_pre(0, 0, 0, lineno, filename);
-    chpl_track_free(memAlloc, approximateSize, c_sublocid_any, lineno, filename);
+    chpl_track_free(memAlloc, approximateSize, subloc, lineno, filename);
   }
 }
 

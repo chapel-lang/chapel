@@ -1,4 +1,6 @@
 use Time;
+use GPUDiagnostics;
+use Memory.Diagnostics;
 
 writeln("Number of sublocales: ", here.gpus.size);
 
@@ -21,6 +23,9 @@ B = 1;
 C = 2;
 
 var minTime = max(real);
+
+/*startVerboseGPU();*/
+startVerboseMem();
 
 for i in 1..numIters {
   t.start();
@@ -57,6 +62,9 @@ for i in 1..numIters {
   t.stop();
   if t.elapsed() < minTime then minTime = t.elapsed();
 }
+
+stopVerboseMem();
+/*stopVerboseGPU();*/
 
 
 if validate then

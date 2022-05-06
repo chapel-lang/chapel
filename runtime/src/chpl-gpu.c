@@ -312,6 +312,8 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
   chpl_gpu_ensure_context();
 
+  chpl_memhook_malloc_pre(1, size, description, lineno, filename);
+
   CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
@@ -324,8 +326,9 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
     CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning NULL (size was 0)\n");
   }
 
-  chpl_track_malloc((void*)ptr, 1, size, chpl_task_getRequestedSubloc(),
-                    description, lineno, filename);
+
+  chpl_memhook_malloc_post((void*)ptr, 1, size, chpl_task_getRequestedSubloc(),
+                           description, lineno, filename);
 
   return (void*)ptr;
 
@@ -393,14 +396,13 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free called. Ptr:%p file:%s line:%d\n", memAlloc,
                chpl_lookupFilename(filename), lineno);
 
+  chpl_memhook_free_pre(memAlloc, 0, chpl_task_getRequestedSubloc(),
+                        lineno, filename);
+
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
-
     CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
   }
-
-  chpl_track_free(memAlloc, 0, chpl_task_getRequestedSubloc(),
-                  lineno, filename);
 }
 
 #endif // HAS_GPU_LOCALE

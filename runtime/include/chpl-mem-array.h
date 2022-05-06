@@ -93,7 +93,8 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
     p = chpl_malloc(size);
   }
 
-  chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+  chpl_memhook_malloc_post(p, nmemb, eltSize, c_sublocid_any,
+                           CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
 #ifdef HAS_GPU_LOCALE
   }
@@ -201,7 +202,7 @@ void chpl_mem_array_free(void* p,
   // layer.
   //
   const size_t size = nmemb * eltSize;
-  chpl_memhook_free_pre(p, size, lineno, filename);
+  chpl_memhook_free_pre(p, size, c_sublocid_any, lineno, filename);
 
   if (chpl_mem_size_justifies_comm_alloc(size)
       && chpl_comm_regMemFree(p, size)) {
