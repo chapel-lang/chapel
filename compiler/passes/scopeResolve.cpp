@@ -2034,9 +2034,6 @@ static void lookupUseImport(const char*           name,
         if (mod->block == block) {
           // if the module is private, return,
           // since we can't access anything in it
-          // TODO: does this need to have a more involved check?
-          // could a private outer module use a private inner
-          // module and see it?
           if (publicOnly && mod->hasFlag(FLAG_PRIVATE)) {
             return;
           }
