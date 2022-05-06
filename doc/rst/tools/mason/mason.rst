@@ -75,10 +75,11 @@ package. Let's signal to mason that we would like to install that package:
 
     mason add HelloWorld@1.0.0
 
-This will add the package to our ``Mason.toml`` file as a dependency.
+This will add the ``HelloWorld`` package to our ``Mason.toml`` file as a
+dependency (you can open the ``Mason.toml`` file to see the change).
 
-Now, everything is ready to go with our HelloWorld package... now the fun
-part: writing some code.
+Now, everything is ready to go with our ``HelloPackage`` program... now the
+fun part: writing (or copying, in this case) some code.
 
 Open up the package source file located at ``./src/HelloPackage.chpl``.
 You should see something like this:
@@ -92,7 +93,7 @@ You should see something like this:
 
 This program will run as-is, but we aren't using our ``HelloWorld`` dependecy
 just yet. In order to use the package, we need to add a ``use HelloWorld`` to
-bring in the dependency. This now gives us access to the whole module namespace
+bring in the dependency. This gives us access to the whole module namespace
 of the ``HelloWorld`` package, and we can call all of the available functions.
 
 Let's call the ``helloChapelFriends()`` function to make sure that it worked.
@@ -109,8 +110,8 @@ Now, the code should look like this:
 At this point, everything should be good to go! Time to run the program.
 
 After double-checking that you are in the top-level directory of the mason
-project that you've been working in, now we can install our dependency and
-build our program with the command:
+project that you've been working in (named ``HelloWorld/`` in this tutorial),
+now we can install our dependency and build our program with the command:
 
 .. code-block:: sh
 
