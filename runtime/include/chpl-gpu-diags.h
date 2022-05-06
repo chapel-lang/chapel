@@ -43,7 +43,7 @@ extern int chpl_gpu_diagnostics; // set via startCommDiagnostics
 extern int chpl_gpu_diags_print_unstable;
 
 #define CHPL_GPU_DIAGS_VARS_ALL(MACRO) \
-  MACRO(nLaunches)
+  MACRO(kernel_launch)
 
 
 typedef struct _chpl_gpuDiagnostics {

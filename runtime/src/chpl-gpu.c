@@ -223,7 +223,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
   }
 
   chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc());
-  chpl_gpu_diags_incr(nLaunches);
+  chpl_gpu_diags_incr(kernel_launch);
 
   CHPL_GPU_DEBUG("Calling gpu function named %s\n", name);
 
@@ -312,23 +312,22 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
   chpl_gpu_ensure_context();
 
-  chpl_memhook_malloc_pre(1, size, description, lineno, filename);
-
   CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
   CUdeviceptr ptr = 0;
   if (size > 0) {
+    chpl_memhook_malloc_pre(1, size, description, lineno, filename);
     CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
+    chpl_memhook_malloc_post((void*)ptr, 1, size, chpl_task_getRequestedSubloc(),
+                             description, lineno, filename);
+
     CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
   }
   else {
     CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning NULL (size was 0)\n");
   }
 
-
-  chpl_memhook_malloc_post((void*)ptr, 1, size, chpl_task_getRequestedSubloc(),
-                           description, lineno, filename);
 
   return (void*)ptr;
 
