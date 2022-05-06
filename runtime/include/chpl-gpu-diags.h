@@ -118,7 +118,7 @@ int chpl_gpu_diags_is_enabled(void) {
   return (atomic_load_int_least16_t(&chpl_gpu_diags_disable_flag) <= 0);
 }
 
-#define chpl_gpu_diags_verbose_printf(is_unstable, format, ...)   \
+#define chpl_gpu_diags_verbose_printf(is_unstable, device_id, format, ...)   \
   do {                                                             \
     if (chpl_verbose_gpu                                          \
         && chpl_gpu_diags_is_enabled()                            \
@@ -128,19 +128,20 @@ int chpl_gpu_diags_is_enabled(void) {
         stack = chpl_stack_unwind_to_string(' ');                  \
       }                                                            \
       if (stack != NULL) {                                         \
-        printf("%d: " format " <%s>\n", chpl_nodeID, __VA_ARGS__, stack); \
+        printf("%d (gpu %d): " format " <%s>\n", chpl_nodeID, (int) device_id, \
+               __VA_ARGS__, stack);                                \
         chpl_mem_free(stack, 0, 0);                                \
       } else {                                                     \
-        printf("%d: " format "\n", chpl_nodeID, __VA_ARGS__);      \
+        printf("%d (gpu %d): " format "\n", chpl_nodeID, (int) device_id, \
+               __VA_ARGS__);      \
       }                                                            \
     }                                                              \
   } while(0)
 
 #define chpl_gpu_diags_verbose_launch(ln, fn, device_id)     \
-  chpl_gpu_diags_verbose_printf(false,                               \
-                                "%s:%d: kernel launch on device %d",    \
-                                chpl_lookupFilename(fn), ln,           \
-                                (int) device_id)
+  chpl_gpu_diags_verbose_printf(false, device_id,          \
+                                "%s:%d: kernel launch",    \
+                                chpl_lookupFilename(fn), ln)
 
 #define chpl_gpu_diags_incr(_ctr)                                           \
   do {                                                                       \
