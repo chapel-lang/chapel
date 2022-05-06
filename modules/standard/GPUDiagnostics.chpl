@@ -44,7 +44,7 @@ module GPUDiagnostics
      one in the gpu layer(s).
    */
   extern record chpl_gpuDiagnostics {
-    var nLaunches: uint(64);
+    var kernel_launch: uint(64);
   };
 
   /*
