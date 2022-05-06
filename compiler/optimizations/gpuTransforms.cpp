@@ -79,7 +79,16 @@ static void markGPUSuitableLoops();
 
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
-  return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
+  LoopStmt* curLoop = LoopStmt::findEnclosingLoop(sym->defPoint);
+
+  while (curLoop != nullptr) {
+    if (curLoop == loop) {
+      return true;
+    }
+    curLoop = LoopStmt::findEnclosingLoop(curLoop->parentExpr);
+  }
+
+  return false;
 }
 
 // This is primarily to handle the indexOfInterest generated for promoted
