@@ -687,9 +687,17 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {
-      fprintf(memLogFile, "%" PRI_locale ": %s:%" PRId32
+      char subloc_info[16];
+#ifdef HAS_GPU_LOCALE
+      if (subloc > 0) {
+        snprintf(subloc_info, 16, " (gpu %" PRI_c_sublocid_t ")", subloc);
+      }
+#else
+      char* subloc_info = "";
+#endif
+      fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                           ": allocate %zuB of %s at %p\n",
-              chpl_nodeID, subloc, (filename ? chpl_lookupFilename(filename) : "--"),
+              chpl_nodeID, subloc_info, (filename ? chpl_lookupFilename(filename) : "--"),
               lineno, number * size, chpl_mem_descString(description),
               memAlloc);
     }

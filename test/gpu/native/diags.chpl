@@ -18,12 +18,11 @@ on here.getChild(1) {
   A = AonGPU;
 }
 
-writeln(A);
-
 stopVerboseMem();
 stopGPUDiagnostics();
 stopVerboseGPU();
 
+writeln(A);
 writeln("End");
 
 writeln("GPU diagnostics:");
