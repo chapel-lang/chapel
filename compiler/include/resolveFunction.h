@@ -29,8 +29,6 @@ class VarSymbol;
 
 void  resolveSignatureAndFunction(FnSymbol* fn);
 void  resolveSignature(FnSymbol* fn);
-void  checkForUnsupportedOverload(FnSymbol* fn);
-
 void  resolveFunction(FnSymbol* fn, CallExpr* forCall = 0);
 
 bool  isParallelIterator(FnSymbol* fn);
