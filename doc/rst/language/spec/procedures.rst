@@ -1551,11 +1551,13 @@ by the first of the following steps that applies:
    -  Prefer an enum or bool cast to a default-sized int or uint over
       another size of int or uint
 
-   -  Prefer an enum, bool, int, or uint cast to a default-sized real
-      over another size of real or complex
+   -  Prefer an int or uint cast to a real with the same width
+      (if available) or next-largest width (if not) over a
+      larger real
 
-   -  Prefer an enum, bool, int, or uint cast to a default-sized complex
-      over another size of complex
+   -  Prefer an int or uint cast to a complex whose components are the
+      same width (if available) or the next largest width (if not)
+      over a larger complex
 
    -  Prefer real/imag cast to the complex with that component size (ie
       total width of twice the real/imag) over another size of complex
