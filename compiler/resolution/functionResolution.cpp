@@ -1135,7 +1135,7 @@ static bool canParamCoerce(Type*   actualType,
       if (var->immediate) {
         if (is_int_type(actualType) || is_uint_type(actualType)) {
           // if this param fits in an 'int(n)' or 'uint(n)', permit it
-          // to param coerce to a 'real(n)'
+          // to param coerce to a 'complex(2*n)'
           if (fits_in_int(get_width(formalType)/2, var->immediate) ||
               fits_in_uint(get_width(formalType)/2, var->immediate)) {
             *paramNarrows = true;
