@@ -297,7 +297,7 @@ struct Converter {
       Expr* e = convertAST(stmt);
       if (!e) continue;
       if (ret) INT_FATAL("implicit block with multiple statements");
-      ret = buildChapelStmt(e);
+      ret = isBlockStmt(e) ? toBlockStmt(e) : buildChapelStmt(e);
     }
 
     return ret;
