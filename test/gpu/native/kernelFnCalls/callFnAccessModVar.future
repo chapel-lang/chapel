@@ -1,0 +1,2 @@
+bug: order-independent loops with calls to functions that access module-scope
+variables are not launched as kernels
