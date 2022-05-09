@@ -336,7 +336,7 @@ statement can be at any position relative to the ``use`` or ``import``.
 
 Private ``use`` statements -- for example ``use M`` or ``private use M``
 - make the contents of the module available in a scope just outside of
-the current one and the name of the module itself (``M`` in the xample)
+the current one and the name of the module itself (``M`` in the example)
 available in a second scope just outside of that. In contrast, ``import``
 as well as ``public use`` do not use these implicit scopes.
 
@@ -367,7 +367,7 @@ statement.  The symbols that are shadowed will only be accessible via
       }
 
       module MainMod {
-        use A;
+        private use A; // note: 'use A' means the same as 'private use A'
         var x = "hello";
 
         proc main() {
@@ -376,9 +376,9 @@ statement.  The symbols that are shadowed will only be accessible via
       }
 
    This program will compile and print out ``hello`` because the use of
-   ``x`` refers to ``MainMod.x`` which shadows ``A.x`` because ``use A``,
-   which means the same as ``private use A``, introduces ``x`` in a scope
-   just outside of the scope of ``MainMod``.
+   ``x`` refers to ``MainMod.x`` which shadows ``A.x`` because ``private
+   use A`` introduces ``x`` in a scope just outside of the scope of
+   ``MainMod``.
   
    .. code-block:: printoutput
 
