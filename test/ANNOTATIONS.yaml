@@ -492,6 +492,9 @@ all:
   02/22/22:
     - text: OS reinstall
       config: chapcs
+  03/11/22:
+    - text: Hardware upgrade
+      config: 16-node-xc
   03/14/22:
     - text: LLVM 13 upgrade
       config: chapcs
