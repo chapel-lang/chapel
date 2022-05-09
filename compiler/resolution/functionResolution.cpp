@@ -1993,14 +1993,14 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
           get_width(actualType) <= get_width(f1Type)/2)
         return true;
     }
-    // Prefer bool/enum/int(64)/uint(64) cast to a default-sized real
+    // Prefer int(64)/uint(64) cast to a default-sized real
     // over another size of real or complex.
-    if ((aBoolEnum || actualType == dtInt[INT_SIZE_DEFAULT])) {
+    if (actualType == dtInt[INT_SIZE_DEFAULT] || actualType == dtUInt[INT_SIZE_DEFAULT]) {
       if (f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
           (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
           f2Type != dtReal[FLOAT_SIZE_DEFAULT])
         return true;
-      // Prefer bool/enum/int/uint cast to a default-sized complex
+      // Prefer int/uint cast to a default-sized complex
       // over another size of complex.
       if (f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
           f2T == NUMERIC_TYPE_COMPLEX &&
