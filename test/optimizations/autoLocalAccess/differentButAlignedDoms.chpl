@@ -3,18 +3,6 @@ use common;
 var D = createDom({1..10});
 var A: [D] int;
 
-// hijack these two methods to provide some output
-inline proc _array.this(i: int) ref {
-  writeln("Custom this was called");
-  return this._value.dsiAccess((i:int,));
-}
-
-inline proc _array.localAccess(i: int) ref {
-  writeln("Custom localAccess was called");
-  return this._value.dsiLocalAccess((i:int,));
-}
-
-
 {
   writeln("Iterand is a different symbol");
   const DInner = D.expand(-1);
