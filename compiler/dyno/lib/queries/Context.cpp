@@ -799,6 +799,7 @@ void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
   // This uses 'exit' so that it can be tested but in the future we could
   // make it call an internal error function that also exits.
   // If this happens, the solution is to fix the query not to recurse.
+  gdbShouldBreakHere();
   fprintf(stderr, "Error: recursion encountered in query %s\n",
           r->parentQueryMap->queryName);
   exit(-1);

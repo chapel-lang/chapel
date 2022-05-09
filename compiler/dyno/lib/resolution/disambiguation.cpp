@@ -22,6 +22,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/resolution/can-pass.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/Function.h"
@@ -830,8 +831,8 @@ static void testArgMapping(const DisambiguationContext& dctx,
     auto nd2 = fa2->formal()->toNamedDecl();
     if (nd1 != nullptr && nd2 != nullptr &&
         nd1->name() == USTR("this") && nd2->name() == USTR("this")) {
-      if (f1Type.genericityWithFields(dctx.context) != Type::CONCRETE &&
-          f2Type.genericityWithFields(dctx.context) != Type::CONCRETE) {
+      if (getTypeGenericity(dctx.context, f1Type) != Type::CONCRETE &&
+          getTypeGenericity(dctx.context, f2Type) != Type::CONCRETE) {
         return;
       }
     }

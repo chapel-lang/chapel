@@ -558,17 +558,6 @@ class Context {
   const ResultType&
   queryGetSaved(const querydetail::QueryMapResult<ResultType, ArgTs...>* r);
 
-  // It's a fatal error to run a query recursively.
-  // To avoid that in cases that have some sort of natural recursion,
-  // use this function to ask if a query is already running and to
-  // get the partial result if it is.
-  template<typename ResultType,
-           typename... ArgTs>
-  const ResultType* queryGetRunningQueryPartialResult(
-         const ResultType& (*queryFunction)(Context* context, ArgTs...),
-         const std::tuple<ArgTs...>& tupleOfArgs,
-         const char* traceQueryName);
-
   template<typename ResultType,
            typename... ArgTs>
   const ResultType& queryEnd(
@@ -577,15 +566,6 @@ class Context {
       const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
       const std::tuple<ArgTs...>& tupleOfArgs,
       ResultType result,
-      const char* traceQueryName);
-
-  template<typename ResultType,
-           typename... ArgTs>
-  const ResultType& queryEndCurrentResult(
-      const ResultType& (*queryFunction)(Context* context, ArgTs...),
-      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
-      const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
-      const std::tuple<ArgTs...>& tupleOfArgs,
       const char* traceQueryName);
 
   template<typename ResultType,

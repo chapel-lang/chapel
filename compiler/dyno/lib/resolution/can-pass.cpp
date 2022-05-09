@@ -231,7 +231,7 @@ static bool isConsideredGeneric(Type::Genericity g) {
 }
 
 bool CanPassResult::isTypeGeneric(Context* context, const QualifiedType& qt) {
-  auto g = qt.genericityWithFields(context);
+  auto g = getTypeGenericity(context, qt);
   return isConsideredGeneric(g);
 }
 bool CanPassResult::isTypeGeneric(Context* context, const Type* t) {

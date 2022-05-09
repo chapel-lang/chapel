@@ -82,6 +82,19 @@ typedSignatureInitial(Context* context,
 const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
 
 /**
+  Resolve a single field decl (which could be e.g. a MultiDecl)
+  within a CompositeType.
+
+  The result will not have summary information computed.
+  fieldsForTypeDecl should be used instead unless there
+  is a reason that one-at-a-time resolution is important.
+ */
+const ResolvedFields& resolveFieldDecl(Context* context,
+                                       const types::CompositeType* ct,
+                                       ID fieldId,
+                                       bool useGenericFormalDefaults);
+
+/**
   Compute the types of the fields for a CompositeType
   (such as one returned by initialTypeForTypeDecl).
 
@@ -105,9 +118,40 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
   Compute whether a type is generic or not.
   Considers the field of a record/class.
   For a UnknownType, returns MAYBE_GENERIC.
+
+  Considers types in the ignore set as concrete.
  */
+types::Type::Genericity
+getTypeGenericityIgnoring(Context* context,
+                          const types::Type* t,
+                          std::set<const types::Type*>& ignore);
+
+/**
+  Compute whether a QualifiedType is generic or not.
+  Considers the field of a record/class.
+  For a UnknownType, returns MAYBE_GENERIC.
+
+  Considers types in the ignore set as concrete.
+ */
+types::Type::Genericity
+getTypeGenericityIgnoring(Context* context,
+                          types::QualifiedType qt,
+                          std::set<const types::Type*>& ignore);
+/**
+  Compute whether a QualifiedType is generic or not.
+  Considers the field of a record/class.
+  For a UnknownType, returns MAYBE_GENERIC.
+*/
 types::Type::Genericity getTypeGenericity(Context* context,
                                           const types::Type* t);
+
+/**
+  Compute whether a QualifiedType is generic or not.
+  Considers the field of a record/class.
+  For a UnknownType, returns MAYBE_GENERIC.
+ */
+types::Type::Genericity getTypeGenericity(Context* context,
+                                          types::QualifiedType qt);
 
 /**
   Compute an initial TypedFnSignature for a type constructor for a

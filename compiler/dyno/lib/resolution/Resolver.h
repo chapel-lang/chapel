@@ -31,7 +31,8 @@ struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
-  const uast::AstNode* modStmt = nullptr;
+  const uast::AstNode* curStmt = nullptr;
+  const types::CompositeType* inCompositeType = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
   bool useGenericFormalDefaults = false;
   const TypedFnSignature* typedSignature = nullptr;
@@ -105,19 +106,39 @@ struct Resolver {
 
   // set up Resolver to initially resolve field declaration types
   static Resolver
-  initialFieldsResolver(Context* context,
-                        const uast::AggregateDecl* decl,
-                        ResolutionResultByPostorderID& byPostorder,
-                        bool useGenericFormalDefaults);
+  initialFieldStmtResolver(Context* context,
+                           const uast::AggregateDecl* decl,
+                           const uast::AstNode* fieldStmt,
+                           const types::CompositeType* compositeType,
+                           ResolutionResultByPostorderID& byPostorder,
+                           bool useGenericFormalDefaults);
 
   // set up Resolver to resolve instantiated field declaration types
   static Resolver
-  instantiatedFieldsResolver(Context* context,
-                             const uast::AggregateDecl* decl,
-                             const SubstitutionsMap& substitutions,
-                             const PoiScope* poiScope,
-                             ResolutionResultByPostorderID& byPostorder,
-                             bool useGenericFormalDefaults);
+  instantiatedFieldStmtResolver(Context* context,
+                                const uast::AggregateDecl* decl,
+                                const uast::AstNode* fieldStmt,
+                                const types::CompositeType* compositeType,
+                                const PoiScope* poiScope,
+                                ResolutionResultByPostorderID& byPostorder,
+                                bool useGenericFormalDefaults);
+
+  // set up Resolver to resolve instantiated field declaration types
+  // without knowning the CompositeType
+  static Resolver
+  instantiatedSignatureFieldsResolver(Context* context,
+                                      const uast::AggregateDecl* decl,
+                                      const SubstitutionsMap& substitutions,
+                                      const PoiScope* poiScope,
+                                      ResolutionResultByPostorderID& byId);
+
+  // set up Resolver to resolve a parent class type expression
+  static Resolver
+  parentClassResolver(Context* context,
+                      const uast::AggregateDecl* decl,
+                      const SubstitutionsMap& substitutions,
+                      const PoiScope* poiScope,
+                      ResolutionResultByPostorderID& byPostorder);
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.

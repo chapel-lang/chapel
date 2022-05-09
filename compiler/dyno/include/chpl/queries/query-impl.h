@@ -276,38 +276,6 @@ Context::queryGetSaved(const QueryMapResult<ResultType, ArgTs...>* r) {
 
 template<typename ResultType,
         typename... ArgTs>
-const ResultType* Context::queryGetRunningQueryPartialResult(
-             const ResultType& (*queryFunction)(Context* context, ArgTs...),
-             const std::tuple<ArgTs...>& tupleOfArgs,
-             const char* traceQueryName) {
-  // Look up the map entry for this query name
-  const void* queryFuncV = (const void*) queryFunction;
-  // Look up the map entry for this query
-  auto search = this->queryDB.find(queryFuncV);
-  if (search == this->queryDB.end()) {
-    return nullptr;
-  }
-
-  // found an entry for this query
-  QueryMapBase* base = search->second.get();
-  auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
-  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
-  auto search2 = queryMap->map.find(key);
-  if (search2 == queryMap->map.end()) {
-    return nullptr;
-  }
-
-  // found an entry for this query. is it currently running?
-  if (search2->lastChecked != -1) {
-    return nullptr;
-  }
-
-  // query is currently running so return the partial result
-  return &search2->partialResult;
-}
-
-template<typename ResultType,
-        typename... ArgTs>
 Context::QueryStatus Context::queryStatus(
              const ResultType& (*queryFunction)(Context* context, ArgTs...),
              const std::tuple<ArgTs...>& tupleOfArgs) {
@@ -370,27 +338,6 @@ Context::queryEnd(
 
   return ret->result;
 }
-
-template<typename ResultType,
-         typename... ArgTs>
-const ResultType&
-Context::queryEndCurrentResult(
-              const ResultType& (*queryFunction)(Context* context, ArgTs...),
-              QueryMap<ResultType, ArgTs...>* queryMap,
-              const QueryMapResult<ResultType, ArgTs...>* r,
-              const std::tuple<ArgTs...>& tupleOfArgs,
-              const char* traceQueryName) {
-
-  // swap the partial result to a variable
-  ResultType partialResultVar;
-  chpl::update<ResultType> updater;
-  updater(partialResultVar, r->partialResult);
-
-  return queryEnd(queryFunction, queryMap, r, tupleOfArgs,
-                  std::move(partialResultVar),
-                  traceQueryName);
-}
-
 
 template<typename ResultType,
          typename... ArgTs>
@@ -576,25 +523,6 @@ Context::querySetterUpdateResult(
   QUERY_BEGIN_TIMING();
 
 /**
-  Returns a pointer to the partial result if the query is already running
-  and nullptr otherwise. The partial result is set by assigning to
-  QUERY_CURRENT_RESULT in some other invocation of func with the exact
-  same arguments.
-
-  Arguments are like QUERY_BEGIN.
- */
-#define QUERY_RUNNING_PARTIAL_RESULT(func, context, ...) \
-  context->queryGetRunningQueryPartialResult(func, std::make_tuple(__VA_ARGS__), #func)
-
-/**
-  Get the current partial result for the current query
-  (for use in recursive queries). The result is an lvalue that can be set.
-  Queries that use this need to end with return QUERY_END_CURRENT_RESULT()
- */
-#define QUERY_CURRENT_RESULT \
-  (BEGIN_QUERY_FOUND->partialResult)
-
-/**
   Write
 
     return QUERY_END(result);
@@ -615,17 +543,6 @@ Context::querySetterUpdateResult(
                                  BEGIN_QUERY_FUNC_NAME))
 
 
-/**
-  For a query working with QUERY_CURRENT_RESULT,
-  return the current result.
- */
-#define QUERY_END_CURRENT_RESULT() \
-  /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */ \
-  (BEGIN_QUERY_CONTEXT->queryEndCurrentResult(BEGIN_QUERY_FUNCTION, \
-                                              BEGIN_QUERY_MAP, \
-                                              BEGIN_QUERY_FOUND, \
-                                              BEGIN_QUERY_ARGS, \
-                                              BEGIN_QUERY_FUNC_NAME))
 /**
   Use QUERY_STORE_RESULT to implement a setter for a non-input query.
   Arguments are:

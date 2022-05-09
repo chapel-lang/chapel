@@ -22,6 +22,7 @@
 #include "chpl/queries/global-strings.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/queries/update-functions.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
@@ -283,9 +284,12 @@ void ResolvedFields::finalizeFields(Context* context) {
   bool allGenHaveDefault = true; // all generic fields have default init
                                  // -- vacuously true if there are no generic
 
+  std::set<const Type*> ignore;
+  ignore.insert(type_);
+
   // look at the fields and compute the summary information
   for (auto field : fields_) {
-    auto g = field.type.genericityWithFields(context);
+    auto g = getTypeGenericityIgnoring(context, field.type, ignore);
     if (g != Type::CONCRETE) {
       if (!field.hasDefaultValue) {
         allGenHaveDefault = false;
