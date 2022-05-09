@@ -32,7 +32,7 @@ extern __constant__ int32_t chpl_nodeID;
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
   // TODO
-  return 1;
+  return 0;
 }
 
 __device__ static inline chpl_localeID_t chpl_gen_getLocaleID(void)

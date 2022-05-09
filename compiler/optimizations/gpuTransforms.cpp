@@ -430,13 +430,13 @@ static void outlineGPUKernels() {
 
           fn->defPoint->insertBefore(new DefExpr(outlinedFunction));
 
-          // if (chpl_task_getRequestedSubloc() > 0) {
+          // if (chpl_task_getRequestedSubloc() >= 0) {
           //   call the generated GPU kernel
           // } else {
           //   run the existing loop on the CPU
           // }
           Expr* condExpr =
-            new CallExpr(PRIM_GREATER,
+            new CallExpr(PRIM_GREATEROREQUAL,
                          new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
                          new_IntSymbol(0));
           BlockStmt* thenBlock = new BlockStmt();
