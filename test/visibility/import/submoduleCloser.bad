@@ -1,0 +1,2 @@
+submoduleCloser.chpl:11: In function 'main':
+submoduleCloser.chpl:15: error: Symbol 'do_my_impl' undeclared in module 'Details'
