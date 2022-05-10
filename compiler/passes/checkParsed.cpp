@@ -47,6 +47,7 @@ static void setupForCheckExplicitDeinitCalls();
 static void warnUnstableUnions(AggregateType* at);
 static void warnUnstableLeadingUnderscores();
 static void checkOperator(FnSymbol* fn);
+static void checkUseStmt(UseStmt* use);
 
 void
 checkParsed() {
@@ -119,6 +120,10 @@ checkParsed() {
   checkExportedNames();
 
   checkDefersAfterParsing();
+
+  forv_Vec(UseStmt, use, gUseStmts) {
+    checkUseStmt(use);
+  }
 }
 
 
@@ -605,5 +610,19 @@ static void warnUnstableLeadingUnderscores() {
                  "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
       }
     }
+  }
+}
+
+/* check for 'public use M only' and warn in that event since
+   it does nothing. (public use does not bring in the module named
+   unless it renames the module e.g. 'public use M as M only' */
+static void checkUseStmt(UseStmt* use) {
+  if (!use->isPrivate && !use->isARename() && use->hasOnlyNothing()) {
+    const char* name = "M";
+    if (auto used = toUnresolvedSymExpr(use->src))
+      name = used->unresolved;
+    USR_WARN(use, "'public use %s only;' has no effect", name);
+    USR_PRINT("try 'public import %s;' or 'public use %s as %s only;'",
+              name, name, name);
   }
 }

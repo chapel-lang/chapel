@@ -224,7 +224,7 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 class DisambiguationContext {
 public:
-                 DisambiguationContext(CallInfo& info);
+                 DisambiguationContext(CallInfo& info, BlockStmt* searchScope);
 
   Vec<Symbol*>*  actuals;
   Expr*          scope;

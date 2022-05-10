@@ -58,8 +58,9 @@ module User {
     }
   }
   proc u3() {
-    proc MyRecord.init(param p)            { note("u3.init", 2); rp = 0; }
-    proc MyRecord.init=(other)             { note("u3.init=", 2); rp = 0; }
+    // having these methods here would lead to ambiguity -- see #19352
+    //proc MyRecord.init(param p)            { note("u3.init", 2); rp = 0; }
+    //proc MyRecord.init=(other)             { note("u3.init=", 2); rp = 0; }
     operator =(ref lhs:MyRecord, rhs:MyRecord) { note("u3.=", 2); }
     operator <(lhs:MyRecord, rhs:MyRecord) { note("u3.<", 2);
                                              return true; }

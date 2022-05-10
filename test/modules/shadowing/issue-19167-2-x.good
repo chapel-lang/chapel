@@ -1,0 +1,2 @@
+issue-19167-2-x.chpl:3: error: symbol x is multiply defined
+issue-19167-2-x.chpl:7: note: also defined here

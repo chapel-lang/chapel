@@ -1,0 +1,6 @@
+issue-19198.chpl:2: In function 'genericfunc':
+issue-19198.chpl:3: error: ambiguous call 'helper1()'
+issue-19198.chpl:18: note: candidates are: helper1()
+issue-19198.chpl:19: note:                 helper1()
+issue-19198.chpl:13: note:                 helper1()
+  issue-19198.chpl:22: called as genericfunc(param p = 1)

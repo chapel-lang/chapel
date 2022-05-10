@@ -30,9 +30,9 @@ checkType(string, ("8"+c:string).type);   // no param complex
 checkType(string, (createStringWithNewBuffer(cstr)+c:string).type);
 checkType(string, (createStringWithNewBuffer(vcstr)+c:string).type);
 
-checkType(string, (c"8"+e:string).type);
-checkType(string, ("8"+e:string).type);
-checkType(string, (cstr+e:string).type);
+checkType(string, (c"8"+pe:string).type);
+checkType(string, ("8"+pe:string).type);
+checkType(string, (cstr+pe:string).type);
 checkType(string, (createStringWithNewBuffer(vcstr)+e:string).type);
 checkType(string, ("8"+ee:string).type);
 checkType(string, (createStringWithNewBuffer(cstr)+ee:string).type);
