@@ -63,6 +63,7 @@ struct ParserContext {
   yyscan_t scanner;
   UniqueString filename;
   Builder* builder;
+  parsing::ParserStats* parseStats;
 
   ParserExprList* topLevelStatements;
   std::vector<ParserError> errors;
@@ -104,7 +105,8 @@ struct ParserContext {
 
   ParserExprList* parenlessMarker;
 
-  ParserContext(const char* filename, Builder* builder)
+  ParserContext(const char* filename, Builder* builder,
+                parsing::ParserStats* parseStats)
   {
     auto uniqueFilename = UniqueString::get(builder->context(), filename);
 
@@ -127,6 +129,7 @@ struct ParserContext {
     this->declStartLocation       = emptyLoc;
     this->atEOF                   = false;
     this->parenlessMarker         = new ParserExprList();
+    this->parseStats              = parseStats;
   }
   ~ParserContext() {
     delete this->parenlessMarker;

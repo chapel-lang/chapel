@@ -65,6 +65,4 @@ BaseAST* getScope(BaseAST* ast);
 void resolveUnresolvedSymExprs(BaseAST* ast);
 void resolveUnmanagedBorrows(CallExpr* call);
 
-void destroyModuleUsesCaches();
-
 #endif

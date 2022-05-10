@@ -78,7 +78,7 @@ static void updateParseResult(ParserContext* parserContext) {
 }
 
 
-BuilderResult Parser::parseFile(const char* path) {
+BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   auto builder = Builder::build(this->context(), path);
   ErrorMessage fileError;
 
@@ -101,7 +101,7 @@ BuilderResult Parser::parseFile(const char* path) {
   yychpl_pstate* parser = yychpl_pstate_new();
   int           parserStatus = YYPUSH_MORE;
   YYLTYPE       my_yylloc;
-  ParserContext parserContext(path, builder.get());
+  ParserContext parserContext(path, builder.get(), parseStats);
 
   my_yylloc.first_line             = 1;
   my_yylloc.first_column           = 1;
@@ -165,7 +165,8 @@ BuilderResult Parser::parseFile(const char* path) {
 }
 
 
-BuilderResult Parser::parseString(const char* path, const char* str) {
+BuilderResult Parser::parseString(const char* path, const char* str,
+                                  ParserStats* parseStats) {
   auto builder = Builder::build(this->context(), path);
 
   // Set the (global) parser debug state
@@ -180,7 +181,7 @@ BuilderResult Parser::parseString(const char* path, const char* str) {
   // State for the parser
   yychpl_pstate* parser = yychpl_pstate_new();
   int           parserStatus = YYPUSH_MORE;
-  ParserContext parserContext(path, builder.get());
+  ParserContext parserContext(path, builder.get(), parseStats);
 
   yychpl_lex_init_extra(&parserContext, &parserContext.scanner);
 

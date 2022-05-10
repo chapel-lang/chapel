@@ -53,6 +53,8 @@ public:
 
   bool            hasOnlyList()                                          const;
 
+  bool            hasOnlyNothing()                                       const;
+
   bool            hasExceptList()                                        const;
 
   void            scopeResolve(ResolveScope* scope);

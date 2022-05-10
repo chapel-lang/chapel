@@ -1,1 +1,2 @@
-0
+same_name_in_mod.chpl:7: error: symbol F is multiply defined
+same_name_in_mod.chpl:1: note: also defined here

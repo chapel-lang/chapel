@@ -9,7 +9,7 @@ num_gpus=$((num_gpus-1))
 num_launches=$(cat $1.numlaunches)
 
 rm -f $1.good
-for i in $(seq 1 $num_gpus);
+for i in $(seq 0 $num_gpus);
 do
   echo "$num_launches Kernel launcher called. (subloc $i)" >> $1.good
 done

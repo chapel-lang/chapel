@@ -25,12 +25,12 @@
    the file (minus the .chpl suffix).  The compiler can be directed to include
    modules in distinct files by naming them on the command line or by relying
    on the ``-M`` flag (see the :ref:`man page <man-chpl>` for exact details).
-   Here, we declare a module `modToUse`:
+   Here, we declare a module `ModToUse`:
 */
-module modToUse {
+module ModToUse {
 
   /* In this case, ``foo`` is a public module-level variable that is defined
-     within the module ``modToUse``  */
+     within the module ``ModToUse``  */
   var foo = 12;
 
   /* As is ``bar``.  */
@@ -41,18 +41,18 @@ module modToUse {
      nested scopes) can access it.
 
      Here, ``hiddenFoo`` is a private module-level variable, making it
-     only accessible to other code contained in ``modToUse``
+     only accessible to other code contained in ``ModToUse``
    */
   private var hiddenFoo = false;
 
 
-  /* ``baz`` is a public function which is defined within ``modToUse``  */
+  /* ``baz`` is a public function which is defined within ``ModToUse``  */
   proc baz (x, y) {
     return x * (x + y);
   }
 
   /* ``hiddenBaz`` is a private function, which is also only accessible by
-     symbols contained in ``modToUse``.
+     symbols contained in ``ModToUse``.
    */
   private proc hiddenBaz(a) {
     writeln(a);
@@ -75,7 +75,7 @@ module modToUse {
     writeln("In Rec.method2()");
   }
 
-} // end of modToUse module
+} // end of ModToUse module
 
 /* In the current implementation, ``private`` cannot be applied to type
    definitions; type aliases, and declarations of enums, records, and
@@ -96,7 +96,7 @@ module ThirdModule {
 
 
 module Conflict {
-  /* This variable shares a name with a symbol in ``modToUse``.  */
+  /* This variable shares a name with a symbol in ``ModToUse``.  */
   var bar = 5;
 
   var other = 5.0 + 3i;
@@ -106,7 +106,7 @@ module Conflict {
 
 
 module DifferentArguments {
-  /* This function shares a name with a function in ``modToUse``, but takes
+  /* This function shares a name with a function in ``ModToUse``, but takes
      different arguments  */
   proc baz(x) {
     return x - 2;
@@ -114,7 +114,7 @@ module DifferentArguments {
 } // end of DifferentArguments module
 
 module RecMoreMethods {
-  private use modToUse;
+  private use ModToUse;
 
   /* ``method3`` is a tertiary method defined on ``Rec`` */
   proc Rec.method3() {
@@ -139,11 +139,11 @@ module MainModule {
        directly in an unqualified manner (without a module name prefix).
 
        In this case, ``bazBarFoo`` should store the result of calling
-       ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which is
+       ``ModToUse.baz`` on ``ModToUse.bar`` and ``ModToUse.foo``, which is
        in this case ``28``.
     */
     {
-      use modToUse;
+      use ModToUse;
 
       var bazBarFoo = baz(bar, foo);
       writeln(bazBarFoo);
@@ -152,7 +152,7 @@ module MainModule {
     /* Since ``use`` statements only affect their containing scope, when we
        leave a scope like this, we lose access to the module's symbols.  For
        instance, since the following line isn't within a scope that contains a
-       ``use`` of ``modToUse``, it would generate an error if uncommented.
+       ``use`` of ``ModToUse``, it would generate an error if uncommented.
        This is because ``foo`` is not visible within our lexical scope or
        via any ``use`` statements in that scope.
      */
@@ -167,29 +167,29 @@ module MainModule {
 
        This demonstrates an ``import`` that enables access with the module
        prefix.  In this example, ``bazBarFoo`` should store the result of
-       calling ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which
+       calling ``ModToUse.baz`` on ``ModToUse.bar`` and ``ModToUse.foo``, which
        is in this case ``28``.
     */
     {
-      import modToUse;
+      import ModToUse;
 
-      var bazBarFoo = modToUse.baz(modToUse.bar, modToUse.foo);
+      var bazBarFoo = ModToUse.baz(ModToUse.bar, ModToUse.foo);
       writeln(bazBarFoo);
     }
     /* This case demonstrates an ``import`` that enables access without the
-       module prefix to a single symbol within ``modToUse``.
+       module prefix to a single symbol within ``ModToUse``.
     */
     {
-      import modToUse.bar;
+      import ModToUse.bar;
 
       writeln(bar);
     }
 
     /* ``import`` statements also only affect their containing scope, so
        similarly the following line would generate an error if uncommented, due
-       to being outside a scope with an ``import`` or ``use`` of ``modToUse``.
+       to being outside a scope with an ``import`` or ``use`` of ``ModToUse``.
     */
-    // var twiceFoo = 2 * modToUse.foo;
+    // var twiceFoo = 2 * ModToUse.foo;
 
 
     /* ``use`` statements apply to the entire scope in which they are defined.
@@ -200,14 +200,14 @@ module MainModule {
        in a scope from calling one declared later.
 
        Thus, as in an earlier example, the following declaration of
-       ``bazBarFoo`` will store the result of calling ``modToUse.baz``
-       on ``modToUse.bar`` and ``modToUse.foo``, which is again
+       ``bazBarFoo`` will store the result of calling ``ModToUse.baz``
+       on ``ModToUse.bar`` and ``ModToUse.foo``, which is again
        ``28``.
     */
     {
       var bazBarFoo = baz(bar, foo);
 
-      use modToUse;
+      use ModToUse;
 
       writeln(bazBarFoo);
     }
@@ -221,35 +221,35 @@ module MainModule {
        statement counterpart.
     */
     {
-      var bazBarFoo = modToUse.baz(modToUse.bar, modToUse.foo);
+      var bazBarFoo = ModToUse.baz(ModToUse.bar, ModToUse.foo);
 
-      import modToUse;
+      import ModToUse;
 
       writeln(bazBarFoo);
     }
 
     /* Modules that are being used can be given a different name than the ones
-       they were declared with.  In this example, ``modToUse.bar`` can be
+       they were declared with.  In this example, ``ModToUse.bar`` can be
        accessed using the new name, ``other``, as the module prefix.  The old
        name is not visible in that scope, though, so writing just
-       ``modToUse.bar`` will not work.  However, unprefixed access to the
+       ``ModToUse.bar`` will not work.  However, unprefixed access to the
        module's symbols remains unchanged.
     */
     {
-      use modToUse as other;
+      use ModToUse as other;
 
       writeln(other.bar);
-      // writeln(modToUse.bar); // would be an error, modToUse not visible
+      // writeln(ModToUse.bar); // would be an error, ModToUse not visible
       writeln(bar);
     }
 
     /* The same is also true of modules that are imported.
      */
     {
-      import modToUse as other;
+      import ModToUse as other;
 
       writeln(other.bar);
-      // writeln(modToUse.bar); // would be an error, modToUse not visible
+      // writeln(ModToUse.bar); // would be an error, ModToUse not visible
     }
 
     /* With this syntax, a ``use`` statement can enable just unqualified access
@@ -257,58 +257,56 @@ module MainModule {
        statements doesn't enable qualified access.
     */
     {
-      use modToUse as _;
+      use ModToUse as _;
 
       writeln(bar);
-      // writeln(modToUse.bar); // would be an error, modToUse not visible
+      // writeln(ModToUse.bar); // would be an error, ModToUse not visible
       // writeln(_.bar); // also an error, _ is not an identifier otherwise
     }
 
-    /* The symbols provided by a ``use`` statement are only considered when
-       the name in question cannot be resolved directly within the local
+    /* Variables provided by a private ``use`` statement are only considered
+       when the name in question cannot be resolved directly within the local
        scope. Thus, because another ``bar`` is defined within this scope, the
        access to ``bar`` within the ``writeln`` will refer to the local
-       variable ``bar`` rather than to ``modToUse.bar``.
+       variable ``bar`` rather than to ``ModToUse.bar``.
     */
     {
       var bar = 4.0;
 
-      use modToUse;
+      use ModToUse;
 
       writeln(bar);
       // Will output the value of the bar defined in this scope (which is
-      // '4.0'), rather than the value of modToUse.bar (which is '2')
+      // '4.0'), rather than the value of ModToUse.bar (which is '2')
     }
 
-    /* Again, the same is true of symbols provided by an ``import`` statement.
-     */
+    /* In contrast, defining a variable with the same name as something
+       imported or brought in by ``public use`` leads to a multiple definition
+       error. */
     {
+      import ModToUse.bar;
       var bar = 4.0;
 
-      import modToUse.bar;
-
-      writeln(bar);
-      // Will output the value of the bar defined in this scope (which is
-      // '4.0'), rather than the value of modToUse.bar (which is '2')
+      // writeln(bar); // multiple definition error
     }
 
-
     /* If a symbol cannot be resolved directly within the local scope, then
-       the symbols provided by a ``use`` statement are considered before the
+       the symbols provided by a ``private use`` / ```use`` statements are
+       considered before the
        symbols defined outside of the scope where the ``use`` statement
        applies.  Thus, because the other ``bar`` was defined outside of
        these curly braces, the compiler will find the ``bar`` from
-       ``modToUse`` when resolving the access within the ``writeln``,
-       rather than the outer ``bar``. The ``bar`` from ``modToUse`` is said
+       ``ModToUse`` when resolving the access within the ``writeln``,
+       rather than the outer ``bar``. The ``bar`` from ``ModToUse`` is said
        to be "shadowing" the definition at the outer scope.
     */
     {
       var bar = false;
       {
 
-        use modToUse;
+        use ModToUse;
         writeln(bar);
-        // Will output the value of modToUse.bar (which is '2'), rather
+        // Will output the value of ModToUse.bar (which is '2'), rather
         // than the value of the bar defined outside of this scope (which
         // is 'false')
       }
@@ -320,9 +318,9 @@ module MainModule {
       var bar = false;
       {
 
-        import modToUse.bar;
+        import ModToUse.bar;
         writeln(bar);
-        // Will output the value of modToUse.bar (which is '2'), rather
+        // Will output the value of ModToUse.bar (which is '2'), rather
         // than the value of the bar defined outside of this scope (which
         // is 'false')
       }
@@ -330,40 +328,40 @@ module MainModule {
 
     /* Multiple modules may be named in a single ``use`` statement */
     {
-      use modToUse, AnotherModule, ThirdModule;
+      use ModToUse, AnotherModule, ThirdModule;
 
       if (a || b < 0) {
         // Refers to AnotherModule.a (which is 'false') and ThirdModule.b (which
         // is '-13.0')
-        writeln(foo); // Refers to modToUse.foo
+        writeln(foo); // Refers to ModToUse.foo
       } else {
-        writeln(bar); // Refers to modToUse.bar
-      } // Will output modToUse.foo (which is '12')
+        writeln(bar); // Refers to ModToUse.bar
+      } // Will output ModToUse.foo (which is '12')
     }
 
     /* Multiple modules may also be named in a single ``import`` statement */
     {
-      import modToUse, AnotherModule, ThirdModule;
+      import ModToUse, AnotherModule, ThirdModule;
 
       if (AnotherModule.a || ThirdModule.b < 0) {
-        writeln(modToUse.foo);
+        writeln(ModToUse.foo);
       } else {
-        writeln(modToUse.bar);
-      } // Will output modToUse.foo (which is '12')
+        writeln(ModToUse.bar);
+      } // Will output ModToUse.foo (which is '12')
     }
 
     /* And such ``import`` statements can mix and match between importing
        modules and the symbols within them.
     */
     {
-      import modToUse.{foo, bar}, AnotherModule, ThirdModule.b;
+      import ModToUse.{foo, bar}, AnotherModule, ThirdModule.b;
 
       if (AnotherModule.a || b < 0) {
         // Refers to ThirdModule.b (which is '-13.0')
-        writeln(foo); // Refers to modToUse.foo
+        writeln(foo); // Refers to ModToUse.foo
       } else {
-        writeln(bar); // Refers to modToUse.bar
-      } // Will output modToUse.foo (which is '12')
+        writeln(bar); // Refers to ModToUse.bar
+      } // Will output ModToUse.foo (which is '12')
     }
 
     /* You can also ``import`` multiple modules in a single statement by naming
@@ -374,31 +372,31 @@ module MainModule {
 
     /* Equivalently, a scope may contain multiple ``use`` statements  */
     {
-      use modToUse;
+      use ModToUse;
       use AnotherModule, ThirdModule;
 
       writeln(a && foo > 15);
-      // outputs false (because AnotherModule.a is 'false' and modToUse.foo is
+      // outputs false (because AnotherModule.a is 'false' and ModToUse.foo is
       // '12')
     }
 
     /* A scope may also contain multiple ``import`` statements */
     {
-      import modToUse.foo;
+      import ModToUse.foo;
       import AnotherModule.a;
 
       writeln(a && foo > 15);
-      // outputs false (because AnotherModule.a is 'false' and modToUse.foo is
+      // outputs false (because AnotherModule.a is 'false' and ModToUse.foo is
       // '12')
     }
 
     /* It can even contain a mix of ``import`` and ``use`` statements */
     {
-      use modToUse;
+      use ModToUse;
       import AnotherModule.a;
 
       writeln(a && foo > 15);
-      // outputs false (because AnotherModule.a is 'false' and modToUse.foo is
+      // outputs false (because AnotherModule.a is 'false' and ModToUse.foo is
       // '12')
     }
 
@@ -412,13 +410,13 @@ module MainModule {
        scope, attempts to access a symbol by that name will result in a naming
        conflict.
 
-       The commented-out line below would fail because both ``modToUse`` and
+       The commented-out line below would fail because both ``ModToUse`` and
        ``Conflict`` define a symbol named ``bar``:
     */
     {
-      use modToUse, Conflict;
+      use ModToUse, Conflict;
 
-      writeln(foo); // Outputs modToUse.foo ('12')
+      writeln(foo); // Outputs ModToUse.foo ('12')
       // writeln(bar);
       writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
     }
@@ -441,10 +439,10 @@ module MainModule {
     */
     {
 
-      use modToUse, DifferentArguments;
+      use ModToUse, DifferentArguments;
 
       writeln(baz(2, 3));
-      // Accesses the function modToUse.baz using the two arguments.  Should
+      // Accesses the function ModToUse.baz using the two arguments.  Should
       // output 2 * (2 + 3) or '10'
       writeln(baz(3));
       // Access the function DifferentArguments.baz using the single argument.
@@ -472,11 +470,11 @@ module MainModule {
 
 
     {
-      use modToUse;
+      use ModToUse;
       use Conflict only other, another;
 
-      writeln(foo); // Outputs modToUse.foo ('12')
-      writeln(bar); // Outputs modToUse.bar ('2')
+      writeln(foo); // Outputs ModToUse.foo ('12')
+      writeln(bar); // Outputs ModToUse.bar ('2')
       writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
     }
 
@@ -487,11 +485,11 @@ module MainModule {
        unqualified access.
     */
     {
-      use modToUse;
+      use ModToUse;
       import Conflict.{other, another};
 
-      writeln(foo); // Outputs modToUse.foo ('12')
-      writeln(bar); // Outputs modToUse.bar ('2')
+      writeln(foo); // Outputs ModToUse.foo ('12')
+      writeln(bar); // Outputs ModToUse.bar ('2')
       writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
     }
 
@@ -501,9 +499,9 @@ module MainModule {
     */
     {
       use Conflict;
-      use modToUse except bar;
+      use ModToUse except bar;
 
-      writeln(foo); // Outputs modToUse.foo ('12')
+      writeln(foo); // Outputs ModToUse.foo ('12')
       writeln(bar); // Outputs Conflict.bar ('5')
       writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
     }
@@ -518,9 +516,9 @@ module MainModule {
        does not cause any conflicts with other included symbols.
     */
     {
-      use modToUse;
+      use ModToUse;
       use Conflict only bar as boop;
-      writeln(bar); // Outputs modToUse.bar ('2')
+      writeln(bar); // Outputs ModToUse.bar ('2')
       writeln(boop); // Outputs Conflict.bar ('5')
     }
 
@@ -528,9 +526,9 @@ module MainModule {
        braces.
     */
     {
-      use modToUse;
+      use ModToUse;
       import Conflict.{bar as boop};
-      writeln(bar); // Outputs modToUse.bar ('2')
+      writeln(bar); // Outputs ModToUse.bar ('2')
       writeln(boop); // Outputs Conflict.bar ('5')
     }
 
@@ -540,9 +538,9 @@ module MainModule {
        always fully qualify accesses to their modules' symbols.
     */
     {
-      use modToUse only;
+      use ModToUse only;
       use Conflict only;
-      writeln(modToUse.bar);  // Outputs modToUse.bar ('2')
+      writeln(ModToUse.bar);  // Outputs ModToUse.bar ('2')
       writeln(Conflict.bar);  // Outputs Conflict.bar ('5')
       // writeln(bar);        // this won't resolve since bar isn't available
     }
@@ -550,9 +548,9 @@ module MainModule {
     /* Again, this is similar to an ``import`` of just the module itself.
      */
     {
-      import modToUse;
+      import ModToUse;
       import Conflict;
-      writeln(modToUse.bar);  // Outputs modToUse.bar ('2')
+      writeln(ModToUse.bar);  // Outputs ModToUse.bar ('2')
       writeln(Conflict.bar);  // Outputs Conflict.bar ('5')
       // writeln(bar);        // this won't resolve since bar isn't available
     }
@@ -567,8 +565,8 @@ module MainModule {
        one of the symbols listed in an ``import`` statement.
     */
     {
-      use modToUse only;
-      var rec = new modToUse.Rec(4); // Only accessible via the module prefix
+      use ModToUse only;
+      var rec = new ModToUse.Rec(4); // Only accessible via the module prefix
       writeln(rec.field);            // Accessible because we have an instance
       rec.method1();                 // Ditto to the field case
       rec.method2();

@@ -3,7 +3,7 @@ use CTypes;
 config param N=16;
 config param BLOCK_SIZE;
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A : [0..<N] uint;
 
   forall i in 0..<N {

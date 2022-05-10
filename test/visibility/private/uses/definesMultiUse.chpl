@@ -16,7 +16,7 @@ module definesMultiUse {
   }
 
   module Inner3 {
-    var e: int;
+    var ee: int;
 
     proc f() {
       writeln("and this as well");
@@ -31,10 +31,10 @@ module definesMultiUse {
     b();
     d();
     f();
-    if (c && e > 3) {
-      writeln(a - e);
+    if (c && ee > 3) {
+      writeln(a - ee);
     } else {
-      writeln(a*e);
+      writeln(a*ee);
     }
   }
 }

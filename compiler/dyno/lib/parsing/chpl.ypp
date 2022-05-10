@@ -676,7 +676,7 @@ stmt:
   {
     $$ = context->buildLabelStmt(@$, $2, $3);
   }
-| TYIELD expr TSEMI
+| TYIELD opt_try_expr TSEMI
   {
     auto comments = context->gatherComments(@1);
     auto node = Yield::build(BUILDER, LOC(@$), toOwned($2));
