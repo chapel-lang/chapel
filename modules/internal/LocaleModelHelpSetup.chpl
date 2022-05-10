@@ -243,7 +243,7 @@ module LocaleModelHelpSetup {
       dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
       dst.childLocales[i].maxTaskPar = 1;
 
-      dst.gpuSublocales = new locale(dst.childLocales[i]);
+      dst.gpuSublocales[i] = new locale(dst.childLocales[i]);
     }
     chpl_task_setSubloc(origSubloc);
   }
