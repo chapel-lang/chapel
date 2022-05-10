@@ -19,12 +19,18 @@
 
 #ifndef CHPL_PARSING_PARSER_STATS_H
 #define CHPL_PARSING_PARSER_STATS_H
-/// \cond DO_NOT_DOCUMENT
+
 namespace chpl {
 
 namespace parsing {
 
+/*
+  A place to collect code stats and generate a report of the number of lines
+  which are code, comments, and blank lines.
+*/
 struct ParserStats {
+
+ /// \cond DO_NOT_DOCUMENT
   bool countTokens;
   bool printTokens;
   static const int HIST_SIZE = 4096;
@@ -76,7 +82,7 @@ struct ParserStats {
   void countSingleLineComment(const char* comment);
 
   void countMultiLineComment(const char* comment);
-
+/// \endcond
   ParserStats();
   ParserStats(bool printTokens);
 };
@@ -84,6 +90,6 @@ struct ParserStats {
 } // end namespace parsing
 
 } // end namespace chpl
-/// \endcond
+
 
 #endif

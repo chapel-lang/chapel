@@ -22,7 +22,7 @@
 #include <string>
 #include "chpl/parsing/parser-stats.h"
 
-/// \cond DO_NOT_DOCUMENT
+
 namespace chpl {
 
 
@@ -252,4 +252,3 @@ ParserStats::ParserStats() {
 
 
 } // end namespace chpl
-/// \endcond

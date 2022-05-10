@@ -82,9 +82,13 @@ bool hasFileText(Context* context, const std::string& path);
  */
 const uast::BuilderResult& parseFile(Context* context, UniqueString path);
 
-// Counts the tokens when parsing
-// TODO: Expose this in a more reasonable manner
+
+/**
+  A function for counting the tokens when parsing
+*/
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats);
+// TODO: Expose this in a more reasonable manner
+
 
 // These functions can't return the Location for a Comment
 // because Comments don't have IDs. If Locations for Comments are needed,

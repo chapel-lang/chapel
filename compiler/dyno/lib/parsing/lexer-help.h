@@ -290,7 +290,6 @@ static std::string eatStringLiteral(yyscan_t scanner,
 
       // account for newlines after \ at the end
       if (c == '\n') {
-        processNewline(scanner);
         nLines++;
         nCols = 0;
       }
@@ -406,7 +405,6 @@ static std::string eatTripleStringLiteral(yyscan_t scanner,
     }
 
     if (c == '\n') {
-      processNewline(scanner);
       nLines++;
       nCols = 0;
     } else {
@@ -563,7 +561,6 @@ static SizedStr eatExternCode(yyscan_t scanner) {
     s += c;
 
     if (c == '\n') {
-      processNewline(scanner);
       nCols = 0;
       nLines++;
     }
