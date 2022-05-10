@@ -2938,9 +2938,23 @@ struct Converter {
         auto resolvedVar = r->byAst(node);
         types::QualifiedType qt = resolvedVar.type();
         if (!qt.isUnknown()) {
-
           // Set a type for the variable
           varSym->type = convertType(qt);
+
+          // Set the Qualifier
+          Qualifier q = QUAL_UNKNOWN;
+          if      (qt.kind() == types::QualifiedType::VAR) q = QUAL_VAL;
+          else if (qt.kind() == types::QualifiedType::CONST_VAR) q = QUAL_CONST_VAL;
+          else if (qt.kind() == types::QualifiedType::CONST_REF) q = QUAL_CONST_REF;
+          else if (qt.kind() == types::QualifiedType::REF) q = QUAL_REF;
+          else if (qt.kind() == types::QualifiedType::IN) q = QUAL_VAL;
+          else if (qt.kind() == types::QualifiedType::CONST_IN) q = QUAL_CONST_VAL;
+          else if (qt.kind() == types::QualifiedType::OUT) q = QUAL_VAL;
+          else if (qt.kind() == types::QualifiedType::INOUT) q = QUAL_VAL;
+          else if (qt.kind() == types::QualifiedType::PARAM) q = QUAL_PARAM;
+
+          if (q != QUAL_UNKNOWN)
+            varSym->qual = q;
 
           // Set the param value for the variable, if applicable
           if (varSym->hasFlag(FLAG_MAYBE_PARAM) ||
