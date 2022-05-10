@@ -35,6 +35,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "wellknown.h"
+#include "misc.h"
 
 #include "chpl/parsing/parsing-queries.h"
 
@@ -121,7 +122,7 @@ static const char*   searchThePath(const char*      modName,
 void parse() {
   yydebug = debugParserLevel;
 
-  if (countTokens == true) {
+  if ((countTokens == true) || (fDynoCompilerLibrary && printTokens)) {
     countTokensInCmdLineFiles();
   }
 
@@ -289,18 +290,26 @@ void addModuleToParseList(const char* name, VisibilityStmt* expr) {
 static void countTokensInCmdLineFiles() {
   int         fileNum       = 0;
   const char* inputFileName = 0;
+  auto parseStats = chpl::parsing::ParserStats(printTokens);
 
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName) == true) {
       if (fDynoCompilerLibrary) {
-        INT_FATAL("Not supported yet!");
+        auto path = chpl::UniqueString::get(gContext, inputFileName);
+        parseStats.startCountingFileTokens(path.c_str());
+        chpl::parsing::countTokens(gContext, path, &parseStats);
+        parseStats.stopCountingFileTokens();
       } else {
         parseFile(inputFileName, MOD_USER, true, false);
       }
     }
   }
-
-  finishCountingTokens();
+  if (fDynoCompilerLibrary) {
+    parseStats.finishCountingTokens();
+    clean_exit(0);
+  } else {
+    finishCountingTokens();
+  }
 }
 
 /************************************* | **************************************
