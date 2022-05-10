@@ -14,8 +14,8 @@ assert((n/2)%numGPUs == 0);
 cobegin {
   A[0..#cpuSize] += 1;
   
-  coforall subloc in 0..<numGPUs do on here.gpu[subloc] {
-    const myShare = cpuSize+gpuSize*(subloc-1)..#gpuSize;
+  coforall subloc in 0..<numGPUs do on here.gpus[subloc] {
+    const myShare = cpuSize+gpuSize*subloc..#gpuSize;
     
     var AonThisGPU = A[myShare];
     AonThisGPU += 1;

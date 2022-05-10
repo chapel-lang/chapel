@@ -28,8 +28,8 @@ for i in 1..numIters {
     A = B + alpha * C;
   }
   else {
-    const numPUs = here.gpus.size; 
-    const numGPUs = numPUs-1;
+    const numGPUs = here.gpus.size;
+    const numPUs = numGPUs+1;
     const chunkDiv = numGPUs+cpuToGpuRatio;
     var chunkSize = (n/chunkDiv):int;
     var cpuSize = (chunkSize*cpuToGpuRatio):int;
@@ -40,8 +40,8 @@ for i in 1..numIters {
     cobegin {
       A[cpuRange] = B[cpuRange] + alpha * C[cpuRange];
 
-      coforall sublocID in 0..#numGPUs do on here.gpu[sublocID] {
-        const myChunk = cpuSize+(sublocID-1)*gpuChunkSize..#gpuChunkSize;
+      coforall sublocID in 0..#numGPUs do on here.gpus[sublocID] {
+        const myChunk = cpuSize+sublocID*gpuChunkSize..#gpuChunkSize;
         if debug then writeln(sublocID, ": ", myChunk);
 
         var Aloc: [myChunk] int;
