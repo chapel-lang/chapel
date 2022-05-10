@@ -19,8 +19,6 @@ module Program {
 
   proc main() {
     var r = new Library.rec();
-    r.method(); // currently:
-                //  without PR #19306, ambiguity error
-                //  with PR #19306, outputs LibraryPlus's rec.method()
+    r.method(); // currently, ambiguity
   }
 }

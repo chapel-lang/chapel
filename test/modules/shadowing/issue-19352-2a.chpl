@@ -13,6 +13,6 @@ module Program {
 
   proc main() {
     var r = new Library.rec();
-    r.method(); // currently outputs: Program's rec.method()
+    r.method(); // currently, ambiguity
   }
 }
