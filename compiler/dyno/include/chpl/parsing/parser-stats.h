@@ -19,7 +19,7 @@
 
 #ifndef CHPL_PARSING_PARSER_STATS_H
 #define CHPL_PARSING_PARSER_STATS_H
-
+/// \cond DO_NOT_DOCUMENT
 namespace chpl {
 
 namespace parsing {
@@ -84,5 +84,6 @@ struct ParserStats {
 } // end namespace parsing
 
 } // end namespace chpl
+/// \endcond
 
 #endif
