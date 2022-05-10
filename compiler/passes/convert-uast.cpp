@@ -2561,35 +2561,43 @@ struct Converter {
 
     INT_ASSERT(node->isExpressionLevel());
 
-    auto dom = node->iterand()->toDomain();
-    INT_ASSERT(dom);
-
     Expr* domActuals = nullptr;
 
-    // If there are no domain expressions, use 'nil'.
-    if (!dom->numExprs()) {
-      domActuals = new SymExpr(gNil);
+    if (auto iterand = node->iterand()) {
+      auto astForIterand = iterand;
 
-    // Convert multiple domain expressions into a PRIM_ACTUALS_LIST.
-    } else if (dom->numExprs() > 1) {
-      CallExpr* actualsList = new CallExpr(PRIM_ACTUALS_LIST);
-      domActuals = actualsList;
+      if (auto dom = iterand->toDomain()) {
 
-      for (auto expr : dom->exprs()) {
-        actualsList->insertAtTail(convertAST(expr));
+        // If there are no domain expressions, use 'nil'.
+        if (!dom->numExprs()) {
+          domActuals = new SymExpr(gNil);
+
+        // Convert multiple domain expressions into a PRIM_ACTUALS_LIST.
+        } else if (dom->numExprs() > 1) {
+          CallExpr* actualsList = new CallExpr(PRIM_ACTUALS_LIST);
+          domActuals = actualsList;
+
+          for (auto expr : dom->exprs()) {
+            actualsList->insertAtTail(convertAST(expr));
+          }
+
+          domActuals = new CallExpr("chpl__ensureDomainExpr", actualsList);
+
+        // Use a single argument directly.
+        } else {
+          astForIterand = dom->expr(0);
+        }
       }
 
-      domActuals = new CallExpr("chpl__ensureDomainExpr", actualsList);
+      if (domActuals == nullptr) {
+        auto expr = astForIterand;
+        domActuals = convertAST(expr);
 
-    // Use a single argument directly.
-    } else {
-      auto expr = dom->expr(0);
-      domActuals = convertAST(expr);
-
-      // But wrap it if it is not a type query for a formal type.
-      bool isFormalTypeQuery = isFormalType && expr->isTypeQuery();
-      if (!isFormalTypeQuery) {
-        domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
+        // But wrap it if it is not a type query for a formal type.
+        bool isFormalTypeQuery = isFormalType && expr->isTypeQuery();
+        if (!isFormalTypeQuery) {
+          domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
+        }
       }
     }
 
@@ -2597,6 +2605,7 @@ struct Converter {
 
     Expr* subType = nullptr;
     if (node->numStmts()) {
+      INT_ASSERT(node->numStmts() == 1);
 
       // Handle the possibility of nested array types.
       if (auto bkt = node->stmt(0)->toBracketLoop()) {
@@ -2611,6 +2620,14 @@ struct Converter {
     CallExpr* ret = new CallExpr("chpl__buildArrayRuntimeType",
                                  domActuals,
                                  subType);
+
+    // This nonsense must be done so that the old builders can emit errors
+    // about skyline arrays. TODO: Move check to 'dyno' rather than do this.
+    if (node->index()) {
+      auto convIndex = convertLoopIndexDecl(node->index());
+      ret->insertAtTail(convIndex);
+      ret->insertAtTail(subType->copy());
+    }
 
     return ret;
   }
@@ -2668,7 +2685,8 @@ struct Converter {
     if (const uast::AstNode* ie = node->initExpression()) {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
       if (bkt && isTypeVar) {
-          initExpr = convertArrayType(bkt);
+          auto convArrayType = convertArrayType(bkt);
+          initExpr = buildForallLoopExprFromArrayType(convArrayType);
         } else {
           initExpr = convertAST(ie);
         }
