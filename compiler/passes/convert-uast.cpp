@@ -41,11 +41,13 @@
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 
-#include "chpl/uast/all-uast.h"
-#include "chpl/util/string-escapes.h"
-#include "chpl/queries/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/queries/global-strings.h"
+#include "chpl/resolution/resolution-queries.h"
+#include "chpl/types/all-types.h"
+#include "chpl/uast/all-uast.h"
 #include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/util/string-escapes.h"
 
 // If this is set then variables/formals will have their "qual" field set
 // now instead of later during resolution.
@@ -53,18 +55,28 @@
 
 using namespace chpl;
 
-// TODO: Remove me after config changes.
-extern bool parsingPrivate;
-
 namespace {
 
 struct Converter {
+  struct ModStackEntry {
+    const char* nameAstr;
+    const uast::Module* mod;
+    const resolution::ResolutionResultByPostorderID* resolved;
+    ModStackEntry(const char* nameAstr,
+                  const uast::Module* mod,
+                  const resolution::ResolutionResultByPostorderID* resolved)
+      : nameAstr(nameAstr), mod(mod), resolved(resolved) {
+      // caller should guarantee that name is an astr
+      INT_ASSERT(nameAstr == astr(nameAstr));
+    }
+  };
+
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
   ModTag topLevelModTag;
-  std::vector<const char*> modNameStack;
   const char* latestComment = nullptr;
   const uast::BuilderResult& builderResult;
+  std::vector<ModStackEntry> modStack;
 
   Converter(chpl::Context* context, ModTag topLevelModTag,
             const uast::BuilderResult& builderResult)
@@ -73,6 +85,24 @@ struct Converter {
       builderResult(builderResult) {}
 
   Expr* convertAST(const uast::AstNode* node);
+  Type* convertType(const types::QualifiedType qt);
+  Immediate* convertParam(const types::QualifiedType qt);
+
+  // type conversion helpers
+  Type* convertClassType(const types::QualifiedType qt);
+  Type* convertEnumType(const types::QualifiedType qt);
+  Type* convertFunctionType(const types::QualifiedType qt);
+  Type* convertBasicClassType(const types::QualifiedType qt);
+  Type* convertRecordType(const types::QualifiedType qt);
+  Type* convertTupleType(const types::QualifiedType qt);
+  Type* convertUnionType(const types::QualifiedType qt);
+  Type* convertBoolType(const types::QualifiedType qt);
+  Type* convertComplexType(const types::QualifiedType qt);
+  Type* convertImagType(const types::QualifiedType qt);
+  Type* convertIntType(const types::QualifiedType qt);
+  Type* convertRealType(const types::QualifiedType qt);
+  Type* convertUintType(const types::QualifiedType qt);
+
 
   const char* consumeLatestComment() {
     const char* ret = latestComment;
@@ -2489,6 +2519,28 @@ struct Converter {
     const char* name = astr(node->name().c_str());
     const char* path = astr(context->filePathForId(node->id()).c_str());
 
+    // Decide if we want to resolve this module
+    bool shouldResolveModule = false;
+    // TODO: check for dead modules and don't resolve those
+    if (node->name() == "M") {
+      shouldResolveModule = true;
+    }
+
+    const resolution::ResolutionResultByPostorderID* resolved = nullptr;
+    const char* name = astr(node->name().c_str());
+
+    if (shouldResolveModule) {
+      // Resolve the module
+      const auto& tmp = resolution::resolveModule(context, node->id());
+      resolved = &tmp;
+    }
+
+    // Push the current module name before descending into children.
+    // Add a ModStackEntry to the end of the modStack
+    this->modStack.emplace_back(name, node, resolved);
+
+    const char* path = context->filePathForId(node->id()).c_str();
+
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
     // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
     // could note if a module is standard/internal/user.
@@ -2498,15 +2550,13 @@ struct Converter {
                       node->kind() == uast::Module::IMPLICIT);
     auto style = uast::BlockStyle::EXPLICIT;
 
-    // Push the current module name before descending into children.
-    this->modNameStack.push_back(name);
-    currentModuleName = this->modNameStack.back();
+    currentModuleName = modStack.back().nameAstr;
     auto body = createBlockWithStmts(node->stmts(), style);
 
     // Pop the module name after converting children.
-    INT_ASSERT(modNameStack.size());
-    auto poppedName = this->modNameStack.back();
-    this->modNameStack.pop_back();
+    INT_ASSERT(modStack.size() > 0);
+    auto poppedName = this->modStack.back().nameAstr;
+    this->modStack.pop_back();
     INT_ASSERT(poppedName == name);
 
     ModuleSymbol* mod = buildModule(name,
@@ -2868,6 +2918,36 @@ struct Converter {
     // 'definedConst' in the domain to false.
     setDefinedConstForDefExprIfApplicable(ret, &ret->sym->flags);
 
+    // Fix up the AST based on the type, if it should be known
+    if (modStack.size() > 0) {
+      const uast::Module* mod = modStack.back().mod;
+      const resolution::ResolutionResultByPostorderID* r =
+        modStack.back().resolved;
+
+      // Check for statements in the module initializer
+      // (not in a function or class etc)
+      if (r != nullptr && node->id().symbolPath() == mod->id().symbolPath()) {
+        printf("CONVERTING VARIABLE!!\n");
+
+        // Get the type of the variable itself
+        auto resolvedVar = r->byAst(node);
+        types::QualifiedType qt = resolvedVar.type();
+        if (!qt.isUnknown()) {
+
+          // Set a type for the variable
+          varSym->type = convertType(qt);
+
+          // Set the param value for the variable, if applicable
+          if (varSym->hasFlag(FLAG_MAYBE_PARAM) ||
+              varSym->hasFlag(FLAG_PARAM)) {
+            if (qt.hasParamPtr()) {
+              varSym->immediate = convertParam(qt);
+            }
+          }
+        }
+      }
+    }
+
     return ret;
   }
 
@@ -3022,6 +3102,216 @@ Expr* Converter::convertAST(const uast::AstNode* node) {
   astlocMarker markAstLoc(node->id());
   return node->dispatch<Expr*>(*this);
 }
+
+Type* Converter::convertType(const types::QualifiedType qt) {
+  using namespace types;
+
+  if (!qt.hasTypePtr())
+    return dtUnknown;
+
+  switch (qt.type()->tag()) {
+    // builtin types with their own classes
+    case typetags::AnyType:       return dtAny;
+    case typetags::BytesType:     return dtBytes;
+    case typetags::CStringType:   return dtStringC;
+    case typetags::ErroneousType: return dtUnknown; // a lie
+    case typetags::NilType:       return dtNil;
+    case typetags::NothingType:   return dtNothing;
+    case typetags::StringType:    return dtString;
+    case typetags::UnknownType:   return dtUnknown;
+    case typetags::VoidType:      return dtVoid;
+
+    // subclasses of BuiltinType
+
+    // concrete builtin types
+    case typetags::CFileType:     return dtFile;
+    case typetags::CFnPtrType:    return dtCFnPtr;
+    case typetags::CVoidPtrType:  return dtCVoidPtr;
+    case typetags::OpaqueType:    return dtOpaque;
+    case typetags::SyncAuxType:   return dtSyncVarAuxFields;
+    case typetags::TaskIdType:    return dtTaskID;
+
+    // generic builtin types
+    case typetags::AnyBoolType:                  return dtAnyBool;
+    case typetags::AnyBorrowedNilableType:       return dtBorrowedNilable;
+    case typetags::AnyBorrowedNonNilableType:    return dtBorrowedNonNilable;
+    case typetags::AnyBorrowedType:              return dtBorrowed;
+    case typetags::AnyComplexType:               return dtAnyComplex;
+    case typetags::AnyEnumType:                  return dtAnyEnumerated;
+    case typetags::AnyImagType:                  return dtAnyImag;
+    case typetags::AnyIntType:                   return dtIntegral; // a lie
+    case typetags::AnyIntegralType:              return dtIntegral;
+    case typetags::AnyIteratorClassType:         return dtIteratorClass;
+    case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
+    case typetags::AnyManagementAnyNilableType:  return dtAnyManagementAnyNilable;
+    case typetags::AnyManagementNilableType:     return dtAnyManagementNilable;
+    case typetags::AnyManagementNonNilableType:  return dtAnyManagementNonNilable;
+    case typetags::AnyNumericType:               return dtNumeric;
+    case typetags::AnyOwnedType:                 return dtOwned;
+    case typetags::AnyPodType:                   return dtAnyPOD;
+    case typetags::AnyRealType:                  return dtAnyReal;
+    case typetags::AnyRecordType:                return dtAnyRecord;
+    case typetags::AnySharedType:                return dtShared;
+    case typetags::AnyUintType:                  return dtIntegral; // a lie
+    case typetags::AnyUninstantiatedType:        return dtUninstantiated;
+    case typetags::AnyUnionType:                 return dtUnknown; // a lie
+    case typetags::AnyUnmanagedNilableType:      return dtUnmanagedNilable;
+    case typetags::AnyUnmanagedNonNilableType:   return dtUnmanagedNonNilable;
+    case typetags::AnyUnmanagedType:             return dtUnmanaged;
+
+    // declared types
+    case typetags::ClassType:   return convertClassType(qt);
+    case typetags::EnumType:   return convertEnumType(qt);
+    case typetags::FunctionType:   return convertFunctionType(qt);
+
+    case typetags::BasicClassType:   return convertBasicClassType(qt);
+    case typetags::RecordType:   return convertRecordType(qt);
+    case typetags::TupleType:   return convertTupleType(qt);
+    case typetags::UnionType:   return convertUnionType(qt);
+
+    // primitive types
+    case typetags::BoolType:   return convertBoolType(qt);
+    case typetags::ComplexType:   return convertComplexType(qt);
+    case typetags::ImagType:   return convertImagType(qt);
+    case typetags::IntType:   return convertIntType(qt);
+    case typetags::RealType:   return convertRealType(qt);
+    case typetags::UintType:   return convertUintType(qt);
+
+    // implementation detail tags (should not be reachable)
+    case typetags::START_BuiltinType:
+    case typetags::END_BuiltinType:
+    case typetags::START_DeclaredType:
+    case typetags::END_DeclaredType:
+    case typetags::START_CompositeType:
+    case typetags::END_CompositeType:
+    case typetags::START_PrimitiveType:
+    case typetags::END_PrimitiveType:
+    case typetags::NUM_TYPE_TAGS:
+      INT_FATAL("should not be reachable");
+      return dtUnknown;
+
+    // intentionally no default --
+    // want a C++ compiler error if a case is missing in the above
+  }
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+Immediate* Converter::convertParam(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertClassType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertEnumType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertFunctionType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertBasicClassType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertRecordType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertTupleType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertUnionType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertBoolType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertComplexType(const types::QualifiedType qt) {
+  const types::ComplexType* t = qt.type()->toComplexType();
+  if (t->isDefaultWidth())
+    return dtComplex[COMPLEX_SIZE_DEFAULT];
+
+  int width = t->bitwidth();
+  if (width == 64) return dtComplex[COMPLEX_SIZE_64];
+  else if (width == 128) return dtComplex[COMPLEX_SIZE_128];
+
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+Type* Converter::convertImagType(const types::QualifiedType qt) {
+  const types::ImagType* t = qt.type()->toImagType();
+  if (t->isDefaultWidth())
+    return dtImag[FLOAT_SIZE_DEFAULT];
+
+  int width = t->bitwidth();
+  if (width == 32) return dtImag[FLOAT_SIZE_32];
+  else if (width == 64) return dtImag[FLOAT_SIZE_64];
+
+  INT_FATAL("should not be reached");
+  return nullptr;
+
+}
+
+Type* Converter::convertIntType(const types::QualifiedType qt) {
+  const types::IntType* t = qt.type()->toIntType();
+  if (t->isDefaultWidth())
+    return dtInt[INT_SIZE_DEFAULT];
+
+  int width = t->bitwidth();
+  if (width == 8) return dtInt[INT_SIZE_8];
+  else if (width == 16) return dtInt[INT_SIZE_16];
+  else if (width == 32) return dtInt[INT_SIZE_32];
+  else if (width == 64) return dtInt[INT_SIZE_64];
+
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+Type* Converter::convertRealType(const types::QualifiedType qt) {
+  const types::RealType* t = qt.type()->toRealType();
+  if (t->isDefaultWidth())
+    return dtReal[FLOAT_SIZE_DEFAULT];
+
+  int width = t->bitwidth();
+  if (width == 32) return dtReal[FLOAT_SIZE_32];
+  else if (width == 64) return dtReal[FLOAT_SIZE_64];
+
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+Type* Converter::convertUintType(const types::QualifiedType qt) {
+  const types::UintType* t = qt.type()->toUintType();
+  if (t->isDefaultWidth())
+    return dtUInt[INT_SIZE_DEFAULT];
+
+  int width = t->bitwidth();
+  if (width == 8) return dtUInt[INT_SIZE_8];
+  else if (width == 16) return dtUInt[INT_SIZE_16];
+  else if (width == 32) return dtUInt[INT_SIZE_32];
+  else if (width == 64) return dtUInt[INT_SIZE_64];
+
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
 
 } // end anonymous namespace
 
