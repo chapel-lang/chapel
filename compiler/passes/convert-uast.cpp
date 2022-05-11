@@ -27,19 +27,20 @@
 
 #include "convert-uast.h"
 
-#include "build.h"
 #include "CatchStmt.h"
-#include "config.h"
 #include "DeferStmt.h"
-#include "docsDriver.h"
 #include "DoWhileStmt.h"
-#include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ForallStmt.h"
 #include "IfExpr.h"
-#include "optimizations.h"
-#include "parser.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
+#include "build.h"
+#include "config.h"
+#include "docsDriver.h"
+#include "optimizations.h"
+#include "parser.h"
+#include "resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/global-strings.h"
@@ -86,7 +87,10 @@ struct Converter {
 
   Expr* convertAST(const uast::AstNode* node);
   Type* convertType(const types::QualifiedType qt);
-  Immediate* convertParam(const types::QualifiedType qt);
+  Symbol* convertParam(const types::QualifiedType qt);
+
+  // convertAST helpers
+  void setVariableType(const uast::VarLikeDecl* v, Symbol* sym);
 
   // type conversion helpers
   Type* convertClassType(const types::QualifiedType qt);
@@ -2919,48 +2923,7 @@ struct Converter {
     setDefinedConstForDefExprIfApplicable(ret, &ret->sym->flags);
 
     // Fix up the AST based on the type, if it should be known
-    if (modStack.size() > 0) {
-      const uast::Module* mod = modStack.back().mod;
-      const resolution::ResolutionResultByPostorderID* r =
-        modStack.back().resolved;
-
-      // Check for statements in the module initializer
-      // (not in a function or class etc)
-      if (r != nullptr && node->id().symbolPath() == mod->id().symbolPath()) {
-        printf("CONVERTING VARIABLE!!\n");
-
-        // Get the type of the variable itself
-        auto resolvedVar = r->byAst(node);
-        types::QualifiedType qt = resolvedVar.type();
-        if (!qt.isUnknown()) {
-          // Set a type for the variable
-          varSym->type = convertType(qt);
-
-          // Set the Qualifier
-          Qualifier q = QUAL_UNKNOWN;
-          if      (qt.kind() == types::QualifiedType::VAR) q = QUAL_VAL;
-          else if (qt.kind() == types::QualifiedType::CONST_VAR) q = QUAL_CONST_VAL;
-          else if (qt.kind() == types::QualifiedType::CONST_REF) q = QUAL_CONST_REF;
-          else if (qt.kind() == types::QualifiedType::REF) q = QUAL_REF;
-          else if (qt.kind() == types::QualifiedType::IN) q = QUAL_VAL;
-          else if (qt.kind() == types::QualifiedType::CONST_IN) q = QUAL_CONST_VAL;
-          else if (qt.kind() == types::QualifiedType::OUT) q = QUAL_VAL;
-          else if (qt.kind() == types::QualifiedType::INOUT) q = QUAL_VAL;
-          else if (qt.kind() == types::QualifiedType::PARAM) q = QUAL_PARAM;
-
-          if (q != QUAL_UNKNOWN)
-            varSym->qual = q;
-
-          // Set the param value for the variable, if applicable
-          if (varSym->hasFlag(FLAG_MAYBE_PARAM) ||
-              varSym->hasFlag(FLAG_PARAM)) {
-            if (qt.hasParamPtr()) {
-              varSym->immediate = convertParam(qt);
-            }
-          }
-        }
-      }
-    }
+    setVariableType(node, varSym);
 
     return ret;
   }
@@ -3117,6 +3080,56 @@ Expr* Converter::convertAST(const uast::AstNode* node) {
   return node->dispatch<Expr*>(*this);
 }
 
+static Qualifier convertQualifier(types::QualifiedType::Kind kind) {
+  Qualifier q = QUAL_UNKNOWN;
+  if      (kind == types::QualifiedType::VAR)       q = QUAL_VAL;
+  else if (kind == types::QualifiedType::CONST_VAR) q = QUAL_CONST_VAL;
+  else if (kind == types::QualifiedType::CONST_REF) q = QUAL_CONST_REF;
+  else if (kind == types::QualifiedType::REF)       q = QUAL_REF;
+  else if (kind == types::QualifiedType::IN)        q = QUAL_VAL;
+  else if (kind == types::QualifiedType::CONST_IN)  q = QUAL_CONST_VAL;
+  else if (kind == types::QualifiedType::OUT)       q = QUAL_VAL;
+  else if (kind == types::QualifiedType::INOUT)     q = QUAL_VAL;
+  else if (kind == types::QualifiedType::PARAM)     q = QUAL_PARAM;
+
+  return q;
+}
+
+void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
+  if (modStack.size() > 0) {
+    const uast::Module* mod = modStack.back().mod;
+    const resolution::ResolutionResultByPostorderID* r =
+      modStack.back().resolved;
+
+    // Check for statements in the module initializer
+    // (not in a function or class etc)
+    if (r != nullptr && v->id().symbolPath() == mod->id().symbolPath()) {
+      printf("SETTING VARIABLE TYPE!!\n");
+
+      // Get the type of the variable itself
+      auto resolvedVar = r->byAst(v);
+      types::QualifiedType qt = resolvedVar.type();
+      if (!qt.isUnknown()) {
+        // Set a type for the variable
+        sym->type = convertType(qt);
+
+        // Set the Qualifier
+        Qualifier q = convertQualifier(qt.kind());
+        if (q != QUAL_UNKNOWN)
+          sym->qual = q;
+
+        // Set the param value for the variable in paramMap, if applicable
+        if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
+          if (qt.hasParamPtr()) {
+            Symbol* val = convertParam(qt);
+            paramMap.put(sym, val); 
+          }
+        }
+      }
+    }
+  }
+}
+
 Type* Converter::convertType(const types::QualifiedType qt) {
   using namespace types;
 
@@ -3211,11 +3224,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
   return nullptr;
 }
 
-Immediate* Converter::convertParam(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
-  return nullptr;
-}
-
 Type* Converter::convertClassType(const types::QualifiedType qt) {
   INT_FATAL("not implemented yet");
   return nullptr;
@@ -3251,76 +3259,161 @@ Type* Converter::convertUnionType(const types::QualifiedType qt) {
   return nullptr;
 }
 
+// helper functions to convert a type to a size
+
+static IF1_bool_type getBoolSize(const types::BoolType* t) {
+  if (t->isDefaultWidth())
+    return BOOL_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return BOOL_SIZE_8;
+  else if (width == 16) return BOOL_SIZE_16;
+  else if (width == 32) return BOOL_SIZE_32;
+  else if (width == 64) return BOOL_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return BOOL_SIZE_DEFAULT;
+}
+
+static IF1_complex_type getComplexSize(const types::ComplexType* t) {
+  if (t->isDefaultWidth())
+    return COMPLEX_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 64)  return COMPLEX_SIZE_64;
+  else if (width == 128) return COMPLEX_SIZE_128;
+
+  INT_FATAL("should not be reached");
+  return COMPLEX_SIZE_DEFAULT;
+}
+
+
+static IF1_float_type getImagSize(const types::ImagType* t) {
+  if (t->isDefaultWidth())
+    return FLOAT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 32) return FLOAT_SIZE_32;
+  else if (width == 64) return FLOAT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return FLOAT_SIZE_DEFAULT;
+}
+
+static IF1_int_type getIntSize(const types::IntType* t) {
+  if (t->isDefaultWidth())
+    return INT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return INT_SIZE_8;
+  else if (width == 16) return INT_SIZE_16;
+  else if (width == 32) return INT_SIZE_32;
+  else if (width == 64) return INT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return INT_SIZE_DEFAULT;
+}
+
+static IF1_float_type getRealSize(const types::RealType* t) {
+  if (t->isDefaultWidth())
+    return FLOAT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 32) return FLOAT_SIZE_32;
+  else if (width == 64) return FLOAT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return FLOAT_SIZE_DEFAULT;
+}
+
+static IF1_int_type getUintSize(const types::UintType* t) {
+  if (t->isDefaultWidth())
+    return INT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return INT_SIZE_8;
+  else if (width == 16) return INT_SIZE_16;
+  else if (width == 32) return INT_SIZE_32;
+  else if (width == 64) return INT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return INT_SIZE_DEFAULT;
+}
+
+
 Type* Converter::convertBoolType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
-  return nullptr;
+  const types::BoolType* t = qt.type()->toBoolType();
+  return dtBools[getBoolSize(t)];
 }
 
 Type* Converter::convertComplexType(const types::QualifiedType qt) {
   const types::ComplexType* t = qt.type()->toComplexType();
-  if (t->isDefaultWidth())
-    return dtComplex[COMPLEX_SIZE_DEFAULT];
-
-  int width = t->bitwidth();
-  if (width == 64) return dtComplex[COMPLEX_SIZE_64];
-  else if (width == 128) return dtComplex[COMPLEX_SIZE_128];
-
-  INT_FATAL("should not be reached");
-  return nullptr;
+  return dtComplex[getComplexSize(t)];
 }
 
 Type* Converter::convertImagType(const types::QualifiedType qt) {
   const types::ImagType* t = qt.type()->toImagType();
-  if (t->isDefaultWidth())
-    return dtImag[FLOAT_SIZE_DEFAULT];
-
-  int width = t->bitwidth();
-  if (width == 32) return dtImag[FLOAT_SIZE_32];
-  else if (width == 64) return dtImag[FLOAT_SIZE_64];
-
-  INT_FATAL("should not be reached");
-  return nullptr;
-
+  return dtImag[getImagSize(t)];
 }
 
 Type* Converter::convertIntType(const types::QualifiedType qt) {
   const types::IntType* t = qt.type()->toIntType();
-  if (t->isDefaultWidth())
-    return dtInt[INT_SIZE_DEFAULT];
-
-  int width = t->bitwidth();
-  if (width == 8) return dtInt[INT_SIZE_8];
-  else if (width == 16) return dtInt[INT_SIZE_16];
-  else if (width == 32) return dtInt[INT_SIZE_32];
-  else if (width == 64) return dtInt[INT_SIZE_64];
-
-  INT_FATAL("should not be reached");
-  return nullptr;
+  return dtInt[getIntSize(t)];
 }
 
 Type* Converter::convertRealType(const types::QualifiedType qt) {
   const types::RealType* t = qt.type()->toRealType();
-  if (t->isDefaultWidth())
-    return dtReal[FLOAT_SIZE_DEFAULT];
-
-  int width = t->bitwidth();
-  if (width == 32) return dtReal[FLOAT_SIZE_32];
-  else if (width == 64) return dtReal[FLOAT_SIZE_64];
-
-  INT_FATAL("should not be reached");
-  return nullptr;
+  return dtReal[getRealSize(t)];
 }
 
 Type* Converter::convertUintType(const types::QualifiedType qt) {
   const types::UintType* t = qt.type()->toUintType();
-  if (t->isDefaultWidth())
-    return dtUInt[INT_SIZE_DEFAULT];
+  return dtUInt[getUintSize(t)];
+}
 
-  int width = t->bitwidth();
-  if (width == 8) return dtUInt[INT_SIZE_8];
-  else if (width == 16) return dtUInt[INT_SIZE_16];
-  else if (width == 32) return dtUInt[INT_SIZE_32];
-  else if (width == 64) return dtUInt[INT_SIZE_64];
+Symbol* Converter::convertParam(const types::QualifiedType qt) {
+
+  const types::Param* p = qt.param();
+  const types::Type* t = qt.type();
+  INT_ASSERT(p && t);
+
+  if (auto bp = p->toBoolParam()) {
+    const types::BoolType* bt = t->toBoolType();
+    return new_BoolSymbol(bp->value(), getBoolSize(bt));
+  } else if (auto cp = p->toComplexParam()) {
+    const types::ComplexType* ct = t->toComplexType();
+    types::Param::ComplexDouble tmp = cp->value();
+    char buf[64];
+    // compute the hexadecimal string form for the number
+    snprintf(buf, sizeof(buf), "%a+%ai", tmp.re, tmp.im);
+    return new_ComplexSymbol(buf, tmp.re, tmp.im, getComplexSize(ct));
+  } else if (auto ip = p->toIntParam()) {
+    const types::IntType* it = t->toIntType();
+    return new_IntSymbol(ip->value(), getIntSize(it));
+  } else if (p->isNoneParam()) {
+    return gNone;
+  } else if (auto rp = p->toRealParam()) {
+    char buf[64];
+    // compute the hexadecimal string form for the number
+    snprintf(buf, sizeof(buf), "%a", rp->value());
+
+    if (auto rt = t->toRealType()) {
+      return new_RealSymbol(buf, getRealSize(rt));
+    } else if (auto it = t->toImagType()) {
+      return new_ImagSymbol(buf, getImagSize(it));
+    }
+  } else if (auto sp = p->toStringParam()) {
+    if (t->isStringType()) {
+      return new_StringSymbol(sp->value().c_str());
+    } else if (t->isCStringType()) {
+      return new_CStringSymbol(sp->value().c_str());
+    } else if (t->isBytesType()) {
+      return new_BytesSymbol(sp->value().c_str());
+    }
+  } else if (auto up = p->toUintParam()) {
+    const types::UintType* t = qt.type()->toUintType();
+    return new_UIntSymbol(up->value(), getUintSize(t));
+  }
 
   INT_FATAL("should not be reached");
   return nullptr;
