@@ -68,6 +68,7 @@ types::QualifiedType getInstantiationType(Context* context,
 
 /**
   Compute a TypedFnSignature from an UntypedFnSignature.
+  (An UntypedFnSignature can be computed with UntypedFnSignature::get()).
   The TypedFnSignature will represent generic and potentially unknown
   types if the function is generic.
  */

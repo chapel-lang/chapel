@@ -60,15 +60,17 @@ namespace {
 
 struct Converter {
   struct ModStackEntry {
-    const char* nameAstr;
     const uast::Module* mod;
+    ModStackEntry(const uast::Module* mod)
+      : mod(mod) {
+    }
+  };
+  struct SymStackEntry {
+    const uast::AstNode* ast;
     const resolution::ResolutionResultByPostorderID* resolved;
-    ModStackEntry(const char* nameAstr,
-                  const uast::Module* mod,
+    SymStackEntry(const uast::AstNode* ast,
                   const resolution::ResolutionResultByPostorderID* resolved)
-      : nameAstr(nameAstr), mod(mod), resolved(resolved) {
-      // caller should guarantee that name is an astr
-      INT_ASSERT(nameAstr == astr(nameAstr));
+      : ast(ast), resolved(resolved) {
     }
   };
 
@@ -78,6 +80,9 @@ struct Converter {
   const char* latestComment = nullptr;
   const uast::BuilderResult& builderResult;
   std::vector<ModStackEntry> modStack;
+  std::vector<SymStackEntry> symStack;
+
+  std::unordered_map<const uast::AstNode*, BaseAST*> alreadyConverted;
 
   Converter(chpl::Context* context, ModTag topLevelModTag,
             const uast::BuilderResult& builderResult)
@@ -85,12 +90,15 @@ struct Converter {
       topLevelModTag(topLevelModTag),
       builderResult(builderResult) {}
 
+  // general functions for converting
   Expr* convertAST(const uast::AstNode* node);
   Type* convertType(const types::QualifiedType qt);
   Symbol* convertParam(const types::QualifiedType qt);
+  FnSymbol* convertFnOutOfOrder(ID fnId);
 
   // convertAST helpers
   void setVariableType(const uast::VarLikeDecl* v, Symbol* sym);
+  void setResolvedCall(const uast::FnCall* call, CallExpr* ret);
 
   // type conversion helpers
   Type* convertClassType(const types::QualifiedType qt);
@@ -112,6 +120,17 @@ struct Converter {
     const char* ret = latestComment;
     latestComment = nullptr;
     return ret;
+  }
+
+  static bool shouldResolve(UniqueString symbolPath) {
+    // TODO: check for dead modules and don't resolve those
+    return symbolPath == "M" || symbolPath.startsWith("M.");
+  }
+  static bool shouldResolve(ID symbolId) {
+    return shouldResolve(symbolId.symbolPath());
+  }
+  static bool shouldResolve(const uast::AstNode* node) {
+    return shouldResolve(node->id());
   }
 
   Expr* convertExprOrNull(const uast::AstNode* node) {
@@ -1819,6 +1838,8 @@ struct Converter {
       addArgsTo->insertAtTail(actual);
     }
 
+    setResolvedCall(node, ret);
+
     return ret;
   }
 
@@ -2291,9 +2312,47 @@ struct Converter {
     return callExpr;
   }
 
-  Expr* visit(const uast::Function* node) {
+  FnSymbol* convertFunction(const uast::Function* node) {
     auto comment = consumeLatestComment();
+    auto it = alreadyConverted.find(node);
+    if (it != alreadyConverted.end()) {
+      // already converted it, so return that
+      return toFnSymbol(it->second);
+    }
+
+    // Decide if we want to resolve this module
+    bool shouldResolveFunction = shouldResolve(node);
+
+    const resolution::ResolutionResultByPostorderID* resolved = nullptr;
+    const resolution::ResolvedFunction* resolvedFn = nullptr;
+    const resolution::TypedFnSignature* initialSig = nullptr;
+    const resolution::PoiScope* poiScope = nullptr;
+
+    if (shouldResolveFunction) {
+      auto uSig = resolution::UntypedFnSignature::get(context, node);
+      initialSig = resolution::typedSignatureInitial(context, uSig);
+      auto whereFalse =
+        resolution::TypedFnSignature::WhereClauseResult::WHERE_FALSE;
+      if (initialSig->whereClauseResult() != whereFalse) {
+        if (!initialSig->needsInstantiation()) {
+          // poiScope not needed for concrete functions
+          poiScope = nullptr;
+          resolvedFn = resolveFunction(context, initialSig, poiScope);
+          if (resolvedFn) {
+            resolved = &resolvedFn->resolutionById();
+          }
+        }
+      }
+    }
+
+    // Also add to symStack
+    // Add a SymStackEntry to the end of the symStack
+    this->symStack.emplace_back(node, resolved);
+
     FnSymbol* fn = new FnSymbol("_");
+
+    // Note that we have already converted this
+    alreadyConverted.emplace(node, fn);
 
     // build up the userString as in old parser
     // needed to match up some error outputs
@@ -2466,17 +2525,33 @@ struct Converter {
       }
     }
 
-    BlockStmt* ret = buildFunctionDecl(fn, retTag, retType, node->throws(),
-                                       whereClause,
-                                       lifetimeConstraints,
-                                       body,
-                                       comment);
+    setupFunctionDecl(fn, retTag, retType, node->throws(),
+                      whereClause,
+                      lifetimeConstraints,
+                      body,
+                      /* docs */ comment);
 
     if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
       Expr* linkageExpr = convertExprOrNull(node->linkageName());
-      ret = buildExternExportFunctionDecl(linkageFlag, linkageExpr, ret);
+      setupExternExportFunctionDecl(linkageFlag, linkageExpr, fn);
     }
+
+    // Update the function symbol with any resolution results.
+    if (resolved) {
+      auto retType = resolution::returnType(context, initialSig, poiScope);
+      fn->retType = convertType(retType);
+    }
+
+    // pop the function from the symStack
+    INT_ASSERT(symStack.size() > 0 && symStack.back().ast == node);
+    this->symStack.pop_back();
+
+    return fn;
+  }
+
+  Expr* visit(const uast::Function* node) {
+    FnSymbol* fn = convertFunction(node);
 
     // For lambdas, return a DefExpr instead of a BlockStmt
     // containing a DefExpr because this is the pattern expected
@@ -2487,6 +2562,8 @@ struct Converter {
       return def;
     }
 
+    // Otherwise, return a block containing a DefExpr
+    BlockStmt* ret = buildChapelStmt(new DefExpr(fn));
     return ret;
   }
 
@@ -2523,12 +2600,14 @@ struct Converter {
     const char* name = astr(node->name().c_str());
     const char* path = astr(context->filePathForId(node->id()).c_str());
 
-    // Decide if we want to resolve this module
-    bool shouldResolveModule = false;
-    // TODO: check for dead modules and don't resolve those
-    if (node->name() == "M") {
-      shouldResolveModule = true;
+    auto it = alreadyConverted.find(node);
+    if (it != alreadyConverted.end()) {
+      // already converted it, so return that
+      return toDefExpr(it->second);
     }
+
+    // Decide if we want to resolve this module
+    bool shouldResolveModule = shouldResolve(node);
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     const char* name = astr(node->name().c_str());
@@ -2541,7 +2620,10 @@ struct Converter {
 
     // Push the current module name before descending into children.
     // Add a ModStackEntry to the end of the modStack
-    this->modStack.emplace_back(name, node, resolved);
+    this->modStack.emplace_back(node);
+    // Also add to symStack
+    // Add a SymStackEntry to the end of the symStack
+    this->symStack.emplace_back(node, resolved);
 
     const char* path = context->filePathForId(node->id()).c_str();
 
@@ -2554,14 +2636,14 @@ struct Converter {
                       node->kind() == uast::Module::IMPLICIT);
     auto style = uast::BlockStyle::EXPLICIT;
 
-    currentModuleName = modStack.back().nameAstr;
+    currentModuleName = name;
     auto body = createBlockWithStmts(node->stmts(), style);
 
-    // Pop the module name after converting children.
-    INT_ASSERT(modStack.size() > 0);
-    auto poppedName = this->modStack.back().nameAstr;
+    // Pop the module after converting children.
+    INT_ASSERT(modStack.size() > 0 && modStack.back().mod == node);
     this->modStack.pop_back();
-    INT_ASSERT(poppedName == name);
+    INT_ASSERT(symStack.size() > 0 && symStack.back().ast == node);
+    this->symStack.pop_back();
 
     ModuleSymbol* mod = buildModule(name,
                                     tag,
@@ -2576,6 +2658,9 @@ struct Converter {
     }
 
     attachSymbolAttributes(node, mod);
+
+    // Note that we have already converted this
+    alreadyConverted.emplace(node, mod);
 
     return new DefExpr(mod);
   }
@@ -2643,6 +2728,8 @@ struct Converter {
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
+
+    setVariableType(node, ret->sym);
 
     return ret;
   }
@@ -3096,14 +3183,10 @@ static Qualifier convertQualifier(types::QualifiedType::Kind kind) {
 }
 
 void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
-  if (modStack.size() > 0) {
-    const uast::Module* mod = modStack.back().mod;
-    const resolution::ResolutionResultByPostorderID* r =
-      modStack.back().resolved;
+  if (symStack.size() > 0) {
+    auto r = symStack.back().resolved;
 
-    // Check for statements in the module initializer
-    // (not in a function or class etc)
-    if (r != nullptr && v->id().symbolPath() == mod->id().symbolPath()) {
+    if (r != nullptr) {
       printf("SETTING VARIABLE TYPE!!\n");
 
       // Get the type of the variable itself
@@ -3122,7 +3205,35 @@ void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
         if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
           if (qt.hasParamPtr()) {
             Symbol* val = convertParam(qt);
-            paramMap.put(sym, val); 
+            paramMap.put(sym, val);
+          }
+        }
+      }
+    }
+  }
+}
+
+void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
+  if (symStack.size() > 0) {
+    auto r = symStack.back().resolved;
+
+    if (r != nullptr) {
+      const auto& resolvedExpr = r->byId(call->id());
+      const auto& candidates = resolvedExpr.mostSpecific();
+      int nBest = candidates.numBest();
+      if (nBest == 0) {
+        // nothing to do
+      } else if (nBest > 1) {
+        INT_FATAL("return intent overloading not yet handled");
+      } else if (nBest == 1) {
+        const resolution::TypedFnSignature* sig = candidates.only();
+        auto usig = sig->untyped();
+        if (usig->idIsFunction()) {
+          FnSymbol* fn = convertFnOutOfOrder(usig->id());
+          if (fn != nullptr) {
+            // Do we need to remove the old baseExpr?
+            expr->baseExpr = new SymExpr(fn);
+            parent_insert_help(expr, expr->baseExpr);
           }
         }
       }
@@ -3419,6 +3530,55 @@ Symbol* Converter::convertParam(const types::QualifiedType qt) {
   return nullptr;
 }
 
+static ID getModuleId(Context* context, ID id) {
+  while (!id.isEmpty()) {
+    auto tag = parsing::idToTag(context, id);
+    if (tag == uast::asttags::Module)
+      return id;
+    id = id.parentSymbolId(context);
+  }
+
+  return id;
+}
+
+FnSymbol* Converter::convertFnOutOfOrder(ID fnId) {
+  // Compute the module
+  ID moduleId = getModuleId(context, fnId);
+  auto ast = parsing::idToAst(context, moduleId);
+  INT_ASSERT(ast && ast->isModule());
+  auto mod = ast->toModule();
+  // Compute the function
+  ast = parsing::idToAst(context, fnId);
+  INT_ASSERT(ast && ast->isFunction());
+  auto fn = ast->toFunction();
+  // Add the module containing the function to the modStack if
+  // it is not already there.
+  bool changeModStack = true;
+  if (modStack.size() > 0 && modStack.back().mod == mod)
+    changeModStack = false;
+
+  if (changeModStack) {
+    modStack.emplace_back(mod);
+  }
+
+  FnSymbol* ret = nullptr;
+  // note: visit will add fn to the symStack
+  Expr* got = visit(fn);
+  if (auto def = toDefExpr(got)) {
+    ret = toFnSymbol(def->sym);
+  } else if (auto block = toBlockStmt(got)) {
+    if (auto def = toDefExpr(block->body.last())) {
+      ret = toFnSymbol(def->sym);
+    }
+  }
+
+  // pop
+  if (changeModStack) {
+    modStack.pop_back();
+  }
+
+  return ret;
+}
 
 } // end anonymous namespace
 
