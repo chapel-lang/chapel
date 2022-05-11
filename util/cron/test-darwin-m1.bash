@@ -8,4 +8,4 @@ source $CWD/common-darwin.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="darwin-m1"
 
-$CWD/nightly -cron -hellos
+$CWD/nightly -cron -examples
