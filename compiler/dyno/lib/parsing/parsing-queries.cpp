@@ -164,24 +164,142 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-static const std::vector<std::string>&
+static const std::vector<UniqueString>&
 moduleSearchPathQuery(Context* context) {
   QUERY_BEGIN_INPUT(moduleSearchPathQuery, context);
 
   // return the empty path if it wasn't already set in
   // setModuleSearchPath
-  std::vector<std::string> result;
+  std::vector<UniqueString> result;
 
   return QUERY_END(result);
 }
 
-const std::vector<std::string>& moduleSearchPath(Context* context) {
+const std::vector<UniqueString>& moduleSearchPath(Context* context) {
   return moduleSearchPathQuery(context);
 }
 
 void setModuleSearchPath(Context* context,
-                         std::vector<std::string> searchPath) {
+                         std::vector<UniqueString> searchPath) {
   QUERY_STORE_INPUT_RESULT(moduleSearchPathQuery, context, searchPath);
+}
+
+
+static const UniqueString&
+internalModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(internalModulePathQuery, context);
+
+  // use empty string if wasn't already set by setInternalModulePath
+  UniqueString result;
+
+  return QUERY_END(result);
+}
+
+UniqueString internalModulePath(Context* context) {
+  return internalModulePathQuery(context);
+}
+
+void setInternalModulePath(Context* context, UniqueString path) {
+  QUERY_STORE_INPUT_RESULT(internalModulePathQuery, context, path);
+}
+
+static const UniqueString&
+bundledModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(bundledModulePathQuery, context);
+
+  // use empty string if wasn't already set by setInternalModulePath
+  UniqueString result;
+
+  return QUERY_END(result);
+}
+
+UniqueString bundledModulePath(Context* context) {
+  return bundledModulePathQuery(context);
+}
+void setBundledModulePath(Context* context, UniqueString path) {
+  QUERY_STORE_INPUT_RESULT(bundledModulePathQuery, context, path);
+}
+
+void setupModuleSearchPaths(Context* context,
+                            const std::string& chpl_home,
+                            bool minimalModules,
+                            const std::string& chpl_locale_model,
+                            bool enableTaskTracking,
+                            const std::string& chpl_tasks,
+                            const std::string& chpl_comm,
+                            const std::string& chpl_sys_modules_subdir,
+                            const std::string& chpl_module_path,
+                            const std::vector<std::string>& cmdLinePaths) {
+
+  std::string modRoot;
+  if (!minimalModules) {
+    modRoot = chpl_home + "/modules";
+  } else {
+    modRoot = chpl_home + "/modules/minimal";
+  }
+
+  std::string internal = modRoot + "/internal";
+  setInternalModulePath(context, UniqueString::get(context, internal));
+  std::string bundled = modRoot + "/";
+  setBundledModulePath(context, UniqueString::get(context, bundled));
+
+  std::vector<std::string> searchPath;
+
+  searchPath.push_back(modRoot + "/internal/localeModels/" + chpl_locale_model);
+
+  const char* tt = enableTaskTracking ? "on" : "off";
+  searchPath.push_back(modRoot + "/internal/tasktable/" + tt);
+
+  searchPath.push_back(modRoot + "/internal/tasks/" + chpl_tasks);
+
+  searchPath.push_back(modRoot + "/internal/comm/" + chpl_comm);
+
+  searchPath.push_back(modRoot + "/internal");
+
+  searchPath.push_back(modRoot + "/standard/gen/" + chpl_sys_modules_subdir);
+
+  searchPath.push_back(modRoot + "/standard");
+  searchPath.push_back(modRoot + "/packages");
+  searchPath.push_back(modRoot + "/layouts");
+  searchPath.push_back(modRoot + "/dists");
+  searchPath.push_back(modRoot + "/dists/dims");
+
+  // Add paths from the CHPL_MODULE_PATH environment variable
+  if (!chpl_module_path.empty()) {
+
+    auto ss = std::stringstream(chpl_module_path);
+    std::string path;
+
+    while (std::getline(ss, path, ':')) {
+      searchPath.push_back(path);
+    }
+  }
+
+  // Add paths from the command line
+  for (const auto& p : cmdLinePaths) {
+    searchPath.push_back(p);
+  }
+
+  // Convert them all to UniqueStrings.
+  std::vector<UniqueString> uSearchPath;
+  for (const auto& p : searchPath) {
+    uSearchPath.push_back(UniqueString::get(context, p));
+  }
+
+  // Set the module search path.
+  setModuleSearchPath(context, uSearchPath);
+}
+
+bool idIsInInternalModule(Context* context, ID id) {
+  UniqueString internal = internalModulePath(context);
+  UniqueString filePath = context->filePathForId(id);
+  return filePath.startsWith(internal);
+}
+
+bool idIsInBundledModule(Context* context, ID id) {
+  UniqueString modules = bundledModulePath(context);
+  UniqueString filePath = context->filePathForId(id);
+  return filePath.startsWith(modules);
 }
 
 static const Module* const& getToplevelModuleQuery(Context* context,
@@ -211,8 +329,8 @@ static const Module* const& getToplevelModuleQuery(Context* context,
     std::string check;
 
     for (auto path : moduleSearchPath(context)) {
-      check.clear();
-      check += path;
+      check = path.str();
+
       // Remove any '/' characters before adding one so we don't double.
       while (!check.empty() && check.back() == '/') {
         check.pop_back();

@@ -190,7 +190,16 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
       ID parentId = parsing::idToParentId(context, id);
       const Scope* parentScope = scopeForIdQuery(context, parentId);
 
-      result = new Scope(ast, parentScope);
+      bool autoUsesModules = false;
+      if (ast->isModule()) {
+        UniqueString modPath = context->filePathForId(id);
+        UniqueString internalModPath = parsing::internalModulePath(context);
+        if (!modPath.startsWith(internalModPath)) {
+          autoUsesModules = true;
+        }
+      }
+
+      result = new Scope(ast, parentScope, autoUsesModules);
     }
   }
 
@@ -269,6 +278,20 @@ static const std::vector<VisibilitySymbols>&
 resolveVisibilityStmt(Context* context, ID useImportId,
                       VisibilityPath path);
 
+// Returns the scope for the automatically included standard module
+static const Scope* const& scopeForAutoModule(Context* context) {
+  QUERY_BEGIN(scopeForAutoModule, context);
+
+  auto name = UniqueString::get(context, "ChapelStandard");
+  const Module* mod = parsing::getToplevelModule(context, name);
+  const Scope* result = nullptr;
+  if (mod != nullptr) {
+    result = scopeForIdQuery(context, mod->id());
+  }
+
+  return QUERY_END(result);
+}
+
 static bool doLookupInImports(Context* context,
                               const Scope* scope,
                               const VisibilityPath& path,
@@ -328,6 +351,26 @@ static bool doLookupInImports(Context* context,
       }
     }
   }
+
+  if (scope->autoUsesModules()) {
+    const Scope* autoModScope = scopeForAutoModule(context);
+    if (autoModScope) {
+      LookupConfig newConfig = LOOKUP_DECLS |
+                               LOOKUP_IMPORT_AND_USE;
+
+      if (onlyInnermost) {
+        newConfig |= LOOKUP_INNERMOST;
+      }
+
+      // find it in that scope
+      bool found = doLookupInScope(context, autoModScope, &path,
+                                   name, newConfig,
+                                   checkedScopes, result);
+      if (found && onlyInnermost)
+        return true;
+    }
+  }
+
   return false;
 }
 

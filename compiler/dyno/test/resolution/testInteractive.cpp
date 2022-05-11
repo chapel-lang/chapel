@@ -193,14 +193,28 @@ static void usage(int argc, char** argv) {
          "file.chpl otherFile.chpl ...\n", argv[0]);
 }
 
+static void setupSearchPaths(Context* ctx, const char* chpl_home,
+                             const std::vector<std::string>& cmdLinePaths) {
+  setupModuleSearchPaths(ctx,
+                         chpl_home,
+                         false,
+                         "flat",
+                         false,
+                         "qthreads",
+                         "none",
+                         "linux64-x86_64-gnu",
+                         "",
+                         cmdLinePaths);
+}
+
 int main(int argc, char** argv) {
 
   bool gc = false;
   Context context;
   Context* ctx = &context;
   bool trace = false;
-
-  std::vector<std::string> searchPath;
+  const char* chpl_home = nullptr;
+  std::vector<std::string> cmdLinePaths;
   int firstfile = 1;
   for (int i = 1; i < argc; i++) {
     if (0 == strcmp(argv[i], "--search")) {
@@ -208,7 +222,7 @@ int main(int argc, char** argv) {
         usage(argc, argv);
         return 1;
       }
-      searchPath.push_back(argv[i+1]);
+      cmdLinePaths.push_back(argv[i+1]);
       i++;
     } else if (0 == strcmp(argv[i], "--trace")) {
       trace = true;
@@ -218,21 +232,30 @@ int main(int argc, char** argv) {
     }
   }
 
-  setModuleSearchPath(ctx, searchPath);
+  if (const char* chpl_home_env  = getenv("CHPL_HOME")) {
+    chpl_home = chpl_home_env;
+    printf("CHPL_HOME is set, so setting up search paths\n");
+  } else {
+    if (cmdLinePaths.size() != 0) {
+      printf("--search only works when CHPL_HOME is set\n");
+      exit(1);
+    }
+  }
 
   if (firstfile == argc) {
     usage(argc, argv);
     return 0; // need this to return 0 for testing to be happy
   }
 
-  // Run this query first to make the other output more understandable
-  ctx->setDebugTraceFlag(false);
-  typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
-  ctx->setDebugTraceFlag(trace);
-
   while (true) {
     ctx->advanceToNextRevision(gc);
-    setModuleSearchPath(ctx, searchPath);
+
+    // Run this query first to make the other output more understandable
+    ctx->setDebugTraceFlag(false);
+    typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
+    ctx->setDebugTraceFlag(trace);
+
+    setupSearchPaths(ctx, chpl_home, cmdLinePaths);
 
     std::set<const ResolvedFunction*> calledFns;
 
