@@ -25,7 +25,14 @@ module ChapelStandard {
   use startInitCommDiags;
   // Internal, but uses standard/CommDiagnostics
 
-  // Internal modules.
+  // The following list 'use's the internal modules whose contents
+  // should be available to every program (as well as some automatic
+  // standard modules that have moved around over time).  Note that
+  // these 'public use's make the contents of these modules available
+  // to 'use's of this module, but hide the name of the module itself
+  // (unless 'as xyz;' is also added).  Issue #19793 suggests taking
+  // this a step further and not permitting the user to refer to the
+  // names of internal modules at all.
   public use CString;
   public use Bytes;
   public use String;
