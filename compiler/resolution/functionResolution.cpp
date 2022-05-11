@@ -169,7 +169,6 @@ static bool hasUserAssign(Type* type);
 static void resolveOther();
 static bool fits_in_int(int width, Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
-static bool fits_in_mantissa(int width, Immediate* imm);
 static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm, bool realPart=true);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType, bool* paramNarrows);
 static bool
@@ -1040,18 +1039,15 @@ static bool canParamCoerce(Type*   actualType,
 
     // don't coerce bools to reals (per spec: "unintended by programmer")
 
-    // coerce any integer type to maximum width real
-    if ((is_int_type(actualType) || is_uint_type(actualType))
-        && get_width(formalType) >= 64)
-      return true;
+    if (is_int_type(actualType) || is_uint_type(actualType)) {
+      // coerce any integer type to maximum width real
+      if (get_width(formalType) >= 64)
+        return true;
 
-    // coerce integer types that are exactly representable
-    if (is_int_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
+      // coerce small integer types to similar-sized reals
+      if (get_width(actualType) <= get_width(formalType))
+        return true;
+    }
 
     // coerce real from smaller size
     if (is_real_type(actualType) &&
@@ -1062,9 +1058,12 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (is_int_type(actualType) || is_uint_type(actualType)) {
-          if (fits_in_mantissa(mantissa_width, var->immediate)) {
-              *paramNarrows = true;
-              return true;
+          // if this param fits in an 'int(n)' or 'uint(n)', permit it
+          // to param coerce to a 'real(n)'
+          if (fits_in_int(get_width(formalType), var->immediate) ||
+              fits_in_uint(get_width(formalType), var->immediate)) {
+            *paramNarrows = true;
+            return true;
           }
         }
         if (is_real_type(actualType)) {
@@ -1108,18 +1107,15 @@ static bool canParamCoerce(Type*   actualType,
 
     // don't coerce bools to complexes (per spec: "unintended by programmer")
 
-    // coerce any integer type to maximum width complex
-    if ((is_int_type(actualType) || is_uint_type(actualType)) &&
-        get_width(formalType) >= 128)
-      return true;
+    if (is_int_type(actualType) || is_uint_type(actualType)) {
+      // coerce any integer type to maximum width complex
+      if (get_width(formalType) >= 128)
+        return true;
 
-    // coerce integer types that are exactly representable
-    if (is_int_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
+      // coerce small integer types to real part of similar-sized complexes
+      if (get_width(actualType) <= get_width(formalType)/2)
+        return true;
+    }
 
     // coerce real/imag from smaller size
     if (is_real_type(actualType) &&
@@ -1138,7 +1134,10 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (is_int_type(actualType) || is_uint_type(actualType)) {
-          if (fits_in_mantissa(mantissa_width, var->immediate)) {
+          // if this param fits in an 'int(n)' or 'uint(n)', permit it
+          // to param coerce to a 'complex(2*n)'
+          if (fits_in_int(get_width(formalType)/2, var->immediate) ||
+              fits_in_uint(get_width(formalType)/2, var->immediate)) {
             *paramNarrows = true;
             return true;
           }
@@ -2053,20 +2052,34 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
         !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
           f2Type == dtUInt[INT_SIZE_DEFAULT]))
       return true;
-    // Prefer bool/enum/int/uint cast to a default-sized real over another
-    // size of real or complex.
-    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
-        f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
-        (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
-        f2Type != dtReal[FLOAT_SIZE_DEFAULT])
-      return true;
-    // Prefer bool/enum/int/uint cast to a default-sized complex over another
-    // size of complex.
-    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
-        f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
-        f2T == NUMERIC_TYPE_COMPLEX &&
-        f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
-      return true;
+    // For non-default-sized ints/uints...
+    if (aT == NUMERIC_TYPE_INT_UINT &&
+        get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT])) {
+      // ...prefer smaller reals over larger ones
+      if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
+          get_width(f1Type) < get_width(f2Type) &&
+          get_width(actualType) <= get_width(f1Type))
+        return true;
+      // ...prefer smaller complexes over larger ones
+      if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
+          get_width(f1Type) < get_width(f2Type) &&
+          get_width(actualType) <= get_width(f1Type)/2)
+        return true;
+    }
+    // Prefer int(64)/uint(64) cast to a default-sized real
+    // over another size of real or complex.
+    if (actualType == dtInt[INT_SIZE_DEFAULT] || actualType == dtUInt[INT_SIZE_DEFAULT]) {
+      if (f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
+          (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
+          f2Type != dtReal[FLOAT_SIZE_DEFAULT])
+        return true;
+      // Prefer int/uint cast to a default-sized complex
+      // over another size of complex.
+      if (f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
+          f2T == NUMERIC_TYPE_COMPLEX &&
+          f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
+        return true;
+    }
     // Prefer real/imag cast to a same-sized complex over another size of
     // complex.
     if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
@@ -2099,24 +2112,6 @@ static bool fits_in_twos_complement(int width, int64_t i) {
 
   int64_t min_neg = 1+max_pos;
   return -min_neg <= i && i <= max_pos;
-}
-
-// Does the integer in imm fit in a floating point format with 'width'
-// bits of mantissa?
-static bool fits_in_mantissa(int width, Immediate* imm) {
-  // is it between -2**width .. 2**width, inclusive?
-
-  if (imm->const_kind == NUM_KIND_INT) {
-    int64_t i = imm->int_value();
-    return fits_in_bits_no_sign(width, i);
-  } else if (imm->const_kind == NUM_KIND_UINT) {
-    uint64_t u = imm->uint_value();
-    if (u > INT64_MAX)
-      return false;
-    return fits_in_bits_no_sign(width, (int64_t)u);
-  }
-
-  return false;
 }
 
 static bool fits_in_mantissa_exponent(int mantissa_width,
