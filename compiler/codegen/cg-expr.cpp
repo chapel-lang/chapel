@@ -2668,7 +2668,7 @@ GenRet codegenCallExprInner(GenRet function,
             func->getAttributes().hasAttributeAtIndex(llArgs.size()+1,
                                                       llvm::Attribute::ByVal);
 #else
-	  bool funcHasAttribute =
+          bool funcHasAttribute =
             func->getAttributes().hasAttribute(llArgs.size()+1,
                                                llvm::Attribute::ByVal);
 #endif
