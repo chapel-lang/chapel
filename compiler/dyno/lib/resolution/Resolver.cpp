@@ -931,7 +931,10 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // Figure out what ID is contained within so we can use the
   // appropriate query.
   ID parentId = id.parentSymbolId(context);
-  auto parentTag = parsing::idToTag(context, parentId);
+  auto parentTag = asttags::Module;
+  if (!parentId.isEmpty()) {
+    parentTag = parsing::idToTag(context, parentId);
+  }
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
@@ -1446,6 +1449,39 @@ void Resolver::exit(const Dot* dot) {
       receiverType = ErroneousType::get(context);
     }
     r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+  } else {
+    ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+    if (receiver.type().kind() == QualifiedType::MODULE) {
+      // resolve e.g. M.x where M is a module
+      LookupConfig config = LOOKUP_DECLS |
+                            LOOKUP_IMPORT_AND_USE |
+                            LOOKUP_PARENTS |
+                            LOOKUP_INNERMOST;
+
+      auto modScope = scopeForModule(context, receiver.toId());
+      auto vec = lookupNameInScope(context, modScope, dot->field(), config);
+      ResolvedExpression& r = byPostorder.byAst(dot);
+      if (vec.size() == 0) {
+        r.setType(QualifiedType());
+      } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+        // can't establish the type. If this is in a function
+        // call, we'll establish it later anyway.
+      } else {
+        // vec.size() == 1 and vec[0].numIds() <= 1
+        const ID& id = vec[0].id(0);
+        QualifiedType type;
+        if (id.isEmpty()) {
+          // empty IDs from the scope resolution process are builtins
+          assert(false && "Not handled yet!");
+        } else {
+          // use the type established at declaration/initialization,
+          // but for things with generic type, use unknown.
+          type = typeForId(id, /*localGenericToUnknown*/ true);
+        }
+        r.setToId(id);
+        r.setType(type);
+      }
+    }
   }
 
   // TODO: resolve field accessors / parenless methods
