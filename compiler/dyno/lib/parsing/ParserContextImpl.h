@@ -930,8 +930,26 @@ ParserContext::buildArrayTypeWithIndex(YYLTYPE location,
                                        ParserExprList* indexExprs,
                                        AstNode* domainExpr,
                                        AstNode* typeExpr) {
-  assert(false && "Not handled yet!");
-  return nullptr;
+  auto index = buildLoopIndexDecl(locIndexExprs, indexExprs);
+
+  // Reconstruct usable location for 'consumeToBlock()'.
+  auto locTypeExpr = builder->getLocation(typeExpr);
+  YYLTYPE yyLocTypeExpr = {
+    .first_line = locTypeExpr.firstLine(),
+    .first_column = locTypeExpr.firstColumn(),
+    .last_line = locTypeExpr.lastLine(),
+    .last_column = locTypeExpr.lastColumn()
+  };
+
+  auto node = BracketLoop::build(builder, convertLocation(location),
+                                 std::move(index),
+                                 toOwned(domainExpr),
+                                 /*withClause*/ nullptr,
+                                 BlockStyle::IMPLICIT,
+                                 consumeToBlock(yyLocTypeExpr, typeExpr),
+                                 /*isExpressionLevel*/ true);
+
+  return node.release();
 }
 
 AstNode*
@@ -1058,7 +1076,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                               ParserExprList* indexExprs) {
   // TODO: We have to handle the possibility of [1..2, 3..4] here.
   if (indexExprs->size() > 1) {
-    const char* msg = "Invalid index expression";
+    const char* msg = "invalid index expression";
     noteError(location, msg);
     return nullptr;
   } else {
@@ -1621,18 +1639,39 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
   }
 
   for (auto& expr : limitations) {
-    if (expr->isAs() || expr->isIdentifier() || expr->isDot() ||
-        expr->isComment()) {
+    auto asExpr = expr->toAs();
+    bool error = false;
+    std::string msg;
+
+    // TODO: Sanitize dot expressions?
+    if (expr->isIdentifier() || expr->isDot() || expr->isComment())
       continue;
-    } else if (limitationKind==VisibilityClause::LimitationKind::EXCEPT ||
-               limitationKind==VisibilityClause::LimitationKind::ONLY) {
-      std::string msg = "incorrect expression in '";
-      msg += kindToString(limitationKind);
-      msg += "' list, identifier expected";
-      return raiseError(location, msg);
+
+    if (limitationKind == VisibilityClause::LimitationKind::EXCEPT ||
+        limitationKind == VisibilityClause::LimitationKind::ONLY) {
+      if (!asExpr) {
+        msg = "incorrect expression in '";
+        msg += kindToString(limitationKind);
+        msg += "' list, identifier expected";
+        error = true;
+      }
     } else if (limitationKind == VisibilityClause::LimitationKind::BRACES) {
-      std::string msg = "incorrect expression in 'import' for unqualified "
-                        "access, identifier expected";
+      if (asExpr) {
+        if (!asExpr->symbol()->isIdentifier() ||
+            !asExpr->rename()->isIdentifier()) {
+          msg = "incorrect expression in 'import' list rename, "
+                "identifier expected";
+          error = true;
+        }
+      } else {
+        msg = "incorrect expression in 'import' for unqualified "
+              "access, identifier expected";
+        error = true;
+      }
+    }
+
+    if (error) {
+      assert(!msg.empty());
       return raiseError(location, msg);
     }
   }
@@ -1711,23 +1750,11 @@ buildForwardingDecl(YYLTYPE location,
 AstNode* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
                                     owned<AstNode> name,
                                     owned<AstNode> rename) {
-  if (!rename->isIdentifier()) {
-    const char* msg = "Rename in 'as' expression must be identifier";
-    return raiseError(locRename, msg);
-  }
-
-  if (!name->isDot() && !name->isIdentifier()) {
-    const char* msg = "Symbol in 'as' expression must be dot or identifier";
-    return raiseError(locName, msg);
-  }
-
-  auto renameAsIdent = toOwned(rename.release()->toIdentifier());
-
   YYLTYPE locEverything = makeSpannedLocation(locName, locRename);
 
   auto node = As::build(builder, convertLocation(locEverything),
                         std::move(name),
-                        std::move(renameAsIdent));
+                        std::move(rename));
 
   return node.release();
 }

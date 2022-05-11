@@ -2193,28 +2193,34 @@ fn_decl_stmt:
   fn_decl_stmt_inner
   opt_ret_tag opt_ret_type
   opt_throws_error opt_lifetime_where
-    {
-      context->clearComments();
-      context->resetDeclState();
+  {
+    context->clearComments();
+    context->resetDeclState();
+
+    // May never have been built if there was a syntax error.
+    if ($1.errorExpr == nullptr) {
       context->enterScope(asttags::Function, $1.name->name());
     }
+  }
   opt_function_body_stmt
-    {
-      FunctionParts fp = $1;
-      fp.returnIntent = $2;
-      fp.returnType = $3;
-      fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
-      WhereAndLifetime wl = $5;
-      fp.body = $7;
+  {
+    FunctionParts fp = $1;
+    fp.returnIntent = $2;
+    fp.returnType = $3;
+    fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
+    WhereAndLifetime wl = $5;
+    fp.body = $7;
+    fp.lifetime = wl.lifetime;
+    fp.where = wl.where;
+    context->clearComments();
 
-      fp.lifetime = wl.lifetime;
-      fp.where = wl.where;
-
-      context->clearComments();
+    // May never have been built if there was a syntax error.
+    if ($1.errorExpr == nullptr) {
       context->exitScope(asttags::Function, $1.name->name());
-
-      $$ = fp;
     }
+
+    $$ = fp;
+  }
 ;
 
 fn_decl_stmt_inner:
