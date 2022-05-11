@@ -521,6 +521,7 @@ module BytesStringCommon {
   }
 
   proc getIndexType(type t) type {
+    import Bytes, String;
     if t==bytes then return Bytes.idxType;
     else if t==string then return String.byteIndex;
     else compilerError("This function should only be used by bytes or string");
