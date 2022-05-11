@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-typedef int err_t;
+typedef int qio_err_t;
 
 struct qio_err_s {
   int code;

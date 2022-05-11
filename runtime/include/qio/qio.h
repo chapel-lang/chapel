@@ -147,7 +147,7 @@ static inline void qio_unlock(qio_lock_t* x) { int rc = pthread_mutex_unlock(x);
 
 static inline qioerr qio_lock_init(qio_lock_t* x) {
   pthread_mutexattr_t attr;
-  err_t err, newerr;
+  qio_err_t err, newerr;
 
   err = pthread_mutexattr_init(&attr);
   if( err ) return qio_int_to_err(err);
@@ -859,7 +859,7 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
 
   if( threadsafe ) {
     qioerr err;
-    err_t errcode;
+    qio_err_t errcode;
     err = qio_lock(&ch->lock);
     errcode = qio_err_to_int(err);
     if( errcode ) {
@@ -875,7 +875,7 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
   } else {
     ssize_t amt_read;
     qioerr err;
-    err_t errcode;
+    qio_err_t errcode;
     uint8_t tmp;
     err = _qio_slow_read(ch, &tmp, 1, &amt_read);
     if( err == 0 && amt_read != 1 ) err = QIO_ESHORT;

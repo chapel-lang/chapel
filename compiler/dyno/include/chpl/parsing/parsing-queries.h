@@ -28,6 +28,7 @@
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Module.h"
+#include "chpl/parsing/parser-stats.h"
 
 #include <vector>
 
@@ -80,6 +81,13 @@ bool hasFileText(Context* context, const std::string& path);
   Any errors encountered will be reported to the Context.
  */
 const uast::BuilderResult& parseFile(Context* context, UniqueString path);
+
+
+/**
+  A function for counting the tokens when parsing
+*/
+void countTokens(Context* context, UniqueString path, ParserStats* parseStats);
+// TODO: Expose this in a more reasonable manner
 
 
 // These functions can't return the Location for a Comment

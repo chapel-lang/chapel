@@ -296,10 +296,10 @@ proc addGitIgnore(dirName: string) {
 
 proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string) {
   const baseToml = """[brick]
-name = "%s"
-version = "%s"
-chplVersion = "%s"
-license = "%s"
+name="%s"
+version="%s"
+chplVersion="%s"
+license="%s"
 
 [dependencies]
 

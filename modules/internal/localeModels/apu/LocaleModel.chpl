@@ -182,7 +182,7 @@ module LocaleModel {
 
     override proc chpl_id() return _node_id;     // top-level locale (node) number
     override proc chpl_localeid() {
-      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
+      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_none);
     }
     override proc chpl_name() return local_name;
 

@@ -95,15 +95,15 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveSignature(FnSymbol* fn) {
-    // Don't resolve formals for concrete functions
-    // more often than necessary.
-    static std::set<FnSymbol*> done;
+  // Don't resolve formals for concrete functions
+  // more often than necessary.
+  static std::set<FnSymbol*> done;
 
-    if (done.find(fn) == done.end()) {
-      done.insert(fn);
+  if (done.find(fn) == done.end()) {
+    done.insert(fn);
 
-      resolveFormals(fn);
-    }
+    resolveFormals(fn);
+  }
 }
 
 /************************************* | **************************************

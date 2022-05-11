@@ -27,16 +27,6 @@ namespace chpl {
 namespace types {
 
 
-Type::Genericity QualifiedType::genericityWithFields(Context* context) const {
-   Type::Genericity g = genericity();
-   if (g == Type::MAYBE_GENERIC && type_ != nullptr ) {
-     return resolution::getTypeGenericity(context, type_);
-   }
-
-   // otherwise return whatever we computed
-   return g;
-}
-
 bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
   return defaultUpdate(keep, addin);
 }

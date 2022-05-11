@@ -20,8 +20,8 @@ module D {
 
   proc main() {
     // writeln(x); // Won't work
-    writeln(A.x);
-    foo();
-    A.foo();
+    foo(); // OK: brought in by import
+    //writeln(A.x); // error: A not brought in
+    //A.foo(); // error: A not brought in
   }
 }

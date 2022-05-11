@@ -26,19 +26,8 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/queries/stringify-functions.h"
 
-#ifndef CHPL_QUERY_TIMING_ENABLED
-#define CHPL_QUERY_TIMING_ENABLED 1
-#endif
-
-#if CHPL_QUERY_TIMING_ENABLED
-
-#define QUERY_BEGIN_TIMING(mapbase)                                                \
-  auto QUERY_STOPWATCH = context->makeQueryTimingStopwatch(mapbase)
-
-#else
-
-#define QUERY_BEGIN_TIMING(mapbase)
-
+#ifndef CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+#define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 1
 #endif
 
 /**
@@ -193,13 +182,13 @@ Context::queryBeginGetMap(
     const char* traceQueryName,
     bool isInputQuery) {
 
-#if CHPL_QUERY_TIMING_ENABLED
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
   auto stopwatch = makePlainQueryTimingStopwatch(enableQueryTiming);
 #endif
 
   auto ret = getMap(queryFunc, tupleOfArgs, traceQueryName, isInputQuery);
 
-#if CHPL_QUERY_TIMING_ENABLED
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
   if (enableQueryTiming) {
     ret->timings.systemGetMap.update(stopwatch.elapsed());
   }
@@ -221,10 +210,10 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
   bool newElementWasAdded = pair.second;
 
   if (enableDebugTrace) {
-    if (newElementWasAdded)
-      printf("Added new result %p %s\n", savedElement, queryMap->queryName);
-    else
-      printf("Found result %p %s\n", savedElement, queryMap->queryName);
+    //if (newElementWasAdded)
+    //  printf("Added new result %p %s\n", savedElement, queryMap->queryName);
+    //else
+    //  printf("Found result %p %s\n", savedElement, queryMap->queryName);
   }
 
   if (newElementWasAdded == false && savedElement->lastChecked == -1) {
@@ -240,13 +229,13 @@ const QueryMapResult<ResultType, ArgTs...>*
 Context::queryBeginGetResult(QueryMap<ResultType, ArgTs...>* queryMap,
                              const std::tuple<ArgTs...>& tupleOfArgs) {
 
-#if CHPL_QUERY_TIMING_ENABLED
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
   auto stopwatch = makePlainQueryTimingStopwatch(enableQueryTiming);
 #endif
 
   auto ret = getResult(queryMap, tupleOfArgs);
 
-#if CHPL_QUERY_TIMING_ENABLED
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
   if (enableQueryTiming) {
     queryMap->timings.systemGetResult.update(stopwatch.elapsed());
   }
@@ -267,11 +256,11 @@ Context::queryUseSaved(
 
   if (enableDebugTrace) {
     if (useSaved) {
-      printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
-             traceQueryName, r);
+      //printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
+      //       traceQueryName, r);
       assert(r->lastChecked == this->currentRevisionNumber);
     } else {
-      printf("QUERY COMPUTING %s (...) %p\n", traceQueryName, r);
+      //printf("QUERY COMPUTING %s (...) %p\n", traceQueryName, r);
     }
   }
 
@@ -283,38 +272,6 @@ const ResultType&
 Context::queryGetSaved(const QueryMapResult<ResultType, ArgTs...>* r) {
   this->saveDependencyInParent(r);
   return r->result;
-}
-
-template<typename ResultType,
-        typename... ArgTs>
-const ResultType* Context::queryGetRunningQueryPartialResult(
-             const ResultType& (*queryFunction)(Context* context, ArgTs...),
-             const std::tuple<ArgTs...>& tupleOfArgs,
-             const char* traceQueryName) {
-  // Look up the map entry for this query name
-  const void* queryFuncV = (const void*) queryFunction;
-  // Look up the map entry for this query
-  auto search = this->queryDB.find(queryFuncV);
-  if (search == this->queryDB.end()) {
-    return nullptr;
-  }
-
-  // found an entry for this query
-  QueryMapBase* base = search->second.get();
-  auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
-  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
-  auto search2 = queryMap->map.find(key);
-  if (search2 == queryMap->map.end()) {
-    return nullptr;
-  }
-
-  // found an entry for this query. is it currently running?
-  if (search2->lastChecked != -1) {
-    return nullptr;
-  }
-
-  // query is currently running so return the partial result
-  return &search2->partialResult;
 }
 
 template<typename ResultType,
@@ -372,36 +329,15 @@ Context::queryEnd(
     queryArgsPrint(tupleOfArgs);
     printf(") %s %p\n", changed?"UPDATED":"NO CHANGE", r);
     assert(r->lastChecked == this->currentRevisionNumber);
-    for (auto dep : r->dependencies) {
-      printf("  with dependency %p %s\n", dep, dep->parentQueryMap->queryName);
-    }
+    //for (auto dep : r->dependencies) {
+    //  printf("  with dependency %p %s\n", dep, dep->parentQueryMap->queryName);
+    //}
   }
 
   endQueryHandleDependency(ret);
 
   return ret->result;
 }
-
-template<typename ResultType,
-         typename... ArgTs>
-const ResultType&
-Context::queryEndCurrentResult(
-              const ResultType& (*queryFunction)(Context* context, ArgTs...),
-              QueryMap<ResultType, ArgTs...>* queryMap,
-              const QueryMapResult<ResultType, ArgTs...>* r,
-              const std::tuple<ArgTs...>& tupleOfArgs,
-              const char* traceQueryName) {
-
-  // swap the partial result to a variable
-  ResultType partialResultVar;
-  chpl::update<ResultType> updater;
-  updater(partialResultVar, r->partialResult);
-
-  return queryEnd(queryFunction, queryMap, r, tupleOfArgs,
-                  std::move(partialResultVar),
-                  traceQueryName);
-}
-
 
 template<typename ResultType,
          typename... ArgTs>
@@ -532,7 +468,6 @@ Context::querySetterUpdateResult(
   const char* BEGIN_QUERY_FUNC_NAME = #func; \
   assert(0 == strcmp(BEGIN_QUERY_FUNC_NAME, __func__)); \
   auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
-  context->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
   auto BEGIN_QUERY_MAP = context->queryBeginGetMap(BEGIN_QUERY_FUNCTION, \
                                                    BEGIN_QUERY_ARGS, \
                                                    BEGIN_QUERY_FUNC_NAME, \
@@ -548,6 +483,19 @@ Context::querySetterUpdateResult(
 #define QUERY_GET_SAVED() \
   (BEGIN_QUERY_CONTEXT->queryGetSaved(BEGIN_QUERY_FOUND))
 
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+
+#define QUERY_BEGIN_TIMING() \
+  context->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
+  auto QUERY_STOPWATCH = context->makeQueryTimingStopwatch(BEGIN_QUERY_MAP)
+
+#else
+
+#define QUERY_BEGIN_TIMING()
+
+#endif
+
+
 /**
   Use QUERY_BEGIN at the start of the implementation of a particular query.
   It checks to see if an earlier result can be used and in that event returns
@@ -561,7 +509,7 @@ Context::querySetterUpdateResult(
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
-  QUERY_BEGIN_TIMING(BEGIN_QUERY_MAP);
+  QUERY_BEGIN_TIMING();
 
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
@@ -572,26 +520,7 @@ Context::querySetterUpdateResult(
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
-  QUERY_BEGIN_TIMING(BEGIN_QUERY_MAP);
-
-/**
-  Returns a pointer to the partial result if the query is already running
-  and nullptr otherwise. The partial result is set by assigning to
-  QUERY_CURRENT_RESULT in some other invocation of func with the exact
-  same arguments.
-
-  Arguments are like QUERY_BEGIN.
- */
-#define QUERY_RUNNING_PARTIAL_RESULT(func, context, ...) \
-  context->queryGetRunningQueryPartialResult(func, std::make_tuple(__VA_ARGS__), #func)
-
-/**
-  Get the current partial result for the current query
-  (for use in recursive queries). The result is an lvalue that can be set.
-  Queries that use this need to end with return QUERY_END_CURRENT_RESULT()
- */
-#define QUERY_CURRENT_RESULT \
-  (BEGIN_QUERY_FOUND->partialResult)
+  QUERY_BEGIN_TIMING();
 
 /**
   Write
@@ -614,17 +543,6 @@ Context::querySetterUpdateResult(
                                  BEGIN_QUERY_FUNC_NAME))
 
 
-/**
-  For a query working with QUERY_CURRENT_RESULT,
-  return the current result.
- */
-#define QUERY_END_CURRENT_RESULT() \
-  /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */ \
-  (BEGIN_QUERY_CONTEXT->queryEndCurrentResult(BEGIN_QUERY_FUNCTION, \
-                                              BEGIN_QUERY_MAP, \
-                                              BEGIN_QUERY_FOUND, \
-                                              BEGIN_QUERY_ARGS, \
-                                              BEGIN_QUERY_FUNC_NAME))
 /**
   Use QUERY_STORE_RESULT to implement a setter for a non-input query.
   Arguments are:

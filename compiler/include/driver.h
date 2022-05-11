@@ -21,6 +21,7 @@
 #ifndef _driver_H_
 #define _driver_H_
 
+#include "arg.h"
 #include "chpl.h"
 #include "map.h"
 

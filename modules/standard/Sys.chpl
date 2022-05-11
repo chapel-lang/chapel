@@ -27,7 +27,7 @@
 
    Each of the functions in this file provides the same functionality
    as the corresponding function without the ``sys_`` prefix, except that
-   the ``sys_`` versions all return an error code (of type :type:`~SysBasic.err_t`)
+   the ``sys_`` versions all return an error code (of type :type:`~SysBasic.qio_err_t`)
    and return any other values (such as how much was read) through an out
    argument.
 
@@ -441,9 +441,9 @@ module Sys {
   extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
   extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
   extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
-  extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
+  extern proc sys_strerror(error:qio_err_t, ref string_out:c_string):qio_err_t;
 
-  extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
+  extern proc sys_readlink(path:c_string, ref string_out:c_string):qio_err_t;
 
   /*Check whether or not the environment variable ``name`` is defined.
     If ``name`` is defined then return 1 and update ``string_out``
@@ -462,27 +462,27 @@ module Sys {
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
   /* The type corresponding to C's mode_t */
   extern type mode_t = uint(32);
-  extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):err_t;
-  extern proc sys_close(fd:fd_t):err_t;
+  extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):qio_err_t;
+  extern proc sys_close(fd:fd_t):qio_err_t;
 
   /* The type corresponding to C's off_t */
   extern type off_t = int(64);
 
-  extern proc sys_mmap(addr:c_void_ptr, length:c_size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):err_t;
-  extern proc sys_munmap(addr:c_void_ptr, length:c_size_t):err_t;
+  extern proc sys_mmap(addr:c_void_ptr, length:c_size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):qio_err_t;
+  extern proc sys_munmap(addr:c_void_ptr, length:c_size_t):qio_err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
 
-  extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):err_t;
-  extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):err_t;
-  extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):err_t;
-  extern proc sys_dup(oldfd:fd_t, ref fd_out:fd_t):err_t;
-  extern proc sys_dup2(oldfd:fd_t, newfd:fd_t, ref fd_out:fd_t):err_t;
-  extern proc sys_pipe(ref read_fd_out:fd_t, ref write_fd_out:fd_t):err_t;
-  extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):err_t;
-  extern proc sys_bind(sockfd:fd_t, const ref addr:sys_sockaddr_t):err_t;
-  extern proc sys_connect(sockfd:fd_t, const ref addr:sys_sockaddr_t):err_t;
-  extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):err_t;
+  extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):qio_err_t;
+  extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):qio_err_t;
+  extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):qio_err_t;
+  extern proc sys_dup(oldfd:fd_t, ref fd_out:fd_t):qio_err_t;
+  extern proc sys_dup2(oldfd:fd_t, newfd:fd_t, ref fd_out:fd_t):qio_err_t;
+  extern proc sys_pipe(ref read_fd_out:fd_t, ref write_fd_out:fd_t):qio_err_t;
+  extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):qio_err_t;
+  extern proc sys_bind(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
+  extern proc sys_connect(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
+  extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):qio_err_t;
   extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
@@ -492,19 +492,19 @@ module Sys {
   extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
   extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
 
-  extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:c_string, flags:c_int):err_t;
-  extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
-  extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
+  extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:c_string, flags:c_int):qio_err_t;
+  extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
+  extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
 
   // TODO -- these should be generic, assuming caller knows what they
   // are doing.
-  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):err_t;
-  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):err_t;
+  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):qio_err_t;
+  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t;
 
-  extern proc sys_listen(sockfd:fd_t, backlog:c_int):err_t;
-  extern proc sys_shutdown(sockfd:fd_t, how:c_int):err_t;
-  extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):err_t;
-  extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:fd_t, ref sockfd_out_b:fd_t):err_t;
+  extern proc sys_listen(sockfd:fd_t, backlog:c_int):qio_err_t;
+  extern proc sys_shutdown(sockfd:fd_t, how:c_int):qio_err_t;
+  extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t;
+  extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:fd_t, ref sockfd_out_b:fd_t):qio_err_t;
 
   extern type fd_set;
   extern type time_t = c_long;
@@ -513,7 +513,7 @@ module Sys {
      var tv_sec:time_t; // seconds
      var tv_usec:suseconds_t; // microseconds
   }
-  extern proc sys_select(nfds:c_int, readfds:c_ptr(fd_set), writefds:c_ptr(fd_set), exceptfds:c_ptr(fd_set), timeout:c_ptr(timeval), ref nset:c_int):err_t;
+  extern proc sys_select(nfds:c_int, readfds:c_ptr(fd_set), writefds:c_ptr(fd_set), exceptfds:c_ptr(fd_set), timeout:c_ptr(timeval), ref nset:c_int):qio_err_t;
   extern proc sys_fd_clr(fd:c_int, ref set:fd_set);
   extern proc sys_fd_isset(fd:c_int, ref set:fd_set):c_int;
   extern proc sys_fd_set(fd:c_int, ref set:fd_set);

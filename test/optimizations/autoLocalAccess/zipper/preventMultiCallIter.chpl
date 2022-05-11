@@ -1,6 +1,6 @@
 // The forall here cannot be optimized. But we must make sure that we are not
 // doing anything funny with the iterator to make that decision
-
+use common;
 // we must have exactly one iterator invocation (the automatic localaccess
 // optimization shouldn't create another iterator record)
 iter myIter() {
@@ -25,21 +25,9 @@ iter myIter(param tag: iterKind, followThis) where tag == iterKind.follower {
   for i in followThis[0] do yield i;
 }
 
-// hijack these two methods to provide some output
-inline proc _array.this(i: int) ref {
-  writeln("Custom this was called");
-  return this._value.dsiAccess((i:int,));
-}
-
-inline proc _array.localAccess(i: int) ref {
-  writeln("Custom localAccess was called");
-  return this._value.dsiLocalAccess((i:int,));
-}
-
-
-var A: [1..10] int;
-var B: [1..10] int;
-var C: [1..10] int;
+var A = createArr({1..10}, int);
+var B = createArr({1..10}, int);
+var C = createArr({1..10}, int);
 
 B = 1;
 C = 2;

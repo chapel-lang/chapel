@@ -4598,7 +4598,7 @@ proc readln(type t ...?numTypes) throws {
    :throws SystemError: Thrown if the file is not successfully deleted.
  */
 proc unlink(path:string) throws {
-  extern proc sys_unlink(path:c_string):err_t;
+  extern proc sys_unlink(path:c_string):qio_err_t;
   var err = sys_unlink(path.localize().c_str());
   if err then try ioerror(err:syserr, "in unlink", path);
 }

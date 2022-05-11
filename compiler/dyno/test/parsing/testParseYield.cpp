@@ -25,6 +25,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Yield.h"
+#include "chpl/uast/Try.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -68,6 +69,43 @@ static void test0(Parser* parser) {
   assert(yield->value()->isFnCall());
 }
 
+static void test1(Parser* parser) {
+  auto parseResult = parser->parseString("test0.chpl",
+      "/* comment 1 */\n"
+      "iter foo(): int {\n"
+      "  /* comment 2 */\n"
+      "  /* comment 3 */\n"
+      "  yield try! /* comment 4 */ bar() /* comment 5 */;\n"
+      "  /* comment 6 */\n"
+      "}\n"
+      "/* comment 7 */\n");
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isFunction());
+  assert(mod->stmt(2)->isComment());
+  const Function* func = mod->stmt(1)->toFunction();
+  assert(func);
+  assert(func->kind() == Function::ITER);
+  assert(func->numStmts() == 4);
+  assert(func->stmt(0)->isComment());
+  assert(func->stmt(1)->isComment());
+  assert(func->stmt(2)->isYield());
+  assert(func->stmt(3)->isComment());
+  const Yield* yield = func->stmt(2)->toYield();
+  assert(yield);
+  assert(yield->value());
+  assert(yield->value()->isTry());
+  const Try* tryBang = yield->value()->toTry();
+  assert(tryBang);
+  assert(tryBang->isTryBang());
+  assert(tryBang->numHandlers() == 0);
+  assert(tryBang->numChildren() == 1);
+  assert(tryBang->stmt(0)->isFnCall());
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -76,6 +114,7 @@ int main() {
   Parser* p = parser.get();
 
   test0(p);
+  test1(p);
 
   return 0;
 }

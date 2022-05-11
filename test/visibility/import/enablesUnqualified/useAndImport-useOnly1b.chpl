@@ -13,7 +13,7 @@ module B {
 }
 
 module C {
-  public use A only foo;
+  public use A as A only foo;
 }
 
 module D {

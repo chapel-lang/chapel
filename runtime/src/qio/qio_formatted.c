@@ -361,7 +361,7 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
   int found_term=0;
   ssize_t len=0;
   ssize_t amt = 0;
-  err_t errcode;
+  qio_err_t errcode;
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 

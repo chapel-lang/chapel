@@ -764,7 +764,7 @@ module MyRandom {
   module PCGRandom {
 
     use super.RandomSupport;
-    private use Random, IO;
+    private use MyRandom, IO;
     private use PCGRandomLib;
     use ChapelLocks;
 

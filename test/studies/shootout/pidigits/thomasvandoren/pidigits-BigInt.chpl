@@ -7,6 +7,7 @@
 */
 
 use BigInteger;
+import BigInteger.round; // avoid conflict with Math.round
 
 // Compute n digits of Pi, 10 000 by default to match benchmark expectation.
 config const n = 10000;

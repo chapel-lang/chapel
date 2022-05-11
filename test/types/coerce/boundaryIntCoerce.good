@@ -1,0 +1,50 @@
+int(64)
+in real64 foo
+in real64 foo
+In complex128 bar
+In complex128 bar
+
+uint(64)
+in real64 foo
+in real64 foo
+In complex128 bar
+In complex128 bar
+
+int(32)
+In real32 foo
+In real32 foo
+In complex64 bar
+In complex64 bar
+In baz
+In baz
+
+uint(32)
+In real32 foo
+In real32 foo
+In complex64 bar
+In complex64 bar
+In baz
+In baz
+
+int(8)
+In real32 foo
+In real32 foo
+In complex64 bar
+In complex64 bar
+In baz
+In baz
+
+uint(8)
+In real32 foo
+In real32 foo
+In complex64 bar
+In complex64 bar
+In baz
+In baz
+
+in real64 foo
+in real64 foo
+In complex128 bar
+In complex128 bar
+In baz
+In baz
