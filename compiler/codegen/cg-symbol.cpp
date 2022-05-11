@@ -1851,7 +1851,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
           b.addAttribute(llvm::Attribute::InReg);
 #if HAVE_LLVM_VER >= 140
         attrs = attrs.addAttributesAtIndex(ctx,
-			                   llvm::AttributeList::ReturnIndex, b);
+                                           llvm::AttributeList::ReturnIndex, b);
 #else
         attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
 #endif
@@ -1875,7 +1875,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
           b.addAttribute(llvm::Attribute::InReg);
 #if HAVE_LLVM_VER >= 140
         attrs = attrs.addAttributesAtIndex(ctx,
-			                   llvm::AttributeList::ReturnIndex, b);
+                                           llvm::AttributeList::ReturnIndex, b);
 #else
         attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
 #endif
