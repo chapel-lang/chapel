@@ -27,9 +27,11 @@ namespace chpl {
 namespace resolution {
 
 
-Scope::Scope(const uast::AstNode* ast, const Scope* parentScope) {
+Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
+             bool autoUsesModules) {
   parentScope_ = parentScope;
   tag_ = ast->tag();
+  autoUsesModules_ = autoUsesModules;
   id_ = ast->id();
   if (auto decl = ast->toNamedDecl()) {
     name_ = decl->name();

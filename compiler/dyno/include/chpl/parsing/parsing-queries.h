@@ -115,13 +115,66 @@ const ModuleVec& parse(Context* context, UniqueString path);
 /**
   Return the current module search path.
  */
-const std::vector<std::string>& moduleSearchPath(Context* context);
+const std::vector<UniqueString>& moduleSearchPath(Context* context);
 
 /**
   Sets the current module search path.
  */
 void setModuleSearchPath(Context* context,
-                         std::vector<std::string> searchPath);
+                         std::vector<UniqueString> searchPath);
+
+/**
+  Return the current internal module path, i.e. CHPL_HOME/modules/internal/
+ */
+UniqueString internalModulePath(Context* context);
+
+/**
+  Set the current internal modules directory, i.e. CHPL_HOME/modules/internal/
+  This should be formed in a consistent manner with setModuleSearchPath,
+  so that this is a prefix for some module search paths.
+ */
+void setInternalModulePath(Context* context, UniqueString path);
+
+
+/**
+  Return the current standard module path, i.e. CHPL_HOME/modules/
+ */
+UniqueString bundledModulePath(Context* context);
+
+/**
+  Set the current bundled modules directory, i.e. CHPL_HOME/modules/
+  This should be formed in a consistent manner with setModuleSearchPath,
+  so that this is a prefix for some module search paths.
+ */
+void setBundledModulePath(Context* context, UniqueString path);
+
+/**
+  Helper to call setModuleSearchPath, setInternalModulePath, standardModulePath.
+  This function accepts the path to CHPL_HOME, and any additional
+  module path components (from environment variable and command line).
+
+  chpl_module_path corresponds to the CHPL_MODULE_PATH env var
+ */
+void setupModuleSearchPaths(Context* context,
+                            const std::string& chpl_home,
+                            bool minimalModules,
+                            const std::string& chpl_locale_model,
+                            bool enableTaskTracking,
+                            const std::string& chpl_tasks,
+                            const std::string& chpl_comm,
+                            const std::string& chpl_sys_modules_subdir,
+                            const std::string& chpl_module_path,
+                            const std::vector<std::string>& cmdLinePaths);
+
+/**
+ Returns true if the ID corresponds to something in an internal module.
+ */
+bool idIsInInternalModule(Context* context, ID id);
+
+/**
+ Returns true if the ID corresponds to something in a bundled module.
+ */
+bool idIsInBundledModule(Context* context, ID id);
 
 /**
  This query parses a toplevel module by name. Returns nullptr
