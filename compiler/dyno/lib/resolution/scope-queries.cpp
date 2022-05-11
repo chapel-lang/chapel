@@ -741,6 +741,13 @@ convertOneName(UniqueString name) {
 }
 
 static std::vector<std::pair<UniqueString,UniqueString>>
+convertOneRename(UniqueString oldName, UniqueString newName) {
+  std::vector<std::pair<UniqueString,UniqueString>> ret;
+  ret.push_back(std::make_pair(oldName, newName));
+  return ret;
+}
+
+static std::vector<std::pair<UniqueString,UniqueString>>
 convertLimitations(Context* context, const VisibilityClause* clause) {
   std::vector<std::pair<UniqueString,UniqueString>> ret;
   for (const AstNode* e : clause->limitations()) {
@@ -783,6 +790,20 @@ doResolveUseStmt(Context* context, const Use* use,
   for (auto clause : use->visibilityClauses()) {
     // Figure out what was use'd
     const AstNode* expr = clause->symbol();
+    UniqueString newName;
+
+    if (auto as = expr->toAs()) {
+      auto origIdent = as->symbol()->toIdentifier();
+      auto newIdent = as->rename()->toIdentifier();
+      if (origIdent != nullptr && newIdent != nullptr) {
+        // search for the original name
+        expr = origIdent;
+        newName = newIdent->name();
+      } else {
+        context->error(expr, "this form of as is not yet supported");
+        continue; // move on to the next visibility clause
+      }
+    }
 
     std::vector<BorrowedIdsWithName> vec;
     UniqueString n;
@@ -800,8 +821,13 @@ doResolveUseStmt(Context* context, const Use* use,
     ID id = vec[0].id(0); // id of the 'use'd module/enum
 
     // First, add VisibilitySymbols entry for the symbol itself
-    result.emplace_back(id, VisibilitySymbols::SYMBOL_ONLY,
-                        isPrivate, convertOneName(n));
+    if (newName.isEmpty()) {
+      result.emplace_back(id, VisibilitySymbols::SYMBOL_ONLY,
+                          isPrivate, convertOneName(n));
+    } else {
+      result.emplace_back(id, VisibilitySymbols::SYMBOL_ONLY,
+                          isPrivate, convertOneRename(n, newName));
+    }
 
     // Then, add the entries for anything imported
     VisibilitySymbols::Kind kind = VisibilitySymbols::ALL_CONTENTS;
