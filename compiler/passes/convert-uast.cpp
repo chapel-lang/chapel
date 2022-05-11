@@ -638,7 +638,7 @@ struct Converter {
     return ret;
   }
 
-  std::pair<Expr*, Expr*> convertAs(const uast::As* node) {
+  std::pair<Expr*, Expr*> convertAsForRename(const uast::As* node) {
     astlocMarker markAstLoc(node->id());
 
     Expr* one = toExpr(convertAST(node->symbol()));
@@ -660,7 +660,7 @@ struct Converter {
 
     if (auto as = node->toAs()) {
       ret->tag = PotentialRename::DOUBLE;
-      ret->renamed = new std::pair<Expr*, Expr*>(convertAs(as));
+      ret->renamed = new std::pair<Expr*, Expr*>(convertAsForRename(as));
     } else {
       ret->tag = PotentialRename::SINGLE;
       ret->elem = toExpr(convertAST(node));
@@ -693,7 +693,7 @@ struct Converter {
     }
 
     if (auto as = vc->symbol()->toAs()) {
-      auto exprs = convertAs(as);
+      auto exprs = convertAsForRename(as);
       mod = exprs.first;
       rename = exprs.second;
     } else {
