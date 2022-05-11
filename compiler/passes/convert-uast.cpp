@@ -1121,25 +1121,13 @@ struct Converter {
   // Note that that expressions that appear in type bindings, e.g.,
   // 'var x: [0..0] int' or 'type T = [0..0] int' use the
   // 'convertArrayType()' instead, as there is no ambiguity about
-  // whether or not the bracket loop is a type. But right now such
-  // calls cannot handle bracket loops that are sub-expressions of
-  // other statements.
+  // whether or not the bracket loop is a type.
   //
-  // E.g., `test/expressions/if-expr/inside-field.chpl`:
-  //
-  /***
-      ```
-      record R3 {
-      type T;
-      var multiple: [1..2] if !isClass(T) then 2*T
-                          else [1..2] if isClass(T) then owned T? else T;
-      }
-      ```
-  */
   bool isBracketLoopMaybeArrayType(const uast::BracketLoop* node) {
     if (!node->isExpressionLevel()) return false;
     if (node->iterand()->isZip()) return false;
     if (node->numStmts() != 1) return false;
+    if (node->index()) return false;
     return true;
   }
 
