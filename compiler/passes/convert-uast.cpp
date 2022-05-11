@@ -642,7 +642,13 @@ struct Converter {
     astlocMarker markAstLoc(node->id());
 
     Expr* one = toExpr(convertAST(node->symbol()));
-    Expr* two = toExpr(convertAST(node->rename()));
+    Expr* two = nullptr;
+    // if this rename is to '_', don't convert it to chpl__tuple_blank!
+    if (node->rename()->toIdentifier()->name()==USTR("_"))
+      two = new UnresolvedSymExpr("_");
+    else
+      two = toExpr(convertAST(node->rename()));
+    assert(two);
     return std::pair<Expr*, Expr*>(one, two);
   }
 
