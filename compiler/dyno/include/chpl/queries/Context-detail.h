@@ -260,7 +260,6 @@ class QueryMapResult final : public QueryMapResultBase {
  public:
   std::tuple<ArgTs...> tupleOfArgs;
   mutable ResultType result;
-  mutable ResultType partialResult;
 
   // This constructor creates an entry with
   //  * lastChecked and lastChanged = -1
