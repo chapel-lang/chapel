@@ -33,6 +33,8 @@ module ChapelHashtable {
 
   private use CTypes;
 
+  config const defaultHashTableResizeThreshold = 0.5;
+
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
 
@@ -235,7 +237,7 @@ module ChapelHashtable {
 
     const startingSize: int;
 
-    proc init(type keyType, type valType, resizeThreshold=0.5,
+    proc init(type keyType, type valType, resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       if isDomainType(keyType) then
