@@ -306,12 +306,6 @@ class Scope {
 };
 
 /**
-  A path of which use/import statements are currently being resolved
-  (in order to support recursive use/import)
- */
-using VisibilityPath = std::vector<ID>;
-
-/**
  This class supports both `use` and `import`.
  It stores a normalized form of the symbols made available
  by a use/import clause.
@@ -399,6 +393,56 @@ class VisibilitySymbols {
     for (auto p : names_) {
       p.first.mark(context);
       p.second.mark(context);
+    }
+  }
+};
+
+/**
+ Stores the result of in-order resolution of use/import statements.
+*/
+class ResolvedVisibilityScope {
+ private:
+  const Scope* scope_;
+  std::vector<VisibilitySymbols> visibilityClauses_;
+
+ public:
+  using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
+
+  ResolvedVisibilityScope(const Scope* scope)
+    : scope_(scope)
+  { }
+
+  /** Return the scope */
+  const Scope *scope() const { return scope_; }
+
+  /** Return an iterator over the visibility clauses */
+  VisibilitySymbolsIterable visibilityClauses() const {
+    return VisibilitySymbolsIterable(visibilityClauses_);
+  }
+
+  /** Add a visibility clause */
+  void addVisibilityClause(ID symbolId, VisibilitySymbols::Kind kind,
+                           bool isPrivate,
+                           std::vector<std::pair<UniqueString,UniqueString>> n)
+  {
+    visibilityClauses_.emplace_back(symbolId, kind, isPrivate, std::move(n));
+  }
+
+  bool operator==(const ResolvedVisibilityScope& other) const {
+    return scope_ == other.scope_ &&
+           visibilityClauses_ == other.visibilityClauses_;
+  }
+  bool operator!=(const ResolvedVisibilityScope& other) const {
+    return !(*this == other);
+  }
+  static bool update(owned<ResolvedVisibilityScope>& keep,
+                     owned<ResolvedVisibilityScope>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(scope_);
+    for (auto sym : visibilityClauses_) {
+      sym.mark(context);
     }
   }
 };

@@ -761,8 +761,6 @@ static void test15() {
   assert(match.id() == lMod->stmt(0)->id());
 }
 
-// test a mutually recursive module case
-// where the mutual recursion is relevant for resolving use/import
 static void test16() {
   printf("test16\n");
   Context ctx;
@@ -773,36 +771,24 @@ static void test16() {
       module M {
         use N;
         use NN;
-        use OO;
         x;
-        z;
       }
 
       module N {
         module NN {
           var x: int;
         }
-        public use O;
-      }
-
-      module O {
-        use M;
-        module OO {
-          var z: int;
-        }
       }
    )"""";
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parse(context, path);
-  assert(vec.size() == 3);
+  assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
-  assert(m->numStmts() == 5);
-  const Identifier* xIdent = m->stmt(3)->toIdentifier();
+  assert(m->numStmts() == 3);
+  const Identifier* xIdent = m->stmt(2)->toIdentifier();
   assert(xIdent);
-  const Identifier* zIdent = m->stmt(4)->toIdentifier();
-  assert(zIdent);
   const Module* n = vec[1]->toModule();
   assert(n);
   assert(n->numStmts() == 2);
@@ -810,13 +796,6 @@ static void test16() {
   assert(nn);
   const Variable* x = nn->stmt(0)->toVariable();
   assert(x);
-  const Module* o = vec[2]->toModule();
-  assert(o);
-  assert(o->numStmts() == 2);
-  const Module* oo = o->stmt(1)->toModule();
-  assert(oo);
-  const Variable* z = oo->stmt(0)->toVariable();
-  assert(z);
 
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
