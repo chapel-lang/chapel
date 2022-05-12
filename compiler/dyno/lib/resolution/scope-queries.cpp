@@ -865,6 +865,20 @@ doResolveImportStmt(Context* context, const Import* imp,
   for (auto clause : imp->visibilityClauses()) {
     // Figure out what was imported
     const AstNode* expr = clause->symbol();
+    UniqueString newName;
+
+    if (auto as = expr->toAs()) {
+      auto origIdent = as->symbol()->toIdentifier();
+      auto newIdent = as->rename()->toIdentifier();
+      if (origIdent != nullptr && newIdent != nullptr) {
+        // search for the original name
+        expr = origIdent;
+        newName = newIdent->name();
+      } else {
+        context->error(expr, "this form of as is not yet supported");
+        continue; // move on to the next visibility clause
+      }
+    }
 
     std::vector<BorrowedIdsWithName> vec;
     UniqueString n;
@@ -905,8 +919,13 @@ doResolveImportStmt(Context* context, const Import* imp,
       case VisibilityClause::NONE:
         if (expr->isIdentifier()) {
           kind = VisibilitySymbols::SYMBOL_ONLY;
-          // Add a VisibilitySymbols entry for the imported thing
-          result.emplace_back(id, kind, isPrivate, convertOneName(n));
+          if (newName.isEmpty()) {
+            // Add a VisibilitySymbols entry for the imported thing
+            result.emplace_back(id, kind, isPrivate, convertOneName(n));
+          } else {
+            result.emplace_back(id, kind, isPrivate,
+                                convertOneRename(n, newName));
+          }
         } else if (expr->isDot()) {
           kind = VisibilitySymbols::ONLY_CONTENTS;
           // Add a VisibilitySymbols entry
