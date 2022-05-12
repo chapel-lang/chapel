@@ -679,7 +679,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
     }
     if (chpl_verbose_mem) {
       char subloc_info[16] = "";
-      /*chpl_track_gen_subloc_info(subloc_info, subloc);*/
+      chpl_track_gen_subloc_info(subloc_info, subloc);
       fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                           ": allocate %zuB of %s at %p\n",
               chpl_nodeID, subloc_info, (filename ? chpl_lookupFilename(filename) : "--"),

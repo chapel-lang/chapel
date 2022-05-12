@@ -78,7 +78,7 @@ void chpl_track_realloc_post(void* moreMemAlloc,
 static inline void chpl_track_gen_subloc_info(char* subloc_info,
                                               c_sublocid_t subloc) {
 #ifdef HAS_GPU_LOCALE
-  if (subloc > 0) {
+  if (subloc >= 0) {
     snprintf(subloc_info, 16, " (gpu %" PRI_c_sublocid_t ")", subloc);
   }
 #endif

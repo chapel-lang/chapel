@@ -9,7 +9,7 @@ startVerboseMem();
 
 var A: [1..10] int = 1;
 
-on here.getChild(1) {
+on here.gpus[0] {
   var AonGPU = A;
   foreach a in AonGPU {
     a += 1;
