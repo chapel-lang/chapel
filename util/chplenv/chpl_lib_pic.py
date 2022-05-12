@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import sys
-import platform
 
 import overrides
+import chpl_platform
 from utils import memoize
-
 
 @memoize
 def get():
@@ -12,14 +11,13 @@ def get():
     if not lib_pic_val:
         # Some platforms have 'gcc' and/or standard libraries
         # default to PIC. For those platforms, arrange for CHPL_LIB_PIC
-        # to defaurt to 'pic' instead of 'none' to avoid problems.
+        # to default to 'pic' instead of 'none' to avoid problems.
         #
         # Another option would be to check for --enable-default-pie in
         #   gcc -v -E
         # However, that would assume that 'gcc' is related to the link command,
         # which is not necessarily the case.
-        release = platform.uname()[2]
-        if 'arch' in release:
+        if chpl_platform.is_arch_linux():
             lib_pic_val = 'pic'
         else:
             lib_pic_val = 'none'
