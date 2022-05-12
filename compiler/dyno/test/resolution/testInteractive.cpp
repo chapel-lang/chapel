@@ -226,14 +226,13 @@ int main(int argc, char** argv) {
   bool trace = false;
   const char* chpl_home = nullptr;
   std::vector<std::string> cmdLinePaths;
+  std::vector<std::string> files;
   bool enableStdLib = false;
-  int firstfile = 1;
   for (int i = 1; i < argc; i++) {
     if (0 == strcmp(argv[i], "--std")) {
       enableStdLib = true;
-      i++;
     } else if (0 == strcmp(argv[i], "--search")) {
-      if (i+1 == argc || firstfile != 1) {
+      if (i+1 >= argc) {
         usage(argc, argv);
         return 1;
       }
@@ -241,10 +240,8 @@ int main(int argc, char** argv) {
       i++;
     } else if (0 == strcmp(argv[i], "--trace")) {
       trace = true;
-      i++;
     } else {
-      firstfile = i;
-      break;
+      files.push_back(argv[i]);
     }
   }
 
@@ -258,7 +255,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (firstfile == argc) {
+  if (files.size() == 0) {
     usage(argc, argv);
     return 0; // need this to return 0 for testing to be happy
   }
@@ -275,8 +272,8 @@ int main(int argc, char** argv) {
 
     std::set<const ResolvedFunction*> calledFns;
 
-    for (int i = firstfile; i < argc; i++) {
-      auto filepath = UniqueString::get(ctx, argv[i]);
+    for (auto p: files) {
+      auto filepath = UniqueString::get(ctx, p);
 
       const ModuleVec& mods = parse(ctx, filepath);
       for (const auto mod : mods) {
