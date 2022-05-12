@@ -1,2 +1,2 @@
-var-shadows-public-import.chpl:7: error: symbol x is multiply defined
-var-shadows-public-import.chpl:2: note: also defined here
+var-shadows-public-import.chpl:8: error: symbol x is multiply defined
+var-shadows-public-import.chpl:3: note: also defined here
