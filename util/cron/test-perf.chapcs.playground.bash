@@ -14,6 +14,10 @@ CWD=$(cd $(dirname $0) ; pwd)
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
+source $CWD/common-llvm.bash
+
+# common-llvm restricts to just extern/ferguson. Enable all perf tests
+unset CHPL_NIGHTLY_TEST_DIRS
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
@@ -26,10 +30,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 #
 
 # Test no localizing global consts 
-GITHUB_USER=bradcray
-GITHUB_BRANCH=disable-localize-glob-consts-by-default
-SHORT_NAME=no-localize-global-consts
-START_DATE=05/09/22
+GITHUB_USER=daviditen
+GITHUB_BRANCH=update-llvm14
+SHORT_NAME=llvm-14
+START_DATE=05/12/22
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
