@@ -35,48 +35,9 @@ TARGETS = $(PARSER_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
-CLEAN_TARGS += \
-               bison-chapel.output
-
-# Don't create rules for bison-chapel.cpp or flex-chapel.cpp since we don't
-# want them to be rebuilt automatically. (This is because of the bison version
-# 2.5 requirement)
-parser: FORCE flex_version_check
-	@rm -f bison-chapel.output bison-chapel.cpp flex-chapel.cpp
-	@rm -f ../include/bison-chapel.h ../include/flex-chapel.h
-	bison chapel.ypp
-	@if grep -q "conflicts:" bison-chapel.output; \
-		then echo "PROBLEM: chapel.ypp contains conflicts"; \
-		rm -f bison-chapel.cpp; \
-		exit 1; \
-	fi;
-	flex chapel.lex
-
-# Require that the flex version is at least 2.6.0
-flex_version_check:
-	@if $(CHPL_MAKE_PYTHON) -c "import sys;                        \
-	               from pkg_resources import parse_version as PV;  \
-	               sys.exit(PV(sys.argv[1]) >= PV(sys.argv[2]))"   \
-	           `flex --version | sed -e 's/flex //' -e 's/ .*//'`  \
-	           "2.6.0";                                            \
-	then echo "PROBLEM: flex version must be at least 2.6.0";      \
-	  exit 1;                                                      \
-	fi
+FORCE:
 
 #
 # standard footer
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
-
-
-# Use bison-chapel.h as prerequisite, to ensure bison only invoked once, even
-# with parallel execution.
-#
-$(OBJ_SUBDIR)/bison-chapel.o: ../include/bison-chapel.h bison-chapel.cpp $(OBJ_SUBDIR_MADE)
-	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CXXFLAGS_NONCHPL) -o $@ bison-chapel.cpp
-
-$(OBJ_SUBDIR)/flex-chapel.o: ../include/bison-chapel.h ../include/flex-chapel.h flex-chapel.cpp $(OBJ_SUBDIR_MADE)
-	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CXXFLAGS_NONCHPL) -o $@ flex-chapel.cpp
-
-$(OBJ_SUBDIR)/parser.o:  ../include/bison-chapel.h ../include/flex-chapel.h parser.cpp $(OBJ_SUBDIR_MADE)
-	$(CXX) -c $(COMP_CXXFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ parser.cpp

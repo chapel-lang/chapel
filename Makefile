@@ -79,10 +79,6 @@ compiler: FORCE
 	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	@cd compiler && $(MAKE)
 
-parser: FORCE
-	@echo "Making the parser..."
-	@cd compiler && $(MAKE) parser
-
 modules: FORCE
 	@echo "Making the modules..."
 	@cd modules && $(MAKE)

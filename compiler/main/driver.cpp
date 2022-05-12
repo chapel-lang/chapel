@@ -28,7 +28,6 @@
 #include "chpl.h"
 #include "commonFlags.h"
 #include "config.h"
-#include "countTokens.h"
 #include "docsDriver.h"
 #include "files.h"
 #include "library.h"
@@ -1823,6 +1822,7 @@ int main(int argc, char* argv[]) {
     process_args(&sArgState, argc, argv);
 
     setupChplGlobals(argv[0]);
+
     if (fDynoCompilerLibrary) {
       // set the config names/values we processed earlier
       chpl::parsing::setConfigSettings(gContext, gDynoParams);
@@ -1845,6 +1845,7 @@ int main(int argc, char* argv[]) {
                                             chpl_module_path,
                                             cmdLineModPaths);
     }
+
     postprocess_args();
 
     if (gContext != nullptr) {

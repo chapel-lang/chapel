@@ -33,6 +33,7 @@
 #include "ForLoop.h"
 #include "ForallStmt.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
