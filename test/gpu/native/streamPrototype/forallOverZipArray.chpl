@@ -1,6 +1,9 @@
+use GPUDiagnostics;
+
 config const start = 1;
 config const end = 10;
 
+startGPUDiagnostics();
 on here.gpus[0] {
   var a, b: [start..end] int;
 
@@ -12,3 +15,5 @@ on here.gpus[0] {
 
   foreach (aElem, bElem) in zip(a, b) { aElem += bElem + 10;    } writeln(a);
 }
+stopGPUDiagnostics();
+writeln(getGPUDiagnostics());
