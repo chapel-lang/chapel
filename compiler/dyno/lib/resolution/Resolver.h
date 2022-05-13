@@ -141,6 +141,11 @@ struct Resolver {
                       const PoiScope* poiScope,
                       ResolutionResultByPostorderID& byPostorder);
 
+  /* Returns ErroneousType and emits the error message msg
+     relevant to location for 'ast'.
+   */
+  types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
+
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.
      E.g.
