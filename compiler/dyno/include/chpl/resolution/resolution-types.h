@@ -187,6 +187,11 @@ class UntypedFnSignature {
     return name_;
   }
 
+  /** Returns the kind of the function this signature represents */
+  uast::Function::Kind kind() const {
+    return kind_;
+  }
+
   /** Returns true if id() refers to a Function */
   bool idIsFunction() const {
     return idTag_ == uast::asttags::Function;
