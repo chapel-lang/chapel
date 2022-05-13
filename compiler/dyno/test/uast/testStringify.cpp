@@ -114,8 +114,8 @@ static void test1(Parser* parser) {
                include public prototype module A;
                include public module B;
                enum myEnum { a=ii, b=jj }
-               extern record foo {};
-               extern "struct bar" record bar {};
+               extern record foo {}
+               extern "struct bar" record bar {}
                export record dog { var x = 0; }
                export "meow" record cat { var x = 0; }
                extern union baz {}
