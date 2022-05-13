@@ -17,18 +17,18 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-const stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                                   hints=QIO_CH_ALWAYS_UNBUFFERED),
-      stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
 
 proc main(args: [] string) {
-  // read in the data using an incrementally growing buffer
-  var bufLen = 8 * 1024,
+  var stdinBin  = openfd(0).reader(iokind.native, locking=false,
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED),
+      stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED),
+      bufLen = 8 * 1024,
       bufDom = {0..<bufLen},
       buf: [bufDom] uint(8),
       end = 0;
 
+  // read in the data using an incrementally growing buffer
   while stdinBin.read(buf[end..]) {
     end = bufLen;
     bufLen += min(1024**2, bufLen);
