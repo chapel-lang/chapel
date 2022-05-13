@@ -1523,6 +1523,70 @@ void Resolver::exit(const uast::New* node) {
   }
 }
 
+bool Resolver::enter(const For* loop) {
+  enterScope(loop);
+
+  const AstNode* iterand = loop->iterand();
+  iterand->traverse(*this);
+
+  ResolvedExpression& iterandRE = byPostorder.byAst(iterand);
+
+  auto& MSC = iterandRE.mostSpecific();
+  bool isIter = MSC.isEmpty() == false &&
+                MSC.numBest() == 1 &&
+                MSC.only()->untyped()->kind() == uast::Function::Kind::ITER;
+
+  bool wasResolved = iterandRE.type().isUnknown() == false &&
+                     iterandRE.type().isErroneousType() == false;
+
+  QualifiedType idxType = QualifiedType(QualifiedType::UNKNOWN,
+                                        ErroneousType::get(context));
+
+  if (isIter) {
+    idxType = iterandRE.type();
+  } else if (wasResolved) {
+    //
+    // Resolve "iterand.these()"
+    //
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
+    auto ci = CallInfo (/* name */ USTR("these"),
+                        /* calledType */ iterandRE.type(),
+                        /* isMethod */ true,
+                        /* hasQuestionArg */ false,
+                        actuals);
+    auto inScope = scopeStack.back();
+    auto c = resolveGeneratedCall(context, iterand, ci, inScope, poiScope);
+
+    if (auto only = c.mostSpecific().only()) {
+      idxType = c.exprType();
+
+      ResolvedExpression::AssociatedFns associated;
+      associated.push_back(only);
+      iterandRE.setAssociatedFns(associated);
+
+      poiInfo.accumulate(c.poiInfo());
+    } else {
+      std::ostringstream oss;
+      iterandRE.type().type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+      context->error(loop, "unable to iterate over values of type %s", oss.str().c_str());
+    }
+  }
+
+  if (const Decl* idx = loop->index()) {
+    ResolvedExpression& re = byPostorder.byAst(idx);
+    re.setType(idxType);
+  }
+
+  loop->body()->traverse(*this);
+
+  return false;
+}
+
+void Resolver::exit(const For* loop) {
+  exitScope(loop);
+}
+
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);
 
