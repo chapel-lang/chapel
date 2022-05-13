@@ -46,6 +46,7 @@ struct Resolver {
   bool fieldOrFormalsComputed = false;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
+  const uast::Call* inLeafCall = nullptr;
 
   // results of the resolution process
 
