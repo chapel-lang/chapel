@@ -171,8 +171,8 @@ static void test4() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id() == x->id());
   assert(match.found() == InnermostMatch::ONE);
+  assert(match.id() == x->id());
 }
 
 // testing a simple recursive use statement
@@ -791,9 +791,10 @@ static void test16() {
   assert(xIdent);
   const Module* n = vec[1]->toModule();
   assert(n);
-  assert(n->numStmts() == 2);
+  assert(n->numStmts() == 1);
   const Module* nn = n->stmt(0)->toModule();
   assert(nn);
+  assert(nn->numStmts() == 1);
   const Variable* x = nn->stmt(0)->toVariable();
   assert(x);
 
@@ -803,11 +804,6 @@ static void test16() {
   const auto& m1 = findInnermostDecl(context, scopeForIdent, xIdent->name());
   assert(m1.id() == x->id());
   assert(m1.found() == InnermostMatch::ONE);
-
-  assert(scopeForIdent == scopeForId(context, zIdent->id()));
-  const auto& m2 = findInnermostDecl(context, scopeForIdent, zIdent->name());
-  assert(m2.id() == z->id());
-  assert(m2.found() == InnermostMatch::ONE);
 }
 
 
