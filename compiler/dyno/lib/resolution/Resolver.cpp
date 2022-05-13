@@ -271,6 +271,23 @@ bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
   return isFieldOrFormal && !isSubstituted && !isFormalInstantiated;
 }
 
+// is it a call to int / uint / etc?
+static bool isCallToIntEtc(const AstNode* formalTypeExpr) {
+  if (auto call = formalTypeExpr->toFnCall()) {
+    if (auto calledAst = call->calledExpression()) {
+      if (auto calledIdent = calledAst->toIdentifier()) {
+        UniqueString n = calledIdent->name();
+        if (n == USTR("int") || n == USTR("uint") || n == USTR("bool") ||
+            n == USTR("real") || n == USTR("imag") || n == USTR("complex")) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 // helper for resolveTypeQueriesFromFormalType
 void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                                   const Type* actualType) {
@@ -294,18 +311,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
   // Make recursive calls as needed to handle any TypeQuery nodes
   // nested within typeExpr.
   if (auto call = formalTypeExpr->toFnCall()) {
-    bool isIntEtc = false;
-    if (auto calledAst = call->calledExpression()) {
-      if (auto calledIdent = calledAst->toIdentifier()) {
-        UniqueString n = calledIdent->name();
-        if (n == USTR("int") || n == USTR("uint") || n == USTR("bool") ||
-            n == USTR("real") || n == USTR("imag") || n == USTR("complex")) {
-          isIntEtc = true;
-        }
-      }
-    }
-
-    if (isIntEtc) {
+    if (isCallToIntEtc(formalTypeExpr)) {
       // If it is e.g. int(TypeQuery), resolve the type query to the width
       // Set the type that we know (since it was passed in)
       if (call->numActuals() == 1) {
@@ -1097,7 +1103,12 @@ bool Resolver::enter(const TypeQuery* tq) {
 
   if (!foundFormalSubstitution) {
     // No substitution (i.e. initial signature) so use AnyType
-    result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+    if (inLeafCall && isCallToIntEtc(inLeafCall)) {
+      auto defaultInt = IntType::get(context, 0);
+      result.setType(QualifiedType(QualifiedType::PARAM, defaultInt));
+    } else {
+      result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+    }
   } else {
 
     if (result.type().kind() != QualifiedType::UNKNOWN &&
@@ -1287,6 +1298,7 @@ void Resolver::exit(const TupleDecl* decl) {
 }
 
 bool Resolver::enter(const Call* call) {
+  inLeafCall = call;
   return true;
 }
 
@@ -1441,24 +1453,54 @@ void Resolver::exit(const Call* call) {
 
   auto ci = prepareCallInfoNormalCall(call);
 
-  CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
-
-  // save the most specific candidates in the resolution result for the id
-  ResolvedExpression& r = byPostorder.byAst(call);
-  r.setMostSpecific(c.mostSpecific());
-  r.setPoiScope(c.poiInfo().poiScope());
-  r.setType(c.exprType());
-
-
-  if (r.type().type() == nullptr) {
-    // assume it is OK if a type was computed, even with no candidates
-    // (that happens e.g. for a primitive)
-    issueErrorForFailedCallResolution(call, ci, c);
-    r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+  // Don't try to resolve a call other than type construction that accepts:
+  //  * an unknown param
+  //  * a generic type unless there are substitutions
+  //  * UnknownType, ErroneousType
+  bool skip = false;
+  if (!ci.calledType().isType()) {
+    for (auto actual : ci.actuals()) {
+      QualifiedType qt = actual.type();
+      if (qt.isParam() && qt.param() == nullptr) {
+        skip = true;
+      } else if (const Type* t = qt.type()) {
+        auto g = t->genericity();
+        bool isBuiltinGeneric = (g == Type::GENERIC &&
+                                 (t->isAnyType() || t->isBuiltinType()));
+        if (isBuiltinGeneric && substitutions == nullptr) {
+          skip = true;
+        } else if (t->isUnknownType() || t->isErroneousType()) {
+          skip = true;
+        }
+      }
+      if (skip) {
+        break;
+      }
+    }
   }
 
-  // gather the poi scopes used when resolving the call
-  poiInfo.accumulate(c.poiInfo());
+  if (!skip) {
+    CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
+
+    // save the most specific candidates in the resolution result for the id
+    ResolvedExpression& r = byPostorder.byAst(call);
+    r.setMostSpecific(c.mostSpecific());
+    r.setPoiScope(c.poiInfo().poiScope());
+    r.setType(c.exprType());
+
+
+    if (r.type().type() == nullptr) {
+      // assume it is OK if a type was computed, even with no candidates
+      // (that happens e.g. for a primitive)
+      issueErrorForFailedCallResolution(call, ci, c);
+      r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+    }
+
+    // gather the poi scopes used when resolving the call
+    poiInfo.accumulate(c.poiInfo());
+  }
+
+  inLeafCall = nullptr;
 }
 
 bool Resolver::enter(const Dot* dot) {

@@ -2035,6 +2035,8 @@ static const Type* getNumericType(Context* context,
       QualifiedType qt = ci.actuals(0).type();
       if (qt.type() && qt.type()->isAnyType()) {
         useGenericType = true;
+      } else if (qt.isParam() && qt.param() == nullptr)  {
+        useGenericType = true;
       }
     }
 
