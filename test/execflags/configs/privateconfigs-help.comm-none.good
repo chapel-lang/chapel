@@ -6,53 +6,54 @@ CONFIG VAR FLAGS:
 CONFIG VARS:
 ============
 Built-in config vars:
-       printModuleInitOrder: bool
-      dataParTasksPerLocale: int(64)
-  dataParIgnoreRunningTasks: bool
-      dataParMinGranularity: int(64)
-                   memTrack: bool
-                   memStats: bool
-             memLeaksByType: bool
-                   memLeaks: bool
-                     memMax: uint(64)
-               memThreshold: uint(64)
-                     memLog: string
-                memLeaksLog: string
-             memLeaksByDesc: string
-                 numLocales: int(64)
+             printModuleInitOrder: bool
+            dataParTasksPerLocale: int(64)
+        dataParIgnoreRunningTasks: bool
+            dataParMinGranularity: int(64)
+                         memTrack: bool
+                         memStats: bool
+                   memLeaksByType: bool
+                         memLeaks: bool
+                           memMax: uint(64)
+                     memThreshold: uint(64)
+                           memLog: string
+                      memLeaksLog: string
+                   memLeaksByDesc: string
+  defaultHashTableResizeThreshold: real(64)
+                       numLocales: int(64)
 
 M1 config vars:
-                        aaa: int(64)
-                        bbb: int(64) (private)
-                        ccc: int(64) (private)
-                        ddd: int(64) (private)
-                        eee: int(64) (private)
-                        fff: int(64)
-                        ggg: int(64) (private)
+                              aaa: int(64)
+                              bbb: int(64) (private)
+                              ccc: int(64) (private)
+                              ddd: int(64) (private)
+                              eee: int(64) (private)
+                              fff: int(64)
+                              ggg: int(64) (private)
 
 M2 config vars:
-                        aaa: int(64) (private)
-                        bbb: int(64)
-                        ccc: int(64) (private)
-                        ddd: int(64) (private)
-                        eee: int(64) (private)
-                        fff: int(64) (private)
-                        ggg: int(64)
+                              aaa: int(64) (private)
+                              bbb: int(64)
+                              ccc: int(64) (private)
+                              ddd: int(64) (private)
+                              eee: int(64) (private)
+                              fff: int(64) (private)
+                              ggg: int(64)
 
 M3 config vars:
-                        aaa: int(64) (private)
-                        bbb: int(64) (private)
-                        ccc: int(64)
-                        ddd: int(64) (private)
-                        eee: int(64) (private)
-                        fff: int(64)
-                        ggg: int(64) (private)
+                              aaa: int(64) (private)
+                              bbb: int(64) (private)
+                              ccc: int(64)
+                              ddd: int(64) (private)
+                              eee: int(64) (private)
+                              fff: int(64)
+                              ggg: int(64) (private)
 
 M4 config vars:
-                        aaa: int(64) (private)
-                        bbb: int(64) (private)
-                        ccc: int(64) (private)
-                        ddd: int(64)
-                        eee: int(64) (private)
-                        fff: int(64) (private)
-                        ggg: int(64)
+                              aaa: int(64) (private)
+                              bbb: int(64) (private)
+                              ccc: int(64) (private)
+                              ddd: int(64)
+                              eee: int(64) (private)
+                              fff: int(64) (private)
+                              ggg: int(64)
