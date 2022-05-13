@@ -432,9 +432,15 @@ struct ChplSyntaxVisitor {
     ss_ << "]";
     if (node->numStmts() > 0) {
       ss_ << " ";
-      interpose(node->stmts(), "");
-      if (node->stmt(0)->isOpCall())
-        ss_ << ";";
+      if (node->blockStyle()==BlockStyle::EXPLICIT) {
+        indentDepth++;
+        printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr,";");
+        indentDepth--;
+      } else {
+        interpose(node->stmts(), "");
+        if (node->stmt(0)->isOpCall())
+          ss_ << ";";
+      }
     }
   }
 
@@ -520,16 +526,25 @@ struct ChplSyntaxVisitor {
     printChapelSyntax(ss_, node->condition());
     ss_ << " ";
     if (node->isExpressionLevel()) {
-      printBlockWithStyle(node->thenBlockStyle(), node->thenStmts(), "then ");
+      ss_ << "then ";
+      printAst(node->thenStmt(0));
     } else {
-      indentDepth++;
-      printBlockWithStyle(node->thenBlockStyle(), node->thenStmts(), "then ", ";");
-      indentDepth--;
+      if (node->thenBlockStyle() == BlockStyle::IMPLICIT && !node->hasElseBlock()) {
+        ss_ << "then ";
+        printAst(node->thenStmt(0));
+        ss_ << ";";
+      } else {
+        indentDepth++;
+        printBlockWithStyle(node->thenBlockStyle(), node->thenStmts(), "then ", ";");
+        indentDepth--;
+      }
+
     }
     if (node->hasElseBlock()) {
       ss_ << " ";
       if (node->isExpressionLevel()) {
-        printBlockWithStyle(node->elseBlockStyle(), node->elseStmts(), "else " );
+        ss_ << "else ";
+        printAst(node->elseStmt(0));
       } else {
         ss_ << "\n";
         indentStream();
@@ -676,13 +691,18 @@ struct ChplSyntaxVisitor {
     }
     printChapelSyntax(ss_, node->iterand());
     ss_ << " ";
-    indentDepth++;
-    if (node->blockStyle() == BlockStyle::EXPLICIT) {
-      printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";");
+    if (node->isExpressionLevel()) {
+      ss_ << "do ";
+      printAst(node->stmt(0));
     } else {
-      printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
+      indentDepth++;
+      if (node->blockStyle() == BlockStyle::EXPLICIT) {
+        printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";");
+      } else {
+        printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
+      }
+      indentDepth--;
     }
-    indentDepth--;
   }
 
   void visit(const Forall* node) {
@@ -698,9 +718,14 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->withClause());
     }
     ss_ << " ";
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-    indentDepth--;
+    if (node->isExpressionLevel()) {
+     ss_ << "do ";
+     printAst(node->stmt(0));
+    } else {
+      indentDepth++;
+      printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
+      indentDepth--;
+    }
   }
 
   void visit(const Foreach* node) {
@@ -1057,15 +1082,20 @@ struct ChplSyntaxVisitor {
     } else {
       ss_ << " ";
     }
-    indentDepth++;
-    // TODO: Should we have a blockstyle associated with Try?
-    interpose(node->stmts(), "\n", "{\n","\n}", ";");
+    if (node->isExpressionLevel()) {
+      printAst(node->stmt(0));
+    } else {
+      indentDepth++;
+      interpose(node->stmts(), "\n", "{\n","\n}", ";");
+      indentDepth--;
+    }
     // if try block has catch blocks
     if (!node->isTryBang()) {
       ss_ << " ";
+      indentDepth++;
       interpose(node->handlers(), " ");
+      indentDepth--;
     }
-    indentDepth--;
   }
 
   void visit(const Tuple* node) {
