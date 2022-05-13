@@ -1116,7 +1116,8 @@ bool Resolver::enter(const TypeQuery* tq) {
       auto defaultInt = IntType::get(context, 0);
       result.setType(QualifiedType(QualifiedType::PARAM, defaultInt));
     } else {
-      result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+      // Well, the type query could refer to a param or to a type.
+      result.setType(QualifiedType(QualifiedType::UNKNOWN, AnyType::get(context)));
     }
   } else {
 

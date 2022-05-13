@@ -835,17 +835,22 @@ CanPassResult CanPassResult::canPass(Context* context,
   const Type* formalT = formalQT.type();
   assert(actualT && formalT);
 
+  // allow unknown qualifier for any type actuals
+  // so other code doesn't have to decide between param
+  // and type for type queries
+  bool actualAnyType = actualT->isAnyType();
+
   // check that the kinds are compatible
 
   // type formal, type actual -> OK
   // non-type formal, non-type actual -> OK
   // type formal, non-type actual -> error, can't pass value to type
   // non-type formal, type actual -> error, can't pass type to value
-  if (formalQT.isType() != actualQT.isType())
+  if (formalQT.isType() != actualQT.isType() && !actualAnyType)
     return fail();
 
   // param actuals can pass to non-param formals
-  if (formalQT.isParam() && !actualQT.isParam())
+  if (formalQT.isParam() && !actualQT.isParam() && !actualAnyType)
     return fail();
 
   // check params
@@ -879,7 +884,7 @@ CanPassResult CanPassResult::canPass(Context* context,
     return passAsIs();
   }
 
-  if (actualQT.isUnknown()) {
+  if (actualQT.isUnknown() && !actualAnyType) {
     return fail(); // actual type not established
   }
 
