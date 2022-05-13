@@ -1260,8 +1260,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   checkIndices(indices);
   if (zippered) zipToTuple(iterator);
 
-  SET_LINENO(body);
-
   VarSymbol* tmpIter = newTemp("tmpIter");
   tmpIter->addFlag(FLAG_EXPR_TEMP);
   tmpIter->addFlag(FLAG_MAYBE_REF);
