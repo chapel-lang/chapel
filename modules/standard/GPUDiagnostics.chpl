@@ -20,10 +20,12 @@
 
 module GPUDiagnostics
 {
-  /*
-    Print out stack traces for gpu events printed after startVerbosegpu
-   */
-  config param gpuDiagsStacktrace = false;
+
+  // TODO can we even do this?
+  // I am leaving it here, because the runtime already inherits this from the
+  // comm diagnostics support
+  pragma "no doc"
+  param gpuDiagsStacktrace = false;
 
   /*
     If this is `false`, a written `gpuDiagnostics` value does not
@@ -37,18 +39,15 @@ module GPUDiagnostics
    */
   config param gpuDiagsPrintUnstable = false;
 
-  /* Aggregated gpuunication operation counts.  This record type is
-     defined in the same way by both the underlying gpu layer(s) and
-     this module, because we don't have a good way to inherit types back
-     and forth between the two.  This first definition duplicates the
-     one in the gpu layer(s).
+  /* 
+     Aggregated GPU operation counts.
    */
   extern record chpl_gpuDiagnostics {
     var kernel_launch: uint(64);
   };
 
   /*
-    The Chapel record type inherits the gpu layer definition of it.
+    The Chapel record type inherits the runtime definition of it.
    */
   type gpuDiagnostics = chpl_gpuDiagnostics;
 
@@ -75,65 +74,33 @@ module GPUDiagnostics
   private extern proc chpl_gpu_getDiagnosticsHere(ref cd: gpuDiagnostics);
 
   /*
-    Start on-the-fly reporting of gpuunication initiated on any locale.
+    Start on-the-fly reporting of GPU operations initiated on any locale.
    */
   proc startVerboseGPU() {
     chpl_gpu_startVerbose(gpuDiagsStacktrace, gpuDiagsPrintUnstable);
   }
 
   /*
-    Stop on-the-fly reporting of gpuunication initiated on any locale.
+    Stop on-the-fly reporting of GPU operations initiated on any locale.
    */
   proc stopVerboseGPU() { chpl_gpu_stopVerbose(); }
 
   /*
-    Start on-the-fly reporting of gpuunication initiated on this locale.
-   */
-  proc startVerbosegpuHere() {
-    compilerError("Not ready yet");
-    chpl_gpu_startVerboseHere(gpuDiagsStacktrace, gpuDiagsPrintUnstable);
-  }
-
-  /*
-    Stop on-the-fly reporting of gpuunication initiated on this locale.
-   */
-  proc stopVerbosegpuHere() {
-    compilerError("Not ready yet");
-    chpl_gpu_stopVerboseHere();
-  }
-
-  /*
-    Start counting gpuunication operations across the whole program.
+    Start counting GPU operations across the whole program.
    */
   proc startGPUDiagnostics() {
     chpl_gpu_startDiagnostics(gpuDiagsPrintUnstable);
   }
 
   /*
-    Stop counting gpuunication operations across the whole program.
+    Stop counting GPU operations across the whole program.
    */
   proc stopGPUDiagnostics() {
     chpl_gpu_stopDiagnostics();
   }
 
   /*
-    Start counting gpuunication operations initiated on this locale.
-   */
-  proc startGPUDiagnosticsHere() {
-    compilerError("Not ready yet");
-    chpl_gpu_startDiagnosticsHere(gpuDiagsPrintUnstable);
-  }
-
-  /*
-    Stop counting gpuunication operations initiated on this locale.
-   */
-  proc stopGPUDiagnosticsHere() {
-    compilerError("Not ready yet");
-    chpl_gpu_stopDiagnosticsHere();
-  }
-
-  /*
-    Reset aggregate gpuunication counts across the whole program.
+    Reset aggregate GPU operation counts across the whole program.
    */
   proc resetGPUDiagnostics() {
     for loc in Locales do on loc do
@@ -141,35 +108,35 @@ module GPUDiagnostics
   }
 
   /*
-    Reset aggregate gpuunication counts on the calling locale.
-   */
-  inline proc resetGPUDiagnosticsHere() {
-    chpl_gpu_resetDiagnosticsHere();
-  }
+    Retrieve aggregate GPU operation counts for the whole program.
 
-  /*
-    Retrieve aggregate gpuunication counts for the whole program.
-
-    :returns: array of counts of gpu ops initiated on each locale
+    :returns: array of counts of GPU ops initiated on each locale
     :rtype: `[LocaleSpace] gpuDiagnostics`
    */
   proc getGPUDiagnostics() {
     var D: [LocaleSpace] gpuDiagnostics;
     for loc in Locales do on loc {
-      D(loc.id) = getgpuDiagnosticsHere();
+      D(loc.id) = getGPUDiagnosticsHere();
     }
     return D;
   }
 
   /*
-    Retrieve aggregate gpuunication counts for this locale.
+    Retrieve aggregate GPU operation counts for this locale.
 
-    :returns: counts of gpu ops initiated on this locale
+    :returns: counts of GPU ops initiated on this locale
     :rtype: `gpuDiagnostics`
    */
-  proc getgpuDiagnosticsHere() {
+  private proc getGPUDiagnosticsHere() {
     var cd: gpuDiagnostics;
     chpl_gpu_getDiagnosticsHere(cd);
     return cd;
+  }
+
+  /*
+    Reset aggregate GPU operation counts on the calling locale.
+   */
+  private inline proc resetGPUDiagnosticsHere() {
+    chpl_gpu_resetDiagnosticsHere();
   }
 }
