@@ -229,6 +229,15 @@ Resolver::parentClassResolver(Context* context,
   return ret;
 }
 
+types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
+                                       const char* msg)
+{
+  auto loc = parsing::locateAst(context, ast);
+  auto err = ErrorMessage(ast->id(), loc, msg, ErrorMessage::ERROR);
+  context->report(err);
+  auto t = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+  return t;
+}
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
   // make sure the set of IDs for fields and formals is computed
@@ -1298,7 +1307,78 @@ void Resolver::exit(const TupleDecl* decl) {
 }
 
 bool Resolver::enter(const Call* call) {
+
   inLeafCall = call;
+
+  // handle && and || to not bother to evaluate the RHS
+  // if the LHS is param and false/true, respectively.
+  auto op = call->toOpCall();
+  if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
+    QualifiedType result;
+    if (op->numActuals() != 2) {
+      result = typeErr(op, "invalid op call");
+    } else if (op->op() == USTR("&&")) {
+      // visit the LHS
+      op->actual(0)->traverse(*this);
+      // look at the LHS type. Is it param?
+      const QualifiedType& lhs = byPostorder.byAst(op->actual(0)).type();
+      if (lhs.isParamFalse()) {
+        // OK, don't need to evaluate the RHS
+        result = lhs;
+      } else {
+        // go ahead and evaluate the RHS
+        op->actual(1)->traverse(*this);
+        // look at the RHS type.
+        const QualifiedType& rhs = byPostorder.byAst(op->actual(0)).type();
+        if (lhs.isParamTrue() && rhs.isParamTrue()) {
+          // if LHS and RHS are both param true, return param true.
+          result = lhs;
+        } else if (lhs.isUnknown() || rhs.isUnknown()) {
+          // if one is unknown, return unknown
+          result = QualifiedType(QualifiedType::CONST_VAR,
+                                 UnknownType::get(context));
+        } else {
+          // TODO: check that LHS and RHS are both bool
+          // otherwise just return a Bool value
+          result = QualifiedType(QualifiedType::CONST_VAR,
+                                 BoolType::get(context, 0));
+        }
+      }
+    } else if (op->op() == USTR("||")) {
+      // visit the LHS
+      op->actual(0)->traverse(*this);
+      // look at the LHS type. Is it param?
+      const QualifiedType& lhs = byPostorder.byAst(op->actual(0)).type();
+      if (lhs.isParamTrue()) {
+        // OK, don't need to evaluate the RHS
+        result = lhs;
+      } else {
+        // go ahead and evaluate the RHS
+        op->actual(1)->traverse(*this);
+        // look at the RHS type.
+        const QualifiedType& rhs = byPostorder.byAst(op->actual(0)).type();
+        if (lhs.isParamFalse() && rhs.isParamFalse()) {
+          // if LHS and RHS are both param false, return param false.
+          result = lhs;
+        } else if (lhs.isUnknown() || rhs.isUnknown()) {
+          // if one is unknown, return unknown
+          result = QualifiedType(QualifiedType::CONST_VAR,
+                                 UnknownType::get(context));
+        } else {
+          // TODO: check that LHS and RHS are both bool
+          // otherwise just return a Bool value
+          result = QualifiedType(QualifiedType::CONST_VAR,
+                                 BoolType::get(context, 0));
+        }
+      }
+    } else {
+      assert(false && "should not be reachable");
+    }
+    // Update the type of the && call
+    byPostorder.byAst(op).setType(result);
+    // Don't visit the children since we already did
+    return false;
+  }
   return true;
 }
 
@@ -1443,6 +1523,13 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
 }
 
 void Resolver::exit(const Call* call) {
+
+  auto op = call->toOpCall();
+  if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
+    // these are handled in 'enter' to do param folding
+    return;
+  }
+
   assert(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
