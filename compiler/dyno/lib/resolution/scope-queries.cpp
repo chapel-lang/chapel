@@ -303,7 +303,7 @@ static bool doLookupInImports(Context* context,
   if (resolving && resolving->scope() == scope) {
     r = resolving;
   } else {
-    resolveVisibilityStmts(context, scope);
+    r = resolveVisibilityStmts(context, scope);
   }
 
   if (r != nullptr) {
