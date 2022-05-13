@@ -114,6 +114,20 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
+void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
+  const FileContents& contents = fileText(context, path);
+  const std::string& text = contents.text();
+  const ErrorMessage& error = contents.error();
+  BuilderResult result(path);
+  if (error.isEmpty()) {
+    // if there was no error reading the file, proceed to parse
+    auto parser = Parser::build(context);
+    const char* pathc = path.c_str();
+    const char* textc = text.c_str();
+    parser->parseString(pathc, textc, parseStats);
+  }
+}
+
 const Location& locateId(Context* context, ID id) {
   QUERY_BEGIN(locateId, context, id);
 

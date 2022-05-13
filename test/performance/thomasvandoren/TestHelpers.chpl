@@ -27,11 +27,11 @@ var A: [outerRows, inner] int,
   C: [outerRows, outerCols] int;
 
 // Fill A and B with random values.
-fillRandom(A);
-fillRandom(B);
+myFillRandom(A);
+myFillRandom(B);
 
 /* Fill int array with random values. */
-proc fillRandom(ref A: [] int) {
+proc myFillRandom(ref A: [] int) {
   // Use serial loop so A filling is reproducible when seed is same.
   for a in A {
     a = (randStream.getNext() * A.size): int;

@@ -358,7 +358,6 @@ class DimensionalArr : BaseRectangularArr {
   // same as 'dom'; for an alias (e.g. a slice), 'dom' of the original array
   const allocDom: dom.type; // must be a DimensionalDom
 
-  proc rank param return dom.rank;
   proc targetIds return localAdescs.domain;
 
   // no subordinate 1-d array descriptors - we handle storage ourselves

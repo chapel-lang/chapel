@@ -69,7 +69,7 @@ module elemental_cholesky_fully_blocked {
 
   use CyclicDist, Barriers;
 
-  public use blocked_elemental_schur_complement, 
+  use blocked_elemental_schur_complement, 
       locality_info, 
       local_reduced_matrix_cyclic_partition_fb,
       scalar_inner_product_cholesky,

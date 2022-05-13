@@ -332,6 +332,9 @@ static void test1(Parser* parser) {
                import this.DefinesOp.+;
              }
              private proc param R.prm2(arg) param : string { }
+             iter foo() {
+               for i in 1..10 do yield try! i;
+             }
              )"""";
   auto parseResult = parser->parseString("Test4.chpl",
                                          testCode.c_str());

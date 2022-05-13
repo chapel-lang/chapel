@@ -1,66 +1,66 @@
 
+Start analyzing forall (views.chpl:19)
+| Found loop domain (views.chpl:9)
+| Will attempt static and dynamic optimizations (views.chpl:19)
+|
+|  Start analyzing call (views.chpl:20)
+|   Found the domain of the access base (views.chpl:8)
+|  This call is a dynamic optimization candidate (views.chpl:20)
+|
+|  Start analyzing call (views.chpl:21)
+|   Can't determine the domain of access base (views.chpl:14)
+|  This call is a dynamic optimization candidate (views.chpl:21)
+|
+End analyzing forall (views.chpl:19)
+
+
 Start analyzing forall (views.chpl:40)
-| Found loop domain (views.chpl:30)
+| Found loop domain (views.chpl:32)
 | Will attempt static and dynamic optimizations (views.chpl:40)
 |
-|  Start analyzing call (views.chpl:41)
-|   Found the domain of the access base (views.chpl:29)
-|  This call is a dynamic optimization candidate (views.chpl:41)
-|
 |  Start analyzing call (views.chpl:42)
+|   Can optimize: Access base is the iterator's base (views.chpl:42)
+|  This call is a static optimization candidate (views.chpl:42)
+|
+|  Start analyzing call (views.chpl:43)
 |   Can't determine the domain of access base (views.chpl:35)
-|  This call is a dynamic optimization candidate (views.chpl:42)
+|  This call is a dynamic optimization candidate (views.chpl:43)
 |
 End analyzing forall (views.chpl:40)
 
 
-Start analyzing forall (views.chpl:61)
-| Found loop domain (views.chpl:53)
-| Will attempt static and dynamic optimizations (views.chpl:61)
-|
-|  Start analyzing call (views.chpl:63)
-|   Can optimize: Access base is the iterator's base (views.chpl:63)
-|  This call is a static optimization candidate (views.chpl:63)
+Start analyzing forall (views.chpl:63)
+| Found loop domain (views.chpl:59)
+| Will attempt static and dynamic optimizations (views.chpl:63)
 |
 |  Start analyzing call (views.chpl:64)
-|   Can't determine the domain of access base (views.chpl:56)
-|  This call is a dynamic optimization candidate (views.chpl:64)
+|   Cannot optimize: call arguments don't match loop indices cleanly (views.chpl:64)
+|  Start analyzing call (views.chpl:65)
+|   Can optimize: Access base is the iterator's base (views.chpl:65)
+|  This call is a static optimization candidate (views.chpl:65)
 |
-End analyzing forall (views.chpl:61)
+End analyzing forall (views.chpl:63)
 
 
-Start analyzing forall (views.chpl:84)
-| Found loop domain (views.chpl:80)
-| Will attempt static and dynamic optimizations (views.chpl:84)
+Start analyzing forall (views.chpl:85)
+| Found loop domain (views.chpl:83)
+| Will attempt static and dynamic optimizations (views.chpl:85)
 |
-|  Start analyzing call (views.chpl:85)
-|   Cannot optimize: call arguments don't match loop indices cleanly (views.chpl:85)
 |  Start analyzing call (views.chpl:86)
 |   Can optimize: Access base is the iterator's base (views.chpl:86)
 |  This call is a static optimization candidate (views.chpl:86)
 |
-End analyzing forall (views.chpl:84)
+|  Start analyzing call (views.chpl:87)
+|   Cannot optimize: call arguments don't match loop indices cleanly (views.chpl:87)
+End analyzing forall (views.chpl:85)
 
-
-Start analyzing forall (views.chpl:106)
-| Found loop domain (views.chpl:104)
-| Will attempt static and dynamic optimizations (views.chpl:106)
-|
-|  Start analyzing call (views.chpl:107)
-|   Can optimize: Access base is the iterator's base (views.chpl:107)
-|  This call is a static optimization candidate (views.chpl:107)
-|
-|  Start analyzing call (views.chpl:108)
-|   Cannot optimize: call arguments don't match loop indices cleanly (views.chpl:108)
-End analyzing forall (views.chpl:106)
-
-Static check successful. Using localAccess with dynamic check (views.chpl:41)
-Static check successful. Using localAccess with dynamic check (views.chpl:42)
-Static check successful. Using localAccess [static and dynamic ALA clone]  (views.chpl:63)
-Static check successful. Using localAccess with dynamic check (views.chpl:64)
-Static check successful. Using localAccess [static only ALA clone]  (views.chpl:63)
-Static check successful. Using localAccess [static only ALA clone]  (views.chpl:107)
-Local access attempt reverted. All static checks failed or code is unreachable.(views.chpl:86)
+Static check successful. Using localAccess with dynamic check (views.chpl:20)
+Static check successful. Using localAccess with dynamic check (views.chpl:21)
+Static check successful. Using localAccess [static and dynamic ALA clone]  (views.chpl:42)
+Static check successful. Using localAccess with dynamic check (views.chpl:43)
+Static check successful. Using localAccess [static only ALA clone]  (views.chpl:42)
+Static check successful. Using localAccess [static only ALA clone]  (views.chpl:86)
+Local access attempt reverted. All static checks failed or code is unreachable.(views.chpl:65)
 
 Starting
 Slice: using slicing domain
@@ -84,5 +84,5 @@ Rank change
 0 0 3 0 0 0 0 0 0 0
 0 0 3 0 0 0 0 0 0 0
 
-`this` was called 30 times
-`localAccess` was called 42 times
+this was called 30 times
+localAccess was called 42 times

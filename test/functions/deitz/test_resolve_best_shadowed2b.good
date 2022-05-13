@@ -1,0 +1,4 @@
+test_resolve_best_shadowed2b.chpl:2: In function 'main':
+test_resolve_best_shadowed2b.chpl:11: error: ambiguous call 'h()'
+test_resolve_best_shadowed2b.chpl:16: note: candidates are: h()
+test_resolve_best_shadowed2b.chpl:24: note:                 h()

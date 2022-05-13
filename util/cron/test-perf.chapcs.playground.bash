@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test resize threshold of 0.75
-GITHUB_USER=bmcdonald3
-GITHUB_BRANCH=threshold-change
-SHORT_NAME=threshold-change
-START_DATE=04/29/22
+# Test no localizing global consts 
+GITHUB_USER=bradcray
+GITHUB_BRANCH=disable-localize-glob-consts-by-default
+SHORT_NAME=no-localize-global-consts
+START_DATE=05/09/22
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

@@ -2,17 +2,6 @@ use common;
 
 class MyClass { proc this(i) { return i; } }
 
-// hijack these two methods to provide some output
-inline proc _array.this(i: int) ref {
-  writeln("Custom this was called");
-  return this._value.dsiAccess((i:int,));
-}
-
-inline proc _array.localAccess(i: int) ref {
-  writeln("Custom localAccess was called");
-  return this._value.dsiLocalAccess((i:int,));
-}
-
 var D = createDom({1..10});
 
 var A = createArr({1..10}, int); // dynamic candidate, static check is true

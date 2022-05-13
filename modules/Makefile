@@ -170,6 +170,12 @@ DISTS_TO_DOCUMENT = \
 	layouts/LayoutCS.chpl \
 
 
+#
+# use absolute paths for internal modules so that the compiler can
+# determine that they're internal (and not just modules that happen to
+# live in a path named 'modules/internal/' so that they don't get
+# indexed like the user-facing modules.
+#
 INTERNAL_MODULES_TO_DOCUMENT =                        \
 	$(CHPL_MAKE_HOME)/modules/internal/Atomics.chpl       \
 	$(CHPL_MAKE_HOME)/modules/internal/Bytes.chpl         \
@@ -187,7 +193,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                        \
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
 	@export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
-	  $(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT) $(SYS_CTYPES_MODULE_DOC)
+	  $(CHPLDOC) --home $(CHPL_MAKE_HOME) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT) $(SYS_CTYPES_MODULE_DOC)
 	@echo "Running post-processing scripts"
 	@./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	@./dists/fixDistDocs.perl      ${MODULE_SPHINX}

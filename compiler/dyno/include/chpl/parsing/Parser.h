@@ -25,6 +25,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/util/memory.h"
+#include "chpl/parsing/parser-stats.h"
 
 #include <vector>
 
@@ -33,36 +34,38 @@ namespace parsing {
 
 /**
   A class for parsing
- */
+*/
 class Parser final {
- private:
-   // TODO: stuff to do with module search paths
-   // and then connect parsed modules to a query
+  private:
+  // TODO: stuff to do with module search paths
+  // and then connect parsed modules to a query
 
-   // TODO: compile-time configuration variable settings
-   // need to be stored in here.
+  // TODO: compile-time configuration variable settings
+  // need to be stored in here.
 
-   Context* context_;
-   Parser(Context* context);
+  Context* context_;
+  Parser(Context* context);
 
- public:
-   static owned<Parser> build(Context* context);
-   ~Parser() = default;
+  public:
+    static owned<Parser> build(Context* context);
+    ~Parser() = default;
 
-   /**
-     Return the AST Context used by this Parser.
+    /**
+      Return the AST Context used by this Parser.
     */
-   Context* context() { return context_; }
+    Context* context() { return context_; }
 
-   /**
+    /**
      Parse a file at a particular path.
     */
-   uast::BuilderResult parseFile(const char* path);
-   /**
+    uast::BuilderResult parseFile(const char* path,
+                                  ParserStats* parseStats=nullptr);
+    /**
      Parse source code in a string.
      'path' is only used for certain errors.
     */
-   uast::BuilderResult parseString(const char* path, const char* str);
+    uast::BuilderResult parseString(const char* path, const char* str,
+                                    ParserStats* parseStats=nullptr);
 };
 
 } // end namespace parsing

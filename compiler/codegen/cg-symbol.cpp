@@ -652,7 +652,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           info->lvt->isCArray(cname)) {
         llvm::Type* eltTy = nullptr;
 #if HAVE_LLVM_VER >= 130
-        eltTy = llvm::cast<llvm::PointerType>(got.val->getType()->getScalarType())->getElementType();
+        eltTy = llvm::cast<llvm::PointerType>(got.val->getType()->getScalarType())->getPointerElementType();
 #endif
 
         got.val = info->irBuilder->CreateStructGEP(eltTy, got.val, 0);
@@ -679,7 +679,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         globalValue->setConstant(true);
 #if HAVE_LLVM_VER >= 130
         llvm::Type* ty = llvm::cast<llvm::PointerType>(
-          constString->getType()->getScalarType())->getElementType();
+          constString->getType()->getScalarType())->getPointerElementType();
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->irBuilder->CreateConstInBoundsGEP2_32(
               ty, constString, 0, 0)));
@@ -1801,9 +1801,18 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
     if (fn->hasFlag(FLAG_LLVM_RETURN_NOALIAS)) {
       // Add NoAlias on return for allocator-like functions
       if (returnTy->isPointerTy()) {
+#if HAVE_LLVM_VER >= 140
+        llvm::AttrBuilder b(ctx);
+#else
         llvm::AttrBuilder b;
+#endif
         b.addAttribute(llvm::Attribute::NoAlias);
+#if HAVE_LLVM_VER >= 140
+        attrs = attrs.addAttributesAtIndex(ctx,
+                                           llvm::AttributeList::ReturnIndex, b);
+#else
         attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
+#endif
       }
     }
   }
@@ -1833,19 +1842,30 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
 
       case clang::CodeGen::ABIArgInfo::Kind::Direct:
       {
+#if HAVE_LLVM_VER >= 140
+        llvm::AttrBuilder b(ctx);
+#else
         llvm::AttrBuilder b;
+#endif
         if (returnInfo.getInReg())
           b.addAttribute(llvm::Attribute::InReg);
+#if HAVE_LLVM_VER >= 140
+        attrs = attrs.addAttributesAtIndex(ctx,
+                                           llvm::AttributeList::ReturnIndex, b);
+#else
         attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
-
+#endif
         returnTy = returnInfo.getCoerceToType();
         break;
       }
       case clang::CodeGen::ABIArgInfo::Kind::Extend:
       {
         bool isSigned = returnInfo.isSignExt();
-
+#if HAVE_LLVM_VER >= 140
+        llvm::AttrBuilder b(ctx);
+#else
         llvm::AttrBuilder b;
+#endif
         if (isSigned)
           b.addAttribute(llvm::Attribute::SExt);
         else
@@ -1853,8 +1873,12 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
 
         if (returnInfo.getInReg())
           b.addAttribute(llvm::Attribute::InReg);
-
+#if HAVE_LLVM_VER >= 140
+        attrs = attrs.addAttributesAtIndex(ctx,
+                                           llvm::AttributeList::ReturnIndex, b);
+#else
         attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
+#endif
 
         returnTy = returnInfo.getCoerceToType();
         break;
@@ -1891,7 +1915,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       argNames.push_back("indirect_return");
 
       // Adjust attributes for sret argument
+#if HAVE_LLVM_VER >= 140
+      llvm::AttrBuilder b(ctx);
+#else
       llvm::AttrBuilder b;
+#endif
 #if HAVE_LLVM_VER >= 130
       b.addStructRetAttr(llvm::PointerType::get(chapelReturnTy, stackSpace));
 #else
@@ -1901,7 +1929,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       if (returnInfo.getInReg())
         b.addAttribute(llvm::Attribute::InReg);
       b.addAlignmentAttr(returnInfo.getIndirectAlign().getQuantity());
+#if HAVE_LLVM_VER >= 140
+      attrs = attrs.addAttributesAtIndex(ctx, argTys.size(), b);
+#else
       attrs = attrs.addAttributes(ctx, argTys.size(), b);
+#endif
     }
     // Add type for inalloca argument
     if (CGI->usesInAlloca()) {
@@ -1910,9 +1942,17 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       argNames.push_back("inalloca_arg");
 
       // Adjust attributes for inalloca argument
+#if HAVE_LLVM_VER >= 140
+      llvm::AttrBuilder b(ctx);
+#else
       llvm::AttrBuilder b;
+#endif
       b.addAttribute(llvm::Attribute::InAlloca);
+#if HAVE_LLVM_VER >= 140
+      attrs = attrs.addAttributesAtIndex(ctx, argTys.size(), b);
+#else
       attrs = attrs.addAttributes(ctx, argTys.size(), b);
+#endif
     }
   }
 
@@ -1940,9 +1980,17 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
 
         // Adjust attributes for padding argument
         if (argInfo->getPaddingInReg()) {
+#if HAVE_LLVM_VER >= 140
+          llvm::AttrBuilder b(ctx);
+#else
           llvm::AttrBuilder b;
+#endif
           b.addAttribute(llvm::Attribute::InReg);
+#if HAVE_LLVM_VER >= 140
+          attrs = attrs.addAttributesAtIndex(ctx, argTys.size(), b);
+#else
           attrs = attrs.addAttributes(ctx, argTys.size(), b);
+#endif
         }
       }
 
@@ -1966,7 +2014,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
           argNames.push_back(astr(formal->cname, ".indirect"));
 
           // Adjust attributes for indirect argument
+#if HAVE_LLVM_VER >= 140
+          llvm::AttrBuilder b(ctx);
+#else
           llvm::AttrBuilder b;
+#endif
           if (argInfo->getInReg()) {
             b.addAttribute(llvm::Attribute::InReg);
           }
@@ -1981,7 +2033,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
           if (argInfo->getIndirectByVal()) {
             b.addAlignmentAttr(align.getQuantity());
           }
+#if HAVE_LLVM_VER >= 140
+          attrs = attrs.addAttributesAtIndex(ctx, argTys.size(), b);
+#else
           attrs = attrs.addAttributes(ctx, argTys.size(), b);
+#endif
           break;
         }
 
@@ -1998,7 +2054,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
               argTys.push_back(sTy->getElementType(i));
               argNames.push_back(astr(formal->cname, ".", istr(i)));
               // Adjust attributes
+#if HAVE_LLVM_VER >= 140
+              llvm::AttrBuilder b(ctx);
+#else
               llvm::AttrBuilder b;
+#endif
               if (argInfo->isExtend()) {
                 if (argInfo->isSignExt()) b.addAttribute(llvm::Attribute::SExt);
                 else                      b.addAttribute(llvm::Attribute::ZExt);
@@ -2006,7 +2066,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
               if (argInfo->getInReg()) {
                 b.addAttribute(llvm::Attribute::InReg);
               }
+#if HAVE_LLVM_VER >= 140
+              attrs = attrs.addAttributesAtIndex(ctx, argTys.size(), b);
+#else
               attrs = attrs.addAttributes(ctx, argTys.size(), b);
+#endif
             }
           } else {
             // Emit argument
@@ -2016,7 +2080,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
               name = astr(name, ".coerce");
             argNames.push_back(name);
             // Adjust attributes
+#if HAVE_LLVM_VER >= 140
+            llvm::AttrBuilder b(ctx);
+#else
             llvm::AttrBuilder b;
+#endif
             if (formal->isRef() && argTy == toTy) {
               b.addAttribute(llvm::Attribute::NonNull);
               llvm::Type* valType = formal->getValType()->codegen().type;
@@ -2030,7 +2098,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
             if (argInfo->getInReg()) {
               b.addAttribute(llvm::Attribute::InReg);
             }
+#if HAVE_LLVM_VER >= 140
+            attrs = attrs.addAttributesAtIndex(ctx, argTys.size(), b);
+#else
             attrs = attrs.addAttributes(ctx, argTys.size(), b);
+#endif
           }
           break;
         }
@@ -2060,12 +2132,20 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       argTys.push_back(argTy);
       argNames.push_back(formal->cname);
       if(formal->isRef()) {
+#if HAVE_LLVM_VER >= 140
+        llvm::AttrBuilder b(ctx);
+#else
         llvm::AttrBuilder b;
+#endif
         b.addAttribute(llvm::Attribute::NonNull);
         llvm::Type* valType = formal->getValType()->codegen().type;
         int64_t sz = getTypeSizeInBytes(layout, valType);
         b.addDereferenceableAttr(sz);
+#if HAVE_LLVM_VER >= 140
+        attrs = attrs.addAttributesAtIndex(ctx, argTys.size(), b);
+#else
         attrs = attrs.addAttributes(ctx, argTys.size(), b);
+#endif
       }
     }
 
@@ -2606,7 +2686,7 @@ void FnSymbol::codegenDef() {
               llvm::Value* val = &*ai++;
               // store it into the addr
 #if HAVE_LLVM_VER >= 130
-              llvm::Type* eltTy = llvm::cast<llvm::PointerType>(storeAdr->getType()->getScalarType())->getElementType();
+              llvm::Type* eltTy = llvm::cast<llvm::PointerType>(storeAdr->getType()->getScalarType())->getPointerElementType();
               llvm::Value* eltPtr =
                 irBuilder->CreateStructGEP(eltTy, storeAdr, i);
 #else

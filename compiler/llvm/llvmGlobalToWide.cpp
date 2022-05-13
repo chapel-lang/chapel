@@ -300,7 +300,11 @@ namespace {
       }
       FunctionType* ft = NULL;
       if( PointerType* pt = dyn_cast<PointerType>(t) ) {
+#if HAVE_LLVM_VER >= 130
+        t = pt->getPointerElementType();
+#else
         t = pt->getElementType();
+#endif
       }
       ft = cast<FunctionType>(t);
       assert(ft);
@@ -1503,13 +1507,22 @@ namespace {
 
         if (update_return) {
           // if it's no longer a pointer, remove pointer-based attributes
+#if HAVE_LLVM_VER >= 140
+          NF->removeRetAttrs(AttributeFuncs::typeIncompatible(RetTy));
+#else
           NF->removeAttributes(AttributeList::ReturnIndex,
                                AttributeFuncs::typeIncompatible(RetTy));
+#endif
         }
         if (update_parameters) {
           for (size_t i = 0; i < Params.size(); i++ ) {
+#if HAVE_LLVM_VER >= 140
+            NF->removeParamAttrs(i+1,
+                                 AttributeFuncs::typeIncompatible(Params[i]));
+#else
             NF->removeAttributes(i+1,
                                  AttributeFuncs::typeIncompatible(Params[i]));
+#endif
           }
         }
 

@@ -27,17 +27,17 @@ foo(0.0)
     r32 0.0
 Test1 uses only RealFoos
 foo(u8)
-    r64 0.0
+    r32 0.0
 foo(i8)
-    r64 0.0
+    r32 0.0
 foo(u16)
-    r64 0.0
+    r32 0.0
 foo(i16)
-    r64 0.0
+    r32 0.0
 foo(u32)
-    r64 0.0
+    r32 0.0
 foo(i32)
-    r64 0.0
+    r32 0.0
 foo(u64)
     r64 0.0
 foo(i64)
@@ -252,17 +252,17 @@ foo(0.0+0.0i)
     c128 0.0 + 0.0i
 Test5 uses only complex foos
 foo(u8)
-    c128 0.0 + 0.0i
+    c64 0.0 + 0.0i
 foo(i8)
-    c128 0.0 + 0.0i
+    c64 0.0 + 0.0i
 foo(u16)
-    c128 0.0 + 0.0i
+    c64 0.0 + 0.0i
 foo(i16)
-    c128 0.0 + 0.0i
+    c64 0.0 + 0.0i
 foo(u32)
-    c128 0.0 + 0.0i
+    c64 0.0 + 0.0i
 foo(i32)
-    c128 0.0 + 0.0i
+    c64 0.0 + 0.0i
 foo(u64)
     c128 0.0 + 0.0i
 foo(i64)

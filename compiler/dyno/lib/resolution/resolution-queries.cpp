@@ -48,38 +48,71 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+
+const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
+                                                       ID id) {
+  QUERY_BEGIN(resolveModuleStmt, context, id);
+
+  assert(id.postOrderId() >= 0);
+
+  // TODO: can we save space better here by having
+  // the ResolutionResultByPostorderID have a different offset
+  // (so it can contain only ids within the requested stmt) or
+  // maybe we can make it sparse with a hashtable or something?
+  ResolutionResultByPostorderID result;
+
+  ID moduleId = parsing::idToParentId(context, id);
+  auto moduleAst = parsing::idToAst(context, moduleId);
+  if (const Module* mod = moduleAst->toModule()) {
+    // Resolve just the requested statement
+    auto modStmt = parsing::idToAst(context, id);
+    auto visitor = Resolver::moduleStmtResolver(context, mod, modStmt, result);
+    modStmt->traverse(visitor);
+  }
+
+  return QUERY_END(result);
+}
+
+
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
 
-  ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
+  const AstNode* ast = parsing::idToAst(context, id);
+  assert(ast != nullptr);
 
-  auto ast = parsing::idToAst(context, id);
-  if (const Module* mod = ast->toModule()) {
-    auto visitor = Resolver::moduleResolver(context, mod, partialResult);
-    for (auto child: mod->children()) {
-      child->traverse(visitor);
+  ResolutionResultByPostorderID result;
+
+  if (ast != nullptr) {
+    if (const Module* mod = ast->toModule()) {
+      result.setupForSymbol(mod);
+      for (auto child: mod->children()) {
+        if (child->isComment() ||
+            child->isTypeDecl() ||
+            child->isFunction() ||
+            child->isUse() ||
+            child->isImport()) {
+          // ignore this statement since it is not relevant to
+          // the resolution of module initializers and module-level
+          // variables.
+        } else {
+          ID stmtId = child->id();
+          // resolve the statement
+          const ResolutionResultByPostorderID& resolved =
+            resolveModuleStmt(context, stmtId);
+
+          // copy results for children and the node itself
+          int firstId = stmtId.postOrderId() - stmtId.numContainedChildren();
+          int lastId = firstId + stmtId.numContainedChildren();
+          for (int i = firstId; i <= lastId; i++) {
+            ID exprId(stmtId.symbolPath(), i, 0);
+            result.byIdExpanding(exprId) = resolved.byId(exprId);
+          }
+        }
+      }
     }
-  } else {
-    assert(false && "case not handled");
   }
 
-  return QUERY_END_CURRENT_RESULT();
-}
-
-static
-const ResolutionResultByPostorderID& partiallyResolvedModule(Context* context,
-                                                             ID id) {
-
-  // check for a partial result from a running query
-  const ResolutionResultByPostorderID* r =
-    QUERY_RUNNING_PARTIAL_RESULT(resolveModule, context, id);
-  // if there was a partial result, return it
-  if (r != nullptr) {
-    return *r;
-  }
-
-  // otherwise, run the query to compute the full result
-  return resolveModule(context, id);
+  return QUERY_END(result);
 }
 
 const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
@@ -89,13 +122,8 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
 
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
-    // Find the parent scope for the ID - i.e. where the id is declared
-    ID parentSymbolId = id.parentSymbolId(context);
-    AstTag parentTag = parsing::idToTag(context, parentSymbolId);
-    if (asttags::isModule(parentTag)) {
-      auto& partial = partiallyResolvedModule(context, parentSymbolId);
-      result = partial.byId(id).type();
-    }
+    const auto& resolvedStmt = resolveModuleStmt(context, id);
+    result = resolvedStmt.byId(id).type();
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
     const Type* t = nullptr;
@@ -257,7 +285,7 @@ anyFormalNeedsInstantiation(Context* context,
     }
 
     if (considerGenericity) {
-      auto g = qt.genericityWithFields(context);
+      auto g = getTypeGenericity(context, qt);
       if (g != Type::CONCRETE) {
         genericOrUnknown = true;
         break;
@@ -410,13 +438,11 @@ const CompositeType* helpGetTypeForDecl(Context* context,
     const BasicClassType* parentClassType = nullptr;
     if (const AstNode* parentClassExpr = c->parentClass()) {
       // Resolve the parent class type expression
-      bool useGenericFormalDefaults = true; // doesn't matter, won't use fields
       ResolutionResultByPostorderID r;
       auto visitor =
-        Resolver::instantiatedFieldsResolver(context, c,
-                                             substitutions,
-                                             poiScope, r,
-                                             useGenericFormalDefaults);
+        Resolver::parentClassResolver(context, c,
+                                      substitutions,
+                                      poiScope, r);
       parentClassExpr->traverse(visitor);
 
       QualifiedType qt = r.byAst(parentClassExpr).type();
@@ -523,27 +549,6 @@ static void helpSetFieldTypes(const AstNode* ast,
   // no action needed for other types of Decls since they aren't fields.
 }
 
-// This visits the fields to resolve them and then
-// sets the types in the Type* passed.
-static void
-resolveAndSetFieldTypes(Context* context, const AggregateDecl* ad,
-                        ResolutionResultByPostorderID& r,
-                        Resolver& visitor,
-                        const CompositeType* t,
-                        ResolvedFields& fields) {
-
-  // visit the field declarations to resolve them
-  // and then set them in the type
-  for (auto child: ad->children()) {
-    child->traverse(visitor);
-    helpSetFieldTypes(child, r, /* initedInParent */ false, fields);
-  }
-
-  // finalize the field types to compute summary information
-  // like whether any was generic
-  fields.finalizeFields(context);
-}
-
 static const Type* const&
 initialTypeForTypeDeclQuery(Context* context, ID declId) {
   QUERY_BEGIN(initialTypeForTypeDeclQuery, context, declId);
@@ -574,16 +579,72 @@ const Type* initialTypeForTypeDecl(Context* context, ID declId) {
   return initialTypeForTypeDeclQuery(context, declId);
 }
 
+const ResolvedFields& resolveFieldDecl(Context* context,
+                                       const CompositeType* ct,
+                                       ID fieldId,
+                                       bool useGenericFormalDefaults) {
+  QUERY_BEGIN(resolveFieldDecl, context, ct, fieldId, useGenericFormalDefaults);
+
+  ResolvedFields result;
+  bool isObjectType = false;
+  if (auto bct = ct->toBasicClassType()) {
+    isObjectType = bct->isObjectType();
+  }
+
+  if (isObjectType) {
+    // no need to try to resolve the fields for the object type,
+    // which doesn't have a real uAST ID.
+
+  } else {
+    auto typeAst = parsing::idToAst(context, ct->id());
+    assert(typeAst && typeAst->isAggregateDecl());
+    auto ad = typeAst->toAggregateDecl();
+
+    auto fieldAst = parsing::idToAst(context, fieldId);
+    assert(fieldAst);
+
+    if (ct->instantiatedFromCompositeType() == nullptr) {
+      // handle resolving a not-yet-instantiated type
+      ResolutionResultByPostorderID r;
+      auto visitor =
+        Resolver::initialFieldStmtResolver(context, ad, fieldAst,
+                                           ct, r, useGenericFormalDefaults);
+
+      // resolve the field types and set them in 'result'
+      fieldAst->traverse(visitor);
+      helpSetFieldTypes(fieldAst, r, /* initedInParent */ false, result);
+    } else {
+      // handle resolving an instantiated type
+
+      // use nullptr for POI scope because POI is not considered
+      // when resolving the fields when constructing a type..
+      const PoiScope* poiScope = nullptr;
+      ResolutionResultByPostorderID r;
+      auto visitor =
+        Resolver::instantiatedFieldStmtResolver(context, ad, fieldAst, ct,
+                                                poiScope, r,
+                                                useGenericFormalDefaults);
+
+      // resolve the field types and set them in 'result'
+      fieldAst->traverse(visitor);
+      helpSetFieldTypes(fieldAst, r, /* initedInParent */ false, result);
+    }
+  }
+
+
+  return QUERY_END(result);
+}
+
 static
 const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                                              const CompositeType* ct,
                                              bool useGenericFormalDefaults) {
   QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, useGenericFormalDefaults);
 
-  ResolvedFields& partialResult = QUERY_CURRENT_RESULT;
+  ResolvedFields result;
 
   assert(ct);
-  partialResult.setType(ct);
+  result.setType(ct);
 
   bool isObjectType = false;
   if (auto bct = ct->toBasicClassType()) {
@@ -599,52 +660,30 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
     assert(ast && ast->isAggregateDecl());
     auto ad = ast->toAggregateDecl();
 
-
-    if (ct->instantiatedFromCompositeType() == nullptr) {
-      // handle resolving a not-yet-instantiated type
-      ResolutionResultByPostorderID r;
-      auto visitor = Resolver::initialFieldsResolver(context, ad, r,
-                                                     useGenericFormalDefaults);
-
-      // resolve the field types and set them in 'result'
-      resolveAndSetFieldTypes(context, ad, r, visitor, ct, partialResult);
-    } else {
-      // handle resolving an instantiated type
-
-      // use nullptr for POI scope because POI is not considered
-      // when resolving the fields when constructing a type..
-      const PoiScope* poiScope = nullptr;
-      ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::instantiatedFieldsResolver(context, ad,
-                                             ct->substitutions(),
-                                             poiScope, r,
-                                             useGenericFormalDefaults);
-
-      // resolve the field types and set them in 'result'
-      resolveAndSetFieldTypes(context, ad, r, visitor, ct, partialResult);
+    for (auto child: ad->children()) {
+      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      if (child->isVarLikeDecl() ||
+          child->isMultiDecl() |
+          child->isTupleDecl()) {
+        const ResolvedFields& resolvedFields =
+          resolveFieldDecl(context, ct, child->id(), useGenericFormalDefaults);
+        // Copy resolvedFields into result
+        int n = resolvedFields.numFields();
+        for (int i = 0; i < n; i++) {
+          result.addField(resolvedFields.fieldName(i),
+                          resolvedFields.fieldHasDefaultValue(i),
+                          resolvedFields.fieldDeclId(i),
+                          resolvedFields.fieldType(i));
+        }
+      }
     }
+
+    // finalize the field types to compute summary information
+    // like whether any was generic
+    result.finalizeFields(context);
   }
 
-  return QUERY_END_CURRENT_RESULT();
-}
-
-static const ResolvedFields&
-partiallyResolvedFieldsForTypeDecl(Context* context,
-                                   const CompositeType* ct,
-                                   bool useGenericFormalDefaults) {
-  // check for a partial result from a running query
-  const ResolvedFields* r =
-    QUERY_RUNNING_PARTIAL_RESULT(fieldsForTypeDeclQuery, context, ct,
-                                 useGenericFormalDefaults);
-
-  // if there was a partial result, return it
-  if (r != nullptr) {
-    return *r;
-  }
-
-  // otherwise, run the query to compute the full result
-  return fieldsForTypeDeclQuery(context, ct, useGenericFormalDefaults);
+  return QUERY_END(result);
 }
 
 const ResolvedFields& fieldsForTypeDecl(Context* context,
@@ -652,7 +691,7 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         bool useGenericFormalDefaults) {
 
   // try first with useGenericFormalDefaults=false
-  const auto& f = partiallyResolvedFieldsForTypeDecl(context, ct, false);
+  const auto& f = fieldsForTypeDeclQuery(context, ct, false);
 
   // If useGenericFormalDefaults was requested and the type
   // is generic with defaults, compute the type again.
@@ -660,7 +699,7 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
   // result of the above query in most cases since most types
   // are not generic record/class with defaults.
   if (useGenericFormalDefaults && f.isGenericWithDefaults()) {
-    return partiallyResolvedFieldsForTypeDecl(context, ct, true);
+    return fieldsForTypeDeclQuery(context, ct, true);
   }
 
   // Otherwise, use the value we just computed.
@@ -668,17 +707,29 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
 }
 
 
+// the ignore argument is just to ignore types that we are currently
+// computing the genericity of (we can assume that those are concrete).
+// that is important for recursive class types (e.g. a linked list).
 static Type::Genericity getFieldsGenericity(Context* context,
-                                            const CompositeType* ct) {
+                                            const CompositeType* ct,
+                                            std::set<const Type*>& ignore) {
   // Figure out the genericity of the type based on the genericity
   // of the fields.
+
+  // add the current type to the ignore set, and stop now
+  // if it is already in the ignore set.
+  auto it = ignore.insert(ct);
+  if (it.second == false) {
+    // set already contained ct, so stop & consider it concrete
+    return Type::CONCRETE;
+  }
 
   // compute genericity of tuple types
   if (auto tt = ct->toTupleType()) {
     Type::Genericity combined = Type::CONCRETE;
     int n = tt->numElements();
     for (int i = 0; i < n; i++) {
-      auto g = tt->elementType(i).genericityWithFields(context);
+      auto g = getTypeGenericityIgnoring(context, tt->elementType(i), ignore);
       assert(g != Type::MAYBE_GENERIC);
       if (g == Type::GENERIC) {
         combined = g;
@@ -699,8 +750,10 @@ static Type::Genericity getFieldsGenericity(Context* context,
   Type::Genericity g = Type::CONCRETE;
 
   if (auto bct = ct->toBasicClassType()) {
-    g = getFieldsGenericity(context, bct->parentClassType());
+    g = getFieldsGenericity(context, bct->parentClassType(), ignore);
     assert(g != Type::MAYBE_GENERIC);
+    if (g == Type::GENERIC)
+      return Type::GENERIC;
   }
 
   // this setting is irrelevant for this query since the
@@ -709,7 +762,8 @@ static Type::Genericity getFieldsGenericity(Context* context,
   const ResolvedFields& f = fieldsForTypeDecl(context, ct,
                                               useGenericFormalDefaults);
 
-  if (f.isGenericWithDefaults() && g == Type::CONCRETE)
+  if (f.isGenericWithDefaults() &&
+      (g == Type::CONCRETE || g == Type::GENERIC_WITH_DEFAULTS))
     return Type::GENERIC_WITH_DEFAULTS;
 
   if (f.isGeneric())
@@ -718,8 +772,10 @@ static Type::Genericity getFieldsGenericity(Context* context,
   return g;
 }
 
-Type::Genericity getTypeGenericity(Context* context, const Type* t) {
-  assert(t);
+Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
+                                           std::set<const Type*>& ignore) {
+  if (t == nullptr)
+    return Type::MAYBE_GENERIC;
 
   // check if the type knows the full answer
   Type::Genericity ret = t->genericity();
@@ -741,11 +797,32 @@ Type::Genericity getTypeGenericity(Context* context, const Type* t) {
     assert(!classType->decorator().isUnknownNilability());
 
     auto bct = classType->basicClassType();
-    return getFieldsGenericity(context, bct);
+    return getFieldsGenericity(context, bct, ignore);
   }
 
   auto compositeType = t->toCompositeType();
-  return getFieldsGenericity(context, compositeType);
+  return getFieldsGenericity(context, compositeType, ignore);
+}
+
+Type::Genericity getTypeGenericityIgnoring(Context* context, QualifiedType qt,
+                                           std::set<const Type*>& ignore) {
+   Type::Genericity g = qt.genericity();
+   if (g == Type::MAYBE_GENERIC && qt.type() != nullptr ) {
+     return resolution::getTypeGenericityIgnoring(context, qt.type(), ignore);
+   }
+
+   // otherwise return whatever we computed
+   return g;
+}
+
+Type::Genericity getTypeGenericity(Context* context, const Type* t) {
+  std::set<const Type*> ignore;
+  return getTypeGenericityIgnoring(context, t, ignore);
+}
+
+Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
+  std::set<const Type*> ignore;
+  return getTypeGenericityIgnoring(context, qt, ignore);
 }
 
 // Returns true if the field should be included in the type constructor.
@@ -1121,19 +1198,20 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                                      &substitutions);
     where = whereClauseResult(context, fn, r, needsInstantiation);
   } else if (ad != nullptr) {
+    // TODO: compute the class type
+
     // visit the fields
     ResolutionResultByPostorderID r;
-    bool useGenericFormalDefaults = false;
     auto visitor =
-      Resolver::instantiatedFieldsResolver(context, ad,
-                                           substitutions, poiScope, r,
-                                           useGenericFormalDefaults);
+      Resolver::instantiatedSignatureFieldsResolver(context, ad, substitutions,
+                                                    poiScope, r);
     // visit the parent type
     if (auto cls = ad->toClass()) {
       if (auto parentClassExpr = cls->parentClass()) {
         parentClassExpr->traverse(visitor);
       }
     }
+
     // visit the field declarations
     for (auto child: ad->children()) {
       if (child->isVariable() ||

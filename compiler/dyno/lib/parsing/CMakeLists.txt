@@ -42,7 +42,7 @@ target_sources(libdyno-obj
                lexer-help.h
                parser-dependencies.h
                parser-help.h
-
+               parser-stats.cpp
                # these are implementing the public interface
                Parser.cpp
                parsing-queries.cpp

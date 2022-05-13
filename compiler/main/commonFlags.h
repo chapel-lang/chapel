@@ -38,6 +38,7 @@ extern bool fRunlldb;
 // Shared setter functions.
 void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused);
 void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unused);
+void setHome(const ArgumentDescription* desc, const char* arg);
 
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
@@ -64,6 +65,9 @@ void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unu
 
 #define DRIVER_ARG_LICENSE \
   {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL}
+
+#define DRIVER_ARG_HOME \
+  {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome}
 
 #define DRIVER_ARG_PRINT_CHPL_HOME \
   {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, NULL,NULL}

@@ -338,9 +338,8 @@ static llvm::Value* createInBoundsGEP(llvm::Value* ptr,
       // consider calling extendToPointerSize at the call site
     }
   }
-
 #if HAVE_LLVM_VER >= 130
-  return info->irBuilder->CreateInBoundsGEP(llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getElementType(), ptr, idxList);
+  return info->irBuilder->CreateInBoundsGEP(llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getPointerElementType(), ptr, idxList);
 #else
   return info->irBuilder->CreateInBoundsGEP(ptr, idxList);
 #endif
@@ -422,7 +421,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 #ifdef HAVE_LLVM
       llvm::Type* ty = nullptr;
 #if HAVE_LLVM_VER >= 130
-      ty = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getElementType();
+      ty = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getPointerElementType();
 #endif
       llvm::Value* adr = info->irBuilder->CreateStructGEP(
           ty, ret.val, WIDE_GEP_ADDR);
@@ -453,7 +452,11 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     llvm::Function* fn = getMakeFn(info->module, &info->globalToWideInfo,
                                    addrType);
     INT_ASSERT(fn);
+#if HAVE_LLVM_VER >= 130
+    llvm::Type* eltType = addrType->getPointerElementType();
+#else
     llvm::Type* eltType = addrType->getElementType();
+#endif
     llvm::Type* locAddrType = llvm::PointerType::getUnqual(eltType);
     // Null pointers require us to possibly cast to the pointer type
     // we are supposed to have since null has type void*.
@@ -571,10 +574,13 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     if( ptr.isLVPtr ) valType = ptr.chplType;
     else valType = ptr.chplType->getValType();
   }
-
+#if HAVE_LLVM_VER >= 130
+  llvm::Type* ptrValType = llvm::cast<llvm::PointerType>(
+                                      ptr.val->getType())->getPointerElementType();
+#else
   llvm::Type* ptrValType = llvm::cast<llvm::PointerType>(
                                       ptr.val->getType())->getElementType();
-
+#endif
   // implicit cast in C, needs to be made explicit in LLVM
   // e.g. T3 = alloca i8;
   //      T3 = (T == T2);   // not actual LLVM syntax
@@ -876,7 +882,7 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
         llvm::Type* ty = nullptr;
 #if HAVE_LLVM_VER >= 130
         ty = llvm::cast<llvm::PointerType>(
-          ws.val->getType()->getScalarType())->getElementType();
+          ws.val->getType()->getScalarType())->getPointerElementType();
 #endif
         ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
                                             ty, ws.val, 0, field);
@@ -1160,7 +1166,7 @@ GenRet doCodegenFieldPtr(
       bool unused;
       llvm::Type* eltTy = nullptr;
 #if HAVE_LLVM_VER >= 130
-      eltTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getElementType();
+      eltTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getPointerElementType();
 #endif
       ret.val = info->irBuilder->CreateStructGEP(
           eltTy, baseValue, cBaseType->getMemberGEP("_u", unused));
@@ -1181,28 +1187,33 @@ GenRet doCodegenFieldPtr(
         llvm::Type* baseTy = nullptr;
         llvm::Type* retTy = nullptr;
 #if HAVE_LLVM_VER >= 130
-        baseTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getElementType();
+        baseTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getPointerElementType();
 #endif
         ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
 #if HAVE_LLVM_VER >= 130
-        retTy = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getElementType();
+        retTy = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getPointerElementType();
 #endif
         ret.val = info->irBuilder->CreateStructGEP(retTy, ret.val, 0);
         ret.isLVPtr = GEN_VAL;
       } else {
+        llvm::Type* ty = nullptr;
 #if HAVE_LLVM_VER >= 130
-        llvm::Type* ty = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getElementType();
-        ret.val = info->irBuilder->CreateStructGEP(ty, baseValue, fieldno);
-#else
-        ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
+        ty = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getPointerElementType();
 #endif
+        ret.val = info->irBuilder->CreateStructGEP(ty, baseValue, fieldno);
+
         if ((isClass(ct) || isRecord(ct)) &&
           cBaseType->symbol->llvmTbaaAggTypeDescriptor &&
           ret.chplType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
-
+#if HAVE_LLVM_VER >= 130
           llvm::StructType *structType = llvm::cast<llvm::StructType>
             (llvm::cast<llvm::PointerType>
-             (baseValue->getType())->getElementType());
+             (baseValue->getType())->getPointerElementType());
+#else
+          llvm::StructType *structType = llvm::cast<llvm::StructType>
+            (llvm::cast<llvm::PointerType>
+             (baseValue->getType())->getPointerElementType());
+#endif
           ret.surroundingStruct = cBaseType;
           ret.fieldOffset = info->module->getDataLayout().
             getStructLayout(structType)->getElementOffset(fieldno);
@@ -2587,7 +2598,7 @@ GenRet codegenCallExprInner(GenRet function,
                 for (unsigned i = 0; i < nElts; i++) {
                   // load to produce the next LLVM argument
 #if HAVE_LLVM_VER >= 130
-                  llvm::Type* ty = llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getElementType();
+                  llvm::Type* ty = llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getPointerElementType();
                   llvm::Value* eltPtr =
                     irBuilder->CreateStructGEP(ty, ptr, i);
                   llvm::Value* loaded =
@@ -2651,12 +2662,19 @@ GenRet codegenCallExprInner(GenRet function,
         }
       } else {
 
-        if (llArgs.size() < fnType->getNumParams() &&
-            func &&
+        if (llArgs.size() < fnType->getNumParams() && func) {
+#if HAVE_LLVM_VER >= 140
+          bool funcHasAttribute =
+            func->getAttributes().hasAttributeAtIndex(llArgs.size()+1,
+                                                      llvm::Attribute::ByVal);
+#else
+          bool funcHasAttribute =
             func->getAttributes().hasAttribute(llArgs.size()+1,
-                                               llvm::Attribute::ByVal))
-          INT_FATAL("byval without ABI info not implemented");
-
+                                               llvm::Attribute::ByVal);
+#endif
+          if (funcHasAttribute)
+            INT_FATAL("byval without ABI info not implemented");
+        }
         llvm::Value* val = NULL;
 
         if (llArgs.size() < fnType->getNumParams()) {

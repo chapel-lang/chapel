@@ -31,6 +31,7 @@ use MasonUtils;
 use Random;
 use Subprocess;
 use TOML;
+import Path;
 
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
    If --dry-run is passed  then it checks to see if the package is able to be published.

@@ -79,7 +79,16 @@ static void markGPUSuitableLoops();
 
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
-  return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
+  LoopStmt* curLoop = LoopStmt::findEnclosingLoop(sym->defPoint);
+
+  while (curLoop != nullptr) {
+    if (curLoop == loop) {
+      return true;
+    }
+    curLoop = LoopStmt::findEnclosingLoop(curLoop->parentExpr);
+  }
+
+  return false;
 }
 
 // This is primarily to handle the indexOfInterest generated for promoted
@@ -421,13 +430,13 @@ static void outlineGPUKernels() {
 
           fn->defPoint->insertBefore(new DefExpr(outlinedFunction));
 
-          // if (chpl_task_getRequestedSubloc() > 0) {
+          // if (chpl_task_getRequestedSubloc() >= 0) {
           //   call the generated GPU kernel
           // } else {
           //   run the existing loop on the CPU
           // }
           Expr* condExpr =
-            new CallExpr(PRIM_GREATER,
+            new CallExpr(PRIM_GREATEROREQUAL,
                          new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
                          new_IntSymbol(0));
           BlockStmt* thenBlock = new BlockStmt();
@@ -486,7 +495,11 @@ static void outlineGPUKernels() {
                 else {
                   if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
                     if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                        parent->isPrimitive(PRIM_GET_MEMBER)) {
+                        parent->isPrimitive(PRIM_GET_MEMBER) ||
+                        parent->isPrimitive(PRIM_SET_MEMBER) ||
+                        parent->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
+                        parent->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                        parent->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
                       if (symExpr == parent->get(2)) {  // this is a field
                         // do nothing
                       }

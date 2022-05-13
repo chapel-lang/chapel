@@ -363,7 +363,7 @@ module BytesStringCommon {
   //
   // If codepointIndex range was given, converts that to byte index range in the
   // process.
-  proc getView(const ref x: ?t, r: range(?)) {
+  proc getView(const ref x: ?t, r: range(?), param checkMisaligned=true) throws {
     assertArgType(t, "getView");
     if t == bytes && r.idxType == codepointIndex {
       compilerError("codepointIndex ranges cannot be used with bytes in getView");
@@ -388,10 +388,30 @@ module BytesStringCommon {
       }
     }
 
-    if t == bytes || r.idxType == byteIndex {
+    if r.idxType == byteIndex {
+      if checkMisaligned && t == string {
+        // if the low bound of the range is within the byteIndices of the
+        // string, it must be the initial byte of a codepoint
+        if r.hasLowBound() &&
+           x.byteIndices.boundsCheck(r.low:int) &&
+           !isInitialByte(x.byte[r.low:int]) {
+          throw new CodepointSplittingError(
+            "Byte-based string slice is not aligned to codepoint boundaries. " +
+            "The byte at low boundary " + r.low:string + " is not the first byte of a UTF-8 codepoint");
+        }
+        // if the "high bound of the range plus one" is within the byteIndices
+        // of the string, that index must be the initial byte of a codepoint
+        if r.hasHighBound() &&
+           x.byteIndices.boundsCheck(r.high:int+1) &&
+           !isInitialByte(x.byte[r.high:int+1]) {
+          throw new CodepointSplittingError(
+            "Byte-based string slice is not aligned to codepoint boundaries. " +
+            "The byte at high boundary " + r.high:string + " is not the first byte of a UTF-8 codepoint");
+        }
+      }
       return simpleCaseHelper();
     }
-    else if t == string && x.isASCII() {
+    else if (t == bytes) || (t == string && x.isASCII()) {
       return simpleCaseHelper();
     }
     else {  // string with codepoint indexing
@@ -446,7 +466,7 @@ module BytesStringCommon {
   }
 
   // TODO: I wasn't very good about caching variables locally in this one.
-  proc getSlice(const ref x: ?t, r: range(?)) {
+  proc getSlice(const ref x: ?t, r: range(?)) throws {
     assertArgType(t, "getSlice");
 
     if x.isEmpty() {
@@ -501,6 +521,7 @@ module BytesStringCommon {
   }
 
   proc getIndexType(type t) type {
+    import Bytes, String;
     if t==bytes then return Bytes.idxType;
     else if t==string then return String.byteIndex;
     else compilerError("This function should only be used by bytes or string");
@@ -525,8 +546,10 @@ module BytesStringCommon {
 
       found += 1;
 
-      result = result[..idx-1] + localReplacement +
-               result[(idx + localNeedle.numBytes)..];
+      try! {
+        result = result[..idx-1] + localReplacement +
+                 result[(idx + localNeedle.numBytes)..];
+      }
 
       startIdx = idx + localReplacement.numBytes;
     }
@@ -556,10 +579,10 @@ module BytesStringCommon {
 
       if(end == -1) {
         // Separator not found
-        chunk = localx[start..];
+        chunk = try! localx[start..];
         done = true;
       } else {
-        chunk = localx[start..end-1];
+        chunk = try! localx[start..end-1];
       }
     }
 
@@ -705,7 +728,10 @@ module BytesStringCommon {
       // used because we cant break out of an on-clause early
       var localRet: int = -2;
       const nLen = needle.buffLen;
-      const (view, _) = getView(x, region);
+
+      // we use try! because this function must only be called with ASCII or
+      // random bytes data. getView shouldn't throw in those cases
+      const (view, _) = try! getView(x, region);
       const xLen = view.size;
 
       // Edge cases
@@ -890,7 +916,7 @@ module BytesStringCommon {
 
     const idx = x.find(sep);
     if idx != -1 {
-      return (x[..idx-1], sep, x[idx+sep.numBytes..]);
+      return try! (x[..idx-1], sep, x[idx+sep.numBytes..]);
     } else {
       return (x, "":t, "":t);
     }

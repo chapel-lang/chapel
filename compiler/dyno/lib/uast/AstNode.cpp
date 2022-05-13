@@ -156,6 +156,9 @@ static void dumpHelper(std::ostream& ss,
   ss << std::setw(maxIdLen) << idStr;
 
 
+  if (depth == 0) {
+    ss << " ";
+  }
   for (int i = 0; i < depth; i++) {
     ss << "  ";
   }

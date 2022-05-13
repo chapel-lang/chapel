@@ -581,7 +581,8 @@ module Bytes {
               :type:`bytes` is returned.
    */
   inline proc bytes.this(r: range(?)) : bytes {
-    return getSlice(this, r);
+    // getSlice with bytes argument never throws
+    return try! getSlice(this, r);
   }
 
   /*
