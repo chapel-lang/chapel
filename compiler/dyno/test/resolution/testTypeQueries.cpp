@@ -204,7 +204,59 @@ static void test6() {
   assert(t && t->isIntType());
 }
 
+static void test7() {
+  printf("test7\n");
+  Context ctx;
+  Context* context = &ctx;
 
+  auto t = parseTypeOfX(context,
+                R""""(
+                  proc f(arg: int(?)) { return arg; }
+                  var a: int(8);
+                  var x = f(a);
+                )"""");
+
+  assert(t && t->isIntType());
+  auto it = t->toIntType();
+  assert(it->bitwidth() == 8);
+}
+
+static void test8() {
+  printf("test8\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                R""""(
+                  proc f(arg: int(?w)) { return arg; }
+                  var a: int(8);
+                  var x = f(a);
+                )"""");
+
+  assert(t && t->isIntType());
+  auto it = t->toIntType();
+  assert(it->bitwidth() == 8);
+}
+
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                R""""(
+                  proc f(arg: int(?w)) {
+                    var y: uint(w);
+                    return y;
+                  }
+                  var a: int(8);
+                  var x = f(a);
+                )"""");
+
+  assert(t && t->isUintType());
+  auto ut = t->toUintType();
+  assert(ut->bitwidth() == 8);
+}
 
 
 int main() {
@@ -214,6 +266,9 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
+  test8();
+  test9();
 
   return 0;
 }

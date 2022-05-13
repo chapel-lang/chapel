@@ -2011,38 +2011,58 @@ static const Type* getNumericType(Context* context,
                                   const CallInfo& ci) {
   UniqueString name = ci.name();
 
-  if (ci.hasQuestionArg()) {
-    if (ci.numActuals() != 0) {
-      context->error(astForErr, "invalid numeric type construction");
-      return ErroneousType::get(context);
-    } else if (name == USTR("int")) {
-      return AnyIntType::get(context);
-    } else if (name == USTR("uint")) {
-      return AnyUintType::get(context);
-    } else if (name == USTR("bool")) {
-      return AnyBoolType::get(context);
-    } else if (name == USTR("real")) {
-      return AnyRealType::get(context);
-    } else if (name == USTR("imag")) {
-      return AnyImagType::get(context);
-    } else if (name == USTR("complex")) {
-      return AnyComplexType::get(context);
-    } else {
-      // case not handled in here
-      return nullptr;
-    }
-  }
-
   if (name == USTR("int") || name == USTR("uint") || name == USTR("bool") ||
       name == USTR("real") || name == USTR("imag") || name == USTR("complex")) {
+
+    // Should we compute the generic version of the type (e.g. int(?))
+    bool useGenericType = false;
+
+    // There should be 0 or 1 actuals depending on if it is ?
+    if (ci.hasQuestionArg()) {
+      // handle int(?)
+      if (ci.numActuals() != 0) {
+        context->error(astForErr, "invalid numeric type construction");
+        return ErroneousType::get(context);
+      }
+      useGenericType = true;
+    } else {
+      // handle int(?t) or int(16)
+      if (ci.numActuals() != 1) {
+        context->error(astForErr, "invalid numeric type construction");
+        return ErroneousType::get(context);
+      }
+
+      QualifiedType qt = ci.actuals(0).type();
+      if (qt.type() && qt.type()->isAnyType()) {
+        useGenericType = true;
+      }
+    }
+
+    if (useGenericType) {
+      if (name == USTR("int")) {
+        return AnyIntType::get(context);
+      } else if (name == USTR("uint")) {
+        return AnyUintType::get(context);
+      } else if (name == USTR("bool")) {
+        return AnyBoolType::get(context);
+      } else if (name == USTR("real")) {
+        return AnyRealType::get(context);
+      } else if (name == USTR("imag")) {
+        return AnyImagType::get(context);
+      } else if (name == USTR("complex")) {
+        return AnyComplexType::get(context);
+      } else {
+        assert(false && "should not be reachable");
+        return nullptr;
+      }
+    }
 
     QualifiedType qt;
     if (ci.numActuals() > 0)
       qt = ci.actuals(0).type();
 
     if (qt.type() == nullptr || !qt.type()->isIntType() ||
-        qt.param() == nullptr || !qt.param()->isIntParam() ||
-        ci.numActuals() != 1) {
+        qt.param() == nullptr || !qt.param()->isIntParam()) {
       context->error(astForErr, "invalid numeric type construction");
       return ErroneousType::get(context);
     }

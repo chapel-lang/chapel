@@ -294,46 +294,73 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
   // Make recursive calls as needed to handle any TypeQuery nodes
   // nested within typeExpr.
   if (auto call = formalTypeExpr->toFnCall()) {
-    // Error if it is not calling a type constructor
-    auto actualCt = actualType->toCompositeType();
-
-    if (actualCt == nullptr) {
-      context->error(formalTypeExpr, "Type construction call expected");
-      return;
-    } else if (!actualCt->instantiatedFromCompositeType()) {
-      context->error(formalTypeExpr, "Instantiated type expected");
-      return;
+    bool isIntEtc = false;
+    if (auto calledAst = call->calledExpression()) {
+      if (auto calledIdent = calledAst->toIdentifier()) {
+        UniqueString n = calledIdent->name();
+        if (n == USTR("int") || n == USTR("uint") || n == USTR("bool") ||
+            n == USTR("real") || n == USTR("imag") || n == USTR("complex")) {
+          isIntEtc = true;
+        }
+      }
     }
 
-    auto baseCt = actualCt->instantiatedFromCompositeType();
-    auto sig = typeConstructorInitial(context, baseCt);
+    if (isIntEtc) {
+      // If it is e.g. int(TypeQuery), resolve the type query to the width
+      // Set the type that we know (since it was passed in)
+      if (call->numActuals() == 1) {
+        if (auto tq = call->actual(0)->toTypeQuery()) {
+          if (auto pt = actualType->toPrimitiveType()) {
+            ResolvedExpression& resolvedWidth = byPostorder.byAst(tq);
+            auto p = IntParam::get(context, pt->bitwidth());
+            auto it = IntType::get(context, 0);
+            auto qt = QualifiedType(QualifiedType::PARAM, it, p);
+            resolvedWidth.setType(qt);
+          }
+        }
+      }
+    } else {
+      // Error if it is not calling a type constructor
+      auto actualCt = actualType->toCompositeType();
 
-    // Generate a simple CallInfo for the call
-    auto callInfo = CallInfo(call);
-    // generate a FormalActualMap
-    auto faMap = FormalActualMap(sig, callInfo);
+      if (actualCt == nullptr) {
+        context->error(formalTypeExpr, "Type construction call expected");
+        return;
+      } else if (!actualCt->instantiatedFromCompositeType()) {
+        context->error(formalTypeExpr, "Instantiated type expected");
+        return;
+      }
 
-    // Now, consider the formals
-    int nActuals = call->numActuals();
-    for (int i = 0; i < nActuals; i++) {
-      // ignore actuals like ?
-      // since these aren't type queries & don't match a formal
-      if (auto id = call->actual(i)->toIdentifier())
-        if (id->name() == USTR("?"))
-          continue;
+      auto baseCt = actualCt->instantiatedFromCompositeType();
+      auto sig = typeConstructorInitial(context, baseCt);
 
-      const FormalActual* fa = faMap.byActualIdx(i);
-      assert(fa != nullptr && fa->formal() != nullptr);
+      // Generate a simple CallInfo for the call
+      auto callInfo = CallInfo(call);
+      // generate a FormalActualMap
+      auto faMap = FormalActualMap(sig, callInfo);
 
-      // get the substitution for that field from the CompositeType
-      // and recurse with the result to set types for nested TypeQuery nodes
-      const uast::Decl* field = fa->formal();
-      const SubstitutionsMap& subs = actualCt->substitutions();
-      auto search = subs.find(field->id());
-      if (search != subs.end()) {
-        QualifiedType fieldType = search->second;
-        auto actual = call->actual(i);
-        resolveTypeQueries(actual, fieldType.type());
+      // Now, consider the formals
+      int nActuals = call->numActuals();
+      for (int i = 0; i < nActuals; i++) {
+        // ignore actuals like ?
+        // since these aren't type queries & don't match a formal
+        if (auto id = call->actual(i)->toIdentifier())
+          if (id->name() == USTR("?"))
+            continue;
+
+        const FormalActual* fa = faMap.byActualIdx(i);
+        assert(fa != nullptr && fa->formal() != nullptr);
+
+        // get the substitution for that field from the CompositeType
+        // and recurse with the result to set types for nested TypeQuery nodes
+        const uast::Decl* field = fa->formal();
+        const SubstitutionsMap& subs = actualCt->substitutions();
+        auto search = subs.find(field->id());
+        if (search != subs.end()) {
+          QualifiedType fieldType = search->second;
+          auto actual = call->actual(i);
+          resolveTypeQueries(actual, fieldType.type());
+        }
       }
     }
   }
