@@ -46,17 +46,17 @@ proc main(args: [] string) {
     var lo = hi;
     while buf[lo] != '>'.toByte() do
       lo -= 1;
-    const nexthi = lo - 1;
 
     // skip past header line
+    var seqlo = lo;
     do {
-      lo += 1;
-    } while buf[lo-1] != eol;
+      seqlo += 1;
+    } while buf[seqlo-1] != eol;
 
     // reverse and complement the sequence
-    revcomp(buf, lo, hi);
+    revcomp(buf, seqlo, hi);
 
-    hi = nexthi;
+    hi = lo - 1;
   }
 
   // write out the transformed buffer
