@@ -198,6 +198,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // Record successful matches in actualIdxToFormalIdx.
 
   int actualIdx = 0;
+  formalIdx = 0;
   for (const CallInfoActual& actual : call.actuals()) {
     if (!actual.byName().isEmpty()) {
       bool match = false;
