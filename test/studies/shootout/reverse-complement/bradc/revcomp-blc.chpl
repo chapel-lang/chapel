@@ -29,14 +29,11 @@ proc main(args: [] string) {
       buf: [bufDom] uint(8),
       end = 0;
 
-  do {
-    const more = stdinBin.read(buf[end..]);
-    if more {
-      end = bufLen;
-      bufLen += min(1024**2, bufLen);
-      bufDom = {0..<bufLen};
-    }
-  } while more;
+  while stdinBin.read(buf[end..]) {
+    end = bufLen;
+    bufLen += min(1024**2, bufLen);
+    bufDom = {0..<bufLen};
+  }
   end = stdinBin.offset()-1;
 
   // process the buffer a sequence at a time, working from the end
