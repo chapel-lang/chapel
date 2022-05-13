@@ -305,14 +305,11 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
   auto whereClauseResult = TypedFnSignature::WHERE_TBD;
   if (const AstNode* where = fn->whereClause()) {
     const QualifiedType& qt = r.byAst(where).type();
-    if (qt.isParam() && qt.type()->isBoolType()) {
-      // OK, we know the result of the where clause
-      // TODO: handle Immediate
-      if (qt.param() != 0) {
-        whereClauseResult = TypedFnSignature::WHERE_TRUE;
-      } else {
-        whereClauseResult = TypedFnSignature::WHERE_FALSE;
-      }
+    bool isBoolType = qt.type() && qt.type()->isBoolType();
+    if (isBoolType && qt.isParamTrue()) {
+      whereClauseResult = TypedFnSignature::WHERE_TRUE;
+    } else if (isBoolType && qt.isParamFalse()) {
+      whereClauseResult = TypedFnSignature::WHERE_FALSE;
     } else if (needsInstantiation) {
       // it's OK, need to establish the value of the where clause later
       whereClauseResult = TypedFnSignature::WHERE_TBD;
@@ -798,6 +795,12 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
 
     auto bct = classType->basicClassType();
     return getFieldsGenericity(context, bct, ignore);
+  }
+
+  // the tuple type that isn't an instantiation is a generic type
+  if (auto tt = t->toTupleType()) {
+    if (tt->instantiatedFromCompositeType() == nullptr)
+      return Type::GENERIC;
   }
 
   auto compositeType = t->toCompositeType();
@@ -1713,7 +1716,9 @@ doIsCandidateApplicableInitial(Context* context,
 
   if (!candidateId.isEmpty()) {
     ast = parsing::idToAst(context, candidateId);
+    assert(ast->isFunction());
     fn = ast->toFunction();
+    assert(fn);
   }
 
   if (ast == nullptr || ast->isTypeDecl()) {
@@ -2063,8 +2068,23 @@ static const Type* getNumericType(Context* context,
     if (ci.numActuals() > 0)
       qt = ci.actuals(0).type();
 
-    if (qt.type() == nullptr || !qt.type()->isIntType() ||
-        qt.param() == nullptr || !qt.param()->isIntParam()) {
+    const Type* t = qt.type();
+    if (t == nullptr) {
+      // Details not yet known so return UnknownType
+      return UnknownType::get(context);
+    }
+    if (t->isUnknownType() || t->isErroneousType()) {
+      // Just propagate the Unknown / Erroneous type
+      // without raising any errors
+      return t;
+    }
+    if (qt.param() == nullptr) {
+      // Details not yet known so return UnknownType
+      return UnknownType::get(context);
+    }
+
+    if (!t->isIntType() || !qt.param()->isIntParam()) {
+      // raise an error b/c of type mismatch
       context->error(astForErr, "invalid numeric type construction");
       return ErroneousType::get(context);
     }
@@ -2140,6 +2160,20 @@ static bool resolveFnCallSpecial(Context* context,
 
   if (const Type* t = resolveFnCallSpecialType(context, astForErr, ci)) {
     exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
+    return true;
+  }
+
+  if (ci.name() == USTR("isCoercible")) {
+    if (ci.numActuals() != 2) {
+      context->error(astForErr, "bad call to %s", ci.name().c_str());
+      exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                  ErroneousType::get(context));
+      return true;
+    }
+    auto got = canPass(context, ci.actuals(0).type(), ci.actuals(1).type());
+    bool result = got.passes();
+    exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context, 0),
+                                BoolParam::get(context, result));
     return true;
   }
 
@@ -2425,17 +2459,40 @@ CallResolutionResult resolvePrimCall(Context* context,
   QualifiedType type;
   PoiInfo poi;
 
-  // start with a non-param result type based on the 1st argument
-  // TODO: do something more intelligent with a table of params
-  if (ci.numActuals() > 0) {
-    type = QualifiedType(QualifiedType::CONST_VAR, ci.actuals(0).type().type());
-  }
-
   // handle param folding
   auto prim = call->prim();
   if (Param::isParamOpFoldable(prim)) {
     if (allParam && ci.numActuals() == 2) {
       type = Param::fold(context, prim, ci.actuals(0).type(), ci.actuals(1).type());
+    }
+  } else {
+    using namespace uast::primtags;
+    switch (prim) {
+      case PRIM_IS_STAR_TUPLE_TYPE:
+        if (ci.numActuals() == 1) {
+          bool result = false;
+          if (auto t = ci.actuals(0).type().type())
+            if (auto tt = t->toTupleType())
+              result = tt->isStarTuple();
+
+          type = QualifiedType(QualifiedType::PARAM,
+                               BoolType::get(context, 0),
+                               BoolParam::get(context, result));
+        }
+        break;
+      default:
+        // Do something for cases not yet handled
+        printf("Warning: type for primitive \"%s\" not yet computed",
+               primTagToName(prim));
+        if (ci.numActuals() > 0) {
+          type = QualifiedType(QualifiedType::CONST_VAR,
+                               ci.actuals(0).type().type());
+        }
+    }
+
+    if (type.kind() == QualifiedType::UNKNOWN) {
+      context->error(call, "bad call to primitive \"%s\"", primTagToName(prim));
+      type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
   }
 
