@@ -448,9 +448,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     // error already issued in checkForKindError
     typePtr = ErroneousType::get(context);
   } else if (!declaredType.hasTypePtr() && !initExprType.hasTypePtr()) {
-    // TODO: remove this error when we add split init support
-    context->error(declForErr, "Cannot establish type for decl");
-    typePtr = ErroneousType::get(context);
+    // Can't establish the type for now
+    typePtr = UnknownType::get(context);
   } else if (declaredType.hasTypePtr() && !initExprType.hasTypePtr()) {
     // declared type but no init, so use declared type
     typePtr = declaredType.type();
@@ -1499,8 +1498,7 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
             qtReceiver.kind() != QualifiedType::FUNCTION &&
             qtReceiver.kind() != QualifiedType::MODULE) {
 
-          auto receiverInfo = CallInfoActual(qtReceiver, USTR("this"));
-          actuals.push_back(std::move(receiverInfo));
+          actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
           isMethodCall = true;
         }
       }
@@ -1511,6 +1509,19 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   if (auto calledExpr = call->calledExpression()) {
     ResolvedExpression& r = byPostorder.byAst(calledExpr);
     calledType = r.type();
+
+    if (calledType.kind() != QualifiedType::UNKNOWN &&
+        calledType.kind() != QualifiedType::TYPE &&
+        calledType.kind() != QualifiedType::FUNCTION) {
+      // If e.g. x is a value (and not a function)
+      // then x(0) translates to x.this(0)
+      name = USTR("this");
+      // add the 'this' argument as well
+      isMethodCall = true;
+      actuals.push_back(CallInfoActual(calledType, USTR("this")));
+      // and reset calledType
+      calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+    }
   }
 
   // Prepare the remaining actuals.
@@ -1543,7 +1554,8 @@ void Resolver::exit(const Call* call) {
 
   // Don't try to resolve a call other than type construction that accepts:
   //  * an unknown param
-  //  * a generic type unless there are substitutions
+  //  * a type that is a generic type unless there are substitutions
+  //  * a value of generic type
   //  * UnknownType, ErroneousType
   bool skip = false;
   if (!ci.calledType().isType()) {
@@ -1552,12 +1564,14 @@ void Resolver::exit(const Call* call) {
       if (qt.isParam() && qt.param() == nullptr) {
         skip = true;
       } else if (const Type* t = qt.type()) {
-        auto g = t->genericity();
+        auto g = getTypeGenericity(context, t);
         bool isBuiltinGeneric = (g == Type::GENERIC &&
                                  (t->isAnyType() || t->isBuiltinType()));
-        if (isBuiltinGeneric && substitutions == nullptr) {
+        if (qt.isType() && isBuiltinGeneric && substitutions == nullptr) {
           skip = true;
         } else if (t->isUnknownType() || t->isErroneousType()) {
+          skip = true;
+        } else if (!qt.isType() && g != Type::CONCRETE) {
           skip = true;
         }
       }
