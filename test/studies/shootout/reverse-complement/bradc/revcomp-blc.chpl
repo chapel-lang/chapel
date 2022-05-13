@@ -2,109 +2,80 @@
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Brad Chamberlain
-   based on the C gcc #6 version by Jeremy Zerfas
+   based on the Chapel #3 version with some inspiration taken from the
+   C gcc #6 version by Jeremy Zerfas
 */
 
 use IO;
 
-const stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                                   hints = QIO_CH_ALWAYS_UNBUFFERED),
+param eol = '\n'.toByte(),  // end-of-line, as an integer
+      cols = 61,            // # of characters per full row (including '\n')
+
+      // A 'bytes' value that stores the complement of each base at its index
+      cmpl = b"          \n                                                  "
+           + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
+             //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
+             //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
+
+
+proc main(args: [] string) {
+  var stdinBin  = openfd(0).reader(iokind.native, locking=false,
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED),
       stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
-
-config var readSize = 16384, // how much to read at a time
-           n = 0;            // a dummy variable to support the CLBG framework
-
-var seqToPrint: atomic int = 0;
-
-proc main() {
-  // read in the data using an incrementally growing buffer
-  var bufSize = readSize,
-      bufDom = {0..<bufSize},
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED),
+      bufLen = 8 * 1024,
+      bufDom = {0..<bufLen},
       buf: [bufDom] uint(8),
-      seqStart, nextSeqID, totRead, end = 0;
+      end = 0;
 
-  do {
-    const start = end,
-          more = stdinBin.read(buf[start..#readSize]);
-    if more {
-      totRead += readSize;
-    } else {
-      readSize = stdinBin.offset() - totRead + 1;
+  // read in the data using an incrementally growing buffer
+  while stdinBin.read(buf[end..]) {
+    end = bufLen;
+    bufLen += min(1024**2, bufLen);
+    bufDom = {0..<bufLen};
+  }
+  end = stdinBin.offset()-1;
+
+  // process the buffer a sequence at a time, working from the end
+  var hi = end;
+  while (hi >= 0) {
+    // search for the '>' that marks the start of a sequence
+    var lo = hi;
+    while buf[lo] != '>'.toByte() do
+      lo -= 1;
+
+    // skip past header line
+    var seqlo = lo;
+    while buf[seqlo] != eol {
+      seqlo += 1;
     }
 
-    do {
-      if end != 0 && buf[end] == '>'.toByte() {
-        // TODO: This latch is heavy-handed... we really want:
-        //   begin with (var seq = buf[seqStart..<end])
-        //     revcomp(stdoutBin, seq);
-        // or maybe even just:
-        //   begin revcomp(stoutBin, seq); ???
-        //
-        // Unfortunate: Have to make a double copy of seq (to avoid
-        // sharing a domain with buf and possibly getting resized
-        // within our begin when it does.  TPVs would help with
-        // this.
-        const seq = buf[seqStart..<end];
-        begin with (in seq)
-          revcomp(nextSeqID, seq);
-        nextSeqID += 1;
-        seqStart = end;
-      }
-      end += 1;
-    } while end < start+readSize;
+    // reverse and complement the sequence
+    revcomp(buf, seqlo+1, hi);
 
-    if more {
-      // if we processed one or more sequences, shift leftovers down
-      if seqStart != 0 {
-        // TODO: Cool to have a cool array shift that was parallel?
-        for (s,d) in zip(seqStart..<start+readSize, 0..) do
-          buf[d] = buf[s];
-        end -= seqStart;
-        seqStart = 0;
-      }
+    hi = lo - 1;
+  }
 
-      // resize if necessary
-      if end + readSize > bufSize {
-        bufSize *= 2;
-        bufDom = {0..<bufSize};
-      }
-    }
-  } while more;
-  revcomp(nextSeqID, buf[seqStart..<end-1]);
+  // write out the transformed buffer
+  stdoutBin.write(buf[..end]);
 }
 
-proc revcomp(seqID, seq:[?D]) {
-  param eol  = '\n'.toByte(),      // end-of-line, as an integer
-        cmp = b"                                                             "
-            + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
-              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
-              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-  var lo = D.low,
-      hi = D.high+1;
+proc revcomp(buf, lo, hi) {
+  // shift all of the linefeeds into the right places
+  const len = hi - lo + 1,
+        off = (len - 1) % cols,
+        shift = cols - off - 1;
 
-  if lo < hi {
-    // skip past header line
-    while seq[lo] != eol {
-      lo += 1;
+  if off {
+    forall m in lo+off..<hi by cols {
+      for i in m..#shift by -1 do
+        buf[i+1] = buf[i];
+      buf[m] = eol;
     }
-
-    while lo < hi {
-      do {
-        lo += 1;
-      } while seq[lo] == eol;
-
-      do {
-        hi -= 1;
-      } while seq[hi] == eol;
-
-      if lo < hi {
-        (seq[lo], seq[hi]) = (cmp(seq[hi]), cmp(seq[lo]));
-      }
-    }
-    seqToPrint.waitFor(seqID);
-    stdoutBin.write(seq);
-    seqToPrint.add(1);
   }
+
+  // walk from both ends of the sequence, complementing and swapping
+  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
+    (buf[i], buf[j]) = (cmpl[buf[j]], cmpl[buf[i]]);
 }
