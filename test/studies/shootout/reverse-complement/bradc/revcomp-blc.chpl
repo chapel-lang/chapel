@@ -17,8 +17,8 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-const stdinBin = openfd(0).reader(iokind.native, locking=false,
-                                  hints = QIO_CH_ALWAYS_UNBUFFERED),
+const stdinBin  = openfd(0).reader(iokind.native, locking=false,
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED),
       stdoutBin = openfd(1).writer(iokind.native, locking=false,
                                    hints=QIO_CH_ALWAYS_UNBUFFERED);
 
@@ -49,12 +49,12 @@ proc main(args: [] string) {
 
     // skip past header line
     var seqlo = lo;
-    do {
+    while buf[seqlo] != eol {
       seqlo += 1;
-    } while buf[seqlo-1] != eol;
+    }
 
     // reverse and complement the sequence
-    revcomp(buf, seqlo, hi);
+    revcomp(buf, seqlo+1, hi);
 
     hi = lo - 1;
   }
