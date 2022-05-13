@@ -138,17 +138,25 @@ def find_system_llvm_config():
     by_version = defaultdict(list)
     errs = []
 
+    feasible_commands = []
+    feasible_versions = []
+    feasible_errors = []
+
     for command in paths:
         version, config_err = check_llvm_config(command)
-        if not config_err:
-            by_version[version].append(command)
-        else:
-            errs.append((command, config_err))
-
-    for version in llvm_versions():
-        commands = by_version[version]
-        if commands:
-            return commands[0]
+        if version != '0':
+            feasible_commands.append(command)
+            feasible_versions.append(int(version))
+            feasible_errors.append(config_err)
+                
+    # index of newest LLVM version (wrong version already caught by
+    # check_llvm_config)
+    i_newest = feasible_versions.index(max(feasible_versions))
+    newest_version_error = feasible_errors[i_newest]
+    if not newest_version_error:
+        return feasible_commands[i_newest]
+    else:
+        return ';PASS;'+newest_version_error # add error tag
 
     return ''
 
@@ -176,7 +184,11 @@ def validate_llvm_config():
     llvm_config = get_llvm_config()
 
     if llvm_val == 'system':
-        if llvm_config == '' or llvm_config == 'none':
+        if llvm_config[0:6] == ';PASS;':
+            auto_config_error=llvm_config[6:]
+            error("Found system LLVM but received error:\n"
+                  " {0}".format(auto_config_error))
+        elif llvm_config =='' or llvm_config == 'none':
             error("CHPL_LLVM=system but could not find an installed LLVM"
                   " with one of the supported versions: {0}".format(
                   llvm_versions_string()))
