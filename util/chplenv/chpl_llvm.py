@@ -135,9 +135,6 @@ def find_system_llvm_config():
     if homebrew_prefix:
         paths.append(homebrew_prefix + "/opt/llvm/bin/llvm-config")
 
-    by_version = defaultdict(list)
-    errs = []
-
     feasible_commands = []
     feasible_versions = []
     feasible_errors = []
