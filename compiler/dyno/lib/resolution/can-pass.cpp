@@ -838,7 +838,7 @@ CanPassResult CanPassResult::canPass(Context* context,
   // allow unknown qualifier for any type actuals
   // so other code doesn't have to decide between param
   // and type for type queries
-  bool actualAnyType = actualT->isAnyType();
+  bool typeQueryActual = (actualQT.kind() == QualifiedType::TYPE_QUERY);
 
   // check that the kinds are compatible
 
@@ -846,11 +846,11 @@ CanPassResult CanPassResult::canPass(Context* context,
   // non-type formal, non-type actual -> OK
   // type formal, non-type actual -> error, can't pass value to type
   // non-type formal, type actual -> error, can't pass type to value
-  if (formalQT.isType() != actualQT.isType() && !actualAnyType)
+  if (formalQT.isType() != actualQT.isType() && !typeQueryActual)
     return fail();
 
   // param actuals can pass to non-param formals
-  if (formalQT.isParam() && !actualQT.isParam() && !actualAnyType)
+  if (formalQT.isParam() && !actualQT.isParam() && !typeQueryActual)
     return fail();
 
   // check params
@@ -884,7 +884,7 @@ CanPassResult CanPassResult::canPass(Context* context,
     return passAsIs();
   }
 
-  if (actualQT.isUnknown() && !actualAnyType) {
+  if (actualQT.isUnknown() && !typeQueryActual) {
     return fail(); // actual type not established
   }
 
@@ -910,6 +910,7 @@ CanPassResult CanPassResult::canPass(Context* context,
       case QualifiedType::UNKNOWN:
       case QualifiedType::FUNCTION:
       case QualifiedType::MODULE:
+      case QualifiedType::TYPE_QUERY:
       case QualifiedType::INDEX:
       case QualifiedType::DEFAULT_INTENT:
       case QualifiedType::CONST_INTENT:

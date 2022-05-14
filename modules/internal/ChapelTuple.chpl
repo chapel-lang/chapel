@@ -44,9 +44,9 @@ assignment, and unary, binary, and relational operators.
 module ChapelTuple {
   use ChapelStandard, DSIUtil;
 
-  pragma "tuple" record _tuple {
+  /*pragma "tuple" record _tuple {
     param size : int;
-  }
+  }*/
 
   pragma "tuple init fn"
   inline proc chpl__init_tuple(param size : int) {
