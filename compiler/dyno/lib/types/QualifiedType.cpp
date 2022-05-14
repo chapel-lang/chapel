@@ -75,6 +75,7 @@ static const char* kindToString(QualifiedType::Kind kind) {
     case QualifiedType::PARAM:          return "param";
     case QualifiedType::TYPE:           return "type";
     case QualifiedType::INDEX:          return "index";
+    case QualifiedType::TYPE_QUERY:     return "type query";
     case QualifiedType::FUNCTION:       return "function";
     case QualifiedType::MODULE:         return "module";
   }

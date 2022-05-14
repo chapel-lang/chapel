@@ -395,7 +395,8 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
                                  QualifiedType initExprType) {
   // check that the resolution of the type expression is a type
   if (declaredType.hasTypePtr() &&
-      declaredType.kind() != QualifiedType::UNKNOWN) {
+      declaredType.kind() != QualifiedType::UNKNOWN &&
+      declaredType.kind() != QualifiedType::TYPE_QUERY) {
     if (declaredType.kind() != QualifiedType::TYPE) {
       context->error(typeForErr, "Value provided where type expected");
       return true;
@@ -1115,8 +1116,10 @@ bool Resolver::enter(const TypeQuery* tq) {
       auto defaultInt = IntType::get(context, 0);
       result.setType(QualifiedType(QualifiedType::PARAM, defaultInt));
     } else {
-      // Well, the type query could refer to a param or to a type.
-      result.setType(QualifiedType(QualifiedType::UNKNOWN, AnyType::get(context)));
+      // the type query could refer to a param or to a type,
+      // so use the TYPE_QUERY kind
+      result.setType(QualifiedType(QualifiedType::TYPE_QUERY,
+                                   AnyType::get(context)));
     }
   } else {
 

@@ -366,10 +366,6 @@ typedSignatureInitialQuery(Context* context,
     for (auto formal : fn->formals()) {
       formal->traverse(visitor);
     }
-    // visit the where clause
-    if (auto whereClause = fn->whereClause()) {
-      whereClause->traverse(visitor);
-    }
     // do not visit the return type or function body
 
     // now, construct a TypedFnSignature from the result
@@ -377,7 +373,20 @@ typedSignatureInitialQuery(Context* context,
     bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
                                                           untypedSig,
                                                           nullptr);
-    auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
+
+    // visit the where clause, unless it needs to be instantiated, in
+    // which case we will visit the where clause when that happens
+    TypedFnSignature::WhereClauseResult whereResult =
+      TypedFnSignature::WHERE_NONE;
+    if (auto whereClause = fn->whereClause()) {
+      if (needsInstantiation) {
+        whereResult = TypedFnSignature::WHERE_TBD;
+      } else {
+        whereClause->traverse(visitor);
+        whereResult = whereClauseResult(context, fn, r, needsInstantiation);
+      }
+    }
+
     // use an empty poiFnIdsUsed since this is never an instantiation
     std::set<std::pair<ID, ID>> poiFnIdsUsed;
     // same for formalsInstantiated
@@ -1086,7 +1095,6 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
                                              const PoiScope* poiScope) {
-
   // Performance: Should this query use a similar approach to
   // resolveFunctionByInfoQuery, where the PoiInfo and visibility
   // are consulted?
@@ -1142,6 +1150,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
         addSub = true;
         useType = entry.actualType();
       }
+    /*} else if (entry.actualType().kind() == QualifiedType::TYPE_QUERY) {
+      addSub = true;
+      useType = entry.actualType();*/
     } else {
       auto got = canPass(context, entry.actualType(), entry.formalType());
       assert(got.passes()); // should not get here otherwise
@@ -1173,6 +1184,11 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
 
     formalIdx++;
+  }
+
+  // use the existing signature if there were no substitutions
+  if (substitutions.size() == 0) {
+    return sig;
   }
 
   std::vector<types::QualifiedType> formalTypes;
@@ -1574,10 +1590,10 @@ const QualifiedType& returnType(Context* context,
 
   QualifiedType result;
 
-  if (untyped->idIsFunction()) {
-    // this should only be applied to concrete fns or instantiations
-    assert(!sig->needsInstantiation());
-
+  if (untyped->idIsFunction() && sig->needsInstantiation()) {
+    // if it needs instantiation, we don't know the return type yet.
+    result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
+  } else if (untyped->idIsFunction()) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
     assert(fn);
@@ -1924,10 +1940,13 @@ void accumulatePoisUsedByResolvingBody(Context* context,
     return;
   }
 
-  assert(!signature->needsInstantiation());
-
   if (signature->instantiatedFrom() == nullptr) {
     // if it's not an instantiation, no need to gather POIs
+    return;
+  }
+
+  if (signature->needsInstantiation()) {
+    // if it needs instantiation, it's not time to gather POIs yet
     return;
   }
 
@@ -2410,13 +2429,14 @@ CallResolutionResult resolveFnCall(Context* context,
     instantiationPoiScope =
       pointOfInstantiationScope(context, inScope, inPoiScope);
     poiInfo.setPoiScope(instantiationPoiScope);
-  }
 
-  for (const TypedFnSignature* candidate : mostSpecific) {
-    if (candidate != nullptr) {
-      if (candidate->untyped()->idIsFunction()) {
-        accumulatePoisUsedByResolvingBody(context, candidate,
-                                          instantiationPoiScope, poiInfo);
+    for (const TypedFnSignature* candidate : mostSpecific) {
+      if (candidate != nullptr) {
+        if (candidate->untyped()->idIsFunction()) {
+          // note: following call returns early if candidate not instantiated
+          accumulatePoisUsedByResolvingBody(context, candidate,
+                                            instantiationPoiScope, poiInfo);
+        }
       }
     }
   }
@@ -2446,7 +2466,6 @@ CallResolutionResult resolvePrimCall(Context* context,
                                      const CallInfo& ci,
                                      const Scope* inScope,
                                      const PoiScope* inPoiScope) {
-
   bool allParam = true;
   for (const CallInfoActual& actual : ci.actuals()) {
     if (!actual.type().hasParamPtr()) {
@@ -2461,10 +2480,8 @@ CallResolutionResult resolvePrimCall(Context* context,
 
   // handle param folding
   auto prim = call->prim();
-  if (Param::isParamOpFoldable(prim)) {
-    if (allParam && ci.numActuals() == 2) {
+  if (Param::isParamOpFoldable(prim) && allParam && ci.numActuals() == 2) {
       type = Param::fold(context, prim, ci.actuals(0).type(), ci.actuals(1).type());
-    }
   } else {
     using namespace uast::primtags;
     switch (prim) {
