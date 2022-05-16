@@ -65,8 +65,8 @@ We have used the following commands to install the above prerequisites:
 
   * Debian, Ubuntu::
 
-      sudo apt-get install gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config cmake llvm-12-dev llvm-12 llvm-12-tools clang-12 libclang-12-dev libclang-cpp12-dev libedit-dev
+      sudo apt-get install gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config cmake llvm-$LLVM_VERSION-dev llvm-$LLVM_VERSION llvm-$LLVM_VERSION-tools clang-$LLVM_VERSION libclang-$LLVM_VERSION-dev libclang-cpp$LLVM_VERSION-dev libedit-dev
 
   * FreeBSD::
 
-     sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake llvm12
+     sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake llvm$LLVM_VERSION
