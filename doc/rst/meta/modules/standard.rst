@@ -16,7 +16,6 @@ default:
 .. toctree::
    :maxdepth: 1
 
-   Chapel Environment Variables <standard/ChapelEnv>
    Errors <standard/Errors>
    IO Support <standard/ChapelIO>
    Math <standard/Math>
