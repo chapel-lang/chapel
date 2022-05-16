@@ -1,2 +1,1 @@
-wrong-escapes-3.chpl:3: error: EOF in string
-wrong-escapes-3.chpl:3: syntax error
+wrong-escapes-3.chpl:2: error: EOF in string
