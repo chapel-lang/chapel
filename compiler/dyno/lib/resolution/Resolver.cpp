@@ -1539,8 +1539,7 @@ bool Resolver::enter(const For* loop) {
   bool wasResolved = iterandRE.type().isUnknown() == false &&
                      iterandRE.type().isErroneousType() == false;
 
-  QualifiedType idxType = QualifiedType(QualifiedType::UNKNOWN,
-                                        ErroneousType::get(context));
+  QualifiedType idxType;
 
   if (isIter) {
     idxType = iterandRE.type();
@@ -1567,10 +1566,15 @@ bool Resolver::enter(const For* loop) {
 
       poiInfo.accumulate(c.poiInfo());
     } else {
+      idxType = QualifiedType(QualifiedType::UNKNOWN,
+                              ErroneousType::get(context));
       std::ostringstream oss;
       iterandRE.type().type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
       context->error(loop, "unable to iterate over values of type %s", oss.str().c_str());
     }
+  } else {
+    idxType = QualifiedType(QualifiedType::UNKNOWN,
+                            ErroneousType::get(context));
   }
 
   if (const Decl* idx = loop->index()) {
