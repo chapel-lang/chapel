@@ -1,8 +1,4 @@
-./RunVectorizeOnlyRawLoops.chpl:5: In function 'runVectorizeOnlyRawLoops':
-./RunVectorizeOnlyRawLoops.chpl:472: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
-./RunVectorizeOnlyRawLoops.chpl:472: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
-  LCALSMain.chpl:620: called as runVectorizeOnlyRawLoops(loop_stats: [domain(1,LoopKernelID,false)] shared LoopStat, run_loop: [domain(1,LoopKernelID,false)] bool, ilength: LoopLength) from function 'runLoopVariant'
-  LCALSMain.chpl:159: called as runLoopVariant(lvid: LoopVariantID, run_loop: [domain(1,LoopKernelID,false)] bool, ilength: LoopLength)
+./RunVectorizeOnlyRawLoops.chpl:4: warning: The 'VectorizingIterator' module has been deprecated; please use 'foreach' loops instead
 
  allocateLoopSuiteRunInfo...
 
