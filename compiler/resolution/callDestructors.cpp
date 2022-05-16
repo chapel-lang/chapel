@@ -2110,7 +2110,14 @@ void callDestructors() {
 
   adjustCoforallIndexVariables();
 
-  createIteratorBreakBlocks();
+  // Some "sub-passes" here are interprocedural, can't run all passes in
+  // the same manager instance yet.
+  {
+    PassManager pm;
+    PassTList<CallExpr*> passes;
+    passes.push_back(std::make_unique<CreateIteratorBreakBlocks>());
+    pm.runPass(std::move(passes), gCallExprs);
+  }
 
   fixupDestructors();
 
