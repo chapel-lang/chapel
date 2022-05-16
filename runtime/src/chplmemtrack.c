@@ -667,10 +667,10 @@ void chpl_reportMemInfo() {
 }
 
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
-                       c_sublocid_t subloc,
                        chpl_mem_descInt_t description,
                        int32_t lineno, int32_t filename) {
   if (number * size > memThreshold) {
+    c_sublocid_t subloc = chpl_task_getRequestedSubloc();
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
       memTrack_lock();
       addMemTableEntry(memAlloc, number, size, subloc, description,
@@ -699,9 +699,10 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 // allocation size. This allows us to pass the initial size if we have it, but
 // otherwise we can ask the allocator for the size of a pointer if it supports
 // that query, which isn't free but is much cheaper than grabbing a lock.
-void chpl_track_free(void* memAlloc, size_t approximateSize,
-                     c_sublocid_t subloc, int32_t lineno, int32_t filename) {
+void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
+                     int32_t filename) {
   if (approximateSize == 0 || approximateSize > memThreshold) {
+    c_sublocid_t subloc = chpl_task_getRequestedSubloc();
     memTableEntry* memEntry = NULL;
     if (chpl_memTrack) {
       memTrack_lock();
@@ -751,9 +752,9 @@ void chpl_track_realloc_pre(void* memAlloc, size_t size,
 
 void chpl_track_realloc_post(void* moreMemAlloc,
                          void* memAlloc, size_t size,
-                         c_sublocid_t subloc,
                          chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
+  c_sublocid_t subloc = chpl_task_getRequestedSubloc();
   if (size > memThreshold) {
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
       memTrack_lock();
