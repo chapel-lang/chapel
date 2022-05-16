@@ -17,7 +17,7 @@ class Chapel < Formula
   end
 
   depends_on "gmp"
-  depends_on "python@3.10"
+  depends_on "python@3.9"
   on_macos do
     depends_on "llvm" if MacOS.version > :catalina
     depends_on "llvm@11" if MacOS.version <= :catalina
