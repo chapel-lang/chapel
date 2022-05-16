@@ -219,6 +219,12 @@ class LocalizeGlobals : public PassT<FnSymbol*> {
   std::vector<SymExpr*> symExprs;
 };
 
+class CreateIteratorBreakBlocks : public PassT<CallExpr*> {
+ public:
+  bool shouldProcess(CallExpr* call) override;
+  void process(CallExpr* call) override;
+};
+
 class BulkCopyRecords : public PassT<FnSymbol*> {
  public:
   bool shouldProcess(FnSymbol* fn) override;
