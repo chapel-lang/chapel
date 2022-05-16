@@ -1,0 +1,5 @@
+qualifiedAccess.chpl:7: In function 'main':
+qualifiedAccess.chpl:8: warning: m1.asdf
+qualifiedAccess.chpl:9: warning: m1.asdf
+1
+1
