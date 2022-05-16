@@ -564,15 +564,6 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       initExprT = r.type();
     }
 
-    bool isGenericField = isField &&
-                          (qtKind == QualifiedType::TYPE ||
-                           qtKind == QualifiedType::PARAM);
-
-    // infer the type of the variable from its initialization expr?
-    bool inferFromInit = !isGenericField ||
-                          useGenericFormalDefaults ||
-                          foundSubstitutionDefaultHint;
-
     if (!typeExprT.hasTypePtr() && useType != nullptr) {
       // use type from argument to resolveNamedDecl
       typeExprT = QualifiedType(QualifiedType::TYPE, useType);
@@ -587,14 +578,37 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       if (isFieldOrFormal && typeExpr == nullptr && initExpr == nullptr) {
         // Lack of initializer for a field/formal means the Any type
         typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
-      } else if (!inferFromInit) {
-        // if we aren't inferring from the init expr, clear initExprT.
-        initExprT = QualifiedType();
-        if (isGenericField) {
-          // a type or param field with initExpr is still generic, e.g.
-          // record R { type t = int; }
-          // if that behavior is requested with !useGenericFormalDefaults
-          typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+      } else if (isFieldOrFormal) {
+        // figure out if we should potentially infer the type from the init expr
+        // (we do so if it's not a field or a formal)
+        bool isTypeOrParam = qtKind == QualifiedType::TYPE ||
+                             qtKind == QualifiedType::PARAM;
+        // infer the type of the variable from its initialization expr?
+        bool inferFromInit = foundSubstitutionDefaultHint ||
+                             useGenericFormalDefaults;
+        // in addition, always infer from init for a concrete type.
+        // the non-concrete cases are like this, e.g.:
+        //    type t = int;
+        //    var x:GenericRecord = f()
+        if (inferFromInit == false && !isTypeOrParam)  {
+          // check also for a generic type as the type expression
+          auto g = getTypeGenericity(context, typeExprT);
+          if (g != Type::GENERIC) {
+            inferFromInit = true;
+          }
+        }
+
+        if (!inferFromInit) {
+          // if we aren't inferring from the init expr, clear initExprT
+          // so it is not used below.
+          initExprT = QualifiedType();
+          if (isTypeOrParam && isField) {
+            // a type or param field with initExpr is still generic, e.g.
+            // record R { type t = int; }
+            // if that behavior is requested with !useGenericFormalDefaults
+            typeExprT = QualifiedType(QualifiedType::TYPE,
+                                      AnyType::get(context));
+          }
         }
       }
 
@@ -1071,6 +1085,29 @@ bool Resolver::enter(const Identifier* ident) {
       // use the type established at declaration/initialization,
       // but for things with generic type, use unknown.
       type = typeForId(id, /*localGenericToUnknown*/ true);
+      // now, for a type that is generic with defaults,
+      // compute the default version when needed. e.g.
+      //   record R { type t = int; }
+      //   var x: R; // should refer to R(int)
+      bool computeDefaults = true;
+      if (inLeafCall && ident == inLeafCall->calledExpression()) {
+        computeDefaults = false;
+      }
+      if (computeDefaults) {
+        if (auto t = type.type()) {
+          if (auto ct = t->toClassType()) {
+            t = ct->basicClassType();
+          }
+          if (auto ct = t->toCompositeType()) {
+            // test if that type is generic
+            auto g = getTypeGenericity(context, ct);
+            if (g == Type::GENERIC_WITH_DEFAULTS) {
+              // fill in the defaults
+              type = typeWithDefaults(context, type);
+            }
+          }
+        }
+      }
     }
     result.setToId(id);
     result.setType(type);

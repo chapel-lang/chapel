@@ -115,6 +115,13 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         bool useGenericFormalDefaults);
 
 /**
+  Computes the version of a type assuming that defaults for generics
+  are needed. So, for 'record R { type t = int; }', this will return R(int).
+ */
+const types::QualifiedType typeWithDefaults(Context* context,
+                                            types::QualifiedType t);
+
+/**
   Compute whether a type is generic or not.
   Considers the field of a record/class.
   For a UnknownType, returns MAYBE_GENERIC.
