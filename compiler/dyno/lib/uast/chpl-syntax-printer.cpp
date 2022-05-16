@@ -664,9 +664,9 @@ struct ChplSyntaxVisitor {
         //TODO: resolve this conflict
         //printChapelSyntax(ss_, node->actual(i));
         if (node->actual(i)->isOpCall()) {
-          ss_ << "(";
+//          ss_ << "(";
           printChapelSyntax(ss_, node->actual(i));
-          ss_ << ")";
+//          ss_ << ")";
         } else {
           printChapelSyntax(ss_, node->actual(i));
         }
@@ -910,7 +910,27 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const MultiDecl* node) {
-    ss_ << "var ";
+    bool isConfig = false;
+    std::string kind;
+    for (auto decl : node->decls()) {
+      if (!decl->isComment()) {
+        if (decl->isVariable() ) {
+          if (decl->toVariable()->isConfig())
+            isConfig = true;
+          kind = kindToString((IntentList)decl->toVariable()->kind());
+        }
+        else if (decl->isTupleDecl()) {
+
+        }
+      }
+    }
+    if (isConfig) {
+      ss_ << "config ";
+    } else {
+      printLinkage(node);
+    }
+
+    ss_ << kind << " ";
 
     // TODO: Can this be generalized between TupleDecl and MultiDecl?
     std::string delimiter = "";
@@ -970,14 +990,47 @@ struct ChplSyntaxVisitor {
       }
     } else if (node->isBinaryOp()) {
       assert(node->numActuals() == 2);
+      bool needParens = false;
+      if (node->actual(0)->isOpCall()) {
+        needParens = opNeedsParens(node->op().str(),
+                          node->actual(0)->toOpCall()->op().str());
+      }
+      if (needParens) ss_ << "(";
       printChapelSyntax(ss_, node->actual(0));
+      if (needParens) ss_ << ")";
+      needParens = false;
       if (node->op() == USTR("by"))
         ss_ << " ";
       ss_ << node->op();
       if (node->op() == USTR("by"))
         ss_ << " ";
+      if (node->actual(1)->isOpCall()) {
+        needParens = opNeedsParens(node->op().str(),
+                          node->actual(1)->toOpCall()->op().str());
+      }
+      if (needParens) ss_ << "(";
       printChapelSyntax(ss_, node->actual(1));
+      if (needParens) ss_ << ")";
     }
+  }
+
+  bool opNeedsParens(std::string parentOp, std::string childOp) {
+    std::map<std::string, int> opPrecedence;
+    opPrecedence.insert(std::pair<std::string, int>("**",100));
+    opPrecedence.insert(std::pair<std::string, int>("*",90));
+    opPrecedence.insert(std::pair<std::string, int>("/",80));
+    opPrecedence.insert(std::pair<std::string, int>("%",70));
+    opPrecedence.insert(std::pair<std::string, int>("+",60));
+    opPrecedence.insert(std::pair<std::string, int>("-",50));
+    if (opPrecedence.count(parentOp)==0 || opPrecedence.count(childOp)==0)
+      return false;
+    int parentRank = opPrecedence[parentOp];
+    int childRank = opPrecedence[childOp];
+    if (parentRank > childRank) {
+      return true;
+    }
+    return false;
+
   }
 
   void visit(const PrimCall* node) {

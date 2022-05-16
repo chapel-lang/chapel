@@ -120,6 +120,8 @@ static void test1(Parser* parser) {
                export "meow" record cat { var x = 0; }
                extern union baz {}
                extern "union thing" union thing {}
+               var x = !(this && that);
+               const j = !this && that;
                class C {
                  /* this class does nothing */
                  var x;
@@ -336,6 +338,7 @@ static void test1(Parser* parser) {
              iter foo() {
                for i in 1..10 do yield try! i;
              }
+             XNew(ij) = (X(ij+north) + X(ij+south) + X(ij+east) + X(ij+west)) / 4.0;
              )"""";
   auto parseResult = parser->parseString("Test1.chpl",
                                          testCode.c_str());
@@ -437,8 +440,11 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   // unsure how best to set this up for testing
+  // probably need to parse an input to a node, and send that node into a function
+  // along with an expected output and ensure the node prints the expected output
   // TEST_CHPL_SYNTAX("module foo {\n}", "module foo {\n}")
 }
+
 
 int main(int argc, char** argv) {
   Context context;
