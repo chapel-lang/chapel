@@ -713,6 +713,80 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
   return f;
 }
 
+static const CompositeType* getTypeWithDefaults(Context* context,
+                                                const CompositeType* ct) {
+  // resolve the fields with useGenericFormalDefaults=false
+  const ResolvedFields& g = fieldsForTypeDecl(context, ct, false);
+  if (!g.isGenericWithDefaults()) {
+    return ct;
+  }
+
+  // and with useGenericFormalDefaults=true
+  const ResolvedFields& r = fieldsForTypeDecl(context, ct, true);
+
+  // for any field that has a different type in r than in g, add
+  // a substitution, and get the type with those substitutions.
+  SubstitutionsMap substitutions;
+  int nFields = g.numFields();
+  assert(r.numFields() == nFields);
+  for (int i = 0; i < nFields; i++) {
+    assert(g.fieldName(i) == r.fieldName(i));
+    assert(g.fieldDeclId(i) == r.fieldDeclId(i));
+    QualifiedType gType = g.fieldType(i);
+    QualifiedType rType = r.fieldType(i);
+    if (gType != rType) {
+      // The type is different so add a substitution.
+      substitutions.insert({g.fieldDeclId(i), rType});
+    }
+  }
+
+  if (substitutions.size() == 0) {
+    return ct;
+  }
+
+  auto ast = parsing::idToAst(context, ct->id());
+  assert(ast && ast->isAggregateDecl());
+  auto ad = ast->toAggregateDecl();
+
+  // POI is not relevant here
+  const PoiScope* poiScope = nullptr;
+  const Type* instantiatedFrom = ct;
+
+  // Create the composite type with those substitutions
+  return helpGetTypeForDecl(context, ad, substitutions,
+                            poiScope, instantiatedFrom);
+}
+
+static
+const CompositeType* const& getTypeWithDefaultsQuery(Context* context,
+                                                     const CompositeType* ct) {
+  QUERY_BEGIN(getTypeWithDefaultsQuery, context, ct);
+
+  auto result = getTypeWithDefaults(context, ct);
+
+  return QUERY_END(result);
+}
+
+const types::QualifiedType typeWithDefaults(Context* context,
+                                            types::QualifiedType t) {
+  if (t.type()) {
+    if (auto clst = t.type()->toClassType()) {
+      auto bct = clst->basicClassType();
+      auto got = getTypeWithDefaultsQuery(context, bct);
+      assert(got->isBasicClassType());
+      bct = got->toBasicClassType();
+
+      auto r = ClassType::get(context, bct, clst->manager(), clst->decorator());
+      return QualifiedType(t.kind(), r, t.param());
+    } else if (auto ct = t.type()->toCompositeType()) {
+      auto got = getTypeWithDefaultsQuery(context, ct);
+      return QualifiedType(t.kind(), got, t.param());
+    }
+  }
+
+  return t;
+}
+
 
 // the ignore argument is just to ignore types that we are currently
 // computing the genericity of (we can assume that those are concrete).
@@ -761,6 +835,14 @@ static Type::Genericity getFieldsGenericity(Context* context,
     assert(g != Type::MAYBE_GENERIC);
     if (g == Type::GENERIC)
       return Type::GENERIC;
+  }
+
+  if (context->isQueryRunning(fieldsForTypeDeclQuery,
+                              std::make_tuple(ct, false)) ||
+      context->isQueryRunning(fieldsForTypeDeclQuery,
+                              std::make_tuple(ct, true))) {
+    // TODO: is there a better way to avoid problems with recursion here?
+    return Type::CONCRETE;
   }
 
   // this setting is irrelevant for this query since the
@@ -1151,9 +1233,6 @@ const TypedFnSignature* instantiateSignature(Context* context,
         addSub = true;
         useType = entry.actualType();
       }
-    /*} else if (entry.actualType().kind() == QualifiedType::TYPE_QUERY) {
-      addSub = true;
-      useType = entry.actualType();*/
     } else {
       auto got = canPass(context, entry.actualType(), entry.formalType());
       assert(got.passes()); // should not get here otherwise
@@ -1189,6 +1268,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   // use the existing signature if there were no substitutions
   if (substitutions.size() == 0) {
+    printf("HERE\n");
     return sig;
   }
 
@@ -1528,31 +1608,33 @@ returnTypeForTypeCtorQuery(Context* context,
     // compute the substitutions
     SubstitutionsMap subs;
 
-    int nFormals = sig->numFormals();
-    for (int i = 0; i < nFormals; i++) {
-      const Decl* formalDecl = untyped->formalDecl(i);
-      const QualifiedType& formalType = sig->formalType(i);
-      // Note that the formalDecl should already be a fieldDecl
-      // based on typeConstructorInitialQuery.
-      bool hasInitExpression = false;
-      if (auto vd = formalDecl->toVarLikeDecl())
-        if (vd->initExpression() != nullptr)
-          hasInitExpression = true;
+    if (instantiatedFrom != nullptr) {
+      int nFormals = sig->numFormals();
+      for (int i = 0; i < nFormals; i++) {
+        const Decl* formalDecl = untyped->formalDecl(i);
+        const QualifiedType& formalType = sig->formalType(i);
+        // Note that the formalDecl should already be a fieldDecl
+        // based on typeConstructorInitialQuery.
+        bool hasInitExpression = false;
+        if (auto vd = formalDecl->toVarLikeDecl())
+          if (vd->initExpression() != nullptr)
+            hasInitExpression = true;
 
-      if (formalType.type()->isAnyType() && !hasInitExpression) {
-        // Ignore this substitution - easier to just leave it out
-        // of the map entirely.
-        // Note that we explicitly put a sub for AnyType for generics
-        // with default, where the default is not used. E.g.
-        //    record R { type t = int; }
-        //    type RR = R(?);
-        //    var x: RR;
-        // is a compilation error because x has generic type.
-        // In order to support that pattern, we need to be able to
-        // represent that RR is a version of R where it's not behaving
-        // as generic-with-default and substituting in AnyType does that.
-      } else {
-        subs.insert({formalDecl->id(), formalType});
+        if (formalType.type()->isAnyType() && !hasInitExpression) {
+          // Ignore this substitution - easier to just leave it out
+          // of the map entirely.
+          // Note that we explicitly put a sub for AnyType for generics
+          // with default, where the default is not used. E.g.
+          //    record R { type t = int; }
+          //    type RR = R(?);
+          //    var x: RR;
+          // is a compilation error because x has generic type.
+          // In order to support that pattern, we need to be able to
+          // represent that RR is a version of R where it's not behaving
+          // as generic-with-default and substituting in AnyType does that.
+        } else {
+          subs.insert({formalDecl->id(), formalType});
+        }
       }
     }
 
@@ -1704,10 +1786,20 @@ isInitialTypedSignatureApplicable(Context* context,
   int formalIdx = 0;
   for (const FormalActual& entry : faMap.byFormals()) {
     const auto& actualType = entry.actualType();
-    const auto& formalType = tfs->formalType(formalIdx);
-    auto got = canPass(context, actualType, formalType);
-    if (!got.passes()) {
-      return false;
+
+    // note: entry.actualType can have type()==nullptr and UNKNOWN.
+    // in that case, resolver code should treat it as a hint to
+    // use the default value. Unless the call used a ? argument.
+    if (entry.actualType().kind() == QualifiedType::UNKNOWN &&
+        entry.actualType().type() == nullptr &&
+        !ci.hasQuestionArg()) {
+      // use the default value - no need to check it matches formal
+    } else {
+      const auto& formalType = tfs->formalType(formalIdx);
+      auto got = canPass(context, actualType, formalType);
+      if (!got.passes()) {
+        return false;
+      }
     }
 
     formalIdx++;
@@ -1733,9 +1825,8 @@ doIsCandidateApplicableInitial(Context* context,
 
   if (!candidateId.isEmpty()) {
     ast = parsing::idToAst(context, candidateId);
-    assert(ast->isFunction());
+    assert(ast->isFunction() || ast->isTypeDecl());
     fn = ast->toFunction();
-    assert(fn);
   }
 
   if (ast == nullptr || ast->isTypeDecl()) {
