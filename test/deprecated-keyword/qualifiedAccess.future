@@ -1,0 +1,2 @@
+bug: qualified access suppresses deprecation warning
+#19813
