@@ -81,6 +81,9 @@ static inline void chpl_track_gen_subloc_info(char* subloc_info,
   if (subloc >= 0) {
     snprintf(subloc_info, 16, " (gpu %" PRI_c_sublocid_t ")", subloc);
   }
+  else {
+    snprintf(subloc_info, 16, " (cpu)");
+  }
 #endif
 }
 
