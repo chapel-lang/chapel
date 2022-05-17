@@ -1268,7 +1268,6 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   // use the existing signature if there were no substitutions
   if (substitutions.size() == 0) {
-    printf("HERE\n");
     return sig;
   }
 
