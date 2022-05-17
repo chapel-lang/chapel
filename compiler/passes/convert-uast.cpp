@@ -63,7 +63,7 @@ struct Converter {
   bool inTupleDecl = false;
   ModTag topLevelModTag;
   std::vector<const char*> modNameStack;
-  const char* latestComment;
+  const char* latestComment = nullptr;
 
   Converter(chpl::Context* context, ModTag topLevelModTag)
     : context(context),
@@ -128,8 +128,6 @@ struct Converter {
   // This code duplicates what was done in 'processBlockComment' for the old
   // scanner, minus all the state tracking for the scanner itself. It is
   // meant to prepare a comment for use with chpldoc.
-  // It's also broken.
-  /*
   const char* trimBlockCommentForDocs(const uast::Comment* node) {
     INT_ASSERT(isBlockComment(node));
     INT_ASSERT(fDocs);
@@ -140,16 +138,22 @@ struct Converter {
     std::string str, line;
     bool badComment = false;
     int depth = 1;
-    int idx = 0;
-    int llc = 0;
-    int lc = 0;
-    int c = 0;
-    int d = 1; // TODO: Better name?
+    int idx = 2;    // Skip opening '/*'.
+    int llc = 0;    // Last last char.
+    int lc = 0;     // Last char.
+    int c = 0;      // Current char.
+    int d = 1;      // TODO: Better name?
 
     while (depth > 0) {
       llc = lc;
       lc = c;
       c = idx < com.size() ? com[idx++] : 0; // Advance the scanner.
+
+      // Skip opening delimiter.
+      if (idx < 2) {
+        INT_ASSERT(c == '/' || c == '*');
+        continue;
+      }
 
       // For newlines, append entire line if past the delimiter.
       if (c == '\n') {
@@ -180,7 +184,7 @@ struct Converter {
 
       // TODO: Eliminate depth tracking?
       if (lc == '*' && c == '/' && llc != '/') {
-        if (delimIdx == delimLen && d != (delimLen + 1)) badComment = true;
+        if (delimIdx == delimLen && d != delimLen + 1) badComment = true;
         depth--;
         d = 1;
       } else if (lc == '/' && c == '*') {
@@ -205,7 +209,7 @@ struct Converter {
 
       if (delimLen > 2) {
         delimLen -= 2;
-        line = line.substr(delimLen);
+        str = str.substr(delimLen);
       }
 
       // TODO: What is this doing?
@@ -222,16 +226,14 @@ struct Converter {
 
     auto ret = astr(str.c_str());
 
-    gdbShouldBreakHere();
-
     return ret;
   }
-  */
 
   Expr* visit(const uast::Comment* node) {
     if (!fDocs) return nullptr;
     INT_ASSERT(node->str().size() >= 2);
-    latestComment = isBlockComment(node) ? node->c_str() : nullptr;
+    latestComment = isBlockComment(node) ? trimBlockCommentForDocs(node)
+                                         : nullptr;
     return nullptr;
   }
 
