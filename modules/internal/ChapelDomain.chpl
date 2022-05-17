@@ -1957,11 +1957,28 @@ module ChapelDomain {
       return size: t;
     }
 
-
+    /* return the (pure) low bound for this domain */
+    proc lowBound {
+      return _value.dsiLow;
+    }
+    /* return the (pure) high bound for this domain */
+    proc highBound {
+      return _value.dsiHigh;
+    }
     /* return the lowest index in this domain */
-    proc low return _value.dsiLow;
+    proc low {
+      if !alignedBoundsByDefault && stridable {
+        compilerWarning("The '.low' query on ranges is in the process of changing from returning the pure low bound to the aligned low bound (e.g., from '1' to '2' for '1..10 by -2').  Update to the '.lowBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior.");
+      }
+      return if alignedBoundsByDefault then _value.dsiAlignedLow else _value.dsiLow;
+    }
     /* Return the highest index in this domain */
-    proc high return _value.dsiHigh;
+    proc high {
+    if !alignedBoundsByDefault && stridable {
+      compilerWarning("The '.high' query on ranges is in the process of changing from returning the pure high bound to the aligned high bound (e.g., from '10' to '9' for '1..10 by 2').  Update to the '.highBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior now and avoid this warning.");
+    }
+      return if alignedBoundsByDefault then _value.dsiAlignedHigh else _value.dsiHigh;
+    }
     /* Return the stride of the indices in this domain */
     proc stride return _value.dsiStride;
     /* Return the alignment of the indices in this domain */
@@ -2156,7 +2173,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do {
         ranges(i) = ranges(i).expand(off(i));
-        if (ranges(i).low > ranges(i).high) {
+        if (ranges(i).lowBound > ranges(i).highBound) {
           halt("***Error: Degenerate dimension created in dimension ", i, "***");
         }
       }
