@@ -225,6 +225,12 @@ class CreateIteratorBreakBlocks : public PassT<CallExpr*> {
   void process(CallExpr* call) override;
 };
 
+class FixupDestructors : public PassT<FnSymbol*> {
+ public:
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+};
+
 class BulkCopyRecords : public PassT<FnSymbol*> {
  public:
   bool shouldProcess(FnSymbol* fn) override;
