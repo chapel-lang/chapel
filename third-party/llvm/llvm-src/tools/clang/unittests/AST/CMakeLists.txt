@@ -15,6 +15,7 @@ add_clang_unittest(ASTTests
   ASTTraverserTest.cpp
   ASTTypeTraitsTest.cpp
   ASTVectorTest.cpp
+  AttrTest.cpp
   CommentLexer.cpp
   CommentParser.cpp
   CommentTextTest.cpp
@@ -38,6 +39,7 @@ clang_target_link_libraries(ASTTests
   clangASTMatchers
   clangBasic
   clangFrontend
+  clangLex
   clangSerialization
   clangTesting
   clangTooling
