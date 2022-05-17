@@ -6,7 +6,7 @@ var lst: list(int, true);
 
 const r = 1..testIters;
 
-lst.extend(r);
+lst.append(r);
 
 for (x, y) in zip(r, lst) do
   assert(x == y);
