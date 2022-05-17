@@ -63,12 +63,19 @@ struct Converter {
   bool inTupleDecl = false;
   ModTag topLevelModTag;
   std::vector<const char*> modNameStack;
+  const char* latestComment;
 
   Converter(chpl::Context* context, ModTag topLevelModTag)
     : context(context),
       topLevelModTag(topLevelModTag) {}
 
   Expr* convertAST(const uast::AstNode* node);
+
+  const char* consumeLatestComment() {
+    const char* ret = latestComment;
+    latestComment = nullptr;
+    return ret;
+  }
 
   Expr* convertExprOrNull(const uast::AstNode* node) {
     if (node == nullptr)
@@ -109,8 +116,122 @@ struct Converter {
     return nullptr;
   }
 
+  static bool isBlockComment(const uast::Comment* node) {
+    const auto& str = node->str();
+    if (str.size() < 4) return false;
+    if (str[0] != '/' || str[1] != '*') return false;
+    INT_ASSERT(str[str.size()-1] == '/');
+    INT_ASSERT(str[str.size()-2] == '*');
+    return true;
+  }
+
+  // This code duplicates what was done in 'processBlockComment' for the old
+  // scanner, minus all the state tracking for the scanner itself. It is
+  // meant to prepare a comment for use with chpldoc.
+  // It's also broken.
+  /*
+  const char* trimBlockCommentForDocs(const uast::Comment* node) {
+    INT_ASSERT(isBlockComment(node));
+    INT_ASSERT(fDocs);
+
+    const auto& com = node->str();
+    int delimLen = strlen(fDocsCommentLabel);
+    int delimIdx = (delimLen >= 2) ? 2 : 0;
+    std::string str, line;
+    bool badComment = false;
+    int depth = 1;
+    int idx = 0;
+    int llc = 0;
+    int lc = 0;
+    int c = 0;
+    int d = 1; // TODO: Better name?
+
+    while (depth > 0) {
+      llc = lc;
+      lc = c;
+      c = idx < com.size() ? com[idx++] : 0; // Advance the scanner.
+
+      // For newlines, append entire line if past the delimiter.
+      if (c == '\n') {
+        if (delimIdx == delimLen) {
+          str += line;
+          str += '\n';
+        }
+        line.clear();
+
+      // Maybe advance the delimiter, append character.
+      } else {
+        if ((delimIdx < delimLen) && (delimIdx != -1)) {
+          if (c == fDocsCommentLabel[delimIdx]) {
+            delimIdx++;
+          } else {
+            delimIdx = -1;
+          }
+        }
+
+        line += c;
+      }
+
+      if (delimLen != 0 && c == fDocsCommentLabel[delimLen - d]) {
+        d++;
+      } else {
+        d = 1;
+      }
+
+      // TODO: Eliminate depth tracking?
+      if (lc == '*' && c == '/' && llc != '/') {
+        if (delimIdx == delimLen && d != (delimLen + 1)) badComment = true;
+        depth--;
+        d = 1;
+      } else if (lc == '/' && c == '*') {
+        depth++;
+      } else if (c == 0) {
+        INT_FATAL("Should not reach here!");
+      }
+    }
+
+    // Back up to not print delimiter again.
+    if (line.size() >= 2) {
+      line.resize(line.size() - 2);
+    }
+
+    // Even further for special delimiters.
+    if (delimLen > 2 && delimIdx == delimLen) {
+      line.resize(line.size() - (delimLen - 2));
+    }
+
+    if (delimIdx == delimLen) {
+      str += line;
+
+      if (delimLen > 2) {
+        delimLen -= 2;
+        line = line.substr(delimLen);
+      }
+
+      // TODO: What is this doing?
+      auto loc = str.find("\\x09");
+      while (loc != std::string::npos) {
+        str = str.substr(0, loc) + str.substr(loc + 4);
+        str.insert(loc, "\t");
+        loc = str.find("\\x09");
+      }
+    }
+
+    // TODO: New parser will have to communicate malformed comments?
+    INT_ASSERT(!badComment);
+
+    auto ret = astr(str.c_str());
+
+    gdbShouldBreakHere();
+
+    return ret;
+  }
+  */
+
   Expr* visit(const uast::Comment* node) {
-    // old ast does not represent comments
+    if (!fDocs) return nullptr;
+    INT_ASSERT(node->str().size() >= 2);
+    latestComment = isBlockComment(node) ? node->c_str() : nullptr;
     return nullptr;
   }
 
@@ -1833,6 +1954,7 @@ struct Converter {
 
   Expr* visit(const uast::MultiDecl* node) {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
+    auto comment = consumeLatestComment();
 
     for (auto decl : node->decls()) {
       INT_ASSERT(decl->linkage() == node->linkage());
@@ -1843,6 +1965,13 @@ struct Converter {
         // Do not use the linkage name since multi-decls cannot be renamed.
         const bool useLinkageName = false;
         conv = convertVariable(var, useLinkageName);
+
+        // Attach the doc comment if it exists.
+        DefExpr* defExpr = toDefExpr(conv);
+        INT_ASSERT(defExpr);
+        auto varSym = toVarSymbol(defExpr->sym);
+        INT_ASSERT(varSym);
+        varSym->doc = comment;
 
       // Otherwise convert in a generic fashion.
       } else {
@@ -1863,9 +1992,11 @@ struct Converter {
   }
 
   // Right now components are one of: Variable, Formal, TupleDecl.
-  BlockStmt* convertTupleDeclComponents(const uast::TupleDecl* node) {
+  BlockStmt* convertTupleDeclComponents(const uast::TupleDecl* node,
+                                        bool attachComments=false) {
     astlocMarker markAstLoc(node->id());
 
+    auto comment = attachComments ? consumeLatestComment() : nullptr;
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
     const bool saveInTupleDecl = inTupleDecl;
@@ -1881,10 +2012,21 @@ struct Converter {
         INT_ASSERT(!formal->typeExpression());
         conv = new DefExpr(new VarSymbol(formal->name().c_str()));
 
+        // Should not be attaching comments to tuple formals.
+        INT_ASSERT(!attachComments);
+
       // Do not use the visitor because it produces a block statement.
       } else if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
         conv = convertVariable(var, useLinkageName);
+
+        if (attachComments) {
+          auto defExpr = toDefExpr(conv);
+          INT_ASSERT(defExpr);
+          auto varSym = toVarSymbol(defExpr->sym);
+          INT_ASSERT(varSym);
+          varSym->doc = comment;
+        }
 
       // It must be a tuple.
       } else {
@@ -1916,13 +2058,14 @@ struct Converter {
 
   // This builds a statement. Arguments use 'convertTupleDeclComponents'.
   BlockStmt* visit(const uast::TupleDecl* node) {
-    auto tuple = convertTupleDeclComponents(node);
+    const bool attachComments = true;
+    auto tuple = convertTupleDeclComponents(node, attachComments);
     auto typeExpr = convertExprOrNull(node->typeExpression());
     auto initExpr = convertExprOrNull(node->initExpression());
 
     BlockStmt* ret = buildTupleVarDeclStmt(tuple, typeExpr, initExpr);
 
-    // get the definition of the temporary that was added
+    // TODO: Shouldn't this be all symbols?
     DefExpr* tmpDef = toDefExpr(ret->body.first());
     attachSymbolStorage(node->intentOrKind(), tmpDef->sym);
 
@@ -2097,6 +2240,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Function* node) {
+    auto comment = consumeLatestComment();
     FnSymbol* fn = new FnSymbol("_");
 
     // build up the userString as in old parser
@@ -2274,7 +2418,7 @@ struct Converter {
                                        whereClause,
                                        lifetimeConstraints,
                                        body,
-                                       /* docs */ nullptr);
+                                       comment);
 
     if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
@@ -2323,6 +2467,7 @@ struct Converter {
   }
 
   DefExpr* visit(const uast::Module* node) {
+    auto comment = consumeLatestComment();
     const char* name = astr(node->name().c_str());
     const char* path = context->filePathForId(node->id()).c_str();
 
@@ -2352,7 +2497,7 @@ struct Converter {
                                     path,
                                     priv,
                                     prototype,
-                                    /* docs */ nullptr);
+                                    comment);
 
     if (node->kind() == uast::Module::IMPLICIT) {
       mod->addFlag(FLAG_IMPLICIT_MODULE);
@@ -2711,9 +2856,15 @@ struct Converter {
   Expr* visit(const uast::Variable* node) {
     auto isTypeVar = node->kind() == uast::Variable::TYPE;
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
+    auto comment = consumeLatestComment();
 
     auto defExpr = convertVariable(node, true);
     INT_ASSERT(defExpr);
+    auto varSym = toVarSymbol(defExpr->sym);
+    INT_ASSERT(varSym);
+
+    // Attach the doc comment if it exists.
+    varSym->doc = comment;
 
     stmts->insertAtTail(defExpr);
 
@@ -2751,7 +2902,11 @@ struct Converter {
   }
 
   Expr* visit(const uast::Enum* node) {
+    auto comment = consumeLatestComment();
     auto enumType = new EnumType();
+
+    // Attach any doc comment to the enum type.
+    enumType->doc = comment;
 
     for (auto elem : node->enumElements()) {
       DefExpr* convElem = convertEnumElement(elem);
@@ -2789,6 +2944,7 @@ struct Converter {
   }
 
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
+    auto comment = consumeLatestComment();
     const char* name = astr(node->name().c_str());
     const char* cname = name;
     Expr* inherit = nullptr;
@@ -2815,7 +2971,7 @@ struct Converter {
     auto ret = buildClassDefExpr(name, cname, tag, inherit,
                                  decls,
                                  externFlag,
-                                 /*docs*/ nullptr);
+                                 comment);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
