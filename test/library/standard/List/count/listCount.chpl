@@ -22,7 +22,7 @@ for 1..testIters do {
 
 var lst2 = lst1;
 
-lst2.extend(lst1);
+lst2.append(lst1);
 
 writeln(lst2.count(testNum));
 

@@ -82,10 +82,10 @@ record buf {
         if idx >= 0 {
           // Character found, bulk-append characters up to and including 'idx'
           // to the 'data' array.
-          data.extend(avail[..idx]);
+          data.append(avail[..idx]);
           (done, used) = (true, avail[..idx].size);
         } else {
-          data.extend(avail);
+          data.append(avail);
           (done, used) = (false, avail.size);
         }
       } else return 0;

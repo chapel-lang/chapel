@@ -172,14 +172,14 @@ lst1.clear();
 writeln("List 1 after clear: ", lst1);
 
 /*
-  We can use the ``list.extend()`` method to merge the contents of our lists
+  We can use the ``list.append()`` method to merge the contents of our lists
   together. Since ``lst1`` is now empty, we can reuse it to save space.
 */
 
-lst1.extend(lst2);
-lst1.extend(lst3);
+lst1.append(lst2);
+lst1.append(lst3);
 
-writeln("List 1 after extends: ", lst1);
+writeln("List 1 after appends: ", lst1);
 
 /*
    You'll notice that the contents of ``lst1`` are backwards. We could call

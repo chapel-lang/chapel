@@ -80,10 +80,10 @@ record buf {
         const idx = _memchr(term, avail);
         if idx >= 0 {
           ref x = avail[..idx];
-          data.extend(x);
+          data.append(x);
           (done, used) = (true, x.size);
         } else {
-          data.extend(avail);
+          data.append(avail);
           (done, used) = (false, avail.size);
         }
       } else return 0;
