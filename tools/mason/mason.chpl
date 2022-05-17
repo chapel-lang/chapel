@@ -41,6 +41,7 @@ use MasonSystem;
 use MasonTest;
 use MasonUpdate;
 use MasonUtils;
+use MasonFlags;
 use List;
 /*
 
@@ -83,7 +84,7 @@ proc main(args: [] string) throws {
   // define all the supported subcommand strings here
   var cmds = ["add","build","clean","doc","env","external","init","publish",
               "new","rm","run","search","system","test","update",
-              "help","version"];
+              "help","version", "flags"];
   for cmd in cmds {
     subCmds.add(cmd,parser.addSubCommand(cmd));
   }
@@ -129,6 +130,7 @@ proc main(args: [] string) throws {
       when "system" do masonSystem(cmdArgs);
       when "test" do masonTest(cmdArgs);
       when "update" do masonUpdate(cmdArgs);
+      when "flags" do masonFlags(cmdArgs);
       when "version" do printVersion();
       otherwise {
         throw new owned MasonError("No such subcommand '%s'\ntry mason --help"
