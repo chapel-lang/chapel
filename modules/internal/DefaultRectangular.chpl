@@ -587,22 +587,22 @@ module DefaultRectangular {
 
     proc dsiLow {
       if rank == 1 {
-        return ranges(0).low;
+        return ranges(0).lowBound;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).low;
+          result(i) = ranges(i).lowBound;
         return result;
       }
     }
 
     proc dsiHigh {
       if rank == 1 {
-        return ranges(0).high;
+        return ranges(0).highBound;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).high;
+          result(i) = ranges(i).highBound;
         return result;
       }
     }
