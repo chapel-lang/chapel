@@ -273,7 +273,7 @@ module Version {
 
     :returns: A new version value of type :type:`programVersion`.
   */
-  proc createVersion(major: int,
+  proc createMutableVersion(major: int,
                      minor: int,
                      update: int = 0,
                      commit: string = ""): programVersion {
@@ -286,20 +286,20 @@ module Version {
     /*
       The major version number. For version ``2.0.1``, this would be ``2``.
     */
-    const major: int;
+    var major: int;
 
     /*
       The minor version number. For version ``2.0.1``, this would be ``0``.
     */
-    const minor: int;
+    var minor: int;
 
     /*
       The update version number. For version ``2.0.1``, this would be ``1``.
     */
-    const update: int;
+    var update: int;
 
     /* The commit ID of the version (e.g., a Git SHA) */
-    const commit: string = "";
+    var commit: string = "";
 
 
     pragma "no doc"
@@ -312,10 +312,10 @@ module Version {
   pragma "no doc"
   operator :(x: programVersion, type t: string) const {
     if (x.commit == "") then
-      return ("version " + x.major:string + "." + x.minor:string + "." +
+      return (x.major:string + "." + x.minor:string + "." +
               x.update:string);
     else
-      return ("version " + x.major:string + "." + x.minor:string + "." +
+      return (x.major:string + "." + x.minor:string + "." +
               x.update:string + " (" + x.commit + ")");
   }
 

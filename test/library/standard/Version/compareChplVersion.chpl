@@ -14,6 +14,9 @@ const v2_2_1_p = createVersion(2,2,1,"ddd");
 const v3_1_0_p = createVersion(3,1,0,"eee");
 const v3_1_1_p = createVersion(3,1,1,"fff");
 
+compareVersions(v3_1_1, v3_1_1);
+compareVersions(v3_1_1_p, v3_1_1_p);
+
 compareVersions(v2_1_0, v2_1_0);
 compareVersions(v2_1_0_p, v2_1_0_p);
 compareLTVersions(v2_1_0, v2_1_0_p);
