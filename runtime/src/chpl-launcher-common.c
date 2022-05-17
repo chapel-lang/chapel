@@ -792,8 +792,8 @@ const char* chpl_get_real_binary_name(void) {
 }
 
 void chpl_launcher_get_job_name(char *baseName, char *jobName, int jobLen) {
-  char* prefix = getenv("CHPL_LAUNCHER_JOB_PREFIX");
-  char* name = getenv("CHPL_LAUNCHER_JOB_NAME");
+  const char* prefix = getenv("CHPL_LAUNCHER_JOB_PREFIX");
+  const char* name = getenv("CHPL_LAUNCHER_JOB_NAME");
 
   if (prefix == NULL) {
     prefix = "CHPL-";
