@@ -11200,12 +11200,13 @@ static Symbol* tempFeedsIntoSetMember(CallExpr* call, SymExpr* valSe,
                                       Symbol* val) {
   if (val->hasFlag(FLAG_TEMP) && ! val->hasFlag(FLAG_USER_VARIABLE_NAME))
    // See if it is the temp used to set a field.
-   for_SymbolSymExprs(se, val)
-    if (se != valSe)
-     if (CallExpr* parent = toCallExpr(se->parentExpr))
-      if (parent->isPrimitive(PRIM_SET_MEMBER))
-       if (SymExpr* fieldSE = toSymExpr(parent->get(2)))
-        return fieldSE->symbol();
+    for_SymbolSymExprs(se, val) {
+      if (se != valSe)
+        if (CallExpr* parent = toCallExpr(se->parentExpr))
+          if (parent->isPrimitive(PRIM_SET_MEMBER))
+            if (SymExpr* fieldSE = toSymExpr(parent->get(2)))
+              return fieldSE->symbol();
+    }
 
     return NULL;
 }
