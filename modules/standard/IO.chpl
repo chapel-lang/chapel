@@ -4454,7 +4454,7 @@ proc channel.close() throws {
 /*
    Return `true` if a channel is currently closed.
  */
-proc channel.isclosed() {
+proc channel.isClosed() : bool {
   var ret:bool;
   on this.home {
     ret = qio_channel_isclosed(locking, _channel_internal);
