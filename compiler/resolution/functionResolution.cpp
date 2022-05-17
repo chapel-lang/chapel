@@ -11198,8 +11198,8 @@ static bool isInDefaultActualFunction(Expr* ref) {
 // or does not feed into a PRIM_SET_MEMBER.
 static Symbol* tempFeedsIntoSetMember(CallExpr* call, SymExpr* valSe,
                                       Symbol* val) {
-  if (val->hasFlag(FLAG_TEMP) && ! val->hasFlag(FLAG_USER_VARIABLE_NAME))
-   // See if it is the temp used to set a field.
+  if (val->hasFlag(FLAG_TEMP) && ! val->hasFlag(FLAG_USER_VARIABLE_NAME)) {
+    // See if it is the temp used to set a field.
     for_SymbolSymExprs(se, val) {
       if (se != valSe)
         if (CallExpr* parent = toCallExpr(se->parentExpr))
@@ -11207,8 +11207,9 @@ static Symbol* tempFeedsIntoSetMember(CallExpr* call, SymExpr* valSe,
             if (SymExpr* fieldSE = toSymExpr(parent->get(2)))
               return fieldSE->symbol();
     }
+  }
 
-    return NULL;
+  return NULL;
 }
 
 // For a PRIM_DEFAULT_INIT_VAR or a PRIM_INIT_VAR_SPLIT_DECL,
