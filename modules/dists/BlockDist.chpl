@@ -666,12 +666,12 @@ proc Block.getChunk(inds, locid) {
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
     if chunk.sizeAs(int) > 0 {
-      if targetLocsIdx(chunk.low) != locid then
-        writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
-                targetLocsIdx(chunk.low));
-      if targetLocsIdx(chunk.high) != locid then
-        writeln("[", here.id, "] ", chunk.high, " is in my chunk but maps to ",
-                targetLocsIdx(chunk.high));
+      if targetLocsIdx(chunk.lowBound) != locid then
+        writeln("[", here.id, "] ", chunk.lowBound, " is in my chunk but maps to ",
+                targetLocsIdx(chunk.lowBound));
+      if targetLocsIdx(chunk.highBound) != locid then
+        writeln("[", here.id, "] ", chunk.highBound, " is in my chunk but maps to ",
+                targetLocsIdx(chunk.highBound));
     }
   return chunk;
 }
@@ -729,8 +729,8 @@ proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
   type idxType = boundingBox.idxType;
   var inds: rank*range(idxType);
   for param i in 0..rank-1 {
-    const lo = boundingBoxDims(i).low;
-    const hi = boundingBoxDims(i).high;
+    const lo = boundingBoxDims(i).lowBound;
+    const hi = boundingBoxDims(i).highBound;
     const numelems = hi - lo + 1;
     const numlocs = targetLocBox.dim(i).sizeAs(int);
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
@@ -803,7 +803,7 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
-  const wholeLow = whole.low;
+  const wholeLow = whole.lowBound;
 
   // If this is the only task running on this locale, we don't want to
   // count it when we try to determine how many tasks to use.  Here we
@@ -868,8 +868,8 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
   for param i in 0..rank-1 {
     var stride = whole.dim(i).stride: strType;
     // not checking here whether the new low and high fit into idxType
-    var low = (stride * followThis(i).low:strType):idxType;
-    var high = (stride * followThis(i).high:strType):idxType;
+    var low = (stride * followThis(i).lowBound:strType):idxType;
+    var high = (stride * followThis(i).highBound:strType):idxType;
     t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
@@ -916,8 +916,8 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
 }
 
 // common redirects
-proc BlockDom.dsiLow           return whole.low;
-proc BlockDom.dsiHigh          return whole.high;
+proc BlockDom.dsiLow           return whole.lowBound;
+proc BlockDom.dsiHigh          return whole.highBound;
 proc BlockDom.dsiAlignedLow    return whole.alignedLow;
 proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
 proc BlockDom.dsiFirst         return whole.first;
@@ -1189,10 +1189,10 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   for param i in 0..rank-1 {
     var stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
-    var low = followThis(i).low * abs(stride):idxType;
-    var high = followThis(i).high * abs(stride):idxType;
+    var low = followThis(i).lowBound * abs(stride):idxType;
+    var high = followThis(i).highBound * abs(stride):idxType;
     myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
-    lowIdx(i) = myFollowThis(i).low;
+    lowIdx(i) = myFollowThis(i).lowBound;
   }
 
   const myFollowThisDom = {(...myFollowThis)};
@@ -1510,10 +1510,10 @@ proc BlockDom.numRemoteElems(viewDom, rlo, rid) {
   //  below can fit into idxType
   var blo, bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank-1).sizeAs(int) - 1) then
-    bhi=viewDom.dim(rank-1).high;
+    bhi=viewDom.dim(rank-1).highBound;
   else {
-      bhi = dist.boundingBox.dim(rank-1).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1):idxType,
+      bhi = dist.boundingBox.dim(rank-1).lowBound +
+        intCeilXDivByY((dist.boundingBox.dim(rank-1).highBound - dist.boundingBox.dim(rank-1).lowBound +1)*(rid+1):idxType,
                        dist.targetLocDom.dim(rank-1).sizeAs(idxType)) - 1:idxType;
   }
 
@@ -1773,7 +1773,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
-      if (locid == dom.dist.targetLocDom.low) {
+      if (locid == dom.dist.targetLocDom.lowBound) {
         const metaop = op.clone();
 
         var next: resType = metaop.identity;
