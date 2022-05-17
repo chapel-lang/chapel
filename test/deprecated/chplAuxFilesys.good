@@ -1,5 +1,2 @@
-chplAuxFilesys.chpl:2: warning: CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem
-chplAuxFilesys.chpl:2: warning: In an upcoming release, you will need to 'use'/'import ChplConfig' in order to access 'CHPL_*' params
-chplAuxFilesys.chpl:6: warning: CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem
-false
+chplAuxFilesys.chpl:3: warning: CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem
 false

@@ -60,6 +60,8 @@ proc printProgress(step : int, elapsed : real) {
 }
 
 proc printSystemInfo() {
+  use ChplConfig;
+
   proc uname(cmd : string) {
     // Spawn doesn't work correctly under ugni or gn-ibv:
     //  - https://github.com/chapel-lang/chapel/issues/7550
