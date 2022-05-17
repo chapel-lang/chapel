@@ -1252,7 +1252,7 @@ module UnrolledLinkedList {
   operator unrolledLinkedList.=(ref lhs: unrolledLinkedList(?t, ?),
                                 rhs: unrolledLinkedList(t, ?)) {
     lhs.clear();
-    lhs.extend(rhs);
+    lhs.append(rhs);
   }
 
   /*

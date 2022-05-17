@@ -1906,7 +1906,7 @@ module List {
   */
   operator list.=(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();
-    lhs.extend(rhs);
+    lhs.append(rhs);
   }
 
   /*
