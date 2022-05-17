@@ -4462,6 +4462,13 @@ proc channel.isClosed() : bool {
   return ret;
 }
 
+
+deprecated "channel.isclosed is deprecated. Please use channel.isClosed instead"
+proc channel.isclosed() : bool {
+  return this.isClosed();
+}
+
+
 // TODO -- we should probably have separate c_ptr ddata and ref versions
 // in this function for it to become user-facing. Right now, errors
 // in the type of the argument will only be caught by a type mismatch
