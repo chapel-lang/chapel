@@ -22,9 +22,9 @@ export CHPL_RT_CACHE_QUIET=true
 export CHPL_COMM_SUBSTRATE=udp
 export CHPL_GASNET_SEGMENT=everything
 
-source $CWD/common-arkouda.bash
-
 # Use Arrow dependencies built using asan
 export ARKOUDA_ASAN=true
+
+source $CWD/common-arkouda.bash
 
 test_correctness
