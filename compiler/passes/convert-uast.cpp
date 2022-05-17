@@ -138,11 +138,11 @@ struct Converter {
     std::string str, line;
     bool badComment = false;
     int depth = 1;
-    int idx = 2;    // Skip opening '/*'.
-    int llc = 0;    // Last last char.
-    int lc = 0;     // Last char.
-    int c = 0;      // Current char.
-    int d = 1;      // TODO: Better name?
+    size_t idx = 2;   // Skip opening '/*'.
+    int llc = 0;      // Last last char.
+    int lc = 0;       // Last char.
+    int c = 0;        // Current char.
+    int d = 1;        // TODO: Better name?
 
     while (depth > 0) {
       llc = lc;
