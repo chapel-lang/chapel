@@ -839,7 +839,7 @@ module List {
       var ret: range;
       on this {
         _enter();
-        ret = _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
 
@@ -863,7 +863,7 @@ module List {
       var ret: range;
       on this {
         _enter();
-        ret = _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
       return ret;
@@ -896,7 +896,7 @@ module List {
       var ret: range;
       on this {
         _enter();
-        ret = _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
       return ret;
@@ -970,7 +970,7 @@ module List {
       on this {
         if idx == _size {
           // TODO: In an ideal world, we'd resize only once.
-          _extendGeneric(items);
+          _appendGeneric(items);
           result = true;
         } else if _withinBounds(idx) {
           _expand(idx, size);
@@ -1457,7 +1457,7 @@ module List {
           _fireAllDestructors();
           _freeAllArrays();
           _firstTimeInitializeArrays();
-          _extendGeneric(arr);
+          _appendGeneric(arr);
         }
 
         _leave();
