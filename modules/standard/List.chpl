@@ -806,6 +806,8 @@ module List {
 
     pragma "no doc"
     inline proc ref _extendGeneric(collection) {
+      var startSize: int;
+      var endSize: int;
 
       //
       // TODO: This could avoid repeated resizes at smaller total capacities
@@ -813,12 +815,16 @@ module List {
       // calling _append().
       //
       on this {
+        startSize = _size;
         for item in collection {
           pragma "no auto destroy"
           var cpy = item;
           _appendByRef(cpy);
         }
+        endSize = _size;
       }
+
+      return startSize..(endSize-1);
     }
 
     /*
@@ -829,12 +835,20 @@ module List {
         contained in this list.
       :type other: `list(eltType)`
     */
-    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
+    proc ref append(other: list(eltType, ?p)) lifetime this < other {
+      var ret: range;
       on this {
         _enter();
-        _extendGeneric(other);
+        ret = _extendGeneric(other);
         _leave();
       }
+
+      return ret;
+    }
+
+    deprecated "list.extend is deprecated, please use list.append"
+    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
+      append(other);
     }
 
     /*
@@ -845,12 +859,19 @@ module List {
         contained in this list.
       :type other: `[?d] eltType`
     */
-    proc ref extend(other: [?d] eltType) lifetime this < other {
+    proc ref append(other: [?d] eltType) lifetime this < other {
+      var ret: range;
       on this {
         _enter();
-        _extendGeneric(other);
+        ret = _extendGeneric(other);
         _leave();
       }
+      return ret;
+    }
+
+    deprecated "list.extend is deprecated, please use list.append"
+    proc ref extend(other: [?d] eltType) lifetime this < other {
+      append(other);
     }
 
     /*
@@ -865,19 +886,25 @@ module List {
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
     */
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
+    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
       if !isBoundedRange(other) {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot extend " + e + " with unbounded " + f;
         compilerError(msg);
       }
-
+      var ret: range;
       on this {
         _enter();
-        _extendGeneric(other);
+        ret = _extendGeneric(other);
         _leave();
       }
+      return ret;
+    }
+
+    deprecated "list.extend is deprecated, please use list.append"
+    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
+      append(other);
     }
 
     /*
