@@ -129,18 +129,51 @@ static bool isBracketLoopMaybeArrayType(const uast::BracketLoop* node) {
   if (!node->isExpressionLevel()) return false;
   if (node->iterand()->isZip()) return false;
   if (node->numStmts() != 1) return false;
-  if (node->index()) return false;
+  if (node->index() && node->stmt(0)->isConditional()) return false;
   return true;
 }
 
 // TODO: Attributes
-// TODO: Nesting
-// TODO: Parentheses based on operator precedence
 
 struct ChplSyntaxVisitor {
   std::stringstream ss_;
   int indentDepth = 0;
   const int spacesPerIndentDepth = 2;
+  // TODO: Expand this and make it into a query
+  // based on https://chapel-lang.org/docs/language/spec/expressions.html
+  const std::map<std::string, int> opPrecedence {
+      {"**",170},
+      {"!", 160},
+      {"~", 160},
+      {"*",150},
+      {"/",150},
+      {"%",150},
+      {"<<",140},
+      {">>",140},
+      {"&",130},
+      {"^",120},
+      {"|",110},
+      {"+",80},
+      {"-",80},
+      {"&&",50},
+      {"||",40},
+      {"#",30}
+  };
+
+  bool opNeedsParens(std::string parentOp, std::string childOp) {
+    if (parentOp == childOp) return false;
+    // make sure the ops both exist in the table because .at will throw if
+    // they don't
+    if (opPrecedence.count(parentOp)==0 || opPrecedence.count(childOp)==0)
+      return false;
+    int parentRank = opPrecedence.at(parentOp);
+    int childRank = opPrecedence.at(childOp);
+
+    if (parentRank >= childRank) {
+      return true;
+    }
+    return false;
+  }
 
   void indentStream() {
     int i = indentDepth;
@@ -417,9 +450,9 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->index());
       ss_ << " in ";
     }
-    if (isBracketLoopMaybeArrayType(node)) {
-      assert(node->iterand()->isDomain());
-      if (node->iterand()->toDomain()->numExprs() == 1)
+    if (isBracketLoopMaybeArrayType(node) &&
+        node->iterand()->isDomain() &&
+        node->iterand()->toDomain()->numExprs() == 1) {
         printChapelSyntax(ss_, node->iterand()->toDomain()->expr(0));
     } else {
       printChapelSyntax(ss_, node->iterand());
@@ -438,7 +471,7 @@ struct ChplSyntaxVisitor {
         indentDepth--;
       } else {
         interpose(node->stmts(), "");
-        if (node->stmt(0)->isOpCall())
+        if (node->stmt(0)->isOpCall() && !node->isExpressionLevel())
           ss_ << ";";
       }
     }
@@ -661,15 +694,9 @@ struct ChplSyntaxVisitor {
           // TODO: Remove spaces around `=` when removing old parser
           ss_ << " = ";
         }
-        //TODO: resolve this conflict
-        //printChapelSyntax(ss_, node->actual(i));
-        if (node->actual(i)->isOpCall()) {
-//          ss_ << "(";
-          printChapelSyntax(ss_, node->actual(i));
-//          ss_ << ")";
-        } else {
-          printChapelSyntax(ss_, node->actual(i));
-        }
+
+        printChapelSyntax(ss_, node->actual(i));
+
         sep = ", ";
       }
       if (node->callUsedSquareBrackets()) {
@@ -968,9 +995,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const OpCall* node) {
-    // TODO: Where do parens come in?
-    // ex: !(this && that)
-    // is different than !this && that
+    bool needParens = false;
     if (node->isUnaryOp()) {
       bool isPostFixBang = false;
       bool isNilable = false;
@@ -982,7 +1007,10 @@ struct ChplSyntaxVisitor {
         ss_ << node->op();
       }
       assert(node->numActuals() == 1);
+      needParens = (!isPostFixBang && node->actual(0)->isOpCall());
+      if (needParens) ss_ << "(";
       printChapelSyntax(ss_, node->actual(0));
+      if (needParens) ss_ << ")";
       if (isPostFixBang) {
         ss_ << "!";
       } else if (isNilable) {
@@ -990,7 +1018,7 @@ struct ChplSyntaxVisitor {
       }
     } else if (node->isBinaryOp()) {
       assert(node->numActuals() == 2);
-      bool needParens = false;
+
       if (node->actual(0)->isOpCall()) {
         needParens = opNeedsParens(node->op().str(),
                           node->actual(0)->toOpCall()->op().str());
@@ -1012,25 +1040,6 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->actual(1));
       if (needParens) ss_ << ")";
     }
-  }
-
-  bool opNeedsParens(std::string parentOp, std::string childOp) {
-    std::map<std::string, int> opPrecedence;
-    opPrecedence.insert(std::pair<std::string, int>("**",100));
-    opPrecedence.insert(std::pair<std::string, int>("*",90));
-    opPrecedence.insert(std::pair<std::string, int>("/",80));
-    opPrecedence.insert(std::pair<std::string, int>("%",70));
-    opPrecedence.insert(std::pair<std::string, int>("+",60));
-    opPrecedence.insert(std::pair<std::string, int>("-",50));
-    if (opPrecedence.count(parentOp)==0 || opPrecedence.count(childOp)==0)
-      return false;
-    int parentRank = opPrecedence[parentOp];
-    int childRank = opPrecedence[childOp];
-    if (parentRank > childRank) {
-      return true;
-    }
-    return false;
-
   }
 
   void visit(const PrimCall* node) {
@@ -1063,9 +1072,16 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Reduce* node) {
-    printChapelSyntax(ss_, node->op());
-    ss_ << " reduce ";
-    printChapelSyntax(ss_, node->iterand());
+    if (node->opExpr()) {
+      printChapelSyntax(ss_, node->opExpr());
+    } else {
+      ss_ << node->op();
+    }
+    ss_ << " ";
+    ss_ << "reduce ";
+    if (node->actual(0)->isOpCall()) ss_<<"(";
+    printChapelSyntax(ss_, node->actual(0));
+    if (node->actual(0)->isOpCall()) ss_<<")";
   }
 
   void visit(const Require* node) {

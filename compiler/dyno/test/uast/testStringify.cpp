@@ -122,6 +122,9 @@ static void test1(Parser* parser) {
                extern "union thing" union thing {}
                var x = !(this && that);
                const j = !this && that;
+               const d : int = (((i + j) * (i + j + 1)) >> 1) + i + 1;
+               Au(i)=+ reduce [j in 0..inRange-1 by 2] ((u(j) * eval_A(j,i)) + (u(j+1) * eval_A(j+1, i)));
+               const vBv = + reduce (u*v);
                class C {
                  /* this class does nothing */
                  var x;
@@ -420,7 +423,10 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc (int(32)).foo() {\n}", "(int(32)).foo()")
   TEST_USER_STRING("proc proc1(arg: Monkey1?) { }", "proc1(arg: Monkey1?)" )
   TEST_USER_STRING("proc proc1(arg: 2*Monkey1?) { }", "proc1(arg: 2*Monkey1?)")
-  TEST_USER_STRING("proc proc1(arg: owned 2*Monkey1?) { }", "proc1(arg: owned 2*Monkey1?)")
+  TEST_USER_STRING("proc proc1(arg: owned 2*Monkey1?) { }",
+                   "proc1(arg: owned 2*Monkey1?)")
+  TEST_USER_STRING("proc init(fScore : borrowed [..] real) {}",
+                   "init(fScore: borrowed [..] real)")
 }
 
 static void test4(Parser* parser) {
