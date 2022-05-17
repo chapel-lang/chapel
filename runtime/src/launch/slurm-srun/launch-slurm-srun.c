@@ -164,9 +164,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
   const char* nodeAccessStr = NULL;
-
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
+  char  jobName[128];
 
   // For programs with large amounts of output, a lot of time can be
   // spent syncing the stdout buffer to the output file. This can cause
@@ -234,6 +234,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     basenamePtr++;
   }
 
+  chpl_launcher_get_job_name(basenamePtr, jobName, sizeof(jobName));
+
   chpl_compute_real_binary_name(argv[0]);
 
   if (debug) {
@@ -258,7 +260,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "#!/bin/sh\n\n");
 
     // set the job name
-    fprintf(slurmFile, "#SBATCH --job-name=Chpl-%.10s\n", basenamePtr);
+    fprintf(slurmFile, "#SBATCH --job-name=%s\n", jobName);
 
     // suppress informational messages, will still display errors
     fprintf(slurmFile, "#SBATCH --quiet\n");
@@ -376,8 +378,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     len = 0;
 
     // set the job name
-    len += sprintf(iCom+len, "--job-name=CHPL-%.10s ",basenamePtr);
-
+    len += sprintf(iCom+len, "--job-name=%s ", jobName);
     // suppress informational messages, will still display errors
     len += sprintf(iCom+len, "--quiet ");
 

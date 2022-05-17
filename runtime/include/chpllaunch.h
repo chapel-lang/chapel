@@ -68,6 +68,8 @@ const char* chpl_get_real_binary_name(void);
 int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales);
 int chpl_launcher_main(int argc, char* argv[]);
 
+void chpl_launcher_get_job_name(char* baseName, char* jobName, int jobLen);
+
 //
 // Defined in launch_<CHPL_LAUNCHER>.c
 //

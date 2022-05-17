@@ -1,0 +1,13 @@
+#! /usr/bin/env python3
+
+import sys
+from helper import checkLauncherArg, getBatchFile
+
+prog = sys.argv[1]
+outputFile = sys.argv[2]
+batchFile = None
+output = None
+
+(batchFile, output) = getBatchFile(outputFile)
+
+checkLauncherArg(prog, batchFile, output, True)
