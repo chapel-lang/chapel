@@ -28,8 +28,6 @@
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 
-// TODO: allow conversion across multiple files
-
 ModuleSymbol*
 convertToplevelModule(chpl::Context* context,
                       const chpl::uast::Module* mod,
