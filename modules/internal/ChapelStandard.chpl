@@ -76,7 +76,7 @@ module ChapelStandard {
 
   // Standard modules.
   public use Types as Types;
-  public use Math as Math;
+  public use AutoMath as AutoMath;
   public use VectorizingIterator as VectorizingIterator;
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
