@@ -1,0 +1,10 @@
+testMapAssignOps.chpl:15: warning: The `+=` operator has been deprecated for map
+testMapAssignOps.chpl:16: warning: The `|=` operator has been deprecated for map
+testMapAssignOps.chpl:17: warning: The `&=` operator has been deprecated for map
+testMapAssignOps.chpl:18: warning: The `-=` operator has been deprecated for map
+testMapAssignOps.chpl:19: warning: The `^=` operator has been deprecated for map
+(1, 1) (2, 2) (3, 3) (5, -5)
+(1, 1) (2, 2) (3, 3) (5, -5)
+(1, 1) (3, 3)
+(2, 2)
+(2, 2) (5, -5)
