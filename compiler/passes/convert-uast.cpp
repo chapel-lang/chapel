@@ -124,7 +124,8 @@ struct Converter {
 
   static bool shouldResolve(UniqueString symbolPath) {
     // TODO: check for dead modules and don't resolve those
-    return symbolPath == "M" || symbolPath.startsWith("M.");
+    //return symbolPath == "M" || symbolPath.startsWith("M.");
+    return false;
   }
   static bool shouldResolve(ID symbolId) {
     return shouldResolve(symbolId.symbolPath());
