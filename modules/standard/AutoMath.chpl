@@ -99,25 +99,6 @@ module AutoMath {
   pragma "fn synchronization free"
   private extern proc fabs(x: real(64)): real(64);
 
-  private inline proc _logBasePow2Help(in val, baseLog2) {
-    // These are used here to avoid including BitOps by default.
-    extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
-    extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
-
-    var lg2 = 0;
-
-    if numBits(val.type) <= 32 {
-      var tmp:uint(32) = val:uint(32);
-      lg2 = 32 - 1 - chpl_bitops_clz_32(tmp):int;
-    } else if numBits(val.type) == 64 {
-      var tmp:uint(64) = val:uint(64);
-      lg2 = 64 - 1 - chpl_bitops_clz_64(tmp):int;
-    } else {
-      compilerError("Integer width not handled in logBasePow2");
-    }
-
-    return lg2 / baseLog2;
-  }
 
   //
   //////////////////////////////////////////////////////////////////////////
@@ -827,6 +808,7 @@ module AutoMath {
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log2(val: int(?w)) {
+    use Math;
     return logBasePow2(val, 1);
   }
 
@@ -838,6 +820,7 @@ module AutoMath {
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log2(val: uint(?w)) {
+    use Math;
     return logBasePow2(val, 1);
   }
 
