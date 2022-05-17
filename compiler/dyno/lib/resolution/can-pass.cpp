@@ -835,6 +835,17 @@ CanPassResult CanPassResult::canPass(Context* context,
   const Type* formalT = formalQT.type();
   assert(actualT && formalT);
 
+  // if the formal type is unknown, allow passing
+  // this can come up with e.g.
+  //   proc f(a: int(?w), b: int(2*w))
+  // when computing an initial candidate, 'b' is unknown
+  // but we should allow passing an argument to it.
+  if (formalQT.kind() == QualifiedType::UNKNOWN &&
+      formalT->isUnknownType() &&
+      !actualQT.isType()) {
+    return passAsIs();
+  }
+
   // allow unknown qualifier for any type actuals
   // so other code doesn't have to decide between param
   // and type for type queries
