@@ -497,13 +497,19 @@ module UnrolledLinkedList {
     }
 
     pragma "no doc"
-    inline proc ref _extendGeneric(collection) {
+    inline proc ref _appendGeneric(collection) {
+      var startSize: int;
+      var endSize: int;
       on this {
+        startSize = _size;
         // TODO: Maybe we can allocate space at one time and append.
         for item in collection {
           _append(item);
         }
+        endSize = _size;
       }
+
+      return startSize..(endSize-1);
     }
 
     /*
@@ -514,14 +520,20 @@ module UnrolledLinkedList {
         contained in this list.
       :type other: `list(eltType)`
     */
-    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
+    proc ref append(other: list(eltType, ?p)) lifetime this < other {
+      var ret: range;
       on this {
         _enter();
-        _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
+      return ret;
     }
 
+    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
+    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
+      append(other);
+    }
     /*
       Extend this unrolledLinkedList by appending a copy of each element
       contained in an unrolledLinkedList.
@@ -530,12 +542,19 @@ module UnrolledLinkedList {
         those contained in this unrolledLinkedList.
       :type other: `unrolledLinkedList(eltType)`
     */
-    proc ref extend(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
+    proc ref append(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
+      var ret: range;
       on this {
         _enter();
-        _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
+      return ret;
+    }
+
+    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
+    proc ref extend(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
+      append(other);
     }
 
     /*
@@ -546,12 +565,19 @@ module UnrolledLinkedList {
         contained in this unrolledLinkedList.
       :type other: `[?d] eltType`
     */
-    proc ref extend(other: [?d] eltType) lifetime this < other {
+    proc ref append(other: [?d] eltType) lifetime this < other {
+      var ret: range;
       on this {
         _enter();
-        _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
+      return ret;
+    }
+
+    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
+    proc ref extend(other: [?d] eltType) lifetime this < other {
+      append(other);
     }
 
     /*
@@ -566,7 +592,7 @@ module UnrolledLinkedList {
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
     */
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
+    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
       if !isBoundedRange(other) {
         param e = this.type:string;
         param f = other.type:string;
@@ -574,11 +600,18 @@ module UnrolledLinkedList {
         compilerError(msg);
       }
 
+      var ret: range;
       on this {
         _enter();
-        _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
+      return ret;
+    }
+
+    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
+    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
+      append(other);
     }
 
     pragma "no doc"

@@ -14,11 +14,11 @@ writeln(lst1);
 var lst2 = new unrolledLinkedList(listType, listLock);
 var arr1: [1..5] listType = [6, 7, 8, 9, 10];
 
-lst2.extend(arr1);
+lst2.append(arr1);
 
 writeln(lst2);
 
-lst1.extend(lst2);
+lst1.append(lst2);
 
 writeln(lst1);
 
