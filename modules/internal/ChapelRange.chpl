@@ -667,7 +667,7 @@ module ChapelRange {
     }
     return chpl_intToIdx(_low);
   }
-  
+
   /* Return the range's low bound. If the range does not have a low
      bound (e.g., ``..10``), a compiler error is generated. */
   inline proc range.low {
