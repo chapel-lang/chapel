@@ -805,7 +805,7 @@ module List {
     }
 
     pragma "no doc"
-    inline proc ref _extendGeneric(collection) {
+    inline proc ref _appendGeneric(collection) {
       var startSize: int;
       var endSize: int;
 
