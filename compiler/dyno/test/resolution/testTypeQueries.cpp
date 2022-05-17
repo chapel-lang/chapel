@@ -318,6 +318,27 @@ static void test10() {
   }
 }
 
+static void test11() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                R""""(
+                  proc g(a: int(?w), b: int(__primitive("*", 2, w))) {
+                    return b;
+                  }
+                  var a: int(8);
+                  var b: int(16);
+                  var x = g(a, b);
+                )"""");
+
+  assert(t && t->isIntType());
+  auto it = t->toIntType();
+  assert(it->bitwidth() == 16);
+}
+
+
 int main() {
   test1();
   test2();
@@ -329,6 +350,7 @@ int main() {
   test8();
   test9();
   test10();
+  test11();
 
   return 0;
 }
