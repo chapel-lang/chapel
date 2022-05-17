@@ -1700,7 +1700,7 @@ module ChapelArray {
       if boundsChecking && isEmpty() then
         halt("last called on an empty array");
 
-      return this(this.domain.high);
+      return this(this.domain.alignedHigh);
     }
 
     deprecated "Array back() method is deprecated; use :proc:`last` instead"
