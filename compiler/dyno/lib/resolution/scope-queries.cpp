@@ -925,11 +925,6 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
   const AstNode* ast = parsing::idToAst(context, scope->id());
   assert(ast != nullptr);
   if (ast != nullptr) {
-
-    printf("### BEGIN EVALUATING ");
-    scope->dump();
-    printf("\n");
-
     result = toOwned(new ResolvedVisibilityScope(scope));
     auto r = result.get();
     // Visit child nodes to find use/import statements therein
@@ -938,10 +933,6 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
         doResolveVisibilityStmt(context, child, r);
       }
     }
-
-    printf("### DONE EVALUATING ");
-    scope->dump();
-    printf("\n");
   }
 
   return QUERY_END(result);
@@ -956,9 +947,6 @@ resolveVisibilityStmts(Context* context, const Scope* scope) {
 
   if (context->isQueryRunning(resolveVisibilityStmtsQuery,
                               std::make_tuple(scope))) {
-    printf("### WAS RUNNING ");
-    scope->dump();
-    printf("\n");
     // ignore use/imports if we are currently resolving uses/imports
     // for this scope
     return nullptr;
