@@ -368,64 +368,6 @@ static void test6() {
   }
 }
 
-static void test7() {
-  printf("test7\n");
-  Context ctx;
-  Context* context = &ctx;
-
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = R""""(
-                           module M {
-                             proc f(arg:?t = 3) { }
-                             f();
-                             f("hi");
-                           }
-                         )"""";
-
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parse(context, path);
-  assert(vec.size() == 1);
-  const Module* m = vec[0]->toModule();
-  assert(m);
-  assert(m->numStmts() == 3);
-  const Call* callNoArgs = m->stmt(1)->toCall();
-  assert(callNoArgs);
-  const Call* callString = m->stmt(2)->toCall();
-  assert(callString);
-
-  {
-    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-    const ResolvedExpression& re = rr.byAst(callNoArgs);
-
-    assert(re.type().type()->isVoidType());
-
-    const TypedFnSignature* fn = re.mostSpecific().only();
-    assert(fn != nullptr);
-    assert(fn->untyped()->name() == "f");
-
-    assert(fn->numFormals() == 1);
-    assert(fn->formalName(0) == "arg");
-    assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
-    assert(fn->formalType(0).type() == IntType::get(context, 64));
-  }
-
-  {
-    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-    const ResolvedExpression& re = rr.byAst(callString);
-
-    assert(re.type().type()->isVoidType());
-
-    const TypedFnSignature* fn = re.mostSpecific().only();
-    assert(fn != nullptr);
-    assert(fn->untyped()->name() == "f");
-
-    assert(fn->numFormals() == 1);
-    assert(fn->formalName(0) == "arg");
-    assert(fn->formalType(0).kind() == QualifiedType::CONST_REF);
-    assert(fn->formalType(0).type() == StringType::get(context));
-  }
-}
 
 int main() {
   test1();
@@ -434,7 +376,6 @@ int main() {
   test4();
   test5();
   test6();
-  test7();
 
   return 0;
 }
