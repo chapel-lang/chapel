@@ -212,231 +212,6 @@ inline proc EFORMAT return chpl_macro_int_EFORMAT():qio_err_t;
 // Note that these error descriptions are reproduced here for convenience
 // only. These descriptions aren't the authority on the matter.
 
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const E2BIG:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EACCES:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EADDRINUSE:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EADDRNOTAVAIL:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EAFNOSUPPORT:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EAGAIN:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EALREADY:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EBADF:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EBADMSG:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EBUSY:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ECANCELED:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ECHILD:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ECONNABORTED:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ECONNREFUSED:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ECONNRESET:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EDEADLK:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EDESTADDRREQ:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EDOM:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EDQUOT:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EEXIST:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EFAULT:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EFBIG:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EHOSTUNREACH:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EIDRM:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EILSEQ:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EINPROGRESS:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EINTR:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EINVAL:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EIO:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EISCONN:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EISDIR:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ELOOP:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EMFILE:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EMLINK:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EMSGSIZE:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EMULTIHOP:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENAMETOOLONG:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENETDOWN:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENETRESET:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENETUNREACH:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENFILE:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOBUFS:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENODEV:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOENT:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOEXEC:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOLCK:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOLINK:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOMEM:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOMSG:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOPROTOOPT:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOSPC:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOSYS:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOTCONN:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOTDIR:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOTEMPTY:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOTSOCK:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOTSUP:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENOTTY:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ENXIO:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EOPNOTSUPP:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EOVERFLOW:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EPERM:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EPIPE:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EPROTO:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EPROTONOSUPPORT:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EPROTOTYPE:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ERANGE:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EROFS:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ESPIPE:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ESRCH:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ESTALE:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ETIMEDOUT:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const ETXTBSY:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EWOULDBLOCK:qio_err_t;
-
-deprecated "SysBasic.E* constants are deprecated; please use OS.POSIX instead"
-extern const EXDEV:qio_err_t;
-
 /* Invalid exchange (linux only) */
 extern const EBADE:qio_err_t;
 
@@ -588,4 +363,228 @@ extern const EUSERS:qio_err_t;
 /* Exchange full (linux only) */
 extern const EXFULL:qio_err_t;
 
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const E2BIG:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EACCES:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EADDRINUSE:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EADDRNOTAVAIL:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EAFNOSUPPORT:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EAGAIN:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EALREADY:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EBADF:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EBADMSG:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EBUSY:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ECANCELED:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ECHILD:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ECONNABORTED:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ECONNREFUSED:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ECONNRESET:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EDEADLK:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EDESTADDRREQ:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EDOM:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EDQUOT:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EEXIST:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EFAULT:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EFBIG:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EHOSTUNREACH:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EIDRM:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EILSEQ:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EINPROGRESS:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EINTR:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EINVAL:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EIO:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EISCONN:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EISDIR:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ELOOP:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EMFILE:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EMLINK:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EMSGSIZE:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EMULTIHOP:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENAMETOOLONG:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENETDOWN:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENETRESET:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENETUNREACH:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENFILE:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOBUFS:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENODEV:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOENT:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOEXEC:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOLCK:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOLINK:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOMEM:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOMSG:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOPROTOOPT:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOSPC:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOSYS:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOTCONN:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOTDIR:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOTEMPTY:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOTSOCK:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOTSUP:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENOTTY:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ENXIO:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EOPNOTSUPP:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EOVERFLOW:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EPERM:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EPIPE:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EPROTO:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EPROTONOSUPPORT:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EPROTOTYPE:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ERANGE:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EROFS:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ESPIPE:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ESRCH:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ESTALE:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ETIMEDOUT:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const ETXTBSY:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EWOULDBLOCK:qio_err_t;
+
+deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
+extern const EXDEV:qio_err_t;
 }
