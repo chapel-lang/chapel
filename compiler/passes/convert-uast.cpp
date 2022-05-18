@@ -1262,7 +1262,7 @@ struct Converter {
     if (!node->isExpressionLevel()) return false;
     if (node->iterand()->isZip()) return false;
     if (node->numStmts() != 1) return false;
-    if (node->index() && node->iterand()->isConditional()) return false;
+    if (node->index() && node->stmt(0)->isConditional()) return false;
     return true;
   }
 
