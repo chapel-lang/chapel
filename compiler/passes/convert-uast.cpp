@@ -647,6 +647,10 @@ struct Converter {
     bool isPrivate = node->visibility() == uast::Decl::PRIVATE;
     bool isPrototype = node->isPrototype();
 
+    // Consume the comment but do not use it - module comment is used.
+    auto comment = consumeLatestComment();
+    (void) comment;
+
     auto& loc = chpl::parsing::locateAst(gContext, node);
     INT_ASSERT(!loc.isEmpty());
     auto path = astr(loc.path().c_str());
