@@ -18,6 +18,14 @@
  * limitations under the License.
  */
 
+/* Supports counting and reporting GPU operations.
+
+  .. warning::
+
+    This module is unstable and its interface is subject to change in the
+    future.
+
+*/
 module GPUDiagnostics
 {
 
