@@ -1,0 +1,5 @@
+#!/bin/sh
+
+sed -e 's/0x.*/0xPREDIFFED/' \
+    -e '/^.*tasking layer unspecified data.*$/d' $2 > $2.tmp
+mv $2.tmp $2

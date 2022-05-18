@@ -1,4 +1,10 @@
+warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+In DefaultRectangular._simpleTransfer(): Alo=(1), Blo=(1), len=10, elemSize=8
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+In DefaultRectangular._simpleTransfer(): Alo=(1), Blo=(1), len=10, elemSize=8
+operator =(a:[],b:[]): successfully completed bulk transfer
 Array: 38 39 40 41 42 43 44 45 46 47
-In DefaultRectangular._simpleTransfer(): Alo=(1), Blo=(1), len=10, elemSize=8
-In DefaultRectangular._simpleTransfer(): Alo=(1), Blo=(1), len=10, elemSize=8
-Number of kernel launches: 1

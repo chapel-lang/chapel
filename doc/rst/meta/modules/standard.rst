@@ -43,6 +43,7 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
+   GPUDiagnostics <standard/GPUDiagnostics>
    Memory <standard/Memory>
 
 
