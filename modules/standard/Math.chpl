@@ -18,7 +18,28 @@
  * limitations under the License.
  */
 
-/* TODO
+/*
+
+This module provides less frequently used mathematical constants and functions.
+
+It includes wrappers for many of the constants and functions in
+the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
+as described in Section 7.12.  Please consult that standard for an
+authoritative description of the expected properties of those constants and
+routines.
+
+In general, where the C math library provides a *double* and a *float* version
+of a function, the float version has a suffix 'f'.  In the Chapel interface,
+the suffix is dropped, and the type of the operand determines which version is
+called -- according to the usual function overloading and resolution rules.
+Normally, the result has the same precision
+as the argument(s).  Please consult the C standard for specifics.
+
+Error Handling -- At present, Chapel does not provide control over error
+handling in the Math module.  The default behavior is as if the macro
+``math_errhandling`` is set to 0: Given erroneous input at run-time,
+all math functions will return an implementation-defined value; no
+exception will be generated.
 
 */
 module Math {

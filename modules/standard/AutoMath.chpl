@@ -21,7 +21,7 @@
 /*
 This module provides mathematical constants and functions.
 
-It includes wrappers for many of the constants in functions in
+It includes wrappers for many of the constants and functions in
 the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
 as described in Section 7.12.  Please consult that standard for an
 authoritative description of the expected properties of those constants and
@@ -38,7 +38,7 @@ Rounding -- The rounding mode for floating-point addition (subtraction) is
 implementation-defined.
 
 Error Handling -- At present, Chapel does not provide control over error
-handling in the Math module.  The default behavior is as if the macro
+handling in the AutoMath module.  The default behavior is as if the macro
 ``math_errhandling`` is set to 0: Given erroneous input at run-time,
 all math functions will return an implementation-defined value; no
 exception will be generated.
