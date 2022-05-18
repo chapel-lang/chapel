@@ -44,6 +44,11 @@ proc masonPrep(args: [] string) throws {
 
 proc prepMasonLightweight(tomlName="Mason.toml", lockName="Mason.lock") {
   updateLock(false, tomlName, lockName);
+  const cwd = here.cwd();
+  const toParse = open(cwd + "/" + lockName, iomode.r);
+  var lockFile = owned.create(parseToml(toParse));
+  const sourceList = genSourceList(lockFile);
+  getSrcCode(sourceList, true);
 }
 
 proc showMasonFlags(tomlName="Mason.toml", lockName="Mason.lock") throws {
