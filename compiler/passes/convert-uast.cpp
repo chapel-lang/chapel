@@ -233,7 +233,7 @@ struct Converter {
       return nullptr;
     }
 
-    auto ret = astr(str.c_str());
+    auto ret = str.size() ? astr(str.c_str()) : nullptr;
 
     return ret;
   }
