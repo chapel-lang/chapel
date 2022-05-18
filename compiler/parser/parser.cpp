@@ -983,6 +983,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     ModuleSymbol* got = convertToplevelModule(gContext, mod, modTag,
                                               modComment,
                                               builderResult);
+    modComment = nullptr;
     INT_ASSERT(got);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
