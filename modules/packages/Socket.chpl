@@ -72,7 +72,8 @@ public use Sys;
 public use SysError;
 public use CTypes;
 use Time;
-use SysBasic;
+use OS.POSIX;
+import SysBasic.{ENOERR,syserr,fd_t,qio_err_t};
 use IO;
 
 /*
