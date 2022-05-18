@@ -2046,48 +2046,52 @@ static void removeElidedOnBlocks() {
   }
 }
 
-static void insertAutoDestroyPrimsForLoopExprTemps() {
-  // below is a workaround for stopping the leaks coming from forall exprs that
-  // are array types. This leak only occurs if the expression is not assigned to
-  // a type variable, and it uses ranges and not domains.
-  //
-  // can we cache the CallExprs we care about in resolveCall etc?
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
-    // don't need to touch ArgSymbols
-    if (!isArgSymbol(call->parentSymbol)) {
-      // are we calling a resolved call_forallexpr?
-      if (FnSymbol *callee = call->resolvedFunction()) {
-        if (callee->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
-          if (startsWith(callee->name, astr_forallexpr)) {
-            // is the argument a range? -- if so, this call will create a domain
-            // that we need to clean in the calling scope
-            if (SymExpr *argSE = toSymExpr(call->get(1))) {
-              if (argSE->symbol()->type->symbol->hasFlag(FLAG_RANGE)) {
-                // are we moving the result of the call to an expr temp (so that
-                // it is not a user variable) that is a runtime type value?
-                if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-                  if (parentCall->isPrimitive(PRIM_MOVE)) {
-                    if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
-                      if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-                          targetSE->symbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-                        SET_LINENO(call);
-                        call->getFunction()->insertBeforeEpilogue(
-                              new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
-                              new SymExpr(targetSE->symbol())));
+bool AutoDestroyLoopExprTemps::shouldProcess(CallExpr* call) {
 
-                      }
-                    }
-                  }
-                }
-              }
-            }
+  // don't need to touch ArgSymbols
+  if (isArgSymbol(call->parentSymbol)) return false;
+
+  // are we calling a resolved call_forallexpr?
+  FnSymbol* callee = call->resolvedFunction();
+  if (!callee || !callee->hasFlag(FLAG_FN_RETURNS_ITERATOR)) return false;
+  if (!startsWith(callee->name, astr_forallexpr)) return false;
+
+  // is the argument a range? -- if so, this call will create a domain
+  // that we need to clean in the calling scope
+  SymExpr *argSE = toSymExpr(call->get(1));
+  if (!argSE || !argSE->symbol()->type->symbol->hasFlag(FLAG_RANGE))
+    return false;
+
+  // are we moving the result of the call to an expr temp (so that
+  // it is not a user variable) that is a runtime type value?
+  if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
+    if (parentCall->isPrimitive(PRIM_MOVE)) {
+      if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
+        auto targetSym = targetSE->symbol();
+        if (targetSym->hasFlag(FLAG_EXPR_TEMP)) {
+          if (targetSym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+            return true;
           }
         }
       }
     }
   }
+
+  return false;
 }
 
+void AutoDestroyLoopExprTemps::process(CallExpr* call) {
+  CallExpr* parentCall = toCallExpr(call->parentExpr);
+  SymExpr* targetSE = toSymExpr(parentCall->get(1));
+  Symbol* targetSym = targetSE->symbol();
+
+  SET_LINENO(call);
+  auto calledFn = call->getFunction();
+  auto destroy = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
+                              new SymExpr(targetSym));
+
+  calledFn->insertBeforeEpilogue(destroy);
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -2095,27 +2099,16 @@ static void insertAutoDestroyPrimsForLoopExprTemps() {
 *                                                                             *
 ************************************** | *************************************/
 
+// Some sub-passes here are interprocedural and can't be migrated yet.
 void callDestructors() {
+  PassManager pm;
 
+  // TODO: Interprocedural - mutates formal and actual.
   adjustCoforallIndexVariables();
 
-  // Some "sub-passes" here are interprocedural, can't run all passes in
-  // the same manager instance yet.
-  {
-    PassManager pm;
-    PassTList<CallExpr*> passes;
-    passes.push_back(std::make_unique<CreateIteratorBreakBlocks>());
-    pm.runPass(std::move(passes), gCallExprs);
-  }
-
-  {
-    PassManager pm;
-    PassTList<FnSymbol*> passes;
-    passes.push_back(std::make_unique<FixupDestructors>());
-    pm.runPass(std::move(passes), gFnSymbols);
-  }
-
-  insertAutoDestroyPrimsForLoopExprTemps();
+  pm.runPass(CreateIteratorBreakBlocks(), gCallExprs);
+  pm.runPass(FixupDestructors(), gFnSymbols);
+  pm.runPass(AutoDestroyLoopExprTemps(), gCallExprs);
 
   insertDestructorCalls();
 
