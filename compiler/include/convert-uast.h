@@ -29,6 +29,7 @@
 
 ModuleSymbol* convertToplevelModule(chpl::Context* context,
                                     const chpl::uast::Module* mod,
-                                    ModTag modTag);
+                                    ModTag modTag,
+                                    const chpl::uast::Comment* comment);
 
 #endif

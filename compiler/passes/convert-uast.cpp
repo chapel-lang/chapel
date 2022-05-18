@@ -3007,11 +3007,20 @@ Expr* Converter::convertAST(const uast::AstNode* node) {
 
 } // end anonymous namespace
 
-ModuleSymbol* convertToplevelModule(chpl::Context* context,
-                                    const chpl::uast::Module* mod,
-                                    ModTag modTag) {
+ModuleSymbol*
+convertToplevelModule(chpl::Context* context,
+                      const chpl::uast::Module* mod,
+                      ModTag modTag,
+                      const chpl::uast::Comment* comment) {
   astlocMarker markAstLoc(mod->id());
   Converter c(context, modTag);
+
+  // Maybe prepare a toplevel comment to attach to the module.
+  if (comment) {
+    auto convComment = c.visit(comment);
+    INT_ASSERT(convComment == nullptr);
+  }
+
   DefExpr* def = c.visit(mod);
   ModuleSymbol* ret = toModuleSymbol(def->sym);
   return ret;
