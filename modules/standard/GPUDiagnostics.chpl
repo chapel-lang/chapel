@@ -31,7 +31,7 @@ module GPUDiagnostics
   pragma "no doc"
   param gpuDiagsPrintUnstable = false;
 
-  /* 
+  /*
      Aggregated GPU operation counts.
    */
   extern record chpl_gpuDiagnostics {
