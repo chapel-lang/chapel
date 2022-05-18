@@ -1,0 +1,1 @@
+posixErrors.chpl:3: warning: POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead

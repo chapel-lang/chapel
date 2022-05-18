@@ -208,6 +208,15 @@ module OS {
     // errno.h
     //
 
+    // The descriptions of these were created by combining the FreeBSD
+    // manual and the linux manuals here:
+    // http://www.freebsd.org/cgi/man.cgi?query=errno&apropos=0&sektion=0&manpath=FreeBSD+10.1-RELEASE&arch=default&format=html
+    // http://linux.die.net/man/3/errno
+    // Verified that the POSIX annotations are correct with POSIX.1-2008:
+    // http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
+    // Note that these error descriptions are reproduced here for convenience
+    // only. These descriptions aren't the authority on the matter.
+
 
     /* Argument list too long. The number of bytes used for the argument and
        environment list of the new process exceeded the current limit.
