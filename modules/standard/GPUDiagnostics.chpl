@@ -22,22 +22,14 @@ module GPUDiagnostics
 {
 
   // TODO can we even do this?
-  // I am leaving it here, because the runtime already inherits this from the
-  // comm diagnostics support
+  // I am leaving these here, because the runtime already inherits them from the
+  // comm diagnostics support, and technically there's support for them. We just
+  // don't need or don't know how to use them
   pragma "no doc"
   param gpuDiagsStacktrace = false;
 
-  /*
-    If this is `false`, a written `gpuDiagnostics` value does not
-    include "unstable" fields even when they are non-zero.  Unstable
-    fields are those expected to have unpredictable values for multiple
-    executions of the same code sequence.  Setting this to `true` causes
-    such fields, if non-zero, to be included when a `gpuDiagnostics`
-    value is written.  At present the only unstable field is the `amo`
-    counter, whose instability is due to the use of atomic reads in spin
-    loops that wait for parallelism and on-statements to complete.
-   */
-  config param gpuDiagsPrintUnstable = false;
+  pragma "no doc"
+  param gpuDiagsPrintUnstable = false;
 
   /* 
      Aggregated GPU operation counts.
