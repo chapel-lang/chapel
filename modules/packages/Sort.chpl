@@ -587,7 +587,7 @@ module BubbleSort {
 
     while (swapped) {
       swapped = false;
-      for i in low..highBound-stride by stride {
+      for i in low..high-stride by stride {
         if chpl_compare(Data(i), Data(i+stride), comparator) > 0 {
           Data(i) <=> Data(i+stride);
           swapped = true;
