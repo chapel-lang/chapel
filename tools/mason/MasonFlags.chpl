@@ -27,6 +27,7 @@ use MasonUtils;
 use MasonEnv;
 use MasonBuild;
 use Subprocess;
+use MasonUpdate;
 use TOML;
 
 proc masonFlags(args: [] string) throws {
@@ -35,10 +36,19 @@ proc masonFlags(args: [] string) throws {
   showMasonFlags();
 }
 
+proc masonPrep(args: [] string) throws {
+  var listArgs: list(string);
+  for x in args do listArgs.append(x);
+  prepMasonLightweight();
+}
+
+proc prepMasonLightweight(tomlName="Mason.toml", lockName="Mason.lock") {
+  updateLock(false, tomlName, lockName);
+}
+
 proc showMasonFlags(tomlName="Mason.toml", lockName="Mason.lock") throws {
   const cwd = here.cwd();
-  const projectHome = getProjectHome(cwd, tomlName);
-  const toParse = open(projectHome + "/" + lockName, iomode.r);
+  const toParse = open(cwd + "/" + lockName, iomode.r);
   var lockFile = owned.create(parseToml(toParse));
   const sourceList = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
