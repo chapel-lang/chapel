@@ -89,7 +89,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer,
   const char* moduleName;
   char* varName;
 
-  if (!equalsSign || !(equalsSign + 1)) {
+  if (!equalsSign) {
     return 0;
   }
 
