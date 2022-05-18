@@ -2128,6 +2128,9 @@ void callDestructors() {
 
   checkLifetimesAndNilDereferences();
 
+  // TODO: Interprocedural, mutates all Vars/Args/ShadowVars of a given type.
+  // TODO: Break out "removeUselessCasts()" into its own pass?
+  // TODO: I think 'dyno' can handle all of this elegantly.
   convertClassTypesToCanonical();
 
   removeEndOfStatementMarkersElidedCopyPrimsZips();
