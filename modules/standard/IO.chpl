@@ -430,7 +430,8 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-public use SysBasic;
+import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
+use OS.POSIX;
 use CTypes;
 public use SysError;
 
@@ -5512,7 +5513,8 @@ FormattedIO Functions and Types
 module FormattedIO {
   use IO;
   use CTypes;
-  use SysBasic;
+  use OS.POSIX;
+  import SysBasic.{ENOERR,syserr};
   use SysError;
 //use IO;
 
@@ -7066,7 +7068,10 @@ proc channel.skipField() throws {
 
   :throws SystemError: Thrown if the string could not be formatted.
  */
-proc string.format(args ...?k): string throws {
+  proc string.format(args ...?k): string throws {
+  // TODO: Without the following line, I get a deprecation warning
+  // for SysBasic, yet nothing seems to be importing/using it...?!?
+  import OS.POSIX.{EILSEQ,EINVAL};
   try {
     return chpl_do_format(this, (...args));
   } catch e: IllegalArgumentError {
