@@ -928,10 +928,11 @@ struct Converter {
 
         Expr* ovar = toExpr(convertAST(rd->actual(0)));
         Expr* riExpr = convertScanReduceOp(rd->op());
-        if (rd->opExpr()->isFnCall()) {
+        if (auto opToCall = rd->opExpr()->toFnCall()) {
           CallExpr* callExpr = new CallExpr(riExpr);
-          for (int i = 0; i < rd->opExpr()->toFnCall()->numActuals(); i++) {
-            callExpr->insertAtTail(convertAST(rd->opExpr()->toFnCall()->actual(i)));
+          for (int i = 0; i < opToCall->numActuals(); i++) {
+            auto conv = convertAST(opToCall->actual(i));
+            callExpr->insertAtTail(conv);
           }
           svs = ShadowVarSymbol::buildFromReduceIntent(ovar, callExpr);
         } else {
@@ -1261,7 +1262,7 @@ struct Converter {
     if (!node->isExpressionLevel()) return false;
     if (node->iterand()->isZip()) return false;
     if (node->numStmts() != 1) return false;
-    if (node->index()) return false;
+    if (node->index() && node->iterand()->isConditional()) return false;
     return true;
   }
 
