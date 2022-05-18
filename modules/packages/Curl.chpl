@@ -158,6 +158,7 @@ Curl Support Types and Functions
 module Curl {
   public use IO, CTypes;
   use Sys;
+  use OS.POSIX;
 
   require "curl/curl.h";
   require "-lcurl";
