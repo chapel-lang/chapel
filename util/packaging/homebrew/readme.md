@@ -28,7 +28,7 @@ thhat would cause the homebrew CI process to fail.
 
 ### Linuxbrew testing 
 The Ubuntu CI is run on a docker container per the instructions on their contribution documentation: 
-https://github.com/Homebrew/homebrew-core/blob/5e9db7dda1d327de4d2cccfc6976116175e0c72a/CONTRIBUTING.md
+https://github.com/Homebrew/homebrew-core/blob/master/CONTRIBUTING.md
 
 The container is executed using the following instructions: 
 ```
