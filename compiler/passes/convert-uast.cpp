@@ -2933,6 +2933,7 @@ struct Converter {
     auto enumTypeSym = new TypeSymbol(node->name().c_str(), enumType);
 
     attachSymbolAttributes(node, enumTypeSym);
+    attachSymbolVisibility(node, enumTypeSym);
 
     enumType->symbol = enumTypeSym;
 
@@ -2987,6 +2988,7 @@ struct Converter {
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
+    attachSymbolVisibility(node, ret->sym);
 
     return ret;
   }

@@ -2613,9 +2613,10 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
           ts->doc = theVs->doc;
-          if (theVs->hasFlag(FLAG_PRIVATE)) {
-            ts->addFlag(FLAG_PRIVATE);
-          }
+
+          // TODO: Loop/copy all flags here instead of two?
+          if (theVs->hasFlag(FLAG_PRIVATE)) ts->addFlag(FLAG_PRIVATE);
+          if (theVs->hasFlag(FLAG_NO_DOC)) ts->addFlag(FLAG_NO_DOC);
         }
         DefExpr* newde = new DefExpr(ts);
 
