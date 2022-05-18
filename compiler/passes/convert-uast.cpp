@@ -64,10 +64,13 @@ struct Converter {
   ModTag topLevelModTag;
   std::vector<const char*> modNameStack;
   const char* latestComment = nullptr;
+  const uast::BuilderResult& builderResult;
 
-  Converter(chpl::Context* context, ModTag topLevelModTag)
+  Converter(chpl::Context* context, ModTag topLevelModTag,
+            const uast::BuilderResult& builderResult)
     : context(context),
-      topLevelModTag(topLevelModTag) {}
+      topLevelModTag(topLevelModTag),
+      builderResult(builderResult) {}
 
   Expr* convertAST(const uast::AstNode* node);
 
@@ -221,8 +224,14 @@ struct Converter {
       }
     }
 
-    // TODO: New parser will have to communicate malformed comments?
-    INT_ASSERT(!badComment);
+    if (badComment) {
+      auto loc = builderResult.commentToLocation(node);
+      INT_ASSERT(!loc.isEmpty());
+      USR_WARN(loc, "chpldoc comment not closed, "
+                    "ignoring comment:%s\n",
+                    str.c_str());
+      return nullptr;
+    }
 
     auto ret = astr(str.c_str());
 
@@ -3011,9 +3020,10 @@ ModuleSymbol*
 convertToplevelModule(chpl::Context* context,
                       const chpl::uast::Module* mod,
                       ModTag modTag,
-                      const chpl::uast::Comment* comment) {
+                      const chpl::uast::Comment* comment,
+                      const chpl::uast::BuilderResult& builderResult) {
   astlocMarker markAstLoc(mod->id());
-  Converter c(context, modTag);
+  Converter c(context, modTag, builderResult);
 
   // Maybe prepare a toplevel comment to attach to the module.
   if (comment) {

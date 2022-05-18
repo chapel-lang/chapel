@@ -981,7 +981,8 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
     // Only converts the module, does not add to done list.
     ModuleSymbol* got = convertToplevelModule(gContext, mod, modTag,
-                                              modComment);
+                                              modComment,
+                                              builderResult);
     INT_ASSERT(got);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
