@@ -1,1 +1,0 @@
-../../../release/examples/primers/chplvis/chplvis2.chpl
