@@ -159,7 +159,6 @@ module Curl {
   public use IO, CTypes;
   use Sys;
   use OS.POSIX;
-  import SysBasic.{ENOERR,syserr};
 
   require "curl/curl.h";
   require "-lcurl";
@@ -508,7 +507,6 @@ module Curl {
     use Sys;
     use CTypes;
     use OS.POSIX;
-    import SysBasic.{syserr, ENOERR, EEOF};
 
     class CurlFile : QioPluginFile {
 

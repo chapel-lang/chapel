@@ -247,7 +247,6 @@ module ZMQ {
   private use CTypes;
   use SysError;
   use OS.POSIX;
-  import SysBasic.{syserr};
 
   private extern proc chpl_macro_int_errno():c_int;
   private inline proc errno return chpl_macro_int_errno():c_int;
