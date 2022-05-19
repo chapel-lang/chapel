@@ -4,10 +4,10 @@ var x = 2, y = 1, z = 3, q = 0;
 var a_s = "aaa";
 var b_s = "bbb";
 
-const v2_1_0 = createMutableVersion(x,y);
-const v2_1_0_a = createMutableVersion(x,y,q,a_s);
-const v2_1_0_b = createMutableVersion(x,y,commit=b_s);
-const v2_0_0_a = createMutableVersion(x,q,q,a_s);
+const v2_1_0 = createProgramVersion(x,y);
+const v2_1_0_a = createProgramVersion(x,y,q,a_s);
+const v2_1_0_b = createProgramVersion(x,y,commit=b_s);
+const v2_0_0_a = createProgramVersion(x,q,q,a_s);
 
 
 

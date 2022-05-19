@@ -273,7 +273,7 @@ module Version {
 
     :returns: A new version value of type :type:`programVersion`.
   */
-  proc createMutableVersion(major: int,
+  proc createProgramVersion(major: int,
                      minor: int,
                      update: int = 0,
                      commit: string = ""): programVersion {
