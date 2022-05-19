@@ -4454,13 +4454,20 @@ proc channel.close() throws {
 /*
    Return `true` if a channel is currently closed.
  */
-proc channel.isclosed() {
+proc channel.isClosed() : bool {
   var ret:bool;
   on this.home {
     ret = qio_channel_isclosed(locking, _channel_internal);
   }
   return ret;
 }
+
+
+deprecated "channel.isclosed is deprecated. Please use channel.isClosed instead"
+proc channel.isclosed() : bool {
+  return this.isClosed();
+}
+
 
 // TODO -- we should probably have separate c_ptr ddata and ref versions
 // in this function for it to become user-facing. Right now, errors

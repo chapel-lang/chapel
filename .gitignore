@@ -168,6 +168,7 @@ cmake-build-debug/
 /test/compflags/waynew/*.h
 /test/compflags/waynew/chplmake.out
 
+/test/deprecated/IO/test.txt
 /test/deprecated/parentNameErr.good
 
 /test/distributions/dm/hplx.exec.out.tmp.orig
