@@ -427,8 +427,9 @@ module IO {
       -- seems that we'd want some way to cache that...).
 */
 
-import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
-use OS.POSIX;
+public import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
+public import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
+private import OS.POSIX.{EBADF};
 use CTypes;
 public use SysError;
 
