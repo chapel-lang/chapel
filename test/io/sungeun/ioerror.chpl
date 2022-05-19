@@ -1,5 +1,5 @@
 // Test IO error function interfaces
-use IO;
+use IO, OS.POSIX;
 
 config const testError = 0;
 
