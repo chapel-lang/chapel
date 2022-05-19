@@ -20,7 +20,6 @@ default:
    IO Support <standard/ChapelIO>
    Math <standard/Math>
    Types <standard/Types>
-   VectorizingIterator <standard/VectorizingIterator>
 
 
 Data Structures
@@ -42,6 +41,7 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
+   GPUDiagnostics <standard/GPUDiagnostics>
    Memory <standard/Memory>
 
 

@@ -154,12 +154,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
+  char  jobName[128];
 
-  if (basenamePtr == NULL) {
-      basenamePtr = argv[0];
-  } else {
-      basenamePtr++;
-  }
+  chpl_launcher_get_job_name(basenamePtr, jobName, sizeof(jobName));
+
   chpl_compute_real_binary_name(argv[0]);
 
 #ifndef DEBUG_LAUNCH
@@ -173,7 +171,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
-  fprintf(pbsFile, "#PBS -N Chpl-%.10s\n", basenamePtr);
+  fprintf(pbsFile, "#PBS -N %s\n", jobName);
   genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
   if (projectString && strlen(projectString) > 0)
     fprintf(pbsFile, "#PBS -A %s\n", projectString);

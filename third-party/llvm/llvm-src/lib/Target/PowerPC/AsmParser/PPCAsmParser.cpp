@@ -23,8 +23,8 @@
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/MCSymbolELF.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/SourceMgr.h"
-#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
@@ -121,6 +121,7 @@ class PPCAsmParser : public MCTargetAsmParser {
   bool ParseDirectiveMachine(SMLoc L);
   bool ParseDirectiveAbiVersion(SMLoc L);
   bool ParseDirectiveLocalEntry(SMLoc L);
+  bool ParseGNUAttribute(SMLoc L);
 
   bool MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
                                OperandVector &Operands, MCStreamer &Out,
@@ -201,7 +202,8 @@ struct PPCOperand : public MCParsedAsmOperand {
     struct TLSRegOp TLSReg;
   };
 
-  PPCOperand(KindTy K) : MCParsedAsmOperand(), Kind(K) {}
+  PPCOperand(KindTy K) : Kind(K) {}
+
 public:
   PPCOperand(const PPCOperand &o) : MCParsedAsmOperand() {
     Kind = o.Kind;
@@ -1576,6 +1578,16 @@ bool PPCAsmParser::ParseInstruction(ParseInstructionInfo &Info, StringRef Name,
     std::swap(Operands[2], Operands[1]);
   }
 
+  // Handle base mnemonic for atomic loads where the EH bit is zero.
+  if (Name == "lqarx" || Name == "ldarx" || Name == "lwarx" ||
+      Name == "lharx" || Name == "lbarx") {
+    if (Operands.size() != 5)
+      return false;
+    PPCOperand &EHOp = (PPCOperand &)*Operands[4];
+    if (EHOp.isU1Imm() && EHOp.getImm() == 0)
+      Operands.pop_back();
+  }
+
   return false;
 }
 
@@ -1594,6 +1606,8 @@ bool PPCAsmParser::ParseDirective(AsmToken DirectiveID) {
     ParseDirectiveAbiVersion(DirectiveID.getLoc());
   else if (IDVal == ".localentry")
     ParseDirectiveLocalEntry(DirectiveID.getLoc());
+  else if (IDVal.startswith(".gnu_attribute"))
+    ParseGNUAttribute(DirectiveID.getLoc());
   else
     return true;
   return false;
@@ -1709,7 +1723,16 @@ bool PPCAsmParser::ParseDirectiveLocalEntry(SMLoc L) {
   return false;
 }
 
+bool PPCAsmParser::ParseGNUAttribute(SMLoc L) {
+  int64_t Tag;
+  int64_t IntegerValue;
+  if (!getParser().parseGNUAttribute(L, Tag, IntegerValue))
+    return false;
 
+  getParser().getStreamer().emitGNUAttribute(Tag, IntegerValue);
+
+  return true;
+}
 
 /// Force static initialization.
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializePowerPCAsmParser() {
@@ -1745,7 +1768,7 @@ unsigned PPCAsmParser::validateTargetOperandClass(MCParsedAsmOperand &AsmOp,
   }
 
   PPCOperand &Op = static_cast<PPCOperand &>(AsmOp);
-  if (Op.isImm() && Op.getImm() == ImmVal)
+  if (Op.isU3Imm() && Op.getImm() == ImmVal)
     return Match_Success;
 
   return Match_InvalidOperand;

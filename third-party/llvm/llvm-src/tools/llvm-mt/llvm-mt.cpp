@@ -46,7 +46,7 @@ enum ID {
 #include "Opts.inc"
 #undef PREFIX
 
-static const opt::OptTable::Info InfoTable[] = {
+const opt::OptTable::Info InfoTable[] = {
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
                HELPTEXT, METAVAR, VALUES)                                      \
 {                                                                              \
@@ -64,7 +64,7 @@ public:
 };
 } // namespace
 
-LLVM_ATTRIBUTE_NORETURN static void reportError(Twine Msg) {
+[[noreturn]] static void reportError(Twine Msg) {
   WithColor::error(errs(), "llvm-mt") << Msg << '\n';
   exit(1);
 }
@@ -135,8 +135,7 @@ int main(int Argc, const char **Argv) {
         MemoryBuffer::getFile(File);
     if (!ManifestOrErr)
       reportError(File, ManifestOrErr.getError());
-    MemoryBuffer &Manifest = *ManifestOrErr.get();
-    error(Merger.merge(Manifest));
+    error(Merger.merge(*ManifestOrErr.get()));
   }
 
   std::unique_ptr<MemoryBuffer> OutputBuffer = Merger.getMergedManifest();
