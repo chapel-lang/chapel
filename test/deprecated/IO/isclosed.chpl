@@ -9,4 +9,3 @@ var w = f.writer();
 assert(!w.isclosed());
 w.close();
 assert(w.isclosed());
-
