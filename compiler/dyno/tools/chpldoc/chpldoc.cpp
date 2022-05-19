@@ -169,6 +169,7 @@ static const char* kindToRstString(bool isMethod, Function::Kind kind) {
   case Function::Kind::PROC: return isMethod ? "method" : "function";
   case Function::Kind::ITER: return isMethod ? "itermethod" : "iter";
   case Function::Kind::OPERATOR: return "operator";
+  case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
@@ -189,6 +190,7 @@ static const char* kindToString(Function::Kind kind) {
   case Function::Kind::PROC: return "proc";
   case Function::Kind::ITER: return "iter";
   case Function::Kind::OPERATOR: return "operator";
+  case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
