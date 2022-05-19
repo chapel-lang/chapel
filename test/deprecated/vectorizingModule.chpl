@@ -1,3 +1,5 @@
+use VectorizingIterator;
+
 var A = [1];
 
 for i in vectorizeOnly(1..1) do
