@@ -2321,7 +2321,7 @@ struct Converter {
       return toFnSymbol(it->second);
     }
 
-    // Decide if we want to resolve this module
+    // Decide if we want to resolve this function
     bool shouldResolveFunction = shouldResolve(node);
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
