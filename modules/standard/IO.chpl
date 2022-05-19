@@ -5037,10 +5037,10 @@ String and Bytes Conversions
  * when reading - read exactly 17 Unicode codepoints
 ``%|17s``
  * when writing - emit string but cause runtime error if length
-   does not match
- * when reading - read exactly 17 bytes (error if we read < 17 bytes)
+   does not match *(deprecated)*
+ * when reading - read exactly 17 bytes (error if we read < 17 bytes) *(deprecated)*
 ``%|*s``
-  as with %17s but the length is specified in the argument before the string.
+  as with %17s but the length is specified in the argument before the string. *(deprecated)*
 ``%"S``
  use double-quotes to delimit string
 ``%'S``
@@ -5053,10 +5053,10 @@ String and Bytes Conversions
 ``%*S``
  quoted string, the arg before the string to specifies quote character
 ``%|0S``
- write a string null-terminated or read bytes until a null-terminator
+ write a string null-terminated or read bytes until a null-terminator *(deprecated)*
 ``%|*S``
  means read bytes until a terminator byte. The terminator byte is read
- from the argument before the string.
+ from the argument before the string. *(deprecated)*
 ``%|1S`` ``%|2S`` ``%|4S`` and ``%|8S``
   work with encoded strings storing a length
   and then the string data. The digit before ``S`` is
