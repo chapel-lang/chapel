@@ -1212,7 +1212,7 @@ buildZip4(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) 
 //
 bool CreateIteratorBreakBlocks::shouldProcess(CallExpr* call) {
   if (call->inTree() && call->isPrimitive(PRIM_YIELD)) {
-    if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
+    if (isFnSymbol(call->parentSymbol)) {
       return true;
     }
   }
