@@ -782,6 +782,41 @@ module AutoMath {
     return log10f(x);
   }
 
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  proc log1p(x: real(64)): real(64) {
+    use Math;
+    return Math.log1p(x);
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc log1p(x : real(32)): real(32) {
+    use Math;
+
+    return Math.log1p(x);
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "logBasePow2 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc logBasePow2(val: int(?w), baseLog2) {
+    use Math;
+
+    return Math.logBasePow2(val, baseLog2);
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "logBasePow2 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc logBasePow2(val: uint(?w), baseLog2) {
+    use Math;
+
+    return Math.logBasePow2(val, baseLog2);
+  }
+
   /* Returns the base 2 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
