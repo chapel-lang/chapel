@@ -133,7 +133,6 @@ module Subprocess {
   use SysError;
   use CTypes;
   use OS.POSIX;
-  import SysBasic.{ENOERR,syserr};
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),

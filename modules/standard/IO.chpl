@@ -7069,7 +7069,7 @@ proc channel.skipField() throws {
 
   :throws SystemError: Thrown if the string could not be formatted.
  */
-  proc string.format(args ...?k): string throws {
+proc string.format(args ...?k): string throws {
   // TODO: Without the following line, I get a deprecation warning
   // for SysBasic, yet nothing seems to be importing/using it...?!?
   import OS.POSIX.{EILSEQ,EINVAL};

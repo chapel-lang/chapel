@@ -126,7 +126,6 @@ HDFS Support Types and Functions
 module HDFS {
 
   use IO, OS.POSIX, SysError, Sys;
-  import SysBasic.{syserr, ENOERR, EEOF};
   public use CTypes;
 
   require "hdfs.h";

@@ -73,7 +73,6 @@ public use SysError;
 public use CTypes;
 use Time;
 use OS, OS.POSIX;
-import SysBasic.{ENOERR,syserr,fd_t,qio_err_t};
 use IO;
 
 /*
