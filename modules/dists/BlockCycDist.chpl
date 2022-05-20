@@ -109,7 +109,7 @@ to the ID of the locale to which it is mapped.
 
     const Space = {1..8, 1..8};
     const D: domain(2)
-      dmapped BlockCyclic(startIdx=Space.low,blocksize=(2,3))
+      dmapped BlockCyclic(startIdx=Space.lowBound,blocksize=(2,3))
       = Space;
     var A: [D] int;
 
@@ -807,11 +807,11 @@ proc LocBlockCyclicDom.size {
 }
 
 proc LocBlockCyclicDom.low {
-  return myStarts.lowBound;
+  return myStarts.alignedLow;
 }
 
 proc LocBlockCyclicDom.high {
-  return myStarts.highBound;
+  return myStarts.alignedHigh;
 }
 
 proc LocBlockCyclicDom._lens {

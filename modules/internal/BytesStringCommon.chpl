@@ -393,20 +393,20 @@ module BytesStringCommon {
         // if the low bound of the range is within the byteIndices of the
         // string, it must be the initial byte of a codepoint
         if r.hasLowBound() &&
-           x.byteIndices.boundsCheck(r.low:int) &&
-           !isInitialByte(x.byte[r.low:int]) {
+           x.byteIndices.boundsCheck(r.lowBound:int) &&
+           !isInitialByte(x.byte[r.lowBound:int]) {
           throw new CodepointSplittingError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
-            "The byte at low boundary " + r.low:string + " is not the first byte of a UTF-8 codepoint");
+            "The byte at low boundary " + r.lowBound:string + " is not the first byte of a UTF-8 codepoint");
         }
         // if the "high bound of the range plus one" is within the byteIndices
         // of the string, that index must be the initial byte of a codepoint
         if r.hasHighBound() &&
-           x.byteIndices.boundsCheck(r.high:int+1) &&
-           !isInitialByte(x.byte[r.high:int+1]) {
+           x.byteIndices.boundsCheck(r.highBound:int+1) &&
+           !isInitialByte(x.byte[r.highBound:int+1]) {
           throw new CodepointSplittingError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
-            "The byte at high boundary " + r.high:string + " is not the first byte of a UTF-8 codepoint");
+            "The byte at high boundary " + r.highBound:string + " is not the first byte of a UTF-8 codepoint");
         }
       }
       return simpleCaseHelper();
@@ -487,8 +487,8 @@ module BytesStringCommon {
     // length. For to be able to cover strided copies, we copy the range
     // from low to high then do a strided operation to put the data in the
     // buffer in the correct order.
-    const copyLen = r2.high-r2.low+1;
-    var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low,
+    const copyLen = r2.highBound-r2.lowBound+1;
+    var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.lowBound,
                                         len=copyLen, loc=x.locale_id);
     if r2.stride == 1 {
       buff = copyBuf;
@@ -498,7 +498,7 @@ module BytesStringCommon {
       // the range is strided
       var (newBuff, allocSize) = bufferAlloc(r2.size+1);
       for (r2_i, i) in zip(r2, 0..) {
-        newBuff[i] = copyBuf[r2_i-r2.low];
+        newBuff[i] = copyBuf[r2_i-r2.lowBound];
       }
       buff = newBuff;
       buffSize = allocSize;

@@ -3830,12 +3830,12 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
-                      amount = arg.domain.high - start + 1) : bool throws
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.alignedLow,
+                      amount = arg.domain.alignedHigh - start + 1) : bool throws
                       where arg.rank == 1 && arg.isRectangular() {
 
   if arg.size == 0 || !arg.domain.contains(start) ||
-     amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
+     amount <= 0 || (start + amount - 1 > arg.domain.alignedHigh) then return false;
 
   var err:syserr = ENOERR;
   on this.home {
@@ -4563,8 +4563,8 @@ proc read(type t ...?numTypes) throws {
   return stdin.read((...t));
 }
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
-proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
-              amount = arg.domain.high - start + 1) : bool throws
+proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.alignedLow,
+              amount = arg.domain.alignedHigh - start + 1) : bool throws
                 where arg.rank == 1 && arg.isRectangular() {
   return stdin.readline(arg, numRead, start, amount);
 }

@@ -1718,7 +1718,7 @@ module ChapelArray {
       if boundsChecking && isEmpty() then
         halt("first called on an empty array");
 
-      return this(this.domain.low);
+      return this(this.domain.alignedLow);
     }
 
     deprecated "Array front() method is deprecated; use :proc:`first` instead"
@@ -1730,9 +1730,9 @@ module ChapelArray {
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
-      const lo = this.domain.low,
+      const lo = this.domain.alignedLow,
             mid = this.domain.sizeAs(this.idxType) / 2,
-            hi = this.domain.high;
+            hi = this.domain.alignedHigh;
       for i in 0..#mid {
         this[lo + i] <=> this[hi - i];
       }
@@ -2363,7 +2363,7 @@ module ChapelArray {
 
      // TODO can we omit the following check and bulk transfer narrow
      // pointers, too
-    if __primitive("is wide pointer", a[aDom.low]) {
+    if __primitive("is wide pointer", a[aDom.alignedLow]) {
       return chpl__bulkTransferArray(a, aDom, b, bDom);
     }
     return false;

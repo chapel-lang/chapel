@@ -85,7 +85,7 @@ to the ID of the locale to which it is mapped.
     use CyclicDist;
 
     const Space = {1..8, 1..8};
-    const D: domain(2) dmapped Cyclic(startIdx=Space.low) = Space;
+    const D: domain(2) dmapped Cyclic(startIdx=Space.lowBound) = Space;
     var A: [D] int;
 
     forall a in A do
