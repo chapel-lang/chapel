@@ -342,7 +342,7 @@ proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridabl
 
   // todo: account for the case s.isAmbiguous()
   ensure(s.isEmpty() ||
-         // If idxType is unsigned, caller must ensure that s.alignedLow is big enough
+         // If idxType is unsigned, caller must ensure that s.lowBound is big enough
          // so it can be subtracted from.
          w.lowBound <= if isIntType(IT) then s.alignedLow else s.lowBound);
   ensure(s.isEmpty() || !w.hasHighBound() || s.alignedHigh <= w.highBound);
