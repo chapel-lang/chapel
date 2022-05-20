@@ -25,10 +25,14 @@
 #include "baseAST.h"
 #include "ModuleSymbol.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 
-ModuleSymbol* convertToplevelModule(chpl::Context* context,
-                                    const chpl::uast::Module* mod,
-                                    ModTag modTag);
+ModuleSymbol*
+convertToplevelModule(chpl::Context* context,
+                      const chpl::uast::Module* mod,
+                      ModTag modTag,
+                      const chpl::uast::Comment* comment,
+                      const chpl::uast::BuilderResult& builderResult);
 
 #endif

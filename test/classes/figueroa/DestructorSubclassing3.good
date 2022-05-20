@@ -1,5 +1,2 @@
-Inside ~E
-Inside ~D
-Inside ~C
-Inside ~C2
-Inside ~C1
+DestructorSubclassing3.chpl:10: error: only single inheritance is supported
+DestructorSubclassing3.chpl:19: error: only single inheritance is supported

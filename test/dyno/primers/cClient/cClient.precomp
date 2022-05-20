@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling interopWithC.chpl
-$3 --dyno --library --static interopWithC.chpl cHelper.h cHelper.c --savec ccode
