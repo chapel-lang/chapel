@@ -1,1 +1,0 @@
-DestructorSubclassing2.chpl:11: error: can't omit initialization of field "super", no type or default value provided

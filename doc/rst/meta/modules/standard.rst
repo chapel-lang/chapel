@@ -17,11 +17,9 @@ default:
    :maxdepth: 1
 
    AutoMath <standard/AutoMath>
-   Chapel Environment Variables <standard/ChapelEnv>
    Errors <standard/Errors>
    IO Support <standard/ChapelIO>
    Types <standard/Types>
-   VectorizingIterator <standard/VectorizingIterator>
 
 
 Data Structures
@@ -43,6 +41,7 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
+   GPUDiagnostics <standard/GPUDiagnostics>
    Memory <standard/Memory>
 
 

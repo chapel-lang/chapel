@@ -1,39 +1,37 @@
 HaltWrappers
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes.HaltWrappers
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.HaltWrappers
 ChapelSysCTypes
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes.ChapelSysCTypes
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.ChapelSysCTypes
 Reflection
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes.Reflection
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Reflection
 CTypes
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes
-ByteBufferHelpers
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.ByteBufferHelpers
-NVStringFactory
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.NVStringFactory
-SysError
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.SysBasic.Sys.SysError
-Sys
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.SysBasic.Sys
-SysBasic
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.SysBasic
-BytesCasts
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.Bytes.BytesCasts
-Bytes
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.Bytes
-BytesStringCommon
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon
-CString
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CString
-StringCasts
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.StringCasts
-String
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String
-ChplConfig
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.ChplConfig
-ChapelEnv
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes
 ChapelTaskData
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelTaskData
+ByteBufferHelpers
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers
+NVStringFactory
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.NVStringFactory
+SysError
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.SysBasic.Sys.SysError
+Sys
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.SysBasic.Sys
+SysBasic
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.SysBasic
+BytesCasts
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.Bytes.BytesCasts
+Bytes
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.Bytes
+BytesStringCommon
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon
+CString
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.CString
+StringCasts
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.StringCasts
+String
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String
+ChplConfig
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig
 ChapelBase
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase
 CommDiagnostics
@@ -188,8 +186,6 @@ Types
   from print-module-resolution.ChapelStandard.Types
 AutoMath
   from print-module-resolution.ChapelStandard.AutoMath
-VectorizingIterator
-  from print-module-resolution.ChapelStandard.VectorizingIterator
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelStandard

@@ -72,10 +72,10 @@ MODULES_TO_DOCUMENT = \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
-	standard/ChapelEnv.chpl \
 	standard/ChapelIO.chpl \
 	standard/ChplConfig.chpl \
 	standard/CommDiagnostics.chpl \
+	standard/GPUDiagnostics.chpl \
 	standard/CPtr.chpl \
 	standard/CTypes.chpl \
 	standard/DateTime.chpl \

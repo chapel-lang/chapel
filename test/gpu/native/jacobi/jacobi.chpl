@@ -1,3 +1,5 @@
+use GPUDiagnostics;
+
 config const nSteps = 10;
 config const n = 10;
 
@@ -6,10 +8,15 @@ config const n = 10;
                                  10 for nSteps)
 */
 
+startGPUDiagnostics();
+
 writeln("on GPU:");
 jacobi(here.gpus[0]);
 writeln("on CPU:");
 jacobi(here);
+
+stopGPUDiagnostics();
+writeln(getGPUDiagnostics());
 
 proc jacobi(loc) {
   on loc {

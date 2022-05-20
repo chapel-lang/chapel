@@ -4867,6 +4867,8 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
   std::vector<GenRet> args;
+  args.push_back(new_IntSymbol(call->astloc.lineno()));
+  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
   // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass
   // this variable to the launch call.
