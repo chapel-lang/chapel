@@ -2616,6 +2616,7 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
           // TODO: Loop/copy all flags here instead of two?
           if (theVs->hasFlag(FLAG_PRIVATE)) ts->addFlag(FLAG_PRIVATE);
+          if (theVs->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) ts->addFlag(FLAG_C_MEMORY_ORDER_TYPE);
           if (theVs->hasFlag(FLAG_NO_DOC)) ts->addFlag(FLAG_NO_DOC);
           if (theVs->hasFlag(FLAG_DEPRECATED)) {
             ts->addFlag(FLAG_DEPRECATED);
