@@ -123,7 +123,7 @@ module RangeChunk {
     var strideToNextBlock = blockStride * nTasks;
 
     if rangeStride > 0 {
-      for blockStart in firstBlockStart..highBound by strideToNextBlock {
+      for blockStart in firstBlockStart..high by strideToNextBlock {
         var blockEnd = min(high, blockStart + blockStride - 1);
         yield blockStart..blockEnd by rangeStride;
       }
