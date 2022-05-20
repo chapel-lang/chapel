@@ -1,7 +1,32 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
-warning: Unknown CUDA version. cuda.h: CUDA_VERSION=11060. Assuming the latest supported version 10.1
-ptxas warning : Unresolved extern variable 'chpl_nodeID' in whole program compilation, ignoring extern qualifier
-warning: Unknown CUDA version. cuda.h: CUDA_VERSION=11060. Assuming the latest supported version 10.1
+Array: 1 1 1 1 1 1 1 1 1 1 
+Array: 2 2 2 2 2 2 2 2 2 2 
+Array: 3 3 3 3 3 3 3 3 3 3 
+Array: 32 32 32 32 32 32 32 32 32 32 
+Array: 1 1 1 1 1 1 1 1 1 1 
+Array: 2 2 2 2 2 2 2 2 2 2 
+Array: 3 3 3 3 3 3 3 3 3 3 
+Array: 32 32 32 32 32 32 32 32 32 32 
+Array: 1 1 1 1 1 1 1 1 1 1 
+Array: 2 2 2 2 2 2 2 2 2 2 
+Array: 3 3 3 3 3 3 3 3 3 3 
+Array: 32 32 32 32 32 32 32 32 32 32 
+Array: 1 1 1 1 1 1 1 1 1 1 
+Array: 2 2 2 2 2 2 2 2 2 2 
+Array: 3 3 3 3 3 3 3 3 3 3 
+Array: 32 32 32 32 32 32 32 32 32 32 
+Array: 1 1 1 1 1 1 1 1 1 1 
+Array: 2 2 2 2 2 2 2 2 2 2 
+Array: 3 3 3 3 3 3 3 3 3 3 
+Array: 32 32 32 32 32 32 32 32 32 32 
+Array: 1 1 1 1 1 1 1 1 1 1 
+Array: 2 2 2 2 2 2 2 2 2 2 
+Array: 3 3 3 3 3 3 3 3 3 3 
+Array: 32 32 32 32 32 32 32 32 32 32 
+Array: 1 1 1 1 1 1 1 1 1 1 
+Array: 2 2 2 2 2 2 2 2 2 2 
+Array: 3 3 3 3 3 3 3 3 3 3 
+Array: 32 32 32 32 32 32 32 32 32 32 
 Array: 1 1 1 1 1 1 1 1 1 1 
 Array: 2 2 2 2 2 2 2 2 2 2 
 Array: 3 3 3 3 3 3 3 3 3 3 
