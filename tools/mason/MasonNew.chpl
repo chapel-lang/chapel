@@ -48,10 +48,13 @@ proc masonNew(args: [] string) throws {
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
 
+  var lightFlag = parser.addFlag(name="light", defaultValue=false);
+
   parser.parseArgs(args);
 
   var vcs = !vcsFlag.valueAsBool();
   var show = showFlag.valueAsBool();
+  var light = lightFlag.valueAsBool();
   var packageName = '';
   var dirName = '';
   var version = '';
@@ -74,7 +77,10 @@ proc masonNew(args: [] string) throws {
         packageName = dirName;
       }
     }
-    if validatePackageName(dirName=packageName) {
+    if light {
+      if !dirArg.hasValue() then dirName = here.cwd();
+      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license);
+    } else if validatePackageName(dirName=packageName) {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");
       }

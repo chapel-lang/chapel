@@ -42,6 +42,7 @@ proc masonBuild(args: [] string) throws {
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var exampleOpts = parser.addOption(name="example", numArgs=0..);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var flagsFlag = parser.addFlag(name="flags", defaultValue=false);
 
   var passArgs = parser.addPassThrough();
 
@@ -57,6 +58,7 @@ proc masonBuild(args: [] string) throws {
   var compopts: list(string);
   var example = false;
   var skipUpdate = MASON_OFFLINE;
+  var flags = flagsFlag.valueAsBool();
 
   // when --example provided with or without a value
   if exampleOpts._present then example = true;
@@ -65,8 +67,31 @@ proc masonBuild(args: [] string) throws {
     if updateFlag.valueAsBool() then skipUpdate = false;
     else skipUpdate = true;
   }
+  
+  if flags {
+    if isDir(MASON_HOME) == false {
+      mkdir(MASON_HOME, parents=true);
+    }
+    const configNames = updateLock(skipUpdate, show=false);
+    const tomlName = configNames[0];
+    const lockName = configNames[1];
 
-  if example {
+    const cwd = here.cwd();
+    const toParse = open(cwd + "/" + lockName, iomode.r);
+    var lockFile = owned.create(parseToml(toParse));
+    
+    // generate list of dependencies and get src code
+    var sourceList = genSourceList(lockFile);
+    getSrcCode(sourceList, false);
+    
+    const depPath = MASON_HOME + '/src/';
+    var flags: string;
+    for (_, name, version) in sourceList {
+      var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
+      flags += depSrc;
+    }
+    writeln(flags);
+  } else if example {
     // compopts become example names. Build never runs examples
     for val in exampleOpts.values() do compopts.append(val);
     compopts.append("--no-run");
