@@ -246,14 +246,24 @@ def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
     if add_L_opt:
         all_args.append('-L' + lib_dir)
         all_args.append('-Wl,-rpath,' + lib_dir)
+
+    # gather the args from the .la, or fallback on just -lpkg
     for lib_arg in libs:
         if lib_arg.endswith('.la'):
             la = os.path.join(lib_dir, lib_arg)
-            all_args.extend(handle_la(la))
+            if os.path.isfile(la):
+                all_args.extend(handle_la(la))
+            else:
+                # if we can't find 'libBLA.la' then add '-lBLA'.
+                # this happens for some package installations
+                x = lib_arg
+                if x.startswith('lib'):
+                    x = x[len('lib'):]
+                if x.endswith('.la'):
+                    x = x[:-len('.la')]
+                all_args.append('-l' + x)
         else:
             all_args.append(lib_arg)
-    if all_args == []:
-        all_args.append('-l' + pkg)
 
     bundled_args = [ ]
     system_args = [ ]
