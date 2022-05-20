@@ -231,6 +231,7 @@ proc masonBuildHelp() {
   writeln('        --force                  Force Mason to build the project');
   writeln('        --example <example>      Build an example from the example/ directory');
   writeln('        --[no-]update            [Do not] update the mason registry before building');
+  writeln('        --flags                  Install dependencies and print build flags');
   writeln();
   writeln('When --example is thrown without an example, all examples will be built');
   writeln('When no options are provided, the following will take place:');
@@ -251,6 +252,7 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
+  writeln('        --light                  Create a "lightweight" Mason package in current directory');
   writeln('    --name <legalName>           Specify package name different from directory name');
 }
 
