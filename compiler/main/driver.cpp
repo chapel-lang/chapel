@@ -1279,8 +1279,12 @@ static void printStuff(const char* argv0) {
     printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
     printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
     printf("\n");
+    const char* internalFlag = "";
+    if (developer)
+      internalFlag = "--internal";
     int wanted_to_write = snprintf(buf, sizeof(buf),
-                                   "%s/util/printchplenv --all", CHPL_HOME);
+                                   "%s/util/printchplenv --all %s",
+                                   CHPL_HOME, internalFlag);
     if (wanted_to_write < 0) {
       USR_FATAL("character encoding error in CHPL_HOME path name");
     } else if ((size_t)wanted_to_write >= sizeof(buf)) {
