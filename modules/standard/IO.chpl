@@ -4516,6 +4516,7 @@ proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   return new ItemReader(ItemType, kind, locking, this);
 }
 
+pragma "no doc"
 record ItemWriter {
   /* What type do we write? */
   type ItemType;
@@ -4534,6 +4535,9 @@ record ItemWriter {
 /* Create and return an :record:`ItemWriter` that can write values of
    a single type.
  */
+pragma "no doc"
+deprecated
+"ItemWriter is deprecated"
 proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
   if !writing then compilerError(".itemWriter on read-only channel");
   return new ItemWriter(ItemType, kind, locking, this);
