@@ -965,8 +965,8 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Break* node) {
-    const char* name = node->target() ? node->target()->name().c_str()
-                                      : nullptr;
+    const char* name = nullptr;
+    if (auto target = node->target()) name = astr(target->name().c_str());
     return buildGotoStmt(GOTO_BREAK, name);
   }
 
@@ -1117,8 +1117,8 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Continue* node) {
-    const char* name =
-        node->target() ? astr(node->target()->name().c_str()) : nullptr;
+    const char* name = nullptr;
+    if (auto target = node->target()) name = astr(target->name().c_str());
     return buildGotoStmt(GOTO_CONTINUE, name);
   }
 
@@ -2485,7 +2485,7 @@ struct Converter {
   DefExpr* visit(const uast::Module* node) {
     auto comment = consumeLatestComment();
     const char* name = astr(node->name().c_str());
-    const char* path = context->filePathForId(node->id()).c_str();
+    const char* path = astr(context->filePathForId(node->id()).c_str());
 
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
     // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
