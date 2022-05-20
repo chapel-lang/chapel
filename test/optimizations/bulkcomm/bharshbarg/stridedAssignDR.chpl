@@ -40,8 +40,8 @@ proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
 
   for i in 0..#rank {
     const cur = Orig.dim(i);
-    const low = cur.low;
-    const high = cur.high;
+    const low = cur.lowBound;
+    const high = cur.highBound;
     const size = cur.size;
     const mid = low + size/2;
     const quart = size/4;
