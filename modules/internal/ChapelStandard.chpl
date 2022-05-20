@@ -38,7 +38,6 @@ module ChapelStandard {
   public use String;
   public use OwnedObject;
   public use SharedObject;
-  public use ChapelEnv as ChapelEnv;
   public use ChapelBase;
   public use Atomics;
   public use NetworkAtomics;

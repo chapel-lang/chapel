@@ -33,7 +33,6 @@ module LocaleModelHelpSetup {
   use ChapelLocale;
   public use DefaultRectangular;
   public use ChapelNumLocales;
-  use ChapelEnv;
   use OS.POSIX;
   use CTypes;
 
