@@ -1,0 +1,1 @@
+use-relative-error2.chpl:5: warning: 'this.this' is redundant, just use 'this'

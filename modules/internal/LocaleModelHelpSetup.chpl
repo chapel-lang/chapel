@@ -33,8 +33,7 @@ module LocaleModelHelpSetup {
   use ChapelLocale;
   public use DefaultRectangular;
   public use ChapelNumLocales;
-  use ChapelEnv;
-  use Sys;
+  use OS.POSIX;
   use CTypes;
 
   config param debugLocaleModel = false;
@@ -115,7 +114,7 @@ module LocaleModelHelpSetup {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
+      chpl_task_setSubloc(c_sublocid_none);
       const node = new locale(new unmanaged LocaleModel(new locale (dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
@@ -128,10 +127,11 @@ module LocaleModelHelpSetup {
   private inline proc localSpawn() {
     use ChplConfig;
     if CHPL_COMM == "gasnet" {
-      var spawnfn: c_string;
-      if (CHPL_COMM_SUBSTRATE == "udp" &&
-         sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 1 && spawnfn == c"L") {
-        return true;
+      if CHPL_COMM_SUBSTRATE == "udp" {
+        const spawnfn = getenv(c"GASNET_SPAWNFN");
+        if spawnfn != c_nil && spawnfn:c_string == c"L" {
+          return true;
+        }
       } else if (CHPL_COMM_SUBSTRATE == "smp") {
         return true;
       }
@@ -231,7 +231,7 @@ module LocaleModelHelpSetup {
   }
 
   proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string,
-      numSublocales: int, type CPULocale, type GPULocale){
+      numSublocales: int, type GPULocale){
 
     var childSpace = {0..#numSublocales};
 
@@ -239,13 +239,10 @@ module LocaleModelHelpSetup {
 
     for i in childSpace {
       chpl_task_setSubloc(i:chpl_sublocID_t);
-      if i == 0 {
-        dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
-      }
-      else {
-        dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
-        dst.childLocales[i].maxTaskPar = 1;
-      }
+      dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
+      dst.childLocales[i].maxTaskPar = 1;
+
+      dst.gpuSublocales[i] = new locale(dst.childLocales[i]);
     }
     chpl_task_setSubloc(origSubloc);
   }

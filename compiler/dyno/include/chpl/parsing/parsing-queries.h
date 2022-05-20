@@ -25,15 +25,17 @@
 #include "chpl/queries/ID.h"
 #include "chpl/queries/Location.h"
 #include "chpl/uast/AstNode.h"
-#include "chpl/uast/Builder.h"
+#include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Module.h"
+#include "chpl/parsing/parser-stats.h"
 
 #include <vector>
 
 namespace chpl {
 namespace parsing {
 
+using ConfigSettingsList = std::vector<std::pair<std::string, std::string>>;
 
 /**
  This query returns the contents of a file as the string field in the
@@ -79,6 +81,13 @@ bool hasFileText(Context* context, const std::string& path);
   Any errors encountered will be reported to the Context.
  */
 const uast::BuilderResult& parseFile(Context* context, UniqueString path);
+
+
+/**
+  A function for counting the tokens when parsing
+*/
+void countTokens(Context* context, UniqueString path, ParserStats* parseStats);
+// TODO: Expose this in a more reasonable manner
 
 
 // These functions can't return the Location for a Comment
@@ -146,6 +155,17 @@ uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id);
  and 'false' otherwise.
  */
 bool functionWithIdHasWhere(Context* context, ID id);
+
+/**
+ * Store config settings that were set from the command line using -s flags
+ */
+void setConfigSettings(Context* context, ConfigSettingsList keys);
+
+/**
+ * Get any config settings that were set from the command line and stored
+ */
+const
+ConfigSettingsList& configSettings(Context* context);
 
 
 } // end namespace parsing

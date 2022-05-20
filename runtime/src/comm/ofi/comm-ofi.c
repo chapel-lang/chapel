@@ -734,11 +734,6 @@ size_t bitmapSizeof(size_t len) {
 }
 
 static inline
-void bitmapZero(struct bitmap_t* b) {
-  memset(&b->map, 0, bitmapSizeofMap(b->len));
-}
-
-static inline
 bitmapBaseType_t bitmapElemBit(size_t i) {
   return ((bitmapBaseType_t) 1) << bitmapOff(i);
 }
@@ -1041,6 +1036,16 @@ void chpl_comm_post_mem_init(void) {
 
   chpl_comm_init_prv_bcast_tab();
   init_broadcast_private();
+
+  /*
+    Previously this was called by init_ofi which is called by
+    chpl_comm_post_task_init. It's been moved here because fi_domain,
+    which this function calls, is not thread-safe and may cause crashes
+    if threads are using malloc when it is called. Moving it here
+    causes fi_domain to be called before the worker threads are
+    created, avoiding the issue.
+  */
+  init_ofiFabricDomain();
 }
 
 
@@ -1071,7 +1076,21 @@ void chpl_comm_post_task_init(void) {
 
 static
 void init_ofi(void) {
-  init_ofiFabricDomain();
+  if (verbosity >= 2) {
+    if (chpl_nodeID == 0) {
+      void* start;
+      size_t size;
+      chpl_comm_regMemHeapInfo(&start, &size);
+      char buf[10];
+      printf("COMM=ofi: %s MCM mode, \"%s\" provider, \"%s\" device, %s fixed heap\n",
+             mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name,
+             ofi_info->domain_attr->name,
+             ((size == 0)
+              ? "no"
+              : chpl_snprintf_KMG_z(buf, sizeof(buf), size)));
+    }
+  }
+
   init_ofiDoProviderChecks();
   init_ofiEp();
   init_ofiExchangeAvInfo();
@@ -1573,7 +1592,6 @@ static fnIsProv_t isMsgOrderFenceProv;
 static fnIsProv_t isMsgOrderProv;
 static fnIsProv_t isDlvrCmpltProv;
 
-
 static
 struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
                                           chpl_bool set) {
@@ -1583,6 +1601,10 @@ struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
                              | FI_ORDER_ATOMIC_WAW
                              | FI_ORDER_SAS;
   if (set) {
+    // Only use this mode if the tasking layer has a fixed number of threads.
+    if (chpl_task_hasFixedNumThreads() == false) {
+      return NULL;
+    }
     info = fi_dupinfo(info);
     info->caps |= need_caps;
     info->tx_attr->msg_order = need_msg_orders;
@@ -1591,14 +1613,14 @@ struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
   } else {
     //
     // In addition to needing to be able to support the specific message
-    // ordering settings we require, for message-order-fence mode the
-    // provider has to support bound tx contexts so that we can benefit
-    // from delaying memory visibility.
+    // ordering settings we require, for message-order-fence mode there
+    // must be a fixed number of worker threads so that we can bind
+    // tx contexts to threads and delay memory visibility.
     //
     return ((info->caps & need_caps) == need_caps
             && (info->tx_attr->msg_order & need_msg_orders) == need_msg_orders
             && (info->rx_attr->msg_order & need_msg_orders) == need_msg_orders
-            && canBindTxCtxs(info))
+            && chpl_task_hasFixedNumThreads())
            ? info
            : NULL;
   }
@@ -1621,14 +1643,19 @@ chpl_bool findMsgOrderFenceProv(struct fi_info** p_infoOut,
   const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
   const chpl_bool accept_sockets_provs = isInProvName("sockets", prov_name);
   enum mcmMode_t mcmm = mcmm_msgOrdFence;
-  chpl_bool ret;
+  chpl_bool ret = false;
 
   if (inputIsHints) {
     struct fi_info* infoAdj = setCheckMsgOrderFenceProv(infoIn, true /*set*/);
-    ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs,
-                             accept_sockets_provs, mcmm);
-    fi_freeinfo(infoAdj);
+    if (infoAdj) {
+      ret = findProvGivenHints(p_infoOut, infoAdj,
+                              accept_RxD_provs, accept_RxM_provs,
+                              accept_sockets_provs, mcmm);
+      fi_freeinfo(infoAdj);
+    } else {
+      DBG_PRINTF_NODE0(DBG_PROV, "** ignoring providers with %s",
+                   mcmModeNames[mcmm]);
+    }
   } else {
     ret = findProvGivenList(p_infoOut, infoIn,
                             accept_RxD_provs, accept_RxM_provs,
@@ -1686,14 +1713,19 @@ chpl_bool findMsgOrderProv(struct fi_info** p_infoOut,
   const chpl_bool accept_RxM_provs = true;
   const chpl_bool accept_sockets_provs = isInProvName("sockets", prov_name);
   enum mcmMode_t mcmm = mcmm_msgOrd;
-  chpl_bool ret;
+  chpl_bool ret = false;
 
   if (inputIsHints) {
     struct fi_info* infoAdj = setCheckMsgOrderProv(infoIn, true /*set*/);
-    ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs,
-                             accept_sockets_provs, mcmm);
-    fi_freeinfo(infoAdj);
+    if (infoAdj) {
+      ret = findProvGivenHints(p_infoOut, infoAdj,
+                              accept_RxD_provs, accept_RxM_provs,
+                              accept_sockets_provs, mcmm);
+      fi_freeinfo(infoAdj);
+    } else {
+      DBG_PRINTF_NODE0(DBG_PROV, "** ignoring providers with %s",
+                   mcmModeNames[mcmm]);
+    }
   } else {
     ret = findProvGivenList(p_infoOut, infoIn,
                             accept_RxD_provs, accept_RxM_provs,
@@ -1745,14 +1777,19 @@ chpl_bool findDlvrCmpltProv(struct fi_info** p_infoOut,
   const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
   const chpl_bool accept_sockets_provs = isInProvName("sockets", prov_name);
   enum mcmMode_t mcmm = mcmm_dlvrCmplt;
-  chpl_bool ret;
+  chpl_bool ret = false;
 
   if (inputIsHints) {
     struct fi_info* infoAdj = setCheckDlvrCmpltProv(infoIn, true /*set*/);
-    ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs,
-                             accept_sockets_provs, mcmm);
-    fi_freeinfo(infoAdj);
+    if (infoAdj) {
+      ret = findProvGivenHints(p_infoOut, infoAdj,
+                              accept_RxD_provs, accept_RxM_provs,
+                              accept_sockets_provs, mcmm);
+      fi_freeinfo(infoAdj);
+    } else {
+      DBG_PRINTF_NODE0(DBG_PROV, "** ignoring providers with %s",
+                   mcmModeNames[mcmm]);
+    }
   } else {
     ret = findProvGivenList(p_infoOut, infoIn,
                             accept_RxD_provs, accept_RxM_provs,
@@ -1859,7 +1896,7 @@ void init_ofiFabricDomain(void) {
   if (ofi_info == NULL) {
     // Search for a good provider.
     for (int i = 0; ofi_info == NULL && i < capTryLen; i++) {
-      struct fi_info* info;
+      struct fi_info* info = NULL;
       enum mcmMode_t mcmm;
       if ((*capTry[i].fnFind)(&info, &mcmm, hints, true /*inputIsHints*/)) {
         ofi_info = info;
@@ -1927,21 +1964,6 @@ void init_ofiFabricDomain(void) {
 
   DBG_PRINTF_NODE0(DBG_PROV | DBG_PROV_ALL,
                    "====================");
-
-  if (verbosity >= 2) {
-    if (chpl_nodeID == 0) {
-      void* start;
-      size_t size;
-      chpl_comm_regMemHeapInfo(&start, &size);
-      char buf[10];
-      printf("COMM=ofi: %s MCM mode, \"%s\" provider, \"%s\" device, %s fixed heap\n",
-             mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name,
-             ofi_info->domain_attr->name,
-             ((size == 0)
-              ? "no"
-              : chpl_snprintf_KMG_z(buf, sizeof(buf), size)));
-    }
-  }
 
   //
   // Create the fabric domain and associated fabric access domain.
@@ -3675,9 +3697,9 @@ void mcmReleaseAllNodes(struct bitmap_t* b1, struct bitmap_t* b2,
         if (skipNode < 0 || node != skipNode) {
           (*tcip->checkTxCmplsFn)(tcip);
           mcmReleaseOneNode(node, tcip, dbgOrderStr);
+          bitmapClear(b2, node);
         }
       } BITMAP_FOREACH_SET_END
-      bitmapZero(b2);
     }
   } else {
     if (b2 == NULL) {
@@ -3685,18 +3707,18 @@ void mcmReleaseAllNodes(struct bitmap_t* b1, struct bitmap_t* b2,
         if (skipNode < 0 || node != skipNode) {
           (*tcip->checkTxCmplsFn)(tcip);
           mcmReleaseOneNode(node, tcip, dbgOrderStr);
+          bitmapClear(b1, node);
         }
       } BITMAP_FOREACH_SET_END
-      bitmapZero(b1);
     } else {
       BITMAP_FOREACH_SET_OR(b1, b2, node) {
         if (skipNode < 0 || node != skipNode) {
           (*tcip->checkTxCmplsFn)(tcip);
           mcmReleaseOneNode(node, tcip, dbgOrderStr);
+          bitmapClear(b1, node);
+          bitmapClear(b2, node);
         }
       } BITMAP_FOREACH_SET_END
-      bitmapZero(b1);
-      bitmapZero(b2);
     }
   }
 }
@@ -4286,7 +4308,8 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
   // to any node are visible.  Similarly, for GETs we have to ensure
   // that previous AMOs and PUTs to the target node are visible, and for
   // PUTs we have to ensure that previous AMOs to the target node are
-  // visible.  Do that here for all nodes.
+  // visible.  Do that here for all nodes except this op's target.  For
+  // that node, we'll use a fenced send instead.
   //
   chpl_bool havePutsOut = false;
   chpl_bool haveAmosOut = false;
@@ -4295,7 +4318,7 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
   case am_opExecOn:
   case am_opExecOnLrg:
     forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
-                          -1 /*skipNode*/, tcip);
+                          node /*skipNode*/, tcip);
     havePutsOut = (tcip->putVisBitmap != NULL
                    && bitmapTest(tcip->putVisBitmap, node));
     haveAmosOut = (tcip->amoVisBitmap != NULL
@@ -4305,7 +4328,7 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     {
       chpl_bool amoHasMemFx = (req->amo.ofiOp != FI_ATOMIC_READ);
       forceMemFxVisAllNodes(amoHasMemFx /*checkPuts*/, true /*checkAmos*/,
-                            -1 /*skipNode*/, tcip);
+                            node /*skipNode*/, tcip);
       havePutsOut = (amoHasMemFx
                      && tcip->putVisBitmap != NULL
                      && bitmapTest(tcip->putVisBitmap, node));

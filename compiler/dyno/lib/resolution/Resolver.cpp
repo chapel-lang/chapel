@@ -95,9 +95,11 @@ struct GatherFieldsOrFormals {
 };
 
 Resolver
-Resolver::moduleResolver(Context* context, const Module* mod,
-                         ResolutionResultByPostorderID& byId) {
+Resolver::moduleStmtResolver(Context* context, const Module* mod,
+                             const AstNode* modStmt,
+                             ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, mod, byId, nullptr);
+  ret.curStmt = modStmt;
   ret.byPostorder.setupForSymbol(mod);
   return ret;
 }
@@ -165,11 +167,15 @@ Resolver::functionResolver(Context* context,
 
 // set up Resolver to initially resolve field declaration types
 Resolver
-Resolver::initialFieldsResolver(Context* context,
-                                const AggregateDecl* decl,
-                                ResolutionResultByPostorderID& byId,
-                                bool useGenericFormalDefaults) {
+Resolver::initialFieldStmtResolver(Context* context,
+                                   const AggregateDecl* decl,
+                                   const AstNode* fieldStmt,
+                                   const CompositeType* compositeType,
+                                   ResolutionResultByPostorderID& byId,
+                                   bool useGenericFormalDefaults) {
   auto ret = Resolver(context, decl, byId, nullptr);
+  ret.curStmt = fieldStmt;
+  ret.inCompositeType = compositeType;
   ret.useGenericFormalDefaults = useGenericFormalDefaults;
   ret.byPostorder.setupForSymbol(decl);
   return ret;
@@ -177,18 +183,52 @@ Resolver::initialFieldsResolver(Context* context,
 
 // set up Resolver to resolve instantiated field declaration types
 Resolver
-Resolver::instantiatedFieldsResolver(Context* context,
-                                     const AggregateDecl* decl,
-                                     const SubstitutionsMap& substitutions,
-                                     const PoiScope* poiScope,
-                                     ResolutionResultByPostorderID& byId,
-                                     bool useGenericFormalDefaults) {
+Resolver::instantiatedFieldStmtResolver(Context* context,
+                                        const AggregateDecl* decl,
+                                        const AstNode* fieldStmt,
+                                        const CompositeType* compositeType,
+                                        const PoiScope* poiScope,
+                                        ResolutionResultByPostorderID& byId,
+                                        bool useGenericFormalDefaults) {
   auto ret = Resolver(context, decl, byId, poiScope);
-  ret.substitutions = &substitutions;
+  ret.curStmt = fieldStmt;
+  ret.inCompositeType = compositeType;
+  ret.substitutions = &compositeType->substitutions();
   ret.useGenericFormalDefaults = useGenericFormalDefaults;
   ret.byPostorder.setupForSymbol(decl);
   return ret;
 }
+
+// set up Resolver to resolve instantiated field declaration types
+// without knowning the CompositeType
+Resolver
+Resolver::instantiatedSignatureFieldsResolver(Context* context,
+                                     const AggregateDecl* decl,
+                                     const SubstitutionsMap& substitutions,
+                                     const PoiScope* poiScope,
+                                     ResolutionResultByPostorderID& byId) {
+  auto ret = Resolver(context, decl, byId, poiScope);
+  ret.substitutions = &substitutions;
+  ret.useGenericFormalDefaults = false;
+  ret.byPostorder.setupForSymbol(decl);
+  return ret;
+}
+
+
+// set up Resolver to resolve a parent class type expression
+Resolver
+Resolver::parentClassResolver(Context* context,
+                              const AggregateDecl* decl,
+                              const SubstitutionsMap& substitutions,
+                              const PoiScope* poiScope,
+                              ResolutionResultByPostorderID& byId) {
+  auto ret = Resolver(context, decl, byId, poiScope);
+  ret.substitutions = &substitutions;
+  ret.useGenericFormalDefaults = true;
+  ret.byPostorder.setupForSymbol(decl);
+  return ret;
+}
+
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
   // make sure the set of IDs for fields and formals is computed
@@ -841,7 +881,33 @@ bool Resolver::resolveSpecialCall(const Call* call) {
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // if the id is contained within this symbol,
   // get the type information from the resolution result.
-  if (id.symbolPath() == symbol->id().symbolPath() && id.postOrderId() >= 0) {
+  //
+  // when resolving a module statement, the resolution result only
+  // contains things within that statement.
+  bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
+                         id.postOrderId() >= 0);
+  bool error = false;
+  if (useLocalResult && curStmt != nullptr) {
+    if (curStmt->id().contains(id)) {
+      // OK, proceed using local result
+    } else {
+      useLocalResult = false;
+      // attempting to get a type for a value that has a later post-order ID
+      // than curStmt should result in an error since we want resolution to
+      // behave as though things are resolved in order.
+      if (id.postOrderId() > curStmt->id().postOrderId()) {
+        error = true;
+      }
+    }
+  }
+
+  if (error) {
+    context->error(curStmt, "Uses later variable, type not established");
+    auto unknownType = UnknownType::get(context);
+    return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+  }
+
+  if (useLocalResult) {
     QualifiedType ret = byPostorder.byId(id).type();
     auto g = Type::MAYBE_GENERIC;
     if (ret.hasTypePtr()) {
@@ -854,16 +920,48 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
       // the type of anything using this type (since it will change
       // on instantiation).
       auto unknownType = UnknownType::get(context);
-      ret = QualifiedType(ret.kind(), unknownType, nullptr);
+      ret = QualifiedType(ret.kind(), unknownType);
     }
 
     return ret;
   }
 
-  // TODO: handle outer function variables
 
-  // otherwise, use a query to try to look it up top-level.
-  return typeForModuleLevelSymbol(context, id);
+  // Otherwise, use a query to try to look it up.
+  // Figure out what ID is contained within so we can use the
+  // appropriate query.
+  ID parentId = id.parentSymbolId(context);
+  auto parentTag = parsing::idToTag(context, parentId);
+
+  if (asttags::isModule(parentTag)) {
+    // If the id is contained within a module, use typeForModuleLevelSymbol.
+    return typeForModuleLevelSymbol(context, id);
+  } else if (asttags::isAggregateDecl(parentTag)) {
+    // If the id is contained within a class/record/union, get the
+    // resolved field.
+    if (parentId == symbol->id()) {
+      // if it is recursive within the current class/record, we can
+      // call resolveField.
+      const ResolvedFields& resolvedFields =
+        resolveFieldDecl(context, inCompositeType, id,
+                         useGenericFormalDefaults);
+      // find the field that matches
+      int nFields = resolvedFields.numFields();
+      for (int i = 0; i < nFields; i++) {
+        if (resolvedFields.fieldDeclId(i) == id) {
+          return resolvedFields.fieldType(i);
+        }
+      }
+
+      assert(false && "could not find resolved field");
+    }
+  }
+
+  // Otherwise it is a case not handled yet
+  // TODO: handle outer function variables
+  assert(false && "not yet handled");
+  auto unknownType = UnknownType::get(context);
+  return QualifiedType(QualifiedType::UNKNOWN, unknownType);
 }
 
 void Resolver::enterScope(const AstNode* ast) {
@@ -1423,6 +1521,74 @@ void Resolver::exit(const uast::New* node) {
       context->error(node, "invalid use of 'new'");
     }
   }
+}
+
+bool Resolver::enter(const For* loop) {
+  enterScope(loop);
+
+  const AstNode* iterand = loop->iterand();
+  iterand->traverse(*this);
+
+  ResolvedExpression& iterandRE = byPostorder.byAst(iterand);
+
+  auto& MSC = iterandRE.mostSpecific();
+  bool isIter = MSC.isEmpty() == false &&
+                MSC.numBest() == 1 &&
+                MSC.only()->untyped()->kind() == uast::Function::Kind::ITER;
+
+  bool wasResolved = iterandRE.type().isUnknown() == false &&
+                     iterandRE.type().isErroneousType() == false;
+
+  QualifiedType idxType;
+
+  if (isIter) {
+    idxType = iterandRE.type();
+  } else if (wasResolved) {
+    //
+    // Resolve "iterand.these()"
+    //
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
+    auto ci = CallInfo (/* name */ USTR("these"),
+                        /* calledType */ iterandRE.type(),
+                        /* isMethod */ true,
+                        /* hasQuestionArg */ false,
+                        actuals);
+    auto inScope = scopeStack.back();
+    auto c = resolveGeneratedCall(context, iterand, ci, inScope, poiScope);
+
+    if (auto only = c.mostSpecific().only()) {
+      idxType = c.exprType();
+
+      ResolvedExpression::AssociatedFns associated;
+      associated.push_back(only);
+      iterandRE.setAssociatedFns(associated);
+
+      poiInfo.accumulate(c.poiInfo());
+    } else {
+      idxType = QualifiedType(QualifiedType::UNKNOWN,
+                              ErroneousType::get(context));
+      std::ostringstream oss;
+      iterandRE.type().type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+      context->error(loop, "unable to iterate over values of type %s", oss.str().c_str());
+    }
+  } else {
+    idxType = QualifiedType(QualifiedType::UNKNOWN,
+                            ErroneousType::get(context));
+  }
+
+  if (const Decl* idx = loop->index()) {
+    ResolvedExpression& re = byPostorder.byAst(idx);
+    re.setType(idxType);
+  }
+
+  loop->body()->traverse(*this);
+
+  return false;
+}
+
+void Resolver::exit(const For* loop) {
+  exitScope(loop);
 }
 
 bool Resolver::enter(const AstNode* ast) {

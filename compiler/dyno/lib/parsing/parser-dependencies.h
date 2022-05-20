@@ -25,7 +25,7 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
-
+#include "chpl/parsing/Parser.h"
 #include "chpl/uast/all-uast.h"
 
 #include <cstdint>

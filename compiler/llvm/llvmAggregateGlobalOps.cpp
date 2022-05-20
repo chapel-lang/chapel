@@ -671,8 +671,13 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     // Determine alignment
     unsigned Alignment = Range.Alignment;
     if (Alignment == 0) {
+#if HAVE_LLVM_VER >= 130
+      Type *EltType =
+        cast<PointerType>(StartPtr->getType())->getPointerElementType();
+#else
       Type *EltType =
         cast<PointerType>(StartPtr->getType())->getElementType();
+#endif
       Alignment = DL->getABITypeAlignment(EltType);
     }
 

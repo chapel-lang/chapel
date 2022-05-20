@@ -42,10 +42,7 @@ namespace uast {
  */
 class As final : public AstNode {
  private:
-  As(AstList children)
-    : AstNode(asttags::As, std::move(children)) {
-    assert(rename()->isIdentifier() || rename()->isVariable());
-  }
+  As(AstList children) : AstNode(asttags::As, std::move(children)) {}
 
   // No need to match 'symbolChildNum_' or 'renameChildNum_', they are const.
   bool contentsMatchInner(const AstNode* other) const override {

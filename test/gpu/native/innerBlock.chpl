@@ -1,3 +1,6 @@
+use GPUDiagnostics;
+
+startGPUDiagnostics();
 on here.getChild(1) {
   var A = [1,2,3,4,5];
   var outerVar = 10;
@@ -57,6 +60,9 @@ on here.getChild(1) {
   writeArr(A);
 
 }
+stopGPUDiagnostics();
+
+writeln(getGPUDiagnostics());
 
 proc writeArr(A) {
   write("Array: ");

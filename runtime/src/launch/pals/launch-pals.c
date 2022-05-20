@@ -68,12 +68,14 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 }
 
 
-void chpl_launch_print_help(void) {
-  int width;
-  printf("LAUNCHER FLAGS:\n");
-  printf("===============\n");
-  printf("  %s keyword : %nspecify cpu assignment within a node: "
-         "none (default),\n",
-         CPU_BIND_OPT_STR, &width);
-  printf("%*snuma, socket, core, thread, depth\n", width, "");
+const argDescTuple_t* chpl_launch_get_help(void) {
+  static const
+    argDescTuple_t args[] =
+    { { CPU_BIND_OPT_STR " keyword",
+        "specify cpu assignment within a node:" },
+      { "",
+        "none (default), numa, socket, core, thread, depth" },
+      { NULL, NULL },
+    };
+  return args;
 }

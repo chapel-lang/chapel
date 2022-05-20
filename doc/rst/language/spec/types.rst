@@ -156,8 +156,8 @@ Signed and Unsigned Integral Types
 
 The integral types can be parameterized by the number of bits used to
 represent them. Valid bit-sizes are 8, 16, 32, and 64. The default
-signed integral type, ``int``, and the default unsigned integral type,
-``uint`` correspond to ``int(64)`` and ``uint(64)`` respectively.
+signed integral type, ``int``, is a synonym for ``int(64)``; and the
+default unsigned integral type, ``uint``, is a synonym for ``uint(64)``.
 
 The integral types and their ranges are given in the following table:
 
@@ -174,11 +174,15 @@ int(64), int   -9223372036854775808 9223372036854775807
 uint(64), uint 0                    18446744073709551615
 ============== ==================== ====================
 
-The unary and binary operators that are pre-defined over the integral
-types operate with 32- and 64-bit precision. Using these operators on
-integral types represented with fewer bits results in an implicit
-conversion to the corresponding 32-bit types according to the rules
-defined in :ref:`Implicit_Conversions`.
+Integer literals such as `3` have type ``int``. However, such literals
+can implicitly convert to other numeric types that can losslessly store
+the value. See :ref:`Implicit_Compile_Time_Constant_Conversions`.
+
+It is possible for overflow to occur with binary operators on integers.
+For signed integers, overflow leads to undefined behavior. For unsigned
+integers, overflow leads to wrapping according to two's complement
+arithmetic.
+
 
 .. _Real_Types:
 

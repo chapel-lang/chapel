@@ -16,12 +16,10 @@ default:
 .. toctree::
    :maxdepth: 1
 
-   Chapel Environment Variables <standard/ChapelEnv>
    Errors <standard/Errors>
    IO Support <standard/ChapelIO>
    Math <standard/Math>
    Types <standard/Types>
-   VectorizingIterator <standard/VectorizingIterator>
 
 
 Data Structures
@@ -43,6 +41,7 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
+   GPUDiagnostics <standard/GPUDiagnostics>
    Memory <standard/Memory>
 
 
@@ -97,6 +96,7 @@ System/Interoperability
 
    CPtr <standard/CPtr>
    CTypes <standard/CTypes>
+   OS <standard/OS>
    Spawn <standard/Spawn>
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>

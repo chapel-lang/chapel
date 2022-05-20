@@ -19,7 +19,7 @@
  */
 
 /*
-   Support for pseudorandom number generation
+   Support for pseudorandom number generation.
 
    This module defines an abstraction for a stream of pseudorandom numbers,
    :class:`~RandomStreamInterface`. Use :proc:`createRandomStream` to
@@ -696,7 +696,7 @@ module Random {
 
 
   /*
-     Seed generation for pseudorandom number generation
+     Seed generation for pseudorandom number generation.
 
 
      .. note::
@@ -750,7 +750,7 @@ module Random {
 
 
   /*
-     Permuted Linear Congruential Random Number Generator
+     Permuted Linear Congruential Random Number Generator.
 
      This module provides PCG random number generation routines.
      See http://www.pcg-random.org/
@@ -1045,15 +1045,35 @@ module Random {
         than creating a new stream for the purpose of the call.
 
         :arg arr: The array to be filled
-        :type arr: [] :type:`eltType`
+        :type arr: `[] T`
       */
-      proc fillRandom(arr: [] eltType) {
+      proc fillRandom(arr: []) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
           x = r;
       }
+
+      /*
+        Fill the argument array with pseudorandom values within a particular
+        range. Sets each element to a number in [`min`, `max`] (inclusive).
+
+        See also the caveats in the :proc:`PCGRandomStream.getNext` accepting
+        min and max arguments..
+
+        :arg arr: The array to be filled
+        :type arr: `[] T`
+      */
+      proc fillRandom(arr: [], min: arr.eltType, max:arr.eltType) {
+        if(!arr.isRectangular()) then
+          compilerError("fillRandom does not support non-rectangular arrays");
+
+        forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType,
+                                          min, max)) do
+          x = r;
+      }
+
 
       /*
      Returns a random sample from a given 1-D array, ``x``.
@@ -1183,11 +1203,7 @@ module Random {
 
         // Fisher-Yates shuffle
         for i in 0..#D.sizeAs(D.idxType) by -1 {
-          var k = randlc_bounded(D.idxType,
-                                 PCGRandomStreamPrivate_rngs,
-                                 seed, PCGRandomStreamPrivate_count,
-                                 0, i);
-
+          var k = PCGRandomStreamPrivate_getNext_noLock(D.idxType, 0, i);
           var j = i;
 
           // Strided case
@@ -1202,8 +1218,6 @@ module Random {
 
           arr[k] <=> arr[j];
         }
-
-        PCGRandomStreamPrivate_count += D.sizeAs(D.idxType);
 
         _unlock();
       }
@@ -1228,24 +1242,13 @@ module Random {
         _lock();
 
         for i in low..high {
-          var j = randlc_bounded(arr.domain.idxType,
-                                 PCGRandomStreamPrivate_rngs,
-                                 seed, PCGRandomStreamPrivate_count,
-                                 low, i);
+          var j = PCGRandomStreamPrivate_getNext_noLock(arr.domain.idxType,
+                                                        low, i);
           arr[i] = arr[j];
           arr[j] = i;
         }
 
-        PCGRandomStreamPrivate_count += high-low;
-
         _unlock();
-      }
-
-
-      pragma "no doc"
-      proc fillRandom(arr: []) {
-        compilerError("PCGRandomStream(eltType=", eltType:string,
-                      ") can only be used to fill arrays of ", eltType:string);
       }
 
       /*
@@ -1265,6 +1268,8 @@ module Random {
        */
       pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=eltType) {
+        // TODO: why does this return an iterator? Couldn't it
+        // just be the iterator?
         _lock();
         const start = PCGRandomStreamPrivate_count;
         PCGRandomStreamPrivate_count += D.sizeAs(int);
@@ -1272,6 +1277,39 @@ module Random {
         _unlock();
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
       }
+
+      /*
+
+         Returns an iterable expression for generating `D.size` random
+         numbers within the range [`min`, `max`] (inclusive).
+
+         See also the caveats in the :proc:`PCGRandomStream.getNext` accepting
+         min and max arguments.
+
+         The RNG state will be immediately advanced by `D.size`
+         before the iterable expression yields any values.
+
+         The returned iterable expression is useful in parallel contexts,
+         including standalone and zippered iteration. The domain will determine
+         the parallelization strategy.
+
+         :arg D: a domain
+         :arg resultType: the type of number to yield
+         :return: an iterable expression yielding random `resultType` values
+
+       */
+      pragma "fn returns iterator"
+      proc iterate(D: domain, type resultType=eltType,
+                   min: resultType, max: resultType) {
+        _lock();
+        const start = PCGRandomStreamPrivate_count;
+        PCGRandomStreamPrivate_count += D.sizeAs(int);
+        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
+        _unlock();
+        return PCGRandomPrivate_iterate_bounded(resultType, D, seed, start,
+                                                min, max);
+      }
+
 
       // Forward the leader iterator as well.
       pragma "no doc"
@@ -1285,6 +1323,20 @@ module Random {
         const start = PCGRandomStreamPrivate_count;
         return PCGRandomPrivate_iterate(resultType, D, seed, start, tag);
       }
+      pragma "no doc"
+      pragma "fn returns iterator"
+      proc iterate(D: domain, type resultType=eltType,
+                   min: resultType, max: resultType, param tag)
+        where tag == iterKind.leader
+      {
+        // Note that proc iterate() for the serial case (i.e. the one above)
+        // is going to be invoked as well, so we should not be taking
+        // any actions here other than the forwarding.
+        const start = PCGRandomStreamPrivate_count;
+        return PCGRandomPrivate_iterate_bounded(resultType, D, seed, start,
+                                                min, max, tag);
+      }
+
 
       pragma "no doc"
       override proc writeThis(f) throws {
@@ -1573,7 +1625,7 @@ module Random {
     //
     pragma "no doc"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                               start: int(64)) {
+                                  start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
       for i in D do
         yield randlc(resultType, cursor);
@@ -1581,7 +1633,7 @@ module Random {
 
     pragma "no doc"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                               start: int(64), param tag: iterKind)
+                                  start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
       for block in D.these(tag=iterKind.leader) do
         yield block;
@@ -1589,7 +1641,8 @@ module Random {
 
     pragma "no doc"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                 start: int(64), param tag: iterKind, followThis)
+                                 start: int(64), param tag: iterKind,
+                                 followThis)
           where tag == iterKind.follower {
       use DSIUtil;
       param multiplier = 1;
@@ -1610,6 +1663,63 @@ module Random {
           for i in innerRange {
             var cursor = randlc_skipto(resultType, seed, myStart + i.safeCast(int(64)) * multiplier);
             yield randlc(resultType, cursor);
+          }
+        }
+      }
+    }
+
+    pragma "no doc"
+    iter PCGRandomPrivate_iterate_bounded(type resultType, D: domain,
+                                          seed: int(64), start: int(64),
+                                          min: resultType, max: resultType) {
+      var cursor = randlc_skipto(resultType, seed, start);
+      var count = start;
+      for i in D {
+        yield randlc_bounded(resultType, cursor, seed, count, min, max);
+        count += 1;
+      }
+    }
+
+    pragma "no doc"
+    iter PCGRandomPrivate_iterate_bounded(type resultType, D: domain,
+                                          seed: int(64),
+                                          start: int(64),
+                                          min: resultType, max: resultType,
+                                          param tag: iterKind)
+          where tag == iterKind.leader {
+      for block in D.these(tag=iterKind.leader) do
+        yield block;
+    }
+
+    pragma "no doc"
+    iter PCGRandomPrivate_iterate_bounded(type resultType, D: domain,
+                                          seed: int(64), start: int(64),
+                                          min: resultType, max: resultType,
+                                          param tag: iterKind, followThis)
+          where tag == iterKind.follower {
+      use DSIUtil;
+      param multiplier = 1;
+      const ZD = computeZeroBasedDomain(D);
+      const innerRange = followThis(ZD.rank-1);
+      for outer in outer(followThis) {
+        var myStart = start;
+        if ZD.rank > 1 then
+          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
+        else
+          myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
+        if !innerRange.stridable {
+          var cursor = randlc_skipto(resultType, seed, myStart);
+          var count = myStart;
+          for i in innerRange {
+            yield randlc_bounded(resultType, cursor, seed, count, min, max);
+            count += 1;
+          }
+        } else {
+          myStart -= innerRange.low.safeCast(int(64));
+          for i in innerRange {
+            var count = myStart + i.safeCast(int(64)) * multiplier;
+            var cursor = randlc_skipto(resultType, seed, count);
+            yield randlc_bounded(resultType, cursor, seed, count, min, max);
           }
         }
       }
@@ -2427,7 +2537,7 @@ module Random {
   } // end PCGRandomLib
 
   /*
-     NAS Parallel Benchmark RNG
+     NAS Parallel Benchmark Random Number Generator.
 
      The pseudorandom number generator (PRNG) implemented by
      this module uses the algorithm from the NAS Parallel Benchmarks

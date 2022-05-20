@@ -728,7 +728,7 @@ module MPI {
    } // End C_MPI
 
 
-  module C_Env {
+  private module C_Env {
     use CTypes;
     // Helper routines to access the environment
     extern proc getenv(name : c_string) : c_string;

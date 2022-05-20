@@ -294,6 +294,12 @@ class Scope {
 };
 
 /**
+  A path of which use/import statements are currently being resolved
+  (in order to support recursive use/import)
+ */
+using VisibilityPath = std::vector<ID>;
+
+/**
  This class supports both `use` and `import`.
  It stores a normalized form of the symbols made available
  by a use/import clause.
@@ -371,64 +377,16 @@ class VisibilitySymbols {
     std::swap(isPrivate_, other.isPrivate_);
   }
 
+  static bool update(VisibilitySymbols& keep,
+                     VisibilitySymbols& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
   void mark(Context* context) const {
     symbolId_.mark(context);
     for (auto p : names_) {
       p.first.mark(context);
       p.second.mark(context);
-    }
-  }
-};
-
-/**
- Stores the result of in-order resolution of use/import
- statements.
-*/
-// This would not be separate from resolving variables
-// if the language design was that symbols available due to use/import
-// are only available after that statement (and in that case this analysis
-// could fold into the logic about variable declarations).
-class ResolvedVisibilityScope {
- private:
-  const Scope* scope_;
-  std::vector<VisibilitySymbols> visibilityClauses_;
-
- public:
-  using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
-
-  ResolvedVisibilityScope(const Scope* scope)
-    : scope_(scope)
-  { }
-
-  /** Return the scope */
-  const Scope *scope() const { return scope_; }
-
-  /** Return an iterator over the visibility clauses */
-  VisibilitySymbolsIterable visibilityClauses() const {
-    return VisibilitySymbolsIterable(visibilityClauses_);
-  }
-
-  /** Add a visibility clause */
-  void addVisibilityClause(const VisibilitySymbols &clause) {
-    // TODO are we missing the whole point of emplace_back here (see callsites)
-    visibilityClauses_.push_back(clause);
-  }
-
-  bool operator==(const ResolvedVisibilityScope& other) const {
-    return scope_ == other.scope_ &&
-           visibilityClauses_ == other.visibilityClauses_;
-  }
-  bool operator!=(const ResolvedVisibilityScope& other) const {
-    return !(*this == other);
-  }
-  static bool update(owned<ResolvedVisibilityScope>& keep,
-                     owned<ResolvedVisibilityScope>& addin) {
-    return defaultUpdateOwned(keep, addin);
-  }
-  void mark(Context* context) const {
-    context->markPointer(scope_);
-    for (auto sym : visibilityClauses_) {
-      sym.mark(context);
     }
   }
 };

@@ -90,8 +90,7 @@ strategy*. Four memory management strategies are available: ``owned``,
 managed by the compiler. In other words, the compiler automatically calls
 ``delete`` on these instances to reclaim their memory. For these
 instances, ``=`` and copy initialization can result in the transfer or
-sharing of ownership. See the module documentation for :mod:`owned
-<OwnedObject>` and :mod:`shared <SharedObject>`.  When ``borrowed`` is
+sharing of ownership. See the module documentation for :record:`~OwnedObject.owned` and :record:`~SharedObject.shared`.  When ``borrowed`` is
 used as a memory management strategy in a ``new-expression``, it also
 creates an instance that has its lifetime managed by the compiler
 (:ref:`Class_New`).
@@ -205,11 +204,11 @@ The memory management strategies have the following meaning:
 -  ``owned`` the instance will be deleted automatically when the
    ``owned`` variable goes out of scope, but only one ``owned`` variable
    can refer to the instance at a time. See the module documentation for
-   :mod:`owned <OwnedObject>`.
+   :record:`~OwnedObject.owned`.
 
 -  ``shared`` will be deleted when all of the ``shared`` variables
    referring to the instance go out of scope. See
-   the module documentation for :mod:`shared <SharedObject>`.
+   the module documentation for :record:`~SharedObject.shared`.
 
 -  ``borrowed`` refers to a class instance that has a lifetime managed
    by another variable.

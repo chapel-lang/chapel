@@ -150,19 +150,14 @@ static void propagate_charset_environment(FILE *f)
 static char* chpl_launch_create_command(int argc, char* argv[],
                                         int32_t numLocales) {
   int i;
-  int size;
-  char baseCommand[256];
-  char* command;
   FILE* pbsFile, *expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
+  char  jobName[128];
 
-  if (basenamePtr == NULL) {
-      basenamePtr = argv[0];
-  } else {
-      basenamePtr++;
-  }
+  chpl_launcher_get_job_name(basenamePtr, jobName, sizeof(jobName));
+
   chpl_compute_real_binary_name(argv[0]);
 
 #ifndef DEBUG_LAUNCH
@@ -176,7 +171,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
-  fprintf(pbsFile, "#PBS -N Chpl-%.10s\n", basenamePtr);
+  fprintf(pbsFile, "#PBS -N %s\n", jobName);
   genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
   if (projectString && strlen(projectString) > 0)
     fprintf(pbsFile, "#PBS -A %s\n", projectString);
@@ -207,15 +202,15 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "send \"exit\\n\"\n");
   fclose(expectFile);
 
-  sprintf(baseCommand, "expect %s", expectFilename);
-
-  size = strlen(baseCommand) + 1;
-
-  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-
-  sprintf(command, "%s", baseCommand);
-
-  if (strlen(command)+1 > size) {
+  const char *cmd_fmt = "expect %s";
+  const int cmd_len
+            = strlen(cmd_fmt)           // 'expect' command printf() format
+              - 2                       //   length of "%s" specifier
+              + strlen(expectFilename)  //   length of expectFilename
+              + 1;                      //   length of trailing '\0'
+  char* command = chpl_mem_allocMany(cmd_len, sizeof(command[0]),
+                                     CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  if (snprintf(command, cmd_len, cmd_fmt, expectFilename) >= cmd_len) {
     chpl_internal_error("buffer overflow");
   }
 
@@ -224,16 +219,25 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
 static void chpl_launch_cleanup(void) {
 #ifndef DEBUG_LAUNCH
-  char command[1024];
+  if (!chpl_doDryRun()) {
+    {
+      char command[sizeof(pbsFilename) + 4];
+      (void) snprintf(command, sizeof(command), "rm %s", pbsFilename);
+      system(command);
+    }
 
-  sprintf(command, "rm %s", pbsFilename);
-  system(command);
+    {
+      char command[sizeof(expectFilename) + 4];
+      (void) snprintf(command, sizeof(command), "rm %s", expectFilename);
+      system(command);
+    }
 
-  sprintf(command, "rm %s", expectFilename);
-  system(command);
-
-  sprintf(command, "rm %s", sysFilename);
-  system(command);
+    {
+      char command[sizeof(sysFilename) + 4];
+      (void) snprintf(command, sizeof(command), "rm %s", sysFilename);
+      system(command);
+    }
+  }
 #endif
 }
 
@@ -253,5 +257,6 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 }
 
 
-void chpl_launch_print_help(void) {
+const argDescTuple_t* chpl_launch_get_help(void) {
+  return NULL;
 }

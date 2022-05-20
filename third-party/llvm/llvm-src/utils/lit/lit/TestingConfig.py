@@ -28,9 +28,10 @@ class TestingConfig(object):
                      'TMPDIR', 'TMP', 'TEMP', 'TEMPDIR', 'AVRLIT_BOARD',
                      'AVRLIT_PORT', 'FILECHECK_OPTS', 'VCINSTALLDIR',
                      'VCToolsinstallDir', 'VSINSTALLDIR', 'WindowsSdkDir',
-                     'WindowsSDKLibVersion']
+                     'WindowsSDKLibVersion', 'SOURCE_DATE_EPOCH']
 
         if sys.platform == 'win32':
+            pass_vars.append('COMSPEC')
             pass_vars.append('INCLUDE')
             pass_vars.append('LIB')
             pass_vars.append('PATHEXT')

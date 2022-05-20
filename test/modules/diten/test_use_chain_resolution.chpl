@@ -22,6 +22,6 @@ module M6 {
   var aaa = 6;
   proc main() {
     public use M3, M5;
-    writeln(aaa); // Expect 54
+    writeln(aaa);
   }
 }

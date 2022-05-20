@@ -18,7 +18,7 @@
  */
 
 /*
-  This module contains the implementation of the heap type.
+  This module contains the implementation of a 'heap' type.
 
   A heap is a specialized tree-based data structure
   that supports extracting the maximal or the minimal element quickly,

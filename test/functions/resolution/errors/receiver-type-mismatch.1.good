@@ -1,0 +1,8 @@
+receiver-type-mismatch.chpl:45: error: unresolved call 'S.foo()'
+receiver-type-mismatch.chpl:30: note: this candidate did not match: S.foo(x: int)
+receiver-type-mismatch.chpl:45: note: because call does not supply enough arguments
+receiver-type-mismatch.chpl:30: note: it is missing a value for formal 'x: int(64)'
+receiver-type-mismatch.chpl:45: note: other candidates are:
+receiver-type-mismatch.chpl:6: note:   C.foo()
+receiver-type-mismatch.chpl:14: note:   D.foo()
+note: and 2 other candidates, use --print-all-candidates to see them

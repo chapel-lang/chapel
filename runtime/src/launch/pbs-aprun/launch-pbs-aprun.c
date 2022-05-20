@@ -103,6 +103,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
   int length = 0;
   FILE *qsubScript = NULL;
   char *qsubFilename = expectFilename;
+  char jobName[128];
 
   if (!queue) {
     queue = getenv("CHPL_LAUNCHER_QUEUE");
@@ -111,18 +112,20 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
 
+  chpl_launcher_get_job_name(genFilename, jobName, sizeof(jobName));
+
   if (generate_qsub_script) {
     pid_t mypid = debug ? 0 : getpid();
     sprintf(qsubFilename, "qsub.%s-%d", genFilename, (int) mypid);
     qsubScript = fopen(qsubFilename, "w");
     fprintf(qsubScript, "#PBS -j oe\n");
     fprintf(qsubScript, "#PBS -zV\n");
-    fprintf(qsubScript, "#PBS -N Chpl-%.10s\n", genFilename);
+    fprintf(qsubScript, "#PBS -N %s\n", jobName);
   } else {
     optionString = chpl_mem_allocMany(maxOptLength, sizeof(char),
                                       CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     length += snprintf(optionString + length, maxOptLength - length,
-                       "-z -V -I -N Chpl-%.10s", genFilename);
+                       "-z -V -I -N %s", jobName);
   }
 
   if (projectString && strlen(projectString) != 0) {
@@ -379,7 +382,7 @@ static void genQsubScript(int argc, char *argv[], int numLocales) {
 }
 
 static void chpl_launch_cleanup(void) {
-  if (!debug) {
+  if (!chpl_doDryRun() && !debug) {
     if (unlink(expectFilename)) {
       char msg[FILENAME_MAX + 35];
       snprintf(msg, FILENAME_MAX + 35, "Error removing temporary file '%s': %s",
@@ -450,15 +453,24 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   return 0;
 }
 
-void chpl_launch_print_help(void) {
-  fprintf(stdout, "LAUNCHER FLAGS:\n");
-  fprintf(stdout, "===============\n");
-  fprintf(stdout, "  %s <cpu assignment>   : specify cpu assignment within a node:\n", CHPL_CC_ARG);
-  fprintf(stdout, "                           none (default), numa_node, cpu\n");
-  fprintf(stdout, "  %s : generate a qsub script and exit\n", CHPL_GENERATE_QSUB_SCRIPT);
-  fprintf(stdout, "  %s <queue>        : specify a queue\n", CHPL_QUEUE_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_QUEUE)\n");
-  fprintf(stdout, "  %s <HH:MM:SS>  : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
+const argDescTuple_t* chpl_launch_get_help(void) {
+  static const
+    argDescTuple_t args[] =
+    { { CHPL_CC_ARG " <cpu assignment>",
+        "specify cpu assignment within a node:" },
+      { "",
+        "none (default), numa_node, cpu" },
+      { CHPL_GENERATE_QSUB_SCRIPT,
+        "generate a qsub script and exit" },
+      { CHPL_QUEUE_FLAG " <queue>",
+        "specify a queue" },
+      { "",
+        "(or use $CHPL_LAUNCHER_QUEUE)" },
+      { CHPL_WALLTIME_FLAG " <HH:MM:SS>",
+        "specify a wallclock time limit" },
+      { "",
+        "(or use $CHPL_LAUNCHER_WALLTIME)" },
+      { NULL, NULL },
+    };
+  return args;
 }
-

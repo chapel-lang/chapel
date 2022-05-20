@@ -64,7 +64,7 @@ void qbytes_free_null(qbytes_t* b) {
 }
 
 void qbytes_free_munmap(qbytes_t* b) {
-  err_t err;
+  qio_err_t err;
 
   /* I don't believe this is required, but
    * I've heard here and there it might be for NFS...

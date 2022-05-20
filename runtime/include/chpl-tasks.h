@@ -370,6 +370,21 @@ uint32_t chpl_task_getFixedNumThreads(void) {
 }
 
 //
+// Similar to the above, but only indicates whether or not the tasking
+// layer uses a fixed number of threads. This may be called prior to
+// the initialization of the tasking layer when the number of threads
+// is not yet known.
+//
+
+#ifndef CHPL_TASK_IMPL_HAS_FIXED_NUM_THREADS
+#define CHPL_TASK_IMPL_HAS_FIXED_NUM_THREADS() false
+#endif
+static inline
+chpl_bool chpl_task_hasFixedNumThreads(void) {
+  return CHPL_TASK_IMPL_HAS_FIXED_NUM_THREADS();
+}
+
+//
 // If the tasking layer runs tasks on a fixed number of threads and
 // the calling thread is one of those, this returns true.  Otherwise,
 // it returns false.

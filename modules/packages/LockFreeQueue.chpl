@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* A lock-free queue using the Michael and Scott algorithm.
+
   .. warning::
 
     This module relies on the :mod:`AtomicObjects` package module, which

@@ -1,8 +1,10 @@
 use BlockDist;
+use GPUDiagnostics;
 
 config const n = 10;
 
-on here.getChild(1) {
+startGPUDiagnostics();
+on here.gpus[0] {
   var space = {1..n};
   var dom = space dmapped Block(space, targetLocales=[here,]);
   var arr: [dom] int;
@@ -19,3 +21,7 @@ on here.getChild(1) {
 
   writeln(arr);
 }
+
+stopGPUDiagnostics();
+
+writeln(getGPUDiagnostics());

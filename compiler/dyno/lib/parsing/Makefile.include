@@ -25,6 +25,7 @@ DYNO_PARSING_SRCS =                                 \
            flex-chpl-lib.cpp                        \
            parsing-queries.cpp                      \
            Parser.cpp                               \
+           parser-stats.cpp                         \
 
 
 SRCS = $(DYNO_PARSING_SRCS)

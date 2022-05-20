@@ -15,7 +15,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('13','12','11',)
+    return ('14','13','12','11',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val):
@@ -783,6 +783,24 @@ def get_host_link_args():
 
     return (bundled, system)
 
+# Return the isysroot argument provided by get_clang_basic_args, if any
+def get_clang_args_sdkroot():
+    args = get_clang_basic_args()
+    bundled, system = get_host_compile_args()
+    args += bundled
+    args += system
+
+    return_next_arg = False
+    for arg in args:
+        if return_next_arg:
+            return arg
+
+        if arg == "-isysroot":
+            return_next_arg = True
+
+    return ''
+
+
 def _main():
     llvm_val = get()
     llvm_config = get_llvm_config()
@@ -798,6 +816,10 @@ def _main():
     parser.add_option('--supported-versions', dest='action',
                       action='store_const',
                       const='llvmversions', default='')
+    parser.add_option('--sdkroot', dest='action',
+                      action='store_const',
+                      const='sdkroot', default='')
+
 
     (options, args) = parser.parse_args()
 
@@ -811,6 +833,8 @@ def _main():
         validate_llvm_config()
     elif options.action == 'llvmversions':
         sys.stdout.write("{0}\n".format(llvm_versions))
+    elif options.action == 'sdkroot':
+        sys.stdout.write("{0}\n".format(get_clang_args_sdkroot()))
     else:
         sys.stdout.write("{0}\n".format(llvm_val))
 

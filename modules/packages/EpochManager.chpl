@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for Epoch-based Memory Reclamation.
+
   .. warning::
 
     This module relies on the :mod:`AtomicObjects` package module, which

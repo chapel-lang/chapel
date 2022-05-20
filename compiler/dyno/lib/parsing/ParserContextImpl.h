@@ -171,17 +171,15 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
       msg += ret.c_str();
       msg += "\"";
       noteError(loc, msg.c_str());
-    } else {
-
-      // Initialize the pragma flags if needed.
-      auto& pragmas = attributeParts.pragmas;
-      if (pragmas == nullptr) {
-        pragmas = new std::set<PragmaTag>();
-      }
-
-      hasAttributeParts = true;
-      pragmas->insert(tag);
     }
+
+    // Initialize the pragma flags if needed.
+    auto& pragmas = attributeParts.pragmas;
+    if (pragmas == nullptr) pragmas = new std::set<PragmaTag>();
+    hasAttributeParts = true;
+
+    // Always insert, even if PRAGMA_UNKNOWN.
+    pragmas->insert(tag);
   }
 
   // Make sure to clean up the UAST node since it will be discarded.
@@ -211,7 +209,6 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
 
 void ParserContext::resetAttributePartsState() {
   if (hasAttributeParts) {
-    assert(numAttributesBuilt >= 1);
     auto& pragmas = attributeParts.pragmas;
     if (pragmas) delete pragmas;
     attributeParts = { nullptr, false, UniqueString() };
@@ -749,7 +746,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       Function::PROC,
                       Formal::DEFAULT_INTENT,
                       nullptr,
-                      PODUniqueString::get(),
+                      nullptr,
                       Function::DEFAULT_RETURN_INTENT,
                       false,
                       nullptr, nullptr, nullptr, nullptr,
@@ -770,6 +767,19 @@ ParserContext::buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp) {
 
 CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
+  if (!fp.errorExpr) {
+    if (fp.formals) {
+      for (auto ast : *fp.formals) {
+        if (ast->isErroneousExpression()) {
+          auto loc = convertLocation(location);
+          auto errorExpr = ErroneousExpression::build(builder, loc);
+          fp.errorExpr = errorExpr.release();
+          break;
+        }
+      }
+    }
+  }
+
   CommentsAndStmt cs = {fp.comments, nullptr};
   if (fp.errorExpr == nullptr) {
     // detect parenless functions
@@ -800,12 +810,20 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
       body = consumeToBlock(location, fp.body);
     }
 
-    auto f = Function::build(builder, this->convertLocation(location),
+    // Own the recorded identifier to clean it up, but grab its location.
+    owned<Identifier> identName = toOwned(fp.name);
+    assert(identName.get());
+    auto identNameLoc = builder->getLocation(identName.get());
+    assert(!identNameLoc.isEmpty());
+
+    // TODO: Right now this location is the start of the function, and
+    // it seems more natural for the location to be the symbol.
+    auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributes),
                              fp.visibility,
                              fp.linkage,
                              toOwned(fp.linkageNameExpr),
-                             fp.name,
+                             identName->name(),
                              fp.isInline,
                              fp.isOverride,
                              fp.kind,
@@ -819,6 +837,17 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                              toOwned(fp.where),
                              this->consumeList(fp.lifetime),
                              std::move(body));
+
+    // If we are not a method then the receiver intent is discarded,
+    // because there is no receiver formal to store it in.
+    // So do the check now.
+    if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
+      const char* msg = fp.thisIntent == Formal::TYPE
+          ? "Missing type for secondary type method"
+          : "'this' intents can only be applied to methods";
+      noteError(location, msg);
+    }
+
     cs.stmt = f.release();
   } else {
     cs.stmt = fp.errorExpr;
@@ -839,12 +868,20 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
       body = consumeToBlock(location, fp.body);
     }
 
-    auto f = Function::build(builder, this->convertLocation(location),
+    // Own the recorded identifier to clean it up, but grab its location.
+    owned<Identifier> identName = toOwned(fp.name);
+    assert(identName.get());
+    auto identNameLoc = builder->getLocation(identName.get());
+    assert(!identNameLoc.isEmpty());
+
+    // TODO: Right now this location is the start of the function, and
+    // it seems more natural for the location to be the symbol.
+    auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributes),
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
                              /* linkageName */ nullptr,
-                             fp.name,
+                             identName->name(),
                              /* inline */ false,
                              /* override */ false,
                              Function::LAMBDA,
@@ -893,8 +930,26 @@ ParserContext::buildArrayTypeWithIndex(YYLTYPE location,
                                        ParserExprList* indexExprs,
                                        AstNode* domainExpr,
                                        AstNode* typeExpr) {
-  assert(false && "Not handled yet!");
-  return nullptr;
+  auto index = buildLoopIndexDecl(locIndexExprs, indexExprs);
+
+  // Reconstruct usable location for 'consumeToBlock()'.
+  auto locTypeExpr = builder->getLocation(typeExpr);
+  YYLTYPE yyLocTypeExpr = {
+    .first_line = locTypeExpr.firstLine(),
+    .first_column = locTypeExpr.firstColumn(),
+    .last_line = locTypeExpr.lastLine(),
+    .last_column = locTypeExpr.lastColumn()
+  };
+
+  auto node = BracketLoop::build(builder, convertLocation(location),
+                                 std::move(index),
+                                 toOwned(domainExpr),
+                                 /*withClause*/ nullptr,
+                                 BlockStyle::IMPLICIT,
+                                 consumeToBlock(yyLocTypeExpr, typeExpr),
+                                 /*isExpressionLevel*/ true);
+
+  return node.release();
 }
 
 AstNode*
@@ -1021,7 +1076,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                               ParserExprList* indexExprs) {
   // TODO: We have to handle the possibility of [1..2, 3..4] here.
   if (indexExprs->size() > 1) {
-    const char* msg = "Invalid index expression";
+    const char* msg = "invalid index expression";
     noteError(location, msg);
     return nullptr;
   } else {
@@ -1570,22 +1625,53 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
 AstNode* ParserContext::
 buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
                       VisibilityClause::LimitationKind limitationKind,
-                      AstList limitations) {
+                      AstList limitations, bool isImport) {
   if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
-    // auto msg = "Expected symbol in visibility clause";
-    // TODO: This error message isn't always correct here, might be an import statement that starts this builder
-    auto msg = "'use' statements must refer to module or enum symbols (e.g., 'use <module>[.<submodule>]*;')";
+    std::string msg;
+    if (isImport) {
+      msg = "'import' statement paths must start with at least one module "
+            "symbol (e.g., 'import <module>[.<submodule>]*;')";
+    } else {
+      msg = "'use' statements must refer to module or enum symbols (e.g., "
+            "'use <module>[.<submodule>]*;')";
+    }
     return raiseError(location, msg);
   }
 
   for (auto& expr : limitations) {
-    if (expr->isAs() || expr->isIdentifier() || expr->isDot() ||
-        expr->isComment()) {
+    auto asExpr = expr->toAs();
+    bool error = false;
+    std::string msg;
+
+    // TODO: Sanitize dot expressions?
+    if (expr->isIdentifier() || expr->isDot() || expr->isComment())
       continue;
-    } else {
-      std::string msg = "incorrect expression in '";
-      msg += kindToString(limitationKind);
-      msg += "' list, identifier expected";
+
+    if (limitationKind == VisibilityClause::LimitationKind::EXCEPT ||
+        limitationKind == VisibilityClause::LimitationKind::ONLY) {
+      if (!asExpr) {
+        msg = "incorrect expression in '";
+        msg += kindToString(limitationKind);
+        msg += "' list, identifier expected";
+        error = true;
+      }
+    } else if (limitationKind == VisibilityClause::LimitationKind::BRACES) {
+      if (asExpr) {
+        if (!asExpr->symbol()->isIdentifier() ||
+            !asExpr->rename()->isIdentifier()) {
+          msg = "incorrect expression in 'import' list rename, "
+                "identifier expected";
+          error = true;
+        }
+      } else {
+        msg = "incorrect expression in 'import' for unqualified "
+              "access, identifier expected";
+        error = true;
+      }
+    }
+
+    if (error) {
+      assert(!msg.empty());
       return raiseError(location, msg);
     }
   }
@@ -1599,10 +1685,10 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
 }
 
 AstNode* ParserContext::
-buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol) {
+buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol, bool isImport) {
   return buildVisibilityClause(location, std::move(symbol),
                                VisibilityClause::NONE,
-                               AstList());
+                               AstList(), isImport);
 }
 
 
@@ -1628,7 +1714,7 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
 
   auto visClause = buildVisibilityClause(location, std::move(expr),
                                          limitationKind,
-                                         std::move(limitationsList));
+                                         std::move(limitationsList), false);
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
                                     std::move(attributes),
@@ -1664,23 +1750,11 @@ buildForwardingDecl(YYLTYPE location,
 AstNode* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
                                     owned<AstNode> name,
                                     owned<AstNode> rename) {
-  if (!rename->isIdentifier()) {
-    const char* msg = "Rename in as expression must be identifier";
-    return raiseError(locRename, msg);
-  }
-
-  if (!name->isDot() && !name->isIdentifier()) {
-    const char* msg = "Symbol in as expression must be dot or identifier";
-    return raiseError(locName, msg);
-  }
-
-  auto renameAsIdent = toOwned(rename.release()->toIdentifier());
-
   YYLTYPE locEverything = makeSpannedLocation(locName, locRename);
 
   auto node = As::build(builder, convertLocation(locEverything),
                         std::move(name),
-                        std::move(renameAsIdent));
+                        std::move(rename));
 
   return node.release();
 }
@@ -1747,7 +1821,7 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
   auto visClause = buildVisibilityClause(locVisibilityClause,
                                          std::move(name),
                                          limitationKind,
-                                         consumeList(limitationExprs));
+                                         consumeList(limitationExprs), false);
 
   if (visClause->isErroneousExpression()) {
     auto convLoc = convertLocation(locVisibilityClause);
@@ -1774,17 +1848,19 @@ CommentsAndStmt
 ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
                                        ParserExprList* vars) {
   int numDecls = 0;
+  Decl* firstDecl = nullptr;
   Decl* lastDecl = nullptr;
 
   for (auto elt : *vars) {
     if (Decl* d = elt->toDecl()) {
+      if (!firstDecl) firstDecl = d;
       lastDecl = d;
       numDecls++;
     }
   }
 
   assert(numDecls > 0);
-  assert(lastDecl);
+  assert(firstDecl && lastDecl);
 
   auto comments = gatherCommentsFromList(vars, locEverything);
   CommentsAndStmt cs = { .comments=comments, .stmt=nullptr };
@@ -1799,6 +1875,21 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     delete vars;
 
   } else {
+
+    // TODO: Just embed and catch this in a tree-walk instead.
+    if (firstDecl->linkageName()) {
+      bool isTypeVar = false;
+
+      if (auto typeVar = firstDecl->toVariable()) {
+        isTypeVar = typeVar->kind() == Variable::TYPE;
+      }
+
+      if (!isTypeVar) {
+        noteError(locEverything, "external symbol renaming can only be "
+                                 "applied to one symbol at a time");
+      }
+    }
+
     auto attributes = buildAttributes(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
                                   std::move(attributes),
@@ -1962,13 +2053,23 @@ AstNode* ParserContext::buildCustomReduce(YYLTYPE location,
                                           YYLTYPE locIdent,
                                           AstNode* lhs,
                                           AstNode* rhs) {
-  if (!lhs->isIdentifier()) {
+
+  if (lhs->isFnCall()) {
+    if (!lhs->toFnCall()->calledExpression()->isIdentifier()) {
+      const char* msg = "Expected identifier for reduction name";
+      return raiseError(locIdent, msg);
+    }
+    AstNode* inputType = (AstNode*) lhs->toFnCall();
+    auto node = Reduce::build(builder, convertLocation(location),
+                              toOwned(inputType),
+                              toOwned(rhs));
+    return node.release();
+  } else if (!lhs->isIdentifier()) {
     const char* msg = "Expected identifier for reduction name";
     return raiseError(locIdent, msg);
   } else {
-    auto identName = lhs->toIdentifier()->name();
     auto node = Reduce::build(builder, convertLocation(location),
-                              identName,
+                              toOwned(lhs->toIdentifier()),
                               toOwned(rhs));
     return node.release();
   }
@@ -2202,3 +2303,181 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
 
   return cs;
 }
+
+AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
+                                             PODUniqueString name) {
+  return buildIdent(location, name);
+}
+
+CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
+                                                  PODUniqueString name,
+                                                  ParserExprList* formals,
+                                                  YYLTYPE locBody,
+                                                  CommentsAndStmt body) {
+  std::vector<ParserComment>* comments;
+  ParserExprList* bodyExprLst;
+  BlockStyle blockStyle;
+
+  prepareStmtPieces(comments, bodyExprLst, blockStyle, location,
+                    false,
+                    locBody,
+                    body);
+
+  AstList formalList = formals ? consumeList(formals) : AstList();
+  AstList bodyStmts = bodyExprLst
+      ? consumeAndFlattenTopLevelBlocks(bodyExprLst)
+      : AstList();
+  const bool isFormalListPresent = formals != nullptr;
+
+  auto node = Interface::build(builder, convertLocation(location),
+                               buildAttributes(location),
+                               visibility,
+                               name,
+                               isFormalListPresent,
+                               std::move(formalList),
+                               std::move(bodyStmts));
+
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
+}
+
+owned<AstNode>
+ParserContext::buildInterfaceExpr(YYLTYPE location,
+                                  PODUniqueString name,
+                                  MaybeNamedActualList* formals) {
+  owned<AstNode> ret = nullptr;
+
+  ret = Identifier::build(builder, convertLocation(location),
+                          name);
+  if (formals != nullptr) {
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    consumeNamedActuals(formals, actuals, actualNames);
+    ret = FnCall::build(builder, convertLocation(location),
+                        std::move(ret),
+                        std::move(actuals),
+                        actualNames,
+                        false);
+  }
+
+  assert(ret.get() != nullptr);
+
+  return ret;
+}
+
+CommentsAndStmt
+ParserContext::buildImplementsStmt(YYLTYPE location,
+                                   YYLTYPE locInterfaceExpr,
+                                   PODUniqueString name,
+                                   MaybeNamedActualList* formals) {
+  auto comments = gatherComments(location);
+  auto interfaceExpr = this->buildInterfaceExpr(locInterfaceExpr,
+                                                name,
+                                                formals);
+
+  const bool isExpressionLevel = false;
+  auto node = Implements::build(builder, convertLocation(location),
+                                /*typeExpr*/ nullptr,
+                                std::move(interfaceExpr),
+                                isExpressionLevel);
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
+}
+
+CommentsAndStmt
+ParserContext::buildImplementsStmt(YYLTYPE location,
+                                   YYLTYPE locTypeExpr,
+                                   PODUniqueString type,
+                                   YYLTYPE locInterfaceExpr,
+                                   PODUniqueString name,
+                                   MaybeNamedActualList* formals) {
+
+  auto comments = gatherComments(location);
+  auto interfaceExpr = buildInterfaceExpr(locInterfaceExpr,
+                                          name,
+                                          formals);
+
+  auto typeIdent = Identifier::build(builder, convertLocation(locTypeExpr),
+                                     type);
+  const bool isExpressionLevel = false;
+  auto node = Implements::build(builder, convertLocation(location),
+                                std::move(typeIdent),
+                                std::move(interfaceExpr),
+                                isExpressionLevel);
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
+}
+
+AstNode*
+ParserContext::buildImplementsConstraint(YYLTYPE location,
+                                         YYLTYPE locInterfaceExpr,
+                                         PODUniqueString name,
+                                         MaybeNamedActualList* formals) {
+   owned<AstNode> interfaceExpr = this->buildInterfaceExpr(locInterfaceExpr,
+                                                          name,
+                                                          formals);
+
+  const bool isExpressionLevel = true;
+  auto node = Implements::build(builder, convertLocation(location),
+                                /*typeExpr*/ nullptr,
+                                std::move(interfaceExpr),
+                                isExpressionLevel);
+
+  return node.release();
+}
+
+AstNode*
+ParserContext::buildImplementsConstraint(YYLTYPE location,
+                                         YYLTYPE locTypeExpr,
+                                         PODUniqueString type,
+                                         YYLTYPE locInterfaceExpr,
+                                         PODUniqueString name,
+                                         MaybeNamedActualList* formals) {
+  auto interfaceExpr = buildInterfaceExpr(locInterfaceExpr,
+                                          name,
+                                          formals);
+
+  auto typeExpr = Identifier::build(builder, convertLocation(locTypeExpr),
+                                    type);
+
+  const bool isExpressionLevel = true;
+  auto node = Implements::build(builder, convertLocation(location),
+                                std::move(typeExpr),
+                                std::move(interfaceExpr),
+                                isExpressionLevel);
+
+  return node.release();
+}
+
+CommentsAndStmt
+ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
+                              CommentsAndStmt cs) {
+  if (cs.stmt && (cs.stmt->isFor() || cs.stmt->isWhile() ||
+                  cs.stmt->isDoWhile())) {
+    auto exprLst = makeList(cs);
+    auto comments = gatherCommentsFromList(exprLst, location);
+    auto astLst = consumeList(exprLst);
+    Loop* loop = nullptr;
+    for (auto& ast : astLst) {
+      if (ast->isLoop()) {
+        loop = ast.release()->toLoop();
+        break;
+      }
+    }
+    assert(loop);
+    auto node = Label::build(builder, convertLocation(location), name,
+                             toOwned(loop));
+    return { .comments=comments, .stmt=node.release() };
+  } else {
+    const char* msg = "can only label for-, while-do- "
+                      "and do-while-statements";
+    auto err = raiseError(location, msg);
+    return finishStmt(err);
+  }
+}
+

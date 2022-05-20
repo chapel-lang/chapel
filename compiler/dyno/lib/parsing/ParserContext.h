@@ -63,6 +63,7 @@ struct ParserContext {
   yyscan_t scanner;
   UniqueString filename;
   Builder* builder;
+  parsing::ParserStats* parseStats;
 
   ParserExprList* topLevelStatements;
   std::vector<ParserError> errors;
@@ -104,7 +105,8 @@ struct ParserContext {
 
   ParserExprList* parenlessMarker;
 
-  ParserContext(const char* filename, Builder* builder)
+  ParserContext(const char* filename, Builder* builder,
+                parsing::ParserStats* parseStats)
   {
     auto uniqueFilename = UniqueString::get(builder->context(), filename);
 
@@ -127,6 +129,7 @@ struct ParserContext {
     this->declStartLocation       = emptyLoc;
     this->atEOF                   = false;
     this->parenlessMarker         = new ParserExprList();
+    this->parseStats              = parseStats;
   }
   ~ParserContext() {
     delete this->parenlessMarker;
@@ -499,12 +502,12 @@ struct ParserContext {
                        owned<AstNode> rename);
 
   AstNode*
-  buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol);
+  buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol, bool isImport);
 
   AstNode*
   buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
                         VisibilityClause::LimitationKind limitationKind,
-                        AstList limitations);
+                        AstList limitations, bool isImport);
 
   CommentsAndStmt
   buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,
@@ -597,4 +600,42 @@ struct ParserContext {
   buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
                       CommentsAndStmt cs);
 
+  AstNode* buildInterfaceFormal(YYLTYPE location, PODUniqueString name);
+
+  CommentsAndStmt buildInterfaceStmt(YYLTYPE location,
+                                     PODUniqueString name,
+                                     ParserExprList* formals,
+                                     YYLTYPE locBody,
+                                     CommentsAndStmt body);
+
+  owned<AstNode>
+  buildInterfaceExpr(YYLTYPE location, PODUniqueString name,
+                     MaybeNamedActualList* formals);
+
+  CommentsAndStmt buildImplementsStmt(YYLTYPE location,
+                                      YYLTYPE locTypeExpr,
+                                      PODUniqueString type,
+                                      YYLTYPE locInterfaceExpr,
+                                      PODUniqueString name,
+                                      MaybeNamedActualList* formals);
+
+  CommentsAndStmt buildImplementsStmt(YYLTYPE location,
+                                      YYLTYPE locInterfaceExpr,
+                                      PODUniqueString name,
+                                      MaybeNamedActualList* formals);
+
+  AstNode* buildImplementsConstraint(YYLTYPE location,
+                                     YYLTYPE locTypeExpr,
+                                     PODUniqueString type,
+                                     YYLTYPE locInterfaceExpr,
+                                     PODUniqueString name,
+                                     MaybeNamedActualList* formals);
+
+  AstNode* buildImplementsConstraint(YYLTYPE location,
+                                     YYLTYPE locInterfaceExpr,
+                                     PODUniqueString name,
+                                     MaybeNamedActualList* formals);
+
+  CommentsAndStmt buildLabelStmt(YYLTYPE location, PODUniqueString name,
+                                 CommentsAndStmt cs);
 };

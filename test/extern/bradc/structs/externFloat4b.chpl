@@ -1,4 +1,4 @@
-extern record _float4 {
+extern "struct _float4" record _float4 {
   var x,y,z,w: real(32);
 }
 

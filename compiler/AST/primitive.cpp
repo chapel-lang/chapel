@@ -56,6 +56,11 @@ returnInfoString(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoBytes(CallExpr* call) {
+  return QualifiedType(dtBytes, QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoStringC(CallExpr* call) {
   return QualifiedType(dtStringC, QUAL_VAL);
 }
@@ -442,8 +447,11 @@ returnInfoCoerce(CallExpr* call) {
     // and return that type.
     SymExpr* actualOne = toSymExpr(call->get(1));
     SymExpr* actualTwo = toSymExpr(call->get(2));
-    t = getInstantiationType(call->get(1)->getValType(), actualOne->symbol(),
+    t = getInstantiationType(actualOne->getValType(), actualOne->symbol(),
                              t, actualTwo->symbol(), call);
+    if (t == nullptr)
+      USR_FATAL(call, "could not coerce a value of type '%s' to type '%s'",
+        actualOne->getValType()->symbol->name, actualTwo->symbol()->name);
   }
 
   return QualifiedType(t, QUAL_VAL);
@@ -1049,6 +1057,8 @@ initPrimitive() {
   prim_def(PRIM_STRING_LENGTH_BYTES, "string_length_bytes", returnInfoDefaultInt);
   prim_def(PRIM_STRING_LENGTH_CODEPOINTS, "string_length_codepoints", returnInfoDefaultInt);
   prim_def(PRIM_ASCII, "ascii", returnInfoUInt8);
+  prim_def(PRIM_STRING_ITEM, "string item", returnInfoString);
+  prim_def(PRIM_BYTES_ITEM, "bytes item", returnInfoBytes);
   prim_def(PRIM_STRING_INDEX, "string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.

@@ -40,6 +40,12 @@
 The following documentation shows functions and methods used to
 manipulate and process Chapel strings.
 
+.. type:: string
+
+The :type:`string` type in Chapel represents a sequence of UTF-8
+characters and is most often used to represent textual data.
+
+
 Methods Available in Other Modules
 ----------------------------------
 
@@ -53,7 +59,7 @@ within strings.
 Casts from String to a Numeric Type
 -----------------------------------
 
-The :mod:`string <String>` type supports casting to numeric types. Such casts
+The :type:`string` type supports casting to numeric types. Such casts
 will convert the string to the numeric type and throw an error if the string is
 invalid. For example:
 
@@ -86,8 +92,8 @@ Non-Unicode Data and Chapel Strings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For doing string operations on non-Unicode or arbitrary data, consider using
-:mod:`bytes <Bytes>` instead of string. However, there may be cases where
-:mod:`string <String>` must be used with non-Unicode data. Examples of this are
+:type:`~Bytes.bytes` instead of string. However, there may be cases where
+:type:`string` must be used with non-Unicode data. Examples of this are
 file system and path operations on systems where UTF-8 file names are not
 enforced.
 
@@ -827,6 +833,7 @@ module String {
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
+    // remember to update <=> if you add a field
 
     proc init() {
       // Let compiler insert defaults
@@ -1012,7 +1019,7 @@ module String {
             chunkStart = i;
             inChunk = true;
             if i - 1 + nBytes > iEnd {
-              chunk = this[chunkStart..];
+              chunk = try! this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -1021,18 +1028,18 @@ module String {
             if cSpace {
               // last split under limit
               if limitSplits && splitCount >= maxsplit {
-                chunk = this[chunkStart..];
+                chunk = try! this[chunkStart..];
                 yieldChunk = true;
                 done = true;
               // no limit
               } else {
-                chunk = this[chunkStart..(i-1):byteIndex];
+                chunk = try! this[chunkStart..(i-1):byteIndex];
                 yieldChunk = true;
                 inChunk = false;
               }
             // out of chars
             } else if i - 1 + nBytes > iEnd {
-              chunk = this[chunkStart..];
+              chunk = try! this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -1088,7 +1095,7 @@ module String {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = pattern.buffLen;
-        const (view, _) = getView(this, indices);
+        const (view, _) = try! getView(this, indices, checkMisaligned=false);
         const thisLen = view.size;
 
         // Edge cases
@@ -1233,10 +1240,10 @@ module String {
   }
 
   /*
-     Gets a version of the :mod:`string <String>` that is on the currently
+     Gets a version of the :type:`string` that is on the currently
      executing locale.
 
-     :returns: A shallow copy if the :mod:`string <String>` is already on the
+     :returns: A shallow copy if the :type:`string` is already on the
                current locale, otherwise a deep copy is performed.
   */
   inline proc string.localize() : string {
@@ -1249,11 +1256,11 @@ module String {
   }
 
   /*
-    Get a `c_string` from a :mod:`string <String>`.
+    Get a `c_string` from a :type:`string`.
 
     .. warning::
 
-        This can only be called safely on a :mod:`string <String>` whose home is
+        This can only be called safely on a :type:`string` whose home is
         the current locale.  This property can be enforced by calling
         :proc:`string.localize()` before :proc:`~string.c_str()`. If the
         string is remote, the program will halt.
@@ -1269,7 +1276,7 @@ module String {
 
     :returns:
         A `c_string` that points to the underlying buffer used by this
-        :mod:`string <String>`. The returned `c_string` is only valid when used
+        :type:`string`. The returned `c_string` is only valid when used
         on the same locale as the string.
    */
   inline proc string.c_str() : c_string {
@@ -1277,7 +1284,7 @@ module String {
   }
 
   /*
-    Returns a :mod:`bytes <Bytes>` from the given :mod:`string <String>`. If the
+    Returns a :type:`~Bytes.bytes` from the given :type:`string`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
 
@@ -1285,7 +1292,7 @@ module String {
                   data, `encodePolicy.unescape` recovers the escaped bytes
                   back.
 
-    :returns: :mod:`bytes <Bytes>`
+    :returns: :type:`~Bytes.bytes`
   */
   proc string.encode(policy=encodePolicy.pass) : bytes {
     var localThis: string = this.localize();
@@ -1596,11 +1603,20 @@ module String {
 
     :arg r: range of the indices the new string should be made from
 
+    :throws: `CodepointSplittingError` if slicing results in splitting a
+             multi-byte codepoint.
+
     :returns: a new string that is a substring within ``0..<string.size``. If
               the length of `r` is zero, an empty string is returned.
    */
-  inline proc string.this(r: range(?)) : string {
+  inline proc string.this(r: range(?)): string throws where r.idxType == byteIndex {
     return getSlice(this, r);
+  }
+
+  pragma "no doc"
+  inline proc string.this(r: range(?)): string where r.idxType != byteIndex {
+    // codepoint-based slicing should never throw
+    return try! getSlice(this, r);
   }
 
   /*
@@ -1759,8 +1775,8 @@ module String {
   }
 
   /*
-    Returns a new :mod:`string <String>`, which is the concatenation of all of
-    the :mod:`string <String>` passed in with the contents of the method
+    Returns a new :type:`string`, which is the concatenation of all of
+    the :type:`string` passed in with the contents of the method
     receiver inserted between them.
 
     .. code-block:: chapel
@@ -1768,17 +1784,17 @@ module String {
         var myString = "|".join("a","10","d");
         writeln(myString); // prints: "a|10|d"
 
-    :arg x: :mod:`string <String>` values to be joined
+    :arg x: :type:`string` values to be joined
 
-    :returns: A :mod:`string <String>`
+    :returns: A :type:`string`
   */
   inline proc string.join(const ref x: string ...) : string {
     return doJoin(this, x);
   }
 
   /*
-    Returns a new :mod:`string <String>`, which is the concatenation of all of
-    the :mod:`string <String>` passed in with the contents of the method
+    Returns a new :type:`string`, which is the concatenation of all of
+    the :type:`string` passed in with the contents of the method
     receiver inserted between them.
 
     .. code-block:: chapel
@@ -1790,9 +1806,9 @@ module String {
         var myJoinedArray = "|".join(["a","10","d"]);
         writeln(myJoinedArray); // prints: "a|10|d"
 
-    :arg x: An array or tuple of :mod:`string <String>` values to be joined
+    :arg x: An array or tuple of :type:`string` values to be joined
 
-    :returns: A :mod:`string <String>`
+    :returns: A :type:`string`
   */
   inline proc string.join(const ref x) : string {
     // this overload serves as a catch-all for unsupported types.
@@ -1857,7 +1873,7 @@ module String {
         }
       }
 
-      return localThis[start..end];
+      return try! localThis[start..end];
     }
   }
 
@@ -2328,6 +2344,20 @@ module String {
   }
 
   pragma "no doc"
+  inline proc param string.this(param i: int) param : string {
+    if i < 0 || i > this.size-1 then
+      compilerError("index " + i:string + " out of bounds for string with length " + this.size:string);
+    return __primitive("string item", this, i);
+  }
+
+  pragma "no doc"
+  inline proc param string.item(param i: int) param : string {
+    if i < 0 || i > this.size-1 then
+      compilerError("index " + i:string + " out of bounds for string with length " + this.size:string);
+    return __primitive("string item", this, i);
+  }
+
+  pragma "no doc"
   inline proc param string.numBytes param
     return __primitive("string_length_bytes", this);
 
@@ -2543,5 +2573,23 @@ module String {
   pragma "no doc"
   inline proc string.hash(): uint {
     return getHash(this);
+  }
+
+  pragma "no doc"
+  operator string.<=>(ref x: string, ref y: string) {
+    if (x.locale_id != y.locale_id) {
+      // TODO: could we just change locale_id?
+      var tmp = x;
+      x = y;
+      y = tmp;
+    } else {
+      x.buffLen <=> y.buffLen;
+      x.buffSize <=> y.buffSize;
+      x.cachedNumCodepoints <=> y.cachedNumCodepoints;
+      x.buff <=> y.buff;
+      x.isOwned <=> y.isOwned;
+      x.hasEscapes <=> y.hasEscapes;
+      x.locale_id <=> y.locale_id;
+    }
   }
 }

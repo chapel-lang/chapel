@@ -1,1 +1,3 @@
-extern_subclasses.chpl:5: syntax error: near 'C2'
+extern_subclasses.chpl:5: error: Cannot declare class types as export or extern
+extern_subclasses.chpl:9: error: Cannot declare class types as export or extern
+extern_subclasses.chpl:13: error: Cannot declare class types as export or extern

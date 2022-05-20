@@ -80,6 +80,11 @@ module ChapelArray {
   pragma "no doc"
   config param debugArrayAsVec = false;
 
+  pragma "no doc"
+  config param logDistArrEltAccess = false;
+  pragma "no doc"
+  config param logAllArrEltAccess = false;
+
   proc _isPrivatized(value) param
     return !_local && ((_privatization && value!.dsiSupportsPrivatization()) ||
                        value!.dsiRequiresPrivatization());
@@ -1016,6 +1021,10 @@ module ChapelArray {
       if boundsChecking then
         checkAccess(i, value=value);
 
+      if logAllArrEltAccess ||
+        (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
+        chpl_debug_writeln("default _array accessor was called");
+
       if this.isRectangular() || this.isSparse() then
         return value.dsiAccess(i);
       else
@@ -1030,6 +1039,10 @@ module ChapelArray {
       if boundsChecking then
         checkAccess(i, value=value);
 
+      if logAllArrEltAccess ||
+        (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
+        chpl_debug_writeln("default _array accessor was called");
+
       if this.isRectangular() || this.isSparse() then
         return value.dsiAccess(i);
       else
@@ -1042,6 +1055,10 @@ module ChapelArray {
       const value = _value;
       if boundsChecking then
         checkAccess(i, value=value);
+
+      if logAllArrEltAccess ||
+        (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
+        chpl_debug_writeln("default _array accessor was called");
 
       if this.isRectangular() || this.isSparse() then
         return value.dsiAccess(i);
@@ -1077,6 +1094,10 @@ module ChapelArray {
       if boundsChecking then
         checkAccess(i, value=value);
 
+      if logAllArrEltAccess ||
+        (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
+        chpl_debug_writeln("local _array accessor was called");
+
       if chpl_isNonDistributedArray() then
         return this(i);
       else
@@ -1094,6 +1115,10 @@ module ChapelArray {
       if boundsChecking then
         checkAccess(i, value=value);
 
+      if logAllArrEltAccess ||
+        (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
+        chpl_debug_writeln("local _array accessor was called");
+
       if chpl_isNonDistributedArray() then
         return this(i);
       else
@@ -1109,6 +1134,10 @@ module ChapelArray {
       const value = _value;
       if boundsChecking then
         checkAccess(i, value=value);
+
+      if logAllArrEltAccess ||
+        (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
+        chpl_debug_writeln("local _array accessor was called");
 
       if chpl_isNonDistributedArray() then
         return this(i);

@@ -19,7 +19,7 @@
  */
 
 /*
-  This module contains the implementation of the list type.
+  This module contains the implementation of Chapel's standard 'list' type.
 
   A list is a lightweight container similar to an array that is suitable for
   building up and iterating over a collection of elements in a structured

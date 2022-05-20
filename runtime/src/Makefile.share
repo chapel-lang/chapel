@@ -42,6 +42,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-file-utils.c \
 	chpl-format.c \
 	chpl-gpu.c \
+	chpl-gpu-diags.c \
 	chplio.c \
 	chpl-mem.c \
 	chpl-mem-desc.c \

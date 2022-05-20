@@ -20,7 +20,7 @@
 
 /*
 
-Lightweight messaging with ZeroMQ (or ØMQ)
+Lightweight messaging with ZeroMQ (or ØMQ).
 
 This module provides high-level Chapel bindings to the
 `ZeroMQ messaging library <https://zeromq.org/>`_.

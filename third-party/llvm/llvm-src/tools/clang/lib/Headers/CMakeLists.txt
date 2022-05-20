@@ -17,6 +17,7 @@ set(files
   avx512dqintrin.h
   avx512erintrin.h
   avx512fintrin.h
+  avx512fp16intrin.h
   avx512ifmaintrin.h
   avx512ifmavlintrin.h
   avx512pfintrin.h
@@ -28,6 +29,7 @@ set(files
   avx512vlbwintrin.h
   avx512vlcdintrin.h
   avx512vldqintrin.h
+  avx512vlfp16intrin.h
   avx512vlintrin.h
   avx512vp2intersectintrin.h
   avx512vlvp2intersectintrin.h
@@ -45,6 +47,7 @@ set(files
   __clang_cuda_complex_builtins.h
   __clang_cuda_device_functions.h
   __clang_cuda_intrinsics.h
+  __clang_cuda_texture_intrinsics.h
   __clang_cuda_libdevice_declares.h
   __clang_cuda_math_forward_declares.h
   __clang_cuda_runtime_wrapper.h
@@ -56,6 +59,7 @@ set(files
   cet.h
   cldemoteintrin.h
   clzerointrin.h
+  crc32intrin.h
   cpuid.h
   clflushoptintrin.h
   clwbintrin.h
@@ -202,20 +206,28 @@ foreach( f ${files} ${cuda_wrapper_files} ${ppc_wrapper_files} ${openmp_wrapper_
 endforeach( f )
 
 # Generate header files and copy them to the build directory
-# Generate arm_neon.h
-clang_generate_header(-gen-arm-neon arm_neon.td arm_neon.h)
-# Generate arm_fp16.h
-clang_generate_header(-gen-arm-fp16 arm_fp16.td arm_fp16.h)
-# Generate arm_sve.h
-clang_generate_header(-gen-arm-sve-header arm_sve.td arm_sve.h)
-# Generate arm_bf16.h
-clang_generate_header(-gen-arm-bf16 arm_bf16.td arm_bf16.h)
-# Generate arm_mve.h
-clang_generate_header(-gen-arm-mve-header arm_mve.td arm_mve.h)
-# Generate arm_cde.h
-clang_generate_header(-gen-arm-cde-header arm_cde.td arm_cde.h)
-# Generate riscv_vector.h
-clang_generate_header(-gen-riscv-vector-header riscv_vector.td riscv_vector.h)
+if(ARM IN_LIST LLVM_TARGETS_TO_BUILD OR AArch64 IN_LIST LLVM_TARGETS_TO_BUILD)
+  # Generate arm_neon.h
+  clang_generate_header(-gen-arm-neon arm_neon.td arm_neon.h)
+  # Generate arm_fp16.h
+  clang_generate_header(-gen-arm-fp16 arm_fp16.td arm_fp16.h)
+  # Generate arm_sve.h
+  clang_generate_header(-gen-arm-sve-header arm_sve.td arm_sve.h)
+  # Generate arm_bf16.h
+  clang_generate_header(-gen-arm-bf16 arm_bf16.td arm_bf16.h)
+  # Generate arm_mve.h
+  clang_generate_header(-gen-arm-mve-header arm_mve.td arm_mve.h)
+  # Generate arm_cde.h
+  clang_generate_header(-gen-arm-cde-header arm_cde.td arm_cde.h)
+  # Copy arm_neon_sve_bridge.h
+  copy_header_to_output_dir(${CMAKE_CURRENT_SOURCE_DIR}
+    arm_neon_sve_bridge.h
+  )
+endif()
+if(RISCV IN_LIST LLVM_TARGETS_TO_BUILD)
+  # Generate riscv_vector.h
+  clang_generate_header(-gen-riscv-vector-header riscv_vector.td riscv_vector.h)
+endif()
 
 add_custom_target(clang-resource-headers ALL DEPENDS ${out_files})
 set_target_properties(clang-resource-headers PROPERTIES

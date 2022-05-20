@@ -59,13 +59,18 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
+#if HAVE_LLVM_VER >= 140
+#include "llvm/MC/TargetRegistry.h"
+#else
+#include "llvm/Support/TargetRegistry.h"
+#endif
 
 #if HAVE_LLVM_VER >= 90
 #include "llvm/Support/CodeGen.h"
@@ -1903,9 +1908,11 @@ static llvm::TargetOptions getTargetOptions(
   Options.EmitCallSiteInfo = CodeGenOpts.EmitCallSiteInfo;
 #if HAVE_LLVM_VER >= 120
   Options.EnableAIXExtendedAltivecABI = CodeGenOpts.EnableAIXExtendedAltivecABI;
+#if HAVE_LLVM_VER < 140
   Options.PseudoProbeForProfiling = CodeGenOpts.PseudoProbeForProfiling;
   Options.ValueTrackingVariableLocations =
       CodeGenOpts.ValueTrackingVariableLocations;
+#endif
 #endif
   Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
 #if HAVE_LLVM_VER >= 140
@@ -2236,11 +2243,19 @@ void prepareCodegenLLVM()
   checkAdjustedDataLayout();
 }
 
+#if HAVE_LLVM_VER >= 140
+static void handleErrorLLVM(void* user_data, const char* reason,
+                            bool gen_crash_diag)
+{
+  INT_FATAL("llvm fatal error: %s", reason);
+}
+#else
 static void handleErrorLLVM(void* user_data, const std::string& reason,
                             bool gen_crash_diag)
 {
   INT_FATAL("llvm fatal error: %s", reason.c_str());
 }
+#endif
 
 struct ExternBlockInfo {
   GenInfo* gen_info;

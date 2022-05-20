@@ -51,6 +51,7 @@
 #include "chpl-file-utils.h"
 #include <chplfp.h>
 #include "chpl-gpu.h"
+#include "chpl-gpu-diags.h"
 #include "chplglob.h"
 #include "chplio.h"
 #include "chplmath.h"
@@ -76,6 +77,10 @@
 
 #ifdef HAS_GPU_LOCALE
 #include "chpl-gpu-gen-includes.h"
+#endif
+
+#if defined(__linux__) || defined(__APPLE__)
+#include "os-module-support/posix.h"
 #endif
 
 #endif

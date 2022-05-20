@@ -1,0 +1,2 @@
+cast-nil-to-generic-2.chpl:25: In method 'fetchone':
+cast-nil-to-generic-2.chpl:27: error: illegal cast from nil to a generic owned type

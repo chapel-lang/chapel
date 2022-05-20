@@ -46,6 +46,9 @@ static void updateLocation(YYLTYPE* loc, int nLines, int nCols) {
 int processNewline(yyscan_t scanner) {
   YYLTYPE* loc = yyget_lloc(scanner);
   updateLocation(loc, 1, 0);
+  ParserContext* context = yyget_extra(scanner);
+  if (context->parseStats)
+    context->parseStats->countNewline();
   return YYLEX_NEWLINE;
 }
 
@@ -71,10 +74,14 @@ static int processToken(yyscan_t scanner, int t) {
   YYSTYPE* val = yyget_lval(scanner);
 
   const char* pch = yyget_text(scanner);
+
+  ParserContext* context = yyget_extra(scanner);
+  if (context->parseStats)
+    context->parseStats->countToken(pch);
   YYLTYPE* loc = yyget_lloc(scanner);
   updateLocation(loc, 0, strlen(pch));
 
-  ParserContext* context = yyget_extra(scanner);
+
   val->uniqueStr = PODUniqueString::get(context->context(), pch);
 
   // If the stack has a value then we must be in externmode.
@@ -111,6 +118,8 @@ static int processStringLiteral(yyscan_t scanner,
   std::string value = eatStringLiteral(scanner, startChar, erroneous);
 
   ParserContext* context = yyget_extra(scanner);
+  if (context->parseStats)
+    context->parseStats->countToken(startChar, value.c_str(), startChar);
 
   StringLiteral::QuoteStyle quotes = StringLiteral::SINGLE;
   if (startChar && startChar[0] == '"')
@@ -157,6 +166,8 @@ static int processTripleStringLiteral(yyscan_t scanner,
   std::string value = eatTripleStringLiteral(scanner, startChar, erroneous);
 
   ParserContext* context = yyget_extra(scanner);
+  if (context->parseStats)
+    context->parseStats->countToken(startChar, value.c_str(), startChar);
 
   StringLiteral::QuoteStyle quotes = StringLiteral::TRIPLE_SINGLE;
   if (startChar && startChar[0] == '"')
@@ -192,13 +203,26 @@ static int processTripleStringLiteral(yyscan_t scanner,
   return type;
 }
 
-static
-void noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg) {
+static void
+noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
+                bool moveLocToEnd=false) {
   ParserContext* context = yyget_extra(scanner);
   YYLTYPE* loc = yyget_lloc(scanner);
   YYLTYPE myloc = *loc;
   updateLocation(&myloc, nLines, nCols);
+  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
   context->noteError(myloc, msg);
+}
+
+static void
+noteNoteInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
+                bool moveLocToEnd=false) {
+  ParserContext* context = yyget_extra(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  YYLTYPE myloc = *loc;
+  updateLocation(&myloc, nLines, nCols);
+  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
+  context->noteNote(myloc, msg);
 }
 
 static
@@ -276,21 +300,20 @@ static std::string eatStringLiteral(yyscan_t scanner,
       if (esc != 0) {
         s += esc;
       } else if (c == 'x') {
-        // Read hexadecimal digits until we run out
+        // Read hexadecimal digits until we run out or we have
+        // reached 2 digits.
         char buf[3] = {'\0', '\0', '\0'};
         bool foundNonHex = false;
-        bool overflow = false;
-        for (int i = 0; c != 0; i++) {
+        bool foundHex = false;
+        for (int i = 0; i < 2 && c != 0; i++) {
           c = getNextYYChar(scanner);
           nCols++;
           // TODO the exact behavior here is not documented in the spec
           if (('0' <= c && c <= '9') ||
               ('A' <= c && c <= 'F') ||
               ('a' <= c && c <= 'f')) {
-            if (i < 2)
-              buf[i] = c;
-            else
-              overflow = true;
+            buf[i] = c;
+            foundHex = true;
           } else {
             foundNonHex = true;
             break;
@@ -299,20 +322,26 @@ static std::string eatStringLiteral(yyscan_t scanner,
 
         long hexChar = strtol(buf, NULL, 16);
 
-        if (hexChar == LONG_MIN) {
+        if (foundHex == false) {
+          noteErrInString(scanner, nLines, nCols,
+                          "non-hexadecimal character follows \\x");
+          isErroneousOut = true;
+        } else if (hexChar == LONG_MIN) {
           noteErrInString(scanner, nLines, nCols,
                           "underflow when reading \\x escape");
           isErroneousOut = true;
-        } else if (overflow || hexChar == LONG_MAX) {
+        } else if (hexChar == LONG_MAX) {
           noteErrInString(scanner, nLines, nCols,
                           "overflow when reading \\x escape");
           isErroneousOut = true;
-        }
-
-        if (0 <= hexChar && hexChar <= 255) {
+        } else if (0 <= hexChar && hexChar <= 255) {
           // append the character
           char cc = (char) hexChar;
           s += cc;
+        } else {
+          noteErrInString(scanner, nLines, nCols,
+                          "unknown problem when reading \\x escape");
+          isErroneousOut = true;
         }
 
         if (foundNonHex)
@@ -425,6 +454,9 @@ static int processExtern(yyscan_t scanner) {
   YYLTYPE* loc = yyget_lloc(scanner);
   updateLocation(loc, 0, strlen(pch));
 
+  ParserContext* context = yyget_extra(scanner);
+  if (context->parseStats)
+    context->parseStats->countToken(pch);
   // Push a state to record that "extern" has been seen
   yy_push_state(externmode, scanner);
 
@@ -448,6 +480,9 @@ static int processExternCode(yyscan_t scanner) {
   YYSTYPE* val = yyget_lval(scanner);
   val->sizedStr = eatExternCode(scanner);
 
+  ParserContext* context = yyget_extra(scanner);
+  if (context->parseStats)
+    context->parseStats->countToken(pch);
   return EXTERNCODE;
 }
 
@@ -639,6 +674,10 @@ static int processSingleLineComment(yyscan_t scanner) {
   std::string s;
   s += yyget_text(scanner);
 
+  ParserContext* context = yyget_extra(scanner);
+  if (context->parseStats)
+    context->parseStats->countCommentLine();
+
   // Read until the end of the line
   while ((c = getNextYYChar(scanner)) != '\n' && c != 0) {
     s += c;
@@ -658,7 +697,11 @@ static int processSingleLineComment(yyscan_t scanner) {
   char* buf = (char*) malloc(size+1);
   memcpy(buf, s.c_str(), size+1);
 
-  ParserContext* context = yyget_extra(scanner);
+ if (context->parseStats) {
+    context->parseStats->countSingleLineComment(buf);
+    if (c != 0)
+      processNewline(scanner);
+ }
   context->noteComment(*loc, buf, size);
 
   return YYLEX_SINGLE_LINE_COMMENT;
@@ -684,11 +727,14 @@ static int processBlockComment(yyscan_t scanner) {
 
   int nLines = 0;
   int nCols = 0;
+  ParserContext* context = yyget_extra(scanner);
   // start with the comment introduction
   std::string s;
+  std::string wholeComment;
   s += yyget_text(scanner);
   nCols += s.size();
-
+  if (context->parseStats)
+    context->parseStats->countCommentLine();
   while (depth > 0) {
     int lastlastc = lastc;
 
@@ -696,12 +742,20 @@ static int processBlockComment(yyscan_t scanner) {
     c     = getNextYYChar(scanner);
 
     if (c == '\n') {
+      if (context->parseStats) {
+        context->parseStats->countMultiLineComment(s.c_str());
+        processNewline(scanner);
+        context->parseStats->countCommentLine();
+      }
       nCols = 0;
       nLines++;
+      wholeComment += s;
+      wholeComment += '\n';
+      s.clear();
     } else {
       nCols++;
+      s += c;
     }
-    s += c;
 
     if (lastc == '*' && c == '/' && lastlastc != '/') { // close comment
       depth--;
@@ -711,11 +765,16 @@ static int processBlockComment(yyscan_t scanner) {
       nestedStartLine = nLines;
       nestedStartCol = nCols;
     } else if (c == 0) {
-      noteErrInString(scanner, nLines, nCols, "EOF in comment");
-      noteErrInString(scanner, startLine, startCol, "unterminated comment started here");
-      if( nestedStartLine >= 0 ) {
-        noteErrInString(scanner, nestedStartLine, nestedStartCol,
-                        "nested comment started here");
+      const bool moveLocToEnd = true;
+      noteErrInString(scanner, nLines, nCols,
+                      "EOF in comment",
+                      moveLocToEnd);
+      noteNoteInString(scanner, startLine, startCol,
+                       "unterminated comment started here");
+      if (nestedStartLine >= 0) {
+        noteNoteInString(scanner, nestedStartLine, nestedStartCol,
+                         "nested comment started here",
+                         moveLocToEnd);
       }
       break;
     }
@@ -723,13 +782,15 @@ static int processBlockComment(yyscan_t scanner) {
 
   updateLocation(loc, nLines, nCols);
 
+  wholeComment += s;
   // allocate the value to return
-  long size = s.size();
+  long size = wholeComment.size();
   char* buf = (char*) malloc(size+1);
-  memcpy(buf, s.c_str(), size+1);
+  memcpy(buf, wholeComment.c_str(), size+1);
 
-  ParserContext* context = yyget_extra(scanner);
   context->noteComment(*loc, buf, size);
+  if (context->parseStats)
+    context->parseStats->countMultiLineComment(s.c_str());
 
   return YYLEX_BLOCK_COMMENT;
 }

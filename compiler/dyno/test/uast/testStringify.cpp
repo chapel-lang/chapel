@@ -242,6 +242,10 @@ static void test1(Parser* parser) {
                forall myIterator() with (+ reduce x) {
                  x = 1;
                }
+               forall elm in A with (PlusReduceOp(int) reduce sum) {
+                 sum reduce= elm;   // bools are implicitly coerced to 'int' input type
+                 writeln(sum);      // accumulation state: int
+               }
                __primitive("=", x, y);
                let x = 0 in writeln(x);
                var x = if foo then bar else baz;
@@ -328,6 +332,9 @@ static void test1(Parser* parser) {
                import this.DefinesOp.+;
              }
              private proc param R.prm2(arg) param : string { }
+             iter foo() {
+               for i in 1..10 do yield try! i;
+             }
              )"""";
   auto parseResult = parser->parseString("Test4.chpl",
                                          testCode.c_str());
@@ -381,22 +388,32 @@ static void test2(Parser* parser) {
 static void test3(Parser* parser) {
 
   TEST_USER_STRING("proc bar(x: int) {\n}\n", "bar(x: int)")
-  TEST_USER_STRING("proc foo(X: [?Dlocal] real) {\n}\n", "foo(X: [?Dlocal] real)")
+  TEST_USER_STRING("proc foo(X: [?Dlocal] real) {\n}\n",
+                   "foo(X: [?Dlocal] real)")
   TEST_USER_STRING("proc baz(A: borrowed C) {\n}\n", "baz(A: borrowed C)")
-  TEST_USER_STRING("proc test(const ref arg:unmanaged MyClass) {\n}\n", "test(const ref arg: unmanaged MyClass)")
-  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n", "hash()")
+  TEST_USER_STRING("proc test(const ref arg:unmanaged MyClass) {\n}\n",
+                   "test(const ref arg: unmanaged MyClass)")
+  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n",
+                   "(borrowed object?).hash()")
   TEST_USER_STRING("proc bark(c = new C()) {\n}\n", "bark(c = new C())")
-  TEST_USER_STRING("proc ref C.setClt2(rhs: borrowed C) {\n}\n", "ref C.setClt2(rhs: borrowed C)")
+  TEST_USER_STRING("proc ref C.setClt2(rhs: borrowed C) {\n}\n",
+                   "ref C.setClt2(rhs: borrowed C)")
   TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")
-  TEST_USER_STRING("proc MYPROC(FORMAL: single int) { }", "MYPROC(FORMAL: single int)")
-  TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param return true;", "==(a: _nilType, b: _nilType)")
-  TEST_USER_STRING("private proc param R.prm2(arg) param : string { }", "private param R.prm2(arg)")
-  TEST_USER_STRING("proc procRefC(ref arg: borrowed C?) { }", "procRefC(ref arg: borrowed C?)")
+  TEST_USER_STRING("proc MYPROC(FORMAL: single int) { }",
+                   "MYPROC(FORMAL: single int)")
+  TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param return true;",
+                   "==(a: _nilType, b: _nilType)")
+  TEST_USER_STRING("private proc param R.prm2(arg) param : string { }",
+                   "private param R.prm2(arg)")
+  TEST_USER_STRING("proc procRefC(ref arg: borrowed C?) { }",
+                   "procRefC(ref arg: borrowed C?)")
   TEST_USER_STRING("operator =(ref r3:R, r4:R){}", " = (ref r3: R, r4: R)")
   TEST_USER_STRING("proc foo(x...) {}", "foo(x ...)")
   TEST_USER_STRING("proc bar(type x...) {}", "bar(type x ...)")
   TEST_USER_STRING("proc bar(type x...?k) {}", "bar(type x ...?k)")
-  TEST_USER_STRING("proc foo(x: borrowed C(t=?tt, r=?rr), y: borrowed C(tt, rr)) {}", "foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))")
+  TEST_USER_STRING("proc foo(x: borrowed C(t=?tt, r=?rr), y: borrowed C(tt, rr)) {}",
+                   "foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))")
+  TEST_USER_STRING("proc (int(32)).foo() {\n}", "(int(32)).foo()")
 }
 
 static void test4(Parser* parser) {

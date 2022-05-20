@@ -11,7 +11,7 @@ module B {
 }
 
 module C {
-  public use A;
+  public use A as A;
 }
 
 module D {

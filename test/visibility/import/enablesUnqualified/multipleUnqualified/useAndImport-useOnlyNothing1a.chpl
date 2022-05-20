@@ -8,7 +8,7 @@ module A {
   }
 }
 module B {
-  public use A only;
+  public use A only; // intentionally does nothing
 }
 
 module C {
@@ -19,9 +19,9 @@ module D {
   use B, C;
 
   proc main() {
-    writeln(x);
-    writeln(A.x);
+    writeln(x); // OK - brought in by import
     // foo(); // Also won't work
-    A.foo();
+    writeln(A.x); // error - A not brought in
+    A.foo(); // error - A not brought in
   }
 }

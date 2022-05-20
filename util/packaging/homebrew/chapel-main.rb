@@ -17,7 +17,9 @@ class Chapel < Formula
   end
 
   depends_on "gmp"
-  depends_on "python@3.10"
+  # We have reverted to Python 3.9 due to an issue testing on Linuxbrew where we would be presented 
+  # not found message for Python when using version 3.10.   
+  depends_on "python@3.9"
   on_macos do
     depends_on "llvm" if MacOS.version > :catalina
     depends_on "llvm@11" if MacOS.version <= :catalina

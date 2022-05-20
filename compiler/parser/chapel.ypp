@@ -555,7 +555,7 @@ stmt:
 | TBREAK opt_label_ident TSEMI         { $$ = buildGotoStmt(GOTO_BREAK, $2); }
 | TCONTINUE opt_label_ident TSEMI      { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
 | TLABEL ident_def stmt                { $$ = buildLabelStmt($2, $3); }
-| TYIELD expr TSEMI                    { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
+| TYIELD opt_try_expr TSEMI            { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
 | error TSEMI                          { $$ = buildErrorStandin(); }
 ;
 
@@ -1660,7 +1660,12 @@ formal:
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
     { $$ = buildTupleArgDefExpr($1, $3, $5, $6); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
-    { USR_FATAL("variable-length argument may not be grouped in a tuple"); }
+    {
+      astlocMarker mark(chplLineno, yyfilename);
+      UnresolvedSymExpr* dummy = new UnresolvedSymExpr("varargs");
+      USR_FATAL(dummy, "variable-length argument may not be grouped "
+                       "in a tuple");
+    }
 ;
 
 opt_intent_tag:

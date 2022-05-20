@@ -27,6 +27,8 @@
 #define LOC(loc) context->convertLocation(loc)
 #define LOC2(STARTLOC, ENDLOC) \
   context->convertLocation(context->makeSpannedLocation(STARTLOC, ENDLOC))
+#define YLOC2(YSTART, YEND) \
+  context->makeSpannedLocation(YSTART, YEND)
 
 // ERROR creates an error and returns an error sentinel AstNode
 #define ERROR(LOC,MSG) context->raiseError(LOC, MSG)

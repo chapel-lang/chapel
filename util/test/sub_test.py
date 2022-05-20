@@ -2289,6 +2289,7 @@ for testname in testsrc:
                             sys.stdout.flush()
                             p = py3_compat.Popen([sprediff, execname, execlog, compiler,
                                                   ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                                 env=dict(list(os.environ.items()) + list(testenv.items())),
                                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                             sys.stdout.write(p.communicate()[0])
 
@@ -2297,6 +2298,7 @@ for testname in testsrc:
                         sys.stdout.flush()
                         p = py3_compat.Popen(['./PREDIFF', execname, execlog, compiler,
                                              ' '.join(envCompopts)+ ' '+compopts, ' '.join(args)],
+                                             env=dict(list(os.environ.items()) + list(testenv.items())),
                                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                         sys.stdout.write(p.communicate()[0])
 
@@ -2305,6 +2307,7 @@ for testname in testsrc:
                         sys.stdout.flush()
                         p = py3_compat.Popen(['./'+prediff, execname, execlog, compiler,
                                              ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                             env=dict(list(os.environ.items()) + list(testenv.items())),
                                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                         sys.stdout.write(p.communicate()[0])
 

@@ -1,4 +1,3 @@
-./Regexp.chpl:3: warning: Relying on a helper module to deal with Regexp being removed
 agggtaaa|tttaccct 1
 [cgt]gggtaaa|tttaccc[acg] 0
 a[act]ggtaaa|tttacc[agt]t 0

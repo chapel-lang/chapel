@@ -166,11 +166,14 @@ def print_discovered(tests, show_suites, show_tests):
 
 def determine_order(tests, order):
     from lit.cl_arguments import TestOrder
-    if order == TestOrder.RANDOM:
+    enum_order = TestOrder(order)
+    if enum_order == TestOrder.RANDOM:
         import random
         random.shuffle(tests)
+    elif enum_order == TestOrder.LEXICAL:
+        tests.sort(key=lambda t: t.getFullName())
     else:
-        assert order == TestOrder.DEFAULT, 'Unknown TestOrder value'
+        assert enum_order == TestOrder.SMART, 'Unknown TestOrder value'
         tests.sort(key=lambda t: (not t.previous_failure, -t.previous_elapsed, t.getFullName()))
 
 
@@ -242,13 +245,12 @@ def execute_in_tmp_dir(run, lit_config):
     tmp_dir = None
     if 'LIT_PRESERVES_TMP' not in os.environ:
         import tempfile
-        tmp_dir = tempfile.mkdtemp(prefix="lit_tmp_")
-        os.environ.update({
-                'TMPDIR': tmp_dir,
-                'TMP': tmp_dir,
-                'TEMP': tmp_dir,
-                'TEMPDIR': tmp_dir,
-                })
+        # z/OS linker does not support '_' in paths, so use '-'.
+        tmp_dir = tempfile.mkdtemp(prefix='lit-tmp-')
+        tmp_dir_envs = {k: tmp_dir for k in ['TMP', 'TMPDIR', 'TEMP', 'TEMPDIR']}
+        os.environ.update(tmp_dir_envs)
+        for cfg in {t.config for t in run.tests}:
+            cfg.environment.update(tmp_dir_envs)
     try:
         run.execute()
     finally:

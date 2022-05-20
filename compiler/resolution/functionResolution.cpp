@@ -169,7 +169,6 @@ static bool hasUserAssign(Type* type);
 static void resolveOther();
 static bool fits_in_int(int width, Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
-static bool fits_in_mantissa(int width, Immediate* imm);
 static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm, bool realPart=true);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType, bool* paramNarrows);
 static bool
@@ -215,6 +214,7 @@ static void printUnusedFunctions();
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal);
 
+static bool  obviousMismatch(CallExpr* call, FnSymbol* fn);
 static bool  moveIsAcceptable(CallExpr* call);
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
@@ -1039,18 +1039,15 @@ static bool canParamCoerce(Type*   actualType,
 
     // don't coerce bools to reals (per spec: "unintended by programmer")
 
-    // coerce any integer type to maximum width real
-    if ((is_int_type(actualType) || is_uint_type(actualType))
-        && get_width(formalType) >= 64)
-      return true;
+    if (is_int_type(actualType) || is_uint_type(actualType)) {
+      // coerce any integer type to maximum width real
+      if (get_width(formalType) >= 64)
+        return true;
 
-    // coerce integer types that are exactly representable
-    if (is_int_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
+      // coerce small integer types to similar-sized reals
+      if (get_width(actualType) <= get_width(formalType))
+        return true;
+    }
 
     // coerce real from smaller size
     if (is_real_type(actualType) &&
@@ -1061,9 +1058,12 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (is_int_type(actualType) || is_uint_type(actualType)) {
-          if (fits_in_mantissa(mantissa_width, var->immediate)) {
-              *paramNarrows = true;
-              return true;
+          // if this param fits in an 'int(n)' or 'uint(n)', permit it
+          // to param coerce to a 'real(n)'
+          if (fits_in_int(get_width(formalType), var->immediate) ||
+              fits_in_uint(get_width(formalType), var->immediate)) {
+            *paramNarrows = true;
+            return true;
           }
         }
         if (is_real_type(actualType)) {
@@ -1107,18 +1107,15 @@ static bool canParamCoerce(Type*   actualType,
 
     // don't coerce bools to complexes (per spec: "unintended by programmer")
 
-    // coerce any integer type to maximum width complex
-    if ((is_int_type(actualType) || is_uint_type(actualType)) &&
-        get_width(formalType) >= 128)
-      return true;
+    if (is_int_type(actualType) || is_uint_type(actualType)) {
+      // coerce any integer type to maximum width complex
+      if (get_width(formalType) >= 128)
+        return true;
 
-    // coerce integer types that are exactly representable
-    if (is_int_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < mantissa_width)
-      return true;
+      // coerce small integer types to real part of similar-sized complexes
+      if (get_width(actualType) <= get_width(formalType)/2)
+        return true;
+    }
 
     // coerce real/imag from smaller size
     if (is_real_type(actualType) &&
@@ -1137,7 +1134,10 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (is_int_type(actualType) || is_uint_type(actualType)) {
-          if (fits_in_mantissa(mantissa_width, var->immediate)) {
+          // if this param fits in an 'int(n)' or 'uint(n)', permit it
+          // to param coerce to a 'complex(2*n)'
+          if (fits_in_int(get_width(formalType)/2, var->immediate) ||
+              fits_in_uint(get_width(formalType)/2, var->immediate)) {
             *paramNarrows = true;
             return true;
           }
@@ -1818,90 +1818,163 @@ getParentBlock(Expr* expr) {
   return NULL;
 }
 
+enum MoreVisibleResult {
+  FOUND_F1_FIRST,
+  FOUND_F2_FIRST,
+  FOUND_BOTH,
+  FOUND_NEITHER
+};
 
 //
-// helper routine for isMoreVisible (below);
-// returns true if fn1 is more visible than fn2
+// helper routines for isMoreVisible (below);
 //
+
 static bool
-isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
-                      Vec<BlockStmt*>& visited) {
-  //
-  // fn1 is more visible
-  //
-  if (fn1->defPoint->parentExpr == block)
-    return true;
+isDefinedInBlock(BlockStmt* block, FnSymbol* fn) {
+  return (fn->defPoint->parentExpr == block);
+}
 
-  //
-  // fn2 is more visible
-  //
-  if (fn2->defPoint->parentExpr == block)
-    return false;
-
-  visited.set_add(block);
-
-  //
-  // return true unless fn2 is more visible,
-  // including the case where neither are visible
-  //
-
-  //
-  // ensure f2 is not more visible via parent block, and recurse
-  //
-  if (BlockStmt* parentBlock = getParentBlock(block))
-    if (!visited.set_in(parentBlock))
-      if (! isMoreVisibleInternal(parentBlock, fn1, fn2, visited))
-        return false;
-
-  //
-  // ensure f2 is not more visible via module uses, and recurse
-  //
+static bool
+isDefinedInUseImport(BlockStmt* block, FnSymbol* fn,
+                     bool allowPrivateUseImp, bool forShadowScope,
+                     Vec<BlockStmt*>& visited) {
   if (block && block->useList) {
+    visited.set_add(block);
+
     for_actuals(expr, block->useList) {
+      bool checkThisInShadowScope = false;
+      if (UseStmt* use = toUseStmt(expr)) {
+        if (use->isPrivate)
+          checkThisInShadowScope = true;
+      }
+
+      // Skip for now things that don't match the request
+      // to find use/import for the shadow scope (or not).
+      // (these will be handled in a different call to this function)
+      if (forShadowScope != checkThisInShadowScope)
+        continue;
+
+      bool isPrivate = false;
       SymExpr* se = NULL;
       if (UseStmt* use = toUseStmt(expr)) {
         se = toSymExpr(use->src);
-      } else if (ImportStmt* import = toImportStmt(expr)) {
-        se = toSymExpr(import->src);
+        isPrivate = use->isPrivate;
+        // TODO: handle renames
+        if (use->skipSymbolSearch(fn->name))
+          continue;
+      } else if (ImportStmt* imp = toImportStmt(expr)) {
+        se = toSymExpr(imp->src);
+        isPrivate = imp->isPrivate;
+        // TODO: handle renames
+        if (imp->skipSymbolSearch(fn->name))
+          continue;
       }
       INT_ASSERT(se);
-      // We only care about uses of modules during function resolution, not
-      // uses of enums.
+
+      // Skip things that are private when considering a nested use/import
+      if (isPrivate && !allowPrivateUseImp)
+        continue;
+
+      // ignore uses of enums here
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-        if (!visited.set_in(mod->block))
-          if (! isMoreVisibleInternal(mod->block, fn1, fn2, visited))
-            return false;
+        // is it defined in the use/imported module?
+        if (isDefinedInBlock(mod->block, fn))
+          return true;
+        // is it defined in something used/imported in that module?
+        if (!visited.set_in(mod->block)) {
+          if (isDefinedInUseImport(mod->block, fn,
+                                   /* allowPrivateUseImp */ false,
+                                   /* forShadowScope */ false,
+                                   visited))
+            return true;
+        }
       }
     }
   }
 
-  return true;
+  return false;
 }
 
+static MoreVisibleResult
+isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
+                      Vec<BlockStmt*>& visited1, Vec<BlockStmt*>& visited2) {
+
+  if (visited1.set_in(block) && visited2.set_in(block))
+    return FOUND_NEITHER;
+
+  // first, check things in the current block or
+  // from use/import that don't use a shadow scope
+  bool foundHere1 = isDefinedInBlock(block, fn1) ||
+                    isDefinedInUseImport(block, fn1,
+                                         /* allowPrivateUseImp */ true,
+                                         /* forShadowScope */ false,
+                                         visited1);
+
+  bool foundHere2 = isDefinedInBlock(block, fn2) ||
+                    isDefinedInUseImport(block, fn2,
+                                         /* allowPrivateUseImp */ true,
+                                         /* forShadowScope */ false,
+                                         visited2);
+
+  if (foundHere1 && foundHere2)
+    return FOUND_BOTH;
+
+  if (foundHere1)
+    return FOUND_F1_FIRST;
+
+  if (foundHere2)
+    return FOUND_F2_FIRST;
+
+  // next, check anything from a use/import in the
+  // current block that uses a shadow scope
+  bool foundShadowHere1 = isDefinedInUseImport(block, fn1,
+                                               /* allowPrivateUseImp */ true,
+                                               /* forShadowScope */ true,
+                                               visited1);
+
+  bool foundShadowHere2 = isDefinedInUseImport(block, fn2,
+                                               /* allowPrivateUseImp */ true,
+                                               /* forShadowScope */ true,
+                                               visited2);
+
+  if (foundShadowHere1 && foundShadowHere2)
+    return FOUND_BOTH;
+
+  if (foundShadowHere1)
+    return FOUND_F1_FIRST;
+
+  if (foundShadowHere2)
+    return FOUND_F2_FIRST;
+
+  // next, check parent scope, recursively
+  if (BlockStmt* parentBlock = getParentBlock(block)) {
+    return isMoreVisibleInternal(parentBlock, fn1, fn2, visited1, visited2);
+  }
+
+  return FOUND_NEITHER;
+}
 
 //
-// return true if fn1 is more visible than fn2 from expr
+// return whether fn1 is more visible than fn2 from expr
 //
-// assumption: fn1 and fn2 are visible from expr; if this assumption
-//             is violated, this function will return true
-//
-static bool
+static MoreVisibleResult
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   //
   // common-case check to see if functions have equal visibility
   //
   if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr) {
-    return false;
+    return FOUND_BOTH;
   }
 
   //
   // call helper function with visited set to avoid infinite recursion
   //
-  Vec<BlockStmt*> visited;
+  Vec<BlockStmt*> visited1;
+  Vec<BlockStmt*> visited2;
   BlockStmt* block = toBlockStmt(expr);
   if (!block)
     block = getParentBlock(expr);
-  return isMoreVisibleInternal(block, fn1, fn2, visited);
+  return isMoreVisibleInternal(block, fn1, fn2, visited1, visited2);
 }
 
 
@@ -1979,20 +2052,34 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
         !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
           f2Type == dtUInt[INT_SIZE_DEFAULT]))
       return true;
-    // Prefer bool/enum/int/uint cast to a default-sized real over another
-    // size of real or complex.
-    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
-        f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
-        (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
-        f2Type != dtReal[FLOAT_SIZE_DEFAULT])
-      return true;
-    // Prefer bool/enum/int/uint cast to a default-sized complex over another
-    // size of complex.
-    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
-        f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
-        f2T == NUMERIC_TYPE_COMPLEX &&
-        f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
-      return true;
+    // For non-default-sized ints/uints...
+    if (aT == NUMERIC_TYPE_INT_UINT &&
+        get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT])) {
+      // ...prefer smaller reals over larger ones
+      if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
+          get_width(f1Type) < get_width(f2Type) &&
+          get_width(actualType) <= get_width(f1Type))
+        return true;
+      // ...prefer smaller complexes over larger ones
+      if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
+          get_width(f1Type) < get_width(f2Type) &&
+          get_width(actualType) <= get_width(f1Type)/2)
+        return true;
+    }
+    // Prefer int(64)/uint(64) cast to a default-sized real
+    // over another size of real or complex.
+    if (actualType == dtInt[INT_SIZE_DEFAULT] || actualType == dtUInt[INT_SIZE_DEFAULT]) {
+      if (f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
+          (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
+          f2Type != dtReal[FLOAT_SIZE_DEFAULT])
+        return true;
+      // Prefer int/uint cast to a default-sized complex
+      // over another size of complex.
+      if (f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
+          f2T == NUMERIC_TYPE_COMPLEX &&
+          f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
+        return true;
+    }
     // Prefer real/imag cast to a same-sized complex over another size of
     // complex.
     if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
@@ -2025,24 +2112,6 @@ static bool fits_in_twos_complement(int width, int64_t i) {
 
   int64_t min_neg = 1+max_pos;
   return -min_neg <= i && i <= max_pos;
-}
-
-// Does the integer in imm fit in a floating point format with 'width'
-// bits of mantissa?
-static bool fits_in_mantissa(int width, Immediate* imm) {
-  // is it between -2**width .. 2**width, inclusive?
-
-  if (imm->const_kind == NUM_KIND_INT) {
-    int64_t i = imm->int_value();
-    return fits_in_bits_no_sign(width, i);
-  } else if (imm->const_kind == NUM_KIND_UINT) {
-    uint64_t u = imm->uint_value();
-    if (u > INT64_MAX)
-      return false;
-    return fits_in_bits_no_sign(width, (int64_t)u);
-  }
-
-  return false;
 }
 
 static bool fits_in_mantissa_exponent(int mantissa_width,
@@ -3139,13 +3208,14 @@ static bool      isGenericRecordInit(CallExpr* call);
 static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState);
 static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
 
-static void      findVisibleFunctionsAndCandidates(
+static BlockStmt* findVisibleFunctionsAndCandidates(
                                      CallInfo&                  info,
                                      VisibilityInfo&            visInfo,
                                      Vec<FnSymbol*>&            visibleFns,
                                      Vec<ResolutionCandidate*>& candidates);
 
 static int       disambiguateByMatch(CallInfo&                  info,
+                                     BlockStmt*                 searchScope,
                                      Vec<ResolutionCandidate*>& candidates,
                                      ResolutionCandidate*&      bestRef,
                                      ResolutionCandidate*&      bestConstRef,
@@ -3483,12 +3553,13 @@ static bool isAcceptableMethodChoice(CallExpr* call,
 }
 
 static void reportHijackingError(CallExpr* call,
+                                 BlockStmt* searchScope,
                                  FnSymbol* bestFn, ModuleSymbol* bestMod,
                                  FnSymbol* candFn, ModuleSymbol* candMod)
 {
   USR_FATAL_CONT(call, "multiple overload sets are applicable to this call");
 
-  if (isMoreVisible(call, candFn, bestFn))
+  if (isMoreVisible(searchScope, candFn, bestFn) == FOUND_F1_FIRST)
   {
     USR_PRINT(candFn, "instead of the candidate here");
     USR_PRINT(candMod, "... defined in this closer module");
@@ -3507,7 +3578,9 @@ static void reportHijackingError(CallExpr* call,
   USR_STOP();
 }
 
-static bool overloadSetsOK(CallExpr* call, check_state_t checkState,
+static bool overloadSetsOK(CallExpr* call,
+                           BlockStmt* searchScope,
+                           check_state_t checkState,
                            Vec<ResolutionCandidate*>& candidates,
                            ResolutionCandidate* bestRef,
                            ResolutionCandidate* bestCref,
@@ -3548,11 +3621,12 @@ static bool overloadSetsOK(CallExpr* call, check_state_t checkState,
 
     ModuleSymbol* candMod = overloadSetModule(candidate);
     if (candMod && candMod != bestMod                                       &&
-        ! isMoreVisible(call, bestFn, candidate->fn)                        &&
+        isMoreVisible(searchScope, bestFn, candidate->fn) != FOUND_F1_FIRST &&
         ! isAcceptableMethodChoice(call, bestFn, candidate->fn, candidates) )
     {
       if (checkState == CHECK_NORMAL_CALL)
-        reportHijackingError(call, bestFn, bestMod, candidate->fn, candMod);
+        reportHijackingError(call, searchScope,
+                             bestFn, bestMod, candidate->fn, candMod);
       return false;
     }
   }
@@ -3578,9 +3652,12 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
 
   FnSymbol*                 retval     = NULL;
 
-  findVisibleFunctionsAndCandidates(info, visInfo, mostApplicable, candidates);
+  BlockStmt* scopeUsed = nullptr;
 
-  numMatches = disambiguateByMatch(info, candidates,
+  scopeUsed = findVisibleFunctionsAndCandidates(info, visInfo,
+                                                mostApplicable, candidates);
+
+  numMatches = disambiguateByMatch(info, scopeUsed, candidates,
                                    bestRef, bestCref, bestVal);
 
   if (checkState == CHECK_NORMAL_CALL && numMatches > 0 && visInfo.inPOI())
@@ -3603,7 +3680,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   }
 
   if (numMatches > 0) {
-    if (! overloadSetsOK(info.call, checkState, candidates,
+    if (! overloadSetsOK(info.call, scopeUsed, checkState, candidates,
                          bestRef, bestCref, bestVal))
       return NULL; // overloadSetsOK() found an error
 
@@ -4250,8 +4327,15 @@ struct ExampleCandidateComparator {
   CallInfo& info;
 
   ExampleCandidateComparator(CallInfo& info) : info(info) { }
+
   bool operator() (FnSymbol* aFn, FnSymbol* bFn) {
     // Return true if aFn is better than bFn
+    bool aObv = obviousMismatch(info.call, aFn);
+    bool bObv = obviousMismatch(info.call, bFn);
+    if (!aObv && bObv) return true;
+    if (aObv && !bObv) return false;
+    // if aObv == bObv, continue
+
     bool ret = false;
     ResolutionCandidate* a = new ResolutionCandidate(aFn);
     ResolutionCandidate* b = new ResolutionCandidate(bFn);
@@ -4527,11 +4611,10 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     sortExampleCandidates(info, visibleFns);
 
     int nPrintDetails = 1;
-    int nPrint = fPrintAllCandidates ? INT_MAX : 3;
-
+    int nPrint = 3; // unused if fPrintAllCandidates
 
     Vec<FnSymbol*> filteredFns;
-    if (fPrintAllCandidates || visibleFns.n == 1) {
+    if (fPrintAllCandidates || visibleFns.n <= nPrint + 1) {
       // Don't do any filtering; we're going to print everything
       filteredFns = visibleFns;
     } else {
@@ -4555,7 +4638,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       // suggesting that there are no other candidates.
       //
       if (filteredFns.n == 0) {
-        for (int i = 0; i < std::min(nPrint, visibleFns.n); i++) {
+        for (int i = 0; i < nPrint; i++) {
           filteredFns.add(visibleFns.v[i]);
         }
       }
@@ -4738,7 +4821,8 @@ void advanceCurrStart(VisibilityInfo& visInfo) {
   visInfo.nextPOI = NULL;
 }
 
-static void findVisibleFunctionsAndCandidates(
+// Returns the POI scope used to find the candidates
+static BlockStmt* findVisibleFunctionsAndCandidates(
                                 CallInfo&                  info,
                                 VisibilityInfo&            visInfo,
                                 Vec<FnSymbol*>&            mostApplicable,
@@ -4758,7 +4842,7 @@ static void findVisibleFunctionsAndCandidates(
 
     explainGatherCandidate(info, candidates);
 
-    return;
+    return getVisibilityScope(call);
   }
 
   // CG TODO: pull all visible interface functions, if within a CG context
@@ -4772,6 +4856,7 @@ static void findVisibleFunctionsAndCandidates(
   std::set<BlockStmt*> visited;
   visInfo.currStart = getVisibilityScope(call);
   INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
+  BlockStmt* scopeUsed = nullptr;
 
   do {
     // CG TODO: no POI for CG functions
@@ -4785,6 +4870,9 @@ static void findVisibleFunctionsAndCandidates(
 
     gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
                                   lrc, candidates);
+
+    // save the scope used for disambiguation
+    scopeUsed = visInfo.currStart;
 
     advanceCurrStart(visInfo);
   }
@@ -4805,6 +4893,8 @@ static void findVisibleFunctionsAndCandidates(
   }
 
   explainGatherCandidate(info, candidates);
+
+  return scopeUsed;
 }
 
 // run filterCandidate() on 'fn' if appropriate
@@ -5208,19 +5298,22 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
 
 ResolutionCandidate*
 disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
-  DisambiguationContext     DC(info);
+  DisambiguationContext     DC(info, getVisibilityScope(info.call));
   Vec<ResolutionCandidate*> ambiguous;
 
   return disambiguateByMatch(candidates, DC, false, ambiguous);
 }
 
+
+// searchScope is the scope used to evaluate is-more-visible
 static int disambiguateByMatch(CallInfo&                  info,
+                               BlockStmt*                 searchScope,
                                Vec<ResolutionCandidate*>& candidates,
 
                                ResolutionCandidate*&      bestRef,
                                ResolutionCandidate*&      bestConstRef,
                                ResolutionCandidate*&      bestValue) {
-  DisambiguationContext     DC(info);
+  DisambiguationContext     DC(info, searchScope);
 
   Vec<ResolutionCandidate*> ambiguous;
 
@@ -5542,12 +5635,19 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     prefer2 = DS.fn2MoreSpecific;
 
   } else {
-    // If the decision hasn't been made based on the argument mappings...
-    if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
+    MoreVisibleResult v = FOUND_NEITHER;
+    // If the decision hasn't been made based on the argument mappings,
+    // consider visibility...
+    // But, do not consider visibility for methods in disambiguation.
+    if (!(candidate1->fn->isMethod() || candidate2->fn->isMethod())) {
+      v = isMoreVisible(DC.scope, candidate1->fn, candidate2->fn);
+    }
+
+    if (v == FOUND_F1_FIRST) {
       EXPLAIN("\nQ: preferring more visible function\n");
       prefer1 = true;
 
-    } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
+    } else if (v == FOUND_F2_FIRST) {
       EXPLAIN("\nR: preferring more visible function\n");
       prefer2 = true;
 
@@ -11098,16 +11198,18 @@ static bool isInDefaultActualFunction(Expr* ref) {
 // or does not feed into a PRIM_SET_MEMBER.
 static Symbol* tempFeedsIntoSetMember(CallExpr* call, SymExpr* valSe,
                                       Symbol* val) {
-  if (val->hasFlag(FLAG_TEMP) && ! val->hasFlag(FLAG_USER_VARIABLE_NAME))
-   // See if it is the temp used to set a field.
-   for_SymbolSymExprs(se, val)
-    if (se != valSe)
-     if (CallExpr* parent = toCallExpr(se->parentExpr))
-      if (parent->isPrimitive(PRIM_SET_MEMBER))
-       if (SymExpr* fieldSE = toSymExpr(parent->get(2)))
-        return fieldSE->symbol();
+  if (val->hasFlag(FLAG_TEMP) && ! val->hasFlag(FLAG_USER_VARIABLE_NAME)) {
+    // See if it is the temp used to set a field.
+    for_SymbolSymExprs(se, val) {
+      if (se != valSe)
+        if (CallExpr* parent = toCallExpr(se->parentExpr))
+          if (parent->isPrimitive(PRIM_SET_MEMBER))
+            if (SymExpr* fieldSE = toSymExpr(parent->get(2)))
+              return fieldSE->symbol();
+    }
+  }
 
-    return NULL;
+  return NULL;
 }
 
 // For a PRIM_DEFAULT_INIT_VAR or a PRIM_INIT_VAR_SPLIT_DECL,
@@ -11945,9 +12047,11 @@ void expandInitFieldPrims()
 *                                                                             *
 ************************************** | *************************************/
 
-DisambiguationContext::DisambiguationContext(CallInfo& info) {
+DisambiguationContext::DisambiguationContext(CallInfo& info,
+                                             BlockStmt* searchScope) {
   actuals = &info.actuals;
-  scope   = (info.scope) ? info.scope : getVisibilityScope(info.call);
+  scope   = searchScope;
+
   explain = false;
 
   if (fExplainVerbose == true) {

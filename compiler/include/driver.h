@@ -21,6 +21,7 @@
 #ifndef _driver_H_
 #define _driver_H_
 
+#include "arg.h"
 #include "chpl.h"
 #include "map.h"
 
@@ -285,5 +286,7 @@ namespace chpl {
 }
 
 extern chpl::Context* gContext;
+
+extern std::vector<std::pair<std::string, std::string>> gDynoParams;
 
 #endif

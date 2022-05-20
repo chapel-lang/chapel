@@ -20,7 +20,7 @@
 
 /*
 
-Support for GNU Multiple Precision Arithmetic
+Support for GNU Multiple Precision Arithmetic.
 
 This module provides a low-level interface to a substantial fraction
 of the GMP library (the GNU Multiple Precision arithmetic library).

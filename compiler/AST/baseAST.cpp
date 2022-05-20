@@ -242,13 +242,6 @@ void cleanAst() {
     serializeMap.erase(key);
   }
 
-  // Important: Sometimes scopeResolve will create dummy UseStmts that are
-  // never inserted into the tree, and will be deleted in between passes.
-  //
-  // If we do not destroy the caches, they may contain pointers back to these
-  // dummy uses.
-  destroyModuleUsesCaches();
-
   //
   // clear back pointers to dead ast instances
   //

@@ -1,0 +1,2 @@
+missingType.chpl:1: In initializer:
+missingType.chpl:1: error: 'R' undeclared (first use this function)

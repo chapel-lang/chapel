@@ -87,8 +87,12 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 }
 
 
-void chpl_launch_print_help(void) {
-  fprintf(stdout, "LAUNCHER FLAGS:\n");
-  fprintf(stdout, "===============\n");
-  fprintf(stdout, "  %s : specify number of SPMD images \n", CHPL_SPMD);
+const argDescTuple_t* chpl_launch_get_help(void) {
+  static const
+    argDescTuple_t args[] =
+    { { CHPL_SPMD,
+        "specify number of SPMD images" },
+      { NULL, NULL },
+    };
+  return args;
 }

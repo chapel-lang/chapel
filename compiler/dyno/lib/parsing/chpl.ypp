@@ -161,7 +161,7 @@
     Function::Kind kind;
     Formal::Intent thisIntent;
     Formal* receiver;
-    PODUniqueString name;
+    Identifier* name;
     Function::ReturnIntent returnIntent;
     bool throws;
     ParserExprList* formals;
@@ -654,7 +654,6 @@ stmt:
   }
 | try_stmt                  { $$ = context->finishStmt(@$, $1); }
 | return_stmt               { $$ = context->finishStmt($1); }
-| TATOMIC stmt              { $$ = TODOSTMT(@$); }
 | TBREAK opt_label_ident TSEMI
   {
     auto comments = context->gatherComments(@1);
@@ -675,28 +674,9 @@ stmt:
   }
 | TLABEL ident_def stmt
   {
-    if ($3.stmt && ($3.stmt->isFor() || $3.stmt->isWhile() || $3.stmt->isDoWhile())) {
-      auto exprLst = context->makeList($3);
-      auto comments = context->gatherCommentsFromList(exprLst, @1);
-      auto astLst = context->consumeList(exprLst);
-      Loop* loop = nullptr;
-      for (auto& ast : astLst) {
-        if (ast->isLoop()) {
-          loop = ast.release()->toLoop();
-          break;
-        }
-      }
-      assert(loop);
-      auto node = Label::build(BUILDER, LOC(@$), $2, toOwned(loop));
-      $$ = { .comments=comments, .stmt=node.release() };
-    } else {
-      const char* msg = "can only label for-, while-do- "
-                        "and do-while-statements";
-      auto err = context->raiseError(@$, msg);
-      $$ = context->finishStmt(err);
-    }
+    $$ = context->buildLabelStmt(@$, $2, $3);
   }
-| TYIELD expr TSEMI
+| TYIELD opt_try_expr TSEMI
   {
     auto comments = context->gatherComments(@1);
     auto node = Yield::build(BUILDER, LOC(@$), toOwned($2));
@@ -1028,32 +1008,32 @@ renames_ls:
 use_renames_ls:
   expr
   {
-    auto node = context->buildVisibilityClause(@$, toOwned($1));
+    auto node = context->buildVisibilityClause(@$, toOwned($1), false);
     $$ = context->makeList(node);
   }
 | expr TAS expr
   {
     auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
-    auto node = context->buildVisibilityClause(@$, toOwned(as));
+    auto node = context->buildVisibilityClause(@$, toOwned(as), false);
     $$ = context->makeList(node);
   }
 | expr TAS TUNDERSCORE
   {
     auto ident = toOwned(context->buildIdent(@3, $3));
     auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
-    auto node = context->buildVisibilityClause(@$, toOwned(as));
+    auto node = context->buildVisibilityClause(@$, toOwned(as), false);
     $$ = context->makeList(node);
   }
 | use_renames_ls TCOMMA expr
   {
-    auto node = context->buildVisibilityClause(@3, toOwned($3));
+    auto node = context->buildVisibilityClause(@3, toOwned($3), false);
     $$ = context->appendList($1, node);
   }
 | use_renames_ls TCOMMA expr TAS expr
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
     auto locVisClause = context->makeSpannedLocation(@3, @5);
-    auto node = context->buildVisibilityClause(locVisClause, toOwned(as));
+    auto node = context->buildVisibilityClause(locVisClause, toOwned(as), false);
     $$ = context->appendList($1, node);
   }
 | use_renames_ls TCOMMA expr TAS TUNDERSCORE
@@ -1061,7 +1041,7 @@ use_renames_ls:
     auto ident = context->buildIdent(@5, $5);
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned(ident));
     auto locVisClause = context->makeSpannedLocation(@3, @5);
-    auto node = context->buildVisibilityClause(locVisClause, toOwned(as));
+    auto node = context->buildVisibilityClause(locVisClause, toOwned(as), false);
     $$ = context->appendList($1, node);
   }
 ;
@@ -1136,24 +1116,24 @@ import_stmt:
 import_expr:
   expr
   {
-    $$ = context->buildVisibilityClause(@$, toOwned($1));
+    $$ = context->buildVisibilityClause(@$, toOwned($1), true);
   }
 | expr TDOT all_op_name
   {
     auto dot = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release();
-    $$ = context->buildVisibilityClause(@$, toOwned(dot));
+    $$ = context->buildVisibilityClause(@$, toOwned(dot), true);
   }
 | expr TAS ident_use
   {
     auto ident = toOwned(context->buildIdent(@3, $3));
     auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
-    $$ = context->buildVisibilityClause(@$, toOwned(as));
+    $$ = context->buildVisibilityClause(@$, toOwned(as), true);
   }
 | expr TDOT TLCBR renames_ls TRCBR
   {
     $$ = context->buildVisibilityClause(@$, toOwned($1),
                                         VisibilityClause::BRACES,
-                                        context->consumeList($4));
+                                        context->consumeList($4), true);
   }
 ;
 
@@ -1451,10 +1431,19 @@ extern_export_decl_stmt:
   }
 | extern_export_decl_stmt_start opt_expr
   {
-    // This will be consumed when building the first variable in the list.
     context->storeVarDeclLinkageName($2);
   }
   var_decl_type var_decl_stmt_inner_ls TSEMI
+  {
+    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    context->resetDeclState();
+  }
+| extern_export_decl_stmt_start opt_expr TTYPE
+  {
+    context->storeVarDeclLinkageName($2);
+    context->noteVarDeclKind(Variable::TYPE);
+  }
+  type_alias_decl_stmt_inner_ls TSEMI
   {
     $$ = context->buildVarOrMultiDeclStmt(@$, $5);
     context->resetDeclState();
@@ -1758,9 +1747,13 @@ ifvar:
 
 interface_stmt:
   TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildInterfaceStmt(@$, $2, $4, @6, $6);
+  }
 | TINTERFACE ident_def                       block_stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildInterfaceStmt(@$, $2, nullptr, @3, $3);
+  }
 ;
 
 ifc_formal_ls:
@@ -1770,7 +1763,7 @@ ifc_formal_ls:
 
 ifc_formal:
   // implicitly 'type' intent, could specify explicitly - see #16966
-  ident_def  { $$ = TODOEXPR(@$); }
+  ident_def  { $$ = context->buildInterfaceFormal(@1, $1); }
 ;
 
 // which types are allowed in 'T implements IFC'
@@ -1817,20 +1810,32 @@ implements_type_error_ident:
 
 implements_stmt:
   TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildImplementsStmt(@$, YLOC2(@2, @5), $2, $4);
+  }
 | implements_type_ident TIMPLEMENTS ident_def TSEMI
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildImplementsStmt(@$, @1, $1, @3, $3, nullptr);
+  }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildImplementsStmt(@$, @1, $1, YLOC2(@3, @6), $3, $5);
+  }
 ;
 
 ifc_constraint:
   TIMPLEMENTS ident_def TLP actual_ls TRP
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildImplementsConstraint(@$, YLOC2(@2, @5), $2, $4);
+  }
 | implements_type_ident TIMPLEMENTS ident_def
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildImplementsConstraint(@$, @1, $1, @3, $3, nullptr);
+  }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildImplementsConstraint(@$, @1, $1, YLOC2(@3, @6), $3, $5);
+  }
 ;
 
 try_stmt:
@@ -2149,7 +2154,7 @@ lambda_decl_expr:
   function_body_stmt
     {
       FunctionParts fp = $1;
-      fp.name = STR("lambda");
+      fp.name = context->buildIdent(@1, STR("lambda"));
       fp.formals = $2;
       fp.returnIntent = $3;
       fp.returnType = $4;
@@ -2188,28 +2193,34 @@ fn_decl_stmt:
   fn_decl_stmt_inner
   opt_ret_tag opt_ret_type
   opt_throws_error opt_lifetime_where
-    {
-      context->clearComments();
-      context->resetDeclState();
-      context->enterScope(asttags::Function, $1.name);
+  {
+    context->clearComments();
+    context->resetDeclState();
+
+    // May never have been built if there was a syntax error.
+    if ($1.errorExpr == nullptr) {
+      context->enterScope(asttags::Function, $1.name->name());
     }
+  }
   opt_function_body_stmt
-    {
-      FunctionParts fp = $1;
-      fp.returnIntent = $2;
-      fp.returnType = $3;
-      fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
-      WhereAndLifetime wl = $5;
-      fp.body = $7;
+  {
+    FunctionParts fp = $1;
+    fp.returnIntent = $2;
+    fp.returnType = $3;
+    fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
+    WhereAndLifetime wl = $5;
+    fp.body = $7;
+    fp.lifetime = wl.lifetime;
+    fp.where = wl.where;
+    context->clearComments();
 
-      fp.lifetime = wl.lifetime;
-      fp.where = wl.where;
-
-      context->clearComments();
-      context->exitScope(asttags::Function, $1.name);
-
-      $$ = fp;
+    // May never have been built if there was a syntax error.
+    if ($1.errorExpr == nullptr) {
+      context->exitScope(asttags::Function, $1.name->name());
     }
+
+    $$ = fp;
+  }
 ;
 
 fn_decl_stmt_inner:
@@ -2217,7 +2228,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.name = $3;
+      fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
       $$ = fp;
     }
@@ -2225,7 +2236,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.name = $3;
+      fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
       $$ = fp;
     }
@@ -2236,7 +2247,7 @@ fn_decl_stmt_inner:
       fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
-      fp.name = $5;
+      fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
       $$ = fp;
     }
@@ -2247,7 +2258,7 @@ fn_decl_stmt_inner:
       fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
-      fp.name = $5;
+      fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
       $$ = fp;
     }
@@ -2543,6 +2554,7 @@ type_alias_decl_stmt:
   }
 ;
 
+// Extern types are handled in the 'extern_export_decl_stmt' above.
 type_alias_decl_stmt_start:
   TTYPE
   {
@@ -2552,11 +2564,6 @@ type_alias_decl_stmt_start:
   {
     $$ = context->noteVarDeclKind(Variable::TYPE);
     context->noteIsVarDeclConfig(true);
-  }
-| TEXTERN TTYPE
-  {
-    $$ = context->noteVarDeclKind(Variable::TYPE);
-    context->noteLinkage(Decl::EXTERN);
   }
 ;
 
@@ -3097,20 +3104,20 @@ for_expr:
   }
 | TLSBR expr_ls TRSBR expr %prec TFOR
   {
-    // TODO: We have to handle the possibility of [1..2, 3..4] here.
-    if ($2->size() > 1) {
-      const char* msg = "Invalid iterand expression";
-      $$ = context->raiseError(@2, msg);
+    owned<AstNode> iterand = nullptr;
+    auto iterExprs = context->consumeList($2);
+    if (iterExprs.size() > 1) {
+      iterand = Domain::build(BUILDER, LOC(@2), std::move(iterExprs));
     } else {
-      auto iterand = context->consumeList($2)[0].release();
-      assert(iterand);
-      $$ = BracketLoop::build(BUILDER, LOC(@$), /*index*/ nullptr,
-                              toOwned(iterand),
-                              /*withClause*/ nullptr,
-                              BlockStyle::IMPLICIT,
-                              context->consumeToBlock(@4, $4),
-                              /*isExpressionLevel*/ true).release();
+      iterand = std::move(iterExprs[0]);
     }
+    assert(iterand);
+    $$ = BracketLoop::build(BUILDER, LOC(@$), /*index*/ nullptr,
+                            std::move(iterand),
+                            /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            context->consumeToBlock(@4, $4),
+                            /*isExpressionLevel*/ true).release();
   }
 | TLSBR expr_ls TIN expr TRSBR expr %prec TFOR
   {
@@ -3250,8 +3257,8 @@ intent_expr:
     }
   }
 | reduce_scan_op_expr TREDUCE ident_expr
-  {
-    $$ = Reduce::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+  { auto ident = Identifier::build(BUILDER, LOC(@1), $1);
+    $$ = Reduce::build(BUILDER, LOC(@$), std::move(ident), toOwned($3)).release();
   }
 | expr                TREDUCE ident_expr
   {
@@ -3651,11 +3658,13 @@ reduce_expr:
   }
 | reduce_scan_op_expr TREDUCE expr
   {
-    $$ = Reduce::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+    auto ident = Identifier::build(BUILDER, LOC(@1), $1);
+    $$ = Reduce::build(BUILDER, LOC(@$), std::move(ident), toOwned($3)).release();
   }
 | reduce_scan_op_expr TREDUCE zippered_iterator
   {
-    $$ = Reduce::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+    auto ident = Identifier::build(BUILDER, LOC(@1), $1);
+    $$ = Reduce::build(BUILDER, LOC(@$), std::move(ident), toOwned($3)).release();
   }
 ;
 

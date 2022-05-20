@@ -60,7 +60,7 @@
 
 
 
-/*
+/* Implements a parallel-safe scalable distributed deque.
 
   Summary
   ________

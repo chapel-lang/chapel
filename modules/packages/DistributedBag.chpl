@@ -64,7 +64,7 @@
 */
 
 
-/*
+/* Implements a highly parallel segmented multiset.
 
   Summary
   _______

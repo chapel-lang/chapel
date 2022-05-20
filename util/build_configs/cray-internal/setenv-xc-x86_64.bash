@@ -356,6 +356,9 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
+
+        # pin to versions of mpich that work with gen_version_cce
+        load_module_version cray-mpich 7.7.19
     }
 
     function load_target_cpu() {

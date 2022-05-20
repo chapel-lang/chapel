@@ -106,7 +106,10 @@ class QualifiedType final {
 
   /** Returns the fast-to-compute genericity of the contained Type pointer.
       Does not include consideration of fields. If the type can have fields
-      and they have not been considered, returns Type::MAYBE_GENERIC. */
+      and they have not been considered, returns Type::MAYBE_GENERIC.
+
+      To consider fields, use the getTypeGenericity.
+   */
   Type::Genericity typeGenericity() const {
     if (type_ == nullptr)
       return Type::MAYBE_GENERIC;
@@ -116,7 +119,10 @@ class QualifiedType final {
 
   /** Returns the fast-to-compute genericity of this QualifiedType.
       Does not include consideration of fields. If the type can have fields
-      and they have not been considered, returns Type::MAYBE_GENERIC. */
+      and they have not been considered, returns Type::MAYBE_GENERIC.
+
+      To consider fields, use the getTypeGenericity.
+  */
   Type::Genericity genericity() const {
     bool genericParam = kind_ == PARAM && !hasParamPtr();
     if (genericParam)
@@ -124,12 +130,6 @@ class QualifiedType final {
 
     return typeGenericity();
   }
-
-  /** Returns the genericity of this QualifiedType including
-      consideration of fields.
-      To consider fields, this can run the getTypeGenericity query.
-   */
-  Type::Genericity genericityWithFields(Context* context) const;
 
   bool isUnknown() const {
     return kind_ == UNKNOWN || !hasTypePtr() || type_->isUnknownType();

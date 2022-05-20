@@ -68,6 +68,7 @@ extern void chpl_memTracking_returnConfigVals(chpl_bool* memTrack,
 typedef struct memTableEntry_struct { /* table entry */
   size_t number;
   size_t size;
+  c_sublocid_t subloc;
   chpl_mem_descInt_t description;
   void* memAlloc;
   int32_t lineno;
@@ -247,6 +248,7 @@ resizeTable(int direction) {
 }
 
 static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
+                             c_sublocid_t subloc,
                              chpl_mem_descInt_t description, int32_t lineno,
                              int32_t filename) {
   unsigned hashValue;
@@ -264,6 +266,7 @@ static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
   hashValue = hash(memAlloc, hashSize);
   memEntry->nextInBucket = memTable[hashValue];
   memTable[hashValue] = memEntry;
+  memEntry->subloc = subloc;
   memEntry->description = description;
   memEntry->memAlloc = memAlloc;
   memEntry->lineno = lineno;
@@ -663,20 +666,23 @@ void chpl_reportMemInfo() {
   }
 }
 
-
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, int32_t filename) {
   if (number * size > memThreshold) {
+    c_sublocid_t subloc = chpl_task_getRequestedSubloc();
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
       memTrack_lock();
-      addMemTableEntry(memAlloc, number, size, description, lineno, filename);
+      addMemTableEntry(memAlloc, number, size, subloc, description,
+                       lineno, filename);
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {
-      fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
+      char subloc_info[16] = "";
+      chpl_track_gen_subloc_info(subloc_info, subloc);
+      fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                           ": allocate %zuB of %s at %p\n",
-              chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+              chpl_nodeID, subloc_info, (filename ? chpl_lookupFilename(filename) : "--"),
               lineno, number * size, chpl_mem_descString(description),
               memAlloc);
     }
@@ -696,15 +702,19 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
                      int32_t filename) {
   if (approximateSize == 0 || approximateSize > memThreshold) {
+    c_sublocid_t subloc = chpl_task_getRequestedSubloc();
     memTableEntry* memEntry = NULL;
     if (chpl_memTrack) {
       memTrack_lock();
       memEntry = removeMemTableEntry(memAlloc);
       if (memEntry) {
         if (chpl_verbose_mem) {
-          fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
+          char subloc_info[16] = "";
+          chpl_track_gen_subloc_info(subloc_info, subloc);
+          fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                               ": free %zuB of %s at %p\n",
-                  chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+                  chpl_nodeID, subloc_info,
+                  (filename ? chpl_lookupFilename(filename) : "--"),
                   lineno, memEntry->number * memEntry->size,
                   chpl_mem_descString(memEntry->description), memAlloc);
         }
@@ -712,8 +722,11 @@ void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
       }
       memTrack_unlock();
     } else if (chpl_verbose_mem && !memEntry) {
-      fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
-              chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+      char subloc_info[16] = "";
+      chpl_track_gen_subloc_info(subloc_info, subloc);
+      fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32 ": free at %p\n",
+              chpl_nodeID, subloc_info,
+              (filename ? chpl_lookupFilename(filename) : "--"),
               lineno, memAlloc);
     }
   }
@@ -741,10 +754,11 @@ void chpl_track_realloc_post(void* moreMemAlloc,
                          void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
+  c_sublocid_t subloc = chpl_task_getRequestedSubloc();
   if (size > memThreshold) {
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
       memTrack_lock();
-      addMemTableEntry(moreMemAlloc, 1, size, description, lineno, filename);
+      addMemTableEntry(moreMemAlloc, 1, size, subloc, description, lineno, filename);
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {

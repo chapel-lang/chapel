@@ -26,7 +26,7 @@
  */
 module ChapelLocale {
 
-  public use LocaleModel;
+  public use LocaleModel as _; // let LocaleModel refer to the class
   import HaltWrappers;
   use CTypes;
 
@@ -474,6 +474,19 @@ module ChapelLocale {
     proc getChild(idx:int) : locale {
       HaltWrappers.pureVirtualMethodHalt();
     }
+
+    // Return array of gpu sublocale
+    proc gpus {
+      return gpusImpl();
+    }
+
+    pragma "no doc"
+    proc gpusImpl() const ref {
+      return chpl_emptyLocales;
+    }
+
+    pragma "no doc"
+    proc isGpu() : bool { return false; }
 
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.

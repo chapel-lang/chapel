@@ -30,6 +30,9 @@ module ChapelTaskID {
   inline operator ==(a: chpl_taskID_t, b: chpl_taskID_t)
     return __primitive("==", a, b);
 
+  inline operator !=(a: chpl_taskID_t, b: chpl_taskID_t)
+    return __primitive("!=", a, b);
+
   inline operator :(x: chpl_taskID_t, type t: int(64))
     return __primitive("cast", t, x);
 

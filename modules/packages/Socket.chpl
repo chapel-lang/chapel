@@ -18,7 +18,7 @@
  */
 
 /*
-  Socket Module library, specifically related to IP Sockets.
+  Supports inter-process communication through IP sockets.
 
   The Socket module focuses on connecting, accepting sockets and providing interface for
   communication between them. Also provided are some constant values representing
@@ -416,7 +416,7 @@ record tcpListener {
 proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws {
   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
   var fdOut:fd_t;
-  var err_out:err_t = 0;
+  var err_out:qio_err_t = 0;
   // try accept
   err_out = sys_accept(socketFd, client_addr, fdOut);
   // if error is not about blocking, throw error
@@ -775,7 +775,7 @@ proc udpSocket.close throws {
 }
 
 pragma "no doc"
-private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):err_t;
+private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):qio_err_t;
 
 /*
   Reads upto `bufferLen` bytes from the socket, and
@@ -793,13 +793,13 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, fla
   :arg timeout: time to wait for data to arrive.
   :type timeval: :type:`~Sys.timeval`
   :return: tuple of (data, address)
-  :rtype: `tuple(:mod:`bytes <Bytes>`, :type:ipAddr)`
+  :rtype: (:type:`~Bytes.bytes`, :type:`ipAddr`)
   :throws SystemError: Upon failure to receive any data
                     within given `timeout`.
 */
 proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
                         flags:c_int = 0):(bytes, ipAddr) throws {
-  var err_out:err_t = 0;
+  var err_out:qio_err_t = 0;
   var buffer = c_calloc(c_uchar, bufferLen);
   var length:c_ssize_t;
   var addressStorage = new sys_sockaddr_t();
@@ -874,7 +874,7 @@ proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, 
   :arg timeout: time to wait for data to arrive.
   :type timeval: :type:`~Sys.timeval`
   :return: data
-  :rtype: :mod:`bytes <Bytes>`
+  :rtype: :type:`~Bytes.bytes`
   :throws SystemError: Upon failure to receive any data
                         within given `timeout`.
 */
@@ -888,7 +888,7 @@ proc udpSocket.recv(bufferLen: int, timeout: real) throws {
 }
 
 pragma "no doc"
-private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):err_t;
+private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):qio_err_t;
 
 /*
   Send `data` over socket to the provided address and
@@ -901,7 +901,7 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
     const sentBytes = socket.send("hello world!":bytes, timeout);
 
   :arg data: data to send to address
-  :type data: :mod:`bytes <Bytes>`
+  :type data: :type:`~Bytes.bytes`
   :arg address: socket address for sending data
   :type address: :type:`ipAddr`
   :arg timeout: time to wait for data to arrive.
@@ -913,7 +913,7 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
 */
 proc udpSocket.send(data: bytes, in address: ipAddr,
                     in timeout = new timeval(-1,0)):c_ssize_t throws {
-  var err_out:err_t = 0;
+  var err_out:qio_err_t = 0;
   var length:c_ssize_t;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
   if err_out == 0 {
@@ -1026,10 +1026,10 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) t
 }
 
 /*
-  Overload for :proc:`setSockOpt` that allows setting a :mod:`bytes <Bytes>` value
+  Overload for :proc:`setSockOpt` that allows setting a :type:`~Bytes.bytes` value
   on socket option. This is useful for `setsockopt` calls that work with a C struct,
   including `SO_LINGER`, `SO_RCVTIMEO`, and `SO_SNDTIMEO`. It is up to the caller to
-  ensure that the `value` which is a :type::mod:`bytes <Bytes>` parameter contains
+  ensure that the `value` which is a :type:`~Bytes.bytes` parameter contains
   the proper bits.
 
   :arg socket: socket to set option on
@@ -1039,7 +1039,7 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) t
   :arg optname: option to set.
   :type optname: `int(32)`
   :arg value: value to set on option
-  :type value: :mod:`bytes <Bytes>`
+  :type value: :type:`~Bytes.bytes`
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */
@@ -1133,7 +1133,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) t
 
 /*
   Returns the value of the given socket option which is expected to be of type
-  :mod:`bytes <Bytes>` on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
+  :type:`~Bytes.bytes` on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
   are defined in :mod:`Sys` module.
 
   :arg socket: socket to set option on
@@ -1143,7 +1143,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) t
   :arg optname: option to set.
   :type optname: `int(32)`
   :return: value of socket option
-  :rtype: :mod:`bytes <Bytes>`
+  :rtype: :type:`~Bytes.bytes`
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */

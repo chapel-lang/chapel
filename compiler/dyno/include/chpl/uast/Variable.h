@@ -49,6 +49,7 @@ namespace uast {
   each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
+ friend class Builder;
  public:
   enum Kind {
     // Use IntentList here for consistent enum values.
@@ -97,6 +98,12 @@ class Variable final : public VarLikeDecl {
 
   bool isConfig_;
   bool isField_;
+
+  /**
+   * Allows for setting a new initExpr when this Variable is a config
+   * Can only be used while the uAST is mutable in the Builder
+   */
+  void setInitExprForConfig(owned<AstNode> ie);
 
  public:
   ~Variable() override = default;

@@ -1,8 +1,3 @@
-multiple-modifiers.chpl:5: error: Type expression uses multiple class kinds: borrowed borrowed
-multiple-modifiers.chpl:6: error: Type expression uses multiple class kinds: borrowed owned
-multiple-modifiers.chpl:7: error: Type expression uses multiple class kinds: borrowed unmanaged
-multiple-modifiers.chpl:8: error: Type expression uses multiple class kinds: borrowed shared
-multiple-modifiers.chpl:9: error: Type expression uses multiple class kinds: owned borrowed
 multiple-modifiers.chpl:10: error: Type expression uses multiple class kinds: owned owned
 multiple-modifiers.chpl:11: error: Type expression uses multiple class kinds: owned unmanaged
 multiple-modifiers.chpl:12: error: Type expression uses multiple class kinds: owned shared
@@ -15,8 +10,8 @@ multiple-modifiers.chpl:18: error: Type expression uses multiple class kinds: sh
 multiple-modifiers.chpl:19: error: Type expression uses multiple class kinds: shared unmanaged
 multiple-modifiers.chpl:20: error: Type expression uses multiple class kinds: shared shared
 multiple-modifiers.chpl:21: error: Type expression uses multiple class kinds: borrowed owned
-multiple-modifiers.chpl:23: error: Type expression uses multiple class kinds: unmanaged shared
 multiple-modifiers.chpl:22: error: Type expression uses multiple class kinds: owned unmanaged
+multiple-modifiers.chpl:23: error: Type expression uses multiple class kinds: unmanaged shared
 multiple-modifiers.chpl:24: error: Type expression uses multiple class kinds: borrowed borrowed
 multiple-modifiers.chpl:25: error: Type expression uses multiple class kinds: borrowed owned
 multiple-modifiers.chpl:26: error: Type expression uses multiple class kinds: borrowed unmanaged
@@ -33,6 +28,11 @@ multiple-modifiers.chpl:36: error: Type expression uses multiple class kinds: sh
 multiple-modifiers.chpl:37: error: Type expression uses multiple class kinds: shared owned
 multiple-modifiers.chpl:38: error: Type expression uses multiple class kinds: shared unmanaged
 multiple-modifiers.chpl:39: error: Type expression uses multiple class kinds: shared shared
-multiple-modifiers.chpl:42: error: Type expression uses multiple class kinds: unmanaged shared
-multiple-modifiers.chpl:41: error: Type expression uses multiple class kinds: owned unmanaged
 multiple-modifiers.chpl:40: error: Type expression uses multiple class kinds: borrowed owned
+multiple-modifiers.chpl:41: error: Type expression uses multiple class kinds: owned unmanaged
+multiple-modifiers.chpl:42: error: Type expression uses multiple class kinds: unmanaged shared
+multiple-modifiers.chpl:5: error: Type expression uses multiple class kinds: borrowed borrowed
+multiple-modifiers.chpl:6: error: Type expression uses multiple class kinds: borrowed owned
+multiple-modifiers.chpl:7: error: Type expression uses multiple class kinds: borrowed unmanaged
+multiple-modifiers.chpl:8: error: Type expression uses multiple class kinds: borrowed shared
+multiple-modifiers.chpl:9: error: Type expression uses multiple class kinds: owned borrowed

@@ -37,13 +37,13 @@ class astlocT {
 private:
   mutable const char* filename_;  // filename of location
   mutable int         lineno_;    // line number of location
-  chpl::ID            id_;        // id from compiler/next
+  chpl::ID            id_;        // id from compiler/dyno
 
 public:
   astlocT(int linenoArg, const char* filenameArg)
     : filename_(filenameArg), lineno_(linenoArg), id_()
   {
-    if (filenameArg != nullptr)
+    if (filenameArg != nullptr && strlen(filenameArg) > 0)
       assert(astr(filename_) == filename_);
   }
 
@@ -89,10 +89,12 @@ public:
     return line;
   }
 
+  // Compare only file/line. If this/other has an ID, then get the
+  // file/line from the ID and use that to compare.
+  bool hasSameFileLine(const astlocT& other) const;
+
   bool operator==(const astlocT& other) const {
-    return this->filename_ == other.filename_ &&
-           this->lineno_ == other.lineno_ &&
-           this->id_ == other.id_;
+    return this->compare(other) == 0;
   }
   bool operator!=(const astlocT& other) const {
     return !(*this == other);

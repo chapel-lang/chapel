@@ -26,6 +26,11 @@
 #include "parser.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "chpl/uast/Builder.h"
+#include <utility>
+
+
+using namespace chpl;
 
 static Map<const char*, Expr*> configMap; // map from configs to vals
 static Map<const char*, VarSymbol*> usedConfigParams; // map from configs to uses
@@ -36,18 +41,22 @@ bool                           mainPreserveDelimiter;
 void checkConfigs() {
   if (fMinimalModules == false) {
     bool             anyBadConfigParams = false;
-    Vec<const char*> configParamSetNames;
+    if (fDynoCompilerLibrary) {
+      // check that all config vars that were set from the command line were assigned
+      anyBadConfigParams = uast::Builder::checkAllConfigVarsAssigned(gContext);
+    } else {
+      Vec<const char *> configParamSetNames;
 
-    configMap.get_keys(configParamSetNames);
+      configMap.get_keys(configParamSetNames);
 
-    forv_Vec(const char, name, configParamSetNames) {
-      if (usedConfigParams.get(name) == NULL) {
-        USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
-                       name);
-        anyBadConfigParams = true;
-      }
+      forv_Vec(const char, name, configParamSetNames) {
+          if (usedConfigParams.get(name) == NULL) {
+            USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
+                           name);
+            anyBadConfigParams = true;
+          }
+        }
     }
-
     if (anyBadConfigParams) {
       USR_STOP();
     }
@@ -68,40 +77,50 @@ void checkConfigs() {
 // the internal scope-less BlockStmt.
 
 void parseCmdLineConfig(const char* name, const char* value) {
-  // Generate a C-string for a nominal Chapel assignment statement
-  const char* stmtText = (value[0] != '\0') ? astr("dummyConfig=", value, ";") : astr("dummyConfig=true;");
-  const char* parseFn  = astr("Command-line arg (", name, ")");
-  const char* parseMsg = astr("parsing '", value, "'");
 
-  // Invoke the parser to generate AST
-  BlockStmt*  stmt     = parseString(stmtText, parseFn, parseMsg);
-
-  // Determine if the body is also a BlockStmt
-  BlockStmt*  b        = toBlockStmt(stmt->body.head);
-  Expr*       newExpr  = NULL;
-
-  // If NO then extract the RHS from the stmt
-  if (b == 0) {
-    if (CallExpr* c = toCallExpr(stmt->body.head)) {
-      newExpr = c->get(2)->copy();
-
-    } else {
-      INT_ASSERT(false);
-    }
-
+  // unfortunately this is parsed in the order from the command line, so for
+  // it to work, --dyno must come before -sConfigVar=Val or it will not try
+  // to use the dyno parser for command line input
+  if (fDynoCompilerLibrary) {
+    // save the name/value pair for dyno parser
+    gDynoParams.push_back(std::make_pair(std::string(name), std::string(value)));
   } else {
-    if (CallExpr* c = toCallExpr(b->body.head)) {
-      newExpr = c->get(2)->copy();
+
+    // Generate a C-string for a nominal Chapel assignment statement
+    const char* stmtText = (value[0] != '\0') ? astr("dummyConfig=", value, ";") : astr("dummyConfig=true;");
+    const char* parseFn  = astr("Command-line arg (", name, ")");
+    const char* parseMsg = astr("parsing '", value, "'");
+
+    // Invoke the parser to generate AST
+    BlockStmt*  stmt     = parseString(stmtText, parseFn, parseMsg);
+
+    // Determine if the body is also a BlockStmt
+    BlockStmt*  b        = toBlockStmt(stmt->body.head);
+    Expr*       newExpr  = NULL;
+
+    // If NO then extract the RHS from the stmt
+    if (b == 0) {
+      if (CallExpr* c = toCallExpr(stmt->body.head)) {
+        newExpr = c->get(2)->copy();
+
+      } else {
+        INT_ASSERT(false);
+      }
 
     } else {
-      INT_ASSERT(false);
+      if (CallExpr* c = toCallExpr(b->body.head)) {
+        newExpr = c->get(2)->copy();
+
+      } else {
+        INT_ASSERT(false);
+      }
+
     }
 
+    configMap.put(astr(name), newExpr);
+
+    INT_ASSERT(newExpr == configMap.get(astr(name)));
   }
-
-  configMap.put(astr(name), newExpr);
-
-  INT_ASSERT(newExpr == configMap.get(astr(name)));
 }
 
 Expr* getCmdLineConfig(const char* name) {

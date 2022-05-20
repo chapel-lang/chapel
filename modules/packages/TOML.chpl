@@ -18,11 +18,10 @@
  * limitations under the License.
  */
 
-/*
+/* Support for parsing and writing TOML files.
+
 Chapel's Library for `Tom's Obvious, Minimal Language (TOML)
 <https://github.com/toml-lang/toml>`_.
-This module provides support for parsing and writing toml files.
-
 
   .. note::
 
@@ -1258,9 +1257,9 @@ module TomlReader {
           const toke = strippedToken;
           const isWhiteSpace = compile("\\s");
           var dateTimeToken = isWhiteSpace.split(toke);
-          if strippedToken.match(compile('|'.join(dt,ti,ld))).matched then
+          if (compile('|'.join(dt,ti,ld))).match(strippedToken).matched then
             strippedToken = dateTimeToken[0];
-          var isComment = strippedToken.match(compile(comments));
+          var isComment = (compile(comments)).match(strippedToken);
           if isComment.matched && idx <= 1 {
             linetokens.append(strippedToken);
           } else if !isComment.matched {
