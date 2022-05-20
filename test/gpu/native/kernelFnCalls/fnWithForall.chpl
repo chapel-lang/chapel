@@ -16,7 +16,7 @@ proc foo(n) {
 
 
 startVerboseGPU();
-on here.getChild(1) {
+on here.gpus[0] {
   var A: [0..#n] real;
 
   foreach i in 0..#n {  // This is not a kernel, `foo` is too complicated
