@@ -1415,6 +1415,12 @@ struct Converter {
     if (!node->isExpressionLevel()) return false;
     if (node->iterand()->isZip()) return false;
     if (node->numStmts() != 1) return false;
+
+    // This seems counterintuitive, as a bracket loop cannot possibly
+    // contain an index. However the old AST printer uses the
+    // 'maybeArrayType' flag in order to decide if something is a
+    // bracket loop or not. If we adjust that, we can probably remove
+    // this check. TODO: Maybe we should include a 'BracketLoop' type?
     if (node->index() && node->stmt(0)->isConditional()) return false;
     return true;
   }
