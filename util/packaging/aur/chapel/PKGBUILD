@@ -7,12 +7,13 @@ pkgver=1.26.0
 pkgrel=1
 pkgdesc="Programming language designed for productive parallel computing at scale"
 url="https://chapel-lang.org/"
-arch=('x86_64')
+arch=('x86_64' 'arm')
 license=('Apache')
-depends=('python' 'perl' 'llvm' 'clang')
-makedepends=('git' 'cmake')
+depends=('python' 'perl' 'llvm' 'clang' 'gmp')
+makedepends=('git' 'cmake' 'libtool')
 source=("https://github.com/chapel-lang/chapel/releases/download/${pkgver}/chapel-${pkgver}.tar.gz")
 sha256sums=('ba396b581f0a17f8da3f365a3f8b079b8d2e229a393fbd1756966b0019931ece')
+            
 
 build() {
         cd "$srcdir/${pkgname}-${pkgver}"
