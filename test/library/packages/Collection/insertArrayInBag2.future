@@ -1,0 +1,2 @@
+bug: nil dereference when inserting record storing an array into DistributedBag
+#19859
