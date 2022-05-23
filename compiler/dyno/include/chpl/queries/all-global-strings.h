@@ -59,6 +59,7 @@ X(these_         , "these")
 X(type           , "type")
 X(uint_          , "uint")
 X(unmanaged      , "unmanaged")
+X(void_          , "void")
 
 X(equals         , "=")
 X(question       , "?")
