@@ -257,7 +257,6 @@ struct ChplSyntaxVisitor {
       auto it = node->formals();
       interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
     }
-
   }
 
   /*
@@ -510,13 +509,7 @@ struct ChplSyntaxVisitor {
     printChapelSyntax(ss_, callee);
     if (isCalleeReservedWord(callee)) {
       ss_ << " ";
-      if (auto op = node->actual(0)->toOpCall()) {
-        assert(op->isUnaryOp() && op->op() == USTR("?"));
-        printChapelSyntax(ss_, op->actual(0));
-        ss_ << op->op();
-      } else {
-        printChapelSyntax(ss_, node->actual(0));
-      }
+      printChapelSyntax(ss_, node->actual(0));
     } else {
       if (node->callUsedSquareBrackets()) {
         ss_ << "[";
@@ -783,8 +776,11 @@ struct ChplSyntaxVisitor {
     // is different than !this && that
     if (node->isUnaryOp()) {
       bool isPostFixBang = false;
+      bool isNilable = false;
       if (node->op() == USTR("postfix!")) {
         isPostFixBang = true;
+      } else if (node->op() == USTR("?")) {
+        isNilable = true;
       } else {
         ss_ << node->op();
       }
@@ -792,6 +788,8 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->actual(0));
       if (isPostFixBang) {
         ss_ << "!";
+      } else if (isNilable) {
+        ss_ << "?";
       }
     } else if (node->isBinaryOp()) {
       assert(node->numActuals() == 2);
@@ -976,11 +974,7 @@ struct ChplSyntaxVisitor {
 
     ss_ << " ...";
     if (const AstNode* ce = node->count()) {
-      if (const TypeQuery* tq = ce->toTypeQuery()) {
-        printChapelSyntax(ss_, tq);
-      } else {
-        printChapelSyntax(ss_, ce);
-      }
+      printChapelSyntax(ss_, ce);
     }
   }
 
