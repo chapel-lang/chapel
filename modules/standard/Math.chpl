@@ -81,7 +81,7 @@ module Math {
     extern proc log1pf(x: real(32)): real(32);
     return log1pf(x);
   }
-  
+
   /* Returns the log to the base `2**baseLog2` of the given `in` value.
      If `baseLog2` is `1`, then returns the log to the base `2`;
      if `baseLog2` is `2`, then returns the log to the base `4`, etc.
@@ -107,5 +107,4 @@ module Math {
     return _logBasePow2Help(val, baseLog2);
   }
 
-  
 }
