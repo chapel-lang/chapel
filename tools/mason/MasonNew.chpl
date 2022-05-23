@@ -79,7 +79,7 @@ proc masonNew(args: [] string) throws {
     }
     if light {
       if !dirArg.hasValue() then dirName = here.cwd();
-      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license);
+      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license, light);
     } else if validatePackageName(dirName=packageName) {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");
@@ -217,8 +217,8 @@ proc exitOnEOF(parameter) {
 }
 
 /* Previews the Mason.toml file that is going to be created */
-proc previewMasonFile(packageName, version, chapelVersion, license) {
-  const baseToml = getBaseTomlString(packageName, version, chapelVersion, license);
+proc previewMasonFile(packageName, version, chapelVersion, license, packageType="package") {
+  const baseToml = getBaseTomlString(packageName, version, chapelVersion, license, packageType);
   writeln();
   writeln(baseToml);
 }
@@ -300,32 +300,36 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
-proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string) {
+proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string, packageType: string) {
   const baseToml = """[brick]
 name="%s"
 version="%s"
 chplVersion="%s"
 license="%s"
+type="%s"
 
 [dependencies]
 
-""".format(packageName, version, chapelVersion, license);
+""".format(packageName, version, chapelVersion, license, packageType);
   return baseToml;
 }
 
 /* Creates the Mason.toml file */
 proc makeBasicToml(dirName: string, path: string, version: string,
-            chplVersion: string, license: string) {
+            chplVersion: string, license: string, light=false) {
   var defaultVersion: string = "0.1.0";
   var defaultChplVersion: string = getChapelVersionStr();
   var defaultLicense: string = "None";
+  var defaultType: string = "package";
   if !version.isEmpty()
     then defaultVersion = version;
   if !chplVersion.isEmpty()
     then defaultChplVersion = chplVersion;
   if !license.isEmpty()
     then defaultLicense = license;
-  const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion, defaultLicense);
+  if light
+    then defaultType = "light";
+  const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion, defaultLicense, defaultType);
   var tomlFile = open(path+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);

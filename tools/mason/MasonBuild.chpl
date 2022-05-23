@@ -141,7 +141,10 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
     if release then
       binLoc = 'release';
 
-
+    // can't build a mason light project
+    if isLightProject(lockFile) {
+      throw new owned MasonError("Cannot build: mason light projects currently cannot be built with mason");
+    }
     // build on last modification
     if projectModified(projectHome, projectName, binLoc) || force {
 
@@ -259,6 +262,10 @@ proc genSourceList(lockFile: borrowed Toml) {
     }
   }
   return sourceList;
+}
+
+proc isLightProject(lockFile: borrowed Toml) {
+  return lockFile["root"]!["type"]!.s == "light";
 }
 
 
