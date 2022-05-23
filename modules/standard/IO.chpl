@@ -2851,7 +2851,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
 
    :returns: an object which yields strings read from the file
 
-   :throws SystemError: Thrown if an ItemReader could not be returned.
+   :throws SystemError: Thrown if an object could not be returned.
  */
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)),
@@ -4485,6 +4485,7 @@ proc channel.readBytes(x, len:c_ssize_t) throws {
    of a single type. Also supports an iterator yielding
    the read values.
  */
+pragma "no doc"
 record ItemReader {
   /* What type do we read and yield? */
   type ItemType;
@@ -4516,11 +4517,13 @@ record ItemReader {
 /* Create and return an :record:`ItemReader` that can yield read values of
    a single type.
  */
+pragma "no doc"
 proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   if writing then compilerError(".itemReader on write-only channel");
   return new ItemReader(ItemType, kind, locking, this);
 }
 
+pragma "no doc"
 record ItemWriter {
   /* What type do we write? */
   type ItemType;
@@ -4539,6 +4542,9 @@ record ItemWriter {
 /* Create and return an :record:`ItemWriter` that can write values of
    a single type.
  */
+pragma "no doc"
+deprecated
+"ItemWriter is deprecated"
 proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
   if !writing then compilerError(".itemWriter on read-only channel");
   return new ItemWriter(ItemType, kind, locking, this);
