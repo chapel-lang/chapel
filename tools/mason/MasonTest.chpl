@@ -210,6 +210,10 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     const toParse = open(projectHome + "/Mason.lock", iomode.r);
     const lockFile = owned.create(parseToml(toParse));
 
+    if isLightProject(lockFile) {
+      throw new owned MasonError("Cannot run tests: mason light projects currently cannot be built with mason");
+    }
+    
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
 

@@ -84,7 +84,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
           updated = true;
         }
       }
-      if !updated {
+      if !updated && show {
         writeln("Skipping registry update since no dependency found in manifest file.");
       }
     }
