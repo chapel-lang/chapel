@@ -106,5 +106,5 @@ module Math {
   inline proc logBasePow2(val: uint(?w), baseLog2) {
     return _logBasePow2Help(val, baseLog2);
   }
-  
+
 }
