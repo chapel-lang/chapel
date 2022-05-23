@@ -1810,7 +1810,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle):file throws {
 
 /*
 
-Create a Chapel file that works with a system file descriptor  Note that once
+Create a Chapel file that works with a system file descriptor.  Note that once
 the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
 
