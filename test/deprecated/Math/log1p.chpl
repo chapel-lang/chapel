@@ -1,9 +1,7 @@
-use Math;
-
 var a: real = 0;
-var b: real = 1.72;
+var b: real(32) = 1.72;
 var c: real = 8;
-var d: real = 26;
+var d: real(32) = 26;
 var e: real = 80;
 
 writeln("a = ", a);

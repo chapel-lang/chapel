@@ -16,9 +16,9 @@ default:
 .. toctree::
    :maxdepth: 1
 
+   AutoMath <standard/AutoMath>
    Errors <standard/Errors>
    IO Support <standard/ChapelIO>
-   Math <standard/Math>
    Types <standard/Types>
 
 
@@ -71,6 +71,7 @@ Math/Numerical
 .. toctree::
    :maxdepth: 1
 
+   AutoMath <standard/AutoMath>
    BigInteger <standard/BigInteger>
    BitOps <standard/BitOps>
    GMP <standard/GMP>

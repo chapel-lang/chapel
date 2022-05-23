@@ -1,5 +1,3 @@
-use Math;
-
 for i in 1..4**3 {
   writeln("i = ", i, "; log4(i) = ", log4(i));
 }

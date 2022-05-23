@@ -1,3 +1,3 @@
-warning: Ambiguous module source file -- using ./Math.chpl over $CHPL_HOME/modules/standard/Math.chpl
+warning: Ambiguous module source file -- using ./AutoMath.chpl over $CHPL_HOME/modules/standard/AutoMath.chpl
 foo2.chpl:3: error: unresolved call 'testmath()'
 foo2.chpl:3: note: because no functions named testmath found in scope

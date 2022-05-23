@@ -184,6 +184,8 @@ ChapelAutoAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation
 Types
   from print-module-resolution.ChapelStandard.Types
+AutoMath
+  from print-module-resolution.ChapelStandard.AutoMath
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelStandard
