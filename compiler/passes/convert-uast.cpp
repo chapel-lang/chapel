@@ -342,6 +342,8 @@ struct Converter {
       return new UnresolvedSymExpr("chpl_by");
     } else if (name == USTR("_")) {
       return new UnresolvedSymExpr("chpl__tuple_blank");
+    } else if (name == USTR("void")) {
+      return new SymExpr(dtVoid->symbol);
     }
 
     return nullptr;
