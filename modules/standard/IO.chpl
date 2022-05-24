@@ -425,9 +425,6 @@ module IO {
       NFS), we should open a local copy of that file and use that in the
       channel. (not sure how to avoid opening # channels copies of these files
       -- seems that we'd want some way to cache that...).
-    - Create leader/follower iterators for ItemReader/ItemWriter so that these
-      are as efficient as possible when working with fixed-size data types
-      (ie, they can open up channels that are not shared).
 */
 
 public use SysBasic;
@@ -2867,12 +2864,12 @@ proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
   local_style.string_end = 0x0a; // '\n'
   param kind = iokind.dynamic;
 
-  var ret:ItemReader(string, kind, locking);
+  var ret:itemReaderInternal(string, kind, locking);
   var err:syserr = ENOERR;
   on this.home {
     try this.checkAssumingLocal();
     var ch = new channel(false, kind, locking, this, err, hints, start, end, local_style);
-    ret = new ItemReader(string, kind, locking, ch);
+    ret = new itemReaderInternal(string, kind, locking, ch);
   }
   if err then try ioerror(err, "in file.lines", this.tryGetPath());
 
@@ -3683,7 +3680,8 @@ iter channel.lines() {
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  for line in this.itemReader(string, this.kind) {
+  var itemReader = new itemReaderInternal(string, kind, locking, this);
+  for line in itemReader {
     yield line;
   }
 
@@ -4485,8 +4483,11 @@ proc channel.readBytes(x, len:c_ssize_t) throws {
    of a single type. Also supports an iterator yielding
    the read values.
  */
+deprecated "ItemReader is deprecated"
+type ItemReader = itemReaderInternal;
+
 pragma "no doc"
-record ItemReader {
+record itemReaderInternal {
   /* What type do we read and yield? */
   type ItemType;
   /* the kind field for our channel */
@@ -4517,14 +4518,17 @@ record ItemReader {
 /* Create and return an :record:`ItemReader` that can yield read values of
    a single type.
  */
-pragma "no doc"
+deprecated "channel.itemReader is deprecated"
 proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   if writing then compilerError(".itemReader on write-only channel");
-  return new ItemReader(ItemType, kind, locking, this);
+  return new itemReaderInternal(ItemType, kind, locking, this);
 }
 
+deprecated "ItemWriter is deprecated"
+type ItemWriter = itemWriterInternal;
+
 pragma "no doc"
-record ItemWriter {
+record itemWriterInternal {
   /* What type do we write? */
   type ItemType;
   /* the kind field for our channel */
@@ -4542,9 +4546,8 @@ record ItemWriter {
 /* Create and return an :record:`ItemWriter` that can write values of
    a single type.
  */
-pragma "no doc"
 deprecated
-"ItemWriter is deprecated"
+"channel.itemWriter is deprecated"
 proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
   if !writing then compilerError(".itemWriter on read-only channel");
   return new ItemWriter(ItemType, kind, locking, this);
