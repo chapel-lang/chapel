@@ -26,6 +26,8 @@
     `wire format <https://developers.google.com/protocol-buffers/docs/encoding/>`_
     encoding algorithms. It has functions to support serialization and deserialization
     of protocol buffer messages.
+
+    For more details, see :ref:`readme-protobuf`
  */
 module ProtobufProtocolSupport {
 
