@@ -2626,27 +2626,27 @@ static void codegenPartTwo() {
     codegen_library_makefile();
   }
 
-    // Vectors to store different symbol names to be used while generating header
-    std::set<const char*> cnames;
-    std::vector<TypeSymbol*> types;
-    std::vector<FnSymbol*> functions;
-    std::vector<VarSymbol*> globals;
+  // Vectors to store different symbol names to be used while generating header
+  std::set<const char*> cnames;
+  std::vector<TypeSymbol*> types;
+  std::vector<FnSymbol*> functions;
+  std::vector<VarSymbol*> globals;
 
-    // This dumps the generated sources into the build directory.
-    info->cfile = hdrfile.fptr;
-    codegen_header(cnames, types, functions, globals);
+  // This dumps the generated sources into the build directory.
+  info->cfile = hdrfile.fptr;
+  codegen_header(cnames, types, functions, globals);
 
-    // Prepare the LLVM IR dumper for code generation
-    // This needs to happen after protectNameFromC which happens
-    // currently in codegen_header.
-    preparePrintLlvmIrForCodegen();
+  // Prepare the LLVM IR dumper for code generation
+  // This needs to happen after protectNameFromC which happens
+  // currently in codegen_header.
+  preparePrintLlvmIrForCodegen();
 
-    info->cfile = defnfile.fptr;
-    codegen_defn(cnames, types, functions, globals);
-    info->cfile = mainfile.fptr;
-    if ( gCodegenGPU == false ) {
-      codegen_config();
-    }
+  info->cfile = defnfile.fptr;
+  codegen_defn(cnames, types, functions, globals);
+  info->cfile = mainfile.fptr;
+  if ( gCodegenGPU == false ) {
+    codegen_config();
+  }
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
@@ -2721,7 +2721,7 @@ void codegen() {
 
     if (pid == 0) {
       // child process
-    gCodegenGPU = true;
+      gCodegenGPU = true;
       codegenPartTwo();
       makeBinary();
       clean_exit(0);
@@ -2740,7 +2740,7 @@ void codegen() {
     }
   }
 
-      codegenPartTwo();
+  codegenPartTwo();
 }
 
 void makeBinary(void) {
