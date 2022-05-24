@@ -143,7 +143,7 @@ module Random {
 
   /*
 
-    Fills a rectangular array of numeric elements with pseudorandom values 
+    Fills a rectangular array of numeric elements with pseudorandom values
     in the range [`min`, `max`] (inclusive) in parallel using
     a new stream from :mod:`PCGRandom`  created
     specifically for this call.  The first `arr.size` values from the stream
@@ -163,7 +163,7 @@ module Random {
     :type seed: `int(64)`
 
   */
-  proc fillRandom(arr: [], min: arr.eltType, max: arr.eltType, 
+  proc fillRandom(arr: [], min: arr.eltType, max: arr.eltType,
       seed: int(64) = SeedGenerator.oddCurrentTime)
     where isSupportedNumericType(arr.eltType) {
     var randNums = createRandomStream(seed=seed,
@@ -172,7 +172,7 @@ module Random {
                                       algorithm=RNG.PCG);
     randNums.fillRandom(arr, min, max);
   }
-  
+
   pragma "no doc"
   proc fillRandom(arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
     compileError("Random.fillRandom is only defined for numeric arrays");
