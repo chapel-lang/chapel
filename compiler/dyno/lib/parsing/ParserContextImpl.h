@@ -960,7 +960,11 @@ ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
   // In some cases the 'domainExprs' may not exist (think array formal).
   auto domainBody = domainExprs ? consumeList(domainExprs) : AstList();
 
+  // TODO: What if there is only a single expr that is a domain? Do we
+  // really want to build '{{...}}'?
+  const bool usedCurlyBraces = false;
   auto domain = Domain::build(builder, convertLocation(locDomainExprs),
+                              usedCurlyBraces,
                               std::move(domainBody));
 
   // If 'typeExpr' is null, then the resulting block is empty.

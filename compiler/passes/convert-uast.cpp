@@ -1483,16 +1483,16 @@ struct Converter {
     bool maybeArrayType = false;
     bool zippered = node->iterand()->isZip();
 
-      // Unpack things differently if body is a conditional.
-      if (auto origCond = node->stmt(0)->toConditional()) {
-        INT_ASSERT(origCond->numThenStmts() == 1);
-        INT_ASSERT(!origCond->hasElseBlock());
-        expr = singleExprFromStmts(origCond->thenStmts());
-        cond = toExpr(convertAST(origCond->condition()));
-        INT_ASSERT(cond);
-      } else {
-        expr = singleExprFromStmts(node->stmts());
-      }
+    // Unpack things differently if body is a conditional.
+    if (auto origCond = node->stmt(0)->toConditional()) {
+      INT_ASSERT(origCond->numThenStmts() == 1);
+      INT_ASSERT(!origCond->hasElseBlock());
+      expr = singleExprFromStmts(origCond->thenStmts());
+      cond = toExpr(convertAST(origCond->condition()));
+      INT_ASSERT(cond);
+    } else {
+      expr = singleExprFromStmts(node->stmts());
+    }
 
     INT_ASSERT(expr != nullptr);
 
@@ -1546,17 +1546,7 @@ struct Converter {
 
   /// Array, Domain, Range, Tuple ///
 
-  CallExpr* visit(const uast::Array* node) {
-    CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
-
-    for (auto expr : node->exprs()) {
-      actualList->insertAtTail(toExpr(convertAST(expr)));
-    }
-
-    return new CallExpr("chpl__buildArrayExpr", actualList);
-  }
-
-  Expr* visit(const uast::Domain* node) {
+  Expr* visit(const uast::Array* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
     bool isAssociativeList = false;
 
@@ -1587,8 +1577,28 @@ struct Converter {
     if (isAssociativeList) {
       ret = new CallExpr("chpl__buildAssociativeArrayExpr", actualList);
     } else {
+      ret = new CallExpr("chpl__buildArrayExpr", actualList);
+    }
+
+    INT_ASSERT(ret != nullptr);
+
+    return ret;
+  }
+
+  Expr* visit(const uast::Domain* node) {
+    CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
+
+    for (auto expr : node->exprs()) {
+      actualList->insertAtTail(convertAST(expr));
+    }
+
+    Expr* ret = nullptr;
+
+    if (node->usedCurlyBraces()) {
       ret = new CallExpr("chpl__buildDomainExpr", actualList,
                          new SymExpr(gTrue));
+    } else {
+      ret = new CallExpr("chpl__ensureDomainExpr", actualList);
     }
 
     INT_ASSERT(ret != nullptr);
