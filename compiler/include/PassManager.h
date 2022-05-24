@@ -179,6 +179,10 @@ template <typename T> using PassTList = std::vector<std::unique_ptr<PassT<T>>>;
 // today so that eg. a pass over CallExpr is actually a Function pass
 // with an adapter to visit every CallExpr without a performance hit.
 //
+// When working over a "std::vector" or "Vec" type, the PassManager will
+// only iterate over elements present when the pass started running, by
+// noting the size at that time.
+//
 class PassManager {
  private:
   // Run pass over many and return it's results (if any). Specialization
