@@ -110,7 +110,7 @@ def check_llvm_packages(llvm_config):
     if os.path.isdir(llvm_lib_dir):
         if sys.platform == "darwin":
           clang_cpp_lib = os.path.join(llvm_lib_dir, 'libclang-cpp.dylib')
-        elif platform == "win32":
+        elif sys.platform == "win32":
           clang_cpp_lib = os.path.join(llvm_lib_dir, 'libclang-cpp.dll')
         else:
           clang_cpp_lib = os.path.join(llvm_lib_dir, 'libclang-cpp.so')
