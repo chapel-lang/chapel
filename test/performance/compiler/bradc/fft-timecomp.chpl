@@ -1,4 +1,4 @@
-use BitOps, Random, Time;
+use Math, BitOps, Random, Time;
 
 use HPCCProblemSize;
 

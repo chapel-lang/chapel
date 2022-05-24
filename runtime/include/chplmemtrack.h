@@ -72,6 +72,18 @@ void chpl_track_realloc_post(void* moreMemAlloc,
                          chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename);
 
+static inline void chpl_track_gen_subloc_info(char* subloc_info,
+                                              c_sublocid_t subloc) {
+#ifdef HAS_GPU_LOCALE
+  if (subloc >= 0) {
+    snprintf(subloc_info, 16, " (gpu %" PRI_c_sublocid_t ")", subloc);
+  }
+  else {
+    snprintf(subloc_info, 16, " (cpu)");
+  }
+#endif
+}
+
 #else // LAUNCHER
 
 #define chpl_setMemmax(value)

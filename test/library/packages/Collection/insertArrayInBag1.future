@@ -1,0 +1,2 @@
+bug: nil dereference when inserting an array into a distributed bag
+#19859

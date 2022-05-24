@@ -39,7 +39,7 @@
  */
 pragma "error mode fatal"
 pragma "unsafe"
-pragma "module included by default"
+deprecated "The 'VectorizingIterator' module has been deprecated; please use 'foreach' loops instead"
 module VectorizingIterator {
   private use ChapelStandard;
 
@@ -72,7 +72,7 @@ module VectorizingIterator {
   /*
      .. warning::
 
-        The :iter:`vectorizeOnly()` iterator is deprecated.
+        This module and its :iter:`vectorizeOnly()` iterator are deprecated.
         Please use ``foreach`` loops instead.
 
      Vectorize only "wrapper" iterator:

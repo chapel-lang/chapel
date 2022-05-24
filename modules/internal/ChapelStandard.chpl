@@ -38,7 +38,6 @@ module ChapelStandard {
   public use String;
   public use OwnedObject;
   public use SharedObject;
-  public use ChapelEnv as ChapelEnv;
   public use ChapelBase;
   public use Atomics;
   public use NetworkAtomics;
@@ -76,8 +75,7 @@ module ChapelStandard {
 
   // Standard modules.
   public use Types as Types;
-  public use Math as Math;
-  public use VectorizingIterator as VectorizingIterator;
+  public use AutoMath as AutoMath;
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

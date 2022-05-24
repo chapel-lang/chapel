@@ -11,7 +11,7 @@
 // Use standard modules for Bit operations, Random numbers, Timing, and
 // Block and Cyclic distributions
 //
-use BitOps, Random, Time, BlockDist, CyclicDist;
+use BitOps, Math, Random, Time, BlockDist, CyclicDist;
 
 use VisualDebug;
 

@@ -29,6 +29,12 @@ then
   export CMAKE_BUILD_PARALLEL_LEVEL=5
 fi
 
+GCC_DIR=`which gcc`
+# remove gcc from the end
+GCC_DIR=`dirname $GCC_DIR`
+# remove bin/ from the end
+GCC_DIR=`dirname $GCC_DIR`
+
 # These parallel builds require CMake > 3.12
 echo Will build in parallel with $CMAKE_BUILD_PARALLEL_LEVEL
 
@@ -42,6 +48,7 @@ cmake ../llvm-src \
   -DCMAKE_INSTALL_PREFIX="$LLVM_INSTALL_DIR" \
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \
+  -DGCC_INSTALL_PREFIX="$GCC_DIR" \
   -DLLVM_ENABLE_WARNINGS=0 \
   -DLLVM_ENABLE_PEDANTIC=0 \
   -DCLANG_ENABLE_ARCMT=0 \

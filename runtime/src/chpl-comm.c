@@ -29,6 +29,7 @@
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-internal.h"
+#include "chpl-gpu-diags.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpl-topo.h"

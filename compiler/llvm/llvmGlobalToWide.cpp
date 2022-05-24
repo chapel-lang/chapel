@@ -1517,7 +1517,7 @@ namespace {
         if (update_parameters) {
           for (size_t i = 0; i < Params.size(); i++ ) {
 #if HAVE_LLVM_VER >= 140
-            NF->removeParamAttrs(i+1,
+            NF->removeParamAttrs(i,
                                  AttributeFuncs::typeIncompatible(Params[i]));
 #else
             NF->removeAttributes(i+1,
