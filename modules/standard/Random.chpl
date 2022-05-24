@@ -145,14 +145,10 @@ module Random {
 
     Fills a rectangular array of numeric elements with pseudorandom values 
     in the range [`min`, `max`] (inclusive) in parallel using
-    a new stream implementing :class:`RandomStreamInterface` created
+    a new :class:`PCGRandomStream` created
     specifically for this call.  The first `arr.size` values from the stream
     will be assigned to the array's elements in row-major order. The
     parallelization strategy is determined by the array.
-
-    .. note::
-      :mod:`NPBRandom` only supports `real(64)`, `imag(64)`, and `complex(128)`
-      numeric types. :mod:`PCGRandom` supports all primitive numeric types.
 
     :arg arr: The array to be filled, where T is a primitive numeric type. Only
       rectangular arrays are supported currently.
@@ -166,10 +162,9 @@ module Random {
      `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
     :type seed: `int(64)`
 
-    :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
-    :type algorithm: :type:`RNG`
   */
-  proc fillRandom(arr: [], min: arr.eltType, max: arr.eltType, seed: int(64) = SeedGenerator.oddCurrentTime)
+  proc fillRandom(arr: [], min: arr.eltType, max: arr.eltType, 
+      seed: int(64) = SeedGenerator.oddCurrentTime)
     where isSupportedNumericType(arr.eltType) {
     var randNums = createRandomStream(seed=seed,
                                       eltType=arr.eltType,
