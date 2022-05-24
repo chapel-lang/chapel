@@ -173,7 +173,6 @@ module Random {
     randNums.fillRandom(arr, min, max);
   }
   
-
   pragma "no doc"
   proc fillRandom(arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
     compileError("Random.fillRandom is only defined for numeric arrays");
