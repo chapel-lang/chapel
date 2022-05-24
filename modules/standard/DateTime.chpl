@@ -567,7 +567,10 @@ module DateTime {
      `microsecond`, and `timezone`.  All arguments are optional
    */
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
-                 in tzinfo: shared TZInfo? = nil) {
+                 in tzinfo: shared TZInfo?) {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -583,17 +586,55 @@ module DateTime {
     this.chpl_tzinfo = tzinfo;
   }
 
+  /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
+     `microsecond`.  All arguments are optional
+   */
+  proc time.init(hour=0, minute=0, second=0, microsecond=0) {
+    if hour < 0 || hour >= 24 then
+      HaltWrappers.initHalt("hour out of range");
+    if minute < 0 || minute >= 60 then
+      HaltWrappers.initHalt("minute out of range");
+    if second < 0 || second >= 60 then
+      HaltWrappers.initHalt("second out of range");
+    if microsecond < 0 || microsecond >= 1000000 then
+      HaltWrappers.initHalt("microsecond out of range");
+    this.chpl_hour = hour;
+    this.chpl_minute = minute;
+    this.chpl_second = second;
+    this.chpl_microsecond = microsecond;
+    this.chpl_tzinfo = nil;
+  }
+
+  /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
+     `microsecond`, and `timezone`.  All arguments are optional
+   */
+
   pragma "no doc"
   proc time.deinit() {
   }
 
   /* Methods on time values */
 
+  /* Replace the `hour`, `minute`, `second`, `microsecond` in a
+     `time` to create a new `time`. All arguments are optional.
+   */
+  proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1) {
+    const newhour = if hour != -1 then hour else this.hour;
+    const newminute = if minute != -1 then minute else this.minute;
+    const newsecond = if second != -1 then second else this.second;
+    const newmicrosecond = if microsecond != -1 then microsecond else this.microsecond;
+
+    return new time(newhour, newminute, newsecond, newmicrosecond);
+  }
+
   /* Replace the `hour`, `minute`, `second`, `microsecond` and `tzinfo` in a
      `time` to create a new `time`. All arguments are optional.
    */
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
-                    in tzinfo=this.tzinfo) {
+                    in tzinfo) {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -636,6 +677,9 @@ module DateTime {
 
   /* Return the offset from UTC */
   proc time.utcoffset() {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     if tzinfo.borrow() == nil {
       return new timedelta();
     } else {
@@ -645,6 +689,9 @@ module DateTime {
 
   /* Return the daylight saving time offset */
   proc time.dst() {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     if tzinfo.borrow() == nil {
       return new timedelta();
     } else {
@@ -654,6 +701,9 @@ module DateTime {
 
   /* Return the name of the timezone for this `time` value */
   proc time.tzname() {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     if tzinfo.borrow() == nil then
       return "";
     else
@@ -916,9 +966,22 @@ module DateTime {
    */
   proc datetime.init(year, month, day,
                      hour=0, minute=0, second=0, microsecond=0,
-                     in tzinfo: shared TZInfo? = nil) {
+                     in tzinfo) {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
+  }
+
+  /* Initialize a new `datetime` value from the given `year`, `month`, `day`,
+     `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
+     `month`, and `day` arguments are required, the rest are optional.
+   */
+  proc datetime.init(year, month, day,
+                     hour=0, minute=0, second=0, microsecond=0) {
+    chpl_date = new date(year, month, day);
+    chpl_time = new time(hour, minute, second, microsecond);
   }
 
   /* Return a `datetime` value representing the current time and date */
@@ -927,7 +990,17 @@ module DateTime {
   }
 
   /* Return a `datetime` value representing the current time and date */
-  proc type datetime.now(in tz: shared TZInfo? = nil) {
+  proc type datetime.now() {
+    const timeSinceEpoch = getTimeOfDay();
+    const lt = getLocalTime(timeSinceEpoch);
+    return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
+                        day=lt.tm_mday,       hour=lt.tm_hour,
+                        minute=lt.tm_min,     second=lt.tm_sec,
+                        microsecond=timeSinceEpoch(1));
+  }
+
+  /* Return a `datetime` value representing the current time and date */
+  proc type datetime.now(in tz: shared TZInfo?) {
     if tz.borrow() == nil {
       const timeSinceEpoch = getTimeOfDay();
       const lt = getLocalTime(timeSinceEpoch);
@@ -936,6 +1009,9 @@ module DateTime {
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=timeSinceEpoch(1));
     } else {
+      if chpl_warnUnstable  {
+        compilerWarning("tzinfo is unstable; its type may change in the future");
+      }
       const timeSinceEpoch = getTimeOfDay();
       const td = new timedelta(seconds=timeSinceEpoch(0),
                                microseconds=timeSinceEpoch(1));
@@ -954,8 +1030,13 @@ module DateTime {
   }
 
   /* The `datetime` that is `timestamp` seconds from the epoch */
+  proc type datetime.fromtimestamp(timestamp: real) {
+    return datetime.utcfromtimestamp(timestamp);
+  }
+
+  /* The `datetime` that is `timestamp` seconds from the epoch */
   proc type datetime.fromtimestamp(timestamp: real,
-                                   in tz: shared TZInfo? = nil) {
+                                   in tz: shared TZInfo?) {
     if tz.borrow() == nil {
       var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
       const lt = getLocalTime(t);
@@ -964,6 +1045,9 @@ module DateTime {
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=t(1));
     } else {
+      if chpl_warnUnstable {
+        compilerWarning("tzinfo is unstable; its type may change in the future");
+      }
       var dt = datetime.utcfromtimestamp(timestamp);
       return (dt + tz!.utcoffset(dt)).replace(tzinfo=tz);
     }
@@ -1036,6 +1120,9 @@ module DateTime {
 
   /* Return the date and time converted into the timezone in the argument */
   proc datetime.astimezone(in tz: shared TZInfo) {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     if tzinfo == tz {
       return this;
     }
