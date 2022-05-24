@@ -403,25 +403,25 @@ static Type* convertToCanonical(Type* a) {
 }
 
 
-static void convertClassTypes(Type* (*convert)(Type*)) {
+static void convertClassTypes(void) {
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    Type* newT = convert(var->type);
+    Type* newT = convertToCanonical(var->type);
     if (newT != var->type) var->type = newT;
   }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    Type* newT = convert(arg->type);
+    Type* newT = convertToCanonical(arg->type);
     if (newT != arg->type) arg->type = newT;
   }
 
   forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
-    Type* newT = convert(sv->type);
+    Type* newT = convertToCanonical(sv->type);
     if (newT != sv->type) sv->type = newT;
   }
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    Type* newT = convert(ts->type);
+    Type* newT = convertToCanonical(ts->type);
     if (newT != ts->type) {
       TypeSymbol* newTS = newT->symbol;
       for_SymbolSymExprs(se, ts) {
@@ -433,7 +433,7 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
     for (size_t i = 0; i < n; i++) {
       NameAndSymbol& ns = ts->type->substitutionsPostResolve[i];
       if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
-        Type* newT = convert(ets->type);
+        Type* newT = convertToCanonical(ets->type);
         if (newT != ets->type) {
           TypeSymbol* newTS = newT->symbol;
           ns.value = newTS;
@@ -443,11 +443,11 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    Type* newRetT = convert(fn->retType);
+    Type* newRetT = convertToCanonical(fn->retType);
     if (newRetT != fn->retType) fn->retType = newRetT;
 
     if (fn->iteratorInfo) {
-      Type* newYieldT = convert(fn->iteratorInfo->yieldedType);
+      Type* newYieldT = convertToCanonical(fn->iteratorInfo->yieldedType);
       if (newYieldT != fn->iteratorInfo->yieldedType)
         fn->iteratorInfo->yieldedType = newYieldT;
     }
@@ -456,7 +456,7 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
     for (size_t i = 0; i < n; i++) {
       NameAndSymbol& ns = fn->substitutionsPostResolve[i];
       if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
-        Type* newT = convert(ets->type);
+        Type* newT = convertToCanonical(ets->type);
         if (newT != ets->type) {
           TypeSymbol* newTS = newT->symbol;
           ns.value = newTS;
@@ -471,7 +471,7 @@ void convertClassTypesToCanonical() {
 
   // Anything that has unmanaged pointer type should be using the canonical
   // type instead.
-  convertClassTypes(convertToCanonical);
+  convertClassTypes();
 
   // At this point the TypeSymbols for the unmanaged types should
   // be removed from the tree. Using these would be an error.

@@ -219,6 +219,35 @@ class LocalizeGlobals : public PassT<FnSymbol*> {
   std::vector<SymExpr*> symExprs;
 };
 
+/**
+  Inserts blocks into iterator bodies after each yield which are
+  responsible for handling cleanup actions at that yield point.
+*/
+class CreateIteratorBreakBlocks : public PassT<CallExpr*> {
+ public:
+  bool shouldProcess(CallExpr* call) override;
+  void process(CallExpr* call) override;
+};
+
+/**
+  Builds up destructor bodies by inserting destructor calls for fields.
+*/
+class FixupDestructors : public PassT<FnSymbol*> {
+ public:
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+};
+
+/**
+  This pass over calls is a workaround which plugs leaks coming from forall
+  exprs that are array types.
+*/
+class AutoDestroyLoopExprTemps: public PassT<CallExpr*> {
+ public:
+  bool shouldProcess(CallExpr* call) override;
+  void process(CallExpr* call) override;
+};
+
 class BulkCopyRecords : public PassT<FnSymbol*> {
  public:
   bool shouldProcess(FnSymbol* fn) override;
