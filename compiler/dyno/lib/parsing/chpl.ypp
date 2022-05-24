@@ -3107,7 +3107,7 @@ for_expr:
     owned<AstNode> iterand = nullptr;
     auto iterExprs = context->consumeList($2);
     if (iterExprs.size() > 1) {
-      iterand = Domain::build(BUILDER, LOC(@2), std::move(iterExprs));
+      iterand = Domain::build(BUILDER, LOC(@2), false, std::move(iterExprs));
     } else {
       iterand = std::move(iterExprs[0]);
     }
@@ -3569,11 +3569,13 @@ literal_expr:
 | TNONE               { $$ = context->buildIdent(@$, $1); }
 | TLCBR expr_ls TRCBR
   {
-    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Domain::build(BUILDER, LOC(@$), true,
+                       context->consumeList($2)).release();
   }
 | TLCBR expr_ls TCOMMA TRCBR
   {
-    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Domain::build(BUILDER, LOC(@$), true,
+                       context->consumeList($2)).release();
   }
 | TLSBR expr_ls TRSBR
   {
@@ -3581,16 +3583,17 @@ literal_expr:
   }
 | TLSBR expr_ls TCOMMA TRSBR
   {
+    // TODO (dlongnecke): Record trailing comma?
     $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 | TLSBR assoc_expr_ls TRSBR
   {
-    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
   {
     // TODO (dlongnecke): Record trailing comma?
-    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 
 ;
