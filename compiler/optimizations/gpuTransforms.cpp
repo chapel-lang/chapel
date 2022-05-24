@@ -206,7 +206,7 @@ bool OutlineInfo::buildStubOutlinedFunction(CForLoop* loop) {
 
   // Pattern match loop boundaries to determine lower
   // and upper bounds. If we fail to match exit early.
-  if(!extractIndicesAndLowerBounds(loop) || 
+  if(!extractIndicesAndLowerBounds(loop) ||
      !extractUpperBound(loop))
   {
     return false;
