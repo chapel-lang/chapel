@@ -3831,11 +3831,11 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :returns: true if the bytes were read without error.
 */
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.alignedLow,
-                      amount = arg.domain.alignedHigh - start + 1) : bool throws
+                      amount = (arg.domain.alignedHigh - start)/arg.domain.stride + 1) : bool throws
                       where arg.rank == 1 && arg.isRectangular() {
-
+  const stride = arg.domain.stride;
   if arg.size == 0 || !arg.domain.contains(start) ||
-     amount <= 0 || (start + amount - 1 > arg.domain.alignedHigh) then return false;
+     amount <= 0 || (start + (amount-1)*stride > arg.domain.alignedHigh) then return false;
 
   var err:syserr = ENOERR;
   on this.home {
@@ -3843,15 +3843,15 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.ali
     param newLineChar = 0x0A;
     var got: int;
     var i = start;
-    const maxIdx = start + amount - 1;
+    const maxIdx = start + (amount-1)*stride;
     while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
       if got < 0 then break;
       arg[i] = got:uint(8);
-      i += 1;
+      i += stride;
       if got == newLineChar then break;
     }
-    numRead = i - start;
+    numRead = (i - start)/stride;
     if i == start && got < 0 then err = (-got):syserr;
   }
 
@@ -4564,7 +4564,7 @@ proc read(type t ...?numTypes) throws {
 }
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
 proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.alignedLow,
-              amount = arg.domain.alignedHigh - start + 1) : bool throws
+              amount = arg.domain.size) : bool throws
                 where arg.rank == 1 && arg.isRectangular() {
   return stdin.readline(arg, numRead, start, amount);
 }
