@@ -1,4 +1,4 @@
-use CTypes;
+use CTypes, Math;
 
 proc copyBtoC(A:[], B:[])
 {
