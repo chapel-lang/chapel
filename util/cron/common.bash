@@ -13,20 +13,13 @@ if [ -z "${CHPL_SOURCED_BASHRC}" -a -f ~/.bashrc ] ; then
     export CHPL_SOURCED_BASHRC=true
 fi
 
-if [ "${USE_LLVM_13}" == "true" ] ; then
-  LLVM_VERSION=13
-else
-  # blank for default
-  LLVM_VERSION=
-fi
-
 if [ -z "${OFFICIAL_SYSTEM_LLVM}" ] ; then
   if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
-    source /data/cf/chapel/setup_system_llvm.bash $LLVM_VERSION
+    source /data/cf/chapel/setup_system_llvm.bash
   elif [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
-    source /cray/css/users/chapelu/setup_system_llvm.bash $LLVM_VERSION
+    source /cray/css/users/chapelu/setup_system_llvm.bash
   elif [ -f /cy/users/chapelu/setup_system_llvm.bash ] ; then
-    source /cy/users/chapelu/setup_system_llvm.bash $LLVM_VERSION
+    source /cy/users/chapelu/setup_system_llvm.bash
   fi
 fi
 
