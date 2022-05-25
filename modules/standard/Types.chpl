@@ -590,14 +590,10 @@ proc isDomain(e)    param  return isDomainValue(e);
 proc isArray(e)     param  return isArrayValue(e);
 /* Returns ``true`` if the argument is a domain map or a domain map type. */
 proc isDmap(e)      param  return isDmapValue(e);
-pragma "no doc"
-proc isSync(e: sync)     param  return true; // workaround: not isSyncValue
 /* Returns ``true`` if the argument is a ``sync`` type or a ``sync`` variable. */
-proc isSync(e)           param  return false;
-pragma "no doc"
-proc isSingle(e: single) param  return true; // workaround: not isSingleValue
+proc isSync(e)      param  return isSyncValue(e);
 /* Returns ``true`` if the argument is a ``single`` type or a ``single`` variable. */
-proc isSingle(e)         param  return false;
+proc isSingle(e)    param  return isSingleValue(e);
 /*Returns ``true`` if the argument is an ``atomic`` type or an ``atomic`` variable.*/
 proc isAtomic(e)    param  return isAtomicValue(e);
 
