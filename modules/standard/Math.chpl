@@ -44,26 +44,7 @@ exception will be generated.
 */
 module Math {
   private use CTypes;
-
-  private inline proc _logBasePow2Help(in val, baseLog2) {
-    // These are used here to avoid including BitOps by default.
-    extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
-    extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
-
-    var lg2 = 0;
-
-    if numBits(val.type) <= 32 {
-      var tmp:uint(32) = val:uint(32);
-      lg2 = 32 - 1 - chpl_bitops_clz_32(tmp):int;
-    } else if numBits(val.type) == 64 {
-      var tmp:uint(64) = val:uint(64);
-      lg2 = 64 - 1 - chpl_bitops_clz_64(tmp):int;
-    } else {
-      compilerError("Integer width not handled in logBasePow2");
-    }
-
-    return lg2 / baseLog2;
-  }
+  private use AutoMath;
 
   /* Returns the natural logarithm of `x` + 1.
 
@@ -90,10 +71,7 @@ module Math {
      :rtype: `int`
   */
   inline proc logBasePow2(val: int(?w), baseLog2) {
-    if (val < 1) {
-      halt("Can't take the log() of a non-positive integer");
-    }
-    return _logBasePow2Help(val, baseLog2);
+    return chpl_logBasePow2(val, baseLog2);
   }
 
   /* Returns the log to the base `2**baseLog2` of the given `in` value.
@@ -104,7 +82,7 @@ module Math {
      :rtype: `int`
   */
   inline proc logBasePow2(val: uint(?w), baseLog2) {
-    return _logBasePow2Help(val, baseLog2);
+    return chpl_logBasePow2(val, baseLog2);
   }
 
 }
