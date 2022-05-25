@@ -24,6 +24,7 @@ def get_cuda_path():
         return ""
 
 def validate(chplLocaleModel, chplComm):
-    if chplLocaleModel == 'gpu' and chplComm != "none":
-        error("The prototype GPU support does not work when CHPL_COMM is not set to\n\"none\".");
-
+    validModels = ["none", "gasnet"]
+    if chplLocaleModel == 'gpu' and chplComm not in ["none", "gasnet"]:
+      error("The prototype GPU support does not work when CHPL_COMM is not set to one of:\n\t%s." %
+         ", ".join(validModels))
