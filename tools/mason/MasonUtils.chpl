@@ -480,6 +480,9 @@ proc isIdentifier(name:string) {
   return ok;
 }
 
+proc isLightProject(lockFile: borrowed Toml) {
+  return lockFile["root"]!["type"]!.s == "light";
+}
 
 /* Iterator to collect fields from a toml
    TODO custom fields returned */

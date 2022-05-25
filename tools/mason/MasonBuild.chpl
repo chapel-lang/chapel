@@ -264,11 +264,6 @@ proc genSourceList(lockFile: borrowed Toml) {
   return sourceList;
 }
 
-proc isLightProject(lockFile: borrowed Toml) {
-  return lockFile["root"]!["type"]!.s == "light";
-}
-
-
 /* Checks to see if dependency has already been
    downloaded previously */
 proc depExists(dependency: string) {
