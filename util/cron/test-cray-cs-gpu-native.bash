@@ -2,6 +2,9 @@
 #
 # GPU itiventerop testing on a Cray CS
 
+# Temporarily use LLVM-13 as a workaround to https://github.com/chapel-lang/chapel/issues/19740
+export USE_LLVM_13=true
+
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash
 
