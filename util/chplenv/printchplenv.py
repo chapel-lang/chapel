@@ -113,6 +113,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_RE2_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('  CHPL_LLVM_CONFIG', COMPILER | NOPATH),
+    ChapelEnv('  CHPL_LLVM_VERSION', COMPILER),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
@@ -200,6 +201,7 @@ def compute_all_values():
     ENV_VALS['  CHPL_RE2_IS_OVERRIDDEN'] = chpl_re2.is_overridden()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
     ENV_VALS['  CHPL_LLVM_CONFIG'] = chpl_llvm.get_llvm_config()
+    ENV_VALS['  CHPL_LLVM_VERSION'] = chpl_llvm.get_llvm_version()
     llvm_clang_c = chpl_llvm.get_llvm_clang('c')
     llvm_clang_cxx = chpl_llvm.get_llvm_clang('c++')
     ENV_VALS['  CHPL_LLVM_CLANG_C'] = " ".join(llvm_clang_c)
@@ -313,6 +315,8 @@ def filter_tidy(chpl_env):
     elif chpl_env.name == '  CHPL_NETWORK_ATOMICS':
         return comm != 'none'
     elif chpl_env.name == '  CHPL_LLVM_CONFIG':
+        return llvm != 'none'
+    elif chpl_env.name == '  CHPL_LLVM_VERSION':
         return llvm != 'none'
     elif chpl_env.name == '  CHPL_CUDA_PATH':
         return locale_model == 'gpu'
