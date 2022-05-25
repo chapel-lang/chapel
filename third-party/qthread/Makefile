@@ -112,9 +112,13 @@ endif
 CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
 # determine which scheduler to use based on locale model.  Override with a user
-# provided option if they requested one
+# provided option if they requested one.
 SCHEDULER = nemesis
 ifeq ($(CHPL_MAKE_LOCALE_MODEL),numa)
+  # The distrib scheduler is numa aware (you can say things like "run this new
+  # task on numa domain X" or "which numa domain is this task running on?");
+  # however its performance is generally worse than nemesis so we don't use it
+  # by default.
   SCHEDULER = distrib
 endif
 ifneq (, $(CHPL_QTHREAD_SCHEDULER))
