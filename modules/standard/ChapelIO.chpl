@@ -181,8 +181,8 @@ pragma "module included by default"
 module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
+  import SysBasic.{ENOERR, syserr, EFORMAT, EEOF};
   use SysError;
-
 
   // TODO -- this should probably be private
   pragma "no doc"
@@ -339,7 +339,6 @@ module ChapelIO {
 
     private
     proc skipFieldsAtEnd(reader, inout needsComma:bool) throws {
-      import SysBasic.{ENOERR, syserr};
       const qioFmt = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       const isJson = qioFmt == QIO_AGGREGATE_FORMAT_JSON;
       const qioSkipUnknown = QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS;
@@ -361,7 +360,7 @@ module ChapelIO {
         }
 
         // Skip an unknown JSON field.
-        var err:syserr = ENOERR;
+
 
         try reader.skipField();
         needsComma = true;
@@ -372,7 +371,6 @@ module ChapelIO {
     proc readThisFieldsDefaultImpl(reader, type t, ref x,
                                    inout needsComma: bool) throws
         where !isUnionType(t) {
-          import SysBasic.{EFORMAT, EEOF};
 
       param numFields = __primitive("num fields", t);
       var isBinary = reader.binary();
@@ -507,11 +505,10 @@ module ChapelIO {
     proc readThisFieldsDefaultImpl(reader, type t, ref x,
                                    inout needsComma: bool) throws
         where isUnionType(t) && !isExternUnionType(t) {
-          import SysBasic.{ENOERR, syserr, EFORMAT, EEOF};
 
       param numFields = __primitive("num fields", t);
       var isBinary = reader.binary();
-      var superclassError: syserr = ENOERR;
+
 
       if isBinary {
         var id = __primitive("get_union_id", x);
