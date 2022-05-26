@@ -74,6 +74,7 @@ public use CTypes;
 use Time;
 use OS, OS.POSIX;
 use IO;
+import SysBasic.{syserr, ENOERR, fd_t, qio_err_t};
 
 /*
   Available values for different Internet

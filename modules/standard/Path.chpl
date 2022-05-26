@@ -583,7 +583,8 @@ proc normPath(path: string): string {
    :rtype: `string`
    :throws SystemError: If one occurs.
 */
-proc realPath(path: string): string throws {
+  proc realPath(path: string): string throws {
+  import SysBasic.syserr;
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
   var res: c_string;
@@ -609,6 +610,7 @@ proc realPath(path: string): string throws {
    :throws SystemError: If one occurs.
 */
 proc realPath(f: file): string throws {
+  import SysBasic.syserr;
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
 
   if (is_c_nil(f._file_internal)) then
