@@ -148,7 +148,7 @@ struct Converter {
   const char* convertLinkageNameAstr(const uast::Decl* node) {
     if (auto linkageName = node->linkageName()) {
       INT_ASSERT(linkageName->isStringLiteral());
-      return astr(linkageName->toStringLiteral()->str().c_str());
+      return astr(linkageName->toStringLiteral()->str());
     }
 
     return nullptr;
@@ -168,7 +168,7 @@ struct Converter {
 
   const char* astrFromStringLiteral(const uast::AstNode* node) {
     if (auto strLit = node->toStringLiteral()) {
-      const char* ret = astr(strLit->str().c_str());
+      const char* ret = astr(strLit->str());
       return ret;
     }
 
@@ -289,7 +289,7 @@ struct Converter {
       return nullptr;
     }
 
-    auto ret = str.size() ? astr(str.c_str()) : nullptr;
+    auto ret = str.size() ? astr(str) : nullptr;
 
     return ret;
   }
@@ -335,7 +335,7 @@ struct Converter {
 
       auto msg = attr->deprecationMessage();
       if (!msg.isEmpty()) {
-        sym->deprecationMsg = astr(msg.c_str());
+        sym->deprecationMsg = astr(msg);
       }
     }
 
@@ -420,7 +420,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Implements* node) {
-    const char* name = astr(node->interfaceName().c_str());
+    const char* name = astr(node->interfaceName());
     CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST);
     Expr* ret = nullptr;
 
@@ -570,7 +570,7 @@ struct Converter {
         INT_ASSERT(var);
         INT_ASSERT(!var->initExpression() && !var->typeExpression());
 
-        resourceName = astr(var->name().c_str());
+        resourceName = astr(var->name());
 
         // TODO: I'm not sure what the best way to get flags is here.
         if (var->kind() != uast::Variable::INDEX) {
@@ -684,7 +684,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::ExternBlock* node) {
-    return buildExternBlockStmt(astr(node->code().c_str()));
+    return buildExternBlockStmt(astr(node->code()));
   }
 
   Expr* visit(const uast::Require* node) {
@@ -701,7 +701,7 @@ struct Converter {
   // Copy the body of 'buildIncludeModule' since it is heavily tied to the
   // old parser's implementation.
   Expr* visit(const uast::Include* node) {
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     bool isPrivate = node->visibility() == uast::Decl::PRIVATE;
     bool isPrototype = node->isPrototype();
 
@@ -711,7 +711,7 @@ struct Converter {
 
     auto& loc = chpl::parsing::locateAst(gContext, node);
     INT_ASSERT(!loc.isEmpty());
-    auto path = astr(loc.path().c_str());
+    auto path = astr(loc.path());
     ModuleSymbol* mod = parseIncludedSubmodule(name, path);
     INT_ASSERT(mod);
 
@@ -756,7 +756,7 @@ struct Converter {
             Expr* mod = convertAST(as->symbol());
             auto ident = as->rename()->toIdentifier();
             INT_ASSERT(ident);
-            const char* rename = astr(ident->name().c_str());
+            const char* rename = astr(ident->name());
             conv = buildImportStmt(mod, rename);
 
           // Handles: 'import foo'
@@ -1024,13 +1024,13 @@ struct Converter {
 
   BlockStmt* visit(const uast::Break* node) {
     const char* name = nullptr;
-    if (auto target = node->target()) name = astr(target->name().c_str());
+    if (auto target = node->target()) name = astr(target->name());
     return buildGotoStmt(GOTO_BREAK, name);
   }
 
   CatchStmt* visit(const uast::Catch* node) {
     auto errorVar = node->error();
-    const char* name = errorVar ? astr(errorVar->name().c_str()) : nullptr;
+    const char* name = errorVar ? astr(errorVar->name()) : nullptr;
     Expr* type = errorVar ? convertExprOrNull(errorVar->typeExpression())
                           : nullptr;
     BlockStmt* body = toBlockStmt(convertAST(node->body()));
@@ -1156,7 +1156,7 @@ struct Converter {
         INT_ASSERT(ifVar->initExpression());
         // astr() varNameStr so it doesn't go out of scope when passed to
         // buildIfVar
-        auto varNameStr = astr(ifVar->name().c_str());
+        auto varNameStr = astr(ifVar->name());
         auto initExpr = toExpr(convertAST(ifVar->initExpression()));
         bool isConst = ifVar->kind() == uast::Variable::CONST;
         cond = buildIfVar(varNameStr, initExpr, isConst);
@@ -1176,12 +1176,12 @@ struct Converter {
 
   BlockStmt* visit(const uast::Continue* node) {
     const char* name = nullptr;
-    if (auto target = node->target()) name = astr(target->name().c_str());
+    if (auto target = node->target()) name = astr(target->name());
     return buildGotoStmt(GOTO_CONTINUE, name);
   }
 
   Expr* visit(const uast::Label* node) {
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     Expr* stmt = toExpr(convertAST(node->loop()));
     INT_ASSERT(stmt);
     return buildLabelStmt(name, stmt);
@@ -1447,7 +1447,7 @@ struct Converter {
     } else if (node->isParam()) {
       INT_ASSERT(node->index() && node->index()->isVariable());
 
-      auto indexStr = astr(node->index()->toVariable()->name().c_str());
+      auto indexStr = astr(node->index()->toVariable()->name());
       body = createBlockWithStmts(node->stmts(), node->blockStyle());
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
@@ -1942,7 +1942,7 @@ struct Converter {
                                       const char* name=nullptr) {
     astlocMarker markAstLoc(node->id());
 
-    const char* opName = name ? name : astr(node->op().c_str());
+    const char* opName = name ? name : astr(node->op());
     int nActuals = node->numActuals();
     CallExpr* ret = new CallExpr(opName);
 
@@ -2363,7 +2363,7 @@ struct Converter {
     // and if so, we are not able to reconstruct them at this time
     std::stringstream ss;
     printFunctionSignature(ss, node);
-    fn->userString = astr(ss.str().c_str());
+    fn->userString = astr(ss.str());
 
     attachSymbolAttributes(node, fn);
     attachSymbolVisibility(node, fn);
@@ -2571,7 +2571,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Interface* node) {
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     CallExpr* formals = new CallExpr(PRIM_ACTUALS_LIST);
     auto style = uast::BlockStyle::EXPLICIT;
     BlockStmt* body = createBlockWithStmts(node->stmts(), style);
@@ -2579,7 +2579,7 @@ struct Converter {
     if (node->isFormalListPresent()) {
       for (auto formal : node->formals()) {
         if (auto ident = formal->toIdentifier()) {
-          const char* name = astr(ident->name().c_str());
+          const char* name = astr(ident->name());
           auto formal = InterfaceSymbol::buildFormal(name, INTENT_TYPE);
           formals->insertAtTail(formal);
         } else {
@@ -2625,8 +2625,8 @@ struct Converter {
     // Add a SymStackEntry to the end of the symStack
     this->symStack.emplace_back(node, resolved);
 
-    const char* name = astr(node->name().c_str());
-    const char* path = astr(context->filePathForId(node->id()).c_str());
+    const char* name = astr(node->name());
+    const char* path = astr(context->filePathForId(node->id()));
 
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
     // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
@@ -3057,7 +3057,7 @@ struct Converter {
   DefExpr* convertEnumElement(const uast::EnumElement* node) {
     astlocMarker markAstLoc(node->id());
 
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     Expr* initExpr = convertExprOrNull(node->initExpression());
     auto ret = new DefExpr(new EnumSymbol(name), initExpr);
     attachSymbolAttributes(node, ret->sym);
@@ -3109,7 +3109,7 @@ struct Converter {
 
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
     auto comment = consumeLatestComment();
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     const char* cname = name;
     Expr* inherit = nullptr;
 
