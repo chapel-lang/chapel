@@ -272,6 +272,7 @@ Error handling
 // be replaced by something more durable, but until then,
 // Chapel programs can still respond to errors.
 if example == 0 || example == 5 {
+  import OS.POSIX.ENOENT;
   writeln("Running Example 5");
 
   try! {
