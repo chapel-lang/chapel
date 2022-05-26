@@ -93,6 +93,7 @@
 module FileSystem {
 
   public use SysError;
+  import SysBasic.{syserr, ENOERR};
   use Path;
   use HaltWrappers;
   use CTypes;
@@ -183,7 +184,7 @@ private inline proc unescape(str: string) {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-proc locale.chdir(name: string) throws {
+  proc locale.chdir(name: string) throws {
   extern proc chpl_fs_chdir(name: c_string):syserr;
 
   var err: syserr = ENOERR;

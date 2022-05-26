@@ -507,6 +507,7 @@ module Curl {
     use Sys;
     use CTypes;
     use OS.POSIX;
+    import SysBasic.{syserr,ENOERR,EEOF};
 
     class CurlFile : QioPluginFile {
 
