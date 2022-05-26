@@ -221,21 +221,21 @@ void setBundledModulePath(Context* context, UniqueString path) {
 }
 
 void setupModuleSearchPaths(Context* context,
-                            const std::string& chpl_home,
+                            const std::string& chplHome,
                             bool minimalModules,
-                            const std::string& chpl_locale_model,
+                            const std::string& chplLocaleModel,
                             bool enableTaskTracking,
-                            const std::string& chpl_tasks,
-                            const std::string& chpl_comm,
-                            const std::string& chpl_sys_modules_subdir,
-                            const std::string& chpl_module_path,
+                            const std::string& chplTasks,
+                            const std::string& chplComm,
+                            const std::string& chplSysModulesSubdir,
+                            const std::string& chplModulePath,
                             const std::vector<std::string>& cmdLinePaths) {
 
   std::string modRoot;
   if (!minimalModules) {
-    modRoot = chpl_home + "/modules";
+    modRoot = chplHome + "/modules";
   } else {
-    modRoot = chpl_home + "/modules/minimal";
+    modRoot = chplHome + "/modules/minimal";
   }
 
   std::string internal = modRoot + "/internal";
@@ -245,18 +245,18 @@ void setupModuleSearchPaths(Context* context,
 
   std::vector<std::string> searchPath;
 
-  searchPath.push_back(modRoot + "/internal/localeModels/" + chpl_locale_model);
+  searchPath.push_back(modRoot + "/internal/localeModels/" + chplLocaleModel);
 
   const char* tt = enableTaskTracking ? "on" : "off";
   searchPath.push_back(modRoot + "/internal/tasktable/" + tt);
 
-  searchPath.push_back(modRoot + "/internal/tasks/" + chpl_tasks);
+  searchPath.push_back(modRoot + "/internal/tasks/" + chplTasks);
 
-  searchPath.push_back(modRoot + "/internal/comm/" + chpl_comm);
+  searchPath.push_back(modRoot + "/internal/comm/" + chplComm);
 
   searchPath.push_back(modRoot + "/internal");
 
-  searchPath.push_back(modRoot + "/standard/gen/" + chpl_sys_modules_subdir);
+  searchPath.push_back(modRoot + "/standard/gen/" + chplSysModulesSubdir);
 
   searchPath.push_back(modRoot + "/standard");
   searchPath.push_back(modRoot + "/packages");
@@ -265,9 +265,9 @@ void setupModuleSearchPaths(Context* context,
   searchPath.push_back(modRoot + "/dists/dims");
 
   // Add paths from the CHPL_MODULE_PATH environment variable
-  if (!chpl_module_path.empty()) {
+  if (!chplModulePath.empty()) {
 
-    auto ss = std::stringstream(chpl_module_path);
+    auto ss = std::stringstream(chplModulePath);
     std::string path;
 
     while (std::getline(ss, path, ':')) {

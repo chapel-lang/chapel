@@ -153,17 +153,23 @@ void setBundledModulePath(Context* context, UniqueString path);
   This function accepts the path to CHPL_HOME, and any additional
   module path components (from environment variable and command line).
 
-  chpl_module_path corresponds to the CHPL_MODULE_PATH env var
+  Most of these arguments have corresponding env / printchplenv settings:
+    chplHome             -- CHPL_HOME
+    chplLocaleModel      -- CHPL_LOCALE_MODEL
+    chplTasks            -- CHPL_TASKS
+    chplComm             -- CHPL_COMM
+    chplSysModulesSubdir -- CHPL_SYS_MODULES_SUBDIR
+    chplModulePath       -- CHPL_MODULE_PATH
  */
 void setupModuleSearchPaths(Context* context,
-                            const std::string& chpl_home,
+                            const std::string& chplHome,
                             bool minimalModules,
-                            const std::string& chpl_locale_model,
+                            const std::string& chplLocaleModel,
                             bool enableTaskTracking,
-                            const std::string& chpl_tasks,
-                            const std::string& chpl_comm,
-                            const std::string& chpl_sys_modules_subdir,
-                            const std::string& chpl_module_path,
+                            const std::string& chplTasks,
+                            const std::string& chplComm,
+                            const std::string& chplSysModulesSubdir,
+                            const std::string& chplModulePath,
                             const std::vector<std::string>& cmdLinePaths);
 
 /**
