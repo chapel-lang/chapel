@@ -2318,8 +2318,7 @@ struct Converter {
     return callExpr;
   }
 
-  FnSymbol* convertFunction(const uast::Function* node) {
-    auto comment = consumeLatestComment();
+  FnSymbol* convertFunction(const uast::Function* node, const char* comment) {
     auto it = alreadyConverted.find(node);
     if (it != alreadyConverted.end()) {
       // already converted it, so return that
@@ -2557,7 +2556,8 @@ struct Converter {
   }
 
   Expr* visit(const uast::Function* node) {
-    FnSymbol* fn = convertFunction(node);
+    auto comment = consumeLatestComment();
+    FnSymbol* fn = convertFunction(node, comment);
 
     // For lambdas, return a DefExpr instead of a BlockStmt
     // containing a DefExpr because this is the pattern expected
