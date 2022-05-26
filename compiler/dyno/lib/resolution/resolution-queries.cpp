@@ -670,7 +670,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
     for (auto child: ad->children()) {
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
       if (child->isVarLikeDecl() ||
-          child->isMultiDecl() |
+          child->isMultiDecl() ||
           child->isTupleDecl()) {
         const ResolvedFields& resolvedFields =
           resolveFieldDecl(context, ct, child->id(), useGenericFormalDefaults);
