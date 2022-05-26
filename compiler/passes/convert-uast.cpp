@@ -77,6 +77,8 @@ struct Converter {
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
   ModTag topLevelModTag;
+  // TODO: remove latestComment and builderResult once
+  // chpldoc is implemented as a separate tool on uAST
   const char* latestComment = nullptr;
   const uast::BuilderResult& builderResult;
   std::vector<ModStackEntry> modStack;
