@@ -280,6 +280,13 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
     return this->declStartLocation;
 }
 
+void ParserContext::resetDeclStateOnError() {
+  // Consume the linkage name just to clean it up.
+  auto droppedLinkageName = consumeVarDeclLinkageName();
+  (void) droppedLinkageName;
+  this->resetDeclState();
+}
+
 void ParserContext::resetDeclState() {
   this->resetAttributePartsState();
   this->varDeclKind = Variable::VAR;

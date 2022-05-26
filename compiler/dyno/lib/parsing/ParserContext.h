@@ -161,6 +161,7 @@ struct ParserContext {
   bool noteIsBuildingFormal(bool isBuildingFormal);
   bool noteIsVarDeclConfig(bool isConfig);
   YYLTYPE declStartLoc(YYLTYPE curLoc);
+  void resetDeclStateOnError();
   void resetDeclState();
 
   void enterScope(asttags::AstTag tag, UniqueString name);
