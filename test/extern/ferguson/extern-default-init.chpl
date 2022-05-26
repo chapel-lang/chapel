@@ -1,4 +1,5 @@
 use IO;
+import SysBasic.syserr;
 
 extern record R {
   var a,b,c,d,e,f,g,h,i,j,k: int(64);
