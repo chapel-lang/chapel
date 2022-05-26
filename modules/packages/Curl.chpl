@@ -159,6 +159,7 @@ module Curl {
   public use IO, CTypes;
   use Sys;
   use OS.POSIX;
+  import SysBasic.{syserr,ENOERR};
 
   require "curl/curl.h";
   require "-lcurl";
