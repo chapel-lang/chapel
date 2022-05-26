@@ -1469,6 +1469,11 @@ struct Converter {
     // Does not appear possible right now, from reading the grammar.
     INT_ASSERT(!node->isExpressionLevel());
 
+    if (node->withClause()) {
+      USR_FATAL_CONT(node->withClause()->id(), "foreach loops do not yet "
+                                               "support task intents");
+    }
+
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
