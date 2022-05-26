@@ -183,6 +183,7 @@ module ChapelIO {
   use ChapelLocale;
   use SysError;
 
+
   // TODO -- this should probably be private
   pragma "no doc"
   proc _isNilObject(val) {
