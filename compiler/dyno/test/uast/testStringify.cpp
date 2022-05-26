@@ -103,7 +103,6 @@ static void test1(Parser* parser) {
   // the one test to rule them all
   std::string testCode;
   testCode = R""""(
-             module Test1 {
                use Map;
                require "foo.h", "foo.c";
                import Foo as X ;
@@ -340,7 +339,7 @@ static void test1(Parser* parser) {
                import this.DefinesOp.{Foo, Foo2, Bar};
                import this.DefinesOp.align;
                import this.DefinesOp.+;
-             }
+
              private proc param R.prm2(arg) param : string { }
              iter foo() {
                for i in 1..10 do yield try! i;

@@ -139,41 +139,7 @@ struct ChplSyntaxVisitor {
   std::stringstream ss_;
   int indentDepth = 0;
   const int spacesPerIndentDepth = 2;
-  // TODO: Expand this and make it into a query
-  // based on https://chapel-lang.org/docs/language/spec/expressions.html
-  const std::map<std::string, int> opPrecedence {
-      {"**",170},
-      {"!", 160},
-      {"~", 160},
-      {"*",150},
-      {"/",150},
-      {"%",150},
-      {"<<",140},
-      {">>",140},
-      {"&",130},
-      {"^",120},
-      {"|",110},
-      {"+",80},
-      {"-",80},
-      {"&&",50},
-      {"||",40},
-      {"#",30}
-  };
 
-  bool opNeedsParens(std::string parentOp, std::string childOp) {
-    if (parentOp == childOp) return false;
-    // make sure the ops both exist in the table because .at will throw if
-    // they don't
-    if (opPrecedence.count(parentOp)==0 || opPrecedence.count(childOp)==0)
-      return false;
-    int parentRank = opPrecedence.at(parentOp);
-    int childRank = opPrecedence.at(childOp);
-
-    if (parentRank >= childRank) {
-      return true;
-    }
-    return false;
-  }
 
   void indentStream() {
     int i = indentDepth;
@@ -308,6 +274,11 @@ struct ChplSyntaxVisitor {
            && !node->isTry()
            && !node->isUnion()
            && !node->isTry();
+  }
+
+  bool isPostfix(const OpCall* op) {
+    return (op->isUnaryOp() &&
+            (op->op() == USTR("postfix!") || op->op() == USTR("?")));
   }
 
   void printFunctionHelper(const Function* node) {
@@ -995,22 +966,32 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const OpCall* node) {
-    bool needParens = false;
+    bool needsParens = false;
+    std::string outerOp, innerOp;
     if (node->isUnaryOp()) {
       bool isPostFixBang = false;
       bool isNilable = false;
+      outerOp = node->op().str();
       if (node->op() == USTR("postfix!")) {
         isPostFixBang = true;
+        outerOp = "!";
       } else if (node->op() == USTR("?")) {
         isNilable = true;
+        outerOp = "?";
       } else {
         ss_ << node->op();
       }
       assert(node->numActuals() == 1);
-      needParens = (!isPostFixBang && node->actual(0)->isOpCall());
-      if (needParens) ss_ << "(";
+      if (node->actual(0)->isOpCall()) {
+        innerOp = node->actual(0)->toOpCall()->op().str();
+        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), true,
+                                 (isPostFixBang || isNilable),
+                                 node->actual(0)->toOpCall()->isUnaryOp(),
+                                 isPostfix(node->actual(0)->toOpCall()) , false);
+      }
+      if (needsParens) ss_ << "(";
       printChapelSyntax(ss_, node->actual(0));
-      if (needParens) ss_ << ")";
+      if (needsParens) ss_ << ")";
       if (isPostFixBang) {
         ss_ << "!";
       } else if (isNilable) {
@@ -1018,27 +999,31 @@ struct ChplSyntaxVisitor {
       }
     } else if (node->isBinaryOp()) {
       assert(node->numActuals() == 2);
-
+      outerOp = node->op().str();
       if (node->actual(0)->isOpCall()) {
-        needParens = opNeedsParens(node->op().str(),
-                          node->actual(0)->toOpCall()->op().str());
+        innerOp = node->actual(0)->toOpCall()->op().str();
+        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false, false,
+                                 node->actual(0)->toOpCall()->isUnaryOp(),
+                                 isPostfix(node->actual(0)->toOpCall()), false);
       }
-      if (needParens) ss_ << "(";
+      if (needsParens) ss_ << "(";
       printChapelSyntax(ss_, node->actual(0));
-      if (needParens) ss_ << ")";
-      needParens = false;
+      if (needsParens) ss_ << ")";
+      needsParens = false;
       if (node->op() == USTR("by"))
         ss_ << " ";
       ss_ << node->op();
       if (node->op() == USTR("by"))
         ss_ << " ";
       if (node->actual(1)->isOpCall()) {
-        needParens = opNeedsParens(node->op().str(),
-                          node->actual(1)->toOpCall()->op().str());
+        innerOp = node->actual(1)->toOpCall()->op().str();
+        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false,
+                                 false, node->actual(1)->toOpCall()->isUnaryOp(),
+                                 isPostfix(node->actual(1)->toOpCall()) , true);
       }
-      if (needParens) ss_ << "(";
+      if (needsParens) ss_ << "(";
       printChapelSyntax(ss_, node->actual(1));
-      if (needParens) ss_ << ")";
+      if (needsParens) ss_ << ")";
     }
   }
 
