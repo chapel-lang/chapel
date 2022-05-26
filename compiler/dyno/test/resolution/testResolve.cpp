@@ -22,6 +22,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/QualifiedType.h"
+#include "chpl/types/StringType.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Identifier.h"
@@ -366,6 +367,7 @@ static void test6() {
     context->collectGarbage();
   }
 }
+
 
 int main() {
   test1();

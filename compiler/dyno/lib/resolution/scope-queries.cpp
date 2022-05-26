@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
+#include "chpl/queries/global-strings.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/uast/all-uast.h"
 
@@ -80,7 +81,18 @@ struct GatherDecls {
 
   // Add NamedDecls to the map
   bool enter(const NamedDecl* d) {
-    gather(declared, d->name(), d);
+    bool skip = false;
+
+    if (d->isRecord() && d->name() == USTR("_tuple")) {
+      // skip gathering _tuple from the standard library
+      // since dyno handles tuple types directly rather
+      // than through a record.
+      skip = true;
+    }
+
+    if (skip == false) {
+      gather(declared, d->name(), d);
+    }
 
     if (d->isFunction()) {
       // make a note if we encountered a function

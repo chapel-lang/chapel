@@ -46,6 +46,7 @@ struct Resolver {
   bool fieldOrFormalsComputed = false;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
+  const uast::Call* inLeafCall = nullptr;
 
   // results of the resolution process
 
@@ -139,6 +140,11 @@ struct Resolver {
                       const SubstitutionsMap& substitutions,
                       const PoiScope* poiScope,
                       ResolutionResultByPostorderID& byPostorder);
+
+  /* Returns ErroneousType and emits the error message msg
+     relevant to location for 'ast'.
+   */
+  types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.
