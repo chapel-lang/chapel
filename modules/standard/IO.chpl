@@ -430,8 +430,8 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-public import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
-public import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
+import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
+import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 private import OS.POSIX.{EBADF};
 use CTypes;
 public use SysError;
