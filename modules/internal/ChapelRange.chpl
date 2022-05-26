@@ -155,7 +155,7 @@ module ChapelRange {
 
   use ChapelBase, SysBasic, HaltWrappers;
 
-  use Math, DSIUtil;
+  use AutoMath, DSIUtil;
 
   private use ChapelDebugPrint only chpl_debug_writeln;
 
