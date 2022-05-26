@@ -2598,8 +2598,6 @@ struct Converter {
 
   DefExpr* visit(const uast::Module* node) {
     auto comment = consumeLatestComment();
-    const char* name = astr(node->name().c_str());
-    const char* path = astr(context->filePathForId(node->id()).c_str());
 
     auto it = alreadyConverted.find(node);
     if (it != alreadyConverted.end()) {
@@ -2611,7 +2609,6 @@ struct Converter {
     bool shouldResolveModule = shouldResolve(node);
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
-    const char* name = astr(node->name().c_str());
 
     if (shouldResolveModule) {
       // Resolve the module
@@ -2626,7 +2623,8 @@ struct Converter {
     // Add a SymStackEntry to the end of the symStack
     this->symStack.emplace_back(node, resolved);
 
-    const char* path = context->filePathForId(node->id()).c_str();
+    const char* name = astr(node->name().c_str());
+    const char* path = astr(context->filePathForId(node->id()).c_str());
 
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
     // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
