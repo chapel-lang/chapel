@@ -146,6 +146,9 @@ static void test1(Parser* parser) {
                  proc param prm(arg) param { }
                  proc type tp(arg) type { }
                }
+               var eval = a**(b**c) != (a**b)**c;
+               var eval2 =  (-1)**2;
+               var eval3 =  1**(-2);
                class D : C {
                  override proc Cproc(val: int) { writeln(val:string); }
                }
