@@ -36,6 +36,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
+#include <queue>
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -51,6 +52,7 @@
 #include "chpl/util/string-escapes.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/queries/global-strings.h"
+
 
 using namespace chpl;
 using namespace uast;
@@ -95,10 +97,87 @@ static std::string templateReplace(const std::string& templ,
   return std::regex_replace(templ, std::regex(std::string("\\$") + key), value);
 }
 
+
+static char * checkProjectVersion(char * projectVersion) {
+  int length = strlen(projectVersion);
+  int i = 0;
+  int dot = 0;
+  bool check = true;
+  int tagIndex = 0;
+
+  // Supported version tags
+  const char * tags[] = {"alpha", "beta", "rc"};
+  const char * error = "";
+  for(i=0; i<length; i++) {
+    if(i>0 && projectVersion[i] == '.') {
+      if(projectVersion[i-1] != '.') {
+        dot++;
+        if(dot>2) {
+          error = "Required only two dots which separates three numbers";
+          check = false;
+          break;
+        }
+        if(i == length-1) {
+          error = "Cannot end with dot, can end with either number or tag";
+          check = false;
+          break;
+        }
+      } else {
+        error = "Missing number between dots";
+        check = false;
+        break;
+      }
+    } else if(projectVersion[i] == '-' && dot == 2) {
+      if(projectVersion[i-1] != '.') {
+        tagIndex = i+1;
+        break;
+      } else {
+        error = "Missing number before tag";
+        check = false;
+        break;
+      }
+    } else if(projectVersion[i] == '-' && dot != 2) {
+      error = "Required only two dots which separates three numbers";
+      check = false;
+      break;
+    } else if((int)projectVersion[i] > (int)'9' || (int)projectVersion[i] < (int)'0') {
+      error = "Invalid Characters, only digits and dots permitted before a hyphen";
+      check = false;
+      break;
+    }
+  }
+  if(dot != 2 && i == length) {
+    error = "Required two dots which separates three numbers";
+    check = false;
+  }
+  if(check && tagIndex>0) {
+    int count = sizeof(tags)/sizeof(*tags);
+    for(int i=0; i<count; i++) {
+      if(strcmp(projectVersion+tagIndex,tags[i]) == 0) {
+        check = true;
+        break;
+      } else {
+        error = "Tag not supported, supported tags are alpha/beta/rc";
+        check = false;
+      }
+    }
+  }
+  if(check) {
+    return projectVersion;
+  } else {
+    std::cerr << "error: Invalid version format: "<< projectVersion << " due to: " << error << std::endl;
+    exit(1);
+  }
+  return NULL;
+}
+
 static std::string indentLines(const std::string& s, int count) {
-  std::string replacement = "\n" + std::string(count, ' ');
+  //std::string replacement = "\n" + std::string(count, ' ');
+  if (s.empty())
+    return s;
   std::string head = std::string(count, ' ');
-  return head + std::regex_replace(s, std::regex("\n"), replacement);
+  std::string ret = head + s; //std::regex_replace(s, std::regex("\n"), replacement);
+  return ret;
 }
 
 static size_t countLeadingSpaces(const std::string& s) {
@@ -167,7 +246,7 @@ static std::string commentSynopsis(const Comment* c) {
 static const char* kindToRstString(bool isMethod, Function::Kind kind) {
   switch (kind) {
   case Function::Kind::PROC: return isMethod ? "method" : "function";
-  case Function::Kind::ITER: return isMethod ? "itermethod" : "iter";
+  case Function::Kind::ITER: return isMethod ? "itermethod" : "iterfunction";
   case Function::Kind::OPERATOR: return "operator";
   case Function::Kind::LAMBDA: return "lambda";
   }
@@ -196,47 +275,22 @@ static const char* kindToString(Function::Kind kind) {
   return "";
 }
 
-static const char* kindToString(Function::ReturnIntent kind) {
+static const char* kindToString(IntentList kind) {
   switch (kind) {
-  case Function::ReturnIntent::CONST: return "const";
-  case Function::ReturnIntent::REF: return "ref";
-  case Function::ReturnIntent::CONST_REF: return "const ref";
-  case Function::ReturnIntent::PARAM: return "param";
-  case Function::ReturnIntent::TYPE: return "type";
-  case Function::ReturnIntent::DEFAULT_RETURN_INTENT: assert(false);
+    case IntentList::CONST_INTENT: return "const";
+    case IntentList::VAR: return "var";
+    case IntentList::CONST_VAR: return "const var";
+    case IntentList::CONST_REF: return "const ref";
+    case IntentList::REF: return "ref";
+    case IntentList::IN: return "in";
+    case IntentList::CONST_IN: return "const in";
+    case IntentList::OUT: return "out";
+    case IntentList::INOUT: return "inout";
+    case IntentList::PARAM: return "param";
+    case IntentList::TYPE: return "type";
+    case IntentList::DEFAULT_INTENT: assert(false);
+    default: return "";
   }
-  assert(false);
-  return "";
-}
-
-static const char* kindToString(Formal::Intent kind) {
-  switch (kind) {
-  case Formal::Intent::CONST: return "const";
-  case Formal::Intent::CONST_REF: return "const ref";
-  case Formal::Intent::REF: return "ref";
-  case Formal::Intent::IN: return "in";
-  case Formal::Intent::CONST_IN: return "const in";
-  case Formal::Intent::OUT: return "out";
-  case Formal::Intent::INOUT: return "inout";
-  case Formal::Intent::PARAM: return "param";
-  case Formal::Intent::TYPE: return "type";
-  case Formal::Intent::DEFAULT_INTENT: assert(false);
-  }
-  assert(false);
-  return "";
-}
-
-static const char* kindToString(Variable::Kind kind) {
-  switch (kind) {
-  case Variable::Kind::VAR: return "var";
-  case Variable::Kind::CONST: return "const";
-  case Variable::Kind::PARAM: return "param";
-  case Variable::Kind::TYPE: return "type";
-  case Variable::Kind::REF: return "ref";
-  case Variable::Kind::CONST_REF: return "const ref";
-  case Variable::Kind::INDEX: assert(false);
-  }
-  assert(false);
   return "";
 }
 
@@ -311,8 +365,33 @@ struct RstSignatureVisitor {
     return false;
   }
 
+//   bool enter(const MultiDecl* node) {
+//     std::string delimiter = "";
+//     for (auto decl : node->decls()) {
+//       os_ << delimiter;
+//       os_ << decl->toVariable()->name();
+//       if (const AstNode* te = decl->toVariable()->typeExpression()) {
+//         os_ << ": ";
+//         //te->traverse(*this);
+//         printChapelSyntax(os_, te);
+//       }
+//       if (const AstNode* ie = decl->toVariable()->initExpression()) {
+//         os_ << " = ";
+//         printChapelSyntax(os_, ie);
+// //        ie->traverse(*this);
+//       }
+//       delimiter = ", ";
+//     }
+//     return false;
+//   }
+
   bool enter(const Record* r) {
     os_ << r->name().c_str();
+    return false;
+  }
+
+  bool enter(const Class* c) {
+    os_ << c->name().c_str();
     return false;
   }
 
@@ -377,7 +456,7 @@ struct RstSignatureVisitor {
       os_ << "config ";
     }
     if (v->kind() != Variable::Kind::INDEX) {
-      os_ << kindToString(v->kind()) << " ";
+      os_ << kindToString((IntentList) v->kind()) << " ";
     }
     os_ << v->name().c_str();
     if (const AstNode* te = v->typeExpression()) {
@@ -393,7 +472,7 @@ struct RstSignatureVisitor {
 
   bool enter(const Formal* f) {
     if (f->intent() != Formal::DEFAULT_INTENT) {
-      os_ << kindToString(f->intent()) << " ";
+      os_ << kindToString((IntentList) f->intent()) << " ";
     }
     os_ << f->name().c_str();
     if (const AstNode* te = f->typeExpression()) {
@@ -401,7 +480,7 @@ struct RstSignatureVisitor {
       te->traverse(*this);
     }
     if (const AstNode* ie = f->initExpression()) {
-      os_ << "=";
+      os_ << " = ";
       ie->traverse(*this);
     }
     return false;
@@ -413,11 +492,57 @@ struct RstSignatureVisitor {
       os_ << kindToString(f->visibility()) << " ";
     }
 
-    // // Function Name
+    // Function Name
     os_ << kindToString(f->kind());
     os_ << " ";
 
-    printFunctionSignature(os_, f);
+    // storage kind
+    if (f->thisFormal() != nullptr
+        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+      os_ << kindToString(f->thisFormal()->storageKind()) <<" ";
+    }
+
+    // print out the receiver type for secondary methods
+    if (f->isMethod() && !f->isPrimaryMethod()) {
+      auto typeExpr = f->thisFormal()->typeExpression();
+      assert(typeExpr);
+
+      if (auto ident = typeExpr->toIdentifier()) {
+        os_ << ident->name().str();
+      } else {
+        os_ << "(";
+        typeExpr->traverse(*this);
+        os_ << ")";
+      }
+
+      os_ << ".";
+    }
+
+    if (f->kind() == Function::Kind::OPERATOR && f->name() == USTR("=")) {
+      // TODO: remove this once the old parser is out of the question
+      // TODO: this is only here to support tests from the old parser
+      // printing extra spaces around an assignment operator
+      os_ << " ";
+      // Function Name
+      os_ << f->name().str();
+      os_ << " ";
+    } else {
+      // Function Name
+      os_ << f->name().str();
+    }
+
+    // Formals
+    int numThisFormal = f->thisFormal() ? 1 : 0;
+    int nFormals = f->numFormals() - numThisFormal;
+    if (nFormals == 0 && f->isParenless()) {
+      // pass
+    } else if (nFormals == 0) {
+      os_ << "()";
+    } else {
+      auto it = f->formals();
+      interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
+    }
+
     // Return type
     if (const AstNode* e = f->returnType()) {
       os_ << ": ";
@@ -425,9 +550,9 @@ struct RstSignatureVisitor {
     }
 
     // Return Intent
-    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      os_ << " " << kindToString(f->returnIntent());
-    }
+//    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+//      os_ << " " << kindToString((IntentList) f->returnIntent());
+//    }
 
     return false;
   }
@@ -489,8 +614,6 @@ struct RstSignatureVisitor {
       (*it)->traverse(*this);
       first = false;
     }
-    // TODO: This is an errant comma present in the current chpldocs
-    // remove it once we don't need to match the old tests
     if (tup->numChildren() == 1) {
       os_ << ",";
     }
@@ -710,7 +833,10 @@ struct RstResultBuilder {
     return getResult();
   }
   owned<RstResult> visit(const Variable* v) {
-    show("data", v);
+    if (v->isField())
+      show("attribute", v);
+    else
+      show("data", v);
     return getResult();
   }
   owned<RstResult> visit(const Record* r) {
@@ -722,6 +848,107 @@ struct RstResultBuilder {
     show("enum", e);
     return getResult();
   }
+
+   owned<RstResult> visit(const MultiDecl* md) {
+     if (isNoDoc(md)) return {};
+
+     std::string kind;
+     std::queue<const AstNode*> expressions;
+
+     for (auto decl : md->decls()) {
+       if (decl->toVariable()->typeExpression() ||
+           decl->toVariable()->initExpression()) {
+         expressions.push(decl);
+         kind = decl->toVariable()->isField() ? "attribute" : "data";
+       }
+     }
+     std::string prevTypeExpression;
+     std::string prevInitExpression;
+     for (auto decl : md->decls()) {
+       if (kind=="attribute" && decl != md->decls().begin()->toDecl()) {
+         os_ << "   ";
+       }
+       // write kind
+       os_ << ".. " << kind << ":: ";
+       if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
+         os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
+       }
+       // write name
+       os_ << decl->toVariable()->name();
+
+       if (expressions.empty()) {
+         assert(!prevTypeExpression.empty() || !prevInitExpression.empty());
+         multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+       } else {
+         // our decl doesn't have a typeExpression or initExpression,
+         // or it is the same one
+         // is previousInit or previousType set?
+         if (!prevInitExpression.empty() || !prevTypeExpression.empty()) {
+           multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+         } else { // use the expression in the queue
+           // take the one from the front of the expressions queue
+           if (expressions.front()->toVariable()->typeExpression()) {
+             //write out type expression->stringify
+             os_ << ": ";
+             expressions.front()->toVariable()->typeExpression()->stringify(os_,
+                                                                            CHPL_SYNTAX);
+             //set previous type expression = ": variableName.type"
+             prevTypeExpression =
+                 ": " + decl->toVariable()->name().str() + ".type";
+           }
+           if (expressions.front()->toVariable()->initExpression()) {
+             // write out initExpression->stringify
+             os_ << " = ";
+             expressions.front()->toVariable()->initExpression()->stringify(os_,
+                                                                            CHPL_SYNTAX);
+             // set previous init expression = "= variableName"
+             prevInitExpression = " = " + decl->toVariable()->name().str();
+           }
+         }
+         if (decl == expressions.front()) {
+           // our decl is the same as the first one in the queue, so we should pop it
+           // and clear the previousInit and previousType
+           expressions.pop();
+           prevTypeExpression.clear();
+           prevInitExpression.clear();
+         }
+       }
+       showComment(md, true);
+
+       if (auto attrs = md->attributes()) {
+         if (attrs->isDeprecated()) {
+           indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
+           indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage().c_str();
+           os_ << "\n\n";
+         }
+       }
+       os_ << "\n";
+     }
+     return getResult();
+   }
+
+  void multiDeclHelper(const Decl* decl, std::string& prevTypeExpression,
+                       std::string& prevInitExpression) {
+    if (!prevTypeExpression.empty()) {
+      // write prevTypeExpression
+      os_ << prevTypeExpression;
+      // set prevTypeExpression = ": thisVariableName.type"
+      prevTypeExpression = ": " + decl->toVariable()->name().str() + ".type";
+    }
+    if (!prevInitExpression.empty()) {
+      // write prevInitExpression
+      os_ << prevInitExpression;
+      // set prevInitExpression  = "= thisVariableName"
+      prevInitExpression = " = " + decl->toVariable()->name().str();
+    }
+  }
+
+  owned<RstResult> visit(const Class* c) {
+    show("class", c);
+    visitChildren(c);
+    return getResult(true);
+  }
+
 
   // TODO all these nullptr gets stored in the query map... can we avoid that?
   owned<RstResult> visit(const AstNode* n) { return {}; }
@@ -910,6 +1137,12 @@ struct Args {
   bool selfTest = false;
   bool stdout = false;
   bool dump = false;
+  bool textOnly = false;
+  std::string outputDir;
+  bool processUsedModules = false;
+  std::string author;
+  std::string commentStyle;
+  std::string projectVersion = "0.0.1";
   std::vector<std::string> files;
 };
 
@@ -928,6 +1161,22 @@ static Args parseArgs(int argc, char **argv) {
       ret.stdout = true;
     } else if (std::strcmp("--dump", argv[i]) == 0) {
       ret.dump = true;
+    } else if (std::strcmp("--text-only", argv[i]) ==  0) {
+      ret.textOnly = true;
+    } else if (std::strcmp("--output-dir", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.outputDir = argv[i + 1];
+      i += 1;
+    } else if (std::strcmp("--process-used-modules", argv[i]) ==  0) {
+      ret.processUsedModules = true;
+    } else if (std::strcmp("--comment-style", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.commentStyle = argv[i + 1];
+      i += 1;
+    } else if (std::strcmp("--project-version", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.projectVersion = checkProjectVersion(argv[i + 1]);
+      i += 1;
     } else {
       ret.files.push_back(argv[i]);
     }
