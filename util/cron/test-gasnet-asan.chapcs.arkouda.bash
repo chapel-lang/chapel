@@ -27,4 +27,6 @@ export ARKOUDA_ASAN=true
 
 source $CWD/common-arkouda.bash
 
+export CHPL_FLAGS="--parallel-make 16 --ccflags -Og"
+
 test_correctness
