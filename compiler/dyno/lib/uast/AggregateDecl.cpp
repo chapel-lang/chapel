@@ -27,13 +27,15 @@ namespace uast {
 
 bool AggregateDecl::validAggregateChildren(AstListIteratorPair<AstNode> it) {
   for (auto elt: it) {
-    if (elt->isComment() || elt->isErroneousExpression()) {
+    if (elt->isComment() || elt->isErroneousExpression() ||
+        elt->isEmptyStmt()) {
       // OK
     } else if (elt->isDecl()) {
       if (elt->isVariable() || elt->isFunction() || elt->isTupleDecl() ||
           elt->isMultiDecl() ||
           elt->isAggregateDecl() ||
-          elt->isForwardingDecl()) {
+          elt->isForwardingDecl() ||
+          elt->isTypeDecl()) {
         // OK
       } else {
         return false;
