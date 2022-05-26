@@ -111,12 +111,12 @@ class AggregateDecl : public TypeDecl {
   /**
    Return a way to iterate over the contained Decls (ignoring Comments)
    */
-  AstListNoCommentsIteratorPair<Decl> decls() const {
+  AstListNoCommentsIteratorPair<AstNode> decls() const {
     if (elementsChildNum_ < 0)
-      return AstListNoCommentsIteratorPair<Decl>(
+      return AstListNoCommentsIteratorPair<AstNode>(
                 children_.end(), children_.end());
 
-    return AstListNoCommentsIteratorPair<Decl>(
+    return AstListNoCommentsIteratorPair<AstNode>(
               children_.begin() + elementsChildNum_,
               children_.begin() + elementsChildNum_ + numElements_);
   }
