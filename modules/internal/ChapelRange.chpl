@@ -153,7 +153,7 @@
  */
 module ChapelRange {
 
-  use ChapelBase, SysBasic, HaltWrappers;
+  use ChapelBase, HaltWrappers;
 
   use Math, DSIUtil;
 

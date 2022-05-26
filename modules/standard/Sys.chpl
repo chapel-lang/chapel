@@ -43,8 +43,7 @@
 
  */
 module Sys {
-  // get basic types from SysBasic
-  use SysBasic;
+  import SysBasic.{qio_err_t, fd_t};
   private use CTypes;
   private use SysError;
 
