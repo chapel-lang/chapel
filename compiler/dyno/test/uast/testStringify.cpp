@@ -125,6 +125,7 @@ static void test1(Parser* parser) {
                const d : int = (((i + j) * (i + j + 1)) >> 1) + i + 1;
                Au(i)=+ reduce [j in 0..inRange-1 by 2] ((u(j) * eval_A(j,i)) + (u(j+1) * eval_A(j+1, i)));
                const vBv = + reduce (u*v);
+               config var x, y, z : int;
                class C {
                  /* this class does nothing */
                  var x;
