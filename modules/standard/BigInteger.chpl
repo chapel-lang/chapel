@@ -2898,9 +2898,9 @@ module BigInteger {
   // and 1 (but usually 0 unless the base is -1 or 1)
   pragma "no doc"
   proc bigint.powNegativeExpHelper(const ref base: bigint, exp: int) {
-    if (base == 1 || (base == -1 && Math.abs(exp) % 2 == 1)) {
+    if (base == 1 || (base == -1 && AutoMath.abs(exp) % 2 == 1)) {
       this = base;
-    } else if (base == -1 && Math.abs(exp) % 2 == 0) {
+    } else if (base == -1 && AutoMath.abs(exp) % 2 == 0) {
       this = 1;
     } else {
       this = 0;

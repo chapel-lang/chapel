@@ -414,6 +414,9 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc foo(x: borrowed C(t=?tt, r=?rr), y: borrowed C(tt, rr)) {}",
                    "foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))")
   TEST_USER_STRING("proc (int(32)).foo() {\n}", "(int(32)).foo()")
+  TEST_USER_STRING("proc proc1(arg: Monkey1?) { }", "proc1(arg: Monkey1?)" )
+  TEST_USER_STRING("proc proc1(arg: 2*Monkey1?) { }", "proc1(arg: 2*Monkey1?)")
+  TEST_USER_STRING("proc proc1(arg: owned 2*Monkey1?) { }", "proc1(arg: owned 2*Monkey1?)")
 }
 
 static void test4(Parser* parser) {

@@ -6,13 +6,13 @@ var f = open(fileName, iomode.cwr);
 
 var w = f.writer();
 
-assert(!w.isclosed());
+assert(!w.isClosed());
 w.close();
-assert(w.isclosed());
+assert(w.isClosed());
 
 // Try a channel that was not initialized.
 {
   var ch:channel(writing=false, kind=iokind.dynamic, locking=true);
-  assert(ch.isclosed());
+  assert(ch.isClosed());
 }
 

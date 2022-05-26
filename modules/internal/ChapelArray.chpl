@@ -1956,32 +1956,6 @@ module ChapelArray {
   }
 
   //
-  // isXxxType, isXxxValue
-  //
-
-  /* Return true if ``t`` is a domain map type. Otherwise return false. */
-  proc isDmapType(type t) param {
-    proc isDmapHelp(type t: _distribution) param  return true;
-    proc isDmapHelp(type t)                param  return false;
-    return isDmapHelp(t);
-  }
-
-  pragma "no doc"
-  proc isDmapValue(e: _distribution) param  return true;
-  /* Return true if ``e`` is a domain map. Otherwise return false. */
-  proc isDmapValue(e)                param  return false;
-
-  /* Return true if ``t`` is an array type. Otherwise return false. */
-  proc isArrayType(type t) param {
-    return isSubtype(t, _array);
-  }
-
-  pragma "no doc"
-  proc isArrayValue(e: []) param  return true;
-  /* Return true if ``e`` is an array. Otherwise return false. */
-  proc isArrayValue(e)     param  return false;
-
-  //
   // Helper functions
   //
 

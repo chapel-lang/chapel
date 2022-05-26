@@ -111,7 +111,7 @@ class Vec {
   C first();
   C *set_in_internal(C a);
   void set_expand();
-  int index(C a);
+  int index(C a) const;
   void set_to_vec();
   void vec_to_set();
   void move(Vec<C,S> &v);
@@ -125,8 +125,8 @@ class Vec {
   C* begin() const { return v; }
   C* end() const { return v + n; }
   Vec<C,S>& operator=(Vec<C,S> &v) { this->copy(v); return *this; }
-  int length () { return n; }
-  int size() { return n; }
+  int length () const { return n; }
+  int size() const { return n; }
 
  private:
   void move_internal(Vec<C,S> &v);
@@ -378,7 +378,7 @@ Vec<C,S>::first() {
 }
 
 template <class C, int S> inline int
-Vec<C,S>::index(C a) {
+Vec<C,S>::index(C a) const {
   for (C *c = v; c < v + n; c++)
     if (*c == a)
       return c - v;

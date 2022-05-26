@@ -1,0 +1,2 @@
+isclosed.chpl:9: warning: channel.isclosed is deprecated. Please use channel.isClosed instead
+isclosed.chpl:11: warning: channel.isclosed is deprecated. Please use channel.isClosed instead

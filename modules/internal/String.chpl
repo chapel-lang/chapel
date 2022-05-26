@@ -833,6 +833,7 @@ module String {
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
+    // remember to update <=> if you add a field
 
     proc init() {
       // Let compiler insert defaults
@@ -2572,5 +2573,23 @@ module String {
   pragma "no doc"
   inline proc string.hash(): uint {
     return getHash(this);
+  }
+
+  pragma "no doc"
+  operator string.<=>(ref x: string, ref y: string) {
+    if (x.locale_id != y.locale_id) {
+      // TODO: could we just change locale_id?
+      var tmp = x;
+      x = y;
+      y = tmp;
+    } else {
+      x.buffLen <=> y.buffLen;
+      x.buffSize <=> y.buffSize;
+      x.cachedNumCodepoints <=> y.cachedNumCodepoints;
+      x.buff <=> y.buff;
+      x.isOwned <=> y.isOwned;
+      x.hasEscapes <=> y.hasEscapes;
+      x.locale_id <=> y.locale_id;
+    }
   }
 }

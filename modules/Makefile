@@ -68,13 +68,14 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
+	standard/AutoMath.chpl \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
-	standard/ChapelEnv.chpl \
 	standard/ChapelIO.chpl \
 	standard/ChplConfig.chpl \
 	standard/CommDiagnostics.chpl \
+	standard/GPUDiagnostics.chpl \
 	standard/CPtr.chpl \
 	standard/CTypes.chpl \
 	standard/DateTime.chpl \
@@ -136,6 +137,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
+	packages/ProtobufProtocolSupport.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \

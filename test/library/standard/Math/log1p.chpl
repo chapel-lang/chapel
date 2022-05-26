@@ -1,3 +1,5 @@
+use Math;
+
 var a: real = 0;
 var b: real = 1.72;
 var c: real = 8;

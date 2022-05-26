@@ -1965,7 +1965,7 @@ static void codegen_header(std::set<const char*> & cnames,
   //
   if( hdrfile ) {
     fprintf(hdrfile, "\nextern void* const chpl_private_broadcast_table[];\n");
-  } else {
+  } else if(!gCodegenGPU) {
 #ifdef HAVE_LLVM
     llvm::Type *private_broadcastTableEntryType =
       llvm::IntegerType::getInt8PtrTy(info->module->getContext());

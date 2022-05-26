@@ -300,7 +300,7 @@ bool fPrintAdditionalErrors;
 static
 bool fPrintChplSettings = false;
 
-bool fDynoCompilerLibrary = false;
+bool fDynoCompilerLibrary = true;
 bool fDynoDebugTrace = false;
 size_t fDynoBreakOnHash = 0;
 

@@ -4,3 +4,4 @@ Total memory required (GB) = 2.28882e-05
 Number of trials = 10
 
 Validation: SUCCESS
+(kernel_launch = 12)

@@ -33,7 +33,6 @@ module LocaleModelHelpSetup {
   use ChapelLocale;
   public use DefaultRectangular;
   public use ChapelNumLocales;
-  use ChapelEnv;
   use OS.POSIX;
   use CTypes;
 
@@ -233,6 +232,12 @@ module LocaleModelHelpSetup {
 
   proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string,
       numSublocales: int, type GPULocale){
+
+    // Cylic (and likely other) distributions uses this variable to determine
+    // how many data-parallel tasks to have per locale. If this gets set to 0
+    // then we end up not processing things in the first locale.
+    extern proc chpl_task_getMaxPar(): uint(32);
+    dst.maxTaskPar = chpl_task_getMaxPar();
 
     var childSpace = {0..#numSublocales};
 

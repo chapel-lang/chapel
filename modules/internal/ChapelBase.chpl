@@ -28,7 +28,7 @@ module ChapelBase {
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
-  use ChapelEnv, CTypes;
+  use CTypes;
 
   config param enablePostfixBangChecks = false;
 
@@ -2262,40 +2262,12 @@ module ChapelBase {
 
 
   proc isGenericType(type t) param return __primitive("is generic type", t);
-  proc isClassType(type t) param return __primitive("is class type", t);
   proc isNilableClassType(type t) param return __primitive("is nilable class type", t);
   proc isNonNilableClassType(type t) param return __primitive("is non nilable class type", t);
 
   proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param return true;
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
   proc isBorrowedOrUnmanagedClassType(type t) param return false;
-
-  proc isRecordType(type t) param {
-    if __primitive("is record type", t) == false then
-      return false;
-
-    // some non-record types are implemented via records - exclude those
-    else if isDmapType(t)   ||
-            isDomainType(t) ||
-            isArrayType(t)  ||
-            isRangeType(t)  ||
-            isTupleType(t)  ||
-            isSyncType(t)   ||
-            isSingleType(t) ||
-            isStringType(t) ||
-            isAtomicType(t) then
-      return false;
-
-    else
-      return true;
-  }
-
-  proc isUnionType(type t) param return __primitive("is union type", t);
-  proc isExternUnionType(type t) param return __primitive("is extern union type", t);
-
-  proc isAtomicType(type t) param return __primitive("is atomic type", t);
-
-  proc isRefIterType(type t) param return __primitive("is ref iter type", t);
 
   // These style element #s are used in the default Writer and Reader.
   // and in e.g. implementations of those in Tuple.

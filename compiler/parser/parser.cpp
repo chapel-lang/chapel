@@ -931,12 +931,9 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   auto path = chpl::UniqueString::get(gContext, fileName);
 
   // The 'parseFile' query gets us a builder result that we can inspect to
-  // see if there were any parse errors. The 'parse' query makes us a vector
-  // of top-level modules for easy use, but it does not reparse any modules.
-  // It simply reuses the result of the 'parseFile' query.
+  // see if there were any parse errors.
   auto& builderResult = chpl::parsing::parseFile(gContext, path);
-  auto& modules = chpl::parsing::parse(gContext, path);
-
+  gFilenameLookup.push_back(path.c_str());
   // Any errors while building will have already been emitted by the global
   // error handling callback that was set above. So just stop.
   // TODO (dlongnecke): What if errors were emitted outside of / not noted
@@ -945,6 +942,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     USR_STOP();
   }
 
+  const chpl::uast::Comment* modComment = nullptr;
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;
 
@@ -957,8 +955,16 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   // The uAST builder will have already created a top level implicit module
   // for us, which sidesteps the case that 'parseFile' addresses.
   //
-  for (auto mod : modules) {
-    INT_ASSERT(mod != nullptr);
+  for (auto ast : builderResult.topLevelExpressions()) {
+
+    // Store the last comment for use when converting the module.
+    if (auto comment = ast->toComment()) {
+      modComment = comment;
+      continue;
+    }
+
+    auto mod = ast->toModule();
+    INT_ASSERT(mod);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
     printf("> Dumping uAST for module %s\n", mod->name().c_str());
@@ -974,7 +980,10 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     yyfilename = nullptr;
 
     // Only converts the module, does not add to done list.
-    ModuleSymbol* got = convertToplevelModule(gContext, mod, modTag);
+    ModuleSymbol* got = convertToplevelModule(gContext, mod, modTag,
+                                              modComment,
+                                              builderResult);
+    modComment = nullptr;
     INT_ASSERT(got);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST

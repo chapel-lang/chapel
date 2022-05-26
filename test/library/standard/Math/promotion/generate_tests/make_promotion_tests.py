@@ -22,7 +22,6 @@ monadic = [('abs', -10.0, 10.0),
            ('lgamma', -6.5, 7.0),
            ('log', 1.0, 10.0),
            ('log10', 1.0, 1000.0),
-           ('log1p', 1.0, 10.0),
            ('log2', 1.0, 1024.0),
            ('nearbyint', -7.0, 7.0),
            ('rint', -7.0, 7.0),
@@ -36,19 +35,23 @@ monadic = [('abs', -10.0, 10.0),
            ('tgamma', -6.5, 7.0),
            ('trunc', -7.0, 7.0)]
 
-def write_test(name, fmin, fmax):
+monadic2 = [('log1p', 1.0, 10.0)]
+
+def write_test(name, fmin, fmax, needsUse):
     min = str(fmin)
     max = str(fmax)
     filename = name + '.chpl'
     this_dir = os.path.abspath(os.path.dirname(__file__))
     (test_dir, _) = os.path.split(this_dir)
     path = os.path.join(test_dir, filename)
-    print path
+    print(path)
     with open(path, 'w') as fout:
         fout.write('// ' + filename + '\n')
         fout.write('// \n')
         fout.write('// AUTO-GENERATED, DO NOT EDIT.  See generate_tests/ directory.\n')
         fout.write('// \n\n')
+        if needsUse:
+            fout.write("use Math;\n")
         fout.write('proc roundIfClose(x: real) {\n')
         fout.write('  const eps = 1e-8;\n')
         fout.write('  if abs(x) < eps then return 0.0; // special case, to avoid -0.0\n')
@@ -70,4 +73,7 @@ def write_test(name, fmin, fmax):
         fout.write('writeln(B);\n')
 
 for (name, min, max) in monadic:
-    write_test(name, min, max)
+    write_test(name, min, max, False)
+
+for (name, min, max) in monadic2:
+    write_test(name, min, max, True)

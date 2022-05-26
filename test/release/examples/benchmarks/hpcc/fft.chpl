@@ -8,10 +8,10 @@
 */
 
 //
-// Use standard modules for Bit operations, Random numbers, Timing, and
-// Block and Cyclic distributions
+// Use standard modules for less common Math functions, Bit operations, Random
+// numbers, Timing, and Block and Cyclic distributions
 //
-use BitOps, Random, Time, BlockDist, CyclicDist;
+use Math, BitOps, Random, Time, BlockDist, CyclicDist;
 
 //
 // Use shared user module for computing HPCC problem sizes
