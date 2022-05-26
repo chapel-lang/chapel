@@ -209,7 +209,7 @@ module String {
   use ChapelStandard;
   use CTypes;
   use ByteBufferHelpers;
-  use BytesStringCommon;
+  public use BytesStringCommon;
   use SysBasic;
 
   use CString;
@@ -931,11 +931,14 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    iter _cpIndexLen(start = 0:byteIndex) {
+    iter _cpIndexLen(start = 0:byteIndex, numYields=max(int)) {
       const localThis = this.localize();
       var i = _findStartOfNextCodepointFromByte(localThis, start);
+      var curYields = 0;
       while i < localThis.buffLen {
         yield localThis._cpIndexLenHelpNoAdjustment(i);  // this increments i
+        curYields += 1;
+        if curYields == numYields then break;
       }
     }
 
@@ -1354,28 +1357,26 @@ module String {
       d
    */
   iter string.items() : string {
-    var localThis: string = this.localize();
+    if this.isASCII() then
+      for i in theseAscii(this) do yield i;
+    else
+      for i in theseUTF8(this) do yield i;
+  }
 
-    if localThis.isASCII() {
-      for i in localThis.byteIndices {
-        var (newBuff, allocSize) = bufferCopyLocal(localThis.buff+i, len=1);
-        yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
-      }
-    }
-    else {
-      var i = 0;
-      while i < localThis.buffLen {
-        const curPos = localThis.buff+i;
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                   buffLen=localThis.buffLen,
-                                                   offset=i,
-                                                   allowEsc=true);
-        var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
-        yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
+  pragma "no doc"
+  iter string.items(param tag: iterKind) where tag==iterKind.leader {
+    if this.isASCII() then
+      for i in theseAscii(tag, this) do yield i;
+    else
+      for i in theseUTF8(tag, this) do yield i;
+  }
 
-        i += nBytes;
-      }
-    }
+  pragma "no doc"
+  iter string.items(param tag: iterKind, followThis) : string where tag==iterKind.follower {
+    if this.isASCII() then
+      for i in theseAscii(tag, this, followThis) do yield i;
+    else
+      for i in theseUTF8(tag, this, followThis) do yield i;
   }
 
   /*
@@ -1399,19 +1400,34 @@ module String {
       d
    */
   iter string.these() : string {
-    for c in this.items() do
-      yield c;
+    for c in this.items() do yield c;
+  }
+
+  pragma "no doc"
+  iter string.these(param tag: iterKind) where tag==iterKind.leader {
+    for c in this.items(tag) do yield c;
+  }
+
+  pragma "no doc"
+  iter string.these(param tag: iterKind, followThis) where tag==iterKind.follower {
+    for c in this.items(tag, followThis) do yield c;
   }
 
   /*
     Iterates over the string byte by byte.
   */
   iter string.chpl_bytes() : uint(8) {
-    var localThis: string = this.localize();
+    for i in theseBytes(this) do yield i;
+  }
 
-    foreach i in 0..#localThis.buffLen {
-      yield localThis.buff[i];
-    }
+  pragma "no doc"
+  iter string.chpl_bytes(param tag: iterKind) where tag==iterKind.leader {
+    for i in theseBytes(tag, this) do yield i;
+  }
+
+  pragma "no doc"
+  iter string.chpl_bytes(param tag: iterKind, followThis) where tag==iterKind.follower {
+    for i in theseBytes(tag, this, followThis) do yield i;
   }
 
   /*

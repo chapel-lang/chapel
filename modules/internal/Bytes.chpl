@@ -544,9 +544,17 @@ module Bytes {
     :yields: 1-length :type:`bytes`
    */
   iter bytes.items(): bytes {
-    if this.isEmpty() then return;
-    foreach i in this.indices do
-      yield this.item[i];
+    for b in theseAscii(this) do yield b;
+  }
+
+  pragma "no doc"
+  iter bytes.items(param tag: iterKind) where tag==iterKind.leader {
+    for b in theseAscii(tag, this) do yield b;
+  }
+
+  pragma "no doc"
+  iter bytes.items(param tag: iterKind, followThis) where tag==iterKind.follower {
+    for b in theseAscii(tag, this, followThis) do yield b;
   }
 
   /*
@@ -555,8 +563,17 @@ module Bytes {
     :yields: uint(8)
    */
   iter bytes.these(): uint(8) {
-    for i in this.bytes() do
-      yield i;
+    for i in this.chpl_bytes() do yield i;
+  }
+
+  pragma "no doc"
+  iter bytes.these(param tag: iterKind) where tag==iterKind.leader {
+    for i in this.chpl_bytes(tag) do yield i;
+  }
+
+  pragma "no doc"
+  iter bytes.these(param tag: iterKind, followThis) where tag==iterKind.follower {
+    for i in this.chpl_bytes(tag, followThis) do yield i;
   }
 
   /*
@@ -565,8 +582,17 @@ module Bytes {
     :yields: uint(8)
   */
   iter bytes.chpl_bytes(): uint(8) {
-    foreach i in this.indices do
-      yield this.byte(i);
+    for b in theseBytes(this) do yield b;
+  }
+
+  pragma "no doc"
+  iter bytes.chpl_bytes(param tag: iterKind) where tag==iterKind.leader {
+    for b in theseBytes(tag, this) do yield b;
+  }
+
+  pragma "no doc"
+  iter bytes.chpl_bytes(param tag: iterKind, followThis) where tag==iterKind.follower {
+    for b in theseBytes(tag, this, followThis) do yield b;
   }
 
   /*

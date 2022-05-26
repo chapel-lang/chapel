@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sort $2 > $2.sorted
+mv $2.sorted $2

@@ -1,0 +1,6 @@
+-sdataType=string -siterType=iterTypes.default    # zip-string-default.good
+-sdataType=string -siterType=iterTypes.dotItems   # zip-string-dotItems.good
+-sdataType=string -siterType=iterTypes.dotBytes   # zip-string-dotBytes.good
+-sdataType=bytes  -siterType=iterTypes.default    # zip-bytes-default.good
+-sdataType=bytes  -siterType=iterTypes.dotItems   # zip-bytes-dotItems.good
+-sdataType=bytes  -siterType=iterTypes.dotBytes   # zip-bytes-dotBytes.good

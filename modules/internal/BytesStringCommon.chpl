@@ -21,6 +21,7 @@
 module BytesStringCommon {
   private use ChapelStandard;
   private use CTypes;
+  private use ChapelDebugPrint;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
 
@@ -1267,6 +1268,115 @@ module BytesStringCommon {
     }
 
     return localX[start..end];
+  }
+
+  iter theseBytes(const ref x: ?t) {
+    if x.isEmpty() then return;
+    const localX = x.localize();
+    foreach i in localX.byteIndices do
+      yield localX.byte(i);
+  }
+
+  iter theseBytes(param tag: iterKind, const ref x: ?t)
+      where tag==iterKind.leader {
+
+    const localX = x.localize();
+    for rangeChunk in localX.byteIndices.these(tag) do
+      yield rangeChunk;
+  }
+
+  iter theseBytes(param tag: iterKind, const ref x: ?t, followThis)
+      where tag==iterKind.follower {
+
+    const localX = x.localize();
+
+    for i in localX.byteIndices.these(tag, followThis) do
+      yield localX.buff[i];
+  }
+
+  iter theseAscii(const ref x: ?t) {
+    if x.isEmpty() then return;
+    const localX = x.localize();
+    foreach i in localX.byteIndices {
+      var (newBuff, allocSize) = bufferCopyLocal(localX.buff+i, len=1);
+      if localX.type == string {
+        yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
+      }
+      else {
+        yield createBytesWithOwnedBuffer(newBuff, 1, allocSize);
+      }
+    }
+  }
+
+  iter theseAscii(param tag: iterKind, const ref x: ?t)
+      where tag==iterKind.leader {
+
+    const localX = x.localize();
+
+    for rangeChunk in localX.byteIndices.these(tag) do
+      yield rangeChunk;
+  }
+
+  iter theseAscii(param tag: iterKind, const ref x: ?t, followThis)
+      where tag==iterKind.follower {
+
+    const localX = x.localize();
+
+    for i in localX.byteIndices.these(tag, followThis) {
+      var (newBuff, allocSize) = bufferCopyLocal(localX.buff+i, len=1);
+      if localX.type == string then
+        yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
+      else
+        yield createBytesWithOwnedBuffer(newBuff, 1, allocSize);
+    }
+  }
+
+  iter theseUTF8(const ref x: ?t) {
+    const localX = x.localize();
+
+    var i = 0;
+    while i < localX.buffLen {
+      const curPos = localX.buff+i;
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=localX.buff,
+                                                 buffLen=localX.buffLen,
+                                                 offset=i,
+                                                 allowEsc=true);
+      var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
+      yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
+
+      i += nBytes;
+    }
+  }
+
+  iter theseUTF8(param tag: iterKind, const ref x: ?t)
+      where tag==iterKind.leader {
+
+    const localX = x.localize();
+
+    for followThis in x.indices.these(tag) do yield followThis;
+  }
+
+
+  iter theseUTF8(param tag: iterKind, const ref x: ?t, followThis)
+      where tag==iterKind.follower {
+
+    const localX = x.localize();
+    const charRange = followThis[0];
+
+    // walk to the starting byte
+    var startingByte = 0:byteIndex;
+    var curIdx = 0;
+    for (cp, byteIdx, nBytes) in x._cpIndexLen() {
+      // TODO: is this `break` good for performance because it cuts the
+      // iteration early, or bad because it prevents inlining (?)
+      if curIdx > charRange.high then break;
+      if charRange.contains(curIdx) {
+        var (newBuff, allocSize) = bufferCopyLocal(localX.buff+byteIdx,
+                                                   nBytes);
+        yield chpl_createStringWithOwnedBufferNV(newBuff, nBytes, allocSize, 1);
+      }
+      curIdx += 1;
+    }
   }
 
   inline proc doEq(a: ?t1, b: ?t2) {
