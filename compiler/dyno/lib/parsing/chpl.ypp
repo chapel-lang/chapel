@@ -686,7 +686,7 @@ stmt:
 | error TSEMI
   {
     $$ = STMT(@$, ErroneousExpression::build(BUILDER, LOC(@1)));
-    context->resetDeclState();
+    context->resetDeclStateOnError();
   }
 ;
 

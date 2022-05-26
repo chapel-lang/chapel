@@ -1,0 +1,2 @@
+renameViaParamExpr.chpl:9: syntax error: near 'record'
+renameViaParamExpr.chpl:12: syntax error: near '}'
