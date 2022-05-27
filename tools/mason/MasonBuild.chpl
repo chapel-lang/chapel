@@ -42,7 +42,7 @@ proc masonBuild(args: [] string) throws {
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var exampleOpts = parser.addOption(name="example", numArgs=0..);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
-  var flagsFlag = parser.addFlag(name="flags", defaultValue=false);
+  var dependentFlag = parser.addFlag(name="dependent-modules", defaultValue=false);
 
   var passArgs = parser.addPassThrough();
 
@@ -58,7 +58,7 @@ proc masonBuild(args: [] string) throws {
   var compopts: list(string);
   var example = false;
   var skipUpdate = MASON_OFFLINE;
-  var flags = flagsFlag.valueAsBool();
+  var dependentModules = dependentFlag.valueAsBool();
 
   // when --example provided with or without a value
   if exampleOpts._present then example = true;
@@ -68,7 +68,7 @@ proc masonBuild(args: [] string) throws {
     else skipUpdate = true;
   }
   
-  if flags {
+  if dependentModules {
     if isDir(MASON_HOME) == false {
       mkdir(MASON_HOME, parents=true);
     }
@@ -87,7 +87,7 @@ proc masonBuild(args: [] string) throws {
     const depPath = MASON_HOME + '/src/';
     var flags: string;
     for (_, name, version) in sourceList {
-      var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
+      var depSrc = ' -M' + depPath + name + "-" + version + '/src/' + name;
       flags += depSrc;
     }
     writeln(flags);
