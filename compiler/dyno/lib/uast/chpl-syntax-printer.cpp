@@ -1097,6 +1097,8 @@ namespace chpl {
    *
    * Returns precedence: higher is tighter-binding.
    * Returns -1 for unhandled operator -- caller should respond conservatively.
+   *
+   * author - Paul Cassella (@cassella)
    */
    int opToPrecedence(const char *op, bool unary, bool postfix) {
     // new is precedence 19, but doesn't come through this path.
@@ -1126,10 +1128,10 @@ namespace chpl {
     else if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0)
       return 7;
     // .. and ..< are precedence 6, but don't come through this path.
-    else if (op == USTR("<").c_str() || op == USTR("<=").c_str() ||
-             op == USTR(">").c_str() || op == USTR(">=").c_str())
+    else if (strcmp(op, "<") == 0 || strcmp(op, "<=") == 0 ||
+             strcmp(op, ">") == 0 || strcmp(op, ">=") == 0)
       return 5;
-    else if (op == USTR("==").c_str() || op == USTR("!=").c_str())
+    else if (strcmp(op, "==") == 0 || strcmp(op, "!=") == 0)
       return 4;
     else if (strcmp(op, "&&") == 0)
       return 3;
@@ -1176,6 +1178,8 @@ namespace chpl {
    * a-(b-c) where inner- is the RHS of the outer-.  But we can emit
    * a-b-c instead of (a-b)-c -- when inner- is the LHS of outer-.
    * Also, to distinguish (-1)**2 (parens needed) from 1**(-2) (not needed).
+   *
+   * author - Paul Cassella (@cassella)
    */
   bool needParens(const char *outer, const char *inner,
                         bool outerUnary, bool outerPostfix,
