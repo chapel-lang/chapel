@@ -1,2 +1,9 @@
-void llvm::CallInst::init(llvm::FunctionType*, llvm::Value*, llvm::ArrayRef<llvm::Value*>, llvm::ArrayRef<llvm::OperandBundleDefT<llvm::Value*> >, const llvm::Twine&): Assertion `(Args.size() == FTy->getNumParams() || (FTy->isVarArg() && Args.size() > FTy->getNumParams())) && "Calling a function with bad signature!"' failed.
-timedexec: target program died with signal 6, without coredump
+Incorrect number of arguments passed to called function!
+  %4 = call i32 @returnIntFromIntArg() #0
+internal error: COD-CG--BOL-nnnn chpl version mmmm
+
+Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
+and we're sorry for the hassle.  We would appreciate your reporting this bug --
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+
