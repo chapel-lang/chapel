@@ -2153,6 +2153,12 @@ compilerAndTestingStats: &compiler-perf-base
     - Move some method definitions into headers (#18961)
   01/25/22:
     - Move SSCA out of release/examples (#19054)
+  05/11/22:
+    - simplify use/import shadowing (#19306)
+  05/20/22:
+    - Always use the dyno parser (#19816)
+  05/26/22:
+    - Bump system llvm from 13 to 14
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2273,6 +2279,10 @@ arkouda: &arkouda-base
     - Closes 1241 Use computeOnSegments for substringSearch (Bears-R-Us/arkouda#1248)
   05/04/22:
     - 846 refactor unique to handle groupby (Bears-R-Us/arkouda#1330)
+  05/20/22:
+    - DataFrame Display Server-Side Performance Issue (Bears-R-Us/arkouda#1409)
+  05/26/22:
+    - Use swap operator in radix sort instead of assignment operator (Bears-R-Us/arkouda#1419)
 
 
 arkouda-string:
