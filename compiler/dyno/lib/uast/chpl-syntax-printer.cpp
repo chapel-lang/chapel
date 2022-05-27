@@ -827,14 +827,9 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Reduce* node) {
-    if (node->opExpr()) {
-      printChapelSyntax(ss_, node->opExpr());
-    } else {
-      ss_ << node->op();
-    }
-    ss_ << " ";
-    ss_ << "reduce ";
-    printChapelSyntax(ss_, node->actual(0));
+    printChapelSyntax(ss_, node->op());
+    ss_ << " reduce ";
+    printChapelSyntax(ss_, node->iterand());
   }
 
   void visit(const Require* node) {
@@ -851,9 +846,9 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Scan* node) {
-    ss_ << node->op() << " ";
-    ss_ << "scan ";
-    interpose(node->actuals(), ", ");
+    printChapelSyntax(ss_, node->op());
+    ss_ << " scan ";
+    printChapelSyntax(ss_, node->iterand());
   }
 
   void visit(const Select* node) {

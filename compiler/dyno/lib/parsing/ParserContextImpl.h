@@ -2060,46 +2060,42 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   return cs;
 }
 
-AstNode* ParserContext::buildCustomReduce(YYLTYPE location,
-                                          YYLTYPE locIdent,
-                                          AstNode* lhs,
-                                          AstNode* rhs) {
-
-  if (lhs->isFnCall()) {
-    if (!lhs->toFnCall()->calledExpression()->isIdentifier()) {
-      const char* msg = "Expected identifier for reduction name";
-      return raiseError(locIdent, msg);
-    }
-    AstNode* inputType = (AstNode*) lhs->toFnCall();
-    auto node = Reduce::build(builder, convertLocation(location),
-                              toOwned(inputType),
-                              toOwned(rhs));
-    return node.release();
-  } else if (!lhs->isIdentifier()) {
-    const char* msg = "Expected identifier for reduction name";
-    return raiseError(locIdent, msg);
-  } else {
-    auto node = Reduce::build(builder, convertLocation(location),
-                              toOwned(lhs->toIdentifier()),
-                              toOwned(rhs));
-    return node.release();
-  }
+AstNode* ParserContext::buildReduce(YYLTYPE location,
+                                    YYLTYPE locOp,
+                                    PODUniqueString op,
+                                    AstNode* iterand) {
+  auto ident = buildIdent(locOp, op);
+  return buildReduce(location, locOp, ident, iterand);
 }
 
-AstNode* ParserContext::buildCustomScan(YYLTYPE location,
-                                        YYLTYPE locIdent,
-                                        AstNode* lhs,
-                                        AstNode* rhs) {
-  if (!lhs->isIdentifier()) {
-    const char* msg = "Expected identifier for scan name";
-    return raiseError(locIdent, msg);
-  } else {
-    auto identName = lhs->toIdentifier()->name();
-    auto node = Scan::build(builder, convertLocation(location),
-                            identName,
-                            toOwned(rhs));
-    return node.release();
-  }
+AstNode* ParserContext::buildReduce(YYLTYPE location,
+                                    YYLTYPE locOp,
+                                    AstNode* op,
+                                    AstNode* iterand) {
+  (void) locOp;
+  auto node = Reduce::build(builder, convertLocation(location),
+                            toOwned(op),
+                            toOwned(iterand));
+  return node.release();
+}
+
+AstNode* ParserContext::buildScan(YYLTYPE location,
+                                  YYLTYPE locOp,
+                                  PODUniqueString op,
+                                  AstNode* iterand) {
+  auto ident = buildIdent(locOp, op);
+  return buildScan(location, locOp, ident, iterand);
+}
+
+AstNode* ParserContext::buildScan(YYLTYPE location,
+                                  YYLTYPE locOp,
+                                  AstNode* op,
+                                  AstNode* iterand) {
+  (void) locOp;
+  auto node = Scan::build(builder, convertLocation(location),
+                          toOwned(op),
+                          toOwned(iterand));
+  return node.release();
 }
 
 AstNode* ParserContext::buildTypeQuery(YYLTYPE location,
