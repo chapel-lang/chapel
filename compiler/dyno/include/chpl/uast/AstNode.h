@@ -141,6 +141,12 @@ class AstNode {
     return this->id_.contains(other->id_);
   }
 
+  /**
+    Returns 'true' if the passed type of AST node can contain statements,
+    transitively.
+   */
+  static bool mayContainStatements(AstTag tag);
+
   bool shallowMatch(const AstNode* other) const;
   bool completeMatch(const AstNode* other) const;
 

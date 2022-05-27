@@ -31,11 +31,11 @@
 //  PRIMITIVE_G -- needs to be code generated
 //                 and there will be a CallExpr::codegenPRIM_BLA method for it
 
-// individual primitives are not documented in this file
-// but rather in AST/primitive.cpp
-
 // behavior for individual primitives are not documented in this file
 // but rather in AST/primitive.cpp
+
+// and the primitive value itself has a PRIM_ prefix e.g.
+// PRIMITIVE_G(NOOP, "noop") is talking about an enum value PRIM_NOOP.
 
 PRIMITIVE_G(UNKNOWN, "")
 

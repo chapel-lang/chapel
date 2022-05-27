@@ -42,6 +42,16 @@ namespace types {
 
   (Storing field types in this class would present significant challenges
    for computing this type in an immutable way within the query framework).
+
+  For a generic-with-default type, the main type (with no substitutions)
+  is generic, and the defaulted version is an instantiation of that.
+
+  E.g., for `record R { type t = int; }`,
+
+   * the CompositeType for R with no substitutions is a generic type
+   * when the version with the default is needed,
+     it will be computed as a CompositeType for R with the substitution
+     t->int which is instantiated from the above type.
  */
 class CompositeType : public Type {
  public:

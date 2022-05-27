@@ -27,6 +27,29 @@ namespace chpl {
 namespace types {
 
 
+bool QualifiedType::isParamTrue() const {
+  if (kind_ == Kind::PARAM && param_ != nullptr) {
+    if (auto bp = param_->toBoolParam()) {
+      if (bp->value() == true) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+bool QualifiedType::isParamFalse() const {
+  if (kind_ == Kind::PARAM && param_ != nullptr) {
+    if (auto bp = param_->toBoolParam()) {
+      if (bp->value() == false) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
   return defaultUpdate(keep, addin);
 }
@@ -52,6 +75,7 @@ static const char* kindToString(QualifiedType::Kind kind) {
     case QualifiedType::PARAM:          return "param";
     case QualifiedType::TYPE:           return "type";
     case QualifiedType::INDEX:          return "index";
+    case QualifiedType::TYPE_QUERY:     return "type query";
     case QualifiedType::FUNCTION:       return "function";
     case QualifiedType::MODULE:         return "module";
   }

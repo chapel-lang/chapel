@@ -189,7 +189,8 @@ static bool trackInstantiationsForFn(FnSymbol* fn) {
           // result in infinitely recursive instantiations; to
           // reproduce this, comment out that part of the test and try
           // test/functions/resolution/instantiateMax/instMaxOKifNonrecursive.chpl).
-          !fn->hasFlag(FLAG_COMPILER_GENERATED));
+          !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+          !fn->hasFlag(FLAG_EXEMPT_INSTANTIATION_LIMIT));
 }
 
 //

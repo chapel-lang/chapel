@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
+#include "chpl/queries/global-strings.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/uast/all-uast.h"
 
@@ -80,7 +81,18 @@ struct GatherDecls {
 
   // Add NamedDecls to the map
   bool enter(const NamedDecl* d) {
-    gather(declared, d->name(), d);
+    bool skip = false;
+
+    if (d->isRecord() && d->name() == USTR("_tuple")) {
+      // skip gathering _tuple from the standard library
+      // since dyno handles tuple types directly rather
+      // than through a record.
+      skip = true;
+    }
+
+    if (skip == false) {
+      gather(declared, d->name(), d);
+    }
 
     if (d->isFunction()) {
       // make a note if we encountered a function
@@ -190,7 +202,16 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
       ID parentId = parsing::idToParentId(context, id);
       const Scope* parentScope = scopeForIdQuery(context, parentId);
 
-      result = new Scope(ast, parentScope);
+      bool autoUsesModules = false;
+      if (ast->isModule()) {
+        UniqueString modPath = context->filePathForId(id);
+        UniqueString internalModPath = parsing::internalModulePath(context);
+        if (!modPath.startsWith(internalModPath)) {
+          autoUsesModules = true;
+        }
+      }
+
+      result = new Scope(ast, parentScope, autoUsesModules);
     }
   }
 
@@ -249,7 +270,7 @@ const Scope* scopeForId(Context* context, ID id) {
 
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
-                            const VisibilityPath* path,
+                            const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
                             std::unordered_set<const Scope*>& checkedScopes,
@@ -257,7 +278,7 @@ static bool doLookupInScope(Context* context,
 
 static bool doLookupExprInScope(Context* context,
                                 const Scope* scope,
-                                const VisibilityPath* path,
+                                const ResolvedVisibilityScope* resolving,
                                 const AstNode* expr,
                                 LookupConfig config,
                                 std::unordered_set<const Scope*>& checkedScopes,
@@ -265,41 +286,41 @@ static bool doLookupExprInScope(Context* context,
                                 UniqueString& name,
                                 const Scope*& resultScope);
 
-static const std::vector<VisibilitySymbols>&
-resolveVisibilityStmt(Context* context, ID useImportId,
-                      VisibilityPath path);
+static const ResolvedVisibilityScope*
+resolveVisibilityStmts(Context* context, const Scope* scope);
+
+// Returns the scope for the automatically included standard module
+static const Scope* const& scopeForAutoModule(Context* context) {
+  QUERY_BEGIN(scopeForAutoModule, context);
+
+  auto name = UniqueString::get(context, "ChapelStandard");
+  const Module* mod = parsing::getToplevelModule(context, name);
+  const Scope* result = nullptr;
+  if (mod != nullptr) {
+    result = scopeForIdQuery(context, mod->id());
+  }
+
+  return QUERY_END(result);
+}
 
 static bool doLookupInImports(Context* context,
                               const Scope* scope,
-                              const VisibilityPath& path,
+                              const ResolvedVisibilityScope* resolving,
                               UniqueString name,
                               bool onlyInnermost,
                               std::unordered_set<const Scope*>& checkedScopes,
                               std::vector<BorrowedIdsWithName>& result) {
-  if (!scope->containsUseImport()) {
-    // stop early if this scope has no use/import statements
-    return false;
+  // Get the resolved visibility statements, if available
+  const ResolvedVisibilityScope* r = nullptr;
+  if (resolving && resolving->scope() == scope) {
+    r = resolving;
+  } else {
+    r = resolveVisibilityStmts(context, scope);
   }
 
-  // Gather the list of IDs of use/import statements in this scope
-  const std::vector<ID>& vizIds = findUseImportStmts(context, scope);
-
-  // Check each use/import statement for the appropriate symbol
-  for (const ID& id : vizIds) {
-    // check only the use/import statements before any named in path
-    bool stop = false;
-    for (const auto& pathId: path) {
-      if (pathId == id)
-        stop = true;
-    }
-    if (stop) {
-      break;
-    }
-
-    const auto& vizSyms = resolveVisibilityStmt(context, id, path);
-
+  if (r != nullptr) {
     // check to see if it's mentioned in names/renames
-    for (const VisibilitySymbols& is: vizSyms) {
+    for (const VisibilitySymbols& is: r->visibilityClauses()) {
       UniqueString from = name;
       bool named = is.lookupName(name, from);
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
@@ -321,13 +342,34 @@ static bool doLookupInImports(Context* context,
         }
 
         // find it in that scope
-        bool found = doLookupInScope(context, symScope, &path, from, newConfig,
+        bool found = doLookupInScope(context, symScope, resolving,
+                                     from, newConfig,
                                      checkedScopes, result);
         if (found && onlyInnermost)
           return true;
       }
     }
   }
+
+  if (scope->autoUsesModules()) {
+    const Scope* autoModScope = scopeForAutoModule(context);
+    if (autoModScope) {
+      LookupConfig newConfig = LOOKUP_DECLS |
+                               LOOKUP_IMPORT_AND_USE;
+
+      if (onlyInnermost) {
+        newConfig |= LOOKUP_INNERMOST;
+      }
+
+      // find it in that scope
+      bool found = doLookupInScope(context, autoModScope, resolving,
+                                   name, newConfig,
+                                   checkedScopes, result);
+      if (found && onlyInnermost)
+        return true;
+    }
+  }
+
   return false;
 }
 
@@ -345,7 +387,7 @@ static bool doLookupInToplevelModules(Context* context,
 
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
-                            const VisibilityPath* path,
+                            const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
                             std::unordered_set<const Scope*>& checkedScopes,
@@ -382,16 +424,9 @@ static bool doLookupInScope(Context* context,
 
   if (checkUseImport) {
     bool got = false;
-    if (path != nullptr) {
-      got = doLookupInImports(context, scope, *path,
-                              name, onlyInnermost,
-                              checkedScopes, result);
-    } else {
-      VisibilityPath emptyPath;
-      got = doLookupInImports(context, scope, emptyPath,
-                        name, onlyInnermost,
-                        checkedScopes, result);
-    }
+    got = doLookupInImports(context, scope, resolving,
+                            name, onlyInnermost,
+                            checkedScopes, result);
     if (onlyInnermost && got) return true;
   }
 
@@ -406,7 +441,7 @@ static bool doLookupInScope(Context* context,
 
     const Scope* cur = nullptr;
     for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
-      bool got = doLookupInScope(context, cur, path, name, newConfig,
+      bool got = doLookupInScope(context, cur, resolving, name, newConfig,
                                  checkedScopes, result);
       if (onlyInnermost && got) return true;
 
@@ -422,7 +457,7 @@ static bool doLookupInScope(Context* context,
         rootScope = cur;
     }
     if (rootScope != nullptr) {
-      bool got = doLookupInScope(context, rootScope, path, name, newConfig,
+      bool got = doLookupInScope(context, rootScope, resolving, name, newConfig,
                                  checkedScopes, result);
       if (onlyInnermost && got) return true;
     }
@@ -436,13 +471,12 @@ static bool doLookupInScope(Context* context,
   return result.size() > startSize;
 }
 
-// 'path' is only != nullptr when we are resolving
-// what module/enum is use/imported. In that event it is used to
-// handle recursive module uses by checking only previous use/import
-// statements.
+// 'resolving' is only != nullptr when we are resolving
+// what module/enum is use/imported. In that event it is a pointer
+// to the result currently being constructed.
 static bool doLookupExprInScope(Context* context,
                                 const Scope* scope,
-                                const VisibilityPath* path,
+                                const ResolvedVisibilityScope* resolving,
                                 const AstNode* expr,
                                 LookupConfig config,
                                 std::unordered_set<const Scope*>& checkedScopes,
@@ -455,7 +489,7 @@ static bool doLookupExprInScope(Context* context,
     name = n;
     resultScope = scope;
 
-    return doLookupInScope(context, scope, path, n, config,
+    return doLookupInScope(context, scope, resolving, n, config,
                            checkedScopes, result);
 
   } else if (auto dot = expr->toDot()) {
@@ -470,7 +504,7 @@ static bool doLookupExprInScope(Context* context,
     LookupConfig rcvConfig = config | LOOKUP_INNERMOST;
 
     // lookup the receiver, recursively
-    bool ok = doLookupExprInScope(context, scope, path,
+    bool ok = doLookupExprInScope(context, scope, resolving,
                                   rcv, rcvConfig, checkedScopes,
                                   rcvResult, rcvName, ignoredScope);
 
@@ -498,7 +532,7 @@ static bool doLookupExprInScope(Context* context,
     // look in rcvScope's declarations for fieldName
     // using a new set of checked scopes
     std::unordered_set<const Scope*> freshCheckedScopes;
-    return doLookupInScope(context, rcvScope, path,
+    return doLookupInScope(context, rcvScope, resolving,
                            fieldName, fieldConfig,
                            freshCheckedScopes, result);
   } else {
@@ -522,7 +556,7 @@ enum VisibilityStmtKind {
 //     (which is only different from 'scope' for a Dot expression)
 static bool lookupInScopeViz(Context* context,
                              const Scope* scope,
-                             const VisibilityPath& path,
+                             const ResolvedVisibilityScope* resolving,
                              const AstNode* expr,
                              VisibilityStmtKind inUseEtc,
                              std::vector<BorrowedIdsWithName>& result,
@@ -550,7 +584,7 @@ static bool lookupInScopeViz(Context* context,
     config |= LOOKUP_TOPLEVEL;
   }
 
-  bool got = doLookupExprInScope(context, scope, &path,
+  bool got = doLookupExprInScope(context, scope, resolving,
                                  expr, config,
                                  checkedScopes, result,
                                  nameOfResult, resultScope);
@@ -620,8 +654,6 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
     return false;
   }
 
-  VisibilityPath emptyPath;
-
   // go through parent scopes checking for a match
   for (const Scope* cur = fromScope; cur != nullptr; cur = cur->parentScope()) {
     if (checkScope == cur) {
@@ -629,15 +661,11 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
     }
 
     if (cur->containsUseImport()) {
-      // Gather the list of IDs of use/import statements in this scope
-      const std::vector<ID>& vizIds = findUseImportStmts(context, cur);
+      const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, cur);
 
-      for (const ID& id : vizIds) {
-        // Resolve the use/import statement
-        const auto& vizSyms = resolveVisibilityStmt(context, id, emptyPath);
-
+      if (r != nullptr) {
         // check for scope containment
-        for (const VisibilitySymbols& is: vizSyms) {
+        for (const VisibilitySymbols& is: r->visibilityClauses()) {
           if (is.kind() == VisibilitySymbols::ALL_CONTENTS) {
             // find it in the contents
             const Scope* usedScope = scopeForId(context, is.symbolId());
@@ -670,30 +698,17 @@ bool isWholeScopeVisibleFromScope(Context* context,
                                         checked);
 }
 
-const std::vector<ID>& findUseImportStmts(Context* context,
-                                          const Scope* scope) {
-  QUERY_BEGIN(findUseImportStmts, context, scope);
-
-  std::vector<ID> result;
-  const AstNode* ast = parsing::idToAst(context, scope->id());
-  assert(ast != nullptr);
-  if (ast != nullptr) {
-    // Visit child nodes to e.g. look inside a Module
-    // rather than collecting it as a NamedDecl
-    for (const AstNode* child : ast->children()) {
-      if (child->isUse() || child->isImport()) {
-        result.push_back(child->id());
-      }
-    }
-  }
-
-  return QUERY_END(result);
-}
-
 static std::vector<std::pair<UniqueString,UniqueString>>
 convertOneName(UniqueString name) {
   std::vector<std::pair<UniqueString,UniqueString>> ret;
   ret.push_back(std::make_pair(name, name));
+  return ret;
+}
+
+static std::vector<std::pair<UniqueString,UniqueString>>
+convertOneRename(UniqueString oldName, UniqueString newName) {
+  std::vector<std::pair<UniqueString,UniqueString>> ret;
+  ret.push_back(std::make_pair(oldName, newName));
   return ret;
 }
 
@@ -728,11 +743,10 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
   return ret;
 }
 
-static std::vector<VisibilitySymbols>
+static void
 doResolveUseStmt(Context* context, const Use* use,
-                 const Scope* scope, const VisibilityPath& path) {
-  std::vector<VisibilitySymbols> result;
-
+                 const Scope* scope,
+                 ResolvedVisibilityScope* r) {
   bool isPrivate = true;
   if (use->visibility() == Decl::PUBLIC)
     isPrivate = false;
@@ -740,11 +754,25 @@ doResolveUseStmt(Context* context, const Use* use,
   for (auto clause : use->visibilityClauses()) {
     // Figure out what was use'd
     const AstNode* expr = clause->symbol();
+    UniqueString newName;
+
+    if (auto as = expr->toAs()) {
+      auto origIdent = as->symbol()->toIdentifier();
+      auto newIdent = as->rename()->toIdentifier();
+      if (origIdent != nullptr && newIdent != nullptr) {
+        // search for the original name
+        expr = origIdent;
+        newName = newIdent->name();
+      } else {
+        context->error(expr, "this form of as is not yet supported");
+        continue; // move on to the next visibility clause
+      }
+    }
 
     std::vector<BorrowedIdsWithName> vec;
     UniqueString n;
     const Scope* resultScope = nullptr;
-    bool got = lookupInScopeViz(context, scope, path, expr, VIS_USE,
+    bool got = lookupInScopeViz(context, scope, r, expr, VIS_USE,
                                 vec, n, resultScope);
     if (got == false || vec.size() == 0) {
       context->error(expr, "could not find target of 'use'");
@@ -757,8 +785,13 @@ doResolveUseStmt(Context* context, const Use* use,
     ID id = vec[0].id(0); // id of the 'use'd module/enum
 
     // First, add VisibilitySymbols entry for the symbol itself
-    result.emplace_back(id, VisibilitySymbols::SYMBOL_ONLY,
-                        isPrivate, convertOneName(n));
+    if (newName.isEmpty()) {
+      r->addVisibilityClause(id, VisibilitySymbols::SYMBOL_ONLY,
+                             isPrivate, convertOneName(n));
+    } else {
+      r->addVisibilityClause(id, VisibilitySymbols::SYMBOL_ONLY,
+                             isPrivate, convertOneRename(n, newName));
+    }
 
     // Then, add the entries for anything imported
     VisibilitySymbols::Kind kind = VisibilitySymbols::ALL_CONTENTS;
@@ -777,18 +810,15 @@ doResolveUseStmt(Context* context, const Use* use,
         break;
     }
     // constructs a VisibilitySymbols entry
-    result.emplace_back(id, kind, isPrivate,
-                        convertLimitations(context, clause));
+    r->addVisibilityClause(id, kind, isPrivate,
+                           convertLimitations(context, clause));
   }
-
-  return result;
 }
 
-static std::vector<VisibilitySymbols>
+static void
 doResolveImportStmt(Context* context, const Import* imp,
-                    const Scope* scope, const VisibilityPath& path) {
-  std::vector<VisibilitySymbols> result;
-
+                    const Scope* scope,
+                    ResolvedVisibilityScope* r) {
   bool isPrivate = true;
   if (imp->visibility() == Decl::PUBLIC)
     isPrivate = false;
@@ -796,11 +826,25 @@ doResolveImportStmt(Context* context, const Import* imp,
   for (auto clause : imp->visibilityClauses()) {
     // Figure out what was imported
     const AstNode* expr = clause->symbol();
+    UniqueString newName;
+
+    if (auto as = expr->toAs()) {
+      auto origIdent = as->symbol()->toIdentifier();
+      auto newIdent = as->rename()->toIdentifier();
+      if (origIdent != nullptr && newIdent != nullptr) {
+        // search for the original name
+        expr = origIdent;
+        newName = newIdent->name();
+      } else {
+        context->error(expr, "this form of as is not yet supported");
+        continue; // move on to the next visibility clause
+      }
+    }
 
     std::vector<BorrowedIdsWithName> vec;
     UniqueString n;
     const Scope* resultScope = nullptr;
-    bool got = lookupInScopeViz(context, scope, path, expr, VIS_IMPORT,
+    bool got = lookupInScopeViz(context, scope, r, expr, VIS_IMPORT,
                                 vec, n, resultScope);
     if (got == false || vec.size() == 0) {
       context->error(expr, "could not find target of 'import'");
@@ -836,72 +880,95 @@ doResolveImportStmt(Context* context, const Import* imp,
       case VisibilityClause::NONE:
         if (expr->isIdentifier()) {
           kind = VisibilitySymbols::SYMBOL_ONLY;
-          // Add a VisibilitySymbols entry for the imported thing
-          result.emplace_back(id, kind, isPrivate, convertOneName(n));
+          if (newName.isEmpty()) {
+            // Add a VisibilitySymbols entry for the imported thing
+            r->addVisibilityClause(id, kind, isPrivate, convertOneName(n));
+          } else {
+            r->addVisibilityClause(id, kind, isPrivate,
+                                   convertOneRename(n, newName));
+          }
         } else if (expr->isDot()) {
           kind = VisibilitySymbols::ONLY_CONTENTS;
           // Add a VisibilitySymbols entry
-          result.emplace_back(id, kind, isPrivate, convertOneName(n));
+          r->addVisibilityClause(id, kind, isPrivate, convertOneName(n));
         }
         break;
       case VisibilityClause::BRACES:
         kind = VisibilitySymbols::ONLY_CONTENTS;
         // Add a VisibilitySymbols entry for the imported things
-        result.emplace_back(id, kind, isPrivate,
-                            convertLimitations(context, clause));
+        r->addVisibilityClause(id, kind, isPrivate,
+                               convertLimitations(context, clause));
         break;
     }
   }
-
-  return result;
 }
 
-static std::vector<VisibilitySymbols>
+static void
 doResolveVisibilityStmt(Context* context,
                         const AstNode* ast,
-                        const VisibilityPath& path) {
+                        ResolvedVisibilityScope* r) {
   if (ast != nullptr) {
     if (ast->isUse() || ast->isImport()) {
-      // construct a new path that includes the current use/import
-      VisibilityPath newPath = path;
-      newPath.push_back(ast->id());
-
       // figure out the scope of the use/import
       const Scope* scope = scopeForIdQuery(context, ast->id());
 
       if (const Use* use = ast->toUse()) {
-        return doResolveUseStmt(context, use, scope, newPath);
+        doResolveUseStmt(context, use, scope, r);
+        return;
       } else if (const Import* imp = ast->toImport()) {
-        return doResolveImportStmt(context, imp, scope, newPath);
+        doResolveImportStmt(context, imp, scope, r);
+        return;
       }
     }
   }
 
   // this code should never run
   assert(false && "should not be reached");
-  std::vector<VisibilitySymbols> empty;
-  return empty;
 }
 
-/**
-  Given an ID of a Use/Import statement, resolves it to figure out
-  which module/enum is used/imported. This is a separate query for
-  each Use/Import statement in order to support modules that use/import
-  each other.
+static
+const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
+                                                      Context* context,
+                                                      const Scope* scope)
+{
+  QUERY_BEGIN(resolveVisibilityStmtsQuery, context, scope);
 
-  The 'path' argument indicates the use/import statements that are
-  currently being resolved in each scope in order to handle recusion.
- */
-const std::vector<VisibilitySymbols>&
-resolveVisibilityStmt(Context* context, ID useImportId,
-                      VisibilityPath path) {
-  QUERY_BEGIN(resolveVisibilityStmt, context, useImportId, path);
-
-  const AstNode* ast = parsing::idToAst(context, useImportId);
-  auto result = doResolveVisibilityStmt(context, ast, path);
+  owned<ResolvedVisibilityScope> result;
+  const AstNode* ast = parsing::idToAst(context, scope->id());
+  assert(ast != nullptr);
+  if (ast != nullptr) {
+    result = toOwned(new ResolvedVisibilityScope(scope));
+    auto r = result.get();
+    // Visit child nodes to find use/import statements therein
+    for (const AstNode* child : ast->children()) {
+      if (child->isUse() || child->isImport()) {
+        doResolveVisibilityStmt(context, child, r);
+      }
+    }
+  }
 
   return QUERY_END(result);
 }
+
+static const ResolvedVisibilityScope*
+resolveVisibilityStmts(Context* context, const Scope* scope) {
+  if (!scope->containsUseImport()) {
+    // stop early if this scope has no use/import statements
+    return nullptr;
+  }
+
+  if (context->isQueryRunning(resolveVisibilityStmtsQuery,
+                              std::make_tuple(scope))) {
+    // ignore use/imports if we are currently resolving uses/imports
+    // for this scope
+    return nullptr;
+  }
+
+  const owned<ResolvedVisibilityScope>& r =
+    resolveVisibilityStmtsQuery(context, scope);
+  return r.get();
+}
+
 
 static
 const owned<PoiScope>& constructPoiScopeQuery(Context* context,

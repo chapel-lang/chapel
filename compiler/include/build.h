@@ -167,12 +167,25 @@ DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 FnSymbol* buildLambda(FnSymbol* fn);
 
+void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
+                                   FnSymbol* fn);
+
 BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef);
 
 FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
                               const char* name,
                               IntentTag   thisTag,
                               Expr*       receiver);
+
+void setupFunctionDecl(FnSymbol*   fn,
+                       RetTag      optRetTag,
+                       Expr*       optRetType,
+                       bool        optThrowsError,
+                       Expr*       optWhere,
+                       Expr*       optLifetimeConstraints,
+                       BlockStmt*  optFnBody,
+                       const char* docs);
+
 BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              RetTag      optRetTag,
                              Expr*       optRetType,

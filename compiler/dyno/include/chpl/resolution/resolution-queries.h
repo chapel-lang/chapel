@@ -68,6 +68,7 @@ types::QualifiedType getInstantiationType(Context* context,
 
 /**
   Compute a TypedFnSignature from an UntypedFnSignature.
+  (An UntypedFnSignature can be computed with UntypedFnSignature::get()).
   The TypedFnSignature will represent generic and potentially unknown
   types if the function is generic.
  */
@@ -113,6 +114,13 @@ const ResolvedFields& resolveFieldDecl(Context* context,
 const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         const types::CompositeType* ct,
                                         bool useGenericFormalDefaults);
+
+/**
+  Computes the version of a type assuming that defaults for generics
+  are needed. So, for 'record R { type t = int; }', this will return R(int).
+ */
+const types::QualifiedType typeWithDefaults(Context* context,
+                                            types::QualifiedType t);
 
 /**
   Compute whether a type is generic or not.
