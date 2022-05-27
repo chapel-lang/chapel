@@ -42,25 +42,22 @@ namespace uast {
 */
 class Scan final : public Call {
  private:
-  Scan(AstList children, UniqueString op)
-    : Call(asttags::Scan, std::move(children), false),
-      op_(op) {
-    assert(numChildren() == 1);
-    assert(!op_.isEmpty());
+  static const int opChildNum_ = 0;
+  static const int iterandChildNum_ = 1;
+
+  Scan(AstList children)
+    : Call(asttags::Scan, std::move(children), false) {
+    assert(numChildren() == 2);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Scan* rhs = other->toScan();
-    return this->op_ == rhs->op_ &&
-      this->callContentsMatchInner(rhs);
+    return this->callContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
     callMarkUniqueStringsInner(context);
-    op_.mark(context);
   }
-
-  UniqueString op_;
 
  public:
   ~Scan() override = default;
@@ -69,15 +66,21 @@ class Scan final : public Call {
     Create and return a scan.
   */
   static owned<Scan> build(Builder* builder, Location loc,
-                           UniqueString op,
-                           owned<AstNode> expr);
+                           owned<AstNode> op,
+                           owned<AstNode> iterand);
 
   /**
-    Returns the scan operator. It may be either a regular operator
-    (e.g. '+', '-') or the name of a class.
+    Returns the scan op expression, e.g., `+` in the expression `+ scan A`.
   */
-  UniqueString op() const {
-    return op_;
+  const AstNode* op() const {
+    return this->child(opChildNum_);
+  }
+
+  /**
+    Returns the iterand of the scan, e.g., 'A' in the expression `+ scan A`.
+  */
+  const AstNode* iterand() const {
+    return this->child(iterandChildNum_);
   }
 
 };

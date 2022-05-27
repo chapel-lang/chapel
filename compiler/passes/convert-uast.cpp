@@ -946,22 +946,27 @@ struct Converter {
   }
 
   // TODO: Speed comparison for this vs. using cached unique strings?
-  Expr* convertScanReduceOp(UniqueString op) {
-    if (op == USTR("+"))
-      return new UnresolvedSymExpr("SumReduceScanOp");
-    if (op == USTR("*"))
-      return new UnresolvedSymExpr("ProductReduceScanOp");
-    if (op == USTR("&&"))
-      return new UnresolvedSymExpr("LogicalAndReduceScanOp");
-    if (op == USTR("||"))
-      return new UnresolvedSymExpr("LogicalOrReduceScanOp");
-    if (op == USTR("&"))
-      return new UnresolvedSymExpr("BitwiseAndReduceScanOp");
-    if (op == USTR("|"))
-      return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
-    if (op == USTR("^"))
-      return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
-    return new UnresolvedSymExpr(op.c_str());
+  Expr* convertScanReduceOp(const uast::AstNode* node) {
+    if (auto opIdent = node->toIdentifier()) {
+      auto name = opIdent->name();
+      if (name == USTR("+"))
+        return new UnresolvedSymExpr("SumReduceScanOp");
+      if (name == USTR("*"))
+        return new UnresolvedSymExpr("ProductReduceScanOp");
+      if (name == USTR("&&"))
+        return new UnresolvedSymExpr("LogicalAndReduceScanOp");
+      if (name == USTR("||"))
+        return new UnresolvedSymExpr("LogicalOrReduceScanOp");
+      if (name == USTR("&"))
+        return new UnresolvedSymExpr("BitwiseAndReduceScanOp");
+      if (name == USTR("|"))
+        return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
+      if (name == USTR("^"))
+        return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
+    }
+
+    auto ret = convertAST(node);
+    return ret;
   }
 
   // Note that there are two ways to translate this. In all cases the
@@ -989,18 +994,9 @@ struct Converter {
       } else if (const uast::Reduce* rd = expr->toReduce()) {
         astlocMarker markAstLoc(rd->id());
 
-        Expr* ovar = toExpr(convertAST(rd->actual(0)));
+        Expr* ovar = convertAST(rd->iterand());
         Expr* riExpr = convertScanReduceOp(rd->op());
-        if (auto opToCall = rd->opExpr()->toFnCall()) {
-          CallExpr* callExpr = new CallExpr(riExpr);
-          for (int i = 0; i < opToCall->numActuals(); i++) {
-            auto conv = convertAST(opToCall->actual(i));
-            callExpr->insertAtTail(conv);
-          }
-          svs = ShadowVarSymbol::buildFromReduceIntent(ovar, callExpr);
-        } else {
-          svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
-        }
+        svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
       } else {
         INT_FATAL("Not handled!");
       }
@@ -2012,23 +2008,16 @@ struct Converter {
   Expr* visit(const uast::Reduce* node) {
     INT_ASSERT(node->numActuals() == 2);
     Expr* opExpr = convertScanReduceOp(node->op());
-    Expr* dataExpr = convertAST(node->actual(0));
-    bool zippered = node->actual(0)->isZip();
-    if (node->opExpr()->isFnCall()){
-      CallExpr* callExpr = new CallExpr(opExpr);
-      for (int i = 0; i < node->opExpr()->toFnCall()->numActuals(); i++) {
-        callExpr->insertAtTail(convertAST(node->opExpr()->toFnCall()->actual(i)));
-      }
-      return buildReduceExpr(callExpr, dataExpr, zippered);
-    }
+    Expr* dataExpr = convertAST(node->iterand());
+    bool zippered = node->iterand()->isZip();
     return buildReduceExpr(opExpr, dataExpr, zippered);
   }
 
   Expr* visit(const uast::Scan* node) {
-    INT_ASSERT(node->numActuals() == 1);
+    INT_ASSERT(node->numActuals() == 2);
     Expr* opExpr = convertScanReduceOp(node->op());
-    Expr* dataExpr = convertAST(node->actual(0));
-    bool zippered = node->actual(0)->isZip();;
+    Expr* dataExpr = convertAST(node->iterand());
+    bool zippered = node->iterand()->isZip();
     return buildScanExpr(opExpr, dataExpr, zippered);
   }
 
