@@ -31,5 +31,15 @@ module Aggregator {
     // how to store updates?  Need locales * updates stored structure, but we
     // don't have skyline arrays.  Sets?  Seems weird to rely on a set at a
     // time like this but idk
+
+    // TODO: impl
+    proc update(key: client.keyType) {
+      compilerError("unimplemented");
+    }
+
+    // TODO: impl
+    proc flush() {
+      compilerError("unimplemented");
+    }
   }
 }

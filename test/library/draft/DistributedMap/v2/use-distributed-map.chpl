@@ -1,6 +1,6 @@
 use DistributedMap;
 
-var dm1 = new distributedMap(string, int);
+var dm1 = new owned distributedMap(string, int);
 var inputArr = ["John", "Jacob", "Jingleheimer", "Schmidt", "his", "name", "is",
                 "my", "name", "too", "whenever", "we", "go", "out", "the",
                 "people", "always", "shout", "there", "goes", "John", "Jacob",

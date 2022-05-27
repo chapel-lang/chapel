@@ -29,11 +29,25 @@ module DistributedMap {
     /* Type of map values. */
     type valType;
 
+    pragma "no doc"
+    const targetLocales = Locales;
+
+    pragma "no doc"
+    var tables: [0..targetLocales.size] chpl__hashtable(keyType, valType);
+
+    // TODO: I seem to recall someone not liking the idea of a lock per locale,
+    // remind myself of why and maybe do something different.
+    pragma "no doc"
+    var locks: [0..targetLocales.size] owned _LockWrapper;
+
+    // TODO: how to hash across locales?
+
     proc init(type keyType, type valType) {
       this.keyType = keyType;
       this.valType = valType;
     }
     // TODO: initializer that takes way to control hash across locales?
+    // TODO: initializer that uses only a subset of the locales?
 
     // TODO: impl
     proc clear() {
