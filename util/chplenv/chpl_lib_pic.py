@@ -9,18 +9,7 @@ from utils import memoize
 def get():
     lib_pic_val = overrides.get('CHPL_LIB_PIC')
     if not lib_pic_val:
-        # Some platforms have 'gcc' and/or standard libraries
-        # default to PIC. For those platforms, arrange for CHPL_LIB_PIC
-        # to default to 'pic' instead of 'none' to avoid problems.
-        #
-        # Another option would be to check for --enable-default-pie in
-        #   gcc -v -E
-        # However, that would assume that 'gcc' is related to the link command,
-        # which is not necessarily the case.
-        if chpl_platform.is_arch_linux():
-            lib_pic_val = 'pic'
-        else:
-            lib_pic_val = 'none'
+        lib_pic_val = 'none'
 
     return lib_pic_val
 
