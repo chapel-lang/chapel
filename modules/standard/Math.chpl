@@ -58,9 +58,7 @@ module Math {
      It is an error if `x` is less than or equal to -1.
   */
   inline proc log1p(x : real(32)): real(32) {
-    pragma "fn synchronization free"
-    extern proc log1pf(x: real(32)): real(32);
-    return log1pf(x);
+    return chpl_log1p(x);
   }
 
   /* Returns the log to the base `2**baseLog2` of the given `in` value.

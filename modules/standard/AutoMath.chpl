@@ -782,39 +782,53 @@ module AutoMath {
     return log10f(x);
   }
 
+  // To prevent this auto-included module from using a non-auto-included module
+  // (Math)
+  pragma "no doc"
+  proc chpl_log1p(x: real(64)): real(64) {
+    pragma "fn synchronization free"
+    extern proc log1p(x: real(64)): real(64);
+    return log1p(x);
+  }
+
+  // To prevent this auto-included module from using a non-auto-included module
+  // (Math)
+  pragma "no doc"
+  inline proc chpl_log1p(x : real(32)): real(32) {
+    pragma "fn synchronization free"
+    extern proc log1pf(x: real(32)): real(32);
+    return log1pf(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_log1p and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
   pragma "no doc"
   pragma "last resort"
   deprecated "log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
   proc log1p(x: real(64)): real(64) {
-    use Math;
-    return Math.log1p(x);
+    return chpl_log1p(x);
   }
 
   pragma "no doc"
   pragma "last resort"
   deprecated "log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc log1p(x : real(32)): real(32) {
-    use Math;
-
-    return Math.log1p(x);
+    return chpl_log1p(x);
   }
 
   pragma "no doc"
   pragma "last resort"
   deprecated "logBasePow2 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc logBasePow2(val: int(?w), baseLog2) {
-    use Math;
-
-    return Math.logBasePow2(val, baseLog2);
+    return chpl_logBasePow2(val, baseLog2);
   }
 
   pragma "no doc"
   pragma "last resort"
   deprecated "logBasePow2 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc logBasePow2(val: uint(?w), baseLog2) {
-    use Math;
-
-    return Math.logBasePow2(val, baseLog2);
+    return chpl_logBasePow2(val, baseLog2);
   }
 
   /* Returns the base 2 logarithm of the argument `x`.
