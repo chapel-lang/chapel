@@ -238,7 +238,7 @@ proc masonBuildHelp() {
   writeln('        --force                  Force Mason to build the project');
   writeln('        --example <example>      Build an example from the example/ directory');
   writeln('        --[no-]update            [Do not] update the mason registry before building');
-  writeln('        --flags                  Install dependencies and print build flags');
+  writeln('        --dependent-modules      Print the include paths to the dependent modules to be integrated into build step');
   writeln();
   writeln('When --example is thrown without an example, all examples will be built');
   writeln('When no options are provided, the following will take place:');

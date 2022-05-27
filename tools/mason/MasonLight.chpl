@@ -32,7 +32,7 @@ use TOML;
 
 proc masonLight(args: [] string) throws {
 
-  var parser = new argumentParser(helpHandler=new MasonBuildHelpHandler());
+  var parser = new argumentParser(helpHandler=new MasonLightHelpHandler());
 
   var newFlag = parser.addFlag(name="new", defaultValue=false);
   var dependentFlag = parser.addFlag(name="dependent-modules", defaultValue=false);
