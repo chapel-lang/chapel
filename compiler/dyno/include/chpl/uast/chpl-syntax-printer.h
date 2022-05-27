@@ -46,5 +46,34 @@ namespace chpl {
   */
   void printFunctionSignature(std::ostream& os, const uast::Function* node);
 
+  /*
+   * Do we want to print spaces around this binary operator?
+   */
+  bool wantSpaces(const char *op, bool printingType);
+
+  /*
+   * Given an AST node outer, with one child inner, this function
+   * returns true if we need to emit parens around the child expression.
+   * That is, if emitting the expression without parenthesis would
+   * change the semantics from what the AST represents.
+   */
+  bool needParens(const char *outer, const char *inner,
+                  bool outerUnary, bool outerPostfix,
+                  bool innerUnary, bool innerPostfix,
+                  bool innerIsRHS);
+  /*
+   * Operator precedence according to the table in the spec,
+   * expressions.rst
+   *
+   * unary flag is needed because unary - (and +) have higher precedence
+   * than binary - (and +).
+   *
+   * postfix flag is needed because postfix ! has higher precedence than
+   * prefix !.
+   *
+   * Returns precedence: higher is tighter-binding.
+   * Returns -1 for unhandled operator -- caller should respond conservatively.
+   */
+  int opToPrecedence(const char *op, bool unary, bool postfix);
 }
 #endif
