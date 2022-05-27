@@ -23,7 +23,7 @@ module DistributedMap {
   private use Map;
 
   // TODO: document type, methods
-  record distributedMap {
+  class distributedMap {
     /* Type of map keys. */
     type keyType;
     /* Type of map values. */
