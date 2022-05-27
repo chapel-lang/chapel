@@ -164,6 +164,12 @@ class MasonDocHelpHandler : HelpHandler {
   }
 }
 
+class MasonLightHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonLightHelp();
+  }
+}
+
 
 proc masonHelp() {
   writeln("Chapel's package manager");
@@ -192,6 +198,7 @@ proc masonHelp() {
   writeln('    test        Compile and run tests found in /test');
   writeln('    external    Integrate external dependencies into mason packages');
   writeln('    publish     Publish package to mason-registry');
+  writeln('    light       Interact with a lightweight mason project');
 }
 
 proc masonRunHelp() {
@@ -597,5 +604,18 @@ proc masonDocHelp() {
   writeln("Will generate documentation when ran inside a mason package.");
   writeln("Requires that chpldoc is set up in order to work.");
   writeln("For instructions on setting up chpldoc, please view its documentation.");
+  writeln();
+}
+
+proc masonLightHelp() {
+  writeln("Interact with a lightweight mason project");
+  writeln();
+  writeln('Usage:');
+  writeln('    mason light [options]');
+  writeln();
+  writeln('Options:');
+  writeln("    -h, --help                  Display this message");
+  writeln("        --new                   Create a new mason lightweight project in the current directory");
+  writeln("        --dependent-modules     Print the include paths to the dependent modules to be integrated into build step");
   writeln();
 }
