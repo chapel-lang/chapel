@@ -20,7 +20,6 @@
 
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/queries/global-strings.h"
-#include "../../../include/symbol.h"
 
 
 using namespace chpl;
@@ -1127,10 +1126,10 @@ namespace chpl {
     else if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0)
       return 7;
     // .. and ..< are precedence 6, but don't come through this path.
-    else if (op == astrSlt || op == astrSlte ||
-             op == astrSgt || op == astrSgte)
+    else if (op == USTR("<").c_str() || op == USTR("<=").c_str() ||
+             op == USTR(">").c_str() || op == USTR(">=").c_str())
       return 5;
-    else if (op == astrSeq || op == astrSne)
+    else if (op == USTR("==").c_str() || op == USTR("!=").c_str())
       return 4;
     else if (strcmp(op, "&&") == 0)
       return 3;
