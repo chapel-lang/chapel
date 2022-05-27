@@ -279,7 +279,7 @@ static const char* kindToString(IntentList kind) {
   switch (kind) {
     case IntentList::CONST_INTENT: return "const";
     case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const var";
+    case IntentList::CONST_VAR: return "const";
     case IntentList::CONST_REF: return "const ref";
     case IntentList::REF: return "ref";
     case IntentList::IN: return "in";
@@ -557,28 +557,73 @@ struct RstSignatureVisitor {
     return false;
   }
 
+  bool isPostfix(const OpCall* op) {
+    return (op->isUnaryOp() &&
+            (op->op() == USTR("postfix!") || op->op() == USTR("?")));
+  }
+
   bool enter(const OpCall* call) {
+    bool needsParens = false;
+    std::string outerOp, innerOp;
     if (call->isUnaryOp()) {
       assert(call->numActuals() == 1);
+      bool isPostFixBang = false;
+      bool isNilable = false;
+      outerOp = call->op().str();
       if (call->op() == USTR("postfix!")) {
-        call->actual(0)->traverse(*this);
-        os_ << "!";
-        return false;
+        isPostFixBang = true;
+        outerOp = "!";
       } else if (call->op() == USTR("?")) {
-        os_ << "nilable ";
+        isNilable = true;
+        outerOp = "?";
       } else {
         os_ << call->op().c_str();
       }
+      if (call->actual(0)->isOpCall()) {
+        innerOp = call->actual(0)->toOpCall()->op().str();
+        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), true,
+                                 (isPostFixBang || isNilable),
+                                 call->actual(0)->toOpCall()->isUnaryOp(),
+                                 isPostfix(call->actual(0)->toOpCall()) , false);
+      }
+      if (needsParens) os_ << "(";
       call->actual(0)->traverse(*this);
+      if (needsParens) os_ << ")";
+      if (isPostFixBang) {
+        os_ << "!";
+      } else if (isNilable) {
+        os_ << "nilable";
+      }
     } else if (call->isBinaryOp()) {
       assert(call->numActuals() == 2);
+      outerOp = call->op().str();
+      if (call->actual(0)->isOpCall()) {
+        innerOp = call->actual(0)->toOpCall()->op().str();
+        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false, false,
+                                 call->actual(0)->toOpCall()->isUnaryOp(),
+                                 isPostfix(call->actual(0)->toOpCall()), false);
+      }
+      if (needsParens) os_ << "(";
       call->actual(0)->traverse(*this);
-      if (call->op() != USTR("**") && call->op() != USTR(":"))
+      if (needsParens) os_ << ")";
+      needsParens = false;
+      if (call->op() == USTR("by")
+          || (call->op() != USTR("**") && call->op() != USTR(":")))
         os_ << " ";
-      os_ << call->op().c_str();
-      if (call->op() != USTR("**"))
+      os_ << call->op();
+      if (call->op() == USTR("by")
+          || (call->op() != USTR("**") && call->op() != USTR(":")))
         os_ << " ";
+      if (call->actual(1)->isOpCall()) {
+        innerOp = call->actual(1)->toOpCall()->op().str();
+        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false,
+                                 false, call->actual(1)->toOpCall()->isUnaryOp(),
+                                 isPostfix(call->actual(1)->toOpCall()) , true);
+      }
+      if (needsParens) os_ << "(";
       call->actual(1)->traverse(*this);
+      if (needsParens) os_ << ")";
+
     }
     return false;
   }
