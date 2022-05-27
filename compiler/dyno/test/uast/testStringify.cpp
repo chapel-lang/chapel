@@ -105,7 +105,7 @@ static void test1(Parser* parser) {
   testCode = R""""(
                use Map;
                require "foo.h", "foo.c";
-               import Foo as X ;
+               import Foo as X;
                include module Foo;
                include private module Bar;
                include prototype module Baz;

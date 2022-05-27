@@ -166,12 +166,14 @@ struct ChplSyntaxVisitor {
   void interpose(It begin, It end, const char* separator,
                 const char* surroundBegin=nullptr,
                 const char* surroundEnd=nullptr,
-                const char* terminator=nullptr) {
+                const char* terminator=nullptr,
+                bool doIndent=false) {
     bool first = true;
+    if (doIndent) indentDepth++;
     if (surroundBegin) ss_ << surroundBegin;
     for (auto it = begin; it != end; it++) {
       if (!first && !it->isComment()) ss_ << separator;
-      if (separator[0]=='\n' ) indentStream();
+      if (separator[0]=='\n') indentStream();
       printAst(*it);
       if (terminator && isExpressionRequiringSemi(*it))
         ss_ << terminator;
@@ -188,14 +190,17 @@ struct ChplSyntaxVisitor {
       else
         ss_ << surroundEnd;
     }
+    if (doIndent) indentDepth--;
   }
 
   template<typename T>
   void interpose(T xs, const char* separator,
                 const char* surroundBegin=nullptr,
                 const char* surroundEnd=nullptr,
-                const char* terminator=nullptr) {
-    interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd, terminator);
+                const char* terminator=nullptr,
+                bool doIndent=false) {
+    interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd,
+              terminator, doIndent);
   }
 
   /*
@@ -205,18 +210,18 @@ struct ChplSyntaxVisitor {
   template<typename It>
   void printBlockWithStyle(BlockStyle style,  It begin, It end,
                           const char* implicitOpeningKeyword=nullptr,
-                          const char* terminator=nullptr) {
+                          const char* terminator=nullptr, bool doIndent=false) {
     if (implicitOpeningKeyword) {
       ss_ << implicitOpeningKeyword;
     }
     if (style != BlockStyle::IMPLICIT) {
-      interpose(begin, end, "\n", "{\n","\n}", terminator);
+      interpose(begin, end, "\n", "{\n","\n}", terminator, doIndent);
     } else {
       if (implicitOpeningKeyword) {
         ss_ << "\n";
-        interpose(begin, end, "\n", nullptr, nullptr, terminator);
+        interpose(begin, end, "\n", nullptr, nullptr, terminator, doIndent);
       } else {
-        interpose(begin, end, "", nullptr, nullptr, terminator);
+        interpose(begin, end, "", nullptr, nullptr, terminator, doIndent);
       }
 
 
@@ -226,8 +231,10 @@ struct ChplSyntaxVisitor {
   template<typename T>
   void printBlockWithStyle(BlockStyle style,  T xs,
                           const char* implicitOpeningKeyword=nullptr,
-                          const char* terminator=nullptr) {
-    printBlockWithStyle(style, xs.begin(), xs.end(), implicitOpeningKeyword, terminator);
+                          const char* terminator=nullptr,
+                          bool doIndent=false) {
+    printBlockWithStyle(style, xs.begin(), xs.end(), implicitOpeningKeyword,
+                        terminator, doIndent);
   }
 
   template<typename T>
@@ -400,15 +407,11 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->withClause());
       ss_ << " ";
     }
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";", true);
   }
 
   void visit(const Block* node) {
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr,";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr,";", true);
   }
 
   void visit(const BoolLiteral* node) {
@@ -437,9 +440,7 @@ struct ChplSyntaxVisitor {
     if (node->numStmts() > 0) {
       ss_ << " ";
       if (node->blockStyle()==BlockStyle::EXPLICIT) {
-        indentDepth++;
-        printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr,";");
-        indentDepth--;
+        printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr,";", true);
       } else {
         interpose(node->stmts(), "");
         if (node->stmt(0)->isOpCall() && !node->isExpressionLevel())
@@ -483,9 +484,7 @@ struct ChplSyntaxVisitor {
       printAst(node->parentClass());
       ss_ << " ";
     }
-    indentDepth++;
-    interpose(node->decls(), "\n", "{\n", "\n}", ";");
-    indentDepth--;
+    interpose(node->decls(), "\n", "{\n", "\n}", ";", true);
   }
 
   void visit(const Cobegin* node) {
@@ -494,9 +493,7 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->withClause());
       ss_<< " ";
     }
-    indentDepth++;
-    interpose(node->taskBodies(), "\n", "{\n","\n}", ";");
-    indentDepth--;
+    interpose(node->taskBodies(), "\n", "{\n","\n}", ";", true);
   }
 
   void visit(const Coforall* node) {
@@ -512,9 +509,7 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->withClause());
     }
     ss_ << " ";
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
   void visit(const Comment* node) {
@@ -538,9 +533,8 @@ struct ChplSyntaxVisitor {
         printAst(node->thenStmt(0));
         ss_ << ";";
       } else {
-        indentDepth++;
-        printBlockWithStyle(node->thenBlockStyle(), node->thenStmts(), "then ", ";");
-        indentDepth--;
+        printBlockWithStyle(node->thenBlockStyle(), node->thenStmts(), "then ",
+                            ";", true);
       }
 
     }
@@ -552,9 +546,8 @@ struct ChplSyntaxVisitor {
       } else {
         ss_ << "\n";
         indentStream();
-        indentDepth++;
-        printBlockWithStyle(node->elseBlockStyle(), node->elseStmts(), "else ", ";");
-        indentDepth--;
+        printBlockWithStyle(node->elseBlockStyle(), node->elseStmts(), "else ",
+                            ";", true);
       }
     }
   }
@@ -607,9 +600,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const DoWhile* node) {
     ss_ << "do ";
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";", true);
     ss_ << " while ";
     printChapelSyntax(ss_, node->condition());
     ss_ << ";";
@@ -693,13 +684,11 @@ struct ChplSyntaxVisitor {
       ss_ << "do ";
       printAst(node->stmt(0));
     } else {
-      indentDepth++;
       if (node->blockStyle() == BlockStyle::EXPLICIT) {
-        printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";");
+        printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";", true);
       } else {
-        printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
+        printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
       }
-      indentDepth--;
     }
   }
 
@@ -720,9 +709,7 @@ struct ChplSyntaxVisitor {
      ss_ << "do ";
      printAst(node->stmt(0));
     } else {
-      indentDepth++;
-      printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-      indentDepth--;
+      printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
     }
   }
 
@@ -735,9 +722,7 @@ struct ChplSyntaxVisitor {
     }
     printChapelSyntax(ss_, node->iterand());
     ss_ << " ";
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
   void visit(const Formal* node) {
@@ -810,9 +795,7 @@ struct ChplSyntaxVisitor {
 
     // function body
     if (node->linkage() != chpl::uast::Decl::EXTERN || node->numStmts() > 0 ) {
-      indentDepth++;
-      interpose(node->stmts(), "\n", "{\n", "\n}", ";");
-      indentDepth--;
+      interpose(node->stmts(), "\n", "{\n", "\n}", ";", true);
     }
     else
       ss_ << ";";
@@ -879,18 +862,14 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->condition());
       ss_ << " ";
     }
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
   void visit(const Manage* node) {
     ss_ << "manage ";
     interpose(node->managers(), ", ");
     ss_ << " ";
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
   void visit(const Module* node) {
@@ -902,9 +881,7 @@ struct ChplSyntaxVisitor {
     }
     ss_ << "module ";
     ss_ << node->name() << " ";
-    indentDepth++;
-    interpose(node->stmts(), "\n", "{\n", "\n}\n",";");
-    indentDepth--;
+    interpose(node->stmts(), "\n", "{\n", "\n}\n",";", true);
   }
 
   void visit(const MultiDecl* node) {
@@ -960,9 +937,7 @@ struct ChplSyntaxVisitor {
     ss_ << "on ";
     printChapelSyntax(ss_, node->destination());
     ss_ << " ";
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
   void visit(const OpCall* node) {
@@ -1051,9 +1026,7 @@ struct ChplSyntaxVisitor {
     printLinkage(node);
     ss_ << "record ";
     ss_ << node->name() << " ";
-    indentDepth++;
-    interpose(node->decls(), "\n", "{\n", "\n}",";");
-    indentDepth--;
+    interpose(node->decls(), "\n", "{\n", "\n}",";", true);
   }
 
   void visit(const Reduce* node) {
@@ -1092,9 +1065,7 @@ struct ChplSyntaxVisitor {
     ss_ << "select ";
     printChapelSyntax(ss_, node->expr());
     ss_ << " ";
-    indentDepth++;
-    interpose(node->whenStmts(), "\n", "{\n", "\n}", ";");
-    indentDepth--;
+    interpose(node->whenStmts(), "\n", "{\n", "\n}", ";", true);
   }
 
   void visit(const Serial* node) {
@@ -1103,9 +1074,7 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->condition());
       ss_ << " ";
     }
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
   void visit(const StringLiteral* node) {
@@ -1114,9 +1083,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const Sync* node) {
     ss_ << "sync ";
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";", true);
   }
 
   void visit(const TaskVar* node) {
@@ -1139,16 +1106,12 @@ struct ChplSyntaxVisitor {
     if (node->isExpressionLevel()) {
       printAst(node->stmt(0));
     } else {
-      indentDepth++;
-      interpose(node->stmts(), "\n", "{\n","\n}", ";");
-      indentDepth--;
+      interpose(node->stmts(), "\n", "{\n","\n}", ";", true);
     }
     // if try block has catch blocks
     if (!node->isTryBang()) {
       ss_ << " ";
-      indentDepth++;
-      interpose(node->handlers(), " ");
-      indentDepth--;
+      interpose(node->handlers(), " ", nullptr, nullptr, nullptr, true);
     }
   }
 
@@ -1191,9 +1154,7 @@ struct ChplSyntaxVisitor {
     printLinkage(node);
     ss_ << "union ";
     ss_ << node->name() << " ";
-    indentDepth++;
-    interpose(node->decls(), "\n", "{\n", "\n}", ";");
-    indentDepth--;
+    interpose(node->decls(), "\n", "{\n", "\n}", ";", true);
   }
 
   void visit(const Use* node) {
@@ -1259,7 +1220,9 @@ struct ChplSyntaxVisitor {
       ss_ << ".";
       printChapelSyntax(ss_, node->limitation(0));
     } else {
-      ss_ << " ";
+      // TODO: what is the is space here for? it causes an issue printing after
+      // the identifier but before the semicolon
+      // ss_ << " ";
       if (limit == VisibilityClause::LimitationKind::ONLY ||
           limit == VisibilityClause::LimitationKind::EXCEPT) {
         ss_ << kindToString(limit);
@@ -1277,18 +1240,14 @@ struct ChplSyntaxVisitor {
       interpose(node->caseExprs(), ", ");
       ss_ << " ";
     }
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
   void visit(const While* node) {
     ss_ << "while ";
     printChapelSyntax(ss_, node->condition());
     ss_ << " ";
-    indentDepth++;
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";");
-    indentDepth--;
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
   void visit(const WithClause* node) {
