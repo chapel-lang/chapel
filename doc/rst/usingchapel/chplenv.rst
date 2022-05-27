@@ -825,7 +825,8 @@ CHPL_LIB_PIC
        Value Description
        ===== ================================
        pic   build position independent code
-       none  build position dependent code
+       none  use the system default, which might be
+             position independent or position dependent
        ===== ================================
 
    If unset, ``CHPL_LIB_PIC`` defaults to ``none``
