@@ -383,8 +383,10 @@ proc isDomainValue(e: domain) param  return true;
 proc isDomainValue(e)         param  return false;
 
 pragma "no doc"
+pragma "fn exempt instantiation limit"
 proc isArrayValue(e: []) param  return true;
 /* Return true if ``e`` is an array. Otherwise return false. */
+pragma "fn exempt instantiation limit"
 proc isArrayValue(e)     param  return false;
 
 pragma "no doc"
