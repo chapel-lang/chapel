@@ -27,25 +27,28 @@
 
 #include "convert-uast.h"
 
-#include "build.h"
 #include "CatchStmt.h"
-#include "config.h"
 #include "DeferStmt.h"
-#include "docsDriver.h"
 #include "DoWhileStmt.h"
-#include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ForallStmt.h"
 #include "IfExpr.h"
-#include "optimizations.h"
-#include "parser.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
+#include "build.h"
+#include "config.h"
+#include "docsDriver.h"
+#include "optimizations.h"
+#include "parser.h"
+#include "resolution.h"
 
-#include "chpl/uast/all-uast.h"
-#include "chpl/util/string-escapes.h"
-#include "chpl/queries/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/queries/global-strings.h"
+#include "chpl/resolution/resolution-queries.h"
+#include "chpl/types/all-types.h"
+#include "chpl/uast/all-uast.h"
 #include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/util/string-escapes.h"
 
 // If this is set then variables/formals will have their "qual" field set
 // now instead of later during resolution.
@@ -53,18 +56,35 @@
 
 using namespace chpl;
 
-// TODO: Remove me after config changes.
-extern bool parsingPrivate;
-
 namespace {
 
 struct Converter {
+  struct ModStackEntry {
+    const uast::Module* mod;
+    ModStackEntry(const uast::Module* mod)
+      : mod(mod) {
+    }
+  };
+  struct SymStackEntry {
+    const uast::AstNode* ast;
+    const resolution::ResolutionResultByPostorderID* resolved;
+    SymStackEntry(const uast::AstNode* ast,
+                  const resolution::ResolutionResultByPostorderID* resolved)
+      : ast(ast), resolved(resolved) {
+    }
+  };
+
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
   ModTag topLevelModTag;
-  std::vector<const char*> modNameStack;
+  // TODO: remove latestComment and builderResult once
+  // chpldoc is implemented as a separate tool on uAST
   const char* latestComment = nullptr;
   const uast::BuilderResult& builderResult;
+  std::vector<ModStackEntry> modStack;
+  std::vector<SymStackEntry> symStack;
+
+  std::unordered_map<const uast::AstNode*, BaseAST*> alreadyConverted;
 
   Converter(chpl::Context* context, ModTag topLevelModTag,
             const uast::BuilderResult& builderResult)
@@ -72,12 +92,48 @@ struct Converter {
       topLevelModTag(topLevelModTag),
       builderResult(builderResult) {}
 
+  // general functions for converting
   Expr* convertAST(const uast::AstNode* node);
+  Type* convertType(const types::QualifiedType qt);
+  Symbol* convertParam(const types::QualifiedType qt);
+  FnSymbol* convertFnOutOfOrder(ID fnId);
+
+  // convertAST helpers
+  void setVariableType(const uast::VarLikeDecl* v, Symbol* sym);
+  void setResolvedCall(const uast::FnCall* call, CallExpr* ret);
+
+  // type conversion helpers
+  Type* convertClassType(const types::QualifiedType qt);
+  Type* convertEnumType(const types::QualifiedType qt);
+  Type* convertFunctionType(const types::QualifiedType qt);
+  Type* convertBasicClassType(const types::QualifiedType qt);
+  Type* convertRecordType(const types::QualifiedType qt);
+  Type* convertTupleType(const types::QualifiedType qt);
+  Type* convertUnionType(const types::QualifiedType qt);
+  Type* convertBoolType(const types::QualifiedType qt);
+  Type* convertComplexType(const types::QualifiedType qt);
+  Type* convertImagType(const types::QualifiedType qt);
+  Type* convertIntType(const types::QualifiedType qt);
+  Type* convertRealType(const types::QualifiedType qt);
+  Type* convertUintType(const types::QualifiedType qt);
+
 
   const char* consumeLatestComment() {
     const char* ret = latestComment;
     latestComment = nullptr;
     return ret;
+  }
+
+  static bool shouldResolve(UniqueString symbolPath) {
+    // TODO: check for dead modules and don't resolve those
+    //return symbolPath == "M" || symbolPath.startsWith("M.");
+    return false;
+  }
+  static bool shouldResolve(ID symbolId) {
+    return shouldResolve(symbolId.symbolPath());
+  }
+  static bool shouldResolve(const uast::AstNode* node) {
+    return shouldResolve(node->id());
   }
 
   Expr* convertExprOrNull(const uast::AstNode* node) {
@@ -92,7 +148,7 @@ struct Converter {
   const char* convertLinkageNameAstr(const uast::Decl* node) {
     if (auto linkageName = node->linkageName()) {
       INT_ASSERT(linkageName->isStringLiteral());
-      return astr(linkageName->toStringLiteral()->str().c_str());
+      return astr(linkageName->toStringLiteral()->str());
     }
 
     return nullptr;
@@ -112,7 +168,7 @@ struct Converter {
 
   const char* astrFromStringLiteral(const uast::AstNode* node) {
     if (auto strLit = node->toStringLiteral()) {
-      const char* ret = astr(strLit->str().c_str());
+      const char* ret = astr(strLit->str());
       return ret;
     }
 
@@ -233,7 +289,7 @@ struct Converter {
       return nullptr;
     }
 
-    auto ret = str.size() ? astr(str.c_str()) : nullptr;
+    auto ret = str.size() ? astr(str) : nullptr;
 
     return ret;
   }
@@ -279,7 +335,7 @@ struct Converter {
 
       auto msg = attr->deprecationMessage();
       if (!msg.isEmpty()) {
-        sym->deprecationMsg = astr(msg.c_str());
+        sym->deprecationMsg = astr(msg);
       }
     }
 
@@ -364,7 +420,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Implements* node) {
-    const char* name = astr(node->interfaceName().c_str());
+    const char* name = astr(node->interfaceName());
     CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST);
     Expr* ret = nullptr;
 
@@ -514,7 +570,7 @@ struct Converter {
         INT_ASSERT(var);
         INT_ASSERT(!var->initExpression() && !var->typeExpression());
 
-        resourceName = astr(var->name().c_str());
+        resourceName = astr(var->name());
 
         // TODO: I'm not sure what the best way to get flags is here.
         if (var->kind() != uast::Variable::INDEX) {
@@ -628,7 +684,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::ExternBlock* node) {
-    return buildExternBlockStmt(astr(node->code().c_str()));
+    return buildExternBlockStmt(astr(node->code()));
   }
 
   Expr* visit(const uast::Require* node) {
@@ -645,7 +701,7 @@ struct Converter {
   // Copy the body of 'buildIncludeModule' since it is heavily tied to the
   // old parser's implementation.
   Expr* visit(const uast::Include* node) {
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     bool isPrivate = node->visibility() == uast::Decl::PRIVATE;
     bool isPrototype = node->isPrototype();
 
@@ -655,7 +711,7 @@ struct Converter {
 
     auto& loc = chpl::parsing::locateAst(gContext, node);
     INT_ASSERT(!loc.isEmpty());
-    auto path = astr(loc.path().c_str());
+    auto path = astr(loc.path());
     ModuleSymbol* mod = parseIncludedSubmodule(name, path);
     INT_ASSERT(mod);
 
@@ -700,7 +756,7 @@ struct Converter {
             Expr* mod = convertAST(as->symbol());
             auto ident = as->rename()->toIdentifier();
             INT_ASSERT(ident);
-            const char* rename = astr(ident->name().c_str());
+            const char* rename = astr(ident->name());
             conv = buildImportStmt(mod, rename);
 
           // Handles: 'import foo'
@@ -968,13 +1024,13 @@ struct Converter {
 
   BlockStmt* visit(const uast::Break* node) {
     const char* name = nullptr;
-    if (auto target = node->target()) name = astr(target->name().c_str());
+    if (auto target = node->target()) name = astr(target->name());
     return buildGotoStmt(GOTO_BREAK, name);
   }
 
   CatchStmt* visit(const uast::Catch* node) {
     auto errorVar = node->error();
-    const char* name = errorVar ? astr(errorVar->name().c_str()) : nullptr;
+    const char* name = errorVar ? astr(errorVar->name()) : nullptr;
     Expr* type = errorVar ? convertExprOrNull(errorVar->typeExpression())
                           : nullptr;
     BlockStmt* body = toBlockStmt(convertAST(node->body()));
@@ -1100,7 +1156,7 @@ struct Converter {
         INT_ASSERT(ifVar->initExpression());
         // astr() varNameStr so it doesn't go out of scope when passed to
         // buildIfVar
-        auto varNameStr = astr(ifVar->name().c_str());
+        auto varNameStr = astr(ifVar->name());
         auto initExpr = toExpr(convertAST(ifVar->initExpression()));
         bool isConst = ifVar->kind() == uast::Variable::CONST;
         cond = buildIfVar(varNameStr, initExpr, isConst);
@@ -1120,12 +1176,12 @@ struct Converter {
 
   BlockStmt* visit(const uast::Continue* node) {
     const char* name = nullptr;
-    if (auto target = node->target()) name = astr(target->name().c_str());
+    if (auto target = node->target()) name = astr(target->name());
     return buildGotoStmt(GOTO_CONTINUE, name);
   }
 
   Expr* visit(const uast::Label* node) {
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     Expr* stmt = toExpr(convertAST(node->loop()));
     INT_ASSERT(stmt);
     return buildLabelStmt(name, stmt);
@@ -1391,7 +1447,7 @@ struct Converter {
     } else if (node->isParam()) {
       INT_ASSERT(node->index() && node->index()->isVariable());
 
-      auto indexStr = astr(node->index()->toVariable()->name().c_str());
+      auto indexStr = astr(node->index()->toVariable()->name());
       body = createBlockWithStmts(node->stmts(), node->blockStyle());
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
@@ -1468,6 +1524,11 @@ struct Converter {
 
     // Does not appear possible right now, from reading the grammar.
     INT_ASSERT(!node->isExpressionLevel());
+
+    if (node->withClause()) {
+      USR_FATAL_CONT(node->withClause()->id(), "foreach loops do not yet "
+                                               "support task intents");
+    }
 
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
@@ -1785,6 +1846,8 @@ struct Converter {
       addArgsTo->insertAtTail(actual);
     }
 
+    setResolvedCall(node, ret);
+
     return ret;
   }
 
@@ -1884,7 +1947,7 @@ struct Converter {
                                       const char* name=nullptr) {
     astlocMarker markAstLoc(node->id());
 
-    const char* opName = name ? name : astr(node->op().c_str());
+    const char* opName = name ? name : astr(node->op());
     int nActuals = node->numActuals();
     CallExpr* ret = new CallExpr(opName);
 
@@ -2257,9 +2320,46 @@ struct Converter {
     return callExpr;
   }
 
-  Expr* visit(const uast::Function* node) {
-    auto comment = consumeLatestComment();
+  FnSymbol* convertFunction(const uast::Function* node, const char* comment) {
+    auto it = alreadyConverted.find(node);
+    if (it != alreadyConverted.end()) {
+      // already converted it, so return that
+      return toFnSymbol(it->second);
+    }
+
+    // Decide if we want to resolve this function
+    bool shouldResolveFunction = shouldResolve(node);
+
+    const resolution::ResolutionResultByPostorderID* resolved = nullptr;
+    const resolution::ResolvedFunction* resolvedFn = nullptr;
+    const resolution::TypedFnSignature* initialSig = nullptr;
+    const resolution::PoiScope* poiScope = nullptr;
+
+    if (shouldResolveFunction) {
+      auto uSig = resolution::UntypedFnSignature::get(context, node);
+      initialSig = resolution::typedSignatureInitial(context, uSig);
+      auto whereFalse =
+        resolution::TypedFnSignature::WhereClauseResult::WHERE_FALSE;
+      if (initialSig->whereClauseResult() != whereFalse) {
+        if (!initialSig->needsInstantiation()) {
+          // poiScope not needed for concrete functions
+          poiScope = nullptr;
+          resolvedFn = resolveFunction(context, initialSig, poiScope);
+          if (resolvedFn) {
+            resolved = &resolvedFn->resolutionById();
+          }
+        }
+      }
+    }
+
+    // Also add to symStack
+    // Add a SymStackEntry to the end of the symStack
+    this->symStack.emplace_back(node, resolved);
+
     FnSymbol* fn = new FnSymbol("_");
+
+    // Note that we have already converted this
+    alreadyConverted.emplace(node, fn);
 
     // build up the userString as in old parser
     // needed to match up some error outputs
@@ -2268,7 +2368,7 @@ struct Converter {
     // and if so, we are not able to reconstruct them at this time
     std::stringstream ss;
     printFunctionSignature(ss, node);
-    fn->userString = astr(ss.str().c_str());
+    fn->userString = astr(ss.str());
 
     attachSymbolAttributes(node, fn);
     attachSymbolVisibility(node, fn);
@@ -2432,17 +2532,34 @@ struct Converter {
       }
     }
 
-    BlockStmt* ret = buildFunctionDecl(fn, retTag, retType, node->throws(),
-                                       whereClause,
-                                       lifetimeConstraints,
-                                       body,
-                                       comment);
+    setupFunctionDecl(fn, retTag, retType, node->throws(),
+                      whereClause,
+                      lifetimeConstraints,
+                      body,
+                      /* docs */ comment);
 
     if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
       Expr* linkageExpr = convertExprOrNull(node->linkageName());
-      ret = buildExternExportFunctionDecl(linkageFlag, linkageExpr, ret);
+      setupExternExportFunctionDecl(linkageFlag, linkageExpr, fn);
     }
+
+    // Update the function symbol with any resolution results.
+    if (resolved) {
+      auto retType = resolution::returnType(context, initialSig, poiScope);
+      fn->retType = convertType(retType);
+    }
+
+    // pop the function from the symStack
+    INT_ASSERT(symStack.size() > 0 && symStack.back().ast == node);
+    this->symStack.pop_back();
+
+    return fn;
+  }
+
+  Expr* visit(const uast::Function* node) {
+    auto comment = consumeLatestComment();
+    FnSymbol* fn = convertFunction(node, comment);
 
     // For lambdas, return a DefExpr instead of a BlockStmt
     // containing a DefExpr because this is the pattern expected
@@ -2453,11 +2570,13 @@ struct Converter {
       return def;
     }
 
+    // Otherwise, return a block containing a DefExpr
+    BlockStmt* ret = buildChapelStmt(new DefExpr(fn));
     return ret;
   }
 
   Expr* visit(const uast::Interface* node) {
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     CallExpr* formals = new CallExpr(PRIM_ACTUALS_LIST);
     auto style = uast::BlockStyle::EXPLICIT;
     BlockStmt* body = createBlockWithStmts(node->stmts(), style);
@@ -2465,7 +2584,7 @@ struct Converter {
     if (node->isFormalListPresent()) {
       for (auto formal : node->formals()) {
         if (auto ident = formal->toIdentifier()) {
-          const char* name = astr(ident->name().c_str());
+          const char* name = astr(ident->name());
           auto formal = InterfaceSymbol::buildFormal(name, INTENT_TYPE);
           formals->insertAtTail(formal);
         } else {
@@ -2486,8 +2605,33 @@ struct Converter {
 
   DefExpr* visit(const uast::Module* node) {
     auto comment = consumeLatestComment();
-    const char* name = astr(node->name().c_str());
-    const char* path = astr(context->filePathForId(node->id()).c_str());
+
+    auto it = alreadyConverted.find(node);
+    if (it != alreadyConverted.end()) {
+      // already converted it, so return that
+      return toDefExpr(it->second);
+    }
+
+    // Decide if we want to resolve this module
+    bool shouldResolveModule = shouldResolve(node);
+
+    const resolution::ResolutionResultByPostorderID* resolved = nullptr;
+
+    if (shouldResolveModule) {
+      // Resolve the module
+      const auto& tmp = resolution::resolveModule(context, node->id());
+      resolved = &tmp;
+    }
+
+    // Push the current module name before descending into children.
+    // Add a ModStackEntry to the end of the modStack
+    this->modStack.emplace_back(node);
+    // Also add to symStack
+    // Add a SymStackEntry to the end of the symStack
+    this->symStack.emplace_back(node, resolved);
+
+    const char* name = astr(node->name());
+    const char* path = astr(context->filePathForId(node->id()));
 
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
     // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
@@ -2498,16 +2642,14 @@ struct Converter {
                       node->kind() == uast::Module::IMPLICIT);
     auto style = uast::BlockStyle::EXPLICIT;
 
-    // Push the current module name before descending into children.
-    this->modNameStack.push_back(name);
-    currentModuleName = this->modNameStack.back();
+    currentModuleName = name;
     auto body = createBlockWithStmts(node->stmts(), style);
 
-    // Pop the module name after converting children.
-    INT_ASSERT(modNameStack.size());
-    auto poppedName = this->modNameStack.back();
-    this->modNameStack.pop_back();
-    INT_ASSERT(poppedName == name);
+    // Pop the module after converting children.
+    INT_ASSERT(modStack.size() > 0 && modStack.back().mod == node);
+    this->modStack.pop_back();
+    INT_ASSERT(symStack.size() > 0 && symStack.back().ast == node);
+    this->symStack.pop_back();
 
     ModuleSymbol* mod = buildModule(name,
                                     tag,
@@ -2522,6 +2664,9 @@ struct Converter {
     }
 
     attachSymbolAttributes(node, mod);
+
+    // Note that we have already converted this
+    alreadyConverted.emplace(node, mod);
 
     return new DefExpr(mod);
   }
@@ -2589,6 +2734,8 @@ struct Converter {
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
+
+    setVariableType(node, ret->sym);
 
     return ret;
   }
@@ -2868,6 +3015,9 @@ struct Converter {
     // 'definedConst' in the domain to false.
     setDefinedConstForDefExprIfApplicable(ret, &ret->sym->flags);
 
+    // Fix up the AST based on the type, if it should be known
+    setVariableType(node, varSym);
+
     return ret;
   }
 
@@ -2912,7 +3062,7 @@ struct Converter {
   DefExpr* convertEnumElement(const uast::EnumElement* node) {
     astlocMarker markAstLoc(node->id());
 
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     Expr* initExpr = convertExprOrNull(node->initExpression());
     auto ret = new DefExpr(new EnumSymbol(name), initExpr);
     attachSymbolAttributes(node, ret->sym);
@@ -2964,7 +3114,7 @@ struct Converter {
 
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
     auto comment = consumeLatestComment();
-    const char* name = astr(node->name().c_str());
+    const char* name = astr(node->name());
     const char* cname = name;
     Expr* inherit = nullptr;
 
@@ -3021,6 +3171,419 @@ struct Converter {
 Expr* Converter::convertAST(const uast::AstNode* node) {
   astlocMarker markAstLoc(node->id());
   return node->dispatch<Expr*>(*this);
+}
+
+static Qualifier convertQualifier(types::QualifiedType::Kind kind) {
+  Qualifier q = QUAL_UNKNOWN;
+  if      (kind == types::QualifiedType::VAR)       q = QUAL_VAL;
+  else if (kind == types::QualifiedType::CONST_VAR) q = QUAL_CONST_VAL;
+  else if (kind == types::QualifiedType::CONST_REF) q = QUAL_CONST_REF;
+  else if (kind == types::QualifiedType::REF)       q = QUAL_REF;
+  else if (kind == types::QualifiedType::IN)        q = QUAL_VAL;
+  else if (kind == types::QualifiedType::CONST_IN)  q = QUAL_CONST_VAL;
+  else if (kind == types::QualifiedType::OUT)       q = QUAL_VAL;
+  else if (kind == types::QualifiedType::INOUT)     q = QUAL_VAL;
+  else if (kind == types::QualifiedType::PARAM)     q = QUAL_PARAM;
+
+  return q;
+}
+
+void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
+  if (symStack.size() > 0) {
+    auto r = symStack.back().resolved;
+
+    if (r != nullptr) {
+      printf("SETTING VARIABLE TYPE!!\n");
+
+      // Get the type of the variable itself
+      auto resolvedVar = r->byAst(v);
+      types::QualifiedType qt = resolvedVar.type();
+      if (!qt.isUnknown()) {
+        // Set a type for the variable
+        sym->type = convertType(qt);
+
+        // Set the Qualifier
+        Qualifier q = convertQualifier(qt.kind());
+        if (q != QUAL_UNKNOWN)
+          sym->qual = q;
+
+        // Set the param value for the variable in paramMap, if applicable
+        if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
+          if (qt.hasParamPtr()) {
+            Symbol* val = convertParam(qt);
+            paramMap.put(sym, val);
+          }
+        }
+      }
+    }
+  }
+}
+
+void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
+  if (symStack.size() > 0) {
+    auto r = symStack.back().resolved;
+
+    if (r != nullptr) {
+      const auto& resolvedExpr = r->byId(call->id());
+      const auto& candidates = resolvedExpr.mostSpecific();
+      int nBest = candidates.numBest();
+      if (nBest == 0) {
+        // nothing to do
+      } else if (nBest > 1) {
+        INT_FATAL("return intent overloading not yet handled");
+      } else if (nBest == 1) {
+        const resolution::TypedFnSignature* sig = candidates.only();
+        auto usig = sig->untyped();
+        if (usig->idIsFunction()) {
+          FnSymbol* fn = convertFnOutOfOrder(usig->id());
+          if (fn != nullptr) {
+            // Do we need to remove the old baseExpr?
+            expr->baseExpr = new SymExpr(fn);
+            parent_insert_help(expr, expr->baseExpr);
+          }
+        }
+      }
+    }
+  }
+}
+
+Type* Converter::convertType(const types::QualifiedType qt) {
+  using namespace types;
+
+  if (!qt.hasTypePtr())
+    return dtUnknown;
+
+  switch (qt.type()->tag()) {
+    // builtin types with their own classes
+    case typetags::AnyType:       return dtAny;
+    case typetags::BytesType:     return dtBytes;
+    case typetags::CStringType:   return dtStringC;
+    case typetags::ErroneousType: return dtUnknown; // a lie
+    case typetags::NilType:       return dtNil;
+    case typetags::NothingType:   return dtNothing;
+    case typetags::StringType:    return dtString;
+    case typetags::UnknownType:   return dtUnknown;
+    case typetags::VoidType:      return dtVoid;
+
+    // subclasses of BuiltinType
+
+    // concrete builtin types
+    case typetags::CFileType:     return dtFile;
+    case typetags::CFnPtrType:    return dtCFnPtr;
+    case typetags::CVoidPtrType:  return dtCVoidPtr;
+    case typetags::OpaqueType:    return dtOpaque;
+    case typetags::SyncAuxType:   return dtSyncVarAuxFields;
+    case typetags::TaskIdType:    return dtTaskID;
+
+    // generic builtin types
+    case typetags::AnyBoolType:                  return dtAnyBool;
+    case typetags::AnyBorrowedNilableType:       return dtBorrowedNilable;
+    case typetags::AnyBorrowedNonNilableType:    return dtBorrowedNonNilable;
+    case typetags::AnyBorrowedType:              return dtBorrowed;
+    case typetags::AnyComplexType:               return dtAnyComplex;
+    case typetags::AnyEnumType:                  return dtAnyEnumerated;
+    case typetags::AnyImagType:                  return dtAnyImag;
+    case typetags::AnyIntType:                   return dtIntegral; // a lie
+    case typetags::AnyIntegralType:              return dtIntegral;
+    case typetags::AnyIteratorClassType:         return dtIteratorClass;
+    case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
+    case typetags::AnyManagementAnyNilableType:  return dtAnyManagementAnyNilable;
+    case typetags::AnyManagementNilableType:     return dtAnyManagementNilable;
+    case typetags::AnyManagementNonNilableType:  return dtAnyManagementNonNilable;
+    case typetags::AnyNumericType:               return dtNumeric;
+    case typetags::AnyOwnedType:                 return dtOwned;
+    case typetags::AnyPodType:                   return dtAnyPOD;
+    case typetags::AnyRealType:                  return dtAnyReal;
+    case typetags::AnyRecordType:                return dtAnyRecord;
+    case typetags::AnySharedType:                return dtShared;
+    case typetags::AnyUintType:                  return dtIntegral; // a lie
+    case typetags::AnyUninstantiatedType:        return dtUninstantiated;
+    case typetags::AnyUnionType:                 return dtUnknown; // a lie
+    case typetags::AnyUnmanagedNilableType:      return dtUnmanagedNilable;
+    case typetags::AnyUnmanagedNonNilableType:   return dtUnmanagedNonNilable;
+    case typetags::AnyUnmanagedType:             return dtUnmanaged;
+
+    // declared types
+    case typetags::ClassType:   return convertClassType(qt);
+    case typetags::EnumType:   return convertEnumType(qt);
+    case typetags::FunctionType:   return convertFunctionType(qt);
+
+    case typetags::BasicClassType:   return convertBasicClassType(qt);
+    case typetags::RecordType:   return convertRecordType(qt);
+    case typetags::TupleType:   return convertTupleType(qt);
+    case typetags::UnionType:   return convertUnionType(qt);
+
+    // primitive types
+    case typetags::BoolType:   return convertBoolType(qt);
+    case typetags::ComplexType:   return convertComplexType(qt);
+    case typetags::ImagType:   return convertImagType(qt);
+    case typetags::IntType:   return convertIntType(qt);
+    case typetags::RealType:   return convertRealType(qt);
+    case typetags::UintType:   return convertUintType(qt);
+
+    // implementation detail tags (should not be reachable)
+    case typetags::START_BuiltinType:
+    case typetags::END_BuiltinType:
+    case typetags::START_DeclaredType:
+    case typetags::END_DeclaredType:
+    case typetags::START_CompositeType:
+    case typetags::END_CompositeType:
+    case typetags::START_PrimitiveType:
+    case typetags::END_PrimitiveType:
+    case typetags::NUM_TYPE_TAGS:
+      INT_FATAL("should not be reachable");
+      return dtUnknown;
+
+    // intentionally no default --
+    // want a C++ compiler error if a case is missing in the above
+  }
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+Type* Converter::convertClassType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertEnumType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertFunctionType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertBasicClassType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertRecordType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertTupleType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertUnionType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+// helper functions to convert a type to a size
+
+static IF1_bool_type getBoolSize(const types::BoolType* t) {
+  if (t->isDefaultWidth())
+    return BOOL_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return BOOL_SIZE_8;
+  else if (width == 16) return BOOL_SIZE_16;
+  else if (width == 32) return BOOL_SIZE_32;
+  else if (width == 64) return BOOL_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return BOOL_SIZE_DEFAULT;
+}
+
+static IF1_complex_type getComplexSize(const types::ComplexType* t) {
+  if (t->isDefaultWidth())
+    return COMPLEX_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 64)  return COMPLEX_SIZE_64;
+  else if (width == 128) return COMPLEX_SIZE_128;
+
+  INT_FATAL("should not be reached");
+  return COMPLEX_SIZE_DEFAULT;
+}
+
+
+static IF1_float_type getImagSize(const types::ImagType* t) {
+  if (t->isDefaultWidth())
+    return FLOAT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 32) return FLOAT_SIZE_32;
+  else if (width == 64) return FLOAT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return FLOAT_SIZE_DEFAULT;
+}
+
+static IF1_int_type getIntSize(const types::IntType* t) {
+  if (t->isDefaultWidth())
+    return INT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return INT_SIZE_8;
+  else if (width == 16) return INT_SIZE_16;
+  else if (width == 32) return INT_SIZE_32;
+  else if (width == 64) return INT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return INT_SIZE_DEFAULT;
+}
+
+static IF1_float_type getRealSize(const types::RealType* t) {
+  if (t->isDefaultWidth())
+    return FLOAT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 32) return FLOAT_SIZE_32;
+  else if (width == 64) return FLOAT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return FLOAT_SIZE_DEFAULT;
+}
+
+static IF1_int_type getUintSize(const types::UintType* t) {
+  if (t->isDefaultWidth())
+    return INT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return INT_SIZE_8;
+  else if (width == 16) return INT_SIZE_16;
+  else if (width == 32) return INT_SIZE_32;
+  else if (width == 64) return INT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return INT_SIZE_DEFAULT;
+}
+
+
+Type* Converter::convertBoolType(const types::QualifiedType qt) {
+  const types::BoolType* t = qt.type()->toBoolType();
+  return dtBools[getBoolSize(t)];
+}
+
+Type* Converter::convertComplexType(const types::QualifiedType qt) {
+  const types::ComplexType* t = qt.type()->toComplexType();
+  return dtComplex[getComplexSize(t)];
+}
+
+Type* Converter::convertImagType(const types::QualifiedType qt) {
+  const types::ImagType* t = qt.type()->toImagType();
+  return dtImag[getImagSize(t)];
+}
+
+Type* Converter::convertIntType(const types::QualifiedType qt) {
+  const types::IntType* t = qt.type()->toIntType();
+  return dtInt[getIntSize(t)];
+}
+
+Type* Converter::convertRealType(const types::QualifiedType qt) {
+  const types::RealType* t = qt.type()->toRealType();
+  return dtReal[getRealSize(t)];
+}
+
+Type* Converter::convertUintType(const types::QualifiedType qt) {
+  const types::UintType* t = qt.type()->toUintType();
+  return dtUInt[getUintSize(t)];
+}
+
+Symbol* Converter::convertParam(const types::QualifiedType qt) {
+
+  const types::Param* p = qt.param();
+  const types::Type* t = qt.type();
+  INT_ASSERT(p && t);
+
+  if (auto bp = p->toBoolParam()) {
+    const types::BoolType* bt = t->toBoolType();
+    return new_BoolSymbol(bp->value(), getBoolSize(bt));
+  } else if (auto cp = p->toComplexParam()) {
+    const types::ComplexType* ct = t->toComplexType();
+    types::Param::ComplexDouble tmp = cp->value();
+    char buf[64];
+    // compute the hexadecimal string form for the number
+    snprintf(buf, sizeof(buf), "%a+%ai", tmp.re, tmp.im);
+    return new_ComplexSymbol(buf, tmp.re, tmp.im, getComplexSize(ct));
+  } else if (auto ip = p->toIntParam()) {
+    const types::IntType* it = t->toIntType();
+    return new_IntSymbol(ip->value(), getIntSize(it));
+  } else if (p->isNoneParam()) {
+    return gNone;
+  } else if (auto rp = p->toRealParam()) {
+    char buf[64];
+    // compute the hexadecimal string form for the number
+    snprintf(buf, sizeof(buf), "%a", rp->value());
+
+    if (auto rt = t->toRealType()) {
+      return new_RealSymbol(buf, getRealSize(rt));
+    } else if (auto it = t->toImagType()) {
+      return new_ImagSymbol(buf, getImagSize(it));
+    }
+  } else if (auto sp = p->toStringParam()) {
+    if (t->isStringType()) {
+      return new_StringSymbol(sp->value().c_str());
+    } else if (t->isCStringType()) {
+      return new_CStringSymbol(sp->value().c_str());
+    } else if (t->isBytesType()) {
+      return new_BytesSymbol(sp->value().c_str());
+    }
+  } else if (auto up = p->toUintParam()) {
+    const types::UintType* t = qt.type()->toUintType();
+    return new_UIntSymbol(up->value(), getUintSize(t));
+  }
+
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+static ID getModuleId(Context* context, ID id) {
+  while (!id.isEmpty()) {
+    auto tag = parsing::idToTag(context, id);
+    if (tag == uast::asttags::Module)
+      return id;
+    id = id.parentSymbolId(context);
+  }
+
+  return id;
+}
+
+FnSymbol* Converter::convertFnOutOfOrder(ID fnId) {
+  // Compute the module
+  ID moduleId = getModuleId(context, fnId);
+  auto ast = parsing::idToAst(context, moduleId);
+  INT_ASSERT(ast && ast->isModule());
+  auto mod = ast->toModule();
+  // Compute the function
+  ast = parsing::idToAst(context, fnId);
+  INT_ASSERT(ast && ast->isFunction());
+  auto fn = ast->toFunction();
+  // Add the module containing the function to the modStack if
+  // it is not already there.
+  bool changeModStack = true;
+  if (modStack.size() > 0 && modStack.back().mod == mod)
+    changeModStack = false;
+
+  if (changeModStack) {
+    modStack.emplace_back(mod);
+  }
+
+  FnSymbol* ret = nullptr;
+  // note: visit will add fn to the symStack
+  Expr* got = visit(fn);
+  if (auto def = toDefExpr(got)) {
+    ret = toFnSymbol(def->sym);
+  } else if (auto block = toBlockStmt(got)) {
+    if (auto def = toDefExpr(block->body.last())) {
+      ret = toFnSymbol(def->sym);
+    }
+  }
+
+  // pop
+  if (changeModStack) {
+    modStack.pop_back();
+  }
+
+  return ret;
 }
 
 } // end anonymous namespace

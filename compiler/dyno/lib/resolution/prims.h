@@ -17,39 +17,25 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/AggregateDecl.h"
+#ifndef PRIMS_H
+#define PRIMS_H
 
-#include "chpl/uast/Builder.h"
+#include "chpl/resolution/scope-types.h"
+#include "chpl/resolution/resolution-types.h"
+#include "chpl/uast/PrimCall.h"
 
 namespace chpl {
-namespace uast {
+namespace resolution {
 
 
-bool AggregateDecl::validAggregateChildren(AstListIteratorPair<AstNode> it) {
-  for (auto elt: it) {
-    if (elt->isComment() || elt->isErroneousExpression() ||
-        elt->isEmptyStmt()) {
-      // OK
-    } else if (elt->isDecl()) {
-      if (elt->isVariable() || elt->isFunction() || elt->isTupleDecl() ||
-          elt->isMultiDecl() ||
-          elt->isAggregateDecl() ||
-          elt->isForwardingDecl() ||
-          elt->isTypeDecl()) {
-        // OK
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
-
-AggregateDecl::~AggregateDecl() {
-}
+CallResolutionResult resolvePrimCall(Context* context,
+                                     const uast::PrimCall* call,
+                                     const CallInfo& ci,
+                                     const Scope* inScope,
+                                     const PoiScope* inPoiScope);
 
 
-} // namespace uast
-} // namespace chpl
+} // end namespace resolution
+} // end namespace chpl
+
+#endif

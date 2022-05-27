@@ -15,7 +15,10 @@ do
     #e.g. -s|--short)
     --stage=*)
       STAGE="${arg#*=}"
-      STAGE_SET=1
+      if [ ! -z $STAGE ]
+      then
+        STAGE_SET=1
+      fi
       shift
       ;;
     *)

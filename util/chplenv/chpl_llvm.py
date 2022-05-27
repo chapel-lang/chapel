@@ -192,6 +192,11 @@ def get_llvm_config():
     return llvm_config
 
 @memoize
+def get_llvm_version():
+    (llvm_version, _) = check_llvm_config(get_llvm_config())
+    return llvm_version
+
+@memoize
 def validate_llvm_config():
     llvm_val = get()
     llvm_config = get_llvm_config()
@@ -836,6 +841,9 @@ def _main():
     parser.add_option('--llvm-config', dest='action',
                       action='store_const',
                       const='llvmconfig', default='')
+    parser.add_option('--llvm-vesion', dest='action',
+                      action='store_const',
+                      const='llvmversion', default='')
     parser.add_option('--supported-versions', dest='action',
                       action='store_const',
                       const='llvmversions', default='')
@@ -854,6 +862,9 @@ def _main():
     elif options.action == 'llvmconfig':
         sys.stdout.write("{0}\n".format(llvm_config))
         validate_llvm_config()
+    elif options.action == 'llvmversion':
+        llvm_version = get_llvm_version()
+        sys.stdout.write("{0}\n".format(llvm_version))
     elif options.action == 'llvmversions':
         sys.stdout.write("{0}\n".format(llvm_versions))
     elif options.action == 'sdkroot':

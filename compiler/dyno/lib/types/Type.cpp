@@ -35,6 +35,7 @@
 #include "chpl/types/StringType.h"
 #include "chpl/types/UintType.h"
 #include "chpl/types/UnknownType.h"
+#include "chpl/types/TupleType.h"
 #include "chpl/types/VoidType.h"
 
 namespace chpl {
@@ -107,6 +108,8 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "void", VoidType::get(context));
 
   gatherType(context, map, "object", BasicClassType::getObjectType(context));
+
+  gatherType(context, map, "_tuple", TupleType::getGenericTupleType(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }

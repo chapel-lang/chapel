@@ -1843,12 +1843,8 @@ FnSymbol* buildLambda(FnSymbol *fn) {
   return fn;
 }
 
-BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef) {
-  DefExpr* def = toDefExpr(blockFnDef->body.tail);
-  INT_ASSERT(def);
-  FnSymbol* fn = toFnSymbol(def->sym);
-  INT_ASSERT(fn);
-
+void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
+                                   FnSymbol* fn) {
   const char* cname = "";
   // Look for a string literal we can use
   if (paramCNameExpr != NULL) {
@@ -1888,6 +1884,15 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
                                       paramCNameExpr, NULL);
     fn->insertFormalAtTail(argDef);
   }
+}
+
+BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef) {
+  DefExpr* def = toDefExpr(blockFnDef->body.tail);
+  INT_ASSERT(def);
+  FnSymbol* fn = toFnSymbol(def->sym);
+  INT_ASSERT(fn);
+
+  setupExternExportFunctionDecl(externOrExport, paramCNameExpr, fn);
 
   return blockFnDef;
 }
@@ -1931,8 +1936,8 @@ buildFunctionSymbol(FnSymbol*   fn,
   return fn;
 }
 
-BlockStmt*
-buildFunctionDecl(FnSymbol*   fn,
+void
+setupFunctionDecl(FnSymbol*   fn,
                   RetTag      optRetTag,
                   Expr*       optRetType,
                   bool        optThrowsError,
@@ -1979,7 +1984,20 @@ buildFunctionDecl(FnSymbol*   fn,
   }
 
   fn->doc = docs;
+}
 
+BlockStmt*
+buildFunctionDecl(FnSymbol*   fn,
+                  RetTag      optRetTag,
+                  Expr*       optRetType,
+                  bool        optThrowsError,
+                  Expr*       optWhere,
+                  Expr*       optLifetimeConstraints,
+                  BlockStmt*  optFnBody,
+                  const char* docs)
+{
+  setupFunctionDecl(fn, optRetTag, optRetType, optThrowsError,
+                    optWhere, optLifetimeConstraints, optFnBody, docs);
   return buildChapelStmt(new DefExpr(fn));
 }
 

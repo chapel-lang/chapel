@@ -497,16 +497,6 @@ module ChapelDomain {
            (d1.isAssociative() && d2.isAssociative()) ||
            (d1.isSparse()      && d2.isSparse()     );
 
-  /* Return true if ``t`` is a domain type. Otherwise return false. */
-  proc isDomainType(type t) param {
-    return isSubtype(t, _domain);
-  }
-
-  pragma "no doc"
-  proc isDomainValue(e: domain) param  return true;
-  /* Return true if ``e`` is a domain. Otherwise return false. */
-  proc isDomainValue(e)         param  return false;
-
   operator -(a :domain, b :domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;

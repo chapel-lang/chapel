@@ -17,4 +17,4 @@ forall i in dom do
 stopGPUDiagnostics();
 
 writeln(arr);
-writeln(getGPUDiagnostics());
+assert(here.maxTaskPar == getGPUDiagnostics().kernel_launch);

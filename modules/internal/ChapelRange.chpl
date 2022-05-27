@@ -572,18 +572,6 @@ module ChapelRange {
   //# Predicates
   //#
 
-  /* Return true if argument ``t`` is a range type, false otherwise */
-  proc isRangeType(type t) param {
-    proc isRangeHelp(type t: range(?)) param  return true;
-    proc isRangeHelp(type t)           param  return false;
-    return isRangeHelp(t);
-  }
-  pragma "no doc"
-  proc isRangeValue(r: range(?)) param  return true;
-  /* Return true if argument ``r`` is a range, false otherwise */
-  pragma "no doc"
-  proc isRangeValue(r)           param  return false;
-
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
   pragma "no doc"
   proc isBoundedRange(r)           param
