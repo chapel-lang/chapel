@@ -58,6 +58,14 @@
 ************************************** | *************************************/
 
 
+using VisitedModulesSet = std::set<std::pair<ModuleSymbol*, const char*>>;
+
+// modSymsCache caches lookups at a module scope, including transitive uses.
+// key: pair of module symbol and name to lookup
+// value: vector of Symbol* that it resolved to
+static std::unordered_map<std::pair<ModuleSymbol*, const char*>,
+                          std::vector<Symbol*>> modSymsCache;
+
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.
 typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
@@ -1928,8 +1936,6 @@ static bool      methodMatched(BaseAST* scope, FnSymbol* method);
 
 static FnSymbol* getMethod(const char* name, Type* type);
 
-using VisitedModulesSet = std::set<std::pair<ModuleSymbol*, const char*>>;
-
 static void lookupUseImport(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
@@ -1959,6 +1965,27 @@ bool lookupThisScopeAndUses(const char*           name,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts) {
+
+  // if scope is a module, use the cached result
+  ModuleSymbol* scopeIsModule = nullptr;
+  if (scope->getModule()->block == scope) {
+    scopeIsModule = scope->getModule();
+  }
+
+  if (storeRenames == false && scopeIsModule) {
+    auto it = modSymsCache.find(std::make_pair(scopeIsModule, name));
+    if (it != modSymsCache.end()) {
+      // if we found a cached result, use it
+      const std::vector<Symbol*>& vec = it->second;
+      for (auto sym : vec) {
+        symbols.push_back(sym);
+      }
+      return symbols.size() != 0;
+    }
+  }
+
+  size_t symbolsStart = symbols.size();
+
   if (Symbol* sym = inSymbolTable(name, scope)) {
     if (sym->hasFlag(FLAG_PRIVATE) == true) {
       if (sym->isVisible(context) == true) {
@@ -1971,15 +1998,11 @@ bool lookupThisScopeAndUses(const char*           name,
   }
 
   if (Symbol* sym = inType(name, scope)) {
-    if (isRepeat(sym, symbols) == true) {
-      // If we're looking at the exact same Symbol, there's no need to add it
-      // and we can just return.
-      return true;
+    if (isRepeat(sym, symbols) == false) {
+      // When methods and fields can be private, need to check against the
+      // rejected private symbols here.  But that's in the future.
+      symbols.push_back(sym);
     }
-
-    // When methods and fields can be private, need to check against the
-    // rejected private symbols here.  But that's in the future.
-    symbols.push_back(sym);
   }
 
   VisitedModulesSet visitedModules;
@@ -2009,6 +2032,16 @@ bool lookupThisScopeAndUses(const char*           name,
                           renameLocs, storeRenames,
                           /* forShadowScope */ true,
                           /* publicOnly */ false);
+  }
+
+  // if scope is a module, store the cached result
+  if (storeRenames == false && scopeIsModule) {
+    std::vector<Symbol*> vec;
+    for (size_t i = symbolsStart; i < symbols.size(); i++) {
+      vec.push_back(symbols[i]);
+    }
+    modSymsCache.emplace(std::make_pair(scopeIsModule, name),
+                         std::move(vec));
   }
 
   return symbols.size() != 0;
