@@ -598,6 +598,8 @@ PRAGMA(OPT_INFO_NO_BLOCKING, npr, "forall not blocking", "forall does not have b
 
 PRAGMA(DESERIALIZATION_BLOCK_MARKER, npr, "marks deserialization options", "then block is var else block is ref serialization")
 
+PRAGMA(EXEMPT_INSTANTIATION_LIMIT, ypr, "fn exempt instantiation limit", "compiler will not limit the number of instantiations of this function")
+
 #undef ypr
 #undef npr
 #undef ncm
