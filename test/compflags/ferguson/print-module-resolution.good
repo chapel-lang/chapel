@@ -64,8 +64,6 @@ DSIUtil
   from print-module-resolution.ChapelStandard.ChapelTuple.DSIUtil
 ChapelTuple
   from print-module-resolution.ChapelStandard.ChapelTuple
-Math
-  from print-module-resolution.ChapelStandard.ChapelRange.AutoMath.Math
 AutoMath
   from print-module-resolution.ChapelStandard.ChapelRange.AutoMath
 ChapelIOStringifyHelper
