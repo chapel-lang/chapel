@@ -583,7 +583,7 @@ proc normPath(path: string): string {
    :rtype: `string`
    :throws SystemError: If one occurs.
 */
-  proc realPath(path: string): string throws {
+proc realPath(path: string): string throws {
   import SysBasic.syserr;
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
