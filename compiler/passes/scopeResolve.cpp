@@ -1436,10 +1436,12 @@ static void resolveModuleCall(CallExpr* call) {
           sym = t->symbol;
         }
 
+#ifdef HAVE_LLVM
         // Failing that, try looking in an extern block.
         if (sym == NULL && mod->extern_info != nullptr) {
-          sym = tryCResolveLocally(mod, mbrName);
+          sym = tryCResolve(mod, mbrName);
         }
+#endif
 
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
@@ -2046,7 +2048,7 @@ bool lookupThisScopeAndUses(const char*           name,
       scopeIsModule != nullptr &&
       scopeIsModule->extern_info != nullptr &&
       skipExternBlocks == false) {
-    Symbol* got = tryCResolveLocally(scopeIsModule, name);
+    Symbol* got = tryCResolve(scopeIsModule, name);
     if (got != nullptr)
       symbols.push_back(got);
   }
@@ -2362,7 +2364,8 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
   return retval;
 }
 
-Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name) {
+Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
+                                 int& nSymbolsFound) {
   BaseAST* scope = mod->block;
   if (Symbol* sym = inSymbolTable(name, scope)) {
     return sym;
@@ -2378,12 +2381,14 @@ Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name) {
                          renameLocs, /* storeRenames */ false, reexportPts);
 
   if (syms.size() > 0) {
+    nSymbolsFound = syms.size();
     return syms[0];
   }
 
   // also check in the root module for builtins
   scope = theProgram->block;
   if (Symbol* sym = inSymbolTable(name, scope)) {
+    nSymbolsFound = 1;
     return sym;
   }
 

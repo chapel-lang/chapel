@@ -162,7 +162,8 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   }
 
   // Don't convert it if it's already converted
-  if (Symbol* sym = lookupInModuleOrBuiltins(module, chpl_name))
+  int ignoredCount = 0;
+  if (Symbol* sym = lookupInModuleOrBuiltins(module, chpl_name, ignoredCount))
     return new SymExpr(sym);
 
   // Create an empty struct and add it to the AST
@@ -395,7 +396,8 @@ static const char* convertTypedef(ModuleSymbol*           module,
 
   if( do_typedef ) {
     // Don't convert it if it's already converted
-    if (lookupInModuleOrBuiltins(module, typedef_name))
+    int ignoredCount = 0;
+    if (lookupInModuleOrBuiltins(module, typedef_name, ignoredCount))
       return typedef_name;
 
     // Create a a DefExpr without the initializing expression
@@ -432,7 +434,8 @@ void convertDeclToChpl(ModuleSymbol* module,
   INT_ASSERT(module->extern_info != NULL);
 
   // Don't convert it if it's already converted
-  if (lookupInModuleOrBuiltins(module, cname))
+  int ignoredCount = 0;
+  if (lookupInModuleOrBuiltins(module, cname, ignoredCount))
     return;
 
   clang::TypeDecl* cType = NULL;
@@ -555,10 +558,61 @@ Symbol* tryCResolveLocally(ModuleSymbol* module, const char* name) {
     // Convert it and update the scope table
     convertDeclToChpl(module, name);
     // Look it up again using the scope table
-    return lookupInModuleOrBuiltins(module, name);
+    int ignoredCount = 0;
+    return lookupInModuleOrBuiltins(module, name, ignoredCount);
   }
 
   return NULL;
+}
+
+static Symbol* doTryCResolve(ModuleSymbol* module,
+                             const char*                       name,
+                             llvm::SmallSet<ModuleSymbol*, 24> &visited) {
+
+  if (module == NULL) {
+    return NULL;
+
+  } else if (visited.insert(module).second) {
+    // we added it to the set, so continue.
+
+  } else {
+    // It was already in the set.
+    return NULL;
+  }
+
+  // Try the modules used by this module.
+  // It is important to consider them first, so that a module that is 'use'd
+  // that has an extern block will generate the Defs there, rather than
+  // getting another copy here.
+  // TODO: handle only, except, etc
+  for (ModuleSymbol* usedMod : module->modUseList) {
+    if (usedMod->modTag == MOD_USER) { // no extern blocks in internal code
+      Symbol* got = doTryCResolve(usedMod, name, visited);
+      if (got != NULL)
+        return got;
+    }
+  }
+
+  return tryCResolveLocally(module, name);
+}
+
+Symbol* tryCResolve(ModuleSymbol* mod, const char* name) {
+  Symbol* retval = NULL;
+
+  // Try looking up the symbol with scope resolve's tables.
+  // This covers the case of finding a symbol already converted.
+  int nSymbolsFound = 0;
+  Symbol* got = lookupInModuleOrBuiltins(mod, name, nSymbolsFound);
+  if (nSymbolsFound != 0)
+    return got;
+
+  if (fAllowExternC == true) {
+    llvm::SmallSet<ModuleSymbol*, 24> visited;
+
+    retval = doTryCResolve(mod, name, visited);
+  }
+
+  return retval;
 }
 
 static void addCDef(ModuleSymbol* module, DefExpr* def) {
@@ -576,7 +630,8 @@ static Expr* tryCResolveExpr(ModuleSymbol* module, const char* name) {
 }
 
 static Expr* lookupExpr(ModuleSymbol* module, const char* name) {
-  Symbol* sym = lookupInModuleOrBuiltins(module, astr(name));
+  int ignoredCount = 0;
+  Symbol* sym = lookupInModuleOrBuiltins(module, astr(name), ignoredCount);
   if (sym == NULL)
     USR_FATAL("Could not find C type %s", name);
 
