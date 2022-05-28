@@ -2772,6 +2772,7 @@ void cleanupExternC(void) {
     delete module->extern_info->gen_info->clangInfo;
     delete module->extern_info->gen_info;
     delete module->extern_info;
+    module->extern_info = nullptr;
     // Remove all ExternBlockStmts from this module.
     forv_Vec(ExternBlockStmt, eb, gExternBlockStmts) {
       eb->remove();
