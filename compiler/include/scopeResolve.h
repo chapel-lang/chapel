@@ -56,7 +56,8 @@ Symbol*  lookupAndCount(const char*           name,
 
 // lookup in the table for a module scope or in the root module for builtins
 // while skipping lookups in extern blocks (used by externCResolve)
-Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name);
+Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
+                                int& nSymbolsFound);
 
 void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                              const char* name,
