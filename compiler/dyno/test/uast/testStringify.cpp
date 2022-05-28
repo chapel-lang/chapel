@@ -430,6 +430,11 @@ static void test3(Parser* parser) {
                    "proc1(arg: owned 2*Monkey1?)")
   TEST_USER_STRING("proc init(fScore : borrowed [..] real) {}",
                    "init(fScore: borrowed [..] real)")
+  TEST_USER_STRING("proc difDecl(arg1: 3*string) {}",
+                   "difDecl(arg1: 3*string)")
+  TEST_USER_STRING("proc multiDimension(arg2: 3*(4*complex)): 3*(4*complex) {}",
+                   "multiDimension(arg2: 3*(4*complex))")
+
 }
 
 static void test4(Parser* parser) {

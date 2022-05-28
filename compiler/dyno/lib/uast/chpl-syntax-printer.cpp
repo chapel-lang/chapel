@@ -995,6 +995,13 @@ struct ChplSyntaxVisitor {
         needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false,
                                  false, node->actual(1)->toOpCall()->isUnaryOp(),
                                  isPostfix(node->actual(1)->toOpCall()) , true);
+        // handle printing parens around tuples
+        // ex: 3*(4*string) != 3*4*string
+        if (!needsParens && innerOp == "*" &&
+            (node->actual(1)->toOpCall()->actual(1)->isTuple() ||
+             node->actual(1)->toOpCall()->actual(1)->isIdentifier())) {
+          needsParens = true;
+        }
       }
       if (needsParens) ss_ << "(";
       printChapelSyntax(ss_, node->actual(1));
