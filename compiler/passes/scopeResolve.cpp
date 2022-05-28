@@ -1961,6 +1961,7 @@ bool lookupThisScopeAndUses(const char*           name,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
+
   ModuleSymbol* scopeIsModule = nullptr;
   if (scope->getModule()->block == scope) {
     scopeIsModule = scope->getModule();
@@ -2039,14 +2040,15 @@ bool lookupThisScopeAndUses(const char*           name,
                           /* publicOnly */ false);
   }
 
-  // If the module has an extern block and we haven't resolved
+  // If the module has an extern block or uses one that does
+  // and we haven't resolved
   // the symbol any other way, look there.
   // Unless skipExternBlocks == true, which is used by lookupInModuleOrBuiltins
   // to avoid infinite recursion.
 #ifdef HAVE_LLVM
   if (symbols.size() == 0 &&
       scopeIsModule != nullptr &&
-      scopeIsModule->extern_info != nullptr &&
+      gExternBlockStmts.size() > 0 &&
       skipExternBlocks == false) {
     Symbol* got = tryCResolve(scopeIsModule, name);
     if (got != nullptr)
