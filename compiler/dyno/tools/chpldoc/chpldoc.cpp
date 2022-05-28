@@ -607,12 +607,11 @@ struct RstSignatureVisitor {
       call->actual(0)->traverse(*this);
       if (needsParens) os_ << ")";
       needsParens = false;
-      if (call->op() == USTR("by")
-          || (call->op() != USTR("**") && call->op() != USTR(":")))
+      bool addSpace = wantSpaces(call->op().c_str(), true);
+      if (addSpace)
         os_ << " ";
       os_ << call->op();
-      if (call->op() == USTR("by")
-          || (call->op() != USTR("**") && call->op() != USTR(":")))
+      if (addSpace)
         os_ << " ";
       if (call->actual(1)->isOpCall()) {
         innerOp = call->actual(1)->toOpCall()->op().str();
