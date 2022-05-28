@@ -91,6 +91,7 @@ bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
                             std::vector<Symbol*>& symbols,
+                            bool skipExternBlocks,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts);
@@ -872,14 +873,6 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
     resolveUnresolvedSymExpr(usymExpr, sym);
   } else {
     updateMethod(usymExpr);
-
-#ifdef HAVE_LLVM
-    if (nSymbols == 0 && gExternBlockStmts.size() > 0) {
-      Symbol* got = tryCResolve(usymExpr, name);
-      if (got != NULL)
-        resolveUnresolvedSymExpr(usymExpr, got);
-    }
-#endif
   }
   return renameLoc;
 }
@@ -1444,11 +1437,9 @@ static void resolveModuleCall(CallExpr* call) {
         }
 
         // Failing that, try looking in an extern block.
-#ifdef HAVE_LLVM
-        if (sym == NULL && gExternBlockStmts.size() > 0) {
+        if (sym == NULL && mod->extern_info != nullptr) {
           sym = tryCResolveLocally(mod, mbrName);
         }
-#endif
 
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
@@ -1847,8 +1838,9 @@ static void lookup(const char*           name,
   if (!visited.set_in(scope)) {
     visited.set_add(scope);
 
-    if (lookupThisScopeAndUses(name, context, scope, symbols, renameLocs,
-                               storeRenames, reexportPts) == true) {
+    if (lookupThisScopeAndUses(name, context, scope, symbols,
+                               /* skipExternBlocks */ false,
+                               renameLocs, storeRenames, reexportPts) == true) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
       // surrounding scopes for the symbols on the left and right part
@@ -1962,17 +1954,28 @@ bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
                             std::vector<Symbol*>& symbols,
+                            bool skipExternBlocks,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
-  // if scope is a module, use the cached result
   ModuleSymbol* scopeIsModule = nullptr;
   if (scope->getModule()->block == scope) {
     scopeIsModule = scope->getModule();
   }
 
-  if (storeRenames == false && scopeIsModule) {
+  // if scope is a module, use the cached result / updated the cache
+  // but don't do so:
+  //  * if we need to compute rename locations
+  //  * if we are doing a resolution on behalf of lookupInModuleOrBuiltins
+  //    for an extern block (indicated by skipExternBlocks) because
+  //    in that situation the result will be modified after the
+  //    extern decl is computed.
+  bool useCache = (storeRenames == false &&
+                   skipExternBlocks == false &&
+                   scopeIsModule);
+
+  if (useCache) {
     auto it = modSymsCache.find(std::make_pair(scopeIsModule, name));
     if (it != modSymsCache.end()) {
       // if we found a cached result, use it
@@ -2034,8 +2037,23 @@ bool lookupThisScopeAndUses(const char*           name,
                           /* publicOnly */ false);
   }
 
-  // if scope is a module, store the cached result
-  if (storeRenames == false && scopeIsModule) {
+  // If the module has an extern block and we haven't resolved
+  // the symbol any other way, look there.
+  // Unless skipExternBlocks == true, which is used by lookupInModuleOrBuiltins
+  // to avoid infinite recursion.
+#ifdef HAVE_LLVM
+  if (symbols.size() == 0 &&
+      scopeIsModule != nullptr &&
+      scopeIsModule->extern_info != nullptr &&
+      skipExternBlocks == false) {
+    Symbol* got = tryCResolveLocally(scopeIsModule, name);
+    if (got != nullptr)
+      symbols.push_back(got);
+  }
+#endif
+
+  // if working with the cache, store the cached result
+  if (useCache) {
     std::vector<Symbol*> vec;
     for (size_t i = symbolsStart; i < symbols.size(); i++) {
       vec.push_back(symbols[i]);
@@ -2342,6 +2360,34 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
   }
 
   return retval;
+}
+
+Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name) {
+  BaseAST* scope = mod->block;
+  if (Symbol* sym = inSymbolTable(name, scope)) {
+    return sym;
+  }
+
+  // also check the uses of the module (for use CTypes, to find c_int),
+  // but don't look in extern blocks (that would lead to an infinite loop).
+  std::vector<Symbol*> syms;
+  std::map<Symbol*, astlocT*> renameLocs;
+  std::map<Symbol*, VisibilityStmt*> reexportPts;
+  lookupThisScopeAndUses(name, scope, scope, syms,
+                         /* skipExternBlocks */ true,
+                         renameLocs, /* storeRenames */ false, reexportPts);
+
+  if (syms.size() > 0) {
+    return syms[0];
+  }
+
+  // also check in the root module for builtins
+  scope = theProgram->block;
+  if (Symbol* sym = inSymbolTable(name, scope)) {
+    return sym;
+  }
+
+  return nullptr;
 }
 
 static Symbol* inType(const char* name, BaseAST* scope) {

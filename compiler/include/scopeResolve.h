@@ -21,13 +21,14 @@
 #ifndef _SCOPE_RESOLVE_H_
 #define _SCOPE_RESOLVE_H_
 
-class astlocT;
 class BaseAST;
 class CallExpr;
 class DefExpr;
 class FnSymbol;
+class ModuleSymbol;
 class Symbol;
 class VisibilityStmt;
+class astlocT;
 
 #include <cstddef>
 #include <map>
@@ -52,6 +53,10 @@ Symbol*  lookupAndCount(const char*           name,
                         bool storeRenames = false,
                         astlocT** renameLoc = NULL,
                         bool issueErrors = true);
+
+// lookup in the table for a module scope or in the root module for builtins
+// while skipping lookups in extern blocks (used by externCResolve)
+Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name);
 
 void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                              const char* name,

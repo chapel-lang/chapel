@@ -162,7 +162,7 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   }
 
   // Don't convert it if it's already converted
-  if (Symbol* sym = lookup(chpl_name, module->block))
+  if (Symbol* sym = lookupInModuleOrBuiltins(module, chpl_name))
     return new SymExpr(sym);
 
   // Create an empty struct and add it to the AST
@@ -395,7 +395,7 @@ static const char* convertTypedef(ModuleSymbol*           module,
 
   if( do_typedef ) {
     // Don't convert it if it's already converted
-    if (lookup(typedef_name, module->block))
+    if (lookupInModuleOrBuiltins(module, typedef_name))
       return typedef_name;
 
     // Create a a DefExpr without the initializing expression
@@ -432,7 +432,7 @@ void convertDeclToChpl(ModuleSymbol* module,
   INT_ASSERT(module->extern_info != NULL);
 
   // Don't convert it if it's already converted
-  if (lookup(cname, module->block) != NULL)
+  if (lookupInModuleOrBuiltins(module, cname))
     return;
 
   clang::TypeDecl* cType = NULL;
@@ -549,71 +549,16 @@ void convertDeclToChpl(ModuleSymbol* module,
   }
 }
 
-static Symbol* tryCResolve(BaseAST* context,
-                           ModuleSymbol* module,
-                           const char* name,
-                           llvm::SmallSet<ModuleSymbol*, 24> &visited);
-
 Symbol* tryCResolveLocally(ModuleSymbol* module, const char* name) {
   // Is it resolveable in this module?
   if (module->extern_info != NULL) {
+    // Convert it and update the scope table
     convertDeclToChpl(module, name);
-    // Try to resolve it again.
-    return lookup(name, module->block);
+    // Look it up again using the scope table
+    return lookupInModuleOrBuiltins(module, name);
   }
 
   return NULL;
-}
-
-Symbol* tryCResolve(BaseAST* context, const char* name) {
-  Symbol* retval = NULL;
-
-  ModuleSymbol* module = context->getModule();
-
-  // Try looking up the symbol with scope resolve's tables.
-  // This covers the case of finding a symbol already converted.
-  int nSymbolsFound = 0;
-  Symbol* got = lookupAndCount(name, context, nSymbolsFound);
-  if (nSymbolsFound != 0)
-    return got;
-
-  if (fAllowExternC == true) {
-    llvm::SmallSet<ModuleSymbol*, 24> visited;
-
-    retval = tryCResolve(context, module, name, visited);
-  }
-
-  return retval;
-}
-
-static Symbol* tryCResolve(BaseAST* context,
-                           ModuleSymbol* module,
-                           const char*                       name,
-                           llvm::SmallSet<ModuleSymbol*, 24> &visited) {
-
-  if (module == NULL) {
-    return NULL;
-
-  } else if (visited.insert(module).second) {
-    // visited.insert(module)) {
-    // we added it to the set, so continue.
-
-  } else {
-    // It was already in the set.
-    return NULL;
-  }
-
-  // try the modules used by this module.
-  // TODO: handle only, except, etc
-  for (ModuleSymbol* usedMod : module->modUseList) {
-    if (usedMod->modTag == MOD_USER) { // no extern blocks in internal code
-      Symbol* got = tryCResolve(context, usedMod, name, visited);
-      if (got != NULL)
-        return got;
-    }
-  }
-
-  return tryCResolveLocally(module, name);
 }
 
 static void addCDef(ModuleSymbol* module, DefExpr* def) {
@@ -623,19 +568,17 @@ static void addCDef(ModuleSymbol* module, DefExpr* def) {
 }
 
 static Expr* tryCResolveExpr(ModuleSymbol* module, const char* name) {
-  BaseAST* context = module->block;
-  Symbol* sym = tryCResolve(context, astr(name));
+  Symbol* sym = tryCResolveLocally(module, astr(name));
   if (sym == NULL)
-    USR_FATAL(context, "Could not find C type %s", name);
+    USR_FATAL("Could not find C type %s", name);
 
   return new SymExpr(sym);
 }
 
 static Expr* lookupExpr(ModuleSymbol* module, const char* name) {
-  BaseAST* context = module->block;
-  Symbol* sym = lookup(astr(name), context);
+  Symbol* sym = lookupInModuleOrBuiltins(module, astr(name));
   if (sym == NULL)
-    USR_FATAL(context, "Could not find type %s", name);
+    USR_FATAL("Could not find C type %s", name);
 
   return new SymExpr(sym);
 }
