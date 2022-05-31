@@ -19,6 +19,7 @@
 
 #include "chpl/uast/New.h"
 #include "chpl/uast/Builder.h"
+#include "chpl/queries/global-strings.h"
 
 namespace chpl {
 namespace uast {
@@ -36,6 +37,14 @@ const char* New::managementToString(New::Management management) {
 
   assert(false && "Should not reach here");
   return nullptr;
+}
+
+New::Management New::stringToManagement(UniqueString ustr) {
+  if (ustr == USTR("owned")) return New::OWNED;
+  if (ustr == USTR("shared")) return New::SHARED;
+  if (ustr == USTR("borrowed")) return New::BORROWED;
+  if (ustr == USTR("unmanaged")) return New::UNMANAGED;
+  return New::DEFAULT_MANAGEMENT;
 }
 
 owned<New> New::build(Builder* builder,

@@ -52,7 +52,16 @@ class New : public AstNode {
     UNMANAGED
   };
 
+  /**
+    Given a management style, return the Chapel keyword representing it.
+  */
   static const char* managementToString(Management management);
+
+  /**
+    Given a string, return a management style, or 'DEFAULT_MANAGEMENT' if
+    there was not a match.
+  */
+  static Management stringToManagement(UniqueString ustr);
 
  private:
   New(AstList children, New::Management management)

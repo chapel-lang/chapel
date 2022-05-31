@@ -46,8 +46,8 @@ namespace {
     void error(const AstNode* node, const char* fmt, ...);
     void warn(const AstNode* node, const char* fmt, ...);
 
-    // Get the i'th parent of the currently visited node. For example, for
-    // the call 'parent(0)', return the most immediate parent.
+    // Get the i'th parent of the currently visited node. For example, the
+    // call 'parent(0)' will return the most immediate parent.
     const AstNode* parent(int depth=0) const;
 
     // Search ancestors for the closest parent with a given tag. If found,
@@ -63,7 +63,7 @@ namespace {
     // Checks.
     void checkDomainTypeQueryUsage(const TypeQuery* node);
     void checkNoDuplicateNamedArguments(const FnCall* node);
-    void checkClassDecorators(const Call* node);
+    void checkNewClassDecorators(const FnCall* node);
     void checkExplicitDeinitCalls(const Call* node);
     void checkPrivateDecls(const Decl* node);
     void checkConstVarNoInit(const Variable* node);
@@ -178,15 +178,101 @@ namespace {
     }
   }
 
-  // TODO...
   void Visitor::checkNoDuplicateNamedArguments(const FnCall* node) {
-    (void) node;
+    std::set<UniqueString> actualNames;
+
+    for (int i = 0; i < node->numActuals(); i++) {
+      if (node->isNamedActual(i)) {
+        auto name = node->actualName(i);
+        assert(!name.isEmpty());
+
+        if (!actualNames.insert(name).second) {
+          auto actual = node->actual(i);
+          assert(actual);
+          error(actual, "The named argument '%s' is used more "
+                        "than once in the same function call.",
+                        name.c_str());
+        }
+      }
+    }
   }
 
-  void Visitor::checkClassDecorators(const Call* node) {
-    (void) node;
+  static
+  New::Management nestedExprManagementStyle(const AstNode* node) {
+    if (!node) return New::DEFAULT_MANAGEMENT;
+
+    auto ret = New::DEFAULT_MANAGEMENT;
+
+    if (auto call = node->toCall()) {
+      if (auto calledExpr = call->calledExpression()) {
+        if (auto ident = calledExpr->toIdentifier()) {
+          ret = New::stringToManagement(ident->name());
+        }
+      }
+    } else if (auto ident = node->toIdentifier()) {
+      ret = New::stringToManagement(ident->name());
+    } else {
+      assert(false && "Not handled!");
+    }
+
+    return ret;
   }
 
+  //
+  // For the expression 'new owned shared borrowed unmanaged C()', three
+  // errors will be emitted, one for 'owned shared', another for 'shared
+  // borrowed', and lastly for 'borrowed unmanaged'.
+  //
+  // TODO: Just generate a single error?
+  //
+  // The AST structure for such an expression looks like:
+  //
+  // test2@8 FnCall
+  // test2@1  New
+  // test2@0    Identifier shared
+  // test2@7  FnCall
+  // test2@2    Identifier borrowed
+  // test2@6    FnCall
+  // test2@3      Identifier unmanaged
+  // test2@5      FnCall
+  // test2@4        Identifier C
+  //
+  // That is, the first duplicate management is stored in the type
+  // expression of the 'New' expression, and all subsequent duplicates are
+  // nested in a chain starting from the first actual.
+  //
+  // Adjust this comment if our parsing strategy changes!
+  //
+  void Visitor::checkNewClassDecorators(const FnCall* node) {
+    auto calledExpr = node->calledExpression();
+    if (!calledExpr) return;
+
+    auto newExpr = calledExpr->toNew();
+    if (!newExpr) return;
+
+    auto outerMgt = newExpr->management();
+    auto innerMgt = nestedExprManagementStyle(newExpr->typeExpression());
+    auto nextCall = node->numActuals()
+        ? node->actual(0)->toCall()
+        : nullptr;
+
+    while (innerMgt != New::DEFAULT_MANAGEMENT) {
+      assert(outerMgt != New::DEFAULT_MANAGEMENT);
+
+      error(node, "Type expression uses multiple class kinds: %s %s",
+                  New::managementToString(outerMgt),
+                  New::managementToString(innerMgt));
+
+      // Cycle to the next nested call (if any).
+      outerMgt = innerMgt;
+      innerMgt = nestedExprManagementStyle(nextCall);
+      nextCall = nextCall->numActuals()
+          ? nextCall->actual(0)->toCall()
+          : nullptr;
+    }
+  }
+
+  // TODO...
   void Visitor::checkExplicitDeinitCalls(const Call* node) {
     (void) node;
   }
@@ -268,6 +354,7 @@ namespace {
 
   void Visitor::visit(const FnCall* node) {
     checkNoDuplicateNamedArguments(node);
+    checkNewClassDecorators(node);
   }
 
   void Visitor::visit(const TypeQuery* node) {
