@@ -81,6 +81,7 @@ class Builder final {
   void doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
                    int& commentIndex, pathVecT& pathVec,
                    declaredHereT& duplicates);
+  void postParseChecks();
 
  public:
   /** Construct a Builder for parsing a top-level module */
