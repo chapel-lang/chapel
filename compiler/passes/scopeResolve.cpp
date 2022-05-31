@@ -2010,6 +2010,10 @@ bool lookupThisScopeAndUses(const char*           name,
       // When methods and fields can be private, need to check against the
       // rejected private symbols here.  But that's in the future.
       symbols.push_back(sym);
+    } else if (useCache == false) {
+      // If we're looking at the exact same Symbol, there's no need to add it
+      // and we can just return.
+      return true;
     }
   }
 
