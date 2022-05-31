@@ -2370,6 +2370,7 @@ Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
                                  int& nSymbolsFound) {
   BaseAST* scope = mod->block;
   if (Symbol* sym = inSymbolTable(name, scope)) {
+    nSymbolsFound = 1;
     return sym;
   }
 
