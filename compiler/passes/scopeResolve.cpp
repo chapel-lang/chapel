@@ -2379,7 +2379,7 @@ Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
     return sym;
   }
 
-  // also check the uses of the module (for use CTypes, to find c_int),
+  // also check the uses of the module (e.g., for use CTypes, to find c_int),
   // but don't look in extern blocks (that would lead to an infinite loop).
   std::vector<Symbol*> syms;
   std::map<Symbol*, astlocT*> renameLocs;
