@@ -2041,8 +2041,7 @@ bool lookupThisScopeAndUses(const char*           name,
   }
 
   // If the module has an extern block or uses one that does
-  // and we haven't resolved
-  // the symbol any other way, look there.
+  // and we haven't resolved the symbol any other way, look for a C decl.
   // Unless skipExternBlocks == true, which is used by lookupInModuleOrBuiltins
   // to avoid infinite recursion.
 #ifdef HAVE_LLVM
