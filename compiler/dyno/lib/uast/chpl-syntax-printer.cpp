@@ -141,6 +141,52 @@ struct ChplSyntaxVisitor {
   const int spacesPerIndentDepth = 2;
 
 
+  void typeExpressionHelper(const AstNode* te) {
+    ss_ << ": ";
+    printChapelSyntax(ss_, te);
+  }
+
+  void initExpressionHelper(const AstNode* ie) {
+    ss_ << " = ";
+    printChapelSyntax(ss_, ie);
+  }
+
+  void declHelper(const TupleDecl* decl) {
+    printTupleContents(decl);
+    if (const AstNode* te = decl->typeExpression()) {
+      typeExpressionHelper(te);
+    }
+    if (const AstNode* ie = decl->initExpression()) {
+      initExpressionHelper(ie);
+    }
+  }
+
+  void declHelper(const VarLikeDecl* decl) {
+    ss_ << decl->name();
+    if (const AstNode* te = decl->typeExpression()) {
+      typeExpressionHelper(te);
+    }
+    if (const AstNode* ie = decl->initExpression()) {
+      initExpressionHelper(ie);
+    }
+  }
+
+  void declHelper(const Variable* decl) {
+    ss_ << decl->name();
+    if (const AstNode* te = decl->typeExpression()) {
+      typeExpressionHelper(te);
+    }
+    if (const AstNode* ie = decl->initExpression()) {
+      initExpressionHelper(ie);
+    }
+  }
+
+  void declHelper(const Decl* decl) {
+    if (decl->isVariable()) declHelper(decl->toVariable());
+    else if (decl->isTupleDecl()) declHelper(decl->toTupleDecl());
+    else if (decl->isVarLikeDecl()) declHelper(decl->toVarLikeDecl());
+  }
+
   void indentStream() {
     int i = indentDepth;
     while (i > 0) {
@@ -363,22 +409,13 @@ struct ChplSyntaxVisitor {
 
   void printTupleContents(const TupleDecl* node) {
     ss_ << "(";
-    // TODO: Can this be generalized between TupleDecl and MultiDecl?
     std::string delimiter = "";
     for (auto decl : node->decls()) {
       ss_ << delimiter;
       if (decl->isTupleDecl()) {
         printTupleContents(decl->toTupleDecl());
       } else {
-        ss_ << decl->toVarLikeDecl()->name();
-        if (const AstNode *te = decl->toVarLikeDecl()->typeExpression()) {
-          ss_ << ": ";
-          printChapelSyntax(ss_, te);
-        }
-        if (const AstNode *ie = decl->toVarLikeDecl()->initExpression()) {
-          ss_ << " = ";
-          printChapelSyntax(ss_, ie);
-        }
+        declHelper(decl);
       }
       delimiter = ", ";
     }
@@ -467,8 +504,7 @@ struct ChplSyntaxVisitor {
       if (node->hasParensAroundError()) ss_ << "(";
       ss_ << node->error()->name();
       if (const AstNode* te = node->error()->typeExpression()) {
-        ss_ << " : ";
-        printChapelSyntax(ss_, te);
+        typeExpressionHelper(te);
       }
       if (node->hasParensAroundError()) ss_ << ")";
       ss_ << " ";
@@ -731,15 +767,7 @@ struct ChplSyntaxVisitor {
     if (node->intent() != Formal::DEFAULT_INTENT) {
       ss_ << kindToString((IntentList) node->intent()) << " ";
     }
-    ss_ << node->name().str();
-    if (const AstNode* te = node->typeExpression()) {
-      ss_ << ": ";
-      printChapelSyntax(ss_, te);
-    }
-    if (const AstNode* ie = node->initExpression()) {
-      ss_ << " = ";
-      printChapelSyntax(ss_, ie);
-    }
+    declHelper(node);
   }
 
   void visit(const ForwardingDecl* node) {
@@ -778,8 +806,7 @@ struct ChplSyntaxVisitor {
 
     // Return type
     if (const AstNode* e = node->returnType()) {
-      ss_ << ": ";
-      printChapelSyntax(ss_, e);
+      typeExpressionHelper(e);
     }
     ss_ << " ";
 
@@ -837,20 +864,8 @@ struct ChplSyntaxVisitor {
 
   void visit(const Let* node) {
     ss_ << "let ";
-    // custom handling to avoid printing storage kind as variables would
-    // normally do
-    // TODO: Can we eliminate or generalize this in a better way?
     for (auto decl : node->decls()) {
-      const Variable* var = decl->toVariable();
-      ss_ << var->name();
-      if (const AstNode *te = var->typeExpression()) {
-        ss_ << ": ";
-        printChapelSyntax(ss_, te);
-      }
-      if (const AstNode *ie = var->initExpression()) {
-        ss_ << " = ";
-        printChapelSyntax(ss_, ie);
-      }
+      declHelper(decl->toVariable());
     }
     ss_ << " in ";
     printChapelSyntax(ss_, node->expression());
@@ -895,7 +910,7 @@ struct ChplSyntaxVisitor {
           kind = kindToString((IntentList)decl->toVariable()->kind());
         }
         else if (decl->isTupleDecl()) {
-
+          // TODO: can tuple decls be configs?
         }
       }
     }
@@ -907,22 +922,12 @@ struct ChplSyntaxVisitor {
 
     ss_ << kind << " ";
 
-    // TODO: Can this be generalized between TupleDecl and MultiDecl?
     std::string delimiter = "";
     for (auto decl : node->decls()) {
       ss_ << delimiter;
-      ss_ << decl->toVariable()->name();
-      if (const AstNode* te = decl->toVariable()->typeExpression()) {
-        ss_ << ": ";
-        printChapelSyntax(ss_, te);
-      }
-      if (const AstNode* ie = decl->toVariable()->initExpression()) {
-        ss_ << " = ";
-        printChapelSyntax(ss_, ie);
-      }
+      declHelper(decl);
       delimiter = ", ";
     }
-
   }
 
   void visit(const New* node) {
@@ -1023,6 +1028,8 @@ struct ChplSyntaxVisitor {
     }
     ss_ << "..";
     if (auto ub = node->upperBound()) {
+      if (node->opKind() == Range::OPEN_HIGH)
+        ss_ << "<";
       printChapelSyntax(ss_, ub);
     }
   }
@@ -1131,17 +1138,7 @@ struct ChplSyntaxVisitor {
         node->intentOrKind() != TupleDecl::IntentOrKind::INDEX) {
       ss_ << kindToString((IntentList) node->intentOrKind()) << " ";
     }
-
-    printTupleContents(node);
-
-    if (const AstNode* te = node->typeExpression()) {
-      ss_ << ": ";
-      printChapelSyntax(ss_, te);
-    }
-    if (const AstNode* ie = node->initExpression()) {
-      ss_ << " = ";
-      printChapelSyntax(ss_, ie);
-    }
+    declHelper(node);
   }
 
   void visit(const TypeDecl* node) {
@@ -1177,16 +1174,8 @@ struct ChplSyntaxVisitor {
     if (node->intent() != Formal::Intent::DEFAULT_INTENT) {
       ss_ << kindToString((IntentList) node->intent()) << " ";
     }
-
-    ss_ << node->name();
-    if (const AstNode* te = node->typeExpression()) {
-      ss_ << ": ";
-      printChapelSyntax(ss_, te);
-    }
-    if (const AstNode* ie = node->initExpression()) {
-      ss_ << " = ";
-      printChapelSyntax(ss_, ie);
-    }
+    // TODO: same pattern as declHelper, in Formal* and TupleDecl*
+    declHelper(node);
 
     ss_ << " ...";
     if (const AstNode* ce = node->count()) {
@@ -1204,15 +1193,7 @@ struct ChplSyntaxVisitor {
     if (node->kind() != Variable::Kind::INDEX) {
       ss_ << kindToString((IntentList) node->kind()) << " ";
     }
-    ss_ << node->name();
-    if (const AstNode* te = node->typeExpression()) {
-      ss_ << ": ";
-      printChapelSyntax(ss_, te);
-    }
-    if (const AstNode* ie = node->initExpression()) {
-      ss_ << " = ";
-      printChapelSyntax(ss_, ie);
-    }
+    declHelper(node);
   }
 
   void visit(const VisibilityClause* node) {
