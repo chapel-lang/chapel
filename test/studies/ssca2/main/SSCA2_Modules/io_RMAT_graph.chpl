@@ -503,6 +503,7 @@ proc createGraphFile(prefix:string, suffix:string, param forWriting:bool) {
 }
 
 proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
+  import SysBasic.EEOF;
   var temp:IONumType;
   try! {
     chan.read(temp);

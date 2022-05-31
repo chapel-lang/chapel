@@ -205,6 +205,7 @@ class Scope {
   uast::asttags::AstTag tag_ = uast::asttags::AST_TAG_UNKNOWN;
   bool containsUseImport_ = false;
   bool containsFunctionDecls_ = false;
+  bool autoUsesModules_ = false;
   ID id_;
   UniqueString name_;
   DeclMap declared_;
@@ -216,7 +217,8 @@ class Scope {
 
   /** Construct a Scope for a particular AST node
       and with a particular parent. */
-  Scope(const uast::AstNode* ast, const Scope* parentScope);
+  Scope(const uast::AstNode* ast, const Scope* parentScope,
+        bool autoUsesModules);
 
   /** Add a builtin type with the provided name. This needs to
       be called to populate the root scope with builtins. */
@@ -232,8 +234,17 @@ class Scope {
       represents. An empty ID indicates that this Scope is the root scope. */
   const ID& id() const { return id_; }
 
-  /** Returns 'true' if this Scope directly contains use or import statements */
-  bool containsUseImport() const { return containsUseImport_; }
+  /** Returns 'true' if this Scope directly contains use or import statements
+      including the automatic 'use' for the standard library. */
+  bool containsUseImport() const {
+    return containsUseImport_ || autoUsesModules_;
+  }
+
+  /** Returns 'true' if the Scope includes the automatic 'use' for
+      the standard library. */
+  bool autoUsesModules() const {
+    return autoUsesModules_;
+  }
 
   /** Returns 'true' if this Scope directly contains any Functions */
   bool containsFunctionDecls() const { return containsFunctionDecls_; }
@@ -258,6 +269,7 @@ class Scope {
            tag_ == other.tag_ &&
            containsUseImport_ == other.containsUseImport_ &&
            containsFunctionDecls_ == other.containsFunctionDecls_ &&
+           autoUsesModules_ == other.autoUsesModules_ &&
            id_ == other.id_ &&
            declared_ == other.declared_ &&
            name_ == other.name_;
@@ -292,12 +304,6 @@ class Scope {
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
 };
-
-/**
-  A path of which use/import statements are currently being resolved
-  (in order to support recursive use/import)
- */
-using VisibilityPath = std::vector<ID>;
 
 /**
  This class supports both `use` and `import`.
@@ -387,6 +393,56 @@ class VisibilitySymbols {
     for (auto p : names_) {
       p.first.mark(context);
       p.second.mark(context);
+    }
+  }
+};
+
+/**
+ Stores the result of in-order resolution of use/import statements.
+*/
+class ResolvedVisibilityScope {
+ private:
+  const Scope* scope_;
+  std::vector<VisibilitySymbols> visibilityClauses_;
+
+ public:
+  using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
+
+  ResolvedVisibilityScope(const Scope* scope)
+    : scope_(scope)
+  { }
+
+  /** Return the scope */
+  const Scope *scope() const { return scope_; }
+
+  /** Return an iterator over the visibility clauses */
+  VisibilitySymbolsIterable visibilityClauses() const {
+    return VisibilitySymbolsIterable(visibilityClauses_);
+  }
+
+  /** Add a visibility clause */
+  void addVisibilityClause(ID symbolId, VisibilitySymbols::Kind kind,
+                           bool isPrivate,
+                           std::vector<std::pair<UniqueString,UniqueString>> n)
+  {
+    visibilityClauses_.emplace_back(symbolId, kind, isPrivate, std::move(n));
+  }
+
+  bool operator==(const ResolvedVisibilityScope& other) const {
+    return scope_ == other.scope_ &&
+           visibilityClauses_ == other.visibilityClauses_;
+  }
+  bool operator!=(const ResolvedVisibilityScope& other) const {
+    return !(*this == other);
+  }
+  static bool update(owned<ResolvedVisibilityScope>& keep,
+                     owned<ResolvedVisibilityScope>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(scope_);
+    for (auto sym : visibilityClauses_) {
+      sym.mark(context);
     }
   }
 };

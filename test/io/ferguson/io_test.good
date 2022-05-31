@@ -380,3 +380,4 @@ io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:152: called as testio(x: ioBits)
 io_test.chpl:54: In function 'test_readlines':
 io_test.chpl:87: warning: reader with a style argument is deprecated
+io_test.chpl:88: warning: channel.itemReader is deprecated

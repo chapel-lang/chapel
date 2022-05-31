@@ -70,6 +70,7 @@
 // really should be using a reduction for these.
 
 use Time, IO;
+import SysBasic.EEOF;
 
 /* Compile-time constants */
 

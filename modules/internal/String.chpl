@@ -210,7 +210,7 @@ module String {
   use CTypes;
   use ByteBufferHelpers;
   use BytesStringCommon;
-  use SysBasic;
+  import SysBasic.{syserr};
 
   use CString;
   public use StringCasts;

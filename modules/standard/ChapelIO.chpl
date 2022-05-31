@@ -181,7 +181,7 @@ pragma "module included by default"
 module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
-  use SysBasic;
+  import SysBasic.{ENOERR, syserr, EFORMAT, EEOF};
   use SysError;
 
   // TODO -- this should probably be private
@@ -360,7 +360,7 @@ module ChapelIO {
         }
 
         // Skip an unknown JSON field.
-        var err:syserr = ENOERR;
+
 
         try reader.skipField();
         needsComma = true;
@@ -508,7 +508,7 @@ module ChapelIO {
 
       param numFields = __primitive("num fields", t);
       var isBinary = reader.binary();
-      var superclassError: syserr = ENOERR;
+
 
       if isBinary {
         var id = __primitive("get_union_id", x);

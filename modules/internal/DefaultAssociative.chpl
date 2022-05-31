@@ -24,7 +24,7 @@ pragma "unsafe" // workaround for trying to default-initialize nil objects
 module DefaultAssociative {
 
   use DSIUtil;
-  use ChapelDistribution, ChapelRange, SysBasic, ChapelArray;
+  use ChapelDistribution, ChapelRange, ChapelArray;
   use ChapelBase, ChapelLocks, IO;
   use ChapelHashing, ChapelHashtable;
   use SysError;

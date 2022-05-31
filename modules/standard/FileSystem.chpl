@@ -93,11 +93,12 @@
 module FileSystem {
 
   public use SysError;
+  import SysBasic.{syserr, ENOERR};
   use Path;
   use HaltWrappers;
   use CTypes;
   use IO;
-  use SysBasic;
+  use OS.POSIX;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
