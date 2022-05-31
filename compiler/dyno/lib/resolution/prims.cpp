@@ -159,6 +159,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GET_SERIAL:
     case PRIM_PTR_EQUAL:
     case PRIM_PTR_NOTEQUAL:
+    case PRIM_BLOCK_C_FOR_LOOP:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            BoolType::get(context, 0));
       break;
@@ -316,7 +317,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_BLOCK_WHILEDO_LOOP:
     case PRIM_BLOCK_DOWHILE_LOOP:
     case PRIM_BLOCK_FOR_LOOP:
-    case PRIM_BLOCK_C_FOR_LOOP:
     case PRIM_BLOCK_BEGIN:
     case PRIM_BLOCK_COBEGIN:
     case PRIM_BLOCK_COFORALL:
