@@ -618,6 +618,12 @@ struct RstSignatureVisitor {
         needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false,
                                  false, call->actual(1)->toOpCall()->isUnaryOp(),
                                  isPostfix(call->actual(1)->toOpCall()) , true);
+        // special case handling things like 3*(4*string)
+        if (!needsParens && innerOp == "*" &&
+            (call->actual(1)->toOpCall()->actual(1)->isTuple() ||
+             call->actual(1)->toOpCall()->actual(1)->isIdentifier())) {
+          needsParens = true;
+        }
       }
       if (needsParens) os_ << "(";
       call->actual(1)->traverse(*this);
