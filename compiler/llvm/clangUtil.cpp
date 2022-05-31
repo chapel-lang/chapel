@@ -2014,10 +2014,14 @@ static void setupModule()
     // GuaranteedTailCallOpt -- guarantee tail call opt (may change fn ABI)
   }
 
-  llvm::Reloc::Model relocModel = llvm::Reloc::Model::Static;
-  // a reasonable alternative would be
-  // llvm::Reloc::Model RM = CodeGenOpts.RelocationModel;
+  // If the clang compiler is configured to do PIC code generation
+  // by default, we want to do PIC code generation even if
+  // CHPL_LIB_PIC is not set, otherwise we get link errors on
+  // such systems.
+  // So, start with the PIC setting that clang is using based on the arguments.
+  llvm::Reloc::Model relocModel = ClangCodeGenOpts.RelocationModel;
 
+  // If CHPL_LIB_PIC=pic, make sure to compile as pic code
   if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
     relocModel = llvm::Reloc::Model::PIC_;
   }
@@ -2396,7 +2400,9 @@ void runClang(const char* just_parse_filename) {
   }
 
 
-  // add -fPIC if CHPL_LIB_PIC indicates we should
+  // add -fPIC if CHPL_LIB_PIC indicates we should.
+  // otherwise, pic-or-not will be up to clang's default, which,
+  // on many systems, is pic.
   if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
     clangCCArgs.push_back("-fPIC");
   }
