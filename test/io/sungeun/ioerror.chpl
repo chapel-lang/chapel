@@ -1,5 +1,5 @@
 // Test IO error function interfaces
-use IO;
+use IO, OS.POSIX; import SysBasic.{syserr, ENOERR};
 
 config const testError = 0;
 

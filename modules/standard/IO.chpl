@@ -427,7 +427,9 @@ module IO {
       -- seems that we'd want some way to cache that...).
 */
 
-public use SysBasic;
+import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
+import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
+import OS.POSIX.{EBADF};
 use CTypes;
 public use SysError;
 
@@ -5528,7 +5530,8 @@ FormattedIO Functions and Types
 module FormattedIO {
   use IO;
   use CTypes;
-  use SysBasic;
+  use OS.POSIX;
+  import SysBasic.{ENOERR,syserr};
   use SysError;
 //use IO;
 

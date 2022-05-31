@@ -1,0 +1,1 @@
+sys-o_.chpl:2: warning: 'Sys.O_RDONLY' is deprecated; please use 'OS.POSIX.O_RDONLY' instead

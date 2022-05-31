@@ -207,82 +207,434 @@ module OS {
     //
     // errno.h
     //
+
+    // The descriptions of these were created by combining the FreeBSD
+    // manual and the linux manuals here:
+    // http://www.freebsd.org/cgi/man.cgi?query=errno&apropos=0&sektion=0&manpath=FreeBSD+10.1-RELEASE&arch=default&format=html
+    // http://linux.die.net/man/3/errno
+    // Verified that the POSIX annotations are correct with POSIX.1-2008:
+    // http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
+    // Note that these error descriptions are reproduced here for convenience
+    // only. These descriptions aren't the authority on the matter.
+
+
+    /* Argument list too long. The number of bytes used for the argument and
+       environment list of the new process exceeded the current limit.
+     */
     extern const E2BIG:c_int;
+
+    /* Permission denied. An attempt was made to access a file in a way
+       forbidden by its file access permissions. (POSIX.1)
+     */
     extern const EACCES:c_int;
+
+    /* Address already in use. Only one usage of each address is normally
+       permitted.
+     */
     extern const EADDRINUSE:c_int;
+
+    /* Can't assign requested address. Normally results from an attempt to
+       create a socket with an address not on this machine.
+     */
     extern const EADDRNOTAVAIL:c_int;
+
+    /* Address family not supported by protocol family. An address incompatible
+       with the requested protocol was used. For example, you should not
+       necessarily expect to be able to use NS addresses with ARPA Internet
+       protocols.
+     */
     extern const EAFNOSUPPORT:c_int;
+
+    /* Resource temporarily unavailable. This is a temporary condition and
+       later calls to the same routine may complete normally.
+     */
     extern const EAGAIN:c_int;
+
+    /* Operation already in progress. An operation was attempted on a
+       non-blocking object that already had an operation in progress.
+     */
     extern const EALREADY:c_int;
+
+    /* Bad file descriptor. A file descriptor argument was out of range,
+       referred to no open file, or a read (write) request was made to a file
+       that was only open for writing (reading).
+     */
     extern const EBADF:c_int;
+
+    /* Bad message. A corrupted message was detected. (POSIX.1) */
     extern const EBADMSG:c_int;
+
+    /* Device or resource busy. An attempt to use a system resource which was
+       in use at the time in a manner which would have conflicted with the
+       request.
+     */
     extern const EBUSY:c_int;
+
+    /* Operation canceled. The scheduled operation was canceled. (POSIX.1) */
     extern const ECANCELED:c_int;
+
+    /* No child processes. A wait or waitpid system call was executed by a
+       process that had no existing or unwaited-for child processes. (POSIX.1)
+     */
     extern const ECHILD:c_int;
+
+    /* Software caused connection abort. A connection abort was caused internal
+       to your host machine.
+     */
     extern const ECONNABORTED:c_int;
+
+    /* Connection refused. No connection could be made because the target
+       machine actively refused it. This usually results from trying to
+       connect to a service that is inactive on the foreign host.
+     */
     extern const ECONNREFUSED:c_int;
+
+    /* Connection reset by peer. A connection was forcibly closed by a peer.
+       This normally results from a loss of the connection on the remote
+       socket due to a timeout or a reboot.
+     */
     extern const ECONNRESET:c_int;
+
+    /* Resource deadlock avoided. An attempt was made to lock a system resource
+       that would have resulted in a deadlock situation. (POSIX.1)
+     */
     extern const EDEADLK:c_int;
+
+    /* Destination address required. A required address was omitted from an
+       operation on a socket.
+     */
     extern const EDESTADDRREQ:c_int;
+
+    /* Numerical argument out of domain. A numerical input argument was outside
+       the defined domain of the mathematical function.
+     */
     extern const EDOM:c_int;
+
+    /* Disc quota exceeded. A write system call to an ordinary file, the
+       creation of a directory or symbolic link, or the creation of a directory
+       entry failed because the user's quota of disk blocks was exhausted, or
+       the allocation of an inode for a newly created file failed because the
+       user's quota of inodes was exhausted.
+     */
     extern const EDQUOT:c_int;
+
+    /* File exists. An existing file was mentioned in an inappropriate context,
+       for instance, as the new link name in a link system call.
+     */
     extern const EEXIST:c_int;
+
+    /* Bad address. The system detected an invalid address in attempting to
+       use an argument of a call.
+     */
     extern const EFAULT:c_int;
+
+    /* File too large. The size of a file exceeded the maximum. */
     extern const EFBIG:c_int;
+
+    /* No route to host. A socket operation was attempted to an unreachable
+       host.
+     */
     extern const EHOSTUNREACH:c_int;
+
+    /* Identifier removed. An IPC identifier was removed while the current
+       process was waiting on it.
+     */
     extern const EIDRM:c_int;
+
+    /*
+       Illegal byte sequence. While decoding a multibyte character the function
+       came along an invalid or an incomplete sequence of bytes or the given
+       wide character is invalid.
+
+       This error might be returned for example in the case of an illegal UTF-8
+       byte sequence.
+     */
     extern const EILSEQ:c_int;
+
+    /* Operation now in progress. An operation that takes a long time to
+       complete (such as a connect system call) was attempted on a
+       non-blocking object.
+     */
     extern const EINPROGRESS:c_int;
+
+    /* Interrupted system call. An asynchronous signal (such as SIGINT or
+       SIGQUIT) was caught by the process during the execution of an
+       interruptible function.  If the signal handler performs a normal return,
+       the interrupted system call will seem to have returned the error
+       condition.
+     */
     extern const EINTR:c_int;
+
+    /* Invalid argument. Some invalid argument was supplied. (For example,
+       specifying an undefined signal to a signal system call or a kill system
+       call).
+     */
     extern const EINVAL:c_int;
+
+   /* Input/output error. Some physical input or output error occurred. This
+      error will not be reported until a subsequent operation on the same file
+      descriptor and may be lost (over written) by any subsequent errors.
+     */
     extern const EIO:c_int;
+
+    /* Socket is already connected. A connect system call was made on an
+       already connected socket; or, a sendto or sendmsg system call on a
+       connected socket specified a destination when already connected.
+     */
     extern const EISCONN:c_int;
+
+    /* Is a directory. An attempt was made to open a directory with write mode
+       specified.
+     */
     extern const EISDIR:c_int;
+
+    /* Too many levels of symbolic links. A path name lookup involved more than
+       32 (MAXSYMLINKS) symbolic links.
+     */
     extern const ELOOP:c_int;
+
+    /* Too many open files. Maximum number of file descriptors
+       allowable in the process has been reached and requests for an
+       open cannot be satisfied until at least one has been
+       closed. The getdtablesize system call will obtain the current
+       limit.
+     */
     extern const EMFILE:c_int;
+
+    /* Too many links. Maximum allowable hard links to a single file has been
+       exceeded.
+     */
     extern const EMLINK:c_int;
+
+    /* Message too long. A message sent on a socket was larger than the
+       internal message buffer or some other network limit.
+     */
     extern const EMSGSIZE:c_int;
+
+    /* Multihop attempted.
+     */
     extern const EMULTIHOP:c_int;
+
+    /* File name too long. A component of a path name exceeded {NAME_MAX}
+       characters, or an entire path name exceeded {PATH_MAX} characters.
+     */
     extern const ENAMETOOLONG:c_int;
+
+    /* Network is down. A socket operation encountered a dead network. */
     extern const ENETDOWN:c_int;
+
+    /* Network dropped connection on reset. The host you were connected to
+       crashed and rebooted.
+     */
     extern const ENETRESET:c_int;
+
+    /* Network is unreachable. A socket operation was attempted to an
+       unreachable network.
+     */
     extern const ENETUNREACH:c_int;
+
+    /* Too many open files in system. Maximum number of open files allowable on
+       the system has been reached and requests for an open cannot be satisfied
+       until at least one has been closed.
+     */
     extern const ENFILE:c_int;
+
+    /* No buffer space available. An operation on a socket or pipe was not
+       performed because the system lacked sufficient buffer space or because a
+       queue was full.
+     */
     extern const ENOBUFS:c_int;
+
+    /* Operation not supported by device. An attempt was made to apply an
+       inappropriate function to a device, for example, trying to read a
+       write-only device such as a printer.
+     */
     extern const ENODEV:c_int;
+
+    /* No such file or directory. A component of a specified pathname did not
+       exist, or the pathname was an empty string.
+     */
     extern const ENOENT:c_int;
+
+    /* Exec format error. A request was made to execute a file that, although
+       it has the appropriate permissions, was not in the format required for
+       an executable file.
+     */
     extern const ENOEXEC:c_int;
+
+    /* No locks available. A system-imposed limit on the number of simultaneous
+      file locks was reached.
+     */
     extern const ENOLCK:c_int;
+
+    /* Link has been severed.
+     */
     extern const ENOLINK:c_int;
+
+    /* Cannot allocate memory. The new process image required more memory than
+       was allowed by the hardware or by system-imposed memory management
+       constraints. A lack of swap space is normally temporary; however, a lack
+       of core is not. Soft limits may be increased to their corresponding hard
+       limits.
+     */
     extern const ENOMEM:c_int;
+
+    /* No message of desired type. An IPC message queue does not contain a
+       message of the desired type, or a message catalog does not contain the
+       requested message.
+     */
     extern const ENOMSG:c_int;
+
+    /* Protocol not available. A bad option or level was specified in a
+       getsockopt or setsockopt system call.
+     */
     extern const ENOPROTOOPT:c_int;
+
+    /* No space left on device. A write system call to an ordinary file, the
+       creation of a directory or symbolic link, or the creation of a directory
+       entry failed because no more disk blocks were available on the file
+       system, or the allocation of an inode for a newly created file failed
+       because no more inodes were available on the file system.
+     */
     extern const ENOSPC:c_int;
+
+    /* Function not implemented. Attempted a system call that is not available
+       on this system.
+     */
     extern const ENOSYS:c_int;
+
+
+    /* Socket is not connected. An request to send or receive data was
+       disallowed because the socket was not connected and (when
+       sending on a datagram socket) no address was
+       supplied.
+     */
     extern const ENOTCONN:c_int;
+
+    /* Not a directory. A component of the specified pathname existed, but it
+       was not a directory, when a directory was expected.
+     */
     extern const ENOTDIR:c_int;
+
+    /* Directory not empty. A directory with entries other than '.' and '..'
+       was supplied to a remove directory or rename call.
+     */
     extern const ENOTEMPTY:c_int;
+
     extern const ENOTRECOVERABLE:c_int;
+
+    /* Socket operation on non-socket. */
     extern const ENOTSOCK:c_int;
+
+    /* Operation not supported. The attempted operation is not supported for
+       the type of object referenced. Usually this occurs when a file
+       descriptor refers to a file or socket that cannot support this
+       operation, for example, trying to accept a connection on a datagram
+       socket.
+     */
     extern const ENOTSUP:c_int;
+
+    /* Inappropriate ioctl for device. A control function (e.g. ioctl system
+       call) was attempted for a file or special device for which the operation
+       was inappropriate.
+     */
     extern const ENOTTY:c_int;
+
+    /* Device not configured. Input or output on a special file referred to a
+       device that did not exist, or made a request beyond the limits of the
+       device. This error may also occur when, for example, a tape drive is
+       not online or no disk pack is loaded on a drive.
+     */
     extern const ENXIO:c_int;
+
+    /* Operation not supported. The attempted operation is not supported for
+       the type of object referenced. Usually this occurs when a file
+       descriptor refers to a file or socket that cannot support this
+       operation, for example, trying to accept a connection on a datagram
+       socket.
+     */
     extern const EOPNOTSUPP:c_int;
+
+    /* Value too large to be stored in data type. A numerical result of the
+       function was too large to be stored in the caller provided space.
+     */
     extern const EOVERFLOW:c_int;
+
     extern const EOWNERDEAD:c_int;
+
+    /* Operation not permitted. An attempt was made to perform an operation
+       limited to processes with appropriate privileges or to the owner of a
+       file or other resources.
+     */
     extern const EPERM:c_int;
+
+    /* Broken pipe. A write on a pipe, socket or FIFO for which there is no
+       process to read the data.
+     */
     extern const EPIPE:c_int;
+
+    /* Protocol error. A device or socket encountered an unrecoverable
+       protocol error.
+     */
     extern const EPROTO:c_int;
+
+    /* Protocol not supported. The protocol has not been configured into the
+       system or no implementation for it exists.
+     */
     extern const EPROTONOSUPPORT:c_int;
+
+    /* Protocol wrong type for socket. A protocol was specified that does not
+       support the semantics of the socket type requested. For example, you
+       cannot use the ARPA Internet UDP protocol with type SOCK_STREAM.
+     */
     extern const EPROTOTYPE:c_int;
+
+    /* Result too large. A numerical result of the function was too large to
+       fit in the available space (perhaps exceeded precision).
+     */
     extern const ERANGE:c_int;
+
+    /* Read-only file system. An attempt was made to modify a file or directory
+       on a file system that was read-only at the time.
+     */
     extern const EROFS:c_int;
+
+    /* Illegal seek. An lseek system call was issued on a socket, pipe or FIFO.
+     */
     extern const ESPIPE:c_int;
+
+    /* No such process. No process could be found corresponding to that
+       specified by the given process ID.
+     */
     extern const ESRCH:c_int;
+
+    /* Stale NFS file handle. An attempt was made to access an open file (on an
+       NFS file system) which is now unavailable as referenced by the file
+       descriptor. This may indicate the file was deleted on the NFS server or
+       some other catastrophic event occurred.
+     */
     extern const ESTALE:c_int;
+
+    /* Operation timed out. A connect or send system call failed because the
+       connected party did not properly respond after a period of time (The
+       timeout period is dependent on the communication protocol).
+     */
     extern const ETIMEDOUT:c_int;
+
+    /* Text file busy. The new process was a pure procedure (shared text) file
+       which was open for writing by another process, or while the pure
+       procedure file was being executed an open system call requested write
+       access.
+     */
     extern const ETXTBSY:c_int;
+
+    /* Operation would block (may be same value as EAGAIN).
+     */
     extern const EWOULDBLOCK:c_int;
+
+    /* Cross-device link. A hard link to a file on another file system was
+       attempted.
+     */
     extern const EXDEV:c_int;
 
     /*

@@ -38,8 +38,6 @@ Initializing Modules:
         ExternalArray
         RangeChunk
        ChapelNumLocales
-       POSIX
-        OS
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray

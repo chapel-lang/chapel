@@ -107,7 +107,7 @@ module BytesStringCommon {
   */
   proc decodeByteBuffer(buff: bufferType, length: int, policy: decodePolicy)
       throws {
-    use SysBasic;
+    import SysBasic.{syserr};
     pragma "fn synchronization free"
     extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
     pragma "fn synchronization free"
@@ -230,7 +230,7 @@ module BytesStringCommon {
    */
   proc decodeHelp(buff:c_ptr(uint(8)), buffLen:int,
                   offset:int, allowEsc: bool ) {
-    use SysBasic;
+    import SysBasic.{syserr};
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf(ref chr:int(32),
                                     ref nBytes:c_int,
