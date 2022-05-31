@@ -54,8 +54,9 @@ Symbol*  lookupAndCount(const char*           name,
                         astlocT** renameLoc = NULL,
                         bool issueErrors = true);
 
-// lookup in the table for a module scope or in the root module for builtins
-// while skipping lookups in extern blocks (used by externCResolve)
+// Lookup a name while ignoring extern blocks.
+// Also considers modules used/imported and the root module for builtins.
+// For use by externCResolve.
 Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
                                 int& nSymbolsFound);
 
