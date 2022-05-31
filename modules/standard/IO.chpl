@@ -432,7 +432,7 @@ module IO {
 
 import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
-private import OS.POSIX.{EBADF};
+import OS.POSIX.{EBADF};
 use CTypes;
 public use SysError;
 
