@@ -1962,9 +1962,11 @@ bool lookupThisScopeAndUses(const char*           name,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
 
-  ModuleSymbol* scopeIsModule = nullptr;
+  bool scopeIsModule = false;
+  ModuleSymbol* scopeModule = nullptr;
   if (scope->getModule()->block == scope) {
-    scopeIsModule = scope->getModule();
+    scopeIsModule = true;
+    scopeModule = scope->getModule();
   }
 
   // if scope is a module, use the cached result / updated the cache
@@ -1979,7 +1981,7 @@ bool lookupThisScopeAndUses(const char*           name,
                    scopeIsModule);
 
   if (useCache) {
-    auto it = modSymsCache.find(std::make_pair(scopeIsModule, name));
+    auto it = modSymsCache.find(std::make_pair(scopeModule, name));
     if (it != modSymsCache.end()) {
       // if we found a cached result, use it
       const std::vector<Symbol*>& vec = it->second;
@@ -2046,10 +2048,10 @@ bool lookupThisScopeAndUses(const char*           name,
   // to avoid infinite recursion.
 #ifdef HAVE_LLVM
   if (symbols.size() == 0 &&
-      scopeIsModule != nullptr &&
+      scopeIsModule &&
       gExternBlockStmts.size() > 0 &&
       skipExternBlocks == false) {
-    Symbol* got = tryCResolve(scopeIsModule, name);
+    Symbol* got = tryCResolve(scopeModule, name);
     if (got != nullptr)
       symbols.push_back(got);
   }
@@ -2061,7 +2063,7 @@ bool lookupThisScopeAndUses(const char*           name,
     for (size_t i = symbolsStart; i < symbols.size(); i++) {
       vec.push_back(symbols[i]);
     }
-    modSymsCache.emplace(std::make_pair(scopeIsModule, name),
+    modSymsCache.emplace(std::make_pair(scopeModule, name),
                          std::move(vec));
   }
 
