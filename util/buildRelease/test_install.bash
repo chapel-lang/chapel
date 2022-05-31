@@ -24,10 +24,17 @@ EXITSTATUS=0
 if [ $EXITSTATUS -eq 0 ]
 then
   # First, check installation to bin lib etc
-  ./configure --prefix="$myprefix" && make && make install
+  ./configure --prefix="$myprefix" && make && make mason && make install
 
   # Remove bin and lib to eliminate possible confusion
   rm -Rf bin lib
+
+  # Check that bin/mason was created
+  if [ ! -f "$myprefix/bin/mason" ]
+  then
+      echo "--prefix install: $myprefix/bin/mason was not installed!" 1<&2
+      EXITSTATUS=1
+  fi
 
   # Check that bin/chpl was created
   if [ ! -f "$myprefix/bin/chpl" ]
