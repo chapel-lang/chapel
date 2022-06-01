@@ -1,0 +1,10 @@
+bug: parser can't handle large if-then-else statements
+
+As pointed out by a user on Gitter, when Chapel code contains large
+if-then-else statements, the parser goes off the rails.  This is true
+of both the old and new parser, though the way in which they go off
+the rails differs (and, I'd expect, may depend on what system you're
+running on, how much memory you have, etc.)
+
+As a workaround, a similarly large select statement can be used (when
+the pattern is as regular as this, anyway).
