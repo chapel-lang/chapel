@@ -147,9 +147,8 @@ struct Converter {
 
   const char* convertLinkageNameAstr(const uast::Decl* node) {
     if (auto linkageName = node->linkageName()) {
-      if (auto strLit = linkageName->toStringLiteral()) {
-        return astr(strLit->str().c_str());
-      }
+      INT_ASSERT(linkageName->isStringLiteral());
+      return astr(linkageName->toStringLiteral()->str());
     }
 
     return nullptr;
@@ -945,7 +944,6 @@ struct Converter {
     return nullptr;
   }
 
-  // TODO: Speed comparison for this vs. using cached unique strings?
   Expr* convertScanReduceOp(const uast::AstNode* node) {
     if (auto opIdent = node->toIdentifier()) {
       auto name = opIdent->name();

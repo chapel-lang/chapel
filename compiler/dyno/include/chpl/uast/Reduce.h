@@ -68,7 +68,8 @@ class Reduce final : public Call {
   static const int iterandExprChildNum_ = 1;
 
   Reduce(AstList children)
-      : Call(asttags::Reduce, std::move(children), false) {
+      : Call(asttags::Reduce, std::move(children),
+             /*hasCalledExpression*/ false) {
     assert(numChildren() == 2);
   }
 
