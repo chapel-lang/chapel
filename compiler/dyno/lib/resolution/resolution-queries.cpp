@@ -50,6 +50,18 @@ using namespace uast;
 using namespace types;
 
 
+static bool isNameOfCompilerGeneratedMethod(UniqueString name);
+static bool needCompilerGeneratedMethod(Context* context,
+                                        const types::Type* type,
+                                        UniqueString name,
+                                        bool parenless);
+static const TypedFnSignature*
+getCompilerGeneratedMethod(Context* context,
+                           const types::Type* type,
+                           UniqueString name,
+                           bool parenless);
+
+
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
                                                        ID id) {
   QUERY_BEGIN(resolveModuleStmt, context, id);
@@ -2356,11 +2368,13 @@ considerCompilerGeneratedCandidates(Context* context,
   auto receiverType = receiver.type().type();
 
   // if not compiler-generated, then nothing to do
-  if (!needCompilerGeneratedMethod(context, receiverType, ci.name()))
+  if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
+                                   ci.isParenless()))
     return false;
 
   // get the compiler-generated function, may be generic
-  auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name());
+  auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
+                                        ci.isParenless());
   assert(tfs);
 
   // check if the inital signature matches
@@ -2666,12 +2680,75 @@ CallResolutionResult resolveGeneratedCall(Context* context,
   return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope);
 }
 
-bool isNameOfCompilerGeneratedMethod(UniqueString name) {
+/**
+  Return true if 'name' is the name of a compiler generated method.
+*/
+static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
   // TODO: Update me over time.
   if (name == USTR("init")       ||
       name == USTR("deinit")     ||
       name == USTR("init=")) {
     return true;
+  }
+
+  return false;
+}
+
+static bool helpFieldNameCheck(const AstNode* ast,
+                               UniqueString name) {
+  if (auto var = ast->toVarLikeDecl()) {
+    return var->name() == name;
+  } else if (auto mult = ast->toMultiDecl()) {
+    for (auto decl : mult->decls()) {
+      bool found = helpFieldNameCheck(decl, name);
+      if (found) {
+        return true;
+      }
+    }
+  } else if (auto tup = ast->toTupleDecl()) {
+    for (auto decl : tup->decls()) {
+      bool found = helpFieldNameCheck(decl, name);
+      if (found) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+  Return true if 'name' is the name of a field for type 't'
+*/
+static bool isNameOfField(Context* context, UniqueString name, const Type* t) {
+  const CompositeType* ct = t->toCompositeType();
+  if (auto clsType = t->toClassType()) {
+    ct = clsType->basicClassType();
+  }
+
+  if (ct == nullptr) {
+    return false;
+  }
+
+  if (auto bct = ct->toBasicClassType()) {
+    if (bct->isObjectType()) {
+      return false;
+    }
+  }
+
+  auto ast = parsing::idToAst(context, ct->id());
+  assert(ast && ast->isAggregateDecl());
+  auto ad = ast->toAggregateDecl();
+
+  for (auto child: ad->children()) {
+    // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+    if (child->isVarLikeDecl() ||
+        child->isMultiDecl() ||
+        child->isTupleDecl()) {
+      bool found = helpFieldNameCheck(child, name);
+      if (found) {
+        return true;
+      }
+    }
   }
 
   return false;
@@ -2725,12 +2802,27 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   return false;
 }
 
-bool
+/**
+  Given a type and a UniqueString representing the name of a method,
+  determine if the type needs a method with such a name to be
+  generated for it.
+*/
+static bool
 needCompilerGeneratedMethod(Context* context, const Type* type,
-                            UniqueString name) {
+                            UniqueString name, bool parenless) {
   if (isNameOfCompilerGeneratedMethod(name)) {
     if (!areOverloadsPresentInDefiningScope(context, type, name)) {
       return true;
+    }
+  }
+
+  // it's also possible that 'name' is the name of a field,
+  // and we need to find the compiler-generated field accessor
+  if (parenless) {
+    if (isNameOfField(context, name, type)) {
+      if (!areOverloadsPresentInDefiningScope(context, type, name)) {
+        return true;
+      }
     }
   }
 
@@ -2812,12 +2904,12 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
 
 static const owned<TypedFnSignature>&
 getCompilerGeneratedMethodQuery(Context* context, const Type* type,
-                                UniqueString name) {
-  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, type, name);
+                                UniqueString name, bool parenless) {
+  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, type, name, parenless);
 
   TypedFnSignature* tfs = nullptr;
 
-  if (needCompilerGeneratedMethod(context, type, name)) {
+  if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->toCompositeType();
     assert(compType);
 
@@ -2833,13 +2925,22 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
   return QUERY_END(ret);
 }
 
+/**
+  Given a type and a UniqueString representing the name of a method,
+  determine if the type needs a method with such a name to be
+  generated for it, and if so, generates and returns a
+  TypedFnSignature representing the generated method.
+
+  If no method was generated, returns nullptr.
+*/
 const TypedFnSignature*
 getCompilerGeneratedMethod(Context* context, const Type* type,
-                           UniqueString name) {
-  auto& owned = getCompilerGeneratedMethodQuery(context, type, name);
+                           UniqueString name, bool parenless) {
+  auto& owned = getCompilerGeneratedMethodQuery(context, type, name, parenless);
   auto ret = owned.get();
   return ret;
 }
+
 
 } // end namespace resolution
 } // end namespace chpl
