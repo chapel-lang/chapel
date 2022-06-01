@@ -161,6 +161,7 @@ struct ParserContext {
   bool noteIsBuildingFormal(bool isBuildingFormal);
   bool noteIsVarDeclConfig(bool isConfig);
   YYLTYPE declStartLoc(YYLTYPE curLoc);
+  void resetDeclStateOnError();
   void resetDeclState();
 
   void enterScope(asttags::AstTag tag, UniqueString name);
@@ -542,13 +543,21 @@ struct ParserContext {
                                          ParserExprList* contents,
                                          YYLTYPE closingBrace);
 
-  AstNode* buildCustomReduce(YYLTYPE location, YYLTYPE locIdent,
-                             AstNode* lhs,
-                             AstNode* rhs);
+  AstNode* buildReduce(YYLTYPE location, YYLTYPE locOp,
+                       PODUniqueString op,
+                       AstNode* iterand);
 
-  AstNode* buildCustomScan(YYLTYPE location, YYLTYPE locIdent,
-                           AstNode* lhs,
-                           AstNode* rhs);
+  AstNode* buildReduce(YYLTYPE location, YYLTYPE locOp,
+                       AstNode* op,
+                       AstNode* iterand);
+
+  AstNode* buildScan(YYLTYPE location, YYLTYPE locOp,
+                     PODUniqueString op,
+                     AstNode* iterand);
+
+  AstNode* buildScan(YYLTYPE location, YYLTYPE locOp,
+                     AstNode* op,
+                     AstNode* iterand);
 
   AstNode* buildTypeQuery(YYLTYPE location,
                           PODUniqueString queriedIdent);

@@ -26,8 +26,9 @@ namespace uast {
 
 
 owned<Domain> Domain::build(Builder* builder, Location loc,
+                            bool usedCurlyBraces,
                             AstList exprs) {
-  Domain* ret = new Domain(std::move(exprs));
+  Domain* ret = new Domain(std::move(exprs), usedCurlyBraces);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

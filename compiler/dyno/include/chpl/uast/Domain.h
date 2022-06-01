@@ -42,13 +42,17 @@ namespace uast {
  */
 class Domain final : public AstNode {
  private:
+  bool usedCurlyBraces_;
+
   // TODO: Record if initializer list has trailing comma?
-  Domain(AstList children)
-    : AstNode(asttags::Domain, std::move(children)) {
+  Domain(AstList children, bool usedCurlyBraces)
+    : AstNode(asttags::Domain, std::move(children)),
+      usedCurlyBraces_(usedCurlyBraces) {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    return true;
+    const Domain* rhs = (const Domain*) other;
+    return this->usedCurlyBraces_ == rhs->usedCurlyBraces_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -61,6 +65,7 @@ class Domain final : public AstNode {
    Create and return a Domain expression.
    */
   static owned<Domain> build(Builder* builder, Location loc,
+                             bool usedCurlyBraces,
                              AstList exprs);
 
   /**
@@ -84,6 +89,13 @@ class Domain final : public AstNode {
   const AstNode* expr(int i) const {
     const AstNode* ast = this->child(i);
     return ast;
+  }
+
+  /**
+    Return 'true' if this domain was constructed with curly braces.
+  */
+  bool usedCurlyBraces() const {
+    return usedCurlyBraces_;
   }
 
 };
