@@ -60,7 +60,7 @@ struct Visitor {
   const AstNode* searchParents(AstTag tag, const AstNode** last);
 
   // Search ancestors for the closest parent that is a decl.
-  const AstNode* searchParentsForDecl(const AstNode** last);
+  const AstNode* searchParentsForDecl(const AstNode** last, int depth=0);
 
   // Wrapper around 'node->dispatch'.
   void check(const AstNode* node);
@@ -124,7 +124,7 @@ void Visitor::report(const AstNode* node, ErrorMessage::Kind kind,
                      const char* fmt,
                      va_list vl) {
   auto loc = builder_.getLocation(node);
-  auto err = ErrorMessage::vbuild(node->id(), loc, kind, fmt, vl);
+  auto err = ErrorMessage::vbuild(kind, loc, fmt, vl);
   builder_.addError(std::move(err));
 }
 
@@ -173,18 +173,19 @@ Visitor::searchParents(AstTag tag, const AstNode** last) {
 }
 
 const AstNode*
-Visitor::searchParentsForDecl(const AstNode** last) {
+Visitor::searchParentsForDecl(const AstNode** last, int depth) {
   const AstNode* ret = nullptr;
   const AstNode* lastInWalk = nullptr;
+  int countDepth = 0;
 
   for (int i = parents_.size() - 1; i >= 0; i--) {
     auto ast = parents_[i];
     if (ast->isDecl()) {
       ret = ast;
-      break;
-    } else {
-      lastInWalk = ast;
+      if (countDepth >= depth) break;
+      countDepth++;
     }
+    lastInWalk = ast;
   }
 
   if (last) *last = lastInWalk;
@@ -399,11 +400,17 @@ void Visitor::checkConfigVar(const Variable* node) {
   if (!node->isConfig()) return;
 
   bool doEmitError = true;
-
   if (parent(0) && parent(0)->isModule()) {
     doEmitError = false;
-  } else if (parent(0)->isMultiDecl()) {
-    if (parent(1) && parent(1)->isModule()) doEmitError = false;
+  } else if (parent(0)->isMultiDecl() || parent(0)->isTupleDecl()) {
+
+    // Find first non tuple/multi decl...
+    for (int i = 0; i < numParents(); i++) {
+      auto up = parent(i);
+      if (up->isMultiDecl() || up->isTupleDecl()) continue;
+      if (up->isModule()) doEmitError = false;
+      break;
+    }
   }
 
   if (doEmitError) {
