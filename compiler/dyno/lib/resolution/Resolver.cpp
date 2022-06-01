@@ -754,6 +754,7 @@ void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
                           /* calledType */ QualifiedType(),
                           /* isMethod */ false,
                           /* hasQuestionArg */ false,
+                          /* isParenless */ false,
                           actuals);
 
       auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
@@ -880,6 +881,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   }
 
   auto ci = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+                     /* isParenless */ false,
                      std::move(actuals));
   auto inScope = scopeStack.back();
   auto inPoiScope = poiScope;
@@ -1539,6 +1541,7 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
             qtReceiver.kind() != QualifiedType::MODULE) {
 
           actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+          calledType = qtReceiver;
           isMethodCall = true;
         }
       }
@@ -1550,7 +1553,8 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
     ResolvedExpression& r = byPostorder.byAst(calledExpr);
     calledType = r.type();
 
-    if (calledType.kind() != QualifiedType::UNKNOWN &&
+    if (isMethodCall == false &&
+        calledType.kind() != QualifiedType::UNKNOWN &&
         calledType.kind() != QualifiedType::TYPE &&
         calledType.kind() != QualifiedType::FUNCTION) {
       // If e.g. x is a value (and not a function)
@@ -1569,6 +1573,7 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
 
   auto ret = CallInfo(name, calledType, isMethodCall,
                       hasQuestionArg,
+                      /* isParenless */ false,
                       actuals);
 
   return ret;
@@ -1630,7 +1635,6 @@ void Resolver::exit(const Call* call) {
     r.setPoiScope(c.poiInfo().poiScope());
     r.setType(c.exprType());
 
-
     if (r.type().type() == nullptr) {
       // assume it is OK if a type was computed, even with no candidates
       // (that happens e.g. for a primitive)
@@ -1649,8 +1653,9 @@ bool Resolver::enter(const Dot* dot) {
   return true;
 }
 void Resolver::exit(const Dot* dot) {
+  ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+
   if (dot->field() == USTR("type")) {
-    ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
     const Type* receiverType;
     ResolvedExpression& r = byPostorder.byAst(dot);
 
@@ -1660,42 +1665,75 @@ void Resolver::exit(const Dot* dot) {
       receiverType = ErroneousType::get(context);
     }
     r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
-  } else {
-    ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
-    if (receiver.type().kind() == QualifiedType::MODULE) {
-      // resolve e.g. M.x where M is a module
-      LookupConfig config = LOOKUP_DECLS |
-                            LOOKUP_IMPORT_AND_USE |
-                            LOOKUP_PARENTS |
-                            LOOKUP_INNERMOST;
-
-      auto modScope = scopeForModule(context, receiver.toId());
-      auto vec = lookupNameInScope(context, modScope, dot->field(), config);
-      ResolvedExpression& r = byPostorder.byAst(dot);
-      if (vec.size() == 0) {
-        r.setType(QualifiedType());
-      } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-        // can't establish the type. If this is in a function
-        // call, we'll establish it later anyway.
-      } else {
-        // vec.size() == 1 and vec[0].numIds() <= 1
-        const ID& id = vec[0].id(0);
-        QualifiedType type;
-        if (id.isEmpty()) {
-          // empty IDs from the scope resolution process are builtins
-          assert(false && "Not handled yet!");
-        } else {
-          // use the type established at declaration/initialization,
-          // but for things with generic type, use unknown.
-          type = typeForId(id, /*localGenericToUnknown*/ true);
-        }
-        r.setToId(id);
-        r.setType(type);
-      }
-    }
+    return;
   }
 
-  // TODO: resolve field accessors / parenless methods
+  // Handle null, unknown, or erroneous receiver type
+  if (receiver.type().type() == nullptr ||
+      receiver.type().type()->isUnknownType()) {
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    r.setType(QualifiedType(QualifiedType::VAR, UnknownType::get(context)));
+    return;
+  }
+  if (receiver.type().type()->isErroneousType()) {
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
+    return;
+  }
+
+  if (receiver.type().kind() == QualifiedType::MODULE) {
+    // resolve e.g. M.x where M is a module
+    LookupConfig config = LOOKUP_DECLS |
+                          LOOKUP_IMPORT_AND_USE;
+
+    auto modScope = scopeForModule(context, receiver.toId());
+    auto vec = lookupNameInScope(context, modScope, dot->field(), config);
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    if (vec.size() == 0) {
+      r.setType(QualifiedType());
+    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+      // can't establish the type. If this is in a function
+      // call, we'll establish it later anyway.
+    } else {
+      // vec.size() == 1 and vec[0].numIds() <= 1
+      const ID& id = vec[0].id(0);
+      QualifiedType type;
+      if (id.isEmpty()) {
+        // empty IDs from the scope resolution process are builtins
+        assert(false && "Not handled yet!");
+      } else {
+        // use the type established at declaration/initialization,
+        // but for things with generic type, use unknown.
+        type = typeForId(id, /*localGenericToUnknown*/ true);
+      }
+      r.setToId(id);
+      r.setType(type);
+    }
+    return;
+  }
+
+  // resolve a.x where a is a record/class and x is a field or parenless method
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
+  auto ci = CallInfo (/* name */ dot->field(),
+                      /* calledType */ QualifiedType(),
+                      /* isMethod */ true,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ true,
+                      actuals);
+  auto inScope = scopeStack.back();
+  auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
+  // save the most specific candidates in the resolution result for the id
+  ResolvedExpression& r = byPostorder.byAst(dot);
+  r.setMostSpecific(c.mostSpecific());
+  r.setPoiScope(c.poiInfo().poiScope());
+  r.setType(c.exprType());
+  if (!c.exprType().hasTypePtr()) {
+    issueErrorForFailedCallResolution(dot, ci, c);
+    r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+  }
+  // gather the poi scopes used when resolving the call
+  poiInfo.accumulate(c.poiInfo());
 }
 
 bool Resolver::enter(const uast::New* nw) {
@@ -1800,6 +1838,7 @@ bool Resolver::enter(const For* loop) {
                         /* calledType */ iterandRE.type(),
                         /* isMethod */ true,
                         /* hasQuestionArg */ false,
+                        /* isParenless */ false,
                         actuals);
     auto inScope = scopeStack.back();
     auto c = resolveGeneratedCall(context, iterand, ci, inScope, poiScope);

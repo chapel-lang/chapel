@@ -296,6 +296,7 @@ class CallInfo {
   types::QualifiedType calledType_;     // the type of the called thing
   bool isMethodCall_ = false;           // then actuals[0] is receiver
   bool hasQuestionArg_ = false;         // includes ? arg for type constructor
+  bool isParenless_ = false;            // is a parenless call
   std::vector<CallInfoActual> actuals_; // types/params/names of actuals
 
  public:
@@ -305,15 +306,24 @@ class CallInfo {
   CallInfo(UniqueString name, types::QualifiedType calledType,
            bool isMethodCall,
            bool hasQuestionArg,
+           bool isParenless,
            std::vector<CallInfoActual> actuals)
       : name_(name), calledType_(calledType),
         isMethodCall_(isMethodCall),
         hasQuestionArg_(hasQuestionArg),
+        isParenless_(isParenless),
         actuals_(std::move(actuals)) {
     #ifndef NDEBUG
     if (isMethodCall) {
       assert(numActuals() >= 1);
       assert(this->actuals(0).byName() == "this");
+    }
+    if (isParenless) {
+      if (isMethodCall) {
+        assert(numActuals() == 1);
+      } else {
+        assert(numActuals() == 0);
+      }
     }
     #endif
   }
@@ -334,6 +344,9 @@ class CallInfo {
   /** check if the call includes ? arg for type constructor */
   bool hasQuestionArg() const { return hasQuestionArg_; }
 
+  /** return true if the call did not use parens */
+  bool isParenless() const { return isParenless_; }
+
   /** return the actuals */
   CallInfoActualIterable actuals() const {
     return CallInfoActualIterable(actuals_);
@@ -353,6 +366,7 @@ class CallInfo {
            calledType_ == other.calledType_ &&
            isMethodCall_ == other.isMethodCall_ &&
            hasQuestionArg_ == other.hasQuestionArg_ &&
+           isParenless_ == other.isParenless_ &&
            actuals_ == other.actuals_;
   }
   bool operator!=(const CallInfo& other) const {
@@ -360,7 +374,7 @@ class CallInfo {
   }
   size_t hash() const {
     return chpl::hash(name_, calledType_, isMethodCall_,
-                      hasQuestionArg_,
+                      hasQuestionArg_, isParenless_,
                       actuals_);
   }
 
