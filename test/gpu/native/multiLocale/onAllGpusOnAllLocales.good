@@ -1,0 +1,6 @@
+warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
+here.gpus.size > 1:  true
+numLaunches.size:   4
+numLaunches[0] == numLaunches[1] + 1:  true
+numLaunches[1] == here.gpus.size:  true
+numLaunches[i] == numLaunches[i+1] for all i > 0?:  true
