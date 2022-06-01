@@ -100,6 +100,15 @@ X(lessThan       , "<")
 X(lessOrEqual    , "<=")
 X(underscore     , "_")
 X(postfixBang    , "postfix!")
+X(logicalNot     , "!")
+X(colon          , ":")
+X(exponentiation , "**")
+X(bitwiseNot     , "~")
+X(divide         , "/")
+X(modulus        , "%")
+X(leftShift      , "<<")
+X(rightShift     , ">>")
+X(rangeCount     , "#")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */
