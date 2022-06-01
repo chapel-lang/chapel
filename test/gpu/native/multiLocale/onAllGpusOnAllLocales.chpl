@@ -35,8 +35,8 @@ var numLaunches = getGPUDiagnostics().kernel_launch;
 writeln("numLaunches.size:   ", numLaunches.size);
 
 // We expect the first locale to have 1 more launch than all subsequent locales
-writeln("numLaunches[0] + 1 == numLaunches[1]:  ", numLaunches[0] + 1 ==
-    numLaunches[1]);
+writeln("numLaunches[0] == numLaunches[1] + 1:  ",
+  numLaunches[0] == numLaunches[1] + 1);
 
 // We expect the second locale to have launches equal to the number of GPUs per
 // node (we're assuming all nodes have an equal number of GPUs)
@@ -48,4 +48,3 @@ var foundMismatch = false;
 for i in 1..<numLaunches.size-1 do
   if numLaunches[i] != numLaunches[i+1] then foundMismatch = true;
 writeln("numLaunches[i] == numLaunches[i+1] for all i > 0?:  ", !foundMismatch);
-
