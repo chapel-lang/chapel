@@ -944,9 +944,9 @@ class ResolvedExpression {
   /** set the point-of-instantiation scope */
   void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
 
-  /** set the functions associated with this expression */
-  void setAssociatedFns(const AssociatedFns& fns) {
-    associatedFns_ = fns;
+  /** add an associated function */
+  void addAssociatedFn(const TypedFnSignature* fn) {
+    associatedFns_.push_back(fn);
   }
 
   bool operator==(const ResolvedExpression& other) const {

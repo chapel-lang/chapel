@@ -699,7 +699,46 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
   }
 }
 
-void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
+void Resolver::handleResolvedCall(ResolvedExpression& r,
+                                  const uast::AstNode* astForErr,
+                                  const CallInfo& ci,
+                                  const CallResolutionResult& c) {
+
+  if (!c.exprType().hasTypePtr()) {
+    issueErrorForFailedCallResolution(astForErr, ci, c);
+    r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+  } else {
+    r.setMostSpecific(c.mostSpecific());
+    r.setPoiScope(c.poiInfo().poiScope());
+    r.setType(c.exprType());
+    // gather the poi scopes used when resolving the call
+    poiInfo.accumulate(c.poiInfo());
+  }
+}
+
+void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
+                                            const uast::AstNode* astForErr,
+                                            const CallInfo& ci,
+                                            const CallResolutionResult& c) {
+  if (!c.exprType().hasTypePtr()) {
+    issueErrorForFailedCallResolution(astForErr, ci, c);
+  } else {
+    // save candidates as associated functions
+    for (auto sig : c.mostSpecific()) {
+      if (sig != nullptr) {
+        r.addAssociatedFn(sig);
+      }
+    }
+    // gather the poi scopes used when resolving the call
+    poiInfo.accumulate(c.poiInfo());
+  }
+}
+
+
+
+void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
+                                        const uast::AstNode* astForErr,
+                                        const Tuple* lhsTuple,
                                         QualifiedType lhsType,
                                         QualifiedType rhsType) {
   // Check that lhsType = rhsType can work
@@ -745,7 +784,7 @@ void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
     QualifiedType lhsEltType = lhsT->elementType(i);
     QualifiedType rhsEltType = rhsT->elementType(i);
     if (auto innerTuple = actual->toTuple()) {
-      resolveTupleUnpackAssign(innerTuple, lhsEltType, rhsEltType);
+      resolveTupleUnpackAssign(r, astForErr, innerTuple, lhsEltType, rhsEltType);
     } else {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
@@ -758,11 +797,7 @@ void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
                           actuals);
 
       auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
-      if (!c.exprType().hasTypePtr()) {
-        issueErrorForFailedCallResolution(actual, ci, c);
-      }
-      // gather the poi scopes used when resolving the call
-      poiInfo.accumulate(c.poiInfo());
+      handleResolvedAssociatedCall(r, astForErr, ci, c);
     }
     i++;
   }
@@ -892,11 +927,10 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   assert(crr.mostSpecific().numBest() <= 1);
 
   // there should be one or zero applicable candidates
-  if (auto only = crr.mostSpecific().only()) {
-    ResolvedExpression::AssociatedFns associated;
-    associated.push_back(only);
-    re.setAssociatedFns(associated);
-    poiInfo.accumulate(crr.poiInfo());
+  if (crr.mostSpecific().only() != nullptr) {
+    handleResolvedAssociatedCall(re, call, ci, crr);
+  } else {
+    issueErrorForFailedCallResolution(call, ci, crr);
   }
 
   return true;
@@ -910,10 +944,13 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   if (op->op() == USTR("=")) {
     if (op->numActuals() == 2) {
       if (auto lhsTuple = op->actual(0)->toTuple()) {
+
+        ResolvedExpression& r = byPostorder.byAst(op);
         QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
         QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
 
-        resolveTupleUnpackAssign(lhsTuple, lhsType, rhsType);
+        resolveTupleUnpackAssign(r, call,
+                                 lhsTuple, lhsType, rhsType);
         return true;
       }
     }
@@ -1124,15 +1161,7 @@ bool Resolver::enter(const Identifier* ident) {
         auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
         // save the most specific candidates in the resolution result for the id
         ResolvedExpression& r = byPostorder.byAst(ident);
-        r.setMostSpecific(c.mostSpecific());
-        r.setPoiScope(c.poiInfo().poiScope());
-        r.setType(c.exprType());
-        if (!c.exprType().hasTypePtr()) {
-          issueErrorForFailedCallResolution(ident, ci, c);
-          r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
-        }
-        // gather the poi scopes used when resolving the call
-        poiInfo.accumulate(c.poiInfo());
+        handleResolvedCall(r, ident, ci, c);
         return false;
       }
     }
@@ -1657,19 +1686,7 @@ void Resolver::exit(const Call* call) {
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
-    r.setMostSpecific(c.mostSpecific());
-    r.setPoiScope(c.poiInfo().poiScope());
-    r.setType(c.exprType());
-
-    if (r.type().type() == nullptr) {
-      // assume it is OK if a type was computed, even with no candidates
-      // (that happens e.g. for a primitive)
-      issueErrorForFailedCallResolution(call, ci, c);
-      r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
-    }
-
-    // gather the poi scopes used when resolving the call
-    poiInfo.accumulate(c.poiInfo());
+    handleResolvedCall(r, call, ci, c);
   }
 
   inLeafCall = nullptr;
@@ -1751,15 +1768,7 @@ void Resolver::exit(const Dot* dot) {
   auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
   // save the most specific candidates in the resolution result for the id
   ResolvedExpression& r = byPostorder.byAst(dot);
-  r.setMostSpecific(c.mostSpecific());
-  r.setPoiScope(c.poiInfo().poiScope());
-  r.setType(c.exprType());
-  if (!c.exprType().hasTypePtr()) {
-    issueErrorForFailedCallResolution(dot, ci, c);
-    r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
-  }
-  // gather the poi scopes used when resolving the call
-  poiInfo.accumulate(c.poiInfo());
+  handleResolvedCall(r, dot, ci, c);
 }
 
 bool Resolver::enter(const uast::New* nw) {
@@ -1869,14 +1878,9 @@ bool Resolver::enter(const For* loop) {
     auto inScope = scopeStack.back();
     auto c = resolveGeneratedCall(context, iterand, ci, inScope, poiScope);
 
-    if (auto only = c.mostSpecific().only()) {
+    if (c.mostSpecific().only() != nullptr) {
       idxType = c.exprType();
-
-      ResolvedExpression::AssociatedFns associated;
-      associated.push_back(only);
-      iterandRE.setAssociatedFns(associated);
-
-      poiInfo.accumulate(c.poiInfo());
+      handleResolvedAssociatedCall(iterandRE, loop, ci, c);
     } else {
       idxType = QualifiedType(QualifiedType::UNKNOWN,
                               ErroneousType::get(context));
