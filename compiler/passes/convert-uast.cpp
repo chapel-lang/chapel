@@ -147,8 +147,9 @@ struct Converter {
 
   const char* convertLinkageNameAstr(const uast::Decl* node) {
     if (auto linkageName = node->linkageName()) {
-      INT_ASSERT(linkageName->isStringLiteral());
-      return astr(linkageName->toStringLiteral()->str());
+      if (auto linkageStr = linkageName->toStringLiteral()) {
+        return astr(linkageStr->str());
+      }
     }
 
     return nullptr;
