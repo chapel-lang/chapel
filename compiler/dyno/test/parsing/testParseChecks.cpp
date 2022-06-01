@@ -105,6 +105,70 @@ static void test2(Parser* parser) {
                      "borrowed unmanaged");
 }
 
+static void test3(Parser* parser) {
+  auto br = parser->parseString("test3.chpl",
+    R""""(
+    deinit(foo);
+    a.deinit(foo, bar);
+    a.b.deinit();
+    )"""");
+  assert(br.numErrors() == 3);
+  displayErrors(br);
+  assertErrorMatches(br, 0, "test3.chpl", 2,
+                     "direct calls to deinit() are not allowed");
+  assertErrorMatches(br, 1, "test3.chpl", 3,
+                     "direct calls to deinit() are not allowed");
+  assertErrorMatches(br, 2, "test3.chpl", 4,
+                     "direct calls to deinit() are not allowed");
+}
+
+static void test4(Parser* parser) {
+  auto br = parser->parseString("test4.chpl",
+    R""""(
+    private class C {}
+    private record r {}
+    private union u {}
+    proc foo() {
+      private var x = 0;
+    }
+    class cat {
+      private var sleepTime = 0;
+      private proc meow() {}
+    }
+    private proc r.baz() {}
+    {
+      private var x = 0;
+    }
+    for i in lo..hi do private var x = 0;
+    )"""");
+  assert(br.numErrors() == 9);
+  displayErrors(br);
+  assertErrorMatches(br, 0, "test4.chpl", 2,
+                     "Can't apply private to types yet");
+  assertErrorMatches(br, 1, "test4.chpl", 3,
+                     "Can't apply private to types yet");
+  assertErrorMatches(br, 2, "test4.chpl", 4,
+                     "Can't apply private to types yet");
+  assertErrorMatches(br, 3, "test4.chpl", 6,
+                     "Private declarations within function bodies "
+                     "are meaningless");
+  assertErrorMatches(br, 4, "test4.chpl", 9,
+                     "Can't apply private to the fields or methods of "
+                     "a class or record yet");
+  assertErrorMatches(br, 5, "test4.chpl", 10,
+                     "Can't apply private to the fields or methods of "
+                     "a class or record yet");
+  assertErrorMatches(br, 6, "test4.chpl", 12,
+                     "Can't apply private to the fields or methods of "
+                     "a class or record yet");
+  assertErrorMatches(br, 7, "test4.chpl", 14,
+                     "Private declarations within nested blocks are "
+                     "meaningless");
+  assertErrorMatches(br, 8, "test4.chpl", 16,
+                     "Private declarations are meaningless outside of "
+                     "module level declarations");
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -115,6 +179,8 @@ int main() {
   test0(p);
   test1(p);
   test2(p);
+  test3(p);
+  test4(p);
 
   return 0;
 }
