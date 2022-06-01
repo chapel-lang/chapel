@@ -414,6 +414,28 @@ AstTag idToTag(Context* context, ID id) {
   return idToTagQuery(context, id);
 }
 
+static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsParenlessFunctionQuery, context, id);
+
+  bool result = false;
+
+  AstTag tag = idToTag(context, id);
+  if (asttags::isFunction(tag)) {
+    const AstNode* ast = astForIDQuery(context, id);
+    if (ast != nullptr) {
+      if (auto fn = ast->toFunction()) {
+        result = fn->isParenless();
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsParenlessFunction(Context* context, ID id) {
+  return idIsParenlessFunctionQuery(context, id);
+}
+
 const ID& idToParentId(Context* context, ID id) {
   // Performance: Would it be better to have the parse query
   // set this query as an alternative to computing maps

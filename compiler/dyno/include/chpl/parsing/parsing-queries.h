@@ -199,6 +199,11 @@ const uast::AstNode* idToAst(Context* context, ID id);
 uast::AstTag idToTag(Context* context, ID id);
 
 /**
+ Returns true if the ID is a parenless function.
+ */
+bool idIsParenlessFunction(Context* context, ID id);
+
+/**
  Returns the parent ID given an ID
  */
 const ID& idToParentId(Context* context, ID id);

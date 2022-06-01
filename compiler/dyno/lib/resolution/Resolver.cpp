@@ -1087,30 +1087,56 @@ bool Resolver::enter(const Identifier* ident) {
       // use the type established at declaration/initialization,
       // but for things with generic type, use unknown.
       type = typeForId(id, /*localGenericToUnknown*/ true);
-      // now, for a type that is generic with defaults,
-      // compute the default version when needed. e.g.
-      //   record R { type t = int; }
-      //   var x: R; // should refer to R(int)
-      bool computeDefaults = true;
-      if (inLeafCall && ident == inLeafCall->calledExpression()) {
-        computeDefaults = false;
-      }
-      if (computeDefaults) {
-        if (auto t = type.type()) {
-          if (auto ct = t->toClassType()) {
-            t = ct->basicClassType();
-          }
-          if (auto ct = t->toCompositeType()) {
-            // test if that type is generic
-            auto g = getTypeGenericity(context, ct);
-            if (g == Type::GENERIC_WITH_DEFAULTS) {
-              // fill in the defaults
-              type = typeWithDefaults(context, type);
+      if (type.kind() == QualifiedType::TYPE) {
+        // now, for a type that is generic with defaults,
+        // compute the default version when needed. e.g.
+        //   record R { type t = int; }
+        //   var x: R; // should refer to R(int)
+        bool computeDefaults = true;
+        if (inLeafCall && ident == inLeafCall->calledExpression()) {
+          computeDefaults = false;
+        }
+        if (computeDefaults) {
+          if (auto t = type.type()) {
+            if (auto ct = t->toClassType()) {
+              t = ct->basicClassType();
+            }
+            if (auto ct = t->toCompositeType()) {
+              // test if that type is generic
+              auto g = getTypeGenericity(context, ct);
+              if (g == Type::GENERIC_WITH_DEFAULTS) {
+                // fill in the defaults
+                type = typeWithDefaults(context, type);
+              }
             }
           }
         }
+      } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
+        // resolve a parenless call
+        std::vector<CallInfoActual> actuals;
+        auto ci = CallInfo (/* name */ ident->name(),
+                            /* calledType */ QualifiedType(),
+                            /* isMethod */ false,
+                            /* hasQuestionArg */ false,
+                            /* isParenless */ true,
+                            actuals);
+        auto inScope = scopeStack.back();
+        auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
+        // save the most specific candidates in the resolution result for the id
+        ResolvedExpression& r = byPostorder.byAst(ident);
+        r.setMostSpecific(c.mostSpecific());
+        r.setPoiScope(c.poiInfo().poiScope());
+        r.setType(c.exprType());
+        if (!c.exprType().hasTypePtr()) {
+          issueErrorForFailedCallResolution(ident, ci, c);
+          r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+        }
+        // gather the poi scopes used when resolving the call
+        poiInfo.accumulate(c.poiInfo());
+        return false;
       }
     }
+
     result.setToId(id);
     result.setType(type);
     // if there are multiple ids we should have gotten

@@ -138,7 +138,11 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
       } else if (asttags::isModule(tag)) {
         kind = QualifiedType::MODULE;
       } else if (asttags::isFunction(tag)) {
-        kind = QualifiedType::FUNCTION;
+        if (parsing::idIsParenlessFunction(context, id)) {
+          kind = QualifiedType::PARENLESS_FUNCTION;
+        } else {
+          kind = QualifiedType::FUNCTION;
+        }
       } else {
         assert(false && "case not handled");
       }
