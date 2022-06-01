@@ -947,24 +947,24 @@ struct ChplSyntaxVisitor {
 
   void visit(const OpCall* node) {
     bool needsParens = false;
-    std::string outerOp, innerOp;
+    UniqueString outerOp, innerOp;
     if (node->isUnaryOp()) {
       bool isPostFixBang = false;
       bool isNilable = false;
-      outerOp = node->op().str();
+      outerOp = node->op();
       if (node->op() == USTR("postfix!")) {
         isPostFixBang = true;
-        outerOp = "!";
+        outerOp = USTR("!");
       } else if (node->op() == USTR("?")) {
         isNilable = true;
-        outerOp = "?";
+        outerOp = USTR("?");
       } else {
-        ss_ << node->op();
+        ss_ << node->op().str();
       }
       assert(node->numActuals() == 1);
       if (node->actual(0)->isOpCall()) {
-        innerOp = node->actual(0)->toOpCall()->op().str();
-        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), true,
+        innerOp = node->actual(0)->toOpCall()->op();
+        needsParens = needParens(outerOp, innerOp, true,
                                  (isPostFixBang || isNilable),
                                  node->actual(0)->toOpCall()->isUnaryOp(),
                                  isPostfix(node->actual(0)->toOpCall()) , false);
@@ -979,10 +979,10 @@ struct ChplSyntaxVisitor {
       }
     } else if (node->isBinaryOp()) {
       assert(node->numActuals() == 2);
-      outerOp = node->op().str();
+      outerOp = node->op();
       if (node->actual(0)->isOpCall()) {
-        innerOp = node->actual(0)->toOpCall()->op().str();
-        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false, false,
+        innerOp = node->actual(0)->toOpCall()->op();
+        needsParens = needParens(outerOp, innerOp, false, false,
                                  node->actual(0)->toOpCall()->isUnaryOp(),
                                  isPostfix(node->actual(0)->toOpCall()), false);
       }
@@ -996,8 +996,8 @@ struct ChplSyntaxVisitor {
       if (node->op() == USTR("by"))
         ss_ << " ";
       if (node->actual(1)->isOpCall()) {
-        innerOp = node->actual(1)->toOpCall()->op().str();
-        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false,
+        innerOp = node->actual(1)->toOpCall()->op();
+        needsParens = needParens(outerOp, innerOp, false,
                                  false, node->actual(1)->toOpCall()->isUnaryOp(),
                                  isPostfix(node->actual(1)->toOpCall()) , true);
         // handle printing parens around tuples
