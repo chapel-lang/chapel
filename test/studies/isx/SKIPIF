@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+
+import os
+
+retval = (os.environ['CHPL_COMM']=="gasnet") & (os.environ['CHPL_COMM_SUBSTRATE']=="mpi")
+
+print(retval)
+
+
