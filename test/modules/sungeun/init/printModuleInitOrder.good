@@ -22,6 +22,9 @@ Initializing Modules:
           Initialization
            Memory
           IO
+           POSIX
+            OS
+           SysError
            FormattedIO
             Regex
          Sort
