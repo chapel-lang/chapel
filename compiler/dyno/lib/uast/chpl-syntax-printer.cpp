@@ -1100,45 +1100,46 @@ namespace chpl {
    *
    * author - Paul Cassella (@cassella)
    */
-   int opToPrecedence(const char *op, bool unary, bool postfix) {
+   int opToPrecedence(UniqueString op, bool unary, bool postfix) {
     // new is precedence 19, but doesn't come through this path.
-    if (postfix && (strcmp(op, "?") == 0 || strcmp(op, "!") == 0))
+    if (postfix && (USTR("?") == op || USTR("!") == op))
       return 18;
-    else if (strcmp(op, ":") == 0)
+    else if (USTR(":") == op)
       return 17;
-    else if (strcmp(op, "**") == 0)
+    else if (USTR("**") == op)
       return 16;
     // reduce/scan/dmapped are precedence 15, but don't come through this path.
-    else if (strcmp(op, "!") == 0 || strcmp(op, "~") == 0)
+    else if (USTR("!") == op || USTR("~") == op)
       return 14;
-    else if (strcmp(op, "*") == 0 ||
-             strcmp(op, "/") == 0 || strcmp(op, "%") == 0)
+    else if (USTR("*") == op ||
+             USTR("/") == op || USTR("%") == op)
       return 13;
     else if (unary &&
-             (strcmp(op, "+") == 0 || strcmp(op, "-") == 0))
+             (USTR("+") == op || USTR("-") == op))
       return 12;
-    else if (strcmp(op, "<<") == 0 || strcmp(op, ">>") == 0)
+    else if (USTR("<<") == op || USTR(">>") == op)
       return 11;
-    else if (strcmp(op, "&") == 0)
+    else if (USTR("&") == op)
       return 10;
-    else if (strcmp(op, "^") == 0)
+    else if (USTR("^") == op)
       return 9;
-    else if (strcmp(op, "|") == 0)
+    else if (USTR("|") == op)
       return 8;
-    else if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0)
+    else if (USTR("+") == op || USTR("-") == op)
       return 7;
     // .. and ..< are precedence 6, but don't come through this path.
-    else if (strcmp(op, "<") == 0 || strcmp(op, "<=") == 0 ||
-             strcmp(op, ">") == 0 || strcmp(op, ">=") == 0)
+    else if (USTR("<") == op || USTR("<=") == op ||
+             USTR(">") == op || USTR(">=") == op ||
+             USTR("<") == op)
       return 5;
-    else if (strcmp(op, "==") == 0 || strcmp(op, "!=") == 0)
+    else if (USTR("==") == op || USTR("!=") == op)
       return 4;
-    else if (strcmp(op, "&&") == 0)
+    else if (USTR("&&") == op)
       return 3;
-    else if (strcmp(op, "||") == 0)
+    else if (USTR("||") == op)
       return 2;
     // by and align are precedence 1 too, but don't come through this path.
-    else if (strcmp(op, "#") == 0)
+    else if (USTR("#") == op)
       return 1;
 
     return -1;
@@ -1181,14 +1182,14 @@ namespace chpl {
    *
    * author - Paul Cassella (@cassella)
    */
-  bool needParens(const char *outer, const char *inner,
+  bool needParens(UniqueString outer, UniqueString inner,
                         bool outerUnary, bool outerPostfix,
                         bool innerUnary, bool innerPostfix,
                         bool innerIsRHS) {
     bool ret = false;
     int outerprec, innerprec;
 
-    if (!outer)
+    if (outer.isEmpty())
       return false;
 
     outerprec = opToPrecedence(outer, outerUnary, outerPostfix);
@@ -1212,16 +1213,16 @@ namespace chpl {
     // rhs, it needs parens if a op1 (b op2 c) isn't equivalent to
     // a op1 b op2 c.  (Note op1 and op2 may be the same op, a - (b - c))
     if (innerIsRHS &&
-        (strcmp(outer, "-") == 0 ||
-         strcmp(outer, "/") == 0 || strcmp(outer, "%") == 0 ||
-         strcmp(outer, "<<") == 0 || strcmp(outer, ">>") == 0 ||
+        (USTR("-") == outer ||
+         USTR("/") == outer ||  USTR("%") == outer ||
+         USTR("<<") == outer ||  USTR(">>") == outer ||
          // (a==b)==true vs. a==(b==true)
-         strcmp(outer, "==") == 0 || strcmp(outer, "!=") == 0)
+          USTR("==") == outer ||  USTR("!=") == outer)
         && outerprec == innerprec)
       ret = true;
 
     // ** is right-associative, and a**(b**c) != (a**b)**c.
-    if (!innerIsRHS && strcmp(outer, "**") == 0 && outerprec == innerprec)
+    if (!innerIsRHS &&  USTR("**") == outer && outerprec == innerprec)
       ret = true;
 
     return ret;
@@ -1230,9 +1231,9 @@ namespace chpl {
   /*
    * Do we want to print spaces around this binary operator?
    */
-   bool wantSpaces(const char *op, bool printingType)
+   bool wantSpaces(UniqueString op, bool printingType)
   {
-    if (strcmp(op, "**") == 0)
+    if (USTR("**") == op)
       return false;
     if (printingType)
       return false;

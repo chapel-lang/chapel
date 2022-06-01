@@ -31,6 +31,13 @@
 
 using namespace chpl;
 
+bool wantSpaces(const char* op, bool printingType);
+bool needParens(const char* outer, const char* inner,
+                  bool outerUnary, bool outerPostfix,
+                  bool innerUnary, bool innerPostfix,
+                  bool innerIsRHS);
+int opToPrecedence(const char* op, bool unary, bool postfix);
+
 const std::string& AstToText::text() const
 {
   return mText;
@@ -47,6 +54,28 @@ void AstToText::appendNameAndFormals(FnSymbol* fn)
     appendName(fn);
     appendFormals(fn);
   }
+}
+
+// wrapper to allow call sites that relied on char* to remain unchanged
+bool wantSpaces(const char* op, bool printingType) {
+  return wantSpaces(UniqueString::get(gContext, op), printingType);
+}
+
+// wrapper to allow call sites that relied on char* to remain unchanged
+bool needParens(const char* outer, const char* inner,
+                  bool outerUnary, bool outerPostfix,
+                  bool innerUnary, bool innerPostfix,
+                  bool innerIsRHS) {
+  return needParens(UniqueString::get(gContext, outer),
+                    UniqueString::get(gContext, inner),
+                    outerUnary, outerPostfix,
+                    innerUnary, innerPostfix,
+                    innerIsRHS);
+                  }
+
+// wrapper to allow call sites that relied on char* to remain unchanged
+int opToPrecedence(const char* op, bool unary, bool postfix) {
+  return opToPrecedence(UniqueString::get(gContext, op), unary, postfix);
 }
 
 /************************************ | *************************************
