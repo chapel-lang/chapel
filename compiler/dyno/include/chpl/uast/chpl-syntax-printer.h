@@ -49,7 +49,7 @@ namespace chpl {
   /*
    * Do we want to print spaces around this binary operator?
    */
-  bool wantSpaces(const char *op, bool printingType);
+  bool wantSpaces(UniqueString op, bool printingType);
 
   /*
    * Given an AST node outer, with one child inner, this function
@@ -57,7 +57,7 @@ namespace chpl {
    * That is, if emitting the expression without parenthesis would
    * change the semantics from what the AST represents.
    */
-  bool needParens(const char *outer, const char *inner,
+  bool needParens(UniqueString outer, UniqueString inner,
                   bool outerUnary, bool outerPostfix,
                   bool innerUnary, bool innerPostfix,
                   bool innerIsRHS);
@@ -74,6 +74,6 @@ namespace chpl {
    * Returns precedence: higher is tighter-binding.
    * Returns -1 for unhandled operator -- caller should respond conservatively.
    */
-  int opToPrecedence(const char *op, bool unary, bool postfix);
+  int opToPrecedence(UniqueString op, bool unary, bool postfix);
 }
 #endif
