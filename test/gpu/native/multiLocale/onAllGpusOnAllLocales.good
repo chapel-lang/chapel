@@ -1,0 +1,5 @@
+here.gpus.size > 1:  false
+numLaunches.size:   4
+numLaunches[0] + 1 == numLaunches[1]:  true
+numLaunches[1] == here.gpus.size:  true
+numLaunches[i] == numLaunches[i+1] for all i > 0?:  true
