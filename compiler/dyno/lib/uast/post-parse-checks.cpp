@@ -115,8 +115,9 @@ struct Visitor {
 
   // Visitors.
   void visit(const AstNode* node);
-  void visit(const TypeQuery* node);
   void visit(const FnCall* node);
+  void visit(const Variable* node);
+  void visit(const TypeQuery* node);
 };
 
 void Visitor::report(const AstNode* node, ErrorMessage::Kind kind,
@@ -357,12 +358,61 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
   }
 }
 
+// TODO: Extend to all 'VarLikeDecl' instead of just variables?
 void Visitor::checkConstVarNoInit(const Variable* node) {
-  (void) node;
+  if (!node->initExpression()) return;
+
+  if (node->kind() != Variable::CONST_REF &&
+      node->kind() != Variable::CONST) {
+    return;
+  }
+
+  if (auto ident = node->initExpression()->toIdentifier()) {
+    if (ident->name() == USTR("noinit")) {
+      error(node, "const variables specified with noinit must be "
+                  "explicitly initialized");
+    }
+  }
+}
+
+static const char* configVarStr(Variable::Kind kind) {
+  const char* ret = nullptr;
+  switch (kind) {
+    case Variable::PARAM:
+      ret = "parameters";
+      break;
+    case Variable::CONST_REF:
+    case Variable::CONST:
+      ret = "constants";
+      break;
+    case Variable::TYPE:  // TODO: Add a case for types?
+    default:
+      ret = "variables";
+      break;
+  }
+
+  assert(ret);
+  return ret;
 }
 
 void Visitor::checkConfigVar(const Variable* node) {
-  (void) node;
+  if (!node->isConfig()) return;
+
+  bool doEmitError = true;
+
+  if (parent(0) && parent(0)->isModule()) {
+    doEmitError = false;
+  } else if (parent(0)->isMultiDecl()) {
+    if (parent(1) && parent(1)->isModule()) doEmitError = false;
+  }
+
+  if (doEmitError) {
+    const char* varTypeStr = configVarStr(node->kind());
+    assert(varTypeStr);
+
+    error(node, "Configuration %s are allowed only at module scope",
+                varTypeStr);
+  }
 }
 
 void Visitor::checkExportVar(const Variable* node) {
@@ -472,6 +522,11 @@ void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkNewClassDecorators(node);
   checkExplicitDeinitCalls(node);
+}
+
+void Visitor::visit(const Variable* node) {
+  checkConstVarNoInit(node);
+  checkConfigVar(node);
 }
 
 void Visitor::visit(const TypeQuery* node) {

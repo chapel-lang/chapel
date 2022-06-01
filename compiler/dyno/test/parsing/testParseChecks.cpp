@@ -169,6 +169,48 @@ static void test4(Parser* parser) {
                      "module level declarations");
 }
 
+static void test5(Parser* parser) {
+  auto br = parser->parseString("test5.chpl",
+    R""""(
+    const x = noinit;
+    const ref y = noinit;
+    )"""");
+  assert(br.numErrors() == 2);
+  displayErrors(br);
+  assertErrorMatches(br, 0, "test5.chpl", 2,
+                     "const variables specified with noinit must be "
+                     "explicitly initialized");
+  assertErrorMatches(br, 1, "test5.chpl", 3,
+                     "const variables specified with noinit must be "
+                     "explicitly initialized");
+}
+
+static void test6(Parser* parser) {
+  auto br = parser->parseString("test6.chpl",
+    R""""(
+    proc foo() {
+      config const x = 0;
+      config const ref y = 0;
+      config param p = 0.0;
+      config var z = 0;
+    }
+    )"""");
+  assert(br.numErrors() == 4);
+  displayErrors(br);
+  assertErrorMatches(br, 0, "test6.chpl", 3,
+                     "Configuration constants are allowed only at module "
+                     "scope");
+  assertErrorMatches(br, 1, "test6.chpl", 4,
+                     "Configuration constants are allowed only at module "
+                     "scope");
+  assertErrorMatches(br, 2, "test6.chpl", 5,
+                     "Configuration parameters are allowed only at module "
+                     "scope");
+  assertErrorMatches(br, 3, "test6.chpl", 6,
+                     "Configuration variables are allowed only at module "
+                     "scope");
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -181,6 +223,8 @@ int main() {
   test2(p);
   test3(p);
   test4(p);
+  test5(p);
+  test6(p);
 
   return 0;
 }
