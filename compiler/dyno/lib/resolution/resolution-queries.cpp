@@ -200,13 +200,13 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
       typePtr = UintType::get(context, 0);
       break;
     case asttags::BytesLiteral:
-      typePtr = BytesType::get(context);
+      typePtr = RecordType::getBytesType(context);
       break;
     case asttags::CStringLiteral:
       typePtr = CStringType::get(context);
       break;
     case asttags::StringLiteral:
-      typePtr = StringType::get(context);
+      typePtr = RecordType::getStringType(context);
       break;
     default:
       assert(false && "case not handled");
@@ -879,6 +879,17 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   // ClassType right now.
   assert(t->isCompositeType() || t->isClassType());
 
+  // the tuple type that isn't an instantiation is a generic type
+  if (auto tt = t->toTupleType()) {
+    if (tt->instantiatedFromCompositeType() == nullptr)
+      return Type::GENERIC;
+  }
+
+  // string and bytes types are never generic
+  if (t->isStringType() || t->isBytesType()) {
+    return Type::CONCRETE;
+  }
+
   if (auto classType = t->toClassType()) {
     // should be handled in BasicClassType::isGeneric
     // so this code should only be called if the management is concrete
@@ -887,12 +898,6 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
 
     auto bct = classType->basicClassType();
     return getFieldsGenericity(context, bct, ignore);
-  }
-
-  // the tuple type that isn't an instantiation is a generic type
-  if (auto tt = t->toTupleType()) {
-    if (tt->instantiatedFromCompositeType() == nullptr)
-      return Type::GENERIC;
   }
 
   auto compositeType = t->toCompositeType();

@@ -25,7 +25,6 @@ DYNO_TYPES_SRCS =                                 \
   BasicClassType.cpp \
   BoolType.cpp \
   BuiltinType.cpp \
-  BytesType.cpp \
   CStringType.cpp \
   ClassType.cpp \
   ClassTypeDecorator.cpp \
@@ -41,7 +40,6 @@ DYNO_TYPES_SRCS =                                 \
   QualifiedType.cpp \
   RealType.cpp \
   RecordType.cpp \
-  StringType.cpp \
   TupleType.cpp \
   Type.cpp \
   TypeTag.cpp \
