@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 
 import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
@@ -35,6 +36,7 @@ def get_bundled_install_path(pkg, ucp=default_uniq_cfg_path()):
 #
 @memoize
 def handle_la(la_path):
+  #    sys.stdout.write("in handle_la {0}\n".format(la_path))
     args = []
     if os.path.isfile(la_path):
         with open(la_path) as f:
@@ -57,6 +59,28 @@ def handle_la(la_path):
                         else:
                             args.append(tok)
     return args
+
+# Given bundled_libs and system_libs lists, filters some
+# usual suspects into system_libs and
+# returns (bundled_args, system_args)
+def filter_libs(bundled_libs, system_libs):
+    bundled_ret = [ ]
+    system_ret = [ ]
+    for arg in bundled_libs:
+        # put some of the usual suspects into the system args
+        if (arg == '-ldl' or
+            arg == '-lm' or
+            arg == '-lnuma' or
+            arg == '-lpthread' or
+            arg == '-pthread'):
+            system_ret.append(arg)
+        else:
+            bundled_ret.append(arg)
+
+    # append the system libs
+    system_ret.extend(system_libs)
+
+    return (bundled_ret, system_ret)
 
 #
 # Return compiler arguments required to use a system library known to
@@ -168,8 +192,15 @@ def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
 # Returns a 2-tuple of lists
 #  (link_bundled_args, link_system_args)
 @memoize
-def pkgconfig_get_bundled_link_args(pkg, ucp, pcfile,
+def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
                                     static=pkgconfig_default_static()):
+    # compute the default ucp
+    if ucp == '':
+        ucp = default_uniq_cfg_path()
+    # compute the default pcfile name
+    if pcfile == '':
+        pcfile = pkg + '.pc'
+
     install_path = get_bundled_install_path(pkg, ucp)
 
     # give up early if the 3rd party package hasn't been built
@@ -204,7 +235,7 @@ def pkgconfig_get_bundled_link_args(pkg, ucp, pcfile,
       libs_private = d['Libs.private'].split()
 
     # assuming libs_private stores system libs, like -lpthread
-    return (libs, libs_private)
+    return filter_libs(libs, libs_private)
 
 # Get the version number for a system-wide installed package.
 # Presumably we update the bundled packages to compatible versions,
@@ -219,24 +250,17 @@ def pkgconfig_get_system_version(pkg):
 
 #
 # This returns the default link args for the given third-party package
-# assuming that the bundled version is used.
+# assuming that the bundled version is used and uses a .la file
+# to do so.
 #
-# returns 2-tuple of lists
-#  (compiler_bundled_args, compiler_system_args)
-def get_bundled_compile_args(pkg, ucp=''):
-    if ucp == '':
-        ucp = default_uniq_cfg_path()
-    inc_dir = os.path.join(get_bundled_install_path(pkg, ucp), 'include')
-    return (['-I' + inc_dir], [ ])
-
-
+# Note that some systems remove .la files on installation of a package,
+# and as a result, using this function can lead to portability problems.
 #
-# This returns the default link args for the given third-party package
-# assuming that the bundled version is used.
+# TODO: remove this function when it is no longer needed
 #
 # returns 2-tuple of lists
 #  (linker_bundled_args, linker_system_args)
-def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
+def libtool_get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
     if ucp == '':
         ucp = default_uniq_cfg_path()
     if libs == []:
@@ -265,19 +289,44 @@ def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
         else:
             all_args.append(lib_arg)
 
-    bundled_args = [ ]
-    system_args = [ ]
-    for arg in all_args:
-        # put some of the usual suspects into the system args
-        if (arg == '-ldl' or
-            arg == '-lm' or
-            arg == '-lnuma' or
-            arg == '-lpthread'):
-            system_args.append(arg)
-        else:
-            bundled_args.append(arg)
+    return filter_libs(bundled_args, [ ])
 
-    return (bundled_args, system_args)
+#
+# This returns the default compile args for the given third-party package
+# assuming that the bundled version is used.
+#
+# returns 2-tuple of lists
+#  (compiler_bundled_args, compiler_system_args)
+def get_bundled_compile_args(pkg, ucp=''):
+    if ucp == '':
+        ucp = default_uniq_cfg_path()
+    inc_dir = os.path.join(get_bundled_install_path(pkg, ucp), 'include')
+    return (['-I' + inc_dir], [ ])
+
+
+#
+# This returns the default link args for the given third-party package
+# assuming that the bundled version is used.
+#
+# This simple version just returns
+#  -L third-party/<pkg>/install/<ucp>/lib
+#  -Wl,-rpath  third-party/<pkg>/install/<ucp>/lib
+#  -lpkg
+#
+# returns 2-tuple of lists
+#  (linker_bundled_args, linker_system_args)
+def get_bundled_link_args(pkg, ucp=''):
+    # compute the default ucp
+    if ucp == '':
+        ucp = default_uniq_cfg_path()
+
+    all_args=[ ]
+    lib_dir = os.path.join(get_bundled_install_path(pkg, ucp), 'lib')
+    all_args.append('-L' + lib_dir)
+    all_args.append('-Wl,-rpath,' + lib_dir)
+    all_args.append('-l' + pkg);
+
+    return filter_libs(all_args, [ ])
 
 # apply substitutions like ${VARNAME} within string
 # using the supplied dictionary d
