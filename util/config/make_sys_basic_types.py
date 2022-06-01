@@ -45,8 +45,6 @@ _types = [
     ('PTRDIFF_MAX', 'c_ptrdiff', 'ptrdiff_t'),
     ('SIZE_MAX', 'c_size_t', 'size_t'),
     ('SSIZE_MAX', 'c_ssize_t', 'ssize_t'),
-    ('SIZE_MAX', 'size_t', 'size_t'),
-    ('SSIZE_MAX', 'ssize_t', 'ssize_t'),
 ]
 
 # Map of max values to chapel types.
@@ -190,11 +188,7 @@ def get_sys_c_types(docs=False):
 
         sys_c_types.append('/* The Chapel type corresponding to the C \'{c_type}\' type'
                            ' */'.format(**locals()))
-        if not chpl_type.startswith('c_'):
-            stmt = 'deprecated "\'{c_type}\' has been deprecated in favor of \'c_{c_type}\'"\n'.format(**locals())
-        else:
-            stmt = ''
-        stmt += 'extern type {chpl_type}= '.format(**locals())
+        stmt = 'extern type {chpl_type}= '.format(**locals())
         if docs:
             stmt += 'integral'
         else:
