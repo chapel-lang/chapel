@@ -88,9 +88,6 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   for (i,x) in zip(reindexDom, X.reindex(reindexDom)) do
     writeln("reindexed X[", i, "] = ", x);
   writeln();
-  // Test vector ops
-  if testError == 10 then
-    X.reverse();
   // Test sparse-specific things
   if testError == 12 then
     writeln("IRV is: ", X.IRV);
@@ -210,10 +207,6 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
     writeln("reindexed X[", i, "] = ", x);
   writeln();
 
-  // Test vector ops
-  if testError == 10 then
-    X.reverse();
-  
   // Test sparse-specific things
   if testError == 12 then
     writeln("IRV is: ", X.IRV);

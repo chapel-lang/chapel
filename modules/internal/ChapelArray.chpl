@@ -1722,6 +1722,7 @@ module ChapelArray {
     }
 
     /* Reverse the order of the values in the array. */
+    deprecated "reverse is deprecated"
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");

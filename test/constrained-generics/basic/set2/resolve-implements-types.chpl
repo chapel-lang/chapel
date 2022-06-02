@@ -4,13 +4,12 @@ of an 'implements' statement needs to be resolved.
 */
 
 interface MyArray {
-  proc Self.reverse();
+  proc Self.isEmpty() : bool;
   proc writeln(arg: Self);
 }
 
 proc cgFun(arg: MyArray) {
-  arg.reverse();
-  writeln(arg);
+  writeln("is empty? ", arg.isEmpty());
 }
 
 var AR = [1, 2, 5];
