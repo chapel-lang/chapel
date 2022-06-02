@@ -133,7 +133,6 @@ is empty: false
 head: 1.8
 tail: 100.8
 find last: (true, (10, 10))
-count last: 1
 equals same: true
 equals diff: false
 
@@ -355,7 +354,6 @@ is empty: false
 head: 1.8
 tail: 49.8
 find last: (true, (8, 8))
-count last: 1
 equals same: true
 equals diff: false
 

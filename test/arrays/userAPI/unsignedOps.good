@@ -79,7 +79,6 @@ is empty: false
 head: 1.8
 tail: 16.8
 find last: (true, (4, 4))
-count last: 1
 equals same: true
 equals diff: false
 
@@ -186,7 +185,6 @@ is empty: false
 head: 1.8
 tail: 16.8
 find last: (true, (4, 4))
-count last: 1
 equals same: true
 equals diff: false
 
@@ -293,7 +291,6 @@ is empty: false
 head: 1.8
 tail: 16.8
 find last: (true, (3, 8))
-count last: 1
 equals same: true
 equals diff: false
 
@@ -400,7 +397,6 @@ is empty: false
 head: 1.8
 tail: 16.8
 find last: (true, (4, 4))
-count last: 1
 equals same: true
 equals diff: false
 
