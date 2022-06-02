@@ -2716,6 +2716,32 @@ static bool helpFieldNameCheck(const AstNode* ast,
   return false;
 }
 
+static const bool&
+isNameOfFieldQuery(Context* context,
+                   UniqueString name, const CompositeType* ct) {
+  QUERY_BEGIN(isNameOfFieldQuery, context, name, ct);
+
+  bool result = false;
+  auto ast = parsing::idToAst(context, ct->id());
+  assert(ast && ast->isAggregateDecl());
+  auto ad = ast->toAggregateDecl();
+
+  for (auto child: ad->children()) {
+    // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+    if (child->isVarLikeDecl() ||
+        child->isMultiDecl() ||
+        child->isTupleDecl()) {
+      bool found = helpFieldNameCheck(child, name);
+      if (found) {
+        result = true;
+        break;
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
 /**
   Return true if 'name' is the name of a field for type 't'
 */
@@ -2735,23 +2761,8 @@ static bool isNameOfField(Context* context, UniqueString name, const Type* t) {
     }
   }
 
-  auto ast = parsing::idToAst(context, ct->id());
-  assert(ast && ast->isAggregateDecl());
-  auto ad = ast->toAggregateDecl();
 
-  for (auto child: ad->children()) {
-    // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
-    if (child->isVarLikeDecl() ||
-        child->isMultiDecl() ||
-        child->isTupleDecl()) {
-      bool found = helpFieldNameCheck(child, name);
-      if (found) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return isNameOfFieldQuery(context, name, ct);
 }
 
 static bool
@@ -2902,6 +2913,55 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   return ret;
 }
 
+static TypedFnSignature*
+generateFieldAccessor(Context* context, UniqueString name,
+                      const CompositeType* compType) {
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  // start by adding a formal for the receiver
+  auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
+                                                      false,
+                                                      nullptr);
+  ufsFormals.push_back(std::move(ufsReceiver));
+
+  const Type* thisType = compType;
+  if (auto bct = thisType->toBasicClassType()) {
+    auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+    thisType = ClassType::get(context, bct, /*manager*/ nullptr, dec);
+  }
+
+  // receiver is 'ref' to allow mutation
+  // TODO: indicate that its const-ness should vary with receiver const-ness
+  formalTypes.push_back(QualifiedType(QualifiedType::REF, thisType));
+
+  // build the untyped signature
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ compType->id(),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*idIsTypeConstructor*/ false,
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  auto whereClauseResult = TypedFnSignature::WHERE_NONE;
+  bool needsInstantiation = false;
+  const TypedFnSignature* instantiatedFrom = nullptr;
+  const TypedFnSignature* parentFn = nullptr;
+  Bitmap formalsInstantiated;
+
+  auto ret = new TypedFnSignature(ufs, formalTypes, whereClauseResult,
+                                  needsInstantiation,
+                                  instantiatedFrom,
+                                  parentFn,
+                                  formalsInstantiated);
+
+  return ret;
+}
+
 static const owned<TypedFnSignature>&
 getCompilerGeneratedMethodQuery(Context* context, const Type* type,
                                 UniqueString name, bool parenless) {
@@ -2911,10 +2971,15 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->toCompositeType();
+    if (auto clsType = type->toClassType()) {
+      compType = clsType->basicClassType();
+    }
     assert(compType);
 
     if (name == USTR("init")) {
       tfs = generateInitSignature(context, compType);
+    } else if (isNameOfField(context, name, compType)) {
+      tfs = generateFieldAccessor(context, name, compType);
     } else {
       assert(false && "Not implemented yet!");
     }
