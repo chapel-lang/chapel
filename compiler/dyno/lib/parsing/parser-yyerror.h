@@ -26,14 +26,23 @@ void yychpl_error(YYLTYPE*       loc,
                   ParserContext* context,
                   const char*    errorMessage) {
   std::string msg;
-  const char* tokenText = yychpl_get_text(context->scanner);
-  if (strlen(tokenText) > 0) {
-    msg += "near '";
-    msg += tokenText;
-    msg += "'";
+  bool isEmptyOrDefaultError = !strcmp("syntax error", errorMessage) ||
+                               !strlen(errorMessage);
+
+  // If Bison reported a generic "syntax error", leave message empty.
+  if (isEmptyOrDefaultError) {
+    const char* tokenText = yychpl_get_text(context->scanner);
+
+    // But append info about nearest token.
+    if (strlen(tokenText) > 0) {
+      msg += "near '";
+      msg += tokenText;
+      msg += "'";
+    }
+
+  // TODO: Also print nearest token?
   } else {
-    // Not very helpful, but default parser errors aren't...
-    assert(msg.size() == 0);
+    msg = errorMessage;
   }
 
   auto err = ParserError(*loc, msg, ErrorMessage::SYNTAX);
