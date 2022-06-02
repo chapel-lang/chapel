@@ -99,7 +99,7 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
     result.swap(tmpResult);
     // raise any errors encountered
     for (const ErrorMessage& e : result.errors()) {
-      if (!e.isEmpty()) {
+      if (!e.isDefaultConstructed()) {
         // report the error and save it for this query
         context->report(e);
       }
