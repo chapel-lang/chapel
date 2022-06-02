@@ -1590,6 +1590,7 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
+    deprecated "sorted is deprecated"
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {

@@ -517,6 +517,12 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
     compilerError("isSorted() requires 1-D array");
 }
 
+pragma "no doc"
+iter sorted(x : domain, comparator:?rec=defaultComparator) {
+  for i in x._value.dsiSorted(comparator) {
+    yield i;
+  }
+}
 
 //
 // This is a first draft "sorterator" which is designed to take some
@@ -550,13 +556,22 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 
  */
 iter sorted(x, comparator:?rec=defaultComparator) {
-  var y = x;
-  if !isArrayValue(y) then
-    compilerError("Sort.sorted called on non-iterable");
-
-  sort(y, comparator=comparator);
-  for i in y do
-    yield i;
+  if isArrayValue(x) && Reflection.canResolveMethod(x._value, "dsiSorted", comparator)
+  {
+    for i in x._value.dsiSorted(comparator) {
+      yield i;
+    }
+    return;
+  } else {
+    var y = x; // need to do before isArrayValue test in case x is an iterable
+    if !isArrayValue(y) then {
+      compilerError("Sort.sorted called on non-iterable type. Type is: " + x.type : string);
+    } else {
+      sort(y, comparator=comparator);
+      for i in y do
+        yield i;
+    }
+  }
 }
 
 pragma "no doc"

@@ -1,3 +1,4 @@
+use Sort;
 use Map;
 use utilFunctions;
 
@@ -12,4 +13,4 @@ forall i in 19..40 with (ref m2) do
 
 m1.extend(m2);
 var A = m1.values();
-writeln(A.sorted());
+writeln(sorted(A));

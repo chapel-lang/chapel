@@ -623,7 +623,8 @@ expression can be evaluated many times. For example:
 
    .. BLOCK-test-chapelnoprint
 
-      writeln(A.sorted());
+      use Sort;
+      writeln(sorted(A));
 
    
 

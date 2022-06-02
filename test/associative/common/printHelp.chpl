@@ -1,6 +1,8 @@
+use Sort;
+
 proc writelnSortedByDom(arr) {
   var first = true;
-  for i in arr.domain.sorted() {
+  for i in sorted(arr.domain) {
     if first then first = false; else write(" ");
     write(arr(i));
   }
@@ -10,7 +12,7 @@ proc writelnSortedByDom(arr) {
 
 proc writelnSorted(arr) {
   var first = true;
-  for elem in arr.sorted() {
+  for elem in sorted(arr) {
     if first then first = false; else write(" ");
     write(elem);
   }
@@ -19,7 +21,7 @@ proc writelnSorted(arr) {
 
 proc writelnSorted(dom: domain) {
   var first = true;
-  for elem in dom.sorted() {
+  for elem in sorted(dom) {
     if first then {
       first = false;
       write("[");
