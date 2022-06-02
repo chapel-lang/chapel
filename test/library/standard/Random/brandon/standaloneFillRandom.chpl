@@ -5,7 +5,7 @@ config const verbose = false;
 
 config const n = 100000;
 
-proc testit(seed: int, n: int) {
+proc testit(seed: int, n: int, min: uint, max: uint) {
   var A: [1..n] uint;
   var B: [1..n] uint;
 
@@ -30,28 +30,28 @@ proc checkMatch(A, B) {
   }
 }
 
-testitb(seed, n, 0, 1);
-testitb(seed, n, 0, 2);
-testitb(seed, n, 0, 3);
-testitb(seed, n, 0, 10);
-testitb(seed, n, 0, 100);
-testitb(seed, n, 0, 1000);
-testitb(seed, n, 0, 10000);
-testitb(seed, n, 0, 100000);
-testitb(seed, n, 0, 1000000);
-testitb(seed, n, 0, 10000000);
-testitb(seed, n, 0, 100000000);
-testitb(seed, n, 0, 1000000000);
-testitb(seed, n, 0, 10000000000);
-testitb(seed, n, 0, 100000000000);
-testitb(seed, n, 0, 1000000000000);
-testitb(seed, n, 0, 10000000000000);
-testitb(seed, n, 0, 100000000000000);
-testitb(seed, n, 0, 1000000000000000);
-testitb(seed, n, 0, 10000000000000000);
-testitb(seed, n, 0, 100000000000000000);
-testitb(seed, n, 0, 1000000000000000000);
-testitb(seed, n, 0, 10000000000000000000);
+testit(seed, n, 0, 1);
+testit(seed, n, 0, 2);
+testit(seed, n, 0, 3);
+testit(seed, n, 0, 10);
+testit(seed, n, 0, 100);
+testit(seed, n, 0, 1000);
+testit(seed, n, 0, 10000);
+testit(seed, n, 0, 100000);
+testit(seed, n, 0, 1000000);
+testit(seed, n, 0, 10000000);
+testit(seed, n, 0, 100000000);
+testit(seed, n, 0, 1000000000);
+testit(seed, n, 0, 10000000000);
+testit(seed, n, 0, 100000000000);
+testit(seed, n, 0, 1000000000000);
+testit(seed, n, 0, 10000000000000);
+testit(seed, n, 0, 100000000000000);
+testit(seed, n, 0, 1000000000000000);
+testit(seed, n, 0, 10000000000000000);
+testit(seed, n, 0, 100000000000000000);
+testit(seed, n, 0, 1000000000000000000);
+testit(seed, n, 0, 10000000000000000000);
 
 if failures == 0 {
   writeln("OK");
