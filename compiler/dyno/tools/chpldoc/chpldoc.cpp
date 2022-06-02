@@ -564,24 +564,24 @@ struct RstSignatureVisitor {
 
   bool enter(const OpCall* call) {
     bool needsParens = false;
-    std::string outerOp, innerOp;
+    UniqueString outerOp, innerOp;
     if (call->isUnaryOp()) {
       assert(call->numActuals() == 1);
       bool isPostFixBang = false;
       bool isNilable = false;
-      outerOp = call->op().str();
+      outerOp = call->op();
       if (call->op() == USTR("postfix!")) {
         isPostFixBang = true;
-        outerOp = "!";
+        outerOp = USTR("!");
       } else if (call->op() == USTR("?")) {
         isNilable = true;
-        outerOp = "?";
+        outerOp = USTR("?");
       } else {
-        os_ << call->op().c_str();
+        os_ << call->op();
       }
       if (call->actual(0)->isOpCall()) {
-        innerOp = call->actual(0)->toOpCall()->op().str();
-        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), true,
+        innerOp = call->actual(0)->toOpCall()->op();
+        needsParens = needParens(outerOp, innerOp, true,
                                  (isPostFixBang || isNilable),
                                  call->actual(0)->toOpCall()->isUnaryOp(),
                                  isPostfix(call->actual(0)->toOpCall()) , false);
@@ -596,10 +596,10 @@ struct RstSignatureVisitor {
       }
     } else if (call->isBinaryOp()) {
       assert(call->numActuals() == 2);
-      outerOp = call->op().str();
+      outerOp = call->op();
       if (call->actual(0)->isOpCall()) {
-        innerOp = call->actual(0)->toOpCall()->op().str();
-        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false, false,
+        innerOp = call->actual(0)->toOpCall()->op();
+        needsParens = needParens(outerOp, innerOp, false, false,
                                  call->actual(0)->toOpCall()->isUnaryOp(),
                                  isPostfix(call->actual(0)->toOpCall()), false);
       }
@@ -607,15 +607,15 @@ struct RstSignatureVisitor {
       call->actual(0)->traverse(*this);
       if (needsParens) os_ << ")";
       needsParens = false;
-      bool addSpace = wantSpaces(call->op().c_str(), true);
+      bool addSpace = wantSpaces(call->op(), true);
       if (addSpace)
         os_ << " ";
       os_ << call->op();
       if (addSpace)
         os_ << " ";
       if (call->actual(1)->isOpCall()) {
-        innerOp = call->actual(1)->toOpCall()->op().str();
-        needsParens = needParens(outerOp.c_str(), innerOp.c_str(), false,
+        innerOp = call->actual(1)->toOpCall()->op();
+        needsParens = needParens(outerOp, innerOp, false,
                                  false, call->actual(1)->toOpCall()->isUnaryOp(),
                                  isPostfix(call->actual(1)->toOpCall()) , true);
         // special case handling things like 3*(4*string)
