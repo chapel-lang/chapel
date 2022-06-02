@@ -479,9 +479,12 @@ struct ChplSyntaxVisitor {
       if (node->blockStyle()==BlockStyle::EXPLICIT) {
         printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr,";", true);
       } else {
-        interpose(node->stmts(), "");
-        if (node->stmt(0)->isOpCall() && !node->isExpressionLevel())
-          ss_ << ";";
+        if (node->stmt(0)->isOpCall()) {
+          interpose(node->stmts(), "", "(", ")");
+          if (!node->isExpressionLevel())
+            ss_ << ";";
+        } else
+          interpose(node->stmts(), "");
       }
     }
   }
@@ -1044,16 +1047,14 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Reduce* node) {
-    if (node->opExpr()) {
-      printChapelSyntax(ss_, node->opExpr());
-    } else {
-      ss_ << node->op();
+    if (node->op()) {
+      printChapelSyntax(ss_, node->op());
+      ss_ << " ";
     }
-    ss_ << " ";
     ss_ << "reduce ";
-    if (node->actual(0)->isOpCall()) ss_<<"(";
-    printChapelSyntax(ss_, node->actual(0));
-    if (node->actual(0)->isOpCall()) ss_<<")";
+    if (node->iterand()->isOpCall()) ss_<<"(";
+    printChapelSyntax(ss_, node->iterand());
+    if (node->iterand()->isOpCall()) ss_<<")";
   }
 
   void visit(const Require* node) {
