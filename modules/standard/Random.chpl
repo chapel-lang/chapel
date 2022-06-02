@@ -141,6 +141,43 @@ module Random {
     compilerError("Random.fillRandom is only defined for numeric arrays");
   }
 
+  /*
+
+    Fills a rectangular array of numeric elements with pseudorandom values
+    in the range [`min`, `max`] (inclusive) in parallel using
+    a new :class:`PCGRandom.PCGRandomStream`  created
+    specifically for this call.  The first `arr.size` values from the stream
+    will be assigned to the array's elements in row-major order. The
+    parallelization strategy is determined by the array.
+
+    :arg arr: The array to be filled, where T is a primitive numeric type. Only
+      rectangular arrays are supported currently.
+    :type arr: `[] T`
+
+    :arg min: The (inclusive) lower bound for the random values used.
+
+    :arg max: The (inclusive) upper bound for the random values used.
+
+    :arg seed: The seed to use for the PRNG.  Defaults to
+     `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+    :type seed: `int(64)`
+
+  */
+  proc fillRandom(arr: [], min: arr.eltType, max: arr.eltType,
+      seed: int(64) = SeedGenerator.oddCurrentTime)
+    where isSupportedNumericType(arr.eltType) {
+    var randNums = createRandomStream(seed=seed,
+                                      eltType=arr.eltType,
+                                      parSafe=false,
+                                      algorithm=RNG.PCG);
+    randNums.fillRandom(arr, min, max);
+  }
+
+  pragma "no doc"
+  proc fillRandom(arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
+    compileError("Random.fillRandom is only defined for numeric arrays");
+  }
+
   /* Shuffle the elements of a rectangular array into a random order.
 
      :arg arr: a rectangular 1-D non-strided array
