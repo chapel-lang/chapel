@@ -98,6 +98,14 @@ module DateTime {
       return c_string; // const char *
   }
 
+  /* Get the `time` since Unix Epoch in seconds
+  */
+  proc timeSinceEpoch(): timedelta {
+    var (seconds,microseconds):(real,real) = getTimeOfDay();
+    microseconds = microseconds/1000000.0;
+    return new timedelta(seconds + microseconds);
+  }
+
   pragma "no doc"
   extern "struct tm" record tm {
     var tm_sec:    c_int;         // seconds [0,61]
@@ -639,7 +647,7 @@ module DateTime {
     if tzinfo.borrow() == nil {
       return new timedelta();
     } else {
-      return tzinfo!.utcoffset(datetime.today());
+      return tzinfo!.utcoffset(datetime.now());
     }
   }
 
@@ -648,7 +656,7 @@ module DateTime {
     if tzinfo.borrow() == nil {
       return new timedelta();
     } else {
-      return tzinfo!.dst(datetime.today());
+      return tzinfo!.dst(datetime.now());
     }
   }
 
@@ -921,7 +929,13 @@ module DateTime {
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
   }
 
+  /* Initialize a new `datetime` value from the given `date` and `time` */
+  proc datetime.init(d: date, t: time) {
+    chpl_date = d;
+    chpl_time = t;
+  }
   /* Return a `datetime` value representing the current time and date */
+  deprecated "'datetime.today()' is deprecated, please use 'date.today()' or 'datetime.now()' instead"
   proc type datetime.today() {
     return this.now();
   }
@@ -1003,6 +1017,7 @@ module DateTime {
 
   /* Get the `time` since Unix Epoch in seconds
   */
+  deprecated "'datetime.timeSinceEpoch()' is deprecated. Please use 'timeSinceEpoch().totalSeconds()' instead."
   proc type datetime.timeSinceEpoch():real {
     var (seconds,microseconds):(real,real) = getTimeOfDay();
     microseconds = microseconds/1000000.0;
@@ -1380,6 +1395,7 @@ module DateTime {
   }
 
   pragma "no doc"
+  deprecated "'operator datetime.-(dt: datetime, d: date)' is deprecated. Please use 'dt - new datetime(d, new time())' instead."
   operator datetime.-(dt: datetime, d: date):timedelta {
     // convert date to datetime and use the default zero time
     var castDate = datetime.combine(d,new time());
@@ -1590,8 +1606,14 @@ module DateTime {
   /* Methods on timedelta values */
 
   /* Return the total number of seconds represented by this object */
-  proc timedelta.total_seconds(): real {
+  proc timedelta.totalSeconds(): real {
     return days*(24*60*60) + seconds + microseconds / 1000000.0;
+  }
+
+  /* Return the total number of seconds represented by this object */
+  deprecated "'timedelta.total_seconds()' is deprecated. Please use 'timedelta.totalSeconds()' instead."
+  proc timedelta.total_seconds(): real {
+    return totalSeconds();
   }
 
 
