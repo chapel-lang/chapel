@@ -1000,7 +1000,8 @@ struct ChplSyntaxVisitor {
     if (limit == VisibilityClause::LimitationKind::BRACES) {
       ss_ << ".";
       interpose(node->limitations(), ", ", "{","}");
-    } else if (limit == VisibilityClause::LimitationKind::NONE && node->numLimitations() == 1) {
+    } else if (limit == VisibilityClause::LimitationKind::NONE &&
+               node->numLimitations() == 1) {
       assert(node->limitation(0)->isIdentifier());
       ss_ << ".";
       printChapelSyntax(ss_, node->limitation(0));
@@ -1056,7 +1057,8 @@ namespace chpl {
     auto visitor = ChplSyntaxVisitor{};
     node->dispatch<void>(visitor);
     // when using << with ss_.rdbuf(), if nothing gets added to os, then
-    // os goes into fail state -> see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
+    // os goes into fail state
+    // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
     // check for failbit and reset
     os << visitor.ss_.rdbuf();
     if (os.fail()) {
@@ -1073,7 +1075,8 @@ namespace chpl {
     auto visitor = ChplSyntaxVisitor{};
     visitor.printFunctionSignature(node);
     // when using << with ss_.rdbuf(), if nothing gets added to os, then
-    // os goes into fail state -> see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
+    // os goes into fail state
+    // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
     // check for failbit and reset
     os << visitor.ss_.rdbuf();
     if (os.fail()) {
@@ -1081,5 +1084,161 @@ namespace chpl {
     }
     os.flush();
   }
+
+  /*
+   * Operator precedence according to the table in the spec,
+   * expressions.rst
+   *
+   * unary flag is needed because unary - (and +) have higher precedence
+   * than binary - (and +).
+   *
+   * postfix flag is needed because postfix ! has higher precedence than
+   * prefix !.
+   *
+   * Returns precedence: higher is tighter-binding.
+   * Returns -1 for unhandled operator -- caller should respond conservatively.
+   *
+   * author - Paul Cassella (@cassella)
+   */
+   int opToPrecedence(UniqueString op, bool unary, bool postfix) {
+    // new is precedence 19, but doesn't come through this path.
+    if (postfix && (USTR("?") == op || USTR("!") == op))
+      return 18;
+    else if (USTR(":") == op)
+      return 17;
+    else if (USTR("**") == op)
+      return 16;
+    // reduce/scan/dmapped are precedence 15, but don't come through this path.
+    else if (USTR("!") == op || USTR("~") == op)
+      return 14;
+    else if (USTR("*") == op ||
+             USTR("/") == op || USTR("%") == op)
+      return 13;
+    else if (unary &&
+             (USTR("+") == op || USTR("-") == op))
+      return 12;
+    else if (USTR("<<") == op || USTR(">>") == op)
+      return 11;
+    else if (USTR("&") == op)
+      return 10;
+    else if (USTR("^") == op)
+      return 9;
+    else if (USTR("|") == op)
+      return 8;
+    else if (USTR("+") == op || USTR("-") == op)
+      return 7;
+    // .. and ..< are precedence 6, but don't come through this path.
+    else if (USTR("<") == op || USTR("<=") == op ||
+             USTR(">") == op || USTR(">=") == op ||
+             USTR("<") == op)
+      return 5;
+    else if (USTR("==") == op || USTR("!=") == op)
+      return 4;
+    else if (USTR("&&") == op)
+      return 3;
+    else if (USTR("||") == op)
+      return 2;
+    // by and align are precedence 1 too, but don't come through this path.
+    else if (USTR("#") == op)
+      return 1;
+
+    return -1;
+  }
+
+  /*
+   * needParens(outer, inner, ...) is called to evaluate whether we need
+   * to add parens around the inner op.  We're here when
+   * appendExpr(outer) is calling appendExpr(expr->get(1)) or
+   * expr->get(2), which has become appendExpr(inner).
+   *
+   * Given an AST node outer, with one child inner, this function
+   * returns true if we need to emit parens around the child expression.
+   * That is, if emitting the expression without parenthesis would
+   * change the semantics from what the AST represents.
+   *
+   * If the inner (child) operator has higher precedence than the outer
+   * (parent), then we don't need parens, as emitting
+   * "a outer_op b inner_op c" is equivalent to
+   * "a outer_op (b inner_op c)".
+   *
+   * If the child operator has equal precedence to the outer, then we
+   * generally don't need parenthesis, except for a few exceptions.  If
+   * the desired expression is a-(b-c) or a-(b+c), then the parentheses
+   * are needed.  Of course they're not needed for a+(b-c) or a+(b+c).
+   * If the desired expression is a/(b/c) or a/(b*c) or a%(b/c), they're
+   * needed, but not for a*(b*c) or a*(b/c).
+   * (TODO: a*(b/c) might need the parens for overflow reasons.)
+   *
+   * Unary - (and +) have higher precedence than binary - (and +), so we
+   * need the unary flag to know which case we're in.
+   *
+   * The postfix flag is needed because postfix ! has higher precedence
+   * than prefix !.
+   *
+   * The innerIsRHS flag is needed because we need parens to express
+   * a-(b-c) where inner- is the RHS of the outer-.  But we can emit
+   * a-b-c instead of (a-b)-c -- when inner- is the LHS of outer-.
+   * Also, to distinguish (-1)**2 (parens needed) from 1**(-2) (not needed).
+   *
+   * author - Paul Cassella (@cassella)
+   */
+  bool needParens(UniqueString outer, UniqueString inner,
+                        bool outerUnary, bool outerPostfix,
+                        bool innerUnary, bool innerPostfix,
+                        bool innerIsRHS) {
+    bool ret = false;
+    int outerprec, innerprec;
+
+    if (outer.isEmpty())
+      return false;
+
+    outerprec = opToPrecedence(outer, outerUnary, outerPostfix);
+    innerprec = opToPrecedence(inner, innerUnary, innerPostfix);
+
+    // -1 means opToPrecedence wasn't expecting one of these operators.
+    // Conservatively wrap parentheses around the representation of this
+    // AST node.
+    if (outerprec == -1 || innerprec == -1)
+      return true;
+
+    // We never need parens around the unary expression on the RHS:
+    // 1**-2 vs 1**(-2)
+    if (innerUnary && innerIsRHS)
+      return false;
+
+    if (outerprec > innerprec)
+      ret = true;
+
+    // If inner and outer have the same precedence, and inner is the
+    // rhs, it needs parens if a op1 (b op2 c) isn't equivalent to
+    // a op1 b op2 c.  (Note op1 and op2 may be the same op, a - (b - c))
+    if (innerIsRHS &&
+        (USTR("-") == outer ||
+         USTR("/") == outer ||  USTR("%") == outer ||
+         USTR("<<") == outer ||  USTR(">>") == outer ||
+         // (a==b)==true vs. a==(b==true)
+          USTR("==") == outer ||  USTR("!=") == outer)
+        && outerprec == innerprec)
+      ret = true;
+
+    // ** is right-associative, and a**(b**c) != (a**b)**c.
+    if (!innerIsRHS &&  USTR("**") == outer && outerprec == innerprec)
+      ret = true;
+
+    return ret;
+  }
+
+  /*
+   * Do we want to print spaces around this binary operator?
+   */
+   bool wantSpaces(UniqueString op, bool printingType)
+  {
+    if (USTR("**") == op)
+      return false;
+    if (printingType)
+      return false;
+    return true;
+  }
+
 
 } // end chpl namespace
