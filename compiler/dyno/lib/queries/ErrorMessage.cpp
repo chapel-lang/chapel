@@ -90,6 +90,7 @@ void ErrorMessage::addDetail(ErrorMessage err) {
 }
 
 void ErrorMessage::swap(ErrorMessage& other) {
+  std::swap(isDefaultConstructed_, other.isDefaultConstructed_);
   std::swap(id_, other.id_);
   std::swap(kind_, other.kind_);
   location_.swap(other.location_);
