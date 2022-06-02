@@ -168,13 +168,6 @@ proc testitb(seed: int, n: int, min: uint, max: uint) {
     B[i] = x;
   }
   checkMatch(A, B);
-
-  if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " E");
-  A=0;
-  B=0;
-  fillRandom(A, min, max, seed);
-  fillRandom(B, min, max, seed);
-  checkMatch(A,B);
 }
 
 var failures = 0;
