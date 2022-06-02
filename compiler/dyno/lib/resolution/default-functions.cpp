@@ -80,7 +80,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
       if (auto fn = node->toFunction()) {
         if (!fn->isMethod()) continue;
 
-        auto ufs = UntypedFnSignature::get(context, fn);
+        auto ufs = UntypedFnSignature::get(context, fn->id());
 
         // TODO: way to just compute formal type instead of whole TFS?
         auto tfs = typedSignatureInitial(context, ufs);
@@ -106,20 +106,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     }
   }
 
-  // it's also possible that 'name' is the name of a field,
-  // and we need to find the compiler-generated field accessor
-  if (parenless) {
-    if (isNameOfField(context, name, type)) {
-      if (!areOverloadsPresentInDefiningScope(context, type, name)) {
-        return true;
-      }
-    }
-  }
-
   return false;
 }
 
-static TypedFnSignature*
+static const TypedFnSignature*
 generateInitSignature(Context* context, const CompositeType* inCompType) {
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   std::vector<QualifiedType> formalTypes;
@@ -178,24 +168,27 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
                         /*whereClause*/ nullptr);
 
   // now build the other pieces of the typed signature
-  auto whereClauseResult = TypedFnSignature::WHERE_NONE;
   bool needsInstantiation = rf.isGeneric();
-  const TypedFnSignature* instantiatedFrom = nullptr;
-  const TypedFnSignature* parentFn = nullptr;
-  Bitmap formalsInstantiated;
 
-  auto ret = new TypedFnSignature(ufs, formalTypes, whereClauseResult,
-                                  needsInstantiation,
-                                  instantiatedFrom,
-                                  parentFn,
-                                  formalsInstantiated);
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   needsInstantiation,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
 
   return ret;
 }
 
-TypedFnSignature*
-generateFieldAccessor(Context* context, UniqueString name,
-                      const CompositeType* compType) {
+static const TypedFnSignature* const&
+fieldAccessorQuery(Context* context,
+                   const types::CompositeType* compType,
+                   UniqueString fieldName) {
+  QUERY_BEGIN(fieldAccessorQuery, context, compType, fieldName);
+
+  const TypedFnSignature* result = nullptr;
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   std::vector<QualifiedType> formalTypes;
 
@@ -218,7 +211,7 @@ generateFieldAccessor(Context* context, UniqueString name,
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
                         /*id*/ compType->id(),
-                        /*name*/ name,
+                        /*name*/ fieldName,
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
@@ -228,47 +221,45 @@ generateFieldAccessor(Context* context, UniqueString name,
                         /*whereClause*/ nullptr);
 
   // now build the other pieces of the typed signature
-  auto whereClauseResult = TypedFnSignature::WHERE_NONE;
-  bool needsInstantiation = false;
-  const TypedFnSignature* instantiatedFrom = nullptr;
-  const TypedFnSignature* parentFn = nullptr;
-  Bitmap formalsInstantiated;
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
 
-  auto ret = new TypedFnSignature(ufs, formalTypes, whereClauseResult,
-                                  needsInstantiation,
-                                  instantiatedFrom,
-                                  parentFn,
-                                  formalsInstantiated);
-
-  return ret;
+  return QUERY_END(result);
 }
 
-static const owned<TypedFnSignature>&
+const TypedFnSignature* fieldAccessor(Context* context,
+                                      const types::CompositeType* compType,
+                                      UniqueString fieldName) {
+  if (compType == nullptr) {
+    return nullptr;
+  }
+
+  return fieldAccessorQuery(context, compType, fieldName);
+}
+
+static const TypedFnSignature* const&
 getCompilerGeneratedMethodQuery(Context* context, const Type* type,
                                 UniqueString name, bool parenless) {
   QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, type, name, parenless);
 
-  TypedFnSignature* tfs = nullptr;
+  const TypedFnSignature* result = nullptr;
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
-    auto compType = type->toCompositeType();
-    if (auto clsType = type->toClassType()) {
-      compType = clsType->basicClassType();
-    }
+    auto compType = type->getCompositeType();
     assert(compType);
 
     if (name == USTR("init")) {
-      tfs = generateInitSignature(context, compType);
-    } else if (isNameOfField(context, name, compType)) {
-      tfs = generateFieldAccessor(context, name, compType);
+      result = generateInitSignature(context, compType);
     } else {
       assert(false && "Not implemented yet!");
     }
   }
 
-  auto ret = toOwned(tfs);
-
-  return QUERY_END(ret);
+  return QUERY_END(result);
 }
 
 /**
@@ -282,9 +273,7 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
 const TypedFnSignature*
 getCompilerGeneratedMethod(Context* context, const Type* type,
                            UniqueString name, bool parenless) {
-  auto& owned = getCompilerGeneratedMethodQuery(context, type, name, parenless);
-  auto ret = owned.get();
-  return ret;
+  return getCompilerGeneratedMethodQuery(context, type, name, parenless);
 }
 
 

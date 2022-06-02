@@ -224,31 +224,6 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 
 /////// function resolution
 
-static const owned<TypedFnSignature>&
-typedSignatureQuery(Context* context,
-                    const UntypedFnSignature* untypedSignature,
-                    std::vector<types::QualifiedType> formalTypes,
-                    TypedFnSignature::WhereClauseResult whereClauseResult,
-                    bool needsInstantiation,
-                    const TypedFnSignature* instantiatedFrom,
-                    const TypedFnSignature* parentFn,
-                    Bitmap formalsInstantiated) {
-  QUERY_BEGIN(typedSignatureQuery, context,
-              untypedSignature, formalTypes, whereClauseResult,
-              needsInstantiation, instantiatedFrom, parentFn,
-              formalsInstantiated);
-
-  auto result = toOwned(new TypedFnSignature(untypedSignature,
-                                             std::move(formalTypes),
-                                             whereClauseResult,
-                                             needsInstantiation,
-                                             instantiatedFrom,
-                                             parentFn,
-                                             formalsInstantiated));
-
-  return QUERY_END(result);
-}
-
 static std::vector<types::QualifiedType>
 getFormalTypes(const Function* fn,
                const ResolutionResultByPostorderID& r) {
@@ -393,20 +368,14 @@ typedSignatureInitialQuery(Context* context,
       }
     }
 
-    // use an empty poiFnIdsUsed since this is never an instantiation
-    std::set<std::pair<ID, ID>> poiFnIdsUsed;
-    // same for formalsInstantiated
-    Bitmap formalsInstantiated;
-
-    const auto& got = typedSignatureQuery(context,
-                                          untypedSig,
-                                          std::move(formalTypes),
-                                          whereResult,
-                                          needsInstantiation,
-                                          /* instantiatedFrom */ nullptr,
-                                          /* parentFn */ parentFnTyped,
-                                          formalsInstantiated);
-    result = got.get();
+    result = TypedFnSignature::get(context,
+                                   untypedSig,
+                                   std::move(formalTypes),
+                                   whereResult,
+                                   needsInstantiation,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ parentFnTyped,
+                                   /* formalsInstantiated */ Bitmap());
   }
 
   return QUERY_END(result);
@@ -984,12 +953,12 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
   return false;
 }
 
-static const owned<TypedFnSignature>&
+static const TypedFnSignature* const&
 typeConstructorInitialQuery(Context* context, const Type* t)
 {
   QUERY_BEGIN(typeConstructorInitialQuery, context, t);
 
-  owned<TypedFnSignature> result;
+  const TypedFnSignature* result = nullptr;
 
   ID id;
   UniqueString name;
@@ -1049,24 +1018,21 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                          std::move(formals),
                                          /* whereClause */ nullptr);
 
-  // not instantiated yet so use empty formalsInstantiated
-  Bitmap formalsInstantiated;
-
-  auto sig = new TypedFnSignature(untyped,
-                                  std::move(formalTypes),
-                                  TypedFnSignature::WHERE_NONE,
-                                  /* needsInstantiation */ true,
-                                  /* instantiatedFrom */ nullptr,
-                                  /* parentFn */ nullptr,
-                                  formalsInstantiated);
-  result = toOwned(sig);
+  result = TypedFnSignature::get(context,
+                                 untyped,
+                                 std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ true,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
 
   return QUERY_END(result);
 }
 
 const TypedFnSignature* typeConstructorInitial(Context* context,
                                                const types::Type* t) {
-  return typeConstructorInitialQuery(context, t).get();
+  return typeConstructorInitialQuery(context, t);
 }
 
 QualifiedType getInstantiationType(Context* context,
@@ -1355,15 +1321,15 @@ const TypedFnSignature* instantiateSignature(Context* context,
   }
 
   // now, construct a TypedFnSignature from the result
-  const auto& result = typedSignatureQuery(context,
-                                           untypedSignature,
-                                           std::move(formalTypes),
-                                           where,
-                                           needsInstantiation,
-                                           /* instantiatedFrom */ sig,
-                                           /* parentFn */ parentFnTyped,
-                                           formalsInstantiated);
-  return result.get();
+  auto result = TypedFnSignature::get(context,
+                                      untypedSignature,
+                                      std::move(formalTypes),
+                                      where,
+                                      needsInstantiation,
+                                      /* instantiatedFrom */ sig,
+                                      /* parentFn */ parentFnTyped,
+                                      std::move(formalsInstantiated));
+  return result;
 }
 
 static const owned<ResolvedFunction>&
@@ -1821,31 +1787,33 @@ static const TypedFnSignature*
 doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& ci) {
-  const AstNode* ast = nullptr;
-  const Function* fn = nullptr;
+  AstTag tag = asttags::AST_TAG_UNKNOWN;
 
   if (!candidateId.isEmpty()) {
-    ast = parsing::idToAst(context, candidateId);
-    assert(ast->isFunction() || ast->isTypeDecl());
-    fn = ast->toFunction();
+    tag = parsing::idToTag(context, candidateId);
+    // could be a function, type for type construction, field
+    assert(isFunction(tag) || isTypeDecl(tag) || isVariable(tag));
+  } else {
+    assert(false && "case not handled");
+    return nullptr;
   }
 
-  if (ast == nullptr || ast->isTypeDecl()) {
-    // calling a builtin type or a declared type
-    const TypeDecl* td = nullptr;
-    if (ast)
-      td = ast->toTypeDecl();
-
-    if (td != nullptr) {
-      const Type* t = initialTypeForTypeDecl(context, td->id());
-      return typeConstructorInitial(context, t);
-    } else {
-      assert(false && "case not handled");
-    }
+  if (isTypeDecl(tag)) {
+    // calling a type - i.e. type construction
+    const Type* t = initialTypeForTypeDecl(context, candidateId);
+    return typeConstructorInitial(context, t);
   }
 
-  assert(fn);
-  auto ufs = UntypedFnSignature::get(context, fn);
+  if (isVariable(tag) &&
+      ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
+    // calling a field accessor
+    auto ct = ci.actual(0).type().type()->getCompositeType();
+    assert(ct);
+    return fieldAccessor(context, ct, ci.name());
+  }
+
+  assert(isFunction(tag) && "only fn case handled here");
+  auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
 
@@ -2710,10 +2678,7 @@ isNameOfFieldQuery(Context* context,
 }
 
 bool isNameOfField(Context* context, UniqueString name, const Type* t) {
-  const CompositeType* ct = t->toCompositeType();
-  if (auto clsType = t->toClassType()) {
-    ct = clsType->basicClassType();
-  }
+  const CompositeType* ct = t->getCompositeType();
 
   if (ct == nullptr) {
     return false;

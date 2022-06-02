@@ -30,8 +30,12 @@ namespace types {
 namespace resolution {
 
 
-TypedFnSignature* generateFieldAccessor(Context* context, UniqueString name,
-                                        const types::CompositeType* compType);
+/**
+  Computes a field accessor
+ */
+const TypedFnSignature* fieldAccessor(Context* context,
+                                      const types::CompositeType* compType,
+                                      UniqueString fieldName);
 
 /**
   Given a type and a UniqueString representing the name of a method,

@@ -1135,10 +1135,7 @@ bool Resolver::enter(const Identifier* ident) {
         }
         if (computeDefaults) {
           if (auto t = type.type()) {
-            if (auto ct = t->toClassType()) {
-              t = ct->basicClassType();
-            }
-            if (auto ct = t->toCompositeType()) {
+            if (auto ct = t->getCompositeType()) {
               // test if that type is generic
               auto g = getTypeGenericity(context, ct);
               if (g == Type::GENERIC_WITH_DEFAULTS) {

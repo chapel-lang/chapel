@@ -151,10 +151,13 @@ class UntypedFnSignature {
                                        const uast::AstNode* whereClause);
 
   /** Get the unique UntypedFnSignature representing a Function's
-      signature. */
+      signature from a Function uAST pointer. */
   static const UntypedFnSignature* get(Context* context,
                                        const uast::Function* function);
 
+  /** Get the unique UntypedFnSignature representing a Function's
+      signature from a Function ID. */
+  static const UntypedFnSignature* get(Context* context, ID functionId);
 
   bool operator==(const UntypedFnSignature& other) const {
     return id_ == other.id_ &&
@@ -565,7 +568,6 @@ class TypedFnSignature {
   // Which formal arguments were substituted when instantiating?
   Bitmap formalsInstantiated_;
 
- public:
   TypedFnSignature(const UntypedFnSignature* untypedSignature,
                    std::vector<types::QualifiedType> formalTypes,
                    WhereClauseResult whereClauseResult,
@@ -580,6 +582,28 @@ class TypedFnSignature {
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
       formalsInstantiated_(std::move(formalsInstantiated)) { }
+
+  static const owned<TypedFnSignature>&
+  getTypedFnSignature(Context* context,
+                      const UntypedFnSignature* untypedSignature,
+                      std::vector<types::QualifiedType> formalTypes,
+                      TypedFnSignature::WhereClauseResult whereClauseResult,
+                      bool needsInstantiation,
+                      const TypedFnSignature* instantiatedFrom,
+                      const TypedFnSignature* parentFn,
+                      Bitmap formalsInstantiated);
+
+ public:
+  /** Get the unique TypedFnSignature containing these components */
+  static
+  const TypedFnSignature* get(Context* context,
+                              const UntypedFnSignature* untypedSignature,
+                              std::vector<types::QualifiedType> formalTypes,
+                              TypedFnSignature::WhereClauseResult whereClauseResult,
+                              bool needsInstantiation,
+                              const TypedFnSignature* instantiatedFrom,
+                              const TypedFnSignature* parentFn,
+                              Bitmap formalsInstantiated);
 
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&
