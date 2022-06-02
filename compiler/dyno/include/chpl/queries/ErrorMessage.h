@@ -45,6 +45,7 @@ class ErrorMessage final {
   };
 
  private:
+  bool isDefaultConstructed_;
   Kind kind_;
   Location location_;
   std::string message_;
@@ -76,7 +77,22 @@ class ErrorMessage final {
 
   void addDetail(ErrorMessage err);
 
+  /**
+    Returns true is this error message has no message and no details. Even
+    if the error is empty, it may still be meaningful in the case of e.g.,
+    a syntax error (where the location offers useful info).
+  */
   bool isEmpty() const { return message_.empty() && details_.empty(); }
+
+  /**
+    Returns true if this error message was default constructed, in
+    which case its contents are not meaningful.
+  */
+  bool isDefaultConstructed() const { return isDefaultConstructed_; }
+
+  /**
+    Return the location in the source code where this error occurred.
+  */
   Location location() const { return location_; }
 
   UniqueString path() const { return location_.path(); }
@@ -93,7 +109,8 @@ class ErrorMessage final {
   Kind kind() const { return kind_; }
 
   inline bool operator==(const ErrorMessage& other) const {
-    return kind_ == other.kind_ &&
+    return isDefaultConstructed_ == other.isDefaultConstructed_ &&
+           kind_ == other.kind_ &&
            location_ == other.location_ &&
            message_ == other.message_ &&
            details_ == other.details_ &&

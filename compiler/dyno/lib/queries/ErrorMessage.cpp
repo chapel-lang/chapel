@@ -48,16 +48,22 @@ static std::string vprint_to_string(const char* format, va_list vl) {
 }
 
 ErrorMessage::ErrorMessage()
-  : kind_(ERROR), location_(), message_() {
+  : isDefaultConstructed_(true), kind_(ERROR), location_(), message_() {
 }
+
 ErrorMessage::ErrorMessage(ID id, Location location, std::string message,
                            Kind kind)
-  : kind_(kind), location_(location), message_(message), id_(id) {
+  : isDefaultConstructed_(false), kind_(kind), location_(location),
+    message_(message),
+    id_(id) {
   gdbShouldBreakHere();
 }
+
 ErrorMessage::ErrorMessage(ID id, Location location, const char* message,
                            Kind kind)
-  : kind_(kind), location_(location), message_(message), id_(id) {
+  : isDefaultConstructed_(false), kind_(kind), location_(location),
+    message_(message),
+    id_(id) {
   gdbShouldBreakHere();
 }
 
@@ -84,6 +90,7 @@ void ErrorMessage::addDetail(ErrorMessage err) {
 }
 
 void ErrorMessage::swap(ErrorMessage& other) {
+  std::swap(isDefaultConstructed_, other.isDefaultConstructed_);
   std::swap(id_, other.id_);
   std::swap(kind_, other.kind_);
   location_.swap(other.location_);
