@@ -1723,7 +1723,7 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: _channel) throws {
       var isBinary = ch.binary();
 
       _enter();
@@ -1757,7 +1757,7 @@ module List {
 
      :arg ch: A channel to read from.
      */
-    proc readThis(ch: channel) throws {
+    proc readThis(ch: _channel) throws {
       //
       // Special handling for reading in order to handle reading an arbitrary
       // size.
