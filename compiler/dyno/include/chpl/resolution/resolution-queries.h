@@ -116,6 +116,11 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         bool useGenericFormalDefaults);
 
 /**
+  Return true if 'name' is the name of a field for type 't'
+*/
+bool isNameOfField(Context* context, UniqueString name, const types::Type* t);
+
+/**
   Computes the version of a type assuming that defaults for generics
   are needed. So, for 'record R { type t = int; }', this will return R(int).
  */

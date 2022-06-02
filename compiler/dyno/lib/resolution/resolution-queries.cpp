@@ -32,6 +32,7 @@
 #include "chpl/uast/all-uast.h"
 
 #include "Resolver.h"
+#include "default-functions.h"
 #include "prims.h"
 
 #include <cstdio>
@@ -48,18 +49,6 @@ namespace resolution {
 
 using namespace uast;
 using namespace types;
-
-
-static bool isNameOfCompilerGeneratedMethod(UniqueString name);
-static bool needCompilerGeneratedMethod(Context* context,
-                                        const types::Type* type,
-                                        UniqueString name,
-                                        bool parenless);
-static const TypedFnSignature*
-getCompilerGeneratedMethod(Context* context,
-                           const types::Type* type,
-                           UniqueString name,
-                           bool parenless);
 
 
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
@@ -1053,8 +1042,9 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   auto untyped = UntypedFnSignature::get(context,
                                          id, name,
                                          /* isMethod */ false,
-                                         idTag,
                                          /* isTypeConstructor */ true,
+                                         /* isCompilerGenerated */ true,
+                                         idTag,
                                          Function::PROC,
                                          std::move(formals),
                                          /* whereClause */ nullptr);
@@ -1675,15 +1665,6 @@ returnTypeForTypeCtorQuery(Context* context,
   return QUERY_END(result);
 }
 
-static
-bool isCompilerGeneratedMethodSignature(const UntypedFnSignature* ufs) {
-  // TODO: consider adding ufs->isCompilerGenerated()
-  if (ufs->idIsRecord() || ufs->idIsClass())
-    if (ufs->isMethod())
-      return isNameOfCompilerGeneratedMethod(ufs->name());
-  return false;
-}
-
 const QualifiedType& returnType(Context* context,
                                 const TypedFnSignature* sig,
                                 const PoiScope* poiScope) {
@@ -1753,7 +1734,7 @@ const QualifiedType& returnType(Context* context,
 
   // if method call and the receiver points to a composite type definition,
   // then it's some sort of compiler-generated method
-  } else if (isCompilerGeneratedMethodSignature(untyped)) {
+  } else if (untyped->isCompilerGenerated()) {
     if (untyped->name() == USTR("init")) {
       result = QualifiedType(QualifiedType::CONST_VAR,
                              VoidType::get(context));
@@ -2680,20 +2661,6 @@ CallResolutionResult resolveGeneratedCall(Context* context,
   return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope);
 }
 
-/**
-  Return true if 'name' is the name of a compiler generated method.
-*/
-static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
-  // TODO: Update me over time.
-  if (name == USTR("init")       ||
-      name == USTR("deinit")     ||
-      name == USTR("init=")) {
-    return true;
-  }
-
-  return false;
-}
-
 static bool helpFieldNameCheck(const AstNode* ast,
                                UniqueString name) {
   if (auto var = ast->toVarLikeDecl()) {
@@ -2742,10 +2709,7 @@ isNameOfFieldQuery(Context* context,
   return QUERY_END(result);
 }
 
-/**
-  Return true if 'name' is the name of a field for type 't'
-*/
-static bool isNameOfField(Context* context, UniqueString name, const Type* t) {
+bool isNameOfField(Context* context, UniqueString name, const Type* t) {
   const CompositeType* ct = t->toCompositeType();
   if (auto clsType = t->toClassType()) {
     ct = clsType->basicClassType();
@@ -2765,246 +2729,6 @@ static bool isNameOfField(Context* context, UniqueString name, const Type* t) {
   return isNameOfFieldQuery(context, name, ct);
 }
 
-static bool
-areOverloadsPresentInDefiningScope(Context* context, const Type* type,
-                                   UniqueString name) {
-  const Scope* scopeForReceiverType = nullptr;
-
-  if (auto compType = type->getCompositeType()) {
-    scopeForReceiverType = scopeForId(context, compType->id());
-  }
-
-  // there is no defining scope
-  if (!scopeForReceiverType) return false;
-
-  // do not look outside the defining module
-  const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS;
-
-  auto vec = lookupNameInScope(context, scopeForReceiverType,
-                               name,
-                               config);
-
-  // nothing found
-  if (vec.size() == 0) return false;
-
-  // loop through IDs and see if any are methods on the same type
-  for (auto& ids : vec) {
-    for (auto id : ids) {
-      auto node = parsing::idToAst(context, id);
-      assert(node);
-
-      if (auto fn = node->toFunction()) {
-        auto ufs = UntypedFnSignature::get(context, fn);
-
-        if (!ufs->isMethod()) continue;
-
-        // TODO: way to just compute formal type instead of whole TFS?
-        auto tfs = typedSignatureInitial(context, ufs);
-        auto receiverQualType = tfs->formalType(0);
-
-        // receiver type matches, return true
-        if (receiverQualType.type() == type) {
-          return true;
-        }
-      }
-    }
-  }
-
-  return false;
-}
-
-/**
-  Given a type and a UniqueString representing the name of a method,
-  determine if the type needs a method with such a name to be
-  generated for it.
-*/
-static bool
-needCompilerGeneratedMethod(Context* context, const Type* type,
-                            UniqueString name, bool parenless) {
-  if (isNameOfCompilerGeneratedMethod(name)) {
-    if (!areOverloadsPresentInDefiningScope(context, type, name)) {
-      return true;
-    }
-  }
-
-  // it's also possible that 'name' is the name of a field,
-  // and we need to find the compiler-generated field accessor
-  if (parenless) {
-    if (isNameOfField(context, name, type)) {
-      if (!areOverloadsPresentInDefiningScope(context, type, name)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-static TypedFnSignature*
-generateInitSignature(Context* context, const CompositeType* inCompType) {
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
-
-  // adjust to refer to fully generic signature if needed
-  auto genericCompType = inCompType->instantiatedFromCompositeType();
-  auto compType = genericCompType ? genericCompType : inCompType;
-
-  // start by adding a formal for the receiver
-  auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
-                                                      false,
-                                                      nullptr);
-  ufsFormals.push_back(std::move(ufsReceiver));
-
-  // receiver is 'ref' because it is mutated
-  formalTypes.push_back(QualifiedType(QualifiedType::REF, compType));
-
-  // consult the fields to build up the remaining untyped formals
-  const bool useGenericDefaults = false;
-  auto& rf = fieldsForTypeDecl(context, compType, useGenericDefaults);
-
-  // TODO: generic types
-  if (rf.isGeneric()) {
-    assert(false && "Not handled yet!");
-  }
-
-  // push all fields -> formals in order
-  for (int i = 0; i < rf.numFields(); i++) {
-    auto qualType = rf.fieldType(i);
-    auto name = rf.fieldName(i);
-    bool hasDefault = rf.fieldHasDefaultValue(i);
-    const uast::Decl* node = nullptr;
-
-    auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, node);
-    ufsFormals.push_back(std::move(fd));
-
-    // for types & param, use the field kind, for values use 'in' intent
-    if (qualType.isType() || qualType.isParam()) {
-      formalTypes.push_back(qualType);
-    } else {
-      auto qt = QualifiedType(QualifiedType::IN, qualType.type());
-      formalTypes.push_back(std::move(qt));
-    }
-  }
-
-  // build the untyped signature
-  auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
-                        /*name*/ USTR("init"),
-                        /*isMethod*/ true,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
-                        /*idIsTypeConstructor*/ false,
-                        /*kind*/ uast::Function::Kind::PROC,
-                        /*formals*/ std::move(ufsFormals),
-                        /*whereClause*/ nullptr);
-
-  // now build the other pieces of the typed signature
-  auto whereClauseResult = TypedFnSignature::WHERE_NONE;
-  bool needsInstantiation = rf.isGeneric();
-  const TypedFnSignature* instantiatedFrom = nullptr;
-  const TypedFnSignature* parentFn = nullptr;
-  Bitmap formalsInstantiated;
-
-  auto ret = new TypedFnSignature(ufs, formalTypes, whereClauseResult,
-                                  needsInstantiation,
-                                  instantiatedFrom,
-                                  parentFn,
-                                  formalsInstantiated);
-
-  return ret;
-}
-
-static TypedFnSignature*
-generateFieldAccessor(Context* context, UniqueString name,
-                      const CompositeType* compType) {
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
-
-  // start by adding a formal for the receiver
-  auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
-                                                      false,
-                                                      nullptr);
-  ufsFormals.push_back(std::move(ufsReceiver));
-
-  const Type* thisType = compType;
-  if (auto bct = thisType->toBasicClassType()) {
-    auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-    thisType = ClassType::get(context, bct, /*manager*/ nullptr, dec);
-  }
-
-  // receiver is 'ref' to allow mutation
-  // TODO: indicate that its const-ness should vary with receiver const-ness
-  formalTypes.push_back(QualifiedType(QualifiedType::REF, thisType));
-
-  // build the untyped signature
-  auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
-                        /*name*/ name,
-                        /*isMethod*/ true,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
-                        /*idIsTypeConstructor*/ false,
-                        /*kind*/ uast::Function::Kind::PROC,
-                        /*formals*/ std::move(ufsFormals),
-                        /*whereClause*/ nullptr);
-
-  // now build the other pieces of the typed signature
-  auto whereClauseResult = TypedFnSignature::WHERE_NONE;
-  bool needsInstantiation = false;
-  const TypedFnSignature* instantiatedFrom = nullptr;
-  const TypedFnSignature* parentFn = nullptr;
-  Bitmap formalsInstantiated;
-
-  auto ret = new TypedFnSignature(ufs, formalTypes, whereClauseResult,
-                                  needsInstantiation,
-                                  instantiatedFrom,
-                                  parentFn,
-                                  formalsInstantiated);
-
-  return ret;
-}
-
-static const owned<TypedFnSignature>&
-getCompilerGeneratedMethodQuery(Context* context, const Type* type,
-                                UniqueString name, bool parenless) {
-  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, type, name, parenless);
-
-  TypedFnSignature* tfs = nullptr;
-
-  if (needCompilerGeneratedMethod(context, type, name, parenless)) {
-    auto compType = type->toCompositeType();
-    if (auto clsType = type->toClassType()) {
-      compType = clsType->basicClassType();
-    }
-    assert(compType);
-
-    if (name == USTR("init")) {
-      tfs = generateInitSignature(context, compType);
-    } else if (isNameOfField(context, name, compType)) {
-      tfs = generateFieldAccessor(context, name, compType);
-    } else {
-      assert(false && "Not implemented yet!");
-    }
-  }
-
-  auto ret = toOwned(tfs);
-
-  return QUERY_END(ret);
-}
-
-/**
-  Given a type and a UniqueString representing the name of a method,
-  determine if the type needs a method with such a name to be
-  generated for it, and if so, generates and returns a
-  TypedFnSignature representing the generated method.
-
-  If no method was generated, returns nullptr.
-*/
-const TypedFnSignature*
-getCompilerGeneratedMethod(Context* context, const Type* type,
-                           UniqueString name, bool parenless) {
-  auto& owned = getCompilerGeneratedMethodQuery(context, type, name, parenless);
-  auto ret = owned.get();
-  return ret;
-}
 
 
 } // end namespace resolution

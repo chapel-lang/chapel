@@ -86,14 +86,16 @@ class UntypedFnSignature {
   };
 
  private:
-  // the ID of a uAST Function, if there is one for this signature;
-  // or, for compiler-generated functions/methods, the ID of the record/class
-  // declaration
+  // the ID of a related uAST node:
+  //   * in most cases, a Function
+  //   * can be a TypeDecl for a type constructor / init / other method
+  //   * can be a Variable for a field accessor
   ID id_;
   UniqueString name_;
   bool isMethod_; // in that case, formals[0] is the receiver
-  uast::asttags::AstTag idTag_; // concrete tag for ID
   bool isTypeConstructor_;
+  bool isCompilerGenerated_;
+  uast::asttags::AstTag idTag_; // concrete tag for ID
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
 
@@ -103,30 +105,35 @@ class UntypedFnSignature {
   UntypedFnSignature(ID id,
                      UniqueString name,
                      bool isMethod,
-                     uast::asttags::AstTag idTag,
                      bool isTypeConstructor,
+                     bool isCompilerGenerated,
+                     uast::asttags::AstTag idTag,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
                      const uast::AstNode* whereClause)
     : id_(id),
       name_(name),
       isMethod_(isMethod),
-      idTag_(idTag),
       isTypeConstructor_(isTypeConstructor),
+      isCompilerGenerated_(isCompilerGenerated),
+      idTag_(idTag),
       kind_(kind),
       formals_(std::move(formals)),
       whereClause_(whereClause) {
     assert(idTag == uast::asttags::Function ||
            idTag == uast::asttags::Class    ||
-           idTag == uast::asttags::Record);
+           idTag == uast::asttags::Record   ||
+           idTag == uast::asttags::Union    ||
+           idTag == uast::asttags::Variable);
   }
 
   static const owned<UntypedFnSignature>&
   getUntypedFnSignature(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
-                        uast::asttags::AstTag idTag,
                         bool isTypeConstructor,
+                        bool isCompilerGenerated,
+                        uast::asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
                         const uast::AstNode* whereClause);
@@ -136,8 +143,9 @@ class UntypedFnSignature {
   static const UntypedFnSignature* get(Context* context, ID id,
                                        UniqueString name,
                                        bool isMethod,
-                                       uast::asttags::AstTag idTag,
                                        bool isTypeConstructor,
+                                       bool isCompilerGenerated,
+                                       uast::asttags::AstTag idTag,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
                                        const uast::AstNode* whereClause);
@@ -152,8 +160,8 @@ class UntypedFnSignature {
     return id_ == other.id_ &&
            name_ == other.name_ &&
            isMethod_ == other.isMethod_ &&
+           isCompilerGenerated_ == other.isCompilerGenerated_ &&
            idTag_ == other.idTag_ &&
-           isTypeConstructor_ == other.isTypeConstructor_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
            whereClause_ == other.whereClause_;
@@ -192,6 +200,11 @@ class UntypedFnSignature {
     return kind_;
   }
 
+  /** Returns true if this compiler generated */
+  bool isCompilerGenerated() const {
+    return isCompilerGenerated_;
+  }
+
   /** Returns true if id() refers to a Function */
   bool idIsFunction() const {
     return idTag_ == uast::asttags::Function;
@@ -205,6 +218,16 @@ class UntypedFnSignature {
   /** Returns true if id() refers to a Record */
   bool idIsRecord() const {
     return idTag_ == uast::asttags::Record;
+  }
+
+  /** Returns true if id() refers to a Union */
+  bool idIsUnion() const {
+    return idTag_ == uast::asttags::Union;
+  }
+
+  /** Returns true if id() refers to a Variable (for a field) */
+  bool idIsField() const {
+    return idTag_ == uast::asttags::Variable;
   }
 
   /** Returns true if this is a type constructor */
