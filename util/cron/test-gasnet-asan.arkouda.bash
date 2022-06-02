@@ -25,6 +25,8 @@ export CHPL_GASNET_SEGMENT=everything
 # Use Arrow dependencies built using asan
 export ARKOUDA_ASAN=true
 
+export CHPL_TEST_ARKOUDA_PERF=false
+
 source $CWD/common-arkouda.bash
 
 export CHPL_FLAGS="--parallel-make 16 --ccflags -Og"

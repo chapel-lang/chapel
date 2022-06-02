@@ -10,7 +10,8 @@ if [ ! -d "$COMMON_DIR" ]; then
 fi
 
 # Perf configuration
-if [ -n "$CHPL_TEST_PERF_CONFIG_NAME" ]; then
+export CHPL_TEST_ARKOUDA_PERF=${CHPL_TEST_ARKOUDA_PERF:-true}
+if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ]; then
   source $CWD/common-perf.bash
   ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-$COMMON_DIR/NightlyPerformance/arkouda}
   export CHPL_TEST_PERF_DIR=$ARKOUDA_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
