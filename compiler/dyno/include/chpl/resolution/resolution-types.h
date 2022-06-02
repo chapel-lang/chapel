@@ -339,7 +339,7 @@ class CallInfo {
     #ifndef NDEBUG
     if (isMethodCall) {
       assert(numActuals() >= 1);
-      assert(this->actuals(0).byName() == "this");
+      assert(this->actual(0).byName() == "this");
     }
     if (isParenless) {
       if (isMethodCall) {
@@ -376,7 +376,7 @@ class CallInfo {
   }
 
   /** return the i'th actual */
-  const CallInfoActual& actuals(size_t i) const {
+  const CallInfoActual& actual(size_t i) const {
     assert(i < actuals_.size());
     return actuals_[i];
   }

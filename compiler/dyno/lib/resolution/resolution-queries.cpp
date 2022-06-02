@@ -1873,7 +1873,7 @@ doIsCandidateApplicableInstantiating(Context* context,
   // Next, check that the types are compatible
   size_t nActuals = call.numActuals();
   for (size_t i = 0; i < nActuals; i++) {
-    const QualifiedType& actualType = call.actuals(i).type();
+    const QualifiedType& actualType = call.actual(i).type();
     const QualifiedType& formalType = instantiated->formalType(i);
     auto got = canPass(context, actualType, formalType);
     if (!got.passes())
@@ -1984,7 +1984,7 @@ lookupCalledExpr(Context* context,
   if (ci.isMethodCall()) {
     assert(ci.numActuals() >= 1);
 
-    auto& receiverQualType = ci.actuals(0).type();
+    auto& receiverQualType = ci.actual(0).type();
     const Scope* scopeForReceiverType = nullptr;
 
     // Try to fetch the scope of the receiver type's definition.
@@ -2100,7 +2100,7 @@ static const Type* getManagedClassType(Context* context,
 
   const Type* t = nullptr;
   if (ci.numActuals() > 0)
-    t = ci.actuals(0).type().type();
+    t = ci.actual(0).type().type();
 
   if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
     context->error(astForErr, "invalid class type construction");
@@ -2149,7 +2149,7 @@ static const Type* getNumericType(Context* context,
         return ErroneousType::get(context);
       }
 
-      QualifiedType qt = ci.actuals(0).type();
+      QualifiedType qt = ci.actual(0).type();
       if (qt.type() && qt.type()->isAnyType()) {
         useGenericType = true;
       } else if (qt.isParam() && qt.param() == nullptr)  {
@@ -2178,7 +2178,7 @@ static const Type* getNumericType(Context* context,
 
     QualifiedType qt;
     if (ci.numActuals() > 0)
-      qt = ci.actuals(0).type();
+      qt = ci.actual(0).type();
 
     const Type* t = qt.type();
     if (t == nullptr) {
@@ -2227,7 +2227,7 @@ static const Type* resolveFnCallSpecialType(Context* context,
 
   if (ci.name() == USTR("?")) {
     if (ci.numActuals() > 0) {
-      if (const Type* t = ci.actuals(0).type().type()) {
+      if (const Type* t = ci.actual(0).type().type()) {
         const ClassType* ct = nullptr;
 
         if (auto bct = t->toBasicClassType()) {
@@ -2282,7 +2282,7 @@ static bool resolveFnCallSpecial(Context* context,
                                   ErroneousType::get(context));
       return true;
     }
-    auto got = canPass(context, ci.actuals(0).type(), ci.actuals(1).type());
+    auto got = canPass(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();
     exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context, 0),
                                 BoolParam::get(context, result));
@@ -2345,7 +2345,7 @@ considerCompilerGeneratedCandidates(Context* context,
 
   // fetch the receiver type info
   assert(ci.numActuals() >= 1);
-  auto& receiver = ci.actuals(0);
+  auto& receiver = ci.actual(0);
   auto receiverType = receiver.type().type();
 
   // if not compiler-generated, then nothing to do
