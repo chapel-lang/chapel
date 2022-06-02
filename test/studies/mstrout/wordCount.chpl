@@ -73,22 +73,19 @@ forall (i, file) in zip(filenames.domain, filenames) {
   var f = open(file, iomode.r);
   if debug then writeln("\n\n====== filename = ", file);
 
-  // Create a reader of the input csv file
+  // Create a reader of the input file
   var reader = f.reader(locking=false);
-
-  // Read the first line to get the column names.
-  var line : string;
-  if (!reader.readline(line)) then
-    writeln("ERROR: ", file, " appears to be empty");
 
   // declare a Map to maintain the count
   var wordCount = new map(string,int);
 
   // Read in all of the lines of the file.
+  var line : string;
   while reader.readline(line) {
     // count each time a word appears in the abstract column of this line
     for word in line.split(" ") {
-      wordCount[word] += 1;
+      var wordNoNewline = word.strip();
+      if wordNoNewline.size > 0 then wordCount[wordNoNewline] += 1;
     }
   }
 
