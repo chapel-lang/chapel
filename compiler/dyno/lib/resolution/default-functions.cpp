@@ -208,14 +208,16 @@ fieldAccessorQuery(Context* context,
   // TODO: indicate that its const-ness should vary with receiver const-ness
   formalTypes.push_back(QualifiedType(QualifiedType::REF, thisType));
 
+  ID fieldId = parsing::fieldIdWithName(context, compType->id(), fieldName);
+
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
+                        /*id*/ fieldId,
                         /*name*/ fieldName,
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*idTag*/ parsing::idToTag(context, fieldId),
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(ufsFormals),
                         /*whereClause*/ nullptr);

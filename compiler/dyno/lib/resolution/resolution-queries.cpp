@@ -1631,6 +1631,28 @@ returnTypeForTypeCtorQuery(Context* context,
   return QUERY_END(result);
 }
 
+static QualifiedType computeTypeOfField(Context* context,
+                                        const Type* t,
+                                        ID fieldId) {
+  if (const CompositeType* ct = t->getCompositeType()) {
+    // Figure out the parent MultiDecl / TupleDecl
+    ID declId = parsing::idToContainingMultiDeclId(context, fieldId);
+
+    // Resolve the type of that field (or MultiDecl/TupleDecl)
+    const auto& fields = resolveFieldDecl(context, ct, declId,
+                                          /*useGenericFormalDefaults*/ false);
+    int n = fields.numFields();
+    for (int i = 0; i < n; i++) {
+      if (fields.fieldDeclId(i) == fieldId) {
+        return fields.fieldType(i);
+      }
+    }
+  }
+
+  assert(false && "should not be reachable");
+  return QualifiedType(QualifiedType::VAR, ErroneousType::get(context));
+}
+
 const QualifiedType& returnType(Context* context,
                                 const TypedFnSignature* sig,
                                 const PoiScope* poiScope) {
@@ -1704,6 +1726,11 @@ const QualifiedType& returnType(Context* context,
     if (untyped->name() == USTR("init")) {
       result = QualifiedType(QualifiedType::CONST_VAR,
                              VoidType::get(context));
+    } else if (untyped->idIsField() && untyped->isMethod()) {
+      // method accessor - compute the type of the field
+      result = computeTypeOfField(context,
+                                  sig->formalType(0).type(),
+                                  untyped->id());
     } else {
       assert(false && "unhandled compiler-generated method");
     }
@@ -1809,6 +1836,7 @@ doIsCandidateApplicableInitial(Context* context,
     // calling a field accessor
     auto ct = ci.actual(0).type().type()->getCompositeType();
     assert(ct);
+    assert(isNameOfField(context, ci.name(), ct));
     return fieldAccessor(context, ct, ci.name());
   }
 

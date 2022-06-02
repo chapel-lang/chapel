@@ -22,10 +22,13 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
+#include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
+#include "chpl/uast/MultiDecl.h"
+#include "chpl/uast/TupleDecl.h"
 
 #include "../util/filesystem_help.h"
 
@@ -491,8 +494,141 @@ functionWithIdHasWhereQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-bool functionWithIdHasWhere(Context* context, ID id) {
+bool idIsFunctionWithWhere(Context* context, ID id) {
   return functionWithIdHasWhereQuery(context, id);
+}
+
+static const ID&
+idToContainingMultiDeclIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
+
+  ID cur = id;
+  assert(isVariable(idToTag(context, id)));
+
+  while (true) {
+    ID parent = idToParentId(context, cur);
+    AstTag parentTag = idToTag(context, parent);
+    if (isMultiDecl(parentTag) || isTupleDecl(parentTag)) {
+      // Continue looping with 'cur'
+      cur = parent;
+    } else {
+      // Stop looping and 'cur' is the decl to use
+      break;
+    }
+  }
+
+  return QUERY_END(cur);
+}
+
+ID idToContainingMultiDeclId(Context* context, ID id) {
+  return idToContainingMultiDeclIdQuery(context, id);
+}
+
+static bool helpFieldNameCheck(const AstNode* ast,
+                               UniqueString fieldName) {
+  if (auto var = ast->toVarLikeDecl()) {
+    return var->name() == fieldName;
+  } else if (auto mult = ast->toMultiDecl()) {
+    for (auto decl : mult->decls()) {
+      bool found = helpFieldNameCheck(decl, fieldName);
+      if (found) {
+        return true;
+      }
+    }
+  } else if (auto tup = ast->toTupleDecl()) {
+    for (auto decl : tup->decls()) {
+      bool found = helpFieldNameCheck(decl, fieldName);
+      if (found) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static const bool&
+idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
+  QUERY_BEGIN(idContainsFieldWithNameQuery, context, typeDeclId, fieldName);
+
+  bool result = false;
+  auto ast = parsing::idToAst(context, typeDeclId);
+  if (ast && ast->isAggregateDecl()) {
+    auto ad = ast->toAggregateDecl();
+
+    for (auto child: ad->children()) {
+      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      if (child->isVarLikeDecl() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        bool found = helpFieldNameCheck(child, fieldName);
+        if (found) {
+          result = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idContainsFieldWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
+  return idContainsFieldWithNameQuery(context, typeDeclId, fieldName);
+}
+
+static bool helpFindFieldId(const AstNode* ast,
+                            UniqueString fieldName,
+                            ID& fieldId) {
+  if (auto var = ast->toVarLikeDecl()) {
+    if (var->name() == fieldName) {
+      fieldId = var->id();
+      return true;
+    }
+  } else if (auto mult = ast->toMultiDecl()) {
+    for (auto decl : mult->decls()) {
+      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      if (found) {
+        return true;
+      }
+    }
+  } else if (auto tup = ast->toTupleDecl()) {
+    for (auto decl : tup->decls()) {
+      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      if (found) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static const ID&
+fieldIdWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
+  QUERY_BEGIN(fieldIdWithNameQuery, context, typeDeclId, fieldName);
+
+  ID result;
+  auto ast = parsing::idToAst(context, typeDeclId);
+  if (ast && ast->isAggregateDecl()) {
+    auto ad = ast->toAggregateDecl();
+
+    for (auto child: ad->children()) {
+      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      if (child->isVarLikeDecl() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        bool found = helpFindFieldId(child, fieldName, result);
+        if (found) {
+          break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+ID fieldIdWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
+  return fieldIdWithNameQuery(context, typeDeclId, fieldName);
 }
 
 void setConfigSettings(Context* context, ConfigSettingsList keys) {
