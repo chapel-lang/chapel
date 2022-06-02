@@ -109,7 +109,8 @@ class ErrorMessage final {
   Kind kind() const { return kind_; }
 
   inline bool operator==(const ErrorMessage& other) const {
-    return kind_ == other.kind_ &&
+    return isDefaultConstructed_ == other.isDefaultConstructed_ &&
+           kind_ == other.kind_ &&
            location_ == other.location_ &&
            message_ == other.message_ &&
            details_ == other.details_ &&
