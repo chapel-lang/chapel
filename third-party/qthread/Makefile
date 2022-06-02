@@ -139,6 +139,13 @@ ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
 endif
 
+# Address sanitizer doesn't work with asm context switching so try
+# makecontext/swapcontext (which may have false-positives, but doesn't
+# immediately fail)
+ifneq (,$(CHPL_QTHREAD_SANITIZER_SUPPORT))
+  CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
+endif
+
 ifeq ($(CHPL_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
