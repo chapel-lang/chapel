@@ -43,7 +43,6 @@ local subdomains:
 {half, one, pointone, zero}
 
 is empty: false
-find last: (true, half)
 count last: 1
 equals same: true
 equals diff: false

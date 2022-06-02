@@ -78,7 +78,6 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln("is empty: ", X.isEmpty());
   writeln("head: ", X.head());
   writeln("tail: ", X.tail());
-  writeln("find last: ", X.find(X[X.domain.alignedHigh]));
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
@@ -197,7 +196,6 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln("is empty: ", X.isEmpty());
   writeln("head: ", X.head());
   writeln("tail: ", X.tail());
-  writeln("find last: ", X.find(X[X.domain.alignedHigh]));
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;

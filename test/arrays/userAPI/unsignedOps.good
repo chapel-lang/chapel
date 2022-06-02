@@ -78,7 +78,6 @@ local subdomains:
 is empty: false
 head: 1.8
 tail: 16.8
-find last: (true, (4, 4))
 equals same: true
 equals diff: false
 
@@ -184,7 +183,6 @@ local subdomains:
 is empty: false
 head: 1.8
 tail: 16.8
-find last: (true, (4, 4))
 equals same: true
 equals diff: false
 
@@ -290,7 +288,6 @@ local subdomains:
 is empty: false
 head: 1.8
 tail: 16.8
-find last: (true, (3, 8))
 equals same: true
 equals diff: false
 
@@ -396,7 +393,6 @@ local subdomains:
 is empty: false
 head: 1.8
 tail: 16.8
-find last: (true, (4, 4))
 equals same: true
 equals diff: false
 

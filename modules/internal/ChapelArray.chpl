@@ -1737,7 +1737,8 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-    proc find(val: this.eltType): (bool, index(this.domain)) {
+     deprecated "find is deprecated, use a reduction like 'maxloc reduce zip(A == val, A.domain)' instead"
+     proc find(val: this.eltType): (bool, index(this.domain)) {
       for i in this.domain {
         if this[i] == val then return (true, i);
       }

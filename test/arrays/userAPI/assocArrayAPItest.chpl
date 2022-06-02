@@ -113,7 +113,6 @@ proc testAssocArrayAPI(X: []) {
 
   // Test collection interface
   writeln("is empty: ", X.isEmpty());
-  writeln("find last: ", X.find(X[high]));
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
