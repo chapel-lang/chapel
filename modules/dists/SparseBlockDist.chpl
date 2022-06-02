@@ -481,15 +481,11 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
-  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
-    /* This results in an infinite recursion when called as of 1.26.0;
-       I expect it always has and that we have no tests that exercise
-       this code path:
-    __primitive("resolves",
-                locArr[locArrDom.alignedLow]!.myElems._value.these(tag)) {
-*/
+    __primitive("method call resolves",
+                locArr[locArrDom.alignedLow]!.myElems._value, "these", tag) {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       forall i in locA!.myElems {
