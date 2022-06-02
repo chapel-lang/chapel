@@ -1,5 +1,5 @@
 private use List;
-
+private use Sort;
 private use Map;
 
 proc mapXor(a: map(?keyType, ?valueType, ?),
@@ -93,7 +93,7 @@ proc checkAllocations() {
 
   proc printthem(arr)
   {
-    for id in arr.valuesToArray().sorted() {
+    for id in sorted(arr.valuesToArray()) {
       write("(id=", id, " x=", to_x[id], ") ");
     }
   }

@@ -1,9 +1,10 @@
 use Map;
+use Sort;
 
 proc pretty(ref a : map) {
   write("{ ");
   var first = true;
-  for k in a.keysToArray().sorted() {
+  for k in sorted(a.keysToArray()) {
     if !first then write(", ", k, " => ", a[k]);
     else {
       write(k, " => ", a[k]);

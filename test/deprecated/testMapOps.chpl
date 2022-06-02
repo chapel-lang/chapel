@@ -1,3 +1,4 @@
+use Sort;
 use Map;
 
 var m1 = new map(int, int);
@@ -10,8 +11,8 @@ m2[1] = -1;
 m2[3] = -3;
 m2[5] = -5;
 
-writeln((m1 + m2).toArray().sorted());
-writeln((m1 | m2).toArray().sorted());
-writeln((m1 & m2).toArray().sorted());
-writeln((m1 - m2).toArray().sorted());
-writeln((m1 ^ m2).toArray().sorted());
+writeln(sorted((m1 + m2).toArray()));
+writeln(sorted((m1 | m2).toArray()));
+writeln(sorted((m1 & m2).toArray()));
+writeln(sorted((m1 - m2).toArray()));
+writeln(sorted((m1 ^ m2).toArray()));

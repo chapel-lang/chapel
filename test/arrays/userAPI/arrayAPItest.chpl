@@ -95,12 +95,6 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   // Test sparse-specific things
   if testError == 12 then
     writeln("IRV is: ", X.IRV);
-  // Test sorted iterator
-  if testError == 13 {
-    writeln("in sorted order: ");
-    for x in X.sorted() do
-      writeln(x);
-  }
 }
 
 proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
@@ -225,11 +219,4 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   // Test sparse-specific things
   if testError == 12 then
     writeln("IRV is: ", X.IRV);
-
-  // Test sorted iterator
-  if testError == 13 {
-    writeln("in sorted order: ");
-    for x in X.sorted() do
-      writeln(x);
-  }
 }

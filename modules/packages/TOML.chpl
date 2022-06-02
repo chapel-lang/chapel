@@ -38,6 +38,7 @@ private use List;
 private use Map;
 public use TomlParser;
 private use TomlReader;
+private use Sort;
 use IO;
 
 
@@ -882,7 +883,7 @@ used to recursively hold tables and respective values
           printValuesJSON(f, flat['root']!, indent=indent);
           flat.remove('root');
         }
-        for k in flat.keysToArray().sorted() {
+        for k in sorted(flat.keysToArray()) {
           f.writef('%s"%s": {\n', ' '*indent, k);
           indent += tabSpace;
           printValuesJSON(f, flat[k]!, indent=indent);
@@ -920,7 +921,7 @@ used to recursively hold tables and respective values
         printValues(f, flat['root']!);
         flat.remove('root');
       }
-      for k in flat.keysToArray().sorted() {
+      for k in sorted(flat.keysToArray()) {
         f.writeln('[', k, ']');
         printValues(f, flat[k]!);
       }

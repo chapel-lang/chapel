@@ -130,6 +130,8 @@ iter distributedDynamic(param tag:iterKind,
                         workerLocales=Locales)
 where tag == iterKind.leader
 {
+  use Sort;
+
   compilerAssert(isDomain(c) || isRange(c),
                  ("DistributedIters: Dynamic iterator (leader): must use a "
                   + "valid domain or range"),
@@ -209,7 +211,7 @@ where tag == iterKind.leader
       if infoDistributedIters then
       {
         const actualWorkerLocaleIds = [L in actualWorkerLocales] L.id:string;
-        const actualWorkerLocaleIdsSorted = actualWorkerLocaleIds.sorted();
+        const actualWorkerLocaleIdsSorted = sorted(actualWorkerLocaleIds);
         writeln("DistributedIters: distributedDynamic:");
         writeln("  coordinated = ", coordinated);
         writeln("  numLocales = ", numLocales);
@@ -394,6 +396,8 @@ iter distributedGuided(param tag:iterKind,
                        workerLocales=Locales)
 where tag == iterKind.leader
 {
+  use Sort;
+
   compilerAssert(isDomain(c) || isRange(c),
                  ("DistributedIters: Guided iterator (leader): must use a "
                   + "valid domain or range"),
@@ -471,7 +475,7 @@ where tag == iterKind.leader
       if infoDistributedIters then
       {
         const actualWorkerLocaleIds = [L in actualWorkerLocales] L.id:string;
-        const actualWorkerLocaleIdsSorted = actualWorkerLocaleIds.sorted();
+        const actualWorkerLocaleIdsSorted = sorted(actualWorkerLocaleIds);
         writeln("DistributedIters: distributedGuided:");
         writeln("  coordinated = ", coordinated);
         writeln("  numLocales = ", numLocales);
