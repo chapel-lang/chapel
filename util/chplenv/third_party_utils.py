@@ -312,31 +312,6 @@ def get_bundled_compile_args(pkg, ucp=''):
     inc_dir = os.path.join(get_bundled_install_path(pkg, ucp), 'include')
     return (['-I' + inc_dir], [ ])
 
-
-#
-# This returns the default link args for the given third-party package
-# assuming that the bundled version is used.
-#
-# This simple version just returns
-#  -L third-party/<pkg>/install/<ucp>/lib
-#  -Wl,-rpath  third-party/<pkg>/install/<ucp>/lib
-#  -lpkg
-#
-# returns 2-tuple of lists
-#  (linker_bundled_args, linker_system_args)
-def get_bundled_link_args(pkg, ucp=''):
-    # compute the default ucp
-    if ucp == '':
-        ucp = default_uniq_cfg_path()
-
-    all_args=[ ]
-    lib_dir = os.path.join(get_bundled_install_path(pkg, ucp), 'lib')
-    all_args.append('-L' + lib_dir)
-    all_args.append('-Wl,-rpath,' + lib_dir)
-    all_args.append('-l' + pkg);
-
-    return filter_libs(all_args, [ ])
-
 # apply substitutions like ${VARNAME} within string
 # using the supplied dictionary d
 def apply_pkgconfig_subs(s, d):
