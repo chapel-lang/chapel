@@ -7,7 +7,7 @@ const Scores = [')'=>1,   ']'=>2,  '}'=>3, '>'=>4];
 
 iter readlines() {
   var line: string;
-  while readline(line) {
+  while readLine(line) {
     yield line.strip();
   }
 }

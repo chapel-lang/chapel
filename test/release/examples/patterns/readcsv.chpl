@@ -74,7 +74,7 @@ var f = open(inFileName, iomode.r);
   //    col_name_1,col_name_2,...,col_name_ncol\n
   var line : string;
 
-  if (!reader.readline(line)) then
+  if (!reader.readLine(line)) then
     halt("ERROR: ", inFileName, " appears to be empty");
 
   var colNames = createListOfColNames(line);
@@ -86,7 +86,7 @@ var f = open(inFileName, iomode.r);
   // Create a list of maps with one map per row of data.
   var dataRows : list(map(string, string));
   // Read individual lines from the file until the end of the file.
-  while (reader.readline(line)) {
+  while (reader.readLine(line)) {
     // Create a new map per line.
     var aRowMap = new map(string, string);
     var start = 0;      // index into the line string
@@ -150,7 +150,7 @@ var f = open(inFileName, iomode.r);
   // Note: this portion is the same as in Approach 1
   var line : string;
 
-  if (!reader.readline(line)) then
+  if (!reader.readLine(line)) then
     writeln("ERROR: ", inFileName, " appears to be empty");
 
   var colNames = createListOfColNames(line);
@@ -167,7 +167,7 @@ var f = open(inFileName, iomode.r);
   var dataRows : list(string);
 
   // Reading all of the lines of the file into a list.
-  while (reader.readline(line)) {
+  while (reader.readLine(line)) {
     dataRows.append(line);
   }
 
@@ -280,4 +280,3 @@ proc createListOfColNames(line : string) {
   }
   return colNames;
 } 
-

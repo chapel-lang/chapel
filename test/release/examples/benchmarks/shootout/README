@@ -152,7 +152,7 @@ o Good motivation for optimizing 1D array reallocations with a common
 
 o Why does '(data:[] uint(8)) op= 0x20' not work?
 
-o Should readline() support an overload that takes an array of int(8)?
+o Should readline() support an overload that takes an array of int(8)? It does now
 
 o Could we use a 'sorted' iterator to print freqs rather than storing into
   an array?
@@ -233,7 +233,7 @@ o Should we be able to support a param loop over lo..hi by 2?
 
 o Each time I use readline() I'm sad that I have to declare a
   'numRead' variable ahead of it.  Could this return a tuple
-  or something to avoid having to pass in this argument?
+  or something to avoid having to pass in this argument? Done :)
 
 
 spectralnorm

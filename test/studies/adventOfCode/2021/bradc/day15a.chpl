@@ -64,7 +64,7 @@ while !Q.isEmpty() {
 
 proc readRisk() {
   var line: string;
-  while readline(line) {
+  while readLine(line) {
     line = line.strip();
     rows += 1;
     if cols == 0 then cols = line.size;
@@ -77,4 +77,3 @@ proc stringToRow(str: string, row) {
   for (ch, c) in zip(str, 1..) do
     Risk[row, c] = ch: int;
 }
-

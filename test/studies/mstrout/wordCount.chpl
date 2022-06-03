@@ -81,7 +81,7 @@ forall (i, file) in zip(filenames.domain, filenames) {
 
   // Read in all of the lines of the file.
   var line : string;
-  while reader.readline(line) {
+  while reader.readLine(line) {
     // count each time a word appears in the abstract column of this line
     for word in line.split(" ") {
       var wordNoNewline = word.strip();

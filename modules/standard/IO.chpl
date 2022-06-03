@@ -3830,6 +3830,7 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
+deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
                       amount = arg.domain.high - start + 1) : bool throws
                       where arg.rank == 1 && arg.isRectangular() {
@@ -3865,6 +3866,43 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   return false;
 }
 
+/* New Array readLine method */
+proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws 
+      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() {
+  if arg.size == 0 || maxSize == 0 || 
+  ( arg.domain.low + maxSize - 1 > arg.domain.high) then return 0;
+
+  var err:syserr = ENOERR;
+  var numRead:int;
+  on this.home {
+    try this.lock(); defer { this.unlock(); }
+    param newLineChar = 0x0A;
+    var got: int;
+    var i = arg.domain.low;
+    const maxIdx = arg.domain.low + maxSize - 1;
+    while i <= maxIdx {
+      got = qio_channel_read_byte(false, this._channel_internal);
+      if got < 0 then break;
+      if got == newLineChar && stripNewline then break;
+      arg[i] = got:uint(8);
+      i += 1;
+      if got == newLineChar then break;
+    }
+    numRead = i - arg.domain.low;
+    if i == arg.domain.low && got < 0 then err = (-got):syserr;
+  }
+
+  if !err {
+    return numRead;
+  } else if err == EEOF {
+    return 0;
+  } else {
+    try this._ch_ioerror(err, "in channel.readLine(arg : [] uint(8))");
+  }
+  return 0;
+
+}
+
 /*
   Read a line into a Chapel string or bytes. Reads until a ``\n`` is reached.
   The ``\n`` is included in the resulting value.
@@ -3874,6 +3912,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 
   :throws SystemError: Thrown if data could not be read from the channel.
 */
+deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
 proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
@@ -3897,6 +3936,83 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   }
 
   return true;
+}
+
+/* New function to replace the old one*/
+proc channel.readLine(ref s: string, maxSize=-1, stripNewline=false): bool throws{
+  if writing then compilerError("read on write-only channel");
+  const origLocale = this.getLocaleOfIoRequest();
+
+  try {
+    on this.home {
+      try this.lock(); defer { this.unlock(); }
+      var saveStyle: iostyleInternal = this._styleInternal();
+      defer {
+        this._set_styleInternal(saveStyle);
+      }
+      var myStyle = saveStyle.text();
+      myStyle.string_format = QIO_STRING_FORMAT_TOEND;
+      myStyle.string_end = 0x0a; // ascii newline.
+      if(maxSize >= 0){
+        try myStyle.max_width_characters = maxSize.safeCast(uint(32)); // Probably should change maxSize's type to be safe to cast
+      }
+      this._set_styleInternal(myStyle);
+      try _readOne(iokind.dynamic, s, origLocale);
+    }
+  } catch err: SystemError {
+    if err.err != EEOF then throw err;
+    return false;
+  }
+  // TODO find a more memory efficient way to do this
+  // Maybe have a QIO_STRING_FORMAT_TOEND_DROPEND which drops the last char
+  if(stripNewline){
+    s = s.strip(chars="\n", leading = false);
+  }
+
+  return true;
+}
+
+/* New bytes function */
+proc channel.readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws{
+  if writing then compilerError("read on write-only channel");
+  const origLocale = this.getLocaleOfIoRequest();
+
+  try {
+    on this.home {
+      try this.lock(); defer { this.unlock(); }
+      var saveStyle: iostyleInternal = this._styleInternal();
+      defer {
+        this._set_styleInternal(saveStyle);
+      }
+      var myStyle = saveStyle.text();
+      myStyle.string_format = QIO_STRING_FORMAT_TOEND;
+      myStyle.string_end = 0x0a; // ascii newline.
+      if(maxSize >= 0){
+        try myStyle.max_width_bytes = maxSize.safeCast(uint(32)); // Probably should change maxSize's type to be safe to cast
+      }
+      this._set_styleInternal(myStyle);
+      try _readOne(iokind.dynamic, b, origLocale);
+    }
+  } catch err: SystemError {
+    if err.err != EEOF then throw err;
+    return false;
+  }
+  // TODO find a more memory efficient way to do this
+  // Maybe have a QIO_STRING_FORMAT_TOEND_DROPEND which drops the last char
+  if(stripNewline){
+    b = b.strip(chars=b"\n", leading = false);
+  }
+  return true;
+}
+
+/* New function that returns instead of using a ref 
+Right now we only have t be string on bytes. Will open issue for
+where t=somethingElse
+*/
+proc channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
+  var retval: t;
+  this.readLine(retval, maxSize, stripNewline);
+  return retval;
 }
 
 /* read a given number of bytes from a channel
@@ -4581,16 +4697,36 @@ proc read(type t ...?numTypes) throws {
   return stdin.read((...t));
 }
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+deprecated "readline is deprecated. Use :proc:`readLine` instead"
 proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
               amount = arg.domain.high - start + 1) : bool throws
                 where arg.rank == 1 && arg.isRectangular() {
   return stdin.readline(arg, numRead, start, amount);
 }
 
+/* use new readLine functions */
+proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws 
+      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() {
+  return stdin.readLine(arg, maxSize, stripNewline);
+}
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+deprecated "readline is deprecated. Use :proc:`readLine` instead"
 proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
   return stdin.readline(arg);
 }
+
+/* New convenience functions for readLine. See :proc:`channel.readLine`*/
+proc readLine(ref s: string, maxSize=-1, stripNewline=false): bool throws{
+  return stdin.readLine(s, maxSize, stripNewline);
+}
+proc readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws{
+  return stdin.readLine(b, maxSize, stripNewline);
+}
+proc readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
+  return stdin.readline(t, maxSize, stripNewline);
+}
+
+
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
 proc readln(ref args ...?n):bool throws {
   return stdin.readln((...args));

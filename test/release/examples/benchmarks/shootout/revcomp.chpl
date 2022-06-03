@@ -19,9 +19,8 @@ proc main(args: [] string) {
       start = 0;
 
   sync {     // wait for all process() tasks to complete before continuing
-    var numRead: int;
-
-    while stdinNoLock.readline(data, numRead, idx) {
+    var numRead = stdinNoLock.readLine(data[idx..]);
+    while numRead > 0 {
       if data[idx] == ">".toByte() {       // is this the start of a section?
 
         // spawn a task to process the previous sequence, if there was one
@@ -33,6 +32,7 @@ proc main(args: [] string) {
       }
 
       idx += numRead; 
+      numRead = stdinNoLock.readLine(data[idx..])
     }
 
     // process the final sequence

@@ -7,7 +7,7 @@ const Scores = [')'=>3,   ']'=>57,  '}'=>1197, '>'=>25137];
 
 iter readlines() {
   var line: string;
-  while readline(line) {
+  while readLine(line) {
     yield line.strip();
   }
 }
@@ -36,4 +36,3 @@ forall (command, lineno) in zip(navSubSys, 1..) {
   }
 }
 writeln(score.read());
-

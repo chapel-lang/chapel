@@ -99,7 +99,7 @@ var r = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", iomode.r);
 var rr = r.reader();
 
 var str:  string;
-while(rr.readline(str)) {
+while(rr.readLine(str)) {
   write(str);
 }
 rr.close();

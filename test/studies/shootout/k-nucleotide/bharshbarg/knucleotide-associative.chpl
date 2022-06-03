@@ -99,13 +99,22 @@ proc main(args: [] string) {
   var tempdata : [1..lineSize] uint(8);
   var numRead = 0;
   var total = 0;
-  while myin.readline(tempdata, numRead) && !startsWithThree(tempdata) { total += numRead; }
+  
+  numRead = stdinNoLock.readLine(tempdata);
+  while numRead>0 && !startsWithThree(tempdata) {
+    total += numRead;
+    numRead = stdinNoLock.readLine(buff);
+  }
 
   // Read in the rest of the file
   var dataDom = {1..fileLen-total};
   var data : [dataDom] uint(8);
   var idx = 1;
-  while myin.readline(data, numRead, idx) { idx += numRead - 1; }
+  numRead = myin.readLine(data[idx..]);
+  while numRead > 0 { 
+    idx += numRead - 1; 
+    numRead = myin.readLine(data[idx..]);
+  }
   
   // Resize our array to the amount actually read
   dataDom = {1..idx};
