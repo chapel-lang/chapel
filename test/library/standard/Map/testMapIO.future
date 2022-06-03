@@ -1,0 +1,5 @@
+bug: cannot read a map from its written format
+#20004
+
+Trying to read a map that was just written results in an unhelpful IO error
+that complains about the expected '}' character.
