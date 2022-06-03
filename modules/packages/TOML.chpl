@@ -1363,9 +1363,20 @@ module TomlReader {
       }
     }
 
-    proc readWriteThis(f) throws {
+    pragma "no doc"
+    proc readThis(f) throws {
+      compilerError("Reading a Tokens type is not supported");
+    }
+
+    proc writeThis(f) throws {
       // TODO: The `list` type currently doesn't support readWriteThis!
       f <~> this.A.toArray();
+    }
+
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' or 'writeThis' methods instead."
+    proc readWriteThis(f) throws {
+      if f.writing then writeThis(f);
+      else readThis(f);
     }
   }
 }

@@ -511,7 +511,12 @@ module EpochManager {
       return arr;
       }
 
-      proc readWriteThis(f) throws {
+      pragma "no doc"
+      proc readThis(f) throws {
+        compilerError("Reading a Vector is not supported");
+      }
+
+      proc writeThis(f) throws {
         f <~> "(Vector) {" <~> this.toArray() <~> "}";
       }
     }
