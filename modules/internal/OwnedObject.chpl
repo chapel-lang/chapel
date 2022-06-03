@@ -441,9 +441,19 @@ module OwnedObject {
     __primitive("call destructor", __primitive("deref", x));
   }
 
+  pragma "no doc"
+  proc _owned.readThis(f) throws {
+    _readWriteHelper(f);
+  }
+
+  pragma "no doc"
+  proc _owned.writeThis(f) throws {
+    _readWriteHelper(f);
+  }
+
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer
   pragma "no doc"
-  proc _owned.readWriteThis(f) throws {
+  proc _owned._readWriteHelper(f) throws {
     if isNonNilableClass(this.chpl_t) {
       var tmp = this.chpl_p! : borrowed class;
       f <~> tmp;
