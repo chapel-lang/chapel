@@ -1,5 +1,6 @@
 use IO;
 
+config type dataType = string;
 config const noisy = false;
 
 proc testio(param typ:iokind, style:iostyleInternal, x)
@@ -149,5 +150,6 @@ proc main() {
   testio(new ioNewline());
   testio(new ioLiteral("test"));
   testio(new ioBits(0b011011001101000110101101, 24));
-
+  
+  test_readlines();
 }

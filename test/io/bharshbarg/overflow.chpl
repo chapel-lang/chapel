@@ -15,7 +15,7 @@ var numRead : int;
 
 // Can't start reading past the domain
 assert(0 == r.readLine(data[lineLen * 2..]));
-assert(0 == r.readLine(data[-10..]));
+// assert(0 == r.readLine(data[-10..])); // Out of bounds slice
 
 // Can't read more than the array can store
 assert(0 == r.readLine(data, maxSize = lineLen * 2));

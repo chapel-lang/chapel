@@ -126,8 +126,8 @@ proc runWithStatus(command, quiet=false): int {
 
     var line:string;
     if !quiet {
-      while sub.stdout.readline(line) do write(line);
-      while sub.stderr.readline(line) do write(line);
+      while sub.stdout.readLine(line) do write(line);
+      while sub.stderr.readLine(line) do write(line);
     }
     sub.wait();
     return sub.exitCode;
@@ -210,7 +210,7 @@ proc runSpackCommand(command, quiet=false) {
   // quiet flag necessary for tests to be portable
   if !quiet {
     var line:string;
-    while sub.stdout.readline(line) {
+    while sub.stdout.readLine(line) {
       write(line);
     }
   }

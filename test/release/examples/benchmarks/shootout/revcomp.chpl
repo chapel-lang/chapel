@@ -32,7 +32,7 @@ proc main(args: [] string) {
       }
 
       idx += numRead; 
-      numRead = stdinNoLock.readLine(data[idx..])
+      numRead = stdinNoLock.readLine(data[idx..]);
     }
 
     // process the final sequence

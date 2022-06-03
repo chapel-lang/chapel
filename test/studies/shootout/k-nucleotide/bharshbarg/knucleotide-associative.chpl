@@ -100,10 +100,10 @@ proc main(args: [] string) {
   var numRead = 0;
   var total = 0;
   
-  numRead = stdinNoLock.readLine(tempdata);
+  numRead = myin.readLine(tempdata);
   while numRead>0 && !startsWithThree(tempdata) {
     total += numRead;
-    numRead = stdinNoLock.readLine(buff);
+    numRead = myin.readLine(tempdata);
   }
 
   // Read in the rest of the file

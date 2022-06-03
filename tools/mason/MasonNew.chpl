@@ -118,7 +118,7 @@ considered if no input is given.""");
         if defPackageName != '' then write(" (" + defPackageName + ")");
         write(": ");
         IO.stdout.flush();
-        IO.stdin.readline(packageName);
+        IO.stdin.readLine(packageName);
         exitOnEOF(packageName);
         packageName = packageName.strip();
         if packageName == '' then
@@ -140,7 +140,7 @@ considered if no input is given.""");
       if !gotCorrectPackageVersion {
         write("Package version (" + defaultVersion + "): ");
         IO.stdout.flush();
-        IO.stdin.readline(version);
+        IO.stdin.readLine(version);
         exitOnEOF(version);
         version = version.strip();
         if version == "" then version = defaultVersion;
@@ -150,7 +150,7 @@ considered if no input is given.""");
       if !gotCorrectChapelVersion {
         write("Chapel version (" + currChapelVersion + "): ");
         IO.stdout.flush();
-        IO.stdin.readline(chapelVersion);
+        IO.stdin.readLine(chapelVersion);
         exitOnEOF(chapelVersion);
         chapelVersion = chapelVersion.strip();
         if chapelVersion == "" then chapelVersion = currChapelVersion;
@@ -161,7 +161,7 @@ considered if no input is given.""");
       if !gotCorrectLicense {
         write("License (" + defaultLicense + "): ");
         IO.stdout.flush();
-        IO.stdin.readline(currLicense);
+        IO.stdin.readLine(currLicense);
         exitOnEOF(currLicense);
         currLicense = currLicense.strip();
         if currLicense == "" then currLicense = defaultLicense;
@@ -176,7 +176,7 @@ considered if no input is given.""");
           write("Is this okay ? (Y/N): ");
           IO.stdout.flush();
           var option: string;
-          IO.stdin.readline(option);
+          IO.stdin.readLine(option);
           exitOnEOF(option);
           option = option.strip();
           option = option.toUpper();
