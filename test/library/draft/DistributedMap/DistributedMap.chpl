@@ -38,8 +38,12 @@ record distributedMap {
     const impl = new unmanaged DistributedMapImpl(keyType, valType);
     this.init(impl);
   }
-  proc readWriteThis(ch) throws {
-    compilerAssert(ch.writing);
+
+  proc readThis(ch) throws {
+    compilerError("Reading a distributedMap is not supported");
+  }
+
+  proc writeThis(ch) throws {
     _value.write(ch);
   }
 } // record distributedMap

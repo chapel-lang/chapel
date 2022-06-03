@@ -20,7 +20,16 @@ class B {
 
 class C {
   var x:int;
-  proc readWriteThis(rw) throws {
+
+  proc readThis(r) throws {
+    readWriteHelper(r);
+  }
+
+  proc writeThis(w) throws {
+    readWriteHelper(w);
+  }
+
+  proc readWriteHelper(rw) throws {
     var loc = rw.readWriteThisFromLocale();
     writeln("in C.readWriteThis loc= ", loc.id);
     if rw.writing then

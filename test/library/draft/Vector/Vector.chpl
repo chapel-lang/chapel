@@ -1157,12 +1157,17 @@ module Vector {
       return _data[i];
     }
 
+    pragma "no doc"
+    proc readThis(ch: channel) throws {
+      compilerError("Reading a Vector is not supported");
+    }
+
     /*
       Write the contents of this vector to a channel.
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) throws {
+    proc writeThis(ch: channel) throws {
       _enter();
       
       ch <~> "[";
@@ -1176,6 +1181,17 @@ module Vector {
       ch <~> "]";
 
       _leave();
+    }
+
+    /*
+      Write the contents of this vector to a channel.
+
+      :arg ch: A channel to write to.
+    */
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+    proc readWriteThis(ch: channel) throws {
+      if ch.writing then writeThis(ch);
+      else readThis(ch);
     }
 
     /*

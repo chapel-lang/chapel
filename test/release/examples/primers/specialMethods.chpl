@@ -183,19 +183,7 @@ proc R.readThis(ch: channel) throws {
   assert(r == r2);
 }
 
-// If the record should be read and written using the same
-// format, the combined ``readWriteThis`` method can replace the
-// ``readThis`` and ``writeThis`` methods. This method will be
-// used for both reading and writing the ``vals`` tuple
-// surrounded by double asterisks. The ``readThis`` and
-// ``writeThis`` methods defined above have higher precedence
-// than ``readWriteThis``, so this function is not used because
-// they are defined.
-proc R.readWriteThis(ch: channel) throws {
-  const stars = new ioLiteral("**");
-  ch <~> stars <~> vals <~> stars;
-}
-
+// Using ``readThis`` and ``writeThis`` together:
 {
   var chW = openwriter(filename);
   chW.writeln(r);
