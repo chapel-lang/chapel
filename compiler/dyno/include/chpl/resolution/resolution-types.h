@@ -163,6 +163,7 @@ class UntypedFnSignature {
     return id_ == other.id_ &&
            name_ == other.name_ &&
            isMethod_ == other.isMethod_ &&
+           isTypeConstructor_ == other.isTypeConstructor_ &&
            isCompilerGenerated_ == other.isCompilerGenerated_ &&
            idTag_ == other.idTag_ &&
            kind_ == other.kind_ &&
