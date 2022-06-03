@@ -49,27 +49,26 @@ proc f(x: complex(128), y: complex(128)) {
   writeln("  f(", x.type:string, ",", y.type:string, ")");
 }
 
-proc f(x, y) {
-  writeln("  f(generic)");
+proc isProhibitedAdd(type t1, type t2) param {
+  return (t1 == uint && isIntType(t2)) ||
+         (t1 == uint && isUintType(t2) && t2 != uint); // bug workaround
 }
+
 
 // next, call 'f' with all combinations of numeric types
 proc callF(type t1, type t2) {
-  {
-    writef(" Second actual %-12s -> ", t2:string);
-  }
-
+  writef(" Second actual %-12s -> ", t2:string);
   var x: t1;
   var y: t2;
-
   f(x, y);
 
   writef("      Reversed %-12s -> ", "");
   f(y, x);
 
-
-  writef("               %-12s ->   ", "+");
-  writeln((x+y).type:string);
+  if (!isProhibitedAdd(t1, t2) && !isProhibitedAdd(t2, t1)) {
+    writef("               %-12s ->   ", "+");
+    writeln((x+y).type:string);
+  }
 }
 
 proc callFVaryT2(type t1) {
