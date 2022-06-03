@@ -562,13 +562,13 @@ module Map {
     }
 
     /*
-      Reads the contents of this map to a channel. The format looks like:
+      Reads the contents of this map from a channel. The format looks like:
 
         .. code-block:: chapel
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to write to.
+      :arg ch: A channel to read from.
     */
     proc readThis(ch: channel) throws {
       _readWriteHelper(ch);
