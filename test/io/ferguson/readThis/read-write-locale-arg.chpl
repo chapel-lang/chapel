@@ -23,7 +23,10 @@ class C {
   proc readWriteThis(rw) throws {
     var loc = rw.readWriteThisFromLocale();
     writeln("in C.readWriteThis loc= ", loc.id);
-    rw.readwrite(x);
+    if rw.writing then
+      rw.write(x);
+    else
+      rw.read(x);
   }
 }
 
