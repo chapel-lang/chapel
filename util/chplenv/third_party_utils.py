@@ -186,12 +186,17 @@ def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
 #
 # This function looks for
 #   third-party/<pkg>/install/<ucp>/lib/pkgconfig/<pcfile>
+#   where pcfile defaults to pkg.pc
+#
+# If add_rpath=True (the default) it will add an rpath linker flag for
+#   third-party/<pkg>/install/<ucp>/lib/
 #
 # Returns a 2-tuple of lists
 #  (link_bundled_args, link_system_args)
 @memoize
 def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
-                                    static=pkgconfig_default_static()):
+                                    static=pkgconfig_default_static(),
+                                    add_rpath=True):
     # compute the default ucp
     if ucp == '':
         ucp = default_uniq_cfg_path()
@@ -205,7 +210,9 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
     if not os.path.exists(install_path):
         return ([ ], [ ])
 
-    pcpath = os.path.join(install_path, 'lib', 'pkgconfig', pcfile)
+
+    lib_dir = os.path.join(install_path, 'lib')
+    pcpath = os.path.join(lib_dir, 'pkgconfig', pcfile)
 
     # if we get this far, we should have a .pc file. check that it exists.
     if not os.access(pcpath, os.R_OK):
@@ -227,10 +234,14 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
     libs_private = [ ]
 
     if 'Libs' in d:
-      libs = d['Libs'].split()
+        libs = d['Libs'].split()
 
     if 'Libs.private' in d:
-      libs_private = d['Libs.private'].split()
+        libs_private = d['Libs.private'].split()
+
+    # add the -rpath option if it was enabled by the caller
+    if add_rpath:
+        libs.append('-Wl,-rpath,' + lib_dir)
 
     # assuming libs_private stores system libs, like -lpthread
     return filter_libs(libs, libs_private)
