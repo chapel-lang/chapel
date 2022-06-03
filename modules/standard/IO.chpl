@@ -3610,7 +3610,10 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
   {
     var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
-    this.readwrite(iolit);
+    if this.writing then
+      this.write(iolit);
+    else
+      this.read(iolit);
   }
 
   /* Explicit call for reading or writing a newline as an
@@ -3620,7 +3623,10 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   inline proc channel.readWriteNewline() throws
   {
     var ionl = new ioNewline();
-    this.readwrite(ionl);
+    if this.writing then
+      this.write(ionl);
+    else
+      this.read(ionl);
   }
 
   /* Returns `true` if this channel is configured for binary I/O.
