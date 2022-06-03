@@ -637,9 +637,19 @@ module ChapelIO {
   pragma "no doc"
   proc nothing.writeThis(f) {}
 
+  pragma "no doc"
+  proc _tuple.readThis(f) throws {
+    _readWriteHelper(f);
+  }
+
+  pragma "no doc"
+  proc _tuple.writeThis(f) throws {
+    _readWriteHelper(f);
+  }
+
   // Moved here to avoid circular dependencies in ChapelTuple.
   pragma "no doc"
-  proc _tuple.readWriteThis(f) throws {
+  proc _tuple._readWriteHelper(f) throws {
     var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
     var start:ioLiteral;
     var comma:ioLiteral;
