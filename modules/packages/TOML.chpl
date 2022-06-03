@@ -1372,12 +1372,6 @@ module TomlReader {
       // TODO: The `list` type currently doesn't support readWriteThis!
       f <~> this.A.toArray();
     }
-
-    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
-    proc readWriteThis(f) throws {
-      if f.writing then writeThis(f);
-      else readThis(f);
-    }
   }
 }
 
