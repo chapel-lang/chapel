@@ -3525,11 +3525,13 @@ proc channel.writeIt(const x) throws {
 
    :throws SystemError: When an IO error has occurred.
  */
+deprecated "channel.readwrite is deprecated"
 inline proc channel.readwrite(const x) throws where this.writing {
   try this.writeIt(x);
 }
 // documented in the writing version.
 pragma "no doc"
+deprecated "channel.readwrite is deprecated"
 inline proc channel.readwrite(ref x) throws where !this.writing {
   try this.readIt(x);
 }
@@ -3603,6 +3605,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   /* Explicit call for reading or writing a literal as an
      alternative to using :type:`IO.ioLiteral`.
    */
+  deprecated "channel.readWriteLiteral is deprecated"
   inline
   proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
   {
@@ -3613,6 +3616,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
+  deprecated "channel.readWriteNewLine is deprecated"
   inline proc channel.readWriteNewline() throws
   {
     var ionl = new ioNewline();
