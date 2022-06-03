@@ -3549,7 +3549,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
    */
   inline operator channel.<~>(const ref ch: channel, const x) const ref throws
   where ch.writing {
-    try ch.readwrite(x);
+    try ch.write(x);
     return ch;
   }
 
@@ -3557,7 +3557,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   pragma "no doc"
   inline operator channel.<~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-    try ch.readwrite(x);
+    try ch.read(x);
     return ch;
   }
 
