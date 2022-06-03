@@ -1373,7 +1373,7 @@ module TomlReader {
       f <~> this.A.toArray();
     }
 
-    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' or 'writeThis' methods instead."
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
     proc readWriteThis(f) throws {
       if f.writing then writeThis(f);
       else readThis(f);

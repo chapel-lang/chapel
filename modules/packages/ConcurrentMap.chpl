@@ -1079,7 +1079,7 @@ module ConcurrentMap {
 
       :arg ch: A channel to write to.
     */
-    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' or 'writeThis' methods instead."
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
     proc readWriteThis(ch: channel) throws {
       if ch.writing then writeThis(ch);
       else readThis(ch);

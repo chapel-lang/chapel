@@ -517,7 +517,7 @@ module DateTime {
   }
 
   /* Read or write a date value from channel `f` */
-  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' or 'writeThis' methods instead."
+  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
   proc date.readWriteThis(f) throws {
     if f.writing then writeThis(f);
     else readThis(f);
@@ -825,7 +825,7 @@ module DateTime {
   }
 
   /* Read or write a time value from channel `f` */
-  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' or 'writeThis' methods instead."
+  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
   proc time.readWriteThis(f) throws {
     if f.writing then writeThis(f);
     else readThis(f);
@@ -1493,7 +1493,7 @@ module DateTime {
   }
 
   /* Read or write a datetime value from channel `f` */
-  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' or 'writeThis' methods instead."
+  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
   proc datetime.readWriteThis(f) throws {
     if f.writing then writeThis(f);
     else readThis(f);
