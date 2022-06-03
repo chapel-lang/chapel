@@ -1,0 +1,2 @@
+timedelta_total_seconds.chpl:4: warning: 'timedelta.total_seconds()' is deprecated. Please use 'timedelta.totalSeconds()' instead.
+1.641e+09

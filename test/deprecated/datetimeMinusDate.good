@@ -1,0 +1,2 @@
+datetimeMinusDate.chpl:6: warning: 'operator datetime.-(dt: datetime, d: date)' is deprecated. Please use 'dt - new datetime(d, new time())' instead.
+(chpl_days = 1, chpl_seconds = 1, chpl_microseconds = 1)
