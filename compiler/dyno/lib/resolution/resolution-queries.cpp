@@ -1728,9 +1728,19 @@ const QualifiedType& returnType(Context* context,
                              VoidType::get(context));
     } else if (untyped->idIsField() && untyped->isMethod()) {
       // method accessor - compute the type of the field
-      result = computeTypeOfField(context,
-                                  sig->formalType(0).type(),
-                                  untyped->id());
+      QualifiedType ft = computeTypeOfField(context,
+                                            sig->formalType(0).type(),
+                                            untyped->id());
+      if (ft.isType() || ft.isParam()) {
+        // return the type as-is (preserving param/type-ness)
+        result = ft;
+      } else if (ft.isConst()) {
+        // return a const ref
+        result = QualifiedType(QualifiedType::CONST_REF, ft.type());
+      } else {
+        // return a ref
+        result = QualifiedType(QualifiedType::REF, ft.type());
+      }
     } else {
       assert(false && "unhandled compiler-generated method");
     }
