@@ -3878,13 +3878,13 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
   :arg maxSize: The maximum amount of bytes to read.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
-  :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call. 
+  :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
   :throws SystemError: Thrown if data could not be read from the channel.
  */
-proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws 
+proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() {
-  if arg.size == 0 || maxSize == 0 || 
+  if arg.size == 0 || maxSize == 0 ||
   ( arg.domain.low + maxSize - 1 > arg.domain.high) then return 0;
 
   var err:syserr = ENOERR;
@@ -4744,7 +4744,7 @@ proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
 }
 
 /* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
-proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws 
+proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() {
   return stdin.readLine(arg, maxSize, stripNewline);
 }
