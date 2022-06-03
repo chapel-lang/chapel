@@ -14,10 +14,6 @@ CWD=$(cd $(dirname $0) ; pwd)
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
-source $CWD/common-llvm.bash
-
-# common-llvm restricts to just extern/ferguson. Enable all perf tests
-unset CHPL_NIGHTLY_TEST_DIRS
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
@@ -29,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test no localizing global consts 
-GITHUB_USER=daviditen
-GITHUB_BRANCH=update-llvm14
-SHORT_NAME=llvm-14
-START_DATE=05/12/22
+# Test perf of disabling memory hooks at compile time
+GITHUB_USER=ronawho
+GITHUB_BRANCH=disable-mem-hooks
+SHORT_NAME=disable-mem-hooks
+START_DATE=06/02/22
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
