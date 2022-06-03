@@ -3605,7 +3605,6 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   /* Explicit call for reading or writing a literal as an
      alternative to using :type:`IO.ioLiteral`.
    */
-  deprecated "channel.readWriteLiteral is deprecated"
   inline
   proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
   {
@@ -3619,7 +3618,6 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
-  deprecated "channel.readWriteNewLine is deprecated"
   inline proc channel.readWriteNewline() throws
   {
     var ionl = new ioNewline();
