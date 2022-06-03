@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 
 import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
@@ -36,7 +35,6 @@ def get_bundled_install_path(pkg, ucp=default_uniq_cfg_path()):
 #
 @memoize
 def handle_la(la_path):
-  #    sys.stdout.write("in handle_la {0}\n".format(la_path))
     args = []
     if os.path.isfile(la_path):
         with open(la_path) as f:
