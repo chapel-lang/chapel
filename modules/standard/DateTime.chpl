@@ -495,6 +495,12 @@ module DateTime {
 
   private use IO;
 
+  // This method exists to work around a bug in chpldoc where the
+  // 'private use' above this method somehow breaks documentation for the
+  // method that follows (formerly 'writeThis')
+  pragma "no doc"
+  proc date._chpldoc_workaround() { }
+
   /* Writes this `date` in ISO 8601 format: YYYY-MM-DD */
   proc date.writeThis(f) throws {
     f.write(isoFormat());
