@@ -155,17 +155,7 @@ module Version {
   }
 
 
-  // helper functions for comparison operators
-
-  private proc spaceship(param x: int, param y: int) param : int {
-    if x < y then
-      return -1;
-    else if x == y then
-      return 0;
-    else
-      return 1;
-  }
-
+  // helper function for comparison operators
   private proc spaceship(v1: sourceVersion(?),
                          v2: sourceVersion(?)) param : int {
     param majComp = spaceship(v1.major, v2.major);
@@ -274,9 +264,9 @@ module Version {
     :returns: A new version value of type :type:`programVersion`.
   */
   proc createProgramVersion(major: int,
-                     minor: int,
-                     update: int = 0,
-                     commit: string = ""): programVersion {
+                            minor: int,
+                            update: int = 0,
+                            commit: string = ""): programVersion {
     return new programVersion(major, minor, update, commit);
 
   }
@@ -286,20 +276,20 @@ module Version {
     /*
       The major version number. For version ``2.0.1``, this would be ``2``.
     */
-    var major: int;
+    const major: int;
 
     /*
       The minor version number. For version ``2.0.1``, this would be ``0``.
     */
-    var minor: int;
+    const minor: int;
 
     /*
       The update version number. For version ``2.0.1``, this would be ``1``.
     */
-    var update: int;
+    const update: int;
 
     /* The commit ID of the version (e.g., a Git SHA) */
-    var commit: string = "";
+    const commit: string = "";
 
 
     pragma "no doc"
@@ -317,18 +307,6 @@ module Version {
     else
       return (x.major:string + "." + x.minor:string + "." +
               x.update:string + " (" + x.commit + ")");
-  }
-
-
-  // helper functions for comparison operators
-
-  private proc spaceship(x: int, y: int) const : int {
-    if x < y then
-      return -1;
-    else if x == y then
-      return 0;
-    else
-      return 1;
   }
 
   private proc spaceship(v1: programVersion,
@@ -418,6 +396,122 @@ module Version {
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
     return retval >= 0 && retval != 2;
   }
+
+  // Comparisons between programVersion and sourceVersion
+  operator ==(v1: programVersion,
+              v2: sourceVersion) : bool {
+    return spaceship(v1, v2) == 0;
+  }
+
+  operator ==(v1: sourceVersion,
+              v2: programVersion) : bool {
+    return v2 == v1;
+  }
+
+  /*
+    Equality/inequality operators between values of :type:`programVersion` and
+    :type:`sourceVersion` check whether or not the two values
+    have identical major, minor, update, and commit values.
+  */
+  operator !=(v1: programVersion,
+              v2: sourceVersion) : bool {
+    return spaceship(v1, v2) != 0;
+  }
+
+  operator !=(v1: sourceVersion,
+              v2: programVersion) : bool {
+    return v2 != v1;
+  }
+
+  operator <(v1: programVersion,
+             v2: sourceVersion) : bool throws {
+    const retval = spaceship(v1, v2);
+    if (retval == 2) then
+      throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
+    return retval < 0;
+  }
+
+  operator <(v1: sourceVersion,
+             v2: programVersion) : bool throws {
+    return v2 > v1;
+  }
+
+  operator <=(v1: programVersion,
+              v2: sourceVersion) : bool throws {
+    const retval = spaceship(v1, v2);
+    if (retval == 2) then
+      throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
+    return retval <= 0;
+  }
+
+  operator <=(v1: sourceVersion,
+              v2: programVersion) : bool throws {
+    return v2 >= v1;
+  }
+
+  operator >(v1: programVersion,
+             v2: sourceVersion) : bool throws {
+    const retval = spaceship(v1, v2);
+    if (retval == 2) then
+      throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
+    return retval > 0 && retval != 2;
+  }
+
+  operator >(v1: sourceVersion,
+             v2: programVersion) : bool throws {
+    return v2 < v1;
+  }
+
+  operator >=(v1: programVersion,
+              v2: sourceVersion) : bool throws {
+    const retval = spaceship(v1, v2);
+    if (retval == 2) then
+      throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
+    return retval >= 0 && retval != 2;
+  }
+
+  operator >=(v1: sourceVersion,
+              v2: programVersion) : bool throws {
+    return v2 <= v1;
+  }
+
+  private proc spaceship(v1: programVersion(?),
+                         v2: sourceVersion(?)) : int {
+    const majComp = spaceship(v1.major, v2.major);
+    if majComp != 0 {
+      return majComp;
+    } else {
+      const minComp = spaceship(v1.minor, v2.minor);
+      if minComp != 0 {
+        return minComp;
+      } else {
+        const upComp = spaceship(v1.update, v2.update);
+        if upComp != 0 {
+          return upComp;
+        } else if v1.commit == v2.commit {
+          return 0;
+        } else if v1.commit == "" {
+          return 1;
+        } else if v2.commit == "" then {
+          return -1;
+        } else {
+          // sentinel for "not comparable"
+          return 2;
+        }
+      }
+    }
+  }
+
+  // helper function for comparison operators
+  private proc spaceship(x: int, y: int) const : int {
+    if x < y then
+      return -1;
+    else if x == y then
+      return 0;
+    else
+      return 1;
+  }
+
 
   class VersionComparisonError : Error {
     var _msg:string;
