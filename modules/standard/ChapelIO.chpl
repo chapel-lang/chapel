@@ -72,19 +72,8 @@ argument.
 Because it is often more convenient to use an operator for I/O, instead of
 writing
 
-.. code-block:: chapel
-
-  f.readwrite(x);
-  f.readwrite(y);
-
-one can write
-
-.. code-block:: chapel
-
-  f <~> x <~> y;
-
-Note that the types :type:`IO.ioLiteral` and :type:`IO.ioNewline` from the :mod:`IO` module
-may be useful when using the ``<~>`` operator. :type:`IO.ioLiteral` represents some string
+ote that the types :type:`IO.ioLiteral` and :type:`IO.ioNewline` may be useful
+when using the ``<~>`` operator. :type:`IO.ioLiteral` represents some string
 that must be read or written as-is (e.g. ``","`` when working with a tuple),
 and :type:`IO.ioNewline` will emit a newline when writing but skip to and
 consume a newline when reading. Note that these types are not included by default.
