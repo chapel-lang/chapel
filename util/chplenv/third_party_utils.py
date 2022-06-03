@@ -287,7 +287,7 @@ def libtool_get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
         else:
             all_args.append(lib_arg)
 
-    return filter_libs(bundled_args, [ ])
+    return filter_libs(all_args, [ ])
 
 #
 # This returns the default compile args for the given third-party package

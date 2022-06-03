@@ -23,7 +23,7 @@ def get_compile_args():
 #  (linker_bundled_args, linker_system_args)
 @memoize
 def get_link_args():
-    (bundled, system) = third_party_utils.get_bundled_link_args(
+    (bundled, system) = third_party_utils.libtool_get_bundled_link_args(
                                       'qthread', ucp=get_uniq_cfg_path())
     # Qthreads may call back to the runtime, so re-search libchpl after.
     bundled.append('-lchpl')
