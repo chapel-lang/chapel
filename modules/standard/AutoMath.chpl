@@ -1305,7 +1305,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc j0(x: real(32)): real(32) {
     return chpl_j0(x);
   }
@@ -1315,7 +1315,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc j0(x: real(64)): real(64) {
     return chpl_j0(x);
   }
@@ -1339,7 +1339,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc j1(x: real(32)): real(32) {
     return chpl_j1(x);
   }
@@ -1349,7 +1349,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc j1(x: real(64)): real(64) {
     return chpl_j1(x);
   }
@@ -1373,7 +1373,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "jn is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc jn(n: int, x: real(32)): real(32) {
     return chpl_jn(n, x);
   }
@@ -1383,7 +1383,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "jn is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc jn(n: int, x: real(64)): real(64) {
     return chpl_jn(n, x);
   }
@@ -1413,7 +1413,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "y0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc y0(x: real(32)): real(32) {
     return chpl_y0(x);
   }
@@ -1423,7 +1423,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "y0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc y0(x: real(64)): real(64) {
     return chpl_y0(x);
   }
@@ -1453,7 +1453,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc y1(x: real(32)): real(32) {
     return chpl_y1(x);
   }
@@ -1463,7 +1463,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc y1(x: real(64)): real(64) {
     return chpl_y1(x);
   }
@@ -1493,7 +1493,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc yn(n: int, x: real(32)): real(32) {
     return chpl_yn(n, x);
   }
@@ -1503,7 +1503,7 @@ module AutoMath {
   // module
   pragma "no doc"
   pragma "last resort"
-  deprecated "yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it"
+  deprecated "yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
   inline proc yn(n: int, x: real(64)): real(64) {
     return chpl_yn(n, x);
   }

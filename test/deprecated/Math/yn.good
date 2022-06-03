@@ -1,13 +1,13 @@
-yn.chpl:11: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-yn.chpl:13: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-yn.chpl:15: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-yn.chpl:17: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-yn.chpl:19: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-yn.chpl:31: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-yn.chpl:33: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-yn.chpl:35: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-yn.chpl:37: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-yn.chpl:39: warning: yn is no longer included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:11: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:13: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:15: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:17: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:19: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:31: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:33: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:35: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:37: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+yn.chpl:39: warning: yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
 For 64-bit reals: 
 a = 10.0 an = 5
 yn(an, a) = 0.135403

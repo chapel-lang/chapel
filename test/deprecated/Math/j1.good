@@ -1,13 +1,13 @@
-j1.chpl:11: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j1.chpl:13: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j1.chpl:15: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j1.chpl:17: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j1.chpl:19: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j1.chpl:31: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j1.chpl:33: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j1.chpl:35: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j1.chpl:37: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j1.chpl:39: warning: j1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:11: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:13: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:15: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:17: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:19: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:31: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:33: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:35: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:37: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j1.chpl:39: warning: j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
 For 64-bit reals: 
 a = -100.0
 j1(a) = 0.0771454

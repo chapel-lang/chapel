@@ -1,13 +1,13 @@
-j0.chpl:11: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j0.chpl:13: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j0.chpl:15: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j0.chpl:17: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j0.chpl:19: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j0.chpl:31: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j0.chpl:33: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j0.chpl:35: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j0.chpl:37: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-j0.chpl:39: warning: j0 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:11: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:13: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:15: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:17: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:19: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:31: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:33: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:35: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:37: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:39: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
 For 64-bit reals: 
 a = -100.0
 j0(a) = 0.0199859

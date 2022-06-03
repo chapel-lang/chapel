@@ -1,13 +1,13 @@
-y1.chpl:10: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-y1.chpl:12: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-y1.chpl:14: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-y1.chpl:16: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-y1.chpl:18: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-y1.chpl:30: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-y1.chpl:32: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-y1.chpl:34: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-y1.chpl:36: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-y1.chpl:38: warning: y1 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:10: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:12: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:14: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:16: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:18: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:30: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:32: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:34: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:36: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y1.chpl:38: warning: y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
 For 64-bit reals: 
 a = 10.0
 y1(a) = 0.249015
