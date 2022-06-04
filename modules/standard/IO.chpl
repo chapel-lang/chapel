@@ -3549,7 +3549,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
    */
   inline operator channel.<~>(const ref ch: channel, const x) const ref throws
   where ch.writing {
-    try ch.write(x);
+    try ch.writeIt(x);
     return ch;
   }
 
@@ -3557,7 +3557,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   pragma "no doc"
   inline operator channel.<~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-    try ch.read(x);
+    try ch.readIt(x);
     return ch;
   }
 
@@ -3610,9 +3610,9 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   {
     var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
     if this.writing then
-      this.write(iolit);
+      this.writeIt(iolit);
     else
-      this.read(iolit);
+      this.readIt(iolit);
   }
 
   /* Explicit call for reading or writing a newline as an
@@ -3622,9 +3622,9 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   {
     var ionl = new ioNewline();
     if this.writing then
-      this.write(ionl);
+      this.writeIt(ionl);
     else
-      this.read(ionl);
+      this.readIt(ionl);
   }
 
   /* Returns `true` if this channel is configured for binary I/O.

@@ -242,7 +242,7 @@ module ChapelIO {
           if isIoField(x, i) {
             if !isBinary {
               var comma = new ioLiteral(", ");
-              if !first then writer.write(comma);
+              if !first then writer.writeIt(comma);
 
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
               writer.writeIt(eq);
@@ -531,7 +531,6 @@ module ChapelIO {
             then new ioLiteral(":", true)
             else new ioLiteral("=", true);
 
-          // TODO: Why not a `read` call here?
           try readIt(eq);
 
           // We read the 'name = ', so now read the value!
