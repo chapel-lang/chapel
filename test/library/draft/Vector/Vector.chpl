@@ -1241,7 +1241,7 @@ module Vector {
   */
   operator vector.=(ref lhs: vector(?t, ?), rhs: vector(t, ?)) {
     lhs.clear();
-    lhs.extend(rhs);
+    lhs.append(rhs);
   }
 
   /*
