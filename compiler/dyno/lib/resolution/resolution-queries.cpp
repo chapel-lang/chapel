@@ -2354,7 +2354,7 @@ considerCompilerGeneratedCandidates(Context* context,
   auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name());
   assert(tfs);
 
-  // check if the inital signature matches
+  // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);
   if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci)) {
     return false;
