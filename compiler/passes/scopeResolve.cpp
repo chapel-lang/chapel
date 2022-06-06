@@ -1445,7 +1445,9 @@ static void resolveModuleCall(CallExpr* call) {
 
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
-            if (sym->hasFlag(FLAG_DEPRECATED)) {
+            if (sym->hasFlag(FLAG_DEPRECATED) && !isFnSymbol(sym)) {
+              // Function symbols will generate a warning during function
+              // resolution, no need to warn here.
               sym->generateDeprecationWarning(call);
             }
 
