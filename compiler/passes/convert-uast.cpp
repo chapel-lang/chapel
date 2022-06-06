@@ -167,15 +167,6 @@ struct Converter {
     return FLAG_UNKNOWN;
   }
 
-  const char* astrFromStringLiteral(const uast::AstNode* node) {
-    if (auto strLit = node->toStringLiteral()) {
-      const char* ret = astr(strLit->str());
-      return ret;
-    }
-
-    return nullptr;
-  }
-
   static bool isBlockComment(const uast::Comment* node) {
     const auto& str = node->str();
     if (str.size() < 4) return false;
