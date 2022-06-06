@@ -37,22 +37,6 @@ testit(seed, n, 0, 10);
 testit(seed, n, 0, 100);
 testit(seed, n, 0, 1000);
 testit(seed, n, 0, 10000);
-testit(seed, n, 0, 100000);
-testit(seed, n, 0, 1000000);
-testit(seed, n, 0, 10000000);
-testit(seed, n, 0, 100000000);
-testit(seed, n, 0, 1000000000);
-testit(seed, n, 0, 10000000000);
-testit(seed, n, 0, 100000000000);
-testit(seed, n, 0, 1000000000000);
-testit(seed, n, 0, 10000000000000);
-testit(seed, n, 0, 100000000000000);
-testit(seed, n, 0, 1000000000000000);
-testit(seed, n, 0, 10000000000000000);
-testit(seed, n, 0, 100000000000000000);
-testit(seed, n, 0, 1000000000000000000);
-testit(seed, n, 0, 10000000000000000000);
-
 if failures == 0 {
   writeln("OK");
 } else {
