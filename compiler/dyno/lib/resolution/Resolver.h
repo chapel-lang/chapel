@@ -125,7 +125,7 @@ struct Resolver {
                                 bool useGenericFormalDefaults);
 
   // set up Resolver to resolve instantiated field declaration types
-  // without knowning the CompositeType
+  // without knowing the CompositeType
   static Resolver
   instantiatedSignatureFieldsResolver(Context* context,
                                       const uast::AggregateDecl* decl,

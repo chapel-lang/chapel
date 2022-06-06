@@ -104,7 +104,7 @@ module GPUDiagnostics
    */
   proc resetGPUDiagnostics() {
     for loc in Locales do on loc do
-      resetgpuDiagnosticsHere();
+      resetGPUDiagnosticsHere();
   }
 
   /*

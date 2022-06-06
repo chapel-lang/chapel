@@ -128,7 +128,7 @@ module Errors {
   }
 
   /*
-   A `CodepointSplittintError` is thrown if an attempt to slice a string with
+   A `CodepointSplittingError` is thrown if an attempt to slice a string with
    byteIndex-based ranges where the range boundaries does not align with
    codepoint boundaries.
    */

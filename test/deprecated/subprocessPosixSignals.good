@@ -14,7 +14,7 @@ subprocessPosixSignals.chpl:17: warning: 'Subprocess.SIGSEGV' is deprecated. Use
 subprocessPosixSignals.chpl:18: warning: 'Subprocess.SIGSTOP' is deprecated. Use 'Sys.SIGSTOP' instead.
 subprocessPosixSignals.chpl:19: warning: 'Subprocess.SIGTERM' is deprecated. Use 'Sys.SIGTERM' instead.
 subprocessPosixSignals.chpl:20: warning: 'Subprocess.SIGTRAP' is deprecated. Use 'Sys.SIGTRAP' instead.
-subprocessPosixSignals.chpl:21: warning: 'Subprocess.SIGSTP' is deprecated. Use 'Sys.SIGSTP' instead.
+subprocessPosixSignals.chpl:21: warning: 'Subprocess.SIGTSTP' is deprecated. Use 'Sys.SIGTSTP' instead.
 subprocessPosixSignals.chpl:22: warning: 'Subprocess.SIGTTIN' is deprecated. Use 'Sys.SIGTTIN' instead.
 subprocessPosixSignals.chpl:23: warning: 'Subprocess.SIGTTOU' is deprecated. Use 'Sys.SIGTTOU' instead.
 subprocessPosixSignals.chpl:24: warning: 'Subprocess.SIGURG' is deprecated. Use 'Sys.SIGURG' instead.

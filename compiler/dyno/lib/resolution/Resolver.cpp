@@ -200,7 +200,7 @@ Resolver::instantiatedFieldStmtResolver(Context* context,
 }
 
 // set up Resolver to resolve instantiated field declaration types
-// without knowning the CompositeType
+// without knowing the CompositeType
 Resolver
 Resolver::instantiatedSignatureFieldsResolver(Context* context,
                                      const AggregateDecl* decl,
