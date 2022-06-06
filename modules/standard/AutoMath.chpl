@@ -785,7 +785,7 @@ module AutoMath {
   // To prevent this auto-included module from using a non-auto-included module
   // (Math)
   pragma "no doc"
-  proc chpl_log1p(x: real(64)): real(64) {
+  inline proc chpl_log1p(x: real(64)): real(64) {
     pragma "fn synchronization free"
     extern proc log1p(x: real(64)): real(64);
     return log1p(x);
@@ -869,7 +869,7 @@ module AutoMath {
   }
 
   pragma "no doc"
-  proc chpl_logBasePow2(val: int(?w), baseLog2) {
+  inline proc chpl_logBasePow2(val: int(?w), baseLog2) {
     if (val < 1) {
       halt("Can't take the log() of a non-positive integer");
     }
@@ -877,7 +877,7 @@ module AutoMath {
   }
 
   pragma "no doc"
-  proc chpl_logBasePow2(val: uint(?w), baseLog2) {
+  inline proc chpl_logBasePow2(val: uint(?w), baseLog2) {
     return _logBasePow2Help(val, baseLog2);
   }
 
