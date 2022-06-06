@@ -1,5 +1,4 @@
 {
-  use Math;
   writeln("For 64-bit reals: ");
   var a: real(64) = 10;
   var b: real(64) = 31;
@@ -8,19 +7,18 @@
   var e: real(64) = 100;
 
   writeln("a = ", a);
-  writeln("y1(a) = ", y1(a));
+  writeln("y0(a) = ", y0(a));
   writeln("b = ", b);
-  writeln("y1(b) = ", y1(b));
+  writeln("y0(b) = ", y0(b));
   writeln("c = ", c);
-  writeln("y1(c) = ", y1(c));
+  writeln("y0(c) = ", y0(c));
   writeln("d = ", d);
-  writeln("y1(d) = ", y1(d));
+  writeln("y0(d) = ", y0(d));
   writeln("e = ", e);
-  writeln("y1(e) = ", y1(e));
+  writeln("y0(e) = ", y0(e));
 }
 
 {
-  use Math;
   writeln("For 32-bit reals: ");
   var a: real(32) = 10;
   var b: real(32) = 31;
@@ -29,13 +27,13 @@
   var e: real(32) = 100;
 
   writeln("a = ", a);
-  writeln("y1(a) = ", y1(a));
+  writeln("y0(a) = ", y0(a));
   writeln("b = ", b);
-  writeln("y1(b) = ", y1(b));
+  writeln("y0(b) = ", y0(b));
   writeln("c = ", c);
-  writeln("y1(c) = ", y1(c));
+  writeln("y0(c) = ", y0(c));
   writeln("d = ", d);
-  writeln("y1(d) = ", y1(d));
+  writeln("y0(d) = ", y0(d));
   writeln("e = ", e);
-  writeln("y1(e) = ", y1(e));
+  writeln("y0(e) = ", y0(e));
 }

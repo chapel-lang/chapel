@@ -1286,51 +1286,110 @@ module AutoMath {
     return ( (diff<=abs(rtol*y)) || (diff<=abs(rtol*x)) || (diff<=atol) );
   }
 
-  /* Returns the Bessel function of the first kind of order `0` of `x`. */
-  inline proc j0(x: real(32)): real(32) {
+  pragma "no doc"
+  inline proc chpl_j0(x: real(32)): real(32) {
     pragma "fn synchronization free"
     extern proc chpl_float_j0(x: real(32)): real(32);
     return chpl_float_j0(x);
   }
 
-  /* Returns the Bessel function of the first kind of order `0` of `x`. */
-  inline proc j0(x: real(64)): real(64) {
+  pragma "no doc"
+  inline proc chpl_j0(x: real(64)): real(64) {
     pragma "fn synchronization free"
     extern proc j0(x: real(64)): real(64);
     return j0(x);
   }
 
-  /* Returns the Bessel function of the first kind of order `1` of `x`. */
-  inline proc j1(x: real(32)): real(32) {
+  // When removing this deprecated function, be sure to remove chpl_j0 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc j0(x: real(32)): real(32) {
+    return chpl_j0(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_j0 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc j0(x: real(64)): real(64) {
+    return chpl_j0(x);
+  }
+
+  pragma "no doc"
+  inline proc chpl_j1(x: real(32)): real(32) {
     pragma "fn synchronization free"
     extern proc chpl_float_j1(x: real(32)): real(32);
     return chpl_float_j1(x);
   }
 
-  /* Returns the Bessel function of the first kind of order `1` of `x`. */
-  inline proc j1(x: real(64)): real(64) {
+  pragma "no doc"
+  inline proc chpl_j1(x: real(64)): real(64) {
     pragma "fn synchronization free"
     extern proc j1(x: real(64)): real(64);
     return j1(x);
   }
 
-  /* Returns the Bessel function of the first kind of order `n` of `x`. */
-  inline proc jn(n: int, x: real(32)): real(32) {
+  // When removing this deprecated function, be sure to remove chpl_j1 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc j1(x: real(32)): real(32) {
+    return chpl_j1(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_j1 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc j1(x: real(64)): real(64) {
+    return chpl_j1(x);
+  }
+
+  pragma "no doc"
+  inline proc chpl_jn(n: int, x: real(32)): real(32) {
     pragma "fn synchronization free"
     extern proc chpl_float_jn(n: c_int, x: real(32)): real(32);
     return chpl_float_jn(n.safeCast(c_int), x);
   }
 
-  /* Returns the Bessel function of the first kind of order `n` of `x`. */
-  inline proc jn(n: int, x: real(64)): real(64) {
+  pragma "no doc"
+  inline proc chpl_jn(n: int, x: real(64)): real(64) {
     pragma "fn synchronization free"
     extern proc jn(n: c_int, x: real(64)): real(64);
     return jn(n.safeCast(c_int), x);
   }
 
-  /* Returns the Bessel function of the second kind of order `0` of `x`, where
-     `x` must be greater than 0 */
-  inline proc y0(x: real(32)): real(32) {
+  // When removing this deprecated function, be sure to remove chpl_jn and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc jn(n: int, x: real(32)): real(32) {
+    return chpl_jn(n, x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_jn and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc jn(n: int, x: real(64)): real(64) {
+    return chpl_jn(n, x);
+  }
+
+  pragma "no doc"
+  inline proc chpl_y0(x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
 
@@ -1339,9 +1398,8 @@ module AutoMath {
     return chpl_float_y0(x);
   }
 
-  /* Returns the Bessel function of the second kind of order `0` of `x`,
-     where `x` must be greater than 0 */
-  inline proc y0(x: real(64)): real(64) {
+  pragma "no doc"
+  inline proc chpl_y0(x: real(64)): real(64) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
 
@@ -1350,9 +1408,28 @@ module AutoMath {
     return y0(x);
   }
 
-  /* Returns the Bessel function of the second kind of order `1` of `x`,
-     where `x` must be greater than 0 */
-  inline proc y1(x: real(32)): real(32) {
+  // When removing this deprecated function, be sure to remove chpl_y0 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc y0(x: real(32)): real(32) {
+    return chpl_y0(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_y0 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc y0(x: real(64)): real(64) {
+    return chpl_y0(x);
+  }
+
+  pragma "no doc"
+  inline proc chpl_y1(x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
 
@@ -1361,9 +1438,8 @@ module AutoMath {
     return chpl_float_y1(x);
   }
 
-  /* Returns the Bessel function of the second kind of order `1` of `x`,
-     where `x` must be greater than 0 */
-  inline proc y1(x: real(64)): real(64) {
+  pragma "no doc"
+  inline proc chpl_y1(x: real(64)): real(64) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
 
@@ -1372,9 +1448,28 @@ module AutoMath {
     return y1(x);
   }
 
-  /* Returns the Bessel function of the second kind of order `n` of `x`,
-     where `x` must be greater than 0 */
-  inline proc yn(n: int, x: real(32)): real(32) {
+  // When removing this deprecated function, be sure to remove chpl_y1 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc y1(x: real(32)): real(32) {
+    return chpl_y1(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_y1 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc y1(x: real(64)): real(64) {
+    return chpl_y1(x);
+  }
+
+  pragma "no doc"
+  inline proc chpl_yn(n: int, x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
 
@@ -1383,15 +1478,34 @@ module AutoMath {
     return chpl_float_yn(n.safeCast(c_int), x);
   }
 
-  /* Returns the Bessel function of the second kind of order `n` of `x`,
-     where `x` must be greater than 0 */
-  inline proc yn(n: int, x: real(64)): real(64) {
+  pragma "no doc"
+  inline proc chpl_yn(n: int, x: real(64)): real(64) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
 
     pragma "fn synchronization free"
     extern proc yn(n: c_int, x: real(64)): real(64);
     return yn(n.safeCast(c_int), x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_yn and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc yn(n: int, x: real(32)): real(32) {
+    return chpl_yn(n, x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_yn and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module
+  pragma "no doc"
+  pragma "last resort"
+  deprecated "yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it"
+  inline proc yn(n: int, x: real(64)): real(64) {
+    return chpl_yn(n, x);
   }
 
   /* Returns true if the sign of `x` is negative, else returns false. It detects
