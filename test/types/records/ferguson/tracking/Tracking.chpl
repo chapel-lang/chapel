@@ -1,5 +1,49 @@
 private use List;
 
+private use Map;
+
+proc mapXor(a: map(?keyType, ?valueType, ?),
+            b: map(keyType, valueType, ?)) {
+  var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
+  
+  try! {
+    for k in a.keys() do
+      if !b.contains(k) then newMap.add(k, a.getValue(k));
+  }
+  try! {
+    for k in b do
+      if !a.contains(k) then newMap.add(k, b.getValue(k));
+  }
+  return newMap;
+}
+
+proc mapSubtract(a: map(?keyType, ?valueType, ?),
+                 b: map(keyType, valueType, ?)) {
+  var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
+  
+  try! {
+    for ak in a.keys() {
+      if !b.contains(ak) then
+        newMap.add(ak, a.getValue(ak));
+    }
+  }
+  
+  return newMap;
+}
+
+proc mapAnd(a: map(?keyType, ?valueType, ?),
+            b: map(keyType, valueType, ?)) {
+  var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
+
+  try! {
+    for k in a.keys() do
+      if b.contains(k) then
+        newMap.add(k, a.getValue(k));
+  }
+
+  return newMap;
+}
+
 var ops: list((int, unmanaged object?, int, int, int));
 var opsLock$: sync bool = true;
 
@@ -54,21 +98,21 @@ proc checkAllocations() {
     }
   }
 
-  if (allocated ^ freed).size > 0 {
+  if (mapXor(allocated, freed)).size > 0 {
     writeln("alloc != free - possibly a memory leak");
 
     write("allocated and not freed: ");
-    var alloc_not_freed = allocated - freed;
+    var alloc_not_freed = mapSubtract(allocated, freed);
     printthem(alloc_not_freed);
     writeln();
 
     write("freed but not allocated: ");
-    var freed_not_allocated = freed - allocated;
+    var freed_not_allocated = mapSubtract(freed, allocated);
     printthem(freed_not_allocated);
     writeln();
 
     write("allocated and then freed: ");
-    var alloc_freed = freed & allocated;
+    var alloc_freed = mapAnd(freed, allocated);
     printthem(alloc_freed);
     writeln();
 
