@@ -20,3 +20,5 @@ Start
 End
 GPU diagnostics:
 (kernel_launch = 1)
+GPU diagnostics after reset:
+(kernel_launch = 0)
