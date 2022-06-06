@@ -8,6 +8,9 @@
   "515baeda-2ada-11e6-a3a6-10ddb1d4c3d5": [
     "CHANGES.md"
   ],
+  "afa8039a-e3ab-11ec-a8be-cd81bce0efc4": [
+    "CODE_OF_CONDUCT.md"
+  ],
   "f91458ec-2adb-11e6-a3a6-10ddb1d4c3d5": [
     "CONTRIBUTORS.md"
   ],
@@ -38,6 +41,9 @@
   ],
   "d551f4f6-d1a9-11e8-954d-10ddb1d4c3d5": [
     "compiler/AST/LoopExpr.cpp"
+  ],
+  "3312420e-e3ac-11ec-a8be-cd81bce0efc4": [
+    "compiler/AST/ModuleSymbol.cpp"
   ],
   "e1c3d7ee-f560-11eb-bb15-35b7469d4b43": [
     "compiler/AST/ParamForLoop.cpp"
@@ -115,6 +121,9 @@
   ],
   "a7eb801c-f560-11eb-bb15-35b7469d4b43": [
     "compiler/dyno/README"
+  ],
+  "b6b773fa-e3ab-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/parsing/parser-stats.h"
   ],
   "8f8948a2-9f73-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/queries/Context-detail.h"
@@ -218,6 +227,12 @@
   "ca94ec3c-9f71-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/As.h"
   ],
+  "c33f61fa-e3ab-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/uast/AstList.h"
+  ],
+  "c4ce7bbe-e3ab-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/uast/AstNode.h"
+  ],
   "d743109e-9f71-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/Begin.h"
   ],
@@ -275,6 +290,9 @@
   "4bb86216-9f73-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/Domain.h"
   ],
+  "c15a9aee-e3ab-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/uast/EmptyStmt.h"
+  ],
   "bb77b0c6-9f72-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/Enum.h"
   ],
@@ -314,6 +332,9 @@
   "315b55b8-9f73-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/ImagLiteral.h"
   ],
+  "0b03fc3c-e553-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/uast/Implements.h"
+  ],
   "373799b6-9f72-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/Import.h"
   ],
@@ -328,6 +349,9 @@
   ],
   "e9ef4e78-9f72-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/IntentList.h"
+  ],
+  "06d28642-e553-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/uast/Interface.h"
   ],
   "0c514296-9f73-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/Label.h"
@@ -376,6 +400,9 @@
   ],
   "e9ef4e79-9f72-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/Record.h"
+  ],
+  "06d28643-e553-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/uast/Reduce.h"
   ],
   "a074aca8-9f80-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/Require.h"
@@ -476,6 +503,15 @@
   "8af2955e-9f74-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/parsing/parser-help.h"
   ],
+  "da1e91c6-e553-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/parsing/parser-stats.cpp"
+  ],
+  "c4ce7bbf-e3ab-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/parsing/parser-yyerror.h"
+  ],
+  "d4c8ff4a-e553-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/parsing/parser-yylloc-default.h"
+  ],
   "45947086-9f74-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/parsing/parsing-queries.cpp"
   ],
@@ -494,6 +530,12 @@
   "0ebe9126-9f75-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/resolution/disambiguation.cpp"
   ],
+  "ffedfa58-e3ab-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/resolution/prims.cpp"
+  ],
+  "1a2ad1ac-e3ac-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/resolution/resolution-queries.cpp"
+  ],
   "c662e13e-9f74-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/types/ClassType.cpp"
   ],
@@ -502,6 +544,12 @@
   ],
   "87f2bc0c-9f75-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/uast/ASTNode.cpp"
+  ],
+  "2c60856a-e3ac-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/uast/AstNode.cpp"
+  ],
+  "202a65c2-e3ac-11ec-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/uast/Builder.cpp"
   ],
   "82e3c60c-9f75-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/uast/Pragma.cpp"
@@ -771,6 +819,9 @@
   ],
   "f50f46a0-2e9e-11eb-adc5-acbc32c4f96b": [
     "doc/rst/developer/bestPractices/DCO.rst"
+  ],
+  "5118f158-e3ac-11ec-a8be-cd81bce0efc4": [
+    "doc/rst/developer/bestPractices/Deprecation.rst"
   ],
   "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/Potpourri.rst"
@@ -1167,6 +1218,9 @@
   "076e82b2-624e-11e9-b712-843835579daa": [
     "modules/packages/ZMQHelper/zmq_helper.h"
   ],
+  "7eb6ec46-e3ac-11ec-a8be-cd81bce0efc4": [
+    "modules/standard/AutoMath.chpl"
+  ],
   "2de80716-9f6c-11ec-866d-111c8d7a1817": [
     "modules/standard/CTypes.chpl"
   ],
@@ -1196,6 +1250,9 @@
   ],
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
+  ],
+  "bd895c06-e3ac-11ec-a8be-cd81bce0efc4": [
+    "modules/standard/OS.chpl"
   ],
   "c51f1070-3a21-11e8-af7e-10ddb1d4c3d5": [
     "modules/standard/Path.chpl"
@@ -1259,6 +1316,9 @@
   ],
   "83d35d38-d6dc-11ea-8acb-843835579daa": [
     "runtime/include/mem/jemalloc/chpl-mem-impl.h"
+  ],
+  "12605982-e3ad-11ec-a8be-cd81bce0efc4": [
+    "runtime/include/os-module-support/posix.h"
   ],
   "cedb8f86-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/qio/sys.h"
