@@ -1043,13 +1043,8 @@ static bool canParamCoerce(Type*   actualType,
     // don't coerce bools to reals (per spec: "unintended by programmer")
 
     if (is_int_type(actualType) || is_uint_type(actualType)) {
-      // coerce any integer type to maximum width real
-      if (get_width(formalType) >= 64)
-        return true;
-
-      // coerce small integer types to similar-sized reals
-      if (get_width(actualType) <= get_width(formalType))
-        return true;
+      // coerce any integer type to any width real
+      return true;
     }
 
     // coerce real from smaller size
@@ -1060,15 +1055,7 @@ static bool canParamCoerce(Type*   actualType,
     // coerce literal/param ints that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
-        if (is_int_type(actualType) || is_uint_type(actualType)) {
-          // if this param fits in an 'int(n)' or 'uint(n)', permit it
-          // to param coerce to a 'real(n)'
-          if (fits_in_int(get_width(formalType), var->immediate) ||
-              fits_in_uint(get_width(formalType), var->immediate)) {
-            *paramNarrows = true;
-            return true;
-          }
-        }
+        // int/uint params would be handled by any-int-to-real rule above
         if (is_real_type(actualType)) {
           if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
@@ -1111,13 +1098,8 @@ static bool canParamCoerce(Type*   actualType,
     // don't coerce bools to complexes (per spec: "unintended by programmer")
 
     if (is_int_type(actualType) || is_uint_type(actualType)) {
-      // coerce any integer type to maximum width complex
-      if (get_width(formalType) >= 128)
-        return true;
-
-      // coerce small integer types to real part of similar-sized complexes
-      if (get_width(actualType) <= get_width(formalType)/2)
-        return true;
+      // coerce any integer type to any width complex
+      return true;
     }
 
     // coerce real/imag from smaller size
@@ -1136,15 +1118,7 @@ static bool canParamCoerce(Type*   actualType,
     // coerce literal/param complexes that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
-        if (is_int_type(actualType) || is_uint_type(actualType)) {
-          // if this param fits in an 'int(n)' or 'uint(n)', permit it
-          // to param coerce to a 'complex(2*n)'
-          if (fits_in_int(get_width(formalType)/2, var->immediate) ||
-              fits_in_uint(get_width(formalType)/2, var->immediate)) {
-            *paramNarrows = true;
-            return true;
-          }
-        }
+        // int/uint params would be handled by any-int-to-complex rule above
         if (is_real_type(actualType)) {
           if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
@@ -2018,12 +1992,22 @@ static numeric_type_t classifyNumericType(Type* t)
   return NUMERIC_TYPE_NON_NUMERIC;
 }
 
+typedef enum {
+  ARG_PREFERENCE_NONE = 0,
+  ARG_PREFERENCE_WEAKEST,
+  ARG_PREFERENCE_WEAKER,
+  ARG_PREFERENCE_WEAK,
+  ARG_PREFERENCE_STRONG
+} arg_preference_t;
 
 // Returns 'true' if we should prefer passing actual to f1Type
 // over f2Type.
 // This method implements rules such as that a bool would prefer to
 // coerce to 'int' over 'int(8)'.
-static bool prefersCoercionToOtherNumericType(Type* actualType,
+//
+// It returns a level of preference for f1, or NONE=0 if f1 is
+// not preferred (including possibly if f2 is preferred)
+static arg_preference_t prefersCoercionToOtherNumericType(Type* actualType,
                                               Type* f1Type,
                                               Type* f2Type) {
 
@@ -2042,10 +2026,10 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
     // Prefer e.g. bool(w1) passed to bool(w2) over passing to int (say)
     // Prefer uint(8) passed to uint(16) over passing to a real
     if (aT == f1T && aT != f2T)
-      return true;
+      return ARG_PREFERENCE_WEAKER;
     // Prefer bool/enum cast to int over uint
     if (aBoolEnum && is_int_type(f1Type) && is_uint_type(f2Type))
-      return true;
+      return ARG_PREFERENCE_WEAKER;
     // Prefer bool/enum cast to default-sized int/uint over another
     // size of int/uint
     if (aBoolEnum &&
@@ -2054,7 +2038,7 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
         f2T == NUMERIC_TYPE_INT_UINT &&
         !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
           f2Type == dtUInt[INT_SIZE_DEFAULT]))
-      return true;
+      return ARG_PREFERENCE_WEAKER;
     // For non-default-sized ints/uints...
     if (aT == NUMERIC_TYPE_INT_UINT &&
         get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT])) {
@@ -2062,12 +2046,12 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
       if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
           get_width(f1Type) < get_width(f2Type) &&
           get_width(actualType) <= get_width(f1Type))
-        return true;
+        return ARG_PREFERENCE_WEAKER;
       // ...prefer smaller complexes over larger ones
       if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
           get_width(f1Type) < get_width(f2Type) &&
           get_width(actualType) <= get_width(f1Type)/2)
-        return true;
+        return ARG_PREFERENCE_WEAKER;
     }
     // Prefer int(64)/uint(64) cast to a default-sized real
     // over another size of real or complex.
@@ -2075,13 +2059,13 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
       if (f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
           (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
           f2Type != dtReal[FLOAT_SIZE_DEFAULT])
-        return true;
+        return ARG_PREFERENCE_WEAKER;
       // Prefer int/uint cast to a default-sized complex
       // over another size of complex.
       if (f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
           f2T == NUMERIC_TYPE_COMPLEX &&
           f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
-        return true;
+        return ARG_PREFERENCE_WEAKER;
     }
     // Prefer real/imag cast to a same-sized complex over another size of
     // complex.
@@ -2090,10 +2074,10 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
         f2T == NUMERIC_TYPE_COMPLEX &&
         get_width(actualType)*2 == get_width(f1Type) &&
         get_width(actualType)*2 != get_width(f2Type))
-      return true;
+      return ARG_PREFERENCE_WEAKER;
   }
 
-  return false;
+  return ARG_PREFERENCE_NONE;
 }
 
 static bool fits_in_bits_no_sign(int width, int64_t i) {
@@ -5909,13 +5893,13 @@ static void testArgMapping(FnSymbol*                    fn1,
   }
 
   const char* reason = "";
-  typedef enum {
-    NONE,
-    WEAKEST,
-    WEAKER,
-    WEAK,
-    STRONG
-  } arg_preference_t;
+
+  // add some short names for arg preferences to keep this code short
+  #define NONE ARG_PREFERENCE_NONE
+  #define WEAKEST ARG_PREFERENCE_WEAKEST
+  #define WEAKER ARG_PREFERENCE_WEAKER
+  #define WEAK ARG_PREFERENCE_WEAK
+  #define STRONG ARG_PREFERENCE_STRONG
 
   arg_preference_t prefer1 = NONE;
   arg_preference_t prefer2 = NONE;
@@ -6000,19 +5984,21 @@ static void testArgMapping(FnSymbol*                    fn1,
 
     reason = "scalar type vs not";
 
-  } else if (prefersCoercionToOtherNumericType(actualScalarType, f1Type, f2Type)) {
+  } else if (auto p = prefersCoercionToOtherNumericType(actualScalarType,
+                                                        f1Type, f2Type)) {
     if (paramWithDefaultSize)
       prefer1 = WEAKEST;
     else
-      prefer1 = WEAKER;
+      prefer1 = p;
 
     reason = "preferred coercion to other";
 
-  } else if (prefersCoercionToOtherNumericType(actualScalarType, f2Type, f1Type)) {
+  } else if (auto p = prefersCoercionToOtherNumericType(actualScalarType,
+                                                        f2Type, f1Type)) {
     if (paramWithDefaultSize)
       prefer2 = WEAKEST;
     else
-      prefer2 = WEAKER;
+      prefer2 = p;
 
     reason = "preferred coercion to other";
 
@@ -6051,6 +6037,12 @@ static void testArgMapping(FnSymbol*                    fn1,
     if (prefer2 == WEAKEST) { DS.fn2WeakestPreferred = true; level = "weakest"; }
     EXPLAIN("%s: Fn %d is %s preferred\n", reason, j, level);
   }
+
+  #undef NONE
+  #undef WEAKEST
+  #undef WEAKER
+  #undef WEAK
+  #undef STRONG
 }
 
 static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
