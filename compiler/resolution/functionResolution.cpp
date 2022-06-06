@@ -2046,12 +2046,12 @@ static arg_preference_t prefersCoercionToOtherNumericType(Type* actualType,
       if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
           get_width(f1Type) < get_width(f2Type) &&
           get_width(actualType) <= get_width(f1Type))
-        return ARG_PREFERENCE_WEAKER;
+        return ARG_PREFERENCE_WEAKEST;
       // ...prefer smaller complexes over larger ones
       if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
           get_width(f1Type) < get_width(f2Type) &&
           get_width(actualType) <= get_width(f1Type)/2)
-        return ARG_PREFERENCE_WEAKER;
+        return ARG_PREFERENCE_WEAKEST;
     }
     // Prefer int(64)/uint(64) cast to a default-sized real
     // over another size of real or complex.
@@ -2074,7 +2074,7 @@ static arg_preference_t prefersCoercionToOtherNumericType(Type* actualType,
         f2T == NUMERIC_TYPE_COMPLEX &&
         get_width(actualType)*2 == get_width(f1Type) &&
         get_width(actualType)*2 != get_width(f2Type))
-      return ARG_PREFERENCE_WEAKER;
+      return ARG_PREFERENCE_WEAK;
   }
 
   return ARG_PREFERENCE_NONE;
