@@ -331,7 +331,7 @@ The ``use`` and ``import`` statements themselves are processed in order,
 so it is not possible to ``use`` a module that is only made available by
 a later ``use``.
 
-The other mentiones of a name made visible by a ``use`` or ``import``
+The other mentions of a name made visible by a ``use`` or ``import``
 statement can be at any position relative to the ``use`` or ``import``.
 
 Private ``use`` statements -- for example ``use M`` or ``private use M``
