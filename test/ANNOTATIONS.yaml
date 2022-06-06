@@ -1120,6 +1120,8 @@ listBenchmark1:
     - Change lists to use 0-based indexing (#14684)
   06/03/20:
     - List _collapse remove shift arg (#15693)
+  06/01/22:
+    - Reduce uses of Math by automatically included modules (#19885)
 
 lulesh:
   03/15/14:
@@ -1794,6 +1796,8 @@ revcomp: &revcomp-base
     - Restore reverse-complement performance with qio hint (#14045)
   02/04/20:
     - Improve const/ref this decorators (and update revcomp) (#14809)
+  06/01/22:
+    - Reduce uses of Math by automatically included modules (#19885)
 revcomp-submitted:
   <<: *revcomp-base
 
@@ -2159,6 +2163,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Always use the dyno parser (#19816)
   05/26/22:
     - Bump system llvm from 13 to 14
+  05/29/22:
+    - Rebuild llvm 14 without debug
+  06/02/22:
+    - Cache module-level scope resolution (#19900)
 
 allTotalTime:
   <<: *compiler-perf-base
