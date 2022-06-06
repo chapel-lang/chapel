@@ -27,3 +27,7 @@ writeln("End");
 
 writeln("GPU diagnostics:");
 writeln(getGPUDiagnostics());
+
+resetGPUDiagnostics();
+writeln("GPU diagnostics after reset:");
+writeln(getGPUDiagnostics());
