@@ -89,6 +89,9 @@ enum struct IntentList {
   /** A function */
   FUNCTION,
 
+  /** A parenless function */
+  PARENLESS_FUNCTION,
+
   /** A module */
   MODULE,
 };

@@ -50,7 +50,7 @@ CallResolutionResult resolvePrimCall(Context* context,
   // handle param folding
   auto prim = call->prim();
   if (Param::isParamOpFoldable(prim) && allParam && ci.numActuals() == 2) {
-      type = Param::fold(context, prim, ci.actuals(0).type(), ci.actuals(1).type());
+      type = Param::fold(context, prim, ci.actual(0).type(), ci.actual(1).type());
       return CallResolutionResult(candidates, type, poi);
   }
 
@@ -101,7 +101,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_STAR_TUPLE_TYPE:
       if (ci.numActuals() == 1) {
         bool result = false;
-        if (auto t = ci.actuals(0).type().type())
+        if (auto t = ci.actual(0).type().type())
           if (auto tt = t->toTupleType())
             result = tt->isStarTuple();
 
@@ -192,7 +192,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_MAX:
       if (ci.numActuals() > 0) {
         type = QualifiedType(QualifiedType::CONST_VAR,
-                             ci.actuals(0).type().type());
+                             ci.actual(0).type().type());
       }
       break;
 

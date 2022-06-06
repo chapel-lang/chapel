@@ -21,13 +21,12 @@
 
 #include "chpl/queries/query-impl.h"
 #include "chpl/types/BoolType.h"
-#include "chpl/types/BytesType.h"
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/RealType.h"
-#include "chpl/types/StringType.h"
+#include "chpl/types/RecordType.h"
 #include "chpl/types/UintType.h"
 
 #include "../immediates/num.h"
@@ -265,10 +264,10 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
     switch (imm.string_kind) {
       case STRING_KIND_STRING:
         return {StringParam::get(context, imm.v_string),
-                StringType::get(context)};
+                RecordType::getStringType(context)};
       case STRING_KIND_BYTES:
         return {StringParam::get(context, imm.v_string),
-                BytesType::get(context)};
+                RecordType::getBytesType(context)};
       case STRING_KIND_C_STRING:
         return {StringParam::get(context, imm.v_string),
                 CStringType::get(context)};

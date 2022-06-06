@@ -199,6 +199,11 @@ const uast::AstNode* idToAst(Context* context, ID id);
 uast::AstTag idToTag(Context* context, ID id);
 
 /**
+ Returns true if the ID is a parenless function.
+ */
+bool idIsParenlessFunction(Context* context, ID id);
+
+/**
  Returns the parent ID given an ID
  */
 const ID& idToParentId(Context* context, ID id);
@@ -213,7 +218,28 @@ uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id);
  Returns 'true' if the passed ID represents a Function with a where clause,
  and 'false' otherwise.
  */
-bool functionWithIdHasWhere(Context* context, ID id);
+bool idIsFunctionWithWhere(Context* context, ID id);
+
+/**
+  Given an ID for a Variable, returns the ID of the containing
+  MultiDecl or TupleDecl, if any, and the ID of the variable otherwise.
+ */
+ID idToContainingMultiDeclId(Context* context, ID id);
+
+/**
+  Given an ID for a Record/Union/Class Decl,
+  returns 'true' if the passed name is the name of a field contained in it.
+ */
+bool idContainsFieldWithName(Context* context, ID typeDeclId,
+                             UniqueString fieldName);
+
+/**
+  Given an ID for a Record/Union/Class Decl,
+  and a field name, returns the ID for the Variable declaring that field.
+ */
+ID fieldIdWithName(Context* context, ID typeDeclId,
+                   UniqueString fieldName);
+
 
 /**
  * Store config settings that were set from the command line using -s flags

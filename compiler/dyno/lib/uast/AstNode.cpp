@@ -297,6 +297,8 @@ static void dumpHelper(std::ostream& ss,
     ss << ident->name().str() << " ";
   } else if (const Comment* comment = ast->toComment()) {
     ss << comment->str() << " ";
+  } else if (const Dot* dot = ast->toDot()) {
+    ss << "." << dot->field() << " ";
   }
 
   //printf("(containing %i) ", ast->id().numContainedChildren());
