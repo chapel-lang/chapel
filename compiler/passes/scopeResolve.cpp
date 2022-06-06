@@ -1445,6 +1445,10 @@ static void resolveModuleCall(CallExpr* call) {
 
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
+            if (sym->hasFlag(FLAG_DEPRECATED)) {
+              sym->generateDeprecationWarning(call);
+            }
+
             if (FnSymbol* fn = toFnSymbol(sym)) {
               if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
                 call->replace(new CallExpr(fn));
