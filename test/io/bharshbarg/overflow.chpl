@@ -22,5 +22,5 @@ assert(0 == r.readLine(data, maxSize = lineLen * 2));
 assert(0 == r.readLine(data[lineLen / 2..], maxSize=lineLen));
 
 // Make sure we don't read more bytes than there is room in the array.
-numRead = r.readLine(data[lineLen / 2..]);
-assert(numRead == lineLen + 1 - (lineLen / 2) + 1);
+try { r.readLine(data[lineLen / 2..]); }
+catch e {writeln(e);}

@@ -3897,14 +3897,14 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
     var got: int;
     var i = arg.domain.low;
     const maxIdx = arg.domain.low + maxSize - 1;
-    while got !=newLineChar {
+    while got != newLineChar {
+      got = qio_channel_read_byte(false, this._channel_internal);
+      if got < 0 then break;
       if( i > maxIdx ) {
         // The line is longer than was specified so we throw an error
         this._revert();
         try this._ch_ioerror("line longer than maxSize", "in channel.readLine(arg : [] uint(8))");
       }
-      got = qio_channel_read_byte(false, this._channel_internal);
-      if got < 0 then break;
       if got == newLineChar && stripNewline then break;
       arg[i] = got:uint(8);
       i += 1;
@@ -3989,9 +3989,9 @@ proc channel.readLine(ref s: string, maxSize=-1, stripNewline=false): bool throw
           if(got < 0) then break;
           lineSize+=1;
           if(lineSize > maxSize){
-                    // The line is longer than was specified so we throw an error
-          this._revert();
-          try this._ch_ioerror("line longer than maxSize", "in channel.readLine(ref s: string)");
+            // The line is longer than was specified so we throw an error
+            this._revert();
+            try this._ch_ioerror("line longer than maxSize", "in channel.readLine(ref s: string)");
           }
         }
         this._revert();
