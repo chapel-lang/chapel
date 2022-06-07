@@ -3822,6 +3822,8 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
   The ``\n`` is returned in the array.
 
+  Note that this routine currently requires a 1D rectangular non-strided array.
+
   Throws a SystemError if a line could not be read from the channel.
 
   :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
@@ -3830,12 +3832,11 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.alignedLow,
-                      amount = (arg.domain.alignedHigh - start)/arg.domain.stride + 1) : bool throws
-                      where arg.rank == 1 && arg.isRectangular() {
-  const stride = arg.domain.stride;
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+                      amount = arg.domain.highBound - start + 1) : bool throws
+                      where arg.rank == 1 && arg.isRectangular() && !arg.stridable {
   if arg.size == 0 || !arg.domain.contains(start) ||
-     amount <= 0 || (start + (amount-1)*stride > arg.domain.alignedHigh) then return false;
+     amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
 
   var err:syserr = ENOERR;
   on this.home {
@@ -3843,15 +3844,15 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.ali
     param newLineChar = 0x0A;
     var got: int;
     var i = start;
-    const maxIdx = start + (amount-1)*stride;
+    const maxIdx = start + amount - 1;
     while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
       if got < 0 then break;
       arg[i] = got:uint(8);
-      i += stride;
+      i += 1;
       if got == newLineChar then break;
     }
-    numRead = (i - start)/stride;
+    numRead = i - start;
     if i == start && got < 0 then err = (-got):syserr;
   }
 
@@ -3864,6 +3865,14 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.ali
   }
   return false;
 }
+
+pragma "no doc"
+pragma "last resort"
+inline proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+                      amount = arg.domain.highBound - start + 1) : bool throws {
+  compilerError("'readline()' is currently only supported for non-strided 1D rectangular arrays");
+}
+
 
 /*
   Read a line into a Chapel string or bytes. Reads until a ``\n`` is reached.
@@ -4563,10 +4572,17 @@ proc read(type t ...?numTypes) throws {
   return stdin.read((...t));
 }
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
-proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.alignedLow,
-              amount = arg.domain.size) : bool throws
-                where arg.rank == 1 && arg.isRectangular() {
+proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+              amount = arg.domain.highBound - start + 1) : bool throws
+                where arg.rank == 1 && arg.isRectangular() && ! arg.stridable {
   return stdin.readline(arg, numRead, start, amount);
+}
+
+pragma "last resort"
+pragma "no doc"
+proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+              amount = arg.domain.highBound - start + 1) : bool throws {
+  compilerError("'readline()' is currently only supported for non-strided 1D rectangular arrays");
 }
 
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */

@@ -1,4 +1,6 @@
-Got 8:48 49 50 51 52 53 54 10
-Got 10:48 49 50 51 52 53 54 55 56 57
-Got 8:48 49 50 51 52 53 54 10
-Got 10:48 49 50 51 52 53 54 55 56 57
+readStridedArr.chpl:6: error: 'readline()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:8: error: 'readline()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:12: error: 'readline()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:12: error: 'readline()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:17: error: 'readline()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:19: error: 'readline()' is currently only supported for non-strided 1D rectangular arrays
