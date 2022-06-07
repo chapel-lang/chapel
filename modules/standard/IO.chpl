@@ -3905,7 +3905,7 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
       if( i > maxIdx ) {
         // The line is longer than was specified so we throw an error
         this._revert();
-        try this._ch_ioerror("line longer than maxSize", "in channel.readLine(arg : [] uint(8))");
+        try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(arg : [] uint(8))");
       }
       if got == newLineChar && stripNewline then break;
       arg[i] = got:uint(8);
@@ -3999,7 +3999,7 @@ proc channel.readLine(ref s: string, maxSize=-1, stripNewline=false): bool throw
           if(lineSize > maxSize){
             // The line is longer than was specified so we throw an error
             this._revert();
-            try this._ch_ioerror("line longer than maxSize", "in channel.readLine(ref s: string)");
+            try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(ref s: string)");
           }
         }
         this._revert();
@@ -4060,7 +4060,7 @@ proc channel.readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws
           if(lineSize > maxSize){
                     // The line is longer than was specified so we throw an error
           this._revert();
-          try this._ch_ioerror("line longer than maxSize", "in channel.readLine(ref b: bytes)");
+          try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(ref b: bytes)");
           }
         }
         this._revert();
