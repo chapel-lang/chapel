@@ -9,8 +9,8 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln("stridable        = ", D.stridable);
   writeln("size             = ", D.size);
   writeln("isEmpty()        = ", D.isEmpty());
-  writeln("low              = ", D.low);
-  writeln("high             = ", D.high);
+  writeln("lowBound         = ", D.lowBound);
+  writeln("highBound        = ", D.highBound);
   writeln("stride           = ", D.stride);
   writeln("alignment        = ", D.alignment);
   writeln("first            = ", D.first);
@@ -70,8 +70,8 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln(D2);
   writeln("size             = ", D2.size);
   writeln("isEmpty()        = ", D2.isEmpty());
-  writeln("low              = ", D2.low);
-  writeln("high             = ", D2.high);
+  writeln("lowBound         = ", D2.lowBound);
+  writeln("highBound        = ", D2.highBound);
   writeln("stride           = ", D2.stride);
   writeln("alignment        = ", D2.alignment);
   writeln();

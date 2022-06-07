@@ -1268,8 +1268,8 @@ module Random {
         if(!arr.isRectangular()) then
           compilerError("permutation does not support non-rectangular arrays");
 
-        var low = arr.domain.dim(0).low;
-        var high = arr.domain.dim(0).high;
+        var low = arr.domain.dim(0).lowBound;
+        var high = arr.domain.dim(0).highBound;
 
         if arr.domain.rank != 1 then
           compilerError("Permutation requires 1-D array");
@@ -1688,15 +1688,15 @@ module Random {
       for outer in outer(followThis) {
         var myStart = start;
         if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
         else
-          myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
         if !innerRange.stridable {
           var cursor = randlc_skipto(resultType, seed, myStart);
           for i in innerRange do
             yield randlc(resultType, cursor);
         } else {
-          myStart -= innerRange.low.safeCast(int(64));
+          myStart -= innerRange.lowBound.safeCast(int(64));
           for i in innerRange {
             var cursor = randlc_skipto(resultType, seed, myStart + i.safeCast(int(64)) * multiplier);
             yield randlc(resultType, cursor);
@@ -1741,9 +1741,9 @@ module Random {
       for outer in outer(followThis) {
         var myStart = start;
         if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
         else
-          myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
         if !innerRange.stridable {
           var cursor = randlc_skipto(resultType, seed, myStart);
           var count = myStart;
@@ -1752,7 +1752,7 @@ module Random {
             count += 1;
           }
         } else {
-          myStart -= innerRange.low.safeCast(int(64));
+          myStart -= innerRange.lowBound.safeCast(int(64));
           for i in innerRange {
             var count = myStart + i.safeCast(int(64)) * multiplier;
             var cursor = randlc_skipto(resultType, seed, count);
@@ -3019,15 +3019,15 @@ module Random {
       for outer in outer(followThis) {
         var myStart = start;
         if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
         else
-          myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
         if !innerRange.stridable {
           cursor = randlc_skipto(seed, myStart);
           for i in innerRange do
             yield randlc(resultType, cursor);
         } else {
-          myStart -= innerRange.low.safeCast(int(64));
+          myStart -= innerRange.lowBound.safeCast(int(64));
           for i in innerRange {
             cursor = randlc_skipto(seed, myStart + i.safeCast(int(64)) * multiplier);
             yield randlc(resultType, cursor);

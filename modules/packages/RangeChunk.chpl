@@ -22,7 +22,7 @@
 
    The ``RangeChunk`` module assists with dividing a bounded ``range`` of any ``idxType``
    and stride into ``numChunks``. Chunks are 0-based, with the ``0`` index chunk including
-   ``range.low`` and the ``numChunks - 1`` index chunk including ``range.high``.
+   ``range.lowBound`` and the ``numChunks - 1`` index chunk including ``range.highBound``.
 
    Chunks are accessible in several ways:
 
@@ -114,11 +114,11 @@ module RangeChunk {
 
     var rangeStride = r.stride;
     var blockStride = blockSize * rangeStride;
-    var low = r.low;
-    var high = r.high;
-    var firstBlockStart = (if rangeStride > 0 then r.low  else r.high) +
+    var low = r.lowBound;
+    var high = r.highBound;
+    var firstBlockStart = (if rangeStride > 0 then r.lowBound  else r.highBound) +
                             blockStride * tid;
-    if firstBlockStart > r.high || firstBlockStart < r.low then return;
+    if firstBlockStart > r.highBound || firstBlockStart < r.lowBound then return;
 
     var strideToNextBlock = blockStride * nTasks;
 

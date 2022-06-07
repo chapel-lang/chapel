@@ -85,7 +85,7 @@ to the ID of the locale to which it is mapped.
     use CyclicDist;
 
     const Space = {1..8, 1..8};
-    const D: domain(2) dmapped Cyclic(startIdx=Space.low) = Space;
+    const D: domain(2) dmapped Cyclic(startIdx=Space.lowBound) = Space;
     var A: [D] int;
 
     forall a in A do
@@ -552,8 +552,8 @@ override proc CyclicDom.dsiDisplayRepresentation() {
 }
 
 // common redirects
-proc CyclicDom.dsiLow           return whole.low;
-proc CyclicDom.dsiHigh          return whole.high;
+proc CyclicDom.dsiLow           return whole.lowBound;
+proc CyclicDom.dsiHigh          return whole.highBound;
 proc CyclicDom.dsiAlignedLow    return whole.alignedLow;
 proc CyclicDom.dsiAlignedHigh   return whole.alignedHigh;
 proc CyclicDom.dsiFirst         return whole.first;
@@ -610,7 +610,7 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
-  const wholeLow = whole.low;
+  const wholeLow = whole.lowBound;
   const wholeStride = whole.stride;
 
   // If this is the only task running on this locale, we don't want to
@@ -666,7 +666,7 @@ private proc chpl__followThisToOrig(type idxType, followThis, whole) {
   for param i in 0..rank-1 {
     // NOTE: unsigned idxType with negative stride will not work
     const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
-    t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).alignedLow;
+    t(i) = ((followThis(i).lowBound*wholestride:idxType)..(followThis(i).highBound*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).alignedLow;
   }
   return t;
 }
@@ -968,14 +968,14 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     if wholestride < 0 && idxType != strType then
       halt("negative stride with unsigned idxType not supported");
     const iStride = wholestride:idxType;
-    const      lo = (followThis(i).low * iStride):idxType,
-               hi = (followThis(i).high * iStride):idxType,
+    const      lo = (followThis(i).lowBound * iStride):idxType,
+               hi = (followThis(i).highBound * iStride):idxType,
            stride = (followThis(i).stride*wholestride):strType;
     t(i) = (lo..hi by stride) + dom.whole.dim(i).alignedLow;
   }
   const myFollowThisDom = {(...t)};
   if fast {
-    const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThisDom.low));
+    const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThisDom.lowBound));
 
     //
     // Slicing arrSection.myElems will require reference counts to be updated.
@@ -1279,7 +1279,7 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
 }
 
 proc newCyclicDom(dom: domain) {
-  return dom dmapped Cyclic(startIdx=dom.low);
+  return dom dmapped Cyclic(startIdx=dom.lowBound);
 }
 
 proc newCyclicArr(dom: domain, type eltType) {

@@ -98,9 +98,9 @@ module elemental_cholesky_symmetric_strided {
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.size;
 
-    assert ( A_grid_domain.low == (0,0) );
+    assert ( A_grid_domain.lowBound == (0,0) );
 
-    assert ( A (A.domain.low).locale.id == 0 );
+    assert ( A (A.domain.lowBound).locale.id == 0 );
 	     
     // initialize a tasking barrier
     var bar = new Barrier(n_processors);
@@ -122,7 +122,7 @@ module elemental_cholesky_symmetric_strided {
 
 	//	writeln ("A.domain: ", A.domain);
 	//
-	//	assert ( A (A.domain.low + stride * processor ).locale ==
+	//	assert ( A (A.domain.lowBound + stride * processor ).locale ==
 	//		 A_locale_grid (processor) );
 
 	var save_tasks_to_finish : int;

@@ -284,11 +284,11 @@ module DefaultSparse {
         _nnz += inds.size-dupCount;
         _bulkGrow();
 
-        var indIdx = _indices.domain.low;
-        var prevIdx = parentDom.low-1;
+        var indIdx = _indices.domain.lowBound;
+        var prevIdx = parentDom.lowBound-1;
 
         if isUnique {
-          _indices[_indices.domain.low..#inds.size]=inds;
+          _indices[_indices.domain.lowBound..#inds.size]=inds;
           return inds.size;
         }
         else {
@@ -313,12 +313,12 @@ module DefaultSparse {
       _bulkGrow();
 
       //linearly fill the new colIdx from backwards
-      var newIndIdx = indsDom.high; //index into new indices
+      var newIndIdx = indsDom.highBound; //index into new indices
       var oldIndIdx = oldnnz-1; //index into old indices
       var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
       while newLoc == -1 {
         newIndIdx -= 1;
-        if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+        if newIndIdx == indsDom.lowBound-1 then break; //there were duplicates -- now done
         newLoc = actualInsertPts[newIndIdx];
       }
       var arrShiftMap: [0..#oldnnz] int; //to map where data goes
@@ -330,17 +330,17 @@ module DefaultSparse {
           arrShiftMap[oldIndIdx] = i;
           oldIndIdx -= 1;
         }
-        else if newIndIdx >= indsDom.low && i == newLoc {
+        else if newIndIdx >= indsDom.lowBound && i == newLoc {
           //put the new guy in
           _indices[i] = inds[newIndIdx];
           newIndIdx -= 1;
-          if newIndIdx >= indsDom.low then
+          if newIndIdx >= indsDom.lowBound then
             newLoc = actualInsertPts[newIndIdx];
           else
             newLoc = -2; //finished new set
           while newLoc == -1 {
             newIndIdx -= 1;
-            if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+            if newIndIdx == indsDom.lowBound-1 then break; //there were duplicates -- now done
             newLoc = actualInsertPts[newIndIdx];
           }
         }

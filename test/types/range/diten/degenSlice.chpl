@@ -1,5 +1,5 @@
 proc isDegen(r) {
-  return r.low > r.high;
+  return r.lowBound > r.highBound;
 }
 
 var r1 = 0..10 by 2;

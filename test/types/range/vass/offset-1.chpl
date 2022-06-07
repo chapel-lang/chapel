@@ -1,5 +1,5 @@
 proc writeme(r:range(?)) where isBoundedRange(r) {
-  write(r.low, "..", r.high);
+  write(r.lowBound, "..", r.highBound);
   if r.stridable {
     write(" by ", r.stride);
     if r.aligned then write(" align ", r.alignment);

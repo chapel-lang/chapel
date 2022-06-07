@@ -467,7 +467,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
-  if Dom.low >= Dom.high then
+  if Dom.alignedLow >= Dom.alignedHigh then
     return;
 
   if radixSortOk(Data, comparator) {
@@ -1235,7 +1235,7 @@ module QuickSort {
   proc quickSortImpl(Data: [?Dom] ?eltType,
                      minlen=16,
                      comparator:?rec=defaultComparator,
-                     start:int = Dom.low, end:int = Dom.high) {
+                     start:int = Dom.alignedLow, end:int = Dom.alignedHigh) {
     import Sort.InsertionSort;
 
     // grab obvious indices
@@ -1733,7 +1733,7 @@ module RadixSortHelp {
   proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
     // Compute end_bit if it's known
     // Default comparator on integers has fixed width
-    const ref element = Data[Data.domain.low];
+    const ref element = Data[Data.domain.alignedLow];
     if comparator.type == DefaultComparator && fixedWidth(element.type) > 0 {
       return fixedWidth(element.type) - RADIX_BITS;
     } else if canResolveMethod(comparator, "key", element) {
@@ -2957,7 +2957,7 @@ module TwoArrayPartitioning {
           // This could be written as a scan expression...
           ref localOffsets = state.perLocale[tid].compat.counts;
           {
-            var offset = localSubdomain.low;
+            var offset = localSubdomain.alignedLow;
             for bin in 0..#nBuckets {
               localOffsets[bin] = offset;
               offset += globalCounts[bin*nLocalesTotal + tid];
@@ -3162,7 +3162,7 @@ module TwoArrayRadixSort {
         endbit=endbit);
 
 
-      partitioningSortWithScratchSpace(Data.domain.low, Data.domain.high,
+      partitioningSortWithScratchSpace(Data.domain.alignedLow, Data.domain.alignedHigh,
                                        Data, Scratch,
                                        state, comparator, 0);
     } else {
@@ -3180,7 +3180,7 @@ module TwoArrayRadixSort {
         endbit=endbit);
 
       distributedPartitioningSortWithScratchSpace(
-                                       Data.domain.low, Data.domain.high,
+                                       Data.domain.alignedLow, Data.domain.alignedHigh,
                                        Data, Scratch,
                                        state1, state2,
                                        comparator, 0);
@@ -3217,7 +3217,7 @@ module TwoArraySampleSort {
         baseCaseSize=baseCaseSize,
         endbit=endbit);
 
-      partitioningSortWithScratchSpace(Data.domain.low, Data.domain.high,
+      partitioningSortWithScratchSpace(Data.domain.alignedLow, Data.domain.alignedHigh,
                                        Data, Scratch,
                                        state, comparator, 0);
     } else {
@@ -3229,7 +3229,7 @@ module TwoArraySampleSort {
         endbit=endbit);
 
       distributedPartitioningSortWithScratchSpace(
-                                       Data.domain.low, Data.domain.high,
+                                       Data.domain.alignedLow, Data.domain.alignedHigh,
                                        Data, Scratch,
                                        state, comparator, 0);
     }
@@ -3265,7 +3265,7 @@ module MSBRadixSort {
     if endbit < 0 then
       endbit = max(int);
 
-    msbRadixSort(Data, start_n=Data.domain.low, end_n=Data.domain.high,
+    msbRadixSort(Data, start_n=Data.domain.alignedLow, end_n=Data.domain.alignedHigh,
                  comparator,
                  startbit=0, endbit=endbit,
                  settings=new MSBRadixSortSettings());

@@ -613,12 +613,12 @@ proc Stencil.getChunk(inds, locid) {
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
     if chunk.sizeAs(int) > 0 {
-      if targetLocsIdx(chunk.low) != locid then
-        writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
-                targetLocsIdx(chunk.low));
-      if targetLocsIdx(chunk.high) != locid then
-        writeln("[", here.id, "] ", chunk.high, " is in my chunk but maps to ",
-                targetLocsIdx(chunk.high));
+      if targetLocsIdx(chunk.lowBound) != locid then
+        writeln("[", here.id, "] ", chunk.lowBound, " is in my chunk but maps to ",
+                targetLocsIdx(chunk.lowBound));
+      if targetLocsIdx(chunk.highBound) != locid then
+        writeln("[", here.id, "] ", chunk.highBound, " is in my chunk but maps to ",
+                targetLocsIdx(chunk.highBound));
     }
   return chunk;
 }
@@ -634,7 +634,7 @@ proc Stencil.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
     result(i) = max(0, min((targetLocDom.dim(i).sizeAs(int)-1):int,
-                           (((ind(i) - boundingBox.dim(i).low) *
+                           (((ind(i) - boundingBox.dim(i).lowBound) *
                              targetLocDom.dim(i).sizeAs(int):idxType) /
                             boundingBox.dim(i).sizeAs(int)):int));
   return if rank == 1 then result(0) else result;
@@ -675,8 +675,8 @@ proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
   type idxType = chpl__tuplify(boundingBox)(0).idxType;
   var inds: rank*range(idxType);
   for param i in 0..rank-1 {
-    const lo = boundingBox.dim(i).low;
-    const hi = boundingBox.dim(i).high;
+    const lo = boundingBox.dim(i).lowBound;
+    const hi = boundingBox.dim(i).highBound;
     const numelems = hi - lo + 1;
     const numlocs = targetLocBox.dim(i).sizeAs(int);
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
@@ -746,7 +746,7 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
-  const wholeLow = whole.low;
+  const wholeLow = whole.lowBound;
 
   // If this is the only task running on this locale, we don't want to
   // count it when we try to determine how many tasks to use.  Here we
@@ -804,8 +804,8 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
   for param i in 0..rank-1 {
     var stride = whole.dim(i).stride: strType;
     // not checking here whether the new low and high fit into idxType
-    var low = (stride * followThis(i).low:strType):idxType;
-    var high = (stride * followThis(i).high:strType):idxType;
+    var low = (stride * followThis(i).lowBound:strType):idxType;
+    var high = (stride * followThis(i).highBound:strType):idxType;
     t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
@@ -850,8 +850,8 @@ proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
 }
 
 // common redirects
-proc StencilDom.dsiLow           return whole.low;
-proc StencilDom.dsiHigh          return whole.high;
+proc StencilDom.dsiLow           return whole.lowBound;
+proc StencilDom.dsiHigh          return whole.highBound;
 proc StencilDom.dsiAlignedLow    return whole.alignedLow;
 proc StencilDom.dsiAlignedHigh   return whole.alignedHigh;
 proc StencilDom.dsiFirst         return whole.first;
@@ -1002,8 +1002,8 @@ proc StencilDom.setup() {
               for i in 0..rank-1 {
                 const wd = whole.dim(i);
                 const rd = recvD.dim(i);
-                const mult = if rd.low > wd.high then -1
-                             else if rd.high < wd.low then 1
+                const mult = if rd.lowBound > wd.highBound then -1
+                             else if rd.highBound < wd.lowBound then 1
                              else 0;
                 // todo: what to do when idxType is unsigned and mult==-1 ?
                 offset(i) = (mult * wd.sizeAs(int) * abstr(i)).safeCast(idxType);
@@ -1314,10 +1314,10 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
   for param i in 0..rank-1 {
     var stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
-    var low = followThis(i).low * abs(stride):idxType;
-    var high = followThis(i).high * abs(stride):idxType;
+    var low = followThis(i).lowBound * abs(stride):idxType;
+    var high = followThis(i).highBound * abs(stride):idxType;
     myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
-    lowIdx(i) = myFollowThis(i).low;
+    lowIdx(i) = myFollowThis(i).lowBound;
   }
 
   const myFollowThisDom = {(...myFollowThis)};
@@ -1363,19 +1363,19 @@ proc StencilArr.dsiSerialWrite(f) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 0..rank-1 do
-    i(dim) = dom.dsiDim(dim).low;
+    i(dim) = dom.dsiDim(dim).lowBound;
   label next while true {
     f <~> do_dsiAccess(true, i);
-    if i(rank-1) <= (dom.dsiDim(rank-1).high - dom.dsiDim(rank-1).stride:strType) {
+    if i(rank-1) <= (dom.dsiDim(rank-1).highBound - dom.dsiDim(rank-1).stride:strType) {
       if ! binary then f <~> " ";
       i(rank-1) += dom.dsiDim(rank-1).stride:strType;
     } else {
       for dim in 0..rank-2 by -1 {
-        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
+        if i(dim) <= (dom.dsiDim(dim).highBound - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank-1 {
             f <~> "\n";
-            i(dim2) = dom.dsiDim(dim2).low;
+            i(dim2) = dom.dsiDim(dim2).lowBound;
           }
           continue next;
         }
@@ -1389,7 +1389,7 @@ pragma "no copy return"
 proc StencilArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 0..rank-1 {
-    low(i) = ranges(i).low;
+    low(i) = ranges(i).lowBound;
   }
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
@@ -1450,8 +1450,8 @@ iter StencilArr.dsiBoundaries() {
     ref myLocDom = LSA.locDom;
     for (D, N, L) in zip(myLocDom.recvDest, myLocDom.Neighs, myLocDom.NeighDom) {
       const target = i + L;
-      const low = dom.dist.targetLocDom.low;
-      const high = dom.dist.targetLocDom.high;
+      const low = dom.dist.targetLocDom.lowBound;
+      const high = dom.dist.targetLocDom.highBound;
 
       if (!dom.dist.targetLocDom.contains(target)) {
         var translated : target.type;
@@ -1482,8 +1482,8 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
       ref myLocDom = LSA.locDom;
       forall (D, N, L) in zip(myLocDom.recvDest, myLocDom.Neighs, myLocDom.NeighDom) {
         const target = i + L;
-        const low = dom.dist.targetLocDom.low;
-        const high = dom.dist.targetLocDom.high;
+        const low = dom.dist.targetLocDom.lowBound;
+        const high = dom.dist.targetLocDom.highBound;
         //
         // if `LSA` has a cache section of the outermost fluff/boundary,
         // then we should yield that so it is updated correctly. To do
@@ -1930,10 +1930,10 @@ proc StencilDom.numRemoteElems(viewDom, rlo, rid) {
   //  below can fit into idxType
   var blo, bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank-1).sizeAs(int) - 1) then
-    bhi=viewDom.dim(rank-1).high;
+    bhi=viewDom.dim(rank-1).highBound;
   else {
-      bhi = dist.boundingBox.dim(rank-1).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1):idxType,
+      bhi = dist.boundingBox.dim(rank-1).lowBound +
+        intCeilXDivByY((dist.boundingBox.dim(rank-1).highBound - dist.boundingBox.dim(rank-1).lowBound +1)*(rid+1):idxType,
                        dist.targetLocDom.dim(rank-1).sizeAs(int):idxType) - 1:idxType;
 
   }

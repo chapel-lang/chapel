@@ -1,1 +1,1 @@
-../../../release/examples/benchmarks/hpcc/fft.chpl
+../../../release/examples/benchmarks/hpcc/fft.chpl -salignedBoundsByDefault=true
