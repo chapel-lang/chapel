@@ -5561,7 +5561,7 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
         // otherwise, run canDispatch to check for promotion
         bool promotes = false;
         bool paramNarrows = false;
-        canDispatch(actualVt, nullptr, formalVt, nullptr,
+        canDispatch(actualVt, actual, formalVt, formal,
                     candidate->fn, &promotes, &paramNarrows,
                     /* param coercions only? */ false);
         if (promotes) {
