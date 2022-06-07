@@ -5506,13 +5506,15 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
-static bool isMatchingImagComplex(Type* t1, Type* t2) {
-  if (is_imag_type(t1) && is_complex_type(t2) &&
-      2*get_width(t1) == get_width(t2))
+static bool isMatchingImagComplex(Type* actualVt, Type* formalVt,
+                                  bool anyImagComplexArgs) {
+  if (is_imag_type(actualVt) && is_complex_type(formalVt) &&
+      2*get_width(actualVt) == get_width(formalVt))
     return true;
 
-  if (is_imag_type(t2) && is_complex_type(t1) &&
-      2*get_width(t2) == get_width(t1))
+  if (anyImagComplexArgs &&
+      is_real_type(actualVt) && is_complex_type(formalVt) &&
+      2*get_width(actualVt) == get_width(formalVt))
     return true;
 
   return false;
@@ -5527,6 +5529,22 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
   // in the call.
   int nImplicitConversionsToTypeNotMentioned = 0;
   int nImplicitConversions = 0;
+
+  bool anyImagComplexArgs = false;
+  for (int k = 0; k < DC.actuals->n; k++) {
+    Symbol*    actual  = DC.actuals->v[k];
+    ArgSymbol* formal = candidate->actualIdxToFormal[k];
+    if (formal->originalIntent != INTENT_OUT) {
+      Type* actualVt = actual->type->getValType();
+      if (actualVt->scalarPromotionType != nullptr) {
+        actualVt = actualVt->scalarPromotionType->getValType();
+      }
+      if (is_imag_type(actualVt) || is_complex_type(actualVt)) {
+        anyImagComplexArgs = true;
+        break;
+      }
+    }
+  }
 
   for (int k = 0; k < DC.actuals->n; k++) {
     Symbol*    actual  = DC.actuals->v[k];
@@ -5562,7 +5580,7 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
         continue;
       }
 
-      if (isMatchingImagComplex(actualVt, formalVt)) {
+      if (isMatchingImagComplex(actualVt, formalVt, anyImagComplexArgs)) {
         // don't worry about imag vs complex
         continue;
       }
@@ -5595,8 +5613,9 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
         Symbol*    otherActual  = DC.actuals->v[other];
         if (other != k && formal->originalIntent != INTENT_OUT) {
           Type* otherActualVt = otherActual->type->getValType();
-          if (formalVt == otherActualVt ||
-              isMatchingImagComplex(formalVt, otherActualVt)) {
+          if (otherActualVt == formalVt ||
+              isMatchingImagComplex(otherActualVt, formalVt,
+                                    anyImagComplexArgs)) {
             formalVtUsedInOtherActual = true;
             break;
           }
@@ -5630,6 +5649,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
   // If index i is set then we can skip testing function F_i because
   // we already know it can not be the best match.
   std::vector<bool> notBest(candidates.n, false);
+
   // If index i is set we have ruled out that function
   std::vector<bool> discarded(candidates.n, false);
 
