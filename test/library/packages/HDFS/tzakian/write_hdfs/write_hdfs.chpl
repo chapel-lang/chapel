@@ -17,7 +17,7 @@ writeln("\n\n=== Finished writing and closed. Now opening for read ===\n");
 var fi = hdfs.hdfs_chapel_open("/tmp/preadv_test1.txt", iomode.r);
 var fff = fi.reader(); 
 var str:  string;
-while(fff.readline(str)) {
+while(fff.readLine(str)) {
   write("read line from HDFS: " + str);
 }
 fff.close();

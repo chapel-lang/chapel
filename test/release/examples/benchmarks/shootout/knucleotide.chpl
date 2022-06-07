@@ -22,16 +22,21 @@ proc main(args: [] string) {
       lineSize = 0,
       numRead = 0;
 
-  while stdinNoLock.readline(buff, lineSize) && !startsWithThree(buff) do
+  lineSize = stdinNoLock.readLine(buff);
+  while lineSize>0 && !startsWithThree(buff) {
     numRead += lineSize;
-
+    lineSize = stdinNoLock.readLine(buff);
+  }
   // Read in the rest of the file
   var dataDom = {1..fileLen-numRead},
       data: [dataDom] uint(8),
       idx = 1;
 
-  while stdinNoLock.readline(data, lineSize, idx) do
+  lineSize = stdinNoLock.readLine(data[idx..]);
+  while lineSize>0 {
     idx += lineSize - 1;
+    lineSize = stdinNoLock.readLine(data[idx..]);
+  }
   
   // Resize our array to the amount actually read
   dataDom = {1..idx};
@@ -138,4 +143,3 @@ inline proc startsWithThree(data) {
          data[2] == "T".toByte() &&
          data[3] == "H".toByte();
 }
-

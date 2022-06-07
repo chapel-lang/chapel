@@ -37,8 +37,8 @@ module CheckHttp {
         var str1: string;
         var str2: string;
         while true {
-          var got1 = filereader.readline(str1);
-          var got2 = urlreader.readline(str2);
+          var got1 = filereader.readLine(str1);
+          var got2 = urlreader.readLine(str2);
           if got1 == false && got2 == false then
             break;
           if got1 != got2 then

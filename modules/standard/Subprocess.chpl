@@ -52,7 +52,7 @@ to read the output from the ``ls`` command.
   var sub = spawn(["ls", "test.*"], stdout=pipeStyle.pipe);
 
   var line:string;
-  while sub.stdout.readline(line) {
+  while sub.stdout.readLine(line) {
     write("ls returned: ", line);
   }
 
@@ -74,7 +74,7 @@ back its input.
   sub.communicate();
 
   var line:string;
-  while sub.stdout.readline(line) {
+  while sub.stdout.readLine(line) {
     write("Got line: ", line);
   }
 

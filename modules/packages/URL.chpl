@@ -30,7 +30,7 @@ For example, the following program downloads a web-page from http://example.com 
   var urlreader = openUrlReader("http://example.com");
   var str:bytes;
   // Output each line read from the URL to stdout
-  while(urlreader.readline(str)) {
+  while(urlreader.readLine(str)) {
     write(str);
   }
 

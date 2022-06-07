@@ -245,7 +245,7 @@ if example == 0 || example == 4 {
 
   var r = f.reader();
   var line:string;
-  while( r.readline(line) ) {
+  while( r.readLine(line) ) {
     write("Read line: ", line);
   }
   r.close();

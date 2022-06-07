@@ -14,7 +14,7 @@ proc normalReturn(doWhat: bool): bool {
   var c1 = f1.reader();
   var c2 = f2.writer();
   var line: string;
-  while (c1.readline(line)) {
+  while (c1.readLine(line)) {
     c2.write(line);
   }
   c2.flush();
@@ -38,7 +38,7 @@ proc outReturn(out res: bool, doWhat: bool) {
   var c1 = f1.reader();
   var c2 = f2.writer();
   var line: string;
-  while (c1.readline(line)) {
+  while (c1.readLine(line)) {
     c2.write(line);
   }
   c2.flush();
@@ -55,4 +55,3 @@ outReturn(res2, true);
 // At the time this test was filed, the previous command
 // would segfault.
 writeln(res2); // Should also output false.
-

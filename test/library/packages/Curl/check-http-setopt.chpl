@@ -23,7 +23,7 @@ module CheckHttpSetOpt {
     setopt(urlreader, CURLOPT_VERBOSE, true);
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -42,7 +42,7 @@ module CheckHttpSetOpt {
 	              (CURLOPT_FILETIME, true));
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -68,7 +68,7 @@ module CheckHttpSetOpt {
     setopt(urlreader, CURLOPT_URL, url);
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -87,7 +87,7 @@ module CheckHttpSetOpt {
     setopt(urlreader, CURLOPT_URL, url:bytes);
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 

@@ -9,7 +9,7 @@ for loc in Locales {
   on loc {
     var r = gfl.hdfsReader(start=50);
     var str: string;
-    r.readline(str);
+    r.readLine(str);
     writeln("on locale ", here.id, " string: " + str);
     r.close();
   }

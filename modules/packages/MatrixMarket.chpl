@@ -208,7 +208,7 @@ class MMReader {
 
    proc read_header() {
      var header:string;
-     assert(fin.readline(header) == true, "MMReader I/O error!");
+     assert(fin.readLine(header) == true, "MMReader I/O error!");
 
      var headerfields = [ s in header.split(" ") ] s;
      this.finfo = initMMInfo(headerfields);
@@ -218,7 +218,7 @@ class MMReader {
      while !pctflag {
        var percentfound:string;
        var offset = fin._offset();
-       fin.readline(percentfound);
+       fin.readLine(percentfound);
 
        // didn't find a percentage, rewind channel by length of read string...
        if percentfound.find("%") == -1 {

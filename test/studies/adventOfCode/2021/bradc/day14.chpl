@@ -6,7 +6,7 @@ config const steps = 10,
 // TODO: bytes + array of uint(8) would be more appropriate, storage-wise
 
 var polyTemplStr: string;
-readline(polyTemplStr);  
+readLine(polyTemplStr);  
 polyTemplStr = polyTemplStr.strip();
 
 var polyTempl = [ch in polyTemplStr] ch;
@@ -18,7 +18,7 @@ var prodMap: map(string, string);
 try {
   var line: string;
   readln();
-  while readline(line) {
+  while readLine(line) {
     prodMap.add(line[0..1], line[6]);
     // TODO: This has got to be too conservative:
     allChars.add[line[0]];

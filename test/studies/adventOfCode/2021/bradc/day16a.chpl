@@ -5,7 +5,7 @@ param bitsPerHex = 4;
 config const debug = false;
 
 var line: bytes;
-readline(line);
+readLine(line);
 line = line.strip();
 writeln(line);
 

@@ -54,7 +54,7 @@ allows a URL to be opened as a :record:`IO.channel`.
   var urlreader = openUrlReader("http://example.com");
   var str:bytes;
   // Output each line read from the URL to stdout
-  while(urlreader.readline(str)) {
+  while(urlreader.readLine(str)) {
     write(str);
   }
 

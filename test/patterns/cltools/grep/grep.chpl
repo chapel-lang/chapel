@@ -49,7 +49,7 @@ proc fileGrep(toFind: string, fname: string) throws {
   var lineNum = 1;
 
   // Search while handling errors, throwing if readline encounters an error.
-  while (r.readline(line)) {
+  while (r.readLine(line)) {
     if (line.find(regEx) != -1) {
       writeln("Found ", toFind, " at ", lineNum, " in ", fname);
     }

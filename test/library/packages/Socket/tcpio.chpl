@@ -16,7 +16,7 @@ proc recv_string(test: borrowed Test) throws {
     var conn = connect(address);
     var reader = conn.reader();
     var x:bytes;
-    reader.readline(x);
+    reader.readLine(x);
     test.assertEqual(x, b"hello world\n");
   }
 }
@@ -48,7 +48,7 @@ proc send_string(test: borrowed Test) throws {
       var conn = server.accept();
       var reader = conn.reader();
       var x:bytes;
-      reader.readline(x);
+      reader.readLine(x);
       test.assertEqual(x, b"hello world\n");
     }
 
@@ -89,7 +89,7 @@ proc send_http(test: borrowed Test) throws {
 
   const reader = conn.reader();
   var b:bytes;
-  reader.readline(b);
+  reader.readLine(b);
   test.assertEqual(b.strip(), b"HTTP/1.1 200 OK");
 }
 

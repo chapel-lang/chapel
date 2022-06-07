@@ -48,8 +48,8 @@ var fff = fi.reader();
 var str:  string;
 var str2: string;
 
-while(ffi.readline(str)) {
-  fff.readline(str2);
+while(ffi.readLine(str)) {
+  fff.readLine(str2);
   write("read string from HDFS: " + str);
   write("read string from  LFS: " + str2);
 }
@@ -70,7 +70,7 @@ var w = open("data/bar.txt", iomode.cw);
 var ww = w.writer();
 
 //var str:  string;
-while(rr.readline(str)) {
+while(rr.readLine(str)) {
   ww.write(str);
 }
 rr.close();

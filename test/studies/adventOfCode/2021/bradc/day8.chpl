@@ -5,7 +5,7 @@ config const debug = false;
 iter getOutputs() {
   var line: string;
 
-  while readline(line) {
+  while readLine(line) {
     if debug then
       writeln("Got: ", line);
     var parts: [1..2] string = line.split(" | ");

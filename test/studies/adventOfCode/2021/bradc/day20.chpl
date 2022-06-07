@@ -3,17 +3,17 @@ use IO;
 config const numSteps = 2, debug = false;
 
 var decoder: string;
-readline(decoder);
+readLine(decoder);
 
 var blank: string;
-readline(blank);
+readLine(blank);
 
 var D: domain(2) = {-(2*numSteps+1)..2*numSteps+1, 1..0};
 var A, B: [D] bool;
 
 var line: string;
 var numLines = 0;
-while readline(line) {
+while readLine(line) {
   numLines += 1;
   D = {-(2*numSteps+1)..numLines+2*numSteps+1, -(2*numSteps+1)..line.size+2*numSteps+1};
   for (ch,col) in zip(line, 0..) do
