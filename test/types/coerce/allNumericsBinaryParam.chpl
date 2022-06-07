@@ -56,7 +56,7 @@ proc f(x, y) {
 
 proc isProhibitedAdd(type t1, type t2) param {
   return (t1 == uint && isIntType(t2)) ||
-         (isUintType(t1) && isIntType(t2) && numBits(t1) >= numBits(t1)) ||
+         (isUintType(t1) && isIntType(t2) && numBits(t1) >= numBits(t2)) ||
          (t1 == uint && isUintType(t2) && t2 != uint); // bug workaround
 }
 
