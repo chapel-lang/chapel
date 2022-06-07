@@ -5465,7 +5465,7 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
     ArgSymbol* formal = candidate->actualIdxToFormal[k];
     if (formal->originalIntent != INTENT_OUT) {
       Type* actualVt = actual->type->getValType();
-      if (actualVt->scalarPromotionType != nullptr) {
+      if (candidate->anyPromotes && actualVt->scalarPromotionType != nullptr) {
         actualVt = actualVt->scalarPromotionType->getValType();
       }
       if (is_imag_type(actualVt) || is_complex_type(actualVt)) {
@@ -5486,7 +5486,7 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
         // same type, nothing else to worry about here
         continue;
       }
-      if (actualVt->scalarPromotionType != nullptr) {
+      if (candidate->anyPromotes && actualVt->scalarPromotionType != nullptr) {
         // otherwise, run canDispatch to check for promotion
         bool promotes = false;
         bool paramNarrows = false;
