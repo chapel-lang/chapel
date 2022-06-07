@@ -1998,7 +1998,8 @@ static numeric_type_t classifyNumericType(Type* t)
 // coerce to 'int' over 'int(8)'.
 static bool prefersCoercionToOtherNumericType(Type* actualType,
                                               Type* f1Type,
-                                              Type* f2Type) {
+                                              Type* f2Type,
+                                              bool paramWithDefaultSize) {
 
   INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
 
@@ -2028,9 +2029,10 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
         !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
           f2Type == dtUInt[INT_SIZE_DEFAULT]))
       return true;
-    // For non-default-sized ints/uints...
+    // For non-default-sized int/uints and non-param ints/uints
     if (aT == NUMERIC_TYPE_INT_UINT &&
-        get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT])) {
+        (get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT]) ||
+         paramWithDefaultSize==false)) {
       // ...prefer smaller reals over larger ones
       if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
           get_width(f1Type) < get_width(f2Type) &&
@@ -2042,9 +2044,9 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
           get_width(actualType) <= get_width(f1Type)/2)
         return true;
     }
-    // Prefer int(64)/uint(64) cast to a default-sized real
+    // For param ints (e.g. 1) prefer a cast to a default-sized real
     // over another size of real or complex.
-    if (actualType == dtInt[INT_SIZE_DEFAULT] || actualType == dtUInt[INT_SIZE_DEFAULT]) {
+    if (actualType == dtInt[INT_SIZE_DEFAULT] && paramWithDefaultSize) {
       if (f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
           (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
           f2Type != dtReal[FLOAT_SIZE_DEFAULT])
@@ -5504,28 +5506,163 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
+static bool isMatchingImagComplex(Type* t1, Type* t2) {
+  if (is_imag_type(t1) && is_complex_type(t2) &&
+      2*get_width(t1) == get_width(t2))
+    return true;
+
+  if (is_imag_type(t2) && is_complex_type(t1) &&
+      2*get_width(t2) == get_width(t1))
+    return true;
+
+  return false;
+}
+
+
+// returns 'true' if the candidate is OK, 'false' if it should be
+// filtered out.
+static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
+                                         const DisambiguationContext& DC) {
+  // check the number of implicit conversions to types not used
+  // in the call.
+  int nImplicitConversionsToTypeNotMentioned = 0;
+  int nImplicitConversions = 0;
+
+  for (int k = 0; k < DC.actuals->n; k++) {
+    Symbol*    actual  = DC.actuals->v[k];
+    ArgSymbol* formal = candidate->actualIdxToFormal[k];
+
+    if (formal->originalIntent != INTENT_OUT) {
+      Type* actualVt = actual->type->getValType();
+      Type* formalVt = formal->type->getValType();
+      if (actualVt == formalVt) {
+        // same type, nothing else to worry about here
+        continue;
+      }
+      if (actualVt->scalarPromotionType != nullptr) {
+        // otherwise, run canDispatch to check for promotion
+        bool promotes = false;
+        bool paramNarrows = false;
+        canDispatch(actualVt, nullptr, formalVt, nullptr,
+                    candidate->fn, &promotes, &paramNarrows,
+                    /* param coercions only? */ false);
+        if (promotes) {
+          actualVt = actualVt->scalarPromotionType->getValType();
+        }
+      }
+      if (actualVt == formalVt) {
+        // same type, nothing else to worry about here
+        continue;
+      }
+
+      // if we get here, an implicit conversion is required
+      if (isClassLikeOrManaged(actualVt) || isClassLikeOrManaged(formalVt) ||
+          isClassLikeOrPtr(actualVt) || isClassLikeOrPtr(formalVt)) {
+        // OK, don't worry about implicit conversion for class types here
+        continue;
+      }
+
+      if (isMatchingImagComplex(actualVt, formalVt)) {
+        // don't worry about imag vs complex
+        continue;
+      }
+
+      if (is_bool_type(actualVt) && formalVt == dtInt[INT_SIZE_DEFAULT]) {
+        // don't worry about bool types converting to default 'int'
+        continue;
+      }
+
+      /*
+      Immediate* imm = nullptr;
+      if (VarSymbol* var = toVarSymbol(actual)) {
+        imm = var->immediate;
+      }
+      if (EnumSymbol* enumsym = toEnumSymbol(actual)) {
+        imm = enumsym->getImmediate();
+      }
+
+      if (imm != nullptr &&
+          isNumericParamDefaultType(actualVt)) {
+        // OK, don't worry about implicit conversions for param
+        // with default type here.
+        continue;
+      }*/
+
+      // is it an implicit conversion to a formal type
+      // that is used in an actual of the call?
+      bool formalVtUsedInOtherActual = false;
+      for (int other = 0; other < DC.actuals->n; other++) {
+        Symbol*    otherActual  = DC.actuals->v[other];
+        if (other != k && formal->originalIntent != INTENT_OUT) {
+          Type* otherActualVt = otherActual->type->getValType();
+          if (formalVt == otherActualVt ||
+              isMatchingImagComplex(formalVt, otherActualVt)) {
+            formalVtUsedInOtherActual = true;
+            break;
+          }
+        }
+      }
+
+      nImplicitConversions++;
+      if (!formalVtUsedInOtherActual) {
+        nImplicitConversionsToTypeNotMentioned++;
+      }
+    }
+  }
+
+  if (nImplicitConversions >= 2 && nImplicitConversionsToTypeNotMentioned > 0) {
+    return false;
+  }
+
+  return true;
+}
 
 static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     const DisambiguationContext& DC,
                     bool                         ignoreWhere,
                     Vec<ResolutionCandidate*>&   ambiguous) {
+
+
   // MPF note: A more straightforwardly O(n) version of this
   // function did not appear to be faster. See history of this comment.
 
   // If index i is set then we can skip testing function F_i because
   // we already know it can not be the best match.
   std::vector<bool> notBest(candidates.n, false);
+  // If index i is set we have ruled out that function
+  std::vector<bool> discarded(candidates.n, false);
+
+  if (candidates.n > 1) {
+    for (int i = 0; i < candidates.n; ++i) {
+      EXPLAIN("##########################\n");
+      EXPLAIN("# Filtering function %d #\n", i);
+      EXPLAIN("##########################\n\n");
+      ResolutionCandidate* candidate1         = candidates.v[i];
+      EXPLAIN("%s\n\n", toString(candidate1->fn));
+
+      if (allowCandidateInDisambiguate(candidate1, DC) == false) {
+        EXPLAIN("X: Fn %d has too many conversions so is filtered out\n", i);
+        discarded[i] = true;
+      } else {
+        EXPLAIN("X: Fn %d is allowed\n", i);
+      }
+    }
+  }
 
   for (int i = 0; i < candidates.n; ++i) {
-    EXPLAIN("##########################\n");
-    EXPLAIN("# Considering function %d #\n", i);
-    EXPLAIN("##########################\n\n");
-
     ResolutionCandidate* candidate1         = candidates.v[i];
     bool                 singleMostSpecific = true;
 
     bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
+
+    if (discarded[i]) {
+      continue;
+    }
+
+    EXPLAIN("##########################\n");
+    EXPLAIN("# Considering function %d #\n", i);
+    EXPLAIN("##########################\n\n");
 
     EXPLAIN("%s\n\n", toString(candidate1->fn));
 
@@ -5536,6 +5673,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
 
     for (int j = 0; j < candidates.n; ++j) {
       if (i == j) {
+        continue;
+      }
+      if (discarded[j]) {
         continue;
       }
 
@@ -5855,6 +5995,8 @@ static void testArgMapping(FnSymbol*                    fn1,
   //  param x:int(32), param y:int(64)
   if (getImmediate(actual) != NULL) {
     actualParam = true;
+    /*paramWithDefaultSize = actualType == dtInt[INT_SIZE_DEFAULT] ||
+                           actualType == dtBools[BOOL_SIZE_DEFAULT]; */
     paramWithDefaultSize = isNumericParamDefaultType(actualType);
   }
 
@@ -5975,7 +6117,8 @@ static void testArgMapping(FnSymbol*                    fn1,
     reason = "scalar type vs not";
 
   } else if (prefersCoercionToOtherNumericType(actualScalarType,
-                                               f1Type, f2Type)) {
+                                               f1Type, f2Type,
+                                               paramWithDefaultSize)) {
     if (paramWithDefaultSize)
       prefer1 = WEAKEST;
     else
@@ -5984,7 +6127,8 @@ static void testArgMapping(FnSymbol*                    fn1,
     reason = "preferred coercion to other";
 
   } else if (prefersCoercionToOtherNumericType(actualScalarType,
-                                               f2Type, f1Type)) {
+                                               f2Type, f1Type,
+                                               paramWithDefaultSize)) {
     if (paramWithDefaultSize)
       prefer2 = WEAKEST;
     else
