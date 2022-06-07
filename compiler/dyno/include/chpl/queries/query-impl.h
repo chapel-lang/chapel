@@ -124,14 +124,20 @@ template<typename... ArgTs>
 void Context::queryBeginTrace(const char* traceQueryName,
                               const std::tuple<ArgTs...>& tupleOfArg) {
 
-  if (breakSet || enableDebugTrace) {
+  if ((breakSet || enableDebugTrace)
+      && std::find(queryTraceIgnoreQueries.begin(),
+                   queryTraceIgnoreQueries.end(),
+                   traceQueryName) == queryTraceIgnoreQueries.end()) {
     auto args = queryArgsToStrings(tupleOfArg);
     size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
     if (enableDebugTrace) {
-      printf("QUERY BEGIN     %s (", traceQueryName);
+      queryTraceDepth++;
+      printf("%i QUERY BEGIN     %s (", queryTraceDepth, traceQueryName);
       queryArgsPrint(tupleOfArg);
-      printf(")\n");
-      printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
+      printf(") ");
+      std::cout << "QUERY + ARGS HASH: 0x"
+                << std::hex << queryAndArgsHash
+                << " {" << std::endl;
     }
     if (breakSet && queryAndArgsHash == breakOnHash) {
       debuggerBreakHere();
@@ -323,11 +329,15 @@ Context::queryEnd(
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
                                    std::move(result), /* forSetter */ false);
 
-  if (enableDebugTrace) {
+  if (enableDebugTrace
+      && std::find(queryTraceIgnoreQueries.begin(),
+                   queryTraceIgnoreQueries.end(),
+                   traceQueryName) == queryTraceIgnoreQueries.end()) {
     bool changed = ret->lastChanged == this->currentRevisionNumber;
-    printf("QUERY END       %s (", traceQueryName);
+    printf("%i QUERY END       %s (", queryTraceDepth, traceQueryName);
     queryArgsPrint(tupleOfArgs);
-    printf(") %s %p\n", changed?"UPDATED":"NO CHANGE", r);
+    printf(") %s }\n", changed?"UPDATED":"NO CHANGE");
+    queryTraceDepth--;
     assert(r->lastChecked == this->currentRevisionNumber);
     //for (auto dep : r->dependencies) {
     //  printf("  with dependency %p %s\n", dep, dep->parentQueryMap->queryName);

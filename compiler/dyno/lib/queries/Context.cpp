@@ -433,7 +433,7 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
                        /* forSetter */ true);
 
   if (enableDebugTrace) {
-    printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
+    printf("%i SETTING FILE PATH FOR MODULE %s -> %s\n", queryTraceDepth,
            moduleIdSymbolPath.c_str(), path.c_str());
   }
   #ifndef NDEBUG
@@ -455,7 +455,7 @@ void Context::advanceToNextRevision(bool prepareToGC) {
     gcCounter++;
   }
   if (enableDebugTrace) {
-    printf("CURRENT REVISION NUMBER IS NOW %i %s\n",
+    printf("%i CURRENT REVISION NUMBER IS NOW %i %s\n", queryTraceDepth,
            (int) this->currentRevisionNumber,
            prepareToGC?"PREPARING GC":"");
   }
@@ -475,7 +475,7 @@ void Context::collectGarbage() {
   assert(queryStack.size() == 0);
 
   if (enableDebugTrace) {
-    printf("COLLECTING GARBAGE\n");
+    printf("%i COLLECTING GARBAGE\n", queryTraceDepth);
   }
 
   // clear out the saved old results
@@ -506,12 +506,12 @@ void Context::collectGarbage() {
       if (buf[1] || buf[0] == gcMark) {
         newTable.insert(e);
         if (enableDebugTrace) {
-          printf("COPYING OVER UNIQUESTRING %s\n", key);
+          printf("%i COPYING OVER UNIQUESTRING %s\n", queryTraceDepth, key);
         }
       } else {
         toFree.push_back(allocation);
         if (enableDebugTrace) {
-          printf("WILL FREE UNIQUESTRING %s\n", key);
+          printf("%i WILL FREE UNIQUESTRING %s\n", queryTraceDepth, key);
         }
       }
     }
@@ -522,7 +522,7 @@ void Context::collectGarbage() {
 
     if (enableDebugTrace) {
       size_t nUniqueStringsAfter = uniqueStringsTable.size();
-      printf("COLLECTED %i UniqueStrings\n",
+      printf("%i COLLECTED %i UniqueStrings\n", queryTraceDepth,
              (int)(nUniqueStringsBefore-nUniqueStringsAfter));
     }
   }
@@ -640,14 +640,16 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
     resultEntry->recompute(this);
     assert(resultEntry->lastChecked == this->currentRevisionNumber);
     if (enableDebugTrace) {
-      printf("DONE RECOMPUTING IF NEEDED -- RECOMPUTED FOR %s\n",
+      printf("%i DONE RECOMPUTING IF NEEDED -- RECOMPUTED FOR %s\n",
+             queryTraceDepth,
              resultEntry->parentQueryMap->queryName);
     }
     return;
   } else {
     updateForReuse(resultEntry);
     if (enableDebugTrace) {
-      printf("DONE RECOMPUTING IF NEEDED -- REUSED FOR %s\n",
+      printf("%i DONE RECOMPUTING IF NEEDED -- REUSED FOR %s\n",
+             queryTraceDepth,
              resultEntry->parentQueryMap->queryName);
     }
   }

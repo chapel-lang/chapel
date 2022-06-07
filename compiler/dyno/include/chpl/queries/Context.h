@@ -105,6 +105,10 @@ class Context {
   bool breakSet = false;
   size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
+  // tracks the nesting of queries, displayed during query tracing
+  int queryTraceDepth = 0;
+  // list of query names to ignore when tracing
+  std::vector<std::string> queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
