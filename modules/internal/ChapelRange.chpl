@@ -1783,13 +1783,24 @@ operator :(r: range(?), type t: range(?)) {
     // to the sum of the idxType and count type.
     //
     proc chpl__computeTypeForCountMath(type t1, type t2) type {
-      if (t1 == t2) then {
-        return chpl__idxTypeToIntIdxType(t1);
-      } else if (numBits(t1) == 64 || numBits(t2) == 64) then {
+      type t1i = chpl__idxTypeToIntIdxType(t1);
+      type t2i = chpl__idxTypeToIntIdxType(t2);
+      if t1i == t2i {
+        return t1i;
+      } else if numBits(t1i) == 64 || numBits(t2i) == 64 {
         return int(64);
+      } else if isInt(t1i) && isInt(t2i) {
+        // both int but different sizes
+        return int(max(numBits(t1i), numBits(t2i)));
+      } else if isUint(t1i) && isUint(t2i) {
+        // both uint but different sizes
+        return uint(max(numBits(t1i), numBits(t2i)));
+      } else if isInt(t1i) {
+        // t1 is int and t2 is uint
+        return int(max(numBits(t1i), 2*numBits(t2i)));
       } else {
-        var x1: t1; var x2: t2;
-        return (x1+x2).type;
+        // assume t1 is uint and t1 is int
+        return int(max(2*numBits(t1i), numBits(t2i)));
       }
     }
 
