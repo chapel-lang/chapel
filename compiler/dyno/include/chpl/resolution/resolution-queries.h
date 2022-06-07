@@ -116,6 +116,11 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         bool useGenericFormalDefaults);
 
 /**
+  Return true if 'name' is the name of a field for type 't'
+*/
+bool isNameOfField(Context* context, UniqueString name, const types::Type* t);
+
+/**
   Computes the version of a type assuming that defaults for generics
   are needed. So, for 'record R { type t = int; }', this will return R(int).
  */
@@ -264,33 +269,6 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const CallInfo& ci,
                                           const Scope* inScope,
                                           const PoiScope* inPoiScope);
-
-/**
-  Return true if 'name' is the name of a compiler generated method.
-*/
-bool isNameOfCompilerGeneratedMethod(UniqueString name);
-
-/**
-  Given a type and a UniqueString representing the name of a method,
-  determine if the type needs a method with such a name to be
-  generated for it.
-*/
-bool needCompilerGeneratedMethod(Context* context,
-                                 const types::Type* type,
-                                 UniqueString name);
-
-/**
-  Given a type and a UniqueString representing the name of a method,
-  determine if the type needs a method with such a name to be
-  generated for it, and if so, generates and returns a
-  TypedFnSignature representing the generated method.
-
-  If no method was generated, returns nullptr.
-*/
-const TypedFnSignature*
-getCompilerGeneratedMethod(Context* context,
-                           const types::Type* type,
-                           UniqueString name);
 
 
 } // end namespace resolution

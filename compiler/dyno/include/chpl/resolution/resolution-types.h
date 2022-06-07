@@ -86,14 +86,16 @@ class UntypedFnSignature {
   };
 
  private:
-  // the ID of a uAST Function, if there is one for this signature;
-  // or, for compiler-generated functions/methods, the ID of the record/class
-  // declaration
+  // the ID of a related uAST node:
+  //   * in most cases, a Function
+  //   * can be a TypeDecl for a type constructor / init / other method
+  //   * can be a Variable for a field accessor
   ID id_;
   UniqueString name_;
   bool isMethod_; // in that case, formals[0] is the receiver
-  uast::asttags::AstTag idTag_; // concrete tag for ID
   bool isTypeConstructor_;
+  bool isCompilerGenerated_;
+  uast::asttags::AstTag idTag_; // concrete tag for ID
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
 
@@ -103,30 +105,35 @@ class UntypedFnSignature {
   UntypedFnSignature(ID id,
                      UniqueString name,
                      bool isMethod,
-                     uast::asttags::AstTag idTag,
                      bool isTypeConstructor,
+                     bool isCompilerGenerated,
+                     uast::asttags::AstTag idTag,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
                      const uast::AstNode* whereClause)
     : id_(id),
       name_(name),
       isMethod_(isMethod),
-      idTag_(idTag),
       isTypeConstructor_(isTypeConstructor),
+      isCompilerGenerated_(isCompilerGenerated),
+      idTag_(idTag),
       kind_(kind),
       formals_(std::move(formals)),
       whereClause_(whereClause) {
     assert(idTag == uast::asttags::Function ||
            idTag == uast::asttags::Class    ||
-           idTag == uast::asttags::Record);
+           idTag == uast::asttags::Record   ||
+           idTag == uast::asttags::Union    ||
+           idTag == uast::asttags::Variable);
   }
 
   static const owned<UntypedFnSignature>&
   getUntypedFnSignature(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
-                        uast::asttags::AstTag idTag,
                         bool isTypeConstructor,
+                        bool isCompilerGenerated,
+                        uast::asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
                         const uast::AstNode* whereClause);
@@ -136,24 +143,29 @@ class UntypedFnSignature {
   static const UntypedFnSignature* get(Context* context, ID id,
                                        UniqueString name,
                                        bool isMethod,
-                                       uast::asttags::AstTag idTag,
                                        bool isTypeConstructor,
+                                       bool isCompilerGenerated,
+                                       uast::asttags::AstTag idTag,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
                                        const uast::AstNode* whereClause);
 
   /** Get the unique UntypedFnSignature representing a Function's
-      signature. */
+      signature from a Function uAST pointer. */
   static const UntypedFnSignature* get(Context* context,
                                        const uast::Function* function);
 
+  /** Get the unique UntypedFnSignature representing a Function's
+      signature from a Function ID. */
+  static const UntypedFnSignature* get(Context* context, ID functionId);
 
   bool operator==(const UntypedFnSignature& other) const {
     return id_ == other.id_ &&
            name_ == other.name_ &&
            isMethod_ == other.isMethod_ &&
-           idTag_ == other.idTag_ &&
            isTypeConstructor_ == other.isTypeConstructor_ &&
+           isCompilerGenerated_ == other.isCompilerGenerated_ &&
+           idTag_ == other.idTag_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
            whereClause_ == other.whereClause_;
@@ -192,6 +204,11 @@ class UntypedFnSignature {
     return kind_;
   }
 
+  /** Returns true if this compiler generated */
+  bool isCompilerGenerated() const {
+    return isCompilerGenerated_;
+  }
+
   /** Returns true if id() refers to a Function */
   bool idIsFunction() const {
     return idTag_ == uast::asttags::Function;
@@ -205,6 +222,16 @@ class UntypedFnSignature {
   /** Returns true if id() refers to a Record */
   bool idIsRecord() const {
     return idTag_ == uast::asttags::Record;
+  }
+
+  /** Returns true if id() refers to a Union */
+  bool idIsUnion() const {
+    return idTag_ == uast::asttags::Union;
+  }
+
+  /** Returns true if id() refers to a Variable (for a field) */
+  bool idIsField() const {
+    return idTag_ == uast::asttags::Variable;
   }
 
   /** Returns true if this is a type constructor */
@@ -296,6 +323,7 @@ class CallInfo {
   types::QualifiedType calledType_;     // the type of the called thing
   bool isMethodCall_ = false;           // then actuals[0] is receiver
   bool hasQuestionArg_ = false;         // includes ? arg for type constructor
+  bool isParenless_ = false;            // is a parenless call
   std::vector<CallInfoActual> actuals_; // types/params/names of actuals
 
  public:
@@ -305,15 +333,24 @@ class CallInfo {
   CallInfo(UniqueString name, types::QualifiedType calledType,
            bool isMethodCall,
            bool hasQuestionArg,
+           bool isParenless,
            std::vector<CallInfoActual> actuals)
       : name_(name), calledType_(calledType),
         isMethodCall_(isMethodCall),
         hasQuestionArg_(hasQuestionArg),
+        isParenless_(isParenless),
         actuals_(std::move(actuals)) {
     #ifndef NDEBUG
     if (isMethodCall) {
       assert(numActuals() >= 1);
-      assert(this->actuals(0).byName() == "this");
+      assert(this->actual(0).byName() == "this");
+    }
+    if (isParenless) {
+      if (isMethodCall) {
+        assert(numActuals() == 1);
+      } else {
+        assert(numActuals() == 0);
+      }
     }
     #endif
   }
@@ -334,13 +371,16 @@ class CallInfo {
   /** check if the call includes ? arg for type constructor */
   bool hasQuestionArg() const { return hasQuestionArg_; }
 
+  /** return true if the call did not use parens */
+  bool isParenless() const { return isParenless_; }
+
   /** return the actuals */
   CallInfoActualIterable actuals() const {
     return CallInfoActualIterable(actuals_);
   }
 
   /** return the i'th actual */
-  const CallInfoActual& actuals(size_t i) const {
+  const CallInfoActual& actual(size_t i) const {
     assert(i < actuals_.size());
     return actuals_[i];
   }
@@ -353,6 +393,7 @@ class CallInfo {
            calledType_ == other.calledType_ &&
            isMethodCall_ == other.isMethodCall_ &&
            hasQuestionArg_ == other.hasQuestionArg_ &&
+           isParenless_ == other.isParenless_ &&
            actuals_ == other.actuals_;
   }
   bool operator!=(const CallInfo& other) const {
@@ -360,7 +401,7 @@ class CallInfo {
   }
   size_t hash() const {
     return chpl::hash(name_, calledType_, isMethodCall_,
-                      hasQuestionArg_,
+                      hasQuestionArg_, isParenless_,
                       actuals_);
   }
 
@@ -528,7 +569,6 @@ class TypedFnSignature {
   // Which formal arguments were substituted when instantiating?
   Bitmap formalsInstantiated_;
 
- public:
   TypedFnSignature(const UntypedFnSignature* untypedSignature,
                    std::vector<types::QualifiedType> formalTypes,
                    WhereClauseResult whereClauseResult,
@@ -543,6 +583,28 @@ class TypedFnSignature {
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
       formalsInstantiated_(std::move(formalsInstantiated)) { }
+
+  static const owned<TypedFnSignature>&
+  getTypedFnSignature(Context* context,
+                      const UntypedFnSignature* untypedSignature,
+                      std::vector<types::QualifiedType> formalTypes,
+                      TypedFnSignature::WhereClauseResult whereClauseResult,
+                      bool needsInstantiation,
+                      const TypedFnSignature* instantiatedFrom,
+                      const TypedFnSignature* parentFn,
+                      Bitmap formalsInstantiated);
+
+ public:
+  /** Get the unique TypedFnSignature containing these components */
+  static
+  const TypedFnSignature* get(Context* context,
+                              const UntypedFnSignature* untypedSignature,
+                              std::vector<types::QualifiedType> formalTypes,
+                              TypedFnSignature::WhereClauseResult whereClauseResult,
+                              bool needsInstantiation,
+                              const TypedFnSignature* instantiatedFrom,
+                              const TypedFnSignature* parentFn,
+                              Bitmap formalsInstantiated);
 
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&
@@ -930,9 +992,9 @@ class ResolvedExpression {
   /** set the point-of-instantiation scope */
   void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
 
-  /** set the functions associated with this expression */
-  void setAssociatedFns(const AssociatedFns& fns) {
-    associatedFns_ = fns;
+  /** add an associated function */
+  void addAssociatedFn(const TypedFnSignature* fn) {
+    associatedFns_.push_back(fn);
   }
 
   bool operator==(const ResolvedExpression& other) const {

@@ -96,7 +96,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   proc setup() {
     //    writeln("In setup");
     var thisid = this.locale.id;
-    if locDoms(dist.targetLocDom.low) == nil {
+    if locDoms(dist.targetLocDom.lowBound) == nil {
       coforall localeIdx in dist.targetLocDom do {
         on dist.targetLocales(localeIdx) do {
           //                    writeln("Setting up on ", here.id);
@@ -484,8 +484,8 @@ class SparseBlockArr: BaseSparseArr {
   iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
-    __primitive("resolves",
-                locArr[locArrDom.low]!.myElems._value.these(tag)) {
+    __primitive("method call resolves",
+                locArr[locArrDom.alignedLow]!.myElems._value, "these", tag) {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       forall i in locA!.myElems {
@@ -645,8 +645,8 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 
-proc SparseBlockDom.dsiLow return whole.low;
-proc SparseBlockDom.dsiHigh return whole.high;
+proc SparseBlockDom.dsiLow return whole.lowBound;
+proc SparseBlockDom.dsiHigh return whole.highBound;
 proc SparseBlockDom.dsiStride return whole.stride;
 
 //
@@ -723,7 +723,7 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
 proc SparseBlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
-    low(i) = ranges(i).low;
+    low(i) = ranges(i).lowBound;
   }
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
@@ -859,10 +859,10 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank-1).size - 1) then
-    bhi=whole.dim(rank-1).high;
+    bhi=whole.dim(rank-1).highBound;
   else
-      bhi=dist.boundingBox.dim(rank-1).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1),
+      bhi=dist.boundingBox.dim(rank-1).lowBound +
+        intCeilXDivByY((dist.boundingBox.dim(rank-1).highBound - dist.boundingBox.dim(rank-1).lowBound +1)*(rid+1),
                    dist.targetLocDom.dim(rank-1).size) - 1;
 
   return(bhi - rlo + 1);

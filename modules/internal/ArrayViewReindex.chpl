@@ -743,8 +743,8 @@ module ArrayViewReindex {
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
     for param d in 0..dims.size-1 {
       if (dims(d).sizeAs(int) == 0) {
-        actualLow(d) = downdom.dsiDim(d).low;
-        actualHigh(d) = downdom.dsiDim(d).high;
+        actualLow(d) = downdom.dsiDim(d).lowBound;
+        actualHigh(d) = downdom.dsiDim(d).highBound;
       } else {
         actualLow(d) = chpl_reindexConvertIdxDim(dims(d).first, updom, downdom, d);
         actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, updom, downdom, d);
@@ -775,8 +775,8 @@ module ArrayViewReindex {
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
     for param d in 0..dims.size-1 {
       if (dims(d).sizeAs(int) == 0) {
-        actualLow(d) = downdom.dsiDim(d).low;
-        actualHigh(d) = downdom.dsiDim(d).high;
+        actualLow(d) = downdom.dsiDim(d).lowBound;
+        actualHigh(d) = downdom.dsiDim(d).highBound;
       } else {
         actualLow(d) = chpl_reindexConvertIdxDim(dims(d).first, updom, downdom, d);
         actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, updom, downdom, d);

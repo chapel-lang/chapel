@@ -54,9 +54,16 @@ class RecordType final : public CompositeType {
 
  public:
 
+  /** Get a record type for an ID, possibly instantiated with substitutions */
   static const RecordType* get(Context* context, ID id, UniqueString name,
                                const RecordType* instantiatedFrom,
                                CompositeType::SubstitutionsMap subs);
+
+  /** Get the string type */
+  static const RecordType* getStringType(Context* context);
+
+  /** Get the bytes type */
+  static const RecordType* getBytesType(Context* context);
 
   ~RecordType() = default;
 

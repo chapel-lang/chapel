@@ -523,7 +523,7 @@ inline proc BlockCyclic1dom._divByStride(locOff)  return
 // _dsiStorageLow(), _dsiStorageHigh(): save a few mods and divisions
 // at the cost of potentially allocating more storage
 inline proc BlockCyclic1dom._dsiStorageLow(locId: locIdT): stoIndexT {
-  const lowW = wholeR.low;
+  const lowW = wholeR.lowBound;
 
   // smallest cycNo(i) for i in wholeR
   var   lowCycNo  = _dsiCycNo(lowW): stoIndexT;
@@ -544,7 +544,7 @@ inline proc BlockCyclic1dom._dsiStorageLow(locId: locIdT): stoIndexT {
 }
 
 inline proc BlockCyclic1dom._dsiStorageHigh(locId: locIdT): stoIndexT {
-  const hiW = wholeR.high;
+  const hiW = wholeR.highBound;
 
   // biggest cycNo(i) for i in wholeR
   var   hiCycNo  = _dsiCycNo(hiW): stoIndexT;
@@ -587,8 +587,8 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   const wholeROrig = globDD.wholeR;
   const wholeR  = globDD.wholeR +
     if zbased then globDD.adjLowIdx else 0:idxType;
-  const lowIdx  = wholeROrig.low;
-  const highIdx = wholeROrig.high;
+  const lowIdx  = wholeROrig.lowBound;
+  const highIdx = wholeROrig.highBound;
   type retT = dsiMyDensifiedRangeType1d(globDD);
   param stridable = globDD.stridable;
   compilerAssert(stridable == wholeR.stridable); // sanity
@@ -647,7 +647,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
                      if up then lowCycNo else highCycNo, locNo, zbased);
   const firstRange = wholeR[curIndices];
   _bcddb("  curIndices ", curIndices, "  firstRange ", firstRange);
-  if firstRange.low <= firstRange.high then
+  if firstRange.lowBound <= firstRange.highBound then
     yield mydensify(firstRange);
   // else nothing to yield on this locale
 
@@ -671,7 +671,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
 
   advance();
   const lastRange = wholeR[curIndices];
-  if lastRange.low <= lastRange.high then
+  if lastRange.lowBound <= lastRange.highBound then
     yield mydensify(lastRange);
 }
 
@@ -706,9 +706,9 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   // In this case, the densified range for *all* indices on this locale is:
   //   0..#wholeR.size by numLocales align AL
   // where
-  //   (_dsiLocNo(wholeR.low) + AL) % numLocales == this.locId
+  //   (_dsiLocNo(wholeR.lowBound) + AL) % numLocales == this.locId
 
-  const firstLoc = globDD._dsiLocNo_formula(wholeR.low) :resultIdxType;
+  const firstLoc = globDD._dsiLocNo_formula(wholeR.lowBound) :resultIdxType;
   const AL = this.locId :resultIdxType + (nLocs - firstLoc);
 
   // Here is the densified range for all indices on this locale.
@@ -730,13 +730,13 @@ proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
   } else {
     if sliceRange.hasLowBound() {
       if sliceRange.hasHighBound() {
-        return globDD._dsiStorageIdx(sliceRange.low)..globDD._dsiStorageIdx(sliceRange.high);
+        return globDD._dsiStorageIdx(sliceRange.lowBound)..globDD._dsiStorageIdx(sliceRange.highBound);
       } else {
-        return globDD._dsiStorageIdx(sliceRange.low)..;
+        return globDD._dsiStorageIdx(sliceRange.lowBound)..;
       }
     } else {
       if sliceRange.hasHighBound() {
-        return ..globDD._dsiStorageIdx(sliceRange.high);
+        return ..globDD._dsiStorageIdx(sliceRange.highBound);
       } else {
         return ..;
       }
@@ -757,8 +757,8 @@ iter BlockCyclic1dom.dsiSerialArrayIterator1d() {
 iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   assert(!rangeToIterateOver.stridable);
 
-  const firstIdx = rangeToIterateOver.low;
-  const lastIdx = rangeToIterateOver.high;
+  const firstIdx = rangeToIterateOver.lowBound;
+  const lastIdx = rangeToIterateOver.highBound;
 
   // This rarely fires, but if so it gets rid of lots of computations.
   // In the common case it adds just 1 branch to at least 2 branches.

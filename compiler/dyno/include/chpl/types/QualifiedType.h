@@ -64,6 +64,7 @@ class QualifiedType final {
   static const Kind TYPE_QUERY = uast::IntentList::TYPE_QUERY;
   static const Kind INDEX = uast::IntentList::INDEX;
   static const Kind FUNCTION = uast::IntentList::FUNCTION;
+  static const Kind PARENLESS_FUNCTION = uast::IntentList::PARENLESS_FUNCTION;
   static const Kind MODULE = uast::IntentList::MODULE;
 
  private:

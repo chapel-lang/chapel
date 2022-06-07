@@ -45,6 +45,24 @@ RecordType::get(Context* context, ID id, UniqueString name,
                        instantiatedFrom, std::move(subs)).get();
 }
 
+const RecordType* RecordType::getStringType(Context* context) {
+  auto symbolPath = UniqueString::get(context, "String._string");
+  auto name = UniqueString::get(context, "string");
+  auto id = ID(symbolPath, -1, 0);
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
+const RecordType* RecordType::getBytesType(Context* context) {
+  auto symbolPath = UniqueString::get(context, "Bytes._bytes");
+  auto name = UniqueString::get(context, "bytes");
+  auto id = ID(symbolPath, -1, 0);
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
 
 } // end namespace types
 } // end namespace chpl

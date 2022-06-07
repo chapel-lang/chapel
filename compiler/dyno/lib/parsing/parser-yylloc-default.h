@@ -65,7 +65,7 @@
   the uAST node. So line numbers are off quite often.
 
   What's been done to fix this is: for zero application reductions, set
-  the location of the entire reduction to be the location of the currrent
+  the location of the entire reduction to be the location of the current
   lookahead token. In essence, optimistically look 1 forward instead of
   1 back (assume that we will consume some non-zero amount of input in a
   future reduction).

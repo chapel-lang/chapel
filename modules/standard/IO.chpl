@@ -3822,6 +3822,8 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
   The ``\n`` is returned in the array.
 
+  Note that this routine currently requires a 1D rectangular non-strided array.
+
   Throws a SystemError if a line could not be read from the channel.
 
   :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
@@ -3830,13 +3832,13 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
-deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
-                      amount = arg.domain.high - start + 1) : bool throws
-                      where arg.rank == 1 && arg.isRectangular() {
 
+deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+                      amount = arg.domain.highBound - start + 1) : bool throws
+                      where arg.rank == 1 && arg.isRectangular() && !arg.stridable {
   if arg.size == 0 || !arg.domain.contains(start) ||
-     amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
+     amount <= 0 || (start + amount - 1 > arg.domain.highBound) then return false;
 
   var err:syserr = ENOERR;
   on this.home {
@@ -3866,6 +3868,14 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   return false;
 }
 
+pragma "no doc"
+pragma "last resort"
+inline proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+                      amount = arg.domain.highBound - start + 1) : bool throws {
+  compilerError("'readline()' is currently only supported for non-strided 1D rectangular arrays");
+}
+
+
 /*
   Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
   This function always does a binary read (i.e. it is not aware of UTF-8 etc)
@@ -3886,7 +3896,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() {
   if arg.size == 0 || maxSize == 0 ||
-  ( arg.domain.low + maxSize - 1 > arg.domain.high) then return 0;
+  ( arg.domain.lowBound + maxSize - 1 > arg.domain.highBound) then return 0;
 
   var err:syserr = ENOERR;
   var numRead:int;
@@ -3895,8 +3905,8 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
     this._mark();
     param newLineChar = 0x0A;
     var got: int;
-    var i = arg.domain.low;
-    const maxIdx = arg.domain.low + maxSize - 1;
+    var i = arg.domain.lowBound;
+    const maxIdx = arg.domain.lowBound + maxSize - 1;
     while got != newLineChar {
       got = qio_channel_read_byte(false, this._channel_internal);
       if got < 0 then break;
@@ -3910,8 +3920,8 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
       i += 1;
       if got == newLineChar then break;
     }
-    numRead = i - arg.domain.low;
-    if i == arg.domain.low && got < 0 then err = (-got):syserr;
+    numRead = i - arg.domain.lowBound;
+    if i == arg.domain.lowBound && got < 0 then err = (-got):syserr;
     this._commit();
   }
 
@@ -4780,19 +4790,35 @@ proc read(ref args ...?n):bool throws {
 proc read(type t ...?numTypes) throws {
   return stdin.read((...t));
 }
-/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
-deprecated "readline is deprecated. Use :proc:`readLine` instead"
-proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
-              amount = arg.domain.high - start + 1) : bool throws
-                where arg.rank == 1 && arg.isRectangular() {
-  return stdin.readline(arg, numRead, start, amount);
-}
 
 /* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
 proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() {
+      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() && ! arg.stridable {
   return stdin.readLine(arg, maxSize, stripNewline);
 }
+
+pragma "last resort"
+pragma "no doc"
+proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
+      where (t == uint(8) || t == int(8)) {
+  compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
+}
+
+/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+deprecated "readline is deprecated. Use :proc:`readLine` instead"
+proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+              amount = arg.domain.highBound - start + 1) : bool throws
+                where arg.rank == 1 && arg.isRectangular() && ! arg.stridable {
+  return stdin.readline(arg, numRead, start, amount);
+}
+
+pragma "last resort"
+pragma "no doc"
+proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+              amount = arg.domain.highBound - start + 1) : bool throws {
+  compilerError("'readline()' is currently only supported for non-strided 1D rectangular arrays");
+}
+
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
 deprecated "readline is deprecated. Use :proc:`readLine` instead"
 proc readline(ref arg: ?t): bool throws where t==string || t==bytes {

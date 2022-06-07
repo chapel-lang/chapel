@@ -106,7 +106,7 @@ proc BlockDim.init(numLocales: int, boundingBox: range(?),
   this.idxType = idxType;
 
   this.numLocales = numLocales;
-  this.bbStart = boundingBox.low;
+  this.bbStart = boundingBox.lowBound;
   this.bbLength = boundingBox.sizeAs(idxType);
 }
 
@@ -260,7 +260,7 @@ proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:in
   const locRange = densify(myRange, globDD.wholeR, userErrors=false);
   // Copied straight from BlockDom leader - replace locBlock(parDim)->locRange.
   const (lo, hi) = _computeBlock(locRange.sizeAs(locRange.idxType), numTasks, taskid,
-                                 locRange.high, locRange.low, locRange.low);
+                                 locRange.highBound, locRange.lowBound, locRange.lowBound);
 
   // If this can occasionally be an empty range, add a check to Dimensional
   // to not yield anything in such a case.

@@ -109,7 +109,7 @@ to the ID of the locale to which it is mapped.
 
     const Space = {1..8, 1..8};
     const D: domain(2)
-      dmapped BlockCyclic(startIdx=Space.low,blocksize=(2,3))
+      dmapped BlockCyclic(startIdx=Space.lowBound,blocksize=(2,3))
       = Space;
     var A: [D] int;
 
@@ -355,9 +355,9 @@ proc BlockCyclic.getStarts(inds, locid) {
   var R: rank*range(idxType, stridable=true);
   for i in 0..rank-1 {
     var lo, hi: idxType;
-    const domlo = inds.dim(i).low,
-          domhi = inds.dim(i).high;
-    const mylo = locDist(locid).myStarts(i).low;
+    const domlo = inds.dim(i).lowBound,
+          domhi = inds.dim(i).highBound;
+    const mylo = locDist(locid).myStarts(i).lowBound;
     const mystr = locDist(locid).myStarts(i).stride;
     if (domlo != lowIdx(i)) {
       if (domlo <= domhi) {
@@ -537,15 +537,15 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
         for param j in 0..rank-1 {
           const lo     = if rank == 1 then i else i(j);
           const dim    = whole.dim(j);
-          const dimLow = dim.low;
+          const dimLow = dim.lowBound;
 
           var temp : range(idxType, stridable=stridable);
           temp = max(lo, dimLow)..
-                     min(lo + dist.blocksize(j):idxType-1, dim.high);
+                     min(lo + dist.blocksize(j):idxType-1, dim.highBound);
           temp     = dim[temp];
           temp     = temp.chpl__unTranslate(dimLow);
 
-          retblock(j) = (temp.low / dim.stride:idxType)..
+          retblock(j) = (temp.lowBound / dim.stride:idxType)..
                         #temp.sizeAs(idxType);
         }
         yield retblock;
@@ -573,9 +573,9 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
     const curFollow = followThis(i);
     const dim       = whole.dim(i);
     const stride    = dim.stride;
-    const low       = (stride * curFollow.low): idxType;
-    const high      = (stride * curFollow.high): idxType;
-    t(i) = ((low..high by stride) + dim.low).safeCast(t(i).type);
+    const low       = (stride * curFollow.lowBound): idxType;
+    const high      = (stride * curFollow.highBound): idxType;
+    t(i) = ((low..high by stride) + dim.lowBound).safeCast(t(i).type);
   }
 
   for i in {(...t)} {
@@ -618,8 +618,8 @@ proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
 }
 
 // common redirects
-proc BlockCyclicDom.dsiLow           return whole.low;
-proc BlockCyclicDom.dsiHigh          return whole.high;
+proc BlockCyclicDom.dsiLow           return whole.lowBound;
+proc BlockCyclicDom.dsiHigh          return whole.highBound;
 proc BlockCyclicDom.dsiAlignedLow    return whole.alignedLow;
 proc BlockCyclicDom.dsiAlignedHigh   return whole.alignedHigh;
 proc BlockCyclicDom.dsiFirst         return whole.first;
@@ -789,7 +789,7 @@ proc LocBlockCyclicDom.enumerateBlocks() {
       else
         lo = i(j);
       write(lo, "..", min(lo + globDom.dist.blocksize(j)-1,
-                          globDom.whole.dim(j).high));
+                          globDom.whole.dim(j).highBound));
     }
     writeln("}");
   }
@@ -807,11 +807,11 @@ proc LocBlockCyclicDom.size {
 }
 
 proc LocBlockCyclicDom.low {
-  return myStarts.low;
+  return myStarts.alignedLow;
 }
 
 proc LocBlockCyclicDom.high {
-  return myStarts.high;
+  return myStarts.alignedHigh;
 }
 
 proc LocBlockCyclicDom._lens {
@@ -998,9 +998,9 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
     const curFollow = followThis(i);
     const dim       = dom.whole.dim(i);
     const stride    = dim.stride;
-    const low       = curFollow.low * stride;
-    const high      = curFollow.high * stride;
-    myFollowThis(i) = ((low..high by stride) + dim.low).safeCast(curFollow.type);
+    const low       = curFollow.lowBound * stride;
+    const high      = curFollow.highBound * stride;
+    myFollowThis(i) = ((low..high by stride) + dim.lowBound).safeCast(curFollow.type);
   }
 
   const myFollowThisDom = {(...myFollowThis)};
@@ -1061,7 +1061,7 @@ iter do_dsiLocalSubdomains(indexDom) {
       var lo: idxType;
       if rank == 1 then lo = i;
       else lo = i(j);
-      temp(j) = lo .. min(lo + blockSizes(j)-1, globDims(j).high);
+      temp(j) = lo .. min(lo + blockSizes(j)-1, globDims(j).highBound);
     }
     yield {(...temp)};
   }

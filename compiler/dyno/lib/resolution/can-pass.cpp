@@ -920,6 +920,7 @@ CanPassResult CanPassResult::canPass(Context* context,
     switch (formalQT.kind()) {
       case QualifiedType::UNKNOWN:
       case QualifiedType::FUNCTION:
+      case QualifiedType::PARENLESS_FUNCTION:
       case QualifiedType::MODULE:
       case QualifiedType::TYPE_QUERY:
       case QualifiedType::INDEX:

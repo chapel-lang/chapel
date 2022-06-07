@@ -2038,10 +2038,6 @@ time-write:
   01/06/21:
     - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
-timeMapMinusEqual:
-  07/10/20:
-    - Optimize map -= operation (#16038)
-
 views-forall-iter:
   10/12/17:
     - Switch from these(tag) to foralls for some standalone iters (#7578)

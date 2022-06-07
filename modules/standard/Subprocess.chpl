@@ -1031,7 +1031,7 @@ module Subprocess {
   deprecated "'Subprocess.SIGTRAP' is deprecated. Use 'Sys.SIGTRAP' instead."
   extern const SIGTRAP: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGSTP' is deprecated. Use 'Sys.SIGSTP' instead."
+  deprecated "'Subprocess.SIGTSTP' is deprecated. Use 'Sys.SIGTSTP' instead."
   extern const SIGTSTP: c_int;
   pragma "no doc"
   deprecated "'Subprocess.SIGTTIN' is deprecated. Use 'Sys.SIGTTIN' instead."

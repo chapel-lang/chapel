@@ -97,7 +97,7 @@ void chpl_gpu_startDiagnostics(chpl_bool print_unstable) {
     chpl_internal_error("pthread_once(&bcastPrintUnstable_once) failed");
   }
 
-  // Make sure that there are no pending gpuunication operations.
+  // Make sure that there are no pending GPU operations.
   chpl_rmem_consist_release(0, 0);
 
   chpl_gpu_diagnostics = 1;
@@ -108,7 +108,7 @@ void chpl_gpu_startDiagnostics(chpl_bool print_unstable) {
 
 
 void chpl_gpu_stopDiagnostics() {
-  // Make sure that there are no pending gpuunication operations.
+  // Make sure that there are no pending GPU operations.
   chpl_rmem_consist_release(0, 0);
 
   chpl_gpu_diagnostics = 0;
@@ -121,7 +121,7 @@ void chpl_gpu_stopDiagnostics() {
 void chpl_gpu_startDiagnosticsHere(chpl_bool print_unstable) {
   chpl_gpu_diags_print_unstable = (print_unstable == true);
 
-  // Make sure that there are no pending gpuunication operations.
+  // Make sure that there are no pending GPU operations.
   chpl_rmem_consist_release(0, 0);
 
   chpl_gpu_diagnostics = 1;
@@ -129,7 +129,7 @@ void chpl_gpu_startDiagnosticsHere(chpl_bool print_unstable) {
 
 
 void chpl_gpu_stopDiagnosticsHere() {
-  // Make sure that there are no pending gpuunication operations.
+  // Make sure that there are no pending GPU operations.
   chpl_rmem_consist_release(0, 0);
 
   chpl_gpu_diagnostics = 0;

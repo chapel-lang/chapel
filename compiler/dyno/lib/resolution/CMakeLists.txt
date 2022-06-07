@@ -20,6 +20,7 @@ target_sources(libdyno-obj
 
                Resolver.cpp
                can-pass.cpp
+               default-functions.cpp
                disambiguation.cpp
                intents.cpp
                prims.cpp

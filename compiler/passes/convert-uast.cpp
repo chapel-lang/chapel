@@ -167,15 +167,6 @@ struct Converter {
     return FLAG_UNKNOWN;
   }
 
-  const char* astrFromStringLiteral(const uast::AstNode* node) {
-    if (auto strLit = node->toStringLiteral()) {
-      const char* ret = astr(strLit->str());
-      return ret;
-    }
-
-    return nullptr;
-  }
-
   static bool isBlockComment(const uast::Comment* node) {
     const auto& str = node->str();
     if (str.size() < 4) return false;
@@ -3255,12 +3246,10 @@ Type* Converter::convertType(const types::QualifiedType qt) {
   switch (qt.type()->tag()) {
     // builtin types with their own classes
     case typetags::AnyType:       return dtAny;
-    case typetags::BytesType:     return dtBytes;
     case typetags::CStringType:   return dtStringC;
     case typetags::ErroneousType: return dtUnknown; // a lie
     case typetags::NilType:       return dtNil;
     case typetags::NothingType:   return dtNothing;
-    case typetags::StringType:    return dtString;
     case typetags::UnknownType:   return dtUnknown;
     case typetags::VoidType:      return dtVoid;
 
@@ -3361,6 +3350,13 @@ Type* Converter::convertBasicClassType(const types::QualifiedType qt) {
 }
 
 Type* Converter::convertRecordType(const types::QualifiedType qt) {
+  const types::RecordType* t = qt.type()->toRecordType();
+  if (t->isStringType()) {
+    return dtString;
+  } else if (t->isBytesType()) {
+    return dtBytes;
+  }
+
   INT_FATAL("not implemented yet");
   return nullptr;
 }

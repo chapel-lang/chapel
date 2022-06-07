@@ -200,7 +200,7 @@ Resolver::instantiatedFieldStmtResolver(Context* context,
 }
 
 // set up Resolver to resolve instantiated field declaration types
-// without knowning the CompositeType
+// without knowing the CompositeType
 Resolver
 Resolver::instantiatedSignatureFieldsResolver(Context* context,
                                      const AggregateDecl* decl,
@@ -699,7 +699,46 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
   }
 }
 
-void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
+void Resolver::handleResolvedCall(ResolvedExpression& r,
+                                  const uast::AstNode* astForErr,
+                                  const CallInfo& ci,
+                                  const CallResolutionResult& c) {
+
+  if (!c.exprType().hasTypePtr()) {
+    issueErrorForFailedCallResolution(astForErr, ci, c);
+    r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+  } else {
+    r.setMostSpecific(c.mostSpecific());
+    r.setPoiScope(c.poiInfo().poiScope());
+    r.setType(c.exprType());
+    // gather the poi scopes used when resolving the call
+    poiInfo.accumulate(c.poiInfo());
+  }
+}
+
+void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
+                                            const uast::AstNode* astForErr,
+                                            const CallInfo& ci,
+                                            const CallResolutionResult& c) {
+  if (!c.exprType().hasTypePtr()) {
+    issueErrorForFailedCallResolution(astForErr, ci, c);
+  } else {
+    // save candidates as associated functions
+    for (auto sig : c.mostSpecific()) {
+      if (sig != nullptr) {
+        r.addAssociatedFn(sig);
+      }
+    }
+    // gather the poi scopes used when resolving the call
+    poiInfo.accumulate(c.poiInfo());
+  }
+}
+
+
+
+void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
+                                        const uast::AstNode* astForErr,
+                                        const Tuple* lhsTuple,
                                         QualifiedType lhsType,
                                         QualifiedType rhsType) {
   // Check that lhsType = rhsType can work
@@ -745,7 +784,7 @@ void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
     QualifiedType lhsEltType = lhsT->elementType(i);
     QualifiedType rhsEltType = rhsT->elementType(i);
     if (auto innerTuple = actual->toTuple()) {
-      resolveTupleUnpackAssign(innerTuple, lhsEltType, rhsEltType);
+      resolveTupleUnpackAssign(r, astForErr, innerTuple, lhsEltType, rhsEltType);
     } else {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
@@ -754,14 +793,11 @@ void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
                           /* calledType */ QualifiedType(),
                           /* isMethod */ false,
                           /* hasQuestionArg */ false,
+                          /* isParenless */ false,
                           actuals);
 
       auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
-      if (!c.exprType().hasTypePtr()) {
-        issueErrorForFailedCallResolution(actual, ci, c);
-      }
-      // gather the poi scopes used when resolving the call
-      poiInfo.accumulate(c.poiInfo());
+      handleResolvedAssociatedCall(r, astForErr, ci, c);
     }
     i++;
   }
@@ -880,6 +916,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   }
 
   auto ci = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+                     /* isParenless */ false,
                      std::move(actuals));
   auto inScope = scopeStack.back();
   auto inPoiScope = poiScope;
@@ -890,11 +927,10 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   assert(crr.mostSpecific().numBest() <= 1);
 
   // there should be one or zero applicable candidates
-  if (auto only = crr.mostSpecific().only()) {
-    ResolvedExpression::AssociatedFns associated;
-    associated.push_back(only);
-    re.setAssociatedFns(associated);
-    poiInfo.accumulate(crr.poiInfo());
+  if (crr.mostSpecific().only() != nullptr) {
+    handleResolvedAssociatedCall(re, call, ci, crr);
+  } else {
+    issueErrorForFailedCallResolution(call, ci, crr);
   }
 
   return true;
@@ -908,10 +944,13 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   if (op->op() == USTR("=")) {
     if (op->numActuals() == 2) {
       if (auto lhsTuple = op->actual(0)->toTuple()) {
+
+        ResolvedExpression& r = byPostorder.byAst(op);
         QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
         QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
 
-        resolveTupleUnpackAssign(lhsTuple, lhsType, rhsType);
+        resolveTupleUnpackAssign(r, call,
+                                 lhsTuple, lhsType, rhsType);
         return true;
       }
     }
@@ -1085,30 +1124,45 @@ bool Resolver::enter(const Identifier* ident) {
       // use the type established at declaration/initialization,
       // but for things with generic type, use unknown.
       type = typeForId(id, /*localGenericToUnknown*/ true);
-      // now, for a type that is generic with defaults,
-      // compute the default version when needed. e.g.
-      //   record R { type t = int; }
-      //   var x: R; // should refer to R(int)
-      bool computeDefaults = true;
-      if (inLeafCall && ident == inLeafCall->calledExpression()) {
-        computeDefaults = false;
-      }
-      if (computeDefaults) {
-        if (auto t = type.type()) {
-          if (auto ct = t->toClassType()) {
-            t = ct->basicClassType();
-          }
-          if (auto ct = t->toCompositeType()) {
-            // test if that type is generic
-            auto g = getTypeGenericity(context, ct);
-            if (g == Type::GENERIC_WITH_DEFAULTS) {
-              // fill in the defaults
-              type = typeWithDefaults(context, type);
+      if (type.kind() == QualifiedType::TYPE) {
+        // now, for a type that is generic with defaults,
+        // compute the default version when needed. e.g.
+        //   record R { type t = int; }
+        //   var x: R; // should refer to R(int)
+        bool computeDefaults = true;
+        if (inLeafCall && ident == inLeafCall->calledExpression()) {
+          computeDefaults = false;
+        }
+        if (computeDefaults) {
+          if (auto t = type.type()) {
+            if (auto ct = t->getCompositeType()) {
+              // test if that type is generic
+              auto g = getTypeGenericity(context, ct);
+              if (g == Type::GENERIC_WITH_DEFAULTS) {
+                // fill in the defaults
+                type = typeWithDefaults(context, type);
+              }
             }
           }
         }
+      } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
+        // resolve a parenless call
+        std::vector<CallInfoActual> actuals;
+        auto ci = CallInfo (/* name */ ident->name(),
+                            /* calledType */ QualifiedType(),
+                            /* isMethod */ false,
+                            /* hasQuestionArg */ false,
+                            /* isParenless */ true,
+                            actuals);
+        auto inScope = scopeStack.back();
+        auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
+        // save the most specific candidates in the resolution result for the id
+        ResolvedExpression& r = byPostorder.byAst(ident);
+        handleResolvedCall(r, ident, ci, c);
+        return false;
       }
     }
+
     result.setToId(id);
     result.setType(type);
     // if there are multiple ids we should have gotten
@@ -1539,6 +1593,7 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
             qtReceiver.kind() != QualifiedType::MODULE) {
 
           actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+          calledType = qtReceiver;
           isMethodCall = true;
         }
       }
@@ -1550,7 +1605,8 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
     ResolvedExpression& r = byPostorder.byAst(calledExpr);
     calledType = r.type();
 
-    if (calledType.kind() != QualifiedType::UNKNOWN &&
+    if (isMethodCall == false &&
+        calledType.kind() != QualifiedType::UNKNOWN &&
         calledType.kind() != QualifiedType::TYPE &&
         calledType.kind() != QualifiedType::FUNCTION) {
       // If e.g. x is a value (and not a function)
@@ -1569,6 +1625,7 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
 
   auto ret = CallInfo(name, calledType, isMethodCall,
                       hasQuestionArg,
+                      /* isParenless */ false,
                       actuals);
 
   return ret;
@@ -1626,20 +1683,7 @@ void Resolver::exit(const Call* call) {
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
-    r.setMostSpecific(c.mostSpecific());
-    r.setPoiScope(c.poiInfo().poiScope());
-    r.setType(c.exprType());
-
-
-    if (r.type().type() == nullptr) {
-      // assume it is OK if a type was computed, even with no candidates
-      // (that happens e.g. for a primitive)
-      issueErrorForFailedCallResolution(call, ci, c);
-      r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
-    }
-
-    // gather the poi scopes used when resolving the call
-    poiInfo.accumulate(c.poiInfo());
+    handleResolvedCall(r, call, ci, c);
   }
 
   inLeafCall = nullptr;
@@ -1649,8 +1693,9 @@ bool Resolver::enter(const Dot* dot) {
   return true;
 }
 void Resolver::exit(const Dot* dot) {
+  ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+
   if (dot->field() == USTR("type")) {
-    ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
     const Type* receiverType;
     ResolvedExpression& r = byPostorder.byAst(dot);
 
@@ -1660,42 +1705,67 @@ void Resolver::exit(const Dot* dot) {
       receiverType = ErroneousType::get(context);
     }
     r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
-  } else {
-    ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
-    if (receiver.type().kind() == QualifiedType::MODULE) {
-      // resolve e.g. M.x where M is a module
-      LookupConfig config = LOOKUP_DECLS |
-                            LOOKUP_IMPORT_AND_USE |
-                            LOOKUP_PARENTS |
-                            LOOKUP_INNERMOST;
-
-      auto modScope = scopeForModule(context, receiver.toId());
-      auto vec = lookupNameInScope(context, modScope, dot->field(), config);
-      ResolvedExpression& r = byPostorder.byAst(dot);
-      if (vec.size() == 0) {
-        r.setType(QualifiedType());
-      } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-        // can't establish the type. If this is in a function
-        // call, we'll establish it later anyway.
-      } else {
-        // vec.size() == 1 and vec[0].numIds() <= 1
-        const ID& id = vec[0].id(0);
-        QualifiedType type;
-        if (id.isEmpty()) {
-          // empty IDs from the scope resolution process are builtins
-          assert(false && "Not handled yet!");
-        } else {
-          // use the type established at declaration/initialization,
-          // but for things with generic type, use unknown.
-          type = typeForId(id, /*localGenericToUnknown*/ true);
-        }
-        r.setToId(id);
-        r.setType(type);
-      }
-    }
+    return;
   }
 
-  // TODO: resolve field accessors / parenless methods
+  // Handle null, unknown, or erroneous receiver type
+  if (receiver.type().type() == nullptr ||
+      receiver.type().type()->isUnknownType()) {
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    r.setType(QualifiedType(QualifiedType::VAR, UnknownType::get(context)));
+    return;
+  }
+  if (receiver.type().type()->isErroneousType()) {
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
+    return;
+  }
+
+  if (receiver.type().kind() == QualifiedType::MODULE) {
+    // resolve e.g. M.x where M is a module
+    LookupConfig config = LOOKUP_DECLS |
+                          LOOKUP_IMPORT_AND_USE;
+
+    auto modScope = scopeForModule(context, receiver.toId());
+    auto vec = lookupNameInScope(context, modScope, dot->field(), config);
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    if (vec.size() == 0) {
+      r.setType(QualifiedType());
+    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+      // can't establish the type. If this is in a function
+      // call, we'll establish it later anyway.
+    } else {
+      // vec.size() == 1 and vec[0].numIds() <= 1
+      const ID& id = vec[0].id(0);
+      QualifiedType type;
+      if (id.isEmpty()) {
+        // empty IDs from the scope resolution process are builtins
+        assert(false && "Not handled yet!");
+      } else {
+        // use the type established at declaration/initialization,
+        // but for things with generic type, use unknown.
+        type = typeForId(id, /*localGenericToUnknown*/ true);
+      }
+      r.setToId(id);
+      r.setType(type);
+    }
+    return;
+  }
+
+  // resolve a.x where a is a record/class and x is a field or parenless method
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
+  auto ci = CallInfo (/* name */ dot->field(),
+                      /* calledType */ QualifiedType(),
+                      /* isMethod */ true,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ true,
+                      actuals);
+  auto inScope = scopeStack.back();
+  auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
+  // save the most specific candidates in the resolution result for the id
+  ResolvedExpression& r = byPostorder.byAst(dot);
+  handleResolvedCall(r, dot, ci, c);
 }
 
 bool Resolver::enter(const uast::New* nw) {
@@ -1800,18 +1870,14 @@ bool Resolver::enter(const For* loop) {
                         /* calledType */ iterandRE.type(),
                         /* isMethod */ true,
                         /* hasQuestionArg */ false,
+                        /* isParenless */ false,
                         actuals);
     auto inScope = scopeStack.back();
     auto c = resolveGeneratedCall(context, iterand, ci, inScope, poiScope);
 
-    if (auto only = c.mostSpecific().only()) {
+    if (c.mostSpecific().only() != nullptr) {
       idxType = c.exprType();
-
-      ResolvedExpression::AssociatedFns associated;
-      associated.push_back(only);
-      iterandRE.setAssociatedFns(associated);
-
-      poiInfo.accumulate(c.poiInfo());
+      handleResolvedAssociatedCall(iterandRE, loop, ci, c);
     } else {
       idxType = QualifiedType(QualifiedType::UNKNOWN,
                               ErroneousType::get(context));

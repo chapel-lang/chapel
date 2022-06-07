@@ -106,7 +106,7 @@ You should see something like this:
     writeln("New library: HelloPackage");
   }
 
-This program will run as-is, but we aren't using our ``HelloWorld`` dependecy
+This program will run as-is, but we aren't using our ``HelloWorld`` dependency
 just yet. In order to use the package, we need to add a ``use HelloWorld`` to
 bring in the dependency. This gives us access to the whole module namespace
 of the ``HelloWorld`` package, and we can call all of the available functions.

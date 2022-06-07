@@ -83,4 +83,69 @@ module Math {
     return chpl_logBasePow2(val, baseLog2);
   }
 
+  /* Returns the Bessel function of the first kind of order `0` of `x`. */
+  inline proc j0(x: real(32)): real(32) {
+    return chpl_j0(x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `0` of `x`. */
+  inline proc j0(x: real(64)): real(64) {
+    return chpl_j0(x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `1` of `x`. */
+  inline proc j1(x: real(32)): real(32) {
+    return chpl_j1(x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `1` of `x`. */
+  inline proc j1(x: real(64)): real(64) {
+    return chpl_j1(x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `n` of `x`. */
+  inline proc jn(n: int, x: real(32)): real(32) {
+    return chpl_jn(n, x);
+  }
+
+  /* Returns the Bessel function of the first kind of order `n` of `x`. */
+  inline proc jn(n: int, x: real(64)): real(64) {
+    return chpl_jn(n, x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `0` of `x`, where
+     `x` must be greater than 0 */
+  inline proc y0(x: real(32)): real(32) {
+    return chpl_y0(x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `0` of `x`,
+     where `x` must be greater than 0 */
+  inline proc y0(x: real(64)): real(64) {
+    return chpl_y0(x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `1` of `x`,
+     where `x` must be greater than 0 */
+  inline proc y1(x: real(32)): real(32) {
+    return chpl_y1(x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `1` of `x`,
+     where `x` must be greater than 0 */
+  inline proc y1(x: real(64)): real(64) {
+    return chpl_y1(x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `n` of `x`,
+     where `x` must be greater than 0 */
+  inline proc yn(n: int, x: real(32)): real(32) {
+    return chpl_yn(n, x);
+  }
+
+  /* Returns the Bessel function of the second kind of order `n` of `x`,
+     where `x` must be greater than 0 */
+  inline proc yn(n: int, x: real(64)): real(64) {
+    return chpl_yn(n, x);
+  }
 }

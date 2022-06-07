@@ -3989,7 +3989,7 @@ module HDF5 {
         for i in 0..#A.rank {
           stride[i] = 1;
           count[i] = locDom.dim(i).size: uint;
-          start[i] = (locDom.dim(i).low - A.domain.dim(i).low): uint;
+          start[i] = (locDom.dim(i).lowBound - A.domain.dim(i).lowBound): uint;
         }
 
         ret = H5Sselect_hyperslab(fileDataspace, H5S_SELECT_SET, start,
@@ -4084,7 +4084,7 @@ module HDF5 {
                                    c_ptrTo(dims), nil, nil);
         }
 
-        const wholeLow = A.domain.whole.low;
+        const wholeLow = A.domain.whole.lowBound;
         for dom in A.localSubdomains() {
           // The dataset is 0-based, so unTranslate each block
           const dsetBlock = dom.chpl__unTranslate(wholeLow);
@@ -4098,7 +4098,7 @@ module HDF5 {
               memStrideArr: [0..#dom.rank] C_HDF5.hsize_t;
 
           for param i in 0..dom.rank-1 {
-            dsetOffsetArr[i] = dsetBlock.dim(i).low: C_HDF5.hsize_t;
+            dsetOffsetArr[i] = dsetBlock.dim(i).lowBound: C_HDF5.hsize_t;
             dsetCountArr[i]  = dsetBlock.dim(i).size: C_HDF5.hsize_t;
             dsetStrideArr[i] = dsetBlock.dim(i).stride: C_HDF5.hsize_t;
 

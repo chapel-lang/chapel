@@ -1,5 +1,6 @@
 
 {
+  use Math;
   writeln("For 64-bit reals: ");
   var a: real(64) = 10, an: int = 5;
   var b: real(64) = 31, bn: int = 4;
@@ -20,6 +21,7 @@
 }
 
 {
+  use Math;
   writeln("For 32-bit reals: ");
   var a: real(32) = 10, an: int = 5;
   var b: real(32) = 31, bn: int = 4;

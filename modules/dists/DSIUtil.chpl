@@ -342,16 +342,16 @@ proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridabl
 
   // todo: account for the case s.isAmbiguous()
   ensure(s.isEmpty() ||
-         // If idxType is unsigned, caller must ensure that s.low is big enough
+         // If idxType is unsigned, caller must ensure that s.lowBound is big enough
          // so it can be subtracted from.
-         w.low <= if isIntType(IT) then s.alignedLow else s.low);
-  ensure(s.isEmpty() || !w.hasHighBound() || s.alignedHigh <= w.high);
+         w.lowBound <= if isIntType(IT) then s.alignedLow else s.lowBound);
+  ensure(s.isEmpty() || !w.hasHighBound() || s.alignedHigh <= w.highBound);
 
   // gotta have a special case, e.g.: s=1..0 w=5..6 IT=uint
   if isUintType(IT) && s.isEmpty() then
     return 1:IT..0:IT;
 
-  return (s - w.low): range(IT,B,S);
+  return (s - w.lowBound): range(IT,B,S);
 }
 
 proc _densiEnsureBounded(arg) {
@@ -437,7 +437,7 @@ proc unDensify(dense: range(?,boundedType=?B,stridable=?S), whole: range(?IT,?,s
   if !whole.hasLowBound() then
     compilerError("unDensify(): the 'whole' argument, when not stridable, must have a low bound");
 
-  return (dense + whole.low): range(IT,B,S);
+  return (dense + whole.lowBound): range(IT,B,S);
 }
 
 proc _undensEnsureBounded(arg) {

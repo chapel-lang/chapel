@@ -32,6 +32,7 @@
 #include "chpl/uast/all-uast.h"
 
 #include "Resolver.h"
+#include "default-functions.h"
 #include "prims.h"
 
 #include <cstdio>
@@ -138,7 +139,11 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
       } else if (asttags::isModule(tag)) {
         kind = QualifiedType::MODULE;
       } else if (asttags::isFunction(tag)) {
-        kind = QualifiedType::FUNCTION;
+        if (parsing::idIsParenlessFunction(context, id)) {
+          kind = QualifiedType::PARENLESS_FUNCTION;
+        } else {
+          kind = QualifiedType::FUNCTION;
+        }
       } else {
         assert(false && "case not handled");
       }
@@ -200,13 +205,13 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
       typePtr = UintType::get(context, 0);
       break;
     case asttags::BytesLiteral:
-      typePtr = BytesType::get(context);
+      typePtr = RecordType::getBytesType(context);
       break;
     case asttags::CStringLiteral:
       typePtr = CStringType::get(context);
       break;
     case asttags::StringLiteral:
-      typePtr = StringType::get(context);
+      typePtr = RecordType::getStringType(context);
       break;
     default:
       assert(false && "case not handled");
@@ -218,31 +223,6 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 
 
 /////// function resolution
-
-static const owned<TypedFnSignature>&
-typedSignatureQuery(Context* context,
-                    const UntypedFnSignature* untypedSignature,
-                    std::vector<types::QualifiedType> formalTypes,
-                    TypedFnSignature::WhereClauseResult whereClauseResult,
-                    bool needsInstantiation,
-                    const TypedFnSignature* instantiatedFrom,
-                    const TypedFnSignature* parentFn,
-                    Bitmap formalsInstantiated) {
-  QUERY_BEGIN(typedSignatureQuery, context,
-              untypedSignature, formalTypes, whereClauseResult,
-              needsInstantiation, instantiatedFrom, parentFn,
-              formalsInstantiated);
-
-  auto result = toOwned(new TypedFnSignature(untypedSignature,
-                                             std::move(formalTypes),
-                                             whereClauseResult,
-                                             needsInstantiation,
-                                             instantiatedFrom,
-                                             parentFn,
-                                             formalsInstantiated));
-
-  return QUERY_END(result);
-}
 
 static std::vector<types::QualifiedType>
 getFormalTypes(const Function* fn,
@@ -388,20 +368,14 @@ typedSignatureInitialQuery(Context* context,
       }
     }
 
-    // use an empty poiFnIdsUsed since this is never an instantiation
-    std::set<std::pair<ID, ID>> poiFnIdsUsed;
-    // same for formalsInstantiated
-    Bitmap formalsInstantiated;
-
-    const auto& got = typedSignatureQuery(context,
-                                          untypedSig,
-                                          std::move(formalTypes),
-                                          whereResult,
-                                          needsInstantiation,
-                                          /* instantiatedFrom */ nullptr,
-                                          /* parentFn */ parentFnTyped,
-                                          formalsInstantiated);
-    result = got.get();
+    result = TypedFnSignature::get(context,
+                                   untypedSig,
+                                   std::move(formalTypes),
+                                   whereResult,
+                                   needsInstantiation,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ parentFnTyped,
+                                   /* formalsInstantiated */ Bitmap());
   }
 
   return QUERY_END(result);
@@ -879,6 +853,17 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   // ClassType right now.
   assert(t->isCompositeType() || t->isClassType());
 
+  // the tuple type that isn't an instantiation is a generic type
+  if (auto tt = t->toTupleType()) {
+    if (tt->instantiatedFromCompositeType() == nullptr)
+      return Type::GENERIC;
+  }
+
+  // string and bytes types are never generic
+  if (t->isStringType() || t->isBytesType()) {
+    return Type::CONCRETE;
+  }
+
   if (auto classType = t->toClassType()) {
     // should be handled in BasicClassType::isGeneric
     // so this code should only be called if the management is concrete
@@ -887,12 +872,6 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
 
     auto bct = classType->basicClassType();
     return getFieldsGenericity(context, bct, ignore);
-  }
-
-  // the tuple type that isn't an instantiation is a generic type
-  if (auto tt = t->toTupleType()) {
-    if (tt->instantiatedFromCompositeType() == nullptr)
-      return Type::GENERIC;
   }
 
   auto compositeType = t->toCompositeType();
@@ -974,12 +953,12 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
   return false;
 }
 
-static const owned<TypedFnSignature>&
+static const TypedFnSignature* const&
 typeConstructorInitialQuery(Context* context, const Type* t)
 {
   QUERY_BEGIN(typeConstructorInitialQuery, context, t);
 
-  owned<TypedFnSignature> result;
+  const TypedFnSignature* result = nullptr;
 
   ID id;
   UniqueString name;
@@ -1032,30 +1011,28 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   auto untyped = UntypedFnSignature::get(context,
                                          id, name,
                                          /* isMethod */ false,
-                                         idTag,
                                          /* isTypeConstructor */ true,
+                                         /* isCompilerGenerated */ true,
+                                         idTag,
                                          Function::PROC,
                                          std::move(formals),
                                          /* whereClause */ nullptr);
 
-  // not instantiated yet so use empty formalsInstantiated
-  Bitmap formalsInstantiated;
-
-  auto sig = new TypedFnSignature(untyped,
-                                  std::move(formalTypes),
-                                  TypedFnSignature::WHERE_NONE,
-                                  /* needsInstantiation */ true,
-                                  /* instantiatedFrom */ nullptr,
-                                  /* parentFn */ nullptr,
-                                  formalsInstantiated);
-  result = toOwned(sig);
+  result = TypedFnSignature::get(context,
+                                 untyped,
+                                 std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ true,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
 
   return QUERY_END(result);
 }
 
 const TypedFnSignature* typeConstructorInitial(Context* context,
                                                const types::Type* t) {
-  return typeConstructorInitialQuery(context, t).get();
+  return typeConstructorInitialQuery(context, t);
 }
 
 QualifiedType getInstantiationType(Context* context,
@@ -1344,15 +1321,15 @@ const TypedFnSignature* instantiateSignature(Context* context,
   }
 
   // now, construct a TypedFnSignature from the result
-  const auto& result = typedSignatureQuery(context,
-                                           untypedSignature,
-                                           std::move(formalTypes),
-                                           where,
-                                           needsInstantiation,
-                                           /* instantiatedFrom */ sig,
-                                           /* parentFn */ parentFnTyped,
-                                           formalsInstantiated);
-  return result.get();
+  auto result = TypedFnSignature::get(context,
+                                      untypedSignature,
+                                      std::move(formalTypes),
+                                      where,
+                                      needsInstantiation,
+                                      /* instantiatedFrom */ sig,
+                                      /* parentFn */ parentFnTyped,
+                                      std::move(formalsInstantiated));
+  return result;
 }
 
 static const owned<ResolvedFunction>&
@@ -1654,13 +1631,26 @@ returnTypeForTypeCtorQuery(Context* context,
   return QUERY_END(result);
 }
 
-static
-bool isCompilerGeneratedMethodSignature(const UntypedFnSignature* ufs) {
-  // TODO: consider adding ufs->isCompilerGenerated()
-  if (ufs->idIsRecord() || ufs->idIsClass())
-    if (ufs->isMethod())
-      return isNameOfCompilerGeneratedMethod(ufs->name());
-  return false;
+static QualifiedType computeTypeOfField(Context* context,
+                                        const Type* t,
+                                        ID fieldId) {
+  if (const CompositeType* ct = t->getCompositeType()) {
+    // Figure out the parent MultiDecl / TupleDecl
+    ID declId = parsing::idToContainingMultiDeclId(context, fieldId);
+
+    // Resolve the type of that field (or MultiDecl/TupleDecl)
+    const auto& fields = resolveFieldDecl(context, ct, declId,
+                                          /*useGenericFormalDefaults*/ false);
+    int n = fields.numFields();
+    for (int i = 0; i < n; i++) {
+      if (fields.fieldDeclId(i) == fieldId) {
+        return fields.fieldType(i);
+      }
+    }
+  }
+
+  assert(false && "should not be reachable");
+  return QualifiedType(QualifiedType::VAR, ErroneousType::get(context));
 }
 
 const QualifiedType& returnType(Context* context,
@@ -1732,10 +1722,25 @@ const QualifiedType& returnType(Context* context,
 
   // if method call and the receiver points to a composite type definition,
   // then it's some sort of compiler-generated method
-  } else if (isCompilerGeneratedMethodSignature(untyped)) {
+  } else if (untyped->isCompilerGenerated()) {
     if (untyped->name() == USTR("init")) {
       result = QualifiedType(QualifiedType::CONST_VAR,
                              VoidType::get(context));
+    } else if (untyped->idIsField() && untyped->isMethod()) {
+      // method accessor - compute the type of the field
+      QualifiedType ft = computeTypeOfField(context,
+                                            sig->formalType(0).type(),
+                                            untyped->id());
+      if (ft.isType() || ft.isParam()) {
+        // return the type as-is (preserving param/type-ness)
+        result = ft;
+      } else if (ft.isConst()) {
+        // return a const ref
+        result = QualifiedType(QualifiedType::CONST_REF, ft.type());
+      } else {
+        // return a ref
+        result = QualifiedType(QualifiedType::REF, ft.type());
+      }
     } else {
       assert(false && "unhandled compiler-generated method");
     }
@@ -1819,31 +1824,34 @@ static const TypedFnSignature*
 doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& ci) {
-  const AstNode* ast = nullptr;
-  const Function* fn = nullptr;
+  AstTag tag = asttags::AST_TAG_UNKNOWN;
 
   if (!candidateId.isEmpty()) {
-    ast = parsing::idToAst(context, candidateId);
-    assert(ast->isFunction() || ast->isTypeDecl());
-    fn = ast->toFunction();
+    tag = parsing::idToTag(context, candidateId);
+    // could be a function, type for type construction, field
+    assert(isFunction(tag) || isTypeDecl(tag) || isVariable(tag));
+  } else {
+    assert(false && "case not handled");
+    return nullptr;
   }
 
-  if (ast == nullptr || ast->isTypeDecl()) {
-    // calling a builtin type or a declared type
-    const TypeDecl* td = nullptr;
-    if (ast)
-      td = ast->toTypeDecl();
-
-    if (td != nullptr) {
-      const Type* t = initialTypeForTypeDecl(context, td->id());
-      return typeConstructorInitial(context, t);
-    } else {
-      assert(false && "case not handled");
-    }
+  if (isTypeDecl(tag)) {
+    // calling a type - i.e. type construction
+    const Type* t = initialTypeForTypeDecl(context, candidateId);
+    return typeConstructorInitial(context, t);
   }
 
-  assert(fn);
-  auto ufs = UntypedFnSignature::get(context, fn);
+  if (isVariable(tag) &&
+      ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
+    // calling a field accessor
+    auto ct = ci.actual(0).type().type()->getCompositeType();
+    assert(ct);
+    assert(isNameOfField(context, ci.name(), ct));
+    return fieldAccessor(context, ct, ci.name());
+  }
+
+  assert(isFunction(tag) && "only fn case handled here");
+  auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
 
@@ -1871,7 +1879,7 @@ doIsCandidateApplicableInstantiating(Context* context,
   // Next, check that the types are compatible
   size_t nActuals = call.numActuals();
   for (size_t i = 0; i < nActuals; i++) {
-    const QualifiedType& actualType = call.actuals(i).type();
+    const QualifiedType& actualType = call.actual(i).type();
     const QualifiedType& formalType = instantiated->formalType(i);
     auto got = canPass(context, actualType, formalType);
     if (!got.passes())
@@ -1982,7 +1990,7 @@ lookupCalledExpr(Context* context,
   if (ci.isMethodCall()) {
     assert(ci.numActuals() >= 1);
 
-    auto& receiverQualType = ci.actuals(0).type();
+    auto& receiverQualType = ci.actual(0).type();
     const Scope* scopeForReceiverType = nullptr;
 
     // Try to fetch the scope of the receiver type's definition.
@@ -2098,7 +2106,7 @@ static const Type* getManagedClassType(Context* context,
 
   const Type* t = nullptr;
   if (ci.numActuals() > 0)
-    t = ci.actuals(0).type().type();
+    t = ci.actual(0).type().type();
 
   if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
     context->error(astForErr, "invalid class type construction");
@@ -2147,7 +2155,7 @@ static const Type* getNumericType(Context* context,
         return ErroneousType::get(context);
       }
 
-      QualifiedType qt = ci.actuals(0).type();
+      QualifiedType qt = ci.actual(0).type();
       if (qt.type() && qt.type()->isAnyType()) {
         useGenericType = true;
       } else if (qt.isParam() && qt.param() == nullptr)  {
@@ -2176,7 +2184,7 @@ static const Type* getNumericType(Context* context,
 
     QualifiedType qt;
     if (ci.numActuals() > 0)
-      qt = ci.actuals(0).type();
+      qt = ci.actual(0).type();
 
     const Type* t = qt.type();
     if (t == nullptr) {
@@ -2225,7 +2233,7 @@ static const Type* resolveFnCallSpecialType(Context* context,
 
   if (ci.name() == USTR("?")) {
     if (ci.numActuals() > 0) {
-      if (const Type* t = ci.actuals(0).type().type()) {
+      if (const Type* t = ci.actual(0).type().type()) {
         const ClassType* ct = nullptr;
 
         if (auto bct = t->toBasicClassType()) {
@@ -2280,7 +2288,7 @@ static bool resolveFnCallSpecial(Context* context,
                                   ErroneousType::get(context));
       return true;
     }
-    auto got = canPass(context, ci.actuals(0).type(), ci.actuals(1).type());
+    auto got = canPass(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();
     exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context, 0),
                                 BoolParam::get(context, result));
@@ -2343,18 +2351,20 @@ considerCompilerGeneratedCandidates(Context* context,
 
   // fetch the receiver type info
   assert(ci.numActuals() >= 1);
-  auto& receiver = ci.actuals(0);
+  auto& receiver = ci.actual(0);
   auto receiverType = receiver.type().type();
 
   // if not compiler-generated, then nothing to do
-  if (!needCompilerGeneratedMethod(context, receiverType, ci.name()))
+  if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
+                                   ci.isParenless()))
     return false;
 
   // get the compiler-generated function, may be generic
-  auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name());
+  auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
+                                        ci.isParenless());
   assert(tfs);
 
-  // check if the inital signature matches
+  // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);
   if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci)) {
     return false;
@@ -2657,180 +2667,72 @@ CallResolutionResult resolveGeneratedCall(Context* context,
   return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope);
 }
 
-bool isNameOfCompilerGeneratedMethod(UniqueString name) {
-  // TODO: Update me over time.
-  if (name == USTR("init")       ||
-      name == USTR("deinit")     ||
-      name == USTR("init=")) {
-    return true;
+static bool helpFieldNameCheck(const AstNode* ast,
+                               UniqueString name) {
+  if (auto var = ast->toVarLikeDecl()) {
+    return var->name() == name;
+  } else if (auto mult = ast->toMultiDecl()) {
+    for (auto decl : mult->decls()) {
+      bool found = helpFieldNameCheck(decl, name);
+      if (found) {
+        return true;
+      }
+    }
+  } else if (auto tup = ast->toTupleDecl()) {
+    for (auto decl : tup->decls()) {
+      bool found = helpFieldNameCheck(decl, name);
+      if (found) {
+        return true;
+      }
+    }
   }
-
   return false;
 }
 
-static bool
-areOverloadsPresentInDefiningScope(Context* context, const Type* type,
-                                   UniqueString name) {
-  const Scope* scopeForReceiverType = nullptr;
+static const bool&
+isNameOfFieldQuery(Context* context,
+                   UniqueString name, const CompositeType* ct) {
+  QUERY_BEGIN(isNameOfFieldQuery, context, name, ct);
 
-  if (auto compType = type->getCompositeType()) {
-    scopeForReceiverType = scopeForId(context, compType->id());
-  }
+  bool result = false;
+  auto ast = parsing::idToAst(context, ct->id());
+  assert(ast && ast->isAggregateDecl());
+  auto ad = ast->toAggregateDecl();
 
-  // there is no defining scope
-  if (!scopeForReceiverType) return false;
-
-  // do not look outside the defining module
-  const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS;
-
-  auto vec = lookupNameInScope(context, scopeForReceiverType,
-                               name,
-                               config);
-
-  // nothing found
-  if (vec.size() == 0) return false;
-
-  // loop through IDs and see if any are methods on the same type
-  for (auto& ids : vec) {
-    for (auto id : ids) {
-      auto node = parsing::idToAst(context, id);
-      assert(node);
-
-      if (auto fn = node->toFunction()) {
-        auto ufs = UntypedFnSignature::get(context, fn);
-
-        if (!ufs->isMethod()) continue;
-
-        // TODO: way to just compute formal type instead of whole TFS?
-        auto tfs = typedSignatureInitial(context, ufs);
-        auto receiverQualType = tfs->formalType(0);
-
-        // receiver type matches, return true
-        if (receiverQualType.type() == type) {
-          return true;
-        }
+  for (auto child: ad->children()) {
+    // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+    if (child->isVarLikeDecl() ||
+        child->isMultiDecl() ||
+        child->isTupleDecl()) {
+      bool found = helpFieldNameCheck(child, name);
+      if (found) {
+        result = true;
+        break;
       }
     }
   }
 
-  return false;
+  return QUERY_END(result);
 }
 
-bool
-needCompilerGeneratedMethod(Context* context, const Type* type,
-                            UniqueString name) {
-  if (isNameOfCompilerGeneratedMethod(name)) {
-    if (!areOverloadsPresentInDefiningScope(context, type, name)) {
-      return true;
+bool isNameOfField(Context* context, UniqueString name, const Type* t) {
+  const CompositeType* ct = t->getCompositeType();
+
+  if (ct == nullptr) {
+    return false;
+  }
+
+  if (auto bct = ct->toBasicClassType()) {
+    if (bct->isObjectType()) {
+      return false;
     }
   }
 
-  return false;
+
+  return isNameOfFieldQuery(context, name, ct);
 }
 
-static TypedFnSignature*
-generateInitSignature(Context* context, const CompositeType* inCompType) {
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
 
-  // adjust to refer to fully generic signature if needed
-  auto genericCompType = inCompType->instantiatedFromCompositeType();
-  auto compType = genericCompType ? genericCompType : inCompType;
-
-  // start by adding a formal for the receiver
-  auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
-                                                      false,
-                                                      nullptr);
-  ufsFormals.push_back(std::move(ufsReceiver));
-
-  // receiver is 'ref' because it is mutated
-  formalTypes.push_back(QualifiedType(QualifiedType::REF, compType));
-
-  // consult the fields to build up the remaining untyped formals
-  const bool useGenericDefaults = false;
-  auto& rf = fieldsForTypeDecl(context, compType, useGenericDefaults);
-
-  // TODO: generic types
-  if (rf.isGeneric()) {
-    assert(false && "Not handled yet!");
-  }
-
-  // push all fields -> formals in order
-  for (int i = 0; i < rf.numFields(); i++) {
-    auto qualType = rf.fieldType(i);
-    auto name = rf.fieldName(i);
-    bool hasDefault = rf.fieldHasDefaultValue(i);
-    const uast::Decl* node = nullptr;
-
-    auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, node);
-    ufsFormals.push_back(std::move(fd));
-
-    // for types & param, use the field kind, for values use 'in' intent
-    if (qualType.isType() || qualType.isParam()) {
-      formalTypes.push_back(qualType);
-    } else {
-      auto qt = QualifiedType(QualifiedType::IN, qualType.type());
-      formalTypes.push_back(std::move(qt));
-    }
-  }
-
-  // build the untyped signature
-  auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
-                        /*name*/ USTR("init"),
-                        /*isMethod*/ true,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
-                        /*idIsTypeConstructor*/ false,
-                        /*kind*/ uast::Function::Kind::PROC,
-                        /*formals*/ std::move(ufsFormals),
-                        /*whereClause*/ nullptr);
-
-  // now build the other pieces of the typed signature
-  auto whereClauseResult = TypedFnSignature::WHERE_NONE;
-  bool needsInstantiation = rf.isGeneric();
-  const TypedFnSignature* instantiatedFrom = nullptr;
-  const TypedFnSignature* parentFn = nullptr;
-  Bitmap formalsInstantiated;
-
-  auto ret = new TypedFnSignature(ufs, formalTypes, whereClauseResult,
-                                  needsInstantiation,
-                                  instantiatedFrom,
-                                  parentFn,
-                                  formalsInstantiated);
-
-  return ret;
-}
-
-static const owned<TypedFnSignature>&
-getCompilerGeneratedMethodQuery(Context* context, const Type* type,
-                                UniqueString name) {
-  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, type, name);
-
-  TypedFnSignature* tfs = nullptr;
-
-  if (needCompilerGeneratedMethod(context, type, name)) {
-    auto compType = type->toCompositeType();
-    assert(compType);
-
-    if (name == USTR("init")) {
-      tfs = generateInitSignature(context, compType);
-    } else {
-      assert(false && "Not implemented yet!");
-    }
-  }
-
-  auto ret = toOwned(tfs);
-
-  return QUERY_END(ret);
-}
-
-const TypedFnSignature*
-getCompilerGeneratedMethod(Context* context, const Type* type,
-                           UniqueString name) {
-  auto& owned = getCompilerGeneratedMethodQuery(context, type, name);
-  auto ret = owned.get();
-  return ret;
-}
 
 } // end namespace resolution
 } // end namespace chpl

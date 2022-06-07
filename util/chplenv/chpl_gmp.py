@@ -60,7 +60,7 @@ def get_compile_args():
 def get_link_args():
     gmp_val = get()
     if gmp_val == 'bundled':
-         return third_party_utils.get_bundled_link_args('gmp')
+         return third_party_utils.pkgconfig_get_bundled_link_args('gmp')
 
     elif gmp_val == 'system':
         return ([ ], ['-lgmp'])

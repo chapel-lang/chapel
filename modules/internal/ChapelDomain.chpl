@@ -1947,11 +1947,46 @@ module ChapelDomain {
       return size: t;
     }
 
+    /* Returns the domain's 'pure' low bound.  For example, given the
+       domain ``{1..10 by -2}``, ``.lowBound`` would return 1, whereas
+       ``.low`` would return 2 since it's the lowest index represented
+       by the domain.  This routine is only supported on rectangular
+       domains. */
+    proc lowBound {
+      return _value.dsiLow;
+    }
 
-    /* return the lowest index in this domain */
-    proc low return _value.dsiLow;
-    /* Return the highest index in this domain */
-    proc high return _value.dsiHigh;
+    /* Return the lowest index represented by a rectangular domain. */
+    proc low {
+      if !alignedBoundsByDefault && stridable {
+        compilerWarning("The '.low' query on ranges is in the process of changing from returning the pure low bound to the aligned low bound (e.g., from '1' to '2' for '1..10 by -2').  Update to the '.lowBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior.");
+      }
+      return if alignedBoundsByDefault then _value.dsiAlignedLow else _value.dsiLow;
+    }
+    pragma "no doc"
+    proc low where this.isAssociative() {
+      compilerError("associative domains do not support '.low'");
+    }
+
+    /* Return the domain's 'pure' high bound.  For example, given the
+       domain ``{1..10 by 2}``, ``.highBound`` would return 10,
+       whereas ``.high`` would return 9 since it's the highest index
+       represented by the domain.  This routine is only supported on
+       rectangular domains. */
+    proc highBound {
+      return _value.dsiHigh;
+    }
+    /* Return the highest index represented by a rectangular domain. */
+    proc high {
+    if !alignedBoundsByDefault && stridable {
+      compilerWarning("The '.high' query on ranges is in the process of changing from returning the pure high bound to the aligned high bound (e.g., from '10' to '9' for '1..10 by 2').  Update to the '.highBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior now and avoid this warning.");
+    }
+      return if alignedBoundsByDefault then _value.dsiAlignedHigh else _value.dsiHigh;
+    }
+    pragma "no doc"
+    proc high where this.isAssociative() {
+      compilerError("associative domains do not support '.high'");
+    }
     /* Return the stride of the indices in this domain */
     proc stride return _value.dsiStride;
     /* Return the alignment of the indices in this domain */
@@ -2146,7 +2181,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do {
         ranges(i) = ranges(i).expand(off(i));
-        if (ranges(i).low > ranges(i).high) {
+        if (ranges(i).lowBound > ranges(i).highBound) {
           halt("***Error: Degenerate dimension created in dimension ", i, "***");
         }
       }
