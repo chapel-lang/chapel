@@ -40,6 +40,9 @@ typedef enum {
 
   RESOLUTION_CANDIDATE_MATCH,
 
+  // Candidate discarded due to too many numeric conversions
+  //RESOLUTION_CANDIDATE_TOO_MANY_CONVERSIONS,
+
   // Types do not match but are related (e.g. borrowed C vs unmanaged C)
   RESOLUTION_CANDIDATE_TYPE_RELATED,
 

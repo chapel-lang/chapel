@@ -957,6 +957,83 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
     return false;
   }
 
+  // check the number of implicit conversions to types not used
+  // in the call.
+#if 0
+  int nImplicitConversionsToTypeNotMentioned = 0;
+  int nImplicitConversions = 0;
+  int nNonThisArguments = 0;
+  Symbol* actualWithImplicitConversionToTypeNotMentioned = nullptr;
+  coindex = -1;
+  for_formals(formal, fn) {
+    if (!formal->hasFlag(FLAG_ARG_THIS))
+      nNonThisArguments++;
+
+    if (Symbol* actual = formalIdxToActual[++coindex]) {
+      if (formal->originalIntent != INTENT_OUT) {
+        Type* actualVt = actual->type->getValType();
+        Type* formalVt = formal->type->getValType();
+        if (actualVt == formalVt) {
+          // same type, nothing else to worry about here
+          continue;
+        }
+
+        // if we get here, an implicit conversion is required
+        if (isClassLikeOrManaged(actualVt) || isClassLikeOrManaged(formalVt) ||
+            isClassLikeOrPtr(actualVt) || isClassLikeOrPtr(formalVt)) {
+          // OK, don't worry about implicit conversion for class types here
+          continue;
+        }
+
+        /*
+        Immediate* imm = nullptr;
+        if (VarSymbol* var = toVarSymbol(actual)) {
+          imm = var->immediate;
+        }
+        if (EnumSymbol* enumsym = toEnumSymbol(actual)) {
+          imm = enumsym->getImmediate();
+        }
+
+        if (imm != nullptr &&
+            isNumericParamDefaultType(actualVt)) {
+          // OK, don't worry about implicit conversions for param
+          // with default type here.
+          continue;
+        }*/
+
+        // is it an implicit conversion to a formal type
+        // that is used in an actual of the call?
+        bool formalVtUsedInOtherActual = false;
+        int innerIndex = -1;
+        for_formals(formal, fn) {
+          if (Symbol* actual = formalIdxToActual[++innerIndex]) {
+            if (formal->originalIntent != INTENT_OUT &&
+                innerIndex != coindex) {
+              Type* otherActualVt = actual->type->getValType();
+              if (formalVt == otherActualVt) {
+                formalVtUsedInOtherActual = true;
+                break;
+              }
+            }
+          }
+        }
+
+        nImplicitConversions++;
+        if (!formalVtUsedInOtherActual) {
+          actualWithImplicitConversionToTypeNotMentioned = actual;
+          nImplicitConversionsToTypeNotMentioned++;
+        }
+      }
+    }
+  }
+
+  if (nImplicitConversions >= nNonThisArguments && nImplicitConversionsToTypeNotMentioned > 0) {
+    failingArgument = actualWithImplicitConversionToTypeNotMentioned;
+    reason = RESOLUTION_CANDIDATE_TOO_MANY_CONVERSIONS;
+    return false;
+  }
+#endif
+
   return true;
 }
 
@@ -1208,6 +1285,9 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
         USR_PRINT(call, "try to apply the postfix ! operator to %s",
                   failingActualDesc);
       break;
+/*    case RESOLUTION_CANDIDATE_TOO_MANY_CONVERSIONS:
+      USR_PRINT(fn, "because there were too many implicit conversions");
+      break;*/
     case RESOLUTION_CANDIDATE_WHERE_FAILED:
       USR_PRINT(fn, "because where clause evaluated to false");
       break;

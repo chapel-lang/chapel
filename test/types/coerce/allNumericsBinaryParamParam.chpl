@@ -49,6 +49,10 @@ proc f(x: complex(128), y: complex(128)) {
   writeln("  f(", x.type:string, ",", y.type:string, ")");
 }
 
+proc f(x, y) {
+  writeln("  f(generic)");
+}
+
 proc isProhibitedAdd(type t1, type t2) param {
   return (t1 == uint && isIntType(t2)) ||
          (t1 == uint && isUintType(t2) && t2 != uint); // bug workaround
