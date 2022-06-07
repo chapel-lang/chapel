@@ -3875,12 +3875,13 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   on the line length (and on stripNewline since the newline will be counted if it is
   stored in the array).
 
-  :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
+  :arg arg: A 1D DefaultRectangular array storing int(8) or uint(8) which must have at least 1 element.
   :arg maxSize: The maximum amount of bytes to read.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
   :throws SystemError: Thrown if data could not be read from the channel.
+  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
  */
 proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() {
@@ -3891,11 +3892,17 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
   var numRead:int;
   on this.home {
     try this.lock(); defer { this.unlock(); }
+    this._mark();
     param newLineChar = 0x0A;
     var got: int;
     var i = arg.domain.low;
     const maxIdx = arg.domain.low + maxSize - 1;
-    while i <= maxIdx {
+    while got !=newLineChar {
+      if( i > maxIdx ) {
+        // The line is longer than was specified so we throw an error
+        this._revert();
+        try this._ch_ioerror("line longer than maxSize", "in channel.readLine(arg : [] uint(8))");
+      }
       got = qio_channel_read_byte(false, this._channel_internal);
       if got < 0 then break;
       if got == newLineChar && stripNewline then break;
@@ -3905,6 +3912,7 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
     }
     numRead = i - arg.domain.low;
     if i == arg.domain.low && got < 0 then err = (-got):syserr;
+    this._commit();
   }
 
   if !err {
@@ -3957,11 +3965,12 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   Read a line into a Chapel string. Reads until a ``\n`` is reached.
 
   :arg arg: a string to receive the line
-  :arg maxSize: The maximum amount of characters to read.
+  :arg maxSize: The maximum number of codepoints to read. The default of -1 means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
   :throws SystemError: Thrown if data could not be read from the channel.
+  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc channel.readLine(ref s: string, maxSize=-1, stripNewline=false): bool throws{
   if writing then compilerError("read on write-only channel");
@@ -3970,13 +3979,30 @@ proc channel.readLine(ref s: string, maxSize=-1, stripNewline=false): bool throw
   try {
     on this.home {
       try this.lock(); defer { this.unlock(); }
+      param newLineChar = 0x0A; // ascii newline.
+      if(maxSize != -1){
+        this._mark();
+        var lineSize = 0;
+        var got : int;
+        while got!=newLineChar {
+          got = qio_channel_read_byte(false, this._channel_internal);
+          if(got < 0) then break;
+          lineSize+=1;
+          if(lineSize > maxSize){
+                    // The line is longer than was specified so we throw an error
+          this._revert();
+          try this._ch_ioerror("line longer than maxSize", "in channel.readLine(ref s: string)");
+          }
+        }
+        this._revert();
+      }
       var saveStyle: iostyleInternal = this._styleInternal();
       defer {
         this._set_styleInternal(saveStyle);
       }
       var myStyle = saveStyle.text();
       myStyle.string_format = QIO_STRING_FORMAT_TOEND;
-      myStyle.string_end = 0x0a; // ascii newline.
+      myStyle.string_end = newLineChar;
       if(maxSize >= 0){
         try myStyle.max_width_characters = maxSize.safeCast(uint(32)); // Probably should change maxSize's type to be safe to cast
       }
@@ -4000,11 +4026,12 @@ proc channel.readLine(ref s: string, maxSize=-1, stripNewline=false): bool throw
   Read a line into Chapel bytes. Reads until a ``\n`` is reached.
 
   :arg arg: bytes to receive the line
-  :arg maxSize: The maximum amount of bytes to read.
+  :arg maxSize: The maximum number of bytes to read. The default of -1 means to read an unlimited number of bytes.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
   :throws SystemError: Thrown if data could not be read from the channel.
+  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc channel.readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws{
   if writing then compilerError("read on write-only channel");
@@ -4013,13 +4040,30 @@ proc channel.readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws
   try {
     on this.home {
       try this.lock(); defer { this.unlock(); }
+      param newLineChar = 0x0A; // ascii newline.
+      if(maxSize != -1) {
+        this._mark();
+        var lineSize = 0;
+        var got : int;
+        while got!=newLineChar {
+          got = qio_channel_read_byte(false, this._channel_internal);
+          if(got < 0) then break;
+          lineSize+=1;
+          if(lineSize > maxSize){
+                    // The line is longer than was specified so we throw an error
+          this._revert();
+          try this._ch_ioerror("line longer than maxSize", "in channel.readLine(ref b: bytes)");
+          }
+        }
+        this._revert();
+      }
       var saveStyle: iostyleInternal = this._styleInternal();
       defer {
         this._set_styleInternal(saveStyle);
       }
       var myStyle = saveStyle.text();
       myStyle.string_format = QIO_STRING_FORMAT_TOEND;
-      myStyle.string_end = 0x0a; // ascii newline.
+      myStyle.string_end = newLineChar;
       if(maxSize >= 0){
         try myStyle.max_width_bytes = maxSize.safeCast(uint(32)); // Probably should change maxSize's type to be safe to cast
       }
@@ -4041,12 +4085,13 @@ proc channel.readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws
 /*
   Read a line. Reads until a ``\n`` is reached.
 
-  :arg arg: The type of data to be read. (Currently only supports string and bytes types)
-  :arg maxSize: The maximum amount of characters to read.
+  :arg t: the type of data to read, which must be ``string`` or ``bytes``. Defaults to ``string`` if not specified.
+  :arg maxSize: The maximum number of codepoints to read. The default of -1 means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: The data that was read.
 
   :throws SystemError: Thrown if data could not be read from the channel.
+  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;

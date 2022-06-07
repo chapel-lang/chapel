@@ -30,7 +30,7 @@ proc check_expected(data, expected:string, len) {
  * its default values for amount, but the result should
  * still match expected.
  */
-proc test_readLine(amount: int, input: string, expected: string, stripNewline=false) {
+proc test_readLine(amount: int, input: string, expected: string, stripNewline=false) throws {
   /* Write input string to f, so we can readLine() it out */
   var f = openmem();
   var w = f.writer();
@@ -43,9 +43,9 @@ proc test_readLine(amount: int, input: string, expected: string, stripNewline=fa
 
   var data: [0..9] uint(8);
   if amount >= 0 {
-    numRead = r.readLine(data, maxSize=amount, stripNewline = stripNewline);
+    try numRead = r.readLine(data, maxSize=amount, stripNewline = stripNewline);
   } else {
-    numRead = r.readLine(data, stripNewline = stripNewline);
+    try numRead = r.readLine(data, stripNewline = stripNewline);
   }
 
   var invoke_string = if amount >= 0 then "readLine(maxSize="+amount:string+")" else
@@ -63,9 +63,9 @@ proc test_readLine(amount: int, input: string, expected: string, stripNewline=fa
 
 test_readLine(9, "foop", "foop\n");
 test_readLine(9, "foop", "foop", stripNewline = true);
-test_readLine(9,  "We apologize for the inconvenience", "We apolog");
-test_readLine(10, "Share and Enjoy", "Share and ");
-
-// Test that readLine's formal's defaults fill the array.
-// This should give us 10 bytes.
-test_readLine(-1, "Your Plastic Pal Who's Fun To Be With", "Your Plast");
+try {test_readLine(9,  "We apologize for the inconvenience", "We apolog");}
+catch e {writeln(e);}
+try {test_readLine(10, "Share and Enjoy", "Share and ");}
+catch e {writeln(e);}
+try {test_readLine(-1, "Your Plastic Pal Who's Fun To Be With", "Your Plast");}
+catch e {writeln(e);}

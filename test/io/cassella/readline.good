@@ -1,5 +1,5 @@
 readLine(maxSize=9) returned 5 bytes
 readLine(maxSize=9) returned 4 bytes
-readLine(maxSize=9) returned 9 bytes
-readLine(maxSize=10) returned 10 bytes
-readLine() returned 10 bytes
+IOError: Input/output error (line longer than maxSize in channel.readLine(arg : [] uint(8)) with path "unknown" offset 0)
+IOError: Input/output error (line longer than maxSize in channel.readLine(arg : [] uint(8)) with path "unknown" offset 0)
+IOError: Input/output error (line longer than maxSize in channel.readLine(arg : [] uint(8)) with path "unknown" offset 0)

@@ -1,4 +1,10 @@
+IOError: Input/output error (line longer than maxSize in channel.readLine(ref s: string) with path "unknown" offset 8)
 Tests Pass for string!
+IOError: Input/output error (line longer than maxSize in channel.readLine(ref b: bytes) with path "unknown" offset 8)
 Tests Pass for bytes!
+IOError: Input/output error (line longer than maxSize in channel.readLine(ref s: string) with path "unknown" offset 8)
 Tests Pass for string!
+IOError: Input/output error (line longer than maxSize in channel.readLine(ref b: bytes) with path "unknown" offset 8)
 Tests Pass for bytes!
+IOError: Input/output error (line longer than maxSize in channel.readLine(arg : [] uint(8)) with path "unknown" offset 8)
+Tests pass for Array!
