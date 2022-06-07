@@ -657,7 +657,13 @@ module DateTime {
   }
 
   /* Return a `string` representing the `time` in ISO format */
+  deprecated "'time.isoformat()' is deprecated. Please use 'time.isoFormat()' instead"
   proc time.isoformat() {
+    return isoFormat();
+  }
+
+  /* Return a `string` representing the `time` in ISO format */
+  proc time.isoFormat() {
     proc makeNDigits(n, d) {
       var ret = d: string;
       while ret.size < n {
@@ -765,7 +771,7 @@ module DateTime {
     const colon = new ioLiteral(":");
     if f.writing {
       try! {
-        f.write(isoformat());
+        f.write(isoFormat());
       }
     } else {
       const binary = f.binary(),
@@ -1257,7 +1263,13 @@ module DateTime {
   }
 
   /* Return the `datetime` as a `string` in ISO format */
+  deprecated "'datetime.isoformat()' is deprecated. Please use 'datetime.isoFormat()' instead"
   proc datetime.isoformat(sep="T") {
+    return isoFormat(sep);
+  }
+
+  /* Return the `datetime` as a `string` in ISO format */
+  proc datetime.isoFormat(sep="T") {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i: string;
       for i in 1..nDigits-numStr.size {
@@ -1390,7 +1402,7 @@ module DateTime {
 
     if f.writing {
       try! {
-        f.write(isoformat());
+        f.write(isoFormat());
       }
     } else {
       const binary = f.binary(),
