@@ -3836,7 +3836,7 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
 deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
                       amount = arg.domain.highBound - start + 1) : bool throws
-                      where arg.rank == 1 && arg.isRectangular() && !arg.stridable {
+                      where arg.rank == 1 && arg.isRectangular() {
   if arg.size == 0 || !arg.domain.contains(start) ||
      amount <= 0 || (start + amount - 1 > arg.domain.highBound) then return false;
 
@@ -3868,14 +3868,6 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   return false;
 }
 
-pragma "no doc"
-pragma "last resort"
-inline proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
-                      amount = arg.domain.highBound - start + 1) : bool throws {
-  compilerError("'readline()' is currently only supported for non-strided 1D rectangular arrays");
-}
-
-
 /*
   Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
   This function always does a binary read (i.e. it is not aware of UTF-8 etc)
@@ -3885,7 +3877,7 @@ inline proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.dom
   on the line length (and on stripNewline since the newline will be counted if it is
   stored in the array).
 
-  :arg arg: A 1D DefaultRectangular array storing int(8) or uint(8) which must have at least 1 element.
+  :arg arg: A 1D DefaultRectangular non-strided array storing int(8) or uint(8) which must have at least 1 element.
   :arg maxSize: The maximum amount of bytes to read.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
@@ -3894,7 +3886,7 @@ inline proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.dom
   :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
  */
 proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() {
+      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() && !arg.stridable {
   if arg.size == 0 || maxSize == 0 ||
   ( arg.domain.lowBound + maxSize - 1 > arg.domain.highBound) then return 0;
 
@@ -3934,6 +3926,12 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
   }
   return 0;
 
+}
+
+pragma "no doc"
+pragma "last resort"
+inline proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws {
+  compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
 }
 
 /*
@@ -4808,15 +4806,8 @@ proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
 deprecated "readline is deprecated. Use :proc:`readLine` instead"
 proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
               amount = arg.domain.highBound - start + 1) : bool throws
-                where arg.rank == 1 && arg.isRectangular() && ! arg.stridable {
+                where arg.rank == 1 && arg.isRectangular() {
   return stdin.readline(arg, numRead, start, amount);
-}
-
-pragma "last resort"
-pragma "no doc"
-proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
-              amount = arg.domain.highBound - start + 1) : bool throws {
-  compilerError("'readline()' is currently only supported for non-strided 1D rectangular arrays");
 }
 
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
