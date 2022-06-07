@@ -439,9 +439,6 @@ void CallInfo::stringify(std::ostream& ss,
     actual.stringify(ss, stringKind);
   }
   ss << ")";
-  if (stringKind != StringifyKind::CHPL_SYNTAX) {
-    ss << "\n";
-  }
 }
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
