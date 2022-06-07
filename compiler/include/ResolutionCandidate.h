@@ -112,6 +112,8 @@ public:
   std::vector<ImplementsStmt*> witnessIstms;
   // Is this a CG "interim instantiation"?
   bool                    isInterimInstantiation;
+  // Does any argument use promotion?
+  bool                    anyPromotes;
 
   Symbol*                 failingArgument; // actual or formal
   ResolutionCandidateFailureReason reason;
