@@ -15,7 +15,7 @@ class FixedOffset: TZInfo {
     this.dstoffset = new timedelta(minutes=dstoffset);
   }
 
-  override proc utcoffset(dt: datetime) {
+  override proc utcOffset(dt: datetime) {
     return offset;
   }
   override proc tzname(dt: datetime) {
@@ -24,8 +24,8 @@ class FixedOffset: TZInfo {
   override proc dst(dt: datetime) {
     return dstoffset;
   }
-  override proc fromutc(dt: datetime) {
-    var dtoff = dt.utcoffset();
+  override proc fromUtc(dt: datetime) {
+    var dtoff = dt.utcOffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
     var dt2 = dt + delta;
@@ -102,9 +102,9 @@ proc test_zones() {
   assert(t1.tzinfo == est);
   assert(t2.tzinfo == utc);
   assert(t3.tzinfo == met);
-  assert(t1.utcoffset() == new timedelta(minutes=-300));
-  assert(t2.utcoffset() == new timedelta(minutes=0));
-  assert(t3.utcoffset() == new timedelta(minutes=60));
+  assert(t1.utcOffset() == new timedelta(minutes=-300));
+  assert(t2.utcOffset() == new timedelta(minutes=0));
+  assert(t3.utcOffset() == new timedelta(minutes=60));
   assert(t1.tzname() == "EST");
   assert(t2.tzname() == "UTC");
   assert(t3.tzname() == "MET");
@@ -173,7 +173,7 @@ proc test_tz_aware_arithmetic() {
   //            (nowaware base - nowawareplus base) +
   //            (nowawareplus offset - nowaware offset) =
   //            -delta + nowawareplus offset - nowaware offset
-  var expected = nowawareplus.utcoffset() - nowaware.utcoffset() - delta;
+  var expected = nowawareplus.utcOffset() - nowaware.utcOffset() - delta;
   assert(got == expected);
 
   // Try max possible difference.
@@ -194,7 +194,7 @@ proc test_tzinfo_now() {
   var another = datetime.now(off42);
   var again = datetime.now(tz=off42);
   assert(another.tzinfo == again.tzinfo);
-  assert(another.utcoffset() == new timedelta(minutes=42));
+  assert(another.utcOffset() == new timedelta(minutes=42));
 
   // We don't know which time zone we're in, and don't have a tzinfo
   // class to represent it, so seeing whether a tz argument actually
@@ -205,7 +205,7 @@ proc test_tzinfo_now() {
   for 0..2 {
     var now = datetime.now(weirdtz);
     assert(now.tzinfo == weirdtz);
-    var utcnow = datetime.utcnow().replace(tzinfo=utc);
+    var utcnow = datetime.utcNow().replace(tzinfo=utc);
     var now2 = utcnow.astimezone(weirdtz);
     if abs(now - now2) < new timedelta(seconds=30) {
       break;
@@ -234,17 +234,17 @@ proc test_tzinfo_fromtimestamp() {
 
   var ts = getTimeOfDay()(1);
   // Ensure it doesn't require tzinfo (i.e., that this doesn't blow up).
-  var base = datetime.fromtimestamp(ts);
+  var base = datetime.fromTimestamp(ts);
   // Try with and without naming the keyword.
   var off42 = new shared FixedOffset(42, "42");
-  var another = datetime.fromtimestamp(ts, off42);
-  var again = datetime.fromtimestamp(ts, tz=off42);
+  var another = datetime.fromTimestamp(ts, off42);
+  var again = datetime.fromTimestamp(ts, tz=off42);
   assert(another.tzinfo == again.tzinfo);
-  assert(another.utcoffset() == new timedelta(minutes=42));
+  assert(another.utcOffset() == new timedelta(minutes=42));
 
   // Try to make sure tz= actually does some conversion.
   var timestamp = 1000000000;
-  var utcdatetime = datetime.utcfromtimestamp(timestamp);
+  var utcdatetime = datetime.utcFromTimestamp(timestamp);
   // In POSIX (epoch 1970), that's 2001-09-09 01:46:40 UTC, give or take.
   // But on some flavor of Mac, it's nowhere near that.  So we can't have
   // any idea here what time that actually is, we can only test that
@@ -252,7 +252,7 @@ proc test_tzinfo_fromtimestamp() {
   var utcoffset = new timedelta(hours=-15, minutes=39); // arbitrary, but not zero
   var tz = new shared FixedOffset(utcoffset, "tz", new timedelta());
   var expected = utcdatetime + utcoffset;
-  var got = datetime.fromtimestamp(timestamp, tz);
+  var got = datetime.fromTimestamp(timestamp, tz);
   assert(expected == got.replace(tzinfo=nil));
 }
 
@@ -306,7 +306,7 @@ proc test_utctimetuple() {
       super.init(dofs);
       this.uofs = new timedelta(minutes=uofs);
     }
-    override proc utcoffset(dt) {
+    override proc utcOffset(dt) {
       return uofs;
     }
   }
@@ -323,7 +323,7 @@ proc test_utctimetuple() {
     assert(13 == t.tm_min);
     assert(d.second == t.tm_sec);
     assert(d.weekday():int == t.tm_wday);
-    assert(d.toordinal() - (new date(1, 1, 1)).toordinal() + 1 == t.tm_yday);
+    assert(d.toOrdinal() - (new date(1, 1, 1)).toOrdinal() + 1 == t.tm_yday);
     assert(0 == t.tm_isdst);
   }
 
@@ -367,10 +367,10 @@ proc test_tzinfo_isoformat() {
       var timestr = '04:05:59' + if us != 0 then '.987001' else '';
       var ofsstr = d.tzname();
       var tailstr = timestr + ofsstr;
-      var iso = d.isoformat();
+      var iso = d.isoFormat();
       assert(iso == datestr + 'T' + tailstr);
-      assert(iso == d.isoformat('T'));
-      assert(d.isoformat('k') == datestr + 'k' + tailstr);
+      assert(iso == d.isoFormat('T'));
+      assert(d.isoFormat('k') == datestr + 'k' + tailstr);
       //assert(str(d) == datestr + ' ' + tailstr);
     }
   }
@@ -448,9 +448,9 @@ proc test_more_astimezone() {
   // Replacing with different tzinfo does adjust.
   var got = dt.astimezone(fm5h);
   assert(got.tzinfo == fm5h);
-  assert(got.utcoffset() == new timedelta(hours=-5));
-  var expected = dt - dt.utcoffset();  // in effect, convert to UTC
-  expected += fm5h.utcoffset(dt);  // and from there to local time
+  assert(got.utcOffset() == new timedelta(hours=-5));
+  var expected = dt - dt.utcOffset();  // in effect, convert to UTC
+  expected += fm5h.utcOffset(dt);  // and from there to local time
   expected = expected.replace(tzinfo=fm5h); // and attach new tzinfo
   assert(got.getdate() == expected.getdate());
   assert(got.gettime() == expected.gettime());
@@ -463,7 +463,7 @@ proc test_aware_subtract() {
   // Ensure that utcoffset() is ignored when the operands have the
   // same tzinfo member.
   class OperandDependentOffset: TZInfo {
-    override proc utcoffset(dt: datetime) {
+    override proc utcOffset(dt: datetime) {
       if dt.minute < 10 {
         // d0 and d1 equal after adjustment
         return new timedelta(minutes=dt.minute);
@@ -524,7 +524,7 @@ proc test_mixed_compare() {
     proc init() {
       offset = new timedelta(minutes=22);
     }
-    override proc utcoffset(dt: datetime) {
+    override proc utcOffset(dt: datetime) {
       offset += new timedelta(minutes=1);
       return offset;
     }
@@ -533,8 +533,8 @@ proc test_mixed_compare() {
   var v = new shared Varies();
   t1 = t2.replace(tzinfo=v);
   t2 = t2.replace(tzinfo=v);
-  assert(t1.utcoffset() == new timedelta(minutes=23));
-  assert(t2.utcoffset() == new timedelta(minutes=24));
+  assert(t1.utcOffset() == new timedelta(minutes=23));
+  assert(t2.utcOffset() == new timedelta(minutes=24));
   assert(t1 == t2);
 
   // But if they're not identical, it isn't ignored.
