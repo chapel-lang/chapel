@@ -1,6 +1,6 @@
 pkgbase = chapel-git
 	pkgdesc = Programming language designed for productive parallel computing at scale
-	pkgver = 1.26.cc0241ef9c
+	pkgver = 1.27.0.7648.gbcc4ac3109
 	pkgrel = 1
 	url = https://chapel-lang.org/
 	arch = x86_64
@@ -12,7 +12,7 @@ pkgbase = chapel-git
 	depends = perl
 	depends = llvm
 	depends = clang
-	source = git+https://github.com/mppf/chapel.git
+	source = git+https://github.com/chapel-lang/chapel.git
 	sha256sums = SKIP
 
 pkgname = chapel-git
