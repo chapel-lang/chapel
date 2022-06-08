@@ -97,8 +97,7 @@ mynormalizepath () {
 
   # Normalize $P more - normalize path
   P=`(unset CDPATH && cd "$P" && pwd)`
-
-  
+ 
   # Make sure we can cd into $P
   if [ $? -ne 0 ]
   then

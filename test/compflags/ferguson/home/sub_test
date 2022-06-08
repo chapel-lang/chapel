@@ -116,8 +116,7 @@ sub check {
   #print "RUNNING $exe --print-chpl-home\n";
   $got = `$exe --print-chpl-home 2>&1`;
   #print "GOT IS $got\n";
-
-  
+ 
   my @lines = split('\n', $got);
   my $prefix_line = "configured prefix";
   my ($gothome, $gotexe) = ("", "") ;
