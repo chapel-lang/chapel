@@ -5580,6 +5580,14 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
         continue;
       }
 
+      if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
+          formalVt->symbol->hasFlag(FLAG_TUPLE)) {
+        // don't worry about tuple types for now
+        // TODO: do worry about tuples containing numeric types that are
+        // converted
+        continue;
+      }
+
       if (isMatchingImagComplex(actualVt, formalVt, anyImagComplexArgs)) {
         // don't worry about imag vs complex
         continue;
