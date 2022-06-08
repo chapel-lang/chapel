@@ -105,6 +105,17 @@ Resolver::moduleStmtResolver(Context* context, const Module* mod,
 }
 
 Resolver
+Resolver::moduleStmtScopeResolver(Context* context, const Module* mod,
+                                  const AstNode* modStmt,
+                                  ResolutionResultByPostorderID& byId) {
+  auto ret = Resolver(context, mod, byId, nullptr);
+  ret.curStmt = modStmt;
+  ret.byPostorder.setupForSymbol(mod);
+  ret.scopeResolveOnly = true;
+  return ret;
+}
+
+Resolver
 Resolver::initialSignatureResolver(Context* context, const Function* fn,
                                    ResolutionResultByPostorderID& byId)
 {
@@ -164,6 +175,55 @@ Resolver::functionResolver(Context* context,
 
   return ret;
 }
+
+Resolver
+Resolver::functionScopeResolver(Context* context,
+                                const Function* fn,
+                                ResolutionResultByPostorderID& byId) {
+
+  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, fn->id());
+  std::vector<QualifiedType> formalTypes;
+  int n = uSig->numFormals();
+  for (int i = 0; i < n; i++) {
+    formalTypes.push_back(QualifiedType(QualifiedType::UNKNOWN,
+                                        UnknownType::get(context)));
+  }
+  auto whereTbd = TypedFnSignature::WhereClauseResult::WHERE_TBD;
+  const TypedFnSignature* sig =
+    TypedFnSignature::get(context, uSig,
+                          std::move(formalTypes),
+                          whereTbd,
+                          /* needsInstantiation */ false,
+                          /* instantiatedFrom */ nullptr,
+                          /* parentFn */ nullptr,
+                          /* formalsInstantiated */ Bitmap());
+
+  auto ret = Resolver(context, fn, byId, nullptr);
+  ret.typedSignature = sig;
+  ret.signatureOnly = false;
+  ret.scopeResolveOnly = true;
+  ret.fnBody = fn->body();
+
+  assert(sig);
+  assert(sig->untyped());
+
+  ret.byPostorder.setupForFunction(fn);
+
+  // set the resolution results for the formals according to
+  // the typedFnSignature (which just has UnknownType in it for all args
+  // here)
+  int nFormals = sig->numFormals();
+  for (int i = 0; i < nFormals; i++) {
+    const Decl* decl = uSig->formalDecl(i);
+    const auto& qt = sig->formalType(i);
+
+    ResolvedExpression& r = ret.byPostorder.byAst(decl);
+    r.setType(qt);
+  }
+
+  return ret;
+}
+
 
 // set up Resolver to initially resolve field declaration types
 Resolver
@@ -495,6 +555,9 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
 
 // useType will be used to set the type if it is not nullptr
 void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
+  if (scopeResolveOnly)
+    return;
+
   // Figure out the Kind of the declaration
   auto qtKind = qualifiedTypeKindForDecl(decl);
 
@@ -840,6 +903,10 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
 
 void Resolver::resolveTupleDecl(const TupleDecl* td,
                                 const Type* useType) {
+  if (scopeResolveOnly) {
+    return;
+  }
+
   QualifiedType::Kind declKind = (IntentList) td->intentOrKind();
   QualifiedType useT;
 
@@ -1632,6 +1699,8 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
 }
 
 void Resolver::exit(const Call* call) {
+  if (scopeResolveOnly)
+    return;
 
   auto op = call->toOpCall();
   if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
@@ -1752,6 +1821,9 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
+  if (scopeResolveOnly)
+    return;
+
   // resolve a.x where a is a record/class and x is a field or parenless method
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
@@ -1794,6 +1866,8 @@ void Resolver::resolveNewForRecord(const uast::New* node,
 }
 
 void Resolver::exit(const uast::New* node) {
+  if (scopeResolveOnly)
+    return;
 
   // Fetch the pieces of the type expression.
   const AstNode* typeExpr = node->typeExpression();

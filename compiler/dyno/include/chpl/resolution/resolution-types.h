@@ -1126,7 +1126,7 @@ class ResolvedFunction {
                    ResolutionResultByPostorderID resolutionById,
                    PoiInfo poiInfo)
       : signature_(signature), returnIntent_(returnIntent),
-        resolutionById_(resolutionById), poiInfo_(poiInfo) {}
+        resolutionById_(std::move(resolutionById)), poiInfo_(poiInfo) {}
 
   /** The type signature */
   const TypedFnSignature* signature() const { return signature_; }

@@ -40,6 +40,13 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id);
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id);
 
 /**
+  Resolve the contents of a Module but don't resolve any paren-ful function
+  calls or establish types.
+ */
+const ResolutionResultByPostorderID& scopeResolveModule(Context* context,
+                                                        ID id);
+
+/**
   Compute the type for a NamedDecl with a particular id.
  */
 const types::QualifiedType& typeForModuleLevelSymbol(Context* context, ID id);
@@ -196,11 +203,18 @@ const ResolvedFunction* resolveFunction(Context* context,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
 
-
 /**
-  Resolves a concrete function using the above queries.
+  Helper to resolves a concrete function using the above queries.
+  Will return `nullptr` if the function is generic or has a `where false`.
   */
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
+
+/**
+  Compute a ResolvedFunction given a TypedFnSignature, but don't
+  do full resolution of types or paren-ful calls in the body.
+ */
+const ResolvedFunction* scopeResolveConcreteFunction(Context* context,
+                                                     ID id);
 
 /**
   Returns the ResolvedFunction called by a particular
