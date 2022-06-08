@@ -2672,8 +2672,8 @@ operator :(r: range(?), type t: range(?)) {
   // Use explicit conversions, no other additional runtime work.
   proc chpl__addRangeStrides(start, stride, count): start.type {
     proc convert(a,b) param
-      return ( a.type == int(64) && b.type == uint(64) ) ||
-             ( a.type == uint(64) && b.type == int(64) );
+      return ( isIntType(a.type) && isUintType(b.type) ) ||
+             ( isUintType(a.type) && isIntType(b.type) );
 
     proc mul(a,b) return if convert(a,b) then a:int(64) * b:int(64) else a * b;
     proc add(a,b) return if convert(a,b) then a:int(64) + b:int(64) else a + b;
