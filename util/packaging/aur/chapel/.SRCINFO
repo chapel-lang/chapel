@@ -1,0 +1,20 @@
+pkgbase = chapel
+	pkgdesc = Programming language designed for productive parallel computing at scale
+	pkgver = 1.26.0
+	pkgrel = 1
+	url = https://chapel-lang.org/
+	arch = x86_64
+	arch = arm
+	license = Apache
+	makedepends = git
+	makedepends = cmake
+	makedepends = libtool
+	depends = python
+	depends = perl
+	depends = llvm
+	depends = clang
+	depends = gmp
+	source = https://github.com/chapel-lang/chapel/releases/download/1.26.0/chapel-1.26.0.tar.gz
+	sha256sums = ba396b581f0a17f8da3f365a3f8b079b8d2e229a393fbd1756966b0019931ece
+
+pkgname = chapel
