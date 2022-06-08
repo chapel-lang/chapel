@@ -913,6 +913,11 @@ module AutoMath {
   inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
   pragma "no doc"
   inline proc max(x: real(?w), y: real(w)) return if (x > y) | isnan(x) then x else y;
+  pragma "no doc"
+  inline proc max(x: int(?w), y: uint(w)) return if x > y then x:uint(w) else y;
+  pragma "no doc"
+  inline proc max(x: uint(?w), y: int(w)) return if x > y then x else y:uint(w);
+
   /* Returns the maximum value of two arguments using the ``>`` operator
      for comparison.
      If one of the arguments is :proc:`AutoMath.NAN`, the result is also NAN.
@@ -943,6 +948,10 @@ module AutoMath {
   inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
   pragma "no doc"
   inline proc min(x: real(?w), y: real(w)) return if (x < y) | isnan(x) then x else y;
+  pragma "no doc"
+  inline proc min(x: int(?w), y: uint(w)) return if x < y then x else y:int(w);
+  pragma "no doc"
+  inline proc min(x: uint(?w), y: int(w)) return if x < y then x:int(w) else y;
   /* Returns the minimum value of two arguments using the ``<`` operator
      for comparison.
 
