@@ -1,0 +1,2 @@
+bug: iteration over a uint(32) range with count yield int(32)s
+#19958 
