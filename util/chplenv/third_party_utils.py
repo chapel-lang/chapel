@@ -58,25 +58,43 @@ def handle_la(la_path):
                             args.append(tok)
     return args
 
+def filter_libs_skip_arg(arg):
+    if arg == '-pthread':
+        # ignore this flag since it causes problems
+        # if ld is used as the linker (vs clang/gcc/etc),
+        # and since Chapel programs always build with pthreads anyway
+        return True
+
+    return False
+
 # Given bundled_libs and system_libs lists, filters some
 # usual suspects into system_libs and
 # returns (bundled_args, system_args)
 def filter_libs(bundled_libs, system_libs):
     bundled_ret = [ ]
     system_ret = [ ]
+
     for arg in bundled_libs:
-        # put some of the usual suspects into the system args
-        if (arg == '-ldl' or
-            arg == '-lm' or
-            arg == '-lnuma' or
-            arg == '-lpthread' or
-            arg == '-pthread'):
+        if filter_libs_skip_arg(arg):
+            # ignore any args we need to skip
+            pass
+        elif (arg == '-ldl' or
+              arg == '-lm' or
+              arg == '-lnuma' or
+              arg == '-lpthread'):
+            # put some of the usual suspects into the system args
             system_ret.append(arg)
         else:
+            # otherwise include the flag in bundled
             bundled_ret.append(arg)
 
-    # append the system libs
-    system_ret.extend(system_libs)
+    for arg in system_libs:
+        if filter_libs_skip_arg(arg):
+            # ignore any args we need to skip
+            pass
+        else:
+            # otherwise include the flag in system
+            system_ret.append(arg)
 
     return (bundled_ret, system_ret)
 
