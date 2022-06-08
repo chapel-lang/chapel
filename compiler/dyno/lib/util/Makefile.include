@@ -26,6 +26,7 @@ DYNO_UTIL_SRCS =      \
   break.cpp \
   filesystem.cpp \
   string-escapes.cpp \
+  terminal.cpp \
 
 
 SRCS = $(DYNO_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c

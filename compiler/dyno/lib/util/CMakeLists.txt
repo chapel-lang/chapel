@@ -30,4 +30,5 @@ target_sources(libdyno-obj
                filesystem.cpp
                filesystem_help.h
                string-escapes.cpp
+               terminal.cpp
               )
