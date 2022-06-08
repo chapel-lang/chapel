@@ -1950,11 +1950,11 @@ operator :(r: range(?), type t: range(?)) {
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride : int(w)) {
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
