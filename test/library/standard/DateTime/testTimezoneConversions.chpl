@@ -34,7 +34,7 @@ class USTimeZone: TZInfo {
       return stdname;
   }
 
-  override proc utcoffset(dt: datetime) {
+  override proc utcOffset(dt: datetime) {
     return stdoffset + dst(dt);
   }
 
@@ -63,8 +63,8 @@ class USTimeZone: TZInfo {
     }
   }
 
-  override proc fromutc(dt: datetime) {
-    var dtoff = dt.utcoffset();
+  override proc fromUtc(dt: datetime) {
+    var dtoff = dt.utcOffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
     var dt2 = dt + delta;
@@ -84,7 +84,7 @@ class FixedOffset: TZInfo {
     this.dstoffset = new timedelta(minutes=dstoffset);
   }
 
-  override proc utcoffset(dt: datetime) {
+  override proc utcOffset(dt: datetime) {
     return offset;
   }
 
@@ -96,8 +96,8 @@ class FixedOffset: TZInfo {
     return dstoffset;
   }
 
-  override proc fromutc(dt: datetime) {
-    var dtoff = dt.utcoffset();
+  override proc fromUtc(dt: datetime) {
+    var dtoff = dt.utcOffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
     var dt2 = dt + delta;
@@ -279,9 +279,9 @@ proc test_tricky() {
     for tz in (Eastern, Pacific) {
       var first_std_hour = dstoff - new timedelta(hours=2); // 23:MM
       // Convert that to UTC.
-      first_std_hour -= tz.borrow().utcoffset(new datetime(1,1,1));
+      first_std_hour -= tz.borrow().utcOffset(new datetime(1,1,1));
       // Adjust for possibly fake UTC.
-      var asutc = first_std_hour + utc.borrow().utcoffset(new datetime(1,1,1));
+      var asutc = first_std_hour + utc.borrow().utcOffset(new datetime(1,1,1));
       // First UTC hour to convert; this is 4:00 when utc=utc_real &
       // tz=Eastern.
       var asutcbase = asutc.replace(tzinfo=utc);
@@ -300,14 +300,14 @@ proc test_tricky() {
 }
 
 proc test_fromutc() {
-  var now = datetime.utcnow().replace(tzinfo=utc_real);
+  var now = datetime.utcNow().replace(tzinfo=utc_real);
   now = now.replace(tzinfo=Eastern);   // insert correct tzinfo
-  var enow = Eastern.fromutc(now);         // doesn't blow up
+  var enow = Eastern.fromUtc(now);         // doesn't blow up
   assert(enow.tzinfo == Eastern); // has right tzinfo member
 
   // Always converts UTC to standard time.
   class FauxUSTimeZone: USTimeZone {
-    override proc fromutc(dt: datetime) {
+    override proc fromUtc(dt: datetime) {
       return dt + stdoffset;
     }
 
@@ -331,11 +331,11 @@ proc test_fromutc() {
     if wall == 23 {
       expected -= new timedelta(days=1);
     }
-    var got = Eastern.fromutc(start);
+    var got = Eastern.fromUtc(start);
     assert(expected == got);
 
     expected = fstart + FEasternRef.stdoffset;
-    got = FEastern.fromutc(fstart);
+    got = FEastern.fromUtc(fstart);
     assert(expected == got);
 
     // Ensure astimezone() calls fromutc() too.
@@ -351,11 +351,11 @@ proc test_fromutc() {
   fstart = start.replace(tzinfo=FEastern);
   for wall in (0, 1, 1, 2, 3, 4) {
     var expected = start.replace(hour=wall, tzinfo=start.tzinfo);
-    var got = Eastern.fromutc(start);
+    var got = Eastern.fromUtc(start);
     assert(expected == got);
 
     expected = fstart + FEasternRef.stdoffset;
-    got = FEastern.fromutc(fstart);
+    got = FEastern.fromUtc(fstart);
     assert(expected == got);
 
     // Ensure astimezone() calls fromutc() too.
