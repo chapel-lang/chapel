@@ -75,6 +75,32 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
   return QUERY_END(result);
 }
 
+static const ResolutionResultByPostorderID&
+scopeResolveModuleStmt(Context* context, ID id) {
+  QUERY_BEGIN(scopeResolveModuleStmt, context, id);
+
+  assert(id.postOrderId() >= 0);
+
+  // TODO: can we save space better here by having
+  // the ResolutionResultByPostorderID have a different offset
+  // (so it can contain only ids within the requested stmt) or
+  // maybe we can make it sparse with a hashtable or something?
+  ResolutionResultByPostorderID result;
+
+  ID moduleId = parsing::idToParentId(context, id);
+  auto moduleAst = parsing::idToAst(context, moduleId);
+  if (const Module* mod = moduleAst->toModule()) {
+    // Resolve just the requested statement
+    auto modStmt = parsing::idToAst(context, id);
+    auto visitor = Resolver::moduleStmtScopeResolver(context, mod, modStmt,
+                                                     result);
+    modStmt->traverse(visitor);
+  }
+
+  return QUERY_END(result);
+}
+
+
 
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
@@ -115,6 +141,49 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   }
 
   return QUERY_END(result);
+}
+
+const ResolutionResultByPostorderID&
+scopeResolveModule(Context* context, ID id) {
+  QUERY_BEGIN(scopeResolveModule, context, id);
+
+  const AstNode* ast = parsing::idToAst(context, id);
+  assert(ast != nullptr);
+
+  ResolutionResultByPostorderID result;
+
+  if (ast != nullptr) {
+    if (const Module* mod = ast->toModule()) {
+      result.setupForSymbol(mod);
+      for (auto child: mod->children()) {
+        if (child->isComment() ||
+            child->isTypeDecl() ||
+            child->isFunction() ||
+            child->isUse() ||
+            child->isImport()) {
+          // ignore this statement since it is not relevant to
+          // the resolution of module initializers and module-level
+          // variables.
+        } else {
+          ID stmtId = child->id();
+          // resolve the statement
+          const ResolutionResultByPostorderID& resolved =
+            scopeResolveModuleStmt(context, stmtId);
+
+          // copy results for children and the node itself
+          int firstId = stmtId.postOrderId() - stmtId.numContainedChildren();
+          int lastId = firstId + stmtId.numContainedChildren();
+          for (int i = firstId; i <= lastId; i++) {
+            ID exprId(stmtId.symbolPath(), i, 0);
+            result.byIdExpanding(exprId) = resolved.byId(exprId);
+          }
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+
 }
 
 const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
@@ -1374,7 +1443,10 @@ resolveFunctionByInfoQuery(Context* context,
     resolvedPoiInfo.setResolved(true);
     resolvedPoiInfo.setPoiScope(nullptr);
 
-    owned<ResolvedFunction> resolved = toOwned(new ResolvedFunction(sig, fn->returnIntent(), resolutionById, resolvedPoiInfo));
+    owned<ResolvedFunction> resolved =
+      toOwned(new ResolvedFunction(sig, fn->returnIntent(),
+                                   std::move(resolutionById),
+                                   resolvedPoiInfo));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -1411,19 +1483,65 @@ const ResolvedFunction* resolveFunction(Context* context,
   return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
 }
 
+
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
-  auto func = parsing::idToAst(context, id)->toFunction();
-  if (func == nullptr)
+  if (id.isEmpty())
     return nullptr;
 
-  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, func);
+  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
-  if (sig->needsInstantiation())
+  if (sig->needsInstantiation()) {
     return nullptr;
+  }
+
+  auto whereFalse =
+    resolution::TypedFnSignature::WhereClauseResult::WHERE_FALSE;
+  if (sig->whereClauseResult() == whereFalse) {
+    return nullptr;
+  }
 
   const ResolvedFunction* ret = resolveFunction(context, sig, nullptr);
   return ret;
 }
+
+static const owned<ResolvedFunction>&
+scopeResolveConcreteFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(scopeResolveConcreteFunctionQuery, context, id);
+
+  const AstNode* ast = parsing::idToAst(context, id);
+  const Function* fn = ast->toFunction();
+
+  ResolutionResultByPostorderID resolutionById;
+  const TypedFnSignature* sig = nullptr;
+  owned<ResolvedFunction> result;
+
+  if (fn) {
+    auto visitor = Resolver::functionScopeResolver(context, fn, resolutionById);
+
+    // visit the function (formals and body) to scope resolve
+    fn->traverse(visitor);
+
+    sig = visitor.typedSignature;
+  }
+
+  result = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
+                                        std::move(resolutionById),
+                                        PoiInfo()));
+
+  return QUERY_END(result);
+}
+
+const ResolvedFunction* scopeResolveConcreteFunction(Context* context,
+                                                     ID id) {
+  if (id.isEmpty())
+    return nullptr;
+
+  const owned<ResolvedFunction>& result =
+    scopeResolveConcreteFunctionQuery(context, id);
+
+  return result.get();
+}
+
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r) {

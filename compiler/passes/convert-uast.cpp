@@ -124,6 +124,17 @@ struct Converter {
     return ret;
   }
 
+  static bool shouldScopeResolve(UniqueString symbolPath) {
+    // TODO: check for dead modules and don't resolve those
+    return true;
+  }
+  static bool shouldScopeResolve(ID symbolId) {
+    return shouldScopeResolve(symbolId.symbolPath());
+  }
+  static bool shouldScopeResolve(const uast::AstNode* node) {
+    return shouldScopeResolve(node->id());
+  }
+
   static bool shouldResolve(UniqueString symbolPath) {
     // TODO: check for dead modules and don't resolve those
     //return symbolPath == "M" || symbolPath.startsWith("M.");
@@ -2319,26 +2330,23 @@ struct Converter {
 
     // Decide if we want to resolve this function
     bool shouldResolveFunction = shouldResolve(node);
+    bool shouldScopeResolveFunction = shouldResolveFunction ||
+                                      shouldScopeResolve(node);
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     const resolution::ResolvedFunction* resolvedFn = nullptr;
     const resolution::TypedFnSignature* initialSig = nullptr;
     const resolution::PoiScope* poiScope = nullptr;
 
-    if (shouldResolveFunction) {
-      auto uSig = resolution::UntypedFnSignature::get(context, node);
-      initialSig = resolution::typedSignatureInitial(context, uSig);
-      auto whereFalse =
-        resolution::TypedFnSignature::WhereClauseResult::WHERE_FALSE;
-      if (initialSig->whereClauseResult() != whereFalse) {
-        if (!initialSig->needsInstantiation()) {
-          // poiScope not needed for concrete functions
-          poiScope = nullptr;
-          resolvedFn = resolveFunction(context, initialSig, poiScope);
-          if (resolvedFn) {
-            resolved = &resolvedFn->resolutionById();
-          }
-        }
+    if (shouldResolveFunction || shouldScopeResolveFunction) {
+      if (shouldResolveFunction) {
+        resolvedFn = resolution::resolveConcreteFunction(context, node->id());
+      } else {
+        resolvedFn =
+          resolution::scopeResolveConcreteFunction(context, node->id());
+      }
+      if (resolvedFn) {
+        resolved = &resolvedFn->resolutionById();
       }
     }
 
@@ -2604,13 +2612,19 @@ struct Converter {
 
     // Decide if we want to resolve this module
     bool shouldResolveModule = shouldResolve(node);
+    bool shouldScopeResolveModule = shouldResolveModule || shouldResolve(node);
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
 
-    if (shouldResolveModule) {
+    if (shouldResolveModule || shouldScopeResolveModule) {
       // Resolve the module
-      const auto& tmp = resolution::resolveModule(context, node->id());
-      resolved = &tmp;
+      if (shouldResolveModule) {
+        const auto& tmp = resolution::resolveModule(context, node->id());
+        resolved = &tmp;
+      } else {
+        const auto& tmp = resolution::scopeResolveModule(context, node->id());
+        resolved = &tmp;
+      }
     }
 
     // Push the current module name before descending into children.

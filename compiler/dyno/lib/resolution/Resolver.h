@@ -42,8 +42,9 @@ struct Resolver {
   std::vector<const uast::Decl*> declStack;
   std::vector<const Scope*> scopeStack;
   bool signatureOnly = false;
-  const uast::Block* fnBody = nullptr;
   bool fieldOrFormalsComputed = false;
+  bool scopeResolveOnly = false;
+  const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
   const uast::Call* inLeafCall = nullptr;
@@ -83,6 +84,12 @@ struct Resolver {
                      const uast::AstNode* modStmt,
                      ResolutionResultByPostorderID& byPostorder);
 
+  // set up Resolver to scope resolve a Module
+  static Resolver
+  moduleStmtScopeResolver(Context* context, const uast::Module* mod,
+                          const uast::AstNode* modStmt,
+                          ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to resolve a potentially generic Function signature
   static Resolver
   initialSignatureResolver(Context* context, const uast::Function* fn,
@@ -104,6 +111,11 @@ struct Resolver {
                    const PoiScope* poiScope,
                    const TypedFnSignature* typedFnSignature,
                    ResolutionResultByPostorderID& byPostorder);
+
+  // set up Resolver to scope resolve a Function
+  static Resolver
+  functionScopeResolver(Context* context, const uast::Function* fn,
+                        ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to initially resolve field declaration types
   static Resolver
