@@ -1,2 +1,1 @@
 COMPOPTS <= --baseline
-COMPOPTS <= --fast
