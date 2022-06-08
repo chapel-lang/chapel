@@ -2168,18 +2168,18 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator ==(a: uint(64), b: int(64)) {
+  inline operator ==(a: uint(?w), b: int(w)) {
     //
     // If b's negative, these obviously aren't equal; if it's not
     // negative, it can be cast to an int
     //
-    return !(b < 0) && (a == b:uint(64));
+    return !(b < 0) && (a == b:uint(w));
   }
   //
   // the dual of the above
   //
-  inline operator ==(a: int(64), b: uint(64)) {
-    return !(a < 0) && (a:uint(64) == b);
+  inline operator ==(a: int(?w), b: uint(w)) {
+    return !(a < 0) && (a:uint(w) == b);
   }
 
   // non-param/param and param/non-param
@@ -2189,11 +2189,11 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator !=(a: uint(64), b: int(64)) {
-    return (b < 0) || (a != b:uint(64));
+  inline operator !=(a: uint(?w), b: int(w)) {
+    return (b < 0) || (a != b:uint(w));
   }
-  inline operator !=(a: int(64), b: uint(64)) {
-    return (a < 0) || (a:uint(64) != b);
+  inline operator !=(a: int(?w), b: uint(w)) {
+    return (a < 0) || (a:uint(w) != b);
   }
 
   // non-param/param and param/non-param
@@ -2202,84 +2202,84 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator >(a: uint(64), b: int(64)) {
-    return (b < 0) || (a > b: uint(64));
+  inline operator >(a: uint(?w), b: int(w)) {
+    return (b < 0) || (a > b: uint(w));
   }
-  inline operator >(a: int(64), b: uint(64)) {
-    return !(a < 0) && (a: uint(64) > b);
+  inline operator >(a: int(?w), b: uint(w)) {
+    return !(a < 0) && (a: uint(w) > b);
   }
 
   // non-param/param and param/non-param
   // non-param/param version not necessary since > above works fine for that
-  inline operator >(param a: uint(64), b: uint(64)) param where a == 0 {
+  inline operator >(param a: uint(?w), b: uint(w)) param where a == 0 {
     return false;
   }
-  inline operator >(param a: uint(64), b: uint(64)) {
+  inline operator >(param a: uint(?w), b: uint(w)) {
     return __primitive(">", a, b);
   }
-  inline operator >(param a: int(64), b: int(64)) {
+  inline operator >(param a: int(?w), b: int(w)) {
     return __primitive(">", a, b);
   }
 
 
   // non-param/non-param
-  inline operator <(a: uint(64), b: int(64)) {
-    return !(b < 0) && (a < b:uint(64));
+  inline operator <(a: uint(?w), b: int(w)) {
+    return !(b < 0) && (a < b:uint(w));
   }
-  inline operator <(a: int(64), b: uint(64)) {
-    return (a < 0) || (a:uint(64) < b);
+  inline operator <(a: int(?w), b: uint(w)) {
+    return (a < 0) || (a:uint(w) < b);
   }
 
   // non-param/param and param/non-param
   // param/non-param version not necessary since < above works fine for that
-  inline operator <(a: uint(64), param b: uint(64)) param where b == 0 {
+  inline operator <(a: uint(?w), param b: uint(w)) param where b == 0 {
     return false;
   }
-  inline operator <(a: uint(64), param b: uint(64)) {
+  inline operator <(a: uint(?w), param b: uint(w)) {
     return __primitive("<", a, b);
   }
-  inline operator <(a: int(64), param b: int(64)) {
+  inline operator <(a: int(?w), param b: int(w)) {
     return __primitive("<", a, b);
   }
 
 
 
   // non-param/non-param
-  inline operator >=(a: uint(64), b: int(64)) {
-    return (b < 0) || (a >= b: uint(64));
+  inline operator >=(a: uint(?w), b: int(w)) {
+    return (b < 0) || (a >= b: uint(w));
   }
-  inline operator >=(a: int(64), b: uint(64)) {
-    return !(a < 0) && (a: uint(64) >= b);
+  inline operator >=(a: int(?w), b: uint(w)) {
+    return !(a < 0) && (a: uint(w) >= b);
   }
 
   // non-param/param and param/non-param
-  inline operator >=(a: uint(64), param b: uint(64)) param where b == 0 {
+  inline operator >=(a: uint(?w), param b: uint(w)) param where b == 0 {
     return true;
   }
-  inline operator >=(a: uint(64), param b: uint(64)) {
+  inline operator >=(a: uint(?w), param b: uint(w)) {
     return __primitive(">=", a, b);
   }
-  inline operator >=(a: int(64), param b: int(64)) {
+  inline operator >=(a: int(?w), param b: int(w)) {
     return __primitive(">=", a, b);
   }
 
 
   // non-param/non-param
-  inline operator <=(a: uint(64), b: int(64)) {
-    return !(b < 0) && (a <= b: uint(64));
+  inline operator <=(a: uint(?w), b: int(w)) {
+    return !(b < 0) && (a <= b: uint(w));
   }
-  inline operator <=(a: int(64), b: uint(64)) {
-    return (a < 0) || (a:uint(64) <= b);
+  inline operator <=(a: int(?w), b: uint(w)) {
+    return (a < 0) || (a:uint(w) <= b);
   }
 
   // non-param/param and param/non-param
-  inline operator <=(param a: uint(64), b: uint(64)) param where a == 0 {
+  inline operator <=(param a: uint(?w), b: uint(w)) param where a == 0 {
     return true;
   }
-  inline operator <=(param a: uint(64), b: uint(64)) {
+  inline operator <=(param a: uint(?w), b: uint(w)) {
     return __primitive("<=", a, b);
   }
-  inline operator <=(param a: int(64), b: int(64)) {
+  inline operator <=(param a: int(?w), b: int(w)) {
     return __primitive("<=", a, b);
   }
 
