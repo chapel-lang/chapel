@@ -11,11 +11,11 @@ foo1 expect int(8), found int(8)
 foo2 expect int(8), found int(8)
 foo3 expect int(8), found int(8)
 foo4 expect int(16), found int(16)
-foo5 expect int, found int
+foo5 expect int(32), found int(32)
 foo6 expect int(32), found int(32)
 foo7 expect int(32), found int(32)
 bar1 expect int(16), found int(16)
-bar2 expect int, found int
+bar2 expect int(32), found int(32)
 bar3 expect int(16), found int(16)
 bar4 expect int(32), found int(32)
 baz1 expect uint, found uint
