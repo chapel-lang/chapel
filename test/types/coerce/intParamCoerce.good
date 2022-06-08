@@ -7,10 +7,10 @@ In boo128
 
 uint(64)
 In foo
-In bar64
-In baz64
-In goo128
-In boo128
+In bar32
+In baz32
+In goo64
+In boo64
 
 int(32)
 In foo
