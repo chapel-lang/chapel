@@ -1,4 +1,5 @@
 use IO;
+import SysBasic.EEOF;
 
 config const filename = "inteof-test.nums";
 config const verbose = false;

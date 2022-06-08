@@ -968,10 +968,10 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
       var threadResults: [0..#maxThreads] eltType = 0;
 
       coforall tid in 0..#maxThreads {
-        const startid = localDomain.low + tid * iterPerThread;
+        const startid = localDomain.lowBound + tid * iterPerThread;
         const temp_endid = startid + iterPerThread - 1;
-        const endid = if localDomain.high < temp_endid
-                      then  localDomain.high else temp_endid;
+        const endid = if localDomain.highBound < temp_endid
+                      then  localDomain.highBound else temp_endid;
         var myResult: eltType = 0;
         for ind in startid..endid {
           myResult += A.localAccess(ind) * B.localAccess(ind);
@@ -1093,8 +1093,8 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
         CC: [blockDom] eltType;
 
     for (jj,kk) in {myChunk by blockSize, Bdim0 by blockSize} {
-      const jMax = min(jj+blockSize-1, myChunk.high);
-      const kMax = min(kk+blockSize-1, Bdim0.high);
+      const jMax = min(jj+blockSize-1, myChunk.highBound);
+      const kMax = min(kk+blockSize-1, Bdim0.highBound);
       const jRange = 0..jMax-jj;
       const kRange = 0..kMax-kk;
 
@@ -1103,7 +1103,7 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
           BB[j,k] = BMat[kB,jB];
 
       for ii in Adim0 by blockSize {
-        const iMax = min(ii+blockSize-1, Adim0.high);
+        const iMax = min(ii+blockSize-1, Adim0.highBound);
         const iRange = 0..iMax-ii;
 
         for (iB, i) in zip(ii..iMax, 0..) do
@@ -2770,10 +2770,10 @@ module Sparse {
   /* Return a CSR domain constructed from internal representation */
   proc CSRDomain(parentDom: domain(2), indices: [?nnzDom], indptr: [?indDom])
         where indDom.rank == 1 && nnzDom.rank == 1 {
-    const rowRange = parentDom.dim(0).low..parentDom.dim(0).high;
+    const rowRange = parentDom.dim(0).lowBound..parentDom.dim(0).highBound;
     var ADom: sparse subdomain(parentDom) dmapped CS(sortedIndices=false);
 
-    ADom.startIdxDom = {rowRange.low..rowRange.high+1};
+    ADom.startIdxDom = {rowRange.lowBound..rowRange.highBound+1};
     ADom.startIdx = indptr;
     ADom._nnz = indices.size;
     ADom.nnzDom = {0..#indices.size};
@@ -2952,7 +2952,7 @@ module Sparse {
      */
 
     // major axis (or row) for result matrix
-    var indPtr: [rowRange.low..rowRange.high+1] idxType;
+    var indPtr: [rowRange.lowBound..rowRange.highBound+1] idxType;
 
     pass1(A, B, indPtr);
 
@@ -2988,9 +2988,9 @@ module Sparse {
 
     type idxType = ADom.idxType;
 
-    var mask: [col_range.low..col_range.high] idxType;
-    mask = col_range.low-1;    // init to something not in col range
-    indPtr[col_range.low] = 0; // col indices definitely start at 0
+    var mask: [col_range.lowBound..col_range.highBound] idxType;
+    mask = col_range.lowBound-1;    // init to something not in col range
+    indPtr[col_range.lowBound] = 0; // col indices definitely start at 0
     var nnz = 0: idxType;
 
     // Rows of output matrix C

@@ -26,6 +26,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
+#include "chpl/uast/While.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -303,6 +304,47 @@ static void test8() {
   assert(errors.size() == 0);
 }
 
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  errors.clear();
+  ctx.setErrorHandler(collectErrors);
+
+  auto iterText = R""""(
+                   iter myIter() {
+                     var i : int;
+                     while __primitive("C for loop",
+                             __primitive("=", i, 0),
+                             __primitive("<=", i, 9),
+                             __primitive("+=", i, 1)) {
+                       yield i;
+                     }
+                   }
+
+                   var x = 0;
+                   for i in myIter() {
+                     __primitive("+=", x, i);
+                   }
+                   )"""";
+  const Module* m = parseModule(context, iterText);
+  auto loop = m->stmt(2)->toFor();
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  auto idx = rr.byAst(loop->index());
+  assert(idx.type().type() == IntType::get(context, 0));
+
+  const TypedFnSignature* sig = rr.byAst(loop->iterand()).mostSpecific().only();
+  auto fn = resolveFunction(context, sig, nullptr);
+  auto rf = fn->resolutionById();
+  auto whileLoop = m->stmt(0)->toFunction()->stmt(1)->toWhile();
+  auto cond = rf.byAst(whileLoop->condition());
+  assert(cond.type().type() == BoolType::get(context, 0));
+
+  assert(errors.size() == 0);
+}
+
 int main() {
   test1();
   test2();
@@ -312,6 +354,7 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
 
   return 0;
 }

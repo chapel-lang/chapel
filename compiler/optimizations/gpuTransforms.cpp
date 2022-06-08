@@ -45,6 +45,16 @@ extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
 
 struct OutlineInfo {
+  // Given a CForLoop that we want to outline into a function for a GPU kernel
+  // extract the loopIndices, lowerBounds, and upperBound and populate it with
+  // boilerplate computation to calculate what index the kernel should operate
+  // on given its thread ID. After buildStubOutlinedFunction is finished its up
+  // to the caller to populate its body with the body of the loop and to call
+  // the outlined function. It's possible that we fail to build the function if
+  // the loop boundaries don't represent a range if this is the case we return
+  // false and the caller should stop trying to outline.
+  bool buildStubOutlinedFunction(CForLoop* loop);
+
   CForLoop* loop = NULL;
 
   std::vector<Symbol*> loopIndices;
@@ -56,14 +66,17 @@ struct OutlineInfo {
   std::vector<Symbol*> kernelActuals;
 
   SymbolMap copyMap;
+
+  private:
+  bool extractIndicesAndLowerBounds(CForLoop* loop);
+  bool extractUpperBound(CForLoop* loop);
+  void generateIndexComputation();
 };
 
 static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
                                                 const char *varName,
                                                 PrimitiveTag prim,
                                                 Type *primReturnType);
-
-static void generateIndexComputation(OutlineInfo& info);
 
 static void generateEarlyReturn(OutlineInfo& info);
 
@@ -77,6 +90,7 @@ static bool shouldOutlineLoopHelp(BlockStmt* blk,
 static SymExpr* hasOuterVarAccesses(FnSymbol* fn);
 static void markGPUSuitableLoops();
 
+static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop);
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   LoopStmt* curLoop = LoopStmt::findEnclosingLoop(sym->defPoint);
@@ -129,7 +143,7 @@ static bool isIndexVariable(OutlineInfo& info, Symbol* sym) {
   return std::find(indices.begin(), indices.end(), sym) != indices.end();
 }
 
-static void extractUpperBound(CForLoop* loop, OutlineInfo& info) {
+bool OutlineInfo::extractUpperBound(CForLoop* loop) {
   if(BlockStmt* bs = toBlockStmt(loop->testBlockGet())) {
     for_exprs_postorder (expr, bs) {
       if(CallExpr *call = toCallExpr(expr)) {
@@ -137,9 +151,9 @@ static void extractUpperBound(CForLoop* loop, OutlineInfo& info) {
           if(SymExpr *symExpr = toSymExpr(call->get(2))) {
 
             SymExpr* lhsSymExpr = toSymExpr(call->get(1));
-            INT_ASSERT(lhsSymExpr && lhsSymExpr->symbol() == info.loopIndices[0]);
+            INT_ASSERT(lhsSymExpr && lhsSymExpr->symbol() == this->loopIndices[0]);
 
-            info.upperBound = symExpr->symbol();
+            this->upperBound = symExpr->symbol();
 
             break;
           }
@@ -148,14 +162,10 @@ static void extractUpperBound(CForLoop* loop, OutlineInfo& info) {
     }
   }
 
-  if (info.upperBound == NULL) {
-    INT_FATAL("Unexpected upper bound for loop identified for extraction as "
-              "GPU kernel");
-  }
+  return this->upperBound != NULL;
 }
 
-static void extractIndicesAndLowerBounds(CForLoop* loop,
-                                         OutlineInfo& info) {
+bool OutlineInfo::extractIndicesAndLowerBounds(CForLoop* loop) {
   if(BlockStmt* bs = toBlockStmt(loop->initBlockGet())) {
     for_alist (expr, bs->body) {
       if(CallExpr *call = toCallExpr(expr)) {
@@ -168,18 +178,19 @@ static void extractIndicesAndLowerBounds(CForLoop* loop,
           INT_ASSERT(idxSymExpr);
           INT_ASSERT(boundSymExpr);
 
-          info.loopIndices.push_back(idxSymExpr->symbol());
-          info.lowerBounds.push_back(boundSymExpr->symbol());
+          this->loopIndices.push_back(idxSymExpr->symbol());
+          this->lowerBounds.push_back(boundSymExpr->symbol());
         }
       }
     }
 
-    INT_ASSERT(bs->body.length == (int)info.loopIndices.size());
-    INT_ASSERT(bs->body.length == (int)info.lowerBounds.size());
+    INT_ASSERT(bs->body.length == (int)this->loopIndices.size());
+    INT_ASSERT(bs->body.length == (int)this->lowerBounds.size());
+  } else {
+    return false;
   }
-  else {
-    INT_FATAL("Unexpected initBlock in CForLoop");
-  }
+
+  return true;
 }
 
 static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint, const char* name,
@@ -190,21 +201,29 @@ static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint, const char* name
   return var;
 }
 
-static OutlineInfo collectOutlineInfo(CForLoop* loop) {
-  OutlineInfo info;
-  info.loop = loop;
-  extractIndicesAndLowerBounds(loop, info);
-  extractUpperBound(loop, info);
+bool OutlineInfo::buildStubOutlinedFunction(CForLoop* loop) {
+  this->loop = loop;
 
-  info.fn = new FnSymbol("chpl_gpu_kernel");
-  info.fn->addFlag(FLAG_RESOLVED);
-  info.fn->addFlag(FLAG_ALWAYS_RESOLVE);
-  info.fn->addFlag(FLAG_GPU_CODEGEN);
+  // Pattern match loop boundaries to determine lower
+  // and upper bounds. If we fail to match exit early.
+  if(!extractIndicesAndLowerBounds(loop) ||
+     !extractUpperBound(loop))
+  {
+    return false;
+  }
 
-  generateIndexComputation(info);
-  generateEarlyReturn(info);
+  fn = new FnSymbol("chpl_gpu_kernel");
 
-  return info;
+  fn->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
+
+  fn->addFlag(FLAG_RESOLVED);
+  fn->addFlag(FLAG_ALWAYS_RESOLVE);
+  fn->addFlag(FLAG_GPU_CODEGEN);
+
+  generateIndexComputation();
+  generateEarlyReturn(*this);
+
+  return true;
 }
 
 /**
@@ -283,16 +302,13 @@ static Symbol* addLocalVariable(OutlineInfo& info, Symbol* symInLoop) {
  *
  *  Also adds the loopIndex->index to the copyMap
  **/
-static void generateIndexComputation(OutlineInfo& info) {
-
-  FnSymbol* fn = info.fn;
-
-  std::vector<Symbol*>::size_type numIndices = info.loopIndices.size();
-  INT_ASSERT(info.lowerBounds.size() == numIndices);
+void OutlineInfo::generateIndexComputation() {
+  std::vector<Symbol*>::size_type numIndices = loopIndices.size();
+  INT_ASSERT(lowerBounds.size() == numIndices);
 
   for (std::vector<Symbol*>::size_type i=0 ; i<numIndices ; i++) {
-    Symbol* loopIndex  = info.loopIndices[i];
-    Symbol* lowerBound = info.lowerBounds[i];
+    Symbol* loopIndex  = loopIndices[i];
+    Symbol* lowerBound = lowerBounds[i];
 
     VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn, "blockIdxX",
       PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_32]);
@@ -313,18 +329,18 @@ static void generateIndexComputation(OutlineInfo& info) {
                                                                   varThreadIdxX));
     fn->insertAtTail(c2);
 
-    Symbol* startOffset = addKernelArgument(info, lowerBound);
+    Symbol* startOffset = addKernelArgument(*this, lowerBound);
     VarSymbol* index = insertNewVarAndDef(fn->body, "chpl_simt_index",
                                           dtInt[INT_SIZE_32]);
     fn->insertAtTail(new CallExpr(PRIM_MOVE, index, new CallExpr(PRIM_ADD,
                                                                  tempVar1,
                                                                  startOffset)));
 
-    info.kernelIndices.push_back(index);
-    info.copyMap.put(loopIndex, index);
+    kernelIndices.push_back(index);
+    copyMap.put(loopIndex, index);
   }
 
-  INT_ASSERT(info.kernelIndices.size() == info.loopIndices.size());
+  INT_ASSERT(kernelIndices.size() == loopIndices.size());
 }
 
 /*
@@ -424,10 +440,13 @@ static void outlineGPUKernels() {
         if (shouldOutlineLoop(loop, allowFnCallsFromGPU)) {
           SET_LINENO(loop);
 
-          OutlineInfo info = collectOutlineInfo(loop);
+          // We may fail to build stub function if loop boundaries don't
+          // pattern match the way we expect, if that happens give up on
+          // outlining and continue to the next loop.
+          OutlineInfo info;
+          if(!info.buildStubOutlinedFunction(loop)) { continue; }
 
           FnSymbol* outlinedFunction = info.fn;
-
           fn->defPoint->insertBefore(new DefExpr(outlinedFunction));
 
           // if (chpl_task_getRequestedSubloc() >= 0) {
@@ -449,9 +468,7 @@ static void outlineGPUKernels() {
           elseBlock->insertAtHead(loop->remove());
 
           std::set<Symbol*> handledSymbols;
-
           for_alist(node, loop->body) {
-
             bool copyNode = true;
             std::vector<SymExpr*> symExprsInBody;
             collectSymExprs(node, symExprsInBody);

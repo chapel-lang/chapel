@@ -141,6 +141,43 @@ module Random {
     compilerError("Random.fillRandom is only defined for numeric arrays");
   }
 
+  /*
+
+    Fills a rectangular array of numeric elements with pseudorandom values
+    in the range [`min`, `max`] (inclusive) in parallel using
+    a new :class:`PCGRandom.PCGRandomStream`  created
+    specifically for this call.  The first `arr.size` values from the stream
+    will be assigned to the array's elements in row-major order. The
+    parallelization strategy is determined by the array.
+
+    :arg arr: The array to be filled, where T is a primitive numeric type. Only
+      rectangular arrays are supported currently.
+    :type arr: `[] T`
+
+    :arg min: The (inclusive) lower bound for the random values used.
+
+    :arg max: The (inclusive) upper bound for the random values used.
+
+    :arg seed: The seed to use for the PRNG.  Defaults to
+     `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+    :type seed: `int(64)`
+
+  */
+  proc fillRandom(arr: [], min: arr.eltType, max: arr.eltType,
+      seed: int(64) = SeedGenerator.oddCurrentTime)
+    where isSupportedNumericType(arr.eltType) {
+    var randNums = createRandomStream(seed=seed,
+                                      eltType=arr.eltType,
+                                      parSafe=false,
+                                      algorithm=RNG.PCG);
+    randNums.fillRandom(arr, min, max);
+  }
+
+  pragma "no doc"
+  proc fillRandom(arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
+    compileError("Random.fillRandom is only defined for numeric arrays");
+  }
+
   /* Shuffle the elements of a rectangular array into a random order.
 
      :arg arr: a rectangular 1-D non-strided array
@@ -1231,8 +1268,8 @@ module Random {
         if(!arr.isRectangular()) then
           compilerError("permutation does not support non-rectangular arrays");
 
-        var low = arr.domain.dim(0).low;
-        var high = arr.domain.dim(0).high;
+        var low = arr.domain.dim(0).lowBound;
+        var high = arr.domain.dim(0).highBound;
 
         if arr.domain.rank != 1 then
           compilerError("Permutation requires 1-D array");
@@ -1651,15 +1688,15 @@ module Random {
       for outer in outer(followThis) {
         var myStart = start;
         if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
         else
-          myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
         if !innerRange.stridable {
           var cursor = randlc_skipto(resultType, seed, myStart);
           for i in innerRange do
             yield randlc(resultType, cursor);
         } else {
-          myStart -= innerRange.low.safeCast(int(64));
+          myStart -= innerRange.lowBound.safeCast(int(64));
           for i in innerRange {
             var cursor = randlc_skipto(resultType, seed, myStart + i.safeCast(int(64)) * multiplier);
             yield randlc(resultType, cursor);
@@ -1704,9 +1741,9 @@ module Random {
       for outer in outer(followThis) {
         var myStart = start;
         if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
         else
-          myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
         if !innerRange.stridable {
           var cursor = randlc_skipto(resultType, seed, myStart);
           var count = myStart;
@@ -1715,7 +1752,7 @@ module Random {
             count += 1;
           }
         } else {
-          myStart -= innerRange.low.safeCast(int(64));
+          myStart -= innerRange.lowBound.safeCast(int(64));
           for i in innerRange {
             var count = myStart + i.safeCast(int(64)) * multiplier;
             var cursor = randlc_skipto(resultType, seed, count);
@@ -2982,15 +3019,15 @@ module Random {
       for outer in outer(followThis) {
         var myStart = start;
         if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
         else
-          myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
+          myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
         if !innerRange.stridable {
           cursor = randlc_skipto(seed, myStart);
           for i in innerRange do
             yield randlc(resultType, cursor);
         } else {
-          myStart -= innerRange.low.safeCast(int(64));
+          myStart -= innerRange.lowBound.safeCast(int(64));
           for i in innerRange {
             cursor = randlc_skipto(seed, myStart + i.safeCast(int(64)) * multiplier);
             yield randlc(resultType, cursor);

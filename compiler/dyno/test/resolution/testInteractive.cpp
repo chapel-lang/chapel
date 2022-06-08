@@ -189,8 +189,33 @@ computeAndPrintStuff(Context* context,
 }
 
 static void usage(int argc, char** argv) {
-  printf("Usage: %s [--search path --search otherPath ...] "
-         "file.chpl otherFile.chpl ...\n", argv[0]);
+  printf("Usage: %s [--std] [--search path --search otherPath ...] "
+         "file.chpl otherFile.chpl ...\n"
+         "  --std enables the standard library\n"
+         "  --searchPath adjusts the search path\n", argv[0]);
+}
+
+static void setupSearchPaths(Context* ctx, bool enableStdLib,
+                             const char* chpl_home,
+                             const std::vector<std::string>& cmdLinePaths) {
+  if (enableStdLib) {
+    setupModuleSearchPaths(ctx,
+                           chpl_home,
+                           false,
+                           "flat",
+                           false,
+                           "qthreads",
+                           "none",
+                           "linux64-x86_64-gnu",
+                           "",
+                           cmdLinePaths);
+  } else {
+    std::vector<UniqueString> uPaths;
+    for (auto p: cmdLinePaths) {
+      uPaths.push_back(UniqueString::get(ctx, p));
+    }
+    setModuleSearchPath(ctx, uPaths);
+  }
 }
 
 int main(int argc, char** argv) {
@@ -199,45 +224,56 @@ int main(int argc, char** argv) {
   Context context;
   Context* ctx = &context;
   bool trace = false;
-
-  std::vector<std::string> searchPath;
-  int firstfile = 1;
+  const char* chpl_home = nullptr;
+  std::vector<std::string> cmdLinePaths;
+  std::vector<std::string> files;
+  bool enableStdLib = false;
   for (int i = 1; i < argc; i++) {
-    if (0 == strcmp(argv[i], "--search")) {
-      if (i+1 == argc || firstfile != 1) {
+    if (0 == strcmp(argv[i], "--std")) {
+      enableStdLib = true;
+    } else if (0 == strcmp(argv[i], "--search")) {
+      if (i+1 >= argc) {
         usage(argc, argv);
         return 1;
       }
-      searchPath.push_back(argv[i+1]);
+      cmdLinePaths.push_back(argv[i+1]);
       i++;
     } else if (0 == strcmp(argv[i], "--trace")) {
       trace = true;
     } else {
-      firstfile = i;
-      break;
+      files.push_back(argv[i]);
     }
   }
 
-  setModuleSearchPath(ctx, searchPath);
+  if (enableStdLib) {
+    if (const char* chpl_home_env  = getenv("CHPL_HOME")) {
+      chpl_home = chpl_home_env;
+      printf("CHPL_HOME is set, so setting up search paths\n");
+    } else {
+      printf("--std only works when CHPL_HOME is set\n");
+      exit(1);
+    }
+  }
 
-  if (firstfile == argc) {
+  if (files.size() == 0) {
     usage(argc, argv);
     return 0; // need this to return 0 for testing to be happy
   }
 
-  // Run this query first to make the other output more understandable
-  ctx->setDebugTraceFlag(false);
-  typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
-  ctx->setDebugTraceFlag(trace);
-
   while (true) {
     ctx->advanceToNextRevision(gc);
-    setModuleSearchPath(ctx, searchPath);
+
+    // Run this query first to make the other output more understandable
+    ctx->setDebugTraceFlag(false);
+    typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
+    ctx->setDebugTraceFlag(trace);
+
+    setupSearchPaths(ctx, enableStdLib, chpl_home, cmdLinePaths);
 
     std::set<const ResolvedFunction*> calledFns;
 
-    for (int i = firstfile; i < argc; i++) {
-      auto filepath = UniqueString::get(ctx, argv[i]);
+    for (auto p: files) {
+      auto filepath = UniqueString::get(ctx, p);
 
       const ModuleVec& mods = parse(ctx, filepath);
       for (const auto mod : mods) {

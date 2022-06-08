@@ -43,8 +43,7 @@
 
  */
 module Sys {
-  // get basic types from SysBasic
-  use SysBasic;
+  import SysBasic.{qio_err_t, fd_t};
   private use CTypes;
   private use SysError;
 
@@ -65,22 +64,55 @@ module Sys {
   extern const F_SETFD:c_int;
 
   // basic file flags
+  pragma "last resort"
+  deprecated "'Sys.O_RDONLY' is deprecated; please use 'OS.POSIX.O_RDONLY' instead"
   extern const O_RDONLY:c_int;
+
+  pragma "last resort"
+  deprecated "'Sys.O_WRONLY' is deprecated; please use 'OS.POSIX.O_WRONLY' instead"
   extern const O_WRONLY:c_int;
+
+  pragma "last resort"
+  deprecated "'Sys.O_RDWR' is deprecated; please use 'OS.POSIX.O_RDWR' instead"
   extern const O_RDWR:c_int;
 
   // POSIX flags
   // It is expected that a new module for Posix interface functionality
   // will likely be introduced. Much of this code would be moved to that
   // module at that time.
+
+  pragma "last resort"
+  deprecated "'Sys.O_APPEND' is deprecated; please use 'OS.POSIX.O_APPEND' instead"
   extern const O_APPEND:c_int;
+
+  pragma "last resort"
+  deprecated "'Sys.O_CREAT' is deprecated; please use 'OS.POSIX.O_CREAT' instead"
   extern const O_CREAT:c_int;
+
+  pragma "last resort"
+  deprecated "'Sys.O_DSYNC' is deprecated; please use 'OS.POSIX.O_DSYNC' instead"
   extern const O_DSYNC:c_int;
+
+  pragma "last resort"
+  deprecated "'Sys.O_EXCL' is deprecated; please use 'OS.POSIX.O_EXCL' instead"
   extern const O_EXCL:c_int;
+
+  pragma "last resort"
+  deprecated "'Sys.O_NOCTTY' is deprecated; please use 'OS.POSIX.O_NOCTTY' instead"
   extern const O_NOCTTY:c_int;
+
+  pragma "last resort"
+  deprecated "'Sys.O_NONBLOCK' is deprecated; please use 'OS.POSIX.O_NONBLOCK' instead"
   extern const O_NONBLOCK:c_int;
+
   extern const O_RSYNC:c_int;
+
+  pragma "last resort"
+  deprecated "'Sys.O_SYNC' is deprecated; please use 'OS.POSIX.O_SYNC' instead"
   extern const O_SYNC:c_int;
+
+  pragma "last resort"
+  deprecated "'Sys.O_TRUNC' is deprecated; please use 'OS.POSIX.O_TRUNC' instead"
   extern const O_TRUNC:c_int;
 
   // Signals as required by POSIX.1-2008, 2013 edition
@@ -506,17 +538,32 @@ module Sys {
   extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t;
   extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:fd_t, ref sockfd_out_b:fd_t):qio_err_t;
 
-  extern type fd_set;
+  pragma "last resort"
+  deprecated "'Sys.fd_set' is deprecated; please use 'OS.POSIX.fd_set' instead"
+  proc fd_set type {
+    import OS.POSIX;
+    return POSIX.fd_set;
+  }
   extern type time_t = c_long;
   extern type suseconds_t = c_long;
   extern "struct timeval" record timeval {
      var tv_sec:time_t; // seconds
      var tv_usec:suseconds_t; // microseconds
   }
+
+  import OS.POSIX.fd_set;
   extern proc sys_select(nfds:c_int, readfds:c_ptr(fd_set), writefds:c_ptr(fd_set), exceptfds:c_ptr(fd_set), timeout:c_ptr(timeval), ref nset:c_int):qio_err_t;
+
+  deprecated "'Sys.sys_fd_clr' is deprecated; please use 'OS.POSIX.FD_CLR' instead"
   extern proc sys_fd_clr(fd:c_int, ref set:fd_set);
+
+  deprecated "'Sys.sys_fd_isset' is deprecated; please use 'OS.POSIX.FD_ISSET' instead"
   extern proc sys_fd_isset(fd:c_int, ref set:fd_set):c_int;
+
+  deprecated "'Sys.sys_fd_set' is deprecated; please use 'OS.POSIX.FD_SET' instead"
   extern proc sys_fd_set(fd:c_int, ref set:fd_set);
+
+  deprecated "'Sys.sys_fd_zero' is deprecated; please use 'OS.POSIX.FD_ZERO' instead"
   extern proc sys_fd_zero(ref set:fd_set);
 
   // recv, recvfrom, recvmsg, send, sendto, sendmsg are in io

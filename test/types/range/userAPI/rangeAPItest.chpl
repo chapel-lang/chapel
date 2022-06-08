@@ -17,10 +17,10 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("aligned          = ", r.aligned);
   writeln("first            = ", if r.hasFirst() then r.first:string else "undefined");
   writeln("last             = ", if r.hasLast() then r.last:string else "undefined");
+  writeln("lowBound         = ", if r.hasLowBound() then r.lowBound else "undefined");
+  writeln("highBound        = ", if r.hasHighBound() then r.highBound else "undefined");
   writeln("low              = ", if r.hasLowBound() then r.low else "undefined");
   writeln("high             = ", if r.hasHighBound() then r.high else "undefined");
-  writeln("alignedLow       = ", if r.hasLowBound() then r.alignedLow else "undefined");
-  writeln("alignedHigh      = ", if r.hasHighBound() then r.alignedHigh else "undefined");
   writeln("isEmpty()        = ", r.isEmpty());
   if (isBoundedRange(r)) {
     writeln("size             = ", r.size);

@@ -210,23 +210,6 @@ module ChapelSyncvar {
   }
 
   /*
-     Noakes 2016/08/10
-
-     These are defined as secondary methods so that chpldoc can render the
-     documentation
-  */
-
-  pragma "no doc"
-  proc isSyncType(type t:_syncvar) param {
-    return true;
-  }
-
-  /* Returns true if `t` is a sync type, false otherwise. */
-  proc isSyncType(type t) param {
-    return false;
-  }
-
-  /*
     1) Block until the sync variable is full.
     2) Read the value of the sync variable and set the variable to empty.
 
@@ -787,16 +770,6 @@ module ChapelSyncvar {
     }
   }
 
-  pragma "no doc"
-  proc isSyncValue(x : sync) param  return true;
-
-  pragma "no doc"
-  proc isSyncValue(x)       param  return false;
-
-
-
-
-
   /************************************ | *************************************
   *                                                                           *
   * The record wrapper to implement single                                    *
@@ -875,23 +848,6 @@ module ChapelSyncvar {
     proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
      }
-  }
-
-  /*
-     Noakes 2016/08/12
-
-     These are defined as secondary methods so that chpldoc can render the
-     documentation
-  */
-
-  pragma "no doc"
-  proc isSingleType(type t:_singlevar) param {
-    return true;
-  }
-
-  /* Returns true if `t` is a single type, false otherwise. */
-  proc isSingleType(type t) param {
-    return false;
   }
 
   /*
@@ -1130,12 +1086,6 @@ module ChapelSyncvar {
       return b;
     }
   }
-
-  pragma "no doc"
-  proc isSingleValue(x : single) param  return true;
-
-  pragma "no doc"
-  proc isSingleValue(x)         param  return false;
 }
 
 

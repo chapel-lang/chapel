@@ -22,7 +22,7 @@ proc main() {
     var f = fs.open(path, iomode.r, style);
     var r = f.reader();
     var s:string;
-    r.readline(s);
+    r.readLine(s);
     assert(s == msg);
     f.close();
   }

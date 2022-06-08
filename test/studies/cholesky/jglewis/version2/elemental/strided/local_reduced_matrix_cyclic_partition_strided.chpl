@@ -27,11 +27,11 @@ module local_reduced_matrix_cyclic_partition_strided {
       var next_block_low = block_low + block_size * stride;
 
       const A11_cols = block_low .. 
-	               min ( next_block_low - 1, idx_range.high ) 
+	               min ( next_block_low - 1, idx_range.highBound ) 
 	               by stride,
 	    A11_rows = A11_cols;
 	
-      const A22_cols = next_block_low .. idx_range.high by stride;
+      const A22_cols = next_block_low .. idx_range.highBound by stride;
 
       yield ( A11_cols, A22_cols );
     }

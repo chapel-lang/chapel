@@ -18,8 +18,7 @@ var data : [1..numChars] uint(8);
 
 var total : int = 1;
 for i in 1..n {
-  var numRead : int;
-  r.readline(data, numRead, total);
+  var numRead = r.readLine(data[total..]);
   total += numRead;
 }
 

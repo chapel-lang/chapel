@@ -197,7 +197,7 @@ where tag == iterKind.leader
     else
     {
       const numWorkerLocales = workerLocales.size;
-      const denseRangeHigh:int = denseRange.high;
+      const denseRangeHigh:int = denseRange.highBound;
       const masterLocale = here.locale;
 
       const actualWorkerLocales =
@@ -246,7 +246,7 @@ where tag == iterKind.leader
         var localeRange:cType = dynamicSubrange(denseRange,
                                                 actualLocaleChunkSize,
                                                 localeStage);
-        while localeRange.low <= denseRangeHigh
+        while localeRange.lowBound <= denseRangeHigh
         {
           const denseLocaleRange:cType = densify(localeRange, localeRange);
           for denseTaskRangeTuple in DynamicIters.dynamic(tag=iterKind.leader,
@@ -455,7 +455,7 @@ where tag == iterKind.leader
     else
     {
       const numWorkerLocales = workerLocales.size;
-      const denseRangeHigh:int = denseRange.high;
+      const denseRangeHigh:int = denseRange.highBound;
       const masterLocale = here.locale;
 
       const actualWorkerLocales =
@@ -498,7 +498,7 @@ where tag == iterKind.leader
         var localeRange:cType = guidedSubrange(denseRange,
                                                numActualWorkerLocales,
                                                localeStage);
-        while localeRange.high <= denseRangeHigh
+        while localeRange.highBound <= denseRangeHigh
         {
           const denseLocaleRange:cType = densify(localeRange, localeRange);
           for denseTaskRangeTuple in DynamicIters.guided(tag=iterKind.leader,
@@ -596,9 +596,9 @@ private proc dynamicSubrange(c:range(?),
                              chunkSize:int,
                              stage:int)
 {
-  const low:int = (c.low + (stage * chunkSize));
+  const low:int = (c.lowBound + (stage * chunkSize));
   const potentialHigh:int = (low + (chunkSize - 1));
-  const high:int = min(potentialHigh, c.high);
+  const high:int = min(potentialHigh, c.highBound);
   const subrange:c.type = (low..high);
   return subrange;
 }
@@ -636,7 +636,7 @@ private proc guidedSubrange(c:range(?),
   assert(workerCount > 0, ("DistributedIters: guidedSubrange: "
                            + "'workerCount' must be positive"));
   const cLength = c.size;
-  var low:int = c.low;
+  var low:int = c.lowBound;
   var chunkSize:int = (cLength / workerCount);
   var remainder:int = (cLength - chunkSize);
   for unused in (1..#stage)
@@ -686,7 +686,7 @@ private proc writeTimeStatistics(wallTime:real,
     const localeTime = localeTimes[i];
     localeTotalTime += localeTime;
     localeTimesFormatted += (i:string + ": " + localeTime:string);
-    localeTimesFormatted += if i == localeRange.high
+    localeTimesFormatted += if i == localeRange.highBound
                             then ""
                             else ", ";
   }

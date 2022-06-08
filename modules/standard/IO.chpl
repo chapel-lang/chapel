@@ -425,12 +425,11 @@ module IO {
       NFS), we should open a local copy of that file and use that in the
       channel. (not sure how to avoid opening # channels copies of these files
       -- seems that we'd want some way to cache that...).
-    - Create leader/follower iterators for ItemReader/ItemWriter so that these
-      are as efficient as possible when working with fixed-size data types
-      (ie, they can open up channels that are not shared).
 */
 
-public use SysBasic;
+import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
+import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
+import OS.POSIX.{EBADF};
 use CTypes;
 public use SysError;
 
@@ -2867,12 +2866,12 @@ proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
   local_style.string_end = 0x0a; // '\n'
   param kind = iokind.dynamic;
 
-  var ret:ItemReader(string, kind, locking);
+  var ret:itemReaderInternal(string, kind, locking);
   var err:syserr = ENOERR;
   on this.home {
     try this.checkAssumingLocal();
     var ch = new channel(false, kind, locking, this, err, hints, start, end, local_style);
-    ret = new ItemReader(string, kind, locking, ch);
+    ret = new itemReaderInternal(string, kind, locking, ch);
   }
   if err then try ioerror(err, "in file.lines", this.tryGetPath());
 
@@ -3683,7 +3682,8 @@ iter channel.lines() {
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  for line in this.itemReader(string, this.kind) {
+  var itemReader = new itemReaderInternal(string, kind, locking, this);
+  for line in itemReader {
     yield line;
   }
 
@@ -3822,6 +3822,8 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
   The ``\n`` is returned in the array.
 
+  Note that this routine currently requires a 1D rectangular non-strided array.
+
   Throws a SystemError if a line could not be read from the channel.
 
   :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
@@ -3830,12 +3832,13 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
-                      amount = arg.domain.high - start + 1) : bool throws
-                      where arg.rank == 1 && arg.isRectangular() {
 
+deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+                      amount = arg.domain.highBound - start + 1) : bool throws
+                      where arg.rank == 1 && arg.isRectangular() {
   if arg.size == 0 || !arg.domain.contains(start) ||
-     amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
+     amount <= 0 || (start + amount - 1 > arg.domain.highBound) then return false;
 
   var err:syserr = ENOERR;
   on this.home {
@@ -3866,6 +3869,72 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 }
 
 /*
+  Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
+  This function always does a binary read (i.e. it is not aware of UTF-8 etc)
+  and is similar in some ways to `readLine(bytes)` but works with an array directly.
+  However, it does not resize the array but rather stores up to first
+  'size' bytes in to it. The exact number of bytes in the array set will depend
+  on the line length (and on stripNewline since the newline will be counted if it is
+  stored in the array).
+
+  :arg arg: A 1D DefaultRectangular non-strided array storing int(8) or uint(8) which must have at least 1 element.
+  :arg maxSize: The maximum amount of bytes to read.
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
+  :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
+
+  :throws SystemError: Thrown if data could not be read from the channel.
+  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+ */
+proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
+      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() && !arg.stridable {
+  if arg.size == 0 || maxSize == 0 ||
+  ( arg.domain.lowBound + maxSize - 1 > arg.domain.highBound) then return 0;
+
+  var err:syserr = ENOERR;
+  var numRead:int;
+  on this.home {
+    try this.lock(); defer { this.unlock(); }
+    this._mark();
+    param newLineChar = 0x0A;
+    var got: int;
+    var i = arg.domain.lowBound;
+    const maxIdx = arg.domain.lowBound + maxSize - 1;
+    while got != newLineChar {
+      got = qio_channel_read_byte(false, this._channel_internal);
+      if got < 0 then break;
+      if( i > maxIdx ) {
+        // The line is longer than was specified so we throw an error
+        this._revert();
+        try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(arg : [] uint(8))");
+      }
+      if got == newLineChar && stripNewline then break;
+      arg[i] = got:uint(8);
+      i += 1;
+      if got == newLineChar then break;
+    }
+    numRead = i - arg.domain.lowBound;
+    if i == arg.domain.lowBound && got < 0 then err = (-got):syserr;
+    this._commit();
+  }
+
+  if !err {
+    return numRead;
+  } else if err == EEOF {
+    return 0;
+  } else {
+    try this._ch_ioerror(err, "in channel.readLine(arg : [] uint(8))");
+  }
+  return 0;
+
+}
+
+pragma "no doc"
+pragma "last resort"
+inline proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws {
+  compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
+}
+
+/*
   Read a line into a Chapel string or bytes. Reads until a ``\n`` is reached.
   The ``\n`` is included in the resulting value.
 
@@ -3874,6 +3943,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 
   :throws SystemError: Thrown if data could not be read from the channel.
 */
+deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
 proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
@@ -3897,6 +3967,144 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   }
 
   return true;
+}
+
+/*
+  Read a line into a Chapel string. Reads until a ``\n`` is reached.
+
+  :arg arg: a string to receive the line
+  :arg maxSize: The maximum number of codepoints to read. The default of -1 means to read an unlimited number of codepoints.
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
+  :returns: `true` if a line was read without error, `false` upon EOF
+
+  :throws SystemError: Thrown if data could not be read from the channel.
+  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+*/
+proc channel.readLine(ref s: string, maxSize=-1, stripNewline=false): bool throws{
+  if writing then compilerError("read on write-only channel");
+  const origLocale = this.getLocaleOfIoRequest();
+
+  try {
+    on this.home {
+      try this.lock(); defer { this.unlock(); }
+      param newLineChar = 0x0A; // ascii newline.
+      if(maxSize != -1){
+        this._mark();
+        var lineSize = 0;
+        var got : int;
+        while got!=newLineChar {
+          got = qio_channel_read_byte(false, this._channel_internal);
+          if(got < 0) then break;
+          lineSize+=1;
+          if(lineSize > maxSize){
+            // The line is longer than was specified so we throw an error
+            this._revert();
+            try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(ref s: string)");
+          }
+        }
+        this._revert();
+      }
+      var saveStyle: iostyleInternal = this._styleInternal();
+      defer {
+        this._set_styleInternal(saveStyle);
+      }
+      var myStyle = saveStyle.text();
+      myStyle.string_format = QIO_STRING_FORMAT_TOEND;
+      myStyle.string_end = newLineChar;
+      if(maxSize >= 0){
+        try myStyle.max_width_characters = maxSize.safeCast(uint(32)); // Probably should change maxSize's type to be safe to cast
+      }
+      this._set_styleInternal(myStyle);
+      try _readOne(iokind.dynamic, s, origLocale);
+    }
+  } catch err: SystemError {
+    if err.err != EEOF then throw err;
+    return false;
+  }
+  // TODO find a more memory efficient way to do this
+  // Maybe have a QIO_STRING_FORMAT_TOEND_DROPEND which drops the last char
+  if(stripNewline){
+    s = s.strip(chars="\n", leading = false);
+  }
+
+  return true;
+}
+
+/*
+  Read a line into Chapel bytes. Reads until a ``\n`` is reached.
+
+  :arg arg: bytes to receive the line
+  :arg maxSize: The maximum number of bytes to read. The default of -1 means to read an unlimited number of bytes.
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
+  :returns: `true` if a line was read without error, `false` upon EOF
+
+  :throws SystemError: Thrown if data could not be read from the channel.
+  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+*/
+proc channel.readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws{
+  if writing then compilerError("read on write-only channel");
+  const origLocale = this.getLocaleOfIoRequest();
+
+  try {
+    on this.home {
+      try this.lock(); defer { this.unlock(); }
+      param newLineChar = 0x0A; // ascii newline.
+      if(maxSize != -1) {
+        this._mark();
+        var lineSize = 0;
+        var got : int;
+        while got!=newLineChar {
+          got = qio_channel_read_byte(false, this._channel_internal);
+          if(got < 0) then break;
+          lineSize+=1;
+          if(lineSize > maxSize){
+                    // The line is longer than was specified so we throw an error
+          this._revert();
+          try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(ref b: bytes)");
+          }
+        }
+        this._revert();
+      }
+      var saveStyle: iostyleInternal = this._styleInternal();
+      defer {
+        this._set_styleInternal(saveStyle);
+      }
+      var myStyle = saveStyle.text();
+      myStyle.string_format = QIO_STRING_FORMAT_TOEND;
+      myStyle.string_end = newLineChar;
+      if(maxSize >= 0){
+        try myStyle.max_width_bytes = maxSize.safeCast(uint(32)); // Probably should change maxSize's type to be safe to cast
+      }
+      this._set_styleInternal(myStyle);
+      try _readOne(iokind.dynamic, b, origLocale);
+    }
+  } catch err: SystemError {
+    if err.err != EEOF then throw err;
+    return false;
+  }
+  // TODO find a more memory efficient way to do this
+  // Maybe have a QIO_STRING_FORMAT_TOEND_DROPEND which drops the last char
+  if(stripNewline){
+    b = b.strip(chars=b"\n", leading = false);
+  }
+  return true;
+}
+
+/*
+  Read a line. Reads until a ``\n`` is reached.
+
+  :arg t: the type of data to read, which must be ``string`` or ``bytes``. Defaults to ``string`` if not specified.
+  :arg maxSize: The maximum number of codepoints to read. The default of -1 means to read an unlimited number of codepoints.
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
+  :returns: The data that was read.
+
+  :throws SystemError: Thrown if data could not be read from the channel.
+  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+*/
+proc channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
+  var retval: t;
+  this.readLine(retval, maxSize, stripNewline);
+  return retval;
 }
 
 /* read a given number of bytes from a channel
@@ -4485,8 +4693,11 @@ proc channel.readBytes(x, len:c_ssize_t) throws {
    of a single type. Also supports an iterator yielding
    the read values.
  */
+deprecated "ItemReader is deprecated"
+type ItemReader = itemReaderInternal;
+
 pragma "no doc"
-record ItemReader {
+record itemReaderInternal {
   /* What type do we read and yield? */
   type ItemType;
   /* the kind field for our channel */
@@ -4517,14 +4728,17 @@ record ItemReader {
 /* Create and return an :record:`ItemReader` that can yield read values of
    a single type.
  */
-pragma "no doc"
+deprecated "channel.itemReader is deprecated"
 proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   if writing then compilerError(".itemReader on write-only channel");
-  return new ItemReader(ItemType, kind, locking, this);
+  return new itemReaderInternal(ItemType, kind, locking, this);
 }
 
+deprecated "ItemWriter is deprecated"
+type ItemWriter = itemWriterInternal;
+
 pragma "no doc"
-record ItemWriter {
+record itemWriterInternal {
   /* What type do we write? */
   type ItemType;
   /* the kind field for our channel */
@@ -4542,9 +4756,8 @@ record ItemWriter {
 /* Create and return an :record:`ItemWriter` that can write values of
    a single type.
  */
-pragma "no doc"
 deprecated
-"ItemWriter is deprecated"
+"channel.itemWriter is deprecated"
 proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
   if !writing then compilerError(".itemWriter on read-only channel");
   return new ItemWriter(ItemType, kind, locking, this);
@@ -4575,17 +4788,49 @@ proc read(ref args ...?n):bool throws {
 proc read(type t ...?numTypes) throws {
   return stdin.read((...t));
 }
+
+/* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
+proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
+      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() && ! arg.stridable {
+  return stdin.readLine(arg, maxSize, stripNewline);
+}
+
+pragma "last resort"
+pragma "no doc"
+proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
+      where (t == uint(8) || t == int(8)) {
+  compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
+}
+
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
-proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
-              amount = arg.domain.high - start + 1) : bool throws
+deprecated "readline is deprecated. Use :proc:`readLine` instead"
+proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+              amount = arg.domain.highBound - start + 1) : bool throws
                 where arg.rank == 1 && arg.isRectangular() {
   return stdin.readline(arg, numRead, start, amount);
 }
 
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+deprecated "readline is deprecated. Use :proc:`readLine` instead"
 proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
   return stdin.readline(arg);
 }
+
+/* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
+proc readLine(ref s: string, maxSize=-1, stripNewline=false): bool throws{
+  return stdin.readLine(s, maxSize, stripNewline);
+}
+
+/* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
+proc readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws{
+  return stdin.readLine(b, maxSize, stripNewline);
+}
+
+/* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
+proc readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
+  return stdin.readline(t, maxSize, stripNewline);
+}
+
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
 proc readln(ref args ...?n):bool throws {
   return stdin.readln((...args));
@@ -5525,7 +5770,8 @@ FormattedIO Functions and Types
 module FormattedIO {
   use IO;
   use CTypes;
-  use SysBasic;
+  use OS.POSIX;
+  import SysBasic.{ENOERR,syserr};
   use SysError;
 //use IO;
 

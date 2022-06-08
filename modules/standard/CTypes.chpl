@@ -492,7 +492,7 @@ module CTypes {
     if (arr._value.locale != here) then
       halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
-    return c_pointer_return(arr[arr.domain.low]);
+    return c_pointer_return(arr[arr.domain.alignedLow]);
   }
 
   /* Returns a :type:`c_ptr` to any Chapel object.

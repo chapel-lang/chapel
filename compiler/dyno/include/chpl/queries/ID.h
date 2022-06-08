@@ -132,7 +132,7 @@ class ID final {
   bool operator==(const ID& other) const {
     (void)numChildIds_; // quiet nextLinter
     return symbolPath_ == other.symbolPath_ &&
-          postOrderId_ == other.postOrderId_;
+           postOrderId_ == other.postOrderId_;
   }
 
   bool operator!=(const ID& other) const {

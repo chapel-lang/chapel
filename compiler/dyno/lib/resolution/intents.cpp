@@ -97,6 +97,8 @@ QualifiedType::Kind resolveIntent(const QualifiedType& t, bool isThis) {
   switch (kind) {
     case QualifiedType::UNKNOWN:
     case QualifiedType::INDEX:
+    case QualifiedType::TYPE_QUERY:
+    case QualifiedType::PARENLESS_FUNCTION:
     case QualifiedType::FUNCTION:
     case QualifiedType::MODULE:
       // these don't really have an intent

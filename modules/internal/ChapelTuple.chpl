@@ -145,21 +145,6 @@ module ChapelTuple {
     if isTuple(x) then return x; else return (x,);
   }
 
-  //
-  // isTuple, isTupleType and isHomogeneousTuple param functions
-  //
-  pragma "no doc" // we are not advertising isXxxValue() functions at present
-  proc isTupleValue(x: _tuple) param
-    return true;
-
-  pragma "no doc"
-  proc isTupleValue(x) param
-    return false;
-
-  pragma "no doc"
-  proc isHomogeneousTupleValue(x) param
-    return __primitive("is star tuple type", x);
-
   pragma "no doc"
   proc _check_tuple_var_decl(const ref x: _tuple, param p) param {
     if p == x.size {
@@ -175,20 +160,6 @@ module ChapelTuple {
     return false;
   }
 
-
-  /*
-    Returns `true` if its argument is a tuple type.
-    The argument must be a type.
-  */
-  proc isTupleType(type t) param
-    return __primitive("is tuple type", t);
-
-  /*
-    Returns `true` if its argument is a homogeneous tuple type.
-    The argument must be a type.
-  */
-  proc isHomogeneousTupleType(type t) param
-    return __primitive("is star tuple type", t);
 
   //
   // tuple assignment

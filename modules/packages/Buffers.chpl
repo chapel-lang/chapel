@@ -46,7 +46,8 @@
 
  */
 module Buffers {
-  use SysBasic;
+  use OS.POSIX;
+  import SysBasic.{ENOERR,syserr};
   use SysError;
   private use CTypes;
 

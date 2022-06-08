@@ -622,9 +622,9 @@ static void test9() {
   Context ctx;
   Context* context = &ctx;
 
-  std::vector<std::string> searchPath;
-  searchPath.push_back("/test/path/library");
-  searchPath.push_back("/test/path/program/");
+  std::vector<UniqueString> searchPath;
+  searchPath.push_back(UniqueString::get(context, "/test/path/library"));
+  searchPath.push_back(UniqueString::get(context, "/test/path/program/"));
 
   setModuleSearchPath(context, searchPath);
 

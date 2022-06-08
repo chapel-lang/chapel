@@ -35,6 +35,127 @@ namespace uast {
 AstNode::~AstNode() {
 }
 
+bool AstNode::mayContainStatements(AstTag tag) {
+  switch (tag) {
+    // cannot contain Chapel statements
+    case asttags::As:
+    case asttags::Array:
+    case asttags::Attributes:
+    case asttags::Break:
+    case asttags::Comment:
+    case asttags::Continue:
+    case asttags::Delete:
+    case asttags::Domain:
+    case asttags::Dot:
+    case asttags::EmptyStmt:
+    case asttags::ErroneousExpression:
+    case asttags::ExternBlock:
+    case asttags::Identifier:
+    case asttags::Import:
+    case asttags::Include:
+    case asttags::Let:
+    case asttags::New:
+    case asttags::Range:
+    case asttags::Require:
+    case asttags::Return:
+    case asttags::Throw:
+    case asttags::TypeQuery:
+    case asttags::Use:
+    case asttags::VisibilityClause:
+    case asttags::WithClause:
+    case asttags::Yield:
+    case asttags::START_Literal:
+    case asttags::BoolLiteral:
+    case asttags::ImagLiteral:
+    case asttags::IntLiteral:
+    case asttags::RealLiteral:
+    case asttags::UintLiteral:
+    case asttags::START_StringLikeLiteral:
+    case asttags::BytesLiteral:
+    case asttags::CStringLiteral:
+    case asttags::StringLiteral:
+    case asttags::END_StringLikeLiteral:
+    case asttags::END_Literal:
+    case asttags::START_Call:
+    case asttags::FnCall:
+    case asttags::OpCall:
+    case asttags::PrimCall:
+    case asttags::Reduce:
+    case asttags::Scan:
+    case asttags::Tuple:
+    case asttags::Zip:
+    case asttags::END_Call:
+    case asttags::MultiDecl:
+    case asttags::TupleDecl:
+    case asttags::ForwardingDecl:
+    case asttags::EnumElement:
+    case asttags::START_VarLikeDecl:
+    case asttags::Formal:
+    case asttags::TaskVar:
+    case asttags::VarArgFormal:
+    case asttags::Variable:
+    case asttags::END_VarLikeDecl:
+    case asttags::Enum:
+      return false;
+
+    // can contain statements
+    case asttags::Catch:
+    case asttags::Cobegin:
+    case asttags::Conditional:
+    case asttags::Implements:
+    case asttags::Label: // contains a loop
+    case asttags::Select:
+    case asttags::Sync:
+    case asttags::Try:
+    case asttags::START_SimpleBlockLike:
+    case asttags::Begin:
+    case asttags::Block:
+    case asttags::Defer:
+    case asttags::Local:
+    case asttags::Manage:
+    case asttags::On:
+    case asttags::Serial:
+    case asttags::When:
+    case asttags::END_SimpleBlockLike:
+    case asttags::START_Loop:
+    case asttags::DoWhile:
+    case asttags::While:
+    case asttags::START_IndexableLoop:
+    case asttags::BracketLoop:
+    case asttags::Coforall:
+    case asttags::For:
+    case asttags::Forall:
+    case asttags::Foreach:
+    case asttags::END_IndexableLoop:
+    case asttags::END_Loop:
+    case asttags::START_Decl:
+    case asttags::START_NamedDecl:
+    case asttags::START_TypeDecl:
+    case asttags::Function:
+    case asttags::Interface:
+    case asttags::Module:
+    case asttags::START_AggregateDecl:
+    case asttags::Class:
+    case asttags::Record:
+    case asttags::Union:
+    case asttags::END_AggregateDecl:
+    case asttags::END_Decl:
+    case asttags::END_NamedDecl:
+    case asttags::END_TypeDecl:
+      return true;
+
+    // implementation details
+    case asttags::NUM_AST_TAGS:
+    case asttags::AST_TAG_UNKNOWN:
+      return true;
+
+    // no default to get compiler warning if any are added
+  }
+
+  assert(false && "should not be reachable");
+  return true;
+}
+
 bool AstNode::shallowMatch(const AstNode* other) const {
   const AstNode* lhs = this;
   const AstNode* rhs = other;
@@ -176,6 +297,8 @@ static void dumpHelper(std::ostream& ss,
     ss << ident->name().str() << " ";
   } else if (const Comment* comment = ast->toComment()) {
     ss << comment->str() << " ";
+  } else if (const Dot* dot = ast->toDot()) {
+    ss << "." << dot->field() << " ";
   }
 
   //printf("(containing %i) ", ast->id().numContainedChildren());

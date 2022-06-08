@@ -174,6 +174,12 @@ class Type {
   // In contrast, isNumericType checks to see if the type is one of the
   // numeric types.
 
+  /** returns true if this represents the string type */
+  bool isStringType() const;
+
+  /** returns true if this represents the bytes type */
+  bool isBytesType() const;
+
   /** returns true if it's string, bytes, or c_string type */
   bool isStringLikeType() const {
     return isStringType() || isBytesType() || isCStringType();

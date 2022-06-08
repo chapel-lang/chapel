@@ -522,6 +522,17 @@ class Context {
        const ResultType& (*queryFunction)(Context* context, ArgTs...),
        const std::tuple<ArgTs...>& tupleOfArgs);
 
+  /**
+    Returns 'true' if the query in question is currently running.
+    This can be useful for avoiding recursion in certain cases.
+   */
+  template<typename ResultType,
+           typename... ArgTs>
+  bool
+  isQueryRunning(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...),
+       const std::tuple<ArgTs...>& tupleOfArgs);
+
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly

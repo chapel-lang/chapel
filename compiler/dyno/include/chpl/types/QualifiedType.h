@@ -61,8 +61,10 @@ class QualifiedType final {
   static const Kind INOUT = uast::IntentList::INOUT;
   static const Kind PARAM = uast::IntentList::PARAM;
   static const Kind TYPE = uast::IntentList::TYPE;
+  static const Kind TYPE_QUERY = uast::IntentList::TYPE_QUERY;
   static const Kind INDEX = uast::IntentList::INDEX;
   static const Kind FUNCTION = uast::IntentList::FUNCTION;
+  static const Kind PARENLESS_FUNCTION = uast::IntentList::PARENLESS_FUNCTION;
   static const Kind MODULE = uast::IntentList::MODULE;
 
  private:
@@ -125,7 +127,7 @@ class QualifiedType final {
   */
   Type::Genericity genericity() const {
     bool genericParam = kind_ == PARAM && !hasParamPtr();
-    if (genericParam)
+    if (genericParam || kind_ == TYPE_QUERY)
       return Type::GENERIC;
 
     return typeGenericity();
@@ -148,6 +150,16 @@ class QualifiedType final {
 
   /** Returns true if kind is PARAM */
   bool isParam() const { return kind_ == Kind::PARAM; }
+
+  /** Returns 'true' if storing a BoolParam 'true';
+      'false' otherwise
+   */
+  bool isParamTrue() const;
+
+  /** Returns 'true' if storing a BoolParam 'false';
+      'false' otherwise
+   */
+  bool isParamFalse() const;
 
   /**
     Returns true if the value cannot be modified directly (but might

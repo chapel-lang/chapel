@@ -1186,7 +1186,6 @@ buildZip4(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) 
   ii->zip4->body->replace(zip4body);
 }
 
-
 //
 // Handle IBB - Iterator Break Block.
 //
@@ -1211,23 +1210,34 @@ buildZip4(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) 
 // pretend to throw an error into the forall's error handler. Mimicking
 // the control flow is sufficient for that.
 //
-void createIteratorBreakBlocks() {
-  for_alive_in_Vec(CallExpr, yield, gCallExprs)
-    if (yield->isPrimitive(PRIM_YIELD))
-      if (FnSymbol* parent = toFnSymbol(yield->parentSymbol)) {
-        SET_LINENO(yield);
-        BlockStmt* ibbBody = new BlockStmt();
-        if (ForallStmt* fs = enclosingForallStmt(yield)) {
-          // An empty IBB is: if gIteratorBreakToken then throw;
-          ibbBody->insertAtTail(gotoForallErrorHandler(fs));
-        } else {
-          // An empty IBB is: if gIteratorBreakToken then return;
-          Symbol* epLab = parent->getOrCreateEpilogueLabel();
-          ibbBody->insertAtTail(new GotoStmt(GOTO_RETURN, epLab));
-        }
-        yield->insertAfter(new CondStmt(new SymExpr(gIteratorBreakToken),
-                                        ibbBody));
-      }
+bool CreateIteratorBreakBlocks::shouldProcess(CallExpr* call) {
+  if (call->inTree() && call->isPrimitive(PRIM_YIELD)) {
+    if (isFnSymbol(call->parentSymbol)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void CreateIteratorBreakBlocks::process(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_YIELD));
+  FnSymbol* parent = toFnSymbol(call->parentSymbol);
+  INT_ASSERT(parent);
+  CallExpr* yield = call;
+
+  SET_LINENO(yield);
+  BlockStmt* ibbBody = new BlockStmt();
+  if (ForallStmt* fs = enclosingForallStmt(yield)) {
+    // An empty IBB is: if gIteratorBreakToken then throw;
+    ibbBody->insertAtTail(gotoForallErrorHandler(fs));
+  } else {
+    // An empty IBB is: if gIteratorBreakToken then return;
+    Symbol* epLab = parent->getOrCreateEpilogueLabel();
+    ibbBody->insertAtTail(new GotoStmt(GOTO_RETURN, epLab));
+  }
+  yield->insertAfter(new CondStmt(new SymExpr(gIteratorBreakToken),
+                                  ibbBody));
 }
 
 // Find and return the IBB for the given yield stmt.

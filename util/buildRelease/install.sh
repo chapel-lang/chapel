@@ -15,7 +15,10 @@ do
     #e.g. -s|--short)
     --stage=*)
       STAGE="${arg#*=}"
-      STAGE_SET=1
+      if [ ! -z $STAGE ]
+      then
+        STAGE_SET=1
+      fi
       shift
       ;;
     *)
@@ -322,14 +325,17 @@ myinstallfile third-party/llvm/filter-llvm-config.awk "$DEST_THIRD_PARTY"/llvm
 # copy utf8-decoder header
 myinstallfile third-party/utf8-decoder/utf8-decoder.h "$DEST_THIRD_PARTY"/utf8-decoder/
 
+
+MASON="bin/$CHPL_BIN_SUBDIR"/mason
+
 # copy mason
-if [ -f tools/mason/mason ]
+if [ -f "$MASON" ]
 then
   if [ ! -z "$PREFIX" ]
   then
-    myinstallfile tools/mason/mason "$PREFIX/bin"
+    myinstallfile "$MASON" "$PREFIX/bin"
   else
-    myinstallfile tools/mason/mason "$DEST_CHPL_HOME/tools/mason"
+    myinstallfile "$MASON" "$DEST_CHPL_HOME/tools/mason"
     ln -s "$DEST_CHPL_HOME/tools/mason/mason" "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"/mason
   fi
 fi

@@ -1,19 +1,10 @@
 #!/usr/bin/env bash
 #
-# GPU itiventerop testing on a Cray CS
+# GPU native testing on a Cray CS (using none for CHPL_COMM)
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common-slurm-gasnet-cray-cs.bash
-
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-cs-gpu-native"
-
+source $CWD/common-native-gpu.bash
 export CHPL_COMM=none
 
-module load cudatoolkit
-export CHPL_LLVM=system
-export CHPL_LOCALE_MODEL=gpu
-export CHPL_TEST_GPU=true
-export CHPL_LAUNCHER_PARTITION=stormP100
-export CHPL_NIGHTLY_TEST_DIRS="gpu/native/"
-
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-cs-gpu-native"
 $CWD/nightly -cron ${nightly_args}

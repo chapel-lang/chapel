@@ -23,8 +23,10 @@ ALL_SRCS += dyno/lib/resolution/*.cpp
 DYNO_RESOLUTION_SRCS =                              \
            Resolver.cpp                             \
            can-pass.cpp                             \
+           default-functions.cpp                    \
            disambiguation.cpp                       \
            intents.cpp                              \
+           prims.cpp                                \
            resolution-queries.cpp                   \
            resolution-types.cpp                     \
            scope-queries.cpp                        \

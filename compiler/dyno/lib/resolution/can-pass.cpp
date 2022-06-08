@@ -835,17 +835,33 @@ CanPassResult CanPassResult::canPass(Context* context,
   const Type* formalT = formalQT.type();
   assert(actualT && formalT);
 
+  // if the formal type is unknown, allow passing
+  // this can come up with e.g.
+  //   proc f(a: int(?w), b: int(2*w))
+  // when computing an initial candidate, 'b' is unknown
+  // but we should allow passing an argument to it.
+  if (formalQT.kind() == QualifiedType::UNKNOWN &&
+      formalT->isUnknownType() &&
+      !actualQT.isType()) {
+    return passAsIs();
+  }
+
+  // allow unknown qualifier for any type actuals
+  // so other code doesn't have to decide between param
+  // and type for type queries
+  bool typeQueryActual = (actualQT.kind() == QualifiedType::TYPE_QUERY);
+
   // check that the kinds are compatible
 
   // type formal, type actual -> OK
   // non-type formal, non-type actual -> OK
   // type formal, non-type actual -> error, can't pass value to type
   // non-type formal, type actual -> error, can't pass type to value
-  if (formalQT.isType() != actualQT.isType())
+  if (formalQT.isType() != actualQT.isType() && !typeQueryActual)
     return fail();
 
   // param actuals can pass to non-param formals
-  if (formalQT.isParam() && !actualQT.isParam())
+  if (formalQT.isParam() && !actualQT.isParam() && !typeQueryActual)
     return fail();
 
   // check params
@@ -879,7 +895,7 @@ CanPassResult CanPassResult::canPass(Context* context,
     return passAsIs();
   }
 
-  if (actualQT.isUnknown()) {
+  if (actualQT.isUnknown() && !typeQueryActual) {
     return fail(); // actual type not established
   }
 
@@ -904,7 +920,9 @@ CanPassResult CanPassResult::canPass(Context* context,
     switch (formalQT.kind()) {
       case QualifiedType::UNKNOWN:
       case QualifiedType::FUNCTION:
+      case QualifiedType::PARENLESS_FUNCTION:
       case QualifiedType::MODULE:
+      case QualifiedType::TYPE_QUERY:
       case QualifiedType::INDEX:
       case QualifiedType::DEFAULT_INTENT:
       case QualifiedType::CONST_INTENT:

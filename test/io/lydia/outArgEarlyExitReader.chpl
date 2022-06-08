@@ -12,7 +12,7 @@ proc normalReturn(doWhat: bool): bool {
   var f = open("filename.txt", iomode.r);
   var c = f.reader();
   var line: string;
-  while (c.readline(line)) {
+  while (c.readLine(line)) {
     write(line);
   }
   f.close();
@@ -32,7 +32,7 @@ proc outReturn(out res: bool, doWhat: bool) {
   var f = open("filename.txt", iomode.r);
   var c = f.reader();
   var line: string;
-  while (c.readline(line)) {
+  while (c.readLine(line)) {
     write(line);
   }
   f.close();
@@ -47,4 +47,3 @@ outReturn(res2, true);
 // At the time this test was filed, the previous command
 // would segfault.
 writeln(res2); // Should also output false.
-

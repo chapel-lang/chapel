@@ -37,7 +37,7 @@ writeln("total flashes: ", flashes.read());
 proc readEnergies() {
   var line: string;
   var row = 0;
-  while readline(line) {
+  while readLine(line) {
     line = line.strip();
     row += 1;
     stringToRow(line, row);
@@ -48,4 +48,3 @@ proc stringToRow(str: string, row) {
   for (ch, c) in zip(str, 1..) do
     Energy[row, c].write(ch: int);
 }
-

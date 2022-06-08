@@ -76,7 +76,7 @@ proc printSystemInfo() {
 
     if sub.exitCode == 0 {
       var ret, buf : string;
-      while sub.stdout.readline(buf) do ret += buf;
+      while sub.stdout.readLine(buf) do ret += buf;
       return ret.strip();
     } else {
       return "unknown";

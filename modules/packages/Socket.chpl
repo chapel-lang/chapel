@@ -72,8 +72,9 @@ public use Sys;
 public use SysError;
 public use CTypes;
 use Time;
-use SysBasic;
+use OS, OS.POSIX;
 use IO;
+import SysBasic.{syserr, ENOERR, fd_t, qio_err_t};
 
 /*
   Available values for different Internet
@@ -1225,10 +1226,10 @@ proc setBlocking(socketFd: fd_t, blocking: bool) throws {
     throw SystemError.fromSyserr(err, "Failed to get socket flags");
   }
   if blocking {
-    flags &= ~O_NONBLOCK;
+    flags &= ~OS.POSIX.O_NONBLOCK;
   }
   else {
-    flags |= O_NONBLOCK;
+    flags |= OS.POSIX.O_NONBLOCK;
   }
   err = sys_fcntl_long(socketFd, F_SETFL, flags, flags);
   if err != 0 {

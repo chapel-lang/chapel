@@ -115,13 +115,72 @@ const ModuleVec& parse(Context* context, UniqueString path);
 /**
   Return the current module search path.
  */
-const std::vector<std::string>& moduleSearchPath(Context* context);
+const std::vector<UniqueString>& moduleSearchPath(Context* context);
 
 /**
   Sets the current module search path.
  */
 void setModuleSearchPath(Context* context,
-                         std::vector<std::string> searchPath);
+                         std::vector<UniqueString> searchPath);
+
+/**
+  Return the current internal module path, i.e. CHPL_HOME/modules/internal/
+ */
+UniqueString internalModulePath(Context* context);
+
+/**
+  Set the current internal modules directory, i.e. CHPL_HOME/modules/internal/
+  This should be formed in a consistent manner with setModuleSearchPath,
+  so that this is a prefix for some module search paths.
+ */
+void setInternalModulePath(Context* context, UniqueString path);
+
+
+/**
+  Return the current standard module path, i.e. CHPL_HOME/modules/
+ */
+UniqueString bundledModulePath(Context* context);
+
+/**
+  Set the current bundled modules directory, i.e. CHPL_HOME/modules/
+  This should be formed in a consistent manner with setModuleSearchPath,
+  so that this is a prefix for some module search paths.
+ */
+void setBundledModulePath(Context* context, UniqueString path);
+
+/**
+  Helper to call setModuleSearchPath, setInternalModulePath, standardModulePath.
+  This function accepts the path to CHPL_HOME, and any additional
+  module path components (from environment variable and command line).
+
+  Most of these arguments have corresponding env / printchplenv settings:
+    chplHome             -- CHPL_HOME
+    chplLocaleModel      -- CHPL_LOCALE_MODEL
+    chplTasks            -- CHPL_TASKS
+    chplComm             -- CHPL_COMM
+    chplSysModulesSubdir -- CHPL_SYS_MODULES_SUBDIR
+    chplModulePath       -- CHPL_MODULE_PATH
+ */
+void setupModuleSearchPaths(Context* context,
+                            const std::string& chplHome,
+                            bool minimalModules,
+                            const std::string& chplLocaleModel,
+                            bool enableTaskTracking,
+                            const std::string& chplTasks,
+                            const std::string& chplComm,
+                            const std::string& chplSysModulesSubdir,
+                            const std::string& chplModulePath,
+                            const std::vector<std::string>& cmdLinePaths);
+
+/**
+ Returns true if the ID corresponds to something in an internal module.
+ */
+bool idIsInInternalModule(Context* context, ID id);
+
+/**
+ Returns true if the ID corresponds to something in a bundled module.
+ */
+bool idIsInBundledModule(Context* context, ID id);
 
 /**
  This query parses a toplevel module by name. Returns nullptr
@@ -140,6 +199,11 @@ const uast::AstNode* idToAst(Context* context, ID id);
 uast::AstTag idToTag(Context* context, ID id);
 
 /**
+ Returns true if the ID is a parenless function.
+ */
+bool idIsParenlessFunction(Context* context, ID id);
+
+/**
  Returns the parent ID given an ID
  */
 const ID& idToParentId(Context* context, ID id);
@@ -154,7 +218,28 @@ uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id);
  Returns 'true' if the passed ID represents a Function with a where clause,
  and 'false' otherwise.
  */
-bool functionWithIdHasWhere(Context* context, ID id);
+bool idIsFunctionWithWhere(Context* context, ID id);
+
+/**
+  Given an ID for a Variable, returns the ID of the containing
+  MultiDecl or TupleDecl, if any, and the ID of the variable otherwise.
+ */
+ID idToContainingMultiDeclId(Context* context, ID id);
+
+/**
+  Given an ID for a Record/Union/Class Decl,
+  returns 'true' if the passed name is the name of a field contained in it.
+ */
+bool idContainsFieldWithName(Context* context, ID typeDeclId,
+                             UniqueString fieldName);
+
+/**
+  Given an ID for a Record/Union/Class Decl,
+  and a field name, returns the ID for the Variable declaring that field.
+ */
+ID fieldIdWithName(Context* context, ID typeDeclId,
+                   UniqueString fieldName);
+
 
 /**
  * Store config settings that were set from the command line using -s flags

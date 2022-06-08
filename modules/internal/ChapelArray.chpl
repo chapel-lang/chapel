@@ -1700,7 +1700,7 @@ module ChapelArray {
       if boundsChecking && isEmpty() then
         halt("last called on an empty array");
 
-      return this(this.domain.high);
+      return this(this.domain.last);
     }
 
     deprecated "Array back() method is deprecated; use :proc:`last` instead"
@@ -1718,7 +1718,7 @@ module ChapelArray {
       if boundsChecking && isEmpty() then
         halt("first called on an empty array");
 
-      return this(this.domain.low);
+      return this(this.domain.first);
     }
 
     deprecated "Array front() method is deprecated; use :proc:`first` instead"
@@ -1730,9 +1730,9 @@ module ChapelArray {
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
-      const lo = this.domain.low,
+      const lo = this.domain.alignedLow,
             mid = this.domain.sizeAs(this.idxType) / 2,
-            hi = this.domain.high;
+            hi = this.domain.alignedHigh;
       for i in 0..#mid {
         this[lo + i] <=> this[hi - i];
       }
@@ -1954,32 +1954,6 @@ module ChapelArray {
     compilerError("cannot apply '#' to '", arr.type:string,
                   "' using count(s) of type ", counts.type:string);
   }
-
-  //
-  // isXxxType, isXxxValue
-  //
-
-  /* Return true if ``t`` is a domain map type. Otherwise return false. */
-  proc isDmapType(type t) param {
-    proc isDmapHelp(type t: _distribution) param  return true;
-    proc isDmapHelp(type t)                param  return false;
-    return isDmapHelp(t);
-  }
-
-  pragma "no doc"
-  proc isDmapValue(e: _distribution) param  return true;
-  /* Return true if ``e`` is a domain map. Otherwise return false. */
-  proc isDmapValue(e)                param  return false;
-
-  /* Return true if ``t`` is an array type. Otherwise return false. */
-  proc isArrayType(type t) param {
-    return isSubtype(t, _array);
-  }
-
-  pragma "no doc"
-  proc isArrayValue(e: []) param  return true;
-  /* Return true if ``e`` is an array. Otherwise return false. */
-  proc isArrayValue(e)     param  return false;
 
   //
   // Helper functions
@@ -2363,7 +2337,7 @@ module ChapelArray {
 
      // TODO can we omit the following check and bulk transfer narrow
      // pointers, too
-    if __primitive("is wide pointer", a[aDom.low]) {
+    if __primitive("is wide pointer", a[aDom.alignedLow]) {
       return chpl__bulkTransferArray(a, aDom, b, bDom);
     }
     return false;

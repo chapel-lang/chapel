@@ -22,7 +22,6 @@ target_sources(libdyno-obj
                BasicClassType.cpp
                BoolType.cpp
                BuiltinType.cpp
-               BytesType.cpp
                CStringType.cpp
                ClassType.cpp
                ClassTypeDecorator.cpp
@@ -38,7 +37,6 @@ target_sources(libdyno-obj
                QualifiedType.cpp
                RealType.cpp
                RecordType.cpp
-               StringType.cpp
                TupleType.cpp
                Type.cpp
                TypeTag.cpp

@@ -367,6 +367,43 @@ static void test6() {
   }
 }
 
+// check a parenless function call
+static void test7() {
+  printf("test7\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             proc parenless { return 1; }
+                             parenless;
+                           }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 2);
+  const Identifier* ident = m->stmt(1)->toIdentifier();
+  assert(ident);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(ident);
+
+  assert(re.type().type());
+  assert(re.type().type()->isIntType());
+
+  const TypedFnSignature* fn = re.mostSpecific().only();
+  assert(fn != nullptr);
+  assert(fn->untyped()->name() == "parenless");
+  assert(fn->numFormals() == 0);
+}
+
+
 int main() {
   test1();
   test2();
@@ -374,6 +411,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }

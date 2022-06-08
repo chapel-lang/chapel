@@ -1,2 +1,2 @@
-readln returnd true, numRead 9: 49 50 51 52 53 54 55 56 57
-readln returnd false, numRead 0: 
+readln returnd numRead 9: 49 50 51 52 53 54 55 56 57
+readln returnd numRead 0: 

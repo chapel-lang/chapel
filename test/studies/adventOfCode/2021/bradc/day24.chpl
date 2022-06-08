@@ -13,7 +13,7 @@ var code: list(string);
 var numruns = 0;
 
 
-while infile.readline(line) {
+while infile.readLine(line) {
   line = line.strip();
   code.append(line);
 }

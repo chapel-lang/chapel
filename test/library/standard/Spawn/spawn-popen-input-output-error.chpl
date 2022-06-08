@@ -16,10 +16,10 @@ sub.stdin.writeln("Along");
 sub.communicate();
 
 var line:string;
-while sub.stdout.readline(line) {
+while sub.stdout.readLine(line) {
   write("stdout line: ", line);
 }
-while sub.stderr.readline(line) {
+while sub.stderr.readLine(line) {
   write("stderr line: ", line);
 }
 

@@ -6,8 +6,8 @@ idxType          = color
 stridable        = false
 size             = 9
 isEmpty()        = false
-low              = (orange, yellow)
-high             = (green, blue)
+lowBound         = (orange, yellow)
+highBound        = (green, blue)
 stride           = (1, 1)
 alignment        = (orange, yellow)
 first            = (orange, yellow)
@@ -55,8 +55,8 @@ Clearing...
 {orange..red, orange..red}
 size             = 0
 isEmpty()        = true
-low              = (orange, orange)
-high             = (red, red)
+lowBound         = (orange, orange)
+highBound        = (red, red)
 stride           = (1, 1)
 alignment        = (orange, orange)
 
@@ -68,8 +68,8 @@ idxType          = color
 stridable        = true
 size             = 4
 isEmpty()        = false
-low              = (orange, yellow)
-high             = (green, blue)
+lowBound         = (orange, yellow)
+highBound        = (green, blue)
 stride           = (2, 2)
 alignment        = (orange, yellow)
 first            = (orange, yellow)
@@ -117,8 +117,8 @@ Clearing...
 {orange..red, orange..red}
 size             = 0
 isEmpty()        = true
-low              = (orange, orange)
-high             = (red, red)
+lowBound         = (orange, orange)
+highBound        = (red, red)
 stride           = (1, 1)
 alignment        = (red, red)
 

@@ -52,7 +52,7 @@ to read the output from the ``ls`` command.
   var sub = spawn(["ls", "test.*"], stdout=pipeStyle.pipe);
 
   var line:string;
-  while sub.stdout.readline(line) {
+  while sub.stdout.readLine(line) {
     write("ls returned: ", line);
   }
 
@@ -74,7 +74,7 @@ back its input.
   sub.communicate();
 
   var line:string;
-  while sub.stdout.readline(line) {
+  while sub.stdout.readLine(line) {
     write("Got line: ", line);
   }
 
@@ -132,7 +132,8 @@ module Subprocess {
   public use IO;
   use SysError;
   use CTypes;
-  use SysBasic;
+  use OS.POSIX;
+  import SysBasic.{syserr, ENOERR};
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),
@@ -1030,7 +1031,7 @@ module Subprocess {
   deprecated "'Subprocess.SIGTRAP' is deprecated. Use 'Sys.SIGTRAP' instead."
   extern const SIGTRAP: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGSTP' is deprecated. Use 'Sys.SIGSTP' instead."
+  deprecated "'Subprocess.SIGTSTP' is deprecated. Use 'Sys.SIGTSTP' instead."
   extern const SIGTSTP: c_int;
   pragma "no doc"
   deprecated "'Subprocess.SIGTTIN' is deprecated. Use 'Sys.SIGTTIN' instead."

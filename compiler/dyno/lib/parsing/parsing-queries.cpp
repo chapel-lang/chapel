@@ -22,10 +22,13 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
+#include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
+#include "chpl/uast/MultiDecl.h"
+#include "chpl/uast/TupleDecl.h"
 
 #include "../util/filesystem_help.h"
 
@@ -99,7 +102,7 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
     result.swap(tmpResult);
     // raise any errors encountered
     for (const ErrorMessage& e : result.errors()) {
-      if (!e.isEmpty()) {
+      if (!e.isDefaultConstructed()) {
         // report the error and save it for this query
         context->report(e);
       }
@@ -164,24 +167,142 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-static const std::vector<std::string>&
+static const std::vector<UniqueString>&
 moduleSearchPathQuery(Context* context) {
   QUERY_BEGIN_INPUT(moduleSearchPathQuery, context);
 
   // return the empty path if it wasn't already set in
   // setModuleSearchPath
-  std::vector<std::string> result;
+  std::vector<UniqueString> result;
 
   return QUERY_END(result);
 }
 
-const std::vector<std::string>& moduleSearchPath(Context* context) {
+const std::vector<UniqueString>& moduleSearchPath(Context* context) {
   return moduleSearchPathQuery(context);
 }
 
 void setModuleSearchPath(Context* context,
-                         std::vector<std::string> searchPath) {
+                         std::vector<UniqueString> searchPath) {
   QUERY_STORE_INPUT_RESULT(moduleSearchPathQuery, context, searchPath);
+}
+
+
+static const UniqueString&
+internalModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(internalModulePathQuery, context);
+
+  // use empty string if wasn't already set by setInternalModulePath
+  UniqueString result;
+
+  return QUERY_END(result);
+}
+
+UniqueString internalModulePath(Context* context) {
+  return internalModulePathQuery(context);
+}
+
+void setInternalModulePath(Context* context, UniqueString path) {
+  QUERY_STORE_INPUT_RESULT(internalModulePathQuery, context, path);
+}
+
+static const UniqueString&
+bundledModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(bundledModulePathQuery, context);
+
+  // use empty string if wasn't already set by setInternalModulePath
+  UniqueString result;
+
+  return QUERY_END(result);
+}
+
+UniqueString bundledModulePath(Context* context) {
+  return bundledModulePathQuery(context);
+}
+void setBundledModulePath(Context* context, UniqueString path) {
+  QUERY_STORE_INPUT_RESULT(bundledModulePathQuery, context, path);
+}
+
+void setupModuleSearchPaths(Context* context,
+                            const std::string& chplHome,
+                            bool minimalModules,
+                            const std::string& chplLocaleModel,
+                            bool enableTaskTracking,
+                            const std::string& chplTasks,
+                            const std::string& chplComm,
+                            const std::string& chplSysModulesSubdir,
+                            const std::string& chplModulePath,
+                            const std::vector<std::string>& cmdLinePaths) {
+
+  std::string modRoot;
+  if (!minimalModules) {
+    modRoot = chplHome + "/modules";
+  } else {
+    modRoot = chplHome + "/modules/minimal";
+  }
+
+  std::string internal = modRoot + "/internal";
+  setInternalModulePath(context, UniqueString::get(context, internal));
+  std::string bundled = modRoot + "/";
+  setBundledModulePath(context, UniqueString::get(context, bundled));
+
+  std::vector<std::string> searchPath;
+
+  searchPath.push_back(modRoot + "/internal/localeModels/" + chplLocaleModel);
+
+  const char* tt = enableTaskTracking ? "on" : "off";
+  searchPath.push_back(modRoot + "/internal/tasktable/" + tt);
+
+  searchPath.push_back(modRoot + "/internal/tasks/" + chplTasks);
+
+  searchPath.push_back(modRoot + "/internal/comm/" + chplComm);
+
+  searchPath.push_back(modRoot + "/internal");
+
+  searchPath.push_back(modRoot + "/standard/gen/" + chplSysModulesSubdir);
+
+  searchPath.push_back(modRoot + "/standard");
+  searchPath.push_back(modRoot + "/packages");
+  searchPath.push_back(modRoot + "/layouts");
+  searchPath.push_back(modRoot + "/dists");
+  searchPath.push_back(modRoot + "/dists/dims");
+
+  // Add paths from the CHPL_MODULE_PATH environment variable
+  if (!chplModulePath.empty()) {
+
+    auto ss = std::stringstream(chplModulePath);
+    std::string path;
+
+    while (std::getline(ss, path, ':')) {
+      searchPath.push_back(path);
+    }
+  }
+
+  // Add paths from the command line
+  for (const auto& p : cmdLinePaths) {
+    searchPath.push_back(p);
+  }
+
+  // Convert them all to UniqueStrings.
+  std::vector<UniqueString> uSearchPath;
+  for (const auto& p : searchPath) {
+    uSearchPath.push_back(UniqueString::get(context, p));
+  }
+
+  // Set the module search path.
+  setModuleSearchPath(context, uSearchPath);
+}
+
+bool idIsInInternalModule(Context* context, ID id) {
+  UniqueString internal = internalModulePath(context);
+  UniqueString filePath = context->filePathForId(id);
+  return filePath.startsWith(internal);
+}
+
+bool idIsInBundledModule(Context* context, ID id) {
+  UniqueString modules = bundledModulePath(context);
+  UniqueString filePath = context->filePathForId(id);
+  return filePath.startsWith(modules);
 }
 
 static const Module* const& getToplevelModuleQuery(Context* context,
@@ -211,8 +332,8 @@ static const Module* const& getToplevelModuleQuery(Context* context,
     std::string check;
 
     for (auto path : moduleSearchPath(context)) {
-      check.clear();
-      check += path;
+      check = path.str();
+
       // Remove any '/' characters before adding one so we don't double.
       while (!check.empty() && check.back() == '/') {
         check.pop_back();
@@ -296,6 +417,28 @@ AstTag idToTag(Context* context, ID id) {
   return idToTagQuery(context, id);
 }
 
+static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsParenlessFunctionQuery, context, id);
+
+  bool result = false;
+
+  AstTag tag = idToTag(context, id);
+  if (asttags::isFunction(tag)) {
+    const AstNode* ast = astForIDQuery(context, id);
+    if (ast != nullptr) {
+      if (auto fn = ast->toFunction()) {
+        result = fn->isParenless();
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsParenlessFunction(Context* context, ID id) {
+  return idIsParenlessFunctionQuery(context, id);
+}
+
 const ID& idToParentId(Context* context, ID id) {
   // Performance: Would it be better to have the parse query
   // set this query as an alternative to computing maps
@@ -351,8 +494,141 @@ functionWithIdHasWhereQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-bool functionWithIdHasWhere(Context* context, ID id) {
+bool idIsFunctionWithWhere(Context* context, ID id) {
   return functionWithIdHasWhereQuery(context, id);
+}
+
+static const ID&
+idToContainingMultiDeclIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
+
+  ID cur = id;
+  assert(isVariable(idToTag(context, id)));
+
+  while (true) {
+    ID parent = idToParentId(context, cur);
+    AstTag parentTag = idToTag(context, parent);
+    if (isMultiDecl(parentTag) || isTupleDecl(parentTag)) {
+      // Continue looping with 'cur'
+      cur = parent;
+    } else {
+      // Stop looping and 'cur' is the decl to use
+      break;
+    }
+  }
+
+  return QUERY_END(cur);
+}
+
+ID idToContainingMultiDeclId(Context* context, ID id) {
+  return idToContainingMultiDeclIdQuery(context, id);
+}
+
+static bool helpFieldNameCheck(const AstNode* ast,
+                               UniqueString fieldName) {
+  if (auto var = ast->toVarLikeDecl()) {
+    return var->name() == fieldName;
+  } else if (auto mult = ast->toMultiDecl()) {
+    for (auto decl : mult->decls()) {
+      bool found = helpFieldNameCheck(decl, fieldName);
+      if (found) {
+        return true;
+      }
+    }
+  } else if (auto tup = ast->toTupleDecl()) {
+    for (auto decl : tup->decls()) {
+      bool found = helpFieldNameCheck(decl, fieldName);
+      if (found) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static const bool&
+idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
+  QUERY_BEGIN(idContainsFieldWithNameQuery, context, typeDeclId, fieldName);
+
+  bool result = false;
+  auto ast = parsing::idToAst(context, typeDeclId);
+  if (ast && ast->isAggregateDecl()) {
+    auto ad = ast->toAggregateDecl();
+
+    for (auto child: ad->children()) {
+      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      if (child->isVarLikeDecl() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        bool found = helpFieldNameCheck(child, fieldName);
+        if (found) {
+          result = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idContainsFieldWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
+  return idContainsFieldWithNameQuery(context, typeDeclId, fieldName);
+}
+
+static bool helpFindFieldId(const AstNode* ast,
+                            UniqueString fieldName,
+                            ID& fieldId) {
+  if (auto var = ast->toVarLikeDecl()) {
+    if (var->name() == fieldName) {
+      fieldId = var->id();
+      return true;
+    }
+  } else if (auto mult = ast->toMultiDecl()) {
+    for (auto decl : mult->decls()) {
+      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      if (found) {
+        return true;
+      }
+    }
+  } else if (auto tup = ast->toTupleDecl()) {
+    for (auto decl : tup->decls()) {
+      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      if (found) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static const ID&
+fieldIdWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
+  QUERY_BEGIN(fieldIdWithNameQuery, context, typeDeclId, fieldName);
+
+  ID result;
+  auto ast = parsing::idToAst(context, typeDeclId);
+  if (ast && ast->isAggregateDecl()) {
+    auto ad = ast->toAggregateDecl();
+
+    for (auto child: ad->children()) {
+      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      if (child->isVarLikeDecl() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        bool found = helpFindFieldId(child, fieldName, result);
+        if (found) {
+          break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+ID fieldIdWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
+  return fieldIdWithNameQuery(context, typeDeclId, fieldName);
 }
 
 void setConfigSettings(Context* context, ConfigSettingsList keys) {

@@ -34,7 +34,8 @@
  */
 module SysError {
 
-use SysBasic;
+use OS.POSIX;
+import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,qio_err_t,ENOERR,syserr};
 private use CTypes;
 
 /*

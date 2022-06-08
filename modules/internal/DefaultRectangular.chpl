@@ -32,7 +32,7 @@ module DefaultRectangular {
 
   use DSIUtil;
   public use ChapelArray;
-  use ChapelDistribution, ChapelRange, SysBasic, SysError, CTypes, CTypes;
+  use ChapelDistribution, ChapelRange, SysError, CTypes, CTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
   public use ExternalArray; // OK: currently expected to be available by
@@ -417,7 +417,7 @@ module DefaultRectangular {
             coforall chunk2 in 0..#numChunks2 {
               var locBlock2: rank*range(intIdxType);
               for param i in 0..rank-1 do
-                locBlock2(i) = followMe(i).low..followMe(i).high;
+                locBlock2(i) = followMe(i).lowBound..followMe(i).highBound;
               var followMe2: rank*range(intIdxType) = locBlock2;
               const low  = locBlock2(parDim2)._low,
                 high = locBlock2(parDim2)._high;
@@ -507,7 +507,7 @@ module DefaultRectangular {
       var block: rank*range(idxType=intIdxType, stridable=stridable);
       if boundsChecking then
         for param i in 0..rank-1 do
-          if followThis(i).high >= ranges(i).sizeAs(uint) then
+          if followThis(i).highBound >= ranges(i).sizeAs(uint) then
             HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration (dimension " + i:string + ")");
       if stridable {
         type strType = chpl__signedType(intIdxType);
@@ -518,21 +518,21 @@ module DefaultRectangular {
                 fSignedStride = followThis(i).stride:strType;
           if rStride > 0 {
             const riStride = rStride:intIdxType;
-            const low = ranges(i).alignedLowAsInt + followThis(i).low*riStride,
-                  high = ranges(i).alignedLowAsInt + followThis(i).high*riStride,
+            const low = ranges(i).alignedLowAsInt + followThis(i).lowBound*riStride,
+                  high = ranges(i).alignedLowAsInt + followThis(i).highBound*riStride,
                   stride = (rSignedStride * fSignedStride):strType;
             block(i) = low..high by stride;
           } else {
             const irStride = (-rStride):intIdxType;
-            const low = ranges(i).alignedHighAsInt - followThis(i).high*irStride,
-                  high = ranges(i).alignedHighAsInt - followThis(i).low*irStride,
+            const low = ranges(i).alignedHighAsInt - followThis(i).highBound*irStride,
+                  high = ranges(i).alignedHighAsInt - followThis(i).lowBound*irStride,
                   stride = (rSignedStride * fSignedStride):strType;
             block(i) = low..high by stride;
           }
         }
       } else {
         for  param i in 0..rank-1 do
-          block(i) = ranges(i)._low+followThis(i).low:intIdxType..ranges(i)._low+followThis(i).high:intIdxType;
+          block(i) = ranges(i)._low+followThis(i).lowBound:intIdxType..ranges(i)._low+followThis(i).highBound:intIdxType;
       }
 
       if rank == 1 {
@@ -587,22 +587,22 @@ module DefaultRectangular {
 
     proc dsiLow {
       if rank == 1 {
-        return ranges(0).low;
+        return ranges(0).lowBound;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).low;
+          result(i) = ranges(i).lowBound;
         return result;
       }
     }
 
     proc dsiHigh {
       if rank == 1 {
-        return ranges(0).high;
+        return ranges(0).highBound;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).high;
+          result(i) = ranges(i).highBound;
         return result;
       }
     }
@@ -683,7 +683,7 @@ module DefaultRectangular {
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
 
-      var allocRange:range(idxType) = (ranges(0).low)..#allocSize;
+      var allocRange:range(idxType) = (ranges(0).lowBound)..#allocSize;
       return new unmanaged DefaultRectangularArr(eltType=eltType,
                                        rank=rank,
                                        idxType=idxType,
@@ -848,11 +848,11 @@ module DefaultRectangular {
   }
 
   proc _remoteAccessData.strideAlignUp(lo, r)
-    return r.low + (lo - r.low + abs(r.stride):idxType - 1)
+    return r.lowBound + (lo - r.lowBound + abs(r.stride):idxType - 1)
            / abs(r.stride):idxType * abs(r.stride):idxType;
 
   proc _remoteAccessData.strideAlignDown(hi, r)
-    return hi - (hi - r.low) % abs(r.stride):idxType;
+    return hi - (hi - r.lowBound) % abs(r.stride):idxType;
 
   proc _remoteAccessData.initDataFrom(other : _remoteAccessData) {
     this.data = other.data;
@@ -875,7 +875,7 @@ module DefaultRectangular {
     rad.str         = chpl__tuplify(newDom.dsiStride);
 
     for param i in 0..rank-1 {
-      const shift = this.blk(i) * (chpl__idxToInt(newDom.dsiDim(i).low) - chpl__idxToInt(this.off(i))).safeCast(int) / abs(this.str(i));
+      const shift = this.blk(i) * (chpl__idxToInt(newDom.dsiDim(i).lowBound) - chpl__idxToInt(this.off(i))).safeCast(int) / abs(this.str(i));
       if this.str(i) > 0 {
         rad.origin += shift;
       } else {
@@ -938,7 +938,7 @@ module DefaultRectangular {
     var curDim      = 0;
     for param j in 0..idx.size-1 {
       if !collapsedDims(j) {
-        rad.off(curDim) = newDom.dsiDim(curDim).low;
+        rad.off(curDim) = newDom.dsiDim(curDim).lowBound;
         const off       = (chpl__idxToInt(rad.off(curDim)) - chpl__idxToInt(this.off(j))):idxSignedType;
         rad.origin     += this.blk(j) * off.safeCast(int) / this.str(j);
         rad.blk(curDim) = this.blk(j);
@@ -1385,7 +1385,7 @@ module DefaultRectangular {
                  (dom.dsiDim(i).stride>0 && str(i)>0));
           s = (dom.dsiDim(i).stride / str(i)) : d.idxType;
         }
-        alias.off(i) = d.dsiDim(i).low;
+        alias.off(i) = d.dsiDim(i).lowBound;
         alias.blk(i) = blk(i) * s;
         alias.str(i) = d.dsiDim(i).stride;
       }
@@ -1396,7 +1396,7 @@ module DefaultRectangular {
       where dom.stridable == false && this.stridable == false
     {
       for param i in 0..rank-1 {
-        alias.off(i) = d.dsiDim(i).low;
+        alias.off(i) = d.dsiDim(i).lowBound;
         alias.blk(i) = blk(i);
         alias.str(i) = d.dsiDim(i).stride;
       }
@@ -1439,7 +1439,7 @@ module DefaultRectangular {
         const oldSize = dom.dsiNumIndices;
         const newSize = reallocD.sizeAs(oldSize.type);
         if (!disableArrRealloc && rank == 1 &&
-            reallocD.low == dom.dsiLow && reallocD.stride == dom.dsiStride &&
+            reallocD.lowBound == dom.dsiLow && reallocD.stride == dom.dsiStride &&
             dom.dsiNumIndices > 0 && reallocD.size > 0 &&
             _ddata_supports_reallocate(data, eltType, oldSize, newSize)) {
 
@@ -1802,7 +1802,7 @@ module DefaultRectangular {
 
       var first = true;
 
-      var offset = dom.dsiDim(0).low;
+      var offset = dom.dsiDim(0).lowBound;
       var i = 0;
 
       var read_end = false;
@@ -2399,7 +2399,7 @@ module DefaultRectangular {
         myop.accumulate(elem);
         res[i] = myop.generate();
       }
-      state[tid] = res[rngs[tid].high];
+      state[tid] = res[rngs[tid].highBound];
       delete myop;
     }
 

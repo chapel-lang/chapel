@@ -153,9 +153,9 @@
  */
 module ChapelRange {
 
-  use ChapelBase, SysBasic, HaltWrappers;
+  use ChapelBase, HaltWrappers;
 
-  use Math, DSIUtil;
+  use AutoMath, DSIUtil;
 
   private use ChapelDebugPrint only chpl_debug_writeln;
 
@@ -170,6 +170,9 @@ module ChapelRange {
   deprecated "'sizeReturnsInt' is deprecated and no longer has an effect"
   config param sizeReturnsInt = false;
 
+  // Should .low/.high queries be aligned by default?  (Note: They will be
+  // in future Chapel releases).
+  config param alignedBoundsByDefault = false;
 
   /*
     The ``BoundedRangeType`` enum is used to specify the types of bounds a
@@ -572,18 +575,6 @@ module ChapelRange {
   //# Predicates
   //#
 
-  /* Return true if argument ``t`` is a range type, false otherwise */
-  proc isRangeType(type t) param {
-    proc isRangeHelp(type t: range(?)) param  return true;
-    proc isRangeHelp(type t)           param  return false;
-    return isRangeHelp(t);
-  }
-  pragma "no doc"
-  proc isRangeValue(r: range(?)) param  return true;
-  /* Return true if argument ``r`` is a range, false otherwise */
-  pragma "no doc"
-  proc isRangeValue(r)           param  return false;
-
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
   pragma "no doc"
   proc isBoundedRange(r)           param
@@ -658,17 +649,29 @@ module ChapelRange {
 
   /* Return the range's low bound. If the range does not have a low
      bound (e.g., ``..10``), a compiler error is generated. */
-  inline proc range.low {
+  inline proc range.lowBound {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
     }
     return chpl_intToIdx(_low);
   }
 
+  /* Return the range's low bound. If the range does not have a low
+     bound (e.g., ``..10``), a compiler error is generated. */
+  inline proc range.low {
+    if !hasLowBound() {
+      compilerError("can't query the low bound of a range without one");
+    }
+    if !alignedBoundsByDefault && stridable {
+      compilerWarning("The '.low' query on ranges is in the process of changing from returning the pure low bound to the aligned low bound (e.g., from '1' to '2' for '1..10 by -2').  Update to the '.lowBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior.");
+    }
+    return if alignedBoundsByDefault then this.alignedLow else chpl_intToIdx(_low);
+  }
+
 
   /* Return the range's high bound. If the range does not have a high
      bound (e.g., ``1..``), a compiler error is generated. */
-  inline proc range.high {
+  inline proc range.highBound {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
     }
@@ -679,6 +682,25 @@ module ChapelRange {
       }
     }
     return chpl_intToIdx(_high);
+  }
+
+
+  /* Return the range's high bound. If the range does not have a high
+     bound (e.g., ``1..``), a compiler error is generated. */
+  inline proc range.high {
+    if !hasHighBound() {
+      compilerError("can't query the high bound of a range without one");
+    }
+    if !alignedBoundsByDefault && stridable {
+      compilerWarning("The '.high' query on ranges is in the process of changing from returning the pure high bound to the aligned high bound (e.g., from '10' to '9' for '1..10 by 2').  Update to the '.highBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior now and avoid this warning.");
+    }
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high { // avoid circularity of calling .size which calls .high
+        warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
+        return if alignedBoundsByDefault then this.alignedLow else chpl_intToIdx(_low);
+      }
+    }
+    return if alignedBoundsByDefault then this.alignedHigh else chpl_intToIdx(_high);
   }
 
 
@@ -1034,8 +1056,8 @@ operator :(r: range(?), type t: range(?)) {
     tmp._aligned = r.aligned;
   }
 
-  tmp._low = (if r.hasLowBound() then r.low else r._low): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then r.high else r._high): tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then r.lowBound else r._low): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then r.highBound else r._high): tmp.intIdxType;
   return tmp;
 }
 
@@ -2265,7 +2287,7 @@ operator :(r: range(?), type t: range(?)) {
 
     while __primitive("C for loop",
                       __primitive( "=", i, start),
-                      __primitive(">=", high, low),  // execute at least once?
+                      __primitive(">=", highBound, lowBound),  // execute at least once?
                       __primitive("+=", i, stride: intIdxType)) {
       yield i;
       if i == end then break;
@@ -2539,14 +2561,14 @@ operator :(r: range(?), type t: range(?)) {
     var ret: string;
 
     if x.hasLowBound() then
-      ret += x.low:string;
+      ret += x.lowBound:string;
     ret += "..";
     if x.hasHighBound() {
       // handle the special case of an empty range with a singleton idxType
       if (chpl__singleValIdxType(x.idxType) && x._high != x._low) {
-        ret += "<" + x.low:string;
+        ret += "<" + x.lowBound:string;
       } else {
-        ret += x.high:string;
+        ret += x.highBound:string;
       }
     }
     if x.stride != 1 {

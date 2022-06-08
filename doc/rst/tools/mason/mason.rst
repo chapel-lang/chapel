@@ -12,15 +12,17 @@ Mason is Chapel's package manager
 Installation Instructions
 =========================
 
-In ``$CHPL_HOME`` run the following:
+Building Mason
+~~~~~~~~~~~~~~
+
+First, make sure your environment is correctly setup, as described in :ref:`readme-chplenv`. In ``$CHPL_HOME`` run the following:
 
 .. code-block:: sh
 
    make mason
 
-It builds the mason binary so that the command line interface can be used.
-This installs mason in the same place as the chapel compiler (``chpl``) so that
-mason can be used anywhere in the user's file system.
+It builds the mason binary as ``$CHPL_HOME/bin/$CHPL_HOST_PLATFORM-$CHPL_HOST_ARCH/mason`` so that the command line interface can be used.
+If the binary is already in your path (see :ref:`using-chapel-in-other-sessions`),  mason can be used anywhere in the user’s file system.
 
 To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
 
@@ -28,6 +30,19 @@ To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
 
    make clean
 
+
+Installing Mason
+~~~~~~~~~~~~~~~~
+
+Similarly to ``chpl``, mason can be built and installed into a specific directory (e.g ``/usr/local/bin``) as follows
+
+.. code-block:: sh
+
+  ./configure
+  make mason
+  make install
+
+The folder where the binary is installed can be configured with the ``--prefix`` or ``--chpl-home`` options, as described in :ref:`readme-installing`.
 
 Using a Mason Package
 =====================
@@ -91,7 +106,7 @@ You should see something like this:
     writeln("New library: HelloPackage");
   }
 
-This program will run as-is, but we aren't using our ``HelloWorld`` dependecy
+This program will run as-is, but we aren't using our ``HelloWorld`` dependency
 just yet. In order to use the package, we need to add a ``use HelloWorld`` to
 bring in the dependency. This gives us access to the whole module namespace
 of the ``HelloWorld`` package, and we can call all of the available functions.

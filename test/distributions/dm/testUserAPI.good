@@ -6,8 +6,8 @@ idxType          = int(64)
 stridable        = false
 size             = 25
 isEmpty()        = false
-low              = (1, 0)
-high             = (5, 4)
+lowBound         = (1, 0)
+highBound        = (5, 4)
 stride           = (1, 1)
 alignment        = (1, 0)
 first            = (1, 0)
@@ -55,8 +55,8 @@ Clearing...
 {1..0, 1..0}
 size             = 0
 isEmpty()        = true
-low              = (1, 1)
-high             = (0, 0)
+lowBound         = (1, 1)
+highBound        = (0, 0)
 stride           = (1, 1)
 alignment        = (1, 1)
 
@@ -68,8 +68,8 @@ idxType          = int(64)
 stridable        = false
 size             = 25
 isEmpty()        = false
-low              = (1, 0)
-high             = (5, 4)
+lowBound         = (1, 0)
+highBound        = (5, 4)
 stride           = (1, 1)
 alignment        = (1, 0)
 first            = (1, 0)
@@ -117,8 +117,8 @@ Clearing...
 {1..0, 1..0}
 size             = 0
 isEmpty()        = true
-low              = (1, 1)
-high             = (0, 0)
+lowBound         = (1, 1)
+highBound        = (0, 0)
 stride           = (1, 1)
 alignment        = (1, 1)
 
@@ -130,8 +130,8 @@ idxType          = int(64)
 stridable        = false
 size             = 25
 isEmpty()        = false
-low              = (1, 0)
-high             = (5, 4)
+lowBound         = (1, 0)
+highBound        = (5, 4)
 stride           = (1, 1)
 alignment        = (1, 0)
 first            = (1, 0)
@@ -179,8 +179,8 @@ Clearing...
 {1..0, 1..0}
 size             = 0
 isEmpty()        = true
-low              = (1, 1)
-high             = (0, 0)
+lowBound         = (1, 1)
+highBound        = (0, 0)
 stride           = (1, 1)
 alignment        = (1, 1)
 
@@ -192,8 +192,8 @@ idxType          = int(64)
 stridable        = false
 size             = 25
 isEmpty()        = false
-low              = (1, 0)
-high             = (5, 4)
+lowBound         = (1, 0)
+highBound        = (5, 4)
 stride           = (1, 1)
 alignment        = (1, 0)
 first            = (1, 0)
@@ -241,8 +241,8 @@ Clearing...
 {1..0, 1..0}
 size             = 0
 isEmpty()        = true
-low              = (1, 1)
-high             = (0, 0)
+lowBound         = (1, 1)
+highBound        = (0, 0)
 stride           = (1, 1)
 alignment        = (1, 1)
 
@@ -254,8 +254,8 @@ idxType          = int(64)
 stridable        = true
 size             = 6
 isEmpty()        = false
-low              = (1, 0)
-high             = (5, 4)
+lowBound         = (1, 0)
+highBound        = (5, 4)
 stride           = (2, 2)
 alignment        = (1, 1)
 first            = (1, 1)
@@ -303,8 +303,8 @@ Clearing...
 {1..0, 1..0}
 size             = 0
 isEmpty()        = true
-low              = (1, 1)
-high             = (0, 0)
+lowBound         = (1, 1)
+highBound        = (0, 0)
 stride           = (1, 1)
 alignment        = (0, 0)
 
@@ -316,8 +316,8 @@ idxType          = int(64)
 stridable        = true
 size             = 6
 isEmpty()        = false
-low              = (1, 0)
-high             = (5, 4)
+lowBound         = (1, 0)
+highBound        = (5, 4)
 stride           = (2, 2)
 alignment        = (1, 1)
 first            = (1, 1)
@@ -365,8 +365,8 @@ Clearing...
 {1..0, 1..0}
 size             = 0
 isEmpty()        = true
-low              = (1, 1)
-high             = (0, 0)
+lowBound         = (1, 1)
+highBound        = (0, 0)
 stride           = (1, 1)
 alignment        = (0, 0)
 
@@ -378,8 +378,8 @@ idxType          = int(64)
 stridable        = true
 size             = 6
 isEmpty()        = false
-low              = (1, 0)
-high             = (5, 4)
+lowBound         = (1, 0)
+highBound        = (5, 4)
 stride           = (2, 2)
 alignment        = (1, 1)
 first            = (1, 1)
@@ -427,8 +427,8 @@ Clearing...
 {1..0, 1..0}
 size             = 0
 isEmpty()        = true
-low              = (1, 1)
-high             = (0, 0)
+lowBound         = (1, 1)
+highBound        = (0, 0)
 stride           = (1, 1)
 alignment        = (0, 0)
 
@@ -440,8 +440,8 @@ idxType          = int(64)
 stridable        = true
 size             = 6
 isEmpty()        = false
-low              = (1, 0)
-high             = (5, 4)
+lowBound         = (1, 0)
+highBound        = (5, 4)
 stride           = (2, 2)
 alignment        = (1, 1)
 first            = (1, 1)
@@ -489,8 +489,8 @@ Clearing...
 {1..0, 1..0}
 size             = 0
 isEmpty()        = true
-low              = (1, 1)
-high             = (0, 0)
+lowBound         = (1, 1)
+highBound        = (0, 0)
 stride           = (1, 1)
 alignment        = (0, 0)
 

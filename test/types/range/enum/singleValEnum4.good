@@ -1,8 +1,8 @@
 explicit initialized
 r is: red..red
 r.size: 1
-r.low: red
-r.high: red
+r.lowBound: red
+r.highBound: red
 serial iter:
 red
 serial follower:
@@ -50,8 +50,8 @@ Par C Loop:
 overwritten:
 r is: red..<red
 r.size: 0
-r.low: red
-r.high: red
+r.lowBound: red
+r.highBound: red
 serial iter:
 serial follower:
 serial leader:
@@ -84,8 +84,8 @@ Par C Loop:
 default initialized
 r is: red..<red
 r.size: 0
-r.low: red
-r.high: red
+r.lowBound: red
+r.highBound: red
 serial iter:
 serial follower:
 serial leader:
@@ -118,8 +118,8 @@ Par C Loop:
 overwritten:
 r is: red..red
 r.size: 1
-r.low: red
-r.high: red
+r.lowBound: red
+r.highBound: red
 serial iter:
 red
 serial follower:
@@ -167,8 +167,8 @@ Par C Loop:
 implicit strided
 r is: red..<red
 r.size: 0
-r.low: red
-r.high: red
+r.lowBound: red
+r.highBound: red
 serial iter:
 serial follower:
 serial leader:
@@ -201,8 +201,8 @@ Par C Loop:
 overwritten:
 r is: red..red
 r.size: 1
-r.low: red
-r.high: red
+r.lowBound: red
+r.highBound: red
 serial iter:
 red
 serial follower:
@@ -250,8 +250,8 @@ Par C Loop:
 strided:
 r is: red..red by 2
 r.size: 1
-r.low: red
-r.high: red
+r.lowBound: red
+r.highBound: red
 serial iter:
 red
 serial follower:

@@ -1,7 +1,7 @@
 use BlockDist;
 use GPUDiagnostics;
 
-config const n = 10;
+config const n = here.maxTaskPar*2;
 
 startGPUDiagnostics();
 
@@ -16,5 +16,7 @@ forall i in dom do
 
 stopGPUDiagnostics();
 
-writeln(arr);
-writeln(getGPUDiagnostics());
+var sum = 0;
+for a in arr do sum += a;
+assert(sum == n);
+assert(here.maxTaskPar == getGPUDiagnostics().kernel_launch);

@@ -54,7 +54,7 @@ allows a URL to be opened as a :record:`IO.channel`.
   var urlreader = openUrlReader("http://example.com");
   var str:bytes;
   // Output each line read from the URL to stdout
-  while(urlreader.readline(str)) {
+  while(urlreader.readLine(str)) {
     write(str);
   }
 
@@ -158,6 +158,8 @@ Curl Support Types and Functions
 module Curl {
   public use IO, CTypes;
   use Sys;
+  use OS.POSIX;
+  import SysBasic.{syserr,ENOERR};
 
   require "curl/curl.h";
   require "-lcurl";
@@ -505,6 +507,8 @@ module Curl {
     use Curl;
     use Sys;
     use CTypes;
+    use OS.POSIX;
+    import SysBasic.{syserr,ENOERR,EEOF};
 
     class CurlFile : QioPluginFile {
 
@@ -915,9 +919,9 @@ module Curl {
       while cc.running_handles > 0 {
         // check for activity on something
         maxfd = -1;
-        sys_fd_zero(fdread);
-        sys_fd_zero(fdwrite);
-        sys_fd_zero(fdexcept);
+        FD_ZERO(c_ptrTo(fdread));
+        FD_ZERO(c_ptrTo(fdwrite));
+        FD_ZERO(c_ptrTo(fdexcept));
 
         // Compute the timeout curl recommends
         var timeoutMillis:c_long = 1;
@@ -1053,9 +1057,9 @@ module Curl {
       while cc.running_handles > 0 {
         // check for activity on something
         maxfd = -1;
-        sys_fd_zero(fdread);
-        sys_fd_zero(fdwrite);
-        sys_fd_zero(fdexcept);
+        FD_ZERO(c_ptrTo(fdread));
+        FD_ZERO(c_ptrTo(fdwrite));
+        FD_ZERO(c_ptrTo(fdexcept));
 
         // Continue anything that is paused
         ccode = curl_easy_pause(cc.curl, CURLPAUSE_CONT);

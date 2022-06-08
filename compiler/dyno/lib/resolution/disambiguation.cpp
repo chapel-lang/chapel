@@ -638,8 +638,8 @@ static int compareSpecificity(const DisambiguationContext& dctx,
     } else if (!ignoreWhere) {
       ID id1 = candidate1.fn->id();
       ID id2 = candidate2.fn->id();
-      bool fn1where = parsing::functionWithIdHasWhere(dctx.context, id1);
-      bool fn2where = parsing::functionWithIdHasWhere(dctx.context, id2);
+      bool fn1where = parsing::idIsFunctionWithWhere(dctx.context, id1);
+      bool fn2where = parsing::idIsFunctionWithWhere(dctx.context, id2);
 
       if (fn1where != fn2where) {
         EXPLAIN("\nU: preferring function with where clause\n");

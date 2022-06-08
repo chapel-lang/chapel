@@ -449,6 +449,33 @@ Context::hasCurrentResultForQuery(
 
 template<typename ResultType,
          typename... ArgTs>
+bool
+Context::isQueryRunning(
+     const ResultType& (*queryFunction)(Context* context, ArgTs...),
+     const std::tuple<ArgTs...>& tupleOfArgs) {
+  // Look up the map entry for this query name
+  const void* queryFuncV = (const void*) queryFunction;
+  // Look up the map entry for this query
+  auto search = this->queryDB.find(queryFuncV);
+  if (search == this->queryDB.end()) {
+    return false;
+  }
+
+  // found an entry for this query
+  QueryMapBase* base = search->second.get();
+  auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
+  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  auto search2 = queryMap->map.find(key);
+  if (search2 == queryMap->map.end()) {
+    return false;
+  }
+
+  return search2->lastChecked == -1;
+}
+
+
+template<typename ResultType,
+         typename... ArgTs>
 void
 Context::querySetterUpdateResult(
     const ResultType& (*queryFunction)(Context* context, ArgTs...),
