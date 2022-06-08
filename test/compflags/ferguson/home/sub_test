@@ -116,11 +116,16 @@ sub check {
   #print "RUNNING $exe --print-chpl-home\n";
   $got = `$exe --print-chpl-home 2>&1`;
   #print "GOT IS $got\n";
-
-
+ 
   my @lines = split('\n', $got);
-  my ($gothome, $gotexe) = split('\t', $lines[-1]);
-
+  my $prefix_line = "configured prefix";
+  my ($gothome, $gotexe) = ("", "") ;
+  #If we configured with a prefix, the --print-chpl-home output includes an extra line. 
+  if (index($lines[-1] , $prefix_line) != -1) { #configured with prefix
+    ($gothome, $gotexe) = split('\t', $lines[-2]);
+  } else { #not configured with prefix
+    ($gothome, $gotexe) = split('\t', $lines[-1]);
+  }
   #print "[Success compiling --print-chpl-home]\n";
   if ($expecthome ne "") {
     if( realpath($gothome) eq realpath($expecthome) ) {
