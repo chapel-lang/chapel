@@ -1,4 +1,0 @@
-depSsize_t.chpl:1: warning: 'SysCTypes' is deprecated; please use the 'CTypes' module instead
-depSsize_t.chpl:3: warning: 'size_t' has been deprecated in favor of 'c_size_t'
-depSsize_t.chpl:4: warning: 'ssize_t' has been deprecated in favor of 'c_ssize_t'
-(0, 0)

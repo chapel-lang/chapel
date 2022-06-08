@@ -102,7 +102,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Subprocess.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
-	standard/SysCTypes.chpl \
 	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \

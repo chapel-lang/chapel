@@ -64,7 +64,7 @@ files_wo_copy=$(find $source_dirs -type f \( \
     grep -v compiler/dyno/lib/parsing/bison-chpl-lib.cpp | \
     grep -v compiler/dyno/lib/parsing/flex-chpl-lib.h | \
     grep -v compiler/dyno/lib/parsing/flex-chpl-lib.cpp | \
-    grep -v 'modules/standard/gen/.*/SysCTypes.chpl' | \
+    grep -v 'modules/standard/gen/.*/ChapelSysCTypes.chpl' | \
     xargs grep -i -L "${copyright_pattern}")
 
 
