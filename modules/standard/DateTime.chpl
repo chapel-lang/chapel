@@ -304,10 +304,7 @@ module DateTime {
   /* The date that is `timestamp` seconds from the epoch */
   deprecated "'date.fromtimestamp()' is deprecated. Please use 'date.fromTimestamp()' instead"
   proc type date.fromtimestamp(timestamp) {
-    const sec = timestamp: int;
-    const us = ((timestamp-sec) * 1000000 + 0.5): int;
-    const td = new timedelta(seconds=sec, microseconds=us);
-    return unixEpoch.getdate() + td;
+    return fromTimestamp(timestamp);
   }
 
   /* The date that is `timestamp` seconds from the epoch */
@@ -321,10 +318,7 @@ module DateTime {
   /* The `date` that is `ord` days from 1-1-0001 */
   deprecated "'date.fromordinal()' is deprecated. Please use 'date.fromOrdinal()' instead"
   proc type date.fromordinal(ord) {
-    if ord < 0 || ord > 1+date.max.toOrdinal() then
-      halt("ordinal (", ord, ") out of range");
-    const (y,m,d) = ordToYmd(ord);
-    return new date(y,m,d);
+    return fromOrdinal(ord);
   }
 
 
@@ -368,7 +362,7 @@ module DateTime {
   /* Return the number of days since 1-1-0001 this `date` represents */
   deprecated "'date.toordinal()' is deprecated. Please use 'date.toOrdinal()' instead"
   proc date.toordinal() {
-    return ymdToOrd(year, month, day);
+    return toOrdinal();
   }
 
   /* Return the number of days since 1-1-0001 this `date` represents */
@@ -697,11 +691,7 @@ module DateTime {
   /* Return the offset from UTC */
   deprecated "'time.utcoffset()' is deprecated. Please use 'time.utcOffset()' instead"
   proc time.utcoffset() {
-    if tzinfo.borrow() == nil {
-      return new timedelta();
-    } else {
-      return tzinfo!.utcOffset(datetime.now());
-    }
+    return utcOffset();
   }
 
   /* Return the offset from UTC */
@@ -1040,17 +1030,7 @@ module DateTime {
   deprecated "'datetime.fromtimestamp()' is deprecated. Please use 'datetime.fromTimestamp()' instead"
   proc type datetime.fromtimestamp(timestamp: real,
                                    in tz: shared TZInfo? = nil) {
-    if tz.borrow() == nil {
-      var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
-      const lt = getLocalTime(t);
-      return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
-                          day=lt.tm_mday,       hour=lt.tm_hour,
-                          minute=lt.tm_min,     second=lt.tm_sec,
-                          microsecond=t(1));
-    } else {
-      var dt = datetime.utcFromTimestamp(timestamp);
-      return (dt + tz!.utcOffset(dt)).replace(tzinfo=tz);
-    }
+    return fromTimestamp(timestamp, tz);
   }
 
   /* The `datetime` that is `timestamp` seconds from the epoch */
@@ -1073,7 +1053,7 @@ module DateTime {
   /* The `datetime` that is `timestamp` seconds from the epoch in UTC */
   deprecated "'datetime.utcfromtimestamp()' is deprecated. Please use 'datetime.utcFromTimestamp()' instead"
   proc type datetime.utcfromtimestamp(timestamp) {
-    return unixEpoch + new timedelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
+    return utcFromTimestamp(timestamp);
   }
 
   /* The `datetime` that is `timestamp` seconds from the epoch in UTC */
@@ -1085,7 +1065,7 @@ module DateTime {
   /* The `datetime` that is `ordinal` days from 1-1-0001 */
   deprecated "'datetime.fromordinal()' is deprecated. Please use 'datetime.fromOrdinal()' instead"
   proc type datetime.fromordinal(ordinal) {
-    return datetime.combine(date.fromOrdinal(ordinal), new time());
+    return fromOrdinal(ordinal);
   }
 
   /* The `datetime` that is `ordinal` days from 1-1-0001 */
@@ -1161,11 +1141,7 @@ module DateTime {
   /* Return the offset from UTC */
   deprecated "'datetime.utcoffset()' is deprecated. Please use 'datetime.utcOffset()' instead"
   proc datetime.utcoffset() {
-    if tzinfo.borrow() == nil {
-      halt("utcoffset called on naive datetime");
-    } else {
-      return tzinfo!.utcoffset(this);
-    }
+    return utcOffset();
   }
 
   /* Return the offset from UTC */
@@ -1233,7 +1209,7 @@ module DateTime {
   /* Return the number of days since 1-1-0001 this `datetime` represents */
   deprecated "'datetime.toordinal()' is deprecated. Please use 'datetime.toOrdinal()' instead"
   proc datetime.toordinal() {
-    return getdate().toOrdinal();
+    return toOrdinal();
   }
 
   /* Return the number of days since 1-1-0001 this `datetime` represents */
