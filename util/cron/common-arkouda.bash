@@ -42,8 +42,8 @@ fi
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
-# Arkouda requires Python >= 3.7
-SETUP_PYTHON=$COMMON_DIR/setup_python37.bash
+# Arkouda requires a newer python
+SETUP_PYTHON=$COMMON_DIR/setup_python_arkouda.bash
 if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
