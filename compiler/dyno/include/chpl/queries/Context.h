@@ -27,6 +27,7 @@
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
 #include "chpl/util/break.h"
+#include "chpl/util/terminal.h"
 
 #include <memory>
 #include <tuple>
@@ -108,12 +109,26 @@ class Context {
   // tracks the nesting of queries, displayed during query tracing
   int queryTraceDepth = 0;
   // list of query names to ignore when tracing
-  std::vector<std::string> queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
+  const std::vector<std::string> queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
+  // list of colors to use for open/close braces depending on query depth
+  const std::vector<TermColorName> queryDepthColor  = {blue, bright_yellow, magenta};
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
   static void defaultReportError(Context* context, const ErrorMessage& err);
   ReportErrorFnType reportError = defaultReportError;
+  // return an ANSI color code for this query depth, if supported by terminal
+  void setQueryDepthColor(int depth, std::ostream& os) {
+    auto color = queryDepthColor[depth % queryDepthColor.size()];
+    setTerminalColor(color, os);
+  }
+
+  void setTerminalColor(TermColorName colorName, std::ostream& os) {
+    if (terminalSupportsColor(getenv("TERM"))) {
+      os << getTerminalColor(colorName);
+    }
+  }
+
 
   // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;

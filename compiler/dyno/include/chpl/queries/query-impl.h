@@ -132,12 +132,17 @@ void Context::queryBeginTrace(const char* traceQueryName,
     size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
     if (enableDebugTrace) {
       queryTraceDepth++;
-      printf("%i QUERY BEGIN     %s (", queryTraceDepth, traceQueryName);
+      // QUERY BEGIN
+      setQueryDepthColor(queryTraceDepth, std::cout);
+      std::cout << queryTraceDepth
+                << " { "
+                << clearTerminalColor() << traceQueryName;
       queryArgsPrint(tupleOfArg);
-      printf(") ");
-      std::cout << "QUERY + ARGS HASH: 0x"
+      std::cout << ") ";
+      setTerminalColor(cyan, std::cout);
+      std::cout <<"QUERY+ARGS HASH: 0x"
                 << std::hex << queryAndArgsHash
-                << " {" << std::endl;
+                << clearTerminalColor() << std::endl;
     }
     if (breakSet && queryAndArgsHash == breakOnHash) {
       debuggerBreakHere();
@@ -333,10 +338,23 @@ Context::queryEnd(
       && std::find(queryTraceIgnoreQueries.begin(),
                    queryTraceIgnoreQueries.end(),
                    traceQueryName) == queryTraceIgnoreQueries.end()) {
-    bool changed = ret->lastChanged == this->currentRevisionNumber;
-    printf("%i QUERY END       %s (", queryTraceDepth, traceQueryName);
-    queryArgsPrint(tupleOfArgs);
-    printf(") %s }\n", changed?"UPDATED":"NO CHANGE");
+    // QUERY END
+    setQueryDepthColor(queryTraceDepth, std::cout);
+    std::cout << queryTraceDepth
+              << clearTerminalColor()
+              << "   " << traceQueryName
+              << " ";
+    if (ret->lastChanged == this->currentRevisionNumber) {
+      setTerminalColor(yellow, std::cout);
+      std::cout << "UPDATED";
+    } else {
+      setTerminalColor(green, std::cout);
+      std::cout << "NO CHANGE";
+    }
+    setQueryDepthColor(queryTraceDepth, std::cout);
+    std::cout << " } "
+              << clearTerminalColor()
+              << std::endl;
     queryTraceDepth--;
     assert(r->lastChecked == this->currentRevisionNumber);
     //for (auto dep : r->dependencies) {
