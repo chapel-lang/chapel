@@ -95,7 +95,6 @@ System/Interoperability
 .. toctree::
    :maxdepth: 1
 
-   CPtr <standard/CPtr>
    CTypes <standard/CTypes>
    OS <standard/OS>
    Spawn <standard/Spawn>
