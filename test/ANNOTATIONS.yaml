@@ -1122,7 +1122,7 @@ listBenchmark1:
     - List _collapse remove shift arg (#15693)
   06/01/22:
     - Reduce uses of Math by automatically included modules (#19885)
-  06/06/22:
+  06/07/22:
     - Fix performance of list benchmark by making these helpers inlined (#19947)
 
 lulesh:
@@ -1801,7 +1801,7 @@ revcomp: &revcomp-base
   06/01/22:
     - Reduce uses of Math by automatically included modules (#19885)
 revcomp-submitted:
-  06/06/22:
+  06/07/22:
     - Fix performance of list benchmark by making these helpers inlined (#19947)
   <<: *revcomp-base
 
