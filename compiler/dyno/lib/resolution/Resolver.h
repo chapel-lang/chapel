@@ -50,6 +50,7 @@ struct Resolver {
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopeComputed = false;
   const Scope* savedReceiverScope = nullptr;
+  const types::CompositeType* savedReceiverType = nullptr;
 
   // results of the resolution process
 
@@ -168,6 +169,10 @@ struct Resolver {
      and return nullptr if it is not applicable.
    */
   const Scope* methodReceiverScope();
+  /* Compute the receiver scope (when resolving a method)
+     and return nullptr if it is not applicable.
+   */
+  const types::CompositeType* methodReceiverType();
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.

@@ -328,12 +328,24 @@ const Scope* Resolver::methodReceiverScope() {
     if (auto receiverType = typedSignature->formalType(0).type()) {
       if (auto compType = receiverType->getCompositeType()) {
         savedReceiverScope = scopeForId(context, compType->id());
+        savedReceiverType = compType;
       }
     }
   }
 
   receiverScopeComputed = true;
   return savedReceiverScope;
+}
+
+const CompositeType* Resolver::methodReceiverType() {
+  if (receiverScopeComputed) {
+    return savedReceiverType;
+  }
+
+  // otherwise, run methodReceiverScope to compute it
+  methodReceiverScope();
+
+  return savedReceiverType;
 }
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
@@ -1134,19 +1146,28 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (!parentId.isEmpty()) {
     parentTag = parsing::idToTag(context, parentId);
   }
+  const Scope* mReceiverScope = methodReceiverScope();
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
     return typeForModuleLevelSymbol(context, id);
-  } else if (asttags::isAggregateDecl(parentTag)) {
+  } else if (asttags::isAggregateDecl(parentTag) || mReceiverScope) {
     // If the id is contained within a class/record/union, get the
     // resolved field.
+    const CompositeType* ct = nullptr;
     if (parentId == symbol->id()) {
+      ct = inCompositeType;
+    } else if (mReceiverScope) {
+      ct = methodReceiverType();
+    } else {
+      assert(false && "case not handled");
+    }
+
+    if (ct) {
       // if it is recursive within the current class/record, we can
       // call resolveField.
       const ResolvedFields& resolvedFields =
-        resolveFieldDecl(context, inCompositeType, id,
-                         useGenericFormalDefaults);
+        resolveFieldDecl(context, ct, id, useGenericFormalDefaults);
       // find the field that matches
       int nFields = resolvedFields.numFields();
       for (int i = 0; i < nFields; i++) {
