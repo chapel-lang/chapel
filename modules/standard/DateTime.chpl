@@ -1042,6 +1042,7 @@ module DateTime {
   }
 
   /* Return a `datetime` value representing the current time and date */
+  deprecated "'datetime.today()' is deprecated, please use 'date.today()' or 'datetime.now()' instead"
   proc type datetime.today() {
     return this.now();
   }
@@ -1108,7 +1109,7 @@ module DateTime {
 
   /* The `datetime` that is `timestamp` seconds from the epoch */
   proc type datetime.fromTimestamp(timestamp: real) {
-    return datetime.utcFromTimestamp(timestamp);
+    return datetime.fromTimestamp(timestamp, nil);
   }
 
   /* The `datetime` that is `timestamp` seconds from the epoch */
