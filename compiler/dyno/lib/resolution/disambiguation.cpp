@@ -714,7 +714,9 @@ computeIsMoreVisible(Context* context,
        curScope != nullptr;
        curScope = curScope->parentScope()) {
 
-    auto decls = lookupNameInScope(context, curScope, callName, onlyDecls);
+    auto decls = lookupNameInScope(context, curScope,
+                                   /* receiver scope */ nullptr,
+                                   callName, onlyDecls);
     auto declVis = checkVisibilityInVec(context, decls, fn1Id, fn2Id);
     if (declVis != MoreVisibleResult::FOUND_NEITHER) {
       return declVis;
@@ -726,7 +728,9 @@ computeIsMoreVisible(Context* context,
       // use M putting M in a nearer scope than something called M
       // within the used module.
       // see issue #19219
-      auto more = lookupNameInScope(context, curScope, callName, importAndUse);
+      auto more = lookupNameInScope(context, curScope,
+                                    /* receiver scope */ nullptr,
+                                    callName, importAndUse);
       auto importUseVis = checkVisibilityInVec(context, more, fn1Id, fn2Id);
       if (importUseVis != MoreVisibleResult::FOUND_NEITHER) {
         return importUseVis;

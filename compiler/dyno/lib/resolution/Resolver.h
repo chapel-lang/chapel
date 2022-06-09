@@ -48,6 +48,8 @@ struct Resolver {
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
   const uast::Call* inLeafCall = nullptr;
+  bool receiverScopeComputed = false;
+  const Scope* savedReceiverScope = nullptr;
 
   // results of the resolution process
 
@@ -153,13 +155,19 @@ struct Resolver {
                       const PoiScope* poiScope,
                       ResolutionResultByPostorderID& byPostorder);
 
-  // get the formal types from a Resolver than computed them
+  /* Get the formal types from a Resolver that computed them
+   */
   std::vector<types::QualifiedType> getFormalTypes(const uast::Function* fn);
 
   /* Returns ErroneousType and emits the error message msg
      relevant to location for 'ast'.
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
+
+  /* Compute the receiver scope (when resolving a method)
+     and return nullptr if it is not applicable.
+   */
+  const Scope* methodReceiverScope();
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.

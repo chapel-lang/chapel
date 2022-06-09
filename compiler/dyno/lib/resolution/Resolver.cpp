@@ -319,6 +319,23 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
+const Scope* Resolver::methodReceiverScope() {
+  if (receiverScopeComputed) {
+    return savedReceiverScope;
+  }
+
+  if (typedSignature && typedSignature->untyped()->isMethod()) {
+    if (auto receiverType = typedSignature->formalType(0).type()) {
+      if (auto compType = receiverType->getCompositeType()) {
+        savedReceiverScope = scopeForId(context, compType->id());
+      }
+    }
+  }
+
+  receiverScopeComputed = true;
+  return savedReceiverScope;
+}
+
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
   // make sure the set of IDs for fields and formals is computed
   if (!fieldOrFormalsComputed) {
@@ -1199,9 +1216,10 @@ bool Resolver::enter(const Identifier* ident) {
   if (!resolvingCalledIdent)
     config |= LOOKUP_INNERMOST;
 
+  const Scope* receiverScope = methodReceiverScope();
 
-  // TODO: adjust to handle looking at receiver scope
-  auto vec = lookupInScope(context, scope, ident, config);
+  auto vec = lookupNameInScope(context, scope, receiverScope,
+                               ident->name(), config);
   if (vec.size() == 0) {
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
@@ -1338,7 +1356,9 @@ bool Resolver::enter(const NamedDecl* decl) {
   if (canOverload == false) {
     // check for multiple definitions
     LookupConfig config = LOOKUP_DECLS;
-    auto vec = lookupNameInScope(context, scope, decl->name(), config);
+    auto vec = lookupNameInScope(context, scope,
+                                 /* receiverScope */ nullptr,
+                                 decl->name(), config);
 
     if (vec.size() > 0) {
       const BorrowedIdsWithName& m = vec[0];
@@ -1823,7 +1843,9 @@ void Resolver::exit(const Dot* dot) {
                           LOOKUP_IMPORT_AND_USE;
 
     auto modScope = scopeForModule(context, receiver.toId());
-    auto vec = lookupNameInScope(context, modScope, dot->field(), config);
+    auto vec = lookupNameInScope(context, modScope,
+                                 /* receiverScope */ nullptr,
+                                 dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (vec.size() == 0) {
       r.setType(QualifiedType());

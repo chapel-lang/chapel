@@ -385,6 +385,7 @@ static bool doLookupInToplevelModules(Context* context,
   return true;
 }
 
+// appends to result
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
                             const ResolvedVisibilityScope* resolving,
@@ -418,7 +419,6 @@ static bool doLookupInScope(Context* context,
 
   if (checkDecls) {
     bool got = scope->lookupInScope(name, result);
-//    bool got = doLookupInScopeDecls(context, scope, name, result);
     if (onlyInnermost && got) return true;
   }
 
@@ -592,6 +592,17 @@ static bool lookupInScopeViz(Context* context,
   return got;
 }
 
+std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
+                                                   const Scope* scope,
+                                                   const Scope* receiverScope,
+                                                   UniqueString name,
+                                                   LookupConfig config) {
+  std::unordered_set<const Scope*> checkedScopes;
+
+  return lookupNameInScopeWithSet(context, scope, receiverScope, name,
+                                  config, checkedScopes);
+}
+
 // note: expr must be Dot or Identifier
 std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                const Scope* scope,
@@ -602,13 +613,26 @@ std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
   return lookupInScopeWithSet(context, scope, expr, config, checkedScopes);
 }
 
-std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
-                                                   const Scope* scope,
-                                                   UniqueString name,
-                                                   LookupConfig config) {
-  std::unordered_set<const Scope*> checkedScopes;
+std::vector<BorrowedIdsWithName>
+lookupNameInScopeWithSet(Context* context,
+                         const Scope* scope,
+                         const Scope* receiverScope,
+                         UniqueString name,
+                         LookupConfig config,
+                         std::unordered_set<const Scope*>& visited) {
+  std::vector<BorrowedIdsWithName> vec;
 
-  return lookupNameInScopeWithSet(context, scope, name, config, checkedScopes);
+  if (receiverScope) {
+    doLookupInScope(context, receiverScope,
+                    /* resolving scope */ nullptr,
+                    name, config, visited, vec);
+  }
+
+  doLookupInScope(context, scope,
+                  /* resolving scope */ nullptr,
+                  name, config, visited, vec);
+
+  return vec;
 }
 
 std::vector<BorrowedIdsWithName>
@@ -626,19 +650,6 @@ lookupInScopeWithSet(Context* context,
 
   return vec;
 }
-
-std::vector<BorrowedIdsWithName>
-lookupNameInScopeWithSet(Context* context,
-                         const Scope* scope,
-                         UniqueString name,
-                         LookupConfig config,
-                         std::unordered_set<const Scope*>& visited) {
-  std::vector<BorrowedIdsWithName> vec;
-
-  doLookupInScope(context, scope, nullptr, name, config, visited, vec);
-  return vec;
-}
-
 
 
 static
@@ -1043,7 +1054,9 @@ const InnermostMatch& findInnermostDecl(Context* context,
                         LOOKUP_INNERMOST;
 
   std::vector<BorrowedIdsWithName> vec =
-    lookupNameInScope(context, scope, name, config);
+    lookupNameInScope(context, scope,
+                      /* receiver scope */ nullptr,
+                      name, config);
 
   if (vec.size() > 0) {
     const BorrowedIdsWithName& r = vec[0];
