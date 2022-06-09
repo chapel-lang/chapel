@@ -1886,7 +1886,7 @@ module ChapelArray {
      equal to the corresponding element in ``that``. Otherwise
      return false. */
   proc _array.equals(that: _array): bool {
-    if chpl_warnUnstable then compilerWarning("the Array.equals() method is unstable");
+    if chpl_warnUnstable then compilerWarning("the 'Array.equals()' method is unstable");
 
     //
     // quick path for identical arrays
