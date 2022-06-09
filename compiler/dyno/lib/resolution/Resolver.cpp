@@ -180,14 +180,20 @@ Resolver
 Resolver::functionScopeResolver(Context* context,
                                 const Function* fn,
                                 ResolutionResultByPostorderID& byId) {
+  auto ret = Resolver(context, fn, byId, nullptr);
+  ret.typedSignature = nullptr; // re-set below
+  ret.signatureOnly = true; // re-set below
+  ret.scopeResolveOnly = true;
+  ret.fnBody = fn->body();
 
+  // scope-resolve the formal types but not the body, yet
+  // (particularly relevant for computing the method receiver type
+  //  if it is an identifier)
+  fn->traverse(ret);
+
+  // copy the formal types to create a TypedFnSignature
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, fn->id());
-  std::vector<QualifiedType> formalTypes;
-  int n = uSig->numFormals();
-  for (int i = 0; i < n; i++) {
-    formalTypes.push_back(QualifiedType(QualifiedType::UNKNOWN,
-                                        UnknownType::get(context)));
-  }
+  std::vector<QualifiedType> formalTypes = ret.getFormalTypes(fn);
   auto whereTbd = TypedFnSignature::WhereClauseResult::WHERE_TBD;
   const TypedFnSignature* sig =
     TypedFnSignature::get(context, uSig,
@@ -198,11 +204,8 @@ Resolver::functionScopeResolver(Context* context,
                           /* parentFn */ nullptr,
                           /* formalsInstantiated */ Bitmap());
 
-  auto ret = Resolver(context, fn, byId, nullptr);
   ret.typedSignature = sig;
   ret.signatureOnly = false;
-  ret.scopeResolveOnly = true;
-  ret.fnBody = fn->body();
 
   assert(sig);
   assert(sig->untyped());
@@ -287,6 +290,23 @@ Resolver::parentClassResolver(Context* context,
   ret.useGenericFormalDefaults = true;
   ret.byPostorder.setupForSymbol(decl);
   return ret;
+}
+
+std::vector<types::QualifiedType>
+Resolver::getFormalTypes(const Function* fn) {
+  std::vector<types::QualifiedType> formalTypes;
+  for (auto formal : fn->formals()) {
+    QualifiedType t = byPostorder.byAst(formal).type();
+    // compute concrete intent
+    bool isThis = false;
+    if (auto namedDecl = formal->toNamedDecl()) {
+      isThis = namedDecl->name() == USTR("this");
+    }
+    t = QualifiedType(resolveIntent(t, isThis), t.type(), t.param());
+
+    formalTypes.push_back(std::move(t));
+  }
+  return formalTypes;
 }
 
 types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
@@ -1169,11 +1189,18 @@ bool Resolver::enter(const Identifier* ident) {
     return false;
   }
 
+  bool resolvingCalledIdent = (inLeafCall &&
+                               ident == inLeafCall->calledExpression());
+
   LookupConfig config = LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS |
-                        LOOKUP_INNERMOST;
+                        LOOKUP_PARENTS;
 
+  if (!resolvingCalledIdent)
+    config |= LOOKUP_INNERMOST;
+
+
+  // TODO: adjust to handle looking at receiver scope
   auto vec = lookupInScope(context, scope, ident, config);
   if (vec.size() == 0) {
     result.setType(QualifiedType());
@@ -1197,7 +1224,7 @@ bool Resolver::enter(const Identifier* ident) {
         //   record R { type t = int; }
         //   var x: R; // should refer to R(int)
         bool computeDefaults = true;
-        if (inLeafCall && ident == inLeafCall->calledExpression()) {
+        if (resolvingCalledIdent) {
           computeDefaults = false;
         }
         if (computeDefaults) {

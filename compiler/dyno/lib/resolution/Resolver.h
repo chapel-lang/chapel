@@ -153,6 +153,9 @@ struct Resolver {
                       const PoiScope* poiScope,
                       ResolutionResultByPostorderID& byPostorder);
 
+  // get the formal types from a Resolver than computed them
+  std::vector<types::QualifiedType> getFormalTypes(const uast::Function* fn);
+
   /* Returns ErroneousType and emits the error message msg
      relevant to location for 'ast'.
    */

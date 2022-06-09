@@ -293,24 +293,6 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 
 /////// function resolution
 
-static std::vector<types::QualifiedType>
-getFormalTypes(const Function* fn,
-               const ResolutionResultByPostorderID& r) {
-  std::vector<types::QualifiedType> formalTypes;
-  for (auto formal : fn->formals()) {
-    QualifiedType t = r.byAst(formal).type();
-    // compute concrete intent
-    bool isThis = false;
-    if (auto namedDecl = formal->toNamedDecl()) {
-      isThis = namedDecl->name() == USTR("this");
-    }
-    t = QualifiedType(resolveIntent(t, isThis), t.type(), t.param());
-
-    formalTypes.push_back(std::move(t));
-  }
-  return formalTypes;
-}
-
 static bool
 anyFormalNeedsInstantiation(Context* context,
                             const std::vector<types::QualifiedType>& formalTs,
@@ -419,7 +401,7 @@ typedSignatureInitialQuery(Context* context,
     // do not visit the return type or function body
 
     // now, construct a TypedFnSignature from the result
-    std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
+    std::vector<types::QualifiedType> formalTypes = visitor.getFormalTypes(fn);
     bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
                                                           untypedSig,
                                                           nullptr);
@@ -1336,7 +1318,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
     // do not visit the return type or function body
 
-    auto tmp = getFormalTypes(fn, r);
+    auto tmp = visitor.getFormalTypes(fn);
     formalTypes.swap(tmp);
     needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
                                                      untypedSignature,
@@ -2133,8 +2115,18 @@ lookupCalledExpr(Context* context,
     vec = lookupNameInScopeWithSet(context, scope, ci.name(), config,
                                    visited);
   } else if (const AstNode* called = call->calledExpression()) {
-    vec = lookupInScopeWithSet(context, scope, called, config,
-                               visited);
+    if (auto ident = called->toIdentifier()) {
+      vec = lookupNameInScopeWithSet(context, scope, ident->name(), config,
+                                     visited);
+    } else if (auto dot = called->toDot()) {
+      vec = lookupNameInScopeWithSet(context, scope, dot->field(), config,
+                                     visited);
+    } else {
+      called->dump();
+      assert(false);
+      vec = lookupInScopeWithSet(context, scope, called, config,
+                                 visited);
+    }
   }
 
   if (ret.size() > 0) {
