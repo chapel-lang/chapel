@@ -27,6 +27,26 @@ namespace chpl {
 namespace resolution {
 
 
+void OwnedIdsWithName::stringify(std::ostream& ss,
+                                 chpl::StringifyKind stringKind) const {
+  if (auto ptr = moreIds_.get()) {
+    for (const auto& elt : *ptr) {
+      elt.stringify(ss, stringKind);
+    }
+  } else {
+    if (!id_.isEmpty()) {
+      id_.stringify(ss, stringKind);
+    }
+  }
+}
+
+void BorrowedIdsWithName::stringify(std::ostream& ss,
+                                    chpl::StringifyKind stringKind) const {
+  for (const auto& elt : *this) {
+    elt.stringify(ss, stringKind);
+  }
+}
+
 Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
              bool autoUsesModules) {
   parentScope_ = parentScope;
@@ -46,6 +66,7 @@ void Scope::addBuiltin(UniqueString name) {
   declared_.emplace(name, ID());
 }
 
+IMPLEMENT_DUMP(OwnedIdsWithName);
 IMPLEMENT_DUMP(BorrowedIdsWithName);
 IMPLEMENT_DUMP(Scope);
 IMPLEMENT_DUMP(PoiScope);

@@ -2062,28 +2062,16 @@ filterCandidatesInstantiating(Context* context,
   }
 }
 
-// call can be nullptr; in that event, the CallInfo will be consulted
-// and it will search for something with 'ci.name()'.
+// always uses ci.name
 static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
-                 const Call* call,
                  const CallInfo& ci,
                  std::unordered_set<const Scope*>& visited) {
-  std::vector<BorrowedIdsWithName> ret;
-
-  // TODO: it would be nice if the caller could compute the name instead
-  const bool doLookupByName = (call == nullptr || call->isOpCall());
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
-  #ifndef NDEBUG
-  if (call != nullptr) {
-    if (auto op = call->toOpCall()) {
-      assert(op->op() == ci.name());
-    }
-  }
-  #endif
+  const Scope* scopeForReceiverType = nullptr;
 
   // For method calls, perform an initial lookup starting at the scope for
   // the definition of the receiver type, if it can be found.
@@ -2091,7 +2079,6 @@ lookupCalledExpr(Context* context,
     assert(ci.numActuals() >= 1);
 
     auto& receiverQualType = ci.actual(0).type();
-    const Scope* scopeForReceiverType = nullptr;
 
     // Try to fetch the scope of the receiver type's definition.
     if (auto receiverType = receiverQualType.type()) {
@@ -2099,41 +2086,13 @@ lookupCalledExpr(Context* context,
         scopeForReceiverType = scopeForId(context, compType->id());
       }
     }
-
-    // Lookup by name, as lookup for dot-exprs does not handle method calls.
-    if (scopeForReceiverType && !visited.count(scopeForReceiverType)) {
-      auto vec = lookupNameInScopeWithSet(context, scopeForReceiverType,
-                                          ci.name(),
-                                          config,
-                                          visited);
-      ret.swap(vec);
-    }
   }
 
-  std::vector<BorrowedIdsWithName> vec;
-  if (doLookupByName) {
-    vec = lookupNameInScopeWithSet(context, scope, ci.name(), config,
-                                   visited);
-  } else if (const AstNode* called = call->calledExpression()) {
-    if (auto ident = called->toIdentifier()) {
-      vec = lookupNameInScopeWithSet(context, scope, ident->name(), config,
-                                     visited);
-    } else if (auto dot = called->toDot()) {
-      vec = lookupNameInScopeWithSet(context, scope, dot->field(), config,
-                                     visited);
-    } else {
-      called->dump();
-      assert(false);
-      vec = lookupInScopeWithSet(context, scope, called, config,
-                                 visited);
-    }
-  }
+  UniqueString name = ci.name();
 
-  if (ret.size() > 0) {
-    ret.insert(ret.end(), vec.begin(), vec.end());
-  } else {
-    ret.swap(vec);
-  }
+  std::vector<BorrowedIdsWithName> ret =
+    lookupNameInScopeWithSet(context, scope, scopeForReceiverType,
+                             name, config, visited);
 
   return ret;
 }
@@ -2530,7 +2489,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   // next, look for candidates without using POI.
   {
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, inScope, call, ci, visited);
+    auto v = lookupCalledExpr(context, inScope, ci, visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2557,8 +2516,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
     }
 
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, curPoi->inScope(), call, ci,
-                              visited);
+    auto v = lookupCalledExpr(context, curPoi->inScope(), ci, visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
