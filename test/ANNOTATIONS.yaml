@@ -1122,6 +1122,8 @@ listBenchmark1:
     - List _collapse remove shift arg (#15693)
   06/01/22:
     - Reduce uses of Math by automatically included modules (#19885)
+  06/07/22:
+    - Fix performance of list benchmark by making these helpers inlined (#19947)
 
 lulesh:
   03/15/14:
@@ -1799,6 +1801,8 @@ revcomp: &revcomp-base
   06/01/22:
     - Reduce uses of Math by automatically included modules (#19885)
 revcomp-submitted:
+  06/07/22:
+    - Fix performance of list benchmark by making these helpers inlined (#19947)
   <<: *revcomp-base
 
 ri-a2-AoA:
@@ -2287,6 +2291,8 @@ arkouda: &arkouda-base
     - DataFrame Display Server-Side Performance Issue (Bears-R-Us/arkouda#1409)
   05/26/22:
     - Use swap operator in radix sort instead of assignment operator (Bears-R-Us/arkouda#1419)
+  06/07/22:
+    - Closes 1455 pep8 formatting tests (Bears-R-Us/arkouda#1458)
 
 
 arkouda-string:
