@@ -746,9 +746,6 @@ module DateTime {
 
   /* Return the daylight saving time offset */
   proc time.dst() {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     if tzinfo.borrow() == nil {
       return new timedelta();
     } else {
@@ -758,9 +755,6 @@ module DateTime {
 
   /* Return the name of the timezone for this `time` value */
   proc time.tzname() {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     if tzinfo.borrow() == nil then
       return "";
     else
