@@ -92,7 +92,7 @@ mynormalizepath () {
   if [ ! -d $P ]
   then
     echo "Prefix directory does not exist, creating directory."
-    mkdir $P
+    mkdir -p $P
   fi
 
   # Normalize $P more - normalize path
