@@ -26,16 +26,16 @@ proc test_basic_attributes_nonzero() {
 
 proc test_isoformat() {
   var t = new datetime(2, 3, 2, 4, 5, 1, 123);
-  assert(t.isoformat() == "0002-03-02T04:05:01.000123");
-  assert(t.isoformat('T') == "0002-03-02T04:05:01.000123");
-  assert(t.isoformat(' ') == "0002-03-02 04:05:01.000123");
+  assert(t.isoFormat() == "0002-03-02T04:05:01.000123");
+  assert(t.isoFormat('T') == "0002-03-02T04:05:01.000123");
+  assert(t.isoFormat(' ') == "0002-03-02 04:05:01.000123");
   // str is ISO format with the separator forced to a blank.
   //assert(str(t) == "0002-03-02 04:05:01.000123");
 
   t = new datetime(2, 3, 2);
-  assert(t.isoformat() == "0002-03-02T00:00:00");
-  assert(t.isoformat('T') == "0002-03-02T00:00:00");
-  assert(t.isoformat(' ') == "0002-03-02 00:00:00");
+  assert(t.isoFormat() == "0002-03-02T00:00:00");
+  assert(t.isoFormat('T') == "0002-03-02T00:00:00");
+  assert(t.isoFormat(' ') == "0002-03-02 00:00:00");
   // str is ISO format with the separator forced to a blank.
   //assert(str(t) == "0002-03-02 00:00:00");
 }
@@ -178,8 +178,8 @@ proc test_more_timetuple() {
   assert(tt.tm_min == t.minute);
   assert(tt.tm_sec == t.second);
   assert(tt.tm_wday == t.weekday(): int(32));
-  assert(tt.tm_yday == t.toordinal() -
-                       (new date(t.year, 1, 1)).toordinal() + 1);
+  assert(tt.tm_yday == t.toOrdinal() -
+                       (new date(t.year, 1, 1)).toOrdinal() + 1);
   assert(tt.tm_isdst == -1);
 }
 

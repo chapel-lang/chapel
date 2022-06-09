@@ -21,9 +21,7 @@ def llvm_versions():
 def get_uniq_cfg_path_for(llvm_val):
     if llvm_val == "bundled":
         # put platform-arch-compiler for included llvm
-        host_bin_subdir = chpl_bin_subdir.get('host')
-        host_compiler = chpl_compiler.get('host')
-        llvm_target_dir = '{0}-{1}'.format(host_bin_subdir, host_compiler)
+        llvm_target_dir = chpl_bin_subdir.get('host')
     else:
         # just put 'system' for system llvm
         llvm_target_dir = llvm_val
