@@ -1,8 +1,6 @@
 inCopyPassedToRef.chpl:1: In function 'main':
-inCopyPassedToRef.chpl:7: internal error: MAI-CHE-CKS-nnnn chpl version mmmm
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug --
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
+inCopyPassedToRef.chpl:8: error: const actual is passed to 'ref' formal 'X' of foo()
+note: to formal of type [domain(1,int(64),false)] real(64)
+inCopyPassedToRef.chpl:11: note: to ref formal here
+inCopyPassedToRef.chpl:12: note: passed as ref here
+inCopyPassedToRef.chpl:12: note: passed as ref here
