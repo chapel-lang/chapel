@@ -7,7 +7,7 @@ renameDateTimeMethods.chpl:16: warning: 'datetime.toordinal()' is deprecated. Pl
 renameDateTimeMethods.chpl:19: warning: 'date.fromordinal()' is deprecated. Please use 'date.fromOrdinal()' instead
 renameDateTimeMethods.chpl:20: warning: 'datetime.fromordinal()' is deprecated. Please use 'datetime.fromOrdinal()' instead
 renameDateTimeMethods.chpl:23: warning: 'date.fromtimestamp()' is deprecated. Please use 'date.fromTimestamp()' instead
-renameDateTimeMethods.chpl:24: warning: 'datetime.fromtimestamp()' is deprecated. Please use 'datetime.fromTimestamp()' instead
+renameDateTimeMethods.chpl:24: warning: 'datetime.utcfromtimestamp()' is deprecated. Please use 'datetime.utcFromTimestamp()' instead
 renameDateTimeMethods.chpl:27: warning: 'TZInfo.fromutc()' is deprecated. Please use 'TZInfo.fromUtc()' instead
 Monday
 (2022, 23, 1)
@@ -18,5 +18,5 @@ Monday
 0028-05-17
 0028-05-17T00:00:00
 1970-01-01
-1969-12-31T20:46:39
+1970-01-01T02:46:39
 renameDateTimeMethods.chpl:27: error: halt reached - pure virtual method called

@@ -21,7 +21,7 @@ writeln(datetime.fromordinal(9999));
 
 var uNow = datetime.utcNow();
 writeln(date.fromtimestamp(9999.0));
-writeln(datetime.fromtimestamp(9999.0));
+writeln(datetime.utcfromtimestamp(9999.0));
 
 var zone = new TZInfo();
 writeln(zone.fromutc(dt)); // Halts
