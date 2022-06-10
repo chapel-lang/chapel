@@ -284,6 +284,21 @@ module CommDiagnostics
      */
     var cache_put_misses: uint(64);
 
+    // NOTE: these counters are attached to the lifetime of the data/network operations,
+    // so nothing is remembered with Aout.
+    //
+    // NOTE: known issue with the counts when ending the diagnostics reporting, as what is
+    // left in the remote cache is not counted correctly.
+    var cache_num_prefetches : uint(64);
+    var cache_num_page_readaheads : uint(64);
+    // too early: we prefetched something but it was evicted before we could use it
+    var cache_prefetch_unused : uint(64);
+    // too late: we prefetched something but had to wait for it to complete when we tried to access it.
+    var cache_prefetch_waited : uint(64);
+    // Same as above but for the read aheads
+    var cache_readahead_unused : uint(64);
+    var cache_readahead_waited : uint(64);
+
     proc writeThis(c) throws {
       use Reflection;
 

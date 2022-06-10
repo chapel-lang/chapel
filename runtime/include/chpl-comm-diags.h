@@ -58,8 +58,13 @@ extern int chpl_comm_diags_print_unstable;
   MACRO(cache_get_hits) \
   MACRO(cache_get_misses) \
   MACRO(cache_put_hits) \
-  MACRO(cache_put_misses)
-
+  MACRO(cache_put_misses) \
+  MACRO(cache_num_prefetches) \
+  MACRO(cache_num_page_readaheads) \
+  MACRO(cache_prefetch_unused) \
+  MACRO(cache_prefetch_waited) \
+  MACRO(cache_readahead_unused) \
+  MACRO(cache_readahead_waited)
 
 typedef struct _chpl_commDiagnostics {
 #define _COMM_DIAGS_DECL(cdv) uint64_t cdv;
