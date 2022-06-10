@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [[ $CHPL_COMM != none ]] ; then
+  echo True
+elif [[ $CHPL_TARGET_PLATFORM != darwin && $CHPL_LIB_PIC != pic ]] ; then
+  echo True
+elif command -v python3 >/dev/null; then
+  # Python3 is required for building with Cython (we would need to change our
+  # output of certain types and that isn't particularly worth it)
+  # The script skipif_helper.py checks that cython and numpy are installed
+  python3 skipif_helper.py
+else
+  echo True
+fi
