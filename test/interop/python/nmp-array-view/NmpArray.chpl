@@ -74,9 +74,9 @@ module NmpArray {
       when 3 do ret = new unmanaged ArrayConcrete(3, T, dims);
       when 4 do ret = new unmanaged ArrayConcrete(4, T, dims);
       when 5 do ret = new unmanaged ArrayConcrete(5, T, dims);
-      when 6 do ret = new unmanaged ArrayConcrete(5, T, dims);
-      when 7 do ret = new unmanaged ArrayConcrete(5, T, dims);
-      when 8 do ret = new unmanaged ArrayConcrete(5, T, dims);
+      when 6 do ret = new unmanaged ArrayConcrete(6, T, dims);
+      when 7 do ret = new unmanaged ArrayConcrete(7, T, dims);
+      when 8 do ret = new unmanaged ArrayConcrete(8, T, dims);
       otherwise do boundsCheckHalt('unsupported rank: ' + rank:string);
     }
     assert(ret != nil);
