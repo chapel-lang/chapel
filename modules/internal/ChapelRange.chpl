@@ -2052,38 +2052,20 @@ operator :(r: range(?), type t: range(?)) {
   // Direct range iterators for low bounded counted ranges (low..#count)
   //
 
-  iter chpl_direct_counted_range_iter(low: int(?w), count: int(w)) {
+  iter chpl_direct_counted_range_iter(low: int(?w), count: integral) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: int(?w), count: uint(w)) {
+  iter chpl_direct_counted_range_iter(low: uint(?w), count: integral) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: uint(?w), count: int(w)) {
-    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
-  }
-
-  iter chpl_direct_counted_range_iter(low: uint(?w), count: uint(w)) {
-    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
-  }
-
-  iter chpl_direct_counted_range_iter(low: enum, count:int(?w)) {
+  iter chpl_direct_counted_range_iter(low: enum, count:integral) {
     const r = low..;
     for i in r#count do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: enum, count:uint(?w)) {
-    const r = low..;
-    for i in r#count do yield i;
-  }
-
-  iter chpl_direct_counted_range_iter(low: bool, count: int(?w)) {
-    const r = low..;
-    for i in r#count do yield i;
-  }
-
-  iter chpl_direct_counted_range_iter(low: bool, count: uint(?w)) {
+  iter chpl_direct_counted_range_iter(low: bool, count: integral) {
     const r = low..;
     for i in r#count do yield i;
   }
@@ -2101,13 +2083,25 @@ operator :(r: range(?), type t: range(?)) {
   // becomes `low..(low + (count - 1))`. Needs to check for negative counts,
   // and for zero counts iterates over a degenerate `1..0`.
   iter chpl_direct_counted_range_iter_helper(low, count) {
+    // From the spec:
+    // The type of the count expression must be a signed or unsigned integer
+    // of the same bit size as the base range’s idxType, or an implicit
+    // conversion must be allowed to that type from the count’s type.
+    // check that now
+    if (isIntegralType(low.type) && isIntegralType(count.type) &&
+        numBits(low.type) < numBits(count.type)) {
+      compilerError("can't apply '#' to a range with idxType ",
+                    low.type:string, " using a count of type ",
+                    count.type:string);
+    }
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
 
-    // The casts in the 'then' clause are seemingly unnecessary, but
-    // avoid C compile-time warnings when 'low' is min(int)
-    const (start, end) = if count == 0 then (low, (low:uint - 1):low.type)
-                                       else (low, low + (count:low.type - 1));
+    const start = low;
+    // The cast to uint in the 'then' clause avoids avoids a C compile-time
+    // warnings when 'low' is min(int)
+    const end = if count == 0 then (low:uint - 1):low.type
+                              else (low + (count:low.type - 1)):low.type;
 
     for i in chpl_direct_param_stride_range_iter(start, end, 1) do yield i;
   }

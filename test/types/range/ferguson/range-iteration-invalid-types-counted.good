@@ -1,0 +1,1 @@
+range-iteration-invalid-types-counted.chpl:3: error: can't apply '#' to a range with idxType int(32) using a count of type int(64)
