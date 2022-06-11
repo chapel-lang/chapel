@@ -36,7 +36,7 @@ config const numrows = computeProblemSize(numMatrices, eltType, rank=2),
              numcols = numrows,
              rowBlkSize = 8, 
              colBlkSize = rowBlkSize,
-             beta = 1.0;
+             beta:eltType = 1.0;
 
 //
 // Configuration constant used for verification thresholds
