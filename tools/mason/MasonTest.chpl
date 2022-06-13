@@ -626,7 +626,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
     else if sep1Found then testExecMsg += line;
     else {
-      if line.strip().endsWith(")") {
+      if line.strip().endsWith("()") {
         var testName = line.strip();
         if currentRunningTests.count(testName) == 0 {
           currentRunningTests.append(testName);
