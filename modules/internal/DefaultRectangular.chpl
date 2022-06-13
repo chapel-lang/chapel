@@ -1657,10 +1657,19 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
-    f <~> new ioLiteral("{") <~> ranges(0);
+    var start = new ioLiteral("{");
+    var sep = new ioLiteral(", ");
+    var end = new ioLiteral("}");
+    if f.writing then f.write(start, ranges(0)); else {
+      f.readIt(start);
+      f.readIt(ranges(0));
+    }
     for i in 1..rank-1 do
-      f <~> new ioLiteral(", ") <~> ranges(i);
-    f <~> new ioLiteral("}");
+      if f.writing then f.write(sep, ranges(i)); else {
+        f.readIt(sep);
+        f.readIt(ranges(i));
+      }
+    if f.writing then f.write(end); else f.readIt(end);
   }
 
   proc DefaultRectangularDom.doiToString() {
@@ -1712,9 +1721,21 @@ module DefaultRectangular {
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
+    // IO TODO: We are using 'readIt' here because the bool-returning
+    // 'channel.read' will *not* throw on an EOF. The current implementation
+    // assumes that an EOF will be caught and cause an early-return.
+    //
+    // This behavior is captured by the following test:
+    // test/io/bharshbarg/readArrays.chpl
+
+    inline proc readwrite(in lit: ioLiteral) throws {
+      if f.writing then f.write(lit);
+      else f.readIt(lit);
+    }
+
     proc writeSpaces(dim:int) throws {
       for i in 1..dim {
-        f <~> new ioLiteral(" ");
+        readwrite(new ioLiteral(" "));
       }
     }
 
@@ -1731,20 +1752,22 @@ module DefaultRectangular {
 
       if isjson || ischpl {
         if dim != rank-1 {
-          f <~> new ioLiteral("[\n");
+          readwrite(new ioLiteral("[\n"));
           writeSpaces(dim+1); // space for the next dimension
-        } else f <~> new ioLiteral("[");
+        } else readwrite(new ioLiteral("["));
       }
 
       if dim == rank-1 {
         var first = true;
         if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
+
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
-          else if isspace then f <~> new ioLiteral(" ");
-          else if isjson || ischpl then f <~> new ioLiteral(", ");
+          else if isspace then readwrite(new ioLiteral(" "));
+          else if isjson || ischpl then readwrite(new ioLiteral(", "));
           idx(dim) = j;
-          f <~> arr.dsiAccess(idx);
+          if f.writing then f.write(arr.dsiAccess(idx));
+          else f.readIt(arr.dsiAccess(idx));
         }
       } else {
         for j in dom.dsiDim(dim) by makeStridePositive {
@@ -1756,7 +1779,7 @@ module DefaultRectangular {
 
           if isjson || ischpl {
             if j != lastIdx {
-              f <~> new ioLiteral(",\n");
+              readwrite(new ioLiteral(",\n"));
               writeSpaces(dim+1);
             }
           }
@@ -1765,15 +1788,15 @@ module DefaultRectangular {
 
       if isspace {
         if !last && dim != 0 {
-          f <~> new ioLiteral("\n");
+          readwrite(new ioLiteral("\n"));
         }
       } else if isjson || ischpl {
         if dim != rank-1 {
-          f <~> new ioLiteral("\n");
+          readwrite(new ioLiteral("\n"));
           writeSpaces(dim); // space for this dimension
-          f <~> new ioLiteral("]");
+          readwrite(new ioLiteral("]"));
         }
-        else f <~> new ioLiteral("]");
+        else readwrite(new ioLiteral("]"));
       }
     }
 
@@ -1795,9 +1818,10 @@ module DefaultRectangular {
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
       var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+      var ionl = new ioNewline(skipWhitespaceOnly=true);
 
       if isjson || ischpl {
-        f <~> new ioLiteral("[");
+        readwrite(new ioLiteral("["));
       }
 
       var first = true;
@@ -1813,9 +1837,9 @@ module DefaultRectangular {
           // but check for a ]
           try {
             if isjson || ischpl {
-              f <~> new ioLiteral("]");
+              readwrite(new ioLiteral("]"));
             } else if isspace {
-              f <~> new ioNewline(skipWhitespaceOnly=true);
+              if f.writing then f.write(ionl); else f.readIt(ionl);
             }
             read_end = true;
             break;
@@ -1826,8 +1850,8 @@ module DefaultRectangular {
 
           // Try reading a comma/space. Break if we don't read one.
           try {
-            if isspace then f <~> new ioLiteral(" ");
-            else if isjson || ischpl then f <~> new ioLiteral(",");
+            if isspace then readwrite(new ioLiteral(" "));
+            else if isjson || ischpl then readwrite(new ioLiteral(","));
           } catch err: BadFormatError {
             break;
           }
@@ -1850,14 +1874,15 @@ module DefaultRectangular {
           arr.dsiPostReallocate();
         }
 
-        f <~> arr.dsiAccess(offset + i);
+        if f.writing then f.write(arr.dsiAccess(offset + i));
+        else f.readIt(arr.dsiAccess(offset + i));
 
         i += 1;
       }
 
       if ! read_end {
         if isjson || ischpl {
-          f <~> new ioLiteral("]");
+          readwrite(new ioLiteral("]"));
         }
       }
 
