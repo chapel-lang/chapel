@@ -474,7 +474,7 @@ struct ChplSyntaxVisitor {
     if (isBracketLoopMaybeArrayType(node) &&
         node->iterand()->isDomain() &&
         node->iterand()->toDomain()->numExprs() == 1) {
-        printAst(node->iterand()->toDomain()->expr(0));
+      printAst(node->iterand()->toDomain()->expr(0));
     } else {
       printAst(node->iterand());
     }
@@ -1366,8 +1366,7 @@ namespace chpl {
       return 3;
     else if (USTR("||") == op)
       return 2;
-    // by and align are precedence 1 too, but don't come through this path.
-    else if (USTR("#") == op)
+    else if (USTR("#") == op || USTR("by") == op || USTR("align") == op)
       return 1;
 
     return -1;
