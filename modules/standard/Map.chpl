@@ -591,19 +591,27 @@ module Map {
     proc _readWriteHelper(ch: channel) throws {
       _enter(); defer _leave();
       var first = true;
-      ch <~> new ioLiteral("{");
+
+      inline proc readwrite(in lit: ioLiteral) throws {
+        if ch.writing then ch.write(lit);
+        else ch.readIt(lit);
+      }
+
+      readwrite(new ioLiteral("{"));
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           if first {
             first = false;
           } else {
-            ch <~> new ioLiteral(", ");
+            readwrite(new ioLiteral(", "));
           }
           ref tabEntry = table.table[slot];
-          ch <~> tabEntry.key <~> new ioLiteral(": ") <~> tabEntry.val;
+          if ch.writing then ch.write(tabEntry.key); else ch.readIt(tabEntry.key);
+          readwrite(new ioLiteral(": "));
+          if ch.writing then ch.write(tabEntry.val); else ch.readIt(tabEntry.val);
         }
       }
-      ch <~> new ioLiteral("}");
+      readwrite(new ioLiteral("}"));
     }
 
     /*
