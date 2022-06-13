@@ -1,0 +1,10 @@
+typeMathError1.chpl:1: error: ambiguous call 'chpl_build_bounded_range(1: int(32), 100: uint(32))'
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note: candidates are: chpl_build_bounded_range(low, high)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: int(8), high: int(8))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: int(16), high: int(16))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: int(32), high: int(32))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: int(64), high: int(64))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: uint(8), high: uint(8))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: uint(16), high: uint(16))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: uint(32), high: uint(32))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: uint(64), high: uint(64))
