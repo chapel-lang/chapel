@@ -1439,19 +1439,19 @@ module SampleSortHelp {
     var equalBuckets: bool;
 
     proc writeThis(ch) throws {
-      ch <~> "SampleBucketizer(";
-      ch <~> "\n logBuckets=" <~> logBuckets;
-      ch <~> "\n numBuckets=" <~> numBuckets;
-      ch <~> "\n equalBuckets=" <~> equalBuckets;
-      ch <~> "\n storage=";
+      ch.write("SampleBucketizer(");
+      ch.write("\n logBuckets=", logBuckets);
+      ch.write("\n numBuckets=", numBuckets);
+      ch.write("\n equalBuckets=", equalBuckets);
+      ch.write("\n storage=");
       for i in 0..numBuckets {
-        ch <~> (try! " %xt".format(storage[i]));
+        ch.write((try! " %xt".format(storage[i])));
       }
-      ch <~> "\n sortedStorage=";
+      ch.write("\n sortedStorage=");
       for i in 0..numBuckets {
-        ch <~> (try! " %xt".format(sortedStorage[i]));
+        ch.write(try! " %xt".format(sortedStorage[i]));
       }
-      ch <~> ")\n";
+      ch.write(")\n");
     }
 
     proc getNumBuckets() {
@@ -2199,10 +2199,10 @@ module TwoArrayPartitioning {
       tasks.append(t);
     }
     proc writeThis(f) throws {
-      f <~> "TwoArrayDistSortTask";
+      f.write("TwoArrayDistSortTask");
       for t in tasks {
-        f <~> " ";
-        f <~> t;
+        f.write(" ");
+        f.write(t);
       }
     }
     proc isEmpty() {

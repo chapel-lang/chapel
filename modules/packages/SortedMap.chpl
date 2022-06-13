@@ -420,16 +420,16 @@ module SortedMap {
     proc writeThis(ch: channel) throws {
       _enter(); defer _leave();
       var first = true;
-      ch <~> "{";
+      ch.write("{");
       for kv in _set {
         if first {
           first = false;
         } else {
-          ch <~> ", ";
+          ch.write(", ");
         }
-        ch <~> kv[0] <~> ": " <~> kv[1]!.val;
+        ch.write(kv[0], ": ", kv[1]!.val);
       }
-      ch <~> "}";
+      ch.write("}");
     }
 
     /*

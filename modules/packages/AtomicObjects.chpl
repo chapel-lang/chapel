@@ -393,7 +393,7 @@ prototype module AtomicObjects {
 
     /* Writes an ABA */
     proc writeThis(f) throws {
-      f <~> "(ABA){cnt=" <~> this.__ABA_cnt <~> ", obj=" <~> this.getObject() <~> "}";
+      f.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
     }
 
     deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
@@ -636,7 +636,7 @@ prototype module AtomicObjects {
     }
 
     proc writeThis(f) throws {
-      f <~> atomicVariable.read();
+      f.write(atomicVariable.read());
     }
 
     deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
