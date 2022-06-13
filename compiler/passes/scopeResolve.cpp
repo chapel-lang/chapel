@@ -1442,7 +1442,7 @@ static void resolveModuleCall(CallExpr* call) {
           currModule->moduleUseAdd(calledModule);
           storeReferencedMod(calledModule, call);
         }
-        
+
 #ifdef HAVE_LLVM
         // Failing that, try looking in an extern block.
         if (sym == NULL && mod->extern_info != nullptr) {
