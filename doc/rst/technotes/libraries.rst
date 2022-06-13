@@ -70,7 +70,7 @@ example, one can define a Chapel file ``foo.chpl`` like this:
    }
 
    // As will this one
-   export proc baz(int x) {
+   export proc baz(x: int) {
      // Does something different
      ...
    }
