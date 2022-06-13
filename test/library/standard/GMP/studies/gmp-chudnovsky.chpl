@@ -267,7 +267,7 @@ proc main() {
 
 proc build_sieve(s: [] sieve_t) {
   const n = s.sizeAs(s.idxType)*2,
-        m = sqrt(n): c_long;
+        m = sqrt(n:real): c_long;
 
   s[1/2].fac = 1;
   s[1/2].pow = 1;
@@ -299,7 +299,7 @@ proc my_sqrt_ui(ref r: mpf_t, x: c_ulong) {
   const prec0 = mpf_get_prec(r);
 
   if (prec0 <= DOUBLE_PREC) {
-    mpf_set_d(r, sqrt(x));
+    mpf_set_d(r, sqrt(x:real));
     return;
   }
 
@@ -312,7 +312,7 @@ proc my_sqrt_ui(ref r: mpf_t, x: c_ulong) {
   }
 
   mpf_set_prec_raw(t1, DOUBLE_PREC);
-  mpf_set_d(t1, 1/sqrt(x));
+  mpf_set_d(t1, 1.0/sqrt(x:real));
 
   while (prec < prec0) {
     prec *= 2;
