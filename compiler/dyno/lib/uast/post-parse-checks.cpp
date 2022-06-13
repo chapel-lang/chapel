@@ -160,10 +160,6 @@ const AstNode* Visitor::parent(int depth) const {
   return ret;
 }
 
-int Visitor::numParents() const {
-  return parents_.size();
-}
-
 const AstNode*
 Visitor::searchParents(AstTag tag, const AstNode** last) {
   const AstNode* ret = nullptr;
