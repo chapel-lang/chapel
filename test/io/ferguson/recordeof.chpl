@@ -20,8 +20,13 @@ proc MyRecord.writeThis(f) throws {
 }
 
 proc MyRecord.readWriteHelper(f) throws {
-  f <~> i;
-  f <~> new ioLiteral("\n");
+  var nl = new ioLiteral("\n");
+  if f.writing then
+    f.write(i);
+  else
+    f.readIt(i);
+
+  if f.writing then f.write(nl); else f.read(nl);
 }
 
 {
