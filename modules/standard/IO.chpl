@@ -3547,6 +3547,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref ch: channel, const x) const ref throws
   where ch.writing {
     try ch.writeIt(x);
@@ -3555,6 +3556,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
 
   // documented in the writing version.
   pragma "no doc"
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
     try ch.readIt(x);
@@ -3576,6 +3578,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      works without requiring an explicit temporary value to store
      the ioLiteral.
    */
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
                               lit:ioLiteral) const ref throws
   where !r.writing {
@@ -3594,6 +3597,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      works without requiring an explicit temporary value to store
      the ioNewline.
    */
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
                               nl:ioNewline) const ref throws
   where !r.writing {
