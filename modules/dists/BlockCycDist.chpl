@@ -317,15 +317,15 @@ override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 // output distribution
 //
 proc BlockCyclic.writeThis(x) throws {
-  x <~> "BlockCyclic\n";
-  x <~> "-------\n";
-  x <~> "distributes: " <~> lowIdx <~> "..." <~> "\n";
-  x <~> "in chunks of: " <~> blocksize <~> "\n";
-  x <~> "across locales: " <~> targetLocales <~> "\n";
-  x <~> "indexed via: " <~> targetLocDom <~> "\n";
-  x <~> "resulting in: " <~> "\n";
+  x.writeln("BlockCyclic");
+  x.writeln("-------");
+  x.writeln("distributes: ", lowIdx, "...");
+  x.writeln("in chunks of: ", blocksize);
+  x.writeln("across locales: ", targetLocales);
+  x.writeln("indexed via: ", targetLocDom);
+  x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x <~> "  [" <~> locid <~> "] " <~> locDist(locid) <~> "\n";
+    x.writeln("  [", locid, "] ", locDist(locid));
 }
 
 //
@@ -488,7 +488,7 @@ proc LocBlockCyclic.writeThis(x) throws {
   on this {
     localeid = here.id;
   }
-  x <~> "locale " <~> localeid <~> " owns blocks: " <~> myStarts;
+  x.write("locale ", localeid, " owns blocks: ", myStarts);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -772,7 +772,7 @@ proc LocBlockCyclicDom.computeFlatInds() {
 // output local domain piece
 //
 proc LocBlockCyclicDom.writeThis(x) throws {
-  x <~> myStarts;
+  x.write(myStarts);
 }
 
 proc LocBlockCyclicDom.enumerateBlocks() {
@@ -1276,7 +1276,7 @@ proc LocBlockCyclicArr.this(i) ref {
 //
 proc LocBlockCyclicArr.writeThis(x) throws {
   // note on this fails; see writeThisUsingOn.chpl
-  x <~> myElems;
+  x.write(myElems);
 }
 
 // sungeun: This doesn't appear to be used yet, so I left it, but it

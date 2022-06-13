@@ -579,15 +579,15 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
 // output distribution
 //
 proc Stencil.writeThis(x) throws {
-  x <~> "Stencil\n";
-  x <~> "-------\n";
-  x <~> "distributes: " <~> boundingBox <~> "\n";
-  x <~> "across locales: " <~> targetLocales <~> "\n";
-  x <~> "indexed via: " <~> targetLocDom <~> "\n";
-  x <~> "resulting in: " <~> "\n";
+  x.writeln("Stencil");
+  x.writeln("-------");
+  x.writeln("distributes: ", boundingBox);
+  x.writeln("across locales: ", targetLocales);
+  x.writeln("indexed via: ", targetLocDom);
+  x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x <~> "  [" <~> locid <~> "] locale " <~> locDist(locid).locale.id <~>
-      " owns chunk: " <~> locDist(locid).myChunk <~> "\n";
+    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+      " owns chunk: ", locDist(locid).myChunk);
 }
 
 proc Stencil.dsiIndexToLocale(ind: idxType) where rank == 1 {
@@ -1365,16 +1365,16 @@ proc StencilArr.dsiSerialWrite(f) {
   for dim in 0..rank-1 do
     i(dim) = dom.dsiDim(dim).lowBound;
   label next while true {
-    f <~> do_dsiAccess(true, i);
+    f.write(do_dsiAccess(true, i));
     if i(rank-1) <= (dom.dsiDim(rank-1).highBound - dom.dsiDim(rank-1).stride:strType) {
-      if ! binary then f <~> " ";
+      if ! binary then f.write(" ");
       i(rank-1) += dom.dsiDim(rank-1).stride:strType;
     } else {
       for dim in 0..rank-2 by -1 {
         if i(dim) <= (dom.dsiDim(dim).highBound - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank-1 {
-            f <~> "\n";
+            f.writeln();
             i(dim2) = dom.dsiDim(dim2).lowBound;
           }
           continue next;

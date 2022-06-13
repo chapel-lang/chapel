@@ -632,15 +632,15 @@ override proc Block.dsiNewSparseDom(param rank: int, type idxType,
 // output distribution
 //
 proc Block.writeThis(x) throws {
-  x <~> "Block" <~> "\n";
-  x <~> "-------" <~> "\n";
-  x <~> "distributes: " <~> boundingBox <~> "\n";
-  x <~> "across locales: " <~> targetLocales <~> "\n";
-  x <~> "indexed via: " <~> targetLocDom <~> "\n";
-  x <~> "resulting in: " <~> "\n";
+  x.writeln("Block");
+  x.writeln("-------");
+  x.writeln("distributes: ", boundingBox);
+  x.writeln("across locales: ", targetLocales);
+  x.writeln("indexed via: ", targetLocDom);
+  x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x <~> "  [" <~> locid <~> "] locale " <~> locDist(locid).locale.id <~>
-      " owns chunk: " <~> locDist(locid).myChunk <~> "\n";
+    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+      " owns chunk: ", locDist(locid).myChunk);
 }
 
 proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {

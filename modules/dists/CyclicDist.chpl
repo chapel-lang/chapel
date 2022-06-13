@@ -395,11 +395,11 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 proc Cyclic.writeThis(x) throws {
-  x <~> this.type:string <~> "\n";
-  x <~> "------\n";
+  x.writeln(this.type:string);
+  x.writeln("------");
   for locid in targetLocDom do
-    x <~> " [" <~> locid <~> "=" <~> targetLocs(locid) <~> "] owns chunk: " <~>
-      locDist(locid).myChunk <~> "\n";
+    x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
+      locDist(locid).myChunk);
 }
 
 proc Cyclic.targetLocsIdx(i: idxType) {
@@ -590,14 +590,14 @@ proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 
 proc CyclicDom.dsiSerialWrite(x) {
   if verboseCyclicDistWriters {
-    x <~> this.type:string <~> "\n";
-    x <~> "------\n";
+    x.writeln(this.type:string);
+    x.writeln("------");
     for loc in dist.targetLocDom {
-      x <~> "[" <~> loc <~> "=" <~> dist.targetLocs(loc) <~> "] owns " <~>
-        locDoms(loc).myBlock <~> "\n";
+      x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ",
+        locDoms(loc).myBlock);
     }
   } else {
-    x <~> whole;
+    x.write(whole);
   }
 }
 
