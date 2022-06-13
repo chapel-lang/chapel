@@ -1730,23 +1730,23 @@ module List {
 
       if isBinary {
         // Write the number of elements
-        ch <~> _size;
+        ch.write(_size);
       } else {
-        ch <~> new ioLiteral("[");
+        ch.write(new ioLiteral("["));
       }
 
       for i in 0..(_size - 2) {
-        ch <~> _getRef(i);
+        ch.write(_getRef(i));
         if !isBinary {
-          ch <~> new ioLiteral(", ");
+          ch.write(new ioLiteral(", "));
         }
       }
 
       if _size > 0 then
-        ch <~> _getRef(_size-1);
+        ch.write(_getRef(_size-1));
 
       if !isBinary {
-        ch <~> new ioLiteral("]");
+        ch.write(new ioLiteral("]"));
       }
 
       _leave();
@@ -1771,18 +1771,20 @@ module List {
       if isBinary {
         // How many elements should we read (for binary mode)?
         var num = 0;
-        ch <~> num;
+        ch.readIt(num);
         for i in 0..#num {
           pragma "no auto destroy"
           var elt: eltType;
-          ch <~> elt;
+          ch.readIt(elt);
           _appendByRef(elt);
         }
       } else {
         var isFirst = true;
         var hasReadEnd = false;
 
-        ch <~> new ioLiteral("[");
+        var LBR = new ioLiteral("[");
+        var RBR = new ioLiteral("]");
+        ch.readIt(LBR);
 
         while !hasReadEnd {
           if isFirst {
@@ -1790,7 +1792,7 @@ module List {
 
             // Try reading an end bracket. If we don't, then continue on.
             try {
-              ch <~> new ioLiteral("]");
+              ch.readIt(RBR);
               hasReadEnd = true;
               break;
             } catch err: BadFormatError {
@@ -1800,7 +1802,8 @@ module List {
 
             // Try to read a comma. Break if we don't.
             try {
-              ch <~> new ioLiteral(",");
+              var comma = new ioLiteral(",");
+              ch.readIt(comma);
             } catch err: BadFormatError {
               break;
             }
@@ -1809,12 +1812,12 @@ module List {
           // read an element
           pragma "no auto destroy"
           var elt: eltType;
-          ch <~> elt;
+          ch.readIt(elt);
           _appendByRef(elt);
         }
 
         if !hasReadEnd {
-          ch <~> new ioLiteral("]");
+          ch.readIt(RBR);
         }
       }
 

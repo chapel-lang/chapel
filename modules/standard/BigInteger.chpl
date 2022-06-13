@@ -509,7 +509,7 @@ module BigInteger {
         }
       }
 
-      writer <~> s;
+      writer.write(s);
     }
   }
 
