@@ -5593,8 +5593,10 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
         continue;
       }
 
-      if (is_bool_type(actualVt) && formalVt == dtInt[INT_SIZE_DEFAULT]) {
+      if (is_bool_type(actualVt) &&
+          (formalVt == dtInt[INT_SIZE_DEFAULT] || is_bool_type(formalVt))) {
         // don't worry about bool types converting to default 'int'
+        // or to other bool sizes
         continue;
       }
 
