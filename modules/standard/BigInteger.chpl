@@ -3435,9 +3435,15 @@ module BigInteger {
   }
 
 
+  // error type associated with an invald mzp_invert: https://gmplib.org/manual/Number-Theoretic-Functions
+  class InversionError : Error {
+    proc init() {
+      super.init("inverse does not exist");
+    }
+  }
 
   // invert
-  proc bigint.invert(const ref a: bigint, const ref b: bigint) : int {
+  proc bigint.invert(const ref a: bigint, const ref b: bigint) : int throws {
     var ret: c_int;
 
     if _local {
@@ -3459,8 +3465,14 @@ module BigInteger {
       }
     }
 
-    return ret.safeCast(int);
+    var ret_int = ret.safeCast(int);
+
+    if (ret_int == 0) then
+      throw new owned InversionError()
+    else 
+      return ret_int;
   }
+
 
 
   // remove
