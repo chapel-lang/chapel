@@ -4,9 +4,9 @@
 proc test1() {
   writeln("test2");
   var b$: single int = 1;
-  var c$: single int = 1;
+  var c: int = 1;
 
-  var a = b$ + c$; ///  warning
+  var a = b$ + c; ///  warning
 
   writeln("a = ", a, " : ", a.type:string);
 }
