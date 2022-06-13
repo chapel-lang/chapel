@@ -2176,10 +2176,42 @@ operator :(r: range(?), type t: range(?)) {
   // An unbounded range iterator (for all strides)
   pragma "no doc"
   pragma "order independent yielding loops"
-  iter range.these() where boundedType != BoundedRangeType.bounded {
+  iter range.these() where boundedType == BoundedRangeType.boundedNone {
+    compilerError("iteration over a range with no bounds");
+  }
 
-    if boundedType == BoundedRangeType.boundedNone then
-      compilerError("iteration over a range with no bounds");
+  // An unbounded range iterator (for all strides)
+  pragma "no doc"
+  pragma "order independent yielding loops"
+  iter range.these() where boundedType == BoundedRangeType.boundedLow {
+
+    if boundsChecking {
+      if ! this.hasFirst() then
+        HaltWrappers.boundsCheckHalt("iteration over range that has no first index");
+
+      if this.isAmbiguous() then
+        HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
+    }
+    // This iterator could be split into different cases depending on the
+    // stride like the bounded iterators. However, all that gets you is the
+    // ability to use low/alignedLow over first. The additional code isn't
+    // worth it just for that.
+    var i: intIdxType;
+    const start = chpl__idxToInt(this.first);
+    const end = max(intIdxType) - stride: intIdxType;
+    while __primitive("C for loop",
+                      __primitive( "=", i, start),
+                      __primitive("<=", i, end),
+                      __primitive("+=", i, stride: intIdxType)) {
+      yield chpl_intToIdx(i);
+    }
+    halt("Loop over unbounded range surpassed representable values");
+  }
+
+  // An unbounded range iterator (for all strides)
+  pragma "no doc"
+  pragma "order independent yielding loops"
+  iter range.these() where boundedType == BoundedRangeType.boundedHigh {
 
     if boundsChecking {
       if ! this.hasFirst() then
@@ -2192,16 +2224,17 @@ operator :(r: range(?), type t: range(?)) {
     // This iterator could be split into different cases depending on the
     // stride like the bounded iterators. However, all that gets you is the
     // ability to use low/alignedLow over first. The additional code isn't
-    // worth it just for that. In the other cases it allowed us to specialize
-    // the test relational operator, which is important
+    // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
+    const end = min(intIdxType) - stride: intIdxType;
     while __primitive("C for loop",
                       __primitive( "=", i, start),
-                      true,
+                      __primitive(">=", i, end),
                       __primitive("+=", i, stride: intIdxType)) {
       yield chpl_intToIdx(i);
     }
+    halt("Loop over unbounded range surpassed representable values");
   }
 
   // A bounded and strided range iterator
