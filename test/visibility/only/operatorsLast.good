@@ -1,4 +1,7 @@
 operatorsLast.chpl:223: warning: This file-scope code is outside of any explicit module declarations (e.g., module DefinesOp), so an implicit module named 'operatorsLast' is being introduced to contain the file's contents.
+operatorsLast.chpl:223: In function 'main':
+operatorsLast.chpl:354: warning: the <~> operator is deprecated
+operatorsLast.chpl:359: warning: the <~> operator is deprecated
 In DefinesOp.+
 {x = 10}
 In DefinesOp.align

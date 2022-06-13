@@ -1,1 +1,5 @@
+exceptIO.chpl:4: warning: the <~> operator is deprecated
+exceptIO.chpl:7: In function 'main':
+exceptIO.chpl:9: warning: the <~> operator is deprecated
+exceptIO.chpl:10: warning: the <~> operator is deprecated
 {x = 3}

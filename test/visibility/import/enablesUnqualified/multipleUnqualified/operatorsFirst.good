@@ -1,4 +1,7 @@
 operatorsFirst.chpl:224: warning: This file-scope code is outside of any explicit module declarations (e.g., module DefinesOp), so an implicit module named 'operatorsFirst' is being introduced to contain the file's contents.
+operatorsFirst.chpl:224: In function 'main':
+operatorsFirst.chpl:355: warning: the <~> operator is deprecated
+operatorsFirst.chpl:360: warning: the <~> operator is deprecated
 In DefinesOp.+
 {x = 10}
 In DefinesOp.align
