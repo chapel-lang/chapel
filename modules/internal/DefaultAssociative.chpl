@@ -105,72 +105,72 @@ module DefaultAssociative {
                                                  initElts=initElts);
     }
 
-    proc dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
-
+    proc dsiSerialWrite(f) throws {
       var binary = f.binary();
 
-      if f.writing {
-        if binary {
-          var numIndices: int = dsiNumIndices;
-          f <~> numIndices;
-          for idx in this {
-            f <~> idx;
-          }
-        } else {
-          var first = true;
-          f <~> new ioLiteral("{");
-          for idx in this {
-            if first then
-              first = false;
-            else
-              f <~> new ioLiteral(", ");
-            f <~> idx;
-          }
-          f <~> new ioLiteral("}");
+      if binary {
+        var numIndices: int = dsiNumIndices;
+        f.write(numIndices);
+        for idx in this {
+          f.write(idx);
         }
       } else {
-        // Clear the domain so it only contains indices read in.
-        dsiClear();
-
-        if binary {
-          var numIndices: int;
-          f <~> numIndices;
-          for i in 1..numIndices {
-            var idx: idxType;
-            f <~> idx;
-            dsiAdd(idx);
-          }
-        } else {
-          f <~> new ioLiteral("{");
-
-          var first = true;
-          var comma = new ioLiteral(",", true);
-          var end = new ioLiteral("}");
-
-          while true {
-
-            // Try reading an end curly. If we get it, then break.
-            try {
-              f <~> end;
-              break;
-            } catch err: BadFormatError {
-              // We didn't read an end brace, so continue on.
-            }
-
-            // Try reading a comma.
-            if !first then f <~> comma;
+        var first = true;
+        f.write(new ioLiteral("{"));
+        for idx in this {
+          if first then
             first = false;
+          else
+            f.write(new ioLiteral(", "));
+          f.write(idx);
+        }
+        f.write(new ioLiteral("}"));
+      }
+    }
 
-            // Read an index.
-            var idx: idxType;
-            f <~> idx;
-            dsiAdd(idx);
+    proc dsiSerialRead(f) throws {
+      var binary = f.binary();
+
+      // Clear the domain so it only contains indices read in.
+      dsiClear();
+
+      if binary {
+        var numIndices: int;
+        f.readIt(numIndices);
+        for i in 1..numIndices {
+          var idx: idxType;
+          f.readIt(idx);
+          dsiAdd(idx);
+        }
+      } else {
+        var first = true;
+        var comma = new ioLiteral(",", true);
+        var start = new ioLiteral("{");
+        var end = new ioLiteral("}");
+
+        f.readIt(start);
+
+        while true {
+
+          // Try reading an end curly. If we get it, then break.
+          try {
+            f.readIt(end);
+            break;
+          } catch err: BadFormatError {
+            // We didn't read an end brace, so continue on.
           }
+
+          // Try reading a comma.
+          if !first then f.readIt(comma);
+          first = false;
+
+          // Read an index.
+          var idx: idxType;
+          f.readIt(idx);
+          dsiAdd(idx);
         }
       }
     }
-    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
     //
     // Standard user domain interface
@@ -657,31 +657,42 @@ module DefaultAssociative {
 
       printBraces &&= (isjson || ischpl);
 
-      if printBraces then f <~> new ioLiteral("[");
+      var LBR = new ioLiteral("[");
+      var RBR = new ioLiteral("]");
+      var SEP = new ioLiteral(if isspace then " "
+                              else if isjson || ischpl then ", "
+                              else "");
+
+      inline proc readwrite(in lit : ioLiteral) throws {
+        if f.writing then f.write(lit);
+        else f.readIt(lit);
+      }
+
+      if printBraces then readwrite(LBR);
 
       for (key, val) in zip(this.dom, this) {
         if first then first = false;
-        else if isspace then f <~> new ioLiteral(" ");
-        else if isjson || ischpl then f <~> new ioLiteral(", ");
+        else if isspace || isjson || ischpl then readwrite(SEP);
 
         if f.writing && ischpl {
-          f <~> key;
-          f <~> new ioLiteral(" => ");
+          f.write(key);
+          f.write(new ioLiteral(" => "));
         }
 
-        f <~> val;
+        if f.writing then f.write(val);
+        else f.readIt(val);
       }
 
-      if printBraces then f <~> new ioLiteral("]");
+      if printBraces then readwrite(RBR);
     }
 
     proc readChapelStyleAssocArray(f) throws {
-      const openBracket = new ioLiteral("[");
-      const closedBracket = new ioLiteral("]");
+      var openBracket = new ioLiteral("[");
+      var closedBracket = new ioLiteral("]");
       var first = true;
       var readEnd = false;
 
-      f <~> openBracket;
+      f.readIt(openBracket);
 
       while true {
         if first {
@@ -689,7 +700,7 @@ module DefaultAssociative {
 
           // Break if we read an immediate closed bracket.
           try {
-            f <~> closedBracket;
+            f.readIt(closedBracket);
             readEnd = true;
             break;
           } catch err: BadFormatError {
@@ -699,7 +710,8 @@ module DefaultAssociative {
 
           // Try reading a comma. If we don't, then break.
           try {
-            f <~> new ioLiteral(",");
+            var comma = new ioLiteral(",");
+            f.readIt(comma);
           } catch err: BadFormatError {
             // Break out of the loop if we didn't read a comma.
             break;
@@ -708,14 +720,15 @@ module DefaultAssociative {
 
         // Read a key.
         var key: idxType;
-        f <~> key;
-        f <~> new ioLiteral("=>");
+        var arrow = new ioLiteral("=>");
+        f.readIt(key);
+        f.readIt(arrow);
 
         // Read the value.
-        f <~> dsiAccess(key);
+        f.readIt(dsiAccess(key));
       }
 
-      if !readEnd then f <~> closedBracket;
+      if !readEnd then f.readIt(closedBracket);
     }
 
     proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
@@ -858,23 +871,34 @@ module DefaultAssociative {
       return;
     }
 
-    if isjson || ischpl then f <~> new ioLiteral("[");
+    var LBR = new ioLiteral("[");
+    var RBR = new ioLiteral("]");
+    var SEP = new ioLiteral(if isspace then " "
+                            else if isjson || ischpl then ", "
+                            else "");
+
+    inline proc readwrite(in lit: ioLiteral) throws {
+      if f.writing then f.write(lit);
+      else f.readIt(lit);
+    }
+
+    if isjson || ischpl then readwrite(LBR);
 
     var first = true;
 
     for key in dom {
       if first then first = false;
-      else if isspace then f <~> new ioLiteral(" ");
-      else if isjson || ischpl then f <~> new ioLiteral(", ");
+      else if isspace || isjson || ischpl then readwrite(SEP);
 
       if f.writing && ischpl {
-        f <~> key;
-        f <~> new ioLiteral(" => ");
+        f.write(key);
+        f.write(new ioLiteral(" => "));
       }
 
-      f <~> arr.dsiAccess(key);
+      if f.writing then f.write(arr.dsiAccess(key));
+      else f.readIt(arr.dsiAccess(key));
     }
 
-    if isjson || ischpl then f <~> new ioLiteral("]");
+    if isjson || ischpl then readwrite(RBR);
   }
 }
