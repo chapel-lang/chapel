@@ -3063,4 +3063,9 @@ void scopeResolve() {
   detectUserDefinedBorrowMethods();
 
   removeUnusedModules();
+
+  // Clear the cache so that functions can be removed
+  // (e.g. in normalize cloneParameterizedPrimitive)
+  // without leading to invalid memory accesses.
+  modSymsCache.clear();
 }
