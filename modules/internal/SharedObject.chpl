@@ -511,12 +511,12 @@ module SharedObject {
   proc _shared._readWriteHelper(f) throws {
     if isNonNilableClass(this.chpl_t) {
       var tmp = this.chpl_p! : borrowed class;
-      f <~> tmp;
+      if f.writing then f.write(tmp); else f.readIt(tmp);
       if tmp == nil then halt("internal error - read nil");
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
     } else {
       var tmp = this.chpl_p : borrowed class?;
-      f <~> tmp;
+      if f.writing then f.write(tmp); else f.readIt(tmp);
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
       if tmp == nil then
         this.doClear();
