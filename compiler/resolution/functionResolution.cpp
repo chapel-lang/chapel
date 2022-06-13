@@ -5454,49 +5454,51 @@ static bool isMatchingImagComplex(Type* actualVt, Type* formalVt,
 // filtered out.
 static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
                                          const DisambiguationContext& DC) {
+  bool anyImagComplexArgs = false;
+  Vec<Type*> normalizedActualTypes;
+
+  for (int k = 0; k < DC.actuals->n; k++) {
+    Symbol*    actual  = DC.actuals->v[k];
+    ArgSymbol* formal = candidate->actualIdxToFormal[k];
+    Type* actualVt = actual->type->getValType();
+    Type* formalVt = formal->type->getValType();
+    if (formal->originalIntent == INTENT_OUT) {
+      actualVt = dtUnknown;
+    } else {
+      if (candidate->anyPromotes) {
+        while (actualVt->scalarPromotionType != nullptr) {
+          // run canDispatch to check for promotion
+          bool promotes = false;
+          bool paramNarrows = false;
+          canDispatch(actualVt, actual, formalVt, formal,
+                      candidate->fn, &promotes, &paramNarrows,
+                      /* param coercions only? */ false);
+          if (promotes) {
+            actualVt = actualVt->scalarPromotionType->getValType();
+          } else {
+            break;
+          }
+        }
+      }
+
+      if (is_imag_type(actualVt) || is_complex_type(actualVt)) {
+        anyImagComplexArgs = true;
+      }
+    }
+    normalizedActualTypes.push_back(actualVt);
+  }
+
   // check the number of implicit conversions to types not used
   // in the call.
   int nImplicitConversionsToTypeNotMentioned = 0;
   int nImplicitConversions = 0;
 
-  bool anyImagComplexArgs = false;
   for (int k = 0; k < DC.actuals->n; k++) {
-    Symbol*    actual  = DC.actuals->v[k];
-    ArgSymbol* formal = candidate->actualIdxToFormal[k];
-    if (formal->originalIntent != INTENT_OUT) {
-      Type* actualVt = actual->type->getValType();
-      if (candidate->anyPromotes && actualVt->scalarPromotionType != nullptr) {
-        actualVt = actualVt->scalarPromotionType->getValType();
-      }
-      if (is_imag_type(actualVt) || is_complex_type(actualVt)) {
-        anyImagComplexArgs = true;
-        break;
-      }
-    }
-  }
-
-  for (int k = 0; k < DC.actuals->n; k++) {
-    Symbol*    actual  = DC.actuals->v[k];
     ArgSymbol* formal = candidate->actualIdxToFormal[k];
 
     if (formal->originalIntent != INTENT_OUT) {
-      Type* actualVt = actual->type->getValType();
+      Type* actualVt = normalizedActualTypes.v[k];
       Type* formalVt = formal->type->getValType();
-      if (actualVt == formalVt) {
-        // same type, nothing else to worry about here
-        continue;
-      }
-      if (candidate->anyPromotes && actualVt->scalarPromotionType != nullptr) {
-        // otherwise, run canDispatch to check for promotion
-        bool promotes = false;
-        bool paramNarrows = false;
-        canDispatch(actualVt, actual, formalVt, formal,
-                    candidate->fn, &promotes, &paramNarrows,
-                    /* param coercions only? */ false);
-        if (promotes) {
-          actualVt = actualVt->scalarPromotionType->getValType();
-        }
-      }
       if (actualVt == formalVt) {
         // same type, nothing else to worry about here
         continue;
@@ -5529,35 +5531,19 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
         continue;
       }
 
-      /*
-      Immediate* imm = nullptr;
-      if (VarSymbol* var = toVarSymbol(actual)) {
-        imm = var->immediate;
-      }
-      if (EnumSymbol* enumsym = toEnumSymbol(actual)) {
-        imm = enumsym->getImmediate();
-      }
-
-      if (imm != nullptr &&
-          isNumericParamDefaultType(actualVt)) {
-        // OK, don't worry about implicit conversions for param
-        // with default type here.
-        continue;
-      }*/
-
       // is it an implicit conversion to a formal type
       // that is used in an actual of the call?
       bool formalVtUsedInOtherActual = false;
       for (int other = 0; other < DC.actuals->n; other++) {
-        Symbol*    otherActual  = DC.actuals->v[other];
-        if (other != k && formal->originalIntent != INTENT_OUT) {
-          Type* otherActualVt = otherActual->type->getValType();
-          if (otherActualVt == formalVt ||
-              isMatchingImagComplex(otherActualVt, formalVt,
-                                    anyImagComplexArgs)) {
-            formalVtUsedInOtherActual = true;
-            break;
-          }
+        if (other == k || formal->originalIntent == INTENT_OUT)
+          continue;
+
+        Type* otherActualVt = normalizedActualTypes.v[other];
+        if (otherActualVt == formalVt ||
+            isMatchingImagComplex(otherActualVt, formalVt,
+                                  anyImagComplexArgs)) {
+          formalVtUsedInOtherActual = true;
+          break;
         }
       }
 
