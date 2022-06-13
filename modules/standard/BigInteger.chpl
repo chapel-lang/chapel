@@ -3435,7 +3435,7 @@ module BigInteger {
   }
 
 
-  // error type associated with an invald mzp_invert: https://gmplib.org/manual/Number-Theoretic-Functions
+  // error type associated with an invald mpz_invert: https://gmplib.org/manual/Number-Theoretic-Functions
   class InversionError : Error {
     proc init() {
       super.init("inverse does not exist");
