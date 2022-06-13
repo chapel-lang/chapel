@@ -221,6 +221,104 @@ static void test6(Parser* parser) {
                      "scope");
 }
 
+static void test7(Parser* parser) {
+  Context* ctx = parser->context();
+  auto br = parser->parseString("test7.chpl",
+    R""""(
+    export var x = 0;
+    )"""");
+  assert(br.numErrors() == 1);
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test7.chpl", 2,
+                     "Export variables are not yet supported");
+}
+
+static void test8(Parser* parser) {
+  Context* ctx = parser->context();
+  auto br = parser->parseString("test8.chpl",
+    R""""(
+    proc emptyBody();
+    )"""");
+  assert(br.numErrors() == 1);
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test8.chpl", 2,
+                     "no-op procedures are only legal for extern functions");
+}
+
+static void test9(Parser* parser) {
+  Context* ctx = parser->context();
+  auto br = parser->parseString("test9.chpl",
+    R""""(
+    extern proc shouldNotHaveBody() { writeln(0); }
+    extern proc shouldNotThrow() throws;
+    extern proc shouldNotDoEither() throws { writeln(0); }
+    )"""");
+  assert(br.numErrors() == 4);
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test9.chpl", 2,
+                     "Extern functions cannot have a body");
+  assertErrorMatches(ctx, br, 1, "test9.chpl", 3,
+                     "Extern functions cannot throw errors.");
+  assertErrorMatches(ctx, br, 2, "test9.chpl", 4,
+                     "Extern functions cannot have a body");
+  assertErrorMatches(ctx, br, 3, "test9.chpl", 4,
+                     "Extern functions cannot throw errors.");
+}
+
+static void test10(Parser* parser) {
+  Context* ctx = parser->context();
+  auto br = parser->parseString("test10.chpl",
+    R""""(
+    export proc foo() where false {}
+    )"""");
+  assert(br.numErrors() == 1);
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test10.chpl", 2,
+                     "Exported functions cannot have where clauses");
+}
+
+static void test11(Parser* parser) {
+  Context* ctx = parser->context();
+  auto br = parser->parseString("test11.chpl",
+    R""""(
+    class C {
+      proc this { return 0; }
+      iter these { yield nil; }
+    }
+    )"""");
+  assert(br.numErrors() == 2);
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test11.chpl", 3,
+                     "method 'this' must have parentheses");
+  assertErrorMatches(ctx, br, 1, "test11.chpl", 4,
+                     "method 'these' must have parentheses");
+}
+
+static void test12(Parser* parser) {
+  Context* ctx = parser->context();
+  auto br = parser->parseString("test12.chpl",
+    R""""(
+    proc f1(out x: int) type {}
+    proc f2(inout x: int) type {}
+    proc f3(out x: int) param {}
+    proc f4(inout x: int) param {}
+    )"""");
+  assert(br.numErrors() == 4);
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test12.chpl", 2,
+                     "Cannot use out in a function returning with "
+                     "'type' intent");
+  assertErrorMatches(ctx, br, 1, "test12.chpl", 3,
+                     "Cannot use inout in a function returning with "
+                     "'type' intent");
+  assertErrorMatches(ctx, br, 2, "test12.chpl", 4,
+                     "Cannot use out in a function returning with "
+                     "'param' intent");
+  assertErrorMatches(ctx, br, 3, "test12.chpl", 5,
+                     "Cannot use inout in a function returning with "
+                     "'param' intent");
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -235,6 +333,12 @@ int main() {
   test4(p);
   test5(p);
   test6(p);
+  test7(p);
+  test8(p);
+  test9(p);
+  test10(p);
+  test11(p);
+  test12(p);
 
   return 0;
 }

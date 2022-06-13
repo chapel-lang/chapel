@@ -316,7 +316,7 @@ static void test1(Parser* parser) {
    var (x,y,(v,z)) :(string, real, (int, real));
    while true do
      ;
-   proc noOp(x:int);
+   proc noOp(x:int) {}
    {
      // not the body
    }

@@ -27,6 +27,9 @@ namespace {
 using namespace chpl;
 using namespace uast;
 
+/***
+  TODO: Run the visitor while assigning IDs to avoid a second pass.
+*/
 struct Visitor {
   std::set<UniqueString> exportedFnNames_;
   std::vector<const AstNode*> parents_;
@@ -95,7 +98,12 @@ struct Visitor {
   void checkEmptyProcedureBody(const Function* node);
   void checkExternProcedure(const Function* node);
   void checkExportProcedure(const Function* node);
-  void checkParenlessMethods(const Function* node);
+  void checkProcedureRequiresParens(const Function* node);
+  void checkOverrideNonMethod(const Function* node);
+  void checkFormalsForTypeOrParamProcs(const Function* node);
+
+  /*
+  TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
   void checkFunctionReturnsYields(const Function* node);
   void checkReturnHelper(const Return* node);
@@ -104,20 +112,23 @@ struct Visitor {
   void checkIncludeModuleStrictName(const Module* node);
   void checkModuleReturnsYields(const Module* node);
   void checkPointlessUse(const Use* node);
+  */
 
-  // Called in the visitor loop to check for duplicate exported names.
+  // Called in the visitor loop to check against superclass types.
   void checkPrivateDecl(const Decl* node);
   void checkExportedName(const NamedDecl* node);
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
-  void warnUnstableLeadingUnderscores(const NamedDecl* node);
+  void warnUnstableSymbolNames(const NamedDecl* node);
 
   // Visitors.
   void visit(const AstNode* node);
   void visit(const FnCall* node);
   void visit(const Variable* node);
   void visit(const TypeQuery* node);
+  void visit(const Function* node);
+  void visit(const Union* node);
 };
 
 void Visitor::report(const AstNode* node, ErrorMessage::Kind kind,
@@ -197,7 +208,10 @@ void Visitor::check(const AstNode* node) {
 
   // First run blanket checks over superclass node types.
   if (auto decl = node->toDecl()) checkPrivateDecl(decl);
-  if (auto named = node->toNamedDecl()) checkExportedName(named);
+  if (auto named = node->toNamedDecl()) {
+    checkExportedName(named);
+    warnUnstableSymbolNames(named);
+  }
 
   // Now run checks via visitor and recurse to children.
   node->dispatch<void>(*this);
@@ -321,6 +335,7 @@ void Visitor::checkNewClassDecorators(const FnCall* node) {
   while (innerMgt != New::DEFAULT_MANAGEMENT) {
     assert(outerMgt != New::DEFAULT_MANAGEMENT);
 
+    // TODO: Also error about 'please use class? instead of %s?'...
     error(node, "Type expression uses multiple class kinds: %s %s",
                 New::managementToString(outerMgt),
                 New::managementToString(innerMgt));
@@ -423,55 +438,86 @@ void Visitor::checkConfigVar(const Variable* node) {
 }
 
 void Visitor::checkExportVar(const Variable* node) {
-  (void) node;
+  if (node->linkage() == Decl::EXPORT) {
+    error(node, "Export variables are not yet supported");
+  }
 }
 
 void Visitor::checkEmptyProcedureBody(const Function* node) {
-  (void) node;
+  if (!node->body() && node->linkage() != Decl::EXTERN) {
+    auto decl = searchParentsForDecl(nullptr);
+    if (!decl || !decl->isInterface()) {
+      error(node, "no-op procedures are only legal for extern functions");
+    }
+  }
 }
 
 void Visitor::checkExternProcedure(const Function* node) {
-  (void) node;
+  if (node->linkage() != Decl::EXTERN) return;
+
+  if (node->body()) {
+    error(node, "Extern functions cannot have a body");
+  }
+
+  if (node->throws()) {
+    error(node, "Extern functions cannot throw errors.");
+  }
 }
 
 void Visitor::checkExportProcedure(const Function* node) {
-  (void) node;
+  if (node->linkage() != Decl::EXPORT) return;
+
+  if (node->whereClause()) {
+    error(node, "Exported functions cannot have where clauses");
+  }
 }
 
-void Visitor::checkParenlessMethods(const Function* node) {
-  (void) node;
+// TODO: Should this be confirming that the function is a method?
+void Visitor::checkProcedureRequiresParens(const Function* node) {
+  if (node->name() == "this" && node->isParenless()) {
+    error(node, "method 'this' must have parentheses");
+  }
+
+  if (node->name() == "these" && node->isParenless()) {
+    error(node, "method 'these' must have parentheses");
+  }
 }
 
-void Visitor::checkProcedureFormalsAgainstRetType(const Function* node) {
-  (void) node;
+void Visitor::checkOverrideNonMethod(const Function* node) {
+  if (!node->isMethod() && node->isOverride()) {
+    error(node, "'override' cannot be applied to non-method '%s'",
+                node->name().c_str());
+  }
 }
 
-void Visitor::checkFunctionReturnsYields(const Function* node) {
-  (void) node;
-}
+void Visitor::checkFormalsForTypeOrParamProcs(const Function* node) {
+  if (node->returnIntent() != Function::PARAM &&
+      node->returnIntent() != Function::TYPE) {
+    return;
+  }
 
-void Visitor::checkReturnHelper(const Return* node) {
-  (void) node;
-}
+  const char* returnIntentStr =
+    node->returnIntent() == Function::TYPE ? "type" : "param";
 
-void Visitor::checkYieldHelper(const Yield* node) {
-  (void) node;
-}
+  for (auto decl : node->formals()) {
+    const char* formalIntentStr = nullptr;
+    bool doEmitError = false;
 
-void Visitor::checkImplicitModuleSameName(const Module* node) {
-  (void) node;
-}
+    if (auto formal = decl->toFormal()) {
+      if (formal->intent() == Formal::OUT ||
+          formal->intent() == Formal::INOUT) {
+        doEmitError = true;
+        formalIntentStr = formal->intent() == Formal::OUT ? "out" : "inout";
+      }
+    }
 
-void Visitor::checkIncludeModuleStrictName(const Module* node) {
-  (void) node;
-}
-
-void Visitor::checkModuleReturnsYields(const Module* node) {
-  (void) node;
-}
-
-void Visitor::checkPointlessUse(const Use* node) {
-  (void) node;
+    if (doEmitError) {
+      assert(formalIntentStr);
+      error(decl, "Cannot use %s in a function returning with '%s' intent",
+                  formalIntentStr,
+                  returnIntentStr);
+    }
+  }
 }
 
 void Visitor::checkPrivateDecl(const Decl* node) {
@@ -500,9 +546,11 @@ void Visitor::checkPrivateDecl(const Decl* node) {
         error(node, "Can't apply private to the fields or methods of a "
                     "class or record yet");
       }
+
     } else if (parent(0)->isBlock() && !isParentFalseBlock(0)) {
       warn(node, "Private declarations within nested blocks are "
                  "meaningless");
+
     } else if (parent(0) != mod) {
       warn(node, "Private declarations are meaningless outside of module "
                  "level declarations");
@@ -510,15 +558,18 @@ void Visitor::checkPrivateDecl(const Decl* node) {
   }
 }
 
+// TODO: This is a global operation, where to store the state?
 void Visitor::checkExportedName(const NamedDecl* node) {
   (void) node;
 }
 
+// TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
   (void) node;
 }
 
-void Visitor::warnUnstableLeadingUnderscores(const NamedDecl* node) {
+// TODO: This relies on detecting a user module.
+void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   (void) node;
 }
 
@@ -534,10 +585,24 @@ void Visitor::visit(const FnCall* node) {
 void Visitor::visit(const Variable* node) {
   checkConstVarNoInit(node);
   checkConfigVar(node);
+  checkExportVar(node);
 }
 
 void Visitor::visit(const TypeQuery* node) {
   checkDomainTypeQueryUsage(node);
+}
+
+void Visitor::visit(const Function* node) {
+  checkEmptyProcedureBody(node);
+  checkExternProcedure(node);
+  checkExportProcedure(node);
+  checkProcedureRequiresParens(node);
+  checkOverrideNonMethod(node);
+  checkFormalsForTypeOrParamProcs(node);
+}
+
+void Visitor::visit(const Union* node) {
+  warnUnstableUnions(node);
 }
 
 } // end anonymous namespace

@@ -308,6 +308,8 @@ static void test4(Parser* parser) {
 }
 
 // TODO: Export variable (might be parse error).
+// Yes, it is a parse error (for now).
+/*
 static void test5(Parser* parser) {
   auto parseResult = parser->parseString("test5.chpl",
     "export var foo = 0;\n"
@@ -318,6 +320,7 @@ static void test5(Parser* parser) {
   assert(mod);
   // TODO: More if not parse error.
 }
+*/
 
 // Type variables (also config and extern).
 static void test6(Parser* parser) {
@@ -411,7 +414,7 @@ int main() {
   test3f(p);
   test3g(p);
   test4(p);
-  test5(p);
+  /* test5(p); */
   test6(p);
   test7(p);
 
