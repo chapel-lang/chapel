@@ -1,1 +1,9 @@
-test_aseq2-error.chpl:3: error: illegal use of '+' on operands of type uint(64) and signed integer
+test_aseq2-error.chpl:3: error: ambiguous call '+(uint(64), int(64))'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidates are: +(a: real(32), b: real(32))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: real(64), b: real(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(64), b: complex(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(128), b: complex(128))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: real(32), b: complex(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: real(64), b: complex(128))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(64), b: real(32))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(128), b: real(64))
