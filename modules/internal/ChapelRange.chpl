@@ -1921,45 +1921,91 @@ operator :(r: range(?), type t: range(?)) {
   // can be the same sized signed or unsigned version of low/high
   //
 
+  //
+  // Direct range iterators for non-strided ranges (low..high)
+  // which always have stride 1.
+  //
+
+  iter chpl_direct_range_iter(low: int(?w), high: int(w)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(w)) do
+      yield i;
+  }
+
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(w)) do
+      yield i;
+  }
+
+  iter chpl_direct_range_iter(low: enum, high: enum) {
+    // Optimize for the stride == 1 case because I anticipate it'll be
+    // better supported for enum ranges than the strided case (if we
+    // ever support the latter)
+    const r = low..high;
+    for i in r do yield i;
+  }
+
+  iter chpl_direct_range_iter(low: bool, high: bool) {
+    // Optimize for the stride == 1 case because I anticipate it'll be
+    // better supported for enum ranges than the strided case (if we
+    // ever support the latter)
+    const r = low..high;
+    for i in r do yield i;
+  }
+
+  // case for when low and high aren't compatible types and can't be coerced
+  iter chpl_direct_range_iter(low, high) {
+    chpl_build_bounded_range(low, high);  // use general error if possible
+    // otherwise, generate a more specific one (though I don't think it's
+    // possible to get here)
+    compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
+  }
+
+  //
+  // Direct range iterators for strided ranges (low..high by stride)
+  //
 
   // cases for when stride is a non-param int (don't want to deal with finding
   // chpl__diffMod and the likes, just create a non-anonymous range to iterate
   // over.)
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: int(w)) {
+  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w),
+                                      stride: int(w)) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: int(w)) {
+  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w),
+                                      stride: int(w)) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enum, high: enum,
-                              stride: integral) {
+  iter chpl_direct_strided_range_iter(low: enum, high: enum,
+                                      stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: bool, high: bool, stride: integral) {
+  iter chpl_direct_strided_range_iter(low: bool, high: bool,
+                                      stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
-
 
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride) {
+  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w),
+                                      param stride) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride) {
+  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w),
+                                      param stride) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enum, high: enum,
-                              param stride: integral) {
+  iter chpl_direct_strided_range_iter(low: enum, high: enum,
+                                      param stride: integral) {
     if (stride == 1) {
         // Optimize for the stride == 1 case because I anticipate it'll be
         // better supported for enum ranges than the strided case (if we
@@ -1975,7 +2021,8 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  iter chpl_direct_range_iter(low: bool, high: bool, param stride: integral) {
+  iter chpl_direct_strided_range_iter(low: bool, high: bool,
+                                      param stride: integral) {
     if (stride == 1) {
         // Optimize for the stride == 1 case because I anticipate it'll be
         // better supported for enum ranges than the strided case (if we
@@ -1993,30 +2040,32 @@ operator :(r: range(?), type t: range(?)) {
 
 
   // cases for when stride is a uint (we know the stride is must be positive)
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
+  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w),
+                                      stride: uint(w)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
+  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w),
+                                      stride: uint(w)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
 
 
   // cases for when stride isn't valid
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride) {
+  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   int(w):string, " using a step of type ",
                   stride.type:string);
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride) {
+  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   uint(w):string, " using a step of type ",
                   stride.type:string);
   }
 
   // case for when low and high aren't compatible types and can't be coerced
-  iter chpl_direct_range_iter(low, high, stride) {
-    chpl_build_bounded_range(low, high);  // use general error if possible
+  iter chpl_direct_strided_range_iter(low, high, stride) {
+    chpl_build_bounded_range(low, high, stride);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
     if (low.type == high.type) then
