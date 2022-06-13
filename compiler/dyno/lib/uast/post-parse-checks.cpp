@@ -153,7 +153,7 @@ void Visitor::warn(const AstNode* node, const char* fmt, ...) {
 
 const AstNode* Visitor::parent(int depth) const {
   assert(depth >= 0);
-  if (depth >= parents_.size()) return nullptr;
+  if (((size_t) depth) >= parents_.size()) return nullptr;
   int idx = parents_.size() - depth - 1;
   assert(idx >= 0);
   auto ret = parents_[idx];
