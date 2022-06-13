@@ -2205,7 +2205,7 @@ record ioNewline {
   pragma "no doc"
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f <~> "\n";
+    f.write("\n");
   }
 }
 
@@ -2234,7 +2234,7 @@ record ioLiteral {
   var ignoreWhiteSpace: bool = true;
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f <~> val;
+    f.write(val);
   }
 }
 
@@ -2257,7 +2257,7 @@ record ioBits {
   pragma "no doc"
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f <~> v;
+    f.write(v);
   }
 }
 
@@ -6177,11 +6177,11 @@ class _channel_regex_info {
     clear();
   }
   override proc writeThis(f) throws {
-    f <~> "{hasRegex = " + hasRegex: string;
-    f <~> ", matchedRegex = " + matchedRegex: string;
-    f <~> ", releaseRegex = " + releaseRegex: string;
-    f <~> ", ... capturei = " + capturei: string;
-    f <~> ", ncaptures = " + ncaptures: string + "}";
+    f.write("{hasRegex = " + hasRegex: string);
+    f.write(", matchedRegex = " + matchedRegex: string);
+    f.write(", releaseRegex = " + releaseRegex: string);
+    f.write(", ... capturei = " + capturei: string);
+    f.write(", ncaptures = " + ncaptures: string + "}");
   }
 }
 
