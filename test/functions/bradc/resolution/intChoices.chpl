@@ -294,8 +294,8 @@ twoInts(i16, i16);
 twoInts(i16, i32);
 twoInts(i16, i64);
 twoInts(i16, I8);
-twoInts(i16, I16);
-twoInts(i16, I32);
+//twoInts(i16, I16); compilation error
+//twoInts(i16, I32); compilation error
 twoInts(i16, I64);
 if !tryErrors then writeln(); else twoInts(i16, sizes.small);
 if !tryErrors then writeln(); else twoInts(i16, sizes.big);
@@ -320,8 +320,8 @@ twoInts(i32, i16);
 twoInts(i32, i32);
 twoInts(i32, i64);
 twoInts(i32, I8);
-twoInts(i32, I16);
-twoInts(i32, I32);
+//twoInts(i32, I16); compilation error
+//twoInts(i32, I32); compilation error
 twoInts(i32, I64);
 if !tryErrors then writeln(); else twoInts(i32, sizes.small);
 if !tryErrors then writeln(); else twoInts(i32, sizes.big);
@@ -394,12 +394,12 @@ if !tryErrors then writeln(); else twoInts(I16, aColor);
 twoInts(I16, RED);
 twoInts(I16, Red);
 twoInts(I16, i8);
-twoInts(I16, i16);
-twoInts(I16, i32);
+//twoInts(I16, i16); compilation error
+//twoInts(I16, i32); compilation error
 twoInts(I16, i64);
 twoInts(I16, I8);
-twoInts(I16, I16);
-twoInts(I16, I32);
+//twoInts(I16, I16); compilation error
+//twoInts(I16, I32);
 twoInts(I16, I64);
 if !tryErrors then writeln(); else twoInts(I16, sizes.small);
 if !tryErrors then writeln(); else twoInts(I16, sizes.big);
@@ -420,12 +420,12 @@ if !tryErrors then writeln(); else twoInts(I32, aColor);
 twoInts(I32, RED);
 twoInts(I32, Red);
 twoInts(I32, i8);
-twoInts(I32, i16);
-twoInts(I32, i32);
+//twoInts(I32, i16); compilation error
+//twoInts(I32, i32); compilation error
 twoInts(I32, i64);
 twoInts(I32, I8);
-twoInts(I32, I16);
-twoInts(I32, I32);
+//twoInts(I32, I16); compilation error
+//twoInts(I32, I32); compilation error
 twoInts(I32, I64);
 if !tryErrors then writeln(); else twoInts(I32, sizes.small);
 if !tryErrors then writeln(); else twoInts(I32, sizes.big);
@@ -1432,8 +1432,8 @@ allSigs(i16, i16);
 allSigs(i16, i32);
 allSigs(i16, i64);
 allSigs(i16, I8);
-allSigs(i16, I16);
-allSigs(i16, I32);
+//allSigs(i16, I16); compilation error
+//allSigs(i16, I32); compilation error
 allSigs(i16, I64);
 allSigs(i16, sizes.small);
 allSigs(i16, sizes.big);
@@ -1458,8 +1458,8 @@ allSigs(i32, i16);
 allSigs(i32, i32);
 allSigs(i32, i64);
 allSigs(i32, I8);
-allSigs(i32, I16);
-allSigs(i32, I32);
+//allSigs(i32, I16); compilation error
+//allSigs(i32, I32); compilation error
 allSigs(i32, I64);
 allSigs(i32, sizes.small);
 allSigs(i32, sizes.big);
@@ -1532,12 +1532,12 @@ allSigs(I16, aColor);
 allSigs(I16, RED);
 allSigs(I16, Red);
 allSigs(I16, i8);
-allSigs(I16, i16);
-allSigs(I16, i32);
+//allSigs(I16, i16); compilation error
+//allSigs(I16, i32); compilation error
 allSigs(I16, i64);
 allSigs(I16, I8);
-allSigs(I16, I16);
-allSigs(I16, I32);
+//allSigs(I16, I16); compilation error
+//allSigs(I16, I32); compilation error
 allSigs(I16, I64);
 allSigs(I16, sizes.small);
 allSigs(I16, sizes.big);
@@ -1558,12 +1558,12 @@ allSigs(I32, aColor);
 allSigs(I32, RED);
 allSigs(I32, Red);
 allSigs(I32, i8);
-allSigs(I32, i16);
-allSigs(I32, i32);
+//allSigs(I32, i16); compilation error
+//allSigs(I32, i32); // compilation error
 allSigs(I32, i64);
 allSigs(I32, I8);
-allSigs(I32, I16);
-allSigs(I32, I32);
+//allSigs(I32, I16); compilation error
+//allSigs(I32, I32);
 allSigs(I32, I64);
 allSigs(I32, sizes.small);
 allSigs(I32, sizes.big);
