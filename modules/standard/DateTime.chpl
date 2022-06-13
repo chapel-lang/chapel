@@ -494,6 +494,7 @@ module DateTime {
   }
 
   private use IO;
+  private import SysBasic.EEOF;
 
   // This method exists to work around a bug in chpldoc where the
   // 'private use' above this method somehow breaks documentation for the
@@ -508,18 +509,20 @@ module DateTime {
 
   /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
   proc date.readThis(f) throws {
-    const dash = new ioLiteral("-");
+    var dash = new ioLiteral("-");
+    var quote = new ioLiteral('"');
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f.readIt(quote);
 
-    f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
+    if !f.read(chpl_year, dash, chpl_month, dash, chpl_day) then
+      throw SystemError.fromSyserr(EEOF, "end of file");
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f.readIt(quote);
   }
 
   /* Read or write a date value from channel `f` */
@@ -815,19 +818,23 @@ module DateTime {
 
   /* Reads this `time` from ISO format: hh:mm:ss.sss */
   proc time.readThis(f) throws {
-    const colon = new ioLiteral(":");
+    var colon = new ioLiteral(":");
+    var quote = new ioLiteral('"');
+    var dot = new ioLiteral(".");
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f.readIt(quote);
 
-    f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
-      <~> new ioLiteral(".") <~> chpl_microsecond;
+    if !f.read(chpl_hour, colon,
+           chpl_minute, colon,
+           chpl_second, dot, chpl_microsecond) then
+      throw SystemError.fromSyserr(EEOF, "end of file");
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f.readIt(quote);
   }
 
   /* Read or write a time value from channel `f` */
@@ -1480,22 +1487,30 @@ module DateTime {
 
   /* Reads this `datetime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
   proc datetime.readThis(f) throws {
-    const dash  = new ioLiteral("-"),
-          colon = new ioLiteral(":");
+    var dash  = new ioLiteral("-"),
+        colon = new ioLiteral(":"),
+        quote = new ioLiteral('"'),
+        sep = new ioLiteral("T"),
+        dot = new ioLiteral(".");
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f.readIt(quote);
 
-    f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
-      <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
-      <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
-      <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
+    if !f.read(chpl_date.chpl_year, dash,
+           chpl_date.chpl_month, dash,
+           chpl_date.chpl_day) then
+      throw SystemError.fromSyserr(EEOF, "end of file");
+    f.readIt(sep);
+    if !f.read(chpl_time.chpl_hour, colon,
+           chpl_time.chpl_minute, colon,
+           chpl_time.chpl_second, dot, chpl_time.chpl_microsecond) then
+      throw SystemError.fromSyserr(EEOF, "end of file");
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f.readIt(quote);
   }
 
   /* Read or write a datetime value from channel `f` */
