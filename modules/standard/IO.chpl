@@ -290,6 +290,8 @@ In addition, there are several convenient synonyms for :proc:`channel.write` and
  * :proc:`channel.readwrite`
  * the `<~> operator`_
 
+.. note:: the <~> operator is deprecated
+
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 :proc:`channel.flush()` method. Flushing the buffer will make all writes available
 to other applications or other views of the file (e.g., it will call the OS call

@@ -71,6 +71,8 @@ implicitly (such as by calling the global :proc:`writeln` function).
 Instead, these methods should only perform I/O on the channel passed as an
 argument.
 
+.. note:: the <~> operator is deprecated.
+
 Because it is often more convenient to use an operator for I/O, instead of
 writing
 
