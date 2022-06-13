@@ -182,30 +182,6 @@ module ChapelDomain {
     dom._value.definedConst = true;
   }
 
-  // definedConst is added only for interface consistency
-  proc chpl__buildDomainExpr(keys..., definedConst) {
-    param count = keys.size;
-    // keyType of string literals is assumed to be type string
-    type keyType = _getLiteralType(keys(0).type);
-    for param i in 1..count-1 do
-      if keyType != _getLiteralType(keys(i).type) {
-        compilerError("Associative domain element " + i:string +
-                      " expected to be of type " + keyType:string +
-                      " but is of type " +
-                      _getLiteralType(keys(i).type):string);
-      }
-
-    //Initialize the domain with a size appropriate for the number of keys.
-    //This prevents resizing as keys are added.
-    var D : domain(keyType);
-    D.requestCapacity(count);
-
-    for param i in 0..count-1 do
-      D += keys(i);
-
-    return D;
-  }
-
   //
   // Support for domain expressions within array types, e.g. [1..n], [D]
   //
@@ -228,7 +204,7 @@ module ChapelDomain {
     // cannot be changed anymore.
     param dimType = chpl_checkForAnonAssocDom(x);
     if dimType != "" then
-      compilerWarning("Anonymous associative domain literals without curly brackets are deprecated; please use curly brackets to create an associative domain of '" + dimType + "' indices");
+      compilerError("Arrays with anonymous domains must either be defined using a list of ranges or use curly brackets.  If you were trying to create an array over a set of '" + dimType + "' indices, please use curly brackets.");
 
     return chpl__buildDomainExpr((...x), definedConst=true);
   }
