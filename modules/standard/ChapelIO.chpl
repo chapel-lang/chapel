@@ -83,17 +83,19 @@ one can write
 
   f <~> x <~> y;
 
-Note that the types :type:`IO.ioLiteral` and :type:`IO.ioNewline` may be useful
-when using the ``<~>`` operator. :type:`IO.ioLiteral` represents some string
+Note that the types :type:`IO.ioLiteral` and :type:`IO.ioNewline` from the :mod:`IO` module
+may be useful when using the ``<~>`` operator. :type:`IO.ioLiteral` represents some string
 that must be read or written as-is (e.g. ``","`` when working with a tuple),
 and :type:`IO.ioNewline` will emit a newline when writing but skip to and
-consume a newline when reading.
+consume a newline when reading. Note that these types are not included by default.
 
 
 This example defines a readWriteThis method and demonstrates how ``<~>`` will
 call the read or write routine, depending on the situation.
 
 .. code-block:: chapel
+
+  use IO;
 
   class IntPair {
     var x: int;
@@ -106,8 +108,6 @@ call the read or write routine, depending on the situation.
   write(ip);
   // prints out
   // 17,2
-
-  delete ip;
 
 This example defines a only a writeThis method - so that there will be a
 function resolution error if the class NoRead is read.
@@ -128,8 +128,6 @@ function resolution error if the class NoRead is read.
   // hello
 
   // Note that read(nr) will generate a compiler error.
-
-  delete nr;
 
 .. _default-readThis-writeThis:
 
