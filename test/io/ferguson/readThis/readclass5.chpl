@@ -13,10 +13,12 @@ class mything {
   }
 
   proc readWriteHelper(rw) throws {
-    rw <~> x;
-    rw.readWriteLiteral(" ");
-    rw <~> y;
-    rw.readWriteNewline();
+    var space = new ioLiteral(" ");
+    var nl = new ioNewline();
+    if rw.writing then
+      rw.write(x, space, y, nl);
+    else
+      rw.read(x, space, y, nl);
   }
 }
 

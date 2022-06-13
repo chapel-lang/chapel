@@ -13,9 +13,11 @@ class mything {
   }
 
   proc readWriteHelper(rw) throws {
-    rw <~> x;
-    rw <~> new ioLiteral(" ");
-    rw <~> y;
+    var space = new ioLiteral(" ");
+    if rw.writing then
+      rw.write(x, space, y);
+    else
+      rw.read(x, space, y);
   }
 }
 

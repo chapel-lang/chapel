@@ -24,9 +24,11 @@ class subthing : mything {
   }
 
   proc readWriteHelper(rw) throws {
-    rw <~> x;
-    rw <~> new ioLiteral(",");
-    rw <~> y;
+    var comma = new ioLiteral(",");
+    if rw.writing then
+      rw.write(x, comma, y);
+    else
+      rw.read(x, comma, y);
   }
 }
 

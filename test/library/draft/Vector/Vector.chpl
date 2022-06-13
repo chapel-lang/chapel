@@ -1170,15 +1170,15 @@ module Vector {
     proc writeThis(ch: channel) throws {
       _enter();
       
-      ch <~> "[";
+      ch.write("[");
 
       for i in 0..(_size - 2) do
-        ch <~> _data[i] <~> ", ";
+        ch.write(_data[i], ", ");
 
       if _size > 0 then
-        ch <~> _data[_size-1];
+        ch.write(_data[_size-1]);
 
-      ch <~> "]";
+      ch.write("]");
 
       _leave();
     }
