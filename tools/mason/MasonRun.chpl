@@ -154,7 +154,7 @@ private proc masonBuildRun(args: [?d] string) {
     var release = releaseFlag.valueAsBool();
     var force = forceFlag.valueAsBool();
     var exec = false;
-    var buildExample = false;
+    var buildExample = buildFlag.valueAsBool();
     var skipUpdate = MASON_OFFLINE;
     var execopts: list(string);
     var exampleProgram='';
