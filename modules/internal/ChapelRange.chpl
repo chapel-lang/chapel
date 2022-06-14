@@ -2198,7 +2198,10 @@ operator :(r: range(?), type t: range(?)) {
     // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
-    const end = max(intIdxType) - stride: intIdxType;
+    const end = if isIntegralType(idxType)
+                  then max(intIdxType) - stride: intIdxType
+                  else if isBoolType(idxType) then 1 - stride: intIdxType
+                  else (idxType.size-1):intIdxType - stride: intIdxType;
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive("<=", i, end),
@@ -2206,8 +2209,9 @@ operator :(r: range(?), type t: range(?)) {
       yield chpl_intToIdx(i);
     }
     if i > end {
-      yield i;
-      halt("Loop over unbounded range surpassed representable values");
+      yield chpl_intToIdx(i);
+      if isIntegralType(idxType) then
+        halt("Loop over unbounded range surpassed representable values");
     }
   }
 
@@ -2230,7 +2234,9 @@ operator :(r: range(?), type t: range(?)) {
     // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
-    const end = min(intIdxType) - stride: intIdxType;
+    const end = if isIntegral(idxType)
+                  then min(intIdxType) - stride: intIdxType
+                  else 0 - stride;
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive(">=", i, end),
@@ -2238,8 +2244,9 @@ operator :(r: range(?), type t: range(?)) {
       yield chpl_intToIdx(i);
     }
     if i < end {
-      yield i;
-      halt("Loop over unbounded range surpassed representable values");
+      yield chpl_intToIdx(i);
+      if isIntegralType(idxType) then
+        halt("Loop over unbounded range surpassed representable values");
     }
   }
 
