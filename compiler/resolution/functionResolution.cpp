@@ -5450,10 +5450,10 @@ static bool isMatchingImagComplex(Type* actualVt, Type* formalVt,
 }
 
 
-// returns 'true' if the candidate is OK, 'false' if it should be
-// filtered out.
-static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
-                                         const DisambiguationContext& DC) {
+static void countImplicitConversions(ResolutionCandidate* candidate,
+                                     const DisambiguationContext& DC,
+                                     int& implicitConversionCountOut,
+                                     int& impConvNotMentionedCountOut) {
   bool anyImagComplexArgs = false;
   Vec<Type*> normalizedActualTypes;
 
@@ -5554,11 +5554,8 @@ static bool allowCandidateInDisambiguate(ResolutionCandidate* candidate,
     }
   }
 
-  if (nImplicitConversions >= 2 && nImplicitConversionsToTypeNotMentioned > 0) {
-    return false;
-  }
-
-  return true;
+  implicitConversionCountOut = nImplicitConversions;
+  impConvNotMentionedCountOut = nImplicitConversionsToTypeNotMentioned;
 }
 
 static ResolutionCandidate*
@@ -5583,10 +5580,18 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       EXPLAIN("##########################\n");
       EXPLAIN("# Filtering function %d #\n", i);
       EXPLAIN("##########################\n\n");
-      ResolutionCandidate* candidate1         = candidates.v[i];
-      EXPLAIN("%s\n\n", toString(candidate1->fn));
+      ResolutionCandidate* candidate         = candidates.v[i];
+      EXPLAIN("%s\n\n", toString(candidate->fn));
 
-      if (allowCandidateInDisambiguate(candidate1, DC) == false) {
+      int nImplicitConversions = 0;
+      int nImplicitConversionsToTypeNotMentioned = 0;
+
+      countImplicitConversions(candidate, DC,
+                               nImplicitConversions,
+                               nImplicitConversionsToTypeNotMentioned);
+
+      if (nImplicitConversions >= 2 &&
+          nImplicitConversionsToTypeNotMentioned > 0) {
         EXPLAIN("X: Fn %d has too many conversions so is filtered out\n", i);
         discarded[i] = true;
       } else {
