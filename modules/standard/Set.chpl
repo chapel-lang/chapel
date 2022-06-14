@@ -407,19 +407,6 @@ module Set {
     }
 
     /*
-      Returns `true` if this set and `other` have at least one element in
-      common, and `false` otherwise.
-
-      :arg other: The set to compare against.
-      :return: Whether or not this set and `other` intersect.
-      :rtype: `bool`
-    */
-    deprecated "Set isIntersecting() method is deprecated; use !:proc:`isDisjoint` instead"
-    proc const isIntersecting(const ref other: set(eltType, ?)): bool {
-      return !isDisjoint(other);
-    }
-
-    /*
       Attempt to remove the item from this set with a value equal to `element`.
       If an element equal to `element` was removed from this set, return `true`,
       else return `false` if no such value was found.
