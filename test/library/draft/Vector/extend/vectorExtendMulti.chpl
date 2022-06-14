@@ -12,7 +12,7 @@ writeln(vec1);
 
 var arr1: [1..5] vectorType = [6, 7, 8, 9, 10];
 
-vec1.extend(arr1);
+vec1.append(arr1);
 
 writeln(vec1);
 
@@ -20,8 +20,8 @@ var vec2 = new vector(vectorType, vectorLock);
 for i in 11..15 do
   vec2.append(i);
 
-vec1.extend(vec2);
+vec1.append(vec2);
 writeln(vec1);
 
-vec1.extend(16..20);
+vec1.append(16..20);
 writeln(vec1);

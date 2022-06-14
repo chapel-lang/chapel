@@ -400,6 +400,9 @@ module UnrolledLinkedList {
 
       :arg x: An element to append.
       :type x: `eltType`
+
+      :return: List index where element was inserted.
+      :rtype: `int`
     */
     proc ref append(x: eltType)
     lifetime this < x {
@@ -414,6 +417,117 @@ module UnrolledLinkedList {
       _enter();
       _append(x);
       _leave();
+    }
+
+    pragma "no doc"
+    inline proc ref _appendGeneric(collection) {
+      var startSize: int;
+      var endSize: int;
+      on this {
+        startSize = _size;
+        // TODO: Maybe we can allocate space at one time and append.
+        for item in collection {
+          _append(item);
+        }
+        endSize = _size;
+      }
+
+      return startSize..(endSize-1);
+    }
+
+    /*
+      Append a copy of each element contained in a list to the end of this
+      unrolledLinkedList.
+
+      :arg other: A list containing elements of the same type as those
+        contained in this list.
+      :type other: `list(eltType)`
+
+      :return: List indices where elements were inserted.
+      :rtype: `range`
+    */
+    proc ref append(other: list(eltType, ?p)) lifetime this < other {
+      var ret: range;
+      on this {
+        _enter();
+        ret = _appendGeneric(other);
+        _leave();
+      }
+      return ret;
+    }
+
+    /*
+      Append a copy of each element contained in another unrolledLinkedList to
+      the end of this unrolledLinkedList.
+
+      :arg other: an unrolledLinkedList containing elements of the same type as
+        those contained in this unrolledLinkedList.
+      :type other: `unrolledLinkedList(eltType)`
+
+      :return: List indices where elements were inserted.
+      :rtype: `range`
+    */
+    proc ref append(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
+      var ret: range;
+      on this {
+        _enter();
+        ret = _appendGeneric(other);
+        _leave();
+      }
+      return ret;
+    }
+
+    /*
+      Append a copy of each element contained in an array to the end of this
+      list.
+
+      :arg other: An array containing elements of the same type as those
+        contained in this unrolledLinkedList.
+      :type other: `[?d] eltType`
+
+      :return: List indices where elements were inserted.
+      :rtype: `range`
+    */
+    proc ref append(other: [?d] eltType) lifetime this < other {
+      var ret: range;
+      on this {
+        _enter();
+        ret = _appendGeneric(other);
+        _leave();
+      }
+      return ret;
+    }
+
+    /*
+      Append a copy of each element yielded by a range to the end of this
+      unrolledLinkedList.
+
+      .. note::
+
+        Attempting to initialize an unrolledLinkedList from an unbounded range
+        will trigger a compiler error.
+
+      :arg other: The range to initialize from.
+      :type other: `range(eltType)`
+
+      :return: List indices where elements were inserted.
+      :rtype: `range`
+    */
+    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
+      if !isBoundedRange(other) {
+        param e = this.type:string;
+        param f = other.type:string;
+        param msg = "Cannot extend " + e + " with unbounded " + f;
+        compilerError(msg);
+      }
+
+      var ret: range;
+      on this {
+        _enter();
+        ret = _appendGeneric(other);
+        _leave();
+      }
+      return ret;
     }
 
     /*
@@ -496,89 +610,24 @@ module UnrolledLinkedList {
       return result;
     }
 
-    pragma "no doc"
-    inline proc ref _extendGeneric(collection) {
-      on this {
-        // TODO: Maybe we can allocate space at one time and append.
-        for item in collection {
-          _append(item);
-        }
-      }
-    }
-
-    /*
-      Extend this unrolledLinkedList by appending a copy of each element
-      contained in a list.
-
-      :arg other: A list containing elements of the same type as those
-        contained in this list.
-      :type other: `list(eltType)`
-    */
+    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
     proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      on this {
-        _enter();
-        _extendGeneric(other);
-        _leave();
-      }
+      append(other);
     }
 
-    /*
-      Extend this unrolledLinkedList by appending a copy of each element
-      contained in an unrolledLinkedList.
-
-      :arg other: an unrolledLinkedList containing elements of the same type as
-        those contained in this unrolledLinkedList.
-      :type other: `unrolledLinkedList(eltType)`
-    */
+    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
     proc ref extend(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
-      on this {
-        _enter();
-        _extendGeneric(other);
-        _leave();
-      }
+      append(other);
     }
 
-    /*
-      Extend this unrolledLinkedList by appending a copy of each element
-      contained in an array.
-
-      :arg other: An array containing elements of the same type as those
-        contained in this unrolledLinkedList.
-      :type other: `[?d] eltType`
-    */
+    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
     proc ref extend(other: [?d] eltType) lifetime this < other {
-      on this {
-        _enter();
-        _extendGeneric(other);
-        _leave();
-      }
+      append(other);
     }
 
-    /*
-      Extends this unrolledLinkedList by appending a copy of each element
-      yielded by a range.
-
-      .. note::
-
-        Attempting to initialize an unrolledLinkedList from an unbounded range
-        will trigger a compiler error.
-
-      :arg other: The range to initialize from.
-      :type other: `range(eltType)`
-    */
+    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
     proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      if !isBoundedRange(other) {
-        param e = this.type:string;
-        param f = other.type:string;
-        param msg = "Cannot extend " + e + " with unbounded " + f;
-        compilerError(msg);
-      }
-
-      on this {
-        _enter();
-        _extendGeneric(other);
-        _leave();
-      }
+      append(other);
     }
 
     pragma "no doc"
@@ -1219,7 +1268,7 @@ module UnrolledLinkedList {
   operator unrolledLinkedList.=(ref lhs: unrolledLinkedList(?t, ?),
                                 rhs: unrolledLinkedList(t, ?)) {
     lhs.clear();
-    lhs.extend(rhs);
+    lhs.append(rhs);
   }
 
   /*

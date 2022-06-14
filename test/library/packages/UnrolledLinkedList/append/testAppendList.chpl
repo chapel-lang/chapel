@@ -9,12 +9,12 @@ for i in 1..testIters do
 
 var lst2: unrolledLinkedList(int, false);
 
-lst2.extend(lst1);
+lst2.append(lst1);
 
 for (x, y) in zip(lst1, lst2) do
   assert(x == y);
 
-lst2.extend(lst1);
+lst2.append(lst1);
 
 assert(lst2.size > lst1.size);
 

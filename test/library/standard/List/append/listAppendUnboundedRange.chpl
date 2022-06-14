@@ -6,5 +6,5 @@ const r = 1..;
 
 writeln(r.type:string);
 
-lst.extend(r);
+lst.append(r);
 

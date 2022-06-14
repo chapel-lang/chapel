@@ -347,7 +347,7 @@ module ArgumentParser {
       var next = pos + 1;
 
       if args[pos] == this._name {
-        myArg._values.extend(args[pos+1..endPos]);
+        myArg._values.append(args[pos+1..endPos]);
         return endPos + 1;
       } else {
         // failed to match the delimiter at this index, which shouldn't happen
@@ -376,7 +376,7 @@ module ArgumentParser {
       var pos = startPos;
       var next = pos + 1;
       if args[pos] == this._name {
-        myArg._values.extend(args[pos..endPos]);
+        myArg._values.append(args[pos..endPos]);
         return endPos + 1;
       } else {
         // failed to match the cmd, this should not happen
@@ -403,7 +403,7 @@ module ArgumentParser {
       if isStringType(t) {
         this._defaultValue.append(defaultValue);
       } else if t == list(string) || isArray(t) {
-        this._defaultValue.extend(defaultValue);
+        this._defaultValue.append(defaultValue);
       }
       // this._numArgs = numArgs;
       // this._help=help;
@@ -1007,7 +1007,7 @@ module ArgumentParser {
     pragma "no doc"
     proc addHelpFlag(name="ArgumentParserAddedHelp",
                      opts:[?optsD]=["-h","--help"]) throws {
-      _helpFlags.extend(opts);
+      _helpFlags.append(opts);
       return addFlag(name, opts, defaultValue=false, help="Display this message and exit");
     }
 
@@ -1294,7 +1294,7 @@ module ArgumentParser {
         myDefault.append(defaultValue);
       } else if t==list(string) ||
                 (isArray(t) && isString(defaultValue[0])) {
-        myDefault.extend(defaultValue);
+        myDefault.append(defaultValue);
       } else if !isNothingType(t) {
         throw new ArgumentError("Only string and list of strings are supported "
                                 + "as default values at this time");
@@ -1806,7 +1806,7 @@ module ArgumentParser {
         const handler = this._handlers.getBorrowed(name);
         const arg = this._result.getReference(name);
         if !arg._present && handler._hasDefault() {
-          arg._values.extend(handler._getDefaultValue());
+          arg._values.append(handler._getDefaultValue());
           arg._present = true;
         }
       }
