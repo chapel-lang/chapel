@@ -5524,6 +5524,7 @@ static bool isMatchingImagComplex(Type* actualVt, Type* formalVt,
 static void countImplicitConversions(ResolutionCandidate* candidate,
                                      const DisambiguationContext& DC,
                                      int& implicitConversionCountOut,
+                                     int& nonThisImplicitConversionCountOut,
                                      int& impConvNotMentionedCountOut) {
   bool anyImagComplexArgs = false;
   Vec<Type*> normalizedActualTypes;
@@ -5562,6 +5563,7 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
   // check the number of implicit conversions to types not used
   // in the call.
   int nImplicitConversionsToTypeNotMentioned = 0;
+  int nNonThisImplicitConversions = 0;
   int nImplicitConversions = 0;
 
   for (int k = 0; k < DC.actuals->n; k++) {
@@ -5624,6 +5626,9 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
       }
 
       nImplicitConversions++;
+      if (!formal->hasFlag(FLAG_ARG_THIS)) {
+        nNonThisImplicitConversions++;
+      }
       if (!formalVtUsedInOtherActual) {
         nImplicitConversionsToTypeNotMentioned++;
       }
@@ -5631,6 +5636,7 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
   }
 
   implicitConversionCountOut = nImplicitConversions;
+  nonThisImplicitConversionCountOut = nNonThisImplicitConversions;
   impConvNotMentionedCountOut = nImplicitConversionsToTypeNotMentioned;
 }
 
@@ -5652,25 +5658,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
   std::vector<bool> discarded(candidates.n, false);
 
   if (candidates.n > 1) {
-    Vec<int> implicitConversionCount;
-    int minImplicitConversions = INT_MAX;
-    int maxImplicitConversions = 0;
-    for (int i = 0; i < candidates.n; ++i) {
-      ResolutionCandidate* candidate = candidates.v[i];
-      int nImplicitConversions = 0;
-      int nImplicitConversionsToTypeNotMentioned = 0;
-
-      countImplicitConversions(candidate, DC,
-                               nImplicitConversions,
-                               nImplicitConversionsToTypeNotMentioned);
-
-      implicitConversionCount.push_back(nImplicitConversions);
-      if (minImplicitConversions > nImplicitConversions)
-        minImplicitConversions = nImplicitConversions;
-      if (maxImplicitConversions < nImplicitConversions)
-        maxImplicitConversions = nImplicitConversions;
-    }
-
     for (int i = 0; i < candidates.n; ++i) {
       EXPLAIN("##########################\n");
       EXPLAIN("# Filtering function %d #\n", i);
@@ -5678,11 +5665,18 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       ResolutionCandidate* candidate = candidates.v[i];
       EXPLAIN("%s\n\n", toString(candidate->fn));
 
-      if (minImplicitConversions == maxImplicitConversions &&
-          minImplicitConversions > 1) {
-        EXPLAIN("X: Discarding all candidates since they have the same "
-                "number of implicit conversions > 1 and = %i\n",
-                minImplicitConversions);
+      int nImplicitConversions = 0;
+      int nNonThisImplicitConversions = 0;
+      int nImplicitConversionsToTypeNotMentioned = 0;
+
+      countImplicitConversions(candidate, DC,
+                               nImplicitConversions,
+                               nNonThisImplicitConversions,
+                               nImplicitConversionsToTypeNotMentioned);
+
+      if (nImplicitConversions >= 2 &&
+          nImplicitConversionsToTypeNotMentioned > 0) {
+        EXPLAIN("X: Fn %d has too many conversions so is filtered out\n", i);
         discarded[i] = true;
       } else {
         EXPLAIN("X: Fn %d is allowed\n", i);
