@@ -51,6 +51,7 @@ struct Resolver {
   bool receiverScopeComputed = false;
   const Scope* savedReceiverScope = nullptr;
   const types::CompositeType* savedReceiverType = nullptr;
+  Resolver* parentResolver = nullptr;
 
   // results of the resolution process
 
@@ -155,6 +156,11 @@ struct Resolver {
                       const SubstitutionsMap& substitutions,
                       const PoiScope* poiScope,
                       ResolutionResultByPostorderID& byPostorder);
+
+  // set up Resolver to resolve a param for loop body
+  static Resolver paramLoopResolver(Resolver& parent,
+                                    const uast::For* loop,
+                                    ResolutionResultByPostorderID& bodyResults);
 
   /* Get the formal types from a Resolver that computed them
    */
