@@ -5435,14 +5435,12 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
-static bool isMatchingImagComplex(Type* actualVt, Type* formalVt,
-                                  bool anyImagComplexArgs) {
+static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
   if (is_imag_type(actualVt) && is_complex_type(formalVt) &&
       2*get_width(actualVt) == get_width(formalVt))
     return true;
 
-  if (anyImagComplexArgs &&
-      is_real_type(actualVt) && is_complex_type(formalVt) &&
+  if (is_real_type(actualVt) && is_complex_type(formalVt) &&
       2*get_width(actualVt) == get_width(formalVt))
     return true;
 
@@ -5455,7 +5453,6 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
                                      int& implicitConversionCountOut,
                                      int& nonThisImplicitConversionCountOut,
                                      int& impConvNotMentionedCountOut) {
-  bool anyImagComplexArgs = false;
   Vec<Type*> normalizedActualTypes;
 
   for (int k = 0; k < DC.actuals->n; k++) {
@@ -5480,10 +5477,6 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
             break;
           }
         }
-      }
-
-      if (is_imag_type(actualVt) || is_complex_type(actualVt)) {
-        anyImagComplexArgs = true;
       }
     }
     normalizedActualTypes.push_back(actualVt);
@@ -5526,7 +5519,7 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
         continue;
       }
 
-      if (isMatchingImagComplex(actualVt, formalVt, anyImagComplexArgs)) {
+      if (isMatchingImagComplex(actualVt, formalVt)) {
         // don't worry about imag vs complex
         continue;
       }
@@ -5547,8 +5540,7 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
 
         Type* otherActualVt = normalizedActualTypes.v[other];
         if (otherActualVt == formalVt ||
-            isMatchingImagComplex(otherActualVt, formalVt,
-                                  anyImagComplexArgs)) {
+            isMatchingImagComplex(otherActualVt, formalVt)) {
           formalVtUsedInOtherActual = true;
           break;
         }
