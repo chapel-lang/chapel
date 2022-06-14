@@ -279,7 +279,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
-          const errMsg = test +" failed to compile";
+          const errMsg = test + " failed to compile\n" +
+                         "Try running 'mason test --show' for more details";
           result.addError(testName, test,  errMsg);
         }
         else {
@@ -626,7 +627,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
     else if sep1Found then testExecMsg += line;
     else {
-      if line.strip().endsWith(")") {
+      if line.strip().endsWith("()") {
         var testName = line.strip();
         if currentRunningTests.count(testName) == 0 {
           currentRunningTests.append(testName);
