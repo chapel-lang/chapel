@@ -2205,8 +2205,10 @@ operator :(r: range(?), type t: range(?)) {
                       __primitive("+=", i, stride: intIdxType)) {
       yield chpl_intToIdx(i);
     }
-    if i > end then
+    if i > end {
+      yield i;
       halt("Loop over unbounded range surpassed representable values");
+    }
   }
 
   // An unbounded range iterator (for all strides)
@@ -2235,8 +2237,10 @@ operator :(r: range(?), type t: range(?)) {
                       __primitive("+=", i, stride: intIdxType)) {
       yield chpl_intToIdx(i);
     }
-    if i < end then
+    if i < end {
+      yield i;
       halt("Loop over unbounded range surpassed representable values");
+    }
   }
 
   // A bounded and strided range iterator
