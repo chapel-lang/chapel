@@ -1832,12 +1832,15 @@ operator :(r: range(?), type t: range(?)) {
                      _aligned = r.aligned);
   }
 
-  operator #(r:range(?i), count:chpl__rangeStrideType(i)) {
-    return chpl_count_help(r, count);
-  }
-
-  operator #(r:range(?i), count:chpl__rangeUnsignedType(i)) {
-    return chpl_count_help(r, count);
+  operator #(r:range(?i), count:integral) {
+    if !isCoercible(count.type, chpl__rangeStrideType(i)) &&
+       !isCoercible(count.type, chpl__rangeUnsignedType(i)) {
+      compilerError("can't apply '#' to a range with idxType ",
+                    i:string, " using a count of type ",
+                    count.type:string);
+    } else {
+      return chpl_count_help(r, count);
+    }
   }
 
   pragma "last resort"
