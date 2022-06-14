@@ -2199,9 +2199,9 @@ operator :(r: range(?), type t: range(?)) {
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
     const end = if isBoolType(idxType)
-                  then 1 - stride: intIdxType
+                  then 1: intIdxType
                 else if isEnumType(idxType)
-                  then (idxType.size-1):intIdxType - stride: intIdxType
+                  then (idxType.size-1):intIdxType
                 else max(intIdxType) - stride: intIdxType;
 
     while __primitive("C for loop",
@@ -2211,7 +2211,13 @@ operator :(r: range(?), type t: range(?)) {
       yield chpl_intToIdx(i);
     }
     if i > end {
-      yield chpl_intToIdx(i);
+      // We'd like to do this, but it breaks our zippering optimizations
+      // for cases like 'for i in (something, 0..)', so we'll just stop
+      // an iteration early instead.  Once we distinguish serial follower
+      // loops from standalone loops, we could support this in the
+      // standalone case without penalty, I believe.
+      //
+      //      yield chpl_intToIdx(i);
       if isIntegralType(idxType) then
         halt("Loop over unbounded range surpassed representable values");
     }
@@ -2237,7 +2243,7 @@ operator :(r: range(?), type t: range(?)) {
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
     const end = if isBoolType(idxType) || isEnumType(idxType)
-                  then 0 - stride
+                  then 0
                   else min(intIdxType) - stride: intIdxType;
     while __primitive("C for loop",
                       __primitive( "=", i, start),
@@ -2246,8 +2252,14 @@ operator :(r: range(?), type t: range(?)) {
       yield chpl_intToIdx(i);
     }
     if i < end {
-      yield chpl_intToIdx(i);
       if isIntegralType(idxType) then
+      // We'd like to do this, but it breaks our zippering optimizations
+      // for cases like 'for i in (something, 0..)', so we'll just stop
+      // an iteration early instead.  Once we distinguish serial follower
+      // loops from standalone loops, we could support this in the
+      // standalone case without penalty, I believe.
+      //
+      //      yield chpl_intToIdx(i);
         halt("Loop over unbounded range surpassed representable values");
     }
   }
