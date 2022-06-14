@@ -2198,10 +2198,12 @@ operator :(r: range(?), type t: range(?)) {
     // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
-    const end = if isIntegralType(idxType)
-                  then max(intIdxType) - stride: intIdxType
-                  else if isBoolType(idxType) then 1 - stride: intIdxType
-                  else (idxType.size-1):intIdxType - stride: intIdxType;
+    const end = if isBoolType(idxType)
+                  then 1 - stride: intIdxType
+                else if isEnumType(idxType)
+                  then (idxType.size-1):intIdxType - stride: intIdxType
+                else max(intIdxType) - stride: intIdxType;
+
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive("<=", i, end),
@@ -2234,9 +2236,9 @@ operator :(r: range(?), type t: range(?)) {
     // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
-    const end = if isIntegral(idxType)
-                  then min(intIdxType) - stride: intIdxType
-                  else 0 - stride;
+    const end = if isBoolType(idxType) || isEnumType(idxType)
+                  then 0 - stride
+                  else min(intIdxType) - stride: intIdxType;
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive(">=", i, end),
