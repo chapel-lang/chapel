@@ -828,12 +828,15 @@ module List {
     }
 
     /*
-      Extend this list by appending a copy of each element contained in
-      another list.
+      Append a copy of each element contained in another list to the end of this
+      list.
 
       :arg other: A list containing elements of the same type as those
         contained in this list.
       :type other: `list(eltType)`
+
+      :return: List indices where element was inserted.
+      :rtype: `range`
     */
     proc ref append(other: list(eltType, ?p)) lifetime this < other {
       var ret: range;
@@ -852,12 +855,15 @@ module List {
     }
 
     /*
-      Extend this list by appending a copy of each element contained in an
-      array.
+      Append a copy of each element contained in an array to the end of this
+      list.
 
       :arg other: An array containing elements of the same type as those
         contained in this list.
       :type other: `[?d] eltType`
+
+      :return: List indices where element was inserted.
+      :rtype: `range`
     */
     proc ref append(other: [?d] eltType) lifetime this < other {
       var ret: range;
@@ -875,8 +881,7 @@ module List {
     }
 
     /*
-      Extends this list by appending a copy of each element yielded by a
-      range.
+      Append a copy of each element yielded by a range to the end of this list.
 
       .. note::
 
@@ -885,6 +890,9 @@ module List {
 
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
+
+      :return: List indices where element was inserted.
+      :rtype: `range`
     */
     proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
       if !isBoundedRange(other) {

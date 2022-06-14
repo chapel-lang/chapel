@@ -400,6 +400,9 @@ module UnrolledLinkedList {
 
       :arg x: An element to append.
       :type x: `eltType`
+
+      :return: List index where element was inserted.
+      :rtype: `int`
     */
     proc ref append(x: eltType)
     lifetime this < x {
@@ -513,12 +516,15 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extend this unrolledLinkedList by appending a copy of each element
-      contained in a list.
+      Append a copy of each element contained in a list to the end of this
+      unrolledLinkedList.
 
       :arg other: A list containing elements of the same type as those
         contained in this list.
       :type other: `list(eltType)`
+
+      :return: List indices where element was inserted.
+      :rtype: `range`
     */
     proc ref append(other: list(eltType, ?p)) lifetime this < other {
       var ret: range;
@@ -534,13 +540,17 @@ module UnrolledLinkedList {
     proc ref extend(other: list(eltType, ?p)) lifetime this < other {
       append(other);
     }
+
     /*
-      Extend this unrolledLinkedList by appending a copy of each element
-      contained in an unrolledLinkedList.
+      Append a copy of each element contained in another unrolledLinkedList to
+      the end of this unrolledLinkedList.
 
       :arg other: an unrolledLinkedList containing elements of the same type as
         those contained in this unrolledLinkedList.
       :type other: `unrolledLinkedList(eltType)`
+
+      :return: List indices where element was inserted.
+      :rtype: `range`
     */
     proc ref append(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
       var ret: range;
@@ -558,12 +568,15 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extend this unrolledLinkedList by appending a copy of each element
-      contained in an array.
+      Append a copy of each element contained in an array to the end of this
+      list.
 
       :arg other: An array containing elements of the same type as those
         contained in this unrolledLinkedList.
       :type other: `[?d] eltType`
+
+      :return: List indices where element was inserted.
+      :rtype: `range`
     */
     proc ref append(other: [?d] eltType) lifetime this < other {
       var ret: range;
@@ -581,8 +594,8 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extends this unrolledLinkedList by appending a copy of each element
-      yielded by a range.
+      Append a copy of each element yielded by a range to the end of this
+      unrolledLinkedList.
 
       .. note::
 
@@ -591,6 +604,9 @@ module UnrolledLinkedList {
 
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
+
+      :return: List indices where element was inserted.
+      :rtype: `range`
     */
     proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
       if !isBoundedRange(other) {
