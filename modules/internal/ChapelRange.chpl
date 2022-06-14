@@ -2173,25 +2173,30 @@ operator :(r: range(?), type t: range(?)) {
   //# Serial Iterators
   //#
 
-  // An unbounded range iterator (for all strides)
+  // An error overload for trying to iterate over '..'
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these() where boundedType == BoundedRangeType.boundedNone {
     compilerError("iteration over a range with no bounds");
   }
 
-  // An unbounded range iterator (for all strides)
+  private inline proc boundsCheckUnboundedRange(r: range(?)) {
+    if boundsChecking {
+      if ! r.hasFirst() then
+        HaltWrappers.boundsCheckHalt("iteration over range that has no first index");
+
+      if r.isAmbiguous() then
+        HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
+    }
+  }
+
+  // The serial iterator for 'lo.. [by s]' ranges
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these() where boundedType == BoundedRangeType.boundedLow {
 
-    if boundsChecking {
-      if ! this.hasFirst() then
-        HaltWrappers.boundsCheckHalt("iteration over range that has no first index");
+    boundsCheckUnboundedRange(this);
 
-      if this.isAmbiguous() then
-        HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
-    }
     // This iterator could be split into different cases depending on the
     // stride like the bounded iterators. However, all that gets you is the
     // ability to use low/alignedLow over first. The additional code isn't
@@ -2211,35 +2216,29 @@ operator :(r: range(?), type t: range(?)) {
       yield chpl_intToIdx(i);
     }
     if i > end {
-      // We'd like to do this, but it breaks our zippering optimizations
-      // for cases like 'for i in (something, 0..)', so we'll just stop
-      // an iteration early instead.  Once we distinguish serial follower
-      // loops from standalone loops, we could support this in the
-      // standalone case without penalty, I believe.
+      // We'd like to do the following yield, but it breaks our
+      // zippering optimizations for cases like 'for i in (something,
+      // 0..)', so we'll just stop an iteration early instead.  Once
+      // we distinguish serial follower loops from standalone loops,
+      // we could support this in the standalone case without penalty,
+      // I believe.
       //
-      //      yield chpl_intToIdx(i);
+      //   yield chpl_intToIdx(i);
       if isIntegralType(idxType) then
         halt("Loop over unbounded range surpassed representable values");
     }
   }
 
-  // An unbounded range iterator (for all strides)
+  // The serial iterator for '..hi [by s]' ranges
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these() where boundedType == BoundedRangeType.boundedHigh {
 
-    if boundsChecking {
-      if ! this.hasFirst() then
-        HaltWrappers.boundsCheckHalt("iteration over range that has no first index");
+    boundsCheckUnboundedRange(this);
 
-      if this.isAmbiguous() then
-        HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
-    }
-
-    // This iterator could be split into different cases depending on the
-    // stride like the bounded iterators. However, all that gets you is the
-    // ability to use low/alignedLow over first. The additional code isn't
-    // worth it just for that.
+    // Apart from the computation of 'end' and the comparison used to
+    // terminate the C for loop, this iterator follows the boundedLow
+    // case above.  See it for additional comments.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
     const end = if isBoolType(idxType) || isEnumType(idxType)
@@ -2253,13 +2252,7 @@ operator :(r: range(?), type t: range(?)) {
     }
     if i < end {
       if isIntegralType(idxType) then
-      // We'd like to do this, but it breaks our zippering optimizations
-      // for cases like 'for i in (something, 0..)', so we'll just stop
-      // an iteration early instead.  Once we distinguish serial follower
-      // loops from standalone loops, we could support this in the
-      // standalone case without penalty, I believe.
-      //
-      //      yield chpl_intToIdx(i);
+        //  yield chpl_intToIdx(i);
         halt("Loop over unbounded range surpassed representable values");
     }
   }
