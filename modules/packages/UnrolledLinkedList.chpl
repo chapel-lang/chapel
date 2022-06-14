@@ -443,7 +443,7 @@ module UnrolledLinkedList {
         contained in this list.
       :type other: `list(eltType)`
 
-      :return: List indices where element was inserted.
+      :return: List indices where elements were inserted.
       :rtype: `range`
     */
     proc ref append(other: list(eltType, ?p)) lifetime this < other {
@@ -464,7 +464,7 @@ module UnrolledLinkedList {
         those contained in this unrolledLinkedList.
       :type other: `unrolledLinkedList(eltType)`
 
-      :return: List indices where element was inserted.
+      :return: List indices where elements were inserted.
       :rtype: `range`
     */
     proc ref append(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
@@ -485,7 +485,7 @@ module UnrolledLinkedList {
         contained in this unrolledLinkedList.
       :type other: `[?d] eltType`
 
-      :return: List indices where element was inserted.
+      :return: List indices where elements were inserted.
       :rtype: `range`
     */
     proc ref append(other: [?d] eltType) lifetime this < other {
@@ -510,7 +510,7 @@ module UnrolledLinkedList {
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
 
-      :return: List indices where element was inserted.
+      :return: List indices where elements were inserted.
       :rtype: `range`
     */
     proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {

@@ -745,7 +745,7 @@ module List {
         contained in this list.
       :type other: `list(eltType)`
 
-      :return: List indices where element was inserted.
+      :return: List indices where elements were inserted.
       :rtype: `range`
     */
     proc ref append(other: list(eltType, ?p)) lifetime this < other {
@@ -767,7 +767,7 @@ module List {
         contained in this list.
       :type other: `[?d] eltType`
 
-      :return: List indices where element was inserted.
+      :return: List indices where elements were inserted.
       :rtype: `range`
     */
     proc ref append(other: [?d] eltType) lifetime this < other {
@@ -791,7 +791,7 @@ module List {
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
 
-      :return: List indices where element was inserted.
+      :return: List indices where elements were inserted.
       :rtype: `range`
     */
     proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
