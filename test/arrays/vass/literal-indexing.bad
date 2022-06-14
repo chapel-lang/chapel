@@ -1,2 +1,1 @@
-literal-indexing.chpl:2: warning: Anonymous associative domain literals without curly brackets are deprecated; please use curly brackets to create an associative domain of 'int(64)' indices
-literal-indexing.chpl:2: error: creating an array of arrays using a for- or forall-expression is not supported, except when using a for-expression over a range
+literal-indexing.chpl:2: error: Arrays with anonymous domains must either be defined using a list of ranges or use curly brackets.  If you were trying to create an array over a set of 'int(64)' indices, please use curly brackets.

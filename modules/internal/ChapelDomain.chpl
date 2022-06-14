@@ -228,7 +228,7 @@ module ChapelDomain {
     // cannot be changed anymore.
     param dimType = chpl_checkForAnonAssocDom(x);
     if dimType != "" then
-      compilerWarning("Anonymous associative domain literals without curly brackets are deprecated; please use curly brackets to create an associative domain of '" + dimType + "' indices");
+      compilerError("Arrays with anonymous domains must either be defined using a list of ranges or use curly brackets.  If you were trying to create an array over a set of '" + dimType + "' indices, please use curly brackets.");
 
     return chpl__buildDomainExpr((...x), definedConst=true);
   }
