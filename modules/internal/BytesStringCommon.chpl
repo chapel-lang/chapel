@@ -176,7 +176,7 @@ module BytesStringCommon {
                                                      expectedSize);
             for i in 0..#nInvalidBytes {
               qio_encode_char_buf(newBuff+decodedIdx,
-                                  0xdc00:int(32)+buff[thisIdx-nInvalidBytes+i]);
+                                  0xdc00+(buff[thisIdx-nInvalidBytes+i]:int(32)));
               decodedIdx += 3;
             }
 
