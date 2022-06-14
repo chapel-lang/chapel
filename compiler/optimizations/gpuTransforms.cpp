@@ -44,9 +44,9 @@ int indentGPUChecksLevel = 0;
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
 
-// --------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Utilities
-// --------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 // If any SymExpr is referring to a variable defined outside the
 // function return the SymExpr. Otherwise return nullptr
@@ -74,8 +74,8 @@ static void errorForOuterVarAccesses(FnSymbol* fn) {
   }
 }
 
-static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint, const char* name,
-                                     Type* type) {
+static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint,
+   const char* name, Type* type) {
   VarSymbol *var = new VarSymbol(name, type);
   var->defPoint = new DefExpr(var);
   insertionPoint->insertAtTail(var->defPoint);
@@ -105,14 +105,14 @@ static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
 }
 
 // This is primarily to handle the indexOfInterest generated for promoted
-// expressions. That symbol is a ref that's defined outside the for loop, but it
-// is def'd and use'd only inside the block. Moreover, one of its defs is
+// expressions. That symbol is a ref that's defined outside the for loop, but
+// it is def'd and use'd only inside the block. Moreover, one of its defs is
 // actually redundant and should be removed. However at this stage in the
 // compilation it is not. The bottom line is, that ref could actually just be a
 // local variable in the loop body. So, we handle that specially to avoid
-// passing that as an argument to the GPU kernel.
-// TODO: investigate whether that def is removed later in the compilation.
-// Ideally move GPU transforms after that pass
+// passing that as an argument to the GPU kernel.  TODO: investigate whether
+// that def is removed later in the compilation.  Ideally move GPU transforms
+// after that pass
 static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
   if (isDefinedInTheLoop(sym, loop) ||
       !sym->hasFlag(FLAG_TEMP)      ||
@@ -136,12 +136,12 @@ static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
   return true;
 }
 
-// --------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // GpuizableLoop
-// --------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
-// Used to evaluate if a loop is eligible to be outlined into a GPU kernel and extracts information about
-// the loop's bounds and indices.
+// Used to evaluate if a loop is eligible to be outlined into a GPU kernel and
+// extracts information about the loop's bounds and indices.
 class GpuizableLoop {
   CForLoop* loop_ = nullptr;
   bool isEligible_ = false;
@@ -158,13 +158,14 @@ public:
   const std::vector<Symbol*>& loopIndices() const { return loopIndices_; }
   const std::vector<Symbol*>& lowerBounds() const { return lowerBounds_; }
   bool isIndexVariable(Symbol* sym) const {
-    return std::find(loopIndices_.begin(), loopIndices_.end(), sym) != loopIndices_.end();
+    return std::find(loopIndices_.begin(), loopIndices_.end(), sym) !=
+      loopIndices_.end();
   }
 
 private:
   bool evaluateLoop(BlockStmt *blk, bool allowFnCalls);
-  bool shouldOutlineLoopHelp(BlockStmt *blk, std::set<FnSymbol *> &okFns, std::set<FnSymbol *> visitedFns,
-                             bool allowFnCalls);
+  bool shouldOutlineLoopHelp(BlockStmt *blk, std::set<FnSymbol *> &okFns,
+    std::set<FnSymbol *> visitedFns, bool allowFnCalls);
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
   bool extractUpperBound();
@@ -301,16 +302,18 @@ bool GpuizableLoop::extractUpperBound() {
   return upperBound_ != nullptr;
 }
 
-// --------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // GpuKernel
-// --------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
-// Given a GpuizableLoop that was determined to be "eligible" we generate an outlined function
+// Given a GpuizableLoop that was determined to be "eligible" we generate an
+// outlined function
 // for GPU code generation that:
-//    - Contains computation to determine what index of the loop is being processed based
-//      on GPU block and thread ID
+//    - Contains computation to determine what index of the loop is being
+//      processed based on GPU block and thread ID
 //    - Contains a copy of loop's body
-//    - Passes in any variables that are declared outside of the loop as parameters to this new function.
+//    - Passes in any variables that are declared outside of the loop as
+//      parameters to this new function.
 class GpuKernel {
   const GpuizableLoop &gpuLoop;
   FnSymbol* fn_;
@@ -409,24 +412,23 @@ void GpuKernel::generateIndexComputation() {
     VarSymbol *varThreadIdxX = generateAssignmentToPrimitive(fn_, "threadIdxX",
       PRIM_GPU_THREADIDX_X, dtInt[INT_SIZE_32]);
 
-    VarSymbol *tempVar = insertNewVarAndDef(fn_->body, "t0", dtInt[INT_SIZE_32]);
-    CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(PRIM_MULT,
-                                                                 varBlockIdxX,
-                                                                 varBlockDimX));
+    VarSymbol *tempVar = insertNewVarAndDef(fn_->body, "t0",
+      dtInt[INT_SIZE_32]);
+    CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(
+      PRIM_MULT, varBlockIdxX, varBlockDimX));
     fn_->insertAtTail(c1);
 
-    VarSymbol *tempVar1 = insertNewVarAndDef(fn_->body, "t1", dtInt[INT_SIZE_32]);
-    CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(PRIM_ADD,
-                                                                  tempVar,
-                                                                  varThreadIdxX));
+    VarSymbol *tempVar1 = insertNewVarAndDef(fn_->body, "t1",
+      dtInt[INT_SIZE_32]);
+    CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(
+      PRIM_ADD, tempVar, varThreadIdxX));
     fn_->insertAtTail(c2);
 
     Symbol* startOffset = addKernelArgument(lowerBound);
     VarSymbol* index = insertNewVarAndDef(fn_->body, "chpl_simt_index",
                                           dtInt[INT_SIZE_32]);
-    fn_->insertAtTail(new CallExpr(PRIM_MOVE, index, new CallExpr(PRIM_ADD,
-                                                                 tempVar1,
-                                                                 startOffset)));
+    fn_->insertAtTail(new CallExpr(PRIM_MOVE, index, new CallExpr(
+      PRIM_ADD, tempVar1, startOffset)));
 
     kernelIndices_.push_back(index);
     copyMap_.put(loopIndex, index);
@@ -595,9 +597,9 @@ void GpuKernel::markGPUSubCalls(FnSymbol* fn) {
   }
 }
 
-// --------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // GPU Transforms
-// --------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 /**
  * Given a CForLoop with lower bound lb and upper bound ub
  * (See extractUpperBound\extractIndicesAndLowerBound to
@@ -721,8 +723,8 @@ void gpuTransforms() {
     logGpuizableLoops();
   }
 
-  // For now, we are doing GPU outlining here. In the future, it should probably
-  // be its own pass.
+  // For now, we are doing GPU outlining here. In the future, it should
+  // probably be its own pass.
   if (localeUsesGPU()) {
     outlineGPUKernels();
   }
