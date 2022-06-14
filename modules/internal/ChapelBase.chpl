@@ -739,8 +739,8 @@ module ChapelBase {
 
   inline proc _cond_test(x: borrowed object?) return x != nil;
   inline proc _cond_test(x: bool) return x;
-  inline proc _cond_test(x: int) return x != 0;
-  inline proc _cond_test(x: uint) return x != 0;
+  inline proc _cond_test(x: int(?w)) return x != 0;
+  inline proc _cond_test(x: uint(?w)) return x != 0;
   inline proc _cond_test(x: sync(?t)) where isBoolType(t) || isIntegralType(t) {
     compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
     return _cond_test(x.readFE());
