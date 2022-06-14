@@ -1703,11 +1703,6 @@ module ChapelArray {
       return this(this.domain.last);
     }
 
-    deprecated "Array back() method is deprecated; use :proc:`last` instead"
-    proc back() {
-      return this.last;
-    }
-
     /* Return the first element in the array. The array must be a
        rectangular 1-D array.
      */
@@ -1719,11 +1714,6 @@ module ChapelArray {
         halt("first called on an empty array");
 
       return this(this.domain.first);
-    }
-
-    deprecated "Array front() method is deprecated; use :proc:`first` instead"
-    proc front() {
-      return this.first;
     }
 
     /* Reverse the order of the values in the array. */
