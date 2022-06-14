@@ -1436,6 +1436,13 @@ static void resolveModuleCall(CallExpr* call) {
           sym = t->symbol;
         }
 
+        // If sym itself is a module, note that it is used
+        // (relevant for getting an error for the case in issue 19932).
+        if (ModuleSymbol* calledModule = toModuleSymbol(sym)) {
+          currModule->moduleUseAdd(calledModule);
+          storeReferencedMod(calledModule, call);
+        }
+
 #ifdef HAVE_LLVM
         // Failing that, try looking in an extern block.
         if (sym == NULL && mod->extern_info != nullptr) {
