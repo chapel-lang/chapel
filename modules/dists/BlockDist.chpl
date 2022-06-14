@@ -1733,6 +1733,14 @@ override proc BlockArr.doiCanBulkTransferRankChange() param return true;
 
 config param debugBlockScan = false;
 
+class BoxedSync {
+  type T;
+  var s: sync T;
+  forwarding s;
+  // guard against dynamic dispatch trying to resolve write()ing the sync
+  override proc writeThis(f) throws { }
+}
+
 proc BlockArr.doiScan(op, dom) where (rank == 1) &&
                                      chpl__scanStateResTypesMatch(op) {
 
@@ -1742,14 +1750,11 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
   // Store one element per locale in order to track our local total
   // for a cross-locale scan as well as flags to negotiate reading and
-  // writing it.  This domain really wants an easier way to express
-  // it...
-  use ReplicatedDist;
+  // writing it.
   const ref targetLocs = this.dsiTargetLocales();
-  const elemPerLocDom = {1..1} dmapped Replicated(targetLocs);
-  var elemPerLoc: [elemPerLocDom] resType;
-  var inputReady$: [elemPerLocDom] sync bool;
-  var outputReady$: [elemPerLocDom] sync bool;
+  var elemPerLoc: [targetLocs.domain] resType;
+  var inputReady$: [targetLocs.domain] sync bool;
+  var outputReady$: [targetLocs.domain] unmanaged BoxedSync(bool)?;
 
   // Fire up tasks per participating locale
   coforall locid in dom.dist.targetLocDom {
@@ -1767,35 +1772,42 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       if debugBlockScan then
         writeln(locid, ": ", (numTasks, rngs, state, tot));
 
+      // Create a local ready var and store it back on the initiating
+      // locale so it can notify us
+      var myOutputReady = new unmanaged BoxedSync(bool)?;
+      outputReady$[locid] = myOutputReady;
+
       // save our local scan total away and signal that it's ready
-      elemPerLoc[1] = tot;
-      inputReady$[1].writeEF(true);
+      elemPerLoc[locid] = tot;
+      inputReady$[locid].writeEF(true);
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
-      if (locid == dom.dist.targetLocDom.lowBound) {
+      if (locid == dom.dist.targetLocDom.lowBound) then on elemPerLoc {
         const metaop = op.clone();
 
         var next: resType = metaop.identity;
         for locid in dom.dist.targetLocDom {
-          const targetloc = targetLocs[locid];
-          const locready = inputReady$.replicand(targetloc)[1].readFE();
+          const locready = inputReady$[locid].readFE();
 
-          // store the scan value and mark that it's ready
-          ref locVal = elemPerLoc.replicand(targetloc)[1];
+          // store the scan value
+          ref locVal = elemPerLoc[locid];
           locVal <=> next;
-          outputReady$.replicand(targetloc)[1].writeEF(true);
 
           // accumulate to prep for the next iteration
           metaop.accumulateOntoState(next, locVal);
+        }
+        // Mark that scan values are ready
+        coforall ready in outputReady$ do on ready {
+          ready!.writeEF(true);
         }
         delete metaop;
       }
 
       // block until someone tells us that our local value has been updated
       // and then read it
-      const resready = outputReady$[1].readFE();
-      const myadjust = elemPerLoc[1];
+      const resready = myOutputReady!.readFE();
+      const myadjust = elemPerLoc[locid];
       if debugBlockScan then
         writeln(locid, ": myadjust = ", myadjust);
 
@@ -1812,6 +1824,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         writeln(locid, ": ", myLocArr);
 
       delete myop;
+      delete myOutputReady;
     }
   }
   if isPOD(resType) then res.dsiElementInitializationComplete();
