@@ -2173,34 +2173,87 @@ operator :(r: range(?), type t: range(?)) {
   //# Serial Iterators
   //#
 
-  // An unbounded range iterator (for all strides)
+  // An error overload for trying to iterate over '..'
   pragma "no doc"
   pragma "order independent yielding loops"
-  iter range.these() where boundedType != BoundedRangeType.bounded {
+  iter range.these() where boundedType == BoundedRangeType.boundedNone {
+    compilerError("iteration over a range with no bounds");
+  }
 
-    if boundedType == BoundedRangeType.boundedNone then
-      compilerError("iteration over a range with no bounds");
-
+  private inline proc boundsCheckUnboundedRange(r: range(?)) {
     if boundsChecking {
-      if ! this.hasFirst() then
+      if ! r.hasFirst() then
         HaltWrappers.boundsCheckHalt("iteration over range that has no first index");
 
-      if this.isAmbiguous() then
+      if r.isAmbiguous() then
         HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
     }
+  }
+
+  // The serial iterator for 'lo.. [by s]' ranges
+  pragma "no doc"
+  pragma "order independent yielding loops"
+  iter range.these() where boundedType == BoundedRangeType.boundedLow {
+
+    boundsCheckUnboundedRange(this);
 
     // This iterator could be split into different cases depending on the
     // stride like the bounded iterators. However, all that gets you is the
     // ability to use low/alignedLow over first. The additional code isn't
-    // worth it just for that. In the other cases it allowed us to specialize
-    // the test relational operator, which is important
+    // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
+    const end = if isBoolType(idxType)
+                  then 1: intIdxType
+                else if isEnumType(idxType)
+                  then (idxType.size-1):intIdxType
+                else max(intIdxType) - stride: intIdxType;
+
     while __primitive("C for loop",
                       __primitive( "=", i, start),
-                      true,
+                      __primitive("<=", i, end),
                       __primitive("+=", i, stride: intIdxType)) {
       yield chpl_intToIdx(i);
+    }
+    if i > end {
+      // We'd like to do the following yield, but it breaks our
+      // zippering optimizations for cases like 'for i in (something,
+      // 0..)', so we'll just stop an iteration early instead.  Once
+      // we distinguish serial follower loops from standalone loops,
+      // we could support this in the standalone case without penalty,
+      // I believe.
+      //
+      //   yield chpl_intToIdx(i);
+      if isIntegralType(idxType) then
+        halt("Loop over unbounded range surpassed representable values");
+    }
+  }
+
+  // The serial iterator for '..hi [by s]' ranges
+  pragma "no doc"
+  pragma "order independent yielding loops"
+  iter range.these() where boundedType == BoundedRangeType.boundedHigh {
+
+    boundsCheckUnboundedRange(this);
+
+    // Apart from the computation of 'end' and the comparison used to
+    // terminate the C for loop, this iterator follows the boundedLow
+    // case above.  See it for additional comments.
+    var i: intIdxType;
+    const start = chpl__idxToInt(this.first);
+    const end = if isBoolType(idxType) || isEnumType(idxType)
+                  then 0
+                  else min(intIdxType) - stride: intIdxType;
+    while __primitive("C for loop",
+                      __primitive( "=", i, start),
+                      __primitive(">=", i, end),
+                      __primitive("+=", i, stride: intIdxType)) {
+      yield chpl_intToIdx(i);
+    }
+    if i < end {
+      if isIntegralType(idxType) then
+        //  yield chpl_intToIdx(i);
+        halt("Loop over unbounded range surpassed representable values");
     }
   }
 
