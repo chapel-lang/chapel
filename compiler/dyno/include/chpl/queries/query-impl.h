@@ -136,7 +136,7 @@ void Context::queryBeginTrace(const char* traceQueryName,
       setQueryDepthColor(queryTraceDepth, std::cout);
       std::cout << queryTraceDepth
                 << " { "
-                << clearTerminalColor() << traceQueryName;
+                << clearTerminalColor() << traceQueryName << " (";
       queryArgsPrint(tupleOfArg);
       std::cout << ") ";
       setTerminalColor(cyan, std::cout);
