@@ -21,22 +21,16 @@ proc main(args: [] string) {
       lineSize = 0,
       numRead = 0;
 
-  lineSize = stdinNoLock.readLine(buff);
-  while lineSize>0 && !startsWithThree(buff) {
+  while stdinNoLock.readline(buff, lineSize) && !startsWithThree(buff) do
     numRead += lineSize;
-    lineSize = stdinNoLock.readLine(buff);
-  }
 
   // Read in the rest of the file
   var dataDom = {1..fileLen-numRead},
       data: [dataDom] uint(8),
       idx = 1;
 
-  lineSize = stdinNoLock.readLine(data[idx..]);
-  while lineSize>0 {
+  while stdinNoLock.readline(data, lineSize, idx) do
     idx += lineSize - 1;
-    lineSize = stdinNoLock.readLine(data[idx..]);
-  }
 
   // Resize our array to the amount actually read
   dataDom = {1..idx};
@@ -143,3 +137,4 @@ record hashVal {
     return val;
   }
 }
+

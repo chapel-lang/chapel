@@ -1,3 +1,8 @@
+knucleotide4.chpl:13: In function 'main':
+knucleotide4.chpl:24: warning: channel.readline is deprecated. Use channel.readLine instead
+knucleotide4.chpl:24: warning: channel.readline is deprecated. Use channel.readLine instead
+knucleotide4.chpl:32: warning: channel.readline is deprecated. Use channel.readLine instead
+knucleotide4.chpl:32: warning: channel.readline is deprecated. Use channel.readLine instead
 A 30.279
 T 30.113
 G 19.835
