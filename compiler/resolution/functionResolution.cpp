@@ -5511,6 +5511,11 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
         continue;
       }
 
+      if (actualVt == dtNil) {
+        // don't worry about converting 'nil' to something else
+        continue;
+      }
+
       if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
           formalVt->symbol->hasFlag(FLAG_TUPLE)) {
         // don't worry about tuple types for now
