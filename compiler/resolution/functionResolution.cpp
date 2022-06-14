@@ -5652,13 +5652,11 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
   std::vector<bool> discarded(candidates.n, false);
 
   if (candidates.n > 1) {
+    Vec<int> implicitConversionCount;
+    int minImplicitConversions = INT_MAX;
+    int maxImplicitConversions = 0;
     for (int i = 0; i < candidates.n; ++i) {
-      EXPLAIN("##########################\n");
-      EXPLAIN("# Filtering function %d #\n", i);
-      EXPLAIN("##########################\n\n");
-      ResolutionCandidate* candidate         = candidates.v[i];
-      EXPLAIN("%s\n\n", toString(candidate->fn));
-
+      ResolutionCandidate* candidate = candidates.v[i];
       int nImplicitConversions = 0;
       int nImplicitConversionsToTypeNotMentioned = 0;
 
@@ -5666,9 +5664,25 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                                nImplicitConversions,
                                nImplicitConversionsToTypeNotMentioned);
 
-      if (nImplicitConversions >= 2 &&
-          nImplicitConversionsToTypeNotMentioned > 0) {
-        EXPLAIN("X: Fn %d has too many conversions so is filtered out\n", i);
+      implicitConversionCount.push_back(nImplicitConversions);
+      if (minImplicitConversions > nImplicitConversions)
+        minImplicitConversions = nImplicitConversions;
+      if (maxImplicitConversions < nImplicitConversions)
+        maxImplicitConversions = nImplicitConversions;
+    }
+
+    for (int i = 0; i < candidates.n; ++i) {
+      EXPLAIN("##########################\n");
+      EXPLAIN("# Filtering function %d #\n", i);
+      EXPLAIN("##########################\n\n");
+      ResolutionCandidate* candidate = candidates.v[i];
+      EXPLAIN("%s\n\n", toString(candidate->fn));
+
+      if (minImplicitConversions == maxImplicitConversions &&
+          minImplicitConversions > 1) {
+        EXPLAIN("X: Discarding all candidates since they have the same "
+                "number of implicit conversions > 1 and = %i\n",
+                minImplicitConversions);
         discarded[i] = true;
       } else {
         EXPLAIN("X: Fn %d is allowed\n", i);
