@@ -5506,7 +5506,6 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
-/*
 static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
   if (is_imag_type(actualVt) && is_complex_type(formalVt) &&
       2*get_width(actualVt) == get_width(formalVt))
@@ -5518,7 +5517,7 @@ static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
 
   return false;
 }
-*/
+
 
 static void countImplicitConversions(ResolutionCandidate* candidate,
                                      const DisambiguationContext& DC,
@@ -5594,11 +5593,10 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
       continue;
     }
 
-    /*
     if (isMatchingImagComplex(actualVt, formalVt)) {
       // don't worry about imag vs complex
       continue;
-    }*/
+    }
 
     if (is_bool_type(actualVt) &&
         (formalVt == dtInt[INT_SIZE_DEFAULT] || is_bool_type(formalVt))) {
@@ -5618,8 +5616,8 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
       Type* otherFormalVt = otherFormal->type->getValType();
       Type* otherActualVt = normalizedActualTypes.v[other];
       if (otherFormalVt == formalVt &&
-          (otherActualVt == formalVt /*||
-           isMatchingImagComplex(otherActualVt, formalVt)*/)) {
+          (otherActualVt == formalVt ||
+           isMatchingImagComplex(otherActualVt, formalVt))) {
         formalVtUsedInOtherActual = true;
         break;
       }
