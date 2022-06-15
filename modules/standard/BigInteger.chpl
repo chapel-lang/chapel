@@ -3448,9 +3448,8 @@ module BigInteger {
     }
   }
 
-  /* 
-  A parameter to select between the new and deprecated overloads of :proc:`bigint.invert()` 
-  
+  /*
+  A parameter to select between the new and deprecated overloads of :proc:`bigint.invert()`
   * `InvertReturnInt = true` causes the deprecated version of :proc:`bigint.invert()` to be called
   * `InvertReturnInt = false` causes the new version of :proc:`bigint.invert()` to be called (this version does not return a status integer)
   */
