@@ -1866,10 +1866,10 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   operator #(r:range(?i), param count: integral) {
-    if doesCountFit(chpl__rangeUnsignedType(i), count) {
-      return chpl_count_help(r, count:chpl__rangeUnsignedType(i));
-    } else if doesCountFit(chpl__rangeStrideType(i), count) {
+    if doesCountFit(chpl__rangeStrideType(i), count) {
       return chpl_count_help(r, count:chpl__rangeStrideType(i));
+    } else if doesCountFit(chpl__rangeUnsignedType(i), count) {
+      return chpl_count_help(r, count:chpl__rangeUnsignedType(i));
     } else {
       compilerError("can't apply '#' to a range with idxType ",
                     i:string, " using a param count of ",
@@ -1878,10 +1878,10 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   operator #(r:range(?i), count:integral) {
-    if isCoercible(count.type, chpl__rangeUnsignedType(i)) {
-      return chpl_count_help(r, count:chpl__rangeUnsignedType(i));
-    } else if isCoercible(count.type, chpl__rangeStrideType(i)) {
+    if isCoercible(count.type, chpl__rangeStrideType(i)) {
       return chpl_count_help(r, count:chpl__rangeStrideType(i));
+    } else if isCoercible(count.type, chpl__rangeUnsignedType(i)) {
+      return chpl_count_help(r, count:chpl__rangeUnsignedType(i));
     } else {
       compilerError("can't apply '#' to a range with idxType ",
                     i:string, " using a count of type ",
