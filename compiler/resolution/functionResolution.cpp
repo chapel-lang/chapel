@@ -5562,68 +5562,73 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
   for (int k = 0; k < DC.actuals->n; k++) {
     ArgSymbol* formal = candidate->actualIdxToFormal[k];
 
-    if (formal->originalIntent != INTENT_OUT) {
-      Type* actualVt = normalizedActualTypes.v[k];
-      Type* formalVt = formal->type->getValType();
-      if (actualVt == formalVt) {
-        // same type, nothing else to worry about here
+    if (formal->originalIntent == INTENT_OUT) {
+      continue; // type comes from call site so ignore it here
+    }
+
+    Type* actualVt = normalizedActualTypes.v[k];
+    Type* formalVt = formal->type->getValType();
+    if (actualVt == formalVt) {
+      // same type, nothing else to worry about here
+      continue;
+    }
+
+    // if we get here, an implicit conversion is required
+    if (isClassLikeOrManaged(actualVt) || isClassLikeOrManaged(formalVt) ||
+        isClassLikeOrPtr(actualVt) || isClassLikeOrPtr(formalVt)) {
+      // OK, don't worry about implicit conversion for class types here
+      continue;
+    }
+
+    if (actualVt == dtNil) {
+      // don't worry about converting 'nil' to something else
+      continue;
+    }
+
+    if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
+        formalVt->symbol->hasFlag(FLAG_TUPLE)) {
+      // don't worry about tuple types for now
+      // TODO: do worry about tuples containing numeric types that are
+      // converted
+      continue;
+    }
+
+    if (isMatchingImagComplex(actualVt, formalVt)) {
+      // don't worry about imag vs complex
+      continue;
+    }
+
+    if (is_bool_type(actualVt) &&
+        (formalVt == dtInt[INT_SIZE_DEFAULT] || is_bool_type(formalVt))) {
+      // don't worry about bool types converting to default 'int'
+      // or to other bool sizes
+      continue;
+    }
+
+    // is it an implicit conversion to a formal type
+    // that is used in an actual of the call?
+    bool formalVtUsedInOtherActual = false;
+    for (int other = 0; other < DC.actuals->n; other++) {
+      ArgSymbol* otherFormal = candidate->actualIdxToFormal[other];
+      if (other == k || otherFormal->originalIntent == INTENT_OUT)
         continue;
-      }
 
-      // if we get here, an implicit conversion is required
-      if (isClassLikeOrManaged(actualVt) || isClassLikeOrManaged(formalVt) ||
-          isClassLikeOrPtr(actualVt) || isClassLikeOrPtr(formalVt)) {
-        // OK, don't worry about implicit conversion for class types here
-        continue;
+      Type* otherFormalVt = otherFormal->type->getValType();
+      Type* otherActualVt = normalizedActualTypes.v[other];
+      if (otherFormalVt == formalVt &&
+          (otherActualVt == formalVt ||
+           isMatchingImagComplex(otherActualVt, formalVt))) {
+        formalVtUsedInOtherActual = true;
+        break;
       }
+    }
 
-      if (actualVt == dtNil) {
-        // don't worry about converting 'nil' to something else
-        continue;
-      }
-
-      if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
-          formalVt->symbol->hasFlag(FLAG_TUPLE)) {
-        // don't worry about tuple types for now
-        // TODO: do worry about tuples containing numeric types that are
-        // converted
-        continue;
-      }
-
-      if (isMatchingImagComplex(actualVt, formalVt)) {
-        // don't worry about imag vs complex
-        continue;
-      }
-
-      if (is_bool_type(actualVt) &&
-          (formalVt == dtInt[INT_SIZE_DEFAULT] || is_bool_type(formalVt))) {
-        // don't worry about bool types converting to default 'int'
-        // or to other bool sizes
-        continue;
-      }
-
-      // is it an implicit conversion to a formal type
-      // that is used in an actual of the call?
-      bool formalVtUsedInOtherActual = false;
-      for (int other = 0; other < DC.actuals->n; other++) {
-        if (other == k || formal->originalIntent == INTENT_OUT)
-          continue;
-
-        Type* otherActualVt = normalizedActualTypes.v[other];
-        if (otherActualVt == formalVt ||
-            isMatchingImagComplex(otherActualVt, formalVt)) {
-          formalVtUsedInOtherActual = true;
-          break;
-        }
-      }
-
-      nImplicitConversions++;
-      if (!formal->hasFlag(FLAG_ARG_THIS)) {
-        nNonThisImplicitConversions++;
-      }
-      if (!formalVtUsedInOtherActual) {
-        nImplicitConversionsToTypeNotMentioned++;
-      }
+    nImplicitConversions++;
+    if (!formal->hasFlag(FLAG_ARG_THIS)) {
+      nNonThisImplicitConversions++;
+    }
+    if (!formalVtUsedInOtherActual) {
+      nImplicitConversionsToTypeNotMentioned++;
     }
   }
 
