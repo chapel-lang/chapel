@@ -74,15 +74,14 @@ module HPCC_PTRANS {
    // -------------------------------------------------------------------------
 
     forall (i,j) in matrix_domain do {
-      A [i,j] = erf (i:real) * cos (j:real);
-      C [j,i] = sin (i:real) * cbrt (j:real);
+      A [i,j] = erf (i) * cos (j);
+      C [j,i] = sin (i) * cbrt (j);
     }
 
     C_save = C;
 
     forall (i,j) in transpose_domain do
-      C_plus_A_transpose [i,j] =
-        beta * sin (j:real) * cbrt (i:real) + erf(j:real) * cos (i:real);
+      C_plus_A_transpose [i,j] = beta * sin (j) * cbrt (i) + erf(j) * cos (i);
 
     // norm_A = norm (A);
     // norm_C = norm (C);
