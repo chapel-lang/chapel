@@ -335,12 +335,6 @@ module Set {
       _addElem(element);
     }
 
-    pragma "last resort"
-    deprecated "The argument name `x` has been deprecated for function `add`, please use `element` instead"
-    proc ref add(in x: eltType) lifetime this < x {
-      add(element=x);
-    }
-
     /*
       Returns `true` if the given element is a member of this set, and `false`
       otherwise.
@@ -358,12 +352,6 @@ module Set {
       }
 
       return result;
-    }
-
-    pragma "last resort"
-    deprecated "The argument name `x` has been deprecated for function `contains, please use `element` instead"
-    proc const contains(const ref x: eltType): bool {
-      return contains(element=x);
     }
 
     /*
@@ -440,12 +428,6 @@ module Set {
       }
 
       return result;
-    }
-
-    pragma "last resort"
-    deprecated "The argument name `x` has been deprecated for function `remove`, please use `element` instead"
-    proc ref remove(const ref x: eltType): bool {
-      return remove(element=x);
     }
 
     /*
