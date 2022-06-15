@@ -1,0 +1,2 @@
+arrayEquals.chpl:4: warning: the 'Array.equals()' method is unstable
+false
