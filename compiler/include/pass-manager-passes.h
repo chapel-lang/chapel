@@ -31,6 +31,20 @@
 */
 
 /**
+  Generate wrapper functions for extern functions that take arrays.
+*/
+class ExpandExternArrayCalls : public PassT<FnSymbol*> {
+ public:
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+
+  static bool
+  isFormalArray(ArgSymbol* formal, UnresolvedSymExpr** outType=nullptr);
+
+  static bool isRetExprVoid(BlockStmt* retExprType);
+};
+
+/**
   Flatten all classes so they are defined at module scope.
 */
 class FlattenClasses : public PassT<TypeSymbol*> {
