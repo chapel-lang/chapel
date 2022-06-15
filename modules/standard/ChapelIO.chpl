@@ -802,19 +802,19 @@ module ChapelIO {
     return stringify((...args));
   }
 
-  //
-  // Catch all
-  //
-  // Convert 'x' to a string just the way it would be written out.
-  //
-  // This is marked as last resort so it doesn't take precedence over
-  // generated casts for types like enums
-  //
-  // This version only applies to non-primitive types
-  // (primitive types should support :string directly)
-  pragma "no doc"
-  pragma "last resort"
-  operator :(x, type t:string) where !isPrimitiveType(x.type) {
-    return stringify(x);
-  }
+  // //
+  // // Catch all
+  // //
+  // // Convert 'x' to a string just the way it would be written out.
+  // //
+  // // This is marked as last resort so it doesn't take precedence over
+  // // generated casts for types like enums
+  // //
+  // // This version only applies to non-primitive types
+  // // (primitive types should support :string directly)
+  // pragma "no doc"
+  // pragma "last resort"
+  // operator :(x, type t:string) where !isPrimitiveType(x.type) {
+  //   return stringify(x);
+  // }
 }
