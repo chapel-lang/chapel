@@ -22,27 +22,49 @@
 
 extern const char* yychpl_get_text(yyscan_t scanner);
 
+namespace {
+enum ErrorKind {
+  EMPTY_ERROR_MESSAGE,
+  SYNTAX_ERROR,
+  MEMORY_EXHAUSTED,
+  UNKNOWN
+};
+} // end anonymous namespace
+
+static enum ErrorKind determineErrorKind(const char* msg) {
+  if (0 == strlen(msg)) return EMPTY_ERROR_MESSAGE;
+  if (!strcmp("syntax error", msg)) return SYNTAX_ERROR;
+  if (!strcmp("memory exhausted", msg)) return MEMORY_EXHAUSTED;
+  return UNKNOWN;
+}
+
+// TODO: Could break out separate function 'yyreport_syntax_error'.
 void yychpl_error(YYLTYPE*       loc,
                   ParserContext* context,
                   const char*    errorMessage) {
+  auto errorKind = determineErrorKind(errorMessage);
+  auto tokenText = yychpl_get_text(context->scanner);
+  bool hasNearestTokenText = (strlen(tokenText) > 0);
+  bool printNearestToken = true;
+  const char* baseMsg = nullptr;
   std::string msg;
-  bool isEmptyOrDefaultError = !strcmp("syntax error", errorMessage) ||
-                               !strlen(errorMessage);
 
-  // If Bison reported a generic "syntax error", leave message empty.
-  if (isEmptyOrDefaultError) {
-    const char* tokenText = yychpl_get_text(context->scanner);
+  switch (errorKind) {
+    case EMPTY_ERROR_MESSAGE:
+    case SYNTAX_ERROR:
+    case UNKNOWN:
+      // Do not print "syntax error" - the error message kind implies that.
+      break;
+    case MEMORY_EXHAUSTED:
+      baseMsg = "memory exhausted while parsing";
+      break;
+  }
 
-    // But append info about nearest token.
-    if (strlen(tokenText) > 0) {
-      msg += "near '";
-      msg += tokenText;
-      msg += "'";
-    }
-
-  // TODO: Also print nearest token?
-  } else {
-    msg = errorMessage;
+  if (baseMsg) msg = baseMsg;
+  if (hasNearestTokenText && printNearestToken) {
+    msg += msg.size() ? ": near '" : "near '";
+    msg += tokenText;
+    msg += "'";
   }
 
   auto err = ParserError(*loc, msg, ErrorMessage::SYNTAX);

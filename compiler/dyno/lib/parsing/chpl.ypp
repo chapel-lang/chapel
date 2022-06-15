@@ -270,8 +270,16 @@
     WhereAndLifetime lifetimeAndWhere;
   };
 
+  // Put our types in a different namespace to avoid conflicting with the
+  // production compiler parser's YYSTYPE/YYLTYPE.
   #define YYSTYPE YYCHPL_STYPE
   #define YYLTYPE YYCHPL_LTYPE
+
+  // Note that the 'YYSTYPE_IS_TRIVIAL' macro tells the generated parser
+  // that YYSTYPE only contains simple scalars (it can be bitcopied).
+  // This is normally communicated by the '%union' directive, but we
+  // stopped using that.
+  #define YYCHPL_STYPE_IS_TRIVIAL 1
 
   #endif
 }
