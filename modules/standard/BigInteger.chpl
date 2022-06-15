@@ -3434,15 +3434,25 @@ module BigInteger {
     }
   }
 
-
+  /*
+   An `InversionError` is thrown if a `bigint.invert()` is attempted with
+   invalid arguments that result in a non-existant inverse. Specifically,
+   if the arguments cause a divide by zero, this error notifies the caller
+   that the internal value of the `bigint` was left in an undefined state.
+   */
   class InversionError : Error {
+
+    /* Create an :class:`InversionError` with the default error message: `Inverse does not exist` */
     proc init() {
-      super.init("inverse does not exist");
+      super.init("Inverse does not exist");
     }
   }
 
-  // invert
-  proc bigint.invert(const ref a: bigint, const ref b: bigint) : int throws {
+  /* A parameter to select between the new and depracated overlaods of `bigint.invert()` */
+  config param INVERT_RETURN_INT = true;
+
+  deprecated "The int-returning overload of bigint.invert() is deprecated - please use the non-returning version by setting `INVERT_RETURN_INT` to false"
+  proc bigint.invert(const ref a: bigint, const ref b: bigint) : int throws where INVERT_RETURN_INT == true {
     var ret: c_int;
 
     if _local {
@@ -3473,6 +3483,47 @@ module BigInteger {
     }
   }
 
+  /* Set the value of ``this`` to the inverse of ``a`` modulo ``b``
+
+     .. note::
+        If an inverse does not exist, an :class:`InversionError` will be thrown,
+        and the value of ``this`` will be left undefined
+
+     This fulfills the same role as the GMP number theoretic function ``mpz_invert``.
+
+     :arg a: The dividend of the modulo operation
+     :type a: :record:`bigint`
+
+     :arg b: The divisor of the modulo operation
+     :type b: :record:`bigint`
+
+  */
+  proc bigint.invert(const ref a: bigint, const ref b: bigint) throws where INVERT_RETURN_INT == false {
+    var ret: c_int;
+
+    if _local {
+      ret = mpz_invert(this.mpz, a.mpz, b.mpz);
+
+    } else if this.localeId == chpl_nodeID &&
+              a.localeId    == chpl_nodeID &&
+              b.localeId    == chpl_nodeID {
+      ret = mpz_invert(this.mpz, a.mpz, b.mpz);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        var a_ = a;
+        var b_ = b;
+
+        ret = mpz_invert(this.mpz, a_.mpz, b_.mpz);
+      }
+    }
+
+    if (ret.safeCast(int) == 0) {
+      throw new owned InversionError();
+    }
+  }
 
   // remove
     /*

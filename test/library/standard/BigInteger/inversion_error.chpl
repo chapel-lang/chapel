@@ -9,10 +9,9 @@ var c = new bigint(2);
 // a = (5 % 2)^(-1)
 // a = (1)^(-1)
 // a = 1
-var status = a.invert(b, c);
+a.invert(b, c);
 
 writeln("Inverse Exists Case:");
-writeln("\tnon-zero status: ", status != 0);
 writeln("\tcorrect inverse: ", a == 1);
 
 // inverse does not exist (error case)
