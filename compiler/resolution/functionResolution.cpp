@@ -3183,12 +3183,13 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
                                      Vec<FnSymbol*>&            visibleFns,
                                      Vec<ResolutionCandidate*>& candidates);
 
-static int       disambiguateByMatch(CallInfo&                  info,
-                                     BlockStmt*                 searchScope,
-                                     Vec<ResolutionCandidate*>& candidates,
-                                     ResolutionCandidate*&      bestRef,
-                                     ResolutionCandidate*&      bestConstRef,
-                                     ResolutionCandidate*&      bestValue);
+static int       filterAndDisambiguate(CallInfo&                  info,
+                                       BlockStmt*                 searchScope,
+                                       Vec<ResolutionCandidate*>& candidates,
+                                       Vec<ResolutionCandidate*>& filtered,
+                                       ResolutionCandidate*&      bestRef,
+                                       ResolutionCandidate*&      bestConstRef,
+                                       ResolutionCandidate*&      bestValue);
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
                                    check_state_t        checkState,
@@ -3610,7 +3611,8 @@ static bool typeUsesForwarding(Type* t);
 
 static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   Vec<FnSymbol*>            mostApplicable;
-  Vec<ResolutionCandidate*> candidates;
+  Vec<ResolutionCandidate*> origCandidates;
+  Vec<ResolutionCandidate*> filteredCandidates;
 
   ResolutionCandidate*      bestRef    = NULL;
   ResolutionCandidate*      bestCref   = NULL;
@@ -3624,17 +3626,18 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   BlockStmt* scopeUsed = nullptr;
 
   scopeUsed = findVisibleFunctionsAndCandidates(info, visInfo,
-                                                mostApplicable, candidates);
+                                                mostApplicable, origCandidates);
 
-  numMatches = disambiguateByMatch(info, scopeUsed, candidates,
-                                   bestRef, bestCref, bestVal);
+  numMatches = filterAndDisambiguate(info, scopeUsed, origCandidates,
+                                     filteredCandidates,
+                                     bestRef, bestCref, bestVal);
 
   if (checkState == CHECK_NORMAL_CALL && numMatches > 0 && visInfo.inPOI())
     updateCacheInfosForACall(visInfo,
                              bestRef, bestCref, bestVal);
 
   // If no candidates were found and it's a method, try forwarding
-  if (candidates.n                  == 0 &&
+  if (origCandidates.n              == 0 &&
       info.call->numActuals()       >= 1 &&
       info.call->get(1)->typeInfo() == dtMethodToken &&
       isUnresolvedSymExpr(info.call->baseExpr)) {
@@ -3649,7 +3652,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   }
 
   if (numMatches > 0) {
-    if (! overloadSetsOK(info.call, scopeUsed, checkState, candidates,
+    if (! overloadSetsOK(info.call, scopeUsed, checkState, origCandidates,
                          bestRef, bestCref, bestVal))
       return NULL; // overloadSetsOK() found an error
 
@@ -3659,9 +3662,9 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   if (numMatches == 0) {
     if (info.call->partialTag == false) {
       if (checkState == CHECK_NORMAL_CALL) {
-        if (candidates.n == 0) {
+        if (origCandidates.n == 0 || filteredCandidates.n == 0) {
           bool existingErrors = fatalErrorsEncountered();
-          printResolutionErrorUnresolved(info, mostApplicable);
+          printResolutionErrorUnresolved(info, origCandidates, mostApplicable);
 
           if (!inGenerousResolutionForErrors()) {
             startGenerousResolutionForErrors();
@@ -3680,7 +3683,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
           USR_STOP();
 
         } else {
-          printResolutionErrorAmbiguous (info, candidates);
+          printResolutionErrorAmbiguous (info, filteredCandidates);
         }
       }
     }
@@ -3704,7 +3707,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
     retval = resolveNormalCall(info, checkState, bestRef, bestCref, bestVal);
   }
 
-  forv_Vec(ResolutionCandidate*, candidate, candidates) {
+  forv_Vec(ResolutionCandidate*, candidate, origCandidates) {
     delete candidate;
   }
 
@@ -4154,12 +4157,15 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
 *                                                                             *
 ************************************** | *************************************/
 
-static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
+static void generateUnresolvedMsg(CallInfo& info,
+                                  Vec<ResolutionCandidate*>& candidates,
+                                  Vec<FnSymbol*>& visibleFns);
 static void sortExampleCandidates(CallInfo& info,
                                   Vec<FnSymbol*>& visibleFns);
 static bool defaultValueMismatch(CallInfo& info);
 
 void printResolutionErrorUnresolved(CallInfo&       info,
+                                    Vec<ResolutionCandidate*>& candidates,
                                     Vec<FnSymbol*>& visibleFns) {
   if (info.call == NULL) {
     INT_FATAL("call is NULL");
@@ -4208,7 +4214,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         }
 
       } else {
-        generateUnresolvedMsg(info, visibleFns);
+        generateUnresolvedMsg(info, candidates, visibleFns);
       }
 
     } else if (info.name == astrSassign) {
@@ -4283,7 +4289,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       }
 
     } else {
-      generateUnresolvedMsg(info, visibleFns);
+      generateUnresolvedMsg(info, candidates, visibleFns);
     }
 
     if (developer == true) {
@@ -4521,7 +4527,9 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
   return false;
 }
 
-static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
+static void generateUnresolvedMsg(CallInfo& info,
+                                  Vec<ResolutionCandidate*>& candidates,
+                                  Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
 
@@ -4561,6 +4569,16 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
                          exprType->symbol->name);
   } else {
     USR_FATAL_CONT(call, "unresolved call '%s'", str);
+  }
+
+  if (candidates.n > 0) {
+    USR_PRINT(call, "all candidates were discarded "
+                    "because each has too many implicit conversions");
+    for (int i = 0; i < candidates.n; i++) {
+      FnSymbol* fn = candidates.v[i]->fn;
+      USR_PRINT(fn, "candidate discarded: %s", toString(fn));
+    }
+    return;
   }
 
   if (visibleFns.n > 0) {
@@ -5235,6 +5253,10 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
 
 #endif
 
+static void
+filterCandidates(const DisambiguationContext& DC,
+                 const Vec<ResolutionCandidate*>& candidates,
+                 Vec<ResolutionCandidate*>& filteredCandidates);
 
 static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
@@ -5266,27 +5288,35 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
                              DisambiguationState& DS);
 
 ResolutionCandidate*
-disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
+filterAndDisambiguateForInit(CallInfo& info,
+                             const Vec<ResolutionCandidate*>& origCandidates,
+                             Vec<ResolutionCandidate*>& filteredCandidates) {
   DisambiguationContext     DC(info, getVisibilityScope(info.call));
   Vec<ResolutionCandidate*> ambiguous;
 
-  return disambiguateByMatch(candidates, DC, false, ambiguous);
+  filterCandidates(DC, origCandidates, filteredCandidates);
+
+  return disambiguateByMatch(filteredCandidates, DC, false, ambiguous);
 }
 
 
 // searchScope is the scope used to evaluate is-more-visible
-static int disambiguateByMatch(CallInfo&                  info,
-                               BlockStmt*                 searchScope,
-                               Vec<ResolutionCandidate*>& candidates,
 
-                               ResolutionCandidate*&      bestRef,
-                               ResolutionCandidate*&      bestConstRef,
-                               ResolutionCandidate*&      bestValue) {
+static int filterAndDisambiguate(CallInfo&                  info,
+                                 BlockStmt*                 searchScope,
+                                 Vec<ResolutionCandidate*>& origCandidates,
+                                 Vec<ResolutionCandidate*>& filtered,
+                                 ResolutionCandidate*&      bestRef,
+                                 ResolutionCandidate*&      bestConstRef,
+                                 ResolutionCandidate*&      bestValue) {
   DisambiguationContext     DC(info, searchScope);
+
+  // filter the candidates
+  filterCandidates(DC, origCandidates, filtered);
 
   Vec<ResolutionCandidate*> ambiguous;
 
-  ResolutionCandidate*      best   = disambiguateByMatch(candidates,
+  ResolutionCandidate*      best   = disambiguateByMatch(filtered,
                                                          DC,
                                                          true,
                                                          ambiguous);
@@ -5357,7 +5387,7 @@ static int disambiguateByMatch(CallInfo&                  info,
 
       // If there are *any* type/param candidates, we need to cause ambiguity
       // if they are not selected... including consideration of where clauses.
-      bestValue  = disambiguateByMatch(candidates, DC, false, ambiguous);
+      bestValue  = disambiguateByMatch(filtered, DC, false, ambiguous);
       if (bestValue)
         retval = 1;
       else
@@ -5372,7 +5402,7 @@ static int disambiguateByMatch(CallInfo&                  info,
         Vec<ResolutionCandidate*> tmpAmbiguous;
 
         // Move candidates to above Vecs according to return intent
-        forv_Vec(ResolutionCandidate*, candidate, candidates) {
+        forv_Vec(ResolutionCandidate*, candidate, filtered) {
           RetTag retTag = candidate->fn->retTag;
 
           if (retTag == RET_REF) {
@@ -5558,6 +5588,42 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
   implicitConversionCountOut = nImplicitConversions;
   nonThisImplicitConversionCountOut = nNonThisImplicitConversions;
   impConvNotMentionedCountOut = nImplicitConversionsToTypeNotMentioned;
+}
+
+// computes filteredCandidates based on candidates
+static void
+filterCandidates(const DisambiguationContext& DC,
+                 const Vec<ResolutionCandidate*>& candidates,
+                 Vec<ResolutionCandidate*>& filteredCandidates) {
+  if (candidates.n > 1) {
+    Vec<ResolutionCandidate*> ret;
+    for (int i = 0; i < candidates.n; ++i) {
+      EXPLAIN("##########################\n");
+      EXPLAIN("# Filtering function %d #\n", i);
+      EXPLAIN("##########################\n\n");
+      ResolutionCandidate* candidate = candidates.v[i];
+      EXPLAIN("%s\n\n", toString(candidate->fn));
+
+      int nImplicitConversions = 0;
+      int nNonThisImplicitConversions = 0;
+      int nImplicitConversionsToTypeNotMentioned = 0;
+
+      countImplicitConversions(candidate, DC,
+                               nImplicitConversions,
+                               nNonThisImplicitConversions,
+                               nImplicitConversionsToTypeNotMentioned);
+
+      if (nImplicitConversions >= 2 &&
+          nImplicitConversionsToTypeNotMentioned > 0) {
+        EXPLAIN("X: Fn %d has too many conversions so is filtered out\n", i);
+      } else {
+        EXPLAIN("X: Fn %d is allowed\n", i);
+        filteredCandidates.push_back(candidate);
+      }
+    }
+  } else if (candidates.n == 1) {
+    filteredCandidates.push_back(candidates.v[0]);
+  }
 }
 
 static ResolutionCandidate*

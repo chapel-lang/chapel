@@ -1,0 +1,6 @@
+all-candidates-discarded-error.chpl:52: error: unresolved call 'f(int(64), uint(64))'
+all-candidates-discarded-error.chpl:52: note: all candidates were discarded because each has too many implicit conversions
+all-candidates-discarded-error.chpl:27: note: candidate discarded: f(x: real(32), y: real(32))
+all-candidates-discarded-error.chpl:30: note: candidate discarded: f(x: real(64), y: real(64))
+all-candidates-discarded-error.chpl:41: note: candidate discarded: f(x: complex(64), y: complex(64))
+all-candidates-discarded-error.chpl:44: note: candidate discarded: f(x: complex(128), y: complex(128))

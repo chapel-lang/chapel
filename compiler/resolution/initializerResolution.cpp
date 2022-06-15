@@ -489,6 +489,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
   if (info.isWellFormed(call) == true) {
     Vec<FnSymbol*>            visibleFns, mostApplicable;
     Vec<ResolutionCandidate*> candidates;
+    Vec<ResolutionCandidate*> filteredCandidates;
     ResolutionCandidate*      best        = NULL;
 
     findVisibleFunctionsAllPOIs(info, visibleFns);
@@ -499,7 +500,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
 
     explainGatherCandidate(info, candidates);
 
-    best = disambiguateForInit(info, candidates);
+    best = filterAndDisambiguateForInit(info, candidates, filteredCandidates);
 
     if (best == NULL) {
       if (call->partialTag == false) {
@@ -529,12 +530,12 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
               clearFatalErrors();
           }
         } else {
-          if (candidates.n == 0) {
-            printResolutionErrorUnresolved(info, mostApplicable);
+          if (candidates.n == 0 || filteredCandidates.n == 0) {
+            printResolutionErrorUnresolved(info, candidates, mostApplicable);
 
             USR_STOP();
           } else {
-            printResolutionErrorAmbiguous (info, candidates);
+            printResolutionErrorAmbiguous (info, filteredCandidates);
           }
         }
       }
