@@ -643,27 +643,31 @@ module ChapelIO {
     var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
     var start:ioLiteral;
     var comma:ioLiteral;
+    var comma1tup:ioLiteral;
     var end:ioLiteral;
     var binary = f.binary();
 
     if st == QIO_TUPLE_FORMAT_SPACE {
       start = new ioLiteral("");
       comma = new ioLiteral(" ");
+      comma1tup = new ioLiteral("");
       end = new ioLiteral("");
     } else if st == QIO_TUPLE_FORMAT_JSON {
       start = new ioLiteral("[");
       comma = new ioLiteral(", ");
+      comma1tup = new ioLiteral("");
       end = new ioLiteral("]");
     } else {
       start = new ioLiteral("(");
       comma = new ioLiteral(", ");
+      comma1tup = new ioLiteral(",");
       end = new ioLiteral(")");
     }
 
     if !binary {
       f <~> start;
     }
-    if size != 0 {
+    if size > 1 {
       f <~> this(0);
       for param i in 1..size-1 {
         if !binary {
@@ -671,6 +675,12 @@ module ChapelIO {
         }
         f <~> this(i);
       }
+    } else if size == 1 {
+      f <~> this(0);
+      if !binary then
+        f <~> comma1tup;
+    } else {
+      // size < 1, print nothing
     }
     if !binary {
       f <~> end;

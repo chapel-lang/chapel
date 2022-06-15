@@ -176,7 +176,7 @@ To specify a 1-tuple, use the form with the trailing comma ``(1,)``.
 
    .. BLOCK-test-chapeloutput
 
-      (7)
+      (7,)
 
 Tuple expressions are evaluated similarly to function calls where the
 arguments are all generic with no explicit intent. So a tuple expression

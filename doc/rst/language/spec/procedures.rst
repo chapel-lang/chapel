@@ -778,7 +778,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. BLOCK-test-chapeloutput
 
-      (1)
+      (1,)
       (hi, there)
       ((1, 2), (3, 4))
 
