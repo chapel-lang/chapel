@@ -73,13 +73,14 @@ bool ExpandExternArrayCalls::shouldProcess(FnSymbol* fn) {
 void ExpandExternArrayCalls::process(FnSymbol* fn) {
   std::set<Expr*> cptrScopes;
   std::set<int> replaced_args;
-  int current_formal = 0;
+  int current_formal = -1;
 
   SET_LINENO(fn);
   FnSymbol* fcopy = fn->copy();
 
   for_formals(formal, fn) {
     UnresolvedSymExpr* eltType = nullptr;
+    current_formal++;
 
     if (!isFormalArray(formal, &eltType)) continue;
 
@@ -98,7 +99,6 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
           new BlockStmt(
             new UnresolvedSymExpr("chpl__c_void_ptr")));
     }
-    current_formal++;
   }
 
   // There should always be something to do.
