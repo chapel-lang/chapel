@@ -2031,6 +2031,10 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
       return true;
     // Prefer int/uint convert to same-width real/complex vs another size
     if (aT == NUMERIC_TYPE_INT_UINT) {
+      // ...prefer converting to a real over a complex
+      if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_COMPLEX)
+        return true;
+
       int actualWidth = get_width(actualType);
       // int/uint types with width less than the smallest size
       // real should prefer the smallest size real.
