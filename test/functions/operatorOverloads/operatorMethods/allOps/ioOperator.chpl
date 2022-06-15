@@ -7,7 +7,7 @@ record Foo {
 operator Foo.<~>(const ref ch: channel, const x: Foo) const ref throws
   where ch.writing {
 
-  try ch.readwrite(x.x);
+  try ch.write(x.x);
   return ch;
 }
 proc main() {

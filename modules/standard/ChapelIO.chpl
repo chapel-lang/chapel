@@ -72,19 +72,8 @@ argument.
 Because it is often more convenient to use an operator for I/O, instead of
 writing
 
-.. code-block:: chapel
-
-  f.readwrite(x);
-  f.readwrite(y);
-
-one can write
-
-.. code-block:: chapel
-
-  f <~> x <~> y;
-
-Note that the types :type:`IO.ioLiteral` and :type:`IO.ioNewline` from the :mod:`IO` module
-may be useful when using the ``<~>`` operator. :type:`IO.ioLiteral` represents some string
+ote that the types :type:`IO.ioLiteral` and :type:`IO.ioNewline` may be useful
+when using the ``<~>`` operator. :type:`IO.ioLiteral` represents some string
 that must be read or written as-is (e.g. ``","`` when working with a tuple),
 and :type:`IO.ioNewline` will emit a newline when writing but skip to and
 consume a newline when reading. Note that these types are not included by default.
@@ -253,13 +242,13 @@ module ChapelIO {
           if isIoField(x, i) {
             if !isBinary {
               var comma = new ioLiteral(", ");
-              if !first then writer.readwrite(comma);
+              if !first then writer.writeIt(comma);
 
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
-              writer.readwrite(eq);
+              writer.writeIt(eq);
             }
 
-            writer.readwrite(__primitive("field by num", x, i));
+            writer.writeIt(__primitive("field by num", x, i));
 
             first = false;
           }
@@ -275,9 +264,9 @@ module ChapelIO {
               write(id);
             } else {
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
-              writer.readwrite(eq);
+              writer.writeIt(eq);
             }
-            writer.readwrite(__primitive("field by num", x, i));
+            writer.writeIt(__primitive("field by num", x, i));
           }
         }
       }
@@ -310,7 +299,7 @@ module ChapelIO {
             start = new ioLiteral("(");
           }
         }
-        writer.readwrite(start);
+        writer.writeIt(start);
       }
 
       var first = true;
@@ -331,7 +320,7 @@ module ChapelIO {
             end = new ioLiteral(")");
           }
         }
-        writer.readwrite(end);
+        writer.writeIt(end);
       }
     }
 
@@ -350,7 +339,7 @@ module ChapelIO {
 
           // Try reading a comma. If we don't, break out of the loop.
           try {
-            reader.readwrite(comma);
+            reader.readIt(comma);
             needsComma = false;
           } catch err: BadFormatError {
             break;
@@ -400,7 +389,7 @@ module ChapelIO {
         // Binary is simple, just read all fields in order.
         for param i in 1..numFields do
           if isIoField(x, i) then
-            try reader.readwrite(__primitive("field by num", x, i));
+            try reader.readIt(__primitive("field by num", x, i));
       } else if numFields > 0 {
 
         // This tuple helps us not read the same field twice.
@@ -421,7 +410,7 @@ module ChapelIO {
           if needsComma then
             try {
               var comma = new ioLiteral(",", true);
-              reader.readwrite(comma);
+              reader.readIt(comma);
               needsComma = false;
             } catch err: BadFormatError {
               // Break out of the loop if we didn't read a comma.
@@ -452,7 +441,7 @@ module ChapelIO {
             var fieldName = ioFieldNameLiteral(reader, t, i);
 
             try {
-              reader.readwrite(fieldName);
+              reader.readIt(fieldName);
             } catch err: SystemError {
               // Try reading again with a different union element.
               if err.err == EFORMAT || err.err == EEOF then continue;
@@ -466,9 +455,9 @@ module ChapelIO {
               then new ioLiteral(":", true)
               else new ioLiteral("=", true);
 
-            try reader.readwrite(equalSign);
+            try reader.readIt(equalSign);
 
-            try reader.readwrite(__primitive("field by num", x, i));
+            try reader.readIt(__primitive("field by num", x, i));
             readField[i-1] = true;
             numRead += 1;
           }
@@ -512,10 +501,10 @@ module ChapelIO {
         var id = __primitive("get_union_id", x);
 
         // Read the ID.
-        try reader.readwrite(id);
+        try reader.readIt(id);
         for param i in 1..numFields do
           if isIoField(x, i) && i == id then
-            try reader.readwrite(__primitive("field by num", x, i));
+            try reader.readIt(__primitive("field by num", x, i));
       } else {
 
         // Read the field name = part until we get one that worked.
@@ -528,7 +517,7 @@ module ChapelIO {
           var fieldName = ioFieldNameLiteral(reader, t, i);
 
           try {
-            reader.readwrite(fieldName);
+            reader.readIt(fieldName);
           } catch err: SystemError {
 
             // Try reading again with a different union element.
@@ -542,11 +531,10 @@ module ChapelIO {
             then new ioLiteral(":", true)
             else new ioLiteral("=", true);
 
-          // TODO: Why not a `readwrite` call here?
           try readIt(eq);
 
           // We read the 'name = ', so now read the value!
-          try reader.readwrite(__primitive("field by num", x, i));
+          try reader.readIt(__primitive("field by num", x, i));
         }
 
         if !hasFoundAtLeastOneField then
@@ -568,7 +556,7 @@ module ChapelIO {
           then new ioLiteral("new " + t:string + "(")
           else new ioLiteral("{");
 
-        try reader.readwrite(start);
+        try reader.readIt(start);
       }
 
       var needsComma = false;
@@ -584,7 +572,7 @@ module ChapelIO {
           then new ioLiteral(")")
           else new ioLiteral("}");
 
-        try reader.readwrite(end);
+        try reader.readIt(end);
       }
     }
 
@@ -604,7 +592,7 @@ module ChapelIO {
             start = new ioLiteral("(");
         }
 
-        try reader.readwrite(start);
+        try reader.readIt(start);
       }
 
       var needsComma = false;
@@ -617,7 +605,7 @@ module ChapelIO {
           then new ioLiteral("}")
           else new ioLiteral(")");
 
-        try reader.readwrite(end);
+        try reader.readIt(end);
       }
     }
 

@@ -3525,11 +3525,13 @@ proc channel.writeIt(const x) throws {
 
    :throws SystemError: When an IO error has occurred.
  */
+deprecated "channel.readwrite is deprecated"
 inline proc channel.readwrite(const x) throws where this.writing {
   try this.writeIt(x);
 }
 // documented in the writing version.
 pragma "no doc"
+deprecated "channel.readwrite is deprecated"
 inline proc channel.readwrite(ref x) throws where !this.writing {
   try this.readIt(x);
 }
@@ -3547,7 +3549,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
    */
   inline operator channel.<~>(const ref ch: channel, const x) const ref throws
   where ch.writing {
-    try ch.readwrite(x);
+    try ch.writeIt(x);
     return ch;
   }
 
@@ -3555,7 +3557,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   pragma "no doc"
   inline operator channel.<~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-    try ch.readwrite(x);
+    try ch.readIt(x);
     return ch;
   }
 
@@ -3607,7 +3609,10 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
   {
     var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
-    this.readwrite(iolit);
+    if this.writing then
+      this.writeIt(iolit);
+    else
+      this.readIt(iolit);
   }
 
   /* Explicit call for reading or writing a newline as an
@@ -3616,7 +3621,10 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   inline proc channel.readWriteNewline() throws
   {
     var ionl = new ioNewline();
-    this.readwrite(ionl);
+    if this.writing then
+      this.writeIt(ionl);
+    else
+      this.readIt(ionl);
   }
 
   /* Returns `true` if this channel is configured for binary I/O.
