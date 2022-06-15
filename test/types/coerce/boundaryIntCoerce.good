@@ -5,10 +5,10 @@ In complex128 bar
 In complex128 bar
 
 uint(64)
-In real32 foo
-In real32 foo
-In complex64 bar
-In complex64 bar
+in real64 foo
+in real64 foo
+In complex128 bar
+In complex128 bar
 
 int(32)
 In real32 foo
