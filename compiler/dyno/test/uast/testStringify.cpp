@@ -126,6 +126,8 @@ static void test1(Parser* parser) {
                const vBv = + reduce (u*v);
                const vBv = + reduce [(u,v) in zip(U,V)] (u * v);
                config var x, y, z : int;
+               config const (x, y): (int, int), (z, y): (bool, int), (x, z): (int, bool);
+               config var (x, y) = (2, 3);
                class C {
                  /* this class does nothing */
                  var x;
