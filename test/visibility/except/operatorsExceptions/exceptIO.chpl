@@ -1,5 +1,18 @@
+
+module DefinesOpIO {
+  use ProvidesTypes;
+  use IO;
+  operator <~>(const ref ch: channel, const x: Foo) const ref throws
+    where ch.writing {
+
+    writeln("In ProvidesOps.<~>");
+    try ch.readwrite(x.x);
+    return ch;
+  }
+}
+
 use ProvidesTypes;
-use ProvidesOps except <~>;
+use DefinesOpIO except <~>;
 use IO only ioNewline, stdout;
 use IO only <~>;
 

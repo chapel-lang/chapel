@@ -1,6 +1,9 @@
 operatorsAlone.chpl:224: warning: This file-scope code is outside of any explicit module declarations (e.g., module DefinesOp), so an implicit module named 'operatorsAlone' is being introduced to contain the file's contents.
+operatorsAlone.chpl:87: warning: the <~> operator is deprecated
 operatorsAlone.chpl:224: In function 'main':
 operatorsAlone.chpl:357: warning: the <~> operator is deprecated
+operatorsAlone.chpl:358: warning: the <~> operator is deprecated
+operatorsAlone.chpl:361: warning: the <~> operator is deprecated
 operatorsAlone.chpl:362: warning: the <~> operator is deprecated
 In DefinesOp.+
 {x = 10}

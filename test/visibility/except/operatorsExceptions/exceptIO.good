@@ -1,5 +1,8 @@
-exceptIO.chpl:4: warning: the <~> operator is deprecated
-exceptIO.chpl:7: In function 'main':
-exceptIO.chpl:9: warning: the <~> operator is deprecated
-exceptIO.chpl:10: warning: the <~> operator is deprecated
+exceptIO.chpl:20: warning: This file-scope code is outside of any explicit module declarations (e.g., module DefinesOpIO), so an implicit module named 'exceptIO' is being introduced to contain the file's contents.
+exceptIO.chpl:5: warning: the <~> operator is deprecated
+exceptIO.chpl:15: warning: the <~> operator is deprecated
+exceptIO.chpl:17: warning: the <~> operator is deprecated
+exceptIO.chpl:20: In function 'main':
+exceptIO.chpl:22: warning: the <~> operator is deprecated
+exceptIO.chpl:23: warning: the <~> operator is deprecated
 {x = 3}
