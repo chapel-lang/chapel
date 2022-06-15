@@ -1,0 +1,25 @@
+.. default-domain:: chpl
+
+.. module:: M
+
+M
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use M;
+
+
+or
+
+.. code-block:: chapel
+
+   import M;
+
+.. function:: proc helloWorld()
+
+.. function:: proc fantasticFunction()
+
+   This is definitely visible 
+
