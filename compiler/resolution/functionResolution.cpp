@@ -2026,43 +2026,33 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
         !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
           f2Type == dtUInt[INT_SIZE_DEFAULT]))
       return true;
-    // For non-default-sized int/uints and non-param ints/uints
-    if (aT == NUMERIC_TYPE_INT_UINT &&
-        (get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT]) ||
-         paramWithDefaultSize==false)) {
-      // ...prefer smaller reals over larger ones
+    // Prefer int/uint convert to same-width real/complex vs another size
+    if (aT == NUMERIC_TYPE_INT_UINT) {
+      int actualWidth = get_width(actualType);
+      // int/uint types with width less than the smallest size
+      // real should prefer the smallest size real.
+      // Today that is real(32) since there no real(16), yet
+      if (actualWidth < 32) actualWidth = 32;
+      // ...prefer same-width reals over other ones
       if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
-          get_width(f1Type) < get_width(f2Type) &&
-          get_width(actualType) <= get_width(f1Type))
+          actualWidth == get_width(f1Type) &&
+          actualWidth != get_width(f2Type))
         return true;
-      // ...prefer smaller complexes over larger ones
+      // ...prefer same-element-width complexes over other ones
       if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
-          get_width(f1Type) < get_width(f2Type) &&
-          get_width(actualType) <= get_width(f1Type)/2)
+          actualWidth*2 == get_width(f1Type) &&
+          actualWidth*2 != get_width(f2Type))
         return true;
     }
-    // For param ints (e.g. 1) prefer a cast to a default-sized real
-    // over another size of real or complex.
-    if (actualType == dtInt[INT_SIZE_DEFAULT] && paramWithDefaultSize) {
-      if (f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
-          (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
-          f2Type != dtReal[FLOAT_SIZE_DEFAULT])
-        return true;
-      // Prefer int/uint cast to a default-sized complex
-      // over another size of complex.
-      if (f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
-          f2T == NUMERIC_TYPE_COMPLEX &&
-          f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
-        return true;
-    }
-    // Prefer real/imag cast to a same-sized complex over another size of
+    // Prefer real/imag convert to a same-sized complex over another size of
     // complex.
-    if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
-        f1T == NUMERIC_TYPE_COMPLEX &&
-        f2T == NUMERIC_TYPE_COMPLEX &&
-        get_width(actualType)*2 == get_width(f1Type) &&
-        get_width(actualType)*2 != get_width(f2Type))
-      return true;
+    if (aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) {
+      int actualWidth = get_width(actualType);
+      if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
+          actualWidth*2 == get_width(f1Type) &&
+          actualWidth*2 != get_width(f2Type))
+        return true;
+    }
   }
 
   return false;
