@@ -1,0 +1,4 @@
+Inverse Exists Case:
+	correct inverse: true
+Inverse Does Not Exist Case:
+	caught: InversionError: Inverse does not exist

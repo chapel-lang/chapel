@@ -96,7 +96,7 @@ writeln();
 // Inverse
 //
 c.set(23);
-var val2 = a.invert(b, c);
+a.invert(b, c);
 writeln("the inverse of ", b, " mod ", c, " is ", a);
 
 writeln();

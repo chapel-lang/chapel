@@ -1,0 +1,2 @@
+invert_int_returning.chpl:7: warning: The int-returning overload of bigint.invert() is deprecated - please use the non-returning version by setting `InvertReturnInt` to false
+Non-zero status: true
