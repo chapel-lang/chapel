@@ -791,8 +791,12 @@ module ChapelArray {
 
     proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
-    proc readWriteThis(f) throws {
-      f <~> _value;
+    proc readThis(f) throws {
+      f.read(_value);
+    }
+
+    proc writeThis(f) throws {
+      f.write(_value);
     }
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }

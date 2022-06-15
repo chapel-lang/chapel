@@ -386,8 +386,20 @@ prototype module AtomicObjects {
       return __ABA_cnt;
     }
 
-    proc readWriteThis(f) throws {
+    pragma "no doc"
+    proc readThis(f) throws {
+      compilerWarning("Reading an ABA is not supported");
+    }
+
+    /* Writes an ABA */
+    proc writeThis(f) throws {
       f <~> "(ABA){cnt=" <~> this.__ABA_cnt <~> ", obj=" <~> this.getObject() <~> "}";
+    }
+
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+    proc readWriteThis(f) throws {
+      if f.writing then writeThis(f);
+      else readThis(f);
     }
 
     forwarding this.getObject()!;
@@ -618,8 +630,19 @@ prototype module AtomicObjects {
       return ret;
     }
 
-    proc readWriteThis(f) throws {
+    pragma "no doc"
+    proc readThis(f) throws {
+      compilerWarning("Reading an AtomicObject is not supported");
+    }
+
+    proc writeThis(f) throws {
       f <~> atomicVariable.read();
+    }
+
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+    proc readWriteThis(f) throws {
+      if f.writing then writeThis(f);
+      else readThis(f);
     }
   }
 }

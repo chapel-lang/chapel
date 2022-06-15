@@ -562,6 +562,19 @@ module Map {
     }
 
     /*
+      Reads the contents of this map from a channel. The format looks like:
+
+        .. code-block:: chapel
+
+           {k1: v1, k2: v2, .... , kn: vn}
+
+      :arg ch: A channel to read from.
+    */
+    proc readThis(ch: channel) throws {
+      _readWriteHelper(ch);
+    }
+
+    /*
       Writes the contents of this map to a channel. The format looks like:
 
         .. code-block:: chapel
@@ -570,7 +583,12 @@ module Map {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) throws {
+    proc writeThis(ch: channel) throws {
+      _readWriteHelper(ch);
+    }
+
+    pragma "no doc"
+    proc _readWriteHelper(ch: channel) throws {
       _enter(); defer _leave();
       var first = true;
       ch <~> new ioLiteral("{");
@@ -586,6 +604,20 @@ module Map {
         }
       }
       ch <~> new ioLiteral("}");
+    }
+
+    /*
+      Writes the contents of this map to a channel. The format looks like:
+
+        .. code-block:: chapel
+
+           {k1: v1, k2: v2, .... , kn: vn}
+
+      :arg ch: A channel to write to.
+    */
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+    proc readWriteThis(ch: channel) throws {
+      _readWriteHelper(ch);
     }
 
     /*

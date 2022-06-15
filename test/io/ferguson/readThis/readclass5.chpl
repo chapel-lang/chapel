@@ -3,11 +3,20 @@ use IO;
 class mything {
   var x:int;
   var y:int;
-  proc readWriteThis(w) throws {
-    w <~> x;
-    w.readWriteLiteral(" ");
-    w <~> y;
-    w.readWriteNewline();
+
+  proc readThis(r) throws {
+    readWriteHelper(r);
+  }
+
+  proc writeThis(w) throws {
+    readWriteHelper(w);
+  }
+
+  proc readWriteHelper(rw) throws {
+    rw <~> x;
+    rw.readWriteLiteral(" ");
+    rw <~> y;
+    rw.readWriteNewline();
   }
 }
 

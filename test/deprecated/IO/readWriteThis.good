@@ -1,0 +1,11 @@
+readWriteThis.chpl:7: warning: 'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead.
+readWriteThis.chpl:17: warning: 'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead.
+===== Wrote: =====
+42
+100.0
+
+==================
+===== Got: =====
+42
+100.0
+================

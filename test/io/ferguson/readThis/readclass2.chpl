@@ -4,7 +4,15 @@ class mything {
   var x:int;
   var y:int;
 
-  proc readWriteThis(rw) throws {
+  proc readThis(r) throws {
+    readWriteHelper(r);
+  }
+
+  proc writeThis(w) throws {
+    readWriteHelper(w);
+  }
+
+  proc readWriteHelper(rw) throws {
     rw <~> x;
     rw <~> new ioLiteral(" ");
     rw <~> y;

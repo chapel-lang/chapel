@@ -1042,6 +1042,11 @@ module ConcurrentMap {
       return A;
     }
 
+    pragma "no doc"
+    proc readThis(f) throws {
+      compilerWarning("Reading a ConcurrentMap is not supported");
+    }
+
     /*
       Writes the contents of this map to a channel. The format looks like:
 
@@ -1051,7 +1056,7 @@ module ConcurrentMap {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) throws {
+    proc writeThis(f) throws {
       ch <~> "{";
       var first = true;
       for (key, val) in this {
@@ -1063,6 +1068,21 @@ module ConcurrentMap {
         }
       }
       ch <~> "}";
+    }
+
+    /*
+      Writes the contents of this map to a channel. The format looks like:
+
+        .. code-block:: chapel
+
+           {k1: v1, k2: v2, .... , kn: vn}
+
+      :arg ch: A channel to write to.
+    */
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+    proc readWriteThis(ch: channel) throws {
+      if ch.writing then writeThis(ch);
+      else readThis(ch);
     }
   }
 

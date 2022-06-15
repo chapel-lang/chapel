@@ -43,6 +43,8 @@ of a Hello World program:
 The readThis(), writeThis(), and readWriteThis() Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. warning:: 'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead.
+
 When programming the input and output method for a custom data type, it is
 often useful to define both the read and write routines at the same time. That
 is possible to do in a Chapel program by defining a ``readWriteThis`` method,
@@ -637,9 +639,19 @@ module ChapelIO {
   pragma "no doc"
   proc nothing.writeThis(f) {}
 
+  pragma "no doc"
+  proc _tuple.readThis(f) throws {
+    _readWriteHelper(f);
+  }
+
+  pragma "no doc"
+  proc _tuple.writeThis(f) throws {
+    _readWriteHelper(f);
+  }
+
   // Moved here to avoid circular dependencies in ChapelTuple.
   pragma "no doc"
-  proc _tuple.readWriteThis(f) throws {
+  proc _tuple._readWriteHelper(f) throws {
     var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
     var start:ioLiteral;
     var comma:ioLiteral;

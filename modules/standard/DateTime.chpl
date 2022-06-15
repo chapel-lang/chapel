@@ -495,27 +495,38 @@ module DateTime {
 
   private use IO;
 
-  /* Read or write a date value from channel `f` */
-  proc date.readWriteThis(f) throws {
+  // This method exists to work around a bug in chpldoc where the
+  // 'private use' above this method somehow breaks documentation for the
+  // method that follows (formerly 'writeThis')
+  pragma "no doc"
+  proc date._chpldoc_workaround() { }
+
+  /* Writes this `date` in ISO 8601 format: YYYY-MM-DD */
+  proc date.writeThis(f) throws {
+    f.write(isoFormat());
+  }
+
+  /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
+  proc date.readThis(f) throws {
     const dash = new ioLiteral("-");
+    const binary = f.binary(),
+          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
-    if f.writing {
-      try! {
-        f.write(isoFormat());
-      }
-    } else {
-      const binary = f.binary(),
-            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    if isjson then
+      f <~> new ioLiteral('"');
 
-      if isjson then
-        f <~> new ioLiteral('"');
+    f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
 
-      f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
+    if isjson then
+      f <~> new ioLiteral('"');
+  }
 
-      if isjson then
-        f <~> new ioLiteral('"');
-    }
+  /* Read or write a date value from channel `f` */
+  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+  proc date.readWriteThis(f) throws {
+    if f.writing then writeThis(f);
+    else readThis(f);
   }
 
 
@@ -797,27 +808,33 @@ module DateTime {
     return str;
   }
 
-  /* Read or write a time value from channel `f` */
-  proc time.readWriteThis(f) throws {
+  /* Writes this `time` in ISO format: hh:mm:ss.sss */
+  proc time.writeThis(f) throws {
+    f.write(isoFormat());
+  }
+
+  /* Reads this `time` from ISO format: hh:mm:ss.sss */
+  proc time.readThis(f) throws {
     const colon = new ioLiteral(":");
-    if f.writing {
-      try! {
-        f.write(isoFormat());
-      }
-    } else {
-      const binary = f.binary(),
-            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    const binary = f.binary(),
+          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
-      if isjson then
-        f <~> new ioLiteral('"');
+    if isjson then
+      f <~> new ioLiteral('"');
 
-      f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
-        <~> new ioLiteral(".") <~> chpl_microsecond;
+    f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
+      <~> new ioLiteral(".") <~> chpl_microsecond;
 
-      if isjson then
-        f <~> new ioLiteral('"');
-    }
+    if isjson then
+      f <~> new ioLiteral('"');
+  }
+
+  /* Read or write a time value from channel `f` */
+  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+  proc time.readWriteThis(f) throws {
+    if f.writing then writeThis(f);
+    else readThis(f);
   }
 
 
@@ -1456,31 +1473,36 @@ module DateTime {
     return this.strftime("%a %b %e %T %Y");
   }
 
-  /* Read or write a datetime value from channel `f` */
-  proc datetime.readWriteThis(f) throws {
+  /* Writes this `datetime` in ISO format: YYYY-MM-DDThh:mm:ss.sss */
+  proc datetime.writeThis(f) throws {
+    f.write(isoFormat());
+  }
+
+  /* Reads this `datetime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
+  proc datetime.readThis(f) throws {
     const dash  = new ioLiteral("-"),
           colon = new ioLiteral(":");
+    const binary = f.binary(),
+          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
-    if f.writing {
-      try! {
-        f.write(isoFormat());
-      }
-    } else {
-      const binary = f.binary(),
-            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    if isjson then
+      f <~> new ioLiteral('"');
 
-      if isjson then
-        f <~> new ioLiteral('"');
+    f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
+      <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
+      <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
+      <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
 
-      f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
-        <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
-        <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
-        <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
+    if isjson then
+      f <~> new ioLiteral('"');
+  }
 
-      if isjson then
-        f <~> new ioLiteral('"');
-    }
+  /* Read or write a datetime value from channel `f` */
+  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+  proc datetime.readWriteThis(f) throws {
+    if f.writing then writeThis(f);
+    else readThis(f);
   }
 
 
