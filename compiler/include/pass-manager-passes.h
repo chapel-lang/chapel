@@ -48,6 +48,7 @@ class ExpandExternArrayCalls : public PassT<FnSymbol*> {
   Flatten all classes so they are defined at module scope.
 */
 class FlattenClasses : public PassT<TypeSymbol*> {
+ public:
   void process(TypeSymbol* ts) override;
 };
 
@@ -154,8 +155,8 @@ class ReturnStarTuplesByRefArgs1 : public PassT<FnSymbol*> {
 
 /**
   The second pass may be run immediately after the first pass, and
-  adjusts all calls which get star tuple fields (to handle the
-  fact that they are now all acessed via ref).
+  adjusts all member accesses for star tuple fields (to handle the
+  fact that they are now ref formals).
 */
 class ReturnStarTuplesByRefArgs2 : public PassT<CallExpr*> {
   bool shouldProcess(CallExpr* fn) override;
