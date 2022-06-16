@@ -237,7 +237,6 @@ static std::vector<std::string> prettifyComment(const std::string& comment, cons
     return {};
   }
   // strip out newlines at the beginning or ending of a comment
-  // strip out * chars at beginning or end of string
   ret = strip(ret, "^\n+|\n+$");
 
   auto lines = splitLines(ret);
@@ -361,7 +360,7 @@ etc.
  */
 struct RstSignatureVisitor {
   std::ostream& os_;
-
+  bool printingType_ = false;
   /** traverse each elt of begin..end, outputting `separator` between each.
    * `surroundBegin` and `surroundEnd` are output before and after respectively
    * if not null */
@@ -466,8 +465,10 @@ struct RstSignatureVisitor {
     }
     os_ << v->name().c_str();
     if (const AstNode* te = v->typeExpression()) {
+      printingType_ = true;
       os_ << ": ";
       te->traverse(*this);
+      printingType_ = false;
     }
     if (const AstNode* ie = v->initExpression()) {
       os_ << " = ";
@@ -483,7 +484,9 @@ struct RstSignatureVisitor {
     os_ << f->name().c_str();
     if (const AstNode* te = f->typeExpression()) {
       os_ << ": ";
+      printingType_ = true;
       te->traverse(*this);
+      printingType_ = false;
     }
     if (const AstNode* ie = f->initExpression()) {
       os_ << " = ";
@@ -556,7 +559,9 @@ struct RstSignatureVisitor {
     // Return type
     if (const AstNode* e = f->returnType()) {
       os_ << ": ";
+      printingType_ = true;
       printChapelSyntax(os_, e);
+      printingType_ = false;
     }
 
     // Return Intent
@@ -588,8 +593,7 @@ struct RstSignatureVisitor {
         isPostFixBang = true;
         outerOp = USTR("!");
       } else if (call->op() == USTR("?")) {
-        isNilable = true;
-        outerOp = USTR("?");
+          os_ << "nilable ";
       } else {
         os_ << call->op();
       }
@@ -605,8 +609,6 @@ struct RstSignatureVisitor {
       if (needsParens) os_ << ")";
       if (isPostFixBang) {
         os_ << "!";
-      } else if (isNilable) {
-        os_ << "?";
       }
     } else if (call->isBinaryOp()) {
       assert(call->numActuals() == 2);
@@ -621,10 +623,13 @@ struct RstSignatureVisitor {
       call->actual(0)->traverse(*this);
       if (needsParens) os_ << ")";
       needsParens = false;
-      bool addSpace = (wantSpaces(call->op(), true) ||
+      bool addSpace = (wantSpaces(call->op(), printingType_) ||
                        call->op()==USTR("by") ||
-                       call->op()==USTR("align"));
-      if (addSpace)
+                       call->op()==USTR("align") ||
+                       call->op()==USTR("scan") ||
+                       call->op()==USTR("reduce") ||
+                       call->op()==USTR("dmapped"));
+      if (addSpace && call->op() != USTR(":"))
         os_ << " ";
       os_ << call->op();
       if (addSpace)
@@ -672,7 +677,6 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const Tuple* tup) {
-    // interpose(tup->children(), ", ", "(", ")");
     os_ << "(";
     bool first = true;
     for (auto it = tup->children().begin(); it != tup->children().end(); it++) {
@@ -714,7 +718,7 @@ struct RstSignatureVisitor {
   // M@25  Block
   // M@24    Identifier int
   bool enter(const BracketLoop* bl) {
-    interpose(bl->children(), "", "[", "]");
+    printChapelSyntax(os_, bl);
     return false;
   }
 
@@ -826,6 +830,7 @@ struct RstResultBuilder {
   std::vector<RstResult*> children_;
   const std::string commentStyle = commentStyle_;
   static const int commentIndent = 3;
+  int indentDepth_ = 1;
 
   bool showComment(const Comment* comment, bool indent=true) {
     if (!comment || comment->str().substr(0, 2) == "//") {
@@ -833,7 +838,7 @@ struct RstResultBuilder {
       return false;
     }
 
-    int indentChars = indent ? commentIndent : 0;
+    int indentChars = indent ? indentDepth_ * commentIndent : 0;
     auto lines = prettifyComment(comment->str(), commentStyle);
     if (!lines.empty())
       os_ << '\n';
@@ -859,9 +864,9 @@ struct RstResultBuilder {
     RstSignatureVisitor ppv{os_};
     node->traverse(ppv);
     os_ << "\n";
-
+    //indentDepth_ ++;
     bool commentShown = showComment(node, indentComment);
-
+    //indentDepth_ --;
     // TODO: Fix all this because why are we checking for specific node type here?
     if (commentShown && node->isEnum()) {
       os_ << "\n";
@@ -1002,7 +1007,7 @@ struct RstResultBuilder {
      std::string prevInitExpression;
      for (auto decl : md->decls()) {
        if (kind=="attribute" && decl != md->decls().begin()->toDecl()) {
-         os_ << "   ";
+         indentStream(os_, 1 * indentPerDepth);
        }
        // write kind
        os_ << ".. " << kind << ":: ";

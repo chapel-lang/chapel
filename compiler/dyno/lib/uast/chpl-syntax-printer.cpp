@@ -636,10 +636,10 @@ struct ChplSyntaxVisitor {
     } else if (node->numExprs() == 0) {
       // do nothing
     } else {
-      if (node->expr(0)->isOpCall()) {
-        interpose(node->exprs(), ", ", "[", "]");
-      } else {
+      if (node->usedCurlyBraces()) {
         interpose(node->exprs(), ", ", "{", "}");
+      } else {
+        interpose(node->exprs(), ", ");
       }
     }
   }
@@ -1337,6 +1337,8 @@ namespace chpl {
     else if (USTR("**") == op)
       return 16;
     // reduce/scan/dmapped are precedence 15, but don't come through this path.
+    else if (USTR("reduce") == op || USTR("scan") == op || USTR("dmapped") == op)
+      return 15;
     else if (USTR("!") == op || USTR("~") == op)
       return 14;
     else if (USTR("*") == op ||
