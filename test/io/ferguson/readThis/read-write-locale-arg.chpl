@@ -31,7 +31,7 @@ class C {
 
   proc readWriteHelper(rw) throws {
     var loc = rw.readWriteThisFromLocale();
-    writeln("in C.readWriteThis loc= ", loc.id);
+    writeln("in C.readWriteHelper loc= ", loc.id);
     if rw.writing then
       rw.write(x);
     else
