@@ -3885,7 +3885,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   stored in the array).
 
   :arg arg: A 1D DefaultRectangular non-strided array storing int(8) or uint(8) which must have at least 1 element.
-  :arg maxSize: The maximum number of bytes to store into the ``arg`` array.
+  :arg maxSize: The maximum number of bytes to store into the ``arg`` array. Defaults to the size of the array.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
