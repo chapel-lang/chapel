@@ -1,9 +1,10 @@
-test_aseq2-error.chpl:3: error: ambiguous call '+(uint(64), int(64))'
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidates are: +(a: real(32), b: real(32))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: real(64), b: real(64))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(64), b: complex(64))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(128), b: complex(128))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: real(32), b: complex(64))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: real(64), b: complex(128))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(64), b: real(32))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(128), b: real(64))
+test_aseq2-error.chpl:3: error: unresolved call '+(uint(64), int(64))'
+test_aseq2-error.chpl:3: note: all candidates were discarded because each has too many implicit conversions
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: real(32), b: real(32))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: real(64), b: real(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: complex(64), b: complex(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: complex(128), b: complex(128))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: real(32), b: complex(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: real(64), b: complex(128))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: complex(64), b: real(32))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: complex(128), b: real(64))
