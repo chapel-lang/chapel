@@ -1,87 +1,97 @@
 use BigInteger;
 
-for a_positive in [true, false] {
-    for b_positive in [true, false] {
-        
-        writeln("Checking Operator (a : ", ( if a_positive then "+" else "-" ), ", b : ", ( if b_positive then "+" else "-" ), ")");
-        var all_match = true;
-        
-        for a_value in 0..10 {
-            for b_value in 1..10 {
-                const a_i = a_value:int * ( if a_positive then 1 else -1 );
-                const b_i = b_value:int * ( if b_positive then 1 else -1 );
-                const a_bi = new bigint(a_i);
-                const b_bi = new bigint(b_i);
+const check_to = 5;
 
-                const amb_i : int = a_i % b_i;
-                const amb_bi : bigint = a_bi % b_bi;
+record op_vs_op {
+    proc this(const a: int, const b: int): (bool, int, bigint) {
+        const a_bi = new bigint(a);
+        const b_bi = new bigint(b);
 
-                if amb_i != amb_bi:int {
-                    writeln("\tmismatch: (", a_i, " % ", b_i, ") \t\t", amb_i, " != ", amb_bi);
-                    all_match = false;
-                }
-            }   
-        }
+        const amb = a % b;
+        const amb_bi = a_bi % b_bi;
 
-        writeln("\tAll Matched: ", all_match);
+        return (
+            amb == amb_bi,
+            amb,
+            amb_bi,
+        );
     }
 }
 
-writeln();
+record op_vs_op_int {
+    proc this(const a: int, const b: int): (bool, int, bigint) {
+        const a_bi = new bigint(a);
 
-for a_positive in [true, false] {
-    for b_positive in [true, false] {
-        
-        writeln("Checking Method (a : ", ( if a_positive then "+" else "-" ), ", b : ", ( if b_positive then "+" else "-" ), ")");
-        var all_match = true;
-        
-        for a_value in 0..10 {
-            for b_value in 1..10 {
-                const a_i = a_value:int * ( if a_positive then 1 else -1 );
-                const b_i = b_value:int * ( if b_positive then 1 else -1 );
-                const a_bi = new bigint(a_i);
-                const b_bi = new bigint(b_i);
+        const amb = a % b;
+        const amb_bi = a_bi % b;
 
-                const amb_i : int = mod(a_i, b_i);
-                var amb_bi = new bigint();
-                amb_bi.mod(a_bi, b_bi);
-
-                if amb_i != amb_bi:int {
-                    writeln("\tmismatch: mod(", a_i, ", ", b_i, ") \t\t", amb_i, " != ", amb_bi);
-                    all_match = false;
-                }
-            }   
-        }
-
-        writeln("\tAll Matched: ", all_match);
+        return (
+            amb == amb_bi,
+            amb,
+            amb_bi,
+        );
     }
 }
 
-writeln();
+record met_vs_met {
+    proc this(const a: int, const b: int): (bool, int, bigint) {
+        const a_bi = new bigint(a);
+        const b_bi = new bigint(b);
 
-for a_positive in [true, false] {
-    for b_positive in [true, false] {
-        
-        writeln("Checking Method (with b.type = int) (a : ", ( if a_positive then "+" else "-" ), ", b : ", ( if b_positive then "+" else "-" ), ")");
-        var all_match = true;
-        
-        for a_value in 0..10 {
-            for b_value in 1..10 {
-                const a_i = a_value:int * ( if a_positive then 1 else -1 );
-                const b_i = b_value:int * ( if b_positive then 1 else -1 );
-                const a_bi = new bigint(a_i);
+        const amb = mod(a, b);
+        var amb_bi = new bigint();
+        amb_bi.mod(a_bi, b_bi);
 
-                const amb_i : int = mod(a_i, b_i);
-                var amb_bi = new bigint();
-                amb_bi.mod(a_bi, b_i); // haven't messed with this method yet!!!
-
-                if amb_i != amb_bi:int {
-                    writeln("\tmismatch: mod(", a_i, ", ", b_i, ") \t\t", amb_i, " != ", amb_bi);
-                    all_match = false;
-                }
-            }   
-        }
-
-        writeln("\tAll Matched: ", all_match);
+        return (
+            amb == amb_bi,
+            amb,
+            amb_bi,
+        );
     }
 }
+
+record met_vs_met_int {
+    proc this(const a: int, const b: int): (bool, int, bigint) {
+        const a_bi = new bigint(a);
+
+        const amb = mod(a, b);
+        var amb_bi = new bigint();
+        amb_bi.mod(a_bi, b);
+
+        return (
+            amb == amb_bi,
+            amb,
+            amb_bi,
+        );
+    }
+}
+
+proc check_matching(name: string, checker) {
+    for a_positive in [true, false] {
+        for b_positive in [true, false] {
+            writeln("Checking ", name, " (a : ", ( if a_positive then "+" else "-" ), ", b : ", ( if b_positive then "+" else "-" ), ")");
+            var all_match = true;
+
+            for a_value in 0..check_to {
+                for b_value in 1..check_to {
+                    const a_i = a_value:int * ( if a_positive then 1 else -1 );
+                    const b_i = b_value:int * ( if b_positive then 1 else -1 );
+
+                    var (matched, int_sol, bigint_sol) = checker(a_i, b_i);
+                    if !matched {
+                        writeln("\tmismatch: (", a_i, ", ", b_i, ") \t\t", int_sol, " != ", bigint_sol);
+                        all_match = false;
+                    }
+                }
+            }
+
+            writeln("\tAll Matched: ", all_match);
+        }
+    }
+    writeln();
+}
+
+check_matching("Operator", new op_vs_op());
+check_matching("Operator (b.type = int)", new op_vs_op_int());
+check_matching("Method", new met_vs_met());
+check_matching("Method (b.type = int)", new met_vs_met_int());

@@ -7,6 +7,15 @@ Checking Operator (a : -, b : +)
 Checking Operator (a : -, b : -)
 	All Matched: true
 
+Checking Operator (b.type = int) (a : +, b : +)
+	All Matched: true
+Checking Operator (b.type = int) (a : +, b : -)
+	All Matched: true
+Checking Operator (b.type = int) (a : -, b : +)
+	All Matched: true
+Checking Operator (b.type = int) (a : -, b : -)
+	All Matched: true
+
 Checking Method (a : +, b : +)
 	All Matched: true
 Checking Method (a : +, b : -)
@@ -16,11 +25,12 @@ Checking Method (a : -, b : +)
 Checking Method (a : -, b : -)
 	All Matched: true
 
-Checking Method (with b.type = int) (a : +, b : +)
+Checking Method (b.type = int) (a : +, b : +)
 	All Matched: true
-Checking Method (with b.type = int) (a : +, b : -)
+Checking Method (b.type = int) (a : +, b : -)
 	All Matched: true
-Checking Method (with b.type = int) (a : -, b : +)
+Checking Method (b.type = int) (a : -, b : +)
 	All Matched: true
-Checking Method (with b.type = int) (a : -, b : -)
-    All Matched: true
+Checking Method (b.type = int) (a : -, b : -)
+	All Matched: true
+

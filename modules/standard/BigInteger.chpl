@@ -1177,39 +1177,40 @@ module BigInteger {
     var c = new bigint();
 
     if _local {
-      mpz_mod(c.mpz, a.mpz,  b.mpz);
+      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
+      c = a - b * c;
 
     } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_mod(c.mpz, a.mpz,  b.mpz);
+      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
+      c = a - b * c;
 
     } else {
       const a_ = a;
 
-      mpz_mod(c.mpz, a_.mpz, b.mpz);
+      mpz_tdiv_q(c.mpz, a_.mpz, b.mpz);
+      c = a - b * c;
     }
 
     return c;
   }
 
   operator bigint.%(const ref a: bigint, b: int) {
-    var b_ = 0 : c_ulong;
-    var c  = new bigint();
-
-    if b >= 0 then
-      b_ = b.safeCast(c_ulong);
-    else
-      b_ = (0 - b).safeCast(c_ulong);
+    var b_ = new bigint(b);
+    var c = new bigint();
 
     if _local {
-      mpz_mod_ui(c.mpz, a.mpz,  b_);
+      mpz_tdiv_q(c.mpz, a.mpz, b_.mpz);
+      c = a - b_ * c;
 
     } else if a.localeId == chpl_nodeID {
-      mpz_mod_ui(c.mpz, a.mpz,  b_);
+      mpz_tdiv_q(c.mpz, a.mpz, b_.mpz);
+      c = a - b_ * c;
 
     } else {
       const a_ = a;
 
-      mpz_mod_ui(c.mpz, a_.mpz, b_);
+      mpz_tdiv_q(c.mpz, a_.mpz, b_.mpz);
+      c = a_ - b_ * c;
     }
 
     return c;
@@ -5083,34 +5084,12 @@ module BigInteger {
     }
   }
 
-  proc bigint.mod(const ref a: bigint, b: integral) : uint {
-    var   b_ : c_ulong;
-    var   ret: c_ulong;
 
-    if b >= 0 then
-      b_ = b.safeCast(c_ulong);
-    else
-      b_ = (0 - b).safeCast(c_ulong);
-
-    if _local {
-      ret = mpz_mod_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      ret = mpz_mod_ui(this.mpz, a.mpz, b_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-
-        ret = mpz_mod_ui(this.mpz, a_.mpz, b_);
-      }
-    }
-
-    return ret.safeCast(uint);
+  proc bigint.mod(const ref a: bigint, b: integral) : int {    
+    var b_ = new bigint(b);
+    this.mod(a, b_);
+    return mpz_get_si(this.mpz).safeCast(int);
   }
-
 
 
   // Comparison Functions
