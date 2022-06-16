@@ -243,16 +243,24 @@ extern int yychpl_debug;
     WhereAndLifetime lifetimeAndWhere;
   };
 
+  // Put our types in a different namespace to avoid conflicting with the
+  // production compiler parser's YYSTYPE/YYLTYPE.
   #define YYSTYPE YYCHPL_STYPE
   #define YYLTYPE YYCHPL_LTYPE
 
+  // Note that the 'YYSTYPE_IS_TRIVIAL' macro tells the generated parser
+  // that YYSTYPE only contains simple scalars (it can be bitcopied).
+  // This is normally communicated by the '%union' directive, but we
+  // stopped using that.
+  #define YYCHPL_STYPE_IS_TRIVIAL 1
+
   #endif
-#line 293 "chpl.ypp"
+#line 301 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 256 "bison-chpl-lib.h"
+#line 264 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -479,14 +487,14 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 301 "chpl.ypp"
+#line 309 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 309 "chpl.ypp"
+#line 317 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
@@ -495,6 +503,6 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   // include override of macro used to compute locations
   #include "parser-yylloc-default.h"
 
-#line 499 "bison-chpl-lib.h"
+#line 507 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */
