@@ -11,11 +11,13 @@ environments. We have tested it on systems with NVidia Tesla P100 GPUs and CUDA
 11.0 and a system with NVidia Ampere A100 GPUs with CUDA 11.6. The current
 implementation will only apply to certain ``forall`` and ``foreach`` loops.
 
-We also (currently) only support single-locale execution (i.e. Chapel must be
-compiled with ``CHPL_COMM=none``). We also require ``LLVM`` to be used as
-Chapel's backend compiler (i.e. ``CHPL_LLVM`` must be set to ``system`` or
-``bundled``). For more information about these settings see :ref:`Optional
-Settings <readme-chplenv>`.
+We also require ``LLVM`` to be used as Chapel's backend compiler (i.e.
+``CHPL_LLVM`` must be set to ``system`` or ``bundled``). For more information
+about these settings see :ref:`Optional Settings <readme-chplenv>`.
+
+GPU support is compatible with various COMM layers to conduct communication
+across nodes although we consider this work more experimental (especially for
+values other than ``CHPL_COMM=none`` or ``CHPL_COMM=gasnet``).
 
 Overview
 --------
