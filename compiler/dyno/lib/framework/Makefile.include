@@ -25,6 +25,7 @@ DYNO_FRAMEWORK_SRCS =                                 \
            ErrorMessage.cpp                         \
            ID.cpp                                   \
            Location.cpp                             \
+           session-queries.cpp                      \
            UniqueString.cpp                         \
 
 

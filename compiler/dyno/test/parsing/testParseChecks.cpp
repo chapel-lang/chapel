@@ -19,6 +19,8 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/queries/Flags.h"
+#include "chpl/queries/session-queries.h"
 #include "chpl/uast/all-uast.h"
 
 // always check assertions in this test
@@ -319,6 +321,54 @@ static void test12(Parser* parser) {
                      "'param' intent");
 }
 
+// TODO: Cannot get the internal/bundled module stuff to work properly.
+/*
+static void test13(Parser* parser) {
+  auto br = parser->parseString("test13.chpl",
+    R""""(
+    proc _bad1() {}
+    var _bad2 = 0;
+    class _bad3 {}
+    proc chpl_bad4() {}
+    var chpl_bad5 = 0;
+    class chpl_bad6 {}
+    )"""");
+  assert(br.numErrors() == 6);
+  displayErrors(br);
+  assertErrorMatches(br, 0, "test13.chpl", 2,
+                     "Symbol names with leading underscores (_bad1) "
+                     "are unstable.");
+  assertErrorMatches(br, 1, "test13.chpl", 3,
+                     "Symbol names with leading underscores (_bad2) "
+                     "are unstable.");
+  assertErrorMatches(br, 2, "test13.chpl", 4,
+                     "Symbol names with leading underscores (_bad3) "
+                     "are unstable.");
+  assertErrorMatches(br, 3, "test13.chpl", 5,
+                     "Symbol names beginning with 'chpl_' (chpl_bad4) "
+                     "are unstable.");
+  assertErrorMatches(br, 4, "test13.chpl", 6,
+                     "Symbol names beginning with 'chpl_' (chpl_bad5) "
+                     "are unstable.");
+  assertErrorMatches(br, 5, "test13.chpl", 7,
+                     "Symbol names beginning with 'chpl_' (chpl_bad6) "
+                     "are unstable.");
+}
+*/
+
+static void test14(Parser* parser) {
+  auto br = parser->parseString("test14.chpl",
+    R""""(
+    union foo {}
+    )"""");
+  assert(br.numErrors() == 1);
+  displayErrors(br);
+  assertErrorMatches(br, 0, "test14.chpl", 2,
+                     "Unions are currently unstable and are expected "
+                     "to change in ways that will break their "
+                     "current uses.");
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -339,6 +389,15 @@ int main() {
   test10(p);
   test11(p);
   test12(p);
+
+  // Turn on the --warn-unstable flag for some warnings.
+  Flags list;
+  list.set(Flags::WARN_UNSTABLE, true);
+  ctx->advanceToNextRevision(false);
+  setFlagsList(ctx, list);
+
+  /* test13(p); */
+  test14(p);
 
   return 0;
 }

@@ -22,6 +22,7 @@ target_sources(libdyno-obj
                ErrorMessage.cpp
                ID.cpp
                Location.cpp
+               session-queries.cpp
                UniqueString.cpp
 
               )

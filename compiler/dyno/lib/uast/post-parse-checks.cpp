@@ -18,7 +18,9 @@
  * limitations under the License.
  */
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/global-strings.h"
+#include "chpl/queries/session-queries.h"
 #include "chpl/uast/all-uast.h"
 #include <vector>
 
@@ -33,12 +35,17 @@ using namespace uast;
 struct Visitor {
   std::set<UniqueString> exportedFnNames_;
   std::vector<const AstNode*> parents_;
-  Context* context_;
+  Context* context_ = nullptr;
   Builder& builder_;
+  bool isVisitingUserCode_ = false;
 
-  Visitor(Context* context, Builder& builder)
+  // Helper to determine if a node is in a user module.
+  static bool isNodeInUserModule(Context* context, const AstNode* node);
+
+  Visitor(Context* context, Builder& builder, bool isVisitingUserCode)
     : context_(context),
-      builder_(builder) {
+      builder_(builder),
+      isVisitingUserCode_(isVisitingUserCode) {
   }
 
   // Create and store an error in the builder (convenience overloads for
@@ -51,12 +58,15 @@ struct Visitor {
   void error(const AstNode* node, const char* fmt, ...);
   void warn(const AstNode* node, const char* fmt, ...);
 
+  // Return true if a given flag is set.
+  bool isFlagSet(Flags::Name flag) const;
+
+  // Return true if we are visiting user code.
+  inline bool isUserCode() const { return isVisitingUserCode_; }
+
   // Get the i'th parent of the currently visited node. For example, the
   // call 'parent(0)' will return the most immediate parent.
   const AstNode* parent(int depth=0) const;
-
-  // Get the number of parents.
-  int numParents() const;
 
   // Search ancestors for the closest parent with a given tag. If found,
   // then 'last' will contain the penultimate parent in the path.
@@ -149,6 +159,10 @@ void Visitor::warn(const AstNode* node, const char* fmt, ...) {
   va_list vl;
   va_start(vl, fmt);
   report(node, ErrorMessage::WARNING, fmt, vl);
+}
+
+bool Visitor::isFlagSet(Flags::Name flag) const {
+  return chpl::isFlagSet(context_, flag);
 }
 
 const AstNode* Visitor::parent(int depth) const {
@@ -561,12 +575,26 @@ void Visitor::checkExportedName(const NamedDecl* node) {
 
 // TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
-  (void) node;
+  if (!isFlagSet(Flags::WARN_UNSTABLE)) return;
+  warn(node, "Unions are currently unstable and are expected to change "
+             "in ways that will break their current uses.");
 }
 
-// TODO: This relies on detecting a user module.
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
-  (void) node;
+  if (!isFlagSet(Flags::WARN_UNSTABLE)) return;
+  if (!isUserCode()) return;
+
+  auto name = node->name();
+
+  if (name.startsWith("_")) {
+    warn(node, "Symbol names with leading underscores (%s) are unstable.",
+               name.c_str());
+  }
+
+  if (name.startsWith("chpl_")) {
+    warn(node, "Symbol names beginning with 'chpl_' (%s) are unstable.",
+               name.c_str());
+  }
 }
 
 // Do nothing.
@@ -601,13 +629,27 @@ void Visitor::visit(const Union* node) {
   warnUnstableUnions(node);
 }
 
+// TODO: May need tweaks because we are still building stuff.
+bool Visitor::isNodeInUserModule(Context* context, const AstNode* node) {
+  auto id = node->id();
+  auto isInternal = parsing::idIsInInternalModule(context, id);
+  auto isBundled = parsing::idIsInBundledModule(context, id);
+  auto ret = !isInternal && !isBundled;
+  return ret;
+}
+
 } // end anonymous namespace
 
 namespace chpl {
 namespace uast {
 
 void Builder::postParseChecks() {
-  auto visitor = Visitor(context_, *this);
+  if (topLevelExpressions_.size() == 0) return;
+
+  auto ast = topLevelExpressions_[0].get();
+  bool isVisitingUserCode = Visitor::isNodeInUserModule(context_, ast);
+  auto visitor = Visitor(context_, *this, isVisitingUserCode);
+
   for (auto& ast : topLevelExpressions_) {
     if (ast->isComment()) continue;
     visitor.check(ast.get());
