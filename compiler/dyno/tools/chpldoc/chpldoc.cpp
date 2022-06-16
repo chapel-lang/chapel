@@ -974,8 +974,11 @@ struct RstResultBuilder {
 
     if (v->isField())
       show("attribute", v);
+    else if (v->storageKind() == IntentList::TYPE)
+      show("type", v);
     else
       show("data", v);
+
     return getResult();
   }
   owned<RstResult> visit(const Record* r) {
@@ -1089,7 +1092,6 @@ struct RstResultBuilder {
     visitChildren(c);
     return getResult(true);
   }
-
 
   // TODO all these nullptr gets stored in the query map... can we avoid that?
   owned<RstResult> visit(const AstNode* n) { return {}; }
