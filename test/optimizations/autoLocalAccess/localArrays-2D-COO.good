@@ -12,7 +12,7 @@ End analyzing forall (localArrays.chpl:56)
 
 Static check successful. Using localAccess (localArrays.chpl:57)
 Testing 2D COO
-
+1
 2
 
 End testing 2D COO
