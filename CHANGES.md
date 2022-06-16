@@ -1,6 +1,156 @@
 Release Changes List
 ====================
 
+version 1.27.0
+==============
+
+Thirtieth public release of Chapel, June 30, 2022
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Packaging / Configuration Changes
+---------------------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+New Features
+------------
+
+Feature Improvements
+--------------------
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+
+Namespace Changes
+-----------------
+
+Name Changes in Libraries
+-------------------------
+
+Deprecated / Removed Library Features
+-------------------------------------
+
+Standard Library Modules
+------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+Tool Improvements
+-----------------
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+Compilation-Time / Generated Code Improvements
+----------------------------------------------
+
+Memory Improvements
+-------------------
+
+Documentation
+-------------
+
+Syntax Highlighting
+-------------------
+
+Example Codes
+-------------
+
+Portability
+-----------
+
+GPU Computing
+-------------
+
+Compiler Improvements
+---------------------
+
+Compiler Flags
+--------------
+
+Generated Executable Flags
+--------------------------
+
+Runtime Library Changes
+-----------------------
+
+Launchers
+---------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Bug Fixes
+---------
+
+Bug Fixes for Build Issues
+--------------------------
+
+Bug Fixes for Libraries
+-----------------------
+
+Bug Fixes for Tools
+-------------------
+
+Platform-specific Bug Fixes
+---------------------------
+
+Third-Party Software Changes
+----------------------------
+
+Developer-oriented changes: Process
+-----------------------------------
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+
+Developer-oriented changes: Naming Changes
+------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Performance improvements
+----------------------------------------------------
+
+Developer-oriented changes: Makefile / Build-time changes
+---------------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+
+Developer-oriented changes: 'dyno' Compiler improvements/changes
+----------------------------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Platform-specific bug fixes
+-------------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+Developer-oriented changes: Tool Improvements
+---------------------------------------------
+
+Developer-oriented changes: Utilities
+-------------------------------------
+
+
 version 1.26.0.1
 ================
 
