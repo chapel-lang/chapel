@@ -3885,7 +3885,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   stored in the array).
 
   :arg arg: A 1D DefaultRectangular non-strided array storing int(8) or uint(8) which must have at least 1 element.
-  :arg maxSize: The maximum number of bytes to return.
+  :arg maxSize: The maximum number of bytes to store into the ``arg`` array.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
@@ -4034,7 +4034,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   Read a line into a Chapel string. Reads until a ``\n`` is reached.
 
   :arg arg: a string to receive the line
-  :arg maxSize: The maximum number of codepoints to return. The default of -1 means to read an unlimited number of codepoints.
+  :arg maxSize: The maximum number of codepoints to store into ``s``. The default of -1 means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
@@ -4119,7 +4119,7 @@ proc channel.readLine(ref s: string,
   Read a line into Chapel bytes. Reads until a ``\n`` is reached.
 
   :arg arg: bytes to receive the line
-  :arg maxSize: The maximum number of bytes to return. The default of -1 means to read an unlimited number of bytes.
+  :arg maxSize: The maximum number of bytes to store into ``b``. The default of -1 means to read an unlimited number of bytes.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
