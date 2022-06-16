@@ -1642,6 +1642,11 @@ void setupClang(GenInfo* info, std::string mainFile)
   DiagnosticsEngine* Diags = NULL;
   Diags = new DiagnosticsEngine(
       clangInfo->DiagID, &*clangInfo->diagOptions, clangInfo->DiagClient);
+  if (localeUsesGPU()) {
+    Diags->setSeverityForGroup(diag::Flavor::WarningOrError,
+                               "unknown-cuda-version",
+                               diag::Severity::Ignored);
+  }
   clangInfo->Diags = Diags;
   clangInfo->Clang = Clang;
 
