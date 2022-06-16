@@ -77,8 +77,6 @@ or
 
    import $MODULE;)RAW";
 
-static std::vector<std::string> modulePath;
-
 static std::vector<std::string> splitLines(const std::string& s) {
   std::stringstream ss(s);
   std::string line;
@@ -820,6 +818,7 @@ struct RstResult {
 
 static const owned<RstResult>& rstDoc(Context * context, ID id);
 static const Comment* const& previousComment(Context* context, ID id);
+static const std::vector<UniqueString>& getModulePath(Context* context, ID id);
 
 struct RstResultBuilder {
   Context* context_;
@@ -895,34 +894,37 @@ struct RstResultBuilder {
   }
 
   void visitChildren(const AstNode* n) {
+    std::vector<RstResult*> subModules;
     for (auto child : n->children()) {
       if (auto &r = rstDoc(context_, child->id())) {
-        children_.push_back(r.get());
+        if (child->isModule()) {
+          subModules.push_back(r.get());
+        } else {
+          children_.push_back(r.get());
+        }
       }
+    }
+    // add the submodules to the end
+    for (auto subModule : subModules) {
+      children_.push_back(subModule);
     }
   }
 
   owned<RstResult> visit(const Module* m) {
     if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m))
       return {};
-    //store module path
-    modulePath.push_back(m->name().str());
-    // build the module name string
-    std::string moduleName;
-    std::string delim;
-    for (auto path : modulePath) {
-      moduleName += delim;
-      moduleName += path;
-      if (delim.empty()) {
-        delim = ".";
-      }
-    }
+    // lookup the module path
+    std::vector<UniqueString> modulePath = getModulePath(context_, m->id());
+
+    std::string moduleName = modulePath.back().str();
+
     // header
     os_ << ".. default-domain:: chpl\n\n";
     os_ << ".. module:: " << m->name().c_str() << '\n';
     const Comment* lastComment = previousComment(context_, m->id());
     if (lastComment) {
-      os_ << "    :synopsis: " << commentSynopsis(lastComment, commentStyle) << '\n';
+      os_ << "    :synopsis: " << commentSynopsis(lastComment, commentStyle)
+          << '\n';
     }
     os_ << '\n';
 
@@ -951,8 +953,6 @@ struct RstResultBuilder {
     }
     visitChildren(m);
 
-    // remove last entry from module path
-    modulePath.pop_back();
     return getResult();
   }
 
@@ -1189,6 +1189,20 @@ static const owned<RstResult>& rstDoc(Context* context, ID id) {
     result = node->dispatch<owned<RstResult>>(cqv);
   }
 
+  return QUERY_END(result);
+}
+
+static const std::vector<UniqueString>& getModulePath(Context* context, ID id) {
+  QUERY_BEGIN(getModulePath, context, id);
+  std::vector<UniqueString> result;
+  if (!id.isEmpty()) {
+    const ID parentID = idToParentId(context, id);
+    if (!parentID.isEmpty()) {
+      const AstNode* parent = idToAst(context, parentID);
+      result.push_back(parent->id().symbolPath());
+    }
+    result.push_back(id.symbolPath());
+  }
   return QUERY_END(result);
 }
 
