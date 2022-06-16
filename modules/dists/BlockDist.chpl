@@ -1757,7 +1757,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   var outputReady$: [targetLocs.domain] unmanaged BoxedSync(bool)?;
 
   // Fire up tasks per participating locale
-  coforall locid in dom.dist.targetLocDom {
+  coforall locid in targetLocs.domain {
     on targetLocs[locid] {
       const myop = op.clone(); // this will be deleted by doiScan()
 
@@ -1783,11 +1783,11 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
-      if (locid == dom.dist.targetLocDom.lowBound) then on elemPerLoc {
+      if (locid == targetLocs.domain.lowBound) then on elemPerLoc {
         const metaop = op.clone();
 
         var next: resType = metaop.identity;
-        for locid in dom.dist.targetLocDom {
+        for locid in targetLocs.domain {
           const locready = inputReady$[locid].readFE();
 
           // store the scan value
