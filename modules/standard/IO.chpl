@@ -4010,9 +4010,9 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
 
   // TODO: if the channel is working with non-UTF-8 data
   // (which is a feature not yet implemented at all)
-  // this would need to call a read than can do character set conversion.
+  // this would need to call a read than can do character set conversion
+  // in the event that s.type == string.
 
-  var amtRead: c_ssize_t = 0;
   var err = qio_channel_read_amt(false, _channel_internal, s.buff, nBytes);
   if !err {
     s.buffLen = nBytes;
@@ -4096,6 +4096,8 @@ proc channel.readLine(ref s: string,
     }
 
     // now read the data into the string
+    // readStringBytesData will advance the channel by exactly `nBytes`.
+    // This may consume or leave the newline based on the logic above.
     err = readStringBytesData(s, this._channel_internal, nBytes, nCodepoints);
     if foundNewline && stripNewline && !err {
       // pass the newline in the input
@@ -4177,7 +4179,10 @@ proc channel.readLine(ref b: bytes,
     }
 
     // now read the data into the bytes
-    err = readStringBytesData(b, this._channel_internal, nBytes, nCodepoints=0);
+    // readStringBytesData will advance the channel by exactly `nBytes`.
+    // This may consume or leave the newline based on the logic above.
+    err = readStringBytesData(b, this._channel_internal, nBytes,
+                              nCodepoints=-1);
     if foundNewline && stripNewline && !err {
       // pass the newline in the input
       got = qio_channel_read_byte(false, this._channel_internal);
