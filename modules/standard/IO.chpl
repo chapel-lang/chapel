@@ -4013,7 +4013,8 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   // this would need to call a read than can do character set conversion
   // in the event that s.type == string.
 
-  var err = qio_channel_read_amt(false, _channel_internal, s.buff, nBytes);
+  var len:c_ssize_t = nBytes.safeCast(c_ssize_t);
+  var err = qio_channel_read_amt(false, _channel_internal, s.buff, len);
   if !err {
     s.buffLen = nBytes;
     if s.type == string {
