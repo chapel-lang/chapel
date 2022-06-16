@@ -149,6 +149,10 @@ compile-util-python: FORCE
 	  echo "Compiling Python scripts in util/" ; \
 	  $(CHPL_MAKE_PYTHON) -m compileall util/config -q ; \
 	  $(CHPL_MAKE_PYTHON) -m compileall util/chplenv -q ; \
+	  if [ -d third-party/chpl-venv/install/chpldeps ] ; then \
+	    echo "Compiling Python scripts in chpl-venv/" ; \
+	    $(CHPL_MAKE_PYTHON) -m compileall third-party/chpl-venv/install/chpldeps/ -q ; \
+	  fi ; \
 	else \
 	  echo "Not compiling Python scripts - missing compileall" ; \
 	fi
