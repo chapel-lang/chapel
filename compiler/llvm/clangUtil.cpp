@@ -1302,6 +1302,15 @@ class CCodeGenConsumer final : public ASTConsumer {
     bool parseOnly;
     ASTContext* savedCtx;
 
+    bool shouldHandleDecl(Decl* d) {
+      if (localeUsesGPU()) {
+        return gCodegenGPU == d->hasAttr<CUDADeviceAttr>();
+      }
+      else {
+        return true;
+      }
+    }
+
   public:
     CCodeGenConsumer()
       : ASTConsumer(),
@@ -1355,9 +1364,13 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->lvt->addGlobalCDecl(td);
         }
       } else if (FunctionDecl *fd = dyn_cast<FunctionDecl>(d)) {
-        info->lvt->addGlobalCDecl(fd);
+        if (shouldHandleDecl(d)) {
+          info->lvt->addGlobalCDecl(fd);
+        }
       } else if (VarDecl *vd = dyn_cast<VarDecl>(d)) {
-        info->lvt->addGlobalCDecl(vd);
+        if (shouldHandleDecl(d)) {
+          info->lvt->addGlobalCDecl(vd);
+        }
       } else if (RecordDecl *rd = dyn_cast<RecordDecl>(d)) {
         info->lvt->addGlobalCDecl(rd);
       } else if (UsingDecl* ud = dyn_cast<UsingDecl>(d)) {
@@ -1629,6 +1642,11 @@ void setupClang(GenInfo* info, std::string mainFile)
   DiagnosticsEngine* Diags = NULL;
   Diags = new DiagnosticsEngine(
       clangInfo->DiagID, &*clangInfo->diagOptions, clangInfo->DiagClient);
+  if (localeUsesGPU()) {
+    Diags->setSeverityForGroup(diag::Flavor::WarningOrError,
+                               "unknown-cuda-version",
+                               diag::Severity::Ignored);
+  }
   clangInfo->Diags = Diags;
   clangInfo->Clang = Clang;
 
