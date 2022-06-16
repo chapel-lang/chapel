@@ -1,6 +1,6 @@
 use BigInteger;
 
-const check_to = 5;
+const check_to = 10;
 
 record op_vs_op {
     proc this(const a: int, const b: int): (bool, int, bigint) {
@@ -29,6 +29,23 @@ record op_vs_op_int {
             amb == amb_bi,
             amb,
             amb_bi,
+        );
+    }
+}
+
+record op_assign {
+    proc this(const a: int, const b: int): (bool, int, bigint) {
+        var a_ = a;
+        var a_bi = new bigint(a);
+        const b_bi = new bigint(b);
+
+        a_ %= b;
+        a_bi %= b_bi;
+
+        return (
+            a_ == a_bi,
+            a_,
+            a_bi,
         );
     }
 }
@@ -93,5 +110,7 @@ proc check_matching(name: string, checker) {
 
 check_matching("Operator", new op_vs_op());
 check_matching("Operator (b.type = int)", new op_vs_op_int());
+check_matching("Assigning Operator (%=)", new op_assign());
+
 check_matching("Method", new met_vs_met());
 check_matching("Method (b.type = int)", new met_vs_met_int());

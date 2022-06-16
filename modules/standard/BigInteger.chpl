@@ -1175,20 +1175,30 @@ module BigInteger {
   // Mod
   operator bigint.%(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
+    var d = new bigint();
 
     if _local {
-      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
-      c = a - b * c;
+      mpz_mod(c.mpz, a.mpz, b.mpz);
+      if mpz_sgn(a.mpz) <= 0 && mpz_sgn(c.mpz) != 0 {
+        d.abs(b);
+        c -= d;
+      }
 
     } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
-      c = a - b * c;
+      mpz_mod(c.mpz, a.mpz, b.mpz);
+      if mpz_sgn(a.mpz) <= 0 {
+        d.abs(b);
+        c -= d;
+      }
 
     } else {
       const a_ = a;
 
-      mpz_tdiv_q(c.mpz, a_.mpz, b.mpz);
-      c = a - b * c;
+      mpz_mod(c.mpz, a_.mpz, b.mpz);
+      if mpz_sgn(a_.mpz) <= 0 {
+        d.abs(b);
+        c -= d;
+      }
     }
 
     return c;
@@ -5085,7 +5095,7 @@ module BigInteger {
   }
 
 
-  proc bigint.mod(const ref a: bigint, b: integral) : int {    
+  proc bigint.mod(const ref a: bigint, b: integral) : int {
     var b_ = new bigint(b);
     this.mod(a, b_);
     return mpz_get_si(this.mpz).safeCast(int);
