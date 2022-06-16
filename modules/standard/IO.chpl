@@ -385,7 +385,6 @@ IO Functions and Types
 
  */
 module IO {
-
 /* "channel" I/O contributed by Michael Ferguson
 
    Future Work:
@@ -3886,7 +3885,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   stored in the array).
 
   :arg arg: A 1D DefaultRectangular non-strided array storing int(8) or uint(8) which must have at least 1 element.
-  :arg maxSize: The maximum amount of bytes to read.
+  :arg maxSize: The maximum number of bytes to store into the ``arg`` array. Defaults to the size of the array.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
@@ -3907,18 +3906,34 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
     var got: int;
     var i = arg.domain.lowBound;
     const maxIdx = arg.domain.lowBound + maxSize - 1;
-    while got != newLineChar {
+    var foundNewline = false;
+    while !foundNewline {
       got = qio_channel_read_byte(false, this._channel_internal);
-      if got < 0 then break;
-      if( i > maxIdx ) {
-        // The line is longer than was specified so we throw an error
+      if got == -EEOF {
+        // encountered EOF
+        break;
+      } else if got < 0 {
+        // encountered an error so throw
         this._revert();
-        try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(arg : [] uint(8))");
+        var err:syserr = -got;
+        try this._ch_ioerror(EFORMAT:syserr, "in channel.readLine(arg : [] uint(8))");
       }
-      if got == newLineChar && stripNewline then break;
-      arg[i] = got:uint(8);
-      i += 1;
-      if got == newLineChar then break;
+      if got == newLineChar {
+        foundNewline = true;
+      }
+      if i > maxIdx {
+        if foundNewline && stripNewline {
+          // don't worry about it since we wouldn't return the newline
+        } else {
+          // The line is longer than was specified so we throw an error
+          this._revert();
+          try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(arg : [] uint(8))");
+        }
+      }
+      if !(foundNewline && stripNewline) {
+        arg[i] = got:uint(8);
+        i += 1;
+      }
     }
     numRead = i - arg.domain.lowBound;
     if i == arg.domain.lowBound && got < 0 then err = (-got):syserr;
@@ -3977,125 +3992,214 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   return true;
 }
 
+// Helper function to replace the contents of a string or bytes
+// by reading up to a fixed number of bytes / codepoints.
+// Returns an error code, and ESHORT if less than that number of
+// bytes was read.
+// Does not validate that the string has valid encoding -- the call
+// site should do that.
+// Assumes we are already on the locale with the channel and that
+// it is alrady locked.
+private proc readStringBytesData(ref s /*: string or bytes*/,
+                                 _channel_internal:qio_channel_ptr_t,
+                                 nBytes: int,
+                                 nCodepoints: int): syserr {
+  import BytesStringCommon;
+
+  BytesStringCommon.resizeBuffer(s, nBytes);
+
+  // TODO: if the channel is working with non-UTF-8 data
+  // (which is a feature not yet implemented at all)
+  // this would need to call a read than can do character set conversion
+  // in the event that s.type == string.
+
+  var err = qio_channel_read_amt(false, _channel_internal, s.buff, nBytes);
+  if !err {
+    s.buffLen = nBytes;
+    if s.type == string {
+      s.cachedNumCodepoints = nCodepoints;
+      s.hasEscapes = false;
+    }
+  } else {
+    s.buffLen = 0;
+    if s.type == string {
+      s.cachedNumCodepoints = 0;
+      s.hasEscapes = false;
+    }
+  }
+  return err;
+}
+
 /*
   Read a line into a Chapel string. Reads until a ``\n`` is reached.
 
   :arg arg: a string to receive the line
-  :arg maxSize: The maximum number of codepoints to read. The default of -1 means to read an unlimited number of codepoints.
+  :arg maxSize: The maximum number of codepoints to store into ``s``. The default of -1 means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
-proc channel.readLine(ref s: string, maxSize=-1, stripNewline=false): bool throws{
+proc channel.readLine(ref s: string,
+                      maxSize=-1,
+                      stripNewline=false): bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
+  var ret: bool = false;
 
-  try {
-    on this.home {
-      try this.lock(); defer { this.unlock(); }
-      param newLineChar = 0x0A; // ascii newline.
-      if(maxSize != -1){
-        this._mark();
-        var lineSize = 0;
-        var got : int;
-        while got!=newLineChar {
-          got = qio_channel_read_byte(false, this._channel_internal);
-          if(got < 0) then break;
-          lineSize+=1;
-          if(lineSize > maxSize){
-            // The line is longer than was specified so we throw an error
-            this._revert();
-            try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(ref s: string)");
-          }
-        }
+  on this.home {
+    try this.lock(); defer { this.unlock(); }
+    param newLineChar = 0x0A; // ascii newline.
+    var maxCodepoints = if maxSize < 0 then max(int) else maxSize;
+    var nCodepoints: int = 0; // num codepoints, including newline
+    var chr : int(32);
+    var err: syserr = ENOERR;
+    var foundNewline = false;
+    // use the channel's buffering to compute how many bytes/codepoints
+    // we are reading
+    this._mark();
+    while !foundNewline {
+      // read a single codepoint
+      err = qio_channel_read_char(false, this._channel_internal, chr);
+      if err == EEOF {
+        // encountered EOF
+        break;
+      } else if err {
+        // encountered an error so throw
         this._revert();
+        try this._ch_ioerror(err, "in channel.readLine(ref s: string)");
       }
-      var saveStyle: iostyleInternal = this._styleInternal();
-      defer {
-        this._set_styleInternal(saveStyle);
+      nCodepoints += 1;
+      if chr == newLineChar {
+        foundNewline = true;
       }
-      var myStyle = saveStyle.text();
-      myStyle.string_format = QIO_STRING_FORMAT_TOEND;
-      myStyle.string_end = newLineChar;
-      if(maxSize >= 0){
-        try myStyle.max_width_characters = maxSize.safeCast(uint(32)); // Probably should change maxSize's type to be safe to cast
+      if nCodepoints > maxCodepoints {
+        if stripNewline && foundNewline {
+          // don't worry about it since we wouldn't return the newline
+        } else {
+          // The line is longer than was specified so we throw an error
+          this._revert();
+          try this._ch_ioerror(EFORMAT:syserr,
+               "line longer than maxSize in channel.readLine(ref s: string)");
+        }
       }
-      this._set_styleInternal(myStyle);
-      try _readOne(iokind.dynamic, s, origLocale);
     }
-  } catch err: SystemError {
-    if err.err != EEOF then throw err;
-    return false;
-  }
-  // TODO find a more memory efficient way to do this
-  // Maybe have a QIO_STRING_FORMAT_TOEND_DROPEND which drops the last char
-  if(stripNewline){
-    s = s.strip(chars="\n", leading = false);
+    var endOffset = this._offset();
+    this._revert();
+    var nBytes:int = endOffset - this._offset();
+    // now, nCodepoints and nBytes include the newline
+    if foundNewline && stripNewline {
+      // but we don't want to read the newline if stripNewline=true.
+      nBytes -= 1;
+      nCodepoints -= 1;
+    }
+
+    // now read the data into the string
+    // readStringBytesData will advance the channel by exactly `nBytes`.
+    // This may consume or leave the newline based on the logic above.
+    err = readStringBytesData(s, this._channel_internal, nBytes, nCodepoints);
+    if foundNewline && stripNewline && !err {
+      // pass the newline in the input
+      err = qio_channel_read_char(false, this._channel_internal, chr);
+    }
+
+    if err != ENOERR && err != EEOF {
+      try this._ch_ioerror(err, "in channel.readLine(ref s: string)");
+    }
+
+    // return 'true' if we read anything
+    ret = foundNewline || nBytes > 0;
   }
 
-  return true;
+  return ret;
 }
 
 /*
   Read a line into Chapel bytes. Reads until a ``\n`` is reached.
 
   :arg arg: bytes to receive the line
-  :arg maxSize: The maximum number of bytes to read. The default of -1 means to read an unlimited number of bytes.
+  :arg maxSize: The maximum number of bytes to store into ``b``. The default of -1 means to read an unlimited number of bytes.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
-proc channel.readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws{
+proc channel.readLine(ref b: bytes,
+                      maxSize=-1,
+                      stripNewline=false): bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
+  var ret: bool = false;
 
-  try {
-    on this.home {
-      try this.lock(); defer { this.unlock(); }
-      param newLineChar = 0x0A; // ascii newline.
-      if(maxSize != -1) {
-        this._mark();
-        var lineSize = 0;
-        var got : int;
-        while got!=newLineChar {
-          got = qio_channel_read_byte(false, this._channel_internal);
-          if(got < 0) then break;
-          lineSize+=1;
-          if(lineSize > maxSize){
-                    // The line is longer than was specified so we throw an error
-          this._revert();
-          try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(ref b: bytes)");
-          }
-        }
+  on this.home {
+    try this.lock(); defer { this.unlock(); }
+    param newLineChar = 0x0A; // ascii newline.
+    var maxBytes = if maxSize < 0 then max(int) else maxSize;
+    var nBytes: int = 0;
+    // use the channel's buffering to compute how many bytes we are reading
+    this._mark();
+    var got : int;
+    var err: syserr = ENOERR;
+    var foundNewline = false;
+    while !foundNewline {
+      // read a sigle byte
+      got = qio_channel_read_byte(false, this._channel_internal);
+      if got == -EEOF {
+        // encountered EOF
+        break;
+      } else if got < 0 {
+        // encountered an error so throw
         this._revert();
+        err = -got;
+        try this._ch_ioerror(err, "in channel.readLine(ref b: bytes)");
+        break;
       }
-      var saveStyle: iostyleInternal = this._styleInternal();
-      defer {
-        this._set_styleInternal(saveStyle);
+      nBytes += 1;
+      if got == newLineChar {
+        foundNewline = true;
       }
-      var myStyle = saveStyle.text();
-      myStyle.string_format = QIO_STRING_FORMAT_TOEND;
-      myStyle.string_end = newLineChar;
-      if(maxSize >= 0){
-        try myStyle.max_width_bytes = maxSize.safeCast(uint(32)); // Probably should change maxSize's type to be safe to cast
+      if nBytes > maxBytes {
+        if foundNewline && stripNewline {
+          // don't worry about it since we wouldn't return the newline
+        } else {
+          // The line is longer than was specified so we throw an error
+          this._revert();
+          try this._ch_ioerror(EFORMAT:syserr,
+                   "line longer than maxSize in channel.readLine(ref b: bytes)");
+        }
       }
-      this._set_styleInternal(myStyle);
-      try _readOne(iokind.dynamic, b, origLocale);
     }
-  } catch err: SystemError {
-    if err.err != EEOF then throw err;
-    return false;
+    this._revert();
+    // now, nBytes includes the newline
+    if foundNewline && stripNewline {
+      // but we don't want to read the newline if stripNewline=true.
+      nBytes -= 1;
+    }
+
+    // now read the data into the bytes
+    // readStringBytesData will advance the channel by exactly `nBytes`.
+    // This may consume or leave the newline based on the logic above.
+    err = readStringBytesData(b, this._channel_internal, nBytes,
+                              nCodepoints=-1);
+    if foundNewline && stripNewline && !err {
+      // pass the newline in the input
+      got = qio_channel_read_byte(false, this._channel_internal);
+      if got < 0 {
+        err = -got;
+      }
+    }
+
+    if err != ENOERR && err != EEOF {
+      try this._ch_ioerror(err, "in channel.readLine(ref s: string)");
+    }
+
+    // return 'true' if we read anything
+    ret = foundNewline || nBytes > 0;
   }
-  // TODO find a more memory efficient way to do this
-  // Maybe have a QIO_STRING_FORMAT_TOEND_DROPEND which drops the last char
-  if(stripNewline){
-    b = b.strip(chars=b"\n", leading = false);
-  }
-  return true;
+
+  return ret;
 }
 
 /*

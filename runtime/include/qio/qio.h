@@ -879,6 +879,7 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
     uint8_t tmp;
     err = _qio_slow_read(ch, &tmp, 1, &amt_read);
     if( err == 0 && amt_read != 1 ) err = QIO_ESHORT;
+
     if( err == 0 ) ret = tmp;
     else {
       _qio_channel_set_error_unlocked(ch, err);
