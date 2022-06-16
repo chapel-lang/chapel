@@ -163,7 +163,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  char* memEnv = getenv("CHPL_LAUNCHER_MEM");
   const char* nodeAccessStr = NULL;
+  const char* memStr = NULL;
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
   char  jobName[128];
@@ -228,6 +230,15 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     nodeAccessStr = "exclusive";
   }
 
+  // request all memory by default ("0"), but allow user to override
+  if (memEnv == NULL) {
+    memStr = "0";
+  } else if (strcmp(memEnv, "unset") == 0) {
+    memStr = NULL;
+  } else {
+    memStr = memEnv;
+  }
+
   if (basenamePtr == NULL) {
     basenamePtr = argv[0];
   } else {
@@ -277,8 +288,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (nodeAccessStr != NULL)
       fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
 
-    // request access to all memory
-    fprintf(slurmFile, "#SBATCH --mem=0\n");
+    // request specified amount of memory
+    if (memStr != NULL)
+      fprintf(slurmFile, "#SBATCH --mem=%s\n", memStr);
 
     // Set the walltime if it was specified
     if (walltime) {
@@ -394,8 +406,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (nodeAccessStr != NULL)
       len += sprintf(iCom+len, "--%s ", nodeAccessStr);
 
-    // request access to all memory
-    len += sprintf(iCom+len, "--mem=0 ");
+    // request specified amount of memory
+    if (memStr != NULL)
+      len += sprintf(iCom+len, "--mem=%s ", memStr);
 
     // kill the job if any program instance halts with non-zero exit status
     len += sprintf(iCom+len, "--kill-on-bad-exit ");
