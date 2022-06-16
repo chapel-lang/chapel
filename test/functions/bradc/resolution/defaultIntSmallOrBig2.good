@@ -1,3 +1,4 @@
-defaultIntSmallOrBig2.chpl:9: error: ambiguous call 'plus(127, 127)'
-defaultIntSmallOrBig2.chpl:1: note: candidates are: plus(x: int(8), y: int(8))
-defaultIntSmallOrBig2.chpl:5: note:                 plus(x: int(16), y: int(16))
+defaultIntSmallOrBig2.chpl:9: error: unresolved call 'plus(127, 127)'
+defaultIntSmallOrBig2.chpl:9: note: all candidates were discarded because each has too many implicit conversions
+defaultIntSmallOrBig2.chpl:1: note: candidate discarded: plus(x: int(8), y: int(8))
+defaultIntSmallOrBig2.chpl:5: note: candidate discarded: plus(x: int(16), y: int(16))

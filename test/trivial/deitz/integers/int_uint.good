@@ -1,9 +1,10 @@
-int_uint.chpl:1: error: ambiguous call '+(int(64), uint(64))'
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidates are: +(a: real(32), b: real(32))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: real(64), b: real(64))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(64), b: complex(64))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(128), b: complex(128))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: real(32), b: complex(64))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: real(64), b: complex(128))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(64), b: real(32))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 +(a: complex(128), b: real(64))
+int_uint.chpl:1: error: unresolved call '+(int(64), uint(64))'
+int_uint.chpl:1: note: all candidates were discarded because each has too many implicit conversions
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: real(32), b: real(32))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: real(64), b: real(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: complex(64), b: complex(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: complex(128), b: complex(128))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: real(32), b: complex(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: real(64), b: complex(128))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: complex(64), b: real(32))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: +(a: complex(128), b: real(64))
