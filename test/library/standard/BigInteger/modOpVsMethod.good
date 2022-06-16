@@ -1,0 +1,26 @@
+Checking Operator (a : +, b : +)
+	All Matched: true
+Checking Operator (a : +, b : -)
+	All Matched: true
+Checking Operator (a : -, b : +)
+	All Matched: true
+Checking Operator (a : -, b : -)
+	All Matched: true
+
+Checking Method (a : +, b : +)
+	All Matched: true
+Checking Method (a : +, b : -)
+	All Matched: true
+Checking Method (a : -, b : +)
+	All Matched: true
+Checking Method (a : -, b : -)
+	All Matched: true
+
+Checking Method (with b.type = int) (a : +, b : +)
+	All Matched: true
+Checking Method (with b.type = int) (a : +, b : -)
+	All Matched: true
+Checking Method (with b.type = int) (a : -, b : +)
+	All Matched: true
+Checking Method (with b.type = int) (a : -, b : -)
+    All Matched: true

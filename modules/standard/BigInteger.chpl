@@ -5053,15 +5053,22 @@ module BigInteger {
   }
 
 
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(m,n) = m - n * floor(m / n)``.
 
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
   proc bigint.mod(const ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_mod(this.mpz, a.mpz, b.mpz);
+      mpz_fdiv_q(this.mpz, a.mpz, b.mpz);
+      this = a - b * this;
 
     } else if this.localeId == chpl_nodeID &&
               a.localeId    == chpl_nodeID &&
               b.localeId    == chpl_nodeID {
-      mpz_mod(this.mpz, a.mpz, b.mpz);
+      mpz_fdiv_q(this.mpz, a.mpz, b.mpz);
+      this = a - b * this;
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
@@ -5070,7 +5077,8 @@ module BigInteger {
         const a_ = a;
         const b_ = b;
 
-        mpz_mod(this.mpz, a_.mpz, b_.mpz);
+        mpz_fdiv_q(this.mpz, a_.mpz, b_.mpz);
+        this = a_ - b_ * this;
       }
     }
   }
