@@ -25,4 +25,3 @@ def get_cuda_path():
 
 def validate(chplLocaleModel, chplComm):
     pass
-
