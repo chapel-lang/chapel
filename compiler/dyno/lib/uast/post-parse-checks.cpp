@@ -37,15 +37,15 @@ struct Visitor {
   std::vector<const AstNode*> parents_;
   Context* context_ = nullptr;
   Builder& builder_;
-  bool isVisitingUserCode_ = false;
+  bool isUserCode_ = false;
 
-  // Helper to determine if a node is in a user module.
-  static bool isNodeInUserModule(Context* context, const AstNode* node);
+  // Helper to determine if a file path is for user code.
+  static bool isUserFilePath(Context* context, UniqueString filepath);
 
-  Visitor(Context* context, Builder& builder, bool isVisitingUserCode)
+  Visitor(Context* context, Builder& builder, bool isUserCode)
     : context_(context),
       builder_(builder),
-      isVisitingUserCode_(isVisitingUserCode) {
+      isUserCode_(isUserCode) {
   }
 
   // Create and store an error in the builder (convenience overloads for
@@ -62,7 +62,7 @@ struct Visitor {
   bool isFlagSet(Flags::Name flag) const;
 
   // Return true if we are visiting user code.
-  inline bool isUserCode() const { return isVisitingUserCode_; }
+  inline bool isUserCode() const { return isUserCode_; }
 
   // Get the i'th parent of the currently visited node. For example, the
   // call 'parent(0)' will return the most immediate parent.
@@ -629,12 +629,12 @@ void Visitor::visit(const Union* node) {
   warnUnstableUnions(node);
 }
 
-// TODO: May need tweaks because we are still building stuff.
-bool Visitor::isNodeInUserModule(Context* context, const AstNode* node) {
-  auto id = node->id();
-  auto isInternal = parsing::idIsInInternalModule(context, id);
-  auto isBundled = parsing::idIsInBundledModule(context, id);
-  auto ret = !isInternal && !isBundled;
+// Duplicate the contents of 'idIsInBundledModule', while skipping the
+// call to 'filePathForId', because at this point the `setFilePathForId`
+// setter query may not have been run yet.
+bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
+  UniqueString modules = chpl::parsing::bundledModulePath(context);
+  auto ret = filepath.startsWith(modules);
   return ret;
 }
 
@@ -646,13 +646,12 @@ namespace uast {
 void Builder::postParseChecks() {
   if (topLevelExpressions_.size() == 0) return;
 
-  auto ast = topLevelExpressions_[0].get();
-  bool isVisitingUserCode = Visitor::isNodeInUserModule(context_, ast);
-  auto visitor = Visitor(context_, *this, isVisitingUserCode);
+  bool isUserCode = Visitor::isUserFilePath(context_, filepath_);
+  auto v = Visitor(context_, *this, isUserCode);
 
   for (auto& ast : topLevelExpressions_) {
     if (ast->isComment()) continue;
-    visitor.check(ast.get());
+    v.check(ast.get());
   }
 }
 

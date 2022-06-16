@@ -322,7 +322,6 @@ static void test12(Parser* parser) {
 }
 
 // TODO: Cannot get the internal/bundled module stuff to work properly.
-/*
 static void test13(Parser* parser) {
   auto br = parser->parseString("test13.chpl",
     R""""(
@@ -354,7 +353,6 @@ static void test13(Parser* parser) {
                      "Symbol names beginning with 'chpl_' (chpl_bad6) "
                      "are unstable.");
 }
-*/
 
 static void test14(Parser* parser) {
   auto br = parser->parseString("test14.chpl",
@@ -396,7 +394,7 @@ int main() {
   ctx->advanceToNextRevision(false);
   setFlagsList(ctx, list);
 
-  /* test13(p); */
+  test13(p);
   test14(p);
 
   return 0;
