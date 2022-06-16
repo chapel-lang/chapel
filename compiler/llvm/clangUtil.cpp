@@ -1304,11 +1304,11 @@ class CCodeGenConsumer final : public ASTConsumer {
 
     bool shouldHandleDecl(Decl* d) {
       if (localeUsesGPU()) {
-        if (gCodegenGPU == d->hasAttr<CUDADeviceAttr>()) {
-          return true;
-        }
+        return gCodegenGPU == d->hasAttr<CUDADeviceAttr>();
       }
-      return false;
+      else {
+        return true;
+      }
     }
 
   public:
