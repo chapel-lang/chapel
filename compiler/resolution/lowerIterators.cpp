@@ -2298,6 +2298,22 @@ setupSimultaneousIterators(Vec<Symbol*>& iterators,
 }
 
 
+static bool
+isBoundedIterator(FnSymbol* fn) {
+  if (fn->_this) {
+    Type* type = fn->_this->getValType();
+    if (type->symbol->hasFlag(FLAG_RANGE)) {
+      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "boundedType"));
+      if (!strcmp(type->substitutionsPostResolve[1].value->name, "bounded"))
+        return true;
+      else
+        return false;
+    }
+  }
+  return true;
+}
+
+
 static void getIteratorChildren(Vec<Type*>& children, Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     forv_Vec(AggregateType, child, at->dispatchChildren) {
@@ -2511,7 +2527,7 @@ expandForLoop(ForLoop* forLoop) {
           testBlock = new BlockStmt(new SymExpr(cond));
         }
 
-      } else if (!fNoBoundsChecks) {
+      } else if (!fNoBoundsChecks && isBoundedIterator(iterFn)) {
         // for all but the first iterator add checks at the beginning of each loop run
         // and a final one after to make sure the other iterators don't finish before
         // the "leader" and they don't have more afterwards.
