@@ -3942,6 +3942,30 @@ module BigInteger {
 
 
   // Miscellaneous Functions
+  /* A method to test whether a bigint can fit into 
+    one of the standard integer types.
+  
+  */
+  proc bigint.fitsInto(type t: integral): bool {
+    var t_ = this;
+    return
+      if t == c_ulong then
+        mpz_fits_ulong_p(t_.mpz)
+      else if t == c_long then 
+        mpz_fits_slong_p(t_.mpz) 
+      else if t == c_uint then
+        mpz_fits_uint_p(t_.mpz)
+      else if t == c_int then
+        mpz_fits_sint_p(t_.mpz)
+      else if t == c_ushort then
+        mpz_fits_ushort_p(t_.mpz)
+      else if t == c_short then
+        mpz_fits_ushort(t_.mpz)
+      else 
+        false;
+  }
+
+  deprecated "`fits_ulong_p` is deprecated -  please use `bigint.fitsInto(c_ulong)` or `bigint.fitsInto(uint(128))` instead"
   proc bigint.fits_ulong_p() : int {
     var ret: c_int;
 
@@ -3960,6 +3984,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_slong_p` is deprecated -  please use `bigint.fitsInto(c_long)` instead"
   proc bigint.fits_slong_p() : int {
     var ret: c_int;
 
@@ -3978,6 +4003,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_uint_p` is deprecated -  please use `bigint.fitsInto(c_uint)` instead"
   proc bigint.fits_uint_p() : int {
     var ret: c_int;
 
@@ -3996,6 +4022,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_sint_p` is deprecated -  please use `bigint.fitsInto(c_int)` instead" 
   proc bigint.fits_sint_p() : int {
     var ret: c_int;
 
@@ -4014,6 +4041,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_ushort_p` is deprecated -  please use `bigint.fitsInto(c_ushort)` instead"
   proc bigint.fits_ushort_p() : int {
     var ret: c_int;
 
@@ -4032,6 +4060,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_sshort_p` is deprecated -  please use `bigint.fitsInto(c_short)` instead"
   proc bigint.fits_sshort_p() : int {
     var ret: c_int;
 
