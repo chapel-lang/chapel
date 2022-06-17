@@ -1146,7 +1146,7 @@ struct ChplSyntaxVisitor {
       interpose(node->stmts(), "\n", "{\n","\n}", ";", true);
     }
     // if try block has catch blocks
-    if (!node->isTryBang()) {
+    if (!node->isTryBang() && node->numHandlers() > 0) {
       ss_ << " ";
       interpose(node->handlers(), " ", nullptr, nullptr, nullptr, true);
     }
