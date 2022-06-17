@@ -1194,7 +1194,7 @@ module BigInteger {
 
     if b >= 0 then
       b_ = b.safeCast(c_ulong);
-    else 
+    else
       b_ = (0 - b).safeCast(c_ulong);
 
     if _local {
@@ -5106,9 +5106,9 @@ module BigInteger {
     } else {
       if b >= 0 then
         b_ = b.safeCast(c_ulong);
-      else 
+      else
         b_ = (0 - b).safeCast(c_ulong);
-      
+
       if _local {
         rem = mpz_fdiv_ui(a.mpz, b_);
       } else if a.localeId == chpl_nodeID {
@@ -5118,37 +5118,15 @@ module BigInteger {
         rem = mpz_fdiv_ui(a_.mpz, b_);
       }
 
-      return 
+      return
         if rem == 0
           then 0
         else if b < 0
           then rem.safeCast(int) + b
-        else 
+        else
           rem.safeCast(int);
     }
   }
-
-  // /* Computes the mod operator on the two arguments, defined as
-  //    ``mod(m,n) = m - n * floor(m / n)``.
-
-  //    The result is always >= 0.
-  //    It is an error if `b` == 0.
-  // */
-  // proc bigint.mod(const ref a: bigint, b: uint) : uint {
-  //   const b_ = b.safeCast(c_ulong);
-  //   var rem: c_ulong; 
-
-  //   if _local {
-  //     rem = mpz_fdiv_ui(a.mpz, b_);
-  //   } else if a.localeId == chpl_nodeID {
-  //     rem = mpz_fdiv_ui(a.mpz, b_);
-  //   } else {
-  //     const a_ = a;
-  //     rem = mpz_fdiv_ui(a_.mpz, b_);
-  //   }
-
-  //   return rem.safeCast(uint);
-  // }
 
   // Comparison Functions
   proc bigint.cmp(const ref b: bigint) : int {
