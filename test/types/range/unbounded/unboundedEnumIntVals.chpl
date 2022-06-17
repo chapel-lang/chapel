@@ -1,26 +1,22 @@
 enum numbers { mn = min(int), one = 1, two = 2, three = 3, mx = max(int)}
 use numbers;
 
-for i in mn.. do
-  writeln(i);
-writeln();
+proc testRange(r) {
+  var count = 0;
+  for i in r {
+    writeln(i);
+    count += 1;
+    if count > 5 {
+      writeln("This isn't working");
+      break;
+    }
+  }
+  writeln();
+}
 
-for i in mn.. by 2 do
-  writeln(i);
-writeln();
-
-for i in one.. by 2 do
-  writeln(i);
-writeln();
-
-for i in ..mx by -1 do
-  writeln(i);
-writeln();
-
-for i in ..mx by -2 do
-  writeln(i);
-writeln();
-
-for i in ..three by -2 do
-  writeln(i);
-writeln();
+testRange(mn..);
+testRange(mn.. by 2);
+testRange(one.. by 2);
+testRange(..mx by -1);
+testRange(..mx by -2);
+testRange(..three by -2);
