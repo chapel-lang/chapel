@@ -1752,12 +1752,13 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   // for a cross-locale scan as well as flags to negotiate reading and
   // writing it.
   const ref targetLocs = this.dsiTargetLocales();
+  const firstLoc = targetLocs.domain.lowBound;
   var elemPerLoc: [targetLocs.domain] resType;
   var inputReady$: [targetLocs.domain] sync bool;
   var outputReady$: [targetLocs.domain] unmanaged BoxedSync(bool)?;
 
   // Fire up tasks per participating locale
-  coforall locid in dom.dist.targetLocDom {
+  coforall locid in targetLocs.domain {
     on targetLocs[locid] {
       const myop = op.clone(); // this will be deleted by doiScan()
 
@@ -1783,11 +1784,11 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
-      if (locid == dom.dist.targetLocDom.lowBound) then on elemPerLoc {
+      if (locid == firstLoc) then on elemPerLoc {
         const metaop = op.clone();
 
         var next: resType = metaop.identity;
-        for locid in dom.dist.targetLocDom {
+        for locid in targetLocs.domain {
           const locready = inputReady$[locid].readFE();
 
           // store the scan value
