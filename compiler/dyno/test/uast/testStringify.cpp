@@ -509,6 +509,8 @@ static void testDecl(Parser* parser) {
   TEST_CHPL_SYNTAX("config const (x, y): (int, int), (z, y): (bool, int);",
                    "config const (x, y): (int, int), (z, y): (bool, int);")
   TEST_CHPL_SYNTAX("config var (x,y) = (2,3);", "config var (x, y) = (2, 3);")
+  TEST_CHPL_SYNTAX("var aq = new owned Foo()?;", "var aq = new owned Foo()?;")
+  TEST_CHPL_SYNTAX("var eq = new Foo()?;", "var eq = new Foo()?;")
 }
 
 //TODO: Write many more specific tests for the format of different node types
