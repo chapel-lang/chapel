@@ -23,6 +23,7 @@ Contributors to the Chapel 1.26.0 release
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
+* Josh Milthorpe, [ORNL]
 * Brandon Neth, [HPE] intern from [University of Arizona]
 * Sarah Nguyen, [HPE]
 * Ahmad Rezaii, [HPE]
