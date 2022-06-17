@@ -3884,18 +3884,18 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   on the line length (and on stripNewline since the newline will be counted if it is
   stored in the array).
 
-  :arg arg: A 1D DefaultRectangular non-strided array storing int(8) or uint(8) which must have at least 1 element.
-  :arg maxSize: The maximum number of bytes to store into the ``arg`` array. Defaults to the size of the array.
+  :arg a: A 1D DefaultRectangular non-strided array storing int(8) or uint(8) which must have at least 1 element.
+  :arg maxSize: The maximum number of bytes to store into the ``a`` array. Defaults to the size of the array.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
  */
-proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() && !arg.stridable {
-  if arg.size == 0 || maxSize == 0 ||
-  ( arg.domain.lowBound + maxSize - 1 > arg.domain.highBound) then return 0;
+proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
+      where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
+  if a.size == 0 || maxSize == 0 ||
+  ( a.domain.lowBound + maxSize - 1 > a.domain.highBound) then return 0;
 
   var err:syserr = ENOERR;
   var numRead:int;
@@ -3904,8 +3904,8 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
     this._mark();
     param newLineChar = 0x0A;
     var got: int;
-    var i = arg.domain.lowBound;
-    const maxIdx = arg.domain.lowBound + maxSize - 1;
+    var i = a.domain.lowBound;
+    const maxIdx = a.domain.lowBound + maxSize - 1;
     var foundNewline = false;
     while !foundNewline {
       got = qio_channel_read_byte(false, this._channel_internal);
@@ -3916,7 +3916,7 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
         // encountered an error so throw
         this._revert();
         var err:syserr = -got;
-        try this._ch_ioerror(EFORMAT:syserr, "in channel.readLine(arg : [] uint(8))");
+        try this._ch_ioerror(EFORMAT:syserr, "in channel.readLine(a : [] uint(8))");
       }
       if got == newLineChar {
         foundNewline = true;
@@ -3927,16 +3927,16 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
         } else {
           // The line is longer than was specified so we throw an error
           this._revert();
-          try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(arg : [] uint(8))");
+          try this._ch_ioerror(EFORMAT:syserr, "line longer than maxSize in channel.readLine(a : [] uint(8))");
         }
       }
       if !(foundNewline && stripNewline) {
-        arg[i] = got:uint(8);
+        a[i] = got:uint(8);
         i += 1;
       }
     }
-    numRead = i - arg.domain.lowBound;
-    if i == arg.domain.lowBound && got < 0 then err = (-got):syserr;
+    numRead = i - a.domain.lowBound;
+    if i == a.domain.lowBound && got < 0 then err = (-got):syserr;
     this._commit();
   }
 
@@ -3945,7 +3945,7 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
   } else if err == EEOF {
     return 0;
   } else {
-    try this._ch_ioerror(err, "in channel.readLine(arg : [] uint(8))");
+    try this._ch_ioerror(err, "in channel.readLine(a : [] uint(8))");
   }
   return 0;
 
@@ -3953,7 +3953,7 @@ proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int
 
 pragma "no doc"
 pragma "last resort"
-inline proc channel.readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws {
+inline proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
 }
 
@@ -4034,7 +4034,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
 /*
   Read a line into a Chapel string. Reads until a ``\n`` is reached.
 
-  :arg arg: a string to receive the line
+  :arg s: a string to receive the line
   :arg maxSize: The maximum number of codepoints to store into ``s``. The default of -1 means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
@@ -4119,7 +4119,7 @@ proc channel.readLine(ref s: string,
 /*
   Read a line into Chapel bytes. Reads until a ``\n`` is reached.
 
-  :arg arg: bytes to receive the line
+  :arg b: bytes to receive the line
   :arg maxSize: The maximum number of bytes to store into ``b``. The default of -1 means to read an unlimited number of bytes.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
@@ -4903,14 +4903,14 @@ proc read(type t ...?numTypes) throws {
 }
 
 /* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
-proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && arg.rank == 1 && arg.isRectangular() && ! arg.stridable {
-  return stdin.readLine(arg, maxSize, stripNewline);
+proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
+      where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && ! a.stridable {
+  return stdin.readLine(a, maxSize, stripNewline);
 }
 
 pragma "last resort"
 pragma "no doc"
-proc readLine(ref arg: [] ?t, maxSize=arg.size, stripNewline=false): int throws
+proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
 }
