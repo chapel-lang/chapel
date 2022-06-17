@@ -4539,12 +4539,6 @@ proc channel.readlnHelper(ref args ...?k,
 /*
    Read a value of passed type.
 
-   .. note::
-
-     It is difficult to handle errors or to handle reaching the end of
-     the file with this function. If such cases are important please use
-     the :proc:`channel.read` returning the values read into arguments instead.
-
    For example, the following line of code reads a value of type `int`
    from :var:`stdin` and uses it to initialize a variable ``x``:
 
@@ -4566,12 +4560,6 @@ proc channel.read(type t) throws {
 
 /*
    Read a value of passed type followed by a newline.
-
-   .. note::
-
-     It is difficult to handle errors or to handle reaching the end of
-     the file with this function. If such cases are important please use
-     the :proc:`channel.readln` returning the values read into arguments instead.
 
    :arg t: the type to read
    :returns: the value read
