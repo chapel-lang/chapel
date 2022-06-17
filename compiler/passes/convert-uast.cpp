@@ -56,6 +56,28 @@
 
 using namespace chpl;
 
+// TODO: replace these global variables with fields in Converter
+// once we have a single Converter instance that converts a module
+// and all of its dependencies.
+
+static std::unordered_map<ID, Symbol*> gConvertedSyms;
+static std::unordered_map<const resolution::TypedFnSignature*,
+                          FnSymbol*> gConvertedFns;
+
+static std::vector<std::pair<SymExpr*, ID>> gIdentFixups;
+static std::vector<std::pair<SymExpr*,
+                            const resolution::TypedFnSignature*>> gFnCallFixups;
+
+// helpers for working with the above
+static void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
+static void noteConvertedFn(const resolution::TypedFnSignature* sig,
+                            FnSymbol* fn);
+static Symbol* findConvertedSym(ID id);
+static FnSymbol* findConvertedFn(const resolution::TypedFnSignature* sig);
+static void noteIdentFixupNeeded(SymExpr* se, ID id);
+static void noteCallFixupNeeded(SymExpr* se,
+                                const resolution::TypedFnSignature* sig);
+
 namespace {
 
 struct Converter {
@@ -84,7 +106,6 @@ struct Converter {
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
 
-  std::unordered_map<const uast::AstNode*, BaseAST*> alreadyConverted;
 
   Converter(chpl::Context* context, ModTag topLevelModTag,
             const uast::BuilderResult& builderResult)
@@ -96,7 +117,6 @@ struct Converter {
   Expr* convertAST(const uast::AstNode* node);
   Type* convertType(const types::QualifiedType qt);
   Symbol* convertParam(const types::QualifiedType qt);
-  FnSymbol* convertFnOutOfOrder(ID fnId);
 
   // convertAST helpers
   void setVariableType(const uast::VarLikeDecl* v, Symbol* sym);
@@ -126,7 +146,13 @@ struct Converter {
 
   static bool shouldScopeResolve(UniqueString symbolPath) {
     // TODO: check for dead modules and don't resolve those
+    if (symbolPath == "Random")
+      return false; // use super.RandomSupport; not working yet
+    if (symbolPath == "DefaultRectangular")
+      return false; // duplicate decorators error
+
     return true;
+//    return false;
   }
   static bool shouldScopeResolve(ID symbolId) {
     return shouldScopeResolve(symbolId.symbolPath());
@@ -408,18 +434,56 @@ struct Converter {
     return nullptr;
   }
 
-  Expr* visit(const uast::Identifier* node) {
-    Expr* ret = nullptr;
+  Expr* resolvedIdentifier(const uast::Identifier* node) {
+    // Check for a resolution result that includes a target ID
+    if (symStack.size() > 0) {
+      auto r = symStack.back().resolved;
+      if (r != nullptr) {
+        const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
+        if (rr != nullptr) {
+          auto id = rr->toId();
+          if (!id.isEmpty()) {
+            Symbol* sym = findConvertedSym(id);
+            if (sym == nullptr) {
+              // we will fix it later
+              sym = gFixupRequiredToken;
+            }
 
-    auto name = node->name();
+            SymExpr* se = new SymExpr(sym);
+            Expr* ret = se;
+            if (parsing::idIsParenlessFunction(context, id)) {
+              // it's a parenless function call so add a CallExpr
+              ret = new CallExpr(se);
+            }
 
-    if (auto remap = reservedWordRemapForIdent(name)) {
-      ret = remap;
-    } else {
-      ret = new UnresolvedSymExpr(name.c_str());
+            if (sym == gFixupRequiredToken) {
+              // note the SymExpr needing fixing later
+              noteIdentFixupNeeded(se, id);
+            }
+
+            return ret;
+          }
+        }
+      }
     }
 
-    return ret;
+    return nullptr;
+  }
+
+  Expr* visit(const uast::Identifier* node) {
+    // first, try to convert it using the resolution result
+    if (Expr* e = resolvedIdentifier(node)) {
+      return e;
+    }
+
+    // check for a reserved word
+    auto name = node->name();
+    if (auto remap = reservedWordRemapForIdent(name)) {
+      return remap;
+    }
+
+    // otherwise use an UnresolvedSymExpr
+    return new UnresolvedSymExpr(name.c_str());
   }
 
   Expr* visit(const uast::Implements* node) {
@@ -950,6 +1014,7 @@ struct Converter {
   Expr* convertScanReduceOp(const uast::AstNode* node) {
     if (auto opIdent = node->toIdentifier()) {
       auto name = opIdent->name();
+      // TODO: check for a resolution result for these
       if (name == USTR("+"))
         return new UnresolvedSymExpr("SumReduceScanOp");
       if (name == USTR("*"))
@@ -1291,7 +1356,9 @@ struct Converter {
     // Simple variables just get reverted to UnresolvedSymExpr.
     if (const uast::Variable* var = node->toVariable()) {
       auto name = var->name();
-      if (auto remap = reservedWordRemapForIdent(name)) {
+      if (Symbol* sym = findConvertedSym(var->id())) {
+        return new SymExpr(sym);
+      } else if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       } else {
         return new UnresolvedSymExpr(name.c_str());
@@ -1728,7 +1795,9 @@ struct Converter {
 
     if (auto ident = node->toIdentifier()) {
       auto name = ident->name();
-      if (name == USTR("atomic")) {
+      if (Expr* e = resolvedIdentifier(ident)) {
+        return e;
+      } else if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
         ret = new UnresolvedSymExpr("_singlevar");
@@ -2322,12 +2391,6 @@ struct Converter {
   }
 
   FnSymbol* convertFunction(const uast::Function* node, const char* comment) {
-    auto it = alreadyConverted.find(node);
-    if (it != alreadyConverted.end()) {
-      // already converted it, so return that
-      return toFnSymbol(it->second);
-    }
-
     // Decide if we want to resolve this function
     bool shouldResolveFunction = shouldResolve(node);
     bool shouldScopeResolveFunction = shouldResolveFunction ||
@@ -2356,8 +2419,10 @@ struct Converter {
 
     FnSymbol* fn = new FnSymbol("_");
 
-    // Note that we have already converted this
-    alreadyConverted.emplace(node, fn);
+    // Note that we have already converted this function
+    noteConvertedSym(node, fn);
+    if (resolvedFn)
+      noteConvertedFn(resolvedFn->signature(), fn);
 
     // build up the userString as in old parser
     // needed to match up some error outputs
@@ -2543,7 +2608,7 @@ struct Converter {
     }
 
     // Update the function symbol with any resolution results.
-    if (resolved) {
+    if (shouldResolveFunction) {
       auto retType = resolution::returnType(context, initialSig, poiScope);
       fn->retType = convertType(retType);
     }
@@ -2604,15 +2669,10 @@ struct Converter {
   DefExpr* visit(const uast::Module* node) {
     auto comment = consumeLatestComment();
 
-    auto it = alreadyConverted.find(node);
-    if (it != alreadyConverted.end()) {
-      // already converted it, so return that
-      return toDefExpr(it->second);
-    }
-
     // Decide if we want to resolve this module
     bool shouldResolveModule = shouldResolve(node);
-    bool shouldScopeResolveModule = shouldResolveModule || shouldResolve(node);
+    bool shouldScopeResolveModule = shouldResolveModule ||
+                                    shouldScopeResolve(node);
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
 
@@ -2669,8 +2729,8 @@ struct Converter {
 
     attachSymbolAttributes(node, mod);
 
-    // Note that we have already converted this
-    alreadyConverted.emplace(node, mod);
+    // Note the module is converted so we can wire up SymExprs later
+    noteConvertedSym(node, mod);
 
     return new DefExpr(mod);
   }
@@ -2805,6 +2865,7 @@ struct Converter {
     astlocMarker markAstLoc(node->id());
 
     ShadowVarPrefix prefix = convertTaskVarIntent(node);
+    // TODO: can we avoid this UnresolvedSymExpr ?
     Expr* nameExp = new UnresolvedSymExpr(node->name().c_str());
     Expr* type = convertTypeExpression(node->typeExpression());
     Expr* init = convertExprOrNull(node->initExpression());
@@ -3022,6 +3083,9 @@ struct Converter {
     // Fix up the AST based on the type, if it should be known
     setVariableType(node, varSym);
 
+    // Note the variable is converted so we can wire up SymExprs later
+    noteConvertedSym(node, varSym);
+
     return ret;
   }
 
@@ -3048,6 +3112,12 @@ struct Converter {
         auto varSym = toVarSymbol(defExpr->sym);
         auto linkageName = node->linkageName() ? varSym->cname : nullptr;
         stmts = convertTypesToExtern(stmts, linkageName);
+
+        // fix up gConvertedSyms since convertTypesToExtern
+        // replaced the DefExpr/Symbol
+        INT_ASSERT(stmts->body.last() && isDefExpr(stmts->body.last()));
+        auto newDef = toDefExpr(stmts->body.last());
+        gConvertedSyms[node->id()] = newDef->sym;
       }
     }
 
@@ -3070,6 +3140,10 @@ struct Converter {
     Expr* initExpr = convertExprOrNull(node->initExpression());
     auto ret = new DefExpr(new EnumSymbol(name), initExpr);
     attachSymbolAttributes(node, ret->sym);
+
+    // Note the enum element is converted so we can wire up SymExprs later
+    noteConvertedSym(node, ret->sym);
+
     return ret;
   }
 
@@ -3099,6 +3173,9 @@ struct Converter {
 
     auto ret = new BlockStmt(BLOCK_SCOPELESS);
     ret->insertAtTail(new DefExpr(enumTypeSym));
+
+    // Note the enum type is converted so we can wire up SymExprs later
+    noteConvertedSym(node, enumTypeSym);
 
     return ret;
   }
@@ -3150,6 +3227,9 @@ struct Converter {
     attachSymbolAttributes(node, ret->sym);
     attachSymbolVisibility(node, ret->sym);
 
+    // Note the type is converted so we can wire up SymExprs later
+    noteConvertedSym(node, ret->sym);
+
     return ret;
   }
 
@@ -3197,25 +3277,27 @@ void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
     auto r = symStack.back().resolved;
 
     if (r != nullptr) {
-      printf("SETTING VARIABLE TYPE!!\n");
-
       // Get the type of the variable itself
-      auto resolvedVar = r->byAst(v);
-      types::QualifiedType qt = resolvedVar.type();
-      if (!qt.isUnknown()) {
-        // Set a type for the variable
-        sym->type = convertType(qt);
+      const resolution::ResolvedExpression* rr = r->byAstOrNull(v);
+      if (rr != nullptr) {
+        types::QualifiedType qt = rr->type();
+        if (!qt.isUnknown()) {
+          printf("SETTING VARIABLE TYPE!!\n");
 
-        // Set the Qualifier
-        Qualifier q = convertQualifier(qt.kind());
-        if (q != QUAL_UNKNOWN)
-          sym->qual = q;
+          // Set a type for the variable
+          sym->type = convertType(qt);
 
-        // Set the param value for the variable in paramMap, if applicable
-        if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
-          if (qt.hasParamPtr()) {
-            Symbol* val = convertParam(qt);
-            paramMap.put(sym, val);
+          // Set the Qualifier
+          Qualifier q = convertQualifier(qt.kind());
+          if (q != QUAL_UNKNOWN)
+            sym->qual = q;
+
+          // Set the param value for the variable in paramMap, if applicable
+          if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
+            if (qt.hasParamPtr()) {
+              Symbol* val = convertParam(qt);
+              paramMap.put(sym, val);
+            }
           }
         }
       }
@@ -3228,22 +3310,30 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
     auto r = symStack.back().resolved;
 
     if (r != nullptr) {
-      const auto& resolvedExpr = r->byId(call->id());
-      const auto& candidates = resolvedExpr.mostSpecific();
-      int nBest = candidates.numBest();
-      if (nBest == 0) {
-        // nothing to do
-      } else if (nBest > 1) {
-        INT_FATAL("return intent overloading not yet handled");
-      } else if (nBest == 1) {
-        const resolution::TypedFnSignature* sig = candidates.only();
-        auto usig = sig->untyped();
-        if (usig->idIsFunction()) {
-          FnSymbol* fn = convertFnOutOfOrder(usig->id());
-          if (fn != nullptr) {
-            // Do we need to remove the old baseExpr?
-            expr->baseExpr = new SymExpr(fn);
-            parent_insert_help(expr, expr->baseExpr);
+      const resolution::ResolvedExpression* rr = r->byAstOrNull(call);
+      if (rr != nullptr) {
+        const auto& candidates = rr->mostSpecific();
+        int nBest = candidates.numBest();
+        if (nBest == 0) {
+          // nothing to do
+        } else if (nBest > 1) {
+          INT_FATAL("return intent overloading not yet handled");
+        } else if (nBest == 1) {
+          const resolution::TypedFnSignature* sig = candidates.only();
+          Symbol* fn = findConvertedFn(sig);
+          if (fn == nullptr) {
+            // we will fix it later
+            fn = gFixupRequiredToken;
+          }
+
+          // TODO: Do we need to remove the old baseExpr?
+          SymExpr* se = new SymExpr(fn);
+          expr->baseExpr = se;
+          parent_insert_help(expr, expr->baseExpr);
+
+          if (fn == gFixupRequiredToken) {
+            // note the SymExpr needing fixing later
+            noteCallFixupNeeded(se, sig);
           }
         }
       }
@@ -3545,6 +3635,7 @@ Symbol* Converter::convertParam(const types::QualifiedType qt) {
   return nullptr;
 }
 
+/*
 static ID getModuleId(Context* context, ID id) {
   while (!id.isEmpty()) {
     auto tag = parsing::idToTag(context, id);
@@ -3556,16 +3647,15 @@ static ID getModuleId(Context* context, ID id) {
   return id;
 }
 
-FnSymbol* Converter::convertFnOutOfOrder(ID fnId) {
+Symbol* Converter::convertSymbolOutOfOrder(ID id) {
   // Compute the module
-  ID moduleId = getModuleId(context, fnId);
+  ID moduleId = getModuleId(context, id);
   auto ast = parsing::idToAst(context, moduleId);
   INT_ASSERT(ast && ast->isModule());
   auto mod = ast->toModule();
   // Compute the function
-  ast = parsing::idToAst(context, fnId);
-  INT_ASSERT(ast && ast->isFunction());
-  auto fn = ast->toFunction();
+  ast = parsing::idToAst(context, id);
+  INT_ASSERT(ast && ast->isNamedDecl());
   // Add the module containing the function to the modStack if
   // it is not already there.
   bool changeModStack = true;
@@ -3576,14 +3666,15 @@ FnSymbol* Converter::convertFnOutOfOrder(ID fnId) {
     modStack.emplace_back(mod);
   }
 
-  FnSymbol* ret = nullptr;
-  // note: visit will add fn to the symStack
-  Expr* got = visit(fn);
+  Symbol* ret = nullptr;
+  // call the appropriate visit function
+  // if ast is a Function, visit will add fn to the symStack
+  Expr* got = convertAST(ast);
   if (auto def = toDefExpr(got)) {
-    ret = toFnSymbol(def->sym);
+    ret = def->sym;
   } else if (auto block = toBlockStmt(got)) {
     if (auto def = toDefExpr(block->body.last())) {
-      ret = toFnSymbol(def->sym);
+      ret = def->sym;
     }
   }
 
@@ -3594,6 +3685,8 @@ FnSymbol* Converter::convertFnOutOfOrder(ID fnId) {
 
   return ret;
 }
+*/
+
 
 } // end anonymous namespace
 
@@ -3615,4 +3708,91 @@ convertToplevelModule(chpl::Context* context,
   DefExpr* def = c.visit(mod);
   ModuleSymbol* ret = toModuleSymbol(def->sym);
   return ret;
+}
+
+static void noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
+  gConvertedSyms.emplace(ast->id(), sym);
+}
+
+static void noteConvertedFn(const resolution::TypedFnSignature* sig,
+                            FnSymbol* fn) {
+  gConvertedFns.emplace(sig, fn);
+}
+
+static void noteIdentFixupNeeded(SymExpr* se, ID id) {
+  gIdentFixups.emplace_back(se, id);
+}
+
+static void noteCallFixupNeeded(SymExpr* se,
+                                const resolution::TypedFnSignature* sig) {
+  gFnCallFixups.emplace_back(se, sig);
+}
+
+static Symbol* findConvertedSym(ID id) {
+  auto it = gConvertedSyms.find(id);
+  if (it != gConvertedSyms.end()) {
+    // already converted it, so return that
+    return it->second;
+  }
+
+  return nullptr;
+}
+
+static FnSymbol* findConvertedFn(const resolution::TypedFnSignature* sig) {
+  auto it = gConvertedFns.find(sig);
+  if (it != gConvertedFns.end()) {
+    // already converted it, so return that
+    return it->second;
+  }
+
+  return nullptr;
+}
+
+void postConvertApplyFixups(chpl::Context* context) {
+
+  // Note: we should be able to minimize the fixups needed
+  // by converting the modules in the initialization order
+
+  // Fix up any SymExprs needing to be re-targeted
+  for (const auto& p : gIdentFixups) {
+    SymExpr* se = p.first;
+    ID target = p.second;
+    INT_ASSERT(se->symbol() == gFixupRequiredToken);
+
+    Symbol* sym = findConvertedSym(target);
+    if (sym == nullptr) {
+      INT_FATAL("could not find target symbol for SymExpr fixup");
+    }
+    se->setSymbol(sym);
+    if (fVerify) {
+      INT_ASSERT(sym->defPoint && sym->defPoint->inTree());
+    }
+  }
+  // clear gIdentFixups since these have now been processed
+  gIdentFixups.clear();
+
+  // Fix up any CallExprs that need to have their calledExpr re-targeted
+  for (const auto& p : gFnCallFixups) {
+    SymExpr* se = p.first;
+    const resolution::TypedFnSignature* target = p.second;
+    INT_ASSERT(se->symbol() == gFixupRequiredToken);
+
+    FnSymbol* fn = findConvertedFn(target);
+    if (fn == nullptr) {
+      INT_FATAL("could not find target function for SymExpr fixup");
+    }
+    se->setSymbol(fn);
+    if (fVerify) {
+      INT_ASSERT(fn->defPoint && fn->defPoint->inTree());
+    }
+  }
+  // clear gFnCallFixups since these have now been processed
+  gFnCallFixups.clear();
+
+  // clear out the globals to save space
+  // (in future, these will be fields in Converter,
+  //  and they can be cleared out without any special action if the
+  //  Converter is destroyed after it is no longer needed)
+  gConvertedSyms.clear();
+  gConvertedFns.clear();
 }
