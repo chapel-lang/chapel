@@ -14,6 +14,7 @@ Contributors to the Chapel 1.26.0 release
 * Jeremiah Corrado, [HPE]
 * Lydia Duncan, [HPE]
 * Michael Ferguson, [HPE]
+* Luca Ferranti, individual contributor
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * David Iten, [HPE]
