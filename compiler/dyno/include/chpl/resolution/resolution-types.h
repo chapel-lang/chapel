@@ -1041,6 +1041,8 @@ class ResolvedExpression {
 class ResolutionResultByPostorderID {
  private:
   ID symbolId;
+  // TODO: replace this with a hashtable or at least
+  // something that doesn't have to start at 0
   std::vector<ResolvedExpression> vec;
 
  public:
@@ -1065,15 +1067,27 @@ class ResolutionResultByPostorderID {
   ResolvedExpression& byAstExpanding(const uast::AstNode* ast) {
     return byIdExpanding(ast->id());
   }
-  ResolvedExpression& byId(const ID& id) {
+
+  bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
-    assert(id.symbolPath() == symbolId.symbolPath());
-    assert(0 <= postorder && (size_t) postorder < vec.size());
+    if (id.symbolPath() == symbolId.symbolPath() &&
+        0 <= postorder && (size_t) postorder < vec.size())
+      return true;
+
+    return false;
+  }
+  bool hasAst(const uast::AstNode* ast) const {
+    return ast != nullptr && hasId(ast->id());
+  }
+
+  ResolvedExpression& byId(const ID& id) {
+    assert(hasId(id));
+    auto postorder = id.postOrderId();
     return vec[postorder];
   }
   const ResolvedExpression& byId(const ID& id) const {
+    assert(hasId(id));
     auto postorder = id.postOrderId();
-    assert(0 <= postorder && (size_t) postorder < vec.size());
     return vec[postorder];
   }
   ResolvedExpression& byAst(const uast::AstNode* ast) {
@@ -1081,6 +1095,26 @@ class ResolutionResultByPostorderID {
   }
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byId(ast->id());
+  }
+  ResolvedExpression* byIdOrNull(const ID& id) {
+    if (hasId(id)) {
+      auto postorder = id.postOrderId();
+      return &vec[postorder];
+    }
+    return nullptr;
+  }
+  const ResolvedExpression* byIdOrNull(const ID& id) const {
+    if (hasId(id)) {
+      auto postorder = id.postOrderId();
+      return &vec[postorder];
+    }
+    return nullptr;
+  }
+  ResolvedExpression* byAstOrNull(const uast::AstNode* ast) {
+    return byIdOrNull(ast->id());
+  }
+  const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    return byIdOrNull(ast->id());
   }
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
