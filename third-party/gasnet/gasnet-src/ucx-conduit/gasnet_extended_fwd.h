@@ -85,4 +85,9 @@
 #define gasnete_amref_put_nbi       gasnete_put_nbi
 #endif
 
+#if !defined(GASNET_DISABLE_MUNMAP_DEFAULT) && PLATFORM_ARCH_64
+ // default to disabling munmap due to bug 4164 (odp performance)
+ #define GASNET_DISABLE_MUNMAP_DEFAULT 1
+#endif
+
 #endif

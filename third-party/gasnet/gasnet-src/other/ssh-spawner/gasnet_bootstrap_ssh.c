@@ -1105,6 +1105,8 @@ static void build_nodelist(void)
     nodelist = parse_servers(env_string);
   } else if ((env_string = my_getenv("LSB_HOSTS")) != NULL) {
     nodelist = parse_servers(env_string);
+  } else if ((env_string = my_getenv("OAR_NODEFILE")) != NULL) {
+    nodelist = parse_nodefile(env_string);
   } else if (my_getenv("SLURM_JOB_ID") != NULL) {
     nodelist = parse_nodepipe("scontrol show hostname");
   } else {

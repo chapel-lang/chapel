@@ -9,18 +9,18 @@ dnl -*- m4 -*-
 define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
-define([GASNET_RELEASE_VERSION_MAJOR_D],[2021])
-define([GASNET_RELEASE_VERSION_MINOR_D],[9])
+define([GASNET_RELEASE_VERSION_MAJOR_D],[2022])
+define([GASNET_RELEASE_VERSION_MINOR_D],[3])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
-define([GASNETEX_SPEC_VERSION_MINOR_D],[14])
+define([GASNETEX_SPEC_VERSION_MINOR_D],[15])
 dnl GASNet-1 spec version:
 define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
 define([GASNETT_SPEC_VERSION_MAJOR_D],[1])
-define([GASNETT_SPEC_VERSION_MINOR_D],[18])
+define([GASNETT_SPEC_VERSION_MINOR_D],[19])
 
 define([GASNET_RELEASE_VERSION_D],
          [GASNET_RELEASE_VERSION_MAJOR_D.GASNET_RELEASE_VERSION_MINOR_D.GASNET_RELEASE_VERSION_PATCH_D])
@@ -3687,6 +3687,18 @@ else
     GASNET_POPVAR(LDFLAGS)
     GASNET_POPVAR(LIBS)
 
+    ucx_max_med_dflt=`expr 4096 - 40 - 64`  # 40 = fixed header, 64 = 16x 4-byte args
+    GASNET_WITH(ucx-max-medium,[Specify gex_LUB*Medium() for ucx-conduit (default $ucx_max_med_dflt)],
+      [if expr "$withval" : '[[0-9]]*$' >/dev/null 2>&1 && \
+          expr "$withval" '>=' 512  >/dev/null 2>&1 ; then
+         ucx_max_medium="$withval"
+       else
+         AC_MSG_ERROR([--with-ucx-max-medium="$withval" is not legal.  Value must no smaller than 512.])
+       fi],
+      [AC_MSG_ERROR([--with-ucx-max-medium must be no smaller than 512])],
+      [ucx_max_medium=$ucx_max_med_dflt])
+    AC_DEFINE_UNQUOTED(GASNETC_UCX_MAX_MEDIUM_DFLT, [$ucx_max_medium])
+
     CONDUIT_SPAWNER
 fi
 AC_SUBST(UCX_CFLAGS)
@@ -3756,6 +3768,8 @@ if test "$enabled_ibv" = yes; then
       struct ibv_device device;
       device.transport_type = IBV_TRANSPORT_IB;
     ], [ AC_DEFINE(HAVE_IBV_TRANSPORT_TYPE) ] )
+
+    AC_CHECK_FUNCS(ibv_wc_status_str)
   fi
 
   GASNET_POPVAR(CFLAGS)
@@ -4138,8 +4152,12 @@ if test "$enabled_ofi" = yes; then
     ofi_known_provider="yes"
     detected_ofi_provider=""
     ofi_use_thread_domain=0
-    # List of supported providers in order of preference.
-    supported_providers="psm2 gni sockets tcp;ofi_rxm verbs;ofi_rxm"
+    ofi_use_multi_cq=0
+    ofi_retry_recvmsg=0
+    # List of known providers in order of preference.
+    # Presence on this list does not necessarily indicate support status.
+    # Consult ofi-conduit/README for the status of supported libfabric providers.
+    known_providers="cxi psm2 gni verbs;ofi_rxm sockets udp;ofi_rxd tcp;ofi_rxm"
     
     GASNET_WITH(ofi-provider, [Statically configure ofi-conduit for the given provider],
         ofi_provider="$withval", )
@@ -4147,7 +4165,7 @@ if test "$enabled_ofi" = yes; then
     if test -z "$ofi_provider"; then
         GASNET_PUSHVAR(PATH, "$OFI_HOME/bin:$PATH")
         if command -v fi_info > /dev/null 2>&1; then # Only do this if fi_info is in the $PATH
-            for word in $supported_providers 
+            for word in $known_providers
             do
                 if fi_info --provider="$word" > /dev/null 2>&1; then
                     detected_ofi_provider="$word"
@@ -4163,20 +4181,31 @@ if test "$enabled_ofi" = yes; then
             ofi_define_mr_scalable=1
             ofi_use_thread_domain=1
         ;;
+        cxi)
+            ofi_define_mr_scalable=1
+            ofi_use_multi_cq=1
+            ofi_retry_recvmsg=1
+        ;;
         gni)
             ofi_define_mr_scalable=0
         ;;
         verbs\;ofi_rxm)
             ofi_define_mr_scalable=0
         ;;
-        tcp\;ofi_rxm)  # Reports MR_SCALABLE support, but see bug 3867
-            ofi_define_mr_scalable=0
+        tcp\;ofi_rxm)
+            ofi_define_mr_scalable=1
+        ;;
+        udp\;ofi_rxd)
+            ofi_define_mr_scalable=1
+            ofi_retry_recvmsg=1
         ;;
         sockets)
             ofi_define_mr_scalable=1
         ;;
         default|"")
             ofi_known_provider="no"
+            ofi_use_multi_cq=1
+            ofi_retry_recvmsg=1
         ;;
         *)
         GASNET_MSG_WARN([
@@ -4188,11 +4217,17 @@ Defaulting to runtime provider feature detection for ofi-conduit.])
     if test "$ofi_known_provider" = "yes"; then
         AC_DEFINE_UNQUOTED(GASNETC_OFI_PROVIDER_LIST, ["$ofi_provider"])
     else
-        AC_DEFINE_UNQUOTED(GASNETC_OFI_PROVIDER_LIST, ["$supported_providers"])
+        AC_DEFINE_UNQUOTED(GASNETC_OFI_PROVIDER_LIST, ["$known_providers"])
     fi
 
     GASNET_IF_ENABLED_WITH_AUTO(ofi-thread-domain, [Indicates if the conduit should use the FI_THREAD_DOMAIN threading model(advanced users only)],
                  [ofi_use_thread_domain="1"], [ofi_use_thread_domain="0"], [])
+
+    GASNET_IF_ENABLED_WITH_AUTO(ofi-multi-cq, [Indicates if the conduit should use multiple CQs (advanced users only)],
+                 [ofi_use_multi_cq="1"], [ofi_use_multi_cq="0"], [])
+
+    GASNET_IF_ENABLED_WITH_AUTO(ofi-retry-recvmsg, [Indicates if the conduit should allow for retry of fi_recvmsg calls (advanced users only)],
+                 [ofi_retry_recvmsg="1"], [ofi_retry_recvmsg="0"], [])
 
     GASNET_IF_ENABLED_WITH_AUTO(ofi-mr-scalable, [Indicates if the conduit should statically compile FI_MR_SCALABLE support into ofi-conduit (advanced users only)],
                  [ofi_define_mr_scalable="1"], [ofi_define_mr_scalable="0"], [])
@@ -4209,6 +4244,8 @@ configured for that provider. If that is not your desired provider, override thi
     fi
 
     AC_DEFINE_UNQUOTED(GASNETC_OFI_USE_THREAD_DOMAIN, [$ofi_use_thread_domain])
+    AC_DEFINE_UNQUOTED(GASNETC_OFI_USE_MULTI_CQ, [$ofi_use_multi_cq])
+    AC_DEFINE_UNQUOTED(GASNETC_OFI_RETRY_RECVMSG, [$ofi_retry_recvmsg])
     GASNET_WITH(ofi-num-completions,
                 [Max number of completions for ofi-conduit to read from a CQ at one time (default 64)],
                 [if expr "$withval" : '[[0-9]]*$' >/dev/null 2>&1 && \
@@ -4234,6 +4271,20 @@ configured for that provider. If that is not your desired provider, override thi
                 [AC_MSG_ERROR([--with-ofi-max-medium must be no smaller than 512])],
                  [ofi_max_medium=8192])
     AC_DEFINE_UNQUOTED(GASNETC_OFI_MAX_MEDIUM, [$ofi_max_medium])
+
+    GASNET_IF_ENABLED_NOHELP(ofi-legacy-extended,
+                      [AC_DEFINE(GASNETC_OFI_REFERENCE_EXTENDED)
+                       GASNET_MSG_WARN([
+-----------------------------------------------------------------------
+ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+ You passed --enable-ofi-legacy-extended
+ This is unsupported and usually has a SERIOUS impact on performance.
+ Do not trust any performance numbers obtained from programs built
+ using this GASNet installation!!!
+
+ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+-----------------------------------------------------------------------])])
   fi
 fi
 AC_SUBST(OFI_CFLAGS)
@@ -4648,7 +4699,7 @@ if test "$have_pmi" = yes; then
   # These have not bee seen outside of Cray PMI, but we can hope:
   GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $PMI_SPAWNER_LDFLAGS")
   GASNET_PUSHVAR(LIBS,"$LIBS $PMI_SPAWNER_LIBS")
-  AC_CHECK_FUNCS([PMI_Allgather PMI_Allgather_on_smp PMI_Bcast])
+  AC_CHECK_FUNCS([PMI_Allgather PMI_Allgather_on_smp PMI_Bcast PMI_Get_numpes_on_smp])
   GASNET_POPVAR(LIBS)
   GASNET_POPVAR(LDFLAGS)
 
@@ -5037,8 +5088,6 @@ if test "$enable_mk_hip" != "no"; then
   if test "$have_mk_hip" != "no"; then
     GASNET_PACKAGE_HOME(HIP, [HIP developer tools], [hipcc], [/opt/rocm], [include/hip/hip_runtime.h])
     GASNET_PACKAGE_CFLAGS(HIP)
-    GASNET_ENV_DEFAULT(HIP_LIBS, -lamdhip64)
-    GASNET_PACKAGE_LDFLAGS(HIP, amdhip64)
 
     # UNDOCUMENTED option to enable use of HIP over CUDA *by GASNet maintainers*.
     # TODO:  Eventually we should REMOVE or DOCUMENT
@@ -5051,10 +5100,22 @@ if test "$enable_mk_hip" != "no"; then
       esac
     ])
     case "$hip_platform" in
-      amd)  AC_DEFINE(GASNETI_HIP_PLATFORM_AMD)
+      amd)
+            GASNET_ENV_DEFAULT(HIP_LIBS, -lamdhip64)
+            GASNET_PACKAGE_LDFLAGS(HIP, amdhip64)
+            AC_DEFINE(GASNETI_HIP_PLATFORM_AMD)
             ;;
       nvidia)
             CHECK_PKG_CUDA()
+
+            # HIP-over-CUDA sometimes depends on amdhip64 (version-dependent)
+            # but always depends on functions from CUDA runtime (library name can vary).
+            # libcudart is generally NOT in CUDA_LIBS, since the CUDA MK does not require it
+            GASNET_ENV_DEFAULT(HIP_LIBS, -lamdhip64 -lcudart)
+            # extra_flags below ensures default HIP_LDFLAGS includes the CUDA libdir (for libcudart)
+            # which notably may or may not be in CUDA_LDFLAGS (since CUDA only requires libcuda)
+            GASNET_PACKAGE_LDFLAGS(HIP, amdhip64, -L$CUDA_HOME/lib64)
+
             # Suppress warnings when compiling gasnet_hip.c and testhip.c
             # due to "issues" in hip_runtime.h when parsed by a C compiler in
             # __HIP_PLATFORM_NVCC__ mode.
@@ -5081,7 +5142,7 @@ if test "$enable_mk_hip" != "no"; then
                         [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS -Wno-return-type"])
                 ;;
             esac
-            HIP_LIBS="$HIP_LIBS -lcudart $CUDA_LIBS"
+            HIP_LIBS="$HIP_LIBS $CUDA_LIBS"
             HIP_LDFLAGS="$HIP_LDFLAGS $CUDA_LDFLAGS"
             HIP_CFLAGS="$HIP_CFLAGS $CUDA_CFLAGS $HIP_NVCC_WARNFLAGS"
             AC_DEFINE(GASNETI_HIP_PLATFORM_NVIDIA)
@@ -5502,6 +5563,17 @@ dnl GASNET_TOOLSONLY_FALSE_END
 fi
 
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
+# Set a site-default for GASNET_HOST_DETECT
+GASNET_WITH(host-detect,
+   [Default value for GASNET_HOST_DETECT (default is system and network dependent)],
+   [case "$withval" in
+      conduit|hostname|gethostid)
+         AC_DEFINE_UNQUOTED(GASNETI_HOST_DETECT_CONFIGURE, "$withval")
+         ;;
+      *) GASNET_MSG_ERROR(User requested --with-host-detect='$withval', but that is not a supported value.)
+         ;;
+    esac])
+
 # Determine the default GASNET_MAX_SEGSIZE string
 if test "$with_pshm" = "no" && test "$HAVE_MMAP" = 0 ; then
   GASNETI_MAX_SEGSIZE_DEFAULT="100MB/P"  # rare malloc-based platforms

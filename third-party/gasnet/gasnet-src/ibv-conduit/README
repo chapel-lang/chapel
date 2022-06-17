@@ -159,6 +159,12 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   of 'mpi', 'pmi' or 'ssh'.  If this option is not used, mpi is the
   default when available, and ssh otherwise.
   Here are some things to consider when selecting a default spawner:
+  + The choice of spawner only affects the protocol used for parallel job
+    setup and teardown; in particular it is NOT used to implement any part
+    of the steady-state GASNet communication operations. As such, the
+    selected protocol needs to be stable and co-exist with GASNet
+    communication, but its performance efficiency is usually not a
+    practical consideration.
   + mpi-spawner is the default when MPI is available precisely because it
     is so frequently present on systems where GASNet is to be installed.
     Additionally, very little (if any) configuration is required and the
@@ -184,7 +190,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
 @ Section: Job Spawning @
 
-  If using UPC, Titanium, etc. the language-specific commands should be used
+  If using UPC++, Chapel, etc. the language-specific commands should be used
   to launch applications.  Otherwise, applications can be launched using
   the gasnetrun_ibv utility:
   + usage summary:

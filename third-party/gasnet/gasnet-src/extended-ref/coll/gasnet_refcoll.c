@@ -2549,6 +2549,7 @@ gasnete_tm_reduce_all_nb_default(
   gasnete_coll_team_t team = i_tm->_coll_team;
   const size_t nbytes = dt_sz * dt_cnt;
   const int binomial_root_radix = 1 + gasnete_coll_log2_rank(i_tm->_size - 1);
+  gasnete_coll_local_tree_geom_t *geom = NULL;
   if ((nbytes * binomial_root_radix <= team->p2p_eager_buffersz) &&
       (nbytes <= gex_AM_LUBRequestMedium())) {
     to_one_alg = &gasnete_tm_reduce_BinomialEager;
@@ -2556,19 +2557,28 @@ gasnete_tm_reduce_all_nb_default(
              (dt_sz <= gex_AM_LUBRequestMedium())) {
     to_one_alg = &gasnete_tm_reduce_BinomialEagerSeg;
   } else {
-    gasneti_assert(dt == GEX_DT_USER);
-    gasneti_fatalerror("gex_Coll_ReduceToAllNB: (dt_sz == %"PRIuSZ") is TOO LARGE for this implementation",
-                       dt_sz);
+    const size_t smallest_scratch = team->scratch_size;
+    gex_Rank_t root = 0; // TODO: could rotate roots to balance load
+    geom = gasnete_coll_local_tree_geom_fetch(gasnetc_tm_reduce_tree_type, root, team);
+    const gex_Rank_t max_radix = geom->max_radix;
+    if ((dt_sz * (max_radix + 1) <= smallest_scratch) && (dt_sz <= gex_AM_LUBRequestLong())) {
+      to_one_alg = &gasnete_tm_reduce_TreePutSeg;
+    } else {
+      gasneti_assert(dt == GEX_DT_USER);
+      gasneti_fatalerror("gex_Coll_ReduceToAll: (dt_sz == %"PRIuSZ") is TOO LARGE for this implementation",
+                         dt_sz);
+    }
   }
 
   gasneti_assert(!!to_one_alg ^ !!to_all_alg); // exactly one must be non-NULL
 
   gex_Event_t result;
   if (to_one_alg) {
+    // TODO-EX: stop abusing implementation_t argument to pass the geom
     result = (*to_one_alg)(e_tm, GEX_RANK_INVALID, dst, src,
                            dt, dt_sz, dt_cnt,
                            opcode, user_fnptr, user_cdata,
-                           /*flags*/0, NULL, sequence GASNETI_THREAD_PASS);
+                           /*flags*/0, (void*)geom, sequence GASNETI_THREAD_PASS);
   } else {
     result = (*to_all_alg)(e_tm, dst, src,
                            dt, dt_sz, dt_cnt,

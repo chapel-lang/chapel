@@ -23,6 +23,7 @@ migration of current GASNet-1 client software. Existing GASNet clients can
 get started by relying on this layer (provided in gasnet.h), and incrementally 
 add calls to the new gex_* interfaces (defined in gasnetex.h, which is 
 automatically included by gasnet.h) to access new EX features and capabilities.
+For details, see docs/gasnet1_differences.md.
 
 Feedback or questions on any matters related to the GASNet-EX project are
 welcomed at: gasnet-devel@lbl.gov
@@ -429,10 +430,10 @@ ucx-conduit: Unified Communication X framework [EXPERIMENTAL]
 
 ofi-conduit: Open Fabrics Interfaces [EXPERIMENTAL]
  GASNet over the Open Fabrics Interface framework (libfabric).
- This conduit is currently being re-implemented for GASNet-EX.
- Work to date is believed to be functionally complete and correct, but not performant.
- Until that rewrite is complete, users are advised to use other conduits compatible
- with their hardware, or to use the legacy GASNet-1 release (if EX-specific features are not required).
+ This conduit is currently experimental, and is not yet carefully tuned for performance.
+ With the exception of HPE Slingshot and Intel OmniPath networks (where ofi-conduit is
+ either the best or only option), users are advised to use other conduits compatible
+ with their hardware.
 
 Native, high-performance conduits:
 ---------------------------------
@@ -529,6 +530,8 @@ Platforms where GASNet and Berkeley UPC have been successfully tested include:
     * CNL/Cray-XK/{gcc,PGI,PathScale,Intel,Cray}/64: smp, mpi &
 
     * CNL/Cray-XC/{gcc,Intel,Cray}/64: smp, mpi, aries, ofi
+
+    * CNL/HPE-Cray-EX/{gcc,Cray}/64: smp, mpi, ofi
 
     * Linux/Cray-XD1/{gcc,PGI}/64: smp, mpi &
 
@@ -854,6 +857,26 @@ these aliases.
  (for instance, the next power of two in some implementations).
  The default for both settings is zero, which results in using the system
  default size for thread stacks.
+
+* GASNET_HOST_DETECT
+ To implement gex_System_QueryHostInfo() and to construct shared-memory
+ "nbrhds", GASNet must map the hosts (compute nodes) in a job.  This requires
+ a unique identifier for each host.  This string-valued setting selects the
+ identifier used.
+ The following are implemented for most conduits:
+   "hostid" - the 32-bit value retuned by gethostid()
+   "hostname" - a 64-bit hash of the hostname
+ Some conduits support:
+   "conduit" - a network-specific identifier (such as a MAC address)
+ On networks providing the "conduit" option, conduit-specific documentation will
+ describe whether it is supported in addition to the two listed above, or if
+ it is the *only* supported option.
+ The default is determined as follows (from highest to lowest priority):
+   IF "conduit" is supported THEN "conduit" is the default.
+   ELSEIF configured using '--with-host-detect=...' THEN the "..." is the default.
+   ELSEIF gethostid() is available THEN "hostid" is the default.
+   ELSE "hostname" is the default.
+
 
 * see conduit-specific documentation in conduit directories for more settings
 

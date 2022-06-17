@@ -1702,7 +1702,7 @@ void doit8(int partner, int *partnerseg) {
 
   //  check that RMA calls evaluate arguments exactly once
 #if !PLATFORM_COMPILER_XLC // Skip due to external bug 4205
-  #if PLATFORM_COMPILER_GNU_CXX && GASNETI_HAVE_CC_PRAGMA_GCC_DIAGNOSTIC
+  #if PLATFORM_COMPILER_GNU_CXX && GASNETT_USE_PRAGMA_GCC_DIAGNOSTIC
   // DO NOT emulate the following warning suppression behavior!
   // These warnings are often an indication of genuine undefined behavior.
   //

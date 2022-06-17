@@ -61,6 +61,7 @@ typedef struct gasneti_mk_impl_s gasneti_mk_impl_t;
     gasneti_Client_t       _client;     \
     gex_MK_Class_t         _mk_class;   \
     gasneti_mk_impl_t     *_mk_impl;    \
+    void                  *_mk_conduit; \
     gasneti_weakatomic32_t _ref_count;
   typedef struct { GASNETI_MK_COMMON } *gasneti_MK_t;
   #if GASNET_DEBUG

@@ -267,7 +267,8 @@ typedef struct _gasneti_ucx_module {
     gasneti_mutex_t             ucp_worker_lock;
     gasnet_ep_info_t          * ep_tbl;
     size_t                      request_size;
-    gasneti_list_t              sreq_free;    /* AM requests pool */
+    gasneti_list_t              sreq_free_req;// AM requests
+    gasneti_list_t              sreq_free_rep;// AM replies
     gasneti_list_t              send_queue;   /* list of pending send requests */
     gasneti_list_t              recv_queue;   /* queue of pending to process reqs */
 #if !GASNETC_PIN_SEGMENT

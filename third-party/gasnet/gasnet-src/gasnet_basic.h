@@ -478,8 +478,9 @@ typedef union { uint64_t _u; char _c[8]; } gasneti_magic_t;
   #define GASNETI_PRAGMA(x) _Pragma ( #x )
 #endif
 
-#if GASNETI_COMPILER_HAS(PRAGMA_GCC_DIAGNOSTIC)
-  #define GASNETI_USE_PRAGMA_GCC_DIAGNOSTIC 1
+#if (!defined(GASNETT_USE_PRAGMA_GCC_DIAGNOSTIC) && GASNETI_COMPILER_HAS(PRAGMA_GCC_DIAGNOSTIC)) || \
+              GASNETT_USE_PRAGMA_GCC_DIAGNOSTIC
+  #define     GASNETT_USE_PRAGMA_GCC_DIAGNOSTIC 1
   #if defined(__cplusplus)
     #define _GASNETI_NOWARN_IGNORES_C_ONLY
   #else

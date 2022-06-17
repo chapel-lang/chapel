@@ -832,6 +832,8 @@ extern size_t gasneti_format_putsgets(char *_buf, void *_pstats,
 
 extern const char *gasneti_formattm(gex_TM_t _tm);
 
+extern const char *gasneti_formatmk(gex_MK_t _mk);
+
 // Prints a *set* of values to a caller-provided buffer.
 // Call with NULL buffer returns required length.
 extern size_t gasneti_format_dt(char *_buf, gex_DT_t _dt);

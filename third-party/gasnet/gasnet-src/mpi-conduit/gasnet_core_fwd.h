@@ -131,6 +131,11 @@
 //#define GASNETC_SEGMENT_DESTROY_HOOK 1
 //#define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
 
+  // Uncomment the following defines if conduit provides the corresponding hook.
+  // See other/kinds/gasnet_kinds_internal.h for prototypes and brief descriptions.
+//#define GASNETC_MK_CREATE_HOOK 1
+//#define GASNETC_MK_DESTROY_HOOK 1
+
 /* mpi-conduit supports top-level poll throttling */
 #define GASNETC_USING_SUSPEND_RESUME 1
 
