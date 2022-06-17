@@ -1,0 +1,4 @@
+bug: infinite loops for method iterators with --no-inline-iterators
+
+When using the --no-inline-iterators flag, some method-based iterators
+go into infinite loops for reasons that are not obvious to me.
