@@ -134,6 +134,8 @@ void parse() {
 
   finishCountingTokens();
 
+  postConvertApplyFixups(gContext);
+
   parsed = true;
 }
 
