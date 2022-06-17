@@ -2298,22 +2298,6 @@ setupSimultaneousIterators(Vec<Symbol*>& iterators,
 }
 
 
-static bool
-isBoundedIterator(FnSymbol* fn) {
-  if (fn->_this) {
-    Type* type = fn->_this->getValType();
-    if (type->symbol->hasFlag(FLAG_RANGE)) {
-      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "boundedType"));
-      if (!strcmp(type->substitutionsPostResolve[1].value->name, "bounded"))
-        return true;
-      else
-        return false;
-    }
-  }
-  return true;
-}
-
-
 static void getIteratorChildren(Vec<Type*>& children, Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     forv_Vec(AggregateType, child, at->dispatchChildren) {
@@ -2508,50 +2492,48 @@ expandForLoop(ForLoop* forLoop) {
         break;
       }
 
-      if (isBoundedIterator(iterFn)) {
-        if (testBlock == NULL) {
-          if (isNotDynIter) {
-            // note that we have found the first test
-            testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
+      if (testBlock == NULL) {
+        if (isNotDynIter) {
+          // note that we have found the first test
+          testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
 
-          } else {
-            // note that we have found the first test block and add checks for
-            // more before and at the end of the loop. As mentioned above,
-            // dynamic iterators generate things that can't be in the header of
-            // the c for loop, so we generate a simple bool variable to put at
-            // the test of the c for loop, and update that condition var before
-            // the loop is run, and at the end of each iteration.
-            forLoop->insertBefore(new DefExpr(cond));
-            forLoop->insertBefore(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
-            forLoop->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
+        } else {
+          // note that we have found the first test block and add checks for
+          // more before and at the end of the loop. As mentioned above,
+          // dynamic iterators generate things that can't be in the header of
+          // the c for loop, so we generate a simple bool variable to put at
+          // the test of the c for loop, and update that condition var before
+          // the loop is run, and at the end of each iteration.
+          forLoop->insertBefore(new DefExpr(cond));
+          forLoop->insertBefore(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
+          forLoop->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
 
-            testBlock = new BlockStmt(new SymExpr(cond));
-          }
-
-        } else if (!fNoBoundsChecks) {
-          // for all but the first iterator add checks at the beginning of each loop run
-          // and a final one after to make sure the other iterators don't finish before
-          // the "leader" and they don't have more afterwards.
-          VarSymbol* hasMore    = newTemp("hasMore",    dtBool);
-          VarSymbol* isFinished = newTemp("isFinished", dtBool);
-
-          forLoop->insertBefore(new DefExpr(isFinished));
-          forLoop->insertBefore(new DefExpr(hasMore));
-
-          forLoop->insertAtHead(new CondStmt(new SymExpr(isFinished),
-                                             new CallExpr(PRIM_RT_ERROR,
-                                                          new_CStringSymbol("zippered iterations have non-equal lengths"))));
-
-          forLoop->insertAtHead(new CallExpr(PRIM_MOVE, isFinished, new CallExpr(PRIM_UNARY_LNOT, hasMore)));
-
-          forLoop->insertAtHead(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
-
-          forLoop->insertAfter(new CondStmt(new SymExpr(hasMore),
-                                            new CallExpr(PRIM_RT_ERROR,
-                                                         new_CStringSymbol("zippered iterations have non-equal lengths"))));
-
-          forLoop->insertAfter(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
+          testBlock = new BlockStmt(new SymExpr(cond));
         }
+
+      } else if (!fNoBoundsChecks) {
+        // for all but the first iterator add checks at the beginning of each loop run
+        // and a final one after to make sure the other iterators don't finish before
+        // the "leader" and they don't have more afterwards.
+        VarSymbol* hasMore    = newTemp("hasMore",    dtBool);
+        VarSymbol* isFinished = newTemp("isFinished", dtBool);
+
+        forLoop->insertBefore(new DefExpr(isFinished));
+        forLoop->insertBefore(new DefExpr(hasMore));
+
+        forLoop->insertAtHead(new CondStmt(new SymExpr(isFinished),
+                                           new CallExpr(PRIM_RT_ERROR,
+                                                        new_CStringSymbol("zippered iterations have non-equal lengths"))));
+
+        forLoop->insertAtHead(new CallExpr(PRIM_MOVE, isFinished, new CallExpr(PRIM_UNARY_LNOT, hasMore)));
+
+        forLoop->insertAtHead(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
+
+        forLoop->insertAfter(new CondStmt(new SymExpr(hasMore),
+                                          new CallExpr(PRIM_RT_ERROR,
+                                                       new_CStringSymbol("zippered iterations have non-equal lengths"))));
+
+        forLoop->insertAfter(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
       }
 
       forLoop->insertAtHead(buildIteratorCall(NULL, ZIP2, iterators.v[i], children));
@@ -2589,15 +2571,7 @@ expandForLoop(ForLoop* forLoop) {
     if (index != gNone)
       forLoop->insertAtHead(index->defPoint->remove());
 
-    // Ensure that the test clause for completely unbounded loops contains
-    // something.
-    // testBlock is only non-NULL if isBoundedIterator() evaluates to true for
-    // at least one of the iterators being zippered together.
-    if (testBlock == NULL) {
-      testBlock = new BlockStmt();
-
-      testBlock->insertAtTail(new SymExpr(gTrue));
-    }
+    INT_ASSERT(testBlock != NULL);
 
     // NOAKES 2014/11/19: An error occurs if the replacement is moved to
     // earlier in the pass.  I have yet to identify the issue but suspect
