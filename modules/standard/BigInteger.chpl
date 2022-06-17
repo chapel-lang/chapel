@@ -1175,71 +1175,54 @@ module BigInteger {
   // Mod
   operator bigint.%(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
-    var d = new bigint();
 
     if _local {
-      mpz_mod(c.mpz, a.mpz, b.mpz);
-      if mpz_sgn(a.mpz) <= 0 && mpz_sgn(c.mpz) != 0 {
-        d.abs(b);
-        c -= d;
-      }
-
+      mpz_tdiv_r(c.mpz, a.mpz, b.mpz);
     } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_mod(c.mpz, a.mpz, b.mpz);
-      if mpz_sgn(a.mpz) <= 0 {
-        d.abs(b);
-        c -= d;
-      }
-
+      mpz_tdiv_r(c.mpz, a.mpz, b.mpz);
     } else {
       const a_ = a;
-
-      mpz_mod(c.mpz, a_.mpz, b.mpz);
-      if mpz_sgn(a_.mpz) <= 0 {
-        d.abs(b);
-        c -= d;
-      }
+      mpz_tdiv_r(c.mpz, a_.mpz, b.mpz);
     }
 
     return c;
   }
 
   operator bigint.%(const ref a: bigint, b: int) {
-    var b_ = new bigint(b);
     var c = new bigint();
+    var b_ : c_ulong;
+
+    if b >= 0 then
+      b_ = b.safeCast(c_ulong);
+    else 
+      b_ = (0 - b).safeCast(c_ulong);
 
     if _local {
-      mpz_tdiv_q(c.mpz, a.mpz, b_.mpz);
-      c = a - b_ * c;
-
+      mpz_tdiv_r_ui(c.mpz, a.mpz, b_);
     } else if a.localeId == chpl_nodeID {
-      mpz_tdiv_q(c.mpz, a.mpz, b_.mpz);
-      c = a - b_ * c;
-
+      mpz_tdiv_r_ui(c.mpz, a.mpz, b_);
     } else {
       const a_ = a;
-
-      mpz_tdiv_q(c.mpz, a_.mpz, b_.mpz);
-      c = a_ - b_ * c;
+      mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
     }
 
     return c;
   }
 
   operator bigint.%(const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
+    const b_ = b.safeCast(c_ulong);
 
     if _local {
-      mpz_mod_ui(c.mpz, a.mpz,  b_);
+      mpz_tdiv_r_ui(c.mpz, a.mpz,  b_);
 
     } else if a.localeId == chpl_nodeID {
-      mpz_mod_ui(c.mpz, a.mpz,  b_);
+      mpz_tdiv_r_ui(c.mpz, a.mpz,  b_);
 
     } else {
       const a_ = a;
 
-      mpz_mod_ui(c.mpz, a_.mpz, b_);
+      mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
     }
 
     return c;
@@ -1975,10 +1958,10 @@ module BigInteger {
   // %=
   operator bigint.%=(ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_mod(a.mpz, a.mpz, b.mpz);
+      mpz_tdiv_r(a.mpz, a.mpz, b.mpz);
 
     } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_mod(a.mpz, a.mpz, b.mpz);
+      mpz_tdiv_r(a.mpz, a.mpz, b.mpz);
 
     } else {
       const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
@@ -1986,7 +1969,7 @@ module BigInteger {
       on __primitive("chpl_on_locale_num", aLoc) {
         const b_ = b;
 
-        mpz_mod(a.mpz, a.mpz, b_.mpz);
+        mpz_tdiv_r(a.mpz, a.mpz, b_.mpz);
       }
     }
   }
@@ -1999,23 +1982,23 @@ module BigInteger {
     else
       b_ = (0 - b) : uint;
 
-      a %= b_;
+    a %= b_;
   }
 
   operator bigint.%=(ref a: bigint, b: uint) {
     var b_ = b.safeCast(c_ulong);
 
     if _local {
-      mpz_mod_ui(a.mpz, a.mpz, b_);
+      mpz_tdiv_r_ui(a.mpz, a.mpz, b_);
 
     } else if a.localeId == chpl_nodeID {
-      mpz_mod_ui(a.mpz, a.mpz, b_);
+      mpz_tdiv_r_ui(a.mpz, a.mpz, b_);
 
     } else {
       const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_mod_ui(a.mpz, a.mpz, b_);
+        mpz_tdiv_r_ui(a.mpz, a.mpz, b_);
       }
     }
   }
@@ -5094,13 +5077,78 @@ module BigInteger {
     }
   }
 
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(m,n) = m - n * floor(m / n)``.
 
+     If b is of an unsigned type, then
+     fewer conditionals will be evaluated at run time.
+
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
   proc bigint.mod(const ref a: bigint, b: integral) : int {
-    var b_ = new bigint(b);
-    this.mod(a, b_);
-    return mpz_get_si(this.mpz).safeCast(int);
+    var b_ : c_ulong;
+    var rem: c_ulong;
+
+    if isNonnegative(b) {
+      b_ = b.safeCast(c_ulong);
+
+      if _local {
+        rem = mpz_fdiv_ui(a.mpz, b_);
+      } else if a.localeId == chpl_nodeID {
+        rem = mpz_fdiv_ui(a.mpz, b_);
+      } else {
+        const a_ = a;
+        rem = mpz_fdiv_ui(a_.mpz, b_);
+      }
+
+      return rem.safeCast(int);
+    } else {
+      if b >= 0 then
+        b_ = b.safeCast(c_ulong);
+      else 
+        b_ = (0 - b).safeCast(c_ulong);
+      
+      if _local {
+        rem = mpz_fdiv_ui(a.mpz, b_);
+      } else if a.localeId == chpl_nodeID {
+        rem = mpz_fdiv_ui(a.mpz, b_);
+      } else {
+        const a_ = a;
+        rem = mpz_fdiv_ui(a_.mpz, b_);
+      }
+
+      return 
+        if rem == 0
+          then 0
+        else if b < 0
+          then rem.safeCast(int) + b
+        else 
+          rem.safeCast(int);
+    }
   }
 
+  // /* Computes the mod operator on the two arguments, defined as
+  //    ``mod(m,n) = m - n * floor(m / n)``.
+
+  //    The result is always >= 0.
+  //    It is an error if `b` == 0.
+  // */
+  // proc bigint.mod(const ref a: bigint, b: uint) : uint {
+  //   const b_ = b.safeCast(c_ulong);
+  //   var rem: c_ulong; 
+
+  //   if _local {
+  //     rem = mpz_fdiv_ui(a.mpz, b_);
+  //   } else if a.localeId == chpl_nodeID {
+  //     rem = mpz_fdiv_ui(a.mpz, b_);
+  //   } else {
+  //     const a_ = a;
+  //     rem = mpz_fdiv_ui(a_.mpz, b_);
+  //   }
+
+  //   return rem.safeCast(uint);
+  // }
 
   // Comparison Functions
   proc bigint.cmp(const ref b: bigint) : int {

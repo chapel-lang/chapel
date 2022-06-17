@@ -33,6 +33,25 @@ record op_vs_op_int {
     }
 }
 
+record op_vs_op_uint {
+    proc this(const a: int, const b: int): (bool, int, bigint) {
+        if b < 0 {
+            return (true, 0, new bigint());
+        } else {
+            const a_bi = new bigint(a);
+
+            const amb = a % b;
+            const amb_bi = a_bi % (b:uint);
+
+            return (
+                amb == amb_bi,
+                amb,
+                amb_bi,
+            );
+        }
+    }
+}
+
 record op_assign {
     proc this(const a: int, const b: int): (bool, int, bigint) {
         var a_ = a;
@@ -72,14 +91,32 @@ record met_vs_met_int {
         const a_bi = new bigint(a);
 
         const amb = mod(a, b);
-        var amb_bi = new bigint();
-        amb_bi.mod(a_bi, b);
+        const amb_bi = a_bi.mod(a_bi, b);
 
         return (
             amb == amb_bi,
             amb,
-            amb_bi,
+            new bigint(amb_bi),
         );
+    }
+}
+
+record met_vs_met_uint {
+    proc this(const a: int, const b: int): (bool, int, bigint) {
+        if b < 0 {
+            return (true, 0, new bigint());
+        } else {
+            const a_bi = new bigint(a);
+
+            const amb = mod(a, b);
+            const amb_bi = a_bi.mod(a_bi, b:uint);
+
+            return (
+                amb == amb_bi,
+                amb,
+                new bigint(amb_bi),
+            );
+        }
     }
 }
 
@@ -110,7 +147,9 @@ proc check_matching(name: string, checker) {
 
 check_matching("Operator", new op_vs_op());
 check_matching("Operator (b.type = int)", new op_vs_op_int());
+check_matching("Operator (b.type = uint)", new op_vs_op_uint());
 check_matching("Assigning Operator (%=)", new op_assign());
 
 check_matching("Method", new met_vs_met());
 check_matching("Method (b.type = int)", new met_vs_met_int());
+check_matching("Method (b.type = uint)", new met_vs_met_uint());
