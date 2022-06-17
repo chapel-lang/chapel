@@ -944,6 +944,7 @@ void initPrimitiveTypes() {
   dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
   CREATE_DEFAULT_SYMBOL(dtDummyRef, gDummyRef, "_dummyRef");
   CREATE_DEFAULT_SYMBOL(dtVoid, gDummyWitness, "_dummyWitness");
+  CREATE_DEFAULT_SYMBOL(dtVoid, gFixupRequiredToken, "_fixupRequired");
 
   dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
   CREATE_DEFAULT_SYMBOL(dtTypeDefaultToken, gTypeDefaultToken, "_typeDefaultT");

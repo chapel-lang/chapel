@@ -891,6 +891,8 @@ extern Symbol *gDummyWitness;
 // Pass this to a return-by-ref formal when the result is not needed.
 // Used when inlining iterators for ForallStmts.
 extern Symbol *gDummyRef;
+// used in convert-uast to mark a SymExpr needing future adjustment
+extern Symbol *gFixupRequiredToken;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
