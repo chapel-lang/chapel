@@ -186,6 +186,8 @@ Resolver::functionScopeResolver(Context* context,
   ret.scopeResolveOnly = true;
   ret.fnBody = fn->body();
 
+  ret.byPostorder.setupForFunction(fn);
+
   // scope-resolve the formal types but not the body, yet
   // (particularly relevant for computing the method receiver type
   //  if it is an identifier)
@@ -209,8 +211,6 @@ Resolver::functionScopeResolver(Context* context,
 
   assert(sig);
   assert(sig->untyped());
-
-  ret.byPostorder.setupForFunction(fn);
 
   // set the resolution results for the formals according to
   // the typedFnSignature (which just has UnknownType in it for all args
@@ -514,6 +514,7 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
 
   // check that the init expression has compatible kind
   if (initExprType.hasTypePtr() &&
+      !initExprType.type()->isUnknownType() &&
       initExprType.kind() != QualifiedType::UNKNOWN) {
     if (declKind == QualifiedType::TYPE &&
         initExprType.kind() != QualifiedType::TYPE) {
@@ -1090,6 +1091,10 @@ bool Resolver::resolveSpecialCall(const Call* call) {
 }
 
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
+  if (scopeResolveOnly) {
+    return QualifiedType();
+  }
+
   // if the id is contained within this symbol,
   // get the type information from the resolution result.
   //
@@ -1137,7 +1142,6 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return ret;
   }
 
-
   // Otherwise, use a query to try to look it up.
   // Figure out what ID is contained within so we can use the
   // appropriate query.
@@ -1158,6 +1162,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     if (parentId == symbol->id()) {
       ct = inCompositeType;
     } else if (mReceiverScope) {
+      // TODO: in this case, we should look for parenless methods.
       ct = methodReceiverType();
     } else {
       assert(false && "case not handled");
