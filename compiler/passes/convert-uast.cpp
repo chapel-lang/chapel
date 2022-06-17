@@ -146,13 +146,13 @@ struct Converter {
 
   static bool shouldScopeResolve(UniqueString symbolPath) {
     // TODO: check for dead modules and don't resolve those
-    if (symbolPath == "Random")
+    /*if (symbolPath == "Random")
       return false; // use super.RandomSupport; not working yet
     if (symbolPath == "DefaultRectangular")
       return false; // duplicate decorators error
+    return true;*/
 
-    return true;
-//    return false;
+    return false;
   }
   static bool shouldScopeResolve(ID symbolId) {
     return shouldScopeResolve(symbolId.symbolPath());
