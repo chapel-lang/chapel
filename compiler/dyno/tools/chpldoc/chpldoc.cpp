@@ -63,7 +63,8 @@ using CommentMap = std::unordered_map<ID, const Comment*>;
 std::unordered_set<asttags::AstTag> gUnhandled;
 static const int indentPerDepth = 3;
 std::string commentStyle_;
-
+bool writeStdOut_ = false;
+std::string outputDir_;
 const std::string templateUsage = R"RAW(**Usage**
 
 .. code-block:: chapel
@@ -77,6 +78,13 @@ or
 
    import $MODULE;)RAW";
 
+static bool isNoDoc(const Decl* e) {
+  if (auto attrs = e->attributes()) {
+    return attrs->hasPragma(pragmatags::PRAGMA_NO_DOC);
+  }
+  return false;
+}
+
 static std::vector<std::string> splitLines(const std::string& s) {
   std::stringstream ss(s);
   std::string line;
@@ -89,8 +97,8 @@ static std::vector<std::string> splitLines(const std::string& s) {
 
 static bool hasSubmodule(const Module* mod) {
   for (const AstNode* child : mod->stmts()) {
-    if (child->isModule() &&
-        child->toModule()->visibility() != chpl::uast::Decl::PRIVATE) {
+    if (auto mod = child->toModule())
+      if (mod->visibility() != chpl::uast::Decl::PRIVATE && !isNoDoc(mod)) {
       return true;
     }
   }
@@ -329,19 +337,15 @@ static const char* kindToString(New::Management kind) {
   return "";
 }
 
-static bool isNoDoc(const Decl* e) {
-  if (auto attrs = e->attributes()) {
-    return attrs->hasPragma(pragmatags::PRAGMA_NO_DOC);
-  }
-  return false;
-}
-
 static bool isCalleeManagementKind(const AstNode* callee) {
   if (callee->isIdentifier() &&
-    (callee->toIdentifier()->name() == "borrowed"
-      || callee->toIdentifier()->name() == "owned"
-      || callee->toIdentifier()->name() == "unmanaged"
-      || callee->toIdentifier()->name() == "shared"))
+      (callee->toIdentifier()->name() == USTR("borrowed")
+       || callee->toIdentifier()->name() == USTR("owned")
+       || callee->toIdentifier()->name() == USTR("unmanaged")
+       || callee->toIdentifier()->name() == USTR("shared")
+       || callee->toIdentifier()->name() == USTR("sync")
+       || callee->toIdentifier()->name() == USTR("single")
+       || callee->toIdentifier()->name() == USTR("atomic")))
       return true;
     return false;
 }
@@ -472,7 +476,11 @@ struct RstSignatureVisitor {
     }
     if (const AstNode* ie = v->initExpression()) {
       os_ << " = ";
+      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+        printingType_ = true;
       ie->traverse(*this);
+      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+        printingType_ = false;
     }
     return false;
   }
@@ -496,6 +504,10 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const Function* f) {
+    // Linkage
+    if (f->linkage() == Decl::Linkage::EXPORT)
+      os_ << "export ";
+
     // Visibility
     if (f->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
       os_ << kindToString(f->visibility()) << " ";
@@ -560,7 +572,7 @@ struct RstSignatureVisitor {
     if (const AstNode* e = f->returnType()) {
       os_ << ": ";
       printingType_ = true;
-      printChapelSyntax(os_, e);
+      e->traverse(*this);
       printingType_ = false;
     }
 
@@ -593,7 +605,11 @@ struct RstSignatureVisitor {
         isPostFixBang = true;
         outerOp = USTR("!");
       } else if (call->op() == USTR("?")) {
+        if (call->actual(0)->isFnCall()) {
+          isNilable = true;
+        } else {
           os_ << "nilable ";
+        }
       } else {
         os_ << call->op();
       }
@@ -609,6 +625,8 @@ struct RstSignatureVisitor {
       if (needsParens) os_ << ")";
       if (isPostFixBang) {
         os_ << "!";
+      } else if (isNilable) {
+        os_ << "?";
       }
     } else if (call->isBinaryOp()) {
       assert(call->numActuals() == 2);
@@ -639,12 +657,17 @@ struct RstSignatureVisitor {
         needsParens = needParens(outerOp, innerOp, false,
                                  false, call->actual(1)->toOpCall()->isUnaryOp(),
                                  isPostfix(call->actual(1)->toOpCall()) , true);
-        // special case handling things like 3*(4*string)
-        if (!needsParens && innerOp == "*" &&
-            (call->actual(1)->toOpCall()->actual(1)->isTuple() ||
-             call->actual(1)->toOpCall()->actual(1)->isIdentifier())) {
-          needsParens = true;
         }
+      // special case handling things like 3*(4*(string))
+      // TODO: This has to be cleaned up/fixed. It's unreadable and probably riddled with bugs
+      if (!needsParens && outerOp == USTR("*") && ((innerOp == USTR("*") && call->actual(1)->isOpCall() &&
+          call->actual(1)->toOpCall()->actual(0)->isIntLiteral() &&
+          (call->actual(1)->toOpCall()->actual(1)->isTuple() ||
+           call->actual(1)->toOpCall()->actual(1)->isIdentifier()
+          )) ||  (call->actual(0)->isIntLiteral() &&
+                 (call->actual(1)->isIdentifier() ||
+                  call->actual(1)->isFnCall())))) {
+        needsParens = true;
       }
       if (needsParens) os_ << "(";
       call->actual(1)->traverse(*this);
@@ -663,9 +686,28 @@ struct RstSignatureVisitor {
       call->actual(0)->traverse(*this);
     } else {
       if (call->callUsedSquareBrackets()) {
-        interpose(call->actuals(), ", ", "[", "]");
+        os_ << "[";
       } else {
-        interpose(call->actuals(), ", ", "(", ")");
+        os_ << "(";
+      }
+      std::string sep;
+      for (int i = 0; i < call->numActuals(); i++) {
+        os_ << sep;
+        if (call->isNamedActual(i)) {
+          os_ << call->actualName(i);
+          // The spaces around = are just to satisfy old tests
+          // TODO: Remove spaces around `=` when removing old parser
+          os_ << " = ";
+        }
+
+        call->actual(i)->traverse(*this);
+
+        sep = ", ";
+      }
+      if (call->callUsedSquareBrackets()) {
+        os_ << "]";
+      } else {
+        os_ << ")";
       }
     }
     return false;
@@ -752,9 +794,10 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const AstNode* a) {
-    printf("unhandled enter on PrettyPrintVisitor of %s\n", asttags::tagToString(a->tag()));
-    a->stringify(os_, StringifyKind::CHPL_SYNTAX);
-    gUnhandled.insert(a->tag());
+    //printf("unhandled enter on PrettyPrintVisitor of %s\n", asttags::tagToString(a->tag()));
+    //a->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    printChapelSyntax(os_, a);
+    //gUnhandled.insert(a->tag());
     return false;
   }
   void exit(const AstNode* a) {}
@@ -805,6 +848,24 @@ struct RstResult {
   }
 
   void mark(const Context *c) const {}
+
+  void outputModule(std::string outDir, std::string name, int indentPerDepth) {
+    auto outpath = outDir + "/" + name + ".rst";
+
+    std::error_code err;
+    if (!std::filesystem::create_directories(outDir, err)) {
+      // TODO the above seems to return false when already exists,
+      // but I don't think that should be the case
+      // So check we really got an error
+      if (err) {
+        std::cerr << "Could not create " << outDir << " because "
+                  << err.message() << "\n";
+        return;
+      }
+    }
+    std::ofstream ofs = std::ofstream(outpath, std::ios::out);
+    output(ofs, indentPerDepth);
+  }
 
   void output(std::ostream& os, int indentPerDepth) {
     output(os, indentPerDepth, 0);
@@ -903,7 +964,18 @@ struct RstResultBuilder {
     for (auto child : n->children()) {
       if (auto &r = rstDoc(context_, child->id())) {
         if (child->isModule()) {
-          subModules.push_back(r.get());
+          if (!writeStdOut_) {
+            // lookup the module path
+            std::vector<UniqueString> modulePath = getModulePath(context_,
+                                                                 child->id());
+            modulePath.pop_back();
+            std::string parentPath = modulePath.back().str();
+            std::string outdir = outputDir_ + "/" + parentPath;
+            r->outputModule(outdir, child->toModule()->name().str(), indentPerDepth);
+
+          } else {
+            subModules.push_back(r.get());
+          }
         } else {
           children_.push_back(r.get());
         }
@@ -928,7 +1000,8 @@ struct RstResultBuilder {
     os_ << ".. module:: " << m->name().c_str() << '\n';
     const Comment* lastComment = previousComment(context_, m->id());
     if (lastComment) {
-      os_ << "    :synopsis: " << commentSynopsis(lastComment, commentStyle)
+      indentStream(os_, 1 * indentPerDepth);
+      os_ << ":synopsis: " << commentSynopsis(lastComment, commentStyle)
           << '\n';
     }
     os_ << '\n';
@@ -962,7 +1035,6 @@ struct RstResultBuilder {
   }
 
   owned<RstResult> visit(const Function* f) {
-    // TODO this doesn't fire on privateProc either
     if (f->visibility() == Decl::Visibility::PRIVATE || isNoDoc(f))
       return {};
     show(kindToRstString(f->isMethod(), f->kind()), f);
@@ -1088,6 +1160,7 @@ struct RstResultBuilder {
   }
 
   owned<RstResult> visit(const Class* c) {
+    if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
     show("class", c);
     visitChildren(c);
     return getResult(true);
@@ -1352,6 +1425,10 @@ static Args parseArgs(int argc, char **argv) {
 static std::string moduleName(const BuilderResult& builderResult) {
   for (const auto& ast : builderResult.topLevelExpressions()) {
     if (const Module* m = ast->toModule()) {
+      /* TODO: This is wrong if the module is an implicit module and it just
+          imports or uses another module. In that case the name should be that
+          of the used or imported module.
+      */
       return m->name().str();
     }
   }
@@ -1364,6 +1441,8 @@ int main(int argc, char** argv) {
   Context *ctx = &context;
 
   Args args = parseArgs(argc, argv);
+  writeStdOut_ = args.stdout;
+
   if (args.commentStyle.substr(0,2) != "/*") {
     std::cerr << "error: comment label should start with /*" << std::endl;
     return 1;
@@ -1393,37 +1472,26 @@ int main(int argc, char** argv) {
                 << builderResult.error(0).message() << "\n";
       return 1;
     }
-    std::ofstream ofs;
     if (!args.stdout) {
       auto name = moduleName(builderResult);
-      auto outdir = args.saveSphinx + "/source/modules";
-      auto outpath = outdir + "/" + name + ".rst";
-
-      std::error_code err;
-      if (!std::filesystem::create_directories(outdir, err)) {
-        // TODO the above seems to return false when already exists,
-        // but I don't think that should be the case
-        // So check we really got an error
-        if (err) {
-          std::cerr << "Could not create " << outdir << " because "
-                    << err.message() << "\n";
-          return 1;
+      outputDir_ = args.saveSphinx + "/source/modules";
+      for (const auto& ast : builderResult.topLevelExpressions()) {
+        if (args.dump) {
+          ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
+        }
+        if (auto& r = rstDoc(ctx, ast->id())) {
+          r->outputModule(outputDir_, name, indentPerDepth);
         }
       }
-      // TODO is the output name from the module or filename?
-
-      // TODO nested modules need some context to end up in the right place
-      // (so this will probably go in the visitor)
-      ofs = std::ofstream(outpath, std::ios::out);
     }
-    std::ostream& os = args.stdout ? std::cout : ofs;
-
-    for (const auto& ast : builderResult.topLevelExpressions()) {
-      if (args.dump) {
-        ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-      }
-      if (auto& r = rstDoc(ctx, ast->id())) {
-        r->output(os, indentPerDepth);
+    else {
+      for (const auto& ast : builderResult.topLevelExpressions()) {
+        if (args.dump) {
+          ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
+        }
+        if (auto& r = rstDoc(ctx, ast->id())) {
+          r->output(std::cout, indentPerDepth);
+        }
       }
     }
 
