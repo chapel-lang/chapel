@@ -1,6 +1,11 @@
 Calling standalone foo()
 0
 1
+Calling range.baz()
+0
+1
+2
+This is not working...
 Calling range.bar()
 0
 1
@@ -16,3 +21,6 @@ false
 true
 true
 This is not working...
+Calling range.foo() on a bounded range
+0
+1
