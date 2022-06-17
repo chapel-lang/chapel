@@ -3761,6 +3761,19 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
   return err_args;
 }
 
+pragma "no doc"
+inline proc channel._readInner(ref args ...?k):void throws {
+  if writing then compilerError("read on write-only channel");
+  const origLocale = this.getLocaleOfIoRequest();
+
+  on this.home {
+    try this.lock(); defer { this.unlock(); }
+    for param i in 0..k-1 {
+      _readOne(kind, args[i], origLocale);
+    }
+  }
+}
+
 /*
 
    Read values from a channel. The input will be consumed atomically - the
@@ -3775,16 +3788,8 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
    :throws SystemError: Thrown if the channel could not be read.
  */
 inline proc channel.read(ref args ...?k):bool throws {
-  if writing then compilerError("read on write-only channel");
-  const origLocale = this.getLocaleOfIoRequest();
-
   try {
-    on this.home {
-      try this.lock(); defer { this.unlock(); }
-      for param i in 0..k-1 {
-        _readOne(kind, args[i], origLocale);
-      }
-    }
+    this._readInner((...args));
   } catch err: SystemError {
     if err.err != EEOF then throw err;
     return false;
@@ -4555,7 +4560,7 @@ proc channel.readlnHelper(ref args ...?k,
  */
 proc channel.read(type t) throws {
   var tmp:t;
-  try this.read(tmp);
+  this._readInner(tmp);
   return tmp;
 }
 
@@ -4575,7 +4580,8 @@ proc channel.read(type t) throws {
  */
 proc channel.readln(type t) throws {
   var tmp:t;
-  try this.readln(tmp);
+  var nl = new ioNewline();
+  this._readInner(tmp, nl);
   return tmp;
 }
 
@@ -4590,9 +4596,8 @@ proc channel.readln(type t) throws {
  */
 proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
-  for param i in 0..(numTypes-2) do
-    tupleVal(i) = this.read(t(i));
-  tupleVal(numTypes-1) = this.readln(t(numTypes-1));
+  var nl = new ioNewline();
+  this._readInner((...tupleVal), nl);
   return tupleVal;
 }
 
@@ -4606,8 +4611,7 @@ proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
  */
 proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
-  for param i in 0..numTypes-1 do
-    tupleVal(i) = this.read(t(i));
+  this._readInner((...tupleVal));
   return tupleVal;
 }
 
