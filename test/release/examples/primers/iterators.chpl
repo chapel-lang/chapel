@@ -52,8 +52,9 @@ writeln("...");
 writeln();
 
 //
-// This example uses zipper iteration to iterate over the unbounded range ``1..``
-// and the fibonacci iterator with ``n`` set to ten. Ranges, as well as arrays
+// This example uses zipper iteration to iterate over the fibonacci iterator
+// with ``n`` set to ten and the unbounded range ``1..``.
+// Ranges, as well as arrays
 // and domains, can be used as iterators in loops.
 //
 // Zipper iteration means that each iterator is advanced to its next yield
@@ -65,7 +66,7 @@ writeln();
 //
 writeln("Fibonacci Numbers");
 
-for (i, j) in zip(1.., fibonacci(10)) {
+for (j, i) in zip(fibonacci(10), 1..) {
   write("The ", i);
 
   select i {
