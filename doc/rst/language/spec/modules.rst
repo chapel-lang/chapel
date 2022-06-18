@@ -340,6 +340,9 @@ the current one and the name of the module itself (``M`` in the example)
 available in a second scope just outside of that. In contrast, ``import``
 as well as ``public use`` do not use these implicit scopes.
 
+Also, note that ``public use`` statements do not enable qualified access
+by default (see :ref:`Public_Use`).
+
 .. _Use_And_Import_Conflicts:
 
 Conflicts
@@ -565,6 +568,11 @@ Making a use ``public`` additionally causes its symbols to be visible as though
 they were defined in the scope with the use.  This strategy is called
 `re-exporting`.  More information about re-exporting can be found in the
 relevant section (:ref:`Reexporting`).
+
+Lastly, by default, ``public use`` does not enable qualified access. For
+example, ``public use M`` brings in the contents of module ``M`` but not
+the name ``M`` itself. However the ``as`` syntax can be used to opt in to
+bringing in the module name to enable qualified access: ``public use M as M``.
 
 .. _Limitation_Clauses:
 

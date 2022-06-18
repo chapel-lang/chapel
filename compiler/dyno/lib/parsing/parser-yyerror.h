@@ -52,8 +52,11 @@ void yychpl_error(YYLTYPE*       loc,
   switch (errorKind) {
     case EMPTY_ERROR_MESSAGE:
     case SYNTAX_ERROR:
-    case UNKNOWN:
       // Do not print "syntax error" - the error message kind implies that.
+      break;
+    case UNKNOWN:
+      // There is still a message of some sort to print.
+      baseMsg = errorMessage;
       break;
     case MEMORY_EXHAUSTED:
       baseMsg = "memory exhausted while parsing";
