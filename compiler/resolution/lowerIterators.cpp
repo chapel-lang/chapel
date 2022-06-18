@@ -2299,18 +2299,18 @@ setupSimultaneousIterators(Vec<Symbol*>& iterators,
 
 
 static bool
-isBoundedIterator(FnSymbol* fn) {
+isIterMethodOnUnboundedRange(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->getValType();
     if (type->symbol->hasFlag(FLAG_RANGE)) {
       INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "boundedType"));
       if (!strcmp(type->substitutionsPostResolve[1].value->name, "bounded"))
-        return true;
-      else
         return false;
+      else
+        return true;
     }
   }
-  return true;
+  return false;
 }
 
 
@@ -2527,7 +2527,7 @@ expandForLoop(ForLoop* forLoop) {
           testBlock = new BlockStmt(new SymExpr(cond));
         }
 
-      } else if (!fNoBoundsChecks && isBoundedIterator(iterFn)) {
+      } else if (!fNoBoundsChecks && !isIterMethodOnUnboundedRange(iterFn)) {
         // for all but the first iterator add checks at the beginning of each loop run
         // and a final one after to make sure the other iterators don't finish before
         // the "leader" and they don't have more afterwards.
