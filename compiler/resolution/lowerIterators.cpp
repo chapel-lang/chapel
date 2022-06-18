@@ -2298,15 +2298,20 @@ setupSimultaneousIterators(Vec<Symbol*>& iterators,
 }
 
 
+// This check is pretty weak ("Is this a default iterator over an
+// unbounded range") in that it embeds special knowledge of this case
+// into the compiler.  Better would be to have serial follower
+// iterators that could adapt to any size, use them for unbounded
+// ranges' default iterators and give users the power to use them as
+// well.
 static bool
-isIterMethodOnUnboundedRange(FnSymbol* fn) {
+isDefaultIterMethodOnUnboundedRange(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->getValType();
     if (type->symbol->hasFlag(FLAG_RANGE)) {
       INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "boundedType"));
-      if (!strcmp(type->substitutionsPostResolve[1].value->name, "bounded"))
-        return false;
-      else
+      if (strcmp(type->substitutionsPostResolve[1].value->name, "bounded") &&
+          !strcmp(fn->name, "these"))
         return true;
     }
   }
@@ -2527,7 +2532,8 @@ expandForLoop(ForLoop* forLoop) {
           testBlock = new BlockStmt(new SymExpr(cond));
         }
 
-      } else if (!fNoBoundsChecks && !isIterMethodOnUnboundedRange(iterFn)) {
+      } else if (!fNoBoundsChecks &&
+                 !isDefaultIterMethodOnUnboundedRange(iterFn)) {
         // for all but the first iterator add checks at the beginning of each loop run
         // and a final one after to make sure the other iterators don't finish before
         // the "leader" and they don't have more afterwards.

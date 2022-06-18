@@ -1,0 +1,4 @@
+(1, 1)
+(2, 2)
+(3, 3)
+boundedIterOnUnboundedRange.chpl:20: error: zippered iterations have non-equal lengths
