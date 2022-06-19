@@ -17,6 +17,9 @@ env:
 # And other yml features like anchors and merge aren't supported
 #   [3] https://github.com/actions/starter-workflows/issues/162
 
+permissions:
+  contents: read
+
 jobs:
   make_check:
     runs-on: ubuntu-latest
