@@ -85,6 +85,7 @@ def get_runtime_link_args(runtime_subdir):
         system.append("-L" + os.path.join(cuda_path, "lib64"))
         system.append("-lcuda")
         system.append("-lcudart")
+        system.append("-lcudadevrt")
 
     # always link with the math library
     system.append("-lm")

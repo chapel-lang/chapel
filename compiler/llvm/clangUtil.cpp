@@ -54,6 +54,8 @@
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/IRReader/IRReader.h"
+#include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Support/FileSystem.h"
@@ -64,7 +66,9 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
+#include "llvm/Transforms/IPO/Internalize.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 
 #if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
@@ -3735,6 +3739,15 @@ void addDumpIrPass(const PassManagerBuilder &Builder,
   PM.add(createDumpIrPass(llvmPrintIrStageNum));
 }
 
+std::set<std::string> preExternals;
+static bool mustPreserve(const llvm::GlobalValue& gv) {
+  if (preExternals.count(gv.getGlobalIdentifier()) > 0) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
 
 // If we're using the LLVM wide optimizations, we have to add
 // some functions to call put/get into the Chapel runtime layers
@@ -4183,6 +4196,30 @@ void makeBinaryLLVM(void) {
       llvm::CodeGenFileType asmFileType =
         llvm::CodeGenFileType::CGFT_AssemblyFile;
 
+
+      llvm::SMDiagnostic err;
+      auto libdevice = llvm::parseIRFile("/home/engin/libdevice.bc", err,
+                                   info->llvmContext);
+
+      std::cout << "Parsing output: " << err.getMessage().str();
+
+      for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
+        if (it->hasExternalLinkage()) {
+
+          std::cout << "heyo 1 " << it->getGlobalIdentifier() << std::endl;
+          preExternals.insert(it->getGlobalIdentifier());
+        }
+      }
+      llvm::Module* compositeModule = llvm::CloneModule(*info->module).release();
+
+      llvm::Linker::linkModules(*compositeModule, std::move(libdevice),
+                                llvm::Linker::Flags::LinkOnlyNeeded);
+
+      std::function<bool(const llvm::GlobalValue&)> mustPreserveGV = mustPreserve;
+      llvm::InternalizePass iPass(mustPreserveGV);
+
+      iPass.internalizeModule(*compositeModule);
+
       llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
 
       {
@@ -4197,7 +4234,7 @@ void makeBinaryLLVM(void) {
                                                  asmFileType,
                                                  disableVerify);
 
-        emitPM.run(*info->module);
+        emitPM.run(*compositeModule);
 
       }
 
