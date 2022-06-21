@@ -3749,6 +3749,27 @@ static bool mustPreserve(const llvm::GlobalValue& gv) {
   }
 }
 
+static void linkLibDevice() {
+  GenInfo* info = gGenInfo;
+
+
+
+  llvm::SMDiagnostic err;
+  auto libdevice = llvm::parseIRFile("/home/engin/libdevice.bc", err,
+                                     info->llvmContext);
+  for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
+    if (it->hasExternalLinkage()) {
+      preExternals.insert(it->getGlobalIdentifier());
+    }
+  }
+  llvm::Linker::linkModules(*info->module, std::move(libdevice),
+                            llvm::Linker::Flags::LinkOnlyNeeded);
+
+  llvm::InternalizePass iPass(mustPreserve);
+  iPass.internalizeModule(*info->module);
+}
+
+
 // If we're using the LLVM wide optimizations, we have to add
 // some functions to call put/get into the Chapel runtime layers
 // (the optimization is meant to be portable to other languages)
@@ -4197,26 +4218,7 @@ void makeBinaryLLVM(void) {
         llvm::CodeGenFileType::CGFT_AssemblyFile;
 
 
-      llvm::SMDiagnostic err;
-      auto libdevice = llvm::parseIRFile("/home/engin/libdevice.bc", err,
-                                   info->llvmContext);
-
-      for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
-        if (it->hasExternalLinkage()) {
-          preExternals.insert(it->getGlobalIdentifier());
-        }
-      }
-      //llvm::Module* compositeModule = llvm::CloneModule(*info->module).release();
-
-      //llvm::Linker::linkModules(*compositeModule, std::move(libdevice),
-      llvm::Linker::linkModules(*info->module, std::move(libdevice),
-                                llvm::Linker::Flags::LinkOnlyNeeded);
-
-      std::function<bool(const llvm::GlobalValue&)> mustPreserveGV = mustPreserve;
-      llvm::InternalizePass iPass(mustPreserveGV);
-
-      //iPass.internalizeModule(*compositeModule);
-      iPass.internalizeModule(*info->module);
+      linkLibDevice();
 
       llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
 
