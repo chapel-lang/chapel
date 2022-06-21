@@ -35,9 +35,14 @@ Name Changes in Libraries
 
 Deprecated / Removed Library Features
 -------------------------------------
+* stopped making the contents of the 'Math' module available by default
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 
 Standard Library Modules
 ------------------------
+* moved available-by-default math features into a new 'AutoMath' library
+  (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and
+  https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 
 Package Modules
 ---------------
@@ -60,7 +65,10 @@ Memory Improvements
 
 Documentation
 -------------
+* documented the 'protobuf' support package, 'ProtobufProtocolSupport'
+  (see https://chapel-lang.org/docs/1.27/modules/packages/ProtobufProtocolSupport.html)
 * fixed a missing line in the example output for 'ArgumentParser'
+* fixed a typo in the 'IO' library documentation
 
 Syntax Highlighting
 -------------------
@@ -92,9 +100,14 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved the printing of call stacks with operator methods in errors
+* added a warning when a module path for 'import' starts with 'super.this'
 
 Bug Fixes
 ---------
+* fixed a bug where deprecation warnings were not generated for qualified access
+* fixed a bug preventing 'import super.super' or similar 'import' statements
+* fixed a bug where private submodules were incorrectly considered as candidates
 
 Bug Fixes for Build Issues
 --------------------------
@@ -112,12 +125,15 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* updated the Sphinx Chapel domain version used for `chpldoc`
 
 Developer-oriented changes: Process
 -----------------------------------
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* extended the documentation of the 'deprecated' keyword with examples  
+  (see https://chapel-lang.org/docs/main/developer/bestPractices/Deprecation.html#examples)
 * changed a few compiler/next references to compiler/dyno
 
 Developer-oriented changes: Naming Changes
