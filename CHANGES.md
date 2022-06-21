@@ -37,12 +37,16 @@ Deprecated / Removed Library Features
 -------------------------------------
 * stopped making the contents of the 'Math' module available by default
   (see https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
+* deprecated support for `+`, `-`, `&`, `|`, and `^` on map
+* removed the deprecated `set.isIntersecting()` method
+* removed deprecated set methods that used `x` as argument names
 
 Standard Library Modules
 ------------------------
 * moved available-by-default math features into a new 'AutoMath' library
   (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and
   https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
+* added a 'defaultHashTableResizeThreshold' config const
 
 Package Modules
 ---------------
@@ -65,10 +69,14 @@ Memory Improvements
 
 Documentation
 -------------
+* added documentation for getting started with `mason`  
+  (see https://chapel-lang.org/docs/1.27/tools/mason/mason.html#using-a-mason-package)
+* updated the installation instructions for `mason`
 * documented the 'protobuf' support package, 'ProtobufProtocolSupport'
   (see https://chapel-lang.org/docs/1.27/modules/packages/ProtobufProtocolSupport.html)
 * fixed a missing line in the example output for 'ArgumentParser'
 * fixed a typo in the 'IO' library documentation
+* fixed typos in the `mason` documentation
 
 Syntax Highlighting
 -------------------
