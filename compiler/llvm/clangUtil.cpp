@@ -4201,24 +4201,22 @@ void makeBinaryLLVM(void) {
       auto libdevice = llvm::parseIRFile("/home/engin/libdevice.bc", err,
                                    info->llvmContext);
 
-      std::cout << "Parsing output: " << err.getMessage().str();
-
       for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
         if (it->hasExternalLinkage()) {
-
-          std::cout << "heyo 1 " << it->getGlobalIdentifier() << std::endl;
           preExternals.insert(it->getGlobalIdentifier());
         }
       }
-      llvm::Module* compositeModule = llvm::CloneModule(*info->module).release();
+      //llvm::Module* compositeModule = llvm::CloneModule(*info->module).release();
 
-      llvm::Linker::linkModules(*compositeModule, std::move(libdevice),
+      //llvm::Linker::linkModules(*compositeModule, std::move(libdevice),
+      llvm::Linker::linkModules(*info->module, std::move(libdevice),
                                 llvm::Linker::Flags::LinkOnlyNeeded);
 
       std::function<bool(const llvm::GlobalValue&)> mustPreserveGV = mustPreserve;
       llvm::InternalizePass iPass(mustPreserveGV);
 
-      iPass.internalizeModule(*compositeModule);
+      //iPass.internalizeModule(*compositeModule);
+      iPass.internalizeModule(*info->module);
 
       llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
 
@@ -4234,7 +4232,8 @@ void makeBinaryLLVM(void) {
                                                  asmFileType,
                                                  disableVerify);
 
-        emitPM.run(*compositeModule);
+        //emitPM.run(*compositeModule);
+        emitPM.run(*info->module);
 
       }
 
