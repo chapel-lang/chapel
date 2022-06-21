@@ -5055,14 +5055,13 @@ module BigInteger {
   */
   proc bigint.mod(const ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_fdiv_q(this.mpz, a.mpz, b.mpz);
-      this = a - b * this;
+      mpz_fdiv_r(this.mpz, a.mpz, b.mpz);
 
     } else if this.localeId == chpl_nodeID &&
               a.localeId    == chpl_nodeID &&
               b.localeId    == chpl_nodeID {
-      mpz_fdiv_q(this.mpz, a.mpz, b.mpz);
-      this = a - b * this;
+
+      mpz_fdiv_r(this.mpz, a.mpz, b.mpz);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
@@ -5071,8 +5070,7 @@ module BigInteger {
         const a_ = a;
         const b_ = b;
 
-        mpz_fdiv_q(this.mpz, a_.mpz, b_.mpz);
-        this = a_ - b_ * this;
+        mpz_fdiv_r(this.mpz, a_.mpz, b_.mpz);
       }
     }
   }
