@@ -1,5 +1,6 @@
-# Use LLVM-13 to work around https://github.com/chapel-lang/chapel/issues/19740
-source /cray/css/users/chapelu/setup_system_llvm.bash 13
+# Use latest system LLVM, to use an earlier version pass version number as a
+# parameter to the script.
+source /cray/css/users/chapelu/setup_system_llvm.bash
 # Lie to prevent common.bash adding a newer llvm
 export OFFICIAL_SYSTEM_LLVM=true
 
