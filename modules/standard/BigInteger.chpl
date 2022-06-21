@@ -3946,7 +3946,7 @@ module BigInteger {
     one of the standard integer types
 
     :arg t: The Integral type to check agianst.
-    :type t: type
+    :type t: `integral`
   */
   proc bigint.fitsInto(type t: integral): bool {
     if _local {
