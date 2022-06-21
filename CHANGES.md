@@ -47,6 +47,7 @@ Standard Domain Maps (Layouts and Distributions)
 
 Tool Improvements
 -----------------
+* added a hint to use '--show' when 'mason test' compilations fail
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -59,6 +60,7 @@ Memory Improvements
 
 Documentation
 -------------
+* fixed a missing line in the example output for 'ArgumentParser'
 
 Syntax Highlighting
 -------------------
@@ -74,6 +76,7 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
+* switched the compiler's front-end to use the new 'dyno' parser/AST by default
 
 Compiler Flags
 --------------
@@ -101,6 +104,8 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* fixed a 'mason test' error when code output includes a line ending with ')'
+* fixed a bug where the 'build' flag had no effect on 'mason run --example'
 
 Platform-specific Bug Fixes
 ---------------------------
@@ -113,6 +118,7 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* changed a few compiler/next references to compiler/dyno
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
@@ -134,6 +140,10 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+* made numerous fixes to 'dyno' to get the parser to pass 100% of our tests
+* migrated setting of 'config' variables to be handled entirely within 'dyno'
+* added token counting and code size stats to 'dyno'
+* added indentation and formatting to CHPL_SYNTAX style uAST node dumps
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
