@@ -87,9 +87,13 @@ module Map {
        than 50% full. The acceptable values for this argument are
        between 0 and 1, exclusive, meaning (0,1). This is useful
        when you would like to reduce memory impact or potentially
-       speed up how fast the map finds a slot.
+       speed up how fast the map finds a slot. To override the
+       default value of 0.5, the `defaultHashTableResizeThreshold`
+       config flag can be set at runtime. Note that this default
+       affects all hash-based data structures, including
+       associative domains and sets.
     */
-    const resizeThreshold = 0.5;
+    const resizeThreshold = defaultHashTableResizeThreshold;
 
     pragma "no doc"
     var table: chpl__hashtable(keyType, valType);
@@ -124,7 +128,8 @@ module Map {
                             attempting to resize.
     */
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold=0.5, initialCapacity=16) {
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
@@ -141,7 +146,8 @@ module Map {
     }
 
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold=0.5, initialCapacity=16)
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
