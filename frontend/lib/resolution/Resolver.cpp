@@ -1178,31 +1178,35 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   }
 
   auto newExpr = call->calledExpression()->toNew();
-  ResolvedExpression& re = byPostorder.byAst(call);
-
-  // TODO: need to take 'new' expr + actuals and compute concrete type
-  ResolvedExpression& reNewExpr = byPostorder.byAst(newExpr);
-
-  re.setType(reNewExpr.type());
+  auto& re = byPostorder.byAst(call);
+  auto& reNewExpr = byPostorder.byAst(newExpr);
+  auto qtNewExpr = reNewExpr.type();
 
   // exit immediately if the 'new' failed to resolve
-  if (re.type().type()->isErroneousType() ||
-      re.type().isUnknown()) {
+  if (qtNewExpr.isUnknown() || qtNewExpr.isErroneousType()) {
     return true;
   }
 
-  // new calls produce a 'init' call as a side effect
+  // Produce an 'init' call as a side effect.
   UniqueString name = USTR("init");
-  auto calledType = QualifiedType(QualifiedType::REF, re.type().type());
+
+  /*
+  auto cls = qtNewExpr.type()->toClassType();
+  assert(cls);
+  auto calledIntent = cls->manager() ? QualifiedType::REF
+                                     : QualifiedType::CONST_IN;
+  */
+  // TODO: Unclear to me whether we should use this ('VAR') or above.
+  auto calledType = qtNewExpr;
   bool isMethodCall = true;
   bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
 
-  // prepare the receiver (the 'newed' object)
-  auto receiverInfo = CallInfoActual(re.type(), USTR("this"));
+  // Prepare receiver.
+  auto receiverInfo = CallInfoActual(calledType, USTR("this"));
   actuals.push_back(std::move(receiverInfo));
 
-  // prepare the remaining actuals
+  // Remaining actuals.
   if (call->numActuals()) {
     prepareCallInfoActuals(call, actuals, hasQuestionArg);
     assert(!hasQuestionArg);
@@ -1220,8 +1224,16 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   assert(crr.mostSpecific().numBest() <= 1);
 
   // there should be one or zero applicable candidates
-  if (crr.mostSpecific().only() != nullptr) {
+  if (auto tfs = crr.mostSpecific().only()) {
     handleResolvedAssociatedCall(re, call, ci, crr);
+
+    //
+    // TODO: Could inspect the formal type and use it + above management
+    // + combine to produce the final class type.
+    // TODO: Compute the concrete type by resolving generics + initializer
+    //
+    re.setType(qtNewExpr);
+
   } else {
     issueErrorForFailedCallResolution(call, ci, crr);
   }
@@ -2328,16 +2340,62 @@ void Resolver::exit(const Dot* dot) {
   handleResolvedCall(r, dot, ci, c);
 }
 
-bool Resolver::enter(const uast::New* nw) {
+bool Resolver::enter(const New* node) {
   return true;
 }
 
-void Resolver::resolveNewForClass(const uast::New* node,
-                                  const types::ClassType* classType) {
-  assert(false && "Not handled yet!");
+// TODO: How do we wire this up with 'getManagedClassType'? Is it possible?
+// TODO: How to handle nilability, e.g. new owned C'?'
+static const ClassType*
+getDecoratedClassForNew(Context* context, const New* node,
+                        const ClassType* classType) {
+  auto basic = classType->basicClassType();
+  auto decorator = classType->decorator();
+  const Type* manager = nullptr;
+
+  switch (node->management()) {
+    case New::DEFAULT_MANAGEMENT:
+    case New::OWNED:
+      decorator = ClassTypeDecorator(ClassTypeDecorator::MANAGED);
+      manager = AnyOwnedType::get(context);
+      break;
+    case New::SHARED:
+      decorator = ClassTypeDecorator(ClassTypeDecorator::MANAGED);
+      manager = AnySharedType::get(context);
+      break;
+    case New::BORROWED:
+      decorator = ClassTypeDecorator(ClassTypeDecorator::BORROWED);
+      break;
+    case New::UNMANAGED:
+      decorator = ClassTypeDecorator(ClassTypeDecorator::UNMANAGED);
+      break;
+  }
+
+  // Combine the decorators to preserve e.g. nilability.
+  auto combine = decorator.combine(classType->decorator());
+
+  // TODO: How to get outer '?' from type expression?
+  if (combine.isUnknownNilability()) {
+    combine = combine.addNonNil();
+  }
+
+  auto ret = ClassType::get(context, basic, manager, combine);
+  return ret;
 }
 
-void Resolver::resolveNewForRecord(const uast::New* node,
+// TODO: Emit warning about 'new borrowed' being unstable.
+// TODO: How do we handle '?'.
+void Resolver::resolveNewForClass(const New* node,
+                                  const ClassType* classType) {
+  ResolvedExpression& re = byPostorder.byAst(node);
+
+  // TODO: Verify initial class type?
+  auto cls = getDecoratedClassForNew(context, node, classType);
+  auto qt = QualifiedType(QualifiedType::VAR, cls);
+  re.setType(qt);
+}
+
+void Resolver::resolveNewForRecord(const New* node,
                                    const RecordType* recordType) {
   ResolvedExpression& re = byPostorder.byAst(node);
 
@@ -2349,7 +2407,7 @@ void Resolver::resolveNewForRecord(const uast::New* node,
   }
 }
 
-void Resolver::exit(const uast::New* node) {
+void Resolver::exit(const New* node) {
   if (scopeResolveOnly)
     return;
 
@@ -2358,15 +2416,16 @@ void Resolver::exit(const uast::New* node) {
   ResolvedExpression& reTypeExpr = byPostorder.byAst(typeExpr);
   auto& qtTypeExpr = reTypeExpr.type();
 
-  // TODO: What about if the thing doesn't make sense/is 'UNKNOWN'?
-  if (qtTypeExpr.kind() != QualifiedType::TYPE) {
-    context->error(node, "'new' must be followed by a type expression");
-  }
+  // Propagate up type expression before doing further work.
+  ResolvedExpression& re = byPostorder.byAst(node);
+  re.setType(qtTypeExpr);
 
-  // if unknown or erroneous, propagate up and do no further work
-  if (qtTypeExpr.isUnknown() || qtTypeExpr.isErroneousType()) {
-    ResolvedExpression& re = byPostorder.byAst(node);
-    re.setType(qtTypeExpr);
+  // Check and exit on obvious error cases.
+  if (qtTypeExpr.isUnknown()) {
+    context->error(node, "Attempt to 'new' a function or undefined symbol");
+    return;
+  } else if (qtTypeExpr.kind() != QualifiedType::TYPE) {
+    context->error(node, "'new' must be followed by a type expression");
     return;
   }
 

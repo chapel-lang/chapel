@@ -25,15 +25,48 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
-// test resolving a very simple module
-// Test resolving a simple primary and secondary method call on a record.
+class CountingErrorHandler {
+  Context::ReportErrorFnType oldHandler_ = nullptr;
+  static std::vector<const ErrorBase*> errors_;
+  Context* ctx_;
+
+  // TODO: Can we just have the error handler be an instance of a class?
+  static void globalReportError(Context* ctx, const ErrorBase* err) {
+    errors_.push_back(err);
+  }
+
+ public:
+  CountingErrorHandler(Context* ctx) : ctx_(ctx) {
+    oldHandler_ = ctx_->errorHandler();
+    ctx_->setErrorHandler(&globalReportError);
+  }
+
+  bool realizeErrors() {
+    if (errors_.size() != 0) {
+      for (auto err : errors_) oldHandler_(ctx_, err);
+      errors_.clear();
+      return true;
+    }
+    return false;
+  }
+
+  ~CountingErrorHandler() {
+    assert(!this->realizeErrors());
+    ctx_->setErrorHandler(oldHandler_);
+  }
+};
+
+// C++ is so dumb...
+std::vector<const ErrorBase*> CountingErrorHandler::errors_;
+
+// Test resolving a simple primary and secondary method in defining scope.
 static void test1() {
   Context ctx;
   Context* context = &ctx;
 
   context->advanceToNextRevision(true);
 
-  auto path = UniqueString::get(context, "input.chpl");
+  auto path = UniqueString::get(context, "test1.chpl");
   std::string contents =
     " record r {\n"
     "   proc doPrimary() {}\n"
@@ -102,13 +135,14 @@ static void test1() {
   context->collectGarbage();
 }
 
+// Similar test but for parenless methods.
 static void test2() {
   Context ctx;
   Context* context = &ctx;
 
   context->advanceToNextRevision(true);
 
-  auto path = UniqueString::get(context, "input.chpl");
+  auto path = UniqueString::get(context, "test2.chpl");
   std::string contents =
     R""""(
       record r {
@@ -202,10 +236,73 @@ static void test3() {
   assert(qt.type()->isRealType()); // and not real
 }
 
+static void test4() {
+  Context ctx;
+  Context* context = &ctx;
+
+  context->advanceToNextRevision(true);
+  auto errHandler = CountingErrorHandler(context);
+
+  auto path = UniqueString::get(context, "test3.chpl");
+  std::string contents =
+    R""""(
+    module A {
+      record r {}
+    }
+    module B {
+      use A;
+      proc r.foo() {}
+      var x: r;
+      x.foo();
+    }
+    )"""";
+  setFileText(context, path, contents);
+
+  // Get the modules.
+  auto& br = parseFileToBuilderResult(context, path, UniqueString());
+  assert(!br.numErrors());
+  assert(br.numTopLevelExpressions() == 2);
+  auto modA = br.topLevelExpression(0)->toModule();
+  assert(modA);
+  auto modB = br.topLevelExpression(1)->toModule();
+  assert(modB);
+
+  // Get the record from module 'A'.
+  assert(modA->numStmts() == 1);
+  auto rec = modA->stmt(0)->toRecord();
+  assert(rec);
+
+  // Get the tertiary method, variable, and call from module 'B'.
+  assert(modB->numStmts() == 4);
+  auto tert = modB->stmt(1)->toFunction();
+  assert(tert);
+  auto x = modB->stmt(2)->toVariable();
+  assert(x && !x->initExpression() && x->typeExpression());
+  auto typeExpr = x->typeExpression()->toIdentifier();
+  assert(typeExpr);
+  auto call = modB->stmt(3)->toFnCall();
+  assert(call);
+
+  auto& rr = resolveModule(context, modB->id());
+  assert(!errHandler.realizeErrors());
+
+  auto& reX = rr.byAst(x);
+  assert(reX.type().kind() == QualifiedType::VAR);
+  assert(!reX.type().isUnknown());
+  assert(!reX.type().isErroneousType());
+  assert(reX.type().type()->isRecordType());
+
+  // TODO: Confirm other things.
+  (void) typeExpr;
+  (void) call;
+  (void) tert;
+}
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }

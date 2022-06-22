@@ -124,8 +124,26 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
                                                       nullptr);
   ufsFormals.push_back(std::move(ufsReceiver));
 
-  // receiver is 'ref' because it is mutated
-  formalTypes.push_back(QualifiedType(QualifiedType::REF, compType));
+  // Determine the receiver type and intent.
+  QualifiedType qtReceiver;
+
+  // If the receiver is a record type, just give it the 'ref' intent.
+  if (compType->isRecordType()) {
+    qtReceiver = QualifiedType(QualifiedType::REF, compType);
+
+  // If the receiver is a basic class C, use 'const in x: borrowed C'.
+  } else if (auto basic = compType->toBasicClassType()) {
+    const Type* manager = nullptr;
+    auto nonNilBorrowed  = ClassTypeDecorator::BORROWED_NONNIL;
+    auto decor = ClassTypeDecorator(nonNilBorrowed);
+    auto receiverType = ClassType::get(context, basic, manager, decor);
+    assert(receiverType);
+    qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
+  } else {
+    assert(false && "Not handled yet!");
+  }
+
+  formalTypes.push_back(std::move(qtReceiver));
 
   // consult the fields to build up the remaining untyped formals
   const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
@@ -134,6 +152,15 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   // TODO: generic types
   if (rf.isGeneric()) {
     assert(false && "Not handled yet!");
+  }
+
+  // TODO: super fields and invoking super
+  if (auto basic = compType->toBasicClassType()) {
+    if (auto parent = basic->parentClassType()) {
+      if (!parent->isObjectType()) {
+        assert(false && "Not handled yet!");
+      }
+    }
   }
 
   // push all fields -> formals in order

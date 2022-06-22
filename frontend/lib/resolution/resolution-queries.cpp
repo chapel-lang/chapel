@@ -2731,8 +2731,9 @@ considerCompilerGeneratedCandidates(Context* context,
 
   // if not compiler-generated, then nothing to do
   if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
-                                   ci.isParenless()))
+                                   ci.isParenless())) {
     return false;
+  }
 
   // get the compiler-generated function, may be generic
   auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
@@ -2788,6 +2789,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   ScopeSet visited;
 
   // inject compiler-generated candidates in a manner similar to below
+  // (note that any added candidates are already fully instantiated)
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,
                                       poiInfo,
                                       candidates);

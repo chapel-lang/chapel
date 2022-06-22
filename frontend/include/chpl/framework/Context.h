@@ -273,18 +273,24 @@ class Context {
   llvm::ErrorOr<const ChplEnvMap&> getChplEnv();
 
   /**
-   Set the error handling function
-   */
+    Set the error handling function
+  */
   void setErrorHandler(ReportErrorFnType reportError) {
     this->reportError = reportError;
   }
 
+  /**
+    Get the current error handling function
+  */
   ReportErrorFnType errorHandler() const {
     return this->reportError;
   }
 
-  static ReportErrorFnType defaultErrorHandler() {
-    return defaultReportError;
+  /**
+    Get the default error handling function
+  */
+  ReportErrorFnType defaultErrorHandler() const {
+    return &defaultReportError;
   }
 
   /**
