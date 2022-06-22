@@ -49,6 +49,11 @@ Namespace Changes
 Name Changes in Libraries
 -------------------------
 
+Changes / Feature Improvements in Libraries
+-------------------------------------------
+* updated `.mod()`/`%` behavior for `bigint`s to match `mod()`/`%` for `int`s  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/BigInteger.html#BigInteger.bigint.mod)
+
 Deprecated / Removed Library Features
 -------------------------------------
 * stopped making the contents of the 'Math' module available by default
@@ -111,6 +116,7 @@ Documentation
 * added missing return types to `.size`, `.sizeAs`, and `.shape` on arrays
   (see https://chapel-lang.org/docs/1.27/language/spec/arrays.html#ChapelArray.size  
    and https://chapel-lang.org/docs/1.27/language/spec/arrays.html#ChapelArray.shape)
+* corrected the 'ChapelIO' documentation examples with updated `use` statements
 * fixed a missing line in the example output for 'ArgumentParser'
 * fixed a typo in the 'IO' library documentation
 * fixed typos in the `mason` documentation
