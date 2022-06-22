@@ -3976,7 +3976,7 @@ module BigInteger {
     } else {
       var t_ = this;
 
-      return fits_into(t_, t);
+      return fits_into(t_.mpz, t);
     }
   }
 

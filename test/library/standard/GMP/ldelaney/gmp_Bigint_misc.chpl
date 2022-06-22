@@ -34,11 +34,3 @@ writeln(kronecker(b, 35));
 writeln(kronecker(b, 25));
 writeln(kronecker(29, a));
 writeln(kronecker(5, a));
-
-// // parse the fits function return value
-// proc parse_fit(val){
-//   if val == 0 then
-//     return " does not fit ";
-//   else
-//     return " fits ";
-// }
