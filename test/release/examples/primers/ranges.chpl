@@ -345,7 +345,7 @@ writeln();
 // Range types are generic with respect to three fields:
 //
 // * ``idxType``: The type of the range's values (defaults to ``int``)
-// * ``boundedType``: A ``BoundedRangeType`` value indicating which bounds the range stores (defaults to ``bounded``)
+// * ``boundedType``: A :enum:`BoundedRangeType` value indicating which bounds the range stores (defaults to ``bounded``)
 // * ``stridable``: A ``bool`` indicating whether or not the range can have a stride other than 1 (defaults to ``false``)
 //
 // Like other variables, range types can be inferred by the compiler
