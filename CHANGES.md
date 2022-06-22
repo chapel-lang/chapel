@@ -26,6 +26,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * `.low`/`.high` on strided ranges now warn about pending alignment changes  
   (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#range.low)
+* removed deprecated support for `.front()`/`.back()` on arrays
 * removed support for bracket-less anonymous associative domains
 * marked `.equals()` on arrays as being unstable
 
@@ -64,6 +65,8 @@ Standard Library Modules
 * moved available-by-default math features into a new 'AutoMath' library
   (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and
   https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
+* ensured all types have separate `isXType`, `isXValue`, and `isX` routines  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Types.html)
 * added a 'defaultHashTableResizeThreshold' config to affect hash table growth  
   (see https://chapel-lang.org/docs/1.27/language/spec/domains.html#ChapelDomain.defaultHashTableResizeThreshold)
 * made `bigint.invert()` throw `InversionError` when an inverse is undefined  
@@ -112,6 +115,10 @@ Syntax Highlighting
 Example Codes
 -------------
 
+Build System Improvements
+-------------------------
+* improved checks and error messages for missing LLVM dependencies
+
 Portability
 -----------
 * renamed internal type `err_t` to support compatibility with AMD's math library
@@ -119,6 +126,8 @@ Portability
 
 GPU Computing
 -------------
+* extended Chapel's GPU support to enable GPU computing using multiple locales
+* removed support for the CPU sublocale, relying on the locale itself to do that
 
 Compiler Improvements
 ---------------------
@@ -197,6 +206,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* added a pragma to exempt specific functions from instantiation limit
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
