@@ -167,6 +167,7 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* added an error about `foreach` loops not supporting task intents yet
 * improved the printing of call stacks with operator methods in errors
 * improved the error message for unrecognized `this` types on initializers
 * added a warning when a module path for 'import' starts with 'super.this'
@@ -174,6 +175,7 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* fixed a parse-time memory bug for deeply nested `if`-`then`-`else` loops
 * fixed a bug where deprecation warnings were not generated for qualified access
 * fixed a bug preventing 'import super.super' or similar 'import' statements
 * fixed a bug where private submodules were incorrectly considered as candidates
