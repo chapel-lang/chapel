@@ -557,7 +557,7 @@ struct cache_entry_s {
   int queue;
 
   // indicates whether the page was prefetched (ENTRY_FLAGS_PREFETCHED)
-  // or read-ahead (ENTRY_FLAGS_READAHEAD)
+  // or read-ahead (ENTRY_FLAGS_READAHEAD) or neither (0)
   int prefetch_diags_flags;
 
   // Since e.g. with ugni, a comm event can cause the implementation
