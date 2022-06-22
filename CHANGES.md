@@ -47,8 +47,9 @@ Standard Library Modules
 * moved available-by-default math features into a new 'AutoMath' library
   (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and
   https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
-* added a 'defaultHashTableResizeThreshold' config const
-* made `bigint.invert()` throw `InversionError` when an inverse is undefined
+* added a 'defaultHashTableResizeThreshold' config to affect hash table growth  
+  (see https://chapel-lang.org/docs/1.27/language/spec/domains.html#ChapelDomain.defaultHashTableResizeThreshold)
+* made `bigint.invert()` throw `InversionError` when an inverse is undefined  
   (see: https://chapel-lang.org/docs/1.27/modules/standard/BigInteger.html#BigInteger.bigint.invert )
 
 
