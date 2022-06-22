@@ -5093,11 +5093,14 @@ module BigInteger {
 
       if _local {
         rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
-      } else if a.localeId == chpl_nodeID {
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
         rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
       } else {
-        const a_ = a;
-        rem = mpz_fdiv_r_ui(this.mpz, a_.mpz, b_);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+          rem = mpz_fdiv_r_ui(this.mpz, a_.mpz, b_);
+        }
       }
 
       return rem.safeCast(int);
@@ -5109,11 +5112,14 @@ module BigInteger {
 
       if _local {
         rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
-      } else if a.localeId == chpl_nodeID {
+      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
         rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
       } else {
-        const a_ = a;
-        rem = mpz_fdiv_r_ui(this.mpz, a_.mpz, b_);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          const a_ = a;
+          rem = mpz_fdiv_r_ui(this.mpz, a_.mpz, b_);
+        }
       }
 
       if rem == 0
