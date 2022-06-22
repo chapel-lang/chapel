@@ -1172,7 +1172,12 @@ module BigInteger {
 
 
 
-  // Mod
+  /* Computes the mod operator on the two arguments, defined as
+     ``a % b = a - b * trunc(a / b)``.
+
+     The result is always >= 0 if `a` > 0.
+     It is an error if `b` == 0.
+  */
   operator bigint.%(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
@@ -1188,6 +1193,12 @@ module BigInteger {
     return c;
   }
 
+  /* Computes the mod operator on the two arguments, defined as
+     ``a % b = a - b * trunc(a / b)``.
+
+     The result is always >= 0 if `a` > 0.
+     It is an error if `b` == 0.
+  */
   operator bigint.%(const ref a: bigint, b: int) {
     var c = new bigint();
     var b_ : c_ulong;
@@ -1209,6 +1220,12 @@ module BigInteger {
     return c;
   }
 
+  /* Computes the mod operator on the two arguments, defined as
+     ``a % b = a - b * trunc(a / b)``.
+
+     The result is always >= 0 if `a` > 0.
+     It is an error if `b` == 0.
+  */
   operator bigint.%(const ref a: bigint, b: uint) {
     var   c  = new bigint();
     const b_ = b.safeCast(c_ulong);
@@ -1955,7 +1972,14 @@ module BigInteger {
 
 
 
-  // %=
+  /* Mod ``a`` by ``b``, storing the result in ``a``.
+
+     Here, the modulo operation is defined as
+     ``a % b = a - b * trunc(a / b)``.
+
+     The result is always >= 0 if `a` > 0.
+     It is an error if `b` == 0.
+  */
   operator bigint.%=(ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_tdiv_r(a.mpz, a.mpz, b.mpz);
@@ -1974,6 +1998,14 @@ module BigInteger {
     }
   }
 
+  /* Mod ``a`` by ``b``, storing the result in ``a``.
+
+     Here, the modulo operation is defined as
+     ``a % b = a - b * trunc(a / b)``.
+
+     The result is always >= 0 if `a` > 0.
+     It is an error if `b` == 0.
+  */
   operator bigint.%=(ref a: bigint, b: int) {
     var b_ = 0 : uint;
 
@@ -1985,6 +2017,14 @@ module BigInteger {
     a %= b_;
   }
 
+  /* Mod ``a`` by ``b``, storing the result in ``a``.
+
+     Here, the modulo operation is defined as
+     ``a % b = a - b * trunc(a / b)``.
+
+     The result is always >= 0 if `a` > 0.
+     It is an error if `b` == 0.
+  */
   operator bigint.%=(ref a: bigint, b: uint) {
     var b_ = b.safeCast(c_ulong);
 
@@ -5048,7 +5088,9 @@ module BigInteger {
 
 
   /* Computes the mod operator on the two arguments, defined as
-     ``mod(m,n) = m - n * floor(m / n)``.
+     ``mod(a, b) = a - b * floor(a / b)``.
+
+     The result is stored in ``this``.
 
      The result is always >= 0 if `b` > 0.
      It is an error if `b` == 0.
@@ -5076,10 +5118,12 @@ module BigInteger {
   }
 
   /* Computes the mod operator on the two arguments, defined as
-     ``mod(m,n) = m - n * floor(m / n)``.
+     ``mod(a, b) = a - b * floor(a / b)``.
 
      If b is of an unsigned type, then
      fewer conditionals will be evaluated at run time.
+
+     The result is stored in ``this`` and returned as an ``int``.
 
      The result is always >= 0 if `b` > 0.
      It is an error if `b` == 0.
