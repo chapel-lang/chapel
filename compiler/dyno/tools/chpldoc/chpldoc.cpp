@@ -229,8 +229,9 @@ static std::ostream& indentStream(std::ostream& os, size_t num) {
 
 // Remove the leading+trailing commentStyle (/*+, *+/)
 // Dedent by the least amount of leading whitespace
-// Return is a list of strings which have no newline chars
-static std::vector<std::string> prettifyComment(const std::string& comment, const std::string& commentStyle) {
+// Return is a list of strings which may have newline chars
+static std::vector<std::string> prettifyComment(const std::string& comment,
+                                                const std::string& commentStyle) {
   std::string ret = comment;
   std::string commentEnd = commentStyle;
   reverse(commentEnd.begin(), commentEnd.end());
@@ -238,28 +239,35 @@ static std::vector<std::string> prettifyComment(const std::string& comment, cons
   if (ret.substr(0, styleLen) == commentStyle) {
     size_t l = ret.length();
     if (ret.substr(l - styleLen, styleLen) != commentEnd)
+      // TODO: this is a broken comment at this point, no?
       return {};
     ret.erase(l - styleLen, styleLen);
     ret.erase(0, styleLen);
   } else {
     return {};
   }
-  // strip out newlines at the beginning or ending of a comment
-  ret = strip(ret, "^\n+|\n+$");
 
   auto lines = splitLines(ret);
   if (lines.empty()) return lines;
 
   size_t toTrim = std::numeric_limits<size_t>::max();
-  for (const std::string& line : lines) {
-    if (line.empty()) continue;
-    toTrim = std::min(toTrim, countLeadingSpaces(line));
+  // exclude the first line from the minimum
+  for (std::vector<std::string>::iterator it = lines.begin(); it < lines.end(); ++it) {
+    if (it->empty()) continue;
+    if (it == lines.begin()) {
+      *it = strip(*it, "^\\s+");
+      continue;
+    }
+    toTrim = std::min(toTrim, countLeadingSpaces(*it));
   }
 
-  assert(toTrim < std::numeric_limits<size_t>::max() && "probably an empty comment");
+  assert((toTrim < std::numeric_limits<size_t>::max() || lines.size()==1) &&
+          "probably an empty comment");
 
-  for (std::string& line : lines) {
-    line.erase(0, toTrim);
+
+  for (std::vector<std::string>::iterator it = lines.begin(); it < lines.end(); ++it) {
+    if (it != lines.begin())
+      it->erase(0, toTrim);
   }
 
   return lines;
@@ -905,7 +913,9 @@ struct RstResultBuilder {
       os_ << '\n';
     for (const auto& line : lines) {
       if (line.empty()) {
-        os_ << '\n';
+        // insert blank spaces here to match test output from chpldoc, not sure
+        // TODO: See if spaces needed for the docs to format correctly
+        indentStream(os_, indentChars) << '\n';
       } else {
         indentStream(os_, indentChars) << line << '\n';
       }
