@@ -62,15 +62,14 @@ writeln("3: output from main task");
 
 // .. _primers-taskparallel-coforall:
 //
-// Coforall Statements
-// -------------------
-// Another more structured form of task parallelism is the ``coforall``
-// statement.  The ``coforall`` statement is a loop variant of the ``cobegin``
-// statement where each iteration of the loop is a separate task.
-// Similar to the ``cobegin`` statement, every iteration of the ``coforall``
-// loop is a separate task and the main thread of execution does not
-// continue until every iteration is complete.
-writeln("4: ### The coforall statement ###");
+// Coforall Loops
+// --------------
+// Another more structured form of task parallelism is the
+// ``coforall`` loop.  This loop form is like a ``for`` loop in which
+// each iteration of the loop is executed by a distinct task.  Similar
+// to the ``cobegin`` statement, the main thread of execution does not
+// continue until the tasks created for each iteration have completed..
+writeln("4: ### The coforall loop ###");
 
 coforall i in 1..n {
   writeln("4: output from spawned task 1 (iteration ", i, ")");
@@ -80,7 +79,7 @@ coforall i in 1..n {
 // While the order of output within an iteration is deterministic (``1``
 // executes before ``2``), the order of output relative to other
 // iterations is not defined.  As with the ``cobegin`` statement, the output
-// from within the ``coforall`` statement will always precede the following
+// from within the ``coforall`` loop will always precede the following
 // output.
 writeln("4: output from main task");
 
@@ -89,7 +88,7 @@ writeln("4: output from main task");
 // As with the ``cobegin`` statement, any ``begin`` statements spawned within
 // a ``coforall`` loop are not guaranteed to be complete before the main
 // thread of execution continues.
-writeln("5: ### The coforall statement with nested begin statements ###");
+writeln("5: ### The coforall loop with nested begin statements ###");
 coforall i in 1..n {
   begin writeln("5: output from spawned task 1 (iteration ", i, ")");
   begin writeln("5: output from spawned task 2 (iteration ", i, ")");

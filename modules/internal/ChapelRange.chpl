@@ -17,145 +17,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
-  A ``range`` is a first-class, constant-space representation of a
-  regular sequence of values.  These values are typically integers,
-  though ranges over enum types are also supported.  Ranges
-  support iteration over the sequences they represent as well as
-  operations such as counting, striding, intersection, shifting, and
-  comparisons.
-
-  Range Values
-  ------------
-  In their simplest form, ranges are represented by their low and high
-  bounds:
 
 
-  .. code-block:: chapel
-
-    1..3    // 1, 2, 3
-    0..n    // 0, 1, 2, 3, ..., n
-    lo..hi  // lo, lo+1, lo+2, ..., hi
-
-  Ranges may also be `unbounded`, in which case, the lower and/or upper
-  bounds may be omitted:
-
-  .. code-block:: chapel
-
-    1..   // 1, 2, 3, ...
-    ..10  // .., 8, 9, 10
-    ..    // ..., -2, -1, 0, 1, 2, ...
-
-  Ranges over enum types respect the declaration order of its values:
-
-  .. code-block:: chapel
-
-    enum color {red=4, orange=2, yellow=1, green=3, blue=6, indigo=7, violet=5};
-    color.orange..color.green;   // orange, yellow, green
-
-  Range Types
-  -----------
-  Range types are generic with respect to three fields:
-
-  * ``idxType``: The type of the range's values—must an integral or enum type (defaults to ``int``)
-  * ``boundedType``: A :enum:`BoundedRangeType` value indicating which bounds the range stores (defaults to ``bounded``)
-  * ``stridable``: A boolean indicating whether or not the range can be strided (defaults to ``false``)
-
-  The following code shows range variables declared with specified
-  type signatures:
-
-  .. code-block:: chapel
-
-    var r1: range = 1..10;
-    var r2: range(int(8)) = 1..myInt8;
-    var r3: range(color) = color.green..color.blue;
-    var r4: range(stridable=true) = 1..10 by 2;
-    var r5: range(boundedType=BoundedRangeType.boundedNone) = ..;
-
-  Like other variables, these types can be inferred by the compiler
-  from the initializing expressions for simplicity:
-
-  .. code-block:: chapel
-
-    var r1 = 1..10;
-    var r2 = 1..myInt8;
-    var r3 = color.green..color.blue;
-    var r4 = 1..10 by 2;
-    var r5 = ..;
-
-
-
-  Range Operators
-  ---------------
-  New ranges can be constructed from existing ones using the counting,
-  striding, and/or alignment operators, ``#``, ``by``, and ``align``:
-
-  .. code-block:: chapel
-
-    0..#10              // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-    0..10 by 2          // 0, 2, 4, 6, 8, 10
-    0..10 by 2 align 1  // 1, 3, 5, 7, 9
-    0.. by 2 # 10       // 0, 2, 4, 6, 8, 10, 12, 14, 16, 18
-
-  Iteration over ranges
-  ---------------------
-  Ranges can be used as the iterable expression in ``for``, ``forall``, and ``coforall`` loops.
-
-  .. code-block:: chapel
-
-    for i in 1..10 { ... f(i) ... }
-    forall i in 1..1000 { ... f(i) ... }
-    coforall i in 0..#numTasks { ... f(i) ... }
-
-  When ranges that are not fully bounded are zipped with another iterator,
-  the other iterator is used to determine an ending point.
-
-  .. code-block:: chapel
-
-    // (i, j) will take the values: (1, 7), (2, 8), (3, 9), (4, 10)
-    for (i, j) in zip(1..4, 7..) { ... }
-
-    // (i, j) will take the values: (1, 10), (2, 9), (3, 8), (4, 7)
-    for (i,j) in zip(1..4, ..10 by -1) { ... }
-
-  Range Intersection
-  ------------------
-  A range can be intersected with another range to form a new range representing the intersection of the two ranges by `slicing` one range with the other.
-
-  .. code-block:: chapel
-
-    (1..10)[3..8] // 3..8
-    (0..20)[1..20 by 2] // 1..20 by 2
-    (1..10)[5..] // 5..10
-    (1..10)[..5] // 1..5
-
-  Range Shifting
-  --------------
-  A range can be shifted by an integer using the ``+`` and ``-`` operators.
-
-  .. code-block:: chapel
-
-    (1..10) + 5 // 6..15
-    (1..10) - 3 // -2..7
-    (1..) + 1 // 2..
-    (..10) + 1 // ..11
-
-  Range Comparisons
-  -----------------
-  Ranges can be compared for equality using the ``==`` and ``!=`` operators.
-
-  .. code-block:: chapel
-
-    1..10 == 1..10 // true
-    1.. == 1.. // true
-    1..10 != (1..10 by 2) // true
-
- */
 module ChapelRange {
 
   use ChapelBase, SysBasic, HaltWrappers;
 
-  use Math, DSIUtil;
+  use DSIUtil;
 
   private use ChapelDebugPrint only chpl_debug_writeln;
 
@@ -790,6 +658,10 @@ module ChapelRange {
     return hasLowBound();
 
   pragma "no doc"
+  proc range.hasFirst() param where stridable && this.boundedType == BoundedRangeType.boundedNone
+  return false;
+  
+  pragma "no doc"
   inline proc range.hasFirst()
     return if isAmbiguous() || isEmpty() then false else
       if stride > 0 then hasLowBound() else hasHighBound();
@@ -798,6 +670,10 @@ module ChapelRange {
   proc range.hasLast() param where !stridable && !hasLowBound()
     return hasHighBound();
 
+  pragma "no doc"
+  proc range.hasLast() param where stridable && this.boundedType == BoundedRangeType.boundedNone
+  return false;
+  
   pragma "no doc"
   inline proc range.hasLast()
     return if isAmbiguous() || isEmpty() then false else

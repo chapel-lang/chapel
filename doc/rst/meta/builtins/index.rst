@@ -14,7 +14,6 @@ amenable to being documented using **chpldoc**:
 
    OwnedObject
    Bytes
-   ChapelRange
    SharedObject
    ChapelSyncvar
    String

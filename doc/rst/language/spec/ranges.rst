@@ -7,9 +7,13 @@ Ranges
 ======
 
 A *range* is a first-class, constant-space representation of a regular
-sequence of indices of either integer, boolean, or enumerated type.
-Ranges support iteration over the sequences they represent and are the
-basis for defining domains (:ref:`Chapter-Domains`).
+sequence of values.  These values are typically integers, though
+ranges over bools, enums, and other types are also supported.  Ranges
+support serial and parallel iteration over the sequences of values
+they represent as well as an alegbra of operations such as counting,
+striding, intersection, shifting, and comparisons.  Ranges form the
+basis for defining rectangular domains (:ref:`Chapter-Domains`) and
+arrays in Chapel.
 
 Ranges are presented as follows:
 
@@ -1264,3 +1268,5 @@ Range Transformations
    Returns a new range with its ``low``, ``high`` and ``alignment`` values
    adjusted by :math:`i`. The ``stride`` value is preserved. If the range’s
    alignment is ambiguous, the behavior is undefined.
+
+.. include:: ../../builtins/ChapelRange.rst
