@@ -17,19 +17,31 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* made small integers prefer coercions to `real(32)` over `real(64)`
+  (see https://chapel-lang.org/docs/1.27/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
+* made loops over unbounded enum/bool ranges stop at their extreme values
+* made serial loops over unbounded integer ranges terminate instead of spinning
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+* `.low`/`.high` on strided ranges now warn about pending alignment changes  
+  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#range.low)
+* removed support for bracket-less anonymous associative domains
+* marked `.equals()` on arrays as being unstable
 
 New Features
 ------------
+* added new `.lowBound`/`.highBound` queries on ranges to get "pure" bounds  
+  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#range.lowBound)
+* added an `alignedBoundsByDefault` config to opt into new `.low`/`.high` defs  
+  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault))
 
 Feature Improvements
 --------------------
 
-Deprecated / Unstable / Removed Language Features
--------------------------------------------------
-* marked `.equals()` on arrays as being unstable
-
 Namespace Changes
 -----------------
+* made internal module names not visible to Chapel programs by default
 
 Name Changes in Libraries
 -------------------------
@@ -39,6 +51,11 @@ Deprecated / Removed Library Features
 * stopped making the contents of the 'Math' module available by default
   (see https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 * deprecated support for `+`, `-`, `&`, `|`, and `^` on map
+* deprecated support for 'Sys'/'SysBasic' symbols now supported by 'OS.POSIX'
+* deprecated the 'VectorizingIterator' module
+* removed the deprecated 'ChapelEnv', 'CPtr', and 'SysCTypes' modules
+* removed deprecated 'SysBasic' features
+* removed deprecated `size_t`/`ssize_t` type aliases
 * removed the deprecated `set.isIntersecting()` method
 * removed deprecated set methods that used `x` as argument names
 
@@ -62,6 +79,7 @@ Standard Domain Maps (Layouts and Distributions)
 Tool Improvements
 -----------------
 * added a hint to use '--show' when 'mason test' compilations fail
+* fixed a bug in which `make install` was no longer installing `mason`
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -74,11 +92,16 @@ Memory Improvements
 
 Documentation
 -------------
+* added a Chapel module index to the documentation sidebar  
+  (see https://chapel-lang.org/docs/1.27/chpl-modindex.html)
 * added documentation for getting started with `mason`  
   (see https://chapel-lang.org/docs/1.27/tools/mason/mason.html#using-a-mason-package)
 * updated the installation instructions for `mason`
 * documented the 'protobuf' support package, 'ProtobufProtocolSupport'
   (see https://chapel-lang.org/docs/1.27/modules/packages/ProtobufProtocolSupport.html)
+* added missing return types to `.size`, `.sizeAs`, and `.shape` on arrays
+  (see https://chapel-lang.org/docs/1.27/language/spec/arrays.html#ChapelArray.size  
+   and https://chapel-lang.org/docs/1.27/language/spec/arrays.html#ChapelArray.shape)
 * fixed a missing line in the example output for 'ArgumentParser'
 * fixed a typo in the 'IO' library documentation
 * fixed typos in the `mason` documentation
@@ -91,6 +114,8 @@ Example Codes
 
 Portability
 -----------
+* renamed internal type `err_t` to support compatibility with AMD's math library
+* improved portability with respect to gcc 12
 
 GPU Computing
 -------------
@@ -114,16 +139,21 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * improved the printing of call stacks with operator methods in errors
+* improved the error message for unrecognized `this` types on initializers
 * added a warning when a module path for 'import' starts with 'super.this'
+* stabilized an error message when calling an otherwise unused module
 
 Bug Fixes
 ---------
 * fixed a bug where deprecation warnings were not generated for qualified access
 * fixed a bug preventing 'import super.super' or similar 'import' statements
 * fixed a bug where private submodules were incorrectly considered as candidates
+* fixed a bug in which scans of default slices of Block arrays didn't compile
+* fixed a bug in which the BUILD_VERSION wasn't printing when it is non-zero
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed a path error for CHPL_LLVM=bundled when CC was set
 
 Bug Fixes for Libraries
 -----------------------
@@ -160,6 +190,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* reduced the reliance on CHPL_HOME when running `make docs`
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
