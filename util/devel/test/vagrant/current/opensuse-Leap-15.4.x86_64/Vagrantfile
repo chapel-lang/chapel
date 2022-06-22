@@ -6,9 +6,9 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "opensuse/Leap-15.3.x86_64"
+  config.vm.box = "opensuse/Leap-15.4.x86_64"
 
-  # leap 15.3 has LLVM 5,7,9,11,12 and defaults to 11
+  # leap 15.4 has LLVM 5,7,9,11,13 and defaults to 13
   config.vm.provision "shell",
     path: "../../provision-scripts/zypper-deps.sh"
 

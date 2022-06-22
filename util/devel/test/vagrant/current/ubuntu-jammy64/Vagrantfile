@@ -6,11 +6,14 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "opensuse/Leap-15.3.x86_64"
+  config.vm.box = "ubuntu/jammy64"
 
-  # leap 15.3 has LLVM 5,7,9,11,12 and defaults to 11
   config.vm.provision "shell",
-    path: "../../provision-scripts/zypper-deps.sh"
+    path: "../../provision-scripts/apt-get-deps.sh"
+
+  # installs LLVM 13
+  config.vm.provision "shell",
+    path: "../../provision-scripts/apt-get-llvm.sh"
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"

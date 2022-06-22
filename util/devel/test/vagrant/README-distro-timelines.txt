@@ -7,6 +7,7 @@ Alpine Linux
   3.15  2023-11-01
 
 Amazon Linux
+       -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
   2    EOL June 30, 2023
   2022
 
@@ -25,7 +26,6 @@ x 6 full updates until May 2017, maintenance until Nov 2020
       https://stackoverflow.com/questions/36327805/how-to-install-gcc-5-3-with-yum-on-centos-7-2/37355018
   8 not-stream - EOL 2021-12-31
   8 stream - EOL May 2024
-  8 stream - estimated EOL 2027
 
 
 Debian -- see https://wiki.debian.org/DebianReleases
@@ -52,11 +52,15 @@ x 30 EOL May 2020
 x 31 EOL Nov 2020
 x 32 EOL May 2021
   33 EOL Nov 2021
-  34
+  34 EOL Jun 2022
   35
+  36
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html
         -- and https://app.vagrantup.com/freebsd
+        -- also note https://docs.freebsd.org/en/books/handbook/virtualization/#virtualization-guest-virtualbox
+           has instructions for installing virtualbox guest additions, in
+           case that is needed
 x 10.2 EOL Dec 2016
 x 10.3 EOL Apr 2018
 x 10.4 EOL Oct 2018
@@ -69,6 +73,7 @@ x 12.1 EOL Jan 2021
   12.2 EOL Mar 2022
   12.3
   13.0 EOL Jan 2026
+  13.1
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
          -- and https://app.vagrantup.com/opensuse
@@ -79,8 +84,9 @@ x 42.2 EOL Jan 2018
 x 42.3 EOL Jun 2019
 x 15.0 EOL Nov 2019
 x 15.1 EOL Nov 2020
-- 15.2 EOL Dec 2021
+x 15.2 EOL Dec 2021
   15.3 EOL Nov 2022
+  15.4 EOL Nov 2023
 
 
 Ubuntu -- see https://wiki.ubuntu.com/Releases
@@ -91,6 +97,7 @@ x 14.04 "Trusty Tahir"      LTS until Apr 2019
 x 16.04 "Xenial Xerus"      LTS until Apr 2021
   18.04 "Bionic Beaver"     LTS until April 2023
   20.04 "Focal Fossa"       LTS until April 2030
+  22.04 "Jammy Jellyfish"   LTS until April 2032
 
 non-LTS:
 x 14.10 "Utopic Unicorn"    EOL July 2015
@@ -104,4 +111,4 @@ x 19.04 "Disco Dingo"       EOL Jan 2020
 x 19.10 "Eoan Ermine"       EOL July 2020
 x 20.10 "Groovy Gorilla"    EOL July 2021
 x 21.04 "Hirsute Hippo"     EOL January 2022
-  21.10 "Impish Indri"      EOL July 2022
+- 21.10 "Impish Indri"      EOL July 2022
