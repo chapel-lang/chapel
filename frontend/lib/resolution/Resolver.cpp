@@ -1232,6 +1232,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     // + combine to produce the final class type.
     // TODO: Compute the concrete type by resolving generics + initializer
     //
+    (void) tfs;
     re.setType(qtNewExpr);
 
   } else {
