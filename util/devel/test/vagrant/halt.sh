@@ -2,6 +2,8 @@
 
 # Stop any running VMs
 
+DIR=`pwd`
+
 for name in current/*
 do
   if [ -f $name/Vagrantfile ]
@@ -9,7 +11,6 @@ do
     cd $name
     echo "------------ $name ---- vagrant halt"
     vagrant halt
-    cd ..
+    cd "$DIR"
   fi
 done
-
