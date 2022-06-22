@@ -26,6 +26,7 @@ Feature Improvements
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* marked `.equals()` on arrays as being unstable
 
 Namespace Changes
 -----------------
@@ -47,6 +48,9 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and
   https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 * added a 'defaultHashTableResizeThreshold' config const
+* made `bigint.invert()` throw `InversionError` when an inverse is undefined
+  (see: https://chapel-lang.org/docs/1.27/modules/standard/BigInteger.html#BigInteger.bigint.invert )
+
 
 Package Modules
 ---------------
