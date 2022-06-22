@@ -935,11 +935,12 @@ struct RstResultBuilder {
     RstSignatureVisitor ppv{os_};
     node->traverse(ppv);
     os_ << "\n";
-    //indentDepth_ ++;
     bool commentShown = showComment(node, indentComment);
-    //indentDepth_ --;
-    // TODO: Fix all this because why are we checking for specific node type here?
-    if (commentShown && node->isEnum()) {
+
+    // TODO: Fix all this because why are we checking for specific node types here?
+    if (commentShown && (node->isEnum() ||
+                         node->isClass() ||
+                         node->isRecord())) {
       os_ << "\n";
     }
 
@@ -1024,8 +1025,8 @@ struct RstResultBuilder {
     // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
     os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
 
-    showComment(lastComment, false);
     if (hasSubmodule(m)) {
+      os_ << "\n;"
       os_ << "**Submodules**" << std::endl << std::endl;
 
       os_ << ".. toctree::" << std::endl;
@@ -1037,8 +1038,11 @@ struct RstResultBuilder {
       os_ << ":glob:" << std::endl << std::endl;
       indentStream(os_, 1 * indentPerDepth);
 
-      os_ << moduleName << "/*" << std::endl << std::endl;
+      os_ << moduleName << "/*" << std::endl;
     }
+
+    showComment(lastComment, false);
+
     visitChildren(m);
 
     return getResult();
