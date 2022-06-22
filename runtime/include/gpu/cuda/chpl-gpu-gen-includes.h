@@ -59,6 +59,7 @@ __device__ static inline chpl_localeID_t chpl_gen_getLocaleID(void)
   return localeID;
 }
 
+__device__ static inline void* c_pointer_return(void* x) { return x; }
 
 __device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node,  c_sublocid_t subloc) {
   chpl_localeID_t loc = { node, subloc };
