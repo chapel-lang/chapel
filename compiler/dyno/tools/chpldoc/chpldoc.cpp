@@ -105,7 +105,8 @@ static bool hasSubmodule(const Module* mod) {
   return false;
 }
 
-static std::string strip(const std::string& s, std::string pattern = "^\\s+|\\s+$") {
+static std::string strip(const std::string& s,
+                         std::string pattern = "^\\s+|\\s+$") {
   auto re = std::regex(pattern);
   return std::regex_replace(s, re, "");
 }
@@ -168,7 +169,8 @@ static char* checkProjectVersion(char* projectVersion) {
       error = "Required only two dots which separates three numbers";
       check = false;
       break;
-    } else if((int)projectVersion[i] > (int)'9' || (int)projectVersion[i] < (int)'0') {
+    } else if((int)projectVersion[i] > (int)'9' ||
+              (int)projectVersion[i] < (int)'0') {
       error = "Invalid Characters, only digits and dots permitted before a hyphen";
       check = false;
       break;
@@ -193,18 +195,18 @@ static char* checkProjectVersion(char* projectVersion) {
   if(check) {
     return projectVersion;
   } else {
-    std::cerr << "error: Invalid version format: "<< projectVersion << " due to: " << error << std::endl;
+    std::cerr << "error: Invalid version format: "
+              << projectVersion << " due to: " << error << std::endl;
     exit(1);
   }
   return NULL;
 }
 
 static std::string indentLines(const std::string& s, int count) {
-  //std::string replacement = "\n" + std::string(count, ' ');
   if (s.empty())
     return s;
   std::string head = std::string(count, ' ');
-  std::string ret = head + s; //std::regex_replace(s, std::regex("\n"), replacement);
+  std::string ret = head + s;
   return ret;
 }
 
@@ -252,7 +254,7 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
 
   size_t toTrim = std::numeric_limits<size_t>::max();
   // exclude the first line from the minimum
-  for (std::vector<std::string>::iterator it = lines.begin(); it < lines.end(); ++it) {
+  for (auto it = lines.begin(); it < lines.end(); ++it) {
     if (it->empty()) continue;
     if (it == lines.begin()) {
       *it = strip(*it, "^\\s+");
@@ -265,7 +267,7 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
           "probably an empty comment");
 
 
-  for (std::vector<std::string>::iterator it = lines.begin(); it < lines.end(); ++it) {
+  for (auto it = lines.begin(); it < lines.end(); ++it) {
     if (it != lines.begin())
       it->erase(0, toTrim);
   }
@@ -273,7 +275,8 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
   return lines;
 }
 
-static std::string commentSynopsis(const Comment* c, const std::string& commentStyle) {
+static std::string commentSynopsis(const Comment* c,
+                                   const std::string& commentStyle) {
   if (!c) return "";
   auto lines = prettifyComment(c->str(), commentStyle);
   if (lines.empty()) return "";
@@ -377,7 +380,9 @@ struct RstSignatureVisitor {
    * `surroundBegin` and `surroundEnd` are output before and after respectively
    * if not null */
   template<typename It>
-  void interpose(It begin, It end, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
+  void interpose(It begin, It end, const char* separator,
+                 const char* surroundBegin=nullptr,
+                 const char* surroundEnd=nullptr) {
     bool first = true;
     if (surroundBegin) os_ << surroundBegin;
     for (auto it = begin; it != end; it++) {
@@ -389,7 +394,9 @@ struct RstSignatureVisitor {
   }
 
   template<typename T>
-  void interpose(T xs, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
+  void interpose(T xs, const char* separator,
+                 const char* surroundBegin=nullptr,
+                 const char* surroundEnd=nullptr) {
     interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
   }
 
@@ -667,14 +674,16 @@ struct RstSignatureVisitor {
                                  isPostfix(call->actual(1)->toOpCall()) , true);
         }
       // special case handling things like 3*(4*(string))
-      // TODO: This has to be cleaned up/fixed. It's unreadable and probably riddled with bugs
-      if (!needsParens && outerOp == USTR("*") && ((innerOp == USTR("*") && call->actual(1)->isOpCall() &&
-          call->actual(1)->toOpCall()->actual(0)->isIntLiteral() &&
-          (call->actual(1)->toOpCall()->actual(1)->isTuple() ||
-           call->actual(1)->toOpCall()->actual(1)->isIdentifier()
-          )) ||  (call->actual(0)->isIntLiteral() &&
-                 (call->actual(1)->isIdentifier() ||
-                  call->actual(1)->isFnCall())))) {
+      // TODO: This has to be cleaned up/fixed. It's unreadable and probably
+      // riddled with bugs
+      if (!needsParens && outerOp == USTR("*") &&
+          ((innerOp == USTR("*") && call->actual(1)->isOpCall() &&
+            call->actual(1)->toOpCall()->actual(0)->isIntLiteral() &&
+            (call->actual(1)->toOpCall()->actual(1)->isTuple() ||
+             call->actual(1)->toOpCall()->actual(1)->isIdentifier())) ||
+           (call->actual(0)->isIntLiteral() &&
+            (call->actual(1)->isIdentifier() ||
+             call->actual(1)->isFnCall())))) {
         needsParens = true;
       }
       if (needsParens) os_ << "(";
@@ -757,16 +766,6 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  // TODO this isn't quite right currently, the dump for var x: [{1..3}] int = ...
-  // has the extra int. Maybe its not supposed to be a BracketLoop though?
-  // that would be more like [i in 0..15] writeln(i);
-  // M@26BracketLoop
-  // M@23  Domain
-  // M@22    Range
-  // M@20      IntLiteral
-  // M@21      IntLiteral
-  // M@25  Block
-  // M@24    Identifier int
   bool enter(const BracketLoop* bl) {
     printChapelSyntax(os_, bl);
     return false;
@@ -802,7 +801,8 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const AstNode* a) {
-    //printf("unhandled enter on PrettyPrintVisitor of %s\n", asttags::tagToString(a->tag()));
+    //printf("unhandled enter on PrettyPrintVisitor of %s\n",
+    //          asttags::tagToString(a->tag()));
     //a->stringify(os_, StringifyKind::CHPL_SYNTAX);
     printChapelSyntax(os_, a);
     //gUnhandled.insert(a->tag());
@@ -937,7 +937,7 @@ struct RstResultBuilder {
     os_ << "\n";
     bool commentShown = showComment(node, indentComment);
 
-    // TODO: Fix all this because why are we checking for specific node types here?
+    // TODO: Fix all this because why are we checking for specific node types?
     if (commentShown && (node->isEnum() ||
                          node->isClass() ||
                          node->isRecord())) {
@@ -947,7 +947,8 @@ struct RstResultBuilder {
     if (auto attrs = node->attributes()) {
       if (attrs->isDeprecated()) {
         auto comment = previousComment(context_, node->id());
-        if (comment && !comment->str().empty() && comment->str().substr(0, 2) == "/*" &&
+        if (comment && !comment->str().empty() &&
+            comment->str().substr(0, 2) == "/*" &&
             comment->str().find("deprecat") != std::string::npos ) {
             // do nothing because deprecation was mentioned in doc comment
         } else {
@@ -980,7 +981,8 @@ struct RstResultBuilder {
             modulePath.pop_back();
             std::string parentPath = modulePath.back().str();
             std::string outdir = outputDir_ + "/" + parentPath;
-            r->outputModule(outdir, child->toModule()->name().str(), indentPerDepth);
+            r->outputModule(outdir, child->toModule()->name().str(),
+                            indentPerDepth);
 
           } else {
             subModules.push_back(r.get());
@@ -1123,27 +1125,25 @@ struct RstResultBuilder {
           multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
         } else { // use the expression in the queue
           // take the one from the front of the expressions queue
-          if (expressions.front()->toVariable()->typeExpression()) {
+          if (auto te = expressions.front()->toVariable()->typeExpression()) {
             //write out type expression->stringify
             os_ << ": ";
-            expressions.front()->toVariable()->typeExpression()->stringify(os_,
-                                                                          CHPL_SYNTAX);
+            te->stringify(os_, CHPL_SYNTAX);
             //set previous type expression = ": variableName.type"
             prevTypeExpression =
                 ": " + decl->toVariable()->name().str() + ".type";
           }
-          if (expressions.front()->toVariable()->initExpression()) {
+          if (auto exp = expressions.front()->toVariable()->initExpression()) {
             // write out initExpression->stringify
             os_ << " = ";
-            expressions.front()->toVariable()->initExpression()->stringify(os_,
-                                                                          CHPL_SYNTAX);
+            exp->stringify(os_, CHPL_SYNTAX);
             // set previous init expression = "= variableName"
             prevInitExpression = " = " + decl->toVariable()->name().str();
           }
         }
         if (decl == expressions.front()) {
-          // our decl is the same as the first one in the queue, so we should pop it
-          // and clear the previousInit and previousType
+          // our decl is the same as the first one in the queue, so we should
+          // pop it and clear the previousInit and previousType
           expressions.pop();
           prevTypeExpression.clear();
           prevInitExpression.clear();
@@ -1154,7 +1154,7 @@ struct RstResultBuilder {
       if (auto attrs = md->attributes()) {
         if (attrs->isDeprecated()) {
           indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
-          indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage().c_str();
+          indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage();
           os_ << "\n\n";
         }
       }
@@ -1534,7 +1534,9 @@ int main(int argc, char** argv) {
   }
 
   if (!gUnhandled.empty()) {
-    printf("ERROR did not pretty print %ld nodes with tags:\n", gUnhandled.size());
+    printf("ERROR did not pretty print %ld nodes with tags:\n",
+            gUnhandled.size());
+
     for (auto tag : gUnhandled) {
       printf("  %s\n", asttags::tagToString(tag));
     }
