@@ -88,15 +88,15 @@ record met_vs_met {
 
 record met_vs_met_int {
     proc this(const a: int, const b: int): (bool, int, bigint) {
-        const a_bi = new bigint(a);
+        var a_bi = new bigint(a);
 
         const amb = mod(a, b);
         const amb_bi = a_bi.mod(a_bi, b);
 
         return (
-            amb == amb_bi,
+            amb == amb_bi && amb == a_bi,
             amb,
-            new bigint(amb_bi),
+            a_bi,
         );
     }
 }
@@ -106,15 +106,15 @@ record met_vs_met_uint {
         if b < 0 {
             return (true, 0, new bigint());
         } else {
-            const a_bi = new bigint(a);
+            var a_bi = new bigint(a);
 
             const amb = mod(a, b);
             const amb_bi = a_bi.mod(a_bi, b:uint);
 
             return (
-                amb == amb_bi,
+                amb == amb_bi && amb == a_bi,
                 amb,
-                new bigint(amb_bi),
+                a_bi,
             );
         }
     }

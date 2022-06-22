@@ -5092,12 +5092,12 @@ module BigInteger {
       b_ = b.safeCast(c_ulong);
 
       if _local {
-        rem = mpz_fdiv_ui(a.mpz, b_);
+        rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
       } else if a.localeId == chpl_nodeID {
-        rem = mpz_fdiv_ui(a.mpz, b_);
+        rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
       } else {
         const a_ = a;
-        rem = mpz_fdiv_ui(a_.mpz, b_);
+        rem = mpz_fdiv_r_ui(this.mpz, a_.mpz, b_);
       }
 
       return rem.safeCast(int);
@@ -5108,21 +5108,21 @@ module BigInteger {
         b_ = (0 - b).safeCast(c_ulong);
 
       if _local {
-        rem = mpz_fdiv_ui(a.mpz, b_);
+        rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
       } else if a.localeId == chpl_nodeID {
-        rem = mpz_fdiv_ui(a.mpz, b_);
+        rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
       } else {
         const a_ = a;
-        rem = mpz_fdiv_ui(a_.mpz, b_);
+        rem = mpz_fdiv_r_ui(this.mpz, a_.mpz, b_);
       }
 
-      return
-        if rem == 0
-          then 0
-        else if b < 0
-          then rem.safeCast(int) + b
-        else
-          rem.safeCast(int);
+      if rem == 0
+        then return 0;
+      else if b < 0 {
+        this += b;
+        return rem.safeCast(int) + b;
+      } else
+        return rem.safeCast(int);
     }
   }
 
