@@ -47,7 +47,7 @@ module ChapelRange {
     * ``boundedLow`` - The range starts at a given low bound, but conceptually goes up to infinity.
     * ``boundedHigh`` - The range conceptually starts at negative infinity and ends at a given high bound.
     * ``boundedNone`` - The range conceptually runs from negative infinity to infinity.
-    
+
     This is currently documented manually in the spec because it fit into
     the flow of the document better.
    */
@@ -445,7 +445,7 @@ module ChapelRange {
                   count.type:string);
   }
 
-  
+
   /* Returns the range's stride */
   inline proc range.stride where stridable  return _stride;
   pragma "no doc"
@@ -768,7 +768,7 @@ module ChapelRange {
   pragma "no doc"
   proc range.hasFirst() param where stridable && this.boundedType == BoundedRangeType.boundedNone
   return false;
-  
+
   pragma "no doc"
   inline proc range.hasFirst()
     return if isAmbiguous() || isEmpty() then false else
@@ -798,7 +798,7 @@ module ChapelRange {
   pragma "no doc"
   proc range.hasLast() param where stridable && this.boundedType == BoundedRangeType.boundedNone
   return false;
-  
+
   pragma "no doc"
   inline proc range.hasLast()
     return if isAmbiguous() || isEmpty() then false else
@@ -1195,7 +1195,7 @@ operator :(r: range(?), type t: range(?)) {
   }
   /* Return a range expanded by ``offset`` elements from each end.  If
      ``offset`` is negative, the range will be contracted.  The stride
-     and alignment of the original range are preserved. 
+     and alignment of the original range are preserved.
 
      Example:
 
