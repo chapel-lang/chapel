@@ -142,6 +142,11 @@
     WhereAndLifetime          lifetimeAndWhere;
   };
 
+  // Communicate to Bison that our YYSTYPE only contains simple scalars
+  // and can be bitcopied. We do this because we do not use the '%union'
+  // directive.
+  #define YYSTYPE_IS_TRIVIAL 1
+
   #endif
 }
 

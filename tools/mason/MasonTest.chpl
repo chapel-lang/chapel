@@ -279,7 +279,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
-          const errMsg = test +" failed to compile";
+          const errMsg = test + " failed to compile\n" +
+                         "Try running 'mason test --show' for more details";
           result.addError(testName, test,  errMsg);
         }
         else {
@@ -429,13 +430,13 @@ proc getRuntimeComm() throws {
   var python: string;
   var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh"],
                          stdout = pipeStyle.pipe);
-  while findPython.stdout.readline(line) {
+  while findPython.stdout.readLine(line) {
     python = line.strip();
   }
 
   var checkComm = spawn([python, CHPL_HOME:string+"/util/chplenv/chpl_comm.py"],
                         stdout = pipeStyle.pipe);
-  while checkComm.stdout.readline(line) {
+  while checkComm.stdout.readLine(line) {
     comm = line.strip();
   }
   // setting communication mechanism.
@@ -461,7 +462,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
     var checkChpl = spawn(["which","chpl"],stdout = pipeStyle.pipe);
     checkChpl.wait();
     var line: string;
-    if checkChpl.stdout.readline(line) {
+    if checkChpl.stdout.readLine(line) {
 
       if files.size == 0 && dirs.size == 0 {
         dirs.append(".");
@@ -607,7 +608,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
             skippedTestNamesStr], stdout = pipeStyle.pipe,
             stderr = pipeStyle.pipe); //Executing the file
   //std output pipe
-  while exec.stdout.readline(line) {
+  while exec.stdout.readLine(line) {
     if line.strip() == separator1 then sep1Found = true;
     else if line.strip() == separator2 && sep1Found {
       var testName = try! currentRunningTests.pop();
@@ -626,7 +627,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
     else if sep1Found then testExecMsg += line;
     else {
-      if line.strip().endsWith(")") {
+      if line.strip().endsWith("()") {
         var testName = line.strip();
         if currentRunningTests.count(testName) == 0 {
           currentRunningTests.append(testName);
@@ -638,9 +639,9 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
   }
   //this is to check the error
-  if exec.stderr.readline(line) {
+  if exec.stderr.readLine(line) {
     var testErrMsg = line;
-    while exec.stderr.readline(line) do testErrMsg += line;
+    while exec.stderr.readLine(line) do testErrMsg += line;
     if !currentRunningTests.isEmpty() {
       var testNameIndex = try! currentRunningTests.pop();
       var testName = testNameIndex;

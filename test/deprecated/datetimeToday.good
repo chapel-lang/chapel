@@ -1,0 +1,1 @@
+datetimeToday.chpl:3: warning: 'datetime.today()' is deprecated, please use 'date.today()' or 'datetime.now()' instead

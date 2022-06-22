@@ -46,6 +46,7 @@ struct Resolver {
   bool fieldOrFormalsComputed = false;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
+  const uast::Call* inLeafCall = nullptr;
 
   // results of the resolution process
 
@@ -124,7 +125,7 @@ struct Resolver {
                                 bool useGenericFormalDefaults);
 
   // set up Resolver to resolve instantiated field declaration types
-  // without knowning the CompositeType
+  // without knowing the CompositeType
   static Resolver
   instantiatedSignatureFieldsResolver(Context* context,
                                       const uast::AggregateDecl* decl,
@@ -139,6 +140,11 @@ struct Resolver {
                       const SubstitutionsMap& substitutions,
                       const PoiScope* poiScope,
                       ResolutionResultByPostorderID& byPostorder);
+
+  /* Returns ErroneousType and emits the error message msg
+     relevant to location for 'ast'.
+   */
+  types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.
@@ -203,9 +209,28 @@ struct Resolver {
                                          const CallInfo& ci,
                                          const CallResolutionResult& c);
 
+  // handle the result of one of the functions to resolve a call. Handles:
+  //  * r.setMostSpecific
+  //  * r.setPoiScope
+  //  * r.setType
+  //  * issueErrorForFailedCallResolution if there was an error
+  //  * poiInfo.accumulate
+  void handleResolvedCall(ResolvedExpression& r,
+                          const uast::AstNode* astForErr,
+                          const CallInfo& ci,
+                          const CallResolutionResult& c);
+  // like handleResolvedCall saves the call in associatedFns.
+  void handleResolvedAssociatedCall(ResolvedExpression& r,
+                                    const uast::AstNode* astForErr,
+                                    const CallInfo& ci,
+                                    const CallResolutionResult& c);
+
   // e.g. (a, b) = mytuple
   // checks that tuple size matches and that the elements are assignable
-  void resolveTupleUnpackAssign(const uast::Tuple* lhsTuple,
+  // saves any '=' called into r.associatedFns
+  void resolveTupleUnpackAssign(ResolvedExpression& r,
+                                const uast::AstNode* astForErr,
+                                const uast::Tuple* lhsTuple,
                                 types::QualifiedType lhsType,
                                 types::QualifiedType rhsType);
 

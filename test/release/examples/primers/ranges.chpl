@@ -159,7 +159,7 @@ writeRange(..);    // -infinity, ..., infinity
 // in place of the missing bound.
 writeRange(false..);         // like 'false..true'
 writeRange(dir.south..);     // like 'dir.south..dir.west'
-writeRange(..color.indigo);  // like 'color.red..color.indigo'
+writeRange(..color.indigo by -1);  // like 'color.red..color.indigo by -1'
 writeln();
 
 //
@@ -221,11 +221,11 @@ writeln();
 writeln("Examples mixing # and by");
 writeRange(r by 2 # 4);    // 1, 3, 5, 7
 writeRange(r # 4 by 2);    // 1, 3
-writeRange(r by -2 # 4);   // -10, -8, -6, -4
+writeRange(r by -2 # 4);   // 10, 8, 6, 4
 writeRange(r # 4 by -2);   // 4, 2
 writeRange(r by 2 # -4);   // 3, 5, 7, 9
 writeRange(r # -4 by 2);   // 7, 9
-writeRange(r by -2 # -4);  // -8, -6, -4, -2
+writeRange(r by -2 # -4);  // 8, 6, 4, 2
 writeRange(r # -4 by -2);  // 10, 8
 writeln();
 

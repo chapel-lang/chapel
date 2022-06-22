@@ -43,6 +43,8 @@ of a Hello World program:
 The readThis(), writeThis(), and readWriteThis() Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. warning:: 'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead.
+
 When programming the input and output method for a custom data type, it is
 often useful to define both the read and write routines at the same time. That
 is possible to do in a Chapel program by defining a ``readWriteThis`` method,
@@ -72,28 +74,19 @@ argument.
 Because it is often more convenient to use an operator for I/O, instead of
 writing
 
-.. code-block:: chapel
-
-  f.readwrite(x);
-  f.readwrite(y);
-
-one can write
-
-.. code-block:: chapel
-
-  f <~> x <~> y;
-
-Note that the types :type:`IO.ioLiteral` and :type:`IO.ioNewline` may be useful
+ote that the types :type:`IO.ioLiteral` and :type:`IO.ioNewline` may be useful
 when using the ``<~>`` operator. :type:`IO.ioLiteral` represents some string
 that must be read or written as-is (e.g. ``","`` when working with a tuple),
 and :type:`IO.ioNewline` will emit a newline when writing but skip to and
-consume a newline when reading.
+consume a newline when reading. Note that these types are not included by default.
 
 
 This example defines a readWriteThis method and demonstrates how ``<~>`` will
 call the read or write routine, depending on the situation.
 
 .. code-block:: chapel
+
+  use IO;
 
   class IntPair {
     var x: int;
@@ -106,8 +99,6 @@ call the read or write routine, depending on the situation.
   write(ip);
   // prints out
   // 17,2
-
-  delete ip;
 
 This example defines a only a writeThis method - so that there will be a
 function resolution error if the class NoRead is read.
@@ -128,8 +119,6 @@ function resolution error if the class NoRead is read.
   // hello
 
   // Note that read(nr) will generate a compiler error.
-
-  delete nr;
 
 .. _default-readThis-writeThis:
 
@@ -181,7 +170,7 @@ pragma "module included by default"
 module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
-  use SysBasic;
+  import SysBasic.{ENOERR, syserr, EFORMAT, EEOF};
   use SysError;
 
   // TODO -- this should probably be private
@@ -255,13 +244,13 @@ module ChapelIO {
           if isIoField(x, i) {
             if !isBinary {
               var comma = new ioLiteral(", ");
-              if !first then writer.readwrite(comma);
+              if !first then writer.writeIt(comma);
 
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
-              writer.readwrite(eq);
+              writer.writeIt(eq);
             }
 
-            writer.readwrite(__primitive("field by num", x, i));
+            writer.writeIt(__primitive("field by num", x, i));
 
             first = false;
           }
@@ -277,9 +266,9 @@ module ChapelIO {
               write(id);
             } else {
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
-              writer.readwrite(eq);
+              writer.writeIt(eq);
             }
-            writer.readwrite(__primitive("field by num", x, i));
+            writer.writeIt(__primitive("field by num", x, i));
           }
         }
       }
@@ -312,7 +301,7 @@ module ChapelIO {
             start = new ioLiteral("(");
           }
         }
-        writer.readwrite(start);
+        writer.writeIt(start);
       }
 
       var first = true;
@@ -333,7 +322,7 @@ module ChapelIO {
             end = new ioLiteral(")");
           }
         }
-        writer.readwrite(end);
+        writer.writeIt(end);
       }
     }
 
@@ -352,7 +341,7 @@ module ChapelIO {
 
           // Try reading a comma. If we don't, break out of the loop.
           try {
-            reader.readwrite(comma);
+            reader.readIt(comma);
             needsComma = false;
           } catch err: BadFormatError {
             break;
@@ -360,7 +349,7 @@ module ChapelIO {
         }
 
         // Skip an unknown JSON field.
-        var err:syserr = ENOERR;
+
 
         try reader.skipField();
         needsComma = true;
@@ -402,7 +391,7 @@ module ChapelIO {
         // Binary is simple, just read all fields in order.
         for param i in 1..numFields do
           if isIoField(x, i) then
-            try reader.readwrite(__primitive("field by num", x, i));
+            try reader.readIt(__primitive("field by num", x, i));
       } else if numFields > 0 {
 
         // This tuple helps us not read the same field twice.
@@ -423,7 +412,7 @@ module ChapelIO {
           if needsComma then
             try {
               var comma = new ioLiteral(",", true);
-              reader.readwrite(comma);
+              reader.readIt(comma);
               needsComma = false;
             } catch err: BadFormatError {
               // Break out of the loop if we didn't read a comma.
@@ -454,7 +443,7 @@ module ChapelIO {
             var fieldName = ioFieldNameLiteral(reader, t, i);
 
             try {
-              reader.readwrite(fieldName);
+              reader.readIt(fieldName);
             } catch err: SystemError {
               // Try reading again with a different union element.
               if err.err == EFORMAT || err.err == EEOF then continue;
@@ -468,9 +457,9 @@ module ChapelIO {
               then new ioLiteral(":", true)
               else new ioLiteral("=", true);
 
-            try reader.readwrite(equalSign);
+            try reader.readIt(equalSign);
 
-            try reader.readwrite(__primitive("field by num", x, i));
+            try reader.readIt(__primitive("field by num", x, i));
             readField[i-1] = true;
             numRead += 1;
           }
@@ -508,16 +497,16 @@ module ChapelIO {
 
       param numFields = __primitive("num fields", t);
       var isBinary = reader.binary();
-      var superclassError: syserr = ENOERR;
+
 
       if isBinary {
         var id = __primitive("get_union_id", x);
 
         // Read the ID.
-        try reader.readwrite(id);
+        try reader.readIt(id);
         for param i in 1..numFields do
           if isIoField(x, i) && i == id then
-            try reader.readwrite(__primitive("field by num", x, i));
+            try reader.readIt(__primitive("field by num", x, i));
       } else {
 
         // Read the field name = part until we get one that worked.
@@ -530,7 +519,7 @@ module ChapelIO {
           var fieldName = ioFieldNameLiteral(reader, t, i);
 
           try {
-            reader.readwrite(fieldName);
+            reader.readIt(fieldName);
           } catch err: SystemError {
 
             // Try reading again with a different union element.
@@ -544,11 +533,10 @@ module ChapelIO {
             then new ioLiteral(":", true)
             else new ioLiteral("=", true);
 
-          // TODO: Why not a `readwrite` call here?
           try readIt(eq);
 
           // We read the 'name = ', so now read the value!
-          try reader.readwrite(__primitive("field by num", x, i));
+          try reader.readIt(__primitive("field by num", x, i));
         }
 
         if !hasFoundAtLeastOneField then
@@ -570,7 +558,7 @@ module ChapelIO {
           then new ioLiteral("new " + t:string + "(")
           else new ioLiteral("{");
 
-        try reader.readwrite(start);
+        try reader.readIt(start);
       }
 
       var needsComma = false;
@@ -586,7 +574,7 @@ module ChapelIO {
           then new ioLiteral(")")
           else new ioLiteral("}");
 
-        try reader.readwrite(end);
+        try reader.readIt(end);
       }
     }
 
@@ -606,7 +594,7 @@ module ChapelIO {
             start = new ioLiteral("(");
         }
 
-        try reader.readwrite(start);
+        try reader.readIt(start);
       }
 
       var needsComma = false;
@@ -619,7 +607,7 @@ module ChapelIO {
           then new ioLiteral("}")
           else new ioLiteral(")");
 
-        try reader.readwrite(end);
+        try reader.readIt(end);
       }
     }
 
@@ -651,33 +639,47 @@ module ChapelIO {
   pragma "no doc"
   proc nothing.writeThis(f) {}
 
+  pragma "no doc"
+  proc _tuple.readThis(f) throws {
+    _readWriteHelper(f);
+  }
+
+  pragma "no doc"
+  proc _tuple.writeThis(f) throws {
+    _readWriteHelper(f);
+  }
+
   // Moved here to avoid circular dependencies in ChapelTuple.
   pragma "no doc"
-  proc _tuple.readWriteThis(f) throws {
+  proc _tuple._readWriteHelper(f) throws {
     var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
     var start:ioLiteral;
     var comma:ioLiteral;
+    var comma1tup:ioLiteral;
     var end:ioLiteral;
     var binary = f.binary();
 
     if st == QIO_TUPLE_FORMAT_SPACE {
       start = new ioLiteral("");
       comma = new ioLiteral(" ");
+      comma1tup = new ioLiteral("");
       end = new ioLiteral("");
     } else if st == QIO_TUPLE_FORMAT_JSON {
       start = new ioLiteral("[");
       comma = new ioLiteral(", ");
+      comma1tup = new ioLiteral("");
       end = new ioLiteral("]");
     } else {
       start = new ioLiteral("(");
       comma = new ioLiteral(", ");
+      comma1tup = new ioLiteral(",");
       end = new ioLiteral(")");
     }
 
     if !binary {
       f <~> start;
     }
-    if size != 0 {
+    if size > 1 {
       f <~> this(0);
       for param i in 1..size-1 {
         if !binary {
@@ -685,6 +687,12 @@ module ChapelIO {
         }
         f <~> this(i);
       }
+    } else if size == 1 {
+      f <~> this(0);
+      if !binary then
+        f <~> comma1tup;
+    } else {
+      // size < 1, print nothing
     }
     if !binary {
       f <~> end;
@@ -704,13 +712,13 @@ module ChapelIO {
     }
 
     if hasLowBound() then
-      f <~> low;
+      f <~> lowBound;
     f <~> new ioLiteral("..");
     if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
-        f <~> new ioLiteral("<") <~> low;
+        f <~> new ioLiteral("<") <~> lowBound;
       } else {
-        f <~> high;
+        f <~> highBound;
       }
     }
     if stride != 1 then

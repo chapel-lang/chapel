@@ -1,6 +1,0 @@
-arrays.chpl:2: warning: Array front() method is deprecated; use first instead
-arrays.chpl:3: warning: Array back() method is deprecated; use last instead
-1
-4
-1
-4

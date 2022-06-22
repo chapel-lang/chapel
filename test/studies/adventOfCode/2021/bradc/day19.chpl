@@ -12,7 +12,7 @@ var Landscape: map(3*int, item);
 
 iter readScanner() {
   var header: string;
-  readline(header);
+  readLine(header);
   if debug then
     writeln(header);
   var x, y, z: int;

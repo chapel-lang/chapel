@@ -107,7 +107,7 @@ module BytesStringCommon {
   */
   proc decodeByteBuffer(buff: bufferType, length: int, policy: decodePolicy)
       throws {
-    use SysBasic;
+    import SysBasic.{syserr};
     pragma "fn synchronization free"
     extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
     pragma "fn synchronization free"
@@ -230,7 +230,7 @@ module BytesStringCommon {
    */
   proc decodeHelp(buff:c_ptr(uint(8)), buffLen:int,
                   offset:int, allowEsc: bool ) {
-    use SysBasic;
+    import SysBasic.{syserr};
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf(ref chr:int(32),
                                     ref nBytes:c_int,
@@ -393,20 +393,20 @@ module BytesStringCommon {
         // if the low bound of the range is within the byteIndices of the
         // string, it must be the initial byte of a codepoint
         if r.hasLowBound() &&
-           x.byteIndices.boundsCheck(r.low:int) &&
-           !isInitialByte(x.byte[r.low:int]) {
+           x.byteIndices.boundsCheck(r.lowBound:int) &&
+           !isInitialByte(x.byte[r.lowBound:int]) {
           throw new CodepointSplittingError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
-            "The byte at low boundary " + r.low:string + " is not the first byte of a UTF-8 codepoint");
+            "The byte at low boundary " + r.lowBound:string + " is not the first byte of a UTF-8 codepoint");
         }
         // if the "high bound of the range plus one" is within the byteIndices
         // of the string, that index must be the initial byte of a codepoint
         if r.hasHighBound() &&
-           x.byteIndices.boundsCheck(r.high:int+1) &&
-           !isInitialByte(x.byte[r.high:int+1]) {
+           x.byteIndices.boundsCheck(r.highBound:int+1) &&
+           !isInitialByte(x.byte[r.highBound:int+1]) {
           throw new CodepointSplittingError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
-            "The byte at high boundary " + r.high:string + " is not the first byte of a UTF-8 codepoint");
+            "The byte at high boundary " + r.highBound:string + " is not the first byte of a UTF-8 codepoint");
         }
       }
       return simpleCaseHelper();
@@ -487,8 +487,8 @@ module BytesStringCommon {
     // length. For to be able to cover strided copies, we copy the range
     // from low to high then do a strided operation to put the data in the
     // buffer in the correct order.
-    const copyLen = r2.high-r2.low+1;
-    var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low,
+    const copyLen = r2.highBound-r2.lowBound+1;
+    var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.lowBound,
                                         len=copyLen, loc=x.locale_id);
     if r2.stride == 1 {
       buff = copyBuf;
@@ -498,7 +498,7 @@ module BytesStringCommon {
       // the range is strided
       var (newBuff, allocSize) = bufferAlloc(r2.size+1);
       for (r2_i, i) in zip(r2, 0..) {
-        newBuff[i] = copyBuf[r2_i-r2.low];
+        newBuff[i] = copyBuf[r2_i-r2.lowBound];
       }
       buff = newBuff;
       buffSize = allocSize;
@@ -1061,41 +1061,51 @@ module BytesStringCommon {
     }
   }
 
+  // reallocates the string/bytes in lhs so that it has room to store
+  // buffLen elements in its buffer, and also an additional null byte.
+  proc resizeBuffer(ref lhs: ?t, buffLen: int) {
+    if lhs.isEmpty() && buffLen == 0 then return;
+
+    // If the lhs.buff is longer than buff, then reuse the buffer if we are
+    // allowed to (lhs.isOwned == true)
+    if buffLen != 0 {
+      if !lhs.isOwned || buffLen+1 > lhs.buffSize {
+        // If the new string is too big for our current buffer or we dont
+        // own our current buffer then we need a new one.
+        if lhs.isOwned && !lhs.isEmpty() then
+          bufferFree(lhs.buff);
+        // TODO: should I just allocate 'size' bytes?
+        const (buff, allocSize) = bufferAlloc(buffLen+1);
+        lhs.buff = buff;
+        lhs.buffSize = allocSize;
+        // We just allocated a buffer, make sure to free it later
+        lhs.isOwned = true;
+      }
+    } else {
+      // If buffLen is 0, 'buf' may still have been allocated. Regardless, we
+      // need to free the old buffer if 'lhs' is isOwned.
+      if lhs.isOwned && !lhs.isEmpty() then bufferFree(lhs.buff);
+      lhs.buffSize = 0;
+
+      // If we need to copy, we can just set 'buff' to nil. Otherwise the
+      // implication is that the string takes ownership of the given buffer,
+      // so we need to store it and free it later.
+      lhs.buff = nil;
+    }
+  }
+
   proc reinitWithNewBuffer(ref lhs: ?t, buff: bufferType, buffLen: int,
                            buffSize: int, numCodepoints: int = 0) {
-      if lhs.isEmpty() && buff == nil then return;
+    if lhs.isEmpty() && buff == nil then return;
 
-      // If the lhs.buff is longer than buff, then reuse the buffer if we are
-      // allowed to (lhs.isOwned == true)
-      if buffLen != 0 {
-        if !lhs.isOwned || buffLen+1 > lhs.buffSize {
-          // If the new string is too big for our current buffer or we dont
-          // own our current buffer then we need a new one.
-          if lhs.isOwned && !lhs.isEmpty() then
-            bufferFree(lhs.buff);
-          // TODO: should I just allocate 'size' bytes?
-          const (buff, allocSize) = bufferAlloc(buffLen+1);
-          lhs.buff = buff;
-          lhs.buffSize = allocSize;
-          // We just allocated a buffer, make sure to free it later
-          lhs.isOwned = true;
-        }
-        bufferMemmoveLocal(lhs.buff, buff, buffLen);
-        lhs.buff[buffLen] = 0;
-      } else {
-        // If buffLen is 0, 'buf' may still have been allocated. Regardless, we
-        // need to free the old buffer if 'lhs' is isOwned.
-        if lhs.isOwned && !lhs.isEmpty() then bufferFree(lhs.buff);
-        lhs.buffSize = 0;
+    resizeBuffer(lhs, buffLen);
+    if buffLen != 0 {
+      bufferMemmoveLocal(lhs.buff, buff, buffLen);
+      lhs.buff[buffLen] = 0;
+    }
 
-        // If we need to copy, we can just set 'buff' to nil. Otherwise the
-        // implication is that the string takes ownership of the given buffer,
-        // so we need to store it and free it later.
-        lhs.buff = nil;
-      }
-
-      lhs.buffLen = buffLen;
-      if t==string then lhs.cachedNumCodepoints = numCodepoints;
+    lhs.buffLen = buffLen;
+    if t==string then lhs.cachedNumCodepoints = numCodepoints;
   }
 
   proc reinitWithOwnedBuffer(ref lhs: ?t, buff: bufferType, buffLen: int,

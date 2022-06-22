@@ -1,5 +1,8 @@
 #!/bin/sh
 
 sed -e 's/0x.*/0xPREDIFFED/' \
+    -e '/allocate [[:digit:]]\+B of comm layer/d' \
+    -e 's/allocate [[:digit:]]\+B of/allocate xxB of/' \
+    -e 's/free [[:digit:]]\+B of/free xxB of/' \
     -e '/^.*tasking layer unspecified data.*$/d' $2 > $2.tmp
 mv $2.tmp $2

@@ -135,6 +135,13 @@ GASNET_BARRIER - barrier algorithm selection
                 GNI operations for lower latency.
   Currently GNIDISSEM is the default.
 
+GASNET_HOST_DETECT - host identification
+  Aries-conduit supports *only* "conduit", using Cray-provided APIs which
+  provide an array of all of the low-level network addresses.
+  If configured using '--with-host-detect=...' for an otherwise-valid value
+  other than "conduit", that default is ignored in favor of "conduit".
+  However, an explicit environment setting other than "conduit" is an error.
+
 GASNET_GNI_AM_RVOUS_CUTOVER - enable/disable rendezvous based AMs
   At small scale, Active Messages are implemented using an "Eager" protocol
   which allocates buffers sufficient for every process to receive up to
@@ -517,7 +524,9 @@ Design Overview:
 The aries conduit provides the gasnet core and extended APIs on Cray systems
 based on the aries interconnect.  Initial work was done for the gemini
 interconnect on the XE6, and the notes which follow are based on that initial
-implementation (and thus are at least partly out-of-date).
+implementation.
+
+PORTIONS OF THIS DOCUMENTATION ARE OUT-OF-DATE.
 
 References:
 
@@ -543,7 +552,12 @@ interconnect used on the Red Storm system and the Cray XT series.
 Physically Gemini is a 3D torus system using network interfaces that
 connect directly to the Hyperchannel IO bus of AMD processors.
 
-Logically Gemini provides short messages, remote memory access, remote
+The Aries interconnect was introduced in the Cray XC series, and retains
+the same GNI communications API (with some small changes in semantics).
+This conduit currently supports only the Aries network, with the support
+for Gemini having been removed.
+
+Logically GNI provides short messages, remote memory access, remote
 atomic operations, and remote block transfers. Memory must be
 registered with GNI before it can be used for communications.  Job
 launch services are provided by the Cray Application Level Placement
@@ -555,29 +569,14 @@ Domain, which is basically a binding to a particular network interface.
 Data necessary to get permit ranks of a parallel application to
 communicate are provided via environment variables and PMI interfaces.
 
-In gemini, the address information for a remote rank is stored in a
+In GNI, the address information for a remote rank is stored in a
 software structure called an Endpoint.  Generally a separate endpoint
 is needed for each rank of the job.  Each endpoint is associated with
 a Completion Queue (CQ) which signals when locally originated
 operations to a particular endpoint have finished.  Cqs may be used by
 multiple endpoints.
 
-NOTE: The next paragraph is no longer accurate - we no longer use SMSG
-
-To use the short message system (SMSG), the application allocates
-buffer space, and assigns a completion queue to be used to announce
-the arrival of messages from remote ranks.  Short message system
-messages can be of variable length, but each message uses a fixed
-length message buffer from a pool.  The shared message queue (MSGQ)
-system is similar, except that resources are shared at the node level,
-rather than each rank having separate resources. The shared message
-queue system has better scalability, scaling as O( (N/24)**2 ) rather
-than O( N**2 ). However, MSGQ has a maximum message length of 128,
-while the limit for SMSG is large enough to handle a complete GASNet
-Medium Active Message.  In ether SMSG or MSGQ, the buffer memory must
-be registered using the GNI API.
-
-The Gemini interconnect provides two flavors of RDMA.  FMA, or Fast
+The Gemini and Aries networks provide two flavors of RDMA.  FMA, or Fast
 Memory Access, provides remote atomic operations, and remote get and
 put. These operations are commanded by user-mode applications directly
 to the hardware, (so called OS Bypass).  For larger messages, Cray
@@ -588,59 +587,78 @@ bytes to a few thousand bytes is likely.
 
 ==Overview==
 
-The gemini conduit creates an endpoint for every rank, and then binds
+The aries conduit creates an endpoint for every rank, and then binds
 each endpoint to a particular rank using the address information
-exchanged through PMI.  Each endpoint in gemini is also associated
+exchanged through PMI.  Each endpoint in GNI is also associated
 with a common completion queue, which is a structure used for
 announcing the completion of locally originated messages.
 
-Next the gemini conduit allocates and registers storage for buffers
-for the gemini short message system.  The setup allocates buffers
-large enough to hold a complete AMMedium message.  Arriving short
-messages are signaled on a second completion queue.  Using defaults,
-about 32K per rank are reserved on each rank.
+Next the aries conduit allocates and registers storage for buffers for
+active messages.  Arriving messages are signaled on a second completion
+queue.
 
 ==Active Message design==
 
-The gemini conduit supports PSHM for same-node communications. This
-isn't strictly necessary when using the Cray Short Message System, but
-it would be necessary when using the Cray Shared Message Queue system
-because MSGQ cannot send to the same node.
+The aries conduit supports PSHM for same-node communications. So, GNI is
+normally used only between compute nodes.
 
-Flow control and deadlock avoidance is done by a fixed credit
-system. The environment variable GASNET_NETWORKDEPTH is the number
-of AM buffers for each peer.  The default value is 12.  Each peer
-has an am_credit variable. When a rank wishes to send an active
-message, it atomic decrements the peer's credit counter and calls the
-gemini conduit's Poll routine until it succeeds.  At the receiver,
-every AM Request generates a "hidden" credit return message if and
-only if the handler did not send a Reply.
+The management of buffer memory on the target is complex, and not yet
+detailed here.  Management of memory on the initiator consists of
+allocating a pool of buffers sufficient to hold a maximum-sized message,
+regardless of the size of the message to send.  This allows the same buffer
+to be used to receive the Reply (if any).
 
-NOTE: The Gemini short message system has some sort of internal credit
-accounting, but we don't rely on it because of lack of features
-(allocating space for replies) and lack of visibility (the only way to
-find out if there is credit is to try to send a message).  The
-gemini-conduit credit design is such that the underlying GNI_SmsgSend
-should never fail.
+Flow control and deadlock avoidance is done by a fixed credit system.
+The GASNET_NETWORKDEPTH* family of environment variables determine the
+number of AM credits for each peer.  Each peer has an am_credit
+variable. When a rank wishes to send an active message, it atomic
+decrements the peer's credit counter and calls the aries conduit's Poll
+routine until it succeeds.  At the target, every AM Request generates a
+"hidden" credit return message if and only if the handler did not send a
+Reply (using the "notify word" described below).
 
-Short and Medium active messages take one message each, so there is no
-need for a reassembly queue for arriving fragments.
+The first portion of an active message is sent to the target with a
+64-bit "notify word" carrying some key metadata.  This word is written
+to a per-initiator ring buffer used as a means to effectively add 8
+bytes to the target-side Cq entry also generated.  In the case of the
+"eager" protocol (see 'GASNET_GNI_AM_RVOUS_CUTOVER' in "Recognized
+environment variables") used for smaller job sizes, the notify word is
+written as the "sync flag" of a GNI_POST_FMA_PUT_W_SYNCFLAG operation,
+with the main FMA_PUT being to a pool of per-initiator target-side
+buffers.  In case of the "rendezvous" protocol, there is a single pool
+of buffers managed by the target.  In this case the notify is sent
+alone, via a GNI_POST_FMA_PUT.
+
+Short and Medium active messages need one message each in the eager
+protocol.  However, in the rendezvous protocol a Short or Medium Request
+is split into two portions.  The first is a message containing only
+metadata, excluding the arguments and payload, but includes metadata
+sufficient for the target to perform an RDMA Get to fetch the rest (if
+any) in a second network transaction.
+
+In both protocols, a Reply is a single message using a GNI-level
+GNI_POST_FMA_PUT_W_SYNCFLAG operation to write arguments and payload (if
+any) to the buffer allocated to the original outbound Request, together
+with the 8-byte notify word.
 
 Long active messages are more complex.  If the data of a long AM will
-fit in a maximum sized message, then it is sent as immediate data
-and copied at the destination.  If the data is too large for the AM
-packet, then it is sent by RDMA, and when the RDMA completion event
-occurs, the Active message is sent.  For blocking AMs, the originator
-polls for completion of the RDMA by calling gasnetc_poll_local_queue, which
-checks for RDMA completions but does NOT check for arriving active
-messages.  In the case of a non-blocking long active message, the
-active message packet is constructed in memory attached to the RDMA
-post descriptor, and when the RDMA completion event occurs, the AM is
-sent by the completion routine.
+fit in a maximum sized message, then it is "packed" as immediate data,
+similar to a Medium, and copied at the destination (with the payload
+handling subject to the same eager versus rendezvous distinction as
+described above).  If the data is too large for this "packed" approach,
+then it is sent by RDMA, and a Cq event generated at the target allows
+it to determine when all parts (as many as three in rendezvous mode)
+have arrived.  This is described in
+  Hargrove P, Bonachea D.
+  "Efficient Active Message RMA in GASNet Using a Target-Side Reassembly
+  Protocol (Extended Abstract)"
+  In 2019 IEEE/ACM Parallel Applications Workshop, Alternatives To MPI+X
+  (PAW-ATM), November 2019.
+  https://doi.org/10.25344/S4PC7M
 
 ==RDMA==
 
-Within the Gemini API (GNI), RDMA is commanded by creating a Post
+Within the GNI API, RDMA is commanded by creating a Post
 Descriptor and passing it to GNI. Both the source and destination
 memory of an RDMA transfer must be registered.  The knowledge of RDMA
 is encapsulated in the functions named gasnetc_rdma_{put,get}*().
@@ -650,18 +668,18 @@ the GASNet memory segment, which is pre-registered by gemini-conduit.
 GASNet does not require that the local address of a put or get be
 registered.  There are a number of cases.
 
-As mentioned above, Gemini provides two kinds of RDMA: FMA and BTE
+As mentioned above, GNI provides two kinds of RDMA: FMA and BTE
 (called "RDMA").  FMA is Fast Memory Access and is used for short
 transfers and is commanded entirely in user mode.  The Byte Transfer
 Engine is intended for larger transfers and is kernel mediated.
 
-Gemini-conduit allocates a pool of RDMA Post Descriptors, called
+Aries-conduit allocates a pool of RDMA Post Descriptors, called
 gasnetc_post_descriptor.  These are kept on a LIFO queue in registered
 memory, because each one contains an "immediate" bounce buffer to
 be used in the event the local address of a short xfer is not
 registered.
 
-Gemini-conduit also allocates a pool of medium sized bounce buffers,
+Aries-conduit also allocates a pool of medium sized bounce buffers,
 which are used in the event the local address of a transfer is not
 registered and is too large for the immediate buffer.  For transfers
 to or from memory outside the GASNet segment that are too large for
@@ -682,9 +700,6 @@ A number of types of follow-on activities are implemented:
 
  * Potentially free a dedicated bounce buffer
 
- * Potentially send an Active Message that was waiting for the RDMA
-   completion
-
  * Perform completion processing (signal other software waiting for
    RDMA completion
 
@@ -694,7 +709,7 @@ and PUT.  The logic for GET is similar to that for PUT.
 
 ==Extended API==
 
-Gemini conduit uses the reference implementation of gasnet_op_t for
+Aries conduit uses the reference implementation of gasnet_op_t for
 completions.
 
 Due to occasional failures of memory registration of large blocks, if
@@ -710,7 +725,7 @@ In order to support GASNET_PAR mode, a variety of locks are used.
 
 GASNETC_LOCK_GNI, GASNETC_UNLOCK_GNI
 
-The Cray gni API is not thread-safe, so the gemini conduit uses a
+The Cray gni API is not thread-safe, so the aries conduit uses a
 single big lock around calls to gni.  Certain cases might be thread
 safe, but without knowledge of the internals of gni it is hard to tell.
 
@@ -728,9 +743,9 @@ These are lock-free on the x86-64 architecture.
 
 ==Event Processing==
 
-The gemini conduit uses two gni completion queues: bound_cq_handle for
-completions of locally originated RDMA, and smsg_cq_handle, for
-arriving short messages.
+The aries conduit uses two gni completion queues: bound_cq_handle for
+completions of locally originated RDMA, and am_cq_handle, for
+arriving Active Messages.
 
 ===bound_cq_handle  (RDMA completion)===
 

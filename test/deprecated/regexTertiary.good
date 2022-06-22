@@ -22,9 +22,9 @@ Match 2
 test
 (matched = true, byteOffset = 0, numBytes = 4)
 Matches 1
-((matched = true, byteOffset = 4, numBytes = 3))
+((matched = true, byteOffset = 4, numBytes = 3),)
 Matches 2
-((matched = true, byteOffset = 4, numBytes = 3))
+((matched = true, byteOffset = 4, numBytes = 3),)
 Split 1
 Words
 words

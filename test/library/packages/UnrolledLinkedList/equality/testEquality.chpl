@@ -14,7 +14,7 @@ var lst2 = new unrolledLinkedList(listType, listLock);
 
 writeln(lst1 != lst2);
 
-lst2.extend(lst1);
+lst2.append(lst1);
 
 writeln(lst1 == lst2);
 

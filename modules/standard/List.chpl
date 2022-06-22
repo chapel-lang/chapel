@@ -714,6 +714,102 @@ module List {
       return result;
     }
 
+    pragma "no doc"
+    inline proc ref _appendGeneric(collection) {
+      var startSize: int;
+      var endSize: int;
+
+      //
+      // TODO: This could avoid repeated resizes at smaller total capacities
+      // if we resized once and then performed repeated moves, rather than
+      // calling _append().
+      //
+      on this {
+        startSize = _size;
+        for item in collection {
+          pragma "no auto destroy"
+          var cpy = item;
+          _appendByRef(cpy);
+        }
+        endSize = _size;
+      }
+
+      return startSize..(endSize-1);
+    }
+
+    /*
+      Append a copy of each element contained in another list to the end of this
+      list.
+
+      :arg other: A list containing elements of the same type as those
+        contained in this list.
+      :type other: `list(eltType)`
+
+      :return: List indices where elements were inserted.
+      :rtype: `range`
+    */
+    proc ref append(other: list(eltType, ?p)) lifetime this < other {
+      var ret: range;
+      on this {
+        _enter();
+        ret = _appendGeneric(other);
+        _leave();
+      }
+
+      return ret;
+    }
+
+    /*
+      Append a copy of each element contained in an array to the end of this
+      list.
+
+      :arg other: An array containing elements of the same type as those
+        contained in this list.
+      :type other: `[?d] eltType`
+
+      :return: List indices where elements were inserted.
+      :rtype: `range`
+    */
+    proc ref append(other: [?d] eltType) lifetime this < other {
+      var ret: range;
+      on this {
+        _enter();
+        ret = _appendGeneric(other);
+        _leave();
+      }
+      return ret;
+    }
+
+    /*
+      Append a copy of each element yielded by a range to the end of this list.
+
+      .. note::
+
+        Attempting to initialize a list from an unbounded range will trigger
+        a compiler error.
+
+      :arg other: The range to initialize from.
+      :type other: `range(eltType)`
+
+      :return: List indices where elements were inserted.
+      :rtype: `range`
+    */
+    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
+      if !isBoundedRange(other) {
+        param e = this.type:string;
+        param f = other.type:string;
+        param msg = "Cannot extend " + e + " with unbounded " + f;
+        compilerError(msg);
+      }
+      var ret: range;
+      on this {
+        _enter();
+        ret = _appendGeneric(other);
+        _leave();
+      }
+      return ret;
+    }
+
     /*
       Returns `true` if this list contains an element equal to the value of
       `x`, and `false` otherwise.
@@ -804,80 +900,19 @@ module List {
       return result;
     }
 
-    pragma "no doc"
-    inline proc ref _extendGeneric(collection) {
-
-      //
-      // TODO: This could avoid repeated resizes at smaller total capacities
-      // if we resized once and then performed repeated moves, rather than
-      // calling _append().
-      //
-      on this {
-        for item in collection {
-          pragma "no auto destroy"
-          var cpy = item;
-          _appendByRef(cpy);
-        }
-      }
-    }
-
-    /*
-      Extend this list by appending a copy of each element contained in
-      another list.
-
-      :arg other: A list containing elements of the same type as those
-        contained in this list.
-      :type other: `list(eltType)`
-    */
+    deprecated "list.extend is deprecated, please use list.append"
     proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      on this {
-        _enter();
-        _extendGeneric(other);
-        _leave();
-      }
+      append(other);
     }
 
-    /*
-      Extend this list by appending a copy of each element contained in an
-      array.
-
-      :arg other: An array containing elements of the same type as those
-        contained in this list.
-      :type other: `[?d] eltType`
-    */
+    deprecated "list.extend is deprecated, please use list.append"
     proc ref extend(other: [?d] eltType) lifetime this < other {
-      on this {
-        _enter();
-        _extendGeneric(other);
-        _leave();
-      }
+      append(other);
     }
 
-    /*
-      Extends this list by appending a copy of each element yielded by a
-      range.
-
-      .. note::
-
-        Attempting to initialize a list from an unbounded range will trigger
-        a compiler error.
-
-      :arg other: The range to initialize from.
-      :type other: `range(eltType)`
-    */
+    deprecated "list.extend is deprecated, please use list.append"
     proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      if !isBoundedRange(other) {
-        param e = this.type:string;
-        param f = other.type:string;
-        param msg = "Cannot extend " + e + " with unbounded " + f;
-        compilerError(msg);
-      }
-
-      on this {
-        _enter();
-        _extendGeneric(other);
-        _leave();
-      }
+      append(other);
     }
 
     /*
@@ -943,7 +978,7 @@ module List {
       on this {
         if idx == _size {
           // TODO: In an ideal world, we'd resize only once.
-          _extendGeneric(items);
+          _appendGeneric(items);
           result = true;
         } else if _withinBounds(idx) {
           _expand(idx, size);
@@ -1430,7 +1465,7 @@ module List {
           _fireAllDestructors();
           _freeAllArrays();
           _firstTimeInitializeArrays();
-          _extendGeneric(arr);
+          _appendGeneric(arr);
         }
 
         _leave();
@@ -1879,7 +1914,7 @@ module List {
   */
   operator list.=(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();
-    lhs.extend(rhs);
+    lhs.append(rhs);
   }
 
   /*

@@ -31,10 +31,10 @@ class Symbol;
 // or NULL if there isn't a C declaration with that name in an extern block.
 //
 // This is called during scopeResolve
-// it can call lookup() and addToSymbolTable()
+// it can call lookupInModuleOrBuiltins() and addToSymbolTable()
 //
-Symbol* tryCResolve(BaseAST* context, const char* cname);
-Symbol* tryCResolveLocally(ModuleSymbol* module, const char* cname);
+Symbol* tryCResolve(ModuleSymbol* mod, const char* cname);
+Symbol* tryCResolveLocally(ModuleSymbol* mod, const char* cname);
 
 #endif
 

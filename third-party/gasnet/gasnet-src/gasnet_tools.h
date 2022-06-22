@@ -404,6 +404,7 @@ extern uint64_t gasnett_release_version(void);
 #define gasnett_fatalerror_nopos gasneti_fatalerror_nopos
 #define gasnett_killmyprocess   gasneti_killmyprocess
 #define gasnett_current_loc     gasneti_current_loc
+#define gasnett_exe_name        gasneti_exe_name
 #define gasnett_sighandlerfn_t  gasneti_sighandlerfn_t
 #define gasnett_reghandler      gasneti_reghandler
 #define gasnett_checksum        gasneti_checksum

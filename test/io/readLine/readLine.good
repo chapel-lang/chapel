@@ -1,0 +1,10 @@
+BadFormatError: bad format (line longer than maxSize in channel.readLine(ref s: string) with path "unknown" offset 8)
+Tests Pass for string!
+BadFormatError: bad format (line longer than maxSize in channel.readLine(ref b: bytes) with path "unknown" offset 8)
+Tests Pass for bytes!
+BadFormatError: bad format (line longer than maxSize in channel.readLine(ref s: string) with path "unknown" offset 8)
+Tests Pass for string!
+BadFormatError: bad format (line longer than maxSize in channel.readLine(ref b: bytes) with path "unknown" offset 8)
+Tests Pass for bytes!
+BadFormatError: bad format (line longer than maxSize in channel.readLine(a : [] uint(8)) with path "unknown" offset 8)
+Tests pass for Array!

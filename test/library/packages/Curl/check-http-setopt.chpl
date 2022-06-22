@@ -23,7 +23,7 @@ module CheckHttpSetOpt {
     setopt(urlreader, CURLOPT_VERBOSE, true);
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -42,7 +42,7 @@ module CheckHttpSetOpt {
 	              (CURLOPT_FILETIME, true));
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -51,7 +51,7 @@ module CheckHttpSetOpt {
     curl_easy_getinfo(getCurlHandle(urlreader), CURLINFO_FILETIME,
 		      c_ptrTo(time));
 
-    writeln("Remote Time ", datetime.utcfromtimestamp(time));
+    writeln("Remote Time ", datetime.utcFromTimestamp(time));
 
     stderr.flush();
     stdout.flush();
@@ -68,7 +68,7 @@ module CheckHttpSetOpt {
     setopt(urlreader, CURLOPT_URL, url);
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -87,7 +87,7 @@ module CheckHttpSetOpt {
     setopt(urlreader, CURLOPT_URL, url:bytes);
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 

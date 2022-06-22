@@ -27,6 +27,29 @@ namespace chpl {
 namespace types {
 
 
+bool QualifiedType::isParamTrue() const {
+  if (kind_ == Kind::PARAM && param_ != nullptr) {
+    if (auto bp = param_->toBoolParam()) {
+      if (bp->value() == true) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+bool QualifiedType::isParamFalse() const {
+  if (kind_ == Kind::PARAM && param_ != nullptr) {
+    if (auto bp = param_->toBoolParam()) {
+      if (bp->value() == false) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
   return defaultUpdate(keep, addin);
 }
@@ -38,22 +61,24 @@ void QualifiedType::mark(Context* context) const {
 
 static const char* kindToString(QualifiedType::Kind kind) {
   switch (kind) {
-    case QualifiedType::UNKNOWN:        return "unknown";
-    case QualifiedType::DEFAULT_INTENT: return "default intent";
-    case QualifiedType::CONST_INTENT:   return "const intent";
-    case QualifiedType::VAR:            return "var";
-    case QualifiedType::CONST_VAR:      return "const";
-    case QualifiedType::CONST_REF:      return "const ref";
-    case QualifiedType::REF:            return "ref";
-    case QualifiedType::IN:             return "in";
-    case QualifiedType::CONST_IN:       return "const in";
-    case QualifiedType::OUT:            return "out";
-    case QualifiedType::INOUT:          return "inout";
-    case QualifiedType::PARAM:          return "param";
-    case QualifiedType::TYPE:           return "type";
-    case QualifiedType::INDEX:          return "index";
-    case QualifiedType::FUNCTION:       return "function";
-    case QualifiedType::MODULE:         return "module";
+    case QualifiedType::UNKNOWN:            return "unknown";
+    case QualifiedType::DEFAULT_INTENT:     return "default intent";
+    case QualifiedType::CONST_INTENT:       return "const intent";
+    case QualifiedType::VAR:                return "var";
+    case QualifiedType::CONST_VAR:          return "const";
+    case QualifiedType::CONST_REF:          return "const ref";
+    case QualifiedType::REF:                return "ref";
+    case QualifiedType::IN:                 return "in";
+    case QualifiedType::CONST_IN:           return "const in";
+    case QualifiedType::OUT:                return "out";
+    case QualifiedType::INOUT:              return "inout";
+    case QualifiedType::PARAM:              return "param";
+    case QualifiedType::TYPE:               return "type";
+    case QualifiedType::INDEX:              return "index";
+    case QualifiedType::TYPE_QUERY:         return "type query";
+    case QualifiedType::FUNCTION:           return "function";
+    case QualifiedType::PARENLESS_FUNCTION: return "parenless function";
+    case QualifiedType::MODULE:             return "module";
   }
 
   assert(false && "should not be reachable");

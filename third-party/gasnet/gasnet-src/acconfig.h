@@ -293,6 +293,9 @@
 #undef GASNETI_PSHM_FILE
 #undef GASNETI_PSHM_XPMEM
 
+/* Set default for GASNET_HOST_DETECT env var */
+#undef GASNETI_HOST_DETECT_CONFIGURE
+
 /* How many cores/node must we support (255 is default) */
 #undef GASNETI_CONFIG_PSHM_MAX_NODES
 
@@ -471,11 +474,17 @@
 #undef GASNETC_GNI_UDREG
 
 /* GASNet ofi-conduit settings */
+#undef GASNETC_OFI_REFERENCE_EXTENDED
 #undef GASNETC_OFI_MAX_MEDIUM
 #undef GASNETC_OFI_NUM_COMPLETIONS
 #undef GASNETC_OFI_HAS_MR_SCALABLE
 #undef GASNETC_OFI_USE_THREAD_DOMAIN
+#undef GASNETC_OFI_USE_MULTI_CQ
+#undef GASNETC_OFI_RETRY_RECVMSG
 #undef GASNETC_OFI_PROVIDER_LIST
+
+/* GASNet ucx-conduit settings */
+#undef GASNETC_UCX_MAX_MEDIUM_DFLT
 
 /* GASNet ibv-conduit features and bug work-arounds */
 #undef HAVE_IBV_SRQ

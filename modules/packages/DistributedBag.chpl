@@ -257,8 +257,12 @@ module DistributedBag {
     }
 
     pragma "no doc"
-    /* Read/write the contents of DistBag from/to a channel */
-    proc readWriteThis(ch: channel) throws {
+    proc readThis(f) throws {
+      compilerError("Reading a DistBag is not supported");
+    }
+
+    pragma "no doc"
+    proc writeThis(ch) throws {
       ch <~> "[";
       var size = this.getSize();
       for (i,iteration) in zip(this, 0..<size) {

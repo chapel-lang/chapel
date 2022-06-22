@@ -1,0 +1,2 @@
+callModLikeProc2.chpl:7: In function 'main':
+callModLikeProc2.chpl:9: error: modules (like 'B' here) cannot be called like procedures

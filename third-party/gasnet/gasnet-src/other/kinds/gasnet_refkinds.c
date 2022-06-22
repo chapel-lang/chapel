@@ -8,6 +8,8 @@
 #include <gasnet_internal.h>
 #include <gasnet_kinds_internal.h>
 
+// Convenience macro
+#define MK_IMPL(i_mk,short_field) ((i_mk)->_mk_impl->mk_##short_field)
 
 #ifndef gasneti_import_mk
 gasneti_MK_t gasneti_import_mk(gex_MK_t _mk) {
@@ -33,7 +35,6 @@ gex_MK_t gasneti_export_mk(gasneti_MK_t _real_mk) {
 }
 #endif
 
-// TODO: what to do about conduit-spcific extension?
 gasneti_MK_t gasneti_alloc_mk(
             gasneti_Client_t                 i_client,
             gasneti_mk_impl_t               *mk_impl,
@@ -52,6 +53,7 @@ gasneti_MK_t gasneti_alloc_mk(
   mk->_client = i_client;
   mk->_mk_class = mk_impl->mk_class;
   mk->_mk_impl = mk_impl;
+  mk->_mk_conduit = NULL;
   gasneti_weakatomic32_set(&mk->_ref_count, 0, 0);
   return mk;
 }
@@ -62,8 +64,12 @@ void gasneti_free_mk(gasneti_MK_t mk)
   gasneti_free(mk);
 }
 
-// Convenience macro
-#define MK_IMPL(i_mk,short_field) ((i_mk)->_mk_impl->mk_##short_field)
+void gasneti_destroy_mk(gasneti_MK_t mk, gex_Flags_t flags)
+{
+  gasneti_assert(0 == gasneti_weakatomic32_read(&mk->_ref_count, 0));
+  if (MK_IMPL(mk,destroy)) MK_IMPL(mk,destroy)(mk, flags);
+  else                     gasneti_free_mk(mk);
+}
 
 int gex_MK_Create(
             gex_MK_t                         *memkind_p,
@@ -119,6 +125,7 @@ int gex_MK_Create(
     default: gasneti_unreachable_error(("Unknown MK class: %i",(int)args->gex_class));
   }
 
+
   if (! rc) {
     // Sanity checks on per-class initialization
     gasneti_assert(result->_mk_class == args->gex_class);
@@ -126,7 +133,17 @@ int gex_MK_Create(
     gasneti_assert(MK_IMPL(result,class) == args->gex_class);
     gasneti_assert(MK_IMPL(result,name));
     gasneti_assert(strlen(MK_IMPL(result,name)));
+  }
 
+#if GASNETC_MK_CREATE_HOOK
+  if (! rc) {
+    // Conduit-specific hook, if any
+    rc = gasnetc_mk_create_hook(result, client, args, flags);
+    if (rc) gasneti_destroy_mk(result, 0); // TODO: any flags to pass through?
+  }
+#endif
+
+  if (! rc) {
     *memkind_p = gasneti_export_mk(result);
   }
 
@@ -162,9 +179,12 @@ void gex_MK_Destroy(
                        (unsigned int)ref_count);
   }
 
-  // Class-specific hook or default if none
-  if (MK_IMPL(i_mk,destroy)) MK_IMPL(i_mk,destroy)(i_mk, flags);
-  else                       gasneti_free_mk(i_mk);
+#if GASNETC_MK_DESTROY_HOOK
+  // Conduit-specific hook, if any
+  gasnetc_mk_destroy_hook(i_mk);
+#endif
+
+  gasneti_destroy_mk(i_mk, flags);
 }
 
 int gasneti_MK_Segment_Create(
@@ -208,4 +228,18 @@ void gasneti_MK_Segment_Destroy(
   }
 
   gasneti_weakatomic32_decrement(&i_mk->_ref_count, 0);
+}
+
+const char *gasneti_formatmk(
+            gex_MK_t e_mk)
+{
+  if (e_mk == GEX_MK_INVALID) {
+    return "GEX_MK_INVALID";
+  } else if (e_mk == GEX_MK_HOST) {
+    return "GEX_MK_HOST";
+  }
+
+  gasneti_MK_t i_mk = gasneti_import_mk_nonhost(e_mk);
+  if (MK_IMPL(i_mk,format)) return MK_IMPL(i_mk,format)(i_mk);
+  else                      return MK_IMPL(i_mk,name);
 }

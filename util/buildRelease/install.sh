@@ -15,7 +15,10 @@ do
     #e.g. -s|--short)
     --stage=*)
       STAGE="${arg#*=}"
-      STAGE_SET=1
+      if [ ! -z $STAGE ]
+      then
+        STAGE_SET=1
+      fi
       shift
       ;;
     *)
@@ -236,8 +239,6 @@ myinstallfileto () {
 # copy chpl
 if [ ! -z "$PREFIX" ]
 then
-  # TODO -- handle chpldoc
-  #   these are symbol links to chpl
   myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpl "$PREFIX/bin"
 else
   tmp_bin_dir="bin/$CHPL_BIN_SUBDIR"
@@ -302,7 +303,7 @@ cd ..
 
 for dir in $THIRD_PARTY_DIRS
 do
-  #echo "Considering 3p dir $dir"
+  # copy Makefiles (which are used by the C backend)
   for f in third-party/"$dir"/Makefile*
   do
     if [ -f "$f" ]
@@ -310,9 +311,18 @@ do
       myinstallfile "$f"  "$DEST_THIRD_PARTY"/"$dir"
     fi
   done
+
+  # copy any installed libraries
   if [ -d third-party/"$dir"/install ]
   then
     myinstalldir "third-party/$dir/install" "$DEST_THIRD_PARTY/$dir/install/"
+  fi
+
+  # chpl-venv also needs to copy chpldoc-sphinx-project
+  # but this never contains executables so should go in DEST_CHPL_HOME
+  if [ -d third-party/"$dir"/chpldoc-sphinx-project ]
+  then
+    myinstalldir "third-party/$dir/chpldoc-sphinx-project" "$DEST_CHPL_HOME/third-party/$dir/chpldoc-sphinx-project/"
   fi
 done
 
@@ -322,15 +332,29 @@ myinstallfile third-party/llvm/filter-llvm-config.awk "$DEST_THIRD_PARTY"/llvm
 # copy utf8-decoder header
 myinstallfile third-party/utf8-decoder/utf8-decoder.h "$DEST_THIRD_PARTY"/utf8-decoder/
 
+
+MASON="bin/$CHPL_BIN_SUBDIR"/mason
+
 # copy mason
-if [ -f tools/mason/mason ]
+if [ -f "$MASON" ]
 then
   if [ ! -z "$PREFIX" ]
   then
-    myinstallfile tools/mason/mason "$PREFIX/bin"
+    myinstallfile "$MASON" "$PREFIX/bin"
   else
-    myinstallfile tools/mason/mason "$DEST_CHPL_HOME/tools/mason"
+    myinstallfile "$MASON" "$DEST_CHPL_HOME/tools/mason"
     ln -s "$DEST_CHPL_HOME/tools/mason/mason" "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"/mason
+  fi
+fi
+
+if [ -f "bin/$CHPL_BIN_SUBDIR/chpldoc" ]
+then
+  # create a symbolic link for chpldoc
+  if [ ! -z "$PREFIX" ]
+  then
+    (cd "$PREFIX/bin" && rm -f chpldoc && ln -s chpl chpldoc)
+  else
+    (cd "$DEST_DIR/bin/$CHPL_BIN_SUBDIR" && rm -f chpldoc && ln -s chpl chpldoc)
   fi
 fi
 

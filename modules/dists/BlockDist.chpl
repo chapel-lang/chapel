@@ -666,12 +666,12 @@ proc Block.getChunk(inds, locid) {
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
     if chunk.sizeAs(int) > 0 {
-      if targetLocsIdx(chunk.low) != locid then
-        writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
-                targetLocsIdx(chunk.low));
-      if targetLocsIdx(chunk.high) != locid then
-        writeln("[", here.id, "] ", chunk.high, " is in my chunk but maps to ",
-                targetLocsIdx(chunk.high));
+      if targetLocsIdx(chunk.lowBound) != locid then
+        writeln("[", here.id, "] ", chunk.lowBound, " is in my chunk but maps to ",
+                targetLocsIdx(chunk.lowBound));
+      if targetLocsIdx(chunk.highBound) != locid then
+        writeln("[", here.id, "] ", chunk.highBound, " is in my chunk but maps to ",
+                targetLocsIdx(chunk.highBound));
     }
   return chunk;
 }
@@ -687,7 +687,7 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
     result(i) = max(0, min(targetLocDom.dim(i).sizeAs(int)-1,
-                           (((ind(i) - boundingBox.dim(i).low).safeCast(int) *
+                           (((ind(i) - boundingBox.dim(i).lowBound).safeCast(int) *
                              targetLocDom.dim(i).sizeAs(int)) /
                             boundingBox.dim(i).sizeAs(int))));
   return if rank == 1 then result(0) else result;
@@ -729,8 +729,8 @@ proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
   type idxType = boundingBox.idxType;
   var inds: rank*range(idxType);
   for param i in 0..rank-1 {
-    const lo = boundingBoxDims(i).low;
-    const hi = boundingBoxDims(i).high;
+    const lo = boundingBoxDims(i).lowBound;
+    const hi = boundingBoxDims(i).highBound;
     const numelems = hi - lo + 1;
     const numlocs = targetLocBox.dim(i).sizeAs(int);
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
@@ -803,7 +803,7 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
-  const wholeLow = whole.low;
+  const wholeLow = whole.lowBound;
 
   // If this is the only task running on this locale, we don't want to
   // count it when we try to determine how many tasks to use.  Here we
@@ -868,8 +868,8 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
   for param i in 0..rank-1 {
     var stride = whole.dim(i).stride: strType;
     // not checking here whether the new low and high fit into idxType
-    var low = (stride * followThis(i).low:strType):idxType;
-    var high = (stride * followThis(i).high:strType):idxType;
+    var low = (stride * followThis(i).lowBound:strType):idxType;
+    var high = (stride * followThis(i).highBound:strType):idxType;
     t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
@@ -916,8 +916,8 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
 }
 
 // common redirects
-proc BlockDom.dsiLow           return whole.low;
-proc BlockDom.dsiHigh          return whole.high;
+proc BlockDom.dsiLow           return whole.lowBound;
+proc BlockDom.dsiHigh          return whole.highBound;
 proc BlockDom.dsiAlignedLow    return whole.alignedLow;
 proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
 proc BlockDom.dsiFirst         return whole.first;
@@ -1189,10 +1189,10 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   for param i in 0..rank-1 {
     var stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
-    var low = followThis(i).low * abs(stride):idxType;
-    var high = followThis(i).high * abs(stride):idxType;
+    var low = followThis(i).lowBound * abs(stride):idxType;
+    var high = followThis(i).highBound * abs(stride):idxType;
     myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
-    lowIdx(i) = myFollowThis(i).low;
+    lowIdx(i) = myFollowThis(i).lowBound;
   }
 
   const myFollowThisDom = {(...myFollowThis)};
@@ -1510,10 +1510,10 @@ proc BlockDom.numRemoteElems(viewDom, rlo, rid) {
   //  below can fit into idxType
   var blo, bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank-1).sizeAs(int) - 1) then
-    bhi=viewDom.dim(rank-1).high;
+    bhi=viewDom.dim(rank-1).highBound;
   else {
-      bhi = dist.boundingBox.dim(rank-1).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1):idxType,
+      bhi = dist.boundingBox.dim(rank-1).lowBound +
+        intCeilXDivByY((dist.boundingBox.dim(rank-1).highBound - dist.boundingBox.dim(rank-1).lowBound +1)*(rid+1):idxType,
                        dist.targetLocDom.dim(rank-1).sizeAs(idxType)) - 1:idxType;
   }
 
@@ -1733,6 +1733,14 @@ override proc BlockArr.doiCanBulkTransferRankChange() param return true;
 
 config param debugBlockScan = false;
 
+class BoxedSync {
+  type T;
+  var s: sync T;
+  forwarding s;
+  // guard against dynamic dispatch trying to resolve write()ing the sync
+  override proc writeThis(f) throws { }
+}
+
 proc BlockArr.doiScan(op, dom) where (rank == 1) &&
                                      chpl__scanStateResTypesMatch(op) {
 
@@ -1742,17 +1750,15 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
   // Store one element per locale in order to track our local total
   // for a cross-locale scan as well as flags to negotiate reading and
-  // writing it.  This domain really wants an easier way to express
-  // it...
-  use ReplicatedDist;
+  // writing it.
   const ref targetLocs = this.dsiTargetLocales();
-  const elemPerLocDom = {1..1} dmapped Replicated(targetLocs);
-  var elemPerLoc: [elemPerLocDom] resType;
-  var inputReady$: [elemPerLocDom] sync bool;
-  var outputReady$: [elemPerLocDom] sync bool;
+  const firstLoc = targetLocs.domain.lowBound;
+  var elemPerLoc: [targetLocs.domain] resType;
+  var inputReady$: [targetLocs.domain] sync bool;
+  var outputReady$: [targetLocs.domain] unmanaged BoxedSync(bool)?;
 
   // Fire up tasks per participating locale
-  coforall locid in dom.dist.targetLocDom {
+  coforall locid in targetLocs.domain {
     on targetLocs[locid] {
       const myop = op.clone(); // this will be deleted by doiScan()
 
@@ -1767,35 +1773,42 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       if debugBlockScan then
         writeln(locid, ": ", (numTasks, rngs, state, tot));
 
+      // Create a local ready var and store it back on the initiating
+      // locale so it can notify us
+      var myOutputReady = new unmanaged BoxedSync(bool)?;
+      outputReady$[locid] = myOutputReady;
+
       // save our local scan total away and signal that it's ready
-      elemPerLoc[1] = tot;
-      inputReady$[1].writeEF(true);
+      elemPerLoc[locid] = tot;
+      inputReady$[locid].writeEF(true);
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
-      if (locid == dom.dist.targetLocDom.low) {
+      if (locid == firstLoc) then on elemPerLoc {
         const metaop = op.clone();
 
         var next: resType = metaop.identity;
-        for locid in dom.dist.targetLocDom {
-          const targetloc = targetLocs[locid];
-          const locready = inputReady$.replicand(targetloc)[1].readFE();
+        for locid in targetLocs.domain {
+          const locready = inputReady$[locid].readFE();
 
-          // store the scan value and mark that it's ready
-          ref locVal = elemPerLoc.replicand(targetloc)[1];
+          // store the scan value
+          ref locVal = elemPerLoc[locid];
           locVal <=> next;
-          outputReady$.replicand(targetloc)[1].writeEF(true);
 
           // accumulate to prep for the next iteration
           metaop.accumulateOntoState(next, locVal);
+        }
+        // Mark that scan values are ready
+        coforall ready in outputReady$ do on ready {
+          ready!.writeEF(true);
         }
         delete metaop;
       }
 
       // block until someone tells us that our local value has been updated
       // and then read it
-      const resready = outputReady$[1].readFE();
-      const myadjust = elemPerLoc[1];
+      const resready = myOutputReady!.readFE();
+      const myadjust = elemPerLoc[locid];
       if debugBlockScan then
         writeln(locid, ": myadjust = ", myadjust);
 
@@ -1812,6 +1825,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         writeln(locid, ": ", myLocArr);
 
       delete myop;
+      delete myOutputReady;
     }
   }
   if isPOD(resType) then res.dsiElementInitializationComplete();

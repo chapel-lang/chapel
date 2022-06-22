@@ -26,16 +26,13 @@ namespace uast {
 
 
 owned<Scan> Scan::build(Builder* builder, Location loc,
-                        UniqueString op,
-                        owned<AstNode> expr) {
-  assert(expr.get() != nullptr);
-  assert(!op.isEmpty());
+                        owned<AstNode> op,
+                        owned<AstNode> iterand) {
+  AstList children;
+  children.push_back(std::move(op));
+  children.push_back(std::move(iterand));
 
-  AstList lst;
-
-  lst.push_back(std::move(expr));
-
-  Scan* ret = new Scan(std::move(lst), op);
+  Scan* ret = new Scan(std::move(children));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

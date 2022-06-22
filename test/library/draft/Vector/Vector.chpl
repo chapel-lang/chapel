@@ -542,7 +542,7 @@ module Vector {
       on this {
         if idx == _size {
           _requestCapacity(_size + size);
-          _extendGeneric(items);
+          _appendGeneric(items);
           result = true;
         } else if _withinBounds(idx) {
           _requestCapacity(_size + size);
@@ -980,12 +980,18 @@ module Vector {
     }
 
     pragma "no doc"
-    inline proc ref _extendGeneric(collection) {
+    inline proc ref _appendGeneric(collection) {
+      var startSize: int;
+      var endSize: int;
       on this {
+        startSize = _size;
         for item in collection {
           _append(item);
         }
+        endSize = _size;
       }
+
+      return startSize..(endSize-1);
     }
 
     /*
@@ -996,13 +1002,15 @@ module Vector {
         contained in this vector.
       :type other: `list(eltType)`
     */
-    proc ref extend(other: vector(eltType, ?p)) lifetime this < other {
+    proc ref append(other: vector(eltType, ?p)) lifetime this < other {
+      var ret: range;
       on this {
         _enter();
         _requestCapacity(_size + other.size);
-        _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
+      return ret;
     }
 
     /*
@@ -1013,13 +1021,15 @@ module Vector {
         contained in this vector.
       :type other: `[?d] eltType`
     */
-    proc ref extend(other: [?d] eltType) lifetime this < other {
+    proc ref append(other: [?d] eltType) lifetime this < other {
+      var ret: range;
       on this {
         _enter();
         _requestCapacity(_size + d.size);
-        _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
+      return ret;
     }
 
     /*
@@ -1034,19 +1044,22 @@ module Vector {
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
     */
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
+    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
       if !isBoundedRange(other) {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot extend " + e + " with unbounded " + f;
         compilerError(msg);
       }
+
+      var ret: range;
       on this {
         _enter();
         _requestCapacity(_size + other.size);
-        _extendGeneric(other);
+        ret = _appendGeneric(other);
         _leave();
       }
+      return ret;
     }
 
     /*
@@ -1144,12 +1157,17 @@ module Vector {
       return _data[i];
     }
 
+    pragma "no doc"
+    proc readThis(ch: channel) throws {
+      compilerError("Reading a Vector is not supported");
+    }
+
     /*
       Write the contents of this vector to a channel.
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) throws {
+    proc writeThis(ch: channel) throws {
       _enter();
       
       ch <~> "[";
@@ -1163,6 +1181,17 @@ module Vector {
       ch <~> "]";
 
       _leave();
+    }
+
+    /*
+      Write the contents of this vector to a channel.
+
+      :arg ch: A channel to write to.
+    */
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+    proc readWriteThis(ch: channel) throws {
+      if ch.writing then writeThis(ch);
+      else readThis(ch);
     }
 
     /*
@@ -1228,7 +1257,7 @@ module Vector {
   */
   operator vector.=(ref lhs: vector(?t, ?), rhs: vector(t, ?)) {
     lhs.clear();
-    lhs.extend(rhs);
+    lhs.append(rhs);
   }
 
   /*

@@ -1,7 +1,0 @@
-#!/bin/sh
-
-awk '!/Unknown CUDA version/ {print};' $2 > $2.no_version_warn
-mv $2.no_version_warn $2
-
-awk '!/ptxas warning : Unresolved extern variable/ {print};' $2 > $2.no_extern_warn
-mv $2.no_extern_warn $2

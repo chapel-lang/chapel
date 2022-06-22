@@ -778,7 +778,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. BLOCK-test-chapeloutput
 
-      (1)
+      (1,)
       (hi, there)
       ((1, 2), (3, 4))
 
@@ -1391,11 +1391,11 @@ function is determined by the first of the following steps that applies:
    corresponding legal argument mapping to :math:`Y`, then :math:`Y`
    is more specific.
 
--  If :math:`X` shadows :math:`Y`, then :math:`X` is more
-   specific.
+-  If neither :math:`X` nor :math:`Y` are methods, and :math:`X` shadows
+   :math:`Y`, then :math:`X` is more specific.
 
--  If :math:`Y` shadows :math:`X`, then :math:`Y` is more
-   specific.
+-  If neither :math:`X` nor :math:`Y` are methods, and :math:`Y` shadows
+   :math:`X`, then :math:`Y` is more specific.
 
 -  If at least one of the legal argument mappings to :math:`X` is
    *weak preferred* and none of the legal argument mappings to

@@ -37,24 +37,11 @@
 extern "C" {
 #endif
 
-// CHPL_MEMHOOKS_ACTIVE=1 will enable the memory hooks;
-// CHPL_MEMHOOKS_ACTIVE will be set to 1 if CHPL_DEBUG is defined;
-// or if CHPL_OPTIMIZE is not defined.
-// If CHPL_OPTIMIZE is defined and CHPL_DEBUG is not defined,
-// we set CHPL_MEMHOOKS_ACTIVE to chpl_memTrack, so that memory tracking
-// can still be activated at run-time.
+// Generally, memory hooks are enabled with chpl_memTrack (e.g. --memTrack).
+// However, -DCHPL_MEMHOOKS_ACTIVE=1 will enable them at compile-time, and
+// -DCHPL_MEMHOOKS_ACTIVE=0 will disable them at compile-time.
 #ifndef CHPL_MEMHOOKS_ACTIVE
-
-#ifdef CHPL_DEBUG
-#define CHPL_MEMHOOKS_ACTIVE 1
-#else
-#ifdef CHPL_OPTIMIZE
 #define CHPL_MEMHOOKS_ACTIVE chpl_memTrack
-#else
-#define CHPL_MEMHOOKS_ACTIVE 1
-#endif
-#endif
-
 #endif
 
 // Returns the starting number for memory descriptors for use by Chapel code.

@@ -1,5 +1,9 @@
-qualifiedAccess.chpl:7: In function 'main':
-qualifiedAccess.chpl:8: warning: m1.asdf
-qualifiedAccess.chpl:9: warning: m1.asdf
+qualifiedAccess.chpl:12: In function 'main':
+qualifiedAccess.chpl:13: warning: m1.asdf
+qualifiedAccess.chpl:14: warning: m1.asdf
+qualifiedAccess.chpl:15: warning: m1.foo
+qualifiedAccess.chpl:16: warning: m1.foo
 1
 1
+In foo
+In foo

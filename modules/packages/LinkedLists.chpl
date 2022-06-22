@@ -26,7 +26,7 @@
       This module is expected to change in the future.
  */
 module LinkedLists {
-  use SysBasic;
+
 
 pragma "no doc"
 class listNode {

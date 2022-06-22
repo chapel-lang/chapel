@@ -1,0 +1,22 @@
+renameDateTimeMethods.chpl:6: warning: 'date.isoweekday()' is deprecated. Please use 'date.isoWeekday() instead
+renameDateTimeMethods.chpl:7: warning: 'date.isocalendar()' is deprecated. Please use 'date.isoCalendar()' instead
+renameDateTimeMethods.chpl:8: warning: 'date.isoformat()' is deprecated. Please use 'date.isoFormat()' instead
+renameDateTimeMethods.chpl:9: warning: 'date.toordinal()' is deprecated. Please use 'date.toOrdinal()' instead
+renameDateTimeMethods.chpl:13: warning: 'time.utcoffset()' is deprecated. Please use 'time.utcOffset()' instead
+renameDateTimeMethods.chpl:16: warning: 'datetime.toordinal()' is deprecated. Please use 'datetime.toOrdinal()' instead
+renameDateTimeMethods.chpl:19: warning: 'date.fromordinal()' is deprecated. Please use 'date.fromOrdinal()' instead
+renameDateTimeMethods.chpl:20: warning: 'datetime.fromordinal()' is deprecated. Please use 'datetime.fromOrdinal()' instead
+renameDateTimeMethods.chpl:23: warning: 'date.fromtimestamp()' is deprecated. Please use 'date.fromTimestamp()' instead
+renameDateTimeMethods.chpl:24: warning: 'datetime.utcfromtimestamp()' is deprecated. Please use 'datetime.utcFromTimestamp()' instead
+renameDateTimeMethods.chpl:27: warning: 'TZInfo.fromutc()' is deprecated. Please use 'TZInfo.fromUtc()' instead
+Monday
+(2022, 23, 1)
+2022-06-06
+738312
+(chpl_days = 0, chpl_seconds = 0, chpl_microseconds = 0)
+738312
+0028-05-17
+0028-05-17T00:00:00
+1970-01-01
+1970-01-01T02:46:39
+renameDateTimeMethods.chpl:27: error: halt reached - pure virtual method called

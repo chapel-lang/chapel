@@ -88,7 +88,7 @@ module DefinesOp {
     where ch.writing {
 
     writeln("In DefinesOp.<~>");
-    try ch.readwrite(x.x);
+    try ch.write(x.x);
     return ch;
   }
 

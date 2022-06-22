@@ -1,4 +1,0 @@
-setArgumentNames.chpl:7: warning: The argument name `x` has been deprecated for function `add`, please use `element` instead
-setArgumentNames.chpl:8: warning: The argument name `x` has been deprecated for function `contains, please use `element` instead
-setArgumentNames.chpl:9: warning: The argument name `x` has been deprecated for function `remove`, please use `element` instead
-{}

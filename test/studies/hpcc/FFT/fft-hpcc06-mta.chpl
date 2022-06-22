@@ -152,7 +152,7 @@ proc printResults(successful, execTime) {
 
 
 proc butterfly(wk1, wk2, wk3, inout A:[?D]) {
-  const i1 = D.low,
+  const i1 = D.lowBound,
         i2 = i1 + D.stride,
         i3 = i2 + D.stride,
         i4 = i3 + D.stride;

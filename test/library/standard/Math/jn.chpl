@@ -1,5 +1,6 @@
 
 {
+  use Math;
   var a: real(64) = -100, an: int = 5;
   var b: real(64) = -0.05, bn: int = 4;
   var c: real(64) = 0, cn: int = 7;
@@ -20,6 +21,7 @@
 }
 
 {
+  use Math;
   var a: real(32) = (-100):real(32), an: int = 5;
   var b: real(32) = (-0.05):real(32), bn: int = 4;
   var c: real(32) = (0):real(32), cn: int = 7;

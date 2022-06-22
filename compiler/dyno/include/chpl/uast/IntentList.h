@@ -78,13 +78,19 @@ enum struct IntentList {
   TYPE,
 
   // intents used within the compiler that aren't
-  // directly represented in the syntax
+  // used in the uAST itself
+
+  /** A type query (e.g. ?t in `proc f(arg: ?t)`) */
+  TYPE_QUERY,
 
   /** A loop index variable */
   INDEX,
 
   /** A function */
   FUNCTION,
+
+  /** A parenless function */
+  PARENLESS_FUNCTION,
 
   /** A module */
   MODULE,

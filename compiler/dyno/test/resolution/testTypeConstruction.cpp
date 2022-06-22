@@ -227,7 +227,7 @@ parseTypeOfX(Context* context, const char* program) {
 
   assert(ct != nullptr);
 
-  bool useGenericFormalDefaults = true;
+  bool useGenericFormalDefaults = false;
   const ResolvedFields& f = fieldsForTypeDecl(context, ct,
                                               useGenericFormalDefaults);
 

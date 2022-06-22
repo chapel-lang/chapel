@@ -62,19 +62,19 @@ proc test_readlines()
     ch.flush();
   }
 
-  if noisy then writeln("Testing readlines: channel.readline(line)");
+  if noisy then writeln("Testing readlines: channel.readLine(line)");
   // try reading it in a few ways.
   {
     var ch = f.reader();
     var line:dataType;
     var got:bool;
-    got = ch.readline(line);
+    got = ch.readLine(line);
     if noisy then writeln("got ", got, " line ", line);
     assert( got && line == "a b\n":dataType );
-    got = ch.readline(line);
+    got = ch.readLine(line);
     if noisy then writeln("got ", got, " line ", line);
     assert( got && line == "c d\n":dataType );
-    got = ch.readline(line);
+    got = ch.readLine(line);
     if noisy then writeln("got ", got, " line ", line);
     assert( !got );
   }
@@ -150,7 +150,6 @@ proc main() {
   testio(new ioNewline());
   testio(new ioLiteral("test"));
   testio(new ioBits(0b011011001101000110101101, 24));
-
+  
   test_readlines();
 }
-

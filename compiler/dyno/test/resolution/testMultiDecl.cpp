@@ -157,9 +157,9 @@ static void test3() {
   assert(dQt.kind() == QualifiedType::VAR);
   assert(dQt.type() == IntType::get(context, 0));
   assert(eQt.kind() == QualifiedType::VAR);
-  assert(eQt.type() == StringType::get(context));
+  assert(eQt.type() == RecordType::getStringType(context));
   assert(fQt.kind() == QualifiedType::VAR);
-  assert(fQt.type() == StringType::get(context));
+  assert(fQt.type() == RecordType::getStringType(context));
 }
 
 static void test4() {

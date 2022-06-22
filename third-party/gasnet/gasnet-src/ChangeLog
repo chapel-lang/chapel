@@ -19,6 +19,66 @@ GASNet-EX ChangeLog
   the GASNet v1.x distribution from https://gasnet.lbl.gov.
 
 ----------------------------------------------------------------------
+2022-03-31: GASNet-EX 2022.3.0 Release
+
+* General and Misc.
+  - Add docs/gasnet1_differences.md guide for legacy GASNet-1 clients
+  - Reduce locking overheads inside AMPoll for single-node runs of
+    {udp,mpi}-conduit in PAR mode.
+  - A new environment variable `GASNET_HOST_DETECT` controls the
+    algorithm used for detecting compute node boundaries in a job.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - Improved reporting of fatal errors reported via IBV completion queues
+
+* Unified Communication X framework (details in ucx-conduit README) [EXPERIMENTAL]
+  - A new environment variable `GASNET_UCX_MAX_MEDIUM` enables setting the
+    size of AM Medium buffers at job launch, and a new configure option
+    `--with-ucx-max-medium` can be used to set the default value.
+    In the absence of these settings, default buffer size remains unchanged.
+  - `GASNET_DISABLE_MUNMAP=1` is now the default for ucx-conduit.
+
+* Libfabric [EXPERIMENTAL] (details in ofi-conduit README)
+  - Initial support for the "cxi" provider for the HPE Slingshot-11 network.
+    + Added support for providers which set the `FI_MR_ENDPOINT` memory mode bit
+    + Added support for providers which do not support multiple endpoints
+      reporting TX completions to a single completion queue
+  - ofi-conduit is now the recommended conduit for HPE Slingshot (such as 
+    present in HPE Cray EX systems) and Intel Omni-Path (OPA) networks
+  - A new family of `GASNET_OFI_DEVICE*` environment variables provide
+    control over which device is used by a given process.  When configure can
+    find (optional) hwloc, this can be based on a process's location in the node
+    architecture (e.g. by socket or numa node).
+  - The implementation now includes a native implementation of the
+    Extended API (Put and Get) in terms of `fi_write()` and `fi_read()`.
+
+* GASNet-EX Spec v0.15: (details in docs/GASNet-EX.txt)
+  - Clarify that src/dst overlap within one operation yields undefined behavior
+  - Initial implementation of gex_Segment_Destroy()
+
+* GASNet tools (spec v1.19): (details in README-tools)
+  - Add gasnett_exe_name() for exposing the current executable name
+  - gasnett_gethostname() now normalizes hostnames to lowercase
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug4211: intermittent udp-conduit exit-time hangs on macOS
+  - bug4227: Bogus maybe-uninit warning building libgasnet with GCC-11.1+ 
+  - bug4297: incorrect nbrhd construction for some multi-homed hosts
+  - bug4321: Intermittent "EBADENDPOINT" failures in single-node udp-conduit
+  - bug4339: ucx: many-to-one deadlock
+  - bug4345: Multiply defined symbols in aries-conduit w/ recent compilers
+  - bug4355: Erroneous memory access when deleting a segment
+  - bug4356: Missing bounds checks for Long payloads
+  - bug4360: Insufficient fixed exit timeouts (ucx, ibv, ofi)
+  - bug4361: (partial fix) reductions on DT_USER of unbounded length
+  - bug4366: intermittent exit-time assertion failures from debug memcheck
+  - bug4373: ofi: FI_MR_ENDPOINT support
+  - bug4374: Update mr_mode handling to OFI 1.5 API spec (or newer?)
+  - bug4375: ofi: support multiple tx CQs
+  - bug4376: ofi: infrequent FI_EAGAIN when reposting multi-recv buffer
+  - bug4399: (partial fix) stronger local address range checks when using kinds
+
+----------------------------------------------------------------------
 2021-09-30: GASNet-EX 2021.9.0 Release
 
 * General and Misc.
@@ -36,7 +96,7 @@ GASNet-EX ChangeLog
   - This release adds Memory Kinds support for AMD GPUs via the HIP API.
   - This release adds ucx-conduit support for `GEX_MK_CLASS_CUDA_UVA` and
     `GEX_MK_CLASS_HIP` on supported hardware and software.
-  - Fixed bugs 4148 and 4150, which had significant impact of the usability
+  - Fixed bugs 4148 and 4150, which had significant impact on the usability
     of RMA Put operations involving device memory.
   See docs/memory_kinds.md for more information on the status of Memory Kinds.
 
@@ -60,7 +120,7 @@ GASNet-EX ChangeLog
     + Fix corruption when using UCX-level shared memory communication (bug 4155)
     + Fix crashes when using synchronous local completion (bug 4277)
     + Fix leak of gex_Event_t for explicit-event local completion (bug 4292)
-  - Improved handing of non-collective exits
+  - Improved handling of non-collective exits
   - Support for multiple endpoints
 
 * Shared-memory without a network (details in smp-conduit README)
@@ -149,7 +209,7 @@ GASNet-EX ChangeLog
     aware that the behavior of configure in this release differs in that one
     must enable memory kinds explicitly using `--enable-memory-kinds` or an
     `--enable-kind-[...]` option for a specific kind.
-  - New preprocessor identifer 'GASNET_HAVE_MK_CLASS_MULTIPLE' (undefined or
+  - New preprocessor identifier 'GASNET_HAVE_MK_CLASS_MULTIPLE' (undefined or
     defined to '1') indicates whether kinds support for anything other than
     host memory has been compiled-in.
 
@@ -277,7 +337,7 @@ GASNet-EX ChangeLog
 2020-10-30: GASNet-EX 2020.10.0 Release
 
 * General and Misc.
-  - NEW: Improved compatability with heap analysis tools like Valgrind
+  - NEW: Improved compatibility with heap analysis tools like Valgrind
     using new configure option --enable-valgrind. GASNet's valgrind
     suppression file now lives in other/valgrind/gasnet.supp.
   - GASNet trace/stats now categorize AMPoll calls in tracemask category 'X'

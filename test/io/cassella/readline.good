@@ -1,4 +1,5 @@
-readline(amount=9) returned 5 bytes
-readline(amount=9) returned 9 bytes
-readline(amount=10) returned 10 bytes
-readline() returned 10 bytes
+readLine(maxSize=9) returned 5 bytes
+readLine(maxSize=9) returned 4 bytes
+BadFormatError: bad format (line longer than maxSize in channel.readLine(a : [] uint(8)) with path "unknown" offset 0)
+BadFormatError: bad format (line longer than maxSize in channel.readLine(a : [] uint(8)) with path "unknown" offset 0)
+BadFormatError: bad format (line longer than maxSize in channel.readLine(a : [] uint(8)) with path "unknown" offset 0)

@@ -1,0 +1,1 @@
+BadFormatError: bad format (line longer than maxSize in channel.readLine(a : [] uint(8)) with path "unknown" offset 0)

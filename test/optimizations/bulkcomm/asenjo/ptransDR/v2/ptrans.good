@@ -1,5 +1,5 @@
-$CHPL_HOME/modules/standard/ChapelIO.chpl:770: In function 'write':
-$CHPL_HOME/modules/standard/ChapelIO.chpl:771: warning: write with a style argument is deprecated
+$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In function 'write':
+$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: warning: write with a style argument is deprecated
   ./util.chpl:46: called as write(args(0): real(64), args(1): iostyleInternal) from function 'showrealrow'
   ./util.chpl:41: called as showrealrow(ARR: [domain(2,int(64),false)] real(64), i: int(64))
 

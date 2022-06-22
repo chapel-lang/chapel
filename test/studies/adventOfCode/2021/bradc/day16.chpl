@@ -3,7 +3,7 @@ use IO;
 param bitsPerHex = 4;
 
 var line: bytes;
-readline(line);
+readLine(line);
 line = line.strip();
 writeln(line);
 

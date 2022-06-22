@@ -1,22 +1,24 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 Start
-0 (cpu): diags.chpl:10: allocate 88B of domain(1,int(64),false) at 0xPREDIFFED
-0 (cpu): diags.chpl:10: allocate 168B of [domain(1,int(64),false)] int(64) at 0xPREDIFFED
-0 (cpu): diags.chpl:10: allocate 80B of array elements at 0xPREDIFFED
-0 (cpu): diags.chpl:10: allocate 48B of _EndCount(AtomicT(int(64)),int(64)) at 0xPREDIFFED
-0 (cpu): diags.chpl:10: free at 0xPREDIFFED
-0 (cpu): diags.chpl:12: allocate 168B of [domain(1,int(64),false)] locale at 0xPREDIFFED
-0 (cpu): diags.chpl:12: allocate 16B of array elements at 0xPREDIFFED
-0 (cpu): diags.chpl:12: allocate 48B of _EndCount(AtomicT(int(64)),int(64)) at 0xPREDIFFED
-0 (cpu): diags.chpl:12: free at 0xPREDIFFED
-0 (gpu 0): diags.chpl:13: allocate 168B of [domain(1,int(64),false)] int(64) at 0xPREDIFFED
-0 (gpu 0): diags.chpl:13: allocate 80B of array elements at 0xPREDIFFED
+0 (cpu): diags.chpl:10: allocate xxB of domain(1,int(64),false) at 0xPREDIFFED
+0 (cpu): diags.chpl:10: allocate xxB of [domain(1,int(64),false)] int(64) at 0xPREDIFFED
+0 (cpu): diags.chpl:10: allocate xxB of array elements at 0xPREDIFFED
+0 (cpu): diags.chpl:10: allocate xxB of _EndCount(AtomicT(int(64)),int(64)) at 0xPREDIFFED
+0 (cpu): diags.chpl:10: free xxB of _EndCount(AtomicT(int(64)),int(64)) at 0xPREDIFFED
+0 (cpu): diags.chpl:12: allocate xxB of [domain(1,int(64),false)] locale at 0xPREDIFFED
+0 (cpu): diags.chpl:12: allocate xxB of array elements at 0xPREDIFFED
+0 (cpu): diags.chpl:12: allocate xxB of _EndCount(AtomicT(int(64)),int(64)) at 0xPREDIFFED
+0 (cpu): diags.chpl:12: free xxB of _EndCount(AtomicT(int(64)),int(64)) at 0xPREDIFFED
+0 (gpu 0): diags.chpl:13: allocate xxB of [domain(1,int(64),false)] int(64) at 0xPREDIFFED
+0 (gpu 0): diags.chpl:13: allocate xxB of array elements at 0xPREDIFFED
 0 (gpu 0): diags.chpl:14: kernel launch
-0 (gpu 0): diags.chpl:18: free at 0xPREDIFFED
-0 (gpu 0): diags.chpl:18: free at 0xPREDIFFED
-0 (cpu): diags.chpl:12: free at 0xPREDIFFED
-0 (cpu): diags.chpl:12: free at 0xPREDIFFED
+0 (gpu 0): diags.chpl:18: free xxB of array elements at 0xPREDIFFED
+0 (gpu 0): diags.chpl:18: free xxB of [domain(1,int(64),false)] int(64) at 0xPREDIFFED
+0 (cpu): diags.chpl:12: free xxB of array elements at 0xPREDIFFED
+0 (cpu): diags.chpl:12: free xxB of [domain(1,int(64),false)] locale at 0xPREDIFFED
 2 2 2 2 2 2 2 2 2 2
 End
 GPU diagnostics:
 (kernel_launch = 1)
+GPU diagnostics after reset:
+(kernel_launch = 0)

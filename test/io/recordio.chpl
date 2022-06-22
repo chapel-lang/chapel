@@ -80,17 +80,26 @@ var B: [0..#3] MyRecord;
   reader.close();
 }
 
-// Now read the data. Way 2: provide a readWriteThis method.
+// Now read the data. Way 2: provide readThis/writeThis methods.
 // Note that this didn't work with Chapel 1.11 or earlier.
 
-/* notes on readWriteThis (see the language spec):
+/* notes on readThis/writeThis (see the language spec):
    - f is a Writer or a Reader
-   - the compiler will generate readWriteThis for you if you don't
+   - the compiler will generate readThis/writeThis for you if you don't
      provide one
    - the I/O operator <~> is available to read or write (depending
-     on which situation we are being called in)
+     on which situation we are being called in). This operator will soon
+     be deprecated
  */
-proc MyRecord.readWriteThis(f) throws {
+proc MyRecord.readThis(f) throws {
+  readWriteHelper(f);
+}
+
+proc MyRecord.writeThis(f) throws {
+  readWriteHelper(f);
+}
+
+proc MyRecord.readWriteHelper(f) throws {
   f <~> i;
   f <~> new ioLiteral("\t");
   f <~> r;

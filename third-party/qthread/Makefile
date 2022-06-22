@@ -111,11 +111,15 @@ endif
 
 CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
-# determine which scheduler to use. Use nemesis for flat and distrib for
-# non-flat.  Override with a user provided option if they requested one
+# determine which scheduler to use based on locale model.  Override with a user
+# provided option if they requested one.
 SCHEDULER = nemesis
-ifneq ($(CHPL_MAKE_LOCALE_MODEL),flat)
-SCHEDULER = distrib
+ifeq ($(CHPL_MAKE_LOCALE_MODEL),numa)
+  # The distrib scheduler is numa aware (you can say things like "run this new
+  # task on numa domain X" or "which numa domain is this task running on?");
+  # however its performance is generally worse than nemesis so we don't use it
+  # by default.
+  SCHEDULER = distrib
 endif
 ifneq (, $(CHPL_QTHREAD_SCHEDULER))
 SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
@@ -133,6 +137,13 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-condwait-queue
 # spinlocks to be fast, so disable them for pgi, and PrgEnv-pgi
 ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
+endif
+
+# Address sanitizer doesn't work with asm context switching so try
+# makecontext/swapcontext (which may have false-positives, but doesn't
+# immediately fail)
+ifneq (,$(CHPL_QTHREAD_SANITIZER_SUPPORT))
+  CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
 endif
 
 ifeq ($(CHPL_LIB_PIC),pic)

@@ -200,7 +200,7 @@ Resolver::instantiatedFieldStmtResolver(Context* context,
 }
 
 // set up Resolver to resolve instantiated field declaration types
-// without knowning the CompositeType
+// without knowing the CompositeType
 Resolver
 Resolver::instantiatedSignatureFieldsResolver(Context* context,
                                      const AggregateDecl* decl,
@@ -229,6 +229,15 @@ Resolver::parentClassResolver(Context* context,
   return ret;
 }
 
+types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
+                                       const char* msg)
+{
+  auto loc = parsing::locateAst(context, ast);
+  auto err = ErrorMessage(ast->id(), loc, msg, ErrorMessage::ERROR);
+  context->report(err);
+  auto t = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+  return t;
+}
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
   // make sure the set of IDs for fields and formals is computed
@@ -271,6 +280,23 @@ bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
   return isFieldOrFormal && !isSubstituted && !isFormalInstantiated;
 }
 
+// is it a call to int / uint / etc?
+static bool isCallToIntEtc(const AstNode* formalTypeExpr) {
+  if (auto call = formalTypeExpr->toFnCall()) {
+    if (auto calledAst = call->calledExpression()) {
+      if (auto calledIdent = calledAst->toIdentifier()) {
+        UniqueString n = calledIdent->name();
+        if (n == USTR("int") || n == USTR("uint") || n == USTR("bool") ||
+            n == USTR("real") || n == USTR("imag") || n == USTR("complex")) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 // helper for resolveTypeQueriesFromFormalType
 void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                                   const Type* actualType) {
@@ -294,46 +320,62 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
   // Make recursive calls as needed to handle any TypeQuery nodes
   // nested within typeExpr.
   if (auto call = formalTypeExpr->toFnCall()) {
-    // Error if it is not calling a type constructor
-    auto actualCt = actualType->toCompositeType();
+    if (isCallToIntEtc(formalTypeExpr)) {
+      // If it is e.g. int(TypeQuery), resolve the type query to the width
+      // Set the type that we know (since it was passed in)
+      if (call->numActuals() == 1) {
+        if (auto tq = call->actual(0)->toTypeQuery()) {
+          if (auto pt = actualType->toPrimitiveType()) {
+            ResolvedExpression& resolvedWidth = byPostorder.byAst(tq);
+            auto p = IntParam::get(context, pt->bitwidth());
+            auto it = IntType::get(context, 0);
+            auto qt = QualifiedType(QualifiedType::PARAM, it, p);
+            resolvedWidth.setType(qt);
+          }
+        }
+      }
+    } else {
+      // Error if it is not calling a type constructor
+      auto actualCt = actualType->toCompositeType();
 
-    if (actualCt == nullptr) {
-      context->error(formalTypeExpr, "Type construction call expected");
-      return;
-    } else if (!actualCt->instantiatedFromCompositeType()) {
-      context->error(formalTypeExpr, "Instantiated type expected");
-      return;
-    }
+      if (actualCt == nullptr) {
+        context->error(formalTypeExpr, "Type construction call expected");
+        return;
+      } else if (!actualCt->instantiatedFromCompositeType()) {
+        context->error(formalTypeExpr, "Instantiated type expected");
+        return;
+      }
 
-    auto baseCt = actualCt->instantiatedFromCompositeType();
-    auto sig = typeConstructorInitial(context, baseCt);
+      auto baseCt = actualCt->instantiatedFromCompositeType();
+      auto sig = typeConstructorInitial(context, baseCt);
 
-    // Generate a simple CallInfo for the call
-    auto callInfo = CallInfo(call);
-    // generate a FormalActualMap
-    auto faMap = FormalActualMap(sig, callInfo);
+      // Generate a simple CallInfo for the call
+      auto callInfo = CallInfo(call);
+      // generate a FormalActualMap
+      auto faMap = FormalActualMap(sig, callInfo);
 
-    // Now, consider the formals
-    int nActuals = call->numActuals();
-    for (int i = 0; i < nActuals; i++) {
-      // ignore actuals like ?
-      // since these aren't type queries & don't match a formal
-      if (auto id = call->actual(i)->toIdentifier())
-        if (id->name() == USTR("?"))
-          continue;
+      // Now, consider the formals
+      int nActuals = call->numActuals();
+      for (int i = 0; i < nActuals; i++) {
+        // ignore actuals like ?
+        // since these aren't type queries & don't match a formal
+        if (auto id = call->actual(i)->toIdentifier())
+          if (id->name() == USTR("?"))
+            continue;
 
-      const FormalActual* fa = faMap.byActualIdx(i);
-      assert(fa != nullptr && fa->formal() != nullptr);
+        const FormalActual* fa = faMap.byActualIdx(i);
+        assert(fa != nullptr && fa->formal() != nullptr);
 
-      // get the substitution for that field from the CompositeType
-      // and recurse with the result to set types for nested TypeQuery nodes
-      const uast::Decl* field = fa->formal();
-      const SubstitutionsMap& subs = actualCt->substitutions();
-      auto search = subs.find(field->id());
-      if (search != subs.end()) {
-        QualifiedType fieldType = search->second;
-        auto actual = call->actual(i);
-        resolveTypeQueries(actual, fieldType.type());
+        // get the substitution for that field from the CompositeType
+        // and recurse with the result to set types for nested TypeQuery nodes
+        const uast::Decl* field = fa->formal();
+        const SubstitutionsMap& subs = actualCt->substitutions();
+        auto search = subs.find(field->id());
+        if (search != subs.end()) {
+          QualifiedType fieldType = search->second;
+          auto actual = call->actual(i);
+          resolveTypeQueries(actual, fieldType.type());
+        }
       }
     }
   }
@@ -353,7 +395,8 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
                                  QualifiedType initExprType) {
   // check that the resolution of the type expression is a type
   if (declaredType.hasTypePtr() &&
-      declaredType.kind() != QualifiedType::UNKNOWN) {
+      declaredType.kind() != QualifiedType::UNKNOWN &&
+      declaredType.kind() != QualifiedType::TYPE_QUERY) {
     if (declaredType.kind() != QualifiedType::TYPE) {
       context->error(typeForErr, "Value provided where type expected");
       return true;
@@ -406,9 +449,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     // error already issued in checkForKindError
     typePtr = ErroneousType::get(context);
   } else if (!declaredType.hasTypePtr() && !initExprType.hasTypePtr()) {
-    // TODO: remove this error when we add split init support
-    context->error(declForErr, "Cannot establish type for decl");
-    typePtr = ErroneousType::get(context);
+    // Can't establish the type for now
+    typePtr = UnknownType::get(context);
   } else if (declaredType.hasTypePtr() && !initExprType.hasTypePtr()) {
     // declared type but no init, so use declared type
     typePtr = declaredType.type();
@@ -522,15 +564,6 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       initExprT = r.type();
     }
 
-    bool isGenericField = isField &&
-                          (qtKind == QualifiedType::TYPE ||
-                           qtKind == QualifiedType::PARAM);
-
-    // infer the type of the variable from its initialization expr?
-    bool inferFromInit = !isGenericField ||
-                          useGenericFormalDefaults ||
-                          foundSubstitutionDefaultHint;
-
     if (!typeExprT.hasTypePtr() && useType != nullptr) {
       // use type from argument to resolveNamedDecl
       typeExprT = QualifiedType(QualifiedType::TYPE, useType);
@@ -545,14 +578,37 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       if (isFieldOrFormal && typeExpr == nullptr && initExpr == nullptr) {
         // Lack of initializer for a field/formal means the Any type
         typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
-      } else if (!inferFromInit) {
-        // if we aren't inferring from the init expr, clear initExprT.
-        initExprT = QualifiedType();
-        if (isGenericField) {
-          // a type or param field with initExpr is still generic, e.g.
-          // record R { type t = int; }
-          // if that behavior is requested with !useGenericFormalDefaults
-          typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+      } else if (isFieldOrFormal) {
+        // figure out if we should potentially infer the type from the init expr
+        // (we do so if it's not a field or a formal)
+        bool isTypeOrParam = qtKind == QualifiedType::TYPE ||
+                             qtKind == QualifiedType::PARAM;
+        // infer the type of the variable from its initialization expr?
+        bool inferFromInit = foundSubstitutionDefaultHint ||
+                             useGenericFormalDefaults;
+        // in addition, always infer from init for a concrete type.
+        // the non-concrete cases are like this, e.g.:
+        //    type t = int;
+        //    var x:GenericRecord = f()
+        if (inferFromInit == false && !isTypeOrParam)  {
+          // check also for a generic type as the type expression
+          auto g = getTypeGenericity(context, typeExprT);
+          if (g != Type::GENERIC) {
+            inferFromInit = true;
+          }
+        }
+
+        if (!inferFromInit) {
+          // if we aren't inferring from the init expr, clear initExprT
+          // so it is not used below.
+          initExprT = QualifiedType();
+          if (isTypeOrParam && isField) {
+            // a type or param field with initExpr is still generic, e.g.
+            // record R { type t = int; }
+            // if that behavior is requested with !useGenericFormalDefaults
+            typeExprT = QualifiedType(QualifiedType::TYPE,
+                                      AnyType::get(context));
+          }
         }
       }
 
@@ -643,7 +699,46 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
   }
 }
 
-void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
+void Resolver::handleResolvedCall(ResolvedExpression& r,
+                                  const uast::AstNode* astForErr,
+                                  const CallInfo& ci,
+                                  const CallResolutionResult& c) {
+
+  if (!c.exprType().hasTypePtr()) {
+    issueErrorForFailedCallResolution(astForErr, ci, c);
+    r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+  } else {
+    r.setMostSpecific(c.mostSpecific());
+    r.setPoiScope(c.poiInfo().poiScope());
+    r.setType(c.exprType());
+    // gather the poi scopes used when resolving the call
+    poiInfo.accumulate(c.poiInfo());
+  }
+}
+
+void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
+                                            const uast::AstNode* astForErr,
+                                            const CallInfo& ci,
+                                            const CallResolutionResult& c) {
+  if (!c.exprType().hasTypePtr()) {
+    issueErrorForFailedCallResolution(astForErr, ci, c);
+  } else {
+    // save candidates as associated functions
+    for (auto sig : c.mostSpecific()) {
+      if (sig != nullptr) {
+        r.addAssociatedFn(sig);
+      }
+    }
+    // gather the poi scopes used when resolving the call
+    poiInfo.accumulate(c.poiInfo());
+  }
+}
+
+
+
+void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
+                                        const uast::AstNode* astForErr,
+                                        const Tuple* lhsTuple,
                                         QualifiedType lhsType,
                                         QualifiedType rhsType) {
   // Check that lhsType = rhsType can work
@@ -689,7 +784,7 @@ void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
     QualifiedType lhsEltType = lhsT->elementType(i);
     QualifiedType rhsEltType = rhsT->elementType(i);
     if (auto innerTuple = actual->toTuple()) {
-      resolveTupleUnpackAssign(innerTuple, lhsEltType, rhsEltType);
+      resolveTupleUnpackAssign(r, astForErr, innerTuple, lhsEltType, rhsEltType);
     } else {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
@@ -698,14 +793,11 @@ void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
                           /* calledType */ QualifiedType(),
                           /* isMethod */ false,
                           /* hasQuestionArg */ false,
+                          /* isParenless */ false,
                           actuals);
 
       auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
-      if (!c.exprType().hasTypePtr()) {
-        issueErrorForFailedCallResolution(actual, ci, c);
-      }
-      // gather the poi scopes used when resolving the call
-      poiInfo.accumulate(c.poiInfo());
+      handleResolvedAssociatedCall(r, astForErr, ci, c);
     }
     i++;
   }
@@ -824,6 +916,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   }
 
   auto ci = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+                     /* isParenless */ false,
                      std::move(actuals));
   auto inScope = scopeStack.back();
   auto inPoiScope = poiScope;
@@ -834,11 +927,10 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   assert(crr.mostSpecific().numBest() <= 1);
 
   // there should be one or zero applicable candidates
-  if (auto only = crr.mostSpecific().only()) {
-    ResolvedExpression::AssociatedFns associated;
-    associated.push_back(only);
-    re.setAssociatedFns(associated);
-    poiInfo.accumulate(crr.poiInfo());
+  if (crr.mostSpecific().only() != nullptr) {
+    handleResolvedAssociatedCall(re, call, ci, crr);
+  } else {
+    issueErrorForFailedCallResolution(call, ci, crr);
   }
 
   return true;
@@ -852,10 +944,13 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   if (op->op() == USTR("=")) {
     if (op->numActuals() == 2) {
       if (auto lhsTuple = op->actual(0)->toTuple()) {
+
+        ResolvedExpression& r = byPostorder.byAst(op);
         QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
         QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
 
-        resolveTupleUnpackAssign(lhsTuple, lhsType, rhsType);
+        resolveTupleUnpackAssign(r, call,
+                                 lhsTuple, lhsType, rhsType);
         return true;
       }
     }
@@ -931,7 +1026,10 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // Figure out what ID is contained within so we can use the
   // appropriate query.
   ID parentId = id.parentSymbolId(context);
-  auto parentTag = parsing::idToTag(context, parentId);
+  auto parentTag = asttags::Module;
+  if (!parentId.isEmpty()) {
+    parentTag = parsing::idToTag(context, parentId);
+  }
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
@@ -1026,7 +1124,45 @@ bool Resolver::enter(const Identifier* ident) {
       // use the type established at declaration/initialization,
       // but for things with generic type, use unknown.
       type = typeForId(id, /*localGenericToUnknown*/ true);
+      if (type.kind() == QualifiedType::TYPE) {
+        // now, for a type that is generic with defaults,
+        // compute the default version when needed. e.g.
+        //   record R { type t = int; }
+        //   var x: R; // should refer to R(int)
+        bool computeDefaults = true;
+        if (inLeafCall && ident == inLeafCall->calledExpression()) {
+          computeDefaults = false;
+        }
+        if (computeDefaults) {
+          if (auto t = type.type()) {
+            if (auto ct = t->getCompositeType()) {
+              // test if that type is generic
+              auto g = getTypeGenericity(context, ct);
+              if (g == Type::GENERIC_WITH_DEFAULTS) {
+                // fill in the defaults
+                type = typeWithDefaults(context, type);
+              }
+            }
+          }
+        }
+      } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
+        // resolve a parenless call
+        std::vector<CallInfoActual> actuals;
+        auto ci = CallInfo (/* name */ ident->name(),
+                            /* calledType */ QualifiedType(),
+                            /* isMethod */ false,
+                            /* hasQuestionArg */ false,
+                            /* isParenless */ true,
+                            actuals);
+        auto inScope = scopeStack.back();
+        auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
+        // save the most specific candidates in the resolution result for the id
+        ResolvedExpression& r = byPostorder.byAst(ident);
+        handleResolvedCall(r, ident, ci, c);
+        return false;
+      }
     }
+
     result.setToId(id);
     result.setType(type);
     // if there are multiple ids we should have gotten
@@ -1067,7 +1203,15 @@ bool Resolver::enter(const TypeQuery* tq) {
 
   if (!foundFormalSubstitution) {
     // No substitution (i.e. initial signature) so use AnyType
-    result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+    if (inLeafCall && isCallToIntEtc(inLeafCall)) {
+      auto defaultInt = IntType::get(context, 0);
+      result.setType(QualifiedType(QualifiedType::PARAM, defaultInt));
+    } else {
+      // the type query could refer to a param or to a type,
+      // so use the TYPE_QUERY kind
+      result.setType(QualifiedType(QualifiedType::TYPE_QUERY,
+                                   AnyType::get(context)));
+    }
   } else {
 
     if (result.type().kind() != QualifiedType::UNKNOWN &&
@@ -1257,6 +1401,78 @@ void Resolver::exit(const TupleDecl* decl) {
 }
 
 bool Resolver::enter(const Call* call) {
+
+  inLeafCall = call;
+
+  // handle && and || to not bother to evaluate the RHS
+  // if the LHS is param and false/true, respectively.
+  auto op = call->toOpCall();
+  if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
+    QualifiedType result;
+    if (op->numActuals() != 2) {
+      result = typeErr(op, "invalid op call");
+    } else if (op->op() == USTR("&&")) {
+      // visit the LHS
+      op->actual(0)->traverse(*this);
+      // look at the LHS type. Is it param?
+      const QualifiedType& lhs = byPostorder.byAst(op->actual(0)).type();
+      if (lhs.isParamFalse()) {
+        // OK, don't need to evaluate the RHS
+        result = lhs;
+      } else {
+        // go ahead and evaluate the RHS
+        op->actual(1)->traverse(*this);
+        // look at the RHS type.
+        const QualifiedType& rhs = byPostorder.byAst(op->actual(0)).type();
+        if (lhs.isParamTrue() && rhs.isParamTrue()) {
+          // if LHS and RHS are both param true, return param true.
+          result = lhs;
+        } else if (lhs.isUnknown() || rhs.isUnknown()) {
+          // if one is unknown, return unknown
+          result = QualifiedType(QualifiedType::CONST_VAR,
+                                 UnknownType::get(context));
+        } else {
+          // TODO: check that LHS and RHS are both bool
+          // otherwise just return a Bool value
+          result = QualifiedType(QualifiedType::CONST_VAR,
+                                 BoolType::get(context, 0));
+        }
+      }
+    } else if (op->op() == USTR("||")) {
+      // visit the LHS
+      op->actual(0)->traverse(*this);
+      // look at the LHS type. Is it param?
+      const QualifiedType& lhs = byPostorder.byAst(op->actual(0)).type();
+      if (lhs.isParamTrue()) {
+        // OK, don't need to evaluate the RHS
+        result = lhs;
+      } else {
+        // go ahead and evaluate the RHS
+        op->actual(1)->traverse(*this);
+        // look at the RHS type.
+        const QualifiedType& rhs = byPostorder.byAst(op->actual(0)).type();
+        if (lhs.isParamFalse() && rhs.isParamFalse()) {
+          // if LHS and RHS are both param false, return param false.
+          result = lhs;
+        } else if (lhs.isUnknown() || rhs.isUnknown()) {
+          // if one is unknown, return unknown
+          result = QualifiedType(QualifiedType::CONST_VAR,
+                                 UnknownType::get(context));
+        } else {
+          // TODO: check that LHS and RHS are both bool
+          // otherwise just return a Bool value
+          result = QualifiedType(QualifiedType::CONST_VAR,
+                                 BoolType::get(context, 0));
+        }
+      }
+    } else {
+      assert(false && "should not be reachable");
+    }
+    // Update the type of the && call
+    byPostorder.byAst(op).setType(result);
+    // Don't visit the children since we already did
+    return false;
+  }
   return true;
 }
 
@@ -1376,8 +1592,8 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
             qtReceiver.kind() != QualifiedType::FUNCTION &&
             qtReceiver.kind() != QualifiedType::MODULE) {
 
-          auto receiverInfo = CallInfoActual(qtReceiver, USTR("this"));
-          actuals.push_back(std::move(receiverInfo));
+          actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+          calledType = qtReceiver;
           isMethodCall = true;
         }
       }
@@ -1388,6 +1604,20 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   if (auto calledExpr = call->calledExpression()) {
     ResolvedExpression& r = byPostorder.byAst(calledExpr);
     calledType = r.type();
+
+    if (isMethodCall == false &&
+        calledType.kind() != QualifiedType::UNKNOWN &&
+        calledType.kind() != QualifiedType::TYPE &&
+        calledType.kind() != QualifiedType::FUNCTION) {
+      // If e.g. x is a value (and not a function)
+      // then x(0) translates to x.this(0)
+      name = USTR("this");
+      // add the 'this' argument as well
+      isMethodCall = true;
+      actuals.push_back(CallInfoActual(calledType, USTR("this")));
+      // and reset calledType
+      calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+    }
   }
 
   // Prepare the remaining actuals.
@@ -1395,12 +1625,20 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
 
   auto ret = CallInfo(name, calledType, isMethodCall,
                       hasQuestionArg,
+                      /* isParenless */ false,
                       actuals);
 
   return ret;
 }
 
 void Resolver::exit(const Call* call) {
+
+  auto op = call->toOpCall();
+  if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
+    // these are handled in 'enter' to do param folding
+    return;
+  }
+
   assert(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
@@ -1411,32 +1649,53 @@ void Resolver::exit(const Call* call) {
 
   auto ci = prepareCallInfoNormalCall(call);
 
-  CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
-
-  // save the most specific candidates in the resolution result for the id
-  ResolvedExpression& r = byPostorder.byAst(call);
-  r.setMostSpecific(c.mostSpecific());
-  r.setPoiScope(c.poiInfo().poiScope());
-  r.setType(c.exprType());
-
-
-  if (r.type().type() == nullptr) {
-    // assume it is OK if a type was computed, even with no candidates
-    // (that happens e.g. for a primitive)
-    issueErrorForFailedCallResolution(call, ci, c);
-    r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+  // Don't try to resolve a call other than type construction that accepts:
+  //  * an unknown param
+  //  * a type that is a generic type unless there are substitutions
+  //  * a value of generic type
+  //  * UnknownType, ErroneousType
+  bool skip = false;
+  if (!ci.calledType().isType()) {
+    for (auto actual : ci.actuals()) {
+      QualifiedType qt = actual.type();
+      if (qt.isParam() && qt.param() == nullptr) {
+        skip = true;
+      } else if (const Type* t = qt.type()) {
+        auto g = getTypeGenericity(context, t);
+        bool isBuiltinGeneric = (g == Type::GENERIC &&
+                                 (t->isAnyType() || t->isBuiltinType()));
+        if (qt.isType() && isBuiltinGeneric && substitutions == nullptr) {
+          skip = true;
+        } else if (t->isUnknownType() || t->isErroneousType()) {
+          skip = true;
+        } else if (!qt.isType() && g != Type::CONCRETE) {
+          skip = true;
+        }
+      }
+      if (skip) {
+        break;
+      }
+    }
   }
 
-  // gather the poi scopes used when resolving the call
-  poiInfo.accumulate(c.poiInfo());
+  if (!skip) {
+    CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
+
+    // save the most specific candidates in the resolution result for the id
+    ResolvedExpression& r = byPostorder.byAst(call);
+    handleResolvedCall(r, call, ci, c);
+  }
+
+  inLeafCall = nullptr;
 }
 
 bool Resolver::enter(const Dot* dot) {
   return true;
 }
 void Resolver::exit(const Dot* dot) {
+  ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+
   if (dot->field() == USTR("type")) {
-    ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
     const Type* receiverType;
     ResolvedExpression& r = byPostorder.byAst(dot);
 
@@ -1446,9 +1705,67 @@ void Resolver::exit(const Dot* dot) {
       receiverType = ErroneousType::get(context);
     }
     r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+    return;
   }
 
-  // TODO: resolve field accessors / parenless methods
+  // Handle null, unknown, or erroneous receiver type
+  if (receiver.type().type() == nullptr ||
+      receiver.type().type()->isUnknownType()) {
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    r.setType(QualifiedType(QualifiedType::VAR, UnknownType::get(context)));
+    return;
+  }
+  if (receiver.type().type()->isErroneousType()) {
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
+    return;
+  }
+
+  if (receiver.type().kind() == QualifiedType::MODULE) {
+    // resolve e.g. M.x where M is a module
+    LookupConfig config = LOOKUP_DECLS |
+                          LOOKUP_IMPORT_AND_USE;
+
+    auto modScope = scopeForModule(context, receiver.toId());
+    auto vec = lookupNameInScope(context, modScope, dot->field(), config);
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    if (vec.size() == 0) {
+      r.setType(QualifiedType());
+    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+      // can't establish the type. If this is in a function
+      // call, we'll establish it later anyway.
+    } else {
+      // vec.size() == 1 and vec[0].numIds() <= 1
+      const ID& id = vec[0].id(0);
+      QualifiedType type;
+      if (id.isEmpty()) {
+        // empty IDs from the scope resolution process are builtins
+        assert(false && "Not handled yet!");
+      } else {
+        // use the type established at declaration/initialization,
+        // but for things with generic type, use unknown.
+        type = typeForId(id, /*localGenericToUnknown*/ true);
+      }
+      r.setToId(id);
+      r.setType(type);
+    }
+    return;
+  }
+
+  // resolve a.x where a is a record/class and x is a field or parenless method
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
+  auto ci = CallInfo (/* name */ dot->field(),
+                      /* calledType */ QualifiedType(),
+                      /* isMethod */ true,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ true,
+                      actuals);
+  auto inScope = scopeStack.back();
+  auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
+  // save the most specific candidates in the resolution result for the id
+  ResolvedExpression& r = byPostorder.byAst(dot);
+  handleResolvedCall(r, dot, ci, c);
 }
 
 bool Resolver::enter(const uast::New* nw) {
@@ -1553,18 +1870,14 @@ bool Resolver::enter(const For* loop) {
                         /* calledType */ iterandRE.type(),
                         /* isMethod */ true,
                         /* hasQuestionArg */ false,
+                        /* isParenless */ false,
                         actuals);
     auto inScope = scopeStack.back();
     auto c = resolveGeneratedCall(context, iterand, ci, inScope, poiScope);
 
-    if (auto only = c.mostSpecific().only()) {
+    if (c.mostSpecific().only() != nullptr) {
       idxType = c.exprType();
-
-      ResolvedExpression::AssociatedFns associated;
-      associated.push_back(only);
-      iterandRE.setAssociatedFns(associated);
-
-      poiInfo.accumulate(c.poiInfo());
+      handleResolvedAssociatedCall(iterandRE, loop, ci, c);
     } else {
       idxType = QualifiedType(QualifiedType::UNKNOWN,
                               ErroneousType::get(context));

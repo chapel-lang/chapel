@@ -39,21 +39,21 @@ for i in ParentDom.dim(0) {
 }
 
 writeln("size:\t\t", SparseDom.size);
-writeln("low:\t\t",SparseDom.low);
-writeln("high:\t\t",SparseDom.high);
+writeln("lowBound:\t",SparseDom.lowBound);
+writeln("highBound:\t",SparseDom.highBound);
 writeln("stride:\t\t",SparseDom.stride);
 writeln("alignment:\t",SparseDom.alignment);
 
 // first and last indices depend on the layout type
 if layoutType == layoutTypes.csc {
-  const expectedFirst = (rowToAdd, ParentDom.dim(1).low);
-  const expectedLast = (rowToAdd, ParentDom.dim(1).high);
+  const expectedFirst = (rowToAdd, ParentDom.dim(1).lowBound);
+  const expectedLast = (rowToAdd, ParentDom.dim(1).highBound);
   writeln("first:\t\t", SparseDom.first == expectedFirst);
   writeln("last:\t\t", SparseDom.last == expectedLast);
 }
 else {
-  const expectedFirst = (ParentDom.dim(0).low, colToAdd);
-  const expectedLast = (ParentDom.dim(0).high, colToAdd);
+  const expectedFirst = (ParentDom.dim(0).lowBound, colToAdd);
+  const expectedLast = (ParentDom.dim(0).highBound, colToAdd);
   writeln("first:\t\t", SparseDom.first == expectedFirst);
   writeln("last:\t\t", SparseDom.last == expectedLast);
 }

@@ -64,19 +64,18 @@ namespace uast {
 */
 class Reduce final : public Call {
  private:
-
+  static const int opChildNum_ = 0;
+  static const int iterandExprChildNum_ = 1;
 
   Reduce(AstList children)
       : Call(asttags::Reduce, std::move(children),
-      /*hasCalledExpression*/ false) {
+             /*hasCalledExpression*/ false) {
     assert(numChildren() == 2);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Reduce* rhs = other->toReduce();
-    return
-        this->opExpr() == rhs->opExpr() &&
-        this->callContentsMatchInner(rhs);
+    return this->callContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -90,33 +89,25 @@ class Reduce final : public Call {
   /**
     Create and return a reduction.
   */
-
   static owned<Reduce> build(Builder* builder,
                              Location loc,
-                             owned<AstNode> lhs,
-                             owned<AstNode> expr);
+                             owned<AstNode> op,
+                             owned<AstNode> iterand);
 
   /**
-    Returns the reduction operator. It may be either a regular operator
-    (e.g. '+', '-') or the name of a class.
+    Returns the reduce op expression, e.g. `minmax(int)` in the expression
+    `minmax(int) reduce sum`.
   */
-  UniqueString op() const {
-    if (this->child(1)->isIdentifier()) {
-      return this->child(1)->toIdentifier()->name();
-    } else {
-      return this->child(1)->toFnCall()->calledExpression()->toIdentifier()->name();
-    }
+  const AstNode* op() const {
+    return this->child(opChildNum_);
   }
 
   /**
-   Returns the op expression, which may be an Identifier or a FnCall
-   A FnCall here should only have one actual, which is an Identifier specifying
-   the input type. However, some tests include multiple actuals here so we allow
-   it here as well.
-   An opExpr specified in `(minmax(int) reduce sum)` is `minmax(int)`
-*/
-  const AstNode* opExpr() const {
-    return this->child(1);
+    Returns the iterand of the reduction, e,g., `sum` in the expression
+    `minmax(int) reduce sum`.
+  */
+  const AstNode* iterand() const {
+    return this->child(iterandExprChildNum_);
   }
 
 };

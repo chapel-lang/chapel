@@ -802,6 +802,8 @@ void gasnetc_init_gni(gasnet_seginfo_t seginfo)
 // register (create memory handle for) a client segment
 void gasnetc_segment_register(gasnetc_Segment_t segment)
 {
+  GASNETI_TRACE_PRINTF(C,("Registering segment [%p, %p)", segment->_addr, segment->_ub));
+
   gni_return_t status;
 #if GASNETC_USE_MULTI_DOMAIN
   GASNETC_DIDX_POST(GASNETC_DEFAULT_DOMAIN);
@@ -832,6 +834,22 @@ void gasnetc_segment_register(gasnetc_Segment_t segment)
   }
 
   gasneti_assert_always (status == GNI_RC_SUCCESS);
+}
+
+void gasnetc_segment_deregister(gasnetc_Segment_t segment)
+{
+  GASNETI_TRACE_PRINTF(C,("Deregistering segment [%p, %p)", segment->_addr, segment->_ub));
+
+#if GASNETC_USE_MULTI_DOMAIN
+  GASNETC_DIDX_POST(GASNETC_DEFAULT_DOMAIN);
+  DOMAIN_SPECIFIC_VAR(gni_nic_handle_t, nic_handle);
+#endif
+
+  gni_return_t status;
+  status = GNI_MemDeregister(nic_handle, &segment->mem_handle);
+  if_pf (status != GNI_RC_SUCCESS) {
+    gasnetc_GNIT_Log("MemDeregister(segment) failed with %s", gasnetc_gni_rc_string(status));
+  }
 }
 
 /*-------------------------------------------------*/
@@ -1554,10 +1572,7 @@ void gasnetc_shutdown(void)
       GASNETI_SEGTBL_LOCK();
         gasneti_Segment_t seg;
         GASNETI_SEGTBL_FOR_EACH(seg) {
-          status = GNI_MemDeregister(nic_handle, &((gasnetc_Segment_t)seg)->mem_handle);
-          if_pf (status != GNI_RC_SUCCESS) {
-            gasnetc_GNIT_Log("MemDeregister(segment) failed with %s", gasnetc_gni_rc_string(status));
-          }
+          gasnetc_segment_deregister((gasnetc_Segment_t)seg);
         }
       GASNETI_SEGTBL_UNLOCK();
 

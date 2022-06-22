@@ -1302,6 +1302,15 @@ class CCodeGenConsumer final : public ASTConsumer {
     bool parseOnly;
     ASTContext* savedCtx;
 
+    bool shouldHandleDecl(Decl* d) {
+      if (localeUsesGPU()) {
+        return gCodegenGPU == d->hasAttr<CUDADeviceAttr>();
+      }
+      else {
+        return true;
+      }
+    }
+
   public:
     CCodeGenConsumer()
       : ASTConsumer(),
@@ -1355,9 +1364,13 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->lvt->addGlobalCDecl(td);
         }
       } else if (FunctionDecl *fd = dyn_cast<FunctionDecl>(d)) {
-        info->lvt->addGlobalCDecl(fd);
+        if (shouldHandleDecl(d)) {
+          info->lvt->addGlobalCDecl(fd);
+        }
       } else if (VarDecl *vd = dyn_cast<VarDecl>(d)) {
-        info->lvt->addGlobalCDecl(vd);
+        if (shouldHandleDecl(d)) {
+          info->lvt->addGlobalCDecl(vd);
+        }
       } else if (RecordDecl *rd = dyn_cast<RecordDecl>(d)) {
         info->lvt->addGlobalCDecl(rd);
       } else if (UsingDecl* ud = dyn_cast<UsingDecl>(d)) {
@@ -1629,6 +1642,11 @@ void setupClang(GenInfo* info, std::string mainFile)
   DiagnosticsEngine* Diags = NULL;
   Diags = new DiagnosticsEngine(
       clangInfo->DiagID, &*clangInfo->diagOptions, clangInfo->DiagClient);
+  if (localeUsesGPU()) {
+    Diags->setSeverityForGroup(diag::Flavor::WarningOrError,
+                               "unknown-cuda-version",
+                               diag::Severity::Ignored);
+  }
   clangInfo->Diags = Diags;
   clangInfo->Clang = Clang;
 
@@ -2014,10 +2032,14 @@ static void setupModule()
     // GuaranteedTailCallOpt -- guarantee tail call opt (may change fn ABI)
   }
 
-  llvm::Reloc::Model relocModel = llvm::Reloc::Model::Static;
-  // a reasonable alternative would be
-  // llvm::Reloc::Model RM = CodeGenOpts.RelocationModel;
+  // If the clang compiler is configured to do PIC code generation
+  // by default, we want to do PIC code generation even if
+  // CHPL_LIB_PIC is not set, otherwise we get link errors on
+  // such systems.
+  // So, start with the PIC setting that clang is using based on the arguments.
+  llvm::Reloc::Model relocModel = ClangCodeGenOpts.RelocationModel;
 
+  // If CHPL_LIB_PIC=pic, make sure to compile as pic code
   if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
     relocModel = llvm::Reloc::Model::PIC_;
   }
@@ -2396,7 +2418,9 @@ void runClang(const char* just_parse_filename) {
   }
 
 
-  // add -fPIC if CHPL_LIB_PIC indicates we should
+  // add -fPIC if CHPL_LIB_PIC indicates we should.
+  // otherwise, pic-or-not will be up to clang's default, which,
+  // on many systems, is pic.
   if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
     clangCCArgs.push_back("-fPIC");
   }
@@ -2772,6 +2796,7 @@ void cleanupExternC(void) {
     delete module->extern_info->gen_info->clangInfo;
     delete module->extern_info->gen_info;
     delete module->extern_info;
+    module->extern_info = nullptr;
     // Remove all ExternBlockStmts from this module.
     forv_Vec(ExternBlockStmt, eb, gExternBlockStmts) {
       eb->remove();

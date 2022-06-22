@@ -1,4 +1,4 @@
-use CTypes;
+use CTypes, Math;
 
 proc copyBtoC(A:[], B:[])
 {
@@ -38,8 +38,8 @@ proc BlockArr.copyBtoC(B)
     //writeln("Domain: ",dom.whole.dims());
 
     //a,b: first and last global indices in each locale
-    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32);
-    var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
+    var a: int(32)=dom.locDoms[lid].myBlock.lowBound:int(32);
+    var b: int(32)=dom.locDoms[lid].myBlock.highBound:int(32);
     var blksize=b-a+1;
     //writeln("Locale", here.id," : blksize ",blksize," subblock first index  a ",a,
 
@@ -100,8 +100,8 @@ proc  BlockArr.copyCtoB(B)
     var num: int;
     var schunkini: int;
     var chunksize: int;
-    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32);
-    var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
+    var a: int(32)=dom.locDoms[lid].myBlock.lowBound:int(32);
+    var b: int(32)=dom.locDoms[lid].myBlock.highBound:int(32);
     num=b-a+1;
 
     var src = locArr[lid].myElems._value.theData;
@@ -379,7 +379,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
 // wk2, and wk3 and a 4-element array (slice) A.
 //
 proc butterfly(wk1, wk2, wk3, X:[?D]) {
-  const i0 = D.low,
+  const i0 = D.lowBound,
         i1 = i0 + D.stride,
         i2 = i1 + D.stride,
         i3 = i2 + D.stride;

@@ -1,4 +1,4 @@
-pidigits4.chpl:8: warning: 'SysCTypes' is deprecated; please use the 'CTypes' module instead
+./SysCTypes.chpl:1: warning: 'SysCTypes' no longer exists... this needs to be resubmitted
 3141592653	:10
 5897932384	:20
 6264338   	:27

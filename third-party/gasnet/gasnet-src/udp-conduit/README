@@ -269,16 +269,23 @@ Recognized environment variables:
   the value "env" is used, which is sufficient as long as the command can be
   found in the default search path.
 
+* GASNET_HOST_DETECT - host identification
+  In addition to the standard options described in the top-level README,
+  udp-conduit supports a "conduit" option.  This option uses the 32-bit IP
+  address and a hash of the hostname to form a 64-bit identifier.  This is
+  the default, even if configured using '--with-host-detect=...' to specify
+  a different one.  However, an explicit value of GASNET_HOST_DETECT in the
+  environment is always honored.
+  If the list of servers (such as from SSH_SERVERS or CSPAWN_SERVERS) may
+  contain multiple entries which resolve to distinct IP address for the same
+  host, one should set GASNET_HOST_DETECT="gethostid". Otherwise, the default
+  of "conduit" would mistakenly identify such entries as distinct hosts, and
+  thus ineligible for shared-memory communication.  
+
 * GASNET_USE_GETHOSTID
-  This Boolean specifies whether gethostid() is used to identify which
-  processes are running on the same host for the purpose of determining
-  eligibility to communicate through shared-memory.
-  This should be enabled (set to "1") if the list of servers (such as from
-  SSH_SERVERS or CSPAWN_SERVERS) may contain multiple entries which resolve
-  to distinct IP address for the same host.  Otherwise, the default use of
-  hostnames and IP addresses (which must both match) would mistakenly
-  identify such entries as ineligible for shared-memory communication.
-  Default is "0" (hostnames and IP addresses are used).
+  ** THIS VARIABLE IS DEPRECATED **
+  One can use GASNET_HOST_DETECT=gethostid to achieve the behavior
+  previously requested using GASNET_USE_GETHOSTID=1.
 
 * GASNET_WORKER_RANK
   May be set to force a particular rank assignment for worker processes.

@@ -1827,6 +1827,29 @@ int gasneti_segment_map(
   return GASNET_OK;
 }
 
+int gasneti_segment_unmap(
+                        gasnet_seginfo_t *segment_p,
+                        int pshm_compat)
+{
+  gasneti_assert(segment_p->size);
+
+  #ifdef GASNETI_MMAP_OR_PSHM
+    // Different unmap ops to support shared (cross-mappable via PSHM) and private mappings
+    #if GASNET_PSHM
+    if (pshm_compat) {
+      gasneti_pshm_munmap(segment_p->addr, segment_p->size);
+    } else
+    #endif
+    {
+      gasneti_munmap(segment_p->addr, segment_p->size);
+    }
+  #else /* !GASNETI_MMAP_OR_PSHM */
+    // TODO_EX: if we think non-mmap support remains important then we need something here
+  #endif /* GASNETI_MMAP_OR_PSHM */
+
+  return GASNET_OK;
+}
+
 #if GASNET_PSHM
 // Cross-map the remote shared segments
 // TODO-EX: need scalable data structures in place of seginfo and gasneti_nodeinfo
@@ -2092,7 +2115,7 @@ int gasneti_segmentAttach(
   gasneti_assert_uint(segsize % GASNET_PAGESIZE ,==, 0);
 
   // Final portion of Segment_Create:
-  gasneti_Segment_t i_segment = gasneti_alloc_segment(i_client, segbase, segsize, GEX_MK_HOST, flags);
+  gasneti_Segment_t i_segment = gasneti_alloc_segment(i_client, segbase, segsize, GEX_MK_HOST, 0, flags);
   gasneti_segtbl_add(i_segment);
 
   // EP_BindSegment:
@@ -2132,7 +2155,8 @@ int gasneti_segmentCreate(
   gasneti_assert(kind != GEX_MK_INVALID);
 
   if (kind == GEX_MK_HOST) {
-    if (address) {
+    int client_allocated = (address != NULL);
+    if (client_allocated) {
       // Client-allocated segment
       // TODO: stronger checks such as for read-only memory?
 
@@ -2152,7 +2176,7 @@ int gasneti_segmentCreate(
     }
 
     // Create the Segment object
-    segment = gasneti_alloc_segment(client, address, length, kind, flags);
+    segment = gasneti_alloc_segment(client, address, length, kind, client_allocated, flags);
   } else {
     int rc = gasneti_MK_Segment_Create(&segment, client, address, length, kind, flags);
     if (rc) return rc;
@@ -2188,6 +2212,12 @@ int gasneti_segmentDestroy(
   }
 #else
   gasneti_assert_ptr(i_segment->_kind ,==, GEX_MK_HOST);
+  if (! i_segment->_client_allocated) {
+    gasnet_seginfo_t si;
+    si.addr = i_segment->_addr;
+    si.size = i_segment->_size;
+    gasneti_assert_zeroret( gasneti_segment_unmap(&si, 0) );
+  }
 #endif
 
   gasneti_segtbl_del(i_segment);

@@ -562,6 +562,19 @@ module Map {
     }
 
     /*
+      Reads the contents of this map from a channel. The format looks like:
+
+        .. code-block:: chapel
+
+           {k1: v1, k2: v2, .... , kn: vn}
+
+      :arg ch: A channel to read from.
+    */
+    proc readThis(ch: channel) throws {
+      _readWriteHelper(ch);
+    }
+
+    /*
       Writes the contents of this map to a channel. The format looks like:
 
         .. code-block:: chapel
@@ -570,7 +583,12 @@ module Map {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) throws {
+    proc writeThis(ch: channel) throws {
+      _readWriteHelper(ch);
+    }
+
+    pragma "no doc"
+    proc _readWriteHelper(ch: channel) throws {
       _enter(); defer _leave();
       var first = true;
       ch <~> new ioLiteral("{");
@@ -586,6 +604,20 @@ module Map {
         }
       }
       ch <~> new ioLiteral("}");
+    }
+
+    /*
+      Writes the contents of this map to a channel. The format looks like:
+
+        .. code-block:: chapel
+
+           {k1: v1, k2: v2, .... , kn: vn}
+
+      :arg ch: A channel to write to.
+    */
+    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+    proc readWriteThis(ch: channel) throws {
+      _readWriteHelper(ch);
     }
 
     /*
@@ -816,6 +848,7 @@ module Map {
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
+  deprecated "The `+` operator has been deprecated for map"
   operator map.+(a: map(?keyType, ?valueType, ?),
                  b: map(keyType, valueType, ?)) {
     return a | b;
@@ -825,12 +858,14 @@ module Map {
     Sets the left-hand side map to contain the keys and values in either
     a or b.
    */
+  deprecated "The `+=` operator has been deprecated for map"
   operator map.+=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     a |= b;
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
+  deprecated "The `|` operator has been deprecated for map"
   operator map.|(a: map(?keyType, ?valueType, ?),
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
@@ -843,6 +878,7 @@ module Map {
   /* Sets the left-hand side map to contain the keys and values in either
      a or b.
    */
+  deprecated "The `|=` operator has been deprecated for map"
   operator map.|=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     // add keys/values from b to a if they weren't already in a
@@ -850,6 +886,7 @@ module Map {
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
+  deprecated "The `&` operator has been deprecated for map"
   operator map.&(a: map(?keyType, ?valueType, ?),
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
@@ -865,12 +902,14 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in both a and b.
    */
+  deprecated "The `&=` operator has been deprecated for map"
   operator map.&=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     a = a & b;
   }
 
   /* Returns a new map containing the keys that are only in a, but not b. */
+  deprecated "The `-` operator has been deprecated for map"
   operator map.-(a: map(?keyType, ?valueType, ?),
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
@@ -887,6 +926,7 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in the
      left-hand map, but not the right-hand map. */
+  deprecated "The `-=` operator has been deprecated for map"
   operator map.-=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     a._enter(); defer a._leave();
@@ -904,6 +944,7 @@ module Map {
 
   /* Returns a new map containing the keys that are in either a or b, but
      not both. */
+  deprecated "The `^` operator has been deprecated for map"
   operator map.^(a: map(?keyType, ?valueType, ?),
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
@@ -921,6 +962,7 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in either the
      left-hand map or the right-hand map, but not both. */
+  deprecated "The `^=` operator has been deprecated for map"
   operator map.^=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     try! {

@@ -1,0 +1,13 @@
+readline.chpl:83: In function 'test_readlineArray':
+readline.chpl:97: warning: channel.readline is deprecated. Use channel.readLine instead
+readline.chpl:99: warning: channel.readline is deprecated. Use channel.readLine instead
+readline.chpl:4: In function 'test_readlines':
+readline.chpl:20: warning: channel.readline is deprecated. Use channel.readLine instead
+readline.chpl:22: warning: channel.readline is deprecated. Use channel.readLine instead
+readline.chpl:24: warning: channel.readline is deprecated. Use channel.readLine instead
+readline.chpl:32: warning: reader with a style argument is deprecated
+readline.chpl:33: warning: channel.itemReader is deprecated
+readline(amount=9) returned 5 bytes
+readline(amount=9) returned 9 bytes
+readline(amount=10) returned 10 bytes
+readline() returned 10 bytes

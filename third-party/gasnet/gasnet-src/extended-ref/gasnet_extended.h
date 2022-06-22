@@ -62,6 +62,7 @@ gex_Event_t _gex_RMA_GetNB(
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECKZEROSZ_GET(NB,_tm,_dest,_rank,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
+  gasneti_boundscheck_local(_tm, _dest, _nbytes);
   void *_mapped_src = GASNETE_NEVER_MAPPED(_flags, _constantp_never_nbrhd)
                       ? NULL : gasnete_mapped_at(_tm, _rank, _src);
   if (_mapped_src) {
@@ -93,6 +94,7 @@ gex_Event_t _gex_RMA_PutNB(
   GASNETI_CHECK_PUT_LCOPT(_lc_opt, 0);
   GASNETI_CHECKZEROSZ_PUT(NB,_tm,_rank,_dest,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _dest, _nbytes);
+  gasneti_boundscheck_local(_tm, _src, _nbytes);
   void *_mapped_dest = GASNETE_NEVER_MAPPED(_flags, _constantp_never_nbrhd)
                        ? NULL : gasnete_mapped_at(_tm, _rank, _dest);
   if (_mapped_dest) {
@@ -250,6 +252,7 @@ int _gex_RMA_GetNBI  (gex_TM_t _tm, void *_dest,
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECKZEROSZ_GET(NBI,_tm,_dest,_rank,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
+  gasneti_boundscheck_local(_tm, _dest, _nbytes);
   void *_mapped_src = GASNETE_NEVER_MAPPED(_flags, _constantp_never_nbrhd)
                       ? NULL : gasnete_mapped_at(_tm, _rank, _src);
   if (_mapped_src) {
@@ -280,6 +283,7 @@ int _gex_RMA_PutNBI  (gex_TM_t _tm,
   GASNETI_CHECK_PUT_LCOPT(_lc_opt, 1);
   GASNETI_CHECKZEROSZ_PUT(NBI,_tm,_rank,_dest,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _dest, _nbytes);
+  gasneti_boundscheck_local(_tm, _src, _nbytes);
   void *_mapped_dest = GASNETE_NEVER_MAPPED(_flags, _constantp_never_nbrhd)
                        ? NULL : gasnete_mapped_at(_tm, _rank, _dest);
   if (_mapped_dest) {
@@ -443,6 +447,7 @@ int _gex_RMA_GetBlocking  (gex_TM_t _tm, void *_dest,
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECKZEROSZ_NAMED(GASNETI_TRACE_GET_NAMED(GET_LOCAL,LOCAL,_tm,_dest,_rank,_src,_nbytes),_nbytes);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
+  gasneti_boundscheck_local(_tm, _dest, _nbytes);
   void *_mapped_src = GASNETE_NEVER_MAPPED(_flags, _constantp_never_nbrhd)
                       ? NULL : gasnete_mapped_at(_tm, _rank, _src);
   if (_mapped_src) {
@@ -472,6 +477,7 @@ int _gex_RMA_PutBlocking  (gex_TM_t _tm,
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECKZEROSZ_NAMED(GASNETI_TRACE_PUT_NAMED(PUT_LOCAL,LOCAL,_tm,_rank,_dest,_src,_nbytes),_nbytes);
   gasneti_boundscheck(_tm, _rank, _dest, _nbytes);
+  gasneti_boundscheck_local(_tm, _src, _nbytes);
   void *_mapped_dest = GASNETE_NEVER_MAPPED(_flags, _constantp_never_nbrhd)
                        ? NULL : gasnete_mapped_at(_tm, _rank, _dest);
   if (_mapped_dest) {

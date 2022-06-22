@@ -95,6 +95,10 @@ int main(int argc, char **argv) {
 
   test_init("testtools", 0,"(iters) (num_threads) (tests_to_run)");
 
+  const char *exename = gasnett_exe_name();
+  if (!exename || !*exename) MSG("WARNING: gasnett_exe_name() failed to discover exename");
+  else MSG("gasnett_exe_name()='%s'",exename);
+
   TEST_BACKTRACE_INIT(argv[0]);
   
   if (argc > 1) iters = atoi(argv[1]);
@@ -249,7 +253,7 @@ int main(int argc, char **argv) {
         do {
           gasnett_tick_t next = gasnett_ticks_now();
           if (next < last) 
-            ERR("gasnett_ticks_to_us not monotonic! !(%" PRIu64 " <= %" PRIu64 ")",
+            ERR("gasnett_ticks_now not monotonic! !(%" PRIu64 " <= %" PRIu64 ")",
                  (uint64_t)last, (uint64_t)next);
           if (next <= GASNETT_TICK_MIN) 
             ERR("gasnett_ticks_to_us()=%" PRIu64 " <= GASNETT_TICK_MIN=%" PRIu64,

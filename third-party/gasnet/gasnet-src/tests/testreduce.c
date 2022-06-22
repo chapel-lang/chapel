@@ -255,12 +255,21 @@ void do_test_user(gex_TM_t tm)
     int failures = 0;
     for (int i = 0; i < iters; ++i) {
       gex_Rank_t root = RAND_ROOT(size);
-      gex_Event_Wait(
-        gex_Coll_ReduceToOneNB(tm, root, OutStrings, InStrings,
-                               GEX_DT_USER, dt_sz, Nelem,
-                               GEX_OP_USER, &op_concat,
-                               (void*)(uintptr_t)dt_sz, 0));
-      if (rank==root) {
+      if (TEST_RAND_ONEIN(5)) {
+        gex_Event_Wait(
+          gex_Coll_ReduceToAllNB(tm, OutStrings, InStrings,
+                                 GEX_DT_USER, dt_sz, Nelem,
+                                 GEX_OP_USER, &op_concat,
+                                 (void*)(uintptr_t)dt_sz, 0));
+
+      } else {
+        gex_Event_Wait(
+          gex_Coll_ReduceToOneNB(tm, root, OutStrings, InStrings,
+                                 GEX_DT_USER, dt_sz, Nelem,
+                                 GEX_OP_USER, &op_concat,
+                                 (void*)(uintptr_t)dt_sz, 0));
+      }
+      if (rank==root) { // Even in ToAll case, one (random) proc verifies
         for (size_t j = 0; j < Nelem; ++j) {
           const char *str = OutStrings + j * dt_sz;
           // Count the number of occurances of each char
@@ -293,12 +302,20 @@ void do_test_user(gex_TM_t tm)
     failures = 0;
     for (int i = 0; i < iters; ++i) {
       gex_Rank_t root = RAND_ROOT(size);
-      gex_Event_Wait(
-        gex_Coll_ReduceToOneNB(tm, root, OutStrings, InStrings,
-                               GEX_DT_USER, dt_sz, Nelem,
-                               GEX_OP_USER_NC, &op_concat,
-                               (void*)(uintptr_t)dt_sz, 0));
-      if (rank==root) {
+      if (TEST_RAND_ONEIN(5)) {
+        gex_Event_Wait(
+          gex_Coll_ReduceToAllNB(tm, OutStrings, InStrings,
+                                 GEX_DT_USER, dt_sz, Nelem,
+                                 GEX_OP_USER_NC, &op_concat,
+                                 (void*)(uintptr_t)dt_sz, 0));
+      } else {
+        gex_Event_Wait(
+          gex_Coll_ReduceToOneNB(tm, root, OutStrings, InStrings,
+                                 GEX_DT_USER, dt_sz, Nelem,
+                                 GEX_OP_USER_NC, &op_concat,
+                                 (void*)(uintptr_t)dt_sz, 0));
+      }
+      if (rank==root) { // Even in ToAll case, one (random) proc verifies
         for (size_t j = 0; j < Nelem; ++j) {
           // validate result against properly ordered (lexically reversed) result
           const char *str = OutStrings + j * dt_sz;

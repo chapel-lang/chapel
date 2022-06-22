@@ -735,6 +735,27 @@ void gasnetc_pmi_allgather_on_smp_init(void) {
 #endif
 
 static void bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootnode) {
+#ifdef HAVE_PMI_GET_NUMPES_ON_SMP
+    // Cray PMI gives us a means to validate our "host" size.
+    // The first SNodeBroadcast seems as good as place as any to check.
+    // TODO: add a function pointer to gasneti_spawnerfn_t for this type of validation
+    static int once = 0;
+    if (!once) {
+        once = 1;
+        int our_count = gasneti_myhost.node_count;
+        int their_count;
+        int rc = PMI_Get_numpes_on_smp(&their_count);
+        gasneti_assert_always(PMI_SUCCESS == rc);
+        if (our_count != their_count) {
+            gasneti_fatalerror("GASNet and PMI do not agree on the number of processes on "
+                               "this host, seeing %d and %d, respectively.  "
+                               "Please see documentation on GASNET_HOST_DETECT in README and "
+                               "consider setting its value to 'hostname' or reconfiguring using "
+                               "'--with-host-detect=hostname' to make that the default value.",
+                               our_count, their_count);
+        }
+    }
+#endif
 #if HAVE_PMI_ALLGATHER_ON_SMP
     const int count = gasneti_myhost.node_count;
     uint8_t *tmp = gasneti_malloc(len * count);

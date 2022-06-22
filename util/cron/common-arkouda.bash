@@ -10,30 +10,40 @@ if [ ! -d "$COMMON_DIR" ]; then
 fi
 
 # Perf configuration
-source $CWD/common-perf.bash
-ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-$COMMON_DIR/NightlyPerformance/arkouda}
-export CHPL_TEST_PERF_DIR=$ARKOUDA_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
-export CHPL_TEST_NUM_TRIALS=3
-export CHPL_TEST_PERF_START_DATE=04/01/20
+export CHPL_TEST_ARKOUDA_PERF=${CHPL_TEST_ARKOUDA_PERF:-true}
+if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ]; then
+  source $CWD/common-perf.bash
+  ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-$COMMON_DIR/NightlyPerformance/arkouda}
+  export CHPL_TEST_PERF_DIR=$ARKOUDA_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
+  export CHPL_TEST_NUM_TRIALS=3
+  export CHPL_TEST_PERF_START_DATE=04/01/20
+  export CHPL_TEST_ARKOUDA_PERF=true
+fi
 
-# Run arkouda correctness and performance testing
+# Run arkouda correctness testing
 export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
-export CHPL_TEST_ARKOUDA_PERF=true
 
 ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
-  export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
-  export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
-  export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
+  # If asan testing, use arrow built with asan
+  if [ -n "$ARKOUDA_ASAN" ]; then
+      export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install-asan}
+      export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install-asan}
+      export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install-asan}
+  else
+      export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
+      export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
+      export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
+  fi
   export PATH="$ARKOUDA_HDF5_PATH/bin:$PATH"
 fi
 
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
-# Arkouda requires Python >= 3.7
-SETUP_PYTHON=$COMMON_DIR/setup_python37.bash
+# Arkouda requires a newer python
+SETUP_PYTHON=$COMMON_DIR/setup_python_arkouda.bash
 if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
@@ -59,6 +69,10 @@ function test_release() {
 function test_nightly() {
   export CHPL_TEST_PERF_DESCRIPTION=nightly
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
+  $CWD/nightly -cron ${nightly_args}
+}
+
+function test_correctness() {
   $CWD/nightly -cron ${nightly_args}
 }
 

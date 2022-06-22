@@ -28,8 +28,8 @@ for i in ParentDom.dim(0) {
 }
 
 writeln("size:\t\t", SparseDom.size);
-writeln("low:\t\t",SparseDom.low);
-writeln("high:\t\t",SparseDom.high);
+writeln("lowBound:\t",SparseDom.lowBound);
+writeln("highBound:\t",SparseDom.highBound);
 writeln("stride:\t\t",SparseDom.stride);
 writeln("alignment:\t",SparseDom.alignment);
 writeln("first:\t\t",SparseDom.first);

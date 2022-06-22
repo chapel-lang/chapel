@@ -32,7 +32,7 @@ Array A
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
 The sum of the values in 1..10, computed by reduce, is also 55
-1.0 2.0 3.0 4.0 5.0
+1 2 3 4 5
 
 Ranges over bools and enums:
 Range false..true = false, true
@@ -43,9 +43,9 @@ Unbounded ranges
 Range 1.. = 1, 2, 3, ...
 Range ..5 = ..., 3, 4, 5
 Range .. = all integers, increasing
-Range false.. = false, true, true, ...
-Range south.. = south, east, west, ...
-Range ..indigo = ..., green, blue, indigo
+Range false.. = false, true
+Range south.. = south, east, west
+Range ..indigo by -1 = indigo, blue, green, yellow, orange, red
 
 Iterating over zip(312..315, 1..) generates
  (312, 1) (313, 2) (314, 3) (315, 4)

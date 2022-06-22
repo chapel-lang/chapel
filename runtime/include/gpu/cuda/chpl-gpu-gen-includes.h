@@ -26,22 +26,40 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
-extern __constant__ int32_t chpl_nodeID;
+
+// General TODO
+// This file is included in the application executable only. It mirrors
+// chpl-gen-include in providing these runtime interfaces to the Chapel module
+// and the compiler-generated, communication-related code. We need these
+// functions to be executing correctly on the GPU to have GPU-driven
+// communication, with the assumption that GPU-driven communication will look
+// like regular communication to the compiler. But until we have proper
+// implementation for the GPU-driven communication, we just need __device__
+// versions of these functions so that we can compile Chapel applications.
 
 // TODO
+// This file might need a `chpl_nodeID` analogue. We need the GPU kernels to be
+// aware of which locale they're executing on.
+
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
   // TODO
+  // We probably need an idea similar to `chpl_nodeID`. But, in our current
+  // design, the subloc ID that this function is supposed to return is the same
+  // as the device ID. So, maybe we call some device function to grab that and
+  // return it?
   return 0;
 }
 
+// TODO Rest of the functions are relatively boilerplate once we have everything
 __device__ static inline chpl_localeID_t chpl_gen_getLocaleID(void)
 {
   chpl_localeID_t localeID;
-  localeID = {chpl_nodeID,chpl_task_getRequestedSubloc()};
+  localeID = {0,chpl_task_getRequestedSubloc()};
   return localeID;
 }
 
+__device__ static inline void* c_pointer_return(void* x) { return x; }
 
 __device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node,  c_sublocid_t subloc) {
   chpl_localeID_t loc = { node, subloc };
@@ -49,7 +67,7 @@ __device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node, 
 }
 
 __device__ static inline c_nodeid_t get_chpl_nodeID(void) {
-  return chpl_nodeID;
+  return 0;
 }
 
 #endif // HAS_GPU_LOCALE

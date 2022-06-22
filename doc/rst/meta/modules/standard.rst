@@ -95,14 +95,12 @@ System/Interoperability
 .. toctree::
    :maxdepth: 1
 
-   CPtr <standard/CPtr>
    CTypes <standard/CTypes>
    OS <standard/OS>
    Spawn <standard/Spawn>
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
    SysBasic <standard/SysBasic>
-   SysCTypes <standard/SysCTypes>
    SysError <standard/SysError>
 
 Utilities

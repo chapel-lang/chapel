@@ -270,8 +270,16 @@
     WhereAndLifetime lifetimeAndWhere;
   };
 
+  // Put our types in a different namespace to avoid conflicting with the
+  // production compiler parser's YYSTYPE/YYLTYPE.
   #define YYSTYPE YYCHPL_STYPE
   #define YYLTYPE YYCHPL_LTYPE
+
+  // Note that the 'YYSTYPE_IS_TRIVIAL' macro tells the generated parser
+  // that YYSTYPE only contains simple scalars (it can be bitcopied).
+  // This is normally communicated by the '%union' directive, but we
+  // stopped using that.
+  #define YYCHPL_STYPE_IS_TRIVIAL 1
 
   #endif
 }
@@ -686,7 +694,7 @@ stmt:
 | error TSEMI
   {
     $$ = STMT(@$, ErroneousExpression::build(BUILDER, LOC(@1)));
-    context->resetDeclState();
+    context->resetDeclStateOnError();
   }
 ;
 
@@ -3107,7 +3115,7 @@ for_expr:
     owned<AstNode> iterand = nullptr;
     auto iterExprs = context->consumeList($2);
     if (iterExprs.size() > 1) {
-      iterand = Domain::build(BUILDER, LOC(@2), std::move(iterExprs));
+      iterand = Domain::build(BUILDER, LOC(@2), false, std::move(iterExprs));
     } else {
       iterand = std::move(iterExprs[0]);
     }
@@ -3257,12 +3265,12 @@ intent_expr:
     }
   }
 | reduce_scan_op_expr TREDUCE ident_expr
-  { auto ident = Identifier::build(BUILDER, LOC(@1), $1);
-    $$ = Reduce::build(BUILDER, LOC(@$), std::move(ident), toOwned($3)).release();
+  {
+    $$ = context->buildReduce(@$, @1, $1, $3);
   }
 | expr                TREDUCE ident_expr
   {
-    $$ = context->buildCustomReduce(@$, @1, $1, $3);
+    $$ = context->buildReduce(@$, @1, $1, $3);
   }
 ;
 
@@ -3569,11 +3577,13 @@ literal_expr:
 | TNONE               { $$ = context->buildIdent(@$, $1); }
 | TLCBR expr_ls TRCBR
   {
-    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Domain::build(BUILDER, LOC(@$), true,
+                       context->consumeList($2)).release();
   }
 | TLCBR expr_ls TCOMMA TRCBR
   {
-    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Domain::build(BUILDER, LOC(@$), true,
+                       context->consumeList($2)).release();
   }
 | TLSBR expr_ls TRSBR
   {
@@ -3581,16 +3591,17 @@ literal_expr:
   }
 | TLSBR expr_ls TCOMMA TRSBR
   {
+    // TODO (dlongnecke): Record trailing comma?
     $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 | TLSBR assoc_expr_ls TRSBR
   {
-    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
   {
     // TODO (dlongnecke): Record trailing comma?
-    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 
 ;
@@ -3650,40 +3661,38 @@ unary_op_expr:
 reduce_expr:
   expr TREDUCE expr
   {
-    $$ = context->buildCustomReduce(@$, @1, $1, $3);
+    $$ = context->buildReduce(@$, @1, $1, $3);
   }
 | expr TREDUCE zippered_iterator
   {
-    $$ = context->buildCustomReduce(@$, @1, $1, $3);
+    $$ = context->buildReduce(@$, @1, $1, $3);
   }
 | reduce_scan_op_expr TREDUCE expr
   {
-    auto ident = Identifier::build(BUILDER, LOC(@1), $1);
-    $$ = Reduce::build(BUILDER, LOC(@$), std::move(ident), toOwned($3)).release();
+    $$ = context->buildReduce(@$, @1, $1, $3);
   }
 | reduce_scan_op_expr TREDUCE zippered_iterator
   {
-    auto ident = Identifier::build(BUILDER, LOC(@1), $1);
-    $$ = Reduce::build(BUILDER, LOC(@$), std::move(ident), toOwned($3)).release();
+    $$ = context->buildReduce(@$, @1, $1, $3);
   }
 ;
 
 scan_expr:
   expr TSCAN expr
   {
-    $$ = context->buildCustomScan(@$, @1, $1, $3);
+    $$ = context->buildScan(@$, @1, $1, $3);
   }
 | expr TSCAN zippered_iterator
   {
-    $$ = context->buildCustomScan(@$, @1, $1, $3);
+    $$ = context->buildScan(@$, @1, $1, $3);
   }
 | reduce_scan_op_expr TSCAN expr
   {
-    $$ = Scan::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+    $$ = context->buildScan(@$, @1, $1, $3);
   }
 | reduce_scan_op_expr TSCAN zippered_iterator
   {
-    $$ = Scan::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+    $$ = context->buildScan(@$, @1, $1, $3);
   }
 ;
 

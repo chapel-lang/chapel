@@ -312,6 +312,8 @@ std::vector<std::pair<std::string, std::string>> gDynoParams;
 
 static bool compilerSetChplLLVM = false;
 
+static std::vector<std::string> cmdLineModPaths;
+
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -718,6 +720,9 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
 
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
   addFlagModulePath(newpath);
+
+  // also add the path to a vector to support dyno
+  cmdLineModPaths.push_back(std::string(newpath));
 }
 
 static void noteCppLinesSet(const ArgumentDescription* desc, const char* unused) {
@@ -1279,8 +1284,12 @@ static void printStuff(const char* argv0) {
     printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
     printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
     printf("\n");
+    const char* internalFlag = "";
+    if (developer)
+      internalFlag = "--internal";
     int wanted_to_write = snprintf(buf, sizeof(buf),
-                                   "%s/util/printchplenv --all", CHPL_HOME);
+                                   "%s/util/printchplenv --all %s",
+                                   CHPL_HOME, internalFlag);
     if (wanted_to_write < 0) {
       USR_FATAL("character encoding error in CHPL_HOME path name");
     } else if ((size_t)wanted_to_write >= sizeof(buf)) {
@@ -1812,6 +1821,22 @@ int main(int argc, char* argv[]) {
       chpl::parsing::setConfigSettings(gContext, gDynoParams);
       // this should not be used after this point!
       gDynoParams.clear();
+
+      // set up the module paths
+      std::string chpl_module_path;
+      if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
+        chpl_module_path = envvarpath;
+      }
+      chpl::parsing::setupModuleSearchPaths(gContext,
+                                            CHPL_HOME,
+                                            fMinimalModules,
+                                            CHPL_LOCALE_MODEL,
+                                            fEnableTaskTracking,
+                                            CHPL_TASKS,
+                                            CHPL_COMM,
+                                            CHPL_SYS_MODULES_SUBDIR,
+                                            chpl_module_path,
+                                            cmdLineModPaths);
     }
     postprocess_args();
 

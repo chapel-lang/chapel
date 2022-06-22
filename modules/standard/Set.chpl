@@ -335,12 +335,6 @@ module Set {
       _addElem(element);
     }
 
-    pragma "last resort"
-    deprecated "The argument name `x` has been deprecated for function `add`, please use `element` instead"
-    proc ref add(in x: eltType) lifetime this < x {
-      add(element=x);
-    }
-
     /*
       Returns `true` if the given element is a member of this set, and `false`
       otherwise.
@@ -358,12 +352,6 @@ module Set {
       }
 
       return result;
-    }
-
-    pragma "last resort"
-    deprecated "The argument name `x` has been deprecated for function `contains, please use `element` instead"
-    proc const contains(const ref x: eltType): bool {
-      return contains(element=x);
     }
 
     /*
@@ -407,19 +395,6 @@ module Set {
     }
 
     /*
-      Returns `true` if this set and `other` have at least one element in
-      common, and `false` otherwise.
-
-      :arg other: The set to compare against.
-      :return: Whether or not this set and `other` intersect.
-      :rtype: `bool`
-    */
-    deprecated "Set isIntersecting() method is deprecated; use !:proc:`isDisjoint` instead"
-    proc const isIntersecting(const ref other: set(eltType, ?)): bool {
-      return !isDisjoint(other);
-    }
-
-    /*
       Attempt to remove the item from this set with a value equal to `element`.
       If an element equal to `element` was removed from this set, return `true`,
       else return `false` if no such value was found.
@@ -453,12 +428,6 @@ module Set {
       }
 
       return result;
-    }
-
-    pragma "last resort"
-    deprecated "The argument name `x` has been deprecated for function `remove`, please use `element` instead"
-    proc ref remove(const ref x: eltType): bool {
-      return remove(element=x);
     }
 
     /*

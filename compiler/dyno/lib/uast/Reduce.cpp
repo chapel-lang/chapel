@@ -26,16 +26,13 @@ namespace uast {
 
 owned<Reduce> Reduce::build(Builder* builder,
                             Location loc,
-                            owned<AstNode> lhs,
-                            owned<AstNode> expr) {
-  assert(expr.get() != nullptr);
-  assert(lhs->isIdentifier() || lhs->isFnCall());
+                            owned<AstNode> op,
+                            owned<AstNode> iterand) {
+  AstList children;
+  children.push_back(std::move(op));
+  children.push_back(std::move(iterand));
 
-  AstList lst;
-  lst.push_back(std::move(expr));
-  lst.push_back(std::move(lhs));
-
-  Reduce* ret = new Reduce(std::move(lst));
+  Reduce* ret = new Reduce(std::move(children));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

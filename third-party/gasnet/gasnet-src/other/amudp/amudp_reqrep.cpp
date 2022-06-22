@@ -146,6 +146,17 @@ static amudp_node_t sourceAddrToId(ep_t ep, en_t sourceAddr, amudp_node_t hint) 
     en_t const name = pinfo[i].remoteName;
     if (enEqual(name, sourceAddr)) return i;
   }
+  #if AMX_DEBUG_VERBOSE
+    AMX_DEBUG_WARN(("sourceAddrToId(%s,%i) failed to find a match in the endpoint table",
+                    AMUDP_enStr(sourceAddr,0), (int)hint));
+    AMX_Info("Endpoint table (nproc=%i):", ep->P);
+    for (amudp_node_t j=0; j < ep->P; j++) {
+      char temp1[80], temp2[80];
+      AMX_Info(" P#%i:\t%s\ttag: %s", j,
+                 AMUDP_enStr(pinfo[j].remoteName, temp1),
+                 AMUDP_tagStr(pinfo[j].tag, temp2));
+    }
+  #endif
   return INVALID_NODE;
 }
 /* ------------------------------------------------------------------------------------ */
@@ -554,9 +565,11 @@ extern int AMUDP_Block(eb_t eb) {
 }
 /* ------------------------------------------------------------------------------------ */
 #if AMX_DEBUG
-  #define REFUSE_NOTICE(reason) AMX_Err("I just refused a message and returned to sender. Reason: %s", reason)
+  #define REFUSE_NOTICE(reason,addr) \
+    AMX_Err("I just refused a message and returned to sender (%s). Reason: %s", \
+            AMUDP_enStr(addr,0), reason)
 #else
-  #define REFUSE_NOTICE(reason) (void)0
+  #define REFUSE_NOTICE(reason,addr) (void)0
 #endif
 
 /* this is a local-use-only macro for AMUDP_processPacket */
@@ -569,8 +582,9 @@ extern int AMUDP_Block(eb_t eb) {
       int retval = sendPacket(ep, msg, GET_MSG_SZ(msg),                         \
                         buf->status.rx.sourceAddr, REFUSAL_PACKET);             \
        /* ignore errors sending this */                                         \
-      if (retval != AM_OK) AMX_Err("failed to sendPacket to refuse message");   \
-      else REFUSE_NOTICE(#errcode);                                             \
+      if (retval != AM_OK) AMX_Err("failed to sendPacket(%s) to refuse message",\
+                                   AMUDP_enStr(buf->status.rx.sourceAddr,0));   \
+      else REFUSE_NOTICE(#errcode, buf->status.rx.sourceAddr);                  \
     }                                                                           \
     return;                                                                     \
   } while(0)

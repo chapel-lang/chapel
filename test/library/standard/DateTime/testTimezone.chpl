@@ -17,7 +17,7 @@ class FixedOffset: TZInfo {
     this.dstoffset = new timedelta(minutes=dstoffset);
   }
 
-  override proc utcoffset(dt) {
+  override proc utcOffset(dt) {
     return offset;
   }
   override proc tzname(dt) {
@@ -53,9 +53,9 @@ proc test_zones() {
   assert(t4.tzinfo.borrow() == nil);
   assert(t5.tzinfo == utc);
 
-  assert(t1.utcoffset() == new timedelta(minutes=-300));
-  assert(t2.utcoffset() == new timedelta(minutes=0));
-  assert(t3.utcoffset() == new timedelta(minutes=60));
+  assert(t1.utcOffset() == new timedelta(minutes=-300));
+  assert(t2.utcOffset() == new timedelta(minutes=0));
+  assert(t3.utcOffset() == new timedelta(minutes=60));
 
   assert(t1.tzname() == "EST");
   assert(t2.tzname() == "UTC");
@@ -77,11 +77,11 @@ proc test_zones() {
   assert(str(t5) == "00:00:00.000040+00:00");
 */
 
-  assert(t1.isoformat() == "07:47:00-05:00");
-  assert(t2.isoformat() == "12:47:00+00:00");
-  assert(t3.isoformat() == "13:47:00+01:00");
-  assert(t4.isoformat() == "00:00:00.000040");
-  assert(t5.isoformat() == "00:00:00.000040+00:00");
+  assert(t1.isoFormat() == "07:47:00-05:00");
+  assert(t2.isoFormat() == "12:47:00+00:00");
+  assert(t3.isoFormat() == "13:47:00+01:00");
+  assert(t4.isoFormat() == "00:00:00.000040");
+  assert(t5.isoFormat() == "00:00:00.000040+00:00");
 
   // %z conversion uses local timezone instead of the one in the tzinfo
   //assert(t1.strftime("%H:%M:%S %%Z=%Z %%z=%z") ==
@@ -157,7 +157,7 @@ proc test_mixed_compare() {
     proc init() {
       offset = new timedelta(minutes=22);
     }
-    override proc utcoffset(dt: datetime) {
+    override proc utcOffset(dt: datetime) {
       offset += new timedelta(minutes=1);
       return offset;
     }
@@ -172,8 +172,8 @@ proc test_mixed_compare() {
   var v = new shared Varies();
   t1 = t2.replace(tzinfo=v);
   t2 = t2.replace(tzinfo=v);
-  assert(t1.utcoffset() == new timedelta(minutes=23));
-  assert(t2.utcoffset() == new timedelta(minutes=24));
+  assert(t1.utcOffset() == new timedelta(minutes=23));
+  assert(t2.utcOffset() == new timedelta(minutes=24));
   assert(t1 == t2);
 
   // But if they're not identical, it isn't ignored.

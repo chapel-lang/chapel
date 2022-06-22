@@ -1071,9 +1071,9 @@ used to recursively hold tables and respective values
         when fieldReal do return val.re:string;
         when fieldString do return ('"' + val.s + '"');
         when fieldEmpty do return ""; // empty
-        when fieldDate do return val.ld.isoformat();
-        when fieldTime do return val.ti.isoformat();
-        when fieldDateTime do return val.dt.isoformat();
+        when fieldDate do return val.ld.isoFormat();
+        when fieldTime do return val.ti.isoFormat();
+        when fieldDateTime do return val.dt.isoFormat();
         otherwise {
           throw new owned TomlError("Error in printing " + val.s);
           return val.s;
@@ -1363,7 +1363,12 @@ module TomlReader {
       }
     }
 
-    proc readWriteThis(f) throws {
+    pragma "no doc"
+    proc readThis(f) throws {
+      compilerError("Reading a Tokens type is not supported");
+    }
+
+    proc writeThis(f) throws {
       // TODO: The `list` type currently doesn't support readWriteThis!
       f <~> this.A.toArray();
     }

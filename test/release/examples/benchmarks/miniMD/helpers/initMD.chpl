@@ -300,7 +300,6 @@ proc setupComms() {
 
 // Reads an input file
 proc inputFile() {
-  var err : syserr;
   var fchan: file;
   try {
     fchan = open(input_file, iomode.r);

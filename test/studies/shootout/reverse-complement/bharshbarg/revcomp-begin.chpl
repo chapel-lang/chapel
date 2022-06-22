@@ -32,7 +32,8 @@ proc main(args: [] string) {
 
   // sync statements wait for all tasks inside them to complete
   sync {
-    while r.readline(data, numRead, idx) {
+    numRead = r.readLine(data[idx..]);
+    while numRead > 0 {
 
       // Look for the start of a section, and if possible 
       // spawn a task to start work on the previous section.
@@ -44,6 +45,7 @@ proc main(args: [] string) {
         }
       }
       idx += numRead; 
+      numRead = r.readLine(data[idx..]);
     }
 
     // work on the last section

@@ -1,0 +1,6 @@
+Wrote:
+==========
+{5: 25.0, 7: 49.0, 8: 64.0, 1: 1.0, 4: 16.0, 6: 36.0, 2: 4.0, 10: 100.0, 9: 81.0, 3: 9.0}
+==========
+Error reading map:
+bad format: missing expected literal (while reading ioLiteral "}" with path "unknown" offset 1)

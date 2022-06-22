@@ -22,7 +22,6 @@
 #include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
-#include "chpl/types/BytesType.h"
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
@@ -32,9 +31,10 @@
 #include "chpl/types/NothingType.h"
 #include "chpl/types/PrimitiveType.h"
 #include "chpl/types/RealType.h"
-#include "chpl/types/StringType.h"
+#include "chpl/types/RecordType.h"
 #include "chpl/types/UintType.h"
 #include "chpl/types/UnknownType.h"
+#include "chpl/types/TupleType.h"
 #include "chpl/types/VoidType.h"
 
 namespace chpl {
@@ -100,13 +100,20 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "_any", AnyType::get(context));
   gatherType(context, map, "_nilType", NilType::get(context));
   gatherType(context, map, "_unknown", UnknownType::get(context));
-  gatherType(context, map, "bytes", BytesType::get(context));
   gatherType(context, map, "c_string", CStringType::get(context));
   gatherType(context, map, "nothing", NothingType::get(context));
-  gatherType(context, map, "string", StringType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
 
   gatherType(context, map, "object", BasicClassType::getObjectType(context));
+
+  gatherType(context, map, "_tuple", TupleType::getGenericTupleType(context));
+
+  auto bytesType = RecordType::getBytesType(context);
+  gatherType(context, map, "bytes", bytesType);
+  gatherType(context, map, "_bytes", bytesType);
+  auto stringType = RecordType::getStringType(context);
+  gatherType(context, map, "string", stringType);
+  gatherType(context, map, "_string", stringType);
 
   BuiltinType::gatherBuiltins(context, map);
 }
@@ -133,6 +140,22 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 }
 
 IMPLEMENT_DUMP(Type);
+
+bool Type::isStringType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->name() == USTR("string"))
+      return true;
+  }
+  return false;
+}
+
+bool Type::isBytesType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->name() == USTR("bytes"))
+      return true;
+  }
+  return false;
+}
 
 bool Type::isNilablePtrType() const {
   if (isPtrType()) {

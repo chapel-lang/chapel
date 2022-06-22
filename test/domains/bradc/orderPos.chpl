@@ -3,11 +3,11 @@ proc doInd(D, i) {
 }
 
 proc doDom(D) {
-  doInd(D, D.low-D.high);
+  doInd(D, D.lowBound-D.highBound);
   for i in D {
     doInd(D, i);
   }
-  doInd(D, D.high+D.low);
+  doInd(D, D.highBound+D.lowBound);
   writeln();
 }
 

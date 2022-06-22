@@ -263,7 +263,7 @@ CHPL_TARGET_PLATFORM <= cygwin
 #   +
 #    var line:string;
 #    var i = 0;
-#    while stdin.readline(line) {
+#    while stdin.readLine(line) {
 #      if i & 1 == 0 {
 #        stdout.write(line);
 #   +stdoutLog.write(line);

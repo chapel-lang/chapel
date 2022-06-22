@@ -1,7 +1,7 @@
 ============================
 README file for GASNet tools
 ============================
-GASNet tools specification version: 1.18
+GASNet tools specification version: 1.19
 Authors: Dan Bonachea <dobonachea@lbl.gov>
          Paul H. Hargrove <PHHargrove@lbl.gov>
 
@@ -1017,7 +1017,7 @@ void gasnett_freezeForDebuggerErr();
 void gasnett_backtrace_init(const char *exename);
 
    should be called early at startup with argv[0] in programs that intend to use the 
-   automatic backtrace functionality
+   automatic backtrace functionality. Alternatively one can pass gasnett_exe_name().
 
 int gasnett_print_backtrace(int fd);
 
@@ -1093,8 +1093,14 @@ GASNETT_PAGESHIFT
 
 const char *gasnett_gethostname();
 
-  Returns the current system hostname, as reported by gethostname().
+  Returns the current system hostname, as reported by gethostname(), with possible
+  normalization (such as of case).
   
+const char *gasnett_exe_name();
+
+  Returns a fully-qualified pathname to the currently running executable, or an
+  empty string if the information is unknown.
+
 int gasnett_cpu_count();    
 
   Returns the count of physical CPU's on this node (ie sharing a virtual memory), 
@@ -1454,6 +1460,10 @@ COMPILER.
       declared via typedefs (and thus don't look like pointers until the typedef has been
       expanded).  Setting to "0" will disable such use.
       One may not set GASNETT_USE_RESTRICT_ON_TYPEDEFS without setting GASNETT_USE_RESTRICT.
+
+  The following can be defined to control use of compiler-specific pragmas
+    GASNETT_USE_PRAGMA_GCC_DIAGNOSTIC
+      Use "#pragma GCC diagnostic" to suppress undesirable diagnostics
 
 * Feature control for ctype.h wrappers
 

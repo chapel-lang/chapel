@@ -31,7 +31,7 @@ var i = 0;
 var signaled = false;
 var signalFile = "";
 var lastline = "";
-while sub.stdout.readline(line) {
+while sub.stdout.readLine(line) {
   line = line.strip();
 
   if line != lastline && line != "Waiting" {
@@ -69,4 +69,3 @@ assert(sub.running == false);
 assert(sub.exitCode == 0);
 
 sub.close();
-

@@ -434,7 +434,7 @@ module AggregationPrimitives {
       if boundsChecking {
         assert(size <= this.size);
         assert(this.size == lArr.size);
-        assert(lArr.domain.low == 0);
+        assert(lArr.domain.lowBound == 0);
         assert(lArr.locale.id == here.id);
       }
       const byte_size = size:c_size_t * c_sizeof(elemType);
@@ -453,7 +453,7 @@ module AggregationPrimitives {
       if boundsChecking {
         assert(size <= this.size);
         assert(this.size == lArr.size);
-        assert(lArr.domain.low == 0);
+        assert(lArr.domain.lowBound == 0);
         assert(lArr.locale.id == here.id);
       }
       const byte_size = size:c_size_t * c_sizeof(elemType);

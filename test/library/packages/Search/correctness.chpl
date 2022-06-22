@@ -55,16 +55,16 @@ proc main() {
   checkSearch(result, (true, 30), revStrideA, 'binarySearch');
 
   result = linearSearch(strideA, 5);
-  checkSearch(result, (false, strideD.high+strideD.stride), strideA, 'linearSearch');
+  checkSearch(result, (false, strideD.highBound+strideD.stride), strideA, 'linearSearch');
 
   result = binarySearch(strideA, 5);
-  checkSearch(result, (false, strideD.high+strideD.stride), strideA, 'binarySearch');
+  checkSearch(result, (false, strideD.highBound+strideD.stride), strideA, 'binarySearch');
 
   result = linearSearch(revStrideA, 5);
-  checkSearch(result, (false, revStrideD.high+abs(revStrideD.stride)), revStrideA, 'linearSearch');
+  checkSearch(result, (false, revStrideD.highBound+abs(revStrideD.stride)), revStrideA, 'linearSearch');
 
   result = binarySearch(revStrideA, 5);
-  checkSearch(result, (false, revStrideD.high+abs(revStrideD.stride)), revStrideA, 'binarySearch');
+  checkSearch(result, (false, revStrideD.highBound+abs(revStrideD.stride)), revStrideA, 'binarySearch');
 
   /* Comparators */
 
@@ -80,10 +80,10 @@ proc main() {
   /* Not Found */
 
   result = search(A, 5, sorted=true);
-  checkSearch(result, (false, A.domain.high+1), A, 'search');
+  checkSearch(result, (false, A.domain.highBound+1), A, 'search');
 
   result = search(A, -5, sorted=true);
-  checkSearch(result, (false, A.domain.low), A, 'search');
+  checkSearch(result, (false, A.domain.lowBound), A, 'search');
 
   result = search(A, 0, sorted=true);
   checkSearch(result, (false, 2), A, 'search');

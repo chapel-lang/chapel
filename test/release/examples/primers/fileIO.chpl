@@ -245,7 +245,7 @@ if example == 0 || example == 4 {
 
   var r = f.reader();
   var line:string;
-  while( r.readline(line) ) {
+  while( r.readLine(line) ) {
     write("Read line: ", line);
   }
   r.close();
@@ -272,6 +272,7 @@ Error handling
 // be replaced by something more durable, but until then,
 // Chapel programs can still respond to errors.
 if example == 0 || example == 5 {
+  import OS.POSIX.ENOENT;
   writeln("Running Example 5");
 
   try! {

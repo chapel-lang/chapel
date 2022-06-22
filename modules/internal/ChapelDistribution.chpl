@@ -507,7 +507,7 @@ module ChapelDistribution {
 
     inline proc _countDuplicates(arr) where isArray(arr) {
       var dupCount = -1;
-      var prev = arr[arr.domain.low];
+      var prev = arr[arr.domain.lowBound];
       for a in arr {
         if a == prev then
           dupCount += 1;
@@ -532,8 +532,8 @@ module ChapelDistribution {
 
         //check duplicates assuming sorted
         if isUnique {
-          const indsStart = inds.domain.low;
-          const indsEnd = inds.domain.high;
+          const indsStart = inds.domain.lowBound;
+          const indsEnd = inds.domain.highBound;
           var lastInd = inds[indsStart];
           for i in indsStart+1..indsEnd {
             if inds[i] == lastInd then
@@ -563,8 +563,8 @@ module ChapelDistribution {
 
       //eliminate duplicates --assumes sorted
       if !isUnique {
-        //make sure lastInd != inds[inds.domain.low]
-        var lastInd = inds[inds.domain.low] + 1;
+        //make sure lastInd != inds[inds.domain.lowBound]
+        var lastInd = inds[inds.domain.lowBound] + 1;
         for (i, p) in zip(inds, indivInsertPts)  {
           if i == lastInd then p = -1;
           else lastInd = i;
@@ -692,8 +692,8 @@ module ChapelDistribution {
     proc dsiDims() { return parentDom.dims(); }
     proc dsiNumIndices { return getNNZ(); }
     proc dsiSize { return getNNZ(); }
-    proc dsiLow { return parentDom.low; }
-    proc dsiHigh { return parentDom.high; }
+    proc dsiLow { return parentDom.lowBound; }
+    proc dsiHigh { return parentDom.highBound; }
     proc dsiStride { return parentDom.stride; }
     proc dsiAlignment { return parentDom.alignment; }
     proc dsiFirst {
@@ -1084,7 +1084,7 @@ module ChapelDistribution {
       var prevNewIdx = 0;
 
       // fill all new indices i s.t. i > indices[oldnnz]
-      forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
+      forall i in shiftMap.domain.highBound+1..dom.nnzDom.highBound do data[i] = irv;
 
       for (i, _newIdx) in zip(0..#oldnnz by -1, shiftMap.domain.dim(0) by -1) {
         newIdx = shiftMap[_newIdx];
@@ -1106,7 +1106,7 @@ module ChapelDistribution {
       for i in shiftrange by -1 {
         data(i+1) = data(i);
       }
-      data(shiftrange.low) = irv;
+      data(shiftrange.lowBound) = irv;
     }
 
     override proc sparseShiftArrayBack(shiftrange) {

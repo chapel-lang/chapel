@@ -496,9 +496,19 @@ module SharedObject {
     __primitive("call destructor", __primitive("deref", x));
   }
 
+  pragma "no doc"
+  proc _shared.readThis(f) throws {
+    _readWriteHelper(f);
+  }
+
+  pragma "no doc"
+  proc _shared.writeThis(f) throws {
+    _readWriteHelper(f);
+  }
+
   // Don't print out 'chpl_p' when printing an Shared, just print class pointer
   pragma "no doc"
-  proc _shared.readWriteThis(f) throws {
+  proc _shared._readWriteHelper(f) throws {
     if isNonNilableClass(this.chpl_t) {
       var tmp = this.chpl_p! : borrowed class;
       f <~> tmp;

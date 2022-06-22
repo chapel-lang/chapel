@@ -13,7 +13,7 @@
 #ifndef _GASNET_CORE_FWD_H
 #define _GASNET_CORE_FWD_H
 
-#define GASNET_CORE_VERSION      0.6
+#define GASNET_CORE_VERSION      0.7
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         OFI
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -133,8 +133,13 @@
   // See gasnet_internal.h for prototypes and brief descriptions.
 #define GASNETC_SEGMENT_ATTACH_HOOK 1
 #define GASNETC_SEGMENT_CREATE_HOOK 1
-//#define GASNETC_SEGMENT_DESTROY_HOOK 1
+#define GASNETC_SEGMENT_DESTROY_HOOK 1
 #define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
+
+  // Uncomment the following defines if conduit provides the corresponding hook.
+  // See other/kinds/gasnet_kinds_internal.h for prototypes and brief descriptions.
+//#define GASNETC_MK_CREATE_HOOK 1
+//#define GASNETC_MK_DESTROY_HOOK 1
 
 // If conduit supports GASNET_MAXEPS!=1, set default and (optional) max values here.
 // Leaving GASNETC_MAXEPS_DFLT unset will result in GASNET_MAXEPS=1, independent
@@ -147,6 +152,14 @@
   /* this can be used to add conduit-specific 
      statistical collection values (see gasnet_trace.h) */
 #define GASNETC_CONDUIT_STATS(CNT,VAL,TIME)  \
+    VAL(C, ALLOC_REQ_BUFF, buffers)          \
+    VAL(C, ALLOC_REP_BUFF, buffers)          \
+    CNT(C, RECVMSG_REQ, cnt)                 \
+    CNT(C, RECVMSG_REP, cnt)                 \
+    CNT(C, RECVMSG_REQ_EAGAIN, cnt)          \
+    CNT(C, RECVMSG_REP_EAGAIN, cnt)          \
+    CNT(C, RECVMSG_REQ_REPOST, cnt)          \
+    CNT(C, RECVMSG_REP_REPOST, cnt)          \
     CNT(C, NB_PUT_INJECT, cnt)               \
     CNT(C, NB_PUT_BOUNCE, cnt)               \
     CNT(C, NB_PUT_BLOCK, cnt)                   

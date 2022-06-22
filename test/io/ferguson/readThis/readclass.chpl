@@ -3,15 +3,27 @@ use IO;
 class mything {
   var x:int;
 
-  proc readWriteThis(rw) throws {
-    rw <~> x;
+  proc readThis(r) throws {
+    r.read(x);
+  }
+
+  proc writeThis(w) throws {
+    w.write(x);
   }
 }
 
 class subthing : mything {
   var y:int;
 
-  override proc readWriteThis(rw) throws {
+  override proc readThis(r) throws {
+    readWriteHelper(r);
+  }
+
+  override proc writeThis(w) throws {
+    readWriteHelper(w);
+  }
+
+  proc readWriteHelper(rw) throws {
     rw <~> x;
     rw <~> new ioLiteral(",");
     rw <~> y;

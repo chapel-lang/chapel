@@ -1,4 +1,4 @@
-$CHPL_HOME/modules/standard/ChapelIO.chpl:774: In function 'writeln':
-$CHPL_HOME/modules/standard/ChapelIO.chpl:775: warning: writeln with a style argument is deprecated
+$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: In function 'writeln':
+$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: warning: writeln with a style argument is deprecated
   spectral-norm-double-time.chpl:71: called as writeln(args(0): real(64), args(1): iostyleInternal)
 1.274224116

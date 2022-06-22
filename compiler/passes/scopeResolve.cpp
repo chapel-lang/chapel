@@ -58,6 +58,14 @@
 ************************************** | *************************************/
 
 
+using VisitedModulesSet = std::set<std::pair<ModuleSymbol*, const char*>>;
+
+// modSymsCache caches lookups at a module scope, including transitive uses.
+// key: pair of module symbol and name to lookup
+// value: vector of Symbol* that it resolved to
+static std::unordered_map<std::pair<ModuleSymbol*, const char*>,
+                          std::vector<Symbol*>> modSymsCache;
+
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.
 typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
@@ -83,6 +91,7 @@ bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
                             std::vector<Symbol*>& symbols,
+                            bool skipExternBlocks,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts);
@@ -864,14 +873,6 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
     resolveUnresolvedSymExpr(usymExpr, sym);
   } else {
     updateMethod(usymExpr);
-
-#ifdef HAVE_LLVM
-    if (nSymbols == 0 && gExternBlockStmts.size() > 0) {
-      Symbol* got = tryCResolve(usymExpr, name);
-      if (got != NULL)
-        resolveUnresolvedSymExpr(usymExpr, got);
-    }
-#endif
   }
   return renameLoc;
 }
@@ -1435,15 +1436,28 @@ static void resolveModuleCall(CallExpr* call) {
           sym = t->symbol;
         }
 
-        // Failing that, try looking in an extern block.
+        // If sym itself is a module, note that it is used
+        // (relevant for getting an error for the case in issue 19932).
+        if (ModuleSymbol* calledModule = toModuleSymbol(sym)) {
+          currModule->moduleUseAdd(calledModule);
+          storeReferencedMod(calledModule, call);
+        }
+
 #ifdef HAVE_LLVM
-        if (sym == NULL && gExternBlockStmts.size() > 0) {
-          sym = tryCResolveLocally(mod, mbrName);
+        // Failing that, try looking in an extern block.
+        if (sym == NULL && mod->extern_info != nullptr) {
+          sym = tryCResolve(mod, mbrName);
         }
 #endif
 
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
+            if (sym->hasFlag(FLAG_DEPRECATED) && !isFnSymbol(sym)) {
+              // Function symbols will generate a warning during function
+              // resolution, no need to warn here.
+              sym->generateDeprecationWarning(call);
+            }
+
             if (FnSymbol* fn = toFnSymbol(sym)) {
               if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
                 call->replace(new CallExpr(fn));
@@ -1839,8 +1853,9 @@ static void lookup(const char*           name,
   if (!visited.set_in(scope)) {
     visited.set_add(scope);
 
-    if (lookupThisScopeAndUses(name, context, scope, symbols, renameLocs,
-                               storeRenames, reexportPts) == true) {
+    if (lookupThisScopeAndUses(name, context, scope, symbols,
+                               /* skipExternBlocks */ false,
+                               renameLocs, storeRenames, reexportPts) == true) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
       // surrounding scopes for the symbols on the left and right part
@@ -1928,8 +1943,6 @@ static bool      methodMatched(BaseAST* scope, FnSymbol* method);
 
 static FnSymbol* getMethod(const char* name, Type* type);
 
-using VisitedModulesSet = std::set<std::pair<ModuleSymbol*, const char*>>;
-
 static void lookupUseImport(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
@@ -1956,9 +1969,44 @@ bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
                             std::vector<Symbol*>& symbols,
+                            bool skipExternBlocks,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts) {
+
+
+  bool scopeIsModule = false;
+  ModuleSymbol* scopeModule = nullptr;
+  if (scope->getModule()->block == scope) {
+    scopeIsModule = true;
+    scopeModule = scope->getModule();
+  }
+
+  // if scope is a module, use the cached result / updated the cache
+  // but don't do so:
+  //  * if we need to compute rename locations
+  //  * if we are doing a resolution on behalf of lookupInModuleOrBuiltins
+  //    for an extern block (indicated by skipExternBlocks) because
+  //    in that situation the result will be modified after the
+  //    extern decl is computed.
+  bool useCache = (storeRenames == false &&
+                   skipExternBlocks == false &&
+                   scopeIsModule);
+
+  if (useCache) {
+    auto it = modSymsCache.find(std::make_pair(scopeModule, name));
+    if (it != modSymsCache.end()) {
+      // if we found a cached result, use it
+      const std::vector<Symbol*>& vec = it->second;
+      for (auto sym : vec) {
+        symbols.push_back(sym);
+      }
+      return symbols.size() != 0;
+    }
+  }
+
+  size_t symbolsStart = symbols.size();
+
   if (Symbol* sym = inSymbolTable(name, scope)) {
     if (sym->hasFlag(FLAG_PRIVATE) == true) {
       if (sym->isVisible(context) == true) {
@@ -1971,15 +2019,15 @@ bool lookupThisScopeAndUses(const char*           name,
   }
 
   if (Symbol* sym = inType(name, scope)) {
-    if (isRepeat(sym, symbols) == true) {
+    if (isRepeat(sym, symbols) == false) {
+      // When methods and fields can be private, need to check against the
+      // rejected private symbols here.  But that's in the future.
+      symbols.push_back(sym);
+    } else if (useCache == false) {
       // If we're looking at the exact same Symbol, there's no need to add it
       // and we can just return.
       return true;
     }
-
-    // When methods and fields can be private, need to check against the
-    // rejected private symbols here.  But that's in the future.
-    symbols.push_back(sym);
   }
 
   VisitedModulesSet visitedModules;
@@ -2009,6 +2057,31 @@ bool lookupThisScopeAndUses(const char*           name,
                           renameLocs, storeRenames,
                           /* forShadowScope */ true,
                           /* publicOnly */ false);
+  }
+
+  // If the module has an extern block or uses one that does
+  // and we haven't resolved the symbol any other way, look for a C decl.
+  // Unless skipExternBlocks == true, which is used by lookupInModuleOrBuiltins
+  // to avoid infinite recursion.
+#ifdef HAVE_LLVM
+  if (symbols.size() == 0 &&
+      scopeIsModule &&
+      gExternBlockStmts.size() > 0 &&
+      skipExternBlocks == false) {
+    Symbol* got = tryCResolve(scopeModule, name);
+    if (got != nullptr)
+      symbols.push_back(got);
+  }
+#endif
+
+  // if working with the cache, store the cached result
+  if (useCache) {
+    std::vector<Symbol*> vec;
+    for (size_t i = symbolsStart; i < symbols.size(); i++) {
+      vec.push_back(symbols[i]);
+    }
+    modSymsCache.emplace(std::make_pair(scopeModule, name),
+                         std::move(vec));
   }
 
   return symbols.size() != 0;
@@ -2309,6 +2382,38 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
   }
 
   return retval;
+}
+
+Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
+                                 int& nSymbolsFound) {
+  BaseAST* scope = mod->block;
+  if (Symbol* sym = inSymbolTable(name, scope)) {
+    nSymbolsFound = 1;
+    return sym;
+  }
+
+  // also check the uses of the module (e.g., for use CTypes, to find c_int),
+  // but don't look in extern blocks (that would lead to an infinite loop).
+  std::vector<Symbol*> syms;
+  std::map<Symbol*, astlocT*> renameLocs;
+  std::map<Symbol*, VisibilityStmt*> reexportPts;
+  lookupThisScopeAndUses(name, scope, scope, syms,
+                         /* skipExternBlocks */ true,
+                         renameLocs, /* storeRenames */ false, reexportPts);
+
+  if (syms.size() > 0) {
+    nSymbolsFound = syms.size();
+    return syms[0];
+  }
+
+  // also check in the root module for builtins
+  scope = theProgram->block;
+  if (Symbol* sym = inSymbolTable(name, scope)) {
+    nSymbolsFound = 1;
+    return sym;
+  }
+
+  return nullptr;
 }
 
 static Symbol* inType(const char* name, BaseAST* scope) {

@@ -54,7 +54,7 @@ int unitsMB = 0;
 int doputs = 1;
 int dogets = 1;
 
-size_t min_payload;
+size_t min_payload = 0;
 size_t max_payload;
 size_t max_step = 0;
 
@@ -333,6 +333,10 @@ int main(int argc, char **argv)
       } else if (!strcmp(argv[arg], "-s")) {
         skipwarmup = 1;
         ++arg;
+      } else if (!strcmp(argv[arg], "-minsz")) {
+        ++arg;
+        if (argc > arg) { min_payload = atol(argv[arg]); arg++; }
+        else help = 1;
       } else if (!strcmp(argv[arg], "-max-step")) {
         ++arg;
         if (argc > arg) { max_step = atoi(argv[arg]); arg++; }
@@ -364,6 +368,7 @@ int main(int argc, char **argv)
     if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); arg++; }
 
     if (!max_step) max_step = maxsz;
+    if (!min_payload) min_payload = 16;
 
     /* get SPMD info (needed for segment size) */
     myproc = gex_TM_QueryRank(myteam);
@@ -383,11 +388,11 @@ int main(int argc, char **argv)
                "  The -c option enables cross-machine pairing, default is nearest neighbor.\n"
                "  The -f option enables 'first/last' mode, where the first/last\n"
                "   nodes communicate with each other, while all other nodes sit idle.\n"
+               "  The '-minsz N' option sets the minimum transfer size tested (default is 16).\n"
                "  The '-max-step N' option selects the maximum step between transfer sizes,\n"
                "    which by default advance by doubling until maxsz is reached.");
     if (help || argc > arg) test_usage();
     
-    min_payload = 16;
     max_payload = maxsz;
 
     if (max_payload < min_payload) {

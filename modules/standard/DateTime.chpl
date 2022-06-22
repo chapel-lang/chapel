@@ -98,6 +98,14 @@ module DateTime {
       return c_string; // const char *
   }
 
+  /* Get the `time` since Unix Epoch in seconds
+  */
+  proc timeSinceEpoch(): timedelta {
+    var (seconds,microseconds):(real,real) = getTimeOfDay();
+    microseconds = microseconds/1000000.0;
+    return new timedelta(seconds + microseconds);
+  }
+
   pragma "no doc"
   extern "struct tm" record tm {
     var tm_sec:    c_int;         // seconds [0,61]
@@ -294,7 +302,13 @@ module DateTime {
   }
 
   /* The date that is `timestamp` seconds from the epoch */
+  deprecated "'date.fromtimestamp()' is deprecated. Please use 'date.fromTimestamp()' instead"
   proc type date.fromtimestamp(timestamp) {
+    return fromTimestamp(timestamp);
+  }
+
+  /* The date that is `timestamp` seconds from the epoch */
+  proc type date.fromTimestamp(timestamp) {
     const sec = timestamp: int;
     const us = ((timestamp-sec) * 1000000 + 0.5): int;
     const td = new timedelta(seconds=sec, microseconds=us);
@@ -302,8 +316,15 @@ module DateTime {
   }
 
   /* The `date` that is `ord` days from 1-1-0001 */
+  deprecated "'date.fromordinal()' is deprecated. Please use 'date.fromOrdinal()' instead"
   proc type date.fromordinal(ord) {
-    if ord < 0 || ord > 1+date.max.toordinal() then
+    return fromOrdinal(ord);
+  }
+
+
+  /* The `date` that is `ord` days from 1-1-0001 */
+  proc type date.fromOrdinal(ord) {
+    if ord < 0 || ord > 1+date.max.toOrdinal() then
       halt("ordinal (", ord, ") out of range");
     const (y,m,d) = ordToYmd(ord);
     return new date(y,m,d);
@@ -333,13 +354,19 @@ module DateTime {
     timeStruct.tm_mon = month: int(32);
     timeStruct.tm_year = year: int(32);
     timeStruct.tm_wday = weekday(): int(32);
-    timeStruct.tm_yday = (toordinal() - (new date(year, 1, 1)).toordinal() + 1): int(32);
+    timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
     timeStruct.tm_isdst = (-1): int(32);
     return timeStruct;
   }
 
   /* Return the number of days since 1-1-0001 this `date` represents */
+  deprecated "'date.toordinal()' is deprecated. Please use 'date.toOrdinal()' instead"
   proc date.toordinal() {
+    return toOrdinal();
+  }
+
+  /* Return the number of days since 1-1-0001 this `date` represents */
+  proc date.toOrdinal() {
     return ymdToOrd(year, month, day);
   }
 
@@ -348,19 +375,34 @@ module DateTime {
    */
   proc date.weekday() {
     // January 1 0001 is a Monday
-    return try! ((toordinal() + 6) % 7): DayOfWeek;
+    return try! ((toOrdinal() + 6) % 7): DayOfWeek;
   }
 
   /* Return the day of the week as an `ISODayOfWeek`.
      `Monday` == 1, `Sunday` == 7 */
+  deprecated "'date.isoweekday()' is deprecated. Please use 'date.isoWeekday() instead"
   proc date.isoweekday() {
+    return isoWeekday();
+  }
+
+  /* Return the day of the week as an `ISODayOfWeek`.
+     `Monday` == 1, `Sunday` == 7 */
+  proc date.isoWeekday() {
     return try! (weekday(): int + 1): ISODayOfWeek;
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
      and ISO day of the week
    */
+  deprecated "'date.isocalendar()' is deprecated. Please use 'date.isoCalendar()' instead"
   proc date.isocalendar() {
+    return isoCalendar();
+  }
+
+  /* Return the ISO date as a tuple containing the ISO year, ISO week number,
+     and ISO day of the week
+   */
+  proc date.isoCalendar() {
     proc findThursday(d: date) {
       var wd = d.weekday();
       return d + new timedelta(days = (DayOfWeek.Thursday:int - wd:int));
@@ -383,11 +425,17 @@ module DateTime {
     const firstDay = findFirstDayOfYear(y);
     const delta = this - firstDay;
 
-    return (y, 1+delta.days/7, isoweekday(): int);
+    return (y, 1+delta.days/7, isoWeekday(): int);
   }
 
   /* Return the date as a `string` in ISO 8601 format: "YYYY-MM-DD" */
+  deprecated "'date.isoformat()' is deprecated. Please use 'date.isoFormat()' instead"
   proc date.isoformat() {
+    return isoFormat();
+  }
+
+  /* Return the date as a `string` in ISO 8601 format: "YYYY-MM-DD" */
+  proc date.isoFormat() {
     var yearstr = year: string;
     var monthstr = month: string;
     var daystr = day: string;
@@ -447,34 +495,45 @@ module DateTime {
 
   private use IO;
 
-  /* Read or write a date value from channel `f` */
-  proc date.readWriteThis(f) throws {
+  // This method exists to work around a bug in chpldoc where the
+  // 'private use' above this method somehow breaks documentation for the
+  // method that follows (formerly 'writeThis')
+  pragma "no doc"
+  proc date._chpldoc_workaround() { }
+
+  /* Writes this `date` in ISO 8601 format: YYYY-MM-DD */
+  proc date.writeThis(f) throws {
+    f.write(isoFormat());
+  }
+
+  /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
+  proc date.readThis(f) throws {
     const dash = new ioLiteral("-");
+    const binary = f.binary(),
+          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
-    if f.writing {
-      try! {
-        f.write(isoformat());
-      }
-    } else {
-      const binary = f.binary(),
-            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    if isjson then
+      f <~> new ioLiteral('"');
 
-      if isjson then
-        f <~> new ioLiteral('"');
+    f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
 
-      f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
+    if isjson then
+      f <~> new ioLiteral('"');
+  }
 
-      if isjson then
-        f <~> new ioLiteral('"');
-    }
+  /* Read or write a date value from channel `f` */
+  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+  proc date.readWriteThis(f) throws {
+    if f.writing then writeThis(f);
+    else readThis(f);
   }
 
 
   /* Operators on date values */
   pragma "no doc"
   operator date.+(d: date, t: timedelta): date {
-    return date.fromordinal(d.toordinal() + t.days);
+    return date.fromOrdinal(d.toOrdinal() + t.days);
   }
 
   pragma "no doc"
@@ -484,32 +543,32 @@ module DateTime {
 
   pragma "no doc"
   operator date.-(d: date, t: timedelta): date {
-    return date.fromordinal(d.toordinal() - t.days);
+    return date.fromOrdinal(d.toOrdinal() - t.days);
   }
 
   pragma "no doc"
   operator date.-(d1: date, d2: date): timedelta {
-    return new timedelta(days=d1.toordinal() - d2.toordinal());
+    return new timedelta(days=d1.toOrdinal() - d2.toOrdinal());
   }
 
   pragma "no doc"
   operator date.<(d1: date, d2: date) {
-    return d1.toordinal() < d2.toordinal();
+    return d1.toOrdinal() < d2.toOrdinal();
   }
 
   pragma "no doc"
   operator date.<=(d1: date, d2: date) {
-    return d1.toordinal() <= d2.toordinal();
+    return d1.toOrdinal() <= d2.toOrdinal();
   }
 
   pragma "no doc"
   operator date.>(d1: date, d2: date) {
-    return d1.toordinal() > d2.toordinal();
+    return d1.toOrdinal() > d2.toOrdinal();
   }
 
   pragma "no doc"
   operator date.>=(d1: date, d2: date) {
-    return d1.toordinal() >= d2.toordinal();
+    return d1.toOrdinal() >= d2.toOrdinal();
   }
 
 
@@ -567,7 +626,10 @@ module DateTime {
      `microsecond`, and `timezone`.  All arguments are optional
    */
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
-                 in tzinfo: shared TZInfo? = nil) {
+                 in tzinfo: shared TZInfo?) {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -583,17 +645,55 @@ module DateTime {
     this.chpl_tzinfo = tzinfo;
   }
 
+  /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
+     `microsecond`.  All arguments are optional
+   */
+  proc time.init(hour=0, minute=0, second=0, microsecond=0) {
+    if hour < 0 || hour >= 24 then
+      HaltWrappers.initHalt("hour out of range");
+    if minute < 0 || minute >= 60 then
+      HaltWrappers.initHalt("minute out of range");
+    if second < 0 || second >= 60 then
+      HaltWrappers.initHalt("second out of range");
+    if microsecond < 0 || microsecond >= 1000000 then
+      HaltWrappers.initHalt("microsecond out of range");
+    this.chpl_hour = hour;
+    this.chpl_minute = minute;
+    this.chpl_second = second;
+    this.chpl_microsecond = microsecond;
+    this.chpl_tzinfo = nil;
+  }
+
+  /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
+     `microsecond`, and `timezone`.  All arguments are optional
+   */
+
   pragma "no doc"
   proc time.deinit() {
   }
 
   /* Methods on time values */
 
+  /* Replace the `hour`, `minute`, `second`, `microsecond` in a
+     `time` to create a new `time`. All arguments are optional.
+   */
+  proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1) {
+    const newhour = if hour != -1 then hour else this.hour;
+    const newminute = if minute != -1 then minute else this.minute;
+    const newsecond = if second != -1 then second else this.second;
+    const newmicrosecond = if microsecond != -1 then microsecond else this.microsecond;
+
+    return new time(newhour, newminute, newsecond, newmicrosecond);
+  }
+
   /* Replace the `hour`, `minute`, `second`, `microsecond` and `tzinfo` in a
      `time` to create a new `time`. All arguments are optional.
    */
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
-                    in tzinfo=this.tzinfo) {
+                    in tzinfo) {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -603,7 +703,13 @@ module DateTime {
   }
 
   /* Return a `string` representing the `time` in ISO format */
+  deprecated "'time.isoformat()' is deprecated. Please use 'time.isoFormat()' instead"
   proc time.isoformat() {
+    return isoFormat();
+  }
+
+  /* Return a `string` representing the `time` in ISO format */
+  proc time.isoFormat() {
     proc makeNDigits(n, d) {
       var ret = d: string;
       while ret.size < n {
@@ -619,7 +725,7 @@ module DateTime {
     if microsecond != 0 {
       ret = ret + "." + makeNDigits(6, microsecond);
     }
-    var offset = utcoffset();
+    var offset = utcOffset();
     if tzinfo.borrow() != nil {
       var sign: string;
       if offset.days < 0 {
@@ -635,11 +741,17 @@ module DateTime {
   }
 
   /* Return the offset from UTC */
+  deprecated "'time.utcoffset()' is deprecated. Please use 'time.utcOffset()' instead"
   proc time.utcoffset() {
+    return utcOffset();
+  }
+
+  /* Return the offset from UTC */
+  proc time.utcOffset() {
     if tzinfo.borrow() == nil {
       return new timedelta();
     } else {
-      return tzinfo!.utcoffset(datetime.today());
+      return tzinfo!.utcOffset(datetime.now());
     }
   }
 
@@ -648,7 +760,7 @@ module DateTime {
     if tzinfo.borrow() == nil {
       return new timedelta();
     } else {
-      return tzinfo!.dst(datetime.today());
+      return tzinfo!.dst(datetime.now());
     }
   }
 
@@ -678,7 +790,7 @@ module DateTime {
     timeStruct.tm_yday = 0;
 
     if tzinfo.borrow() != nil {
-      timeStruct.tm_gmtoff = abs(utcoffset()).seconds: c_long;
+      timeStruct.tm_gmtoff = abs(utcOffset()).seconds: c_long;
       timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
@@ -696,27 +808,33 @@ module DateTime {
     return str;
   }
 
-  /* Read or write a time value from channel `f` */
-  proc time.readWriteThis(f) throws {
+  /* Writes this `time` in ISO format: hh:mm:ss.sss */
+  proc time.writeThis(f) throws {
+    f.write(isoFormat());
+  }
+
+  /* Reads this `time` from ISO format: hh:mm:ss.sss */
+  proc time.readThis(f) throws {
     const colon = new ioLiteral(":");
-    if f.writing {
-      try! {
-        f.write(isoformat());
-      }
-    } else {
-      const binary = f.binary(),
-            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    const binary = f.binary(),
+          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
-      if isjson then
-        f <~> new ioLiteral('"');
+    if isjson then
+      f <~> new ioLiteral('"');
 
-      f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
-        <~> new ioLiteral(".") <~> chpl_microsecond;
+    f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
+      <~> new ioLiteral(".") <~> chpl_microsecond;
 
-      if isjson then
-        f <~> new ioLiteral('"');
-    }
+    if isjson then
+      f <~> new ioLiteral('"');
+  }
+
+  /* Read or write a time value from channel `f` */
+  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+  proc time.readWriteThis(f) throws {
+    if f.writing then writeThis(f);
+    else readThis(f);
   }
 
 
@@ -767,8 +885,8 @@ module DateTime {
       const dt1 = datetime.combine(new date(1900, 1, 1), t1);
       const dt2 = datetime.combine(new date(1900, 1, 1), t2);
       return dt1 < dt2;
-      //return (t1.replace(tzinfo=nil) - t1.utcoffset()) <
-      //       (t2.replace(tzinfo=nil) - t2.utcoffset());
+      //return (t1.replace(tzinfo=nil) - t1.utcOffset()) <
+      //       (t2.replace(tzinfo=nil) - t2.utcOffset());
     }
   }
 
@@ -916,18 +1034,48 @@ module DateTime {
    */
   proc datetime.init(year, month, day,
                      hour=0, minute=0, second=0, microsecond=0,
-                     in tzinfo: shared TZInfo? = nil) {
+                     in tzinfo) {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
   }
 
+  /* Initialize a new `datetime` value from the given `year`, `month`, `day`,
+     `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
+     `month`, and `day` arguments are required, the rest are optional.
+   */
+  proc datetime.init(year, month, day,
+                     hour=0, minute=0, second=0, microsecond=0) {
+    chpl_date = new date(year, month, day);
+    chpl_time = new time(hour, minute, second, microsecond);
+  }
+
+  /* Initialize a new `datetime` value from the given `date` and `time` */
+  proc datetime.init(d: date, t: time) {
+    chpl_date = d;
+    chpl_time = t;
+  }
+
   /* Return a `datetime` value representing the current time and date */
+  deprecated "'datetime.today()' is deprecated, please use 'date.today()' or 'datetime.now()' instead"
   proc type datetime.today() {
     return this.now();
   }
 
   /* Return a `datetime` value representing the current time and date */
-  proc type datetime.now(in tz: shared TZInfo? = nil) {
+  proc type datetime.now() {
+    const timeSinceEpoch = getTimeOfDay();
+    const lt = getLocalTime(timeSinceEpoch);
+    return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
+                        day=lt.tm_mday,       hour=lt.tm_hour,
+                        minute=lt.tm_min,     second=lt.tm_sec,
+                        microsecond=timeSinceEpoch(1));
+  }
+
+  /* Return a `datetime` value representing the current time and date */
+  proc type datetime.now(in tz: shared TZInfo?) {
     if tz.borrow() == nil {
       const timeSinceEpoch = getTimeOfDay();
       const lt = getLocalTime(timeSinceEpoch);
@@ -936,26 +1084,54 @@ module DateTime {
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=timeSinceEpoch(1));
     } else {
+      if chpl_warnUnstable  {
+        compilerWarning("tzinfo is unstable; its type may change in the future");
+      }
       const timeSinceEpoch = getTimeOfDay();
       const td = new timedelta(seconds=timeSinceEpoch(0),
                                microseconds=timeSinceEpoch(1));
       const utcNow = unixEpoch + td;
 
-      return (utcNow + tz!.utcoffset(utcNow)).replace(tzinfo=tz);
+      return (utcNow + tz!.utcOffset(utcNow)).replace(tzinfo=tz);
     }
   }
 
   /* Return a `datetime` value representing the current time and date in UTC */
+  deprecated "'datetime.utcnow()' is deprecated. Please use 'datetime.utcNow()' instead"
   proc type datetime.utcnow() {
+    return utcNow();
+  }
+
+  /* Return a `datetime` value representing the current time and date in UTC */
+  proc type datetime.utcNow() {
     const timeSinceEpoch = getTimeOfDay();
     const td = new timedelta(seconds=timeSinceEpoch(0),
                              microseconds=timeSinceEpoch(1));
     return unixEpoch + td;
   }
 
+
   /* The `datetime` that is `timestamp` seconds from the epoch */
+  deprecated "'datetime.fromtimestamp()' is deprecated. Please use 'datetime.fromTimestamp()' instead"
+  proc type datetime.fromtimestamp(timestamp: real) {
+    return fromTimestamp(timestamp);
+  }
+
+  /* The `datetime` that is `timestamp` seconds from the epoch */
+  deprecated "'datetime.fromtimestamp()' is deprecated. Please use 'datetime.fromTimestamp()' instead"
   proc type datetime.fromtimestamp(timestamp: real,
-                                   in tz: shared TZInfo? = nil) {
+                                   in tz: shared TZInfo?) {
+    return fromTimestamp(timestamp, tz);
+  }
+
+  /* The `datetime` that is `timestamp` seconds from the epoch */
+  proc type datetime.fromTimestamp(timestamp: real) {
+    return datetime.fromTimestamp(timestamp, nil);
+  }
+
+  /* The `datetime` that is `timestamp` seconds from the epoch */
+  proc type datetime.fromTimestamp(timestamp: real,
+                                   in tz: shared TZInfo?) {
     if tz.borrow() == nil {
       var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
       const lt = getLocalTime(t);
@@ -964,19 +1140,36 @@ module DateTime {
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=t(1));
     } else {
-      var dt = datetime.utcfromtimestamp(timestamp);
-      return (dt + tz!.utcoffset(dt)).replace(tzinfo=tz);
+      if chpl_warnUnstable {
+        compilerWarning("tzinfo is unstable; its type may change in the future");
+      }
+      var dt = datetime.utcFromTimestamp(timestamp);
+      return (dt + tz!.utcOffset(dt)).replace(tzinfo=tz);
     }
   }
 
+
   /* The `datetime` that is `timestamp` seconds from the epoch in UTC */
+  deprecated "'datetime.utcfromtimestamp()' is deprecated. Please use 'datetime.utcFromTimestamp()' instead"
   proc type datetime.utcfromtimestamp(timestamp) {
+    return utcFromTimestamp(timestamp);
+  }
+
+  /* The `datetime` that is `timestamp` seconds from the epoch in UTC */
+  proc type datetime.utcFromTimestamp(timestamp) {
     return unixEpoch + new timedelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
+
   /* The `datetime` that is `ordinal` days from 1-1-0001 */
+  deprecated "'datetime.fromordinal()' is deprecated. Please use 'datetime.fromOrdinal()' instead"
   proc type datetime.fromordinal(ordinal) {
-    return datetime.combine(date.fromordinal(ordinal), new time());
+    return fromOrdinal(ordinal);
+  }
+
+  /* The `datetime` that is `ordinal` days from 1-1-0001 */
+  proc type datetime.fromOrdinal(ordinal) {
+    return datetime.combine(date.fromOrdinal(ordinal), new time());
   }
 
   /* Form a `datetime` value from a given `date` and `time` */
@@ -1003,6 +1196,7 @@ module DateTime {
 
   /* Get the `time` since Unix Epoch in seconds
   */
+  deprecated "'datetime.timeSinceEpoch()' is deprecated. Please use 'timeSinceEpoch().totalSeconds()' instead."
   proc type datetime.timeSinceEpoch():real {
     var (seconds,microseconds):(real,real) = getTimeOfDay();
     microseconds = microseconds/1000000.0;
@@ -1036,22 +1230,30 @@ module DateTime {
 
   /* Return the date and time converted into the timezone in the argument */
   proc datetime.astimezone(in tz: shared TZInfo) {
+    if chpl_warnUnstable {
+      compilerWarning("tzinfo is unstable; its type may change in the future");
+    }
     if tzinfo == tz {
       return this;
     }
-    const utc = (this - this.utcoffset()).replace(tzinfo=tz);
-    return tz.borrow().fromutc(utc);
+    const utc = (this - this.utcOffset()).replace(tzinfo=tz);
+    return tz.borrow().fromUtc(utc);
   }
 
   /* Return the offset from UTC */
+  deprecated "'datetime.utcoffset()' is deprecated. Please use 'datetime.utcOffset()' instead"
   proc datetime.utcoffset() {
-    if tzinfo.borrow() == nil {
-      halt("utcoffset called on naive datetime");
-    } else {
-      return tzinfo!.utcoffset(this);
-    }
+    return utcOffset();
   }
 
+  /* Return the offset from UTC */
+  proc datetime.utcOffset() {
+    if tzinfo.borrow() == nil {
+      halt("utcOffset called on naive datetime");
+    } else {
+      return tzinfo!.utcOffset(this);
+    }
+  }
   /* Return the daylight saving time offset */
   proc datetime.dst() {
     if tzinfo.borrow() == nil then
@@ -1077,7 +1279,7 @@ module DateTime {
     timeStruct.tm_mon = month: int(32);
     timeStruct.tm_year = year: int(32);
     timeStruct.tm_wday = weekday(): int(32);
-    timeStruct.tm_yday = (toordinal() - (new date(year, 1, 1)).toordinal() + 1): int(32);
+    timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
 
     if tzinfo.borrow() == nil {
       timeStruct.tm_isdst = -1;
@@ -1099,7 +1301,7 @@ module DateTime {
       ret.tm_isdst = 0;
       return ret;
     } else {
-      const utc = this.replace(tzinfo=nil) - utcoffset();
+      const utc = this.replace(tzinfo=nil) - utcOffset();
       var ret = utc.timetuple();
       ret.tm_isdst = 0;
       return ret;
@@ -1107,8 +1309,14 @@ module DateTime {
   }
 
   /* Return the number of days since 1-1-0001 this `datetime` represents */
+  deprecated "'datetime.toordinal()' is deprecated. Please use 'datetime.toOrdinal()' instead"
   proc datetime.toordinal() {
-    return getdate().toordinal();
+    return toOrdinal();
+  }
+
+  /* Return the number of days since 1-1-0001 this `datetime` represents */
+  proc datetime.toOrdinal() {
+    return getdate().toOrdinal();
   }
 
   /* Return the day of the week as a `DayOfWeek`.
@@ -1133,7 +1341,13 @@ module DateTime {
   }
 
   /* Return the `datetime` as a `string` in ISO format */
+  deprecated "'datetime.isoformat()' is deprecated. Please use 'datetime.isoFormat()' instead"
   proc datetime.isoformat(sep="T") {
+    return isoFormat(sep);
+  }
+
+  /* Return the `datetime` as a `string` in ISO format */
+  proc datetime.isoFormat(sep="T") {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i: string;
       for i in 1..nDigits-numStr.size {
@@ -1144,7 +1358,7 @@ module DateTime {
     var micro = if microsecond > 0 then "." + zeroPad(6, microsecond) else "";
     var offset: string;
     if tzinfo.borrow() != nil {
-      var utcoff = utcoffset();
+      var utcoff = utcOffset();
       var sign: string;
       if utcoff < new timedelta(0) {
         sign = '-';
@@ -1195,7 +1409,7 @@ module DateTime {
 
     if tzinfo.borrow() != nil {
       timeStruct.tm_isdst = tzinfo!.dst(this).seconds: int(32);
-      timeStruct.tm_gmtoff = tzinfo!.utcoffset(this).seconds: c_long;
+      timeStruct.tm_gmtoff = tzinfo!.utcOffset(this).seconds: c_long;
       timeStruct.tm_zone = nil;
     } else {
       timeStruct.tm_isdst = -1: int(32);
@@ -1259,31 +1473,36 @@ module DateTime {
     return this.strftime("%a %b %e %T %Y");
   }
 
-  /* Read or write a datetime value from channel `f` */
-  proc datetime.readWriteThis(f) throws {
+  /* Writes this `datetime` in ISO format: YYYY-MM-DDThh:mm:ss.sss */
+  proc datetime.writeThis(f) throws {
+    f.write(isoFormat());
+  }
+
+  /* Reads this `datetime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
+  proc datetime.readThis(f) throws {
     const dash  = new ioLiteral("-"),
           colon = new ioLiteral(":");
+    const binary = f.binary(),
+          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
-    if f.writing {
-      try! {
-        f.write(isoformat());
-      }
-    } else {
-      const binary = f.binary(),
-            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    if isjson then
+      f <~> new ioLiteral('"');
 
-      if isjson then
-        f <~> new ioLiteral('"');
+    f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
+      <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
+      <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
+      <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
 
-      f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
-        <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
-        <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
-        <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
+    if isjson then
+      f <~> new ioLiteral('"');
+  }
 
-      if isjson then
-        f <~> new ioLiteral('"');
-    }
+  /* Read or write a datetime value from channel `f` */
+  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
+  proc datetime.readWriteThis(f) throws {
+    if f.writing then writeThis(f);
+    else readThis(f);
   }
 
 
@@ -1311,7 +1530,7 @@ module DateTime {
     var adddays = td.days + newhour / 24;
     newhour %= 24;
 
-    return datetime.combine(date.fromordinal(dt.getdate().toordinal()+adddays),
+    return datetime.combine(date.fromOrdinal(dt.getdate().toOrdinal()+adddays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tzinfo=dt.tzinfo));
@@ -1352,7 +1571,7 @@ module DateTime {
       subDays += 1;
       newhour += 24;
     }
-    return datetime.combine(date.fromordinal(dt.getdate().toordinal()-subDays),
+    return datetime.combine(date.fromOrdinal(dt.getdate().toOrdinal()-subDays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tzinfo=dt.tzinfo));
@@ -1369,17 +1588,18 @@ module DateTime {
             newsec = dt1.second - dt2.second,
             newmin = dt1.minute - dt2.minute,
             newhour = dt1.hour - dt2.hour,
-            newday = dt1.toordinal() - dt2.toordinal();
+            newday = dt1.toOrdinal() - dt2.toOrdinal();
       return new timedelta(days=newday, hours=newhour, minutes=newmin,
                            seconds=newsec, microseconds=newmicro);
     } else {
       return dt1.replace(tzinfo=nil) -
                                 dt2.replace(tzinfo=nil) +
-                                dt2.utcoffset() - dt1.utcoffset();
+                                dt2.utcOffset() - dt1.utcOffset();
     }
   }
 
   pragma "no doc"
+  deprecated "'operator datetime.-(dt: datetime, d: date)' is deprecated. Please use 'dt - new datetime(d, new time())' instead."
   operator datetime.-(dt: datetime, d: date):timedelta {
     // convert date to datetime and use the default zero time
     var castDate = datetime.combine(d,new time());
@@ -1403,8 +1623,8 @@ module DateTime {
                         t1.second == t2.second &&
                         t1.microsecond == t2.microsecond;
     } else {
-      return (dt1.replace(tzinfo=nil) - dt1.utcoffset()) ==
-             (dt2.replace(tzinfo=nil) - dt2.utcoffset());
+      return (dt1.replace(tzinfo=nil) - dt1.utcOffset()) ==
+             (dt2.replace(tzinfo=nil) - dt2.utcOffset());
     }
   }
 
@@ -1425,8 +1645,8 @@ module DateTime {
       else if date2 < date1 then return false;
       else return dt1.gettime() < dt2.gettime();
     } else {
-      return (dt1.replace(tzinfo=nil) - dt1.utcoffset()) <
-             (dt2.replace(tzinfo=nil) - dt2.utcoffset());
+      return (dt1.replace(tzinfo=nil) - dt1.utcOffset()) <
+             (dt2.replace(tzinfo=nil) - dt2.utcOffset());
     }
   }
 
@@ -1442,8 +1662,8 @@ module DateTime {
       else if date2 < date1 then return false;
       else return dt1.gettime() <= dt2.gettime();
     } else {
-      return (dt1.replace(tzinfo=nil) - dt1.utcoffset()) <=
-             (dt2.replace(tzinfo=nil) - dt2.utcoffset());
+      return (dt1.replace(tzinfo=nil) - dt1.utcOffset()) <=
+             (dt2.replace(tzinfo=nil) - dt2.utcOffset());
     }
   }
 
@@ -1459,8 +1679,8 @@ module DateTime {
       else if date2 > date1 then return false;
       else return dt1.gettime() > dt2.gettime();
     } else {
-      return (dt1.replace(tzinfo=nil) - dt1.utcoffset()) >
-             (dt2.replace(tzinfo=nil) - dt2.utcoffset());
+      return (dt1.replace(tzinfo=nil) - dt1.utcOffset()) >
+             (dt2.replace(tzinfo=nil) - dt2.utcOffset());
     }
   }
 
@@ -1476,8 +1696,8 @@ module DateTime {
       else if date2 > date1 then return false;
       else return dt1.gettime() >= dt2.gettime();
     } else {
-      return (dt1.replace(tzinfo=nil) - dt1.utcoffset()) >=
-             (dt2.replace(tzinfo=nil) - dt2.utcoffset());
+      return (dt1.replace(tzinfo=nil) - dt1.utcOffset()) >=
+             (dt2.replace(tzinfo=nil) - dt2.utcOffset());
     }
   }
 
@@ -1590,8 +1810,14 @@ module DateTime {
   /* Methods on timedelta values */
 
   /* Return the total number of seconds represented by this object */
-  proc timedelta.total_seconds(): real {
+  proc timedelta.totalSeconds(): real {
     return days*(24*60*60) + seconds + microseconds / 1000000.0;
+  }
+
+  /* Return the total number of seconds represented by this object */
+  deprecated "'timedelta.total_seconds()' is deprecated. Please use 'timedelta.totalSeconds()' instead."
+  proc timedelta.total_seconds(): real {
+    return totalSeconds();
   }
 
 
@@ -1722,7 +1948,14 @@ module DateTime {
      derived from it. */
   class TZInfo {
     /* The offset from UTC this class represents */
+    deprecated "'TZInfo.utcoffset()' is deprecated. Please use 'TZInfo.utcOffset()' instead"
     proc utcoffset(dt: datetime): timedelta {
+      HaltWrappers.pureVirtualMethodHalt();
+      return new timedelta();
+    }
+
+    /* The offset from UTC this class represents */
+    proc utcOffset(dt: datetime): timedelta {
       HaltWrappers.pureVirtualMethodHalt();
       return new timedelta();
     }
@@ -1740,10 +1973,18 @@ module DateTime {
     }
 
     /* Convert a `time` in UTC to this time zone */
+    deprecated "'TZInfo.fromutc()' is deprecated. Please use 'TZInfo.fromUtc()' instead"
     proc fromutc(dt: datetime): datetime {
       HaltWrappers.pureVirtualMethodHalt();
       return new datetime(0,0,0);
     }
+
+    /* Convert a `time` in UTC to this time zone */
+    proc fromUtc(dt: datetime): datetime {
+      HaltWrappers.pureVirtualMethodHalt();
+      return new datetime(0,0,0);
+    }
+
   }
 
   // TODO: Add a timezone class implementation

@@ -1120,6 +1120,10 @@ listBenchmark1:
     - Change lists to use 0-based indexing (#14684)
   06/03/20:
     - List _collapse remove shift arg (#15693)
+  06/01/22:
+    - Reduce uses of Math by automatically included modules (#19885)
+  06/07/22:
+    - Fix performance of list benchmark by making these helpers inlined (#19947)
 
 lulesh:
   03/15/14:
@@ -1794,7 +1798,11 @@ revcomp: &revcomp-base
     - Restore reverse-complement performance with qio hint (#14045)
   02/04/20:
     - Improve const/ref this decorators (and update revcomp) (#14809)
+  06/01/22:
+    - Reduce uses of Math by automatically included modules (#19885)
 revcomp-submitted:
+  06/07/22:
+    - Fix performance of list benchmark by making these helpers inlined (#19947)
   <<: *revcomp-base
 
 ri-a2-AoA:
@@ -2034,10 +2042,6 @@ time-write:
   01/06/21:
     - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
-timeMapMinusEqual:
-  07/10/20:
-    - Optimize map -= operation (#16038)
-
 views-forall-iter:
   10/12/17:
     - Switch from these(tag) to foralls for some standalone iters (#7578)
@@ -2153,6 +2157,16 @@ compilerAndTestingStats: &compiler-perf-base
     - Move some method definitions into headers (#18961)
   01/25/22:
     - Move SSCA out of release/examples (#19054)
+  05/11/22:
+    - simplify use/import shadowing (#19306)
+  05/20/22:
+    - Always use the dyno parser (#19816)
+  05/26/22:
+    - Bump system llvm from 13 to 14
+  05/29/22:
+    - Rebuild llvm 14 without debug
+  06/02/22:
+    - Cache module-level scope resolution (#19900)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2273,6 +2287,12 @@ arkouda: &arkouda-base
     - Closes 1241 Use computeOnSegments for substringSearch (Bears-R-Us/arkouda#1248)
   05/04/22:
     - 846 refactor unique to handle groupby (Bears-R-Us/arkouda#1330)
+  05/20/22:
+    - DataFrame Display Server-Side Performance Issue (Bears-R-Us/arkouda#1409)
+  05/26/22:
+    - Use swap operator in radix sort instead of assignment operator (Bears-R-Us/arkouda#1419)
+  06/07/22:
+    - Closes 1455 pep8 formatting tests (Bears-R-Us/arkouda#1458)
 
 
 arkouda-string:

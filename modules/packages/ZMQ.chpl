@@ -246,6 +246,7 @@ module ZMQ {
   private use IO;
   private use CTypes;
   use SysError;
+  use OS.POSIX;
 
   private extern proc chpl_macro_int_errno():c_int;
   private inline proc errno return chpl_macro_int_errno():c_int;
@@ -1056,6 +1057,7 @@ module ZMQ {
 
     pragma "no doc"
     proc throw_socket_error(socket_errno: c_int, err_fn: string) throws {
+      import SysBasic.syserr;
       var errmsg_zmq: string;
       try! {
         errmsg_zmq = createStringWithNewBuffer(zmq_strerror(socket_errno));

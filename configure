@@ -89,6 +89,12 @@ mynormalizepath () {
       ;;
   esac
 
+  if [ ! -d $P ]
+  then
+    echo "Prefix directory does not exist, creating directory."
+    mkdir -p $P
+  fi
+
   # Normalize $P more - normalize path
   P=`(unset CDPATH && cd "$P" && pwd)`
 

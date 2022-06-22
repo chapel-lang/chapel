@@ -184,8 +184,13 @@
   // See gasnet_internal.h for prototypes and brief descriptions.
 #define GASNETC_SEGMENT_ATTACH_HOOK 1
 #define GASNETC_SEGMENT_CREATE_HOOK 1
-//#define GASNETC_SEGMENT_DESTROY_HOOK 1
+#define GASNETC_SEGMENT_DESTROY_HOOK 1
 #define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
+
+  // Uncomment the following defines if conduit provides the corresponding hook.
+  // See other/kinds/gasnet_kinds_internal.h for prototypes and brief descriptions.
+//#define GASNETC_MK_CREATE_HOOK 1
+//#define GASNETC_MK_DESTROY_HOOK 1
 
 #if GASNETC_PIN_SEGMENT // multi-EP NOT supported with remote firehose
 // If conduit supports GASNET_MAXEPS!=1, set default and (optional) max values here.
