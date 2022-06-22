@@ -21,6 +21,7 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.27/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
 * made loops over unbounded enum/bool ranges stop at their extreme values
 * made serial loops over unbounded integer ranges terminate instead of spinning
+* byte-based string slicing now throws when not aligned to codepoint boundaries
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -39,6 +40,7 @@ New Features
 
 Feature Improvements
 --------------------
+* `param` indexing of `string` and `bytes` values is now done at compile-time
 
 Namespace Changes
 -----------------
@@ -52,6 +54,8 @@ Deprecated / Removed Library Features
 * stopped making the contents of the 'Math' module available by default
   (see https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 * deprecated support for `+`, `-`, `&`, `|`, and `^` on map
+* deprecated `list.extend()` in favor of new `list.append()` overloads
+* deprecated `channel.write()`
 * deprecated support for 'Sys'/'SysBasic' symbols now supported by 'OS.POSIX'
 * deprecated the 'VectorizingIterator' module
 * removed the deprecated 'ChapelEnv', 'CPtr', and 'SysCTypes' modules
@@ -65,6 +69,8 @@ Standard Library Modules
 * moved available-by-default math features into a new 'AutoMath' library
   (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and
   https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
+* added a new 'GPUDiagnostics' module for tracking GPU kernel launches  
+  (see https://chapel-lang.org/docs/master/modules/standard/GPUDiagnostics.html)
 * ensured all types have separate `isXType`, `isXValue`, and `isX` routines  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Types.html)
 * added a 'defaultHashTableResizeThreshold' config to affect hash table growth  
@@ -127,7 +133,14 @@ Portability
 GPU Computing
 -------------
 * extended Chapel's GPU support to enable GPU computing using multiple locales
+* added a new 'GPUDiagnostics' module for tracking kernel launches  
+  (see https://chapel-lang.org/docs/master/modules/standard/GPUDiagnostics.html)
+* extended 'Memory.Diagnostics' to support tracking GPU-based allocations  
+  (see https://chapel-lang.org/docs/master/modules/standard/Memory/Diagnostics.html)
+* nested block statements and tuples are now supported for GPU kernels
 * removed support for the CPU sublocale, relying on the locale itself to do that
+* addressed a number of GPU portability / stability issues  
+  (see 'Bug Fixes for GPU Computing' below)
 
 Compiler Improvements
 ---------------------
@@ -157,12 +170,20 @@ Bug Fixes
 * fixed a bug where deprecation warnings were not generated for qualified access
 * fixed a bug preventing 'import super.super' or similar 'import' statements
 * fixed a bug where private submodules were incorrectly considered as candidates
+* fixed a bug preventing `try!` expressions in `yield` statements
 * fixed a bug in which scans of default slices of Block arrays didn't compile
 * fixed a bug in which the BUILD_VERSION wasn't printing when it is non-zero
 
 Bug Fixes for Build Issues
 --------------------------
 * fixed a path error for CHPL_LLVM=bundled when CC was set
+
+Bug Fixes for GPU Computing
+---------------------------
+* fixed a bug preventing copmilation with LLVM versions greater than 13
+* fixed a bug with CUDA 10.1 that prevented GPU initialization
+* fixed a bug causing an 'unresolved extern' warning during compilation
+* suppressed CUDA version warnings for those that are newer than clang supports
 
 Bug Fixes for Libraries
 -----------------------
