@@ -8,11 +8,11 @@ Ranges
 A *range* is a first-class, constant-space representation of a regular
 sequence of values.  These values are typically integers, though
 ranges over bools, enums, and other types are also supported.  Ranges
-support serial and parallel iteration over the sequence of values
-they represent, as well as an alegbra of operations such as counting,
-striding, intersection, shifting, and comparisons.  Ranges form the
-basis for defining rectangular domains (:ref:`Chapter-Domains`) and
-arrays (:ref:`Chapter-Arrays`) in Chapel.
+support serial and parallel iteration over the sequence of values they
+represent, as well as operations such as counting, striding,
+intersection, shifting, and comparisons.  Ranges form the basis for
+defining rectangular domains (:ref:`Chapter-Domains`) and arrays
+(:ref:`Chapter-Arrays`) in Chapel.
 
 Ranges are presented as follows:
 
