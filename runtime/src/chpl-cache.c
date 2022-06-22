@@ -558,7 +558,7 @@ struct cache_entry_s {
 
   // indicates whether the page was prefetched (ENTRY_FLAGS_PREFETCHED)
   // or read-ahead (ENTRY_FLAGS_READAHEAD)
-  int flags;
+  int prefetch_diags_flags;
 
   // Since e.g. with ugni, a comm event can cause the implementation
   // to switch tasks, only allow one task at a time to manipulate
@@ -966,17 +966,17 @@ struct rdcache_s* cache_create(void) {
 // unused prefetches and read aheads. By "unused", we
 // mean that the entry was prefetched or read ahead but
 // never accessed before being evicted. We zero out the
-// flags at the end so we don't double count this event.
+// prefetch_diags_flags at the end so we don't double count this event.
 static
 void count_unused_prefetches(struct cache_entry_s* z)
 {
-  if((z->flags & ENTRY_FLAGS_PREFETCHED) != 0) {
+  if((z->prefetch_diags_flags & ENTRY_FLAGS_PREFETCHED) != 0) {
     chpl_comm_diags_incr(cache_prefetch_unused);
   }
-  if((z->flags & ENTRY_FLAGS_READAHEADED) != 0) {
+  if((z->prefetch_diags_flags & ENTRY_FLAGS_READAHEADED) != 0) {
     chpl_comm_diags_incr(cache_readahead_unused);
   }
-  z->flags = 0;
+  z->prefetch_diags_flags = 0;
 }
 
 static
@@ -1356,7 +1356,7 @@ void aout_evict(struct rdcache_s* cache)
 
   // reset the prefetch/read ahead flags so we won't
   // increment the counters for this entry.
-  z->flags = 0;
+  z->prefetch_diags_flags = 0;
 
   // and store it on the free list.
   entry = &z->base;
@@ -2028,19 +2028,19 @@ void unreserve_entry(struct rdcache_s* cache,
 // Utility function to increment the waited counters.
 // We call this when we had to wait for an inflight prefetch
 // or read ahead to complete when we tried to do a get. We zero
-// out the flags at the end so we don't double count the event.
+// out the prefetch_diags_flags at the end so we don't double count the event.
 static
 void count_waited_prefetch(struct cache_entry_s* entry,
                            chpl_bool waited)
 {
-  if (waited && entry->flags != 0) {
-    if (entry->flags & ENTRY_FLAGS_PREFETCHED) {
+  if (waited && entry->prefetch_diags_flags != 0) {
+    if (entry->prefetch_diags_flags & ENTRY_FLAGS_PREFETCHED) {
       chpl_comm_diags_incr(cache_prefetch_waited);
     }
-    if (entry->flags & ENTRY_FLAGS_READAHEADED) {
+    if (entry->prefetch_diags_flags & ENTRY_FLAGS_READAHEADED) {
       chpl_comm_diags_incr(cache_readahead_waited);
     }
-    entry->flags = 0;
+    entry->prefetch_diags_flags = 0;
   }
 }
 
@@ -2259,7 +2259,7 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     tree->am_current++;
 
     bottom_match->queue = QUEUE_AM;
-    bottom_match->flags = 0;
+    bottom_match->prefetch_diags_flags = 0;
     bottom_match->entryReservedByTask = NULL;
     bottom_match->readahead_skip = 0;
     bottom_match->readahead_len = 0;
@@ -2288,7 +2288,7 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     bottom_tmp->base.next = NULL;
 
     bottom_tmp->queue = QUEUE_AIN;
-    bottom_tmp->flags = 0;
+    bottom_tmp->prefetch_diags_flags = 0;
     bottom_tmp->entryReservedByTask = NULL;
     bottom_tmp->readahead_skip = 0;
     bottom_tmp->readahead_len = 0;
@@ -2754,7 +2754,6 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
                 node, prefetch_start, prefetch_end - prefetch_start,
                 next_ra_length,
                 commID, ln, fn);
-      chpl_comm_diags_incr(cache_num_page_readaheads);
     } else {
       // We could not prefetch, so record a cache miss so
       //  that sequential prefetch will continue when we access
@@ -2978,8 +2977,8 @@ int cache_get_in_page(struct rdcache_s* cache,
         assert(entry->base.raddr == ra_page && entry->base.node == node);
       }
 
-      // Clear the flags
-      entry->flags = 0;
+      // Clear the prefetch flags to indicate that the data was used
+      entry->prefetch_diags_flags = 0;
       // Copy the data out.
       chpl_memcpy(addr, entry->page + (raddr-ra_page), size);
 
@@ -3104,12 +3103,12 @@ int cache_get_in_page(struct rdcache_s* cache,
   entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
 
   // Set the flag to indicate whether it was prefetched or read-aheaded
-  if (isreadahead && !(entry->flags & ENTRY_FLAGS_READAHEADED)) {
-    entry->flags |= ENTRY_FLAGS_READAHEADED;
+  if (isreadahead && !(entry->prefetch_diags_flags & ENTRY_FLAGS_READAHEADED)) {
+    entry->prefetch_diags_flags |= ENTRY_FLAGS_READAHEADED;
     chpl_comm_diags_incr(cache_num_page_readaheads);
   }
-  if (isprefetch && !isreadahead && !(entry->flags & ENTRY_FLAGS_PREFETCHED)) {
-    entry->flags |= ENTRY_FLAGS_PREFETCHED;
+  if (isprefetch && !isreadahead && !(entry->prefetch_diags_flags & ENTRY_FLAGS_PREFETCHED)) {
+    entry->prefetch_diags_flags |= ENTRY_FLAGS_PREFETCHED;
     chpl_comm_diags_incr(cache_num_prefetches);
   }
 
@@ -3774,18 +3773,6 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
   if( acquire ) {
     task_local->last_acquire = cache->next_request_number;
     cache->next_request_number++;
-    // Note prefetches that cannot be used
-    // TODO: the counts below are not being seen in the output (the if is not
-    // triggering).
-    /*struct cache_entry_s* entry;
-    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled()) {
-      for( entry = cache->ain_head; entry; entry = entry->next ) {
-        count_unused_prefetches(entry);
-      }
-      for( entry = cache->am_lru_head; entry; entry = entry->next ) {
-        count_unused_prefetches(entry);
-      }
-    }*/
   }
 
   if( release ) {
