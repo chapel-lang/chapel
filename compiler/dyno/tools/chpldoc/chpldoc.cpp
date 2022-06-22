@@ -1198,11 +1198,20 @@ struct RstResultBuilder {
 */
 struct CommentVisitor {
   CommentMap& map;
+  /* Keep track of used comments here to prevent reusing a comment for a
+     module or class and the first method or attribute.
+   */
+  std::vector<const Comment*> usedComments_;
   const Comment* lastComment_ = nullptr;
 
   void put(const AstNode* n) {
     if (lastComment_) {
-      map.emplace(n->id(), lastComment_);
+      std::vector<const Comment*>::iterator it =
+          std::find(usedComments_.begin(), usedComments_.end(), lastComment_);
+      if (it == usedComments_.end()) {
+        usedComments_.push_back(lastComment_);
+        map.emplace(n->id(), lastComment_);
+      }
     }
   }
 
