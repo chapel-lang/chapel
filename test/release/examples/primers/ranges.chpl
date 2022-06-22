@@ -31,10 +31,11 @@ writeRange(r3);
 writeln();
 
 // Ranges can also be defined using an `open-interval` form using the
-// ``..<`` operator, causing the upper bound to be omitted.  For
-// example, the range ``3..<10`` is equivalent to ``3..9``.  This form
-// is particularly useful for 0-based indexing, to avoid bounds like
-// ``n-1``.
+// ``..<`` operator, causing the upper bound to be excluded from the
+// values represented by this range.  For example, the range
+// ``3..<10`` is equivalent to ``3..9``.  This form is particularly
+// useful for 0-based indexing, to avoid bounds like ``n-1``.
+//
 writeln("Open interval ranges");
 const rOpen = 1..<10,  // 1, 2, 3, ..., 9
       rOpen2 = 0..<n;  // 0, 1, 2, ..., n-1
@@ -77,7 +78,7 @@ writeln();
 // for-loop iterates over the sequence represented by ``r``, computing
 // the sum of the values in the sequence.
 //
-var sum: int = 0;
+var sum = 0;
 for i in 1..10 do       // compute 1 + 2 + 3 + ... + 10
   sum += i;
 writeln("The sum of the values in '1..10' is ", sum);
@@ -90,7 +91,7 @@ writeln();
 //
 // Ranges also serve as the building block for rectangular
 // :ref:`domains <primers-domains>` and :ref:`arrays
-// <primers-arrays>`.  Here we use the range ``r`` to declare a 2D
+// <primers-arrays>`.  Here we use ranges to declare a 2D
 // 10x10 domain and an array over it.
 //
 writeln("Domains and arrays");
@@ -101,8 +102,8 @@ writeln("Array A");
 writeln(A);
 writeln();
 
-// Arrays can also be declared in terms of anonymous domains by using
-// ranges directly (optionally dropping the curly brackets):
+// Arrays can also be declared using ranges directly, which
+// effectively creates an anonymous domain for the array:
 
 var A1: [1..n] int,
     A2: [1..n, 1..n] string;
@@ -125,41 +126,15 @@ writeln();
   --------------------------
 */
 
-// Ranges can be defined over boolean values and enumerated types.  In
-// the case of enumerations, the range's values are ordered according
-// to the declaration order of the enum's constants rather than their
-// (optional) numerical values.
-
-writeln("Ranges over bools and enums:");
-enum dir {north, south, east, west};
-enum color {red=4, orange=2, yellow=1, green=3, blue=6, indigo=7, violet=5};
-const boolRange = false..true,                 // false, true
-      enumRange = dir.north..dir.west,         // north, south, east, west
-      colorRange = color.orange..color.green;  // orange, yellow, green
-writeRange(boolRange);
-writeRange(enumRange);
-writeRange(colorRange);
-writeln();
-
 //
-// Ranges can also be `unbounded` on one or both sides, when the
-// respective bound is omitted.  For integer ranges, the lack of a
-// bound can be thought of as representing the infinite sequence of
-// values in that direction.  For example, a range without a high
-// bound represents all values greater than or equal to the low bound.
+// Ranges can be `unbounded` on one or both sides, when the
+// respective bound is omitted.  For example, a range without a high
+// bound represents values greater than or equal to the low bound.
 //
 writeln("Unbounded ranges");
-writeRange(1..);   // 1, 2, 3, ..., infinity
-writeRange(..5);   // -infinity, ..., 3, 4, 5
-writeRange(..);    // -infinity, ..., infinity
-
-
-// Since boolean and enum values are finite by definition, the lack of
-// a bound implies that the type's low/high value should be used
-// in place of the missing bound.
-writeRange(false..);         // like 'false..true'
-writeRange(dir.south..);     // like 'dir.south..dir.west'
-writeRange(..color.indigo by -1);  // like 'color.red..color.indigo by -1'
+writeRange(1..);   // 1, 2, 3, ...
+writeRange(..5);   // ..., 3, 4, 5
+writeRange(..);    // ...
 writeln();
 
 //
@@ -172,6 +147,31 @@ writeln("Iterating over zip(312..315, 1..) generates");
 for (i, j) in zip(312..315, 1..) {
   write(" ", (i, j));
 }
+writeln();
+writeln();
+
+// Ranges can also be defined over boolean values and enumerated
+// types.  In the case of enumerations, the range's sequence of values
+// is based on the declaration order of the enum's constants rather
+// than their (optional) numerical values.
+//
+writeln("Ranges over bools and enums:");
+enum dir {north, south, east, west};
+enum color {red=4, orange=2, yellow=1, green=3, blue=6, indigo=7, violet=5};
+const boolRange = false..true,                 // false, true
+      enumRange = dir.north..dir.west,         // north, south, east, west
+      colorRange = color.orange..color.green;  // orange, yellow, green
+writeRange(boolRange);
+writeRange(enumRange);
+writeRange(colorRange);
+writeln();
+
+// For boolean and enum ranges, the lack of a bound implies that the
+// type's low/high value should be used in place of the missing bound.
+//
+writeRange(false..);         // like 'false..true'
+writeRange(dir.south..);     // like 'dir.south..dir.west'
+writeRange(..color.indigo by -1);  // like 'color.red..color.indigo by -1'
 writeln();
 
 /*
@@ -229,7 +229,7 @@ writeRange(r by -2 # -4);  // 8, 6, 4, 2
 writeRange(r # -4 by -2);  // 10, 8
 writeln();
 
-// By default, a strided range's values are aligned with respect to
+// By default, a strided range's values are aligned with
 // its first value.  Thus, for a positive stride, the values are
 // aligned with its low bound; while for a negative stride, the
 // values are aligned to its high bound.
@@ -268,8 +268,9 @@ writeln();
 
 
 //
-// The ``+`` and ``-`` operators can be used to shift a range's
-// sequence higher or lower.
+// The ``+`` and ``-`` operators can be used to create a new range
+// from an existing one, representing a shift in the range's sequence
+// of values.
 //
 writeln("Operators + and -");
 writeRange(r + 5);          // 6..15

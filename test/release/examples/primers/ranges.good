@@ -34,21 +34,23 @@ Array A
 The sum of the values in 1..10, computed by reduce, is also 55
 1 2 3 4 5
 
+Unbounded ranges
+Range 1.. = 1, 2, 3, ...
+Range ..5 = ..., 3, 4, 5
+Range .. = all integers, increasing
+
+Iterating over zip(312..315, 1..) generates
+ (312, 1) (313, 2) (314, 3) (315, 4)
+
 Ranges over bools and enums:
 Range false..true = false, true
 Range north..west = north, south, east, west
 Range orange..green = orange, yellow, green
 
-Unbounded ranges
-Range 1.. = 1, 2, 3, ...
-Range ..5 = ..., 3, 4, 5
-Range .. = all integers, increasing
 Range false.. = false, true
 Range south.. = south, east, west
 Range ..indigo by -1 = indigo, blue, green, yellow, orange, red
 
-Iterating over zip(312..315, 1..) generates
- (312, 1) (313, 2) (314, 3) (315, 4)
 The count operator
 Range 0..4 = 0, 1, 2, 3, 4
 Range 1..4 = 1, 2, 3, 4
