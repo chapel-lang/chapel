@@ -76,7 +76,7 @@ writeln();
 d.mod(c, a);
 writeln(d);
 
-var d2 : uint = 0;
+var d2 : int = 0;
 
 d2 = d.mod(c, 8);
 writeln(d2);

@@ -1,0 +1,63 @@
+Checking Operator (a : +, b : +)
+	All Matched: true
+Checking Operator (a : +, b : -)
+	All Matched: true
+Checking Operator (a : -, b : +)
+	All Matched: true
+Checking Operator (a : -, b : -)
+	All Matched: true
+
+Checking Operator (b.type = int) (a : +, b : +)
+	All Matched: true
+Checking Operator (b.type = int) (a : +, b : -)
+	All Matched: true
+Checking Operator (b.type = int) (a : -, b : +)
+	All Matched: true
+Checking Operator (b.type = int) (a : -, b : -)
+	All Matched: true
+
+Checking Operator (b.type = uint) (a : +, b : +)
+	All Matched: true
+Checking Operator (b.type = uint) (a : +, b : -)
+	All Matched: true
+Checking Operator (b.type = uint) (a : -, b : +)
+	All Matched: true
+Checking Operator (b.type = uint) (a : -, b : -)
+	All Matched: true
+
+Checking Assigning Operator (%=) (a : +, b : +)
+	All Matched: true
+Checking Assigning Operator (%=) (a : +, b : -)
+	All Matched: true
+Checking Assigning Operator (%=) (a : -, b : +)
+	All Matched: true
+Checking Assigning Operator (%=) (a : -, b : -)
+	All Matched: true
+
+Checking Method (a : +, b : +)
+	All Matched: true
+Checking Method (a : +, b : -)
+	All Matched: true
+Checking Method (a : -, b : +)
+	All Matched: true
+Checking Method (a : -, b : -)
+	All Matched: true
+
+Checking Method (b.type = int) (a : +, b : +)
+	All Matched: true
+Checking Method (b.type = int) (a : +, b : -)
+	All Matched: true
+Checking Method (b.type = int) (a : -, b : +)
+	All Matched: true
+Checking Method (b.type = int) (a : -, b : -)
+	All Matched: true
+
+Checking Method (b.type = uint) (a : +, b : +)
+	All Matched: true
+Checking Method (b.type = uint) (a : +, b : -)
+	All Matched: true
+Checking Method (b.type = uint) (a : -, b : +)
+	All Matched: true
+Checking Method (b.type = uint) (a : -, b : -)
+	All Matched: true
+
