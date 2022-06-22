@@ -590,7 +590,7 @@ proc installSpkg(args: [?d] string) throws {
 
   if specArg.hasValue() {
     var specArr = specArg.values();
-    if MASON_OFFLINE && specArr.count("--update") == 0 {
+    if MASON_OFFLINE && ((+ reduce (specArr == "--update")) == 0) {
       writeln("Cannot install Spack packages when MASON_OFFLINE=true");
       return;
     }

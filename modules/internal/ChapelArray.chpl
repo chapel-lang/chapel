@@ -1745,9 +1745,10 @@ module ChapelArray {
     }
 
     /* Return the number of times ``val`` occurs in the array. */
-    /*proc count(val: this.eltType): int {
+    deprecated "'count' is deprecated"
+    proc count(val: this.eltType): int {
       return + reduce (this == val);
-    }*/
+    }
 
    /* Return a tuple of integers describing the size of each dimension.
       For a sparse array, returns the shape of the parent domain.*/
