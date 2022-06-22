@@ -96,23 +96,47 @@ def check_llvm_packages(llvm_config):
     clang_cpp_lib = ''
     clang_cpp_lib_ok = False
 
+    usr_include_clang_ok = False
+
     include_dir = run_command([llvm_config, '--includedir']).strip()
     if os.path.isdir(include_dir):
         llvm_header = os.path.join(include_dir,
                                    'llvm', 'Config', 'llvm-config.h')
         llvm_include_ok = os.path.exists(llvm_header)
+
         clang_header = os.path.join(include_dir, 'clang', 'Basic', 'Version.h')
         clang_include_ok = os.path.exists(clang_header)
+        if not clang_include_ok:
+            usr_include = "/usr/include"
+            clang_header2 = os.path.join(usr_include, 'clang', 'Basic', 'Version.h')
+            ver_inc = os.path.join(usr_include, 'clang', 'Basic', 'Version.inc')
+            if os.path.exists(clang_header2) and os.path.exists(ver_inc):
+
+                llvm_version, ignored_err = check_llvm_config(llvm_config)
+                llvm_version = llvm_version.strip()
+                with open(ver_inc) as f:
+                    contents = f.read()
+                    if llvm_version in contents:
+                        usr_include_clang_ok = True
+                        clang_include_ok = True;
 
     llvm_lib_dir = run_command([llvm_config, '--libdir']).strip()
+
+    clang_lib_name = None
+    if sys.platform == "darwin":
+        clang_lib_name = 'libclang-cpp.dylib'
+    elif sys.platform == "win32":
+        clang_lib_name = 'libclang-cpp.dll'
+    else:
+        clang_lib_name = 'libclang-cpp.so'
+
     if os.path.isdir(llvm_lib_dir):
-        if sys.platform == "darwin":
-          clang_cpp_lib = os.path.join(llvm_lib_dir, 'libclang-cpp.dylib')
-        elif sys.platform == "win32":
-          clang_cpp_lib = os.path.join(llvm_lib_dir, 'libclang-cpp.dll')
-        else:
-          clang_cpp_lib = os.path.join(llvm_lib_dir, 'libclang-cpp.so')
+        clang_cpp_lib = os.path.join(llvm_lib_dir, clang_lib_name);
         clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
+        if usr_include_clang_ok and not clang_cpp_lib_ok:
+            # use e.g. /usr/lib/libclang-cpp.so
+            clang_cpp_lib = os.path.join("/usr/lib", clang_lib_name);
+            clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
 
     s = ''
     if not llvm_include_ok:
@@ -251,12 +275,27 @@ def get_llvm_clang_command_name(lang):
     else:
         return 'clang'
 
+@memoize
 def get_system_llvm_clang(lang):
     clang_name = get_llvm_clang_command_name(lang)
     bindir = get_system_llvm_config_bindir()
     clang = ''
     if bindir:
         clang = os.path.join(bindir, clang_name)
+
+        if not os.path.exists(clang):
+            # also try /usr/bin/clang since some OSes use that
+            # for the clang package
+            usr_bin = "/usr/bin"
+            clang2 = os.path.join(usr_bin, clang_name);
+            if os.path.exists(clang2):
+                llvm_config = find_system_llvm_config()
+                # check that clang --version matches llvm-config --version
+                clangv = run_command([clang2, '--version']).strip()
+                llvmv = run_command([llvm_config, '--version']).strip()
+
+                if llvmv in clangv:
+                    clang = clang2
 
     return clang
 

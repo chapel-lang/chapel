@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <emmintrin.h>
 #include <stdio.h>
+#include <sys/types.h>
 
 /* Internal Headers */
 #include "qthread/qthread.h"

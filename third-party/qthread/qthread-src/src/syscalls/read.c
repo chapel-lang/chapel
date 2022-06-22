@@ -3,6 +3,8 @@
 #endif
 
 /* System Headers */
+#include <sys/types.h>
+
 #include <qthread/qthread-int.h> /* for uint64_t */
 
 #ifdef HAVE_SYS_SYSCALL_H
