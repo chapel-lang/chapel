@@ -36,3 +36,6 @@ as follows:
 
 * Pulled in an upstream fix for errno with syscalls.
   https://github.com/Qthreads/qthreads/pull/89
+
+* Pulled in an upstream fix for build errors on Alpine linux
+  https://github.com/Qthreads/qthreads/pull/105
