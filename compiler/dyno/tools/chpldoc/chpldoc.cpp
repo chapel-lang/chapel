@@ -952,18 +952,16 @@ struct RstResultBuilder {
             // do nothing because deprecation was mentioned in doc comment
         } else {
           // write the deprecation warning and message
-          indentStream(os_, 1 * indentPerDepth) << ".. warning::\n\n";
+          indentStream(os_, indentDepth_ * indentPerDepth) << ".. warning::\n\n";
+          indentStream(os_, (indentDepth_ + 1) * indentPerDepth);
           if (attrs->deprecationMessage().isEmpty()) {
             // write a generic message because there wasn't a specific one
-            indentStream(os_, 2 * indentPerDepth)
-                << getNodeName((AstNode*) node) << " is deprecated";
-            os_ << "\n\n";
+            os_ << getNodeName((AstNode*) node) << " is deprecated";
           } else {
             // use the specific deprecation message
-            indentStream(os_, 2 * indentPerDepth)
-                << attrs->deprecationMessage().c_str();
-            os_ << "\n\n";
+            os_ << strip(attrs->deprecationMessage().c_str());
           }
+          os_ << "\n\n";
         }
       }
     }
@@ -1026,7 +1024,7 @@ struct RstResultBuilder {
     os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
 
     if (hasSubmodule(m)) {
-      os_ << "\n;"
+      os_ << "\n";
       os_ << "**Submodules**" << std::endl << std::endl;
 
       os_ << ".. toctree::" << std::endl;
@@ -1051,15 +1049,22 @@ struct RstResultBuilder {
   owned<RstResult> visit(const Function* f) {
     if (f->visibility() == Decl::Visibility::PRIVATE || isNoDoc(f))
       return {};
+    bool doIndent = f->isMethod() && f->isPrimaryMethod();
+    if (doIndent) indentDepth_ ++;
     show(kindToRstString(f->isMethod(), f->kind()), f);
+    if (doIndent) indentDepth_ --;
     return getResult();
   }
+
   owned<RstResult> visit(const Variable* v) {
     if (v->visibility() == Decl::Visibility::PRIVATE || isNoDoc(v))
       return {};
 
-    if (v->isField())
+    if (v->isField()) {
+      indentDepth_ ++;
       show("attribute", v);
+      indentDepth_ --;
+    }
     else if (v->storageKind() == IntentList::TYPE)
       show("type", v);
     else
@@ -1067,6 +1072,7 @@ struct RstResultBuilder {
 
     return getResult();
   }
+
   owned<RstResult> visit(const Record* r) {
     if (isNoDoc(r)) return {};
     show("record", r);
@@ -1079,83 +1085,83 @@ struct RstResultBuilder {
     return getResult();
   }
 
-   owned<RstResult> visit(const MultiDecl* md) {
-     if (isNoDoc(md)) return {};
+  owned<RstResult> visit(const MultiDecl* md) {
+    if (isNoDoc(md)) return {};
 
-     std::string kind;
-     std::queue<const AstNode*> expressions;
+    std::string kind;
+    std::queue<const AstNode*> expressions;
 
-     for (auto decl : md->decls()) {
-       if (decl->toVariable()->typeExpression() ||
-           decl->toVariable()->initExpression()) {
-         expressions.push(decl);
-         kind = decl->toVariable()->isField() ? "attribute" : "data";
-       }
-     }
-     std::string prevTypeExpression;
-     std::string prevInitExpression;
-     for (auto decl : md->decls()) {
-       if (kind=="attribute" && decl != md->decls().begin()->toDecl()) {
-         indentStream(os_, 1 * indentPerDepth);
-       }
-       // write kind
-       os_ << ".. " << kind << ":: ";
-       if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
-         os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
-       }
-       // write name
-       os_ << decl->toVariable()->name();
+    for (auto decl : md->decls()) {
+      if (decl->toVariable()->typeExpression() ||
+          decl->toVariable()->initExpression()) {
+        expressions.push(decl);
+        kind = decl->toVariable()->isField() ? "attribute" : "data";
+      }
+    }
+    std::string prevTypeExpression;
+    std::string prevInitExpression;
+    for (auto decl : md->decls()) {
+      if (kind=="attribute" && decl != md->decls().begin()->toDecl()) {
+        indentStream(os_, 1 * indentPerDepth);
+      }
+      // write kind
+      os_ << ".. " << kind << ":: ";
+      if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
+        os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
+      }
+      // write name
+      os_ << decl->toVariable()->name();
 
-       if (expressions.empty()) {
-         assert(!prevTypeExpression.empty() || !prevInitExpression.empty());
-         multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
-       } else {
-         // our decl doesn't have a typeExpression or initExpression,
-         // or it is the same one
-         // is previousInit or previousType set?
-         if (!prevInitExpression.empty() || !prevTypeExpression.empty()) {
-           multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
-         } else { // use the expression in the queue
-           // take the one from the front of the expressions queue
-           if (expressions.front()->toVariable()->typeExpression()) {
-             //write out type expression->stringify
-             os_ << ": ";
-             expressions.front()->toVariable()->typeExpression()->stringify(os_,
-                                                                            CHPL_SYNTAX);
-             //set previous type expression = ": variableName.type"
-             prevTypeExpression =
-                 ": " + decl->toVariable()->name().str() + ".type";
-           }
-           if (expressions.front()->toVariable()->initExpression()) {
-             // write out initExpression->stringify
-             os_ << " = ";
-             expressions.front()->toVariable()->initExpression()->stringify(os_,
-                                                                            CHPL_SYNTAX);
-             // set previous init expression = "= variableName"
-             prevInitExpression = " = " + decl->toVariable()->name().str();
-           }
-         }
-         if (decl == expressions.front()) {
-           // our decl is the same as the first one in the queue, so we should pop it
-           // and clear the previousInit and previousType
-           expressions.pop();
-           prevTypeExpression.clear();
-           prevInitExpression.clear();
-         }
-       }
-       showComment(md, true);
+      if (expressions.empty()) {
+        assert(!prevTypeExpression.empty() || !prevInitExpression.empty());
+        multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+      } else {
+        // our decl doesn't have a typeExpression or initExpression,
+        // or it is the same one
+        // is previousInit or previousType set?
+        if (!prevInitExpression.empty() || !prevTypeExpression.empty()) {
+          multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+        } else { // use the expression in the queue
+          // take the one from the front of the expressions queue
+          if (expressions.front()->toVariable()->typeExpression()) {
+            //write out type expression->stringify
+            os_ << ": ";
+            expressions.front()->toVariable()->typeExpression()->stringify(os_,
+                                                                          CHPL_SYNTAX);
+            //set previous type expression = ": variableName.type"
+            prevTypeExpression =
+                ": " + decl->toVariable()->name().str() + ".type";
+          }
+          if (expressions.front()->toVariable()->initExpression()) {
+            // write out initExpression->stringify
+            os_ << " = ";
+            expressions.front()->toVariable()->initExpression()->stringify(os_,
+                                                                          CHPL_SYNTAX);
+            // set previous init expression = "= variableName"
+            prevInitExpression = " = " + decl->toVariable()->name().str();
+          }
+        }
+        if (decl == expressions.front()) {
+          // our decl is the same as the first one in the queue, so we should pop it
+          // and clear the previousInit and previousType
+          expressions.pop();
+          prevTypeExpression.clear();
+          prevInitExpression.clear();
+        }
+      }
+      showComment(md, true);
 
-       if (auto attrs = md->attributes()) {
-         if (attrs->isDeprecated()) {
-           indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
-           indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage().c_str();
-           os_ << "\n\n";
-         }
-       }
-       os_ << "\n";
-     }
-     return getResult();
-   }
+      if (auto attrs = md->attributes()) {
+        if (attrs->isDeprecated()) {
+          indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
+          indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage().c_str();
+          os_ << "\n\n";
+        }
+      }
+      os_ << "\n";
+    }
+    return getResult();
+  }
 
   void multiDeclHelper(const Decl* decl, std::string& prevTypeExpression,
                        std::string& prevInitExpression) {
