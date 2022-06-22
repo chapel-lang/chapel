@@ -68,14 +68,6 @@ class Chapel < Formula
         CHPL_LLVM_GCC_PREFIX=none
       EOS
 
-      # There is a jemalloc issue on M1 builds of Chapel.   That causes
-      # mason builds to fail.   This change below ensures builds complete successfully. 
-#      if OS.mac? 
-#        if Hardware::CPU.arm?
-#          system "echo CHPL_MEM=cstdlib >> chplconfig"
-#        end
-#      end
-
       system "./util/printchplenv", "--all"
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
         system "make", "test-venv"
