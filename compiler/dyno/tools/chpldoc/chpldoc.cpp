@@ -608,88 +608,81 @@ struct RstSignatureVisitor {
             (op->op() == USTR("postfix!") || op->op() == USTR("?")));
   }
 
-  bool enter(const OpCall* call) {
-    bool needsParens = false;
-    UniqueString outerOp, innerOp;
-    if (call->isUnaryOp()) {
-      assert(call->numActuals() == 1);
-      bool isPostFixBang = false;
-      bool isNilable = false;
-      outerOp = call->op();
-      if (call->op() == USTR("postfix!")) {
-        isPostFixBang = true;
-        outerOp = USTR("!");
-      } else if (call->op() == USTR("?")) {
-        if (call->actual(0)->isFnCall()) {
-          isNilable = true;
-        } else {
-          os_ << "nilable ";
-        }
+  void printUnaryOp(const OpCall* node) {
+    assert(node->numActuals() == 1);
+    UniqueString unaryOp;
+    bool isPostFixBang = false;
+    bool isNilable = false;
+    unaryOp = node->op();
+    if (unaryOp == USTR("postfix!")) {
+      isPostFixBang = true;
+      unaryOp = USTR("!");
+    } else if (node->op() == USTR("?")) {
+      if (node->actual(0)->isFnCall()) {
+        isNilable = true;
       } else {
-        os_ << call->op();
+        os_ << "nilable ";
       }
-      if (call->actual(0)->isOpCall()) {
-        innerOp = call->actual(0)->toOpCall()->op();
-        needsParens = needParens(outerOp, innerOp, true,
-                                 (isPostFixBang || isNilable),
-                                 call->actual(0)->toOpCall()->isUnaryOp(),
-                                 isPostfix(call->actual(0)->toOpCall()) , false);
-      }
-      if (needsParens) os_ << "(";
-      call->actual(0)->traverse(*this);
-      if (needsParens) os_ << ")";
-      if (isPostFixBang) {
-        os_ << "!";
-      } else if (isNilable) {
-        os_ << "?";
-      }
-    } else if (call->isBinaryOp()) {
-      assert(call->numActuals() == 2);
-      outerOp = call->op();
-      if (call->actual(0)->isOpCall()) {
-        innerOp = call->actual(0)->toOpCall()->op();
-        needsParens = needParens(outerOp, innerOp, false, false,
-                                 call->actual(0)->toOpCall()->isUnaryOp(),
-                                 isPostfix(call->actual(0)->toOpCall()), false);
-      }
-      if (needsParens) os_ << "(";
-      call->actual(0)->traverse(*this);
-      if (needsParens) os_ << ")";
-      needsParens = false;
-      bool addSpace = (wantSpaces(call->op(), printingType_) ||
-                       call->op()==USTR("by") ||
-                       call->op()==USTR("align") ||
-                       call->op()==USTR("scan") ||
-                       call->op()==USTR("reduce") ||
-                       call->op()==USTR("dmapped"));
-      if (addSpace && call->op() != USTR(":"))
-        os_ << " ";
-      os_ << call->op();
-      if (addSpace)
-        os_ << " ";
-      if (call->actual(1)->isOpCall()) {
-        innerOp = call->actual(1)->toOpCall()->op();
-        needsParens = needParens(outerOp, innerOp, false,
-                                 false, call->actual(1)->toOpCall()->isUnaryOp(),
-                                 isPostfix(call->actual(1)->toOpCall()) , true);
-        }
-      // special case handling things like 3*(4*(string))
-      // TODO: This has to be cleaned up/fixed. It's unreadable and probably
-      // riddled with bugs
-      if (!needsParens && outerOp == USTR("*") &&
-          ((innerOp == USTR("*") && call->actual(1)->isOpCall() &&
-            call->actual(1)->toOpCall()->actual(0)->isIntLiteral() &&
-            (call->actual(1)->toOpCall()->actual(1)->isTuple() ||
-             call->actual(1)->toOpCall()->actual(1)->isIdentifier())) ||
-           (call->actual(0)->isIntLiteral() &&
-            (call->actual(1)->isIdentifier() ||
-             call->actual(1)->isFnCall())))) {
-        needsParens = true;
-      }
-      if (needsParens) os_ << "(";
-      call->actual(1)->traverse(*this);
-      if (needsParens) os_ << ")";
+    } else {
+      os_ << unaryOp;
+    }
+    opHelper(node, 0, (isPostFixBang || isNilable));
+    if (isPostFixBang || isNilable) {
+      os_ << unaryOp;
+    }
+  }
 
+  void opHelper(const OpCall* node, int pos, bool postfix) {
+    bool needsParens = false;
+    bool isRHS = pos;
+    UniqueString outerOp, innerOp;
+    outerOp = node->op();
+    if (node->actual(pos)->isOpCall()) {
+      innerOp = node->actual(pos)->toOpCall()->op();
+      needsParens = needParens(outerOp, innerOp, node->isUnaryOp(), postfix,
+                               node->actual(pos)->toOpCall()->isUnaryOp(),
+                               isPostfix(node->actual(pos)->toOpCall()), isRHS);
+    }
+    // handle printing parens around tuples
+    // ex: 3*(4*string) != 3*4*string
+    if (isRHS && !needsParens && outerOp == USTR("*") &&
+          ((innerOp == USTR("*") && node->actual(pos)->isOpCall() &&
+            node->actual(pos)->toOpCall()->actual(0)->isIntLiteral() &&
+            (node->actual(pos)->toOpCall()->actual(1)->isTuple() ||
+             node->actual(pos)->toOpCall()->actual(1)->isIdentifier())) ||
+           (node->actual(0)->isIntLiteral() &&
+            (node->actual(pos)->isIdentifier() ||
+             node->actual(pos)->isFnCall())))) {
+      needsParens = true;
+    }
+    if (needsParens) os_ << "(";
+    node->actual(pos)->traverse(*this);
+    if (needsParens) os_ << ")";
+  }
+
+  void printBinaryOp(const OpCall* node) {
+    assert(node->numActuals() == 2);
+    bool addSpace = wantSpaces(node->op(), printingType_) ||
+                    node->op() == USTR("by") ||
+                    node->op() == USTR("align") ||
+                    node->op() == USTR("reduce=") ||
+                    node->op() == USTR("reduce") ||
+                    node->op() == USTR("scan") ||
+                    node->op() == USTR("dmapped");
+    opHelper(node, 0, false);
+    if (addSpace && node->op() != USTR(":"))
+      os_ << " ";
+    os_ << node->op();
+    if (addSpace)
+      os_ << " ";
+    opHelper(node, 1, false);
+  }
+
+  bool enter(const OpCall* node) {
+    if (node->isUnaryOp()) {
+      printUnaryOp(node);
+    } else if (node->isBinaryOp()) {
+      printBinaryOp(node);
     }
     return false;
   }
