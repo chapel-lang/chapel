@@ -3752,11 +3752,12 @@ static bool mustPreserve(const llvm::GlobalValue& gv) {
 static void linkLibDevice() {
   GenInfo* info = gGenInfo;
 
-
-
   llvm::SMDiagnostic err;
-  auto libdevice = llvm::parseIRFile("/home/engin/libdevice.bc", err,
+  auto libdevice = llvm::parseIRFile(CHPL_CUDA_LIBDEVICE_PATH, err,
                                      info->llvmContext);
+  const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
+  libdevice->setTargetTriple(Triple.getTriple());
+  libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
   for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
     if (it->hasExternalLinkage()) {
       preExternals.insert(it->getGlobalIdentifier());

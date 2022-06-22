@@ -143,6 +143,8 @@ extern const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS;
 extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
+extern const char* CHPL_CUDA_LIBDEVICE_PATH;
+
 extern bool  printPasses;
 extern FILE* printPassesFile;
 
