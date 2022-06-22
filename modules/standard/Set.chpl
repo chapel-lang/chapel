@@ -148,9 +148,13 @@ module Set {
        than 50% full. The acceptable values for this argument are
        between 0 and 1, exclusive, meaning (0,1). This is useful
        when you would like to reduce memory impact or potentially
-       speed up how fast the map finds a slot.
+       speed up how fast the map finds a slot. To override the
+       default value of 0.5, the `defaultHashTableResizeThreshold`
+       config flag can be set at runtime. Note that this default
+       affects all hash-based data structures, including
+       associative domains and maps.
     */
-    const resizeThreshold = 0.5;
+    const resizeThreshold = defaultHashTableResizeThreshold;
 
     pragma "no doc"
     var _lock$ = if parSafe then new _LockWrapper() else none;
@@ -169,7 +173,8 @@ module Set {
                             map can hold at least this many values before
                             attempting to resize.
     */
-    proc init(type eltType, param parSafe=false, resizeThreshold=0.5,
+    proc init(type eltType, param parSafe=false,
+              resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
       _checkElementType(eltType);
       this.eltType = eltType;
@@ -200,7 +205,8 @@ module Set {
                             attempting to resize.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              resizeThreshold=0.5, initialCapacity=16)
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       _checkElementType(eltType);
 

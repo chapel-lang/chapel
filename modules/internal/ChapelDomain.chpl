@@ -25,6 +25,21 @@ module ChapelDomain {
   public use ChapelBase;
   use ArrayViewRankChange;
 
+  /*
+     Fractional value that specifies how full this domain can be
+     before requesting additional memory. The default value of
+     0.5 means that the map will not resize until the map is more
+     than 50% full. The acceptable values for this argument are
+     between 0 and 1, exclusive, meaning (0,1). A lower
+     `defaultHashTableResizeThreshold` value can potentially
+     improve indexing performance, since the table will likely
+     have fewer collisions, while a higher value can help save
+     memory.
+     Note that this value also impacts all of Chapel's hash-based
+     data structures, such as `set` and `map`.
+  */
+  config const defaultHashTableResizeThreshold = 0.5;
+
   pragma "no copy return"
   pragma "return not owned"
   proc _getDomain(value) {
