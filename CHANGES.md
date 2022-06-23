@@ -8,27 +8,33 @@ Thirtieth public release of Chapel, June 30, 2022
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* improved GPU support, including enabling the use of multiple locales
+* improved namespace behavior w.r.t. `import`, `use`, and shadowing
+* the Chapel compiler now supports LLVM 14, in addition to 11, 12, and 13
+* improved the performance and scalability of scan operations on `Block` arrays
+* added new 'OS.POSIX' and 'GPUDiagnostics' modules
+* restored support for Omni-Path networks
+* introduced a Code of Conduct for Chapel developers
+* made many changes, mostly minor, in support of Chapel 2.0 stabilization
+* many other bug fixes and improvements to error messages and documentation
 
 Packaging / Configuration Changes
 ---------------------------------
-* the Chapel compiler's LLVM back-end now supports versions 11, 12, 13, and 14
+* the compiler's LLVM back-end now supports version 14 as well as 11, 12, 13
 * made Chapel available as an Arch Linux AUR package  
   (see https://aur.archlinux.org/packages/chapel)
-* updated `./configure` to create prefix directories if they don't already exist
+* updated `configure` to create prefix directories if they don't already exist
 * `make install` now installs `chpldoc` if it is built
-
-Syntactic / Naming Changes
---------------------------
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* made small integers prefer coercions to `real(32)` over `real(64)`
+* made small integers prefer coercions to `real(32)` over `real(64)`  
   (see https://chapel-lang.org/docs/1.27/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
-* `public use` and `import` statements no longer introduces a hidden scope
+* made `public use` and `import` statements no longer introduce a hidden scope  
   (see https://chapel-lang.org/docs/1.27/language/spec/modules.html#using-and-importing)
-* `public use M` no longer brings in the name 'M' for qualified access
+* made `public use M` no longer bring in the name `M` for qualified access  
   (see https://chapel-lang.org/docs/1.27/language/spec/modules.html#public-and-private-use-statements)
-* methods are no longer subject to shadowing
+* changed methods to no longer be subject to shadowing  
   (see https://chapel-lang.org/docs/1.27/language/spec/procedures.html#determining-more-specific-functions)
 * made loops over unbounded enum/bool ranges stop at their extreme values
 * made serial loops over unbounded integer ranges terminate instead of spinning
@@ -36,15 +42,16 @@ Semantic Changes / Changes to Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
-* `.low`/`.high` on strided ranges now warn about pending alignment changes  
+* `.low`/`.high` on strided ranges now warn about pending behavioral changes  
   (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#range.low)
+* marked `.equals()` on arrays as being unstable
 * removed deprecated support for `.front()`/`.back()` on arrays
 * removed support for bracket-less anonymous associative domains
-* marked `.equals()` on arrays as being unstable
 
 New Features
 ------------
 * added new `.lowBound`/`.highBound` queries on ranges to get "pure" bounds  
+  (e.g., `(1..10 by 2).highBound` returns `10`)  
   (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#range.lowBound)
 * added an `alignedBoundsByDefault` config to opt into new `.low`/`.high` defs  
   (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault))
@@ -58,48 +65,48 @@ Namespace Changes
 -----------------
 * made internal module names not visible to Chapel programs by default
 
+Changes / Feature Improvements in Libraries
+-------------------------------------------
+* updated `.mod()`/`%` behavior for `bigint`s to match `mod()`/`%` for `int`s  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/BigInteger.html#BigInteger.bigint.mod)
+* improved `readLine` to return bytes read, throw errors, strip newlines, etc.  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.readLine)
+
 Name Changes in Libraries
 -------------------------
-* renamed `[channel.]readline()` to `[channel].readLine()`
+* renamed `[channel.]readline()` to `[channel].readLine()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.readLine)
-* renamed `channel.isclosed()` to `channel.isClosed()`
-  (see https://chapel-lang.org/docs/main/modules/standard/IO.html?highlight=closed#IO.channel.isClosed)
+* renamed `channel.isclosed()` to `channel.isClosed()`  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html?highlight=closed#IO.channel.isClosed)
 * renamed `timedelta.total_seconds()` with `timedelta.totalSeconds()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/DateTime.html#DateTime.timedelta.totalSeconds)
 * renamed a number of other symbols in 'DateTime' to use preferred camelCasing
 * renamed the `pattern` argument to `sep` in `.split()` on `string`/`bytes`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Regex.html#Regex.string.split)
 
-Changes / Feature Improvements in Libraries
--------------------------------------------
-* updated `.mod()`/`%` behavior for `bigint`s to match `mod()`/`%` for `int`s  
-  (see https://chapel-lang.org/docs/1.27/modules/standard/BigInteger.html#BigInteger.bigint.mod)
-* improved `readLine` to return bytes read, throw errors, strip newlines, ...
-  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.readLine)
-
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
-* stopped making the contents of the 'Math' module available by default
+* stopped making the contents of the 'Math' module available by default  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 * deprecated support for `+`, `-`, `&`, `|`, and `^` on map
 * deprecated `list.extend()` in favor of new `list.append()` overloads
-* deprecated `channel.write()`
-* deprecated support for `.readWriteThis()` methods  
-  (see https://chapel-lang.org/docs/1.27/modules/standard/ChapelIO.html#the-readthis-writethis-and-readwritethis-methods)
-* deprecated the `channel.itemReader` and `channel.itemWriter` methods  
-  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.ItemReader)
-* deprecated support for 'Sys'/'SysBasic' symbols now supported by 'OS.POSIX'
 * deprecated `.search()` on `string`/`bytes` in favor of `.find()  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Regex.html#Regex.string.find)
-* deprecated `.matches()` on `string`/`bytes` in favor of `.startsWith()`
+* deprecated `.matches()` on `string`/`bytes` in favor of `.startsWith()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Regex.html#Regex.string.startsWith)
-* deprecated the 'VectorizingIterator' module
 * deprecated `datetime.today()` in favor of `datetime.now()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/DateTime.html#DateTime.datetime.now)
 * deprecated `datetime.timeSinceEpoch()` in favor of `timeSinceEpoch()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/DateTime.html#DateTime.timeSinceEpoch)
 * deprecated `datetime - date` in favor of `datetime - datetime`
 * marked timezones as being unstable in the 'DateTime' module
+* deprecated support for `.readWriteThis()` methods  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/ChapelIO.html#the-readthis-writethis-and-readwritethis-methods)
+* deprecated the `channel.itemReader` and `channel.itemWriter` methods  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.ItemReader)
+* deprecated `channel.write()`
+* deprecated support for 'Sys'/'SysBasic' symbols now supported by 'OS.POSIX'
+* deprecated the 'VectorizingIterator' module
 * removed the deprecated 'ChapelEnv', 'CPtr', and 'SysCTypes' modules
 * removed deprecated 'SysBasic' features
 * removed deprecated `size_t`/`ssize_t` type aliases
@@ -108,15 +115,15 @@ Deprecated / Unstable / Removed Library Features
 
 Standard Library Modules
 ------------------------
-* added a new 'OS.POSIX' module that exposes POSIX capabilities
-  (see https://chapel-lang.org/docs/1.27/modules/standard/OS.html)
-* moved available-by-default math features into a new 'AutoMath' library
-  (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and
+* added a new 'OS.POSIX' module that exposes POSIX capabilities  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/OS/POSIX.html)
+* moved available-by-default math features into a new 'AutoMath' library  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and  
   https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 * added a new 'GPUDiagnostics' module for tracking GPU kernel launches  
-  (see https://chapel-lang.org/docs/master/modules/standard/GPUDiagnostics.html)
-* added new `fillRandom()` routines to 'Random' accepting min/max bounds
-  (see https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html#PCGRandom.PCGRandomStream.fillRandom
+  (see https://chapel-lang.org/docs/1.27/modules/standard/GPUDiagnostics.html)
+* added new `fillRandom()` routines to 'Random' that accept min/max bounds  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html#PCGRandom.PCGRandomStream.fillRandom  
    and https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html\#PCGRandom.PCGRandomStream.fillRandom)
 * ensured all types have separate `isXType`, `isXValue`, and `isX` routines  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Types.html)
@@ -125,16 +132,9 @@ Standard Library Modules
 * made `bigint.invert()` throw `InversionError` when an inverse is undefined  
   (see: https://chapel-lang.org/docs/1.27/modules/standard/BigInteger.html#BigInteger.bigint.invert )
 
-
-Package Modules
----------------
-
-Standard Domain Maps (Layouts and Distributions)
-------------------------------------------------
-
 Tool Improvements
 -----------------
-* added a hint to use '--show' when 'mason test' compilations fail
+* added a hint to use `--show` when `mason test` compilations fail
 * fixed a bug in which `make install` was no longer installing `mason`
 
 Performance Optimizations / Improvements
@@ -146,47 +146,29 @@ Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
 * reduced memory consistency overhead for `CHPL_COMM=ofi` w/ the 'cxi' provider
 
-Compilation-Time / Generated Code Improvements
-----------------------------------------------
-
-Memory Improvements
--------------------
-
 Documentation
 -------------
 * added a Chapel module index to the documentation sidebar  
   (see https://chapel-lang.org/docs/1.27/chpl-modindex.html)
 * added documentation for getting started with `mason`  
   (see https://chapel-lang.org/docs/1.27/tools/mason/mason.html#using-a-mason-package)
-* updated the installation instructions for `mason`
+* updated the installation instructions for `mason`  
+  (see https://chapel-lang.org/docs/1.27/tools/mason/mason.html#installation-instructions)
 * clarified integer overflow in the language specification  
-  (see https://chapel-lang.org/docs/1.27/language/spec/types.html#signed-and-un\
-signed-integral-types
+  (see https://chapel-lang.org/docs/1.27/language/spec/types.html#signed-and-unsigned-integral-types  
    and https://chapel-lang.org/docs/1.27/language/spec/ranges.html#iterating-over-ranges)
 * made the spec recommend `c_array` for interoperating with fixed-size C arrays  
-  (see https://chapel-lang.org/docs/main/language/spec/interoperability.html#re\
-ferring-to-external-c-types)
-* documented the 'protobuf' support package, 'ProtobufProtocolSupport'
+  (see https://chapel-lang.org/docs/1.27/language/spec/interoperability.html#referring-to-external-c-types)
+* documented the 'protobuf' support package, 'ProtobufProtocolSupport'  
   (see https://chapel-lang.org/docs/1.27/modules/packages/ProtobufProtocolSupport.html)
-* added missing return types to `.size`, `.sizeAs`, and `.shape` on arrays
+* added missing return types to `.size`, `.sizeAs`, and `.shape` on arrays  
   (see https://chapel-lang.org/docs/1.27/language/spec/arrays.html#ChapelArray.size  
    and https://chapel-lang.org/docs/1.27/language/spec/arrays.html#ChapelArray.shape)
-* corrected the 'ChapelIO' documentation examples with updated `use` statements
-* fixed a missing line in the example output for 'ArgumentParser'
-* fixed a typo in the 'IO' library documentation
-* fixed typos in the `mason` documentation
-* fixed formatting errors regarding default values for ranges in the spec
-* Fixed a syntax error in the interoperability documents
-
-Syntax Highlighting
--------------------
-
-Example Codes
--------------
+* fixed other typos, mistakes, and formatting throughout the documentation
 
 Build System Improvements
 -------------------------
-* specialized build directories by LLVM version to avoid mixing versions
+* specialized build directories by LLVM version to keep from mixing versions
 * improved checks and error messages for missing LLVM dependencies
 
 Portability
@@ -194,41 +176,32 @@ Portability
 * restored support for Omni-Path (OPA) networks  
   (see https://chapel-lang.org/docs/1.27/platforms/omnipath.html)
 * improved portability to Alpine Linux
-* renamed internal type `err_t` to support compatibility with AMD's math library
+* renamed internal type to support compatibility with AMD's math library
 * improved support for packaging scenarios that delete libtool's `.la` files
 * fixed link problems when clang defaults to position-independent executables
-* improved portability with respect to gcc 12 and clang 14
+* improved code portability with respect to gcc 12 and clang 14 warnings
 
 GPU Computing
 -------------
-* enabled GPU computing using multiple locales
+* enabled GPU computing using multiple locales  
   (see https://chapel-lang.org/docs/1.27/technotes/gpu.html)
 * added a new 'GPUDiagnostics' module for tracking kernel launches  
-  (see https://chapel-lang.org/docs/master/modules/standard/GPUDiagnostics.html)
+  (see https://chapel-lang.org/docs/1.27/modules/standard/GPUDiagnostics.html)
 * extended 'Memory.Diagnostics' to support tracking GPU-based allocations  
-  (see https://chapel-lang.org/docs/master/modules/standard/Memory/Diagnostics.html)
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Memory/Diagnostics.html)
 * nested block statements and tuples are now supported for GPU kernels
-* removed support for the CPU sublocale, relying on the locale itself to do that
+* removed support for the CPU sublocale, relying on the locale itself for that
 * addressed a number of GPU portability / stability issues  
   (see 'Bug Fixes for GPU Computing' below)
 
 Compiler Improvements
 ---------------------
 * updated the compiler to support LLVM version 14 (in addition to 11, 12, 13)
-* switched the compiler's front-end to use the new 'dyno' parser/uAST by default
-
-Compiler Flags
---------------
-
-Generated Executable Flags
---------------------------
-
-Runtime Library Changes
------------------------
+* switched the compiler's front-end to use the 'dyno' parser/uAST by default
 
 Launchers
 ---------
-* added support for overriding launcher job names
+* added prototype support for overriding launcher job names
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -236,7 +209,7 @@ Error Messages / Semantic Checks
 * added an error about `foreach` loops not supporting task intents yet
 * improved the printing of call stacks with operator methods in errors
 * improved the error message for unrecognized `this` types on initializers
-* added a warning when a module path for 'import' starts with 'super.this'
+* added a warning when a module path for `import` starts with `super.this`
 * added an error message for certain illegal generic class coercions
 * stabilized an error message when calling an otherwise unused module
 
@@ -245,35 +218,32 @@ Bug Fixes
 * fixed a bug in which certain returned expressions were evaluated twice
 * fixed a parse-time memory bug for deeply nested `if`-`then`-`else` loops
 * fixed an internal error with respect to generic nilable classes
-* fixed a bug where EOF errors were not thrown for some `channel.read()` methods
-* fixed a bug where deprecation warnings were not generated for qualified access
-* fixed a bug preventing 'import super.super' or similar 'import' statements
-* fixed a bug where private submodules were incorrectly considered as candidates
+* fixed a bug where EOF errors were not thrown for `channel.read()` methods
+* fixed a bug where qualified accesses failed to trigger deprecation warnings
+* fixed a bug preventing `import super.super` or similar `import` statements
+* fixed a bug where private submodules were incorrectly treated as candidates
 * fixed bugs relating to function shadowing and/or point-of-instantiation
 * fixed a bug with `var x = nil;`
 * fixed a bug preventing `try!` expressions in `yield` statements
 * fixed a bug in which scans of default slices of Block arrays didn't compile
-* fixed a bug in which the BUILD_VERSION wasn't printing when it is non-zero
+* fixed a bug in which `--version` wasn't printing BUILD_VERSION when non-zero
 
 Bug Fixes for Build Issues
 --------------------------
-* fixed a path error for CHPL_LLVM=bundled when CC was set
+* fixed a path error for `CHPL_LLVM=bundled` when `CC` is set
 
 Bug Fixes for GPU Computing
 ---------------------------
-* fixed a bug preventing copmilation with LLVM versions greater than 13
+* fixed a bug preventing GPU compilation with LLVM versions greater than 13
 * fixed a bug with CUDA 10.1 that prevented GPU initialization
 * fixed a bug causing an 'unresolved extern' warning during compilation
 * fixed a bug with iterating over associative domains
 * suppressed CUDA version warnings for those that are newer than clang supports
 
-Bug Fixes for Libraries
------------------------
-
 Bug Fixes for Tools
 -------------------
-* fixed a 'mason test' error when code output includes a line ending with ')'
-* fixed a bug where the 'build' flag had no effect on 'mason run --example'
+* fixed a `mason test` error when code output includes a line ending with `)`
+* fixed a bug where the `build` flag had no effect on `mason run --example`
 
 Platform-specific Bug Fixes
 ---------------------------
@@ -281,8 +251,8 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
-* updated GASNet-EX to version 2022.3.0
 * updated the bundled version of LLVM to version 14
+* updated GASNet-EX to version 2022.3.0
 * updated the Sphinx Chapel domain version used for `chpldoc`
 
 Developer-oriented changes: Process
@@ -292,66 +262,39 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
-* extended the documentation of the 'deprecated' keyword with examples  
-  (see https://chapel-lang.org/docs/main/developer/bestPractices/Deprecation.html#examples)
-* changed a few compiler/next references to compiler/dyno
-
-Developer-oriented changes: Naming Changes
-------------------------------------------
-
-Developer-oriented changes: Module changes
-------------------------------------------
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
+* extended the documentation of the `deprecated` keyword with examples  
+  (see https://chapel-lang.org/docs/1.27/developer/bestPractices/Deprecation.html#examples)
+* changed a few 'compiler/next' references to 'compiler/dyno'
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * added new error messages when building an invalid runtime configuration
-* reduced the reliance on CHPL_HOME when running `make docs`
-
-Developer-oriented changes: Compiler Flags
-------------------------------------------
+* reduced the reliance on `CHPL_HOME` when running `make docs`
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
-* added a pragma to exempt specific functions from instantiation limit
+* added a pragma to exempt specific functions from the instantiation limit
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
-* made numerous fixes to 'dyno' to get the parser to pass 100% of our tests
+* made numerous fixes to 'dyno' to get the parser to pass all of our tests
 * migrated setting of 'config' variables to be handled entirely within 'dyno'
-* added token counting and code size stats to 'dyno'
+* added token counting and code size statistics to 'dyno'
 * significantly improved resolution, including support for fields
-* added a prototype capability to use the dyno resolver when running `chpl`
-* added indentation and formatting to CHPL_SYNTAX style uAST node dumps
+* added a prototype capability to use the 'dyno' resolver when running `chpl`
+* added indentation and formatting to CHPL_SYNTAX-style uAST node dumps
 * removed support for recursive queries in favor of simply detecting recursion
 * enabled 'dyno' to find internal modules
-* made 'dyno' now automatically add 'use ChapelStandard'
+* made 'dyno' now automatically add `use ChapelStandard`
 * removed `uast::Expression` and improved the spelling of several type names
 * fixed problems running `make test-dyno` on Mac OS X
-
-Developer-oriented changes: Runtime improvements
-------------------------------------------------
-
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
-
-Developer-oriented changes: Testing System
-------------------------------------------
-
-Developer-oriented changes: Tool Improvements
----------------------------------------------
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 1.26.0.1
 ================
 
 This version is a slight variation on the 1.26.0 release containing a
-late-breaking bug fix that is specific to CHPL_COMM='ofi' when using the
+late-breaking bug fix that is specific to `CHPL_COMM=ofi` when using the
 'cxi' provider.
 
 
