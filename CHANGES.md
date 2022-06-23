@@ -50,6 +50,7 @@ New Features
 Feature Improvements
 --------------------
 * `param` indexing of `string` and `bytes` values is now done at compile-time
+* changed one-tuples to print out as `(10,)` rather than `(10)` by default
 
 Namespace Changes
 -----------------
@@ -176,7 +177,7 @@ Portability
 * renamed internal type `err_t` to support compatibility with AMD's math library
 * improved support for packaging scenarios that delete libtool's `.la` files
 * fixed link problems when clang defaults to position-independent executables
-* improved portability with respect to gcc 12
+* improved portability with respect to gcc 12 and clang 14
 
 GPU Computing
 -------------
@@ -210,20 +211,25 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved the order and number of resolution candidates printed in errors
 * added an error about `foreach` loops not supporting task intents yet
 * improved the printing of call stacks with operator methods in errors
 * improved the error message for unrecognized `this` types on initializers
 * added a warning when a module path for 'import' starts with 'super.this'
+* added an error message for certain illegal generic class coercions
 * stabilized an error message when calling an otherwise unused module
 
 Bug Fixes
 ---------
+* fixed a bug in which certain returned expressions were evaluated twice
 * fixed a parse-time memory bug for deeply nested `if`-`then`-`else` loops
+* fixed an internal error with respect to generic nilable classes
 * fixed a bug where EOF errors were not thrown for some `channel.read()` methods
 * fixed a bug where deprecation warnings were not generated for qualified access
 * fixed a bug preventing 'import super.super' or similar 'import' statements
 * fixed a bug where private submodules were incorrectly considered as candidates
 * fixed bugs relating to function shadowing and/or point-of-instantiation
+* fixed a bug with `var x = nil;`
 * fixed a bug preventing `try!` expressions in `yield` statements
 * fixed a bug in which scans of default slices of Block arrays didn't compile
 * fixed a bug in which the BUILD_VERSION wasn't printing when it is non-zero
