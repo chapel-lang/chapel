@@ -38,7 +38,7 @@ get_version(char *v) {
     // It's is an official release.
     // Try to decide whether or not to include the BUILD_VERSION
     // based on its string length. A short git sha is 10 characters.
-    if (strlen(BUILD_VERSION) > 2) {
+    if (strlen(BUILD_VERSION) > 2 && !developer) {
       // assume it is a sha, so don't include it
     } else if (strcmp(BUILD_VERSION, "0") == 0) {
       // no need to append a .0
