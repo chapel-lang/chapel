@@ -76,6 +76,10 @@ Deprecated / Removed Library Features
 * deprecated support for `+`, `-`, `&`, `|`, and `^` on map
 * deprecated `list.extend()` in favor of new `list.append()` overloads
 * deprecated `channel.write()`
+* deprecated support for `.readWriteThis()` methods  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/ChapelIO.html#the-readthis-writethis-and-readwritethis-methods)
+* deprecated the `channel.itemReader` and `channel.itemWriter` methods  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.ItemReader)
 * deprecated support for 'Sys'/'SysBasic' symbols now supported by 'OS.POSIX'
 * deprecated the 'VectorizingIterator' module
 * removed the deprecated 'ChapelEnv', 'CPtr', and 'SysCTypes' modules
@@ -214,6 +218,7 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed a parse-time memory bug for deeply nested `if`-`then`-`else` loops
+* fixed a bug where EOF errors were not thrown for some `channel.read()` methods
 * fixed a bug where deprecation warnings were not generated for qualified access
 * fixed a bug preventing 'import super.super' or similar 'import' statements
 * fixed a bug where private submodules were incorrectly considered as candidates
