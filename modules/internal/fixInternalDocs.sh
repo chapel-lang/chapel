@@ -203,11 +203,10 @@ removeUsage $file
 ## End Atomics ##
 
 ## ChapelRange ##
-
 file="./ChapelRange.rst"
 
 removePrefixFunctions $file
-fixTitle "Ranges" $file
+removeTitle $file
 removeUsage $file
 
 # End ChapelRange ##
