@@ -172,6 +172,7 @@ Portability
 -----------
 * restored support for Omni-Path (OPA) networks  
   (see https://chapel-lang.org/docs/1.27/platforms/omnipath.html)
+* improved portability to Alpine Linux
 * renamed internal type `err_t` to support compatibility with AMD's math library
 * improved support for packaging scenarios that delete libtool's `.la` files
 * fixed link problems when clang defaults to position-independent executables
