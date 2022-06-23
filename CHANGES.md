@@ -11,6 +11,9 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* made Chapel available as an Arch Linux AUR package  
+  (see https://aur.archlinux.org/packages/chapel)
+* `make install` now installs `chpldoc` if it is built
 
 Syntactic / Naming Changes
 --------------------------
@@ -19,6 +22,12 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * made small integers prefer coercions to `real(32)` over `real(64)`
   (see https://chapel-lang.org/docs/1.27/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
+* `public use` and `import` statements no longer introduces a hidden scope
+  (see https://chapel-lang.org/docs/1.27/language/spec/modules.html#using-and-importing)
+* `public use M` no longer brings in the name 'M' for qualified access
+  (see https://chapel-lang.org/docs/1.27/language/spec/modules.html#public-and-private-use-statements)
+* methods are no longer subject to shadowing
+  (see https://chapel-lang.org/docs/1.27/language/spec/procedures.html#determining-more-specific-functions)
 * made loops over unbounded enum/bool ranges stop at their extreme values
 * made serial loops over unbounded integer ranges terminate instead of spinning
 * byte-based string slicing now throws when not aligned to codepoint boundaries
@@ -71,11 +80,16 @@ Deprecated / Removed Library Features
 
 Standard Library Modules
 ------------------------
+* added new 'OS[.POSIX]' modules for interacting with the operating system  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/OS.html)
 * moved available-by-default math features into a new 'AutoMath' library
   (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and
   https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 * added a new 'GPUDiagnostics' module for tracking GPU kernel launches  
   (see https://chapel-lang.org/docs/master/modules/standard/GPUDiagnostics.html)
+* added new `fillRandom()` overloads to 'Random' accepting min/max bounds
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html\
+#PCGRandom.PCGRandomStream.fillRandom)
 * ensured all types have separate `isXType`, `isXValue`, and `isX` routines  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Types.html)
 * added a 'defaultHashTableResizeThreshold' config to affect hash table growth  
@@ -111,6 +125,13 @@ Documentation
 * added documentation for getting started with `mason`  
   (see https://chapel-lang.org/docs/1.27/tools/mason/mason.html#using-a-mason-package)
 * updated the installation instructions for `mason`
+* clarified integer overflow in the language specification  
+  (see https://chapel-lang.org/docs/1.27/language/spec/types.html#signed-and-un\
+signed-integral-types
+   and https://chapel-lang.org/docs/1.27/language/spec/ranges.html#iterating-over-ranges)
+* made the spec recommend `c_array` for interoperating with fixed-size C arrays  
+  (see https://chapel-lang.org/docs/main/language/spec/interoperability.html#re\
+ferring-to-external-c-types)
 * documented the 'protobuf' support package, 'ProtobufProtocolSupport'
   (see https://chapel-lang.org/docs/1.27/modules/packages/ProtobufProtocolSupport.html)
 * added missing return types to `.size`, `.sizeAs`, and `.shape` on arrays
@@ -134,6 +155,8 @@ Build System Improvements
 Portability
 -----------
 * renamed internal type `err_t` to support compatibility with AMD's math library
+* improved support for packaging scenarios that delete libtool's `.la` files
+* fixed link problems when clang defaults to position-independent executables
 * improved portability with respect to gcc 12
 
 GPU Computing
@@ -151,7 +174,7 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
-* switched the compiler's front-end to use the new 'dyno' parser/AST by default
+* switched the compiler's front-end to use the new 'dyno' parser/uAST by default
 
 Compiler Flags
 --------------
@@ -179,6 +202,7 @@ Bug Fixes
 * fixed a bug where deprecation warnings were not generated for qualified access
 * fixed a bug preventing 'import super.super' or similar 'import' statements
 * fixed a bug where private submodules were incorrectly considered as candidates
+* fixed bugs relating to function shadowing and/or point-of-instantiation
 * fixed a bug preventing `try!` expressions in `yield` statements
 * fixed a bug in which scans of default slices of Block arrays didn't compile
 * fixed a bug in which the BUILD_VERSION wasn't printing when it is non-zero
@@ -243,7 +267,14 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 * made numerous fixes to 'dyno' to get the parser to pass 100% of our tests
 * migrated setting of 'config' variables to be handled entirely within 'dyno'
 * added token counting and code size stats to 'dyno'
+* significantly improved resolution, including support for fields
+* added a prototype capability to use the dyno resolver when running `chpl`
 * added indentation and formatting to CHPL_SYNTAX style uAST node dumps
+* removed support for recursive queries in favor of simply detecting recursion
+* enabled 'dyno' to find internal modules
+* made 'dyno' now automatically add 'use ChapelStandard'
+* removed `uast::Expression` and improved the spelling of several type names
+* fixed problems running `make test-dyno` on Mac OS X
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
