@@ -12,7 +12,7 @@ endif
 # release's verion number
 #
 WEB_DOC_DIR=
-WEB_DOC_VERSION=master
+WEB_DOC_VERSION=main
 
 # Makefile.sphinx interfaces with sphinx build commands
 include Makefile.sphinx
