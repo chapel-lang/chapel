@@ -1158,7 +1158,7 @@ operator :(r: range(?), type t: range(?)) {
   /* Return a range with elements shifted from this range by ``offset``.
      Formally, the range's low bound, high bound, and alignment values
      will be shifted while the stride value will be preserved.  If the
-     range's alignment is ambiguous, the behavior will be undefined.
+     range's alignment is ambiguous, the behavior is undefined.
 
      Example:
 

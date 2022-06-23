@@ -172,7 +172,7 @@ The type of a range is characterized by three properties:
 -  ``stridable`` is a boolean that determines whether the range’s stride
    can take on values other than 1. ``stridable`` is ``false`` by
    default. A range is called *stridable* if its type’s ``stridable``
-   value is ``true``.
+   field is ``true``.
 
 ``boundedType`` is one of the constants of the following enumeration:
 
@@ -449,7 +449,7 @@ sequence. If the range is empty, no iterations are executed.
 
 Overflow of the index variable while iterating over an unbounded range
 leads to undefined behavior.  For unbounded ranges of bool or enum
-index type, the iteration will stop at the last legal value represented
+index type, the iteration will stop at the last value represented
 by the type.
 
 In order for it to be possible to iterate over a range with a last
@@ -661,7 +661,7 @@ following primary properties:
    should be identical by substituting the value in R into the
    expression.  We have also found that using a strict ordering of low
    and high bounds can be clearer when using ranges to slice
-   multidimensional arrays.
+   arrays.
 
 .. _Align_Operator_For_Ranges:
 
@@ -899,8 +899,8 @@ resulting range is also ambiguously aligned.
 
 .. _Range_Slicing:
 
-Range Slicing / Intersection
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Range Slicing
+~~~~~~~~~~~~~
 
 Ranges can be *sliced* using other ranges to create new sub-ranges. The
 resulting range represents the intersection between the two ranges’

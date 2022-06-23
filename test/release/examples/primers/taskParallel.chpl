@@ -68,7 +68,7 @@ writeln("3: output from main task");
 // ``coforall`` loop.  This loop form is like a ``for`` loop in which
 // each iteration of the loop is executed by a distinct task.  Similar
 // to the ``cobegin`` statement, the main thread of execution does not
-// continue until the tasks created for each iteration have completed..
+// continue until the tasks created for each iteration have completed.
 writeln("4: ### The coforall loop ###");
 
 coforall i in 1..n {
