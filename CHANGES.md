@@ -123,7 +123,8 @@ Standard Library Modules
 * added a new 'GPUDiagnostics' module for tracking GPU kernel launches  
   (see https://chapel-lang.org/docs/1.27/modules/standard/GPUDiagnostics.html)
 * added new `fillRandom()` routines to 'Random' that accept min/max bounds  
-  (see https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html#PCGRandom.PCGRandomStream.fillRandom)
+  (see https://chapel-lang.org/docs/main/modules/standard/Random.html#Random.fillRandom
+   and https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html#PCGRandom.PCGRandomStream.fillRandom)
 * ensured all types have separate `isXType`, `isXValue`, and `isX` routines  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Types.html)
 * added a 'defaultHashTableResizeThreshold' config to affect hash table growth  
