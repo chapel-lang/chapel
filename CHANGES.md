@@ -43,7 +43,7 @@ Semantic Changes / Changes to Chapel Language
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * `.low`/`.high` on strided ranges now warn about pending behavioral changes  
-  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#range.low)
+  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.range.low)
 * marked `.equals()` on arrays as being unstable
 * removed deprecated support for `.front()`/`.back()` on arrays
 * removed support for bracket-less anonymous associative domains
@@ -52,7 +52,7 @@ New Features
 ------------
 * added new `.lowBound`/`.highBound` queries on ranges to get "pure" bounds  
   (e.g., `(1..10 by 2).highBound` returns `10`)  
-  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#range.lowBound)
+  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.range.low)
 * added an `alignedBoundsByDefault` config to opt into new `.low`/`.high` defs  
   (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault))
 
@@ -123,8 +123,7 @@ Standard Library Modules
 * added a new 'GPUDiagnostics' module for tracking GPU kernel launches  
   (see https://chapel-lang.org/docs/1.27/modules/standard/GPUDiagnostics.html)
 * added new `fillRandom()` routines to 'Random' that accept min/max bounds  
-  (see https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html#PCGRandom.PCGRandomStream.fillRandom  
-   and https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html\#PCGRandom.PCGRandomStream.fillRandom)
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html#PCGRandom.PCGRandomStream.fillRandom)
 * ensured all types have separate `isXType`, `isXValue`, and `isX` routines  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Types.html)
 * added a 'defaultHashTableResizeThreshold' config to affect hash table growth  
@@ -258,7 +257,7 @@ Third-Party Software Changes
 Developer-oriented changes: Process
 -----------------------------------
 * introduced a Code of Conduct for Chapel developers  
-  (see https://chapel-lang.org/docs/1.27/developer/index.html)
+  (see https://github.com/chapel-lang/chapel/blob/main/CODE_OF_CONDUCT.md)
 
 Developer-oriented changes: Documentation
 -----------------------------------------
