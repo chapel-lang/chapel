@@ -14,6 +14,7 @@ Packaging / Configuration Changes
 * the Chapel compiler's LLVM back-end now supports versions 11, 12, 13, and 14
 * made Chapel available as an Arch Linux AUR package  
   (see https://aur.archlinux.org/packages/chapel)
+* updated `./configure` to create prefix directories if they don't already exist
 * `make install` now installs `chpldoc` if it is built
 
 Syntactic / Naming Changes
@@ -114,9 +115,9 @@ Standard Library Modules
   https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 * added a new 'GPUDiagnostics' module for tracking GPU kernel launches  
   (see https://chapel-lang.org/docs/master/modules/standard/GPUDiagnostics.html)
-* added new `fillRandom()` overloads to 'Random' accepting min/max bounds
-  (see https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html\
-#PCGRandom.PCGRandomStream.fillRandom)
+* added new `fillRandom()` routines to 'Random' accepting min/max bounds
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html#PCGRandom.PCGRandomStream.fillRandom
+   and https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html\#PCGRandom.PCGRandomStream.fillRandom)
 * ensured all types have separate `isXType`, `isXValue`, and `isX` routines  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Types.html)
 * added a 'defaultHashTableResizeThreshold' config to affect hash table growth  
@@ -175,6 +176,7 @@ ferring-to-external-c-types)
 * fixed a typo in the 'IO' library documentation
 * fixed typos in the `mason` documentation
 * fixed formatting errors regarding default values for ranges in the spec
+* Fixed a syntax error in the interoperability documents
 
 Syntax Highlighting
 -------------------
