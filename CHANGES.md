@@ -236,6 +236,7 @@ Bug Fixes for GPU Computing
 * fixed a bug preventing copmilation with LLVM versions greater than 13
 * fixed a bug with CUDA 10.1 that prevented GPU initialization
 * fixed a bug causing an 'unresolved extern' warning during compilation
+* fixed a bug with iterating over associative domains
 * suppressed CUDA version warnings for those that are newer than clang supports
 
 Bug Fixes for Libraries
