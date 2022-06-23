@@ -111,6 +111,8 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* improved the performance and scalability of scan operations on `Block` arrays
+* reduced memory consistency overhead for `CHPL_COMM=ofi` w/ the 'cxi' provider
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -154,6 +156,8 @@ Build System Improvements
 
 Portability
 -----------
+* restored support for Omni-Path (OPA) networks  
+  (see https://chapel-lang.org/docs/1.27/platforms/omnipath.html)
 * renamed internal type `err_t` to support compatibility with AMD's math library
 * improved support for packaging scenarios that delete libtool's `.la` files
 * fixed link problems when clang defaults to position-independent executables
@@ -231,6 +235,7 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* updated GASNet-EX to version 2022.3.0
 * updated the Sphinx Chapel domain version used for `chpldoc`
 
 Developer-oriented changes: Process
