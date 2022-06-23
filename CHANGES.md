@@ -80,7 +80,7 @@ Deprecated / Removed Library Features
 
 Standard Library Modules
 ------------------------
-* added new 'OS[.POSIX]' modules for interacting with the operating system  
+* added a new 'OS.POSIX' module that exposes POSIX capabilities
   (see https://chapel-lang.org/docs/1.27/modules/standard/OS.html)
 * moved available-by-default math features into a new 'AutoMath' library
   (see https://chapel-lang.org/docs/1.27/modules/standard/AutoMath.html and
@@ -112,6 +112,10 @@ Tool Improvements
 Performance Optimizations / Improvements
 ----------------------------------------
 * improved the performance and scalability of scan operations on `Block` arrays
+* optimized the swap operator for `string`/`bytes` types
+
+Platform-specific Performance Optimizations / Improvements
+----------------------------------------------------------
 * reduced memory consistency overhead for `CHPL_COMM=ofi` w/ the 'cxi' provider
 
 Compilation-Time / Generated Code Improvements
@@ -191,6 +195,7 @@ Runtime Library Changes
 
 Launchers
 ---------
+* added support for overriding launcher job names
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -232,6 +237,7 @@ Bug Fixes for Tools
 
 Platform-specific Bug Fixes
 ---------------------------
+* fixed an initialization race with `CHPL_COMM=ofi` on InfiniBand systems
 
 Third-Party Software Changes
 ----------------------------
@@ -258,6 +264,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* added new error messages when building an invalid runtime configuration
 * reduced the reliance on CHPL_HOME when running `make docs`
 
 Developer-oriented changes: Compiler Flags
