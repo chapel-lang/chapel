@@ -57,11 +57,17 @@ Namespace Changes
 
 Name Changes in Libraries
 -------------------------
+* renamed `[channel.]readline()` to `[channel].readLine()`
+  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.readLine)
+* renamed `channel.isclosed()` to `channel.isClosed()`
+  (see https://chapel-lang.org/docs/main/modules/standard/IO.html?highlight=closed#IO.channel.isClosed)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
 * updated `.mod()`/`%` behavior for `bigint`s to match `mod()`/`%` for `int`s  
   (see https://chapel-lang.org/docs/1.27/modules/standard/BigInteger.html#BigInteger.bigint.mod)
+* improved `readLine` to return bytes read, throw errors, strip newlines, ...
+  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.readLine)
 
 Deprecated / Removed Library Features
 -------------------------------------
