@@ -58,8 +58,8 @@ there.  This may also be set using the ``CHPL_CUDA_ARCH`` environment variable.
 If you would like to view debugging information you can pass ``--verbose`` to
 your generated executable. This output will show the invocation of CUDA kernel
 calls along with various other interactions with the GPU such as memory
-operations.  You may also use the GPUDiagnostics module to gather similar
-information.
+operations.  You may also use the :mod:`GPUDiagnostics` module to gather
+similar information.
 
 Example
 -------
@@ -102,11 +102,10 @@ As of Chapel 1.27.0 the GPU locale model may be used alongside communication
 layers (values of ``CHPL_COMM``) other than ``none``. This enables programs to
 use of GPUs across nodes.
 
-In this mode, normal inter-node PGAS style access is supported outside of loops
-that are offloaded to the GPU; however, inter-node PGAS style communication
-within a kernel itself is not supported.  An idiomatic way to use all GPUs
-available across all locales is using nested ``coforall`` loops like the
-following:
+In this mode, normal remote access is supported outside of loops that are
+offloaded to the GPU; however, remote access within a kernel itself is not
+supported.  An idiomatic way to use all GPUs available across all locales is
+using nested ``coforall`` loops like the following:
 
 .. code-block:: chapel
 
