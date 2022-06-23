@@ -259,6 +259,8 @@ Third-Party Software Changes
 
 Developer-oriented changes: Process
 -----------------------------------
+* introduced a Code of Conduct for Chapel developers  
+  (see https://chapel-lang.org/docs/1.27/developer/index.html)
 
 Developer-oriented changes: Documentation
 -----------------------------------------
