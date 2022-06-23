@@ -11,6 +11,7 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* the Chapel compiler's LLVM back-end now supports versions 11, 12, 13, and 14
 * made Chapel available as an Arch Linux AUR package  
   (see https://aur.archlinux.org/packages/chapel)
 * `make install` now installs `chpldoc` if it is built
@@ -62,6 +63,9 @@ Name Changes in Libraries
   (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.readLine)
 * renamed `channel.isclosed()` to `channel.isClosed()`
   (see https://chapel-lang.org/docs/main/modules/standard/IO.html?highlight=closed#IO.channel.isClosed)
+* renamed `timedelta.total_seconds()` with `timedelta.totalSeconds()`  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/DateTime.html#DateTime.timedelta.totalSeconds)
+* renamed a number of other symbols in 'DateTime' to use preferred camelCasing
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -70,8 +74,8 @@ Changes / Feature Improvements in Libraries
 * improved `readLine` to return bytes read, throw errors, strip newlines, ...
   (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.readLine)
 
-Deprecated / Removed Library Features
--------------------------------------
+Deprecated / Unstable / Removed Library Features
+------------------------------------------------
 * stopped making the contents of the 'Math' module available by default
   (see https://chapel-lang.org/docs/1.27/modules/standard/Math.html)
 * deprecated support for `+`, `-`, `&`, `|`, and `^` on map
@@ -83,6 +87,12 @@ Deprecated / Removed Library Features
   (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.ItemReader)
 * deprecated support for 'Sys'/'SysBasic' symbols now supported by 'OS.POSIX'
 * deprecated the 'VectorizingIterator' module
+* deprecated `datetime.today()` in favor of `datetime.now()`  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/DateTime.html#DateTime.datetime.now)
+* deprecated `datetime.timeSinceEpoch()` in favor of `timeSinceEpoch()`  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/DateTime.html#DateTime.timeSinceEpoch)
+* deprecated `datetime - date` in favor of `datetime - datetime`
+* marked timezones as being unstable in the 'DateTime' module
 * removed the deprecated 'ChapelEnv', 'CPtr', and 'SysCTypes' modules
 * removed deprecated 'SysBasic' features
 * removed deprecated `size_t`/`ssize_t` type aliases
@@ -158,6 +168,7 @@ ferring-to-external-c-types)
 * fixed a missing line in the example output for 'ArgumentParser'
 * fixed a typo in the 'IO' library documentation
 * fixed typos in the `mason` documentation
+* fixed formatting errors regarding default values for ranges in the spec
 
 Syntax Highlighting
 -------------------
@@ -167,6 +178,7 @@ Example Codes
 
 Build System Improvements
 -------------------------
+* specialized build directories by LLVM version to avoid mixing versions
 * improved checks and error messages for missing LLVM dependencies
 
 Portability
@@ -194,6 +206,7 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
+* updated the compiler to support LLVM version 14 (in addition to 11, 12, 13)
 * switched the compiler's front-end to use the new 'dyno' parser/uAST by default
 
 Compiler Flags
@@ -261,6 +274,7 @@ Platform-specific Bug Fixes
 Third-Party Software Changes
 ----------------------------
 * updated GASNet-EX to version 2022.3.0
+* updated the bundled version of LLVM to version 14
 * updated the Sphinx Chapel domain version used for `chpldoc`
 
 Developer-oriented changes: Process
