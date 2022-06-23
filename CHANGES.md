@@ -184,7 +184,7 @@ Portability
 GPU Computing
 -------------
 * enabled GPU computing using multiple locales  
-  (see https://chapel-lang.org/docs/1.27/technotes/gpu.html)
+  (see https://chapel-lang.org/docs/1.27/technotes/gpu.html#multi-locale-support)
 * added a new 'GPUDiagnostics' module for tracking kernel launches  
   (see https://chapel-lang.org/docs/1.27/modules/standard/GPUDiagnostics.html)
 * extended 'Memory.Diagnostics' to support tracking GPU-based allocations  
