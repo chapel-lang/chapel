@@ -66,6 +66,8 @@ Name Changes in Libraries
 * renamed `timedelta.total_seconds()` with `timedelta.totalSeconds()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/DateTime.html#DateTime.timedelta.totalSeconds)
 * renamed a number of other symbols in 'DateTime' to use preferred camelCasing
+* renamed the `pattern` argument to `sep` in `.split()` on `string`/`bytes`  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Regex.html#Regex.string.split)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -86,6 +88,10 @@ Deprecated / Unstable / Removed Library Features
 * deprecated the `channel.itemReader` and `channel.itemWriter` methods  
   (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.ItemReader)
 * deprecated support for 'Sys'/'SysBasic' symbols now supported by 'OS.POSIX'
+* deprecated `.search()` on `string`/`bytes` in favor of `.find()  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Regex.html#Regex.string.find)
+* deprecated `.matches()` on `string`/`bytes` in favor of `.startsWith()`
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Regex.html#Regex.string.startsWith)
 * deprecated the 'VectorizingIterator' module
 * deprecated `datetime.today()` in favor of `datetime.now()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/DateTime.html#DateTime.datetime.now)
