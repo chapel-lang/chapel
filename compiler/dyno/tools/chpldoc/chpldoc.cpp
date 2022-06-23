@@ -65,6 +65,7 @@ static const int indentPerDepth = 3;
 std::string commentStyle_;
 bool writeStdOut_ = false;
 std::string outputDir_;
+bool textOnly_ = false;
 const std::string templateUsage = R"RAW(**Usage**
 
 .. code-block:: chapel
@@ -75,6 +76,15 @@ const std::string templateUsage = R"RAW(**Usage**
 or
 
 .. code-block:: chapel
+
+   import $MODULE;)RAW";
+
+const std::string textOnlyTemplateUsage = R"RAW(
+
+Usage:
+   use $MODULE;
+
+or
 
    import $MODULE;)RAW";
 
@@ -406,6 +416,8 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const Record* r) {
+    // TODO: Shouldn't this be record, not Record?
+    if (textOnly_) os_ << "Record: ";
     os_ << r->name().c_str();
     return false;
   }
@@ -851,7 +863,8 @@ struct RstResult {
   void mark(const Context *c) const {}
 
   void outputModule(std::string outDir, std::string name, int indentPerDepth) {
-    auto outpath = outDir + "/" + name + ".rst";
+    std::string ext = textOnly_ ? ".txt" : ".rst";
+    auto outpath = outDir + "/" + name + ext;
 
     std::error_code err;
     if (!std::filesystem::create_directories(outDir, err)) {
@@ -899,46 +912,48 @@ struct RstResultBuilder {
       os_ << '\n';
       return false;
     }
-
-    int indentChars = indent ? indentDepth_ * commentIndent : 0;
+    int addDepth = textOnly_ ? 1 : 0;
+    int indentChars = indent ? (addDepth + indentDepth_) * commentIndent : 0;
     auto lines = prettifyComment(comment->str(), commentStyle);
     if (!lines.empty())
       os_ << '\n';
     for (const auto& line : lines) {
       if (line.empty()) {
-        // insert blank spaces here to match test output from chpldoc, not sure
+        // insert blank spaces here to match test output from chpldoc
         // TODO: See if spaces needed for the docs to format correctly
         indentStream(os_, indentChars) << '\n';
       } else {
         indentStream(os_, indentChars) << line << '\n';
       }
     }
-    os_ << "\n";
     return true;
   }
   bool showComment(const AstNode* node, bool indent=true) {
-    return showComment(previousComment(context_, node->id()), indent);
+    bool commentShown = showComment(previousComment(context_, node->id()), indent);
+    if (commentShown && ((textOnly_ && !node->isModule()) || !textOnly_)) os_ << "\n";
+    return commentShown;
   }
 
   template<typename T>
   bool show(const std::string& kind, const T* node, bool indentComment=true) {
     if (isNoDoc(node)) return false;
 
-    os_ << ".. " << kind << ":: ";
+    if (!textOnly_) os_ << ".. " << kind << ":: ";
     RstSignatureVisitor ppv{os_};
     node->traverse(ppv);
-    os_ << "\n";
+    if (!textOnly_) os_ << "\n";
     bool commentShown = showComment(node, indentComment);
 
     // TODO: Fix all this because why are we checking for specific node types?
-    if (commentShown && (node->isEnum() ||
-                         node->isClass() ||
-                         node->isRecord())) {
+    if (commentShown && !textOnly_ && (node->isEnum() ||
+                                       node->isClass() ||
+                                       node->isRecord() ||
+                                       node->isModule())) {
       os_ << "\n";
     }
 
     if (auto attrs = node->attributes()) {
-      if (attrs->isDeprecated()) {
+      if (attrs->isDeprecated() && !textOnly_) {
         auto comment = previousComment(context_, node->id());
         if (comment && !comment->str().empty() &&
             comment->str().substr(0, 2) == "/*" &&
@@ -996,49 +1011,59 @@ struct RstResultBuilder {
       return {};
     // lookup the module path
     std::vector<UniqueString> modulePath = getModulePath(context_, m->id());
-
     std::string moduleName = modulePath.back().str();
-
+    const Comment* lastComment = nullptr;
     // header
-    os_ << ".. default-domain:: chpl\n\n";
-    os_ << ".. module:: " << m->name().c_str() << '\n';
-    const Comment* lastComment = previousComment(context_, m->id());
-    if (lastComment) {
-      indentStream(os_, 1 * indentPerDepth);
-      os_ << ":synopsis: " << commentSynopsis(lastComment, commentStyle)
-          << '\n';
+    if (!textOnly_) {
+      os_ << ".. default-domain:: chpl\n\n";
+      os_ << ".. module:: " << m->name().c_str() << '\n';
+      lastComment = previousComment(context_, m->id());
+      if (lastComment) {
+        indentStream(os_, 1 * indentPerDepth);
+        os_ << ":synopsis: " << commentSynopsis(lastComment, commentStyle)
+            << '\n';
+      }
+      os_ << '\n';
+
+      // module title
+      os_ << m->name().c_str() << "\n";
+      os_ << std::string(m->name().length(), '=') << "\n";
+
+      // usage
+      // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
+      os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
+    } else {
+      os_ << m->name().c_str();
+      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+      lastComment = previousComment(context_, m->id());
     }
-    os_ << '\n';
-
-    // module title
-    os_ << m->name().c_str() << "\n";
-    os_ << std::string(m->name().length(), '=') << "\n";
-
-    // usage
-    // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
-    os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
-
     if (hasSubmodule(m)) {
-      os_ << "\n";
-      os_ << "**Submodules**" << std::endl << std::endl;
+      if (!textOnly_) {
+        os_ << "\n";
+        os_ << "**Submodules**" << std::endl << std::endl;
 
-      os_ << ".. toctree::" << std::endl;
-      indentStream(os_, 1 * indentPerDepth);
+        os_ << ".. toctree::" << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
 
-      os_ << ":maxdepth: 1" << std::endl;
-      indentStream(os_, 1 * indentPerDepth);
+        os_ << ":maxdepth: 1" << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
 
-      os_ << ":glob:" << std::endl << std::endl;
-      indentStream(os_, 1 * indentPerDepth);
+        os_ << ":glob:" << std::endl << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
 
-      os_ << moduleName << "/*" << std::endl;
+        os_ << moduleName << "/*" << std::endl;
+      } else {
+        os_ << "\nSubmodules for this module are located in the ";
+        os_ << moduleName << "/ directory" << std::endl;
+      }
     }
-
-    showComment(lastComment, false);
+    if (textOnly_) indentDepth_ --;
+    showComment(m, textOnly_);
+    if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
 
-    return getResult();
+    return getResult(textOnly_);
   }
 
   owned<RstResult> visit(const Function* f) {
@@ -1100,7 +1125,7 @@ struct RstResultBuilder {
         indentStream(os_, 1 * indentPerDepth);
       }
       // write kind
-      os_ << ".. " << kind << ":: ";
+      if (!textOnly_) os_ << ".. " << kind << ":: ";
       if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
         os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
       }
@@ -1145,7 +1170,7 @@ struct RstResultBuilder {
       showComment(md, true);
 
       if (auto attrs = md->attributes()) {
-        if (attrs->isDeprecated()) {
+        if (attrs->isDeprecated() && !textOnly_) {
           indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
           indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage();
           os_ << "\n\n";
@@ -1426,6 +1451,10 @@ static Args parseArgs(int argc, char **argv) {
       assert(i < (argc - 1));
       ret.outputDir = argv[i + 1];
       i += 1;
+    } else if (std::strcmp("--author", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.author = argv[i + 1];
+      i += 1;
     } else if (std::strcmp("--process-used-modules", argv[i]) ==  0) {
       ret.processUsedModules = true;
     } else if (std::strcmp("--comment-style", argv[i]) == 0) {
@@ -1464,7 +1493,7 @@ int main(int argc, char** argv) {
 
   Args args = parseArgs(argc, argv);
   writeStdOut_ = args.stdout;
-
+  textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {
     std::cerr << "error: comment label should start with /*" << std::endl;
     return 1;
@@ -1496,7 +1525,10 @@ int main(int argc, char** argv) {
     }
     if (!args.stdout) {
       auto name = moduleName(builderResult);
-      outputDir_ = args.saveSphinx + "/source/modules";
+      if (!textOnly_)
+        outputDir_ = args.saveSphinx + "/source/modules";
+      else
+        outputDir_ = args.saveSphinx;
       for (const auto& ast : builderResult.topLevelExpressions()) {
         if (args.dump) {
           ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
