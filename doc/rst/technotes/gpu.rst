@@ -100,12 +100,12 @@ Multi-Locale Support
 
 As of Chapel 1.27.0 the GPU locale model may be used alongside communication
 layers (values of ``CHPL_COMM``) other than ``none``. This enables programs to
-use of GPUs across nodes.
+use GPUs across nodes.
 
 In this mode, normal remote access is supported outside of loops that are
-offloaded to the GPU; however, remote access within a kernel itself is not
-supported.  An idiomatic way to use all GPUs available across all locales is
-using nested ``coforall`` loops like the following:
+offloaded to the GPU; however, remote access within a kernel is not supported.
+An idiomatic way to use all GPUs available across locales is with nested
+``coforall`` loops like the following:
 
 .. code-block:: chapel
 
