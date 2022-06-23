@@ -52,7 +52,7 @@ New Features
 ------------
 * added new `.lowBound`/`.highBound` queries on ranges to get "pure" bounds  
   (e.g., `(1..10 by 2).highBound` returns `10`)  
-  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.range.low)
+  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.range.lowBound)
 * added an `alignedBoundsByDefault` config to opt into new `.low`/`.high` defs  
   (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault))
 
