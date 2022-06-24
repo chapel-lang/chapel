@@ -14,6 +14,7 @@ Highlights (see subsequent sections for further details)
 * improved the performance and scalability of scan operations on `Block` arrays
 * added new 'OS.POSIX' and 'GPUDiagnostics' modules
 * restored support for Omni-Path networks
+* the new 'dyno' parser and AST are now used by default when compiling
 * introduced a Code of Conduct for Chapel developers
 * made many changes, mostly minor, in support of stabilizing Chapel features
 * many other bug fixes and improvements to error messages and documentation
