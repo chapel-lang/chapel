@@ -458,6 +458,39 @@ const ID& idToParentId(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+// Given an ID:
+//  if it is a module, return that ID
+//  if it is not a module, return the ID of the module containing it
+static const ID& getModuleForId(Context* context, ID id) {
+  QUERY_BEGIN(getModuleForId, context, id);
+
+  // If id is a module, return that
+  AstTag tag;
+  ID result = id;
+
+  assert(!result.isEmpty() && "should be handled at call site");
+
+  while (!result.isEmpty()) {
+    tag = idToTag(context, result);
+    if (isModule(tag)) {
+      break;
+    }
+    result = result.parentSymbolId(context);
+  }
+
+  assert(!result.isEmpty() && "not expected");
+
+  return QUERY_END(result);
+}
+
+ID idToParentModule(Context* context, ID id) {
+  ID parentSymId = id.parentSymbolId(context);
+  if (parentSymId.isEmpty())
+    return parentSymId;
+
+  return getModuleForId(context, parentSymId);
+}
+
 static const Function::ReturnIntent&
 idToFnReturnIntentQuery(Context* context, ID id) {
   QUERY_BEGIN(idToFnReturnIntentQuery, context, id);

@@ -209,6 +209,12 @@ bool idIsParenlessFunction(Context* context, ID id);
 const ID& idToParentId(Context* context, ID id);
 
 /**
+  Returns the ID for the module containing the given ID,
+  or the empty ID when given a toplevel module.
+ */
+ID idToParentModule(Context* context, ID id);
+
+/**
  Given an ID that represents a Function, get the declared return
  intent for that function.
  */
