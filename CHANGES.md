@@ -15,7 +15,7 @@ Highlights (see subsequent sections for further details)
 * added new 'OS.POSIX' and 'GPUDiagnostics' modules
 * restored support for Omni-Path networks
 * introduced a Code of Conduct for Chapel developers
-* made many changes, mostly minor, in support of Chapel 2.0 stabilization
+* made many changes, mostly minor, in support of stabilizing Chapel features
 * many other bug fixes and improvements to error messages and documentation
 
 Packaging / Configuration Changes
@@ -34,7 +34,7 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.27/language/spec/modules.html#using-and-importing)
 * made `public use M` no longer bring in the name `M` for qualified access  
   (see https://chapel-lang.org/docs/1.27/language/spec/modules.html#public-and-private-use-statements)
-* changed methods to no longer be subject to shadowing  
+* changed methods such that they are no longer subject to shadowing  
   (see https://chapel-lang.org/docs/1.27/language/spec/procedures.html#determining-more-specific-functions)
 * made loops over unbounded enum/bool ranges stop at their extreme values
 * made serial loops over unbounded integer ranges terminate instead of spinning
@@ -74,7 +74,7 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
-* renamed `[channel.]readline()` to `[channel].readLine()`  
+* renamed `[channel.]readline()` to `[channel.]readLine()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.readLine)
 * renamed `channel.isclosed()` to `channel.isClosed()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html?highlight=closed#IO.channel.isClosed)
