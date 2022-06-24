@@ -66,6 +66,16 @@ void Scope::addBuiltin(UniqueString name) {
   declared_.emplace(name, ID());
 }
 
+const Scope* Scope::moduleScope() const {
+  const Scope* cur;
+  for (cur = this;
+       cur != nullptr && !isModule(cur->tag());
+       cur = cur->parentScope()) {
+    ; // search for the containing module
+  }
+  return cur;
+}
+
 IMPLEMENT_DUMP(OwnedIdsWithName);
 IMPLEMENT_DUMP(BorrowedIdsWithName);
 IMPLEMENT_DUMP(Scope);
