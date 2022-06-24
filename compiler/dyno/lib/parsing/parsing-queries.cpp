@@ -305,6 +305,12 @@ bool idIsInBundledModule(Context* context, ID id) {
   return filePath.startsWith(modules);
 }
 
+static const bool& fileExistsQuery(Context* context, std::string path) {
+  QUERY_BEGIN_INPUT(fileExistsQuery, context, path);
+  bool result = fileExists(path.c_str());
+  return QUERY_END(result);
+}
+
 static const Module* const& getToplevelModuleQuery(Context* context,
                                                    UniqueString name) {
   QUERY_BEGIN(getToplevelModuleQuery, context, name);
@@ -347,7 +353,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
       check += name.c_str();
       check += ".chpl";
 
-      if (hasFileText(context, check) || fileExists(check.c_str())) {
+      if (hasFileText(context, check) || fileExistsQuery(context, check)) {
         auto filePath = UniqueString::get(context, check);
         const ModuleVec& v = parse(context, filePath);
         for (auto mod: v) {
