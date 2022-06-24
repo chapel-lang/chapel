@@ -1486,6 +1486,9 @@ bool Resolver::enter(const MultiDecl* decl) {
   return false;
 }
 void Resolver::exit(const MultiDecl* decl) {
+  if (scopeResolveOnly)
+    return;
+
   // Visit the named decls in reverse order
   // setting the type/init.
   auto begin = decl->declOrComments().begin();

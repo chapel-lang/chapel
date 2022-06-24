@@ -98,6 +98,7 @@ struct Converter {
 
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
+  bool inImportOrUse = false;
   ModTag topLevelModTag;
   // TODO: remove latestComment and builderResult once
   // chpldoc is implemented as a separate tool on uAST
@@ -435,6 +436,12 @@ struct Converter {
   }
 
   Expr* resolvedIdentifier(const uast::Identifier* node) {
+    // Don't try to resolve identifiers in use/import yet
+    // (it messes up the current use/import build routines)
+    if (inImportOrUse) {
+      return nullptr;
+    }
+
     // Check for a resolution result that includes a target ID
     if (symStack.size() > 0) {
       auto r = symStack.back().resolved;
@@ -808,6 +815,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Import* node) {
+    inImportOrUse = true;
     const bool isPrivate = node->visibility() != uast::Decl::PUBLIC;
     auto ret = new BlockStmt(BLOCK_SCOPELESS);
 
@@ -857,6 +865,7 @@ struct Converter {
 
     setImportPrivacy(ret, isPrivate);
 
+    inImportOrUse = false;
     return ret;
   }
 
@@ -999,11 +1008,13 @@ struct Converter {
   BlockStmt* visit(const uast::Use* node) {
     INT_ASSERT(node->numVisibilityClauses() > 0);
 
+    inImportOrUse = true;
     if (node->numVisibilityClauses() == 1) {
       return convertUsePossibleLimitations(node);
     } else {
       return convertUseNoLimitations(node);
     }
+    inImportOrUse = false;
   }
 
   Expr* visit(const uast::VisibilityClause* node) {
