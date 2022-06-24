@@ -213,8 +213,7 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
   Compute a ResolvedFunction given a TypedFnSignature, but don't
   do full resolution of types or paren-ful calls in the body.
  */
-const ResolvedFunction* scopeResolveConcreteFunction(Context* context,
-                                                     ID id);
+const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
 
 /**
   Returns the ResolvedFunction called by a particular

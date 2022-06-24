@@ -85,7 +85,7 @@ resolvedExpressionForAst(Context* context, const AstNode* ast,
             return &inFn->resolutionById().byAst(ast);
           } else {
             if (scopeResolveOnly) {
-              auto rFn = scopeResolveConcreteFunction(context, parentFn->id());
+              auto rFn = scopeResolveFunction(context, parentFn->id());
               return &rFn->resolutionById().byAst(ast);
             } else {
               auto typed = typedSignatureInitial(context, untyped);
@@ -109,6 +109,19 @@ computeAndPrintStuff(Context* context,
                      const ResolvedFunction* inFn,
                      std::set<const ResolvedFunction*>& calledFns,
                      bool scopeResolveOnly) {
+
+  // Scope resolve / resolve concrete functions before printing
+  if (auto fn = ast->toFunction()) {
+    if (scopeResolveOnly) {
+      inFn = scopeResolveFunction(context, fn->id());
+    } else {
+      auto untyped = UntypedFnSignature::get(context, fn);
+      auto typed = typedSignatureInitial(context, untyped);
+      if (!typed->needsInstantiation()) {
+        inFn = resolveFunction(context, typed, nullptr);
+      }
+    }
+  }
 
   for (const AstNode* child : ast->children()) {
     computeAndPrintStuff(context, child, inFn, calledFns, scopeResolveOnly);

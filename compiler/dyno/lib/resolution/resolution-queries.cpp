@@ -1489,8 +1489,8 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
 }
 
 static const owned<ResolvedFunction>&
-scopeResolveConcreteFunctionQuery(Context* context, ID id) {
-  QUERY_BEGIN(scopeResolveConcreteFunctionQuery, context, id);
+scopeResolveFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(scopeResolveFunctionQuery, context, id);
 
   const AstNode* ast = parsing::idToAst(context, id);
   const Function* fn = ast->toFunction();
@@ -1502,8 +1502,12 @@ scopeResolveConcreteFunctionQuery(Context* context, ID id) {
   if (fn) {
     auto visitor = Resolver::functionScopeResolver(context, fn, resolutionById);
 
-    // visit the function (formals and body) to scope resolve
-    fn->traverse(visitor);
+    // visit the children of fn to scope resolve
+    // (visiting the children because visiting a function will not
+    //  cause it to be scope resolved).
+    for (auto child: fn->children()) {
+      child->traverse(visitor);
+    }
 
     sig = visitor.typedSignature;
   }
@@ -1515,13 +1519,13 @@ scopeResolveConcreteFunctionQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-const ResolvedFunction* scopeResolveConcreteFunction(Context* context,
+const ResolvedFunction* scopeResolveFunction(Context* context,
                                                      ID id) {
   if (id.isEmpty())
     return nullptr;
 
   const owned<ResolvedFunction>& result =
-    scopeResolveConcreteFunctionQuery(context, id);
+    scopeResolveFunctionQuery(context, id);
 
   return result.get();
 }

@@ -2406,7 +2406,7 @@ struct Converter {
         resolvedFn = resolution::resolveConcreteFunction(context, node->id());
       } else {
         resolvedFn =
-          resolution::scopeResolveConcreteFunction(context, node->id());
+          resolution::scopeResolveFunction(context, node->id());
       }
       if (resolvedFn) {
         resolved = &resolvedFn->resolutionById();
