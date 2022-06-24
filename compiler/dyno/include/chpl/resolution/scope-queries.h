@@ -80,17 +80,6 @@ namespace resolution {
                     LookupConfig config);
 
   /**
-    Same as lookupInScope above but uses an AstNode instead of a name.
-    Note that this only really handles DotExprs for qualified
-    access to modules (and not so much method calls).
-   */
-  std::vector<BorrowedIdsWithName>
-  lookupInScope(Context* context,
-                const Scope* scope,
-                const uast::AstNode* expr,
-                LookupConfig config);
-
-  /**
     Same as lookupNameInScope but includes a set tracking visited scopes.
    */
   std::vector<BorrowedIdsWithName>
@@ -100,16 +89,6 @@ namespace resolution {
                            UniqueString name,
                            LookupConfig config,
                            std::unordered_set<const Scope*>& visited);
-
-  /**
-    Same as lookupInScope but includes a set tracking visited scopes.
-   */
-  std::vector<BorrowedIdsWithName>
-  lookupInScopeWithSet(Context* context,
-                       const Scope* scope,
-                       const uast::AstNode* expr,
-                       LookupConfig config,
-                       std::unordered_set<const Scope*>& visited);
 
   /**
     Returns true if all of checkScope is visible from fromScope

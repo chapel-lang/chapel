@@ -276,16 +276,6 @@ static bool doLookupInScope(Context* context,
                             std::unordered_set<const Scope*>& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result);
 
-static bool doLookupExprInScope(Context* context,
-                                const Scope* scope,
-                                const ResolvedVisibilityScope* resolving,
-                                const AstNode* expr,
-                                LookupConfig config,
-                                std::unordered_set<const Scope*>& checkedScopes,
-                                std::vector<BorrowedIdsWithName>& result,
-                                UniqueString& name,
-                                const Scope*& resultScope);
-
 static const ResolvedVisibilityScope*
 resolveVisibilityStmts(Context* context, const Scope* scope);
 
@@ -467,77 +457,6 @@ static bool doLookupInScope(Context* context,
   return result.size() > startSize;
 }
 
-// 'resolving' is only != nullptr when we are resolving
-// what module/enum is use/imported. In that event it is a pointer
-// to the result currently being constructed.
-static bool doLookupExprInScope(Context* context,
-                                const Scope* scope,
-                                const ResolvedVisibilityScope* resolving,
-                                const AstNode* expr,
-                                LookupConfig config,
-                                std::unordered_set<const Scope*>& checkedScopes,
-                                std::vector<BorrowedIdsWithName>& result,
-                                UniqueString& name,
-                                const Scope*& resultScope) {
-
-  if (auto ident = expr->toIdentifier()) {
-    UniqueString n = ident->name();
-    name = n;
-    resultScope = scope;
-
-    return doLookupInScope(context, scope, resolving, n, config,
-                           checkedScopes, result);
-
-  } else if (auto dot = expr->toDot()) {
-    const AstNode* rcv = dot->receiver();
-    UniqueString fieldName = dot->field();
-
-    std::vector<BorrowedIdsWithName> rcvResult;
-    ID rcvId;
-    UniqueString rcvName;
-    const Scope* ignoredScope;
-
-    LookupConfig rcvConfig = config | LOOKUP_INNERMOST;
-
-    // lookup the receiver, recursively
-    bool ok = doLookupExprInScope(context, scope, resolving,
-                                  rcv, rcvConfig, checkedScopes,
-                                  rcvResult, rcvName, ignoredScope);
-
-    if (ok == false || rcvResult.size() == 0) {
-      return false;
-    }
-
-    if (rcvResult.size() > 1 || rcvResult[0].numIds() > 1) {
-      context->error(expr, "ambiguity in resolving dot receiver");
-    }
-    rcvId = rcvResult[0].id(0);
-
-    // find the fieldName in the scope of rcvId
-    const Scope* rcvScope = scopeForId(context, rcvId);
-
-    LookupConfig fieldConfig = LOOKUP_DECLS |
-                               LOOKUP_IMPORT_AND_USE;
-    if ((config & LOOKUP_INNERMOST) != 0) {
-      fieldConfig |= LOOKUP_INNERMOST;
-    }
-
-    // save the field name we used and the final scope checked
-    name = fieldName;
-    resultScope = rcvScope;
-    // look in rcvScope's declarations for fieldName
-    // using a new set of checked scopes
-    std::unordered_set<const Scope*> freshCheckedScopes;
-    return doLookupInScope(context, rcvScope, resolving,
-                           fieldName, fieldConfig,
-                           freshCheckedScopes, result);
-  } else {
-    context->error(expr, "this expression type is not allowed here");
-    return false;
-  }
-}
-
-
 enum VisibilityStmtKind {
   VIS_USE,    // the expr is the thing being use'd e.g. use A.B
   VIS_IMPORT, // the expr is the thing being imported e.g. import C.D
@@ -605,16 +524,6 @@ std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
                                   config, checkedScopes);
 }
 
-// note: expr must be Dot or Identifier
-std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
-                                               const Scope* scope,
-                                               const AstNode* expr,
-                                               LookupConfig config) {
-  std::unordered_set<const Scope*> checkedScopes;
-
-  return lookupInScopeWithSet(context, scope, expr, config, checkedScopes);
-}
-
 std::vector<BorrowedIdsWithName>
 lookupNameInScopeWithSet(Context* context,
                          const Scope* scope,
@@ -636,23 +545,6 @@ lookupNameInScopeWithSet(Context* context,
 
   return vec;
 }
-
-std::vector<BorrowedIdsWithName>
-lookupInScopeWithSet(Context* context,
-                     const Scope* scope,
-                     const AstNode* expr,
-                     LookupConfig config,
-                     std::unordered_set<const Scope*>& visited) {
-  std::vector<BorrowedIdsWithName> vec;
-  UniqueString name;
-  const Scope* resultScope;
-
-  doLookupExprInScope(context, scope, nullptr, expr, config, visited,
-                      vec, name, resultScope);
-
-  return vec;
-}
-
 
 static
 bool doIsWholeScopeVisibleFromScope(Context* context,
