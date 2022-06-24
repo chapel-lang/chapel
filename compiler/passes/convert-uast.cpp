@@ -3761,7 +3761,8 @@ void postConvertApplyFixups(chpl::Context* context) {
 
     Symbol* sym = findConvertedSym(target);
     if (sym == nullptr) {
-      INT_FATAL("could not find target symbol for SymExpr fixup");
+      INT_FATAL("could not find target symbol for SymExpr fixup for %s",
+                target.str().c_str());
     }
     se->setSymbol(sym);
     if (fVerify) {
@@ -3788,6 +3789,9 @@ void postConvertApplyFixups(chpl::Context* context) {
   }
   // clear gFnCallFixups since these have now been processed
   gFnCallFixups.clear();
+
+  // Ensure gFixupRequiredToken is no longer used.
+  INT_ASSERT(gFixupRequiredToken->firstSymExpr() == nullptr);
 
   // clear out the globals to save space
   // (in future, these will be fields in Converter,
