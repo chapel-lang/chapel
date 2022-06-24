@@ -18,6 +18,7 @@
 comp_unit_test(testCanPass)
 comp_unit_test(testDisambiguation)
 comp_unit_test(testFieldAccess)
+comp_unit_test(testFindDecl)
 comp_unit_test(testInteractive)
 comp_unit_test(testLocation)
 comp_unit_test(testLoopIndexVars)

@@ -46,20 +46,27 @@ using namespace uast;
 using namespace types;
 
 
-static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
-  if (decl->isFunction()) {
+static QualifiedType::Kind qualifiedTypeKindForTag(AstTag tag) {
+  if (isFunction(tag)) {
     return QualifiedType::FUNCTION;
-  } else if (decl->isModule()) {
+  } else if (isModule(tag)) {
     return QualifiedType::MODULE;
-  } else if (decl->isTypeDecl()) {
+  } else if (isTypeDecl(tag)) {
     return QualifiedType::TYPE;
-  } else if (const VarLikeDecl* vd = decl->toVarLikeDecl()) {
+  }
+
+  return QualifiedType::UNKNOWN;
+}
+
+static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
+  if (const VarLikeDecl* vd = decl->toVarLikeDecl()) {
     IntentList storageKind = vd->storageKind();
     return storageKind;
-    assert(false && "case not handled");
   }
-  assert(false && "case not handled");
-  return QualifiedType::UNKNOWN;
+
+  QualifiedType::Kind ret = qualifiedTypeKindForTag(decl->tag());
+  assert(ret != QualifiedType::UNKNOWN && "case not handled");
+  return ret;
 }
 
 // This class can gather up the IDs of contained fields or formals
@@ -1092,7 +1099,10 @@ bool Resolver::resolveSpecialCall(const Call* call) {
 
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (scopeResolveOnly) {
-    return QualifiedType();
+    auto tag = parsing::idToTag(context, id);
+    auto kind = qualifiedTypeKindForTag(tag);
+    const Type* type = nullptr;
+    return QualifiedType(kind, type);
   }
 
   // if the id is contained within this symbol,
@@ -1850,20 +1860,8 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
-  // Handle null, unknown, or erroneous receiver type
-  if (receiver.type().type() == nullptr ||
-      receiver.type().type()->isUnknownType()) {
-    ResolvedExpression& r = byPostorder.byAst(dot);
-    r.setType(QualifiedType(QualifiedType::VAR, UnknownType::get(context)));
-    return;
-  }
-  if (receiver.type().type()->isErroneousType()) {
-    ResolvedExpression& r = byPostorder.byAst(dot);
-    r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
-    return;
-  }
-
-  if (receiver.type().kind() == QualifiedType::MODULE) {
+  if (receiver.type().kind() == QualifiedType::MODULE &&
+      !receiver.toId().isEmpty()) {
     // resolve e.g. M.x where M is a module
     LookupConfig config = LOOKUP_DECLS |
                           LOOKUP_IMPORT_AND_USE;
@@ -1895,6 +1893,20 @@ void Resolver::exit(const Dot* dot) {
     }
     return;
   }
+
+  // Handle null, unknown, or erroneous receiver type
+  if (receiver.type().type() == nullptr ||
+      receiver.type().type()->isUnknownType()) {
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    r.setType(QualifiedType(QualifiedType::VAR, UnknownType::get(context)));
+    return;
+  }
+  if (receiver.type().type()->isErroneousType()) {
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
+    return;
+  }
+
 
   if (scopeResolveOnly)
     return;
