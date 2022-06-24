@@ -475,7 +475,7 @@ static bool lookupInScopeViz(Context* context,
                              std::vector<BorrowedIdsWithName>& result) {
   std::unordered_set<const Scope*> checkedScopes;
 
-  LookupConfig config = 0;
+  LookupConfig config = LOOKUP_INNERMOST;
 
   if (isFirstPart == true) {
     // e.g. A in use A.B.C or import A.B.C
@@ -603,6 +603,56 @@ bool isWholeScopeVisibleFromScope(Context* context,
                                         checked);
 }
 
+static void errorIfNameNotInScope(Context* context,
+                                  const Scope* scope,
+                                  const ResolvedVisibilityScope* resolving,
+                                  UniqueString name,
+                                  ID idForErr,
+                                  VisibilityStmtKind useOrImport) {
+  std::unordered_set<const Scope*> checkedScopes;
+  std::vector<BorrowedIdsWithName> result;
+  LookupConfig config = LOOKUP_INNERMOST |
+                        LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE;
+  bool got = doLookupInScope(context, scope, resolving,
+                             name, config,
+                             checkedScopes, result);
+
+  if (got == false || result.size() == 0) {
+    if (useOrImport == VIS_USE) {
+      context->error(idForErr, "could not find '%s' for 'use'", name.c_str());
+    } else {
+      context->error(idForErr, "could not find '%s' for 'import'",
+                     name.c_str());
+    }
+  }
+}
+
+static void
+errorIfAnyLimitationNotInScope(Context* context,
+                               const VisibilityClause* clause,
+                               const Scope* scope,
+                               const ResolvedVisibilityScope* resolving,
+                               VisibilityStmtKind useOrImport) {
+  for (const AstNode* e : clause->limitations()) {
+    if (auto ident = e->toIdentifier()) {
+      errorIfNameNotInScope(context, scope, resolving, ident->name(),
+                            ident->id(), useOrImport);
+    } else if (auto as = e->toAs()) {
+      if (auto ident = as->symbol()->toIdentifier()) {
+        errorIfNameNotInScope(context, scope, resolving, ident->name(),
+                              ident->id(), useOrImport);
+      }
+    }
+  }
+}
+
+static std::vector<std::pair<UniqueString,UniqueString>>
+emptyNames() {
+  std::vector<std::pair<UniqueString,UniqueString>> empty;
+  return empty;
+}
+
 static std::vector<std::pair<UniqueString,UniqueString>>
 convertOneName(UniqueString name) {
   std::vector<std::pair<UniqueString,UniqueString>> ret;
@@ -626,6 +676,7 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
       ret.push_back(std::make_pair(name, name));
     } else if (auto dot = e->toDot()) {
       context->error(dot, "dot expression not supported here");
+      continue;
     } else if (auto as = e->toAs()) {
       UniqueString name;
       UniqueString rename;
@@ -634,6 +685,7 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
         name = symId->name();
       } else {
         context->error(s, "expression type not supported for 'as'");
+        continue;
       }
 
       // Expect an identifier by construction.
@@ -778,19 +830,33 @@ doResolveUseStmt(Context* context, const Use* use,
       switch (clause->limitationKind()) {
         case VisibilityClause::EXCEPT:
           kind = VisibilitySymbols::CONTENTS_EXCEPT;
+          // check that we do not have 'except A as B'
+          for (const AstNode* e : clause->limitations()) {
+            if (!e->isIdentifier()) {
+              context->error(e, "'as' cannot be used with 'except'");
+            }
+          }
+          // add the visibility clause for only/except
+          r->addVisibilityClause(foundScope, kind, isPrivate,
+                                 convertLimitations(context, clause));
           break;
         case VisibilityClause::ONLY:
           kind = VisibilitySymbols::ONLY_CONTENTS;
+          // check that symbols named with 'only' actually exist
+          errorIfAnyLimitationNotInScope(context, clause, foundScope,
+                                         r, VIS_USE);
+          // add the visibility clause for only/except
+          r->addVisibilityClause(foundScope, kind, isPrivate,
+                                 convertLimitations(context, clause));
           break;
         case VisibilityClause::NONE:
           kind = VisibilitySymbols::ALL_CONTENTS;
+          r->addVisibilityClause(foundScope, kind, isPrivate, emptyNames());
           break;
         case VisibilityClause::BRACES:
           assert(false && "Should not be possible");
           break;
       }
-      r->addVisibilityClause(foundScope, kind, isPrivate,
-                             convertLimitations(context, clause));
     }
   }
 }
@@ -826,9 +892,12 @@ doResolveImportStmt(Context* context, const Import* imp,
     // is an overloaded function, we handle the outermost Dot expression
     // here instead of using findUseImportTarget on it (which would insist
     // on it matching just one thing).
+    // But, we don't do that for 'import M.f.{a,b,c}'
     if (auto dot = expr->toDot()) {
-      expr = dot->receiver();
-      dotName = dot->field();
+      if (clause->limitationKind() != VisibilityClause::BRACES) {
+        expr = dot->receiver();
+        dotName = dot->field();
+      }
     }
 
     const Scope* foundScope = findUseImportTarget(context, scope, r,
@@ -838,6 +907,8 @@ doResolveImportStmt(Context* context, const Import* imp,
 
       if (!dotName.isEmpty()) {
         // e.g. 'import M.f' - dotName is f and foundScope is for M
+        // Note that 'f' could refer to multiple symbols in the case
+        // of an overloaded function.
         switch (clause->limitationKind()) {
           case VisibilityClause::EXCEPT:
           case VisibilityClause::ONLY:
@@ -845,21 +916,24 @@ doResolveImportStmt(Context* context, const Import* imp,
             break;
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
+            errorIfNameNotInScope(context, foundScope, r,
+                                  dotName, clause->id(), VIS_IMPORT);
             if (newName.isEmpty()) {
+              // e.g. 'import M.f'
               r->addVisibilityClause(foundScope, kind, isPrivate,
                                      convertOneName(dotName));
             } else {
+              // e.g. 'import M.f as g'
               r->addVisibilityClause(foundScope, kind, isPrivate,
                                      convertOneRename(dotName, newName));
             }
             break;
           case VisibilityClause::BRACES:
-            kind = VisibilitySymbols::ONLY_CONTENTS;
-            r->addVisibilityClause(foundScope, kind, isPrivate,
-                                   convertLimitations(context, clause));
+            // this case should be ruled out above
+            // (dotName should not be set)
+            assert(false && "should not be reachable");
             break;
         }
-
       } else {
         // e.g. 'import OtherModule'
         switch (clause->limitationKind()) {
@@ -870,15 +944,23 @@ doResolveImportStmt(Context* context, const Import* imp,
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::SYMBOL_ONLY;
             if (newName.isEmpty()) {
+              // e.g. 'import OtherModule'
               r->addVisibilityClause(foundScope, kind, isPrivate,
                                      convertOneName(oldName));
             } else {
+              // e.g. 'import OtherModule as Foo'
               r->addVisibilityClause(foundScope, kind, isPrivate,
                                      convertOneRename(oldName, newName));
             }
             break;
           case VisibilityClause::BRACES:
+            // e.g. 'import OtherModule.{a,b,c}'
             kind = VisibilitySymbols::ONLY_CONTENTS;
+            // check that symbols named in the braces actually exist
+            errorIfAnyLimitationNotInScope(context, clause, foundScope,
+                                           r, VIS_IMPORT);
+
+            // add the visibility clause with the named symbols
             r->addVisibilityClause(foundScope, kind, isPrivate,
                                    convertLimitations(context, clause));
             break;
