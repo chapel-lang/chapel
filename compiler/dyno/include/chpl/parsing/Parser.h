@@ -44,10 +44,20 @@ class Parser final {
   // need to be stored in here.
 
   Context* context_;
-  Parser(Context* context);
+  ID parentModuleId_;
+
+  Parser(Context* context, ID parentModuleId);
 
   public:
+    /* Construct a parser for parsing a top-level module */
+    static Parser topLevelModuleParser(Context* context);
+
+    /* Construct a parser for parsing an included module */
+    static Parser includedModuleParser(Context* context, ID parentModuleId);
+
+    /* returns an owned topLevelModuleParser */
     static owned<Parser> build(Context* context);
+
     ~Parser() = default;
 
     /**

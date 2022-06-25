@@ -42,7 +42,7 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-static void gather(DeclMap& declared, UniqueString name, const NamedDecl* d) {
+static void gather(DeclMap& declared, UniqueString name, const AstNode* d) {
   auto search = declared.find(name);
   if (search == declared.end()) {
     // add a new entry containing just the one ID
@@ -135,6 +135,13 @@ struct GatherDecls {
   }
   void exit(const Import* d) { }
 
+  // consider 'include module' something that defines a name
+  bool enter(const Include* d) {
+    gather(declared, d->name(), d);
+    return false;
+  }
+  void exit(const Include* d) { }
+
   // ignore other AST nodes
   bool enter(const AstNode* ast) {
     return false;
@@ -219,23 +226,31 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
   return QUERY_END(ownedResult);
 }
 
-static const Scope* const& scopeForIdQuery(Context* context, ID id) {
-  QUERY_BEGIN(scopeForIdQuery, context, id);
+static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
+  QUERY_BEGIN(scopeForIdQuery, context, idIn);
 
   const Scope* result = nullptr;
 
-  if (id.isEmpty()) {
+  if (idIn.isEmpty()) {
     // use empty scope for top-level
-    const owned<Scope>& newScope = constructScopeQuery(context, id);
+    const owned<Scope>& newScope = constructScopeQuery(context, ID());
     result = newScope.get();
   } else {
     // decide whether or not to create a new scope
     bool newScope = false;
 
+    ID id = idIn;
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
       assert(false && "could not find ast for id");
-    } else if (createsScope(ast->tag())) {
+    } else if (ast->isInclude()) {
+      // parse 'module include' and use the result of parsing instead
+      // of the 'module include' itself.
+      ast = parsing::getIncludedSubmodule(context, id);
+      id = ast->id();
+    }
+
+    if (createsScope(ast->tag())) {
       if (Builder::astTagIndicatesNewIdScope(ast->tag())) {
         // always create a new scope for a Function etc
         newScope = true;
@@ -738,7 +753,8 @@ static const Scope* findScopeViz(Context* context,
 
   ID foundId = vec[0].id(0);
   AstTag tag = parsing::idToTag(context, foundId);
-  if (isModule(tag) || (useOrImport == VIS_USE && isEnum(tag))) {
+  if (isModule(tag) || isInclude(tag) ||
+      (useOrImport == VIS_USE && isEnum(tag))) {
     return scopeForModule(context, foundId);
   }
 

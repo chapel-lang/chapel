@@ -26,6 +26,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Identifier.h"
+#include "chpl/uast/Include.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/TupleDecl.h"
@@ -84,9 +85,17 @@ bool hasFileText(Context* context, const std::string& path) {
   return context->hasCurrentResultForQuery(fileTextQuery, tupleOfArgs);
 }
 
-const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
-  QUERY_BEGIN(parseFile, context, path);
+static Parser helpMakeParser(Context* context,
+                             bool forIncludedModule, ID parentModuleId) {
+  if (forIncludedModule == false) {
+    return Parser::topLevelModuleParser(context);
+  } else {
+    return Parser::includedModuleParser(context, parentModuleId);
+  }
+}
 
+static BuilderResult helpParseFile(Context* context, UniqueString path,
+                                   bool forIncludedModule, ID parentModuleId) {
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
@@ -95,10 +104,10 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
 
   if (error.isEmpty()) {
     // if there was no error reading the file, proceed to parse
-    auto parser = Parser::build(context);
+    auto parser = helpMakeParser(context, forIncludedModule, parentModuleId);
     const char* pathc = path.c_str();
     const char* textc = text.c_str();
-    BuilderResult tmpResult = parser->parseString(pathc, textc);
+    BuilderResult tmpResult = parser.parseString(pathc, textc);
     result.swap(tmpResult);
     // raise any errors encountered
     for (const ErrorMessage& e : result.errors()) {
@@ -111,11 +120,32 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
   } else {
     // Error should have already been reported in the fileText query.
     // Just record an error here as well so follow-ons are clear
-    result.errors_.push_back(error);
+    BuilderResult::appendError(result, error);
   }
+
+  return result;
+}
+
+const BuilderResult& parseFile(Context* context, UniqueString path) {
+  QUERY_BEGIN(parseFile, context, path);
+
+  BuilderResult result = helpParseFile(context, path,
+                                       /*included*/ false, ID());
 
   return QUERY_END(result);
 }
+
+const BuilderResult& parseIncludedFile(Context* context,
+                                       UniqueString path,
+                                       ID parentModuleId) {
+  QUERY_BEGIN(parseIncludedFile, context, path, parentModuleId);
+
+  BuilderResult result = helpParseFile(context, path,
+                                       /*included*/ true, parentModuleId);
+
+  return QUERY_END(result);
+}
+
 
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
   const FileContents& contents = fileText(context, path);
@@ -384,6 +414,60 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
 }
 
+static const Module* const&
+getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
+  QUERY_BEGIN(getIncludedSubmoduleQuery, context, includeModuleId);
+
+  const Module* result = nullptr;
+  const Include* include = nullptr;
+  if (auto ast = idToAst(context, includeModuleId)) {
+    if (auto inc = ast->toInclude()) {
+      include = inc;
+    }
+  }
+
+  if (include != nullptr) {
+    ID parentModuleId = idToParentModule(context, includeModuleId);
+    UniqueString parentModulePath = context->filePathForId(parentModuleId);
+    UniqueString submoduleName = include->name();
+    std::string check = parentModulePath.str();
+    // remove ".chpl"
+    check.resize(check.size() - 5);
+    // add /Submodule.chpl
+    check += "/";
+    check += submoduleName.c_str();
+    check += ".chpl";
+
+    if (hasFileText(context, check) || fileExistsQuery(context, check)) {
+      auto filePath = UniqueString::get(context, check);
+      const BuilderResult& p =
+        parseIncludedFile(context, filePath, parentModuleId);
+
+      for (auto topLevelExpression : p.topLevelExpressions()) {
+        if (const Module* mod = topLevelExpression->toModule()) {
+          if (result == nullptr) {
+            result = mod;
+          } else {
+            context->error(mod, "cannot have multiple modules "
+                                "defined in included module");
+          }
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const Module* getIncludedSubmodule(Context* context,
+                                   ID includeModuleId) {
+  if (includeModuleId.isEmpty()) {
+    return nullptr;
+  }
+
+  return getIncludedSubmoduleQuery(context, includeModuleId);
+}
+
 static const AstNode* const& astForIDQuery(Context* context, ID id) {
   QUERY_BEGIN(astForIDQuery, context, id);
 
@@ -513,7 +597,7 @@ idToFnReturnIntentQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id) {
+Function::ReturnIntent idToFnReturnIntent(Context* context, ID id) {
   return idToFnReturnIntentQuery(context, id);
 }
 

@@ -81,6 +81,62 @@ int ID::compare(const ID& other) const {
   return this->postOrderId() - other.postOrderId();
 }
 
+std::vector<std::pair<UniqueString,int>>
+ID::expandSymbolPath(Context* context, UniqueString symbolPath) {
+  std::vector<std::pair<UniqueString,int>> ret;
+
+  const char* s = symbolPath.c_str();
+  while (s && s[0] != '\0') {
+    const char* nextPeriod = strchr(s, '.');
+
+    // compute location of the null byte or just after the next '.'
+    const char* next = nullptr;
+    if (nextPeriod == nullptr) {
+      // location of the null byte
+      next = s + strlen(s);
+    } else {
+      // just after the '.'
+      next = nextPeriod + 1;
+    }
+
+    // if there is a '#' in s..next, find it
+    const char* nextPound = nullptr;
+    for (const char* p = s; p < next; p++) {
+      if (*p == '#') {
+        nextPound = p;
+      }
+    }
+
+    // compute the repeat count
+    int repeat = 0;
+    if (nextPound != nullptr) {
+      // convert the numeric repeat value to an integer
+      // note that atoi should stop at the first non-digit
+      repeat = atoi(nextPound + 1);
+    }
+
+    // compute location of the '#', '.', or the null byte,
+    // whichever comes first
+    const char* partEnd = nullptr;
+    if (nextPound != nullptr) {
+      partEnd = nextPound;
+    } else if (nextPeriod != nullptr) {
+      partEnd = nextPeriod;
+    } else {
+      partEnd = next; // next is location of null byte in this case
+    }
+
+    // compute the UniqueString containing just the symbol part
+    auto part = UniqueString::get(context, s, partEnd-s);
+
+    ret.emplace_back(part, repeat);
+
+    s = next;
+  }
+
+  return ret;
+}
+
 bool ID::update(chpl::ID& keep, chpl::ID& addin) {
   return defaultUpdate(keep, addin);
 }

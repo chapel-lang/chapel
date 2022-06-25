@@ -168,6 +168,11 @@ void BuilderResult::updateFilePaths(Context* context,
   }
 }
 
+void BuilderResult::appendError(BuilderResult& keep,
+                                const ErrorMessage& error) {
+  keep.errors_.push_back(error);
+}
+
 const AstNode* BuilderResult::idToAst(ID id) const {
   const AstNode* ast = nullptr;
   auto search = idToAst_.find(id);

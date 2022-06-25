@@ -129,6 +129,13 @@ class ID final {
    */
   int compare(const ID& other) const;
 
+  /**
+    Given a symbol path, expand it into a vector
+    of pairs, containing the path component and the repeat number.
+   */
+  static std::vector<std::pair<UniqueString,int>>
+  expandSymbolPath(Context* context, UniqueString symbolPath);
+
   bool operator==(const ID& other) const {
     (void)numChildIds_; // quiet nextLinter
     return symbolPath_ == other.symbolPath_ &&

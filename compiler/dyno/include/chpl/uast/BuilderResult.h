@@ -54,8 +54,6 @@ namespace uast {
  */
 class BuilderResult final {
   friend class Builder;
-  friend const BuilderResult& chpl::parsing::parseFile(Context* context,
-                                                       UniqueString path);
 
  private:
   UniqueString filePath_;
@@ -73,9 +71,6 @@ class BuilderResult final {
 
   // Goes from Comment ID to Location, applies to all AST nodes except Comment
   std::vector<Location> commentIdToLocation_;
-
- private:
-  static void updateFilePaths(Context* context, const BuilderResult& keep);
 
  public:
   /** Construct an empty BuilderResult */
@@ -114,7 +109,6 @@ class BuilderResult final {
 
     return nullptr;
   }
-
 
   /** return the number of errors */
   int numErrors() const {
@@ -160,6 +154,10 @@ class BuilderResult final {
 
   static bool update(BuilderResult& keep, BuilderResult& addin);
   void mark(Context* context) const;
+
+  // these two should only be called by the parser
+  static void updateFilePaths(Context* context, const BuilderResult& keep);
+  static void appendError(BuilderResult& keep, const ErrorMessage& error);
 };
 
 

@@ -82,10 +82,24 @@ static std::string filenameToModulename(const char* filename) {
   }
 }
 
-owned<Builder> Builder::build(Context* context, const char* filepath) {
+owned<Builder> Builder::topLevelModuleBuilder(Context* context,
+                                              const char* filepath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
-  auto b = new Builder(context, uniqueFilename);
+  UniqueString startingSymbolPath;
+  auto b = new Builder(context, uniqueFilename, startingSymbolPath);
   return toOwned(b);
+}
+
+owned<Builder> Builder::includedModuleBuilder(Context* context,
+                                              const char* filepath,
+                                              ID parentModuleId) {
+  auto uniqueFilename = UniqueString::get(context, filepath);
+  auto b = new Builder(context, uniqueFilename, parentModuleId.symbolPath());
+  return toOwned(b);
+}
+
+owned<Builder> Builder::build(Context* context, const char* filepath) {
+  return Builder::topLevelModuleBuilder(context, filepath);
 }
 
 void Builder::addToplevelExpression(owned<AstNode> e) {
@@ -166,6 +180,11 @@ void Builder::assignIDs() {
   declaredHereT duplicates;
   int i = 0;
   int commentIndex = 0;
+
+  if (!startingSymbolPath_.isEmpty()) {
+    // start from the starting symbol path if it exists
+    pathVec = ID::expandSymbolPath(context_, startingSymbolPath_);
+  }
 
   for (auto const& ownedExpression: topLevelExpressions_) {
     AstNode* ast = ownedExpression.get();
@@ -283,7 +302,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
         pathStr += std::to_string(repeat);
       }
     }
-    auto newSymbolPath = UniqueString::get(this->context(), pathStr);
+    auto newSymbolPath = UniqueString::get(context_, pathStr);
+    assert(ID::expandSymbolPath(context_, newSymbolPath) == pathVec);
 
     // get a fresh postorder traversal counter and duplicates map
     int freshId = 0;

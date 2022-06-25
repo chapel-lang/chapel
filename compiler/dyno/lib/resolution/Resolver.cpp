@@ -49,7 +49,7 @@ using namespace types;
 static QualifiedType::Kind qualifiedTypeKindForTag(AstTag tag) {
   if (isFunction(tag)) {
     return QualifiedType::FUNCTION;
-  } else if (isModule(tag)) {
+  } else if (isModule(tag) || isInclude(tag)) {
     return QualifiedType::MODULE;
   } else if (isTypeDecl(tag)) {
     return QualifiedType::TYPE;

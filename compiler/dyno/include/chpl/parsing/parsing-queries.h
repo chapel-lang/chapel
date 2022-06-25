@@ -82,6 +82,13 @@ bool hasFileText(Context* context, const std::string& path);
  */
 const uast::BuilderResult& parseFile(Context* context, UniqueString path);
 
+/**
+  Like parseFile, but also accepts a parent module ID,
+  so that IDs can be correctly assigned when parsing an included submodule.
+ */
+const uast::BuilderResult& parseIncludedFile(Context* context,
+                                             UniqueString path,
+                                             ID parentModuleId);
 
 /**
   A function for counting the tokens when parsing
@@ -187,6 +194,13 @@ bool idIsInBundledModule(Context* context, ID id);
  if no such toplevel module can be found in the module search path.
  */
 const uast::Module* getToplevelModule(Context* context, UniqueString name);
+
+/**
+ This query parses a submodule for 'include submodule'.
+ Returns nullptr if no such file can be found.
+ */
+const uast::Module* getIncludedSubmodule(Context* context,
+                                         ID includeModuleId);
 
 /**
  Returns the uast node with the given ID.

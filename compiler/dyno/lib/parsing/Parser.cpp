@@ -40,12 +40,20 @@ namespace parsing {
 
 using namespace chpl::uast;
 
-Parser::Parser(Context* context)
-  : context_(context) {
+Parser::Parser(Context* context, ID parentModuleId)
+  : context_(context), parentModuleId_(parentModuleId) {
+}
+
+Parser Parser::topLevelModuleParser(Context* context) {
+  return Parser(context, ID());
+}
+
+Parser Parser::includedModuleParser(Context* context, ID parentModuleId) {
+  return Parser(context, parentModuleId);
 }
 
 owned<Parser> Parser::build(Context* context) {
-  return toOwned(new Parser(context));
+  return toOwned(new Parser(context, ID()));
 }
 
 static void updateParseResult(ParserContext* parserContext) {
