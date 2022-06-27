@@ -1757,6 +1757,8 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   var inputReady$: [targetLocs.domain] sync bool;
   var outputReady$: [targetLocs.domain] unmanaged BoxedSync(bool)?;
 
+  const cachedPID = pid;
+
   // Fire up tasks per participating locale
   coforall locid in targetLocs.domain {
     on targetLocs[locid] {
@@ -1764,7 +1766,8 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // set up some references to our LocBlockArr descriptor, our
       // local array, local domain, and local result elements
-      ref myLocArrDesc = locArr[locid];
+      const thisArr = if _privatization then chpl_getPrivatizedCopy(this.type, cachedPID) else this;
+      ref myLocArrDesc = thisArr.locArr[locid];
       ref myLocArr = myLocArrDesc.myElems;
       const ref myLocDom = myLocArr.domain;
 
