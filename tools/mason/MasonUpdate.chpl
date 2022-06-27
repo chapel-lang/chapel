@@ -190,6 +190,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
 
   // Assert some expected fields are not nil
   if brick!['name'] == nil || brick!['version'] == nil{
+    writeln('need name and version');
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
@@ -300,6 +301,30 @@ proc chplVersionError(brick:borrowed Toml) {
   }
 }
 
+proc getGitDeps(root: unmanaged Toml) {
+  // name of package mapped to the URL
+  var urls: map(string, string);
+  for key in root["dependencies"]!.A {
+    // commas currently don't play with TOML files,
+    // so cast to string rather than trying to search
+    // through the TOML
+    var tmp = root["dependencies"]![key]!:string;
+
+    // TODO: When supporting additional things, split
+    // on comma and then use that to determine the
+    // branch, etc.
+    
+    if tmp.find("git") != -1 {
+      var start = tmp.find("\"");
+      var end = tmp.rfind("\"");
+      var val = tmp[(start+1)..(end-1)];
+      urls[key] = val;
+    }
+  }
+  
+  return urls;
+}
+
 /* Responsible for creating the dependency tree
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
@@ -318,8 +343,10 @@ private proc createDepTree(root: unmanaged Toml) {
 
   if root.pathExists("dependencies") {
     var deps = getDependencies(root);
+    var gitDeps = getGitDeps(root);
     var manifests = getManifests(deps);
     depTree = createDepTrees(depTree, manifests, "root");
+    depTree = addGitDeps(depTree, gitDeps);
   }
 
   //
@@ -401,9 +428,27 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then
     depTree[name]!.set("dependencies", depList.toArray());
+    
   return depTree;
 }
 
+private proc addGitDeps(depTree: unmanaged Toml, ref gitDeps: map(string, string)) {
+  for key in gitDeps {
+    if !depTree.pathExists(key) {
+      var dt: domain(string);
+      var depTbl: [dt] unmanaged Toml?;
+      depTree.set(key, depTbl);
+    }
+    depTree[key]!.set("url", gitDeps[key]);
+    depTree[key]!.set("name", key);
+
+    // TODO: Fix version and chplversion
+    depTree[key]!.set("version", "0");
+    depTree[key]!.set("chplVersion", "1.27.0");
+  }
+  writeln(depTree);
+  return depTree;
+}
 
 //
 // TODO: Accept an array of bricks
