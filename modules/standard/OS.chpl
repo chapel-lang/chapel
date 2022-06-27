@@ -857,4 +857,20 @@ module OS {
     extern proc write(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
 
   } // end POSIX
+
+  /*Check whether or not the environment variable ``name`` is defined.
+    If ``name`` is defined then return 1 and update ``string_out``
+    to store the value of the environment variable
+    otherwise the function returns 0.
+
+    :arg name: name of the environment variable
+    :type name: `c_string`
+
+    :arg string_out: store the value of ``name`` environment variable if defined
+    :type string_out: `c_string`
+
+    :returns: 1 if ``name`` is defined and 0 if not
+    :rtype: `c_int`
+   */
+  extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
 }
