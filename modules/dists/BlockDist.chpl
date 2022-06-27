@@ -1818,10 +1818,17 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
           // accumulate to prep for the next iteration
           metaop.accumulateOntoState(next, locVal);
         }
+
+        // Iterator that yields values instead of references (to enable RVF)
+        iter valIter(iterable) {
+          for elem in iterable do yield elem;
+        }
+
         // Mark that scan values are ready
-        coforall (ready, elem) in zip(outputReady$, elemPerLoc) do on ready {
+        coforall (ready, elem) in zip(valIter(outputReady$), valIter(elemPerLoc)) do on ready {
           ready!.writeEF(elem);
         }
+
         delete metaop;
       }
 
