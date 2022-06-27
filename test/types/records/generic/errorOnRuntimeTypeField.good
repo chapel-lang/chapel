@@ -1,0 +1,4 @@
+errorOnRuntimeTypeField.chpl:14: error: Using an idiom that is not yet well-supported
+(possibly instantiating a type field with an array or domain type?)
+(see https://github.com/chapel-lang/chapel/issues/20050)
+Note: This source location is a guess.

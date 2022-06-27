@@ -585,6 +585,9 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
   // e.g. T3 = alloca i8;
   //      T3 = (T == T2);   // not actual LLVM syntax
   // in LLVM, boolean type is i1
+  if (val.val == NULL) {
+    USR_FATAL("Using an idiom that is not yet well-supported\n(possibly instantiating a type field with an array or domain type?)\n(see https://github.com/chapel-lang/chapel/issues/20050)");
+  }
   if (val.val->getType() != ptrValType){
     llvm::Value* v = convertValueToType(val.val, ptrValType, !val.isUnsigned);
     INT_ASSERT(v);
