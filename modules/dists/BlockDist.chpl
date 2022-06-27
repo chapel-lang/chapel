@@ -1733,10 +1733,25 @@ override proc BlockArr.doiCanBulkTransferRankChange() param return true;
 
 config param debugBlockScan = false;
 
+/* Boxed sync with readFE/writeEF only, but works for arbitrary types. Not
+ * suitable for general use since there are races with when the value gets
+ * written to, but safe for single writer, single reader case here.
+ */
 class BoxedSync {
   type T;
-  var s: sync T;
-  forwarding s;
+  var s: sync int; // int over bool to enable native qthread sync
+  var res: T;
+
+  proc readFE(): T {
+    s.readFE();
+    return res;
+  }
+
+  proc writeEF(val: T): void {
+    res = val;
+    s.writeEF(1);
+  }
+
   // guard against dynamic dispatch trying to resolve write()ing the sync
   override proc writeThis(f) throws { }
 }
@@ -1754,8 +1769,8 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   const ref targetLocs = this.dsiTargetLocales();
   const firstLoc = targetLocs.domain.lowBound;
   var elemPerLoc: [targetLocs.domain] resType;
-  var inputReady$: [targetLocs.domain] sync bool;
-  var outputReady$: [targetLocs.domain] unmanaged BoxedSync(bool)?;
+  var inputReady$: [targetLocs.domain] sync int;
+  var outputReady$: [targetLocs.domain] unmanaged BoxedSync(resType)?;
 
   const cachedPID = pid;
 
@@ -1778,13 +1793,13 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // Create a local ready var and store it back on the initiating
       // locale so it can notify us
-      const myOutputReady = new unmanaged BoxedSync(bool)?;
+      const myOutputReady = new unmanaged BoxedSync(resType)?;
 
       on elemPerLoc {
         // save our local scan total away and signal that it's ready
         outputReady$[locid] = myOutputReady;
         elemPerLoc[locid] = tot;
-        inputReady$[locid].writeEF(true);
+        inputReady$[locid].writeEF(1);
       }
 
       // the "first" locale scans the per-locale contributions as they
@@ -1794,7 +1809,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
         var next: resType = metaop.identity;
         for locid in targetLocs.domain {
-          const locready = inputReady$[locid].readFE();
+          inputReady$[locid].readFE();
 
           // store the scan value
           ref locVal = elemPerLoc[locid];
@@ -1804,16 +1819,14 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
           metaop.accumulateOntoState(next, locVal);
         }
         // Mark that scan values are ready
-        coforall ready in outputReady$ do on ready {
-          ready!.writeEF(true);
+        coforall (ready, elem) in zip(outputReady$, elemPerLoc) do on ready {
+          ready!.writeEF(elem);
         }
         delete metaop;
       }
 
-      // block until someone tells us that our local value has been updated
-      // and then read it
-      const resready = myOutputReady!.readFE();
-      const myadjust = elemPerLoc[locid];
+      // block until our local value has been updated
+      const myadjust = myOutputReady!.readFE();
       if debugBlockScan then
         writeln(locid, ": myadjust = ", myadjust);
 
