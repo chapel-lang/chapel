@@ -1787,15 +1787,17 @@ operator :(r: range(?), type t: range(?)) {
       }
     }
 
-    if boundsChecking && !r.hasFirst() && count > 0 then
-      boundsCheckHalt("With a positive count, the range must have a first index.");
-    if boundsChecking && !r.hasLast()  && count < 0 then
-      boundsCheckHalt("With a negative count, the range must have a last index.");
-    if boundsChecking && r.boundedType == BoundedRangeType.bounded &&
-      abs(count:chpl__maxIntTypeSameSign(count.type)):uint > r.sizeAs(uint) then {
-      boundsCheckHalt("bounded range is too small to access " + abs(count):string + " elements");
+    if boundsChecking {
+      if count > 0 && !r.hasFirst() then
+        boundsCheckHalt("With a positive count, the range must have a first index.");
+      if count < 0 && !r.hasLast() then
+        boundsCheckHalt("With a negative count, the range must have a last index.");
+      if r.boundedType == BoundedRangeType.bounded &&
+         abs(count):uint > r.sizeAs(uint) then
+           boundsCheckHalt("range of size " + r.size:string +
+                           " is too small for counting " + abs(count):string +
+                           " elements");
     }
-
     //
     // BLC: I'm not particularly proud of this, but it was the only
     // way I could figure to keep count.chpl working given that the
@@ -1841,11 +1843,7 @@ operator :(r: range(?), type t: range(?)) {
                      _aligned = r.aligned);
   }
 
-  operator #(r:range(?i), count:chpl__rangeStrideType(i)) {
-    return chpl_count_help(r, count);
-  }
-
-  operator #(r:range(?i), count:chpl__rangeUnsignedType(i)) {
+  operator #(r:range(?i), count:integral) {
     return chpl_count_help(r, count);
   }
 
