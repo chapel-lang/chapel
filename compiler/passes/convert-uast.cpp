@@ -786,7 +786,6 @@ struct Converter {
   // old parser's implementation.
   Expr* visit(const uast::Include* node) {
     bool isIncPrivate = node->visibility() == uast::Decl::PRIVATE;
-    bool isPrototype = node->isPrototype();
 
     // Consume the comment but do not use it - module comment is used.
     auto comment = consumeLatestComment();
@@ -832,6 +831,7 @@ struct Converter {
       mod->addFlag(FLAG_PRIVATE);
     }
 
+    /* these are now reported in dyno itself
     if (isModPrivate && !isIncPrivate) {
       USR_FATAL_CONT(node->id(),
                      "cannot make a private module public through "
@@ -843,7 +843,7 @@ struct Converter {
       USR_FATAL_CONT(node->id(), "cannot apply prototype to module in "
                                  "include statement");
       USR_PRINT(umod->id(), "put prototype keyword at module declaration here");
-    }
+    }*/
 
     if (fWarnUnstable && mod->modTag == MOD_USER) {
       USR_WARN(node->id(), "module include statements are not yet stable "
