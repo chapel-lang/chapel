@@ -181,6 +181,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 
   const (sourceList, gitList) = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
+  const gitDepPath = MASON_HOME + '/git/';
   const project = lockFile["root"]!["name"]!.s;
   const pathToProj = projectHome + '/src/'+ project + '.chpl';
   const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
@@ -196,6 +197,11 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     for (_, name, version) in sourceList {
       var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
       command += depSrc;
+    }
+
+    for (_, name, version) in gitList {
+      var gitDepSrc = ' ' + gitDepPath + name + "-" + version + '/src/' + name + ".chpl";
+      command += gitDepSrc;
     }
 
     // Verbosity control
