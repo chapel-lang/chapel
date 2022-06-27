@@ -1769,18 +1769,20 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       const ref myLocDom = myLocArr.domain;
 
       // Compute the local pre-scan on our local array
-      var (numTasks, rngs, state, tot) = myLocArr._value.chpl__preScan(myop, res, myLocDom[dom]);
+      const (numTasks, rngs, state, tot) = myLocArr._value.chpl__preScan(myop, res, myLocDom[dom]);
       if debugBlockScan then
         writeln(locid, ": ", (numTasks, rngs, state, tot));
 
       // Create a local ready var and store it back on the initiating
       // locale so it can notify us
-      var myOutputReady = new unmanaged BoxedSync(bool)?;
-      outputReady$[locid] = myOutputReady;
+      const myOutputReady = new unmanaged BoxedSync(bool)?;
 
-      // save our local scan total away and signal that it's ready
-      elemPerLoc[locid] = tot;
-      inputReady$[locid].writeEF(true);
+      on elemPerLoc {
+        // save our local scan total away and signal that it's ready
+        outputReady$[locid] = myOutputReady;
+        elemPerLoc[locid] = tot;
+        inputReady$[locid].writeEF(true);
+      }
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
