@@ -211,7 +211,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     const lockFile = parseToml(toParse);
 
     // Get project source code and dependencies
-    const sourceList = genSourceList(lockFile);
+    const (sourceList, gitList) = genSourceList(lockFile);
 
     getSrcCode(sourceList, show);
     const project = lockFile["root"]!["name"]!.s;
