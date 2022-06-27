@@ -82,7 +82,8 @@ private proc getBuildInfo(projectHome: string) {
   const tomlFile = owned.create(parseToml(toml));
 
   // Get project source code and dependencies
-  const sourceList = genSourceList(lockFile);
+  // TODO: Add some use of the gitDeps
+  const (sourceList, gitDeps) = genSourceList(lockFile);
 
   //
   // TODO: Temporarily use `toArray` here because `list` does not yet

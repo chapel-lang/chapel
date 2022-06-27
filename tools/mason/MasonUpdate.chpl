@@ -446,7 +446,6 @@ private proc addGitDeps(depTree: unmanaged Toml, ref gitDeps: map(string, string
     depTree[key]!.set("version", "0");
     depTree[key]!.set("chplVersion", "1.27.0");
   }
-  writeln(depTree);
   return depTree;
 }
 

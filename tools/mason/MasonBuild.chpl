@@ -131,7 +131,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         }
 
         // generate list of dependencies and get src code
-        var sourceList = genSourceList(lockFile);
+        var (sourceList, gitList) = genSourceList(lockFile);
 
         if lockFile.pathExists('external') {
           spackInstalled();
@@ -142,6 +142,8 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         // have for good performance.
         //
         getSrcCode(sourceList, show);
+
+        getGitCode(gitList, show);
 
         // get compilation options including external dependencies
         const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
@@ -177,7 +179,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
                 release: bool, compopts: list(string), projectHome: string) : bool throws {
 
-  const sourceList = genSourceList(lockFile);
+  const (sourceList, gitList) = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
   const project = lockFile["root"]!["name"]!.s;
   const pathToProj = projectHome + '/src/'+ project + '.chpl';
@@ -222,18 +224,34 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
    url and the name for local mason dependency pool */
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
+  var gitList: list((string, string, string));
   for (name, package) in lockFile.A.items() {
     if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
         var toml = lockFile[name]!;
+        // TODO: we don't really want to require version for git
+        //       deps, but there are a few steps to remove that
         var version = toml["version"]!.s;
-        var source = toml["source"]!.s;
-        sourceList.append((source, name, version));
+        
+        if toml.pathExists("source") {
+          var source = toml["source"]!.s;
+          sourceList.append((source, name, version));
+        } else if toml.pathExists("url") {
+          // TODO: We want the branch or hash or whatever
+          //       since version is already required, maybe
+          //       we can just put it there and then do the
+          //       transform from the toml -> lock file?
+          var url = toml["url"]!.s;
+          gitList.append((url, name, version));
+        } else {
+          writeln("frowns today :(");
+        }
+        
       }
     }
   }
-  return sourceList;
+  return (sourceList, gitList);
 }
 
 
@@ -274,6 +292,36 @@ proc getSrcCode(sourceListArg: list(3*string), show) {
       }
       runCommand(getDependency);
       gitC(destination, checkout);
+    }
+  }
+}
+
+proc getGitCode(gitListArg: list(3*string), show) {
+  if isDir(MASON_HOME + '/git/') == false {
+    mkdir(MASON_HOME + '/git/', parents=true);
+  }
+
+  //
+  // TODO: Temporarily use `toArray` here because `list` does not yet
+  // support parallel iteration, which the `getSrcCode` method _must_
+  // have for good performance.
+  //
+  var gitList = gitListArg.toArray();
+
+  var baseDir = MASON_HOME +'/git/';
+  forall (srcURL, name, version) in gitList {
+    // TODO: This shouldn't be based on version, but branch
+    const nameVers = name + "-" + version;
+    const destination = baseDir + nameVers;
+    // TODO: probably want to pull latest or something if it's main branch?
+    if !depExists(nameVers) {
+      writeln("Downloading dependency: " + nameVers);
+      // TODO: We will want to checkout the revision requested
+      var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
+      if show {
+        getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
+      }
+      runCommand(getDependency);
     }
   }
 }
