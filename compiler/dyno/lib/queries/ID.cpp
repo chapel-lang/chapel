@@ -99,9 +99,10 @@ ID::expandSymbolPath(Context* context, UniqueString symbolPath) {
       next = nextPeriod + 1;
     }
 
-    // if there is a '#' in s..next, find it
+    // if there is a '#' in s+1..next, find it
+    // start at s+1 to handle e.g. an ID for a # (range count) operator
     const char* nextPound = nullptr;
-    for (const char* p = s; p < next; p++) {
+    for (const char* p = s+1; p < next; p++) {
       if (*p == '#') {
         nextPound = p;
       }
