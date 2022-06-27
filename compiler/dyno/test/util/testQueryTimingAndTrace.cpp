@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 
   for (int i = 1; i < argc; i++) {
     auto filepath = UniqueString::get(ctx, argv[i]);
-    const ModuleVec& mods = parse(ctx, filepath);
+    const ModuleVec& mods = parseToplevel(ctx, filepath);
     for (const Module* mod : mods) {
       const ResolutionResultByPostorderID& rr = resolveModule(ctx, mod->id());
       (void)rr;

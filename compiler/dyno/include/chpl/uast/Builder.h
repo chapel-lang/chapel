@@ -88,12 +88,12 @@ class Builder final {
                                               const char* filepath);
 
   /** Construct a Builder for parsing an included module.
-      'parentModuleId' must be the ID of the module containing the
-      'module include' statement.
+      'parentSymbolPath' is the symbol path component of the ID
+      of the module containing the 'module include' statement.
    */
   static owned<Builder> includedModuleBuilder(Context* context,
                                               const char* filepath,
-                                              ID parentModuleId);
+                                              UniqueString parentSymbolPath);
 
   /** returns an owned topLevelModuleBuilder */
   static owned<Builder> build(Context* context, const char* filepath);

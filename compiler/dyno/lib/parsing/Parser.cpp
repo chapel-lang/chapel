@@ -40,20 +40,23 @@ namespace parsing {
 
 using namespace chpl::uast;
 
-Parser::Parser(Context* context, ID parentModuleId)
-  : context_(context), parentModuleId_(parentModuleId) {
+Parser::Parser(Context* context, UniqueString parentSymbolPath)
+  : context_(context), parentSymbolPath_(parentSymbolPath) {
 }
 
 Parser Parser::topLevelModuleParser(Context* context) {
-  return Parser(context, ID());
+  UniqueString emptySymbolPath;
+  return Parser(context, emptySymbolPath);
 }
 
-Parser Parser::includedModuleParser(Context* context, ID parentModuleId) {
-  return Parser(context, parentModuleId);
+Parser Parser::includedModuleParser(Context* context,
+                                    UniqueString parentSymbolPath) {
+  return Parser(context, parentSymbolPath);
 }
 
 owned<Parser> Parser::build(Context* context) {
-  return toOwned(new Parser(context, ID()));
+  UniqueString emptySymbolPath;
+  return toOwned(new Parser(context, emptySymbolPath));
 }
 
 static void updateParseResult(ParserContext* parserContext) {
@@ -87,7 +90,13 @@ static void updateParseResult(ParserContext* parserContext) {
 
 
 BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
-  auto builder = Builder::build(this->context(), path);
+  owned<Builder> builder;
+  if (parentSymbolPath_.isEmpty()) {
+    builder = Builder::topLevelModuleBuilder(this->context(), path);
+  } else {
+    builder = Builder::includedModuleBuilder(this->context(), path,
+                                             parentSymbolPath_);
+  }
   ErrorMessage fileError;
 
   FILE* fp = openfile(path, "r", fileError);
@@ -175,7 +184,13 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
 
 BuilderResult Parser::parseString(const char* path, const char* str,
                                   ParserStats* parseStats) {
-  auto builder = Builder::build(this->context(), path);
+  owned<Builder> builder;
+  if (parentSymbolPath_.isEmpty()) {
+    builder = Builder::topLevelModuleBuilder(this->context(), path);
+  } else {
+    builder = Builder::includedModuleBuilder(this->context(), path,
+                                             parentSymbolPath_);
+  }
 
   // Set the (global) parser debug state
   if (DEBUG_PARSER)

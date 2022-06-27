@@ -92,9 +92,9 @@ owned<Builder> Builder::topLevelModuleBuilder(Context* context,
 
 owned<Builder> Builder::includedModuleBuilder(Context* context,
                                               const char* filepath,
-                                              ID parentModuleId) {
+                                              UniqueString parentSymbolPath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
-  auto b = new Builder(context, uniqueFilename, parentModuleId.symbolPath());
+  auto b = new Builder(context, uniqueFilename, parentSymbolPath);
   return toOwned(b);
 }
 

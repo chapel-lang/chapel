@@ -49,7 +49,7 @@ static void test1() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -81,7 +81,7 @@ static void test2() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -114,7 +114,7 @@ static void test3() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -152,7 +152,7 @@ static void test4() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -192,7 +192,7 @@ static void test5() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -228,7 +228,7 @@ static void test6() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -275,7 +275,7 @@ static void test7() {
 
     context->advanceToNextRevision(true);
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     m = vec[0];
     mScope = scopeForId(context, m->id());
@@ -295,7 +295,7 @@ static void test7() {
 
     context->advanceToNextRevision(true);
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     m = vec[0];
     assert(m->numStmts() == 2);
@@ -332,7 +332,7 @@ static void test7() {
 
     context->advanceToNextRevision(true);
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     m = vec[0];
     assert(m->numStmts() == 2);
@@ -375,7 +375,7 @@ static void test7() {
 
     context->advanceToNextRevision(true);
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 2);
     m = vec[0];
     assert(m->numStmts() == 3);
@@ -426,7 +426,7 @@ static void test8() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -480,7 +480,7 @@ static void test9() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -519,7 +519,7 @@ static void test10() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -560,7 +560,7 @@ static void test11() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -612,7 +612,7 @@ static void test12() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -658,7 +658,7 @@ static void test13() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -702,7 +702,7 @@ static void test14() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -782,7 +782,7 @@ static void test16() {
    )"""";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);

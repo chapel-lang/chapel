@@ -306,7 +306,7 @@ int main(int argc, char** argv) {
     for (auto p: files) {
       auto filepath = UniqueString::get(ctx, p);
 
-      const ModuleVec& mods = parse(ctx, filepath);
+      const ModuleVec& mods = parseToplevel(ctx, filepath);
       for (const auto mod : mods) {
         mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
         printf("\n");

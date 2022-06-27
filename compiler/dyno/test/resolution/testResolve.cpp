@@ -54,7 +54,7 @@ static void test1() {
                            "x;";
     setFileText(context, path, contents);
 
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -87,7 +87,7 @@ static void test2() {
     std::string contents = "";
     setFileText(context, path, contents);
 
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -103,7 +103,7 @@ static void test2() {
     std::string contents = "var x;";
     setFileText(context, path, contents);
 
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -119,7 +119,7 @@ static void test2() {
     std::string contents = "var x: int;";
     setFileText(context, path, contents);
 
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -144,7 +144,7 @@ static void test2() {
                            "x;";
     setFileText(context, path, contents);
 
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -179,7 +179,7 @@ static void test3() {
                            "}\n"
                            "var y = foo(1);";
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -209,7 +209,7 @@ static void test3() {
     context->advanceToNextRevision(true);
     std::string contents = "var y = foo(1);";
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -256,7 +256,7 @@ static void test4() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -292,7 +292,7 @@ static void test5() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -335,7 +335,7 @@ static void test6() {
                            )"""";
 
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -356,7 +356,7 @@ static void test6() {
                            )"""";
 
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -383,7 +383,7 @@ static void test7() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);

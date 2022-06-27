@@ -79,16 +79,24 @@ bool hasFileText(Context* context, const std::string& path);
   This query reads a file (with the fileText query) and then parses it.
 
   Any errors encountered will be reported to the Context.
+
+  The 'parentSymbolPath' is relevant for submodules that are in separate files
+  with 'module include'. When parsing the included module for a 'module
+  include', 'parentSymbolPath' should match the symbolPath of the ID of the
+  module containing the 'module include' statement.
+
+  When parsing a toplevel module, 'parentSymbolPath' should be "".
  */
-const uast::BuilderResult& parseFile(Context* context, UniqueString path);
+const uast::BuilderResult&
+parseFileToBuilderResult(Context* context, UniqueString path,
+                         UniqueString parentSymbolPath);
 
 /**
-  Like parseFile, but also accepts a parent module ID,
-  so that IDs can be correctly assigned when parsing an included submodule.
+ Like parseFileToBuilderResult but parses whatever file contained 'id'.
+ Useful for projection queries.
  */
-const uast::BuilderResult& parseIncludedFile(Context* context,
-                                             UniqueString path,
-                                             ID parentModuleId);
+const uast::BuilderResult*
+parseFileContainingIdToBuilderResult(Context* context, ID id);
 
 /**
   A function for counting the tokens when parsing
@@ -99,7 +107,8 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats);
 
 // These functions can't return the Location for a Comment
 // because Comments don't have IDs. If Locations for Comments are needed,
-// instead use the astToLocation field from the result of parseFile.
+// instead use the astToLocation field from the result of
+// parseFileToBuilderResult.
 
 /**
  This query returns the Location where a particular ID appeared.
@@ -116,8 +125,28 @@ const Location& locateAst(Context* context, const uast::AstNode* ast);
 using ModuleVec = std::vector<const uast::Module*>;
 /**
  This query returns a vector of parsed modules given a file path.
+
+  The 'parentSymbolPath' is relevant for submodules that are in separate files
+  with 'module include'. When parsing the included module for a 'module
+  include', 'parentSymbolPath' should match the symbolPath of the ID of the
+  module containing the 'module include' statement.
+
+  When parsing a toplevel module, 'parentSymbolPath' should be "".
+
  */
-const ModuleVec& parse(Context* context, UniqueString path);
+const ModuleVec& parse(Context* context, UniqueString path,
+                       UniqueString parentSymbolPath);
+
+/**
+ Convenience function to parse a file with parentSymbolPath="".
+ */
+const ModuleVec& parseToplevel(Context* context, UniqueString path);
+
+/**
+ This query returns a vector of parsed modules for whatever file
+ contains the passed id. It is useful for projection queries.
+*/
+//const ModuleVec* parseFileContainingIdToModuleVec(Context* context, ID id);
 
 /**
   Return the current module search path.

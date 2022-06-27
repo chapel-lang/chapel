@@ -56,13 +56,15 @@ static void test1() {
   Context ctx;
   Context* context = &ctx;
   auto path = UniqueString::get(context, "input.chpl");
+  UniqueString emptyParentSymbolPath;
 
   {
     context->advanceToNextRevision(true);
     std::string contents = "var x = 42; /* comment */";
     setFileText(context, path, contents);
-    const uast::BuilderResult& p = parseFile(context, path);
-    const Module* m = oneModule(parse(context, path));
+    const uast::BuilderResult& p =
+      parseFileToBuilderResult(context, path, emptyParentSymbolPath);
+    const Module* m = oneModule(parseToplevel(context, path));
     const AstNode *e = m->stmt(0);
     const Comment *c = m->stmt(1)->toComment();
     assert(locateAst(context, e).firstLine() == 1);
@@ -73,8 +75,9 @@ static void test1() {
     context->advanceToNextRevision(true);
     std::string contents = "\n\nvar x = 42; /* comment */";
     setFileText(context, path, contents);
-    const uast::BuilderResult& p = parseFile(context, path);
-    const Module* m = oneModule(parse(context, path));
+    const uast::BuilderResult& p =
+      parseFileToBuilderResult(context, path, emptyParentSymbolPath);
+    const Module* m = oneModule(parseToplevel(context, path));
     const AstNode *e = m->stmt(0);
     const Comment *c = m->stmt(1)->toComment();
     assert(locateAst(context, e).firstLine() == 3);
@@ -97,7 +100,7 @@ static void test2() {
     context->advanceToNextRevision(true);
     std::string contents = "var x:int = 3.14;";
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     for (const Module* mod : vec) {
       mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }
@@ -120,7 +123,7 @@ static void test2() {
     context->advanceToNextRevision(true);
     std::string contents = "\n\nvar x:int = 3.14;";
     setFileText(context, path, contents);
-    const ModuleVec& vec = parse(context, path);
+    const ModuleVec& vec = parseToplevel(context, path);
     for (const Module* mod : vec) {
       mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }

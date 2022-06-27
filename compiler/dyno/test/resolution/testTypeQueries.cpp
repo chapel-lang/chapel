@@ -45,7 +45,7 @@ static const Module* parseModule(Context* context, const char* src) {
   std::string contents = src;
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
 
   return vec[0];
@@ -275,7 +275,7 @@ static void test10() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);

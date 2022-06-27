@@ -86,16 +86,19 @@ bool hasFileText(Context* context, const std::string& path) {
 }
 
 static Parser helpMakeParser(Context* context,
-                             bool forIncludedModule, ID parentModuleId) {
-  if (forIncludedModule == false) {
+                             UniqueString parentSymbolPath) {
+  if (parentSymbolPath.isEmpty()) {
     return Parser::topLevelModuleParser(context);
   } else {
-    return Parser::includedModuleParser(context, parentModuleId);
+    return Parser::includedModuleParser(context, parentSymbolPath);
   }
 }
 
-static BuilderResult helpParseFile(Context* context, UniqueString path,
-                                   bool forIncludedModule, ID parentModuleId) {
+const BuilderResult&
+parseFileToBuilderResult(Context* context, UniqueString path,
+                         UniqueString parentSymbolPath) {
+  QUERY_BEGIN(parseFileToBuilderResult, context, path, parentSymbolPath);
+
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
@@ -104,7 +107,7 @@ static BuilderResult helpParseFile(Context* context, UniqueString path,
 
   if (error.isEmpty()) {
     // if there was no error reading the file, proceed to parse
-    auto parser = helpMakeParser(context, forIncludedModule, parentModuleId);
+    auto parser = helpMakeParser(context, parentSymbolPath);
     const char* pathc = path.c_str();
     const char* textc = text.c_str();
     BuilderResult tmpResult = parser.parseString(pathc, textc);
@@ -123,29 +126,23 @@ static BuilderResult helpParseFile(Context* context, UniqueString path,
     BuilderResult::appendError(result, error);
   }
 
-  return result;
-}
-
-const BuilderResult& parseFile(Context* context, UniqueString path) {
-  QUERY_BEGIN(parseFile, context, path);
-
-  BuilderResult result = helpParseFile(context, path,
-                                       /*included*/ false, ID());
-
   return QUERY_END(result);
 }
 
-const BuilderResult& parseIncludedFile(Context* context,
-                                       UniqueString path,
-                                       ID parentModuleId) {
-  QUERY_BEGIN(parseIncludedFile, context, path, parentModuleId);
+// parses whatever file exists that contains the passed ID and returns it
+const BuilderResult*
+parseFileContainingIdToBuilderResult(Context* context, ID id) {
+  UniqueString path;
+  UniqueString parentSymbolPath;
+  bool found = context->filePathForId(id, path, parentSymbolPath);
+  if (found) {
+    const BuilderResult& p = parseFileToBuilderResult(context, path,
+                                                      parentSymbolPath);
+    return &p;
+  }
 
-  BuilderResult result = helpParseFile(context, path,
-                                       /*included*/ true, parentModuleId);
-
-  return QUERY_END(result);
+  return nullptr;
 }
-
 
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
   const FileContents& contents = fileText(context, path);
@@ -164,13 +161,19 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
 const Location& locateId(Context* context, ID id) {
   QUERY_BEGIN(locateId, context, id);
 
+  Location result;
+
   // Ask the context for the filename from the ID
-  UniqueString path = context->filePathForId(id);
+  UniqueString path;
+  UniqueString parentSymbolPath;
 
-  // Get the result of parsing
-  const BuilderResult& p = parseFile(context, path);
-
-  Location result = p.idToLocation(id, path);
+  bool found = context->filePathForId(id, path, parentSymbolPath);
+  if (found) {
+    // Get the result of parsing
+    const BuilderResult& p = parseFileToBuilderResult(context, path,
+                                                      parentSymbolPath);
+    result = p.idToLocation(id, path);
+  }
 
   return QUERY_END(result);
 }
@@ -181,11 +184,13 @@ const Location& locateAst(Context* context, const AstNode* ast) {
   return locateId(context, ast->id());
 }
 
-const ModuleVec& parse(Context* context, UniqueString path) {
-  QUERY_BEGIN(parse, context, path);
+const ModuleVec& parse(Context* context, UniqueString path,
+                       UniqueString parentSymbolPath) {
+  QUERY_BEGIN(parse, context, path, parentSymbolPath);
 
   // Get the result of parsing
-  const BuilderResult& p = parseFile(context, path);
+  const BuilderResult& p = parseFileToBuilderResult(context, path,
+                                                    parentSymbolPath);
   // Compute a vector of Modules
   ModuleVec result;
   for (auto topLevelExpression : p.topLevelExpressions()) {
@@ -195,6 +200,11 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   }
 
   return QUERY_END(result);
+}
+
+const ModuleVec& parseToplevel(Context* context, UniqueString path) {
+  UniqueString emptyParentSymbolPath;
+  return parse(context, path, emptyParentSymbolPath);
 }
 
 static const std::vector<UniqueString>&
@@ -325,14 +335,24 @@ void setupModuleSearchPaths(Context* context,
 
 bool idIsInInternalModule(Context* context, ID id) {
   UniqueString internal = internalModulePath(context);
-  UniqueString filePath = context->filePathForId(id);
-  return filePath.startsWith(internal);
+  UniqueString filePath;
+  UniqueString parentSymbolPath;
+  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  if (found) {
+    return filePath.startsWith(internal);
+  }
+  return false;
 }
 
 bool idIsInBundledModule(Context* context, ID id) {
   UniqueString modules = bundledModulePath(context);
-  UniqueString filePath = context->filePathForId(id);
-  return filePath.startsWith(modules);
+  UniqueString filePath;
+  UniqueString parentSymbolPath;
+  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  if (found) {
+    return filePath.startsWith(modules);
+  }
+  return false;
 }
 
 static const bool& fileExistsQuery(Context* context, std::string path) {
@@ -349,18 +369,16 @@ static const Module* const& getToplevelModuleQuery(Context* context,
 
   auto searchId = ID(name, -1, 0);
   UniqueString path;
+  UniqueString parentSymbolPath;
+  bool found = context->filePathForId(searchId, path, parentSymbolPath);
 
-  if (context->hasFilePathForId(searchId)) {
-    auto path = context->filePathForId(searchId);
-    // rule out empty path and also "<unknown file path>"
-    if (path.isEmpty() == false &&
-        path.c_str()[0] != '<') {
-      const ModuleVec& modVec = parse(context, path);
-      for (const Module* mod : modVec) {
-        if (mod->name() == name) {
-          result = mod;
-          break;
-        }
+  // rule out empty path and also "<unknown file path>"
+  if (found && path.isEmpty() == false && path.c_str()[0] != '<') {
+    const ModuleVec& modVec = parse(context, path, parentSymbolPath);
+    for (const Module* mod : modVec) {
+      if (mod->name() == name) {
+        result = mod;
+        break;
       }
     }
   } else {
@@ -385,7 +403,8 @@ static const Module* const& getToplevelModuleQuery(Context* context,
 
       if (hasFileText(context, check) || fileExistsQuery(context, check)) {
         auto filePath = UniqueString::get(context, check);
-        const ModuleVec& v = parse(context, filePath);
+        UniqueString emptyParentSymbolPath;
+        const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
         for (auto mod: v) {
           if (mod->name() == name) {
             result = mod;
@@ -426,10 +445,20 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
     }
   }
 
+  ID parentModuleId;
+  UniqueString parentModulePath;
+  UniqueString parentParentSymbolPath;
+  bool found = false;
   if (include != nullptr) {
-    ID parentModuleId = idToParentModule(context, includeModuleId);
-    UniqueString parentModulePath = context->filePathForId(parentModuleId);
+    // find the ID of the module containing the 'module include'
+    parentModuleId = idToParentModule(context, includeModuleId);
+    // find some other information about that parent module
+    found = context->filePathForId(parentModuleId, parentModulePath,
+                                   parentParentSymbolPath);
+  }
+  if (found) {
     UniqueString submoduleName = include->name();
+    UniqueString parentSymbolPath = parentModuleId.symbolPath();
     std::string check = parentModulePath.str();
     // remove ".chpl"
     check.resize(check.size() - 5);
@@ -440,8 +469,8 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
 
     if (hasFileText(context, check) || fileExistsQuery(context, check)) {
       auto filePath = UniqueString::get(context, check);
-      const BuilderResult& p =
-        parseIncludedFile(context, filePath, parentModuleId);
+      const BuilderResult& p = parseFileToBuilderResult(context, filePath,
+                                                        parentSymbolPath);
 
       for (auto topLevelExpression : p.topLevelExpressions()) {
         if (const Module* mod = topLevelExpression->toModule()) {
@@ -471,13 +500,11 @@ const Module* getIncludedSubmodule(Context* context,
 static const AstNode* const& astForIDQuery(Context* context, ID id) {
   QUERY_BEGIN(astForIDQuery, context, id);
 
-  // Ask the context for the filename from the ID
-  UniqueString path = context->filePathForId(id);
-
-  // Get the result of parsing
-  const BuilderResult& p = parseFile(context, path);
-
-  const AstNode* result = p.idToAst(id);
+  const AstNode* result = nullptr;
+  const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
+  if (r != nullptr) {
+    result = r->idToAst(id);
+  }
 
   return QUERY_END(result);
 }
@@ -530,20 +557,18 @@ bool idIsParenlessFunction(Context* context, ID id) {
 }
 
 const ID& idToParentId(Context* context, ID id) {
+  QUERY_BEGIN(idToParentId, context, id);
+
   // Performance: Would it be better to have the parse query
   // set this query as an alternative to computing maps
   // in Builder::Result and then redundantly setting them here?
-  // Or, should we store parent ID as a field in AstNode?
 
-  QUERY_BEGIN(idToParentId, context, id);
+  ID result;
 
-  // Ask the context for the filename from the ID
-  UniqueString path = context->filePathForId(id);
-
-  // Get the result of parsing
-  const BuilderResult& p = parseFile(context, path);
-
-  ID result = p.idToParentId(id);
+  const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
+  if (r != nullptr) {
+    result = r->idToParentId(id);
+  }
 
   return QUERY_END(result);
 }

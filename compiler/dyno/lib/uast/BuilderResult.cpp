@@ -147,24 +147,14 @@ void BuilderResult::mark(Context* context) const {
   BuilderResult::updateFilePaths(context, *this);
 }
 
-static void updateFilePathsForModulesRecursively(Context* context,
-                                                 const AstNode* ast,
-                                                 UniqueString path) {
-  if (const Module* mod = ast->toModule()) {
-    context->setFilePathForModuleID(mod->id(), path);
-  }
-
-  for (const AstNode* child : ast->children()) {
-    updateFilePathsForModulesRecursively(context, child, path);
-  }
-}
-
 void BuilderResult::updateFilePaths(Context* context,
                                     const BuilderResult& keep) {
   UniqueString path = keep.filePath_;
   // Update the filePathForModuleName query
-  for (auto & expr : keep.topLevelExpressions_) {
-    updateFilePathsForModulesRecursively(context, expr.get(), path);
+  for (auto & ast : keep.topLevelExpressions_) {
+    if (const Module* mod = ast->toModule()) {
+      context->setFilePathForModuleID(mod->id(), path);
+    }
   }
 }
 

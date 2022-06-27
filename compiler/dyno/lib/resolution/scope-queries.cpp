@@ -211,9 +211,7 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
 
       bool autoUsesModules = false;
       if (ast->isModule()) {
-        UniqueString modPath = context->filePathForId(id);
-        UniqueString internalModPath = parsing::internalModulePath(context);
-        if (!modPath.startsWith(internalModPath)) {
+        if (!parsing::idIsInInternalModule(context, ast->id())) {
           autoUsesModules = true;
         }
       }

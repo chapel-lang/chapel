@@ -417,7 +417,9 @@ static UniqueString removeLastSymbolPathComponent(Context* context,
   return UniqueString::get(context, s, lastDot);
 }
 
-UniqueString Context::filePathForId(ID id) {
+bool Context::filePathForId(ID id,
+                            UniqueString& pathOut,
+                            UniqueString& parentSymbolPathOut) {
   UniqueString symbolPath = id.symbolPath();
 
   while (!symbolPath.isEmpty()) {
@@ -427,28 +429,8 @@ UniqueString Context::filePathForId(ID id) {
                                         tupleOfArgs);
 
     if (got) {
-      const UniqueString& p =
-        filePathForModuleIdSymbolPathQuery(this, symbolPath);
-      return p;
-    }
-
-    // remove the last path component, e.g. M.N -> M
-    symbolPath = removeLastSymbolPathComponent(this, symbolPath);
-  }
-
-  return UniqueString::get(this, "<unknown file path>");
-}
-
-bool Context::hasFilePathForId(ID id) {
-  UniqueString symbolPath = id.symbolPath();
-
-  while (!symbolPath.isEmpty()) {
-    auto tupleOfArgs = std::make_tuple(symbolPath);
-
-    bool got = hasCurrentResultForQuery(filePathForModuleIdSymbolPathQuery,
-                                        tupleOfArgs);
-
-    if (got) {
+      pathOut = filePathForModuleIdSymbolPathQuery(this, symbolPath);
+      parentSymbolPathOut = removeLastSymbolPathComponent(this, symbolPath);
       return true;
     }
 
@@ -456,6 +438,8 @@ bool Context::hasFilePathForId(ID id) {
     symbolPath = removeLastSymbolPathComponent(this, symbolPath);
   }
 
+  pathOut = UniqueString::get(this, "<unknown file path>");
+  parentSymbolPathOut = UniqueString();
   return false;
 }
 
@@ -473,7 +457,12 @@ void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
     printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
            moduleIdSymbolPath.c_str(), path.c_str());
   }
-  assert(hasFilePathForId(moduleID));
+  #ifndef NDEBUG
+    UniqueString gotPath;
+    UniqueString gotParentSymbolPath;
+    bool ok = filePathForId(moduleID, gotPath, gotParentSymbolPath);
+    assert(ok && path == gotPath);
+  #endif
 }
 
 void Context::advanceToNextRevision(bool prepareToGC) {
