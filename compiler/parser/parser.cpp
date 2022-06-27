@@ -932,9 +932,13 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   auto path = chpl::UniqueString::get(gContext, fileName);
 
+  INT_ASSERT(!include);
+
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.
-  auto& builderResult = chpl::parsing::parseFile(gContext, path);
+  chpl::UniqueString emptySymbolPath;
+  auto& builderResult =
+    chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
   // Any errors while building will have already been emitted by the global
   // error handling callback that was set above. So just stop.

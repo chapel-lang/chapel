@@ -151,7 +151,17 @@ struct Converter {
       return false; // use super.RandomSupport; not working yet
     if (symbolPath == "DefaultRectangular")
       return false; // duplicate decorators error
-    return true;*/
+    if (symbolPath == "DefaultRectangular.complexTransferCore")
+      return false; // invalid multiple declaration
+
+    if (symbolPath == "BytesStringCommon.decodeByteBuffer")
+      return false; // incorrect expression in 'import' for unqualified access,
+                    // identifier expected --     import SysBasic.{syserr};
+
+    */
+    //return symbolPath == "M" || symbolPath.startsWith("M.");
+
+    //return true;
 
     return false;
   }
@@ -775,35 +785,64 @@ struct Converter {
   // Copy the body of 'buildIncludeModule' since it is heavily tied to the
   // old parser's implementation.
   Expr* visit(const uast::Include* node) {
-    const char* name = astr(node->name());
-    bool isPrivate = node->visibility() == uast::Decl::PRIVATE;
+    bool isIncPrivate = node->visibility() == uast::Decl::PRIVATE;
     bool isPrototype = node->isPrototype();
 
     // Consume the comment but do not use it - module comment is used.
     auto comment = consumeLatestComment();
     (void) comment;
 
-    auto& loc = chpl::parsing::locateAst(gContext, node);
-    INT_ASSERT(!loc.isEmpty());
-    auto path = astr(loc.path());
-    ModuleSymbol* mod = parseIncludedSubmodule(name, path);
+    const uast::Module* umod =
+      parsing::getIncludedSubmodule(context, node->id());
+    if (umod == nullptr) {
+      return nullptr;
+    }
+
+    bool isModPrivate = umod->visibility() == uast::Decl::PRIVATE;
+
+    // note any comment that occurs before the module for chpldoc
+    const uast::BuilderResult* builderResult =
+      parsing::parseFileContainingIdToBuilderResult(context, umod->id());
+    INT_ASSERT(builderResult);
+
+    if (builderResult != nullptr) {
+      for (auto ast : builderResult->topLevelExpressions()) {
+        // Store the last comment for use when converting the module.
+        if (auto comment = ast->toComment()) {
+          this->visit(comment);
+        }
+        if (ast == umod) {
+          break;
+        }
+      }
+    }
+
+    // convert the included module
+
+    // when converting the module,
+    // make sure to use ID for included submodule
+    // rather than the module include.
+    astlocMarker markAstLoc(umod->id());
+
+    ModuleSymbol* mod = convertModule(umod);
     INT_ASSERT(mod);
 
-    if (isPrivate && !mod->hasFlag(FLAG_PRIVATE)) {
+    // make some adjustments
+    if (isIncPrivate && !isModPrivate) {
       mod->addFlag(FLAG_PRIVATE);
     }
 
-    if (mod->hasFlag(FLAG_PRIVATE) && !isPrivate) {
+    if (isModPrivate && !isIncPrivate) {
       USR_FATAL_CONT(node->id(),
                      "cannot make a private module public through "
                      "an include statement");
-      USR_PRINT(mod, "module declared private here");
+      USR_PRINT(umod->id(), "module declared private here");
     }
 
     if (isPrototype) {
       USR_FATAL_CONT(node->id(), "cannot apply prototype to module in "
                                  "include statement");
-      USR_PRINT(mod, "put prototype keyword at module declaration here");
+      USR_PRINT(umod->id(), "put prototype keyword at module declaration here");
     }
 
     if (fWarnUnstable && mod->modTag == MOD_USER) {
@@ -2677,7 +2716,7 @@ struct Converter {
     return ret;
   }
 
-  DefExpr* visit(const uast::Module* node) {
+  ModuleSymbol* convertModule(const uast::Module* node) {
     auto comment = consumeLatestComment();
 
     // Decide if we want to resolve this module
@@ -2706,7 +2745,12 @@ struct Converter {
     this->symStack.emplace_back(node, resolved);
 
     const char* name = astr(node->name());
-    const char* path = astr(context->filePathForId(node->id()));
+    UniqueString pathUstr;
+    UniqueString ignoredParentSymPath;
+    bool foundPath =
+      context->filePathForId(node->id(), pathUstr, ignoredParentSymPath);
+    assert(foundPath);
+    const char* path = astr(pathUstr);
 
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
     // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
@@ -2743,6 +2787,10 @@ struct Converter {
     // Note the module is converted so we can wire up SymExprs later
     noteConvertedSym(node, mod);
 
+    return mod;
+  }
+  DefExpr* visit(const uast::Module* node) {
+    ModuleSymbol* mod = convertModule(node);
     return new DefExpr(mod);
   }
 
