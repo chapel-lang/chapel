@@ -67,7 +67,7 @@ module Path {
 
 use List;
 use SysError, IO;
-use Sys, OS.POSIX;
+use OS.POSIX;
 use CTypes;
 
 /*
@@ -903,4 +903,3 @@ proc splitPath(path: string): (string, string) {
  }
 }
 } // end module Path
-

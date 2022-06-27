@@ -1619,7 +1619,7 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
    :rtype: `int`
 */
 proc locale.umask(mask: int): int {
-  use Sys;
+  import OS.POSIX.mode_t;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
 
   var result: int;
