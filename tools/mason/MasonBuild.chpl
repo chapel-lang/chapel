@@ -318,10 +318,14 @@ proc getGitCode(gitListArg: list(3*string), show) {
       writeln("Downloading dependency: " + nameVers);
       // TODO: We will want to checkout the revision requested
       var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
+      // TODO: update this from hardcode master
+      var checkout = "git checkout -q master";
       if show {
         getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
+        checkout = "git checkout master";
       }
       runCommand(getDependency);
+      gitC(destination, checkout);
     }
   }
 }
