@@ -143,12 +143,6 @@ const ModuleVec& parse(Context* context, UniqueString path,
 const ModuleVec& parseToplevel(Context* context, UniqueString path);
 
 /**
- This query returns a vector of parsed modules for whatever file
- contains the passed id. It is useful for projection queries.
-*/
-//const ModuleVec* parseFileContainingIdToModuleVec(Context* context, ID id);
-
-/**
   Return the current module search path.
  */
 const std::vector<UniqueString>& moduleSearchPath(Context* context);

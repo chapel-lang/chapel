@@ -146,23 +146,6 @@ struct Converter {
   }
 
   static bool shouldScopeResolve(UniqueString symbolPath) {
-    // TODO: check for dead modules and don't resolve those
-    /*if (symbolPath == "Random")
-      return false; // use super.RandomSupport; not working yet
-    if (symbolPath == "DefaultRectangular")
-      return false; // duplicate decorators error
-    if (symbolPath == "DefaultRectangular.complexTransferCore")
-      return false; // invalid multiple declaration
-
-    if (symbolPath == "BytesStringCommon.decodeByteBuffer")
-      return false; // incorrect expression in 'import' for unqualified access,
-                    // identifier expected --     import SysBasic.{syserr};
-
-    */
-    //return symbolPath == "M" || symbolPath.startsWith("M.");
-
-    //return true;
-
     return false;
   }
   static bool shouldScopeResolve(ID symbolId) {
@@ -173,8 +156,6 @@ struct Converter {
   }
 
   static bool shouldResolve(UniqueString symbolPath) {
-    // TODO: check for dead modules and don't resolve those
-    //return symbolPath == "M" || symbolPath.startsWith("M.");
     return false;
   }
   static bool shouldResolve(ID symbolId) {
@@ -830,20 +811,6 @@ struct Converter {
     if (isIncPrivate && !isModPrivate) {
       mod->addFlag(FLAG_PRIVATE);
     }
-
-    /* these are now reported in dyno itself
-    if (isModPrivate && !isIncPrivate) {
-      USR_FATAL_CONT(node->id(),
-                     "cannot make a private module public through "
-                     "an include statement");
-      USR_PRINT(umod->id(), "module declared private here");
-    }
-
-    if (isPrototype) {
-      USR_FATAL_CONT(node->id(), "cannot apply prototype to module in "
-                                 "include statement");
-      USR_PRINT(umod->id(), "put prototype keyword at module declaration here");
-    }*/
 
     if (fWarnUnstable && mod->modTag == MOD_USER) {
       USR_WARN(node->id(), "module include statements are not yet stable "
@@ -3693,58 +3660,6 @@ Symbol* Converter::convertParam(const types::QualifiedType qt) {
   INT_FATAL("should not be reached");
   return nullptr;
 }
-
-/*
-static ID getModuleId(Context* context, ID id) {
-  while (!id.isEmpty()) {
-    auto tag = parsing::idToTag(context, id);
-    if (tag == uast::asttags::Module)
-      return id;
-    id = id.parentSymbolId(context);
-  }
-
-  return id;
-}
-
-Symbol* Converter::convertSymbolOutOfOrder(ID id) {
-  // Compute the module
-  ID moduleId = getModuleId(context, id);
-  auto ast = parsing::idToAst(context, moduleId);
-  INT_ASSERT(ast && ast->isModule());
-  auto mod = ast->toModule();
-  // Compute the function
-  ast = parsing::idToAst(context, id);
-  INT_ASSERT(ast && ast->isNamedDecl());
-  // Add the module containing the function to the modStack if
-  // it is not already there.
-  bool changeModStack = true;
-  if (modStack.size() > 0 && modStack.back().mod == mod)
-    changeModStack = false;
-
-  if (changeModStack) {
-    modStack.emplace_back(mod);
-  }
-
-  Symbol* ret = nullptr;
-  // call the appropriate visit function
-  // if ast is a Function, visit will add fn to the symStack
-  Expr* got = convertAST(ast);
-  if (auto def = toDefExpr(got)) {
-    ret = def->sym;
-  } else if (auto block = toBlockStmt(got)) {
-    if (auto def = toDefExpr(block->body.last())) {
-      ret = def->sym;
-    }
-  }
-
-  // pop
-  if (changeModStack) {
-    modStack.pop_back();
-  }
-
-  return ret;
-}
-*/
 
 
 } // end anonymous namespace
