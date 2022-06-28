@@ -1,0 +1,7 @@
+Running test 1
+	cache_num_page_readaheads: 0
+	cache_readahead_unused: 0
+	cache_readahead_waited: 0
+Running test 2
+	cache_num_page_readaheads: greater than zero
+	cache_readahead_unused: 0

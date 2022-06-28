@@ -11,7 +11,6 @@
 use CommDiagnostics;
 use IO;
 use CTypes;
-use Time;
 
 // This is a wrapper around the function that we currently use to
 // issue a prefetch. Prefetches via this function are what the CommDiagnostics
@@ -91,8 +90,8 @@ proc testCounters(id: int)
         assert(cache_prefetch_unused == 32);
         assert(cache_prefetch_waited == 0);
         writef("\tcache_num_prefetches: %i\n", cache_num_prefetches);
-        writef("\tcache_num_unused: %i\n", cache_prefetch_unused);
-        writef("\tcache_num_waited: %i\n", cache_prefetch_waited);
+        writef("\tcache_prefetch_unused: %i\n", cache_prefetch_unused);
+        writef("\tcache_prefetch_waited: %i\n", cache_prefetch_waited);
     } /* end of test 1 */
 
     //################################################################################################
@@ -142,8 +141,8 @@ proc testCounters(id: int)
         assert(cache_prefetch_unused == numPrefetches-numAccessed);
         assert(cache_prefetch_waited == 0);
         writef("\tcache_num_prefetches: %i\n", cache_num_prefetches);
-        writef("\tcache_num_unused: %i\n", cache_prefetch_unused);
-        writef("\tcache_num_waited: %i\n", cache_prefetch_waited);          
+        writef("\tcache_prefetch_unused: %i\n", cache_prefetch_unused);
+        writef("\tcache_prefetch_waited: %i\n", cache_prefetch_waited);          
     } /* end of test 2 */
 
     //################################################################################################
@@ -179,8 +178,8 @@ proc testCounters(id: int)
         assert(cache_prefetch_unused == 0);
         assert(cache_prefetch_waited == numPrefetches);
         writef("\tcache_num_prefetches: %i\n", cache_num_prefetches);
-        writef("\tcache_num_unused: %i\n", cache_prefetch_unused);
-        writef("\tcache_num_waited: %i\n", cache_prefetch_waited);
+        writef("\tcache_prefetch_unused: %i\n", cache_prefetch_unused);
+        writef("\tcache_prefetch_waited: %i\n", cache_prefetch_waited);
     } /* end of test 3 */  
 }
 
