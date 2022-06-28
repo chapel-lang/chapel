@@ -1793,7 +1793,7 @@ operator :(r: range(?), type t: range(?)) {
       if count < 0 && !r.hasLast() then
         boundsCheckHalt("With a negative count, the range must have a last index.");
       if r.boundedType == BoundedRangeType.bounded &&
-         abs(count):uint > r.sizeAs(uint) then
+        abs(count:chpl__maxIntTypeSameSign(count.type)):uint > r.sizeAs(uint) then
            boundsCheckHalt("range of size " + r.size:string +
                            " is too small for counting " + abs(count):string +
                            " elements");
