@@ -326,10 +326,158 @@ static void test3() {
   context->collectGarbage();
 }
 
+static void determineManagerAndDecorator(Context* ctx,
+                                         New::Management management,
+                                         ClassTypeDecorator& outDecor,
+                                         const Type*& outManager) {
+  auto decorTag = ClassTypeDecorator::BORROWED;
+  const Type* manager = nullptr;
+
+  switch (management) {
+    case New::DEFAULT_MANAGEMENT:
+    case New::OWNED:
+      decorTag = ClassTypeDecorator::MANAGED;
+      manager = AnyOwnedType::get(ctx);
+      break;
+    case New::SHARED:
+      decorTag = ClassTypeDecorator::MANAGED;
+      manager = AnySharedType::get(ctx);
+      break;
+    case New::BORROWED:
+      decorTag = ClassTypeDecorator::BORROWED;
+      break;
+    case New::UNMANAGED:
+      decorTag = ClassTypeDecorator::UNMANAGED;
+      break;
+    default: break;
+  }
+
+  outDecor = ClassTypeDecorator(decorTag);
+  outManager = manager;
+  return;
+}
+
+static bool testNewExpression(Context* ctx, const char* expr) {
+  static int testNumCounter = 0;
+  std::string testName;
+  testName += "testNewExpr";
+  testName += std::to_string(testNumCounter++);
+  testName += ".chpl";
+  auto path = UniqueString::get(ctx, testName.c_str());
+  std::string contents =
+    R""""(
+    module A {
+      class C {}
+      var x = )"""";
+  contents += expr;
+  contents += ";\n}\n";
+
+  setFileText(ctx, path, contents);
+
+  // Need to be known now to unpack the new expression.
+  bool isNilableInNewExpr = strstr(expr, "?(");
+  bool isPostfixNilable = strstr(expr, ")?");
+  bool isNilable = (isNilableInNewExpr || isPostfixNilable);
+
+  // Get the module.
+  auto& br = parseFile(ctx, path);
+  if (br.numErrors()) return false;
+
+  assert(br.numTopLevelExpressions() == 1);
+  auto modA = br.topLevelExpression(0)->toModule();
+  assert(modA);
+
+  // Get the class.
+  assert(modA->numStmts() == 2);
+  auto cls = modA->stmt(0)->toClass();
+  assert(cls);
+
+  // Get the call containing the new expression.
+  auto x = modA->stmt(1)->toVariable();
+  assert(x && x->initExpression());
+
+  const Call* call = nullptr;
+  if (isPostfixNilable) {
+    auto opCall = x->initExpression()->toOpCall();
+    assert(opCall && opCall->numActuals() == 1 && opCall->op() == "?");
+    call = opCall->actual(0)->toCall();
+  } else {
+    call = x->initExpression()->toCall();
+  }
+
+  assert(call);
+  assert(call->calledExpression() && call->calledExpression()->isNew());
+
+  // Gather the pieces needed to construct the class type.
+  auto management = call->calledExpression()->toNew()->management();
+  ClassTypeDecorator decor(ClassTypeDecorator::BORROWED);
+  const Type* manager = nullptr;
+  determineManagerAndDecorator(ctx, management, decor, manager);
+  auto initial = initialTypeForTypeDecl(ctx, cls->id());
+  auto initialClass = initial->toClassType();
+  assert(initialClass);
+  auto basic = initialClass->basicClassType();
+  assert(basic);
+
+  // Set the nilability on the decorator.
+  decor = isNilable ? decor.addNilable() : decor.addNonNil();
+
+  // Construct the class type we are expecting.
+  const Type* expectedCls = ClassType::get(ctx, basic, manager, decor);
+  assert(expectedCls);
+
+  auto& rr = resolveModule(ctx, modA->id());
+
+  // Confirm that the expected type matches the variable type.
+  auto& reX = rr.byAst(x);
+  const Type* actualCls = reX.type().type();
+  assert(actualCls);
+
+  bool ret = (expectedCls == actualCls);
+  return ret;
+}
+
+static void doTestNewExpression(Context* ctx, const char* expr) {
+  auto errHandler = CountingErrorHandler(ctx);
+  bool passed = testNewExpression(ctx, expr);
+  assert(!errHandler.realizeErrors());
+  assert(passed);
+  ctx->advanceToNextRevision(true);
+}
+
+// Test different combinations of management/nilability flavors.
+static void test4() {
+  Context context;
+  Context* ctx = &context;
+
+  doTestNewExpression(ctx, "new C()");
+  doTestNewExpression(ctx, "new owned C()");
+  doTestNewExpression(ctx, "new shared C()");
+  doTestNewExpression(ctx, "new borrowed C()");
+  doTestNewExpression(ctx, "new unmanaged C()");
+  doTestNewExpression(ctx, "new C?()");
+  doTestNewExpression(ctx, "new owned C?()");
+  doTestNewExpression(ctx, "new shared C?()");
+  doTestNewExpression(ctx, "new borrowed C?()");
+  doTestNewExpression(ctx, "new unmanaged C?()");
+  doTestNewExpression(ctx, "new C()?");
+  doTestNewExpression(ctx, "new owned C()?");
+  doTestNewExpression(ctx, "new shared C()?");
+  doTestNewExpression(ctx, "new borrowed C()?");
+  doTestNewExpression(ctx, "new unmanaged C()?");
+}
+
+// TODO: Begin testing some generic records (without user initializers).
+static void test5() {
+
+}
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
+  test5();
 
   return 0;
 }

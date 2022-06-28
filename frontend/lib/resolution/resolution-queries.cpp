@@ -2600,6 +2600,27 @@ static const Type* getNumericType(Context* context,
   return nullptr;
 }
 
+static const Type*
+convertClassTypeToNilable(Context* context, const Type* t) {
+  const ClassType* ct = nullptr;
+
+  if (auto bct = t->toBasicClassType()) {
+    auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+    ct = ClassType::get(context, bct, nullptr, d);
+  } else {
+    ct = t->toClassType();
+  }
+
+  if (ct) {
+    // get the nilable version of the class type
+    ClassTypeDecorator d = ct->decorator().addNilable();
+    auto ret= ct->withDecorator(context, d);
+    return ret;
+  }
+
+  return nullptr;
+}
+
 // Resolving compiler-supported type-returning patterns
 // 'call' and 'inPoiScope' are used for the location for error reporting.
 static const Type* resolveFnCallSpecialType(Context* context,
@@ -2609,19 +2630,7 @@ static const Type* resolveFnCallSpecialType(Context* context,
   if (ci.name() == USTR("?")) {
     if (ci.numActuals() > 0) {
       if (const Type* t = ci.actual(0).type().type()) {
-        const ClassType* ct = nullptr;
-
-        if (auto bct = t->toBasicClassType()) {
-          auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
-          ct = ClassType::get(context, bct, nullptr, d);
-        } else {
-          ct = t->toClassType();
-        }
-
-        if (ct) {
-          // get the nilable version of the class type
-          ClassTypeDecorator d = ct->decorator().addNilable();
-          auto nilable = ct->withDecorator(context, d);
+        if (auto nilable = convertClassTypeToNilable(context, t)) {
           return nilable;
         }
       }
@@ -2639,6 +2648,37 @@ static const Type* resolveFnCallSpecialType(Context* context,
   return nullptr;
 }
 
+static
+bool resolvePostfixNilableAppliedToNew(Context* context, const Call* call,
+                                       const CallInfo& ci,
+                                       QualifiedType& exprTypeOut) {
+
+  // First, pattern match to find something like 'new C()?'...
+  if (!call || !call->isOpCall()) return false;
+
+  auto opCall = call->toOpCall();
+  if (opCall->op() != USTR("?") || opCall->numActuals() != 1) return false;
+
+  auto newCall = opCall->actual(0)->toFnCall();
+  if (!newCall || !newCall->calledExpression() ||
+      !newCall->calledExpression()->isNew()) {
+    return false;
+  }
+
+  // Now, adjust the type to be nilable, but not the kind.
+  auto qtNewCall = ci.actual(0).type();
+
+  if (qtNewCall.isUnknown() || qtNewCall.isErroneousType()) {
+    exprTypeOut = qtNewCall;
+  }
+
+  auto convToNilable = convertClassTypeToNilable(context, qtNewCall.type());
+  auto outType = convToNilable ? convToNilable : qtNewCall.type();
+
+  exprTypeOut = QualifiedType(qtNewCall.kind(), outType);
+
+  return true;
+}
 
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
@@ -3011,6 +3051,9 @@ CallResolutionResult resolveCall(Context* context,
   if (call->isFnCall() || call->isOpCall()) {
     // see if the call is handled directly by the compiler
     QualifiedType tmpRetType;
+    if (resolvePostfixNilableAppliedToNew(context, call, ci, tmpRetType)) {
+      return CallResolutionResult(std::move(tmpRetType));
+    }
     if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }

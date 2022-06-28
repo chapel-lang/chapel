@@ -1182,12 +1182,23 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto& reNewExpr = byPostorder.byAst(newExpr);
   auto qtNewExpr = reNewExpr.type();
 
+
   // exit immediately if the 'new' failed to resolve
   if (qtNewExpr.isUnknown() || qtNewExpr.isErroneousType()) {
     return true;
   }
 
-  // Produce an 'init' call as a side effect.
+  // Remove nilability from e.g., 'new C?()' for the init call (or else it
+  // will not resolve because the receiver formal is 'nonnil borrowed').
+  const Type* initReceiverType = qtNewExpr.type();
+  if (auto clsType = qtNewExpr.type()->toClassType()) {
+    auto oldDecor = clsType->decorator();
+    auto newDecor = oldDecor.addNonNil();
+    initReceiverType = clsType->withDecorator(context, newDecor);
+    assert(initReceiverType);
+  }
+
+  // The 'new' will produce an 'init' call as a side effect.
   UniqueString name = USTR("init");
 
   /*
@@ -1196,8 +1207,8 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto calledIntent = cls->manager() ? QualifiedType::REF
                                      : QualifiedType::CONST_IN;
   */
-  // TODO: Unclear to me whether we should use this ('VAR') or above.
-  auto calledType = qtNewExpr;
+  // TODO: Unclear to me whether we should use this type or the above.
+  auto calledType = QualifiedType(qtNewExpr.kind(), initReceiverType);
   bool isMethodCall = true;
   bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
