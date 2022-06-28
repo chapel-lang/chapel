@@ -494,6 +494,7 @@ module Sys {
   deprecated "'Sys.sys_getenv' is deprecated; please use 'OS.sys_getenv' instead"
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
   /* The type corresponding to C's mode_t */
+  deprecated "'Sys.mode_t' is deprecated; please use 'OS.POSIX.mode_t' instead"
   extern type mode_t = uint(32);
   extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):qio_err_t;
   extern proc sys_close(fd:fd_t):qio_err_t;

@@ -34,6 +34,7 @@
 
  */
 module OS {
+  private use CTypes;
   /*
      The ``OS.POSIX`` module provides definitions matching the POSIX
      programming interface, specifically POSIX.1-2017.  That standard
