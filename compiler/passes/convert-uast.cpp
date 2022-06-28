@@ -2716,6 +2716,7 @@ struct Converter {
     UniqueString ignoredParentSymPath;
     bool foundPath =
       context->filePathForId(node->id(), pathUstr, ignoredParentSymPath);
+    (void)foundPath; // avoid unused variable warning
     assert(foundPath);
     const char* path = astr(pathUstr);
 
