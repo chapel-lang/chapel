@@ -302,6 +302,36 @@ static void test6() {
   assert(xInitId == y->id());
 }
 
+static void test7() {
+  printf("test7\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        module SiblingModule {
+          var y: int;
+        }
+        module SubModule {
+          import super.SiblingModule;
+          var x = SiblingModule.y;
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  const ResolvedExpression& re = scopeResolveIt(context, x->initExpression());
+  assert(re.toId() == y->id());
+}
+
+
 int main() {
   test1();
   test2();
@@ -309,6 +339,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }
