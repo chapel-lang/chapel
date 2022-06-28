@@ -105,8 +105,9 @@ class Context {
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
-  static void defaultReportError(const ErrorMessage& err);
-  void (*reportError)(const ErrorMessage& err) = defaultReportError;
+  static void defaultReportError(Context* context, const ErrorMessage& err);
+  void (*reportError)(Context* context, const ErrorMessage& err) =
+    defaultReportError;
 
   // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
@@ -223,8 +224,8 @@ class Context {
   /**
    Set the error handling function
    */
-  void setErrorHandler(void (*reportError)(const ErrorMessage& err))
-  {
+  void setErrorHandler(void (*reportError)(Context* context,
+                                           const ErrorMessage& err)) {
     this->reportError = reportError;
   }
 

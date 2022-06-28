@@ -58,7 +58,9 @@ static auto recIter = std::string(R""""(
                       )"""");
 
 std::vector<ErrorMessage> errors;
-static void collectErrors(const ErrorMessage& err) { errors.push_back(err); }
+static void collectErrors(Context* context, const ErrorMessage& err) {
+  errors.push_back(err);
+}
 
 static const Module* parseModule(Context* context, const char* src) {
   auto path = UniqueString::get(context, "input.chpl");

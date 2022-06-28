@@ -37,7 +37,7 @@ using namespace types;
 using namespace uast;
 
 // error handler that causes the test to fail if it runs
-static void reportError(const ErrorMessage& err) {
+static void reportError(Context* context, const ErrorMessage& err) {
   printf("error encountered - %s\n", err.message().c_str());
   assert(false && "fatal error");
 }

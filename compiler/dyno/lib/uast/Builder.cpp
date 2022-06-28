@@ -372,20 +372,14 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
   auto usedId = nameToConfigSettingId(context(), configNameUsed);
 
   if (usedId != var->id()) {
-    // TODO: Need a nicer way of constructing errors/notes/warnings without storing them in the context_
-    std::string err = "ambiguous config name (";
-    err += configNameUsed;
-    err += ")";
-    std::string otherLoc = "also defined here";
-    std::string disambiguate = "(disambiguate using -s<modulename>.";
-    disambiguate += configNameUsed;
-    disambiguate += "...)";
-    ErrorMessage errorMessage = ErrorMessage(var->id(), idToLocation_[var->id()], err, ErrorMessage::ERROR );
-    ErrorMessage noteOtherLoc = ErrorMessage(var->id(), idToLocation_[usedId], otherLoc, ErrorMessage::NOTE);
-    ErrorMessage noteDisambiguate = ErrorMessage(var->id(), idToLocation_[usedId], disambiguate, ErrorMessage::NOTE);
-    addError(errorMessage);
-    addError(noteOtherLoc);
-    addError(noteDisambiguate);
+    auto errorMessage = ErrorMessage::error(var,
+        "ambiguous config name (%s)", configNameUsed.c_str());
+    auto noteOtherLoc = ErrorMessage::note(usedId, "also defined here");
+    auto noteDisambiguate = ErrorMessage::note(usedId,
+        "(disambiguate using -s<modulename>.%s...)", configNameUsed.c_str());
+    errorMessage.addDetail(noteOtherLoc);
+    errorMessage.addDetail(noteDisambiguate);
+    addError(std::move(errorMessage));
   }
 }
 
@@ -425,13 +419,13 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
           std::cerr << "note: " + msg << std::endl;
         }
       }
-      if (!configMatched.first.empty() && configMatched.first != configPair.first) {
-        std::string errMsg = "config set ambiguously via '-s";
-        errMsg += configMatched.first;
-        errMsg += "' and '-s";
-        errMsg += configPair.first + "'";
-        ErrorMessage errorMessage = ErrorMessage(var->id(), notedLocations_[var], errMsg, ErrorMessage::ERROR);
-        addError(errorMessage);
+      if (!configMatched.first.empty() &&
+          configMatched.first != configPair.first) {
+
+        auto errorMessage = ErrorMessage::error(var,
+            "config set ambiguously via '-s%s' and '-s%s'",
+            configMatched.first.c_str(), configPair.first.c_str());
+        addError(std::move(errorMessage));
       }
       configMatched = configPair;
     }

@@ -492,33 +492,21 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
     bool isModPrivate = (result->visibility() == uast::Decl::PRIVATE);
 
     if (isModPrivate && !isIncPrivate) {
-      Location incLoc = parsing::locateId(context, include->id());
-      Location modLoc = parsing::locateId(context, result->id());
-
-      auto error =
-        ErrorMessage::build(include->id(), incLoc,
-                            ErrorMessage::ERROR,
+      auto error = ErrorMessage::error(include,
                             "cannot make a private module public through "
                             "an include statement");
-      error.addDetail(
-          ErrorMessage::build(result->id(), modLoc, ErrorMessage::NOTE,
-                              "module declared private here"));
+      error.addDetail(ErrorMessage::note(result,
+                            "module declared private here"));
       context->report(std::move(error));
     }
 
     if (isIncPrototype) {
-      Location incLoc = parsing::locateId(context, include->id());
-      Location modLoc = parsing::locateId(context, result->id());
-
-      auto error =
-        ErrorMessage::build(include->id(), incLoc,
-                            ErrorMessage::ERROR,
+      auto error = ErrorMessage::error(include,
                             "cannot apply prototype to module in "
                             "include statement");
-      error.addDetail(
-          ErrorMessage::build(result->id(), modLoc, ErrorMessage::NOTE,
-                              "put prototype keyword at "
-                              "module declaration here"));
+      error.addDetail(ErrorMessage::note(result,
+                            "put prototype keyword at "
+                            "module declaration here"));
       context->report(std::move(error));
     }
   }

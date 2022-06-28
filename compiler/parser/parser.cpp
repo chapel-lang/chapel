@@ -99,7 +99,8 @@ static ModuleSymbol* oldParserParseFile(const char* fileName,
                                         bool        include);
 
 // Callback to configure how dyno error messages are displayed.
-static void dynoParseFileErrorHandler(const chpl::ErrorMessage& err);
+static void dynoParseFileErrorHandler(chpl::Context* context,
+                                      const chpl::ErrorMessage& err);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -868,10 +869,11 @@ static ModuleSymbol* oldParserParseFile(const char* path,
   return retval;
 }
 
-static void uASTDisplayError(const chpl::ErrorMessage& err) {
+static void uASTDisplayError(chpl::Context* context,
+                             const chpl::ErrorMessage& err) {
   //astlocMarker locMarker(err.location());
 
-  auto loc = err.location();
+  auto loc = err.location(context);
 
   const char* msg = err.message().c_str();
 
@@ -883,8 +885,8 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
       USR_WARN(loc,"%s", msg);
       break;
     case chpl::ErrorMessage::SYNTAX: {
-      const char* path = err.path().c_str();
-      const int line = err.line();
+      const char* path = loc.path().c_str();
+      const int line = loc.line();
       const int tagUsrFatalCont = 3;
       setupError("parser", path, line, tagUsrFatalCont);
       fprintf(stderr, "%s:%d: %s", path, line, "syntax error");
@@ -904,11 +906,12 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
 }
 
 // TODO: Add helpers to convert locations without passing IDs.
-static void dynoParseFileErrorHandler(const chpl::ErrorMessage& err) {
-  uASTDisplayError(err);
+static void dynoParseFileErrorHandler(chpl::Context* context,
+                                      const chpl::ErrorMessage& err) {
+  uASTDisplayError(context, err);
 
   for (auto& detail : err.details()) {
-    uASTDisplayError(detail);
+    uASTDisplayError(context, detail);
   }
 }
 

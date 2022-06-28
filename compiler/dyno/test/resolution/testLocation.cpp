@@ -42,7 +42,9 @@ static const Module* oneModule(const ModuleVec& vec) {
 
 // TODO maybe we want to support something like this
 std::vector<ErrorMessage> errors;
-static void collectErrors(const ErrorMessage& err) { errors.push_back(err); }
+static void collectErrors(Context* context, const ErrorMessage& err) {
+  errors.push_back(err);
+}
 
 static void printErrors() {
   for (auto err: errors) {
@@ -115,7 +117,7 @@ static void test2() {
 
     printErrors();
     assert(errors.size() == 1);
-    assert(errors[0].location().firstLine() == 1);
+    assert(errors[0].location(context).firstLine() == 1);
   }
 
   {
@@ -139,8 +141,8 @@ static void test2() {
 
     printErrors();
     assert(errors.size() == 1);
-    printf("%d\n", errors[0].location().firstLine());
-    assert(errors[0].location().firstLine() == 3);
+    printf("%d\n", errors[0].location(context).firstLine());
+    assert(errors[0].location(context).firstLine() == 3);
   }
 }
 
