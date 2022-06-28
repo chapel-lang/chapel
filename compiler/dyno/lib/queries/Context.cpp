@@ -67,8 +67,9 @@ using namespace chpl::querydetail;
 static void defaultReportErrorPrintDetail(const ErrorMessage& err,
                                           const char* prefix,
                                           const char* kind) {
-  const char* path = err.path().c_str();
-  int lineno = err.line();
+  Location loc = err.location();
+  const char* path = loc.path().c_str();
+  int lineno = loc.line();
   bool validPath = (path != nullptr && path[0] != '\0');
 
   if (validPath && lineno > 0) {

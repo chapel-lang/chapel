@@ -95,13 +95,6 @@ class ErrorMessage final {
   */
   Location location() const { return location_; }
 
-  UniqueString path() const { return location_.path(); }
-  int firstLine() const { return location_.firstLine(); }
-  int firstColumn() const { return location_.firstColumn(); }
-  int lastLine() const { return location_.lastLine(); }
-  int lastColumn() const { return location_.lastColumn(); }
-  int line() const { return location_.line(); }
-
   const std::string& message() const { return message_; }
 
   const std::vector<ErrorMessage>& details() const { return details_; }
