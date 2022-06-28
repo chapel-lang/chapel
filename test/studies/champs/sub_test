@@ -60,6 +60,7 @@ test_compile externalSolverPost
 test_compile meshDeformation
 test_compile continuation
 test_compile stability
+test_compile coloring
 
 # copy the input data to the filesystem we're running on
 
