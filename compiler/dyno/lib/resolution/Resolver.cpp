@@ -578,7 +578,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
   } else {
     // otherwise both declaredType and initExprType are provided.
     // check that they are compatible
-    auto got = canPass(context, initExprType, declaredType);
+    auto got = canPass(context, initExprType,
+                       QualifiedType(declKind, declaredType.type()));
     if (!got.passes()) {
       context->error(declForErr, "Type mismatch in declared type vs init expr");
       typePtr = ErroneousType::get(context);
