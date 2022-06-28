@@ -303,7 +303,7 @@ proc getSrcCode(sourceListArg: list(3*string), show) {
 }
 
 proc getGitCode(gitListArg: list(3*string), show) {
-  if isDir(MASON_HOME + '/git/') == false {
+  if !isDir(MASON_HOME + '/git/') {
     mkdir(MASON_HOME + '/git/', parents=true);
   }
 
