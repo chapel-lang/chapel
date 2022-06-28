@@ -263,8 +263,8 @@ proc genSourceList(lockFile: borrowed Toml) {
 
 /* Checks to see if dependency has already been
    downloaded previously */
-proc depExists(dependency: string) {
-  var repos = MASON_HOME +'/src/';
+proc depExists(dependency: string, repo='/src/') {
+  var repos = MASON_HOME + repo;
   var exists = false;
   for dir in listdir(repos) {
     if dir == dependency then
@@ -320,7 +320,7 @@ proc getGitCode(gitListArg: list(3*string), show) {
     const nameVers = name + "-" + version;
     const destination = baseDir + nameVers;
     // TODO: probably want to pull latest or something if it's main branch?
-    if !depExists(nameVers) {
+    if !depExists(nameVers, '/git/') {
       writeln("Downloading dependency: " + nameVers);
       // TODO: We will want to checkout the revision requested
       var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
