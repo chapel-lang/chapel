@@ -38,6 +38,8 @@ def get_cuda_libdevice_path():
     else:
         return libdevices[0]
 
+def get_runtime():
+    return "cuda"
 
 def validate(chplLocaleModel, chplComm):
     pass

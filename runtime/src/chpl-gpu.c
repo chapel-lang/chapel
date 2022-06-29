@@ -26,6 +26,7 @@
 #include "chpl-tasks.h"
 #include "error.h"
 #include "chplcgfns.h"
+#include "gpu-cuda-target.h"
 
 #ifdef HAS_GPU_LOCALE
 
@@ -175,7 +176,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                         va_list args) {
   chpl_gpu_ensure_context();
 
-  CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
+  chpl_gpu_test();
+
+  CHPL_GPU_LOG("Kernel launcher called. (subloc %d)\n"
                "\tKernel: %s\n"
                "\tGrid: %d,%d,%d\n"
                "\tBlock: %d,%d,%d\n"

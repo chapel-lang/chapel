@@ -110,6 +110,10 @@ UNWIND_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.unwind-$(CHPL_MAKE_UNWIND)
 # Add any further includes for HWLOC.
 HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
 -include $(HWLOC_INCLUDE)
+#
+# Add any further includes for gpu.
+GPU_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.gpu-$(CHPL_MAKE_GPU)
+-include $(GPU_INCLUDE)
 
 # For use with library-mode. Position independent code is required by shared
 # objects that want to bring in our static runtime/third-party libraries
