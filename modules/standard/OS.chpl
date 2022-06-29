@@ -132,7 +132,12 @@ module OS {
     inline operator :(x:c_int, type t:mode_t)
       return __primitive("cast", t, x);
 
+    /*
+      Make a system call to open a file at the specified path,
+      with the specified flags and mode.
 
+      The 'flags' argument 
+    */
     extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):qio_err_t;
 
     /*
