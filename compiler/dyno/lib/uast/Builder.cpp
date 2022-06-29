@@ -145,13 +145,31 @@ bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
 void Builder::createImplicitModuleIfNeeded() {
   bool containsOnlyModules = true;
   bool containsAnyModules = false;
+  bool containsUseImportOrRequire = false;
+  bool containsOther = false;
+  int nModules = 0;
+  const Module* lastModule = nullptr;
+  const AstNode* firstNonModule = nullptr;
+
   for (auto const& ownedExpression: topLevelExpressions_) {
-    if (ownedExpression->isComment()) {
+    const AstNode* ast = ownedExpression.get();
+    if (ast->isComment()) {
       // ignore comments for this analysis
-    } else if (ownedExpression->isModule()) {
+    } else if (ast->isModule()) {
       containsAnyModules = true;
+      lastModule = ast->toModule();
+      nModules++;
     } else {
       containsOnlyModules = false;
+      if (firstNonModule == nullptr) {
+        firstNonModule = ast;
+      }
+
+      if (ast->isUse() || ast->isImport() || ast->isRequire()) {
+        containsUseImportOrRequire = true;
+      } else {
+        containsOther = true;
+      }
     }
   }
   if (containsAnyModules && containsOnlyModules) {
@@ -165,13 +183,42 @@ void Builder::createImplicitModuleIfNeeded() {
     AstList stmts;
     stmts.swap(topLevelExpressions_);
     auto loc = Location(filepath_, 1, 1, 1, 1);
-    auto implicitModule = Module::build(this, std::move(loc),
-                                        /*attributes*/ nullptr,
-                                        Decl::DEFAULT_VISIBILITY,
-                                        inferredModuleName,
-                                        Module::IMPLICIT,
-                                        std::move(stmts));
-    topLevelExpressions_.push_back(std::move(implicitModule));
+    auto ownedModule = Module::build(this, std::move(loc),
+                                     /*attributes*/ nullptr,
+                                     Decl::DEFAULT_VISIBILITY,
+                                     inferredModuleName,
+                                     Module::IMPLICIT,
+                                     std::move(stmts));
+    const Module* implicitModule = ownedModule.get();
+    topLevelExpressions_.push_back(std::move(ownedModule));
+
+    // emit warnings as needed
+    if (containsUseImportOrRequire && !containsOther && nModules == 1) {
+      const char* stmtKind = "require', 'use', and/or 'import";
+
+      printf("%s", lastModule->name().c_str());
+      printf("%s", filepath_.c_str());
+      printf("%s", stmtKind);
+
+      addError(ErrorMessage::warning(lastModule,
+               "as written, '%s' is a sub-module of the module created for "
+               "file '%s' due to the file-level '%s' statements.  If you "
+               "meant for '%s' to be a top-level module, move the '%s' "
+               "statements into its scope.",
+               lastModule->name().c_str(),
+               filepath_.c_str(),
+               stmtKind,
+               lastModule->name().c_str(),
+               stmtKind));
+    } else if (nModules >= 1 && !containsOnlyModules) {
+      addError(ErrorMessage::warning(firstNonModule,
+               "This file-scope code is outside of any "
+               "explicit module declarations (e.g., module %s), "
+               "so an implicit module named '%s' is being "
+               "introduced to contain the file's contents.",
+               lastModule->name().c_str(),
+               implicitModule->name().c_str()));
+    }
   }
 }
 

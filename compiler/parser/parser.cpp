@@ -1027,14 +1027,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   INT_ASSERT(lastModSym && numModSyms);
 
-  // Use this temporarily to check the contents of the implicit module.
-  // TODO (dlongnecke): Emit the errors in this helper function in the
-  // parse query instead when we have warnings (e.g. 'noteWarning').
-  if (numModSyms == 1 && lastModSym->hasFlag(FLAG_IMPLICIT_MODULE)) {
-    SET_LINENO(lastModSym);
-    containsOnlyModules(lastModSym->block, path.c_str());
-  }
-
   // All modules were already added to the done list in the loop above.
   // The non-uAST variant of this function returns 'nullptr' if multiple
   // top level modules were produced by parsing the file.
