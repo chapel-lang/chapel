@@ -27,6 +27,7 @@
 #include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/CompositeType.h"
+#include "chpl/types/EnumType.h"
 #include "chpl/types/ErroneousType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
