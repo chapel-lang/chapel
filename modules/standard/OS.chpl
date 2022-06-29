@@ -46,6 +46,8 @@ module OS {
   */
   module POSIX {
     public use CTypes;
+    private use SysError;
+    import SysBasic.{qio_err_t, fd_t};
 
     //
     // sys/types.h
@@ -129,6 +131,9 @@ module OS {
     pragma "no doc"
     inline operator :(x:c_int, type t:mode_t)
       return __primitive("cast", t, x);
+
+
+    extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):qio_err_t;
 
     /*
        Explicit conversions between ``nlink_t`` and ``c_int`` are
