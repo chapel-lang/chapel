@@ -1307,11 +1307,14 @@ class CCodeGenConsumer final : public ASTConsumer {
     ASTContext* savedCtx;
 
     bool shouldHandleDecl(Decl* d) {
-      if (localeUsesGPU()) {
-        return gCodegenGPU == d->hasAttr<CUDADeviceAttr>();
+      if (gCodegenGPU) {
+        //this decl must have __device__
+        return d->hasAttr<CUDADeviceAttr>();
       }
       else {
-        return true;
+        // this decl either doesn't have __device__, or if it has, it also has a
+        // __host__
+        return !d->hasAttr<CUDADeviceAttr>() || d->hasAttr<CUDAHostAttr>();
       }
     }
 
