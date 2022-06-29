@@ -102,7 +102,6 @@ CHPL_HOST_PLATFORM
         netbsd32     32-bit NetBSD platforms
         netbsd64     64-bit NetBSD platforms
         pwr6         IBM Power6 SMP cluster
-        sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
         hpe-cray-ex  HPE Cray EX
