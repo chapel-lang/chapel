@@ -558,10 +558,12 @@ iter sorted(x : domain, comparator:?rec=defaultComparator) {
 iter sorted(x, comparator:?rec=defaultComparator) {
   if isArrayValue(x) && Reflection.canResolveMethod(x._value, "dsiSorted", comparator)
   {
+    // As far as I know this branch is only encountered for associative arrays
     for i in x._value.dsiSorted(comparator) {
       yield i;
     }
-    return;
+  } else if isArrayValue(x) && Reflection.canResolveMethod(x._value, "dsiSorted") {
+    compilerError(x._value.type:string + " does not support dsiSorted(comparator)");
   } else {
     var y = x; // need to do before isArrayValue test in case x is an iterable
     if !isArrayValue(y) then {
