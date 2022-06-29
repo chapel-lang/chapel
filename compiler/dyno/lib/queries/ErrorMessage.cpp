@@ -130,6 +130,16 @@ ErrorMessage ErrorMessage::note(const uast::AstNode* ast,
   return ret;
 }
 
+ErrorMessage ErrorMessage::note(Location loc,
+                                const char* fmt, ...) {
+  ErrorMessage ret;
+  va_list vl;
+  va_start(vl, fmt);
+  ret = ErrorMessage::vbuild(NOTE, loc, fmt, vl);
+  va_end(vl);
+  return ret;
+}
+
 ErrorMessage ErrorMessage::warning(ID id, const char* fmt, ...) {
   ErrorMessage ret;
   va_list vl;
@@ -145,6 +155,16 @@ ErrorMessage ErrorMessage::warning(const uast::AstNode* ast,
   va_list vl;
   va_start(vl, fmt);
   ret = ErrorMessage::vbuild(WARNING, ast->id(), fmt, vl);
+  va_end(vl);
+  return ret;
+}
+
+ErrorMessage ErrorMessage::warning(Location loc,
+                                 const char* fmt, ...) {
+  ErrorMessage ret;
+  va_list vl;
+  va_start(vl, fmt);
+  ret = ErrorMessage::vbuild(WARNING, loc, fmt, vl);
   va_end(vl);
   return ret;
 }

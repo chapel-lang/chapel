@@ -99,6 +99,14 @@ class ErrorMessage final {
 #endif
   ;
 
+  /** Build a note ErrorMessage from a Location and a printf-style format */
+  static ErrorMessage note(Location loc, const char* fmt, ...)
+#ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 2, 3)))
+#endif
+  ;
 
   /** Build a warning ErrorMessage from an ID and a printf-style format */
   static ErrorMessage warning(ID id, const char* fmt, ...)
@@ -111,6 +119,15 @@ class ErrorMessage final {
 
   /** Build a warning ErrorMessage from an AstNode* and a printf-style format*/
   static ErrorMessage warning(const uast::AstNode*, const char* fmt, ...)
+#ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 2, 3)))
+#endif
+  ;
+
+  /** Build a warning ErrorMessage from a Location and a printf-style format */
+  static ErrorMessage warning(Location loc, const char* fmt, ...)
 #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
