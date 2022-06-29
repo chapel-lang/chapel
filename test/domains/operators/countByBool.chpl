@@ -9,5 +9,13 @@ writeln(D3);
 
 var A: [D] real;
 
+// These will print a single element due to true == 1 in each
+// dimension:
+writeln(A#(flag, flag));
+writeln(A#(true, true));
+
+// Because each of these counts includes a false (0), each of these
+// array views will effectively be empty, so the writeln()s will
+// generate a blank line rather than anything interesting.
 writeln(A#(flag, !flag));
 writeln(A#(false, true));
