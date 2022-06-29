@@ -502,7 +502,6 @@ module Subprocess {
     // into this issue under those circumstances. See issue #7550 for
     // more details.
     if CHPL_COMM == "ugni" {
-      use Sys;
       if stdin != pipeStyle.forward || stdout != pipeStyle.forward || stderr != pipeStyle.forward then
         if numLocales > 1 {
           var env_c_str:c_string;
@@ -1111,7 +1110,7 @@ module Subprocess {
     the child process. See :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.abort() throws {
-    use Sys only SIGABRT;
+    use OS.POSIX only SIGABRT;
     try _throw_on_launch_error();
     try this.sendPosixSignal(Sys.SIGABRT);
   }
@@ -1121,7 +1120,7 @@ module Subprocess {
      :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.alarm() throws {
-    use Sys only SIGALRM;
+    use OS.POSIX only SIGALRM;
     try _throw_on_launch_error();
     try this.sendPosixSignal(Sys.SIGALRM);
   }
@@ -1132,7 +1131,7 @@ module Subprocess {
     :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.kill() throws {
-    use Sys only SIGKILL;
+    use OS.POSIX only SIGKILL;
     try _throw_on_launch_error();
     try this.sendPosixSignal(Sys.SIGKILL);
   }
@@ -1143,7 +1142,7 @@ module Subprocess {
     :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.terminate() throws {
-    use Sys only SIGTERM;
+    use OS.POSIX only SIGTERM;
     try _throw_on_launch_error();
     try this.sendPosixSignal(Sys.SIGTERM);
   }

@@ -157,7 +157,6 @@ Curl Support Types and Functions
  */
 module Curl {
   public use IO, CTypes;
-  // use Sys;
   use OS.POSIX;
   import SysBasic.{syserr,ENOERR};
 
@@ -505,7 +504,6 @@ module Curl {
     import Time;
     use IO;
     use Curl;
-    // use Sys
     use CTypes;
     use OS.POSIX;
     import SysBasic.{syserr,ENOERR,EEOF};
