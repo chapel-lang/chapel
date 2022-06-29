@@ -41,6 +41,8 @@ static void test1() {
 
   auto t1Parent = t1.parentSymbolId(context);
   assert(t1Parent.isEmpty());
+  auto t1Name = t1.symbolName(context);
+  assert(t1Name == "###...");
 
   auto exp1 = ID::expandSymbolPath(context, t1.symbolPath());
   assert(exp1.size() == 1);
@@ -50,6 +52,8 @@ static void test1() {
   auto t3 = ID(UniqueString::get(context, "ChapelRange.\\#"), -1, 0);
   auto t3Parent = t3.parentSymbolId(context);
   assert(t3Parent.symbolPath() == "ChapelRange");
+  auto t3name = t3.symbolName(context);
+  assert(t3name == "#");
 
   auto exp3 = ID::expandSymbolPath(context, t3.symbolPath());
   assert(exp3.size() == 2);
@@ -61,6 +65,8 @@ static void test1() {
   auto t4 = ID(UniqueString::get(context, "file\\.name\\#.submodule.x#3"),-1,0);
   auto t4Parent = t4.parentSymbolId(context);
   assert(t4Parent.symbolPath() == "file\\.name\\#.submodule");
+  auto t4name = t4.symbolName(context);
+  assert(t4name == "x");
 
   auto exp4 = ID::expandSymbolPath(context, t4.symbolPath());
   assert(exp4.size() == 3);
@@ -81,6 +87,9 @@ static void test2() {
   ID modId = ID(UniqueString::get(context, esc), -1, 2);
   context->setFilePathForModuleId(modId, UniqueString::get(context, fname));
 
+  assert(modId.parentSymbolId(context).symbolPath() == "");
+  assert(modId.symbolName(context) == "weird-file##.name");
+
   {
     UniqueString gotPath;
     UniqueString gotParentSymbol;
@@ -91,7 +100,14 @@ static void test2() {
   }
 
   auto escSub = esc + ".x#3";
-  ID eltId = ID(UniqueString::get(context, escSub), 0, 0);
+  ID eltId = ID(UniqueString::get(context, escSub), -1, 0);
+  ID eltId1 = ID(UniqueString::get(context, escSub), 1, 0);
+
+  assert(eltId.parentSymbolId(context).symbolPath() == esc.c_str());
+  assert(eltId.symbolName(context) == "x");
+
+  assert(eltId1.parentSymbolId(context).symbolPath() == eltId1.symbolPath());
+  assert(eltId1.symbolName(context) == "x");
 
   {
     UniqueString gotPath;
@@ -104,7 +120,11 @@ static void test2() {
 
   const char* subFname = "weird-file##.name/Submodule.chpl";
   auto escSubMod = esc + ".Submodule#4";
-  ID subModId = ID(UniqueString::get(context, escSubMod), 0, 0);
+  ID subModId = ID(UniqueString::get(context, escSubMod), -1, 0);
+
+  assert(subModId.parentSymbolId(context).symbolPath() == esc.c_str());
+  assert(subModId.symbolName(context) == "Submodule");
+
   context->setFilePathForModuleId(subModId,
                                   UniqueString::get(context, subFname));
 
@@ -118,7 +138,10 @@ static void test2() {
   }
 
   auto escSubElt = escSubMod + ".y#5";
-  ID subEltId = ID(UniqueString::get(context, escSubElt), 0, 0);
+  ID subEltId = ID(UniqueString::get(context, escSubElt), -1, 0);
+
+  assert(subEltId.parentSymbolId(context).symbolPath()==subModId.symbolPath());
+  assert(subEltId.symbolName(context) == "y");
 
   {
     UniqueString gotPath;

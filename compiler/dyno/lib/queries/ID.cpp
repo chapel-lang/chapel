@@ -26,6 +26,18 @@
 namespace chpl {
 
 
+// find the last '.' but don't count \.
+// returns -1 if none was found
+static ssize_t findLastDot(const char* path) {
+  ssize_t lastDot = -1;
+  for (ssize_t i = 1; path[i]; i++) {
+    if (path[i] == '.' && path[i-1] != '\\')
+      lastDot = i;
+  }
+
+  return lastDot;
+}
+
 UniqueString ID::parentSymbolPath(Context* context, UniqueString symbolPath) {
 
   // If the symbol path is empty, return an empty string
@@ -33,13 +45,9 @@ UniqueString ID::parentSymbolPath(Context* context, UniqueString symbolPath) {
     return UniqueString();
   }
 
-  // remove the last '.' component from the ID but don't count \.
+  // find the last '.' component from the ID but don't count \.
   const char* path = symbolPath.c_str();
-  ssize_t lastDot = -1;
-  for (ssize_t i = 1; path[i]; i++) {
-    if (path[i] == '.' && path[i-1] != '\\')
-      lastDot = i;
-  }
+  ssize_t lastDot = findLastDot(path);
 
   if (lastDot == -1) {
     // no path component to remove, so return an empty string
@@ -48,6 +56,45 @@ UniqueString ID::parentSymbolPath(Context* context, UniqueString symbolPath) {
 
   // Otherwise, construct a UniqueString for the parent symbol path
   return UniqueString::get(context, path, lastDot);
+}
+
+UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
+{
+  // If the symbol path is empty, return an empty string
+  if (symbolPath.isEmpty()) {
+    return UniqueString();
+  }
+
+  // find the last '.' component from the ID but don't count \.
+  const char* path = symbolPath.c_str();
+  ssize_t lastDot = findLastDot(path);
+
+  if (lastDot != -1) {
+    // skip past the final '.'
+    path = path + lastDot + 1;
+  }
+
+
+  // now find truncate it at a '#' but don't count \#
+  ssize_t end = 0;
+  ssize_t i = 1;
+  while (true) {
+    if (path[i] == '\0' ||
+        (path[i] == '#' && path[i-1] != '\\')) {
+      end = i;
+      break;
+    }
+    i++;
+  }
+
+  // compute the portion of the string before the #
+  auto s = std::string(path, end);
+
+  // now unquote
+  s = unescapeStringId(s);
+
+  // now get the UniqueString
+  return UniqueString::get(context, s);
 }
 
 ID ID::parentSymbolId(Context* context) const {
@@ -64,6 +111,10 @@ ID ID::parentSymbolId(Context* context) const {
 
   // Otherwise, construct an ID for the parent symbol
   return ID(parentSymPath, -1, 0);
+}
+
+UniqueString ID::symbolName(Context* context) const {
+  return ID::innermostSymbolName(context, symbolPath_);
 }
 
 bool ID::contains(const ID& other) const {

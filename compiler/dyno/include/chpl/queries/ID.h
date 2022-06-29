@@ -117,6 +117,12 @@ class ID final {
   ID parentSymbolId(Context* context) const;
 
   /**
+    If the ID represents a symbol, return the name of that symbol.
+    Otherwise, return the name of the symbol that contains the ID.
+   */
+  UniqueString symbolName(Context* context) const;
+
+  /**
     returns 'true' if the AST node with this ID contains the AST
     node with the other ID, including if they refer to the same AST node.
    */
@@ -133,7 +139,12 @@ class ID final {
   /** Given a symbol path, return the parent symbol path.
       Returns an empty string if the symbol path was empty string.
     */
-  static UniqueString parentSymbolPath(Context*, UniqueString symbolPath);
+  static UniqueString parentSymbolPath(Context* context,
+                                       UniqueString symbolPath);
+
+  /** Given a symbol path, return the name of the innermost symbol */
+  static UniqueString innermostSymbolName(Context* context,
+                                          UniqueString symbolPath);
 
   /**
     Given a symbol path, expand it into a vector
