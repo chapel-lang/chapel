@@ -3740,26 +3740,35 @@ void addDumpIrPass(const PassManagerBuilder &Builder,
 }
 
 static void linkLibDevice() {
+  // We follow the directions in https://llvm.org/docs/NVPTXUsage.html#libdevice
+
   GenInfo* info = gGenInfo;
 
+  // load libdevice as a new module
   llvm::SMDiagnostic err;
   auto libdevice = llvm::parseIRFile(CHPL_CUDA_LIBDEVICE_PATH, err,
                                      info->llvmContext);
+  //
+  // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
   libdevice->setTargetTriple(Triple.getTriple());
   libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
 
-  std::set<std::string> preExternals;
+  // save external functions
+  std::set<std::string> externals;
   for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
     if (it->hasExternalLinkage()) {
-      preExternals.insert(it->getGlobalIdentifier());
+      externals.insert(it->getGlobalIdentifier());
     }
   }
+
+  // link
   llvm::Linker::linkModules(*info->module, std::move(libdevice),
                             llvm::Linker::Flags::LinkOnlyNeeded);
 
-  llvm::InternalizePass iPass([&preExternals](const llvm::GlobalValue& gv) {
-    return preExternals.count(gv.getGlobalIdentifier()) > 0;
+  // internalize all functions that are not in `externals`
+  llvm::InternalizePass iPass([&externals](const llvm::GlobalValue& gv) {
+    return externals.count(gv.getGlobalIdentifier()) > 0;
   });
   iPass.internalizeModule(*info->module);
 }
