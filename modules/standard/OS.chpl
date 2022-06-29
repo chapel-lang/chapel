@@ -685,13 +685,13 @@ module OS {
     extern const SIGXCPU: c_int;
     extern const SIGXFSZ: c_int;
 
-      // These signals are not strictly required by POSIX.1.2008 2013 edition
-  // and so should not be included here:
+    // These signals are not strictly required by POSIX.1.2008 2013 edition
+    // and so should not be included here:
 
-  // SIGPOLL is Obsolescent and optional as part of XSI STREAMS
-  // SIGPROF is Obsolescent and optional as part of XSI STREAMS
-  // SIGSYS is optional as part of X/Open Systems Interface
-  // SIGVTALRM is optional as part of X/Open Systems Interface
+    // SIGPOLL is Obsolescent and optional as part of XSI STREAMS
+    // SIGPROF is Obsolescent and optional as part of XSI STREAMS
+    // SIGSYS is optional as part of X/Open Systems Interface
+    // SIGVTALRM is optional as part of X/Open Systems Interface
 
     //
     // fcntl.h

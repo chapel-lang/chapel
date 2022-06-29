@@ -42,6 +42,7 @@
    will be returned through the final ``ret_out`` argument.
 
  */
+deprecated "The 'Sys' module has been deprecated; please find replacement symbols in the 'OS' and  'Socket' modules"
 module Sys {
   import SysBasic.{qio_err_t, fd_t};
   private use CTypes;
@@ -119,52 +120,76 @@ module Sys {
   // See note below about signals intentionally not included
 
   pragma "last resort"
+  deprecated "'Sys.SIGABRT' is deprecated; please use 'OS.POSIX.SIGABRT' instead"
   extern const SIGABRT: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGALRM' is deprecated; please use 'OS.POSIX.SIGALRM' instead"
   extern const SIGALRM: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGBUS' is deprecated; please use 'OS.POSIX.SIGBUS' instead"
   extern const SIGBUS: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGCHLD' is deprecated; please use 'OS.POSIX.SIGCHLD' instead"
   extern const SIGCHLD: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGCONT' is deprecated; please use 'OS.POSIX.SIGCONT' instead"
   extern const SIGCONT: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGFPE' is deprecated; please use 'OS.POSIX.SIGFPE' instead"
   extern const SIGFPE: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGHUP' is deprecated; please use 'OS.POSIX.SIGHUP' instead"
   extern const SIGHUP: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGILL' is deprecated; please use 'OS.POSIX.SIGILL' instead"
   extern const SIGILL: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGINT' is deprecated; please use 'OS.POSIX.SIGINT' instead"
   extern const SIGINT: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGKILL' is deprecated; please use 'OS.POSIX.SIGKILL' instead"
   extern const SIGKILL: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGPIPE' is deprecated; please use 'OS.POSIX.SIGPIPE' instead"
   extern const SIGPIPE: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGQUIT' is deprecated; please use 'OS.POSIX.SIGQUIT' instead"
   extern const SIGQUIT: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGSEGV' is deprecated; please use 'OS.POSIX.SIGSEGV' instead"
   extern const SIGSEGV: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGSTOP' is deprecated; please use 'OS.POSIX.SIGSTOP' instead"
   extern const SIGSTOP: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGTERM' is deprecated; please use 'OS.POSIX.SIGTERM' instead"
   extern const SIGTERM: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGTRAP' is deprecated; please use 'OS.POSIX.SIGTRAP' instead"
   extern const SIGTRAP: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGTSTP' is deprecated; please use 'OS.POSIX.SIGTSTP' instead"
   extern const SIGTSTP: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGTTIN' is deprecated; please use 'OS.POSIX.SIGTTIN' instead"
   extern const SIGTTIN: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGTTOU' is deprecated; please use 'OS.POSIX.SIGTTOU' instead"
   extern const SIGTTOU: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGURG' is deprecated; please use 'OS.POSIX.SIGURG' instead"
   extern const SIGURG: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGUSR1' is deprecated; please use 'OS.POSIX.SIGUSR1' instead"
   extern const SIGUSR1: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGUSR2' is deprecated; please use 'OS.POSIX.SIGUSR2' instead"
   extern const SIGUSR2: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGXCPU' is deprecated; please use 'OS.POSIX.SIGXCPU' instead"
   extern const SIGXCPU: c_int;
   pragma "last resort"
+  deprecated "'Sys.SIGXFSZ' is deprecated; please use 'OS.POSIX.SIGXFSZ' instead"
   extern const SIGXFSZ: c_int;
 
   // These signals are not strictly required by POSIX.1.2008 2013 edition
@@ -290,7 +315,7 @@ module Sys {
   extern const IP_TOS:c_int;
   extern const IP_TTL:c_int;
 
-  // IP 6 socket options
+  // IP 6 socket options - unused outside of Sys - deprecating without replacement
   extern const IPV6_ADDRFORM:c_int;
   extern const IPV6_ADD_MEMBERSHIP:c_int;
   extern const IPV6_DROP_MEMBERSHIP:c_int;
@@ -311,7 +336,7 @@ module Sys {
   extern const IPV6_UNICAST_HOPS:c_int;
   extern const IPV6_V6ONLY:c_int;
 
-  // TCP socket options
+  // TCP socket options - some used in Socket - deprecating and moving to Socket.chpl as private constants
   extern const TCP_CORK:c_int;
   extern const TCP_DEFER_ACCEPT:c_int;
   extern const TCP_INFO:c_int;
@@ -325,19 +350,29 @@ module Sys {
   extern const TCP_SYNCNT:c_int;
   extern const TCP_WINDOW_CLAMP:c_int;
 
-  // socket address sizes
+  // socket address sizes - unused outside of Sys - deprecating without replacement
   extern const INET_ADDRSTRLEN:c_int;
   extern const INET6_ADDRSTRLEN:c_int;
   extern const NI_MAXHOST:c_int;
   extern const NI_MAXSERV:c_int;
 
-  // standard ipv4 addresses
+  // standard ipv4 addresses - used in Socket - deprecating and moving to Socket.chpl
+  pragma "last resort"
+  deprecated "'Sys.INADDR_ANY' is deprecated; please use 'Socket.INADDR_ANY' instead"
   extern const INADDR_ANY:sys_in_addr_t;
+  pragma "last resort"
+  deprecated "'Sys.INADDR_BROADCAST' is deprecated; please use 'Socket.INADDR_BROADCAST' instead"
   extern const INADDR_BROADCAST:sys_in_addr_t;
+  pragma "last resort"
+  deprecated "'Sys.INADDR_LOOPBACK' is deprecated; please use 'Socket.INADDR_LOOPBACK' instead"
   extern const INADDR_LOOPBACK:sys_in_addr_t;
 
-  // standard ipv6 addresses
+  // standard ipv6 addresses - used in Socket - deprecating and moving to Socket.chpl
+  pragma "last resort"
+  deprecated "'Sys.in6addr_any' is deprecated; please use 'Socket.in6addr_any' instead"
   extern const in6addr_any:sys_in6_addr_t;
+  pragma "last resort"
+  deprecated "'Sys.in6addr_loopback' is deprecated; please use 'Socket.in6addr_loopback' instead"
   extern const in6addr_loopback:sys_in6_addr_t;
 
   // UDP socket options
@@ -346,8 +381,14 @@ module Sys {
 
   /* SOCKET STRUCTURE TYPES */
 
+  pragma "last resort"
+  deprecated "'Sys.sys_in_addr_t' is deprecated; please use 'Socket.sys_in_addr_t' instead"
   extern type sys_in_addr_t;
+  pragma "last resort"
+  deprecated "'Sys.sys_in6_addr_t' is deprecated; please use 'Socket.sys_in6_addr_t' instead"
   extern type sys_in6_addr_t;
+
+  
 
   extern type sys_sockaddr_storage_t;
   /* The type corresponding to C's socklen_t */
@@ -491,6 +532,7 @@ module Sys {
   // proc sys_addrinfo_ptr_t.canonname:c_string { return sys_getaddrinfo_canonname(this); }
   proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
 
+  // only used here - deprecating without replacement
   extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
   extern proc sys_getsockaddr_family(const ref addr: sys_sockaddr_t):c_int;
   extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
@@ -519,9 +561,7 @@ module Sys {
   deprecated "'Sys.sys_getenv' is deprecated; please use 'OS.sys_getenv' instead"
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
   /* The type corresponding to C's mode_t */
-  deprecated "'Sys.mode_t' is deprecated; please use 'OS.POSIX.mode_t' instead"
   extern type mode_t = uint(32);
-  deprecated "'Sys.sys_open' is deprecated; please use 'OS.POSIX.sys_open' instead"
   extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):qio_err_t;
   extern proc sys_close(fd:fd_t):qio_err_t;
 
@@ -532,7 +572,7 @@ module Sys {
   extern proc sys_munmap(addr:c_void_ptr, length:c_size_t):qio_err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
-
+  // - moved to Socket.chpl -
   extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):qio_err_t;
   extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):qio_err_t;
   extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):qio_err_t;

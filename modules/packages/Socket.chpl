@@ -393,6 +393,31 @@ private extern const SO_SNDBUF:c_int;
 private extern const SO_SNDTIMEO:c_int;
 private extern const SO_SECINFO:c_int;
 
+private extern const TCP_CORK:c_int;
+private extern const TCP_DEFER_ACCEPT:c_int;
+private extern const TCP_INFO:c_int;
+private extern const TCP_KEEPCNT:c_int;
+private extern const TCP_KEEPIDLE:c_int;
+private extern const TCP_KEEPINTVL:c_int;
+private extern const TCP_LINGER2:c_int;
+private extern const TCP_MAXSEG:c_int;
+private extern const TCP_NODELAY:c_int;
+private extern const TCP_QUICKACK:c_int;
+private extern const TCP_SYNCNT:c_int;
+private extern const TCP_WINDOW_CLAMP:c_int;
+
+extern type sys_in_addr_t;
+extern type sys_in6_addr_t;
+
+// standard ipv4 addresses
+extern const INADDR_ANY:sys_in_addr_t;
+extern const INADDR_BROADCAST:sys_in_addr_t;
+extern const INADDR_LOOPBACK:sys_in_addr_t;
+
+// standard ipv6 addresses
+extern const in6addr_any:sys_in6_addr_t;
+extern const in6addr_loopback:sys_in6_addr_t;
+
 pragma "no doc"
 var event_loop_base:c_ptr(event_base);
 
