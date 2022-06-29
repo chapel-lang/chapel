@@ -364,7 +364,7 @@ private proc quote_string(s:string, len:c_ssize_t) {
 /* Helper to allow calling the standalone fromSyserr function from the
    deprecated type method SystemError.fromSyserr until it is removed */
 private proc fromSyserrHelper(err: syserr, details: string = "") {
-  return fromSyserr(err, details);  
+  return fromSyserr(err, details);
 }
 /*
   Return the matching :class:`SystemError` subtype for a given ``syserr``,
