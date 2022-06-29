@@ -494,6 +494,11 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
           }
         }
       }
+    } else {
+      auto err = ErrorMessage::error(include, "cannot find included submodule");
+      err.addDetail(ErrorMessage::note(include, "expected file at path '%s'",
+                                       check.c_str()));
+      context->report(err);
     }
   }
 
