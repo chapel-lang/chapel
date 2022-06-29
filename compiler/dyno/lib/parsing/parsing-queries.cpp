@@ -455,7 +455,19 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
     // find some other information about that parent module
     found = context->filePathForId(parentModuleId, parentModulePath,
                                    parentParentSymbolPath);
+
+    // check that the computed filename matches
+    std::string name1 = Builder::filenameToModulename(parentModulePath.c_str());
+    UniqueString name2 = parentModuleId.symbolName(context);
+
+    if (name2 != name1.c_str()) {
+      context->error(include,
+                     "Cannot include modules from a module whose name doesn't "
+                     "match its filename");
+      found = false;
+    }
   }
+
   if (found) {
     UniqueString submoduleName = include->name();
     UniqueString parentSymbolPath = parentModuleId.symbolPath();
@@ -477,8 +489,8 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
           if (result == nullptr) {
             result = mod;
           } else {
-            context->error(mod, "cannot have multiple modules "
-                                "defined in included module");
+            context->error(mod,
+                           "included module file contains multiple modules");
           }
         }
       }

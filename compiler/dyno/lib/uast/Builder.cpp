@@ -66,7 +66,7 @@ bool Builder::checkAllConfigVarsAssigned(Context* context) {
    return !anyBadConfigs;
  }
 
-static std::string filenameToModulename(const char* filename) {
+std::string Builder::filenameToModulename(const char* filename) {
   const char* moduleName = filename;
   const char* lastSlash = strrchr(moduleName, '/');
 
@@ -177,7 +177,7 @@ void Builder::createImplicitModuleIfNeeded() {
     return;
   } else {
     // compute the basename of filename to get the inferred module name
-    std::string modname = filenameToModulename(filepath_.c_str());
+    std::string modname = Builder::filenameToModulename(filepath_.c_str());
     auto inferredModuleName = UniqueString::get(context_, modname);
     // create a new module containing all of the statements
     AstList stmts;

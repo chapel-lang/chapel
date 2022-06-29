@@ -815,6 +815,7 @@ struct Converter {
     if (isIncPrivate && !isModPrivate) {
       mod->addFlag(FLAG_PRIVATE);
     }
+    mod->addFlag(FLAG_INCLUDED_MODULE);
 
     if (fWarnUnstable && mod->modTag == MOD_USER) {
       USR_WARN(node->id(), "module include statements are not yet stable "

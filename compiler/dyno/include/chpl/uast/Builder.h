@@ -130,6 +130,11 @@ class Builder final {
    */
   static bool astTagIndicatesNewIdScope(asttags::AstTag tag);
 
+  /**
+    Compute the module name based on a file name.
+   */
+  static std::string filenameToModulename(const char* filename);
+
   // build methods are actually type methods on the individual AST
   // elements. This prevents the Builder API from growing unreasonably large.
 
