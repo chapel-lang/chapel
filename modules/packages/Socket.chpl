@@ -365,6 +365,34 @@ private extern proc pthread_create(thread: c_ptr(pthread_t), const attr: c_ptr(p
                                    start_routine: c_fn_ptr, arg: c_void_ptr): c_int;
 private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_void_ptr)): c_int;
 
+private extern const SOCK_STREAM:c_int;
+private extern const SOCK_DGRAM:c_int;
+private extern const SOCK_SEQPACKET:c_int;
+private extern const SOCK_RAW:c_int;
+private extern const SOCK_RDM:c_int;
+private extern const SOCK_NONBLOCK:c_int;
+private extern const SOCK_CLOEXEC:c_int;
+
+private extern const SOL_SOCKET:c_int;
+private extern const IPPROTO_IP:c_int;
+private extern const IPPROTO_IPV6:c_int;
+private extern const IPPROTO_TCP:c_int;
+private extern const IPPROTO_UDP:c_int;
+
+private extern const SO_ACCEPTCONN:c_int;
+private extern const SO_BROADCAST:c_int;
+private extern const SO_DEBUG:c_int;
+private extern const SO_ERROR:c_int;
+private extern const SO_KEEPALIVE:c_int;
+private extern const SO_LINGER:c_int;
+private extern const SO_OOBINLINE:c_int;
+private extern const SO_RCVBUF:c_int;
+private extern const SO_RCVTIMEO:c_int;
+private extern const SO_REUSEADDR:c_int;
+private extern const SO_SNDBUF:c_int;
+private extern const SO_SNDTIMEO:c_int;
+private extern const SO_SECINFO:c_int;
+
 pragma "no doc"
 var event_loop_base:c_ptr(event_base);
 

@@ -201,7 +201,7 @@ module Sys {
   //extern const S_IWOTH:c_int;
   //extern const S_IXOTH:c_int;
 
-  // socket domains
+  // socket domains - unused outside of Sys - deprecating without replacement
   extern const AF_UNIX:c_int;
   extern const AF_LOCAL:c_int;
   extern const AF_INET:c_int;
@@ -214,7 +214,7 @@ module Sys {
   extern const AF_APPLETALK:c_int;
   extern const AF_PACKET:c_int;
 
-  // socket types
+  // socket types - some used in Socket - deprecating and moving to Socket.chpl as private constants
   extern const SOCK_STREAM:c_int;
   extern const SOCK_DGRAM:c_int;
   extern const SOCK_SEQPACKET:c_int;
@@ -224,7 +224,7 @@ module Sys {
   extern const SOCK_NONBLOCK:c_int;
   extern const SOCK_CLOEXEC:c_int;
 
-  // sendmsg flags.
+  // sendmsg flags. - unused outside of Sys - deprecating without replacement
   extern const MSG_CONFIRM:c_int;
   extern const MSG_DONTROUTE:c_int;
   extern const MSG_DONTWAIT:c_int;
@@ -233,7 +233,7 @@ module Sys {
   extern const MSG_NOSIGNAL:c_int;
   extern const MSG_OOB:c_int;
 
-  // recvmsg flags
+  // recvmsg flags - unused outside of Sys - deprecating without replacement
   extern const MSG_CMSG_CLOEXEC:c_int;
   extern const MSG_ERRQUEUE:c_int;
   extern const MSG_PEEK:c_int;
@@ -243,19 +243,19 @@ module Sys {
   //extern const MSG_EOR:c_int; sendmsg flag
   extern const MSG_CTRUNC:c_int;
 
-  // shutdown how.
+  // shutdown how. - unused outside of Sys - deprecating without replacement
   extern const SHUT_RD:c_int;
   extern const SHUT_WR:c_int;
   extern const SHUT_RDWR:c_int;
 
-  // socket option 'levels'
+  // socket option 'levels' - some used in Socket - deprecating and moving to Socket.chpl as private constants
   extern const SOL_SOCKET:c_int;
   extern const IPPROTO_IP:c_int;
   extern const IPPROTO_IPV6:c_int;
   extern const IPPROTO_TCP:c_int;
   extern const IPPROTO_UDP:c_int;
 
-  // socket options
+  // socket options - some used in Socket - deprecating and moving to Socket.chpl as private constants
   extern const SO_ACCEPTCONN:c_int;
   extern const SO_BROADCAST:c_int;
   extern const SO_DEBUG:c_int;
@@ -270,7 +270,7 @@ module Sys {
   extern const SO_SNDTIMEO:c_int;
   extern const SO_SECINFO:c_int;
 
-  // IP socket options
+  // IP socket options - unused outside of Sys - deprecating without replacement
   extern const IP_ADD_MEMBERSHIP:c_int;
   extern const IP_DROP_MEMBERSHIP:c_int;
   extern const IP_HDRINCL:c_int;
