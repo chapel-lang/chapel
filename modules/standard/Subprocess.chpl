@@ -983,76 +983,76 @@ module Subprocess {
   // Signals as required by POSIX.1-2008, 2013 edition
   // See note below about signals intentionally not included.
   pragma "no doc"
-  deprecated "'Subprocess.SIGABRT' is deprecated. Use 'Sys.SIGABRT' instead."
+  deprecated "'Subprocess.SIGABRT' is deprecated. Use 'OS.POSIX.SIGABRT' instead."
   extern const SIGABRT: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGALRM' is deprecated. Use 'Sys.SIGALRM' instead."
+  deprecated "'Subprocess.SIGALRM' is deprecated. Use 'OS.POSIX.SIGALRM' instead."
   extern const SIGALRM: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGBUS' is deprecated. Use 'Sys.SIGBUS' instead."
+  deprecated "'Subprocess.SIGBUS' is deprecated. Use 'OS.POSIX.SIGBUS' instead."
   extern const SIGBUS: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGCHLD' is deprecated. Use 'Sys.SIGCHLD' instead."
+  deprecated "'Subprocess.SIGCHLD' is deprecated. Use 'SOS.POSIX.SIGCHLD' instead."
   extern const SIGCHLD: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGCONT' is deprecated. Use 'Sys.SIGCONT' instead."
+  deprecated "'Subprocess.SIGCONT' is deprecated. Use 'OS.POSIX.SIGCONT' instead."
   extern const SIGCONT: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGFPE' is deprecated. Use 'Sys.SIGFPE' instead."
+  deprecated "'Subprocess.SIGFPE' is deprecated. Use 'OS.POSIX.SIGFPE' instead."
   extern const SIGFPE: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGHUP' is deprecated. Use 'Sys.SIGHUP' instead."
+  deprecated "'Subprocess.SIGHUP' is deprecated. Use 'OS.POSIX.SIGHUP' instead."
   extern const SIGHUP: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGILL' is deprecated. Use 'Sys.SIGILL' instead."
+  deprecated "'Subprocess.SIGILL' is deprecated. Use 'OS.POSIX.SIGILL' instead."
   extern const SIGILL: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGINT' is deprecated. Use 'Sys.SIGINT' instead."
+  deprecated "'Subprocess.SIGINT' is deprecated. Use 'OS.POSIX.SIGINT' instead."
   extern const SIGINT: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGKILL' is deprecated. Use 'Sys.SIGKILL' instead."
+  deprecated "'Subprocess.SIGKILL' is deprecated. Use 'OS.POSIX.SIGKILL' instead."
   extern const SIGKILL: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGPIPE' is deprecated. Use 'Sys.SIGPIPE' instead."
+  deprecated "'Subprocess.SIGPIPE' is deprecated. Use 'OS.POSIX.SIGPIPE' instead."
   extern const SIGPIPE: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGQUIT' is deprecated. Use 'Sys.SIGQUIT' instead."
+  deprecated "'Subprocess.SIGQUIT' is deprecated. Use 'OS.POSIX.SIGQUIT' instead."
   extern const SIGQUIT: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGSEGV' is deprecated. Use 'Sys.SIGSEGV' instead."
+  deprecated "'Subprocess.SIGSEGV' is deprecated. Use 'OS.POSIX.SIGSEGV' instead."
   extern const SIGSEGV: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGSTOP' is deprecated. Use 'Sys.SIGSTOP' instead."
+  deprecated "'Subprocess.SIGSTOP' is deprecated. Use 'OS.POSIX.SIGSTOP' instead."
   extern const SIGSTOP: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGTERM' is deprecated. Use 'Sys.SIGTERM' instead."
+  deprecated "'Subprocess.SIGTERM' is deprecated. Use 'OS.POSIX.SIGTERM' instead."
   extern const SIGTERM: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGTRAP' is deprecated. Use 'Sys.SIGTRAP' instead."
+  deprecated "'Subprocess.SIGTRAP' is deprecated. Use 'OS.POSIX.SIGTRAP' instead."
   extern const SIGTRAP: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGTSTP' is deprecated. Use 'Sys.SIGTSTP' instead."
+  deprecated "'Subprocess.SIGTSTP' is deprecated. Use 'OS.POSIX.SIGTSTP' instead."
   extern const SIGTSTP: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGTTIN' is deprecated. Use 'Sys.SIGTTIN' instead."
+  deprecated "'Subprocess.SIGTTIN' is deprecated. Use 'OS.POSIX.SIGTTIN' instead."
   extern const SIGTTIN: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGTTOU' is deprecated. Use 'Sys.SIGTTOU' instead."
+  deprecated "'Subprocess.SIGTTOU' is deprecated. Use 'OS.POSIX.SIGTTOU' instead."
   extern const SIGTTOU: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGURG' is deprecated. Use 'Sys.SIGURG' instead."
+  deprecated "'Subprocess.SIGURG' is deprecated. Use 'OS.POSIX.SIGURG' instead."
   extern const SIGURG: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGUSR1' is deprecated. Use 'Sys.SIGUSR1' instead."
+  deprecated "'Subprocess.SIGUSR1' is deprecated. Use 'OS.POSIX.SIGUSR1' instead."
   extern const SIGUSR1: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGUSR2' is deprecated. Use 'Sys.SIGUSR2' instead."
+  deprecated "'Subprocess.SIGUSR2' is deprecated. Use 'OS.POSIX.SIGUSR2' instead."
   extern const SIGUSR2: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGXCPU' is deprecated. Use 'Sys.SIGXCPU' instead."
+  deprecated "'Subprocess.SIGXCPU' is deprecated. Use 'OS.POSIX.SIGXCPU' instead."
   extern const SIGXCPU: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGXFSZ' is deprecated. Use 'Sys.SIGXFSZ' instead."
+  deprecated "'Subprocess.SIGXFSZ' is deprecated. Use 'OS.POSIX.SIGXFSZ' instead."
   extern const SIGXFSZ: c_int;
 
   // These signals are not strictly required by POSIX.1.2008 2013 edition
@@ -1112,7 +1112,7 @@ module Subprocess {
   proc subprocess.abort() throws {
     use OS.POSIX only SIGABRT;
     try _throw_on_launch_error();
-    try this.sendPosixSignal(Sys.SIGABRT);
+    try this.sendPosixSignal(OS.POSIX.SIGABRT);
   }
 
   /* Send the child process an alarm signal. The associated signal,
@@ -1122,7 +1122,7 @@ module Subprocess {
   proc subprocess.alarm() throws {
     use OS.POSIX only SIGALRM;
     try _throw_on_launch_error();
-    try this.sendPosixSignal(Sys.SIGALRM);
+    try this.sendPosixSignal(OS.POSIX.SIGALRM);
   }
 
   /*
@@ -1133,7 +1133,7 @@ module Subprocess {
   proc subprocess.kill() throws {
     use OS.POSIX only SIGKILL;
     try _throw_on_launch_error();
-    try this.sendPosixSignal(Sys.SIGKILL);
+    try this.sendPosixSignal(OS.POSIX.SIGKILL);
   }
 
   /*
@@ -1144,6 +1144,6 @@ module Subprocess {
   proc subprocess.terminate() throws {
     use OS.POSIX only SIGTERM;
     try _throw_on_launch_error();
-    try this.sendPosixSignal(Sys.SIGTERM);
+    try this.sendPosixSignal(OS.POSIX.SIGTERM);
   }
 }
