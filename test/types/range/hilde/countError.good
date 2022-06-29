@@ -1,1 +1,1 @@
-halt:
+countError.chpl:17: error: halt reached - range of size 1073741825 is too small for counting 2147483648 elements
