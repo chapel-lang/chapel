@@ -264,7 +264,7 @@ chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen) {
 // Find the named executable in the PATH, if it's there.
 //
 char *chpl_find_executable(const char *prog_name) {
-  const char *cmd_fmt = "/usr/bin/which --skip-alias --skip-functions %s";
+  const char *cmd_fmt = "which %s";
   const int cmd_len
             = strlen(cmd_fmt)     // 'which' command, as printf() format
               - 2                 //   length of "%s" specifier
