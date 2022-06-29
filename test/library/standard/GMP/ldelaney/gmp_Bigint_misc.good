@@ -1,18 +1,3 @@
--65536 does not fit  in an unsigned long integer
-129 fits  in an unsigned long integer
--65536 fits  in a signed long integer
-129 fits  in a signed long integer
-
--65536 does not fit  in an unsigned integer
-129 fits  in an unsigned integer
--65536 fits  in a signed integer
-129 fits  in a signed integer
-
--65536 does not fit  in an unsigned short integer
-129 fits  in an unsigned short integer
--65536 does not fit  in a signed short integer
-129 fits  in a signed short integer
-
 a is even
 b is odd
 -65536 is 6 digits in base 10

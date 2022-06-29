@@ -3973,9 +3973,48 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-
+  private proc fits_into(mpz: mpz_t, type t: integral): bool {
+    return
+      if t == c_long then
+        mpz_fits_slong_p(mpz) != 0
+      else if t == c_ulong then
+        mpz_fits_ulong_p(mpz) != 0
+      else if t == c_int then
+        mpz_fits_sint_p(mpz) != 0
+      else if t == c_uint then
+        mpz_fits_uint_p(mpz) != 0
+      else if t == c_short then
+        mpz_fits_sshort_p(mpz) != 0
+      else if t == c_ushort then
+        mpz_fits_ushort_p(mpz) != 0
+      else if t == c_schar then
+        mpz_cmp_si(mpz, -128) >= 0 && mpz_cmp_si(mpz, 127) <= 0
+      else if t == c_uchar then
+        mpz_cmp_ui(mpz, 0) >= 0 && mpz_cmp_ui(mpz, 255) <= 0
+      else
+        false;
+  }
 
   // Miscellaneous Functions
+  /* Test whether a :record:`bigint` will fit into
+    one of the standard integer types
+
+    :arg t: The Integral type to check against.
+    :type t: `integral`
+  */
+  proc bigint.fitsInto(type t: integral): bool {
+    if _local {
+      return fits_into(this.mpz, t);
+    } else if this.localeId == chpl_nodeID {
+      return fits_into(this.mpz, t);
+    } else {
+      var t_ = this;
+
+      return fits_into(t_.mpz, t);
+    }
+  }
+
+  deprecated "`fits_ulong_p` is deprecated -  please use `bigint.fitsInto(c_ulong)` instead"
   proc bigint.fits_ulong_p() : int {
     var ret: c_int;
 
@@ -3994,6 +4033,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_slong_p` is deprecated -  please use `bigint.fitsInto(c_long)` instead"
   proc bigint.fits_slong_p() : int {
     var ret: c_int;
 
@@ -4012,6 +4052,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_uint_p` is deprecated -  please use `bigint.fitsInto(c_uint)` instead"
   proc bigint.fits_uint_p() : int {
     var ret: c_int;
 
@@ -4030,6 +4071,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_sint_p` is deprecated -  please use `bigint.fitsInto(c_int)` instead"
   proc bigint.fits_sint_p() : int {
     var ret: c_int;
 
@@ -4048,6 +4090,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_ushort_p` is deprecated -  please use `bigint.fitsInto(c_ushort)` instead"
   proc bigint.fits_ushort_p() : int {
     var ret: c_int;
 
@@ -4066,6 +4109,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  deprecated "`fits_sshort_p` is deprecated -  please use `bigint.fitsInto(c_short)` instead"
   proc bigint.fits_sshort_p() : int {
     var ret: c_int;
 
