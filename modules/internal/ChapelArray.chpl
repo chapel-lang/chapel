@@ -1745,7 +1745,7 @@ module ChapelArray {
     }
 
     /* Return the number of times ``val`` occurs in the array. */
-    deprecated "'count' is deprecated"
+    deprecated "'count' is deprecated use '+ reduce (A == val)' instead"
     proc count(val: this.eltType): int {
       return + reduce (this == val);
     }
