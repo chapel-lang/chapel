@@ -109,7 +109,6 @@ local subdomains:
 is empty: false
 head: 1.8
 tail: 49.8
-find last: (true, (7, 7))
 count last: 1
 equals same: true
 equals diff: false
