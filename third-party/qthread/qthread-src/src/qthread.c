@@ -829,6 +829,11 @@ int API_FUNC qthread_initialize(void)
     qt_internal_alignment_init();
     qt_hash_initialize_subsystem();
 
+#ifndef QTHREAD_NO_ASSERTS
+    qthread_library_initialized = 1;
+    MACHINE_FENCE;
+#endif
+
     qt_topology_init(&nshepherds,
                      &nworkerspershep,
                      &hw_par);
@@ -936,10 +941,7 @@ int API_FUNC qthread_initialize(void)
     }
     qaffinity = qt_internal_get_env_bool("AFFINITY", 1);
     qthread_debug(AFFINITY_DETAILS, "qaffinity = %i\n", qaffinity);
-#ifndef QTHREAD_NO_ASSERTS
-    qthread_library_initialized = 1;
-    MACHINE_FENCE;
-#endif
+
     {
         int ret = qt_affinity_gendists(qlib->shepherds, nshepherds);
         if (ret != QTHREAD_SUCCESS) {
