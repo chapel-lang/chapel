@@ -422,7 +422,7 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
   err_out = sys_accept(socketFd, client_addr, fdOut);
   // if error is not about blocking, throw error
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
-    throw SystemError.fromSyserr(err_out, "accept() failed");
+    throw fromSyserr(err_out, "accept() failed");
   }
   // successfully return file
   if err_out == 0 {
@@ -450,7 +450,7 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
     t.stop();
     // if error was timeout throw error
     if retval & EV_TIMEOUT != 0 {
-      throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
+      throw fromSyserr(ETIMEDOUT, "accept() timed out");
     }
     var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
     // try accept again
@@ -458,7 +458,7 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
     if err_out != 0 {
       // error was not about blocking wait so throw it
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
-        throw SystemError.fromSyserr(err_out, "accept() failed");
+        throw fromSyserr(err_out, "accept() failed");
       }
       // no indefinitely blocking wait
       if timeout.tv_sec != -1 {
@@ -470,7 +470,7 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
           timeout.tv_sec = remainingSeconds;
           timeout.tv_usec = remainingMicroSeconds;
         }
-        throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
+        throw fromSyserr(ETIMEDOUT, "accept() timed out");
       }
     }
   }
@@ -487,7 +487,7 @@ proc tcpListener.accept(timeout: real): tcpConn throws {
 proc ref tcpListener.close() throws {
   var err_out = sys_close(this.socketFd);
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "Failed to close tcpListener");
+    throw fromSyserr(err_out, "Failed to close tcpListener");
   }
   this.socketFd = -1;
 }
@@ -580,7 +580,7 @@ proc listen(in address: ipAddr, reuseAddr: bool = true,
   bind(socketFd, address, reuseAddr);
   var err_out = sys_listen(socketFd, backlog:c_int);
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "Failed to listen on socket");
+    throw fromSyserr(err_out, "Failed to listen on socket");
   }
   const listener = new tcpListener(socketFd);
   return listener;
@@ -613,7 +613,7 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
   var err_out = sys_connect(socketFd, address._addressStorage);
   if err_out != 0 && err_out != EINPROGRESS {
     sys_close(socketFd);
-    throw SystemError.fromSyserr(err_out,"connect() failed");
+    throw fromSyserr(err_out,"connect() failed");
   }
   if err_out == 0 {
     setBlocking(socketFd, true);
@@ -632,12 +632,12 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
   }
   var retval = localSync$.readFE();
   if retval & EV_TIMEOUT != 0 {
-    throw SystemError.fromSyserr(ETIMEDOUT, "connect() timed out");
+    throw fromSyserr(ETIMEDOUT, "connect() timed out");
   }
   err_out = sys_connect(socketFd, address._addressStorage);
   if err_out != 0 {
     sys_close(socketFd);
-    throw SystemError.fromSyserr(err_out,"connect() failed");
+    throw fromSyserr(err_out,"connect() failed");
   }
   setBlocking(socketFd, true);
   return openfd(socketFd):tcpConn;
@@ -771,7 +771,7 @@ proc udpSocket.addr throws {
 proc udpSocket.close throws {
   var err_out = sys_close(this.socketFd);
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "Failed to close udpSocket");
+    throw fromSyserr(err_out, "Failed to close udpSocket");
   }
 }
 
@@ -810,7 +810,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
   }
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
     c_free(buffer);
-    throw SystemError.fromSyserr(err_out,"recv failed");
+    throw fromSyserr(err_out,"recv failed");
   }
   var localSync$: sync c_short;
   var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
@@ -830,14 +830,14 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
     t.stop();
     if retval & EV_TIMEOUT != 0 {
       c_free(buffer);
-      throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
+      throw fromSyserr(ETIMEDOUT, "recv timed out");
     }
     var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
     err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:c_size_t, 0, addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
         c_free(buffer);
-        throw SystemError.fromSyserr(err_out,"recv failed");
+        throw fromSyserr(err_out,"recv failed");
       }
       if timeout.tv_sec == -1 {
         var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
@@ -848,7 +848,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
           timeout.tv_usec = remainingMicroSeconds;
         }
         c_free(buffer);
-        throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
+        throw fromSyserr(ETIMEDOUT, "recv timed out");
       }
     }
   }
@@ -921,7 +921,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
     return length;
   }
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
-    throw SystemError.fromSyserr(err_out, "send failed");
+    throw fromSyserr(err_out, "send failed");
   }
   var localSync$: sync c_short;
   var internalEvent = event_new(event_loop_base, this.socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
@@ -933,18 +933,18 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
     t.start();
     err_out = event_add(internalEvent, if timeout.tv_sec == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
-      throw SystemError.fromSyserr(err_out, "send failed");
+      throw fromSyserr(err_out, "send failed");
     }
     var retval = localSync$.readFE();
     t.stop();
     if retval & EV_TIMEOUT != 0 {
-      throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
+      throw fromSyserr(ETIMEDOUT, "send timed out");
     }
     var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
     err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
-        throw SystemError.fromSyserr(err_out, "send failed");
+        throw fromSyserr(err_out, "send failed");
       }
       if timeout.tv_sec == -1 {
         var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
@@ -954,7 +954,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
           timeout.tv_sec = remainingSeconds;
           timeout.tv_usec = remainingMicroSeconds;
         }
-        throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
+        throw fromSyserr(ETIMEDOUT, "send timed out");
       }
     }
   }
@@ -986,7 +986,7 @@ proc setSockOpt(socketFd: fd_t, level: c_int, optname: c_int, ref value: c_int) 
   var ptroptval = c_ptrTo(value);
   var err_out = sys_setsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "Failed to set socket option");
+    throw fromSyserr(err_out, "Failed to set socket option");
   }
 }
 
@@ -1022,7 +1022,7 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) t
   var ptroptval = value.c_str();
   var err_out = sys_setsockopt(socketFd, level, optname, ptroptval, optlen);
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "Failed to set socket option");
+    throw fromSyserr(err_out, "Failed to set socket option");
   }
 }
 
@@ -1054,7 +1054,7 @@ pragma "no doc"
 proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, value:nothing, optlen:socklen_t) throws {
   var err_out = sys_setsockopt(socketFd, level, optname, nil, optlen);
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "Failed to set socket option");
+    throw fromSyserr(err_out, "Failed to set socket option");
   }
 }
 
@@ -1088,7 +1088,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int) throws {
   var optlen = sizeof(optval):socklen_t;
   var err_out = sys_getsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "Failed to get socket option");
+    throw fromSyserr(err_out, "Failed to get socket option");
   }
   return optval;
 }
@@ -1126,7 +1126,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) t
     var err_out = sys_getsockopt(socketFd, level, optname, buffer:c_void_ptr, len);
     if err_out != 0 {
       c_free(buffer);
-      throw SystemError.fromSyserr(err_out, "Failed to get socket option");
+      throw fromSyserr(err_out, "Failed to get socket option");
     }
     return createBytesWithOwnedBuffer(buffer, len, buflen);
   }
@@ -1159,7 +1159,7 @@ proc getPeerName(socketFD: fd_t) throws {
   var addressStorage = new sys_sockaddr_t();
   var err = sys_getpeername(socketFD, addressStorage);
   if err != 0 {
-    throw SystemError.fromSyserr(err, "Failed to get remote address");
+    throw fromSyserr(err, "Failed to get remote address");
   }
   return new ipAddr(addressStorage);
 }
@@ -1186,7 +1186,7 @@ proc getSockName(socketFD: fd_t) throws {
   var addressStorage = new sys_sockaddr_t();
   var err = sys_getsockname(socketFD, addressStorage);
   if err != 0 {
-    throw SystemError.fromSyserr(err, "Failed to get local address");
+    throw fromSyserr(err, "Failed to get local address");
   }
   return new ipAddr(addressStorage);
 }
@@ -1213,7 +1213,7 @@ proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, proto
   var socketFd: c_int;
   var err = sys_socket(family:c_int, sockType, protocol:c_int, socketFd);
   if err != 0 {
-    throw SystemError.fromSyserr(err, "Failed to create socket");
+    throw fromSyserr(err, "Failed to create socket");
   }
   return socketFd;
 }
@@ -1223,7 +1223,7 @@ proc setBlocking(socketFd: fd_t, blocking: bool) throws {
   var flags:c_int;
   var err = sys_fcntl(socketFd, F_GETFL, flags);
   if err != 0 {
-    throw SystemError.fromSyserr(err, "Failed to get socket flags");
+    throw fromSyserr(err, "Failed to get socket flags");
   }
   if blocking {
     flags &= ~OS.POSIX.O_NONBLOCK;
@@ -1233,7 +1233,7 @@ proc setBlocking(socketFd: fd_t, blocking: bool) throws {
   }
   err = sys_fcntl_long(socketFd, F_SETFL, flags, flags);
   if err != 0 {
-    throw SystemError.fromSyserr(err, "Failed to make socket non blocking");
+    throw fromSyserr(err, "Failed to make socket non blocking");
   }
 }
 
@@ -1243,7 +1243,7 @@ proc bind(socketFd:fd_t, ref address: ipAddr, reuseAddr = true) throws {
   setSockOpt(socketFd, SOL_SOCKET, SO_REUSEADDR, enable);
   var err = sys_bind(socketFd, address._addressStorage);
   if err != 0 {
-    throw SystemError.fromSyserr(err, "Failed to bind Socket");
+    throw fromSyserr(err, "Failed to bind Socket");
   }
 }
 

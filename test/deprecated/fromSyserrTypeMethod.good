@@ -1,0 +1,2 @@
+fromSyserrTypeMethod.chpl:4: warning: SystemError.fromSyserr' is deprecated. Please use 'fromSyserr' instead
+fromSyserrTypeMethod.chpl:5: warning: 'SystemError.fromSyserr' is deprecated. Please use 'fromSyserr' instead
