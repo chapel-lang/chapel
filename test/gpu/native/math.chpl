@@ -151,10 +151,14 @@ foreach i in r do R[0] = gcd(i16,i16); R[1] = gcd(i16,i16); check(R,"gcd(i16,i16
 foreach i in r do R[0] = gcd(i32,i32); R[1] = gcd(i32,i32); check(R,"gcd(i32,i32)");
 foreach i in r do R[0] = gcd(i64,i64); R[1] = gcd(i64,i64); check(R,"gcd(i64,i64)");
 
-/* TODO: these use macro wrappers. There are others, too.
 foreach i in r do  B[0] =  isfinite(r32);   B[1] =  isfinite(r32);  check(B,"isfinite(r32)");
 foreach i in r do  B[0] =  isfinite(r64);   B[1] =  isfinite(r64);  check(B,"isfinite(r64)");
-*/
+
+foreach i in r do  B[0] =  isinf(r32);   B[1] =  isinf(r32);  check(B,"isinf(r32)");
+foreach i in r do  B[0] =  isinf(r64);   B[1] =  isinf(r64);  check(B,"isinf(r64)");
+
+foreach i in r do  B[0] =  isnan(r32);   B[1] =  isnan(r32);  check(B,"isnan(r32)");
+foreach i in r do  B[0] =  isnan(r64);   B[1] =  isnan(r64);  check(B,"isnan(r64)");
 
 foreach i in r do  R[0] = ldexp(r32,i32);   R[1] =  ldexp(r32,i32);  check(R,"ldexp(r32,i32)");
 foreach i in r do  R[0] = ldexp(r64,i32);   R[1] =  ldexp(r64,i32);  check(R,"ldexp(r64,i32)");
@@ -191,7 +195,6 @@ foreach i in r do  R[0] = log2(u32);   R[1] = log2(u32);  check(R,"log2(u32)");
 foreach i in r do  R[0] = log2(u64);   R[1] = log2(u64);  check(R,"log2(u64)");
 */
 
-/* TODO macro wrapper support
 foreach i in r do  R[0] = max(i8 ,i8 );   R[1] = max(i8 ,i8 );  check(R,"max(i8 ,i8 )");
 foreach i in r do  R[0] = max(i16,i16);   R[1] = max(i16,i16);  check(R,"max(i16,i16)");
 foreach i in r do  R[0] = max(i32,i32);   R[1] = max(i32,i32);  check(R,"max(i32,i32)");
@@ -212,7 +215,6 @@ foreach i in r do  R[0] = min(u32,u32);   R[1] = min(u32,u32);  check(R,"min(u32
 foreach i in r do  R[0] = min(u64,u64);   R[1] = min(u64,u64);  check(R,"min(u64,u64)");
 foreach i in r do  R[0] = min(r32,r32);   R[1] = min(r32,r32);  check(R,"min(r32,r32)");
 foreach i in r do  R[0] = min(r64,r64);   R[1] = min(r64,r64);  check(R,"min(r64,r64)");
-*/
 
 foreach i in r do  R[0] = mod(i8 ,i8 );   R[1] = mod(i8 ,i8 );  check(R,"mod(i8 ,i8 )");
 foreach i in r do  R[0] = mod(i16,i16);   R[1] = mod(i16,i16);  check(R,"mod(i16,i16)");
@@ -245,6 +247,9 @@ foreach i in r do  R[0] = sgn(u64);   R[1] = sgn(u64);  check(R,"sgn(u64)");
 foreach i in r do  R[0] = sgn(r32);   R[1] = sgn(r32);  check(R,"sgn(r32)");
 foreach i in r do  R[0] = sgn(r64);   R[1] = sgn(r64);  check(R,"sgn(r64)");
 
+foreach i in r do  B[0] =  signbit(r32);   B[1] =  signbit(r32);  check(B,"signbit(r32)");
+foreach i in r do  B[0] =  signbit(r64);   B[1] =  signbit(r64);  check(B,"signbit(r64)");
+
 foreach i in r do  R[0] =  sin(r32);   R[1] =  sin(r32);  check(R,"sin(r32)");
 foreach i in r do  R[0] =  sin(r64);   R[1] =  sin(r64);  check(R,"sin(r64)");
 foreach i in r do  R[0] =  sinh(r32);   R[1] =  sinh(r32);  check(R,"sinh(r32)");
@@ -264,7 +269,6 @@ foreach i in r do  R[0] =  tgamma(r64);   R[1] =  tgamma(r64);  check(R,"tgamma(
 foreach i in r do  R[0] =  trunc(r32);   R[1] =  trunc(r32);  check(R,"trunc(r32)");
 foreach i in r do  R[0] =  trunc(r64);   R[1] =  trunc(r64);  check(R,"trunc(r64)");
 
-/* TODO macro wrapper support
 foreach i in r do  R[0] =  j0(r32);   R[1] =  j0(r32);  check(R,"j0(r32)");
 foreach i in r do  R[0] =  j0(r64);   R[1] =  j0(r64);  check(R,"j0(r64)");
 foreach i in r do  R[0] =  j1(r32);   R[1] =  j1(r32);  check(R,"j1(r32)");
@@ -278,7 +282,6 @@ foreach i in r do  R[0] =  y1(r32);   R[1] =  y1(r32);  check(R,"y1(r32)");
 foreach i in r do  R[0] =  y1(r64);   R[1] =  y1(r64);  check(R,"y1(r64)");
 foreach i in r do  R[0] =  yn(2,r32);   R[1] =  yn(2,r32);  check(R,"yn(2,r32)");
 foreach i in r do  R[0] =  yn(2,r64);   R[1] =  yn(2,r64);  check(R,"yn(2,r64)");
-*/
 
   stopGPUDiagnostics();
 }
