@@ -4228,7 +4228,6 @@ void makeBinaryLLVM(void) {
                                                  asmFileType,
                                                  disableVerify);
 
-        //emitPM.run(*compositeModule);
         emitPM.run(*info->module);
 
       }
