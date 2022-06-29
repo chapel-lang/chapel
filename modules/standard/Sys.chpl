@@ -388,8 +388,6 @@ module Sys {
   deprecated "'Sys.sys_in6_addr_t' is deprecated; please use 'Socket.sys_in6_addr_t' instead"
   extern type sys_in6_addr_t;
 
-  
-
   extern type sys_sockaddr_storage_t;
   /* The type corresponding to C's socklen_t */
   extern type socklen_t = int(32);
@@ -522,6 +520,8 @@ module Sys {
     var ai_addrlen: socklen_t;
     var ai_next: c_ptr(sys_addrinfo_t);
   }
+
+  // only used in Socket - deprecating and moving there as a private type
   type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
 
   proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }
@@ -532,7 +532,7 @@ module Sys {
   // proc sys_addrinfo_ptr_t.canonname:c_string { return sys_getaddrinfo_canonname(this); }
   proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
 
-  // only used here - deprecating without replacement
+  // only used in implementation of 'sys_sockaddr_t' - deprecating and moving to Socket.chpl as private
   extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
   extern proc sys_getsockaddr_family(const ref addr: sys_sockaddr_t):c_int;
   extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
@@ -541,7 +541,6 @@ module Sys {
   extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
   extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
   extern proc sys_strerror(error:qio_err_t, ref string_out:c_string):qio_err_t;
-
   extern proc sys_readlink(path:c_string, ref string_out:c_string):qio_err_t;
 
   /*Check whether or not the environment variable ``name`` is defined.
@@ -560,29 +559,34 @@ module Sys {
    */
   deprecated "'Sys.sys_getenv' is deprecated; please use 'OS.sys_getenv' instead"
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+
   /* The type corresponding to C's mode_t */
+  // has replacement in OS.POSIX
   extern type mode_t = uint(32);
+
+  // not used outside of Sys - deprecating without replacement
   extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):qio_err_t;
   extern proc sys_close(fd:fd_t):qio_err_t;
 
   /* The type corresponding to C's off_t */
+  // has replacement in OS.POSIX
   extern type off_t = int(64);
 
   extern proc sys_mmap(addr:c_void_ptr, length:c_size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):qio_err_t;
   extern proc sys_munmap(addr:c_void_ptr, length:c_size_t):qio_err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
-  // - moved to Socket.chpl -
-  extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):qio_err_t;
-  extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):qio_err_t;
+
+  extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):qio_err_t; // -> socket
+  extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):qio_err_t; // -> socket
   extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):qio_err_t;
   extern proc sys_dup(oldfd:fd_t, ref fd_out:fd_t):qio_err_t;
   extern proc sys_dup2(oldfd:fd_t, newfd:fd_t, ref fd_out:fd_t):qio_err_t;
   extern proc sys_pipe(ref read_fd_out:fd_t, ref write_fd_out:fd_t):qio_err_t;
-  extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):qio_err_t;
-  extern proc sys_bind(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
-  extern proc sys_connect(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
-  extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):qio_err_t;
+  extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):qio_err_t; // -> socket
+  extern proc sys_bind(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t; // -> socket
+  extern proc sys_connect(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t; // -> socket
+  extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):qio_err_t; // -> socket
   extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
@@ -590,20 +594,20 @@ module Sys {
   extern proc sys_getaddrinfo_addrlen(res:sys_addrinfo_ptr_t):socklen_t;
   extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
   extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
-  extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
+  extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t); // -> socket
 
   extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:c_string, flags:c_int):qio_err_t;
-  extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
-  extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
+  extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t; // -> socket
+  extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t; // -> socket
 
   // TODO -- these should be generic, assuming caller knows what they
   // are doing.
-  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):qio_err_t;
-  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t;
+  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):qio_err_t; // -> socket
+  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t; // -> socket
 
-  extern proc sys_listen(sockfd:fd_t, backlog:c_int):qio_err_t;
+  extern proc sys_listen(sockfd:fd_t, backlog:c_int):qio_err_t; // -> socket
   extern proc sys_shutdown(sockfd:fd_t, how:c_int):qio_err_t;
-  extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t;
+  extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t; // -> socket
   extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:fd_t, ref sockfd_out_b:fd_t):qio_err_t;
 
   pragma "last resort"
@@ -612,8 +616,10 @@ module Sys {
     import OS.POSIX;
     return POSIX.fd_set;
   }
+
   extern type time_t = c_long;
   extern type suseconds_t = c_long;
+  // has replacement in OS.POSIX
   extern "struct timeval" record timeval {
      var tv_sec:time_t; // seconds
      var tv_usec:suseconds_t; // microseconds

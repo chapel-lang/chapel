@@ -418,6 +418,176 @@ extern const INADDR_LOOPBACK:sys_in_addr_t;
 extern const in6addr_any:sys_in6_addr_t;
 extern const in6addr_loopback:sys_in6_addr_t;
 
+// external functions for 'sys_sockaddr_t' implementation
+private extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
+private extern proc sys_getsockaddr_family(const ref addr: sys_sockaddr_t):c_int;
+private extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
+private extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint);
+private extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
+private extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
+private extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
+private extern proc sys_strerror(error:qio_err_t, ref string_out:c_string):qio_err_t;
+private extern proc sys_readlink(path:c_string, ref string_out:c_string):qio_err_t;
+
+// private types for 'sys_sockaddr_t' implementation
+private extern type sys_sockaddr_storage_t;
+private extern type socklen_t = int(32);
+
+extern record sys_sockaddr_t {
+  var addr:sys_sockaddr_storage_t;
+  var len:socklen_t;
+
+  proc init() {
+    this.complete();
+    sys_init_sys_sockaddr_t(this);
+  }
+
+  /*
+  Initialize sys_sockaddr_t with provided `family`, `host` and
+  `port`. `host` should be provided in standard notation as per
+  family. Note : `host` isn't resolved using DNS Lookup.
+
+  :arg host: hostname address in ipv4 or ipv6 string notation
+  :type host: `string`
+
+  :arg port: port number
+  :type port: `c_uint`
+
+  :arg family: domain of socket
+  :type family: `c_int`
+
+  :throws IllegalArgumentError: Upon failure to provide a compatible
+                                `host` and `family`.
+  */
+  pragma "no doc"
+  proc set(host: c_string, port: c_uint, family: c_int) throws {
+    var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
+    if err_out != 1 {
+      throw new IllegalArgumentError("Incompatible Address and Family");
+    }
+  }
+
+  /*
+  Initialize sys_sockaddr_t with provided `host` and
+  `port`. `host` should be one of the standard ipv4
+  addresses. family for socket address is assumed to be
+  `AF_INET` based on `host` address being ipv4.
+
+  :arg host: standard hostname address ipv6
+  :type host: `sys_in_addr_t`
+
+  :arg port: port number
+  :type port: `c_uint`
+  */
+  pragma "no doc"
+  proc set(host: sys_in_addr_t, port: c_uint) {
+    sys_set_sys_sockaddr_in_t(this, host, port);
+  }
+
+  /*
+  Initialize sys_sockaddr_t with provided `host` and
+  `port`. `host` should be one of the standard ipv6
+  addresses. family for socket address is assumed to be
+  `AF_INET6` based on `host` address being ipv6.
+
+  :arg host: standard hostname address ipv6
+  :type host: `sys_in6_addr_t`
+
+  :arg port: port number
+  :type port: `c_uint`
+  */
+  pragma "no doc"
+  proc set(host: sys_in6_addr_t, port: c_uint) {
+    sys_set_sys_sockaddr_in6_t(this, host, port);
+  }
+
+  /*
+  Returns the `host` address stored in record.
+
+  :return: Returns numeric host string.
+  :rtype: `string`
+
+  :throws Error: If record was uninitialized and has no information
+                  about `host` or `port`.
+  */
+  pragma "no doc"
+  proc const ref numericHost() throws {
+
+    var buffer = c_calloc(c_char, NI_MAXHOST);
+    var length:c_int;
+
+    var err_out = sys_host_sys_sockaddr_t(this, buffer, NI_MAXHOST, length);
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out);
+    }
+
+    return createStringWithOwnedBuffer(buffer, length, NI_MAXHOST);
+  }
+
+  /*
+  Returns the `port` stored in record.
+
+  :return: Returns numeric port.
+  :rtype: `c_uint`
+
+  :throws Error: If record was uninitialized and has no information
+                  about `host` or `port`.
+  */
+  pragma "no doc"
+  proc const ref port() throws {
+    var port:c_uint;
+
+    var err_out = sys_port_sys_sockaddr_t(this, port);
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out);
+    }
+
+    return port;
+  }
+}
+
+/*
+  Returns socket family.
+
+  :returns: a socket family
+  :rtype: `c_int`
+*/
+proc const ref sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
+
+extern "struct addrinfo" record sys_addrinfo_t {
+  var ai_flags: c_int;
+  var ai_family: c_int;
+  var ai_socktype: c_int;
+  var ai_protocol: c_int;
+  var ai_addrlen: socklen_t;
+  var ai_next: c_ptr(sys_addrinfo_t);
+}
+
+private type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
+
+proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }
+proc sys_addrinfo_ptr_t.family:c_int { return sys_getaddrinfo_family(this); }
+proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
+proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddrinfo_addr(this); }
+// Not supported yet
+// proc sys_addrinfo_ptr_t.canonname:c_string { return sys_getaddrinfo_canonname(this); }
+proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
+
+
+private extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):qio_err_t;
+private extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):qio_err_t;
+private extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):qio_err_t;
+private extern proc sys_bind(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
+private extern proc sys_connect(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
+private extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):qio_err_t;
+private extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
+private extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
+private extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
+private extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):qio_err_t;
+private extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t;
+private extern proc sys_listen(sockfd:fd_t, backlog:c_int):qio_err_t;
+private extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t;
+
 pragma "no doc"
 var event_loop_base:c_ptr(event_base);
 
