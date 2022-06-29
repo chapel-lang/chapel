@@ -421,10 +421,11 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
   auto usedId = nameToConfigSettingId(context(), configNameUsed);
 
   if (usedId != var->id()) {
-    auto errorMessage = ErrorMessage::error(var,
+    auto errorMessage = ErrorMessage::error(notedLocations_[var],
         "ambiguous config name (%s)", configNameUsed.c_str());
-    auto noteOtherLoc = ErrorMessage::note(usedId, "also defined here");
-    auto noteDisambiguate = ErrorMessage::note(usedId,
+    auto noteOtherLoc = ErrorMessage::note(idToLocation_[usedId],
+        "also defined here");
+    auto noteDisambiguate = ErrorMessage::note(idToLocation_[usedId],
         "(disambiguate using -s<modulename>.%s...)", configNameUsed.c_str());
     errorMessage.addDetail(noteOtherLoc);
     errorMessage.addDetail(noteDisambiguate);
@@ -471,7 +472,7 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
       if (!configMatched.first.empty() &&
           configMatched.first != configPair.first) {
 
-        auto errorMessage = ErrorMessage::error(var,
+        auto errorMessage = ErrorMessage::error(notedLocations_[var],
             "config set ambiguously via '-s%s' and '-s%s'",
             configMatched.first.c_str(), configPair.first.c_str());
         addError(std::move(errorMessage));
