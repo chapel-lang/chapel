@@ -1,0 +1,11 @@
+uint-range-strided-by-int.chpl:3: error: ambiguous call 'chpl_direct_range_iter(uint(8), uint(8), int(64))'
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note: candidates are: chpl_direct_range_iter(low, high, stride)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_direct_range_iter(low: int(64), high: int(64), stride: int(64))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_direct_range_iter(low: uint(64), high: uint(64), stride: int(64))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_direct_range_iter(low: int(16), high: int(16), stride)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_direct_range_iter(low: int(32), high: int(32), stride)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_direct_range_iter(low: int(64), high: int(64), stride)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_direct_range_iter(low: uint(8), high: uint(8), stride)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_direct_range_iter(low: uint(16), high: uint(16), stride)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_direct_range_iter(low: uint(32), high: uint(32), stride)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_direct_range_iter(low: uint(64), high: uint(64), stride)
