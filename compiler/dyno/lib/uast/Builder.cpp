@@ -195,12 +195,8 @@ void Builder::createImplicitModuleIfNeeded() {
     // emit warnings as needed
     if (containsUseImportOrRequire && !containsOther && nModules == 1) {
       const char* stmtKind = "require', 'use', and/or 'import";
-
-      printf("%s", lastModule->name().c_str());
-      printf("%s", filepath_.c_str());
-      printf("%s", stmtKind);
-
-      addError(ErrorMessage::warning(lastModule,
+      Location lastModuleLoc = notedLocations_[lastModule];
+      addError(ErrorMessage::warning(lastModuleLoc,
                "as written, '%s' is a sub-module of the module created for "
                "file '%s' due to the file-level '%s' statements.  If you "
                "meant for '%s' to be a top-level module, move the '%s' "
@@ -211,7 +207,8 @@ void Builder::createImplicitModuleIfNeeded() {
                lastModule->name().c_str(),
                stmtKind));
     } else if (nModules >= 1 && !containsOnlyModules) {
-      addError(ErrorMessage::warning(firstNonModule,
+      Location firstNonModuleLoc = notedLocations_[firstNonModule];
+      addError(ErrorMessage::warning(firstNonModuleLoc,
                "This file-scope code is outside of any "
                "explicit module declarations (e.g., module %s), "
                "so an implicit module named '%s' is being "
