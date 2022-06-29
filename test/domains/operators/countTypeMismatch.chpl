@@ -9,9 +9,9 @@ var A2: [D2] int = [(i,j) in D2] i*10 + j;
 config const c = 3, c2 = 4;
 
 writeln(D1#c);
-//writeln(D2#c);
+//writeln(D2#c);  // Error: can't apply scalar count to multidimensional domain
 writeln(D2#(c,c2));
 
 writeln(A1#c);
-//writeln(A2#c);
+//writeln(A2#c);  // Error: can't apply scalar count to multidimensional array
 writeln(A2#(c,c2));
