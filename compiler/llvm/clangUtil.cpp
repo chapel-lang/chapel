@@ -3739,16 +3739,6 @@ void addDumpIrPass(const PassManagerBuilder &Builder,
   PM.add(createDumpIrPass(llvmPrintIrStageNum));
 }
 
-std::set<std::string> preExternals;
-static bool mustPreserve(const llvm::GlobalValue& gv) {
-  if (preExternals.count(gv.getGlobalIdentifier()) > 0) {
-    return true;
-  }
-  else {
-    return false;
-  }
-}
-
 static void linkLibDevice() {
   GenInfo* info = gGenInfo;
 
@@ -3758,6 +3748,8 @@ static void linkLibDevice() {
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
   libdevice->setTargetTriple(Triple.getTriple());
   libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
+
+  std::set<std::string> preExternals;
   for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
     if (it->hasExternalLinkage()) {
       preExternals.insert(it->getGlobalIdentifier());
@@ -3766,7 +3758,9 @@ static void linkLibDevice() {
   llvm::Linker::linkModules(*info->module, std::move(libdevice),
                             llvm::Linker::Flags::LinkOnlyNeeded);
 
-  llvm::InternalizePass iPass(mustPreserve);
+  llvm::InternalizePass iPass([&preExternals](const llvm::GlobalValue& gv) {
+    return preExternals.count(gv.getGlobalIdentifier()) > 0;
+  });
   iPass.internalizeModule(*info->module);
 }
 
@@ -4217,7 +4211,6 @@ void makeBinaryLLVM(void) {
 
       llvm::CodeGenFileType asmFileType =
         llvm::CodeGenFileType::CGFT_AssemblyFile;
-
 
       linkLibDevice();
 
