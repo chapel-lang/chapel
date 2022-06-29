@@ -373,7 +373,7 @@ class Context {
     Sets the file path for the given module ID. This
     is suitable to call from a parse query.
    */
-  void setFilePathForModuleID(ID moduleID, UniqueString path);
+  void setFilePathForModuleId(ID moduleID, UniqueString path);
 
   /**
     This function increments the current revision number stored

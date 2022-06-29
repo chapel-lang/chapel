@@ -68,15 +68,15 @@ bool Builder::checkAllConfigVarsAssigned(Context* context) {
 
 static std::string filenameToModulename(const char* filename) {
   const char* moduleName = filename;
-  const char* firstSlash = strrchr(moduleName, '/');
+  const char* lastSlash = strrchr(moduleName, '/');
 
-  if (firstSlash) {
-    moduleName = firstSlash + 1;
+  if (lastSlash) {
+    moduleName = lastSlash + 1;
   }
 
-  const char* firstPeriod = strrchr(moduleName, '.');
-  if (firstPeriod) {
-    return std::string(moduleName, firstPeriod-moduleName);
+  const char* lastPeriod = strrchr(moduleName, '.');
+  if (lastPeriod) {
+    return std::string(moduleName, lastPeriod-moduleName);
   } else {
     return std::string(moduleName);
   }
@@ -271,21 +271,26 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   if (newScope) {
     // for scoping constructs, adjust the symbolPath and
     // then visit the defined symbol
-    UniqueString name = ast->toNamedDecl()->name();
+    UniqueString declName = ast->toNamedDecl()->name();
     int repeat = 0;
 
-    auto search = duplicates.find(name);
+    auto search = duplicates.find(declName);
     if (search != duplicates.end()) {
       // it's already there, so increment the repeat counter
       repeat = search->second;
       repeat++;
       search->second = repeat;
     } else {
-      duplicates.insert(search, std::make_pair(name, 0));
+      duplicates.insert(search, std::make_pair(declName, 0));
     }
 
+    // compute an escaped version of the name
+    // (in case it contains special characters used in ID like . and #)
+    std::string quotedNameString = escapeStringId(declName.c_str());
+    auto quotedName = UniqueString::get(context_, quotedNameString);
+
     // push the path component
-    pathVec.push_back(std::make_pair(name, repeat));
+    pathVec.push_back(std::make_pair(quotedName, repeat));
 
     // compute the string representing the path
     std::string pathStr;

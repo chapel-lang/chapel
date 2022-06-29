@@ -153,7 +153,7 @@ void BuilderResult::updateFilePaths(Context* context,
   // Update the filePathForModuleName query
   for (auto & ast : keep.topLevelExpressions_) {
     if (const Module* mod = ast->toModule()) {
-      context->setFilePathForModuleID(mod->id(), path);
+      context->setFilePathForModuleId(mod->id(), path);
     }
   }
 }

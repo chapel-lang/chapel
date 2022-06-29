@@ -36,6 +36,7 @@ class Context;
 class ID final {
  private:
   // A path to the symbol, e.g. MyModule#0.MyFunction#1
+  // Note that this is escaped (\. and \# are not the same as . and #)
   UniqueString symbolPath_;
 
   // Within that symbol, what is the number of this node in
@@ -128,6 +129,11 @@ class ID final {
       result  > 0 if this > other
    */
   int compare(const ID& other) const;
+
+  /** Given a symbol path, return the parent symbol path.
+      Returns an empty string if the symbol path was empty string.
+    */
+  static UniqueString parentSymbolPath(Context*, UniqueString symbolPath);
 
   /**
     Given a symbol path, expand it into a vector

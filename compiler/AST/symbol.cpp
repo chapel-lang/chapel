@@ -1409,69 +1409,6 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
-std::string unescapeString(const char* const str, BaseAST *astForError) {
-  std::string newString = "";
-  char nextChar;
-  int pos = 0;
-
-  while((nextChar = str[pos++]) != '\0') {
-    if(nextChar != '\\') {
-      newString += nextChar;
-      continue;
-    }
-
-    // handle \ escapes
-    nextChar = str[pos++];
-    switch(nextChar) {
-      case '\'':
-      case '\"':
-      case '?':
-      case '\\':
-        newString += nextChar;
-        break;
-      case 'a':
-        newString += '\a';
-        break;
-      case 'b':
-        newString += '\b';
-        break;
-      case 'f':
-        newString += '\f';
-        break;
-      case 'n':
-        newString += '\n';
-        break;
-      case 'r':
-        newString += '\r';
-        break;
-      case 't':
-        newString += '\t';
-        break;
-      case 'v':
-        newString += '\v';
-        break;
-      case 'x':
-        {
-          char buf[3];
-          long num;
-          buf[0] = buf[1] = buf[2] = '\0';
-          if (str[pos] && isxdigit(str[pos])) {
-              buf[0] = str[pos++];
-              if( str[pos] && isxdigit(str[pos]))
-                buf[1] = str[pos++];
-          }
-          num = strtol(buf, NULL, 16);
-          newString += (char) num;
-        }
-        break;
-      default:
-        USR_FATAL(astForError, "Unexpected string escape: '\\%c'",  nextChar);
-        break;
-    }
-  }
-  return newString;
-}
-
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 
@@ -1544,7 +1481,7 @@ void createInitStringLiterals() {
 
     // unescape the string and compute its length
     std::string unescapedString =
-      unescapeString(s->immediate->to_string().c_str(), s);
+      chpl::unescapeStringC(s->immediate->to_string());
     int64_t numCodepoints = 0;
 
     if (s->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
@@ -1643,7 +1580,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   s->immediate = new Immediate;
   *s->immediate = imm;
 
-  std::string unescapedString = unescapeString(str, s);
+  std::string unescapedString = chpl::unescapeStringC(str);
   int64_t numCodepoints = 0;
   const bool ret = isValidString(unescapedString, &numCodepoints);
   if (!ret) {

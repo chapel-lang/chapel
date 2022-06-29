@@ -26,26 +26,44 @@
 namespace chpl {
 
 
+UniqueString ID::parentSymbolPath(Context* context, UniqueString symbolPath) {
+
+  // If the symbol path is empty, return an empty string
+  if (symbolPath.isEmpty()) {
+    return UniqueString();
+  }
+
+  // remove the last '.' component from the ID but don't count \.
+  const char* path = symbolPath.c_str();
+  ssize_t lastDot = -1;
+  for (ssize_t i = 1; path[i]; i++) {
+    if (path[i] == '.' && path[i-1] != '\\')
+      lastDot = i;
+  }
+
+  if (lastDot == -1) {
+    // no path component to remove, so return an empty string
+    return UniqueString();
+  }
+
+  // Otherwise, construct a UniqueString for the parent symbol path
+  return UniqueString::get(context, path, lastDot);
+}
+
 ID ID::parentSymbolId(Context* context) const {
   if (postOrderId_ >= 0) {
     // Create an ID with postorder id -1 instead
     return ID(symbolPath_, -1, 0);
   }
 
-  // remove the last '.' component from the ID
-  const char* path = symbolPath_.c_str();
-  ssize_t lastDot = -1;
-  for (ssize_t i = 0; path[i]; i++) {
-    if (path[i] == '.') lastDot = i;
-  }
-
-  if (lastDot == -1) {
-    // no path component to remove, so return an empty ID
+  UniqueString parentSymPath = ID::parentSymbolPath(context, symbolPath_);
+  if (parentSymPath.isEmpty()) {
+    // no parent symbol path so return an empty ID
     return ID();
   }
 
   // Otherwise, construct an ID for the parent symbol
-  return ID(UniqueString::get(context, path, lastDot), -1, 0);
+  return ID(parentSymPath, -1, 0);
 }
 
 bool ID::contains(const ID& other) const {
@@ -87,7 +105,25 @@ ID::expandSymbolPath(Context* context, UniqueString symbolPath) {
 
   const char* s = symbolPath.c_str();
   while (s && s[0] != '\0') {
-    const char* nextPeriod = strchr(s, '.');
+    const char* nextPeriod = nullptr;
+    // find the next period, but don't count \.
+    {
+      const char* p = s;
+      char cur = 0;
+      char last = 0;
+      while (true) {
+        cur = *p;
+        if (cur == '\0') {
+          break; // end of string
+        }
+        if (cur == '.' && last != '\\') {
+          nextPeriod = p;
+          break; // found the period
+        }
+        last = cur;
+        p++;
+      }
+    }
 
     // compute location of the null byte or just after the next '.'
     const char* next = nullptr;
@@ -99,12 +135,19 @@ ID::expandSymbolPath(Context* context, UniqueString symbolPath) {
       next = nextPeriod + 1;
     }
 
-    // if there is a '#' in s+1..next, find it
-    // start at s+1 to handle e.g. an ID for a # (range count) operator
+    // if there is a '#' in s..next, find it,
+    // but don't count \#
     const char* nextPound = nullptr;
-    for (const char* p = s+1; p < next; p++) {
-      if (*p == '#') {
-        nextPound = p;
+    {
+      char cur = 0;
+      char last = 0;
+      for (const char* p = s; p < next; p++) {
+        cur = *p;
+        if (cur == '#' && last != '\\') {
+          nextPound = p;
+          break;
+        }
+        last = cur;
       }
     }
 

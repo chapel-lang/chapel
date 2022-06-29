@@ -396,29 +396,6 @@ const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
   return QUERY_END(result);
 }
 
-static UniqueString removeLastSymbolPathComponent(Context* context,
-                                                  UniqueString str) {
-
-  // If the symbol path is empty, return an empty string
-  if (str.isEmpty()) {
-    UniqueString empty;
-    return empty;
-  }
-
-  // Otherwise, remove the last path component
-  const char* s = str.c_str();
-  int len = strlen(s);
-  int lastDot = 0;
-  for (int i = len-1; i >= 0; i--) {
-    if (s[i] == '.') {
-      lastDot = i;
-      break;
-    }
-  }
-
-  return UniqueString::get(context, s, lastDot);
-}
-
 bool Context::filePathForId(ID id,
                             UniqueString& pathOut,
                             UniqueString& parentSymbolPathOut) {
@@ -432,12 +409,12 @@ bool Context::filePathForId(ID id,
 
     if (got) {
       pathOut = filePathForModuleIdSymbolPathQuery(this, symbolPath);
-      parentSymbolPathOut = removeLastSymbolPathComponent(this, symbolPath);
+      parentSymbolPathOut = ID::parentSymbolPath(this, symbolPath);
       return true;
     }
 
     // remove the last path component, e.g. M.N -> M
-    symbolPath = removeLastSymbolPathComponent(this, symbolPath);
+    symbolPath = ID::parentSymbolPath(this, symbolPath);
   }
 
   pathOut = UniqueString::get(this, "<unknown file path>");
@@ -445,7 +422,7 @@ bool Context::filePathForId(ID id,
   return false;
 }
 
-void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
+void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
   UniqueString moduleIdSymbolPath = moduleID.symbolPath();
   auto tupleOfArgs = std::make_tuple(moduleIdSymbolPath);
 

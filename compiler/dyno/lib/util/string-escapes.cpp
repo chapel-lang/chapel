@@ -35,7 +35,7 @@ static char toHex(char c) {
 }
 
 static void addCharEscapeNonprint(std::string& s, char c) {
-  int escape  = !(isascii(c) && isprint(c));
+  int escape = !(isascii(c) && isprint(c));
   //
   // If the previous character sequence was a hex escape and the current
   // character is a hex digit, escape it also.  Otherwise, conforming
@@ -62,6 +62,7 @@ static void addCharEscapeNonprint(std::string& s, char c) {
 }
 
 // Convert C escape characters into two characters: '\\' and the other character
+// appends the result of escaping 'c' to 's'
 static void addCharEscapingC(std::string& s, char c) {
   switch (c) {
     case '\"' :
@@ -110,12 +111,193 @@ static void addCharEscapingC(std::string& s, char c) {
   }
 }
 
-std::string quoteStringForC(const std::string& unescaped) {
-  std::string s;
-  for (char c : unescaped) {
-    addCharEscapingC(s, c);
+// handles one character / escape from the beginning of 'str'
+//  (e.g. \xff would be more than one byte)
+// appends the result of unescaping to s
+// returns the number of bytes processed from input
+static ssize_t addCharUnescapingC(std::string& newString, const char* str) {
+  ssize_t pos = 0;
+  char nextChar = str[pos++];
+  if (nextChar == '\0') {
+    return 0;
   }
-  return s;
+
+  if(nextChar != '\\') {
+    newString.push_back(nextChar);
+    return pos;
+  }
+
+  // handle \ escapes
+  nextChar = str[pos++];
+
+  switch (nextChar) {
+    case '\'':
+    case '\"':
+    case '?':
+    case '\\':
+      newString.push_back(nextChar);
+      break;
+    case 'a':
+      newString.push_back('\a');
+      break;
+    case 'b':
+      newString.push_back('\b');
+      break;
+    case 'f':
+      newString.push_back('\f');
+      break;
+    case 'n':
+      newString.push_back('\n');
+      break;
+    case 'r':
+      newString.push_back('\r');
+      break;
+    case 't':
+      newString.push_back('\t');
+      break;
+    case 'v':
+      newString.push_back('\v');
+      break;
+    case 'x':
+      {
+        char buf[3];
+        long num;
+        buf[0] = buf[1] = buf[2] = '\0';
+        if (str[pos] && isxdigit(str[pos])) {
+            buf[0] = str[pos++];
+            if( str[pos] && isxdigit(str[pos]))
+              buf[1] = str[pos++];
+        }
+        num = strtol(buf, NULL, 16);
+        newString.push_back((char) num);
+      }
+      break;
+    default:
+      // it's not a valid C escape so just pass it through
+      // if this should be an error, it needs to be caught elsewhere
+      newString.push_back('\\');
+      newString.push_back(nextChar);
+      break;
+  }
+
+  return pos;
+}
+
+std::string escapeStringC(const std::string& unescaped) {
+  std::string ret;
+  for (char c : unescaped) {
+    addCharEscapingC(ret, c);
+  }
+  return ret;
+}
+
+std::string escapeStringC(const char* unescaped) {
+  std::string ret;
+  if (unescaped == nullptr)
+    return ret;
+
+  for (ssize_t i = 0; unescaped[i] != '\0'; i++) {
+    addCharEscapingC(ret, unescaped[i]);
+  }
+
+  return ret;
+}
+
+std::string unescapeStringC(const char* str) {
+  std::string newString = "";
+  ssize_t pos = 0;
+
+  if (str == nullptr) {
+    return newString;
+  }
+
+  while (str[pos] != '\0') {
+    int amt = addCharUnescapingC(newString, &str[pos]);
+    pos += amt;
+  }
+
+  return newString;
+}
+
+std::string unescapeStringC(const std::string& str) {
+  return unescapeStringC(str.c_str());
+}
+
+// appends the result of escaping 'c' to 's'
+static void addCharEscapingId(std::string& s, char c) {
+  switch (c) {
+    case '.':
+      s.push_back('\\');
+      s.push_back('.');
+      break;
+    case '#':
+      s.push_back('\\');
+      s.push_back('#');
+      break;
+    default:
+      addCharEscapingC(s, c);
+      break;
+  }
+}
+
+// handles one character / escape from the beginning of 'str'
+//  (e.g. \xff would be more than one byte)
+// appends the result of unescaping to s
+// returns the number of bytes processed from input
+static ssize_t addCharUnescapingId(std::string& newString, const char* str) {
+  // handle unescaping \. and \#
+  if (str[0] == '\\') {
+    if (str[1] == '.') {
+      newString.push_back('.');
+      return 2;
+    } else if (str[1] == '#') {
+      newString.push_back('#');
+      return 2;
+    }
+  }
+
+  // handle any C escapes
+  return addCharUnescapingC(newString, str);
+}
+
+std::string escapeStringId(const std::string& unescaped) {
+  std::string ret;
+  for (char c : unescaped) {
+    addCharEscapingId(ret, c);
+  }
+  return ret;
+}
+
+std::string escapeStringId(const char* unescaped) {
+  std::string ret;
+  if (unescaped == nullptr)
+    return ret;
+
+  for (ssize_t i = 0; unescaped[i] != '\0'; i++) {
+    addCharEscapingId(ret, unescaped[i]);
+  }
+
+  return ret;
+}
+
+std::string unescapeStringId(const char* str) {
+  std::string newString = "";
+  ssize_t pos = 0;
+
+  if (str == nullptr) {
+    return newString;
+  }
+
+  while (str[pos] != '\0') {
+    int amt = addCharUnescapingId(newString, &str[pos]);
+    pos += amt;
+  }
+
+  return newString;
+}
+
+std::string unescapeStringId(const std::string& str) {
+  return unescapeStringId(str.c_str());
 }
 
 
