@@ -51,12 +51,12 @@ snprint_float_val(char* buf, size_t max, double val, bool hex) {
       return nc;
     }
   } else if (std::isinf(val)) {
-    if (std::signbit(val)) strncpy(buf, "-INFINITY", max);
-    else                   strncpy(buf, "INFINITY", max);
+    if (std::signbit(val)) strncpy(buf, "-inf", max);
+    else                   strncpy(buf, "inf", max);
     return strlen(buf);
   } else {
-    if (std::signbit(val)) strncpy(buf, "-NAN", max);
-    else                   strncpy(buf, "NAN", max);
+    if (std::signbit(val)) strncpy(buf, "-nan", max);
+    else                   strncpy(buf, "nan", max);
     return strlen(buf);
   }
 }
