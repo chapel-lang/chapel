@@ -1,0 +1,2 @@
+# omp layer doesn't allow arbitrary shapes in kernels
+CHPL_GPU == omp

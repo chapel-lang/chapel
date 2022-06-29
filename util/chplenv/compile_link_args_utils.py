@@ -79,12 +79,20 @@ def get_runtime_link_args(runtime_subdir):
     bundled.append("-lchpl")
 
     if locale_model == "gpu":
-        # If compiling for GPU locales, add CUDA to link path,
-        # and add cuda libraries
-        cuda_path = chpl_gpu.get_cuda_path()
-        system.append("-L" + os.path.join(cuda_path, "lib64"))
-        system.append("-lcuda")
-        system.append("-lcudart")
+        gpu_type = chpl_gpu.get()
+        if gpu_type == "cuda":
+            # If compiling for GPU locales, add CUDA to link path,
+            # and add cuda libraries
+            cuda_path = chpl_gpu.get_cuda_path()
+            system.append("-L" + os.path.join(cuda_path, "lib64"))
+            system.append("-lcuda")
+            system.append("-lcudart")
+
+        gpu_runtime = chpl_gpu.get_runtime()
+        if gpu_runtime == "omp":
+            system.append("-ldl")
+            # append the rpath
+            bundled.append(chpl_gpu.get_link_args())
 
     # always link with the math library
     system.append("-lm")

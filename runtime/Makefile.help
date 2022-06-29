@@ -73,6 +73,7 @@ include $(call FIND_MAKEFILE,TASKS,tasks)
 include $(call FIND_MAKEFILE,THREADS,threads)
 include $(call FIND_MAKEFILE,TIMERS,timers)
 include $(call FIND_MAKEFILE,COMM,comm)
+include $(call FIND_MAKEFILE,GPU,gpu)
 include $(call FIND_MAKEFILE,LAUNCHER,launch)
 include $(call FIND_MAKEFILE,MEM,mem)
 include $(call FIND_MAKEFILE,TOPO,topo)
@@ -95,6 +96,7 @@ RUNTIME_OBJS = \
 	$(THREADS_OBJS) \
 	$(TIMERS_OBJS) \
 	$(COMM_OBJS) \
+	$(GPU_OBJS) \
 	$(MEM_COMMON_OBJS) \
 	$(QIO_OBJS) \
 	$(REGEX_OBJS) \
