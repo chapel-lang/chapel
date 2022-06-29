@@ -721,6 +721,11 @@ static void maybePrintModuleFile(ModTag modTag, const char* path) {
   }
 }
 
+void noteParsedIncludedModule(ModuleSymbol* mod, const char* pathAstr) {
+  maybePrintModuleFile(mod->modTag, pathAstr);
+  gFilenameLookup.push_back(pathAstr);
+}
+
 static ModuleSymbol* oldParserParseFile(const char* path,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine,

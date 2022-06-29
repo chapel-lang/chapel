@@ -785,7 +785,11 @@ struct Converter {
       parsing::parseFileContainingIdToBuilderResult(context, umod->id());
     INT_ASSERT(builderResult);
 
+    UniqueString filePath;
+
     if (builderResult != nullptr) {
+      filePath = builderResult->filePath();
+
       for (auto ast : builderResult->topLevelExpressions()) {
         // Store the last comment for use when converting the module.
         if (auto comment = ast->toComment()) {
@@ -816,6 +820,9 @@ struct Converter {
       USR_WARN(node->id(), "module include statements are not yet stable "
                            "and may change");
     }
+
+    // allow production compiler to take action now that it is parsed
+    noteParsedIncludedModule(mod, astr(filePath));
 
     return buildChapelStmt(new DefExpr(mod));
   }
@@ -3680,8 +3687,7 @@ convertToplevelModule(chpl::Context* context,
     INT_ASSERT(convComment == nullptr);
   }
 
-  DefExpr* def = c.visit(mod);
-  ModuleSymbol* ret = toModuleSymbol(def->sym);
+  ModuleSymbol* ret = c.convertModule(mod);
   return ret;
 }
 

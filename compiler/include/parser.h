@@ -60,4 +60,6 @@ BlockStmt*         parseString(const char* string,
 ModuleSymbol*      parseIncludedSubmodule(const char* name,
                                           const char* path=yyfilename);
 
+void noteParsedIncludedModule(ModuleSymbol* mod, const char* path);
+
 #endif
