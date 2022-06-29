@@ -132,12 +132,7 @@ module OS {
     inline operator :(x:c_int, type t:mode_t)
       return __primitive("cast", t, x);
 
-    /*
-      Make a system call to open a file at the specified path,
-      with the specified flags and mode.
 
-      The 'flags' argument 
-    */
     extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):qio_err_t;
 
     /*
@@ -182,6 +177,9 @@ module OS {
     pragma "no doc"
     inline operator :(x:c_int, type t:suseconds_t)
       return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_long, type t:suseconds_t)
+      return __primitive("cast", t, x);
 
     /*
        Explicit conversions between ``time_t`` and ``c_int`` are
@@ -193,6 +191,9 @@ module OS {
       return __primitive("cast", t, x);
     pragma "no doc"
     inline operator :(x:c_int, type t:time_t)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_long, type t:time_t)
       return __primitive("cast", t, x);
 
     /*
