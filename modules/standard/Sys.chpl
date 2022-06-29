@@ -117,29 +117,54 @@ module Sys {
 
   // Signals as required by POSIX.1-2008, 2013 edition
   // See note below about signals intentionally not included
+
+  pragma "last resort"
   extern const SIGABRT: c_int;
+  pragma "last resort"
   extern const SIGALRM: c_int;
+  pragma "last resort"
   extern const SIGBUS: c_int;
+  pragma "last resort"
   extern const SIGCHLD: c_int;
+  pragma "last resort"
   extern const SIGCONT: c_int;
+  pragma "last resort"
   extern const SIGFPE: c_int;
+  pragma "last resort"
   extern const SIGHUP: c_int;
+  pragma "last resort"
   extern const SIGILL: c_int;
+  pragma "last resort"
   extern const SIGINT: c_int;
+  pragma "last resort"
   extern const SIGKILL: c_int;
+  pragma "last resort"
   extern const SIGPIPE: c_int;
+  pragma "last resort"
   extern const SIGQUIT: c_int;
+  pragma "last resort"
   extern const SIGSEGV: c_int;
+  pragma "last resort"
   extern const SIGSTOP: c_int;
+  pragma "last resort"
   extern const SIGTERM: c_int;
+  pragma "last resort"
   extern const SIGTRAP: c_int;
+  pragma "last resort"
   extern const SIGTSTP: c_int;
+  pragma "last resort"
   extern const SIGTTIN: c_int;
+  pragma "last resort"
   extern const SIGTTOU: c_int;
+  pragma "last resort"
   extern const SIGURG: c_int;
+  pragma "last resort"
   extern const SIGUSR1: c_int;
+  pragma "last resort"
   extern const SIGUSR2: c_int;
+  pragma "last resort"
   extern const SIGXCPU: c_int;
+  pragma "last resort"
   extern const SIGXFSZ: c_int;
 
   // These signals are not strictly required by POSIX.1.2008 2013 edition
