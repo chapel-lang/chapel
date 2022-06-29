@@ -1432,10 +1432,17 @@ bool Resolver::enter(const Call* call) {
           result = QualifiedType(QualifiedType::CONST_VAR,
                                  UnknownType::get(context));
         } else {
-          // TODO: check that LHS and RHS are both bool
-          // otherwise just return a Bool value
-          result = QualifiedType(QualifiedType::CONST_VAR,
-                                 BoolType::get(context, 0));
+          assert(rhs.type()->isBoolType() && lhs.type()->isBoolType());
+          if (rhs.isParam() && lhs.isParam()) {
+            // preserve param-ness
+            result = QualifiedType(QualifiedType::PARAM,
+                                   BoolType::get(context, 0),
+                                   BoolParam::get(context, 0));
+          } else {
+            // otherwise just return a Bool value
+            result = QualifiedType(QualifiedType::CONST_VAR,
+                                   BoolType::get(context, 0));
+          }
         }
       }
     } else if (op->op() == USTR("||")) {
@@ -1459,10 +1466,17 @@ bool Resolver::enter(const Call* call) {
           result = QualifiedType(QualifiedType::CONST_VAR,
                                  UnknownType::get(context));
         } else {
-          // TODO: check that LHS and RHS are both bool
-          // otherwise just return a Bool value
-          result = QualifiedType(QualifiedType::CONST_VAR,
-                                 BoolType::get(context, 0));
+          assert(rhs.type()->isBoolType() && lhs.type()->isBoolType());
+          if (rhs.isParam() && lhs.isParam()) {
+            // preserve param-ness
+            result = QualifiedType(QualifiedType::PARAM,
+                                   BoolType::get(context, 0),
+                                   BoolParam::get(context, 1));
+          } else {
+            // otherwise just return a Bool value
+            result = QualifiedType(QualifiedType::CONST_VAR,
+                                   BoolType::get(context, 0));
+          }
         }
       }
     } else {
