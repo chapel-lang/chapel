@@ -22,7 +22,6 @@
 
 #include "chplcast.h"
 #include "chpltypes.h"
-#include "chplfp.h"
 #include "chpl-mem.h"
 #include "error.h"
 
