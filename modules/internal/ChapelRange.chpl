@@ -1843,7 +1843,17 @@ operator :(r: range(?), type t: range(?)) {
                      _aligned = r.aligned);
   }
 
-  operator #(r:range(?i), count:integral) {
+  // TODO: Do we really want to support this?  Arkouda currently relies
+  // on it, and bools don't coerce to generic 'integral' arguments so
+  // dropping it broke the Arkouda build.  On one hand, it seems odd to
+  // accept a boolean as a count value.  On the other hand, we permit
+  // bools to coerce to ints in most cases, so this gives a similar
+  // end-user experience
+  operator #(r:range(?), count:bool) {
+    return chpl_count_help(r, count:int);
+  }
+
+  operator #(r:range(?), count:integral) {
     return chpl_count_help(r, count);
   }
 
