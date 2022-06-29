@@ -1423,7 +1423,7 @@ bool Resolver::enter(const Call* call) {
         // go ahead and evaluate the RHS
         op->actual(1)->traverse(*this);
         // look at the RHS type.
-        const QualifiedType& rhs = byPostorder.byAst(op->actual(0)).type();
+        const QualifiedType& rhs = byPostorder.byAst(op->actual(1)).type();
         if (lhs.isParamTrue() && rhs.isParamTrue()) {
           // if LHS and RHS are both param true, return param true.
           result = lhs;
@@ -1450,7 +1450,7 @@ bool Resolver::enter(const Call* call) {
         // go ahead and evaluate the RHS
         op->actual(1)->traverse(*this);
         // look at the RHS type.
-        const QualifiedType& rhs = byPostorder.byAst(op->actual(0)).type();
+        const QualifiedType& rhs = byPostorder.byAst(op->actual(1)).type();
         if (lhs.isParamFalse() && rhs.isParamFalse()) {
           // if LHS and RHS are both param false, return param false.
           result = lhs;
