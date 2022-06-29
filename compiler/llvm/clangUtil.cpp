@@ -54,6 +54,8 @@
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/IRReader/IRReader.h"
+#include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Support/FileSystem.h"
@@ -64,7 +66,9 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
+#include "llvm/Transforms/IPO/Internalize.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 
 #if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
@@ -3735,6 +3739,40 @@ void addDumpIrPass(const PassManagerBuilder &Builder,
   PM.add(createDumpIrPass(llvmPrintIrStageNum));
 }
 
+static void linkLibDevice() {
+  // We follow the directions in https://llvm.org/docs/NVPTXUsage.html#libdevice
+
+  GenInfo* info = gGenInfo;
+
+  // load libdevice as a new module
+  llvm::SMDiagnostic err;
+  auto libdevice = llvm::parseIRFile(CHPL_CUDA_LIBDEVICE_PATH, err,
+                                     info->llvmContext);
+  //
+  // adjust it
+  const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
+  libdevice->setTargetTriple(Triple.getTriple());
+  libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
+
+  // save external functions
+  std::set<std::string> externals;
+  for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
+    if (it->hasExternalLinkage()) {
+      externals.insert(it->getGlobalIdentifier());
+    }
+  }
+
+  // link
+  llvm::Linker::linkModules(*info->module, std::move(libdevice),
+                            llvm::Linker::Flags::LinkOnlyNeeded);
+
+  // internalize all functions that are not in `externals`
+  llvm::InternalizePass iPass([&externals](const llvm::GlobalValue& gv) {
+    return externals.count(gv.getGlobalIdentifier()) > 0;
+  });
+  iPass.internalizeModule(*info->module);
+}
+
 
 // If we're using the LLVM wide optimizations, we have to add
 // some functions to call put/get into the Chapel runtime layers
@@ -4182,6 +4220,8 @@ void makeBinaryLLVM(void) {
 
       llvm::CodeGenFileType asmFileType =
         llvm::CodeGenFileType::CGFT_AssemblyFile;
+
+      linkLibDevice();
 
       llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
 

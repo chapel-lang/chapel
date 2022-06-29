@@ -113,6 +113,8 @@ const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS = NULL;
 const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
+const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
+
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static bool fBaseline = false;
@@ -1451,6 +1453,10 @@ static void setChapelEnvs() {
   CHPL_TARGET_SYSTEM_COMPILE_ARGS = envMap["CHPL_TARGET_SYSTEM_COMPILE_ARGS"];
   CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
   CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
+
+  if (localeUsesGPU()) {
+    CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
+  }
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
