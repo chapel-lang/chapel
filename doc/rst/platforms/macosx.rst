@@ -28,11 +28,11 @@ following commands::
 These commands install the latest release of Chapel.  When using a
 Homebrew installation of Chapel, the ``CHPL_HOME`` directory is here::
 
-    /usr/local/Cellar/chapel/<chapel-version>/libexec/
+    $HOMEBREW_CELLAR/chapel/<chapel-version>/libexec/
 
 Compile and run a test program::
 
-    chpl /usr/local/Cellar/chapel/<chapel-version>/libexec/hello.chpl
+    chpl $HOMEBREW_CELLAR/chapel/<chapel-version>/libexec/hello.chpl
     ./hello
 
 If you're new to Chapel, refer to the `What's Next?
