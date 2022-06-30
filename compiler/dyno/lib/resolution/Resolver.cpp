@@ -1890,6 +1890,32 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
+  if (receiver.type().kind() == QualifiedType::TYPE &&
+      receiver.type().type()->isEnumType()) {
+    // resolve E.x where E is an enum.
+    const EnumType* enumType = receiver.type().type()->toEnumType();
+    assert(enumType != nullptr);
+    assert(receiver.toId().isEmpty() == false);
+
+    LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
+    auto enumScope = scopeForId(context, receiver.toId());
+    auto vec = lookupNameInScope(context, enumScope,
+                                 /* receiverScope */ nullptr,
+                                 dot->field(), config);
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    if (vec.size() == 0 || vec.size() > 1 || vec[0].numIds() > 1) {
+      // too many or no candidates. The dot expression doesn't specify a valid element.
+      // TODO should be report an error to the user here?
+      r.setType(QualifiedType());
+    } else {
+      auto id = vec[0].id(0);
+      auto newParam = EnumParam::get(context, id);
+      r.setToId(id);
+      r.setType(QualifiedType(QualifiedType::PARAM, enumType, newParam));
+    }
+    return;
+  }
+
   // Handle null, unknown, or erroneous receiver type
   if (receiver.type().type() == nullptr ||
       receiver.type().type()->isUnknownType()) {
@@ -1902,7 +1928,6 @@ void Resolver::exit(const Dot* dot) {
     r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
     return;
   }
-
 
   if (scopeResolveOnly)
     return;
