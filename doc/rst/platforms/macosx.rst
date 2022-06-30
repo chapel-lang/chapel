@@ -32,7 +32,7 @@ Homebrew installation of Chapel, the ``CHPL_HOME`` directory is here::
 
 Compile and run a test program::
 
-    chpl $HOMEBREW_CELLAR/chapel/<chapel-version>/libexec/hello.chpl
+    chpl $HOMEBREW_CELLAR/chapel/<chapel-version>/libexec/examples/hello.chpl
     ./hello
 
 If you're new to Chapel, refer to the `What's Next?
