@@ -63,6 +63,9 @@ implement queries and how the query framework functions.
 
  */
 class Context {
+ public:
+  using ReportErrorFnType = void(*)(Context*, const ErrorMessage&);
+
  private:
   // map that supports uniqueCString / UniqueString
   using UniqueStringsTableType = std::unordered_set<chpl::detail::StringAndLength, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
@@ -106,8 +109,7 @@ class Context {
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
   static void defaultReportError(Context* context, const ErrorMessage& err);
-  void (*reportError)(Context* context, const ErrorMessage& err) =
-    defaultReportError;
+  ReportErrorFnType reportError = defaultReportError;
 
   // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
@@ -224,8 +226,7 @@ class Context {
   /**
    Set the error handling function
    */
-  void setErrorHandler(void (*reportError)(Context* context,
-                                           const ErrorMessage& err)) {
+  void setErrorHandler(ReportErrorFnType reportError) {
     this->reportError = reportError;
   }
 
