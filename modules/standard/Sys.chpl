@@ -523,7 +523,7 @@ module Sys {
   */
   proc const ref sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
 
-  // --- deprecated and moved to Socket as private ---
+  // --- deprecated and moved to Socket ---
   extern "struct addrinfo" record sys_addrinfo_t {
     var ai_flags: c_int;
     var ai_family: c_int;

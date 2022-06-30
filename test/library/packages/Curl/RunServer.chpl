@@ -1,5 +1,5 @@
 use Subprocess;
-use OS.POSIX only SIGINT;
+use OS.POSIX;
 use URL;
 use Time;
 use FileSystem;
