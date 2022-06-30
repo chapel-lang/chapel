@@ -1,10 +1,10 @@
 use Subprocess;
-use Sys only SIGKILL;
+use OS.POSIX only SIGKILL;
 use Time;
 
 var sub = spawn(["sleep", "60"]);
 sleep(1);
-sub.send_signal(Sys.SIGKILL);
+sub.send_signal(OS.POSIX.SIGKILL);
 while sub.running do
   sub.poll();
-assert(sub.exitCode == -Sys.SIGKILL);
+assert(sub.exitCode == -OS.POSIX.SIGKILL);

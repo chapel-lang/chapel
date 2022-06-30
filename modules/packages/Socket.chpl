@@ -428,9 +428,9 @@ private extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref 
 private extern proc sys_strerror(error:qio_err_t, ref string_out:c_string):qio_err_t;
 private extern proc sys_readlink(path:c_string, ref string_out:c_string):qio_err_t;
 
-// private types for 'sys_sockaddr_t' implementation
-private extern type sys_sockaddr_storage_t;
-private extern type socklen_t = int(32);
+// types for 'sys_sockaddr_t' implementation
+extern type sys_sockaddr_storage_t;
+extern type socklen_t = int(32);
 
 extern record sys_sockaddr_t {
   var addr:sys_sockaddr_storage_t;
@@ -562,7 +562,7 @@ private extern "struct addrinfo" record sys_addrinfo_t {
   var ai_next: c_ptr(sys_addrinfo_t);
 }
 
-private type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
+type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
 
 proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }
 proc sys_addrinfo_ptr_t.family:c_int { return sys_getaddrinfo_family(this); }

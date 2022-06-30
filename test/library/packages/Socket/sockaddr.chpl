@@ -1,4 +1,4 @@
-use Sys;
+use Socket;
 
 use CTypes;
 use UnitTest;

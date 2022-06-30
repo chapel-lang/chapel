@@ -398,7 +398,7 @@ module Sys {
   deprecated "'Sys.sys_in6_addr_t' is deprecated; please use 'Socket.sys_in6_addr_t' instead"
   extern type sys_in6_addr_t;
 
-  // --- deprecated and moved to Socket as private ---
+  // --- deprecated and moved to Socket ---
   extern type sys_sockaddr_storage_t;
   /* The type corresponding to C's socklen_t */
   extern type socklen_t = int(32);
@@ -533,7 +533,7 @@ module Sys {
     var ai_next: c_ptr(sys_addrinfo_t);
   }
 
-  // --- deprecated and moved to Socket as private ---
+  // --- deprecated and moved to Socket ---
   type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
 
   proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }

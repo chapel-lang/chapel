@@ -1,5 +1,5 @@
 use Subprocess;
-use Sys only SIGINT;
+use OS.POSIX only SIGINT;
 use URL;
 use Time;
 use FileSystem;
@@ -56,7 +56,7 @@ proc stopServer() {
   if server.running {
     // Kill the little HTTP server
     try! {
-      server.sendPosixSignal(Sys.SIGINT);
+      server.sendPosixSignal(OS.POSIX.SIGINT);
     } catch e:ProcessLookupError {
       // Ignore it already being dead
     }
