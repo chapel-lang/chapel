@@ -1,0 +1,1 @@
+tuple-init.chpl:1: error: cannot define initializer for tuple type
