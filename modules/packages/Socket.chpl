@@ -553,7 +553,7 @@ extern record sys_sockaddr_t {
 */
 proc const ref sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
 
-extern "struct addrinfo" record sys_addrinfo_t {
+private extern "struct addrinfo" record sys_addrinfo_t {
   var ai_flags: c_int;
   var ai_family: c_int;
   var ai_socktype: c_int;
