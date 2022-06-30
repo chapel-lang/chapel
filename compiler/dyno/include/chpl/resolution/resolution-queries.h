@@ -204,7 +204,7 @@ const ResolvedFunction* resolveFunction(Context* context,
                                         const PoiScope* poiScope);
 
 /**
-  Helper to resolves a concrete function using the above queries.
+  Helper to resolve a concrete function using the above queries.
   Will return `nullptr` if the function is generic or has a `where false`.
   */
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
