@@ -133,6 +133,11 @@ class AstNode {
   }
 
   /**
+    Returns 'true' if this AST node is a leaf node by tag.
+  */
+  bool isLeaf() const;
+
+  /**
     Returns the number of child AST nodes in the tree directly under this one.
    */
   int numChildren() const {

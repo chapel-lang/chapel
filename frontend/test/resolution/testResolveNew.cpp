@@ -72,13 +72,14 @@ class CountingErrorHandler {
 // C++ is so dumb...
 std::vector<const ErrorBase*> CountingErrorHandler::errors_;
 
+// Empty record with user defined initializer.
 static void test1() {
   Context ctx;
   Context* context = &ctx;
 
   context->advanceToNextRevision(true);
 
-  auto path = UniqueString::get(context, "input.chpl");
+  auto path = UniqueString::get(context, "test1.chpl");
   std::string contents =
     " record r {\n"
     "   proc init() {}\n"
@@ -137,8 +138,8 @@ static void test1() {
   auto receiverQualType = initTfs->formalType(0);
   assert(receiverQualType.type() == qtR.type());
 
-  // TODO: should dyno mark this 'init' as 'REF'? Seems deceptive since
-  // an initializer is always going to mutate state.
+  // TODO: should dyno mark this 'init' as 'REF'? The current behavior
+  // seems deceptive since an initializer is always going to mutate state.
   assert(receiverQualType.kind() == QualifiedType::CONST_REF);
 
   context->collectGarbage();
@@ -380,7 +381,7 @@ static bool testNewExpression(Context* ctx, const char* expr) {
   bool isNilable = (isNilableInNewExpr || isPostfixNilable);
 
   // Get the module.
-  auto& br = parseFile(ctx, path);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
   if (br.numErrors()) return false;
 
   assert(br.numTopLevelExpressions() == 1);
@@ -469,15 +470,71 @@ static void test4() {
 
 // TODO: Begin testing some generic records (without user initializers).
 static void test5() {
+}
 
+// Ditto but for classes.
+static void test6() {
+}
+
+// Test a simple record with a user defined initializer.
+static void test7() {
+  Context context;
+  Context* ctx = &context;
+
+  ctx->advanceToNextRevision(true);
+
+  auto path = UniqueString::get(ctx, "test7.chpl");
+  std::string contents = R""""(
+    record r {
+      type T;
+      param P: int;
+      var v1 = 0;
+      var v2: real;
+      proc init(type T, param P: int) {
+        this.T = T;
+        this.P = P;
+      }
+    }
+    var obj = new r(int, 8);
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  assert(!br.numErrors());
+
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 2);
+  auto rec = mod->stmt(0)->toRecord();
+  assert(rec);
+  auto obj = mod->stmt(1)->toVariable();
+  assert(obj);
+
+  // TODO: Confirm the final initializer type.
+  auto& rr = resolveModule(ctx, mod->id());
+  (void) rr;
 }
 
 int main() {
+  /*
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
+  */
+  (void) test1;
+  (void) test2;
+  (void) test3;
+  (void) test4;
+  (void) test5;
+  (void) test6;
+
+  test7();
 
   return 0;
 }

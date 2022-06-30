@@ -1300,6 +1300,22 @@ static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
   return type;
 }
 
+static bool isTfsForInitializer(const TypedFnSignature* tfs) {
+  if (tfs->needsInstantiation())
+    if (tfs->untyped()->name() == USTR("init"))
+      if (tfs->untyped()->isMethod())
+        if (!tfs->formalIsInstantiated(0))
+          return true;
+  return false;
+}
+
+static bool ensureBodyIsResolved(Context* context, const CallInfo& ci,
+                                 const TypedFnSignature* tfs) {
+  if (tfs->untyped()->isCompilerGenerated()) return false;
+  if (isTfsForInitializer(tfs)) return true;
+  return false;
+}
+
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -1613,6 +1629,22 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                       /* instantiatedFrom */ sig,
                                       /* parentFn */ parentFnTyped,
                                       std::move(formalsInstantiated));
+
+  // May need to resolve the body at this point to compute final TFS.
+  if (ensureBodyIsResolved(context, call, sig)) {
+    if (!sig->untyped()->isCompilerGenerated()) {
+      if (isTfsForInitializer(sig)) {
+        auto resolvedFn = resolveInitializer(context, sig, poiScope);
+        auto newTfs = resolvedFn->signature();
+        assert(!newTfs->needsInstantiation());
+        result = newTfs;
+      } else {
+        assert(false && "Not handled yet!");
+        std::ignore = resolveFunction(context, sig, poiScope);
+      }
+    }
+  }
+
   return result;
 }
 
@@ -1631,10 +1663,16 @@ resolveFunctionByPoisQuery(Context* context,
   return QUERY_END(result);
 }
 
+// TODO: Should we expose this thing in a header somewhere?
+extern bool
+handleResolvingInitFn(Context* context, Resolver& visitor,
+                      const Function* fn,
+                      const TypedFnSignature*& outFinalTfs);
+
 static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(Context* context,
-                            const TypedFnSignature* sig,
-                            PoiInfo poiInfo) {
+                           const TypedFnSignature* sig,
+                           PoiInfo poiInfo) {
   QUERY_BEGIN(resolveFunctionByInfoQuery, context, sig, poiInfo);
 
   const UntypedFnSignature* untypedSignature = sig->untyped();
@@ -1650,11 +1688,21 @@ resolveFunctionByInfoQuery(Context* context,
     auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
                                                resolutionById);
 
-    // visit the function body
-    fn->body()->traverse(visitor);
+    const TypedFnSignature* finalTfs = nullptr;
+    bool handled = false;
 
-    resolvedPoiInfo.swap(visitor.poiInfo);
+    // TODO: What other info does the init visitor need to communicate?
+    handled |= handleResolvingInitFn(context, visitor, fn, finalTfs);
+
+    if (!handled) {
+      fn->body()->traverse(visitor);
+      handled = true;
+    }
+
+    assert(handled);
+
     // TODO can this be encapsulated in a method?
+    resolvedPoiInfo.swap(visitor.poiInfo);
     resolvedPoiInfo.setResolved(true);
     resolvedPoiInfo.setPoiScope(nullptr);
 
@@ -1685,9 +1733,23 @@ resolveFunctionByInfoQuery(Context* context,
   return QUERY_END(result);
 }
 
+const ResolvedFunction* resolveInitializer(Context* context,
+                                           const TypedFnSignature* sig,
+                                           const PoiScope* poiScope) {
+  bool isAcceptable = isTfsForInitializer(sig);
+  assert(isAcceptable);
+
+  // construct the PoiInfo for this case
+  auto poiInfo = PoiInfo(poiScope);
+
+  // lookup in the map using this PoiInfo
+  return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
+}
+
 const ResolvedFunction* resolveFunction(Context* context,
-                                         const TypedFnSignature* sig,
-                                         const PoiScope* poiScope) {
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* poiScope) {
+
   // this should only be applied to concrete fns or instantiations
   assert(!sig->needsInstantiation());
 
@@ -2899,7 +2961,6 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
 
   return mostSpecific;
 }
-
 
 // call can be nullptr. in that event ci.name() will be used to find
 // what is called.

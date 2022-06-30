@@ -2218,6 +2218,18 @@ void Resolver::exit(const Call* call) {
   inLeafCall = nullptr;
 }
 
+/*
+  // TODO: Prevent nested 'this.this.foo' cases.
+  if (auto ident = dot->receiver()->toIdentifier()) {
+    gdbShouldBreakHere();
+    if (ident->name() == USTR("this")) {
+      auto& re = byPostorder.byAst(dot);
+      re.setType(receiver.type());
+      re.setToId(receiver.toId());
+      return false;
+    }
+  }
+*/
 bool Resolver::enter(const Dot* dot) {
   return true;
 }
