@@ -583,6 +583,8 @@ module Sys {
   // not used outside of Sys
   // --- deprecated with no replacement ---
   extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):qio_err_t;
+
+  // --- deprecated and moved to Socket as private ---
   extern proc sys_close(fd:fd_t):qio_err_t;
 
   /* The type corresponding to C's off_t */

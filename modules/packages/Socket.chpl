@@ -246,6 +246,13 @@ operator struct_timeval.=(other: real) {
   this.tv_usec = ((other - this.tv_sec) * 1000000):suseconds_t;
 }
 
+proc default_timeval() {
+  var dtv : struct_timeval;
+  dtv.tv_sec = (-1):c_int:time_t;
+  dtv.tv_usec = 0:c_int:suseconds_t;
+  return dtv;
+}
+
 pragma "no doc"
 private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):syserr;
 
@@ -600,6 +607,7 @@ private extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optv
 private extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t;
 private extern proc sys_listen(sockfd:fd_t, backlog:c_int):qio_err_t;
 private extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t;
+private extern proc sys_close(fd:fd_t):qio_err_t;
 
 pragma "no doc"
 var event_loop_base:c_ptr(event_base);
@@ -650,7 +658,7 @@ record tcpListener {
   :throws Error: Upon timeout completion without
                   any new connection
 */
-proc tcpListener.accept(in timeout: struct_timeval = new struct_timeval(-1,0)):tcpConn throws {
+proc tcpListener.accept(in timeout: struct_timeval = default_timeval()):tcpConn throws {
   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
   var fdOut:fd_t;
   var err_out:qio_err_t = 0;
@@ -676,7 +684,7 @@ proc tcpListener.accept(in timeout: struct_timeval = new struct_timeval(-1,0)):t
     var t: Timer;
     t.start();
     // make event active
-    err_out = event_add(internalEvent, if timeout.tv_sec == -1 then nil else c_ptrTo(timeout));
+    err_out = event_add(internalEvent, if timeout.tv_sec:int == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
       throw new Error("accept() failed");
     }
@@ -697,14 +705,14 @@ proc tcpListener.accept(in timeout: struct_timeval = new struct_timeval(-1,0)):t
         throw SystemError.fromSyserr(err_out, "accept() failed");
       }
       // no indefinitely blocking wait
-      if timeout.tv_sec != -1 {
-        var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
+      if timeout.tv_sec:int != -1 {
+        var totalTimeout = timeout.tv_sec:c_int*1000000 + timeout.tv_usec:c_int;
         // timer didn't elapsed
         if totalTimeout > t.elapsed(TimeUnits.microseconds) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
           const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
-          timeout.tv_sec = remainingSeconds;
-          timeout.tv_usec = remainingMicroSeconds;
+          timeout.tv_sec = remainingSeconds:time_t;
+          timeout.tv_usec = remainingMicroSeconds:suseconds_t;
         }
         throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
       }
@@ -842,7 +850,7 @@ proc listen(in address: ipAddr, reuseAddr: bool = true,
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to connect
 */
-proc connect(const ref address: ipAddr, in timeout = new struct_timeval(-1,0)): tcpConn throws {
+proc connect(const ref address: ipAddr, in timeout = default_timeval()): tcpConn throws {
   var family = address.family;
   var socketFd = socket(family, SOCK_STREAM);
   setBlocking(socketFd, false);
@@ -862,7 +870,7 @@ proc connect(const ref address: ipAddr, in timeout = new struct_timeval(-1,0)): 
     event_del(writerEvent);
     event_free(writerEvent);
   }
-  err_out = event_add(writerEvent, if timeout.tv_sec == -1 then nil else c_ptrTo(timeout));
+  err_out = event_add(writerEvent, if timeout.tv_sec == -1:c_int:time_t then nil else c_ptrTo(timeout));
   if err_out != 0 {
     throw new Error("connect() failed");
   }
@@ -908,7 +916,7 @@ proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {
                         to any of the resolved address in given `timeout`.
 */
 proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IPUnspec,
-             in timeout = new struct_timeval(-1,0)): tcpConn throws {
+             in timeout = default_timeval()): tcpConn throws {
   var result:sys_addrinfo_ptr_t;
   var hints = new sys_addrinfo_t();
   hints.ai_family = family:c_int;
@@ -967,7 +975,7 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
                     to any of the resolved address in given `timeout`.
 */
 proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPUnspec,
-             timeout = new struct_timeval(-1,0)): tcpConn throws {
+             timeout = default_timeval()): tcpConn throws {
   return connect(host, port:string, family, timeout);
 }
 
@@ -1034,7 +1042,7 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, fla
   :throws SystemError: Upon failure to receive any data
                     within given `timeout`.
 */
-proc udpSocket.recvfrom(bufferLen: int, in timeout = new struct_timeval(-1,0),
+proc udpSocket.recvfrom(bufferLen: int, in timeout = default_timeval(),
                         flags:c_int = 0):(bytes, ipAddr) throws {
   var err_out:qio_err_t = 0;
   var buffer = c_calloc(c_uchar, bufferLen);
@@ -1075,7 +1083,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new struct_timeval(-1,0),
         c_free(buffer);
         throw SystemError.fromSyserr(err_out,"recv failed");
       }
-      if timeout.tv_sec == -1 {
+      if timeout.tv_sec == -1:c_int:time_t {
         var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
         if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
@@ -1115,7 +1123,7 @@ proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, 
   :throws SystemError: Upon failure to receive any data
                         within given `timeout`.
 */
-proc udpSocket.recv(bufferLen: int, in timeout = new struct_timeval(-1,0)) throws {
+proc udpSocket.recv(bufferLen: int, in timeout = default_timeval()) throws {
   var (data, _) = this.recvfrom(bufferLen, timeout);
   return data;
 }
@@ -1149,7 +1157,7 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
                         within given `timeout`.
 */
 proc udpSocket.send(data: bytes, in address: ipAddr,
-                    in timeout = new struct_timeval(-1,0)):c_ssize_t throws {
+                    in timeout = default_timeval()):c_ssize_t throws {
   var err_out:qio_err_t = 0;
   var length:c_ssize_t;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
@@ -1182,7 +1190,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
         throw SystemError.fromSyserr(err_out, "send failed");
       }
-      if timeout.tv_sec == -1 {
+      if timeout.tv_sec == -1:c_int:time_t {
         var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
         if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);

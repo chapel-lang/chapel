@@ -195,6 +195,9 @@ module OS {
     pragma "no doc"
     inline operator :(x:c_long, type t:time_t)
       return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:time_t, type t:int)
+      return __primitive("cast", t, x);
 
     /*
        Explicit conversions between ``uid_t`` and ``c_int`` are
@@ -913,6 +916,13 @@ module OS {
       var tv_sec:time_t;       // seconds since Jan. 1, 1970
       var tv_usec:suseconds_t; // and microseconds
     }
+
+    // proc struct_timeval.init() {}
+
+    // proc struct_timeval.init(tv_sec: int, tv_usec: int) {
+    //   this.tv_sec = tv_sec:time_t;
+    //   this.tv_usec = tv_usec:suseconds_t;
+    // }
 
     extern "struct timezone" record struct_timezone {
       var tz_minuteswest:c_int; // of Greenwich
