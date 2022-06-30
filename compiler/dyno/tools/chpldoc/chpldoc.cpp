@@ -36,6 +36,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
+#include <queue>
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -49,6 +50,9 @@
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/queries/global-strings.h"
+
 
 using namespace chpl;
 using namespace uast;
@@ -93,10 +97,87 @@ static std::string templateReplace(const std::string& templ,
   return std::regex_replace(templ, std::regex(std::string("\\$") + key), value);
 }
 
+
+static char * checkProjectVersion(char * projectVersion) {
+  int length = strlen(projectVersion);
+  int i = 0;
+  int dot = 0;
+  bool check = true;
+  int tagIndex = 0;
+
+  // Supported version tags
+  const char * tags[] = {"alpha", "beta", "rc"};
+  const char * error = "";
+  for(i=0; i<length; i++) {
+    if(i>0 && projectVersion[i] == '.') {
+      if(projectVersion[i-1] != '.') {
+        dot++;
+        if(dot>2) {
+          error = "Required only two dots which separates three numbers";
+          check = false;
+          break;
+        }
+        if(i == length-1) {
+          error = "Cannot end with dot, can end with either number or tag";
+          check = false;
+          break;
+        }
+      } else {
+        error = "Missing number between dots";
+        check = false;
+        break;
+      }
+    } else if(projectVersion[i] == '-' && dot == 2) {
+      if(projectVersion[i-1] != '.') {
+        tagIndex = i+1;
+        break;
+      } else {
+        error = "Missing number before tag";
+        check = false;
+        break;
+      }
+    } else if(projectVersion[i] == '-' && dot != 2) {
+      error = "Required only two dots which separates three numbers";
+      check = false;
+      break;
+    } else if((int)projectVersion[i] > (int)'9' || (int)projectVersion[i] < (int)'0') {
+      error = "Invalid Characters, only digits and dots permitted before a hyphen";
+      check = false;
+      break;
+    }
+  }
+  if(dot != 2 && i == length) {
+    error = "Required two dots which separates three numbers";
+    check = false;
+  }
+  if(check && tagIndex>0) {
+    int count = sizeof(tags)/sizeof(*tags);
+    for(int i=0; i<count; i++) {
+      if(strcmp(projectVersion+tagIndex,tags[i]) == 0) {
+        check = true;
+        break;
+      } else {
+        error = "Tag not supported, supported tags are alpha/beta/rc";
+        check = false;
+      }
+    }
+  }
+  if(check) {
+    return projectVersion;
+  } else {
+    std::cerr << "error: Invalid version format: "<< projectVersion << " due to: " << error << std::endl;
+    exit(1);
+  }
+  return NULL;
+}
+
 static std::string indentLines(const std::string& s, int count) {
-  std::string replacement = "\n" + std::string(count, ' ');
+  //std::string replacement = "\n" + std::string(count, ' ');
+  if (s.empty())
+    return s;
   std::string head = std::string(count, ' ');
-  return head + std::regex_replace(s, std::regex("\n"), replacement);
+  std::string ret = head + s; //std::regex_replace(s, std::regex("\n"), replacement);
+  return ret;
 }
 
 static size_t countLeadingSpaces(const std::string& s) {
@@ -165,8 +246,9 @@ static std::string commentSynopsis(const Comment* c) {
 static const char* kindToRstString(bool isMethod, Function::Kind kind) {
   switch (kind) {
   case Function::Kind::PROC: return isMethod ? "method" : "function";
-  case Function::Kind::ITER: return isMethod ? "itermethod" : "iter";
+  case Function::Kind::ITER: return isMethod ? "itermethod" : "iterfunction";
   case Function::Kind::OPERATOR: return "operator";
+  case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
@@ -187,52 +269,28 @@ static const char* kindToString(Function::Kind kind) {
   case Function::Kind::PROC: return "proc";
   case Function::Kind::ITER: return "iter";
   case Function::Kind::OPERATOR: return "operator";
+  case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
 }
 
-static const char* kindToString(Function::ReturnIntent kind) {
+static const char* kindToString(IntentList kind) {
   switch (kind) {
-  case Function::ReturnIntent::CONST: return "const";
-  case Function::ReturnIntent::REF: return "ref";
-  case Function::ReturnIntent::CONST_REF: return "const ref";
-  case Function::ReturnIntent::PARAM: return "param";
-  case Function::ReturnIntent::TYPE: return "type";
-  case Function::ReturnIntent::DEFAULT_RETURN_INTENT: assert(false);
+    case IntentList::CONST_INTENT: return "const";
+    case IntentList::VAR: return "var";
+    case IntentList::CONST_VAR: return "const";
+    case IntentList::CONST_REF: return "const ref";
+    case IntentList::REF: return "ref";
+    case IntentList::IN: return "in";
+    case IntentList::CONST_IN: return "const in";
+    case IntentList::OUT: return "out";
+    case IntentList::INOUT: return "inout";
+    case IntentList::PARAM: return "param";
+    case IntentList::TYPE: return "type";
+    case IntentList::DEFAULT_INTENT: assert(false);
+    default: return "";
   }
-  assert(false);
-  return "";
-}
-
-static const char* kindToString(Formal::Intent kind) {
-  switch (kind) {
-  case Formal::Intent::CONST: return "const";
-  case Formal::Intent::CONST_REF: return "const ref";
-  case Formal::Intent::REF: return "ref";
-  case Formal::Intent::IN: return "in";
-  case Formal::Intent::CONST_IN: return "const in";
-  case Formal::Intent::OUT: return "out";
-  case Formal::Intent::INOUT: return "inout";
-  case Formal::Intent::PARAM: return "param";
-  case Formal::Intent::TYPE: return "type";
-  case Formal::Intent::DEFAULT_INTENT: assert(false);
-  }
-  assert(false);
-  return "";
-}
-
-static const char* kindToString(Variable::Kind kind) {
-  switch (kind) {
-  case Variable::Kind::VAR: return "var";
-  case Variable::Kind::CONST: return "const";
-  case Variable::Kind::PARAM: return "param";
-  case Variable::Kind::TYPE: return "type";
-  case Variable::Kind::REF: return "ref";
-  case Variable::Kind::CONST_REF: return "const ref";
-  case Variable::Kind::INDEX: assert(false);
-  }
-  assert(false);
   return "";
 }
 
@@ -255,6 +313,16 @@ static bool isNoDoc(const Decl* e) {
     return attrs->hasPragma(pragmatags::PRAGMA_NO_DOC);
   }
   return false;
+}
+
+static bool isCalleeManagementKind(const AstNode* callee) {
+  if (callee->isIdentifier() &&
+    (callee->toIdentifier()->name() == "borrowed"
+      || callee->toIdentifier()->name() == "owned"
+      || callee->toIdentifier()->name() == "unmanaged"
+      || callee->toIdentifier()->name() == "shared"))
+      return true;
+    return false;
 }
 
 /**
@@ -297,8 +365,33 @@ struct RstSignatureVisitor {
     return false;
   }
 
+//   bool enter(const MultiDecl* node) {
+//     std::string delimiter = "";
+//     for (auto decl : node->decls()) {
+//       os_ << delimiter;
+//       os_ << decl->toVariable()->name();
+//       if (const AstNode* te = decl->toVariable()->typeExpression()) {
+//         os_ << ": ";
+//         //te->traverse(*this);
+//         printChapelSyntax(os_, te);
+//       }
+//       if (const AstNode* ie = decl->toVariable()->initExpression()) {
+//         os_ << " = ";
+//         printChapelSyntax(os_, ie);
+// //        ie->traverse(*this);
+//       }
+//       delimiter = ", ";
+//     }
+//     return false;
+//   }
+
   bool enter(const Record* r) {
     os_ << r->name().c_str();
+    return false;
+  }
+
+  bool enter(const Class* c) {
+    os_ << c->name().c_str();
     return false;
   }
 
@@ -351,7 +444,7 @@ struct RstSignatureVisitor {
 
   bool enter(const EnumElement* e) {
     os_ << e->name().c_str();
-    if (const Expression* ie = e->initExpression()) {
+    if (const AstNode* ie = e->initExpression()) {
       os_ <<  " = ";
       ie->traverse(*this);
     }
@@ -363,14 +456,14 @@ struct RstSignatureVisitor {
       os_ << "config ";
     }
     if (v->kind() != Variable::Kind::INDEX) {
-      os_ << kindToString(v->kind()) << " ";
+      os_ << kindToString((IntentList) v->kind()) << " ";
     }
     os_ << v->name().c_str();
-    if (const Expression* te = v->typeExpression()) {
+    if (const AstNode* te = v->typeExpression()) {
       os_ << ": ";
       te->traverse(*this);
     }
-    if (const Expression* ie = v->initExpression()) {
+    if (const AstNode* ie = v->initExpression()) {
       os_ << " = ";
       ie->traverse(*this);
     }
@@ -379,15 +472,15 @@ struct RstSignatureVisitor {
 
   bool enter(const Formal* f) {
     if (f->intent() != Formal::DEFAULT_INTENT) {
-      os_ << kindToString(f->intent()) << " ";
+      os_ << kindToString((IntentList) f->intent()) << " ";
     }
     os_ << f->name().c_str();
-    if (const Expression* te = f->typeExpression()) {
+    if (const AstNode* te = f->typeExpression()) {
       os_ << ": ";
       te->traverse(*this);
     }
-    if (const Expression* ie = f->initExpression()) {
-      os_ << "=";
+    if (const AstNode* ie = f->initExpression()) {
+      os_ << " = ";
       ie->traverse(*this);
     }
     return false;
@@ -400,7 +493,43 @@ struct RstSignatureVisitor {
     }
 
     // Function Name
-    os_ << kindToString(f->kind()) << " " << f->name().c_str();
+    os_ << kindToString(f->kind());
+    os_ << " ";
+
+    // storage kind
+    if (f->thisFormal() != nullptr
+        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+      os_ << kindToString(f->thisFormal()->storageKind()) <<" ";
+    }
+
+    // print out the receiver type for secondary methods
+    if (f->isMethod() && !f->isPrimaryMethod()) {
+      auto typeExpr = f->thisFormal()->typeExpression();
+      assert(typeExpr);
+
+      if (auto ident = typeExpr->toIdentifier()) {
+        os_ << ident->name().str();
+      } else {
+        os_ << "(";
+        typeExpr->traverse(*this);
+        os_ << ")";
+      }
+
+      os_ << ".";
+    }
+
+    if (f->kind() == Function::Kind::OPERATOR && f->name() == USTR("=")) {
+      // TODO: remove this once the old parser is out of the question
+      // TODO: this is only here to support tests from the old parser
+      // printing extra spaces around an assignment operator
+      os_ << " ";
+      // Function Name
+      os_ << f->name().str();
+      os_ << " ";
+    } else {
+      // Function Name
+      os_ << f->name().str();
+    }
 
     // Formals
     int numThisFormal = f->thisFormal() ? 1 : 0;
@@ -415,43 +544,109 @@ struct RstSignatureVisitor {
     }
 
     // Return type
-    if (const Expression* e = f->returnType()) {
+    if (const AstNode* e = f->returnType()) {
       os_ << ": ";
       e->traverse(*this);
     }
 
     // Return Intent
-    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      os_ << " " << kindToString(f->returnIntent());
-    }
+//    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+//      os_ << " " << kindToString((IntentList) f->returnIntent());
+//    }
+
     return false;
+  }
+
+  bool isPostfix(const OpCall* op) {
+    return (op->isUnaryOp() &&
+            (op->op() == USTR("postfix!") || op->op() == USTR("?")));
   }
 
   bool enter(const OpCall* call) {
+    bool needsParens = false;
+    UniqueString outerOp, innerOp;
     if (call->isUnaryOp()) {
-      os_ << call->op().c_str();
       assert(call->numActuals() == 1);
+      bool isPostFixBang = false;
+      bool isNilable = false;
+      outerOp = call->op();
+      if (call->op() == USTR("postfix!")) {
+        isPostFixBang = true;
+        outerOp = USTR("!");
+      } else if (call->op() == USTR("?")) {
+        isNilable = true;
+        outerOp = USTR("?");
+      } else {
+        os_ << call->op();
+      }
+      if (call->actual(0)->isOpCall()) {
+        innerOp = call->actual(0)->toOpCall()->op();
+        needsParens = needParens(outerOp, innerOp, true,
+                                 (isPostFixBang || isNilable),
+                                 call->actual(0)->toOpCall()->isUnaryOp(),
+                                 isPostfix(call->actual(0)->toOpCall()) , false);
+      }
+      if (needsParens) os_ << "(";
       call->actual(0)->traverse(*this);
-
+      if (needsParens) os_ << ")";
+      if (isPostFixBang) {
+        os_ << "!";
+      } else if (isNilable) {
+        os_ << "nilable";
+      }
     } else if (call->isBinaryOp()) {
       assert(call->numActuals() == 2);
+      outerOp = call->op();
+      if (call->actual(0)->isOpCall()) {
+        innerOp = call->actual(0)->toOpCall()->op();
+        needsParens = needParens(outerOp, innerOp, false, false,
+                                 call->actual(0)->toOpCall()->isUnaryOp(),
+                                 isPostfix(call->actual(0)->toOpCall()), false);
+      }
+      if (needsParens) os_ << "(";
       call->actual(0)->traverse(*this);
-      os_ << call->op().c_str();
+      if (needsParens) os_ << ")";
+      needsParens = false;
+      bool addSpace = wantSpaces(call->op(), true);
+      if (addSpace)
+        os_ << " ";
+      os_ << call->op();
+      if (addSpace)
+        os_ << " ";
+      if (call->actual(1)->isOpCall()) {
+        innerOp = call->actual(1)->toOpCall()->op();
+        needsParens = needParens(outerOp, innerOp, false,
+                                 false, call->actual(1)->toOpCall()->isUnaryOp(),
+                                 isPostfix(call->actual(1)->toOpCall()) , true);
+        // special case handling things like 3*(4*string)
+        if (!needsParens && innerOp == "*" &&
+            (call->actual(1)->toOpCall()->actual(1)->isTuple() ||
+             call->actual(1)->toOpCall()->actual(1)->isIdentifier())) {
+          needsParens = true;
+        }
+      }
+      if (needsParens) os_ << "(";
       call->actual(1)->traverse(*this);
+      if (needsParens) os_ << ")";
+
     }
     return false;
   }
 
-  bool enter(const Call* call) {
-    const Expression* callee = call->calledExpression();
-    if (!callee) {
-      printf("ERROR %s\n", asttags::tagToString(call->tag()));
-      call->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-    }
-    assert(callee);  // This should be true because OpCall is handled
+  bool enter(const FnCall* call) {
+    const AstNode* callee = call->calledExpression();
+    assert(callee);
     callee->traverse(*this);
-    interpose(call->actuals(), ", ", "(", ")");
-
+    if (isCalleeManagementKind(callee)) {
+      os_ << " ";
+      call->actual(0)->traverse(*this);
+    } else {
+      if (call->callUsedSquareBrackets()) {
+        interpose(call->actuals(), ", ", "[", "]");
+      } else {
+        interpose(call->actuals(), ", ", "(", ")");
+      }
+    }
     return false;
   }
 
@@ -461,7 +656,18 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const Tuple* tup) {
-    interpose(tup->children(), ", ", "(", ")");
+    // interpose(tup->children(), ", ", "(", ")");
+    os_ << "(";
+    bool first = true;
+    for (auto it = tup->children().begin(); it != tup->children().end(); it++) {
+      if (!first) os_ << ", ";
+      (*it)->traverse(*this);
+      first = false;
+    }
+    if (tup->numChildren() == 1) {
+      os_ << ",";
+    }
+    os_ << ")";
     return false;
   }
 
@@ -500,9 +706,24 @@ struct RstSignatureVisitor {
     return true;
   }
 
+  bool enter(const VarArgFormal* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
+  bool enter(const TypeQuery* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
+  bool enter(const Conditional* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
   bool enter(const AstNode* a) {
     printf("unhandled enter on PrettyPrintVisitor of %s\n", asttags::tagToString(a->tag()));
-    a->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
+    a->stringify(os_, StringifyKind::CHPL_SYNTAX);
     gUnhandled.insert(a->tag());
     return false;
   }
@@ -662,7 +883,10 @@ struct RstResultBuilder {
     return getResult();
   }
   owned<RstResult> visit(const Variable* v) {
-    show("data", v);
+    if (v->isField())
+      show("attribute", v);
+    else
+      show("data", v);
     return getResult();
   }
   owned<RstResult> visit(const Record* r) {
@@ -674,6 +898,107 @@ struct RstResultBuilder {
     show("enum", e);
     return getResult();
   }
+
+   owned<RstResult> visit(const MultiDecl* md) {
+     if (isNoDoc(md)) return {};
+
+     std::string kind;
+     std::queue<const AstNode*> expressions;
+
+     for (auto decl : md->decls()) {
+       if (decl->toVariable()->typeExpression() ||
+           decl->toVariable()->initExpression()) {
+         expressions.push(decl);
+         kind = decl->toVariable()->isField() ? "attribute" : "data";
+       }
+     }
+     std::string prevTypeExpression;
+     std::string prevInitExpression;
+     for (auto decl : md->decls()) {
+       if (kind=="attribute" && decl != md->decls().begin()->toDecl()) {
+         os_ << "   ";
+       }
+       // write kind
+       os_ << ".. " << kind << ":: ";
+       if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
+         os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
+       }
+       // write name
+       os_ << decl->toVariable()->name();
+
+       if (expressions.empty()) {
+         assert(!prevTypeExpression.empty() || !prevInitExpression.empty());
+         multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+       } else {
+         // our decl doesn't have a typeExpression or initExpression,
+         // or it is the same one
+         // is previousInit or previousType set?
+         if (!prevInitExpression.empty() || !prevTypeExpression.empty()) {
+           multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+         } else { // use the expression in the queue
+           // take the one from the front of the expressions queue
+           if (expressions.front()->toVariable()->typeExpression()) {
+             //write out type expression->stringify
+             os_ << ": ";
+             expressions.front()->toVariable()->typeExpression()->stringify(os_,
+                                                                            CHPL_SYNTAX);
+             //set previous type expression = ": variableName.type"
+             prevTypeExpression =
+                 ": " + decl->toVariable()->name().str() + ".type";
+           }
+           if (expressions.front()->toVariable()->initExpression()) {
+             // write out initExpression->stringify
+             os_ << " = ";
+             expressions.front()->toVariable()->initExpression()->stringify(os_,
+                                                                            CHPL_SYNTAX);
+             // set previous init expression = "= variableName"
+             prevInitExpression = " = " + decl->toVariable()->name().str();
+           }
+         }
+         if (decl == expressions.front()) {
+           // our decl is the same as the first one in the queue, so we should pop it
+           // and clear the previousInit and previousType
+           expressions.pop();
+           prevTypeExpression.clear();
+           prevInitExpression.clear();
+         }
+       }
+       showComment(md, true);
+
+       if (auto attrs = md->attributes()) {
+         if (attrs->isDeprecated()) {
+           indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
+           indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage().c_str();
+           os_ << "\n\n";
+         }
+       }
+       os_ << "\n";
+     }
+     return getResult();
+   }
+
+  void multiDeclHelper(const Decl* decl, std::string& prevTypeExpression,
+                       std::string& prevInitExpression) {
+    if (!prevTypeExpression.empty()) {
+      // write prevTypeExpression
+      os_ << prevTypeExpression;
+      // set prevTypeExpression = ": thisVariableName.type"
+      prevTypeExpression = ": " + decl->toVariable()->name().str() + ".type";
+    }
+    if (!prevInitExpression.empty()) {
+      // write prevInitExpression
+      os_ << prevInitExpression;
+      // set prevInitExpression  = "= thisVariableName"
+      prevInitExpression = " = " + decl->toVariable()->name().str();
+    }
+  }
+
+  owned<RstResult> visit(const Class* c) {
+    show("class", c);
+    visitChildren(c);
+    return getResult(true);
+  }
+
 
   // TODO all these nullptr gets stored in the query map... can we avoid that?
   owned<RstResult> visit(const AstNode* n) { return {}; }
@@ -862,6 +1187,12 @@ struct Args {
   bool selfTest = false;
   bool stdout = false;
   bool dump = false;
+  bool textOnly = false;
+  std::string outputDir;
+  bool processUsedModules = false;
+  std::string author;
+  std::string commentStyle;
+  std::string projectVersion = "0.0.1";
   std::vector<std::string> files;
 };
 
@@ -880,6 +1211,22 @@ static Args parseArgs(int argc, char **argv) {
       ret.stdout = true;
     } else if (std::strcmp("--dump", argv[i]) == 0) {
       ret.dump = true;
+    } else if (std::strcmp("--text-only", argv[i]) ==  0) {
+      ret.textOnly = true;
+    } else if (std::strcmp("--output-dir", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.outputDir = argv[i + 1];
+      i += 1;
+    } else if (std::strcmp("--process-used-modules", argv[i]) ==  0) {
+      ret.processUsedModules = true;
+    } else if (std::strcmp("--comment-style", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.commentStyle = argv[i + 1];
+      i += 1;
+    } else if (std::strcmp("--project-version", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.projectVersion = checkProjectVersion(argv[i + 1]);
+      i += 1;
     } else {
       ret.files.push_back(argv[i]);
     }
@@ -917,7 +1264,14 @@ int main(int argc, char** argv) {
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
     const BuilderResult& builderResult = parseFile(ctx, path);
-
+    // just display the first error message right now
+    // this is a quick fix to stop the program from dying
+    // in  a gross way when a file can't be located
+    if (builderResult.numErrors() > 0) {
+      std::cerr << "Error parsing " << path << ": "
+                << builderResult.error(0).message() << "\n";
+      return 1;
+    }
     std::ofstream ofs;
     if (!args.stdout) {
       auto name = moduleName(builderResult);
