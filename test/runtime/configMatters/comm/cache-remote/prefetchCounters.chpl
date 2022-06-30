@@ -87,7 +87,7 @@ proc testCounters(id: int)
         var cache_prefetch_unused = res[1].cache_prefetch_unused;
         var cache_prefetch_waited = res[1].cache_prefetch_waited;
         assert(cache_num_prefetches == numPrefetches);
-        assert(cache_prefetch_unused == 32);
+        assert(cache_prefetch_unused == numPrefetches);
         assert(cache_prefetch_waited == 0);
         writef("\tcache_num_prefetches: %i\n", cache_num_prefetches);
         writef("\tcache_prefetch_unused: %i\n", cache_prefetch_unused);
