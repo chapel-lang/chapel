@@ -1,5 +1,5 @@
 use SysError;
 
-var e = fromSyserr(-1);
+var e = SystemErrorFrom(-1);
 
 writeln(e);

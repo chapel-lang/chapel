@@ -1065,7 +1065,7 @@ module ZMQ {
       var errmsg_fmt = "Error in Socket.%s(%s): %s\n";
       var errmsg_str = errmsg_fmt.format(err_fn, string:string, errmsg_zmq);
 
-      throw fromSyserr(socket_errno:syserr, errmsg_str);
+      throw SystemErrorFrom(socket_errno:syserr, errmsg_str);
     }
   } // record Socket
 

@@ -81,7 +81,7 @@ class SystemError : Error {
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  deprecated "'SystemError.fromSyserr' is deprecated. Please use 'fromSyserr' instead"
+  deprecated "'SystemError.fromSyserr' is deprecated. Please use 'SystemErrorFrom' instead"
   proc type fromSyserr(err: syserr, details: string = "") {
     return fromSyserrHelper(err, details);
   }
@@ -95,7 +95,7 @@ class SystemError : Error {
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  deprecated "SystemError.fromSyserr' is deprecated. Please use 'fromSyserr' instead"
+  deprecated "SystemError.fromSyserr' is deprecated. Please use 'SystemErrorFrom' instead"
   proc type fromSyserr(err: int, details: string = "") {
     return fromSyserrHelper(err:syserr, details);
   }
@@ -361,10 +361,10 @@ private proc quote_string(s:string, len:c_ssize_t) {
   }
 }
 
-/* Helper to allow calling the standalone fromSyserr function from the
+/* Helper to allow calling the standalone SystemErrorFrom function from the
    deprecated type method SystemError.fromSyserr until it is removed */
 private proc fromSyserrHelper(err: syserr, details: string = "") {
-  return fromSyserr(err, details);
+  return SystemErrorFrom(err, details);
 }
 /*
   Return the matching :class:`SystemError` subtype for a given ``syserr``,
@@ -375,7 +375,7 @@ private proc fromSyserrHelper(err: syserr, details: string = "") {
 */
 pragma "insert line file info"
 pragma "always propagate line file info"
-proc fromSyserr(err: syserr, details: string = "") {
+proc SystemErrorFrom(err: syserr, details: string = "") {
   if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
     return new owned BlockingIOError(details, err);
   } else if err == ECHILD {
@@ -426,8 +426,8 @@ proc fromSyserr(err: syserr, details: string = "") {
 */
 pragma "insert line file info"
 pragma "always propagate line file info"
-proc fromSyserr(err: int, details: string = "") {
-  return fromSyserr(err:syserr, details);
+proc SystemErrorFrom(err: int, details: string = "") {
+  return SystemErrorFrom(err:syserr, details);
 }
 
 /* Create and throw a :class:`SystemError` if an error occurred, formatting a
@@ -450,7 +450,7 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     var   details    = msg + " with path " + quotedpath +
                        " offset " + offset:string;
-    throw fromSyserr(error, details);
+    throw SystemErrorFrom(error, details);
   }
 }
 
@@ -462,7 +462,7 @@ proc ioerror(error:syserr, msg:string, path:string) throws
   if error {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     var   details    = msg + " with path " + quotedpath;
-    throw fromSyserr(error, details);
+    throw SystemErrorFrom(error, details);
   }
 }
 
@@ -471,7 +471,7 @@ pragma "insert line file info"
 pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string) throws
 {
-  if error then throw fromSyserr(error, msg);
+  if error then throw SystemErrorFrom(error, msg);
 }
 
 /* Create and throw an :class:`IOError` and include a formatted message based on
@@ -491,7 +491,7 @@ proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
   const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
   const details    = errstr + " " + msg + " with path " + quotedpath +
                      " offset " + offset:string;
-  throw fromSyserr(EIO:syserr, details);
+  throw SystemErrorFrom(EIO:syserr, details);
 }
 
 /* Convert a syserr code to a human-readable string describing the error.
