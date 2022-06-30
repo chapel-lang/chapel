@@ -53,14 +53,16 @@ static void test1() {
   Context* ctx = &context;
 
   auto path = UniqueString::get(ctx, "input.chpl");
+  UniqueString emptyParentSymbolPath;
   std::string contents = "/* this is a test */";
   setFileText(ctx, path, contents);
 
-  parse(ctx, path);
+  parse(ctx, path, emptyParentSymbolPath);
 }
 
 static const Module* parseOneModule(Context* ctx, UniqueString filepath) {
-  const ModuleVec& v = parse(ctx, filepath);
+  UniqueString emptyParentSymbolPath;
+  const ModuleVec& v = parse(ctx, filepath, emptyParentSymbolPath);
   assert(v.size() == 1);
   return v[0];
 }
@@ -514,7 +516,10 @@ static void test5() {
 static void checkPathAllChildren(Context* context,
                                  const AstNode* ast,
                                  UniqueString expectPath) {
-  UniqueString gotPath = context->filePathForId(ast->id());
+  UniqueString gotPath;
+  UniqueString gotParentSymbolPath;
+  bool found = context->filePathForId(ast->id(), gotPath, gotParentSymbolPath);
+  assert(found);
   assert(gotPath == expectPath);
 
   for (const AstNode* child : ast->children()) {
@@ -600,6 +605,7 @@ static void test8() {
   Context* ctx = &context;
 
   auto filepath = UniqueString::get(ctx, "test8.chpl");
+  UniqueString emptyParentSymbolPath;
   std::string contents;
 
   contents = "module M { }\n"
@@ -607,7 +613,7 @@ static void test8() {
              "module O { }\n";
   setFileText(ctx, filepath, contents);
 
-  const ModuleVec& v = parse(ctx, filepath);
+  const ModuleVec& v = parse(ctx, filepath, emptyParentSymbolPath);
   assert(v.size() == 3);
 
   auto m = getToplevelModule(ctx, UniqueString::get(ctx, "M"));

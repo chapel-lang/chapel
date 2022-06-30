@@ -167,7 +167,14 @@ ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
               nameSE->symbol()->name);
   }
 
-  const char* nameString = toUnresolvedSymExpr(nameExp)->unresolved;
+  const char* nameString = nullptr;
+  if (auto urse = toUnresolvedSymExpr(nameExp))
+    nameString = urse->unresolved;
+  else if (auto se = toSymExpr(nameExp))
+    nameString = se->symbol()->name;
+  else
+    INT_FATAL("case not handled");
+
   if (nameString == astrThis)
     USR_FATAL_CONT(nameExp, "cannot currently apply a forall or task intent to 'this'");
 
@@ -182,7 +189,14 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
                                                         Expr* riExpr)
 {
   INT_ASSERT(riExpr != NULL);
-  const char* name = toUnresolvedSymExpr(ovar)->unresolved;
+  const char* name = nullptr;
+  if (auto urse = toUnresolvedSymExpr(ovar))
+    name = urse->unresolved;
+  else if (auto se = toSymExpr(ovar))
+    name = se->symbol()->name;
+  else
+    INT_FATAL("case not handled");
+
   ShadowVarSymbol* result = new ShadowVarSymbol(TFI_REDUCE, name, NULL, riExpr);
   new DefExpr(result); // set result->defPoint
   return result;

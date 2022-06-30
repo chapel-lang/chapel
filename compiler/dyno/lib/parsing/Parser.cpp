@@ -40,12 +40,23 @@ namespace parsing {
 
 using namespace chpl::uast;
 
-Parser::Parser(Context* context)
-  : context_(context) {
+Parser::Parser(Context* context, UniqueString parentSymbolPath)
+  : context_(context), parentSymbolPath_(parentSymbolPath) {
+}
+
+Parser Parser::topLevelModuleParser(Context* context) {
+  UniqueString emptySymbolPath;
+  return Parser(context, emptySymbolPath);
+}
+
+Parser Parser::includedModuleParser(Context* context,
+                                    UniqueString parentSymbolPath) {
+  return Parser(context, parentSymbolPath);
 }
 
 owned<Parser> Parser::build(Context* context) {
-  return toOwned(new Parser(context));
+  UniqueString emptySymbolPath;
+  return toOwned(new Parser(context, emptySymbolPath));
 }
 
 static void updateParseResult(ParserContext* parserContext) {
@@ -71,15 +82,20 @@ static void updateParseResult(ParserContext* parserContext) {
   for (ParserError & parserError : parserContext->errors) {
     // Need to convert the error to a regular ErrorMessage
     Location loc = parserContext->convertLocation(parserError.location);
-    auto errMsg = ErrorMessage(ID(), loc, parserError.message,
-                               parserError.kind);
+    auto errMsg = ErrorMessage(parserError.kind, loc, parserError.message);
     builder->addError(std::move(errMsg));
   }
 }
 
 
 BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
-  auto builder = Builder::build(this->context(), path);
+  owned<Builder> builder;
+  if (parentSymbolPath_.isEmpty()) {
+    builder = Builder::topLevelModuleBuilder(this->context(), path);
+  } else {
+    builder = Builder::includedModuleBuilder(this->context(), path,
+                                             parentSymbolPath_);
+  }
   ErrorMessage fileError;
 
   FILE* fp = openfile(path, "r", fileError);
@@ -167,7 +183,13 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
 
 BuilderResult Parser::parseString(const char* path, const char* str,
                                   ParserStats* parseStats) {
-  auto builder = Builder::build(this->context(), path);
+  owned<Builder> builder;
+  if (parentSymbolPath_.isEmpty()) {
+    builder = Builder::topLevelModuleBuilder(this->context(), path);
+  } else {
+    builder = Builder::includedModuleBuilder(this->context(), path,
+                                             parentSymbolPath_);
+  }
 
   // Set the (global) parser debug state
   if (DEBUG_PARSER)

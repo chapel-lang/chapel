@@ -37,4 +37,10 @@ convertToplevelModule(chpl::Context* context,
                       const chpl::uast::Comment* comment,
                       const chpl::uast::BuilderResult& builderResult);
 
+// apply fixups to fix SymExprs to refer to Symbols that
+// might have been created in a different order.
+// TODO: in the future, this should be a method on Converter,
+// and there should be 1 Converter to convert a module and its dependencies.
+void postConvertApplyFixups(chpl::Context* context);
+
 #endif

@@ -343,7 +343,12 @@ static void test1(Parser* parser) {
   )"""";
   auto parseResult = parser->parseString("Test1.chpl",
                                          testCode.c_str());
-  assert(!parseResult.numErrors());
+  for (int i = 0; i < parseResult.numErrors(); i++) {
+    const ErrorMessage& err = parseResult.error(i);
+    // ignore implicit module warning
+    assert(err.kind() != ErrorMessage::SYNTAX);
+    assert(err.kind() != ErrorMessage::ERROR);
+  }
   auto mod = parseResult.singleModule();
   assert(mod);
   stringifyNode(mod, CHPL_SYNTAX);

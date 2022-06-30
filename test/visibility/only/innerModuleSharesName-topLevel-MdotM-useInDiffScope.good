@@ -1,2 +1,2 @@
-innerModuleSharesName-topLevel-MdotM-useInDiffScope.chpl:1: warning: as written, 'M' is a sub-module of the module created for file 'innerModuleSharesName-topLevel-MdotM-useInDiffScope.chpl' due to the file-level 'require', 'use', and/or 'import' statements.  If you meant for 'M' to be a top-level module, move the 'require', 'use', and/or 'import' statements into its scope.
+innerModuleSharesName-topLevel-MdotM-useInDiffScope.chpl:9: warning: This file-scope code is outside of any explicit module declarations (e.g., module M), so an implicit module named 'innerModuleSharesName-topLevel-MdotM-useInDiffScope' is being introduced to contain the file's contents.
 whee

@@ -61,7 +61,7 @@ static void test1() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -119,7 +119,7 @@ static void test1n() {
                          "}\n";
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 3);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -177,7 +177,7 @@ static void test2a() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* M = vec[0]->toModule();
   assert(M);
@@ -250,7 +250,7 @@ static void test2() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 4);
   const Module* g = vec[0]->toModule();
   assert(g);
@@ -342,7 +342,7 @@ static void test3a() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 2);
   const Module* M = vec[0]->toModule();
   assert(M);
@@ -421,7 +421,7 @@ static void test3() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 3);
   const Module* G = vec[0]->toModule();
   assert(G);
@@ -590,7 +590,7 @@ static void test4() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   auto M = vec[0]->toModule();
   assert(M);
@@ -645,7 +645,7 @@ static void test5() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 4);
   auto N = vec[0]->toModule();
   auto A = vec[1]->toModule();
@@ -717,7 +717,7 @@ static void test6() {
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 5);
   auto M = vec[0]->toModule();
   auto N = vec[1]->toModule();

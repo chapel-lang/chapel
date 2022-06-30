@@ -228,7 +228,7 @@ static std::string getStringAndIndexFromPrim(CallExpr* call, size_t* idx) {
   INT_ASSERT(se->symbol()->isParameter() == true);
 
   const char*       str       = get_string(se);
-  const std::string unescaped = unescapeString(str, se);
+  const std::string unescaped = chpl::unescapeStringC(str);
 
   if (call->numActuals() > 1) {
     SymExpr* ie = toSymExpr(call->get(2));
@@ -434,10 +434,9 @@ static Expr* postFoldPrimop(CallExpr* call) {
     INT_ASSERT(lhs && rhs);
 
     if (lhs->symbol()->isParameter() && rhs->symbol()->isParameter()) {
-      std::string lstr = unescapeString(get_string(lhs), lhs);
-      std::string rstr = unescapeString(get_string(rhs), rhs);
-
-      std::string concat = chpl::quoteStringForC(lstr+rstr);
+      std::string lstr = chpl::unescapeStringC(get_string(lhs));
+      std::string rstr = chpl::unescapeStringC(get_string(rhs));
+      std::string concat = chpl::escapeStringC(lstr+rstr);
 
       if (lhs->symbol()->type == dtString) {
         retval = new SymExpr(new_StringSymbol(astr(concat)));
@@ -456,8 +455,9 @@ static Expr* postFoldPrimop(CallExpr* call) {
     INT_ASSERT(se);
 
     if (se->symbol()->isParameter() == true) {
-      const char* str     = get_string(se);
-      const size_t nbytes = unescapeString(str, se).length();
+      const char* str         = get_string(se);
+      const std::string unesc = chpl::unescapeStringC(str);
+      const size_t nbytes     = unesc.length();
 
       retval = new SymExpr(new_IntSymbol(nbytes, INT_SIZE_DEFAULT));
 
@@ -470,7 +470,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     INT_ASSERT(se && se->symbol()->isParameter());
 
     const char* str         = get_string(se);
-    const std::string unesc = unescapeString(str, se);
+    const std::string unesc = chpl::unescapeStringC(str);
     const size_t nbytes     = unesc.length();
 
     // Don't bother looking at the first byte.

@@ -9345,7 +9345,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
     }
 
     // collapse newlines and other escape sequences before printing
-    str = astr(unescapeString(str, var).c_str());
+    str = astr(chpl::unescapeStringC(str).c_str());
 
     if (call->isPrimitive(PRIM_ERROR) == true) {
       if (inTryResolve == 0) {

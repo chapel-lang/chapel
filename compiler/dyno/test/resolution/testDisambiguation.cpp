@@ -75,7 +75,7 @@ static void checkCalledIndex(Context* context,
 
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);

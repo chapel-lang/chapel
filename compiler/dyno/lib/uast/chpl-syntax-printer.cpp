@@ -509,7 +509,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const BytesLiteral* node) {
-    ss_ << "b\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
+    ss_ << "b\"" << escapeStringC(node->str().str()) << '"';
   }
 
   void visit(const Catch* node) {
@@ -611,7 +611,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const CStringLiteral* node) {
-    ss_ << "c\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
+    ss_ << "c\"" << escapeStringC(node->str().str()) << '"';
   }
 
   void visit(const Defer* node) {
@@ -1041,7 +1041,7 @@ struct ChplSyntaxVisitor {
   void visit(const PrimCall* node) {
     ss_ << "__primitive";
     ss_ << "(";
-    ss_ << '"' << quoteStringForC(primTagToName(node->prim())) << '"' << ", ";
+    ss_ << '"' << escapeStringC(primTagToName(node->prim())) << '"' << ", ";
     interpose(node->actuals(), ", ");
     ss_ << ")";
   }
@@ -1114,7 +1114,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const StringLiteral* node) {
-    ss_ << '"' << quoteStringForC(std::string(node->str().c_str())) << '"';
+    ss_ << '"' << escapeStringC(node->str().str()) << '"';
   }
 
   void visit(const Sync* node) {

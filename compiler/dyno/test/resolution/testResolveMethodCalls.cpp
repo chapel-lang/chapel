@@ -57,7 +57,7 @@ static void test1() {
   setFileText(context, path, contents);
 
   // Get the module.
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -133,7 +133,7 @@ static void test2() {
   setFileText(context, path, contents);
 
   // Get the module.
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);

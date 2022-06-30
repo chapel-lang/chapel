@@ -26,26 +26,95 @@
 namespace chpl {
 
 
+// find the last '.' but don't count \.
+// returns -1 if none was found
+static ssize_t findLastDot(const char* path) {
+  ssize_t lastDot = -1;
+  for (ssize_t i = 1; path[i]; i++) {
+    if (path[i] == '.' && path[i-1] != '\\')
+      lastDot = i;
+  }
+
+  return lastDot;
+}
+
+UniqueString ID::parentSymbolPath(Context* context, UniqueString symbolPath) {
+
+  // If the symbol path is empty, return an empty string
+  if (symbolPath.isEmpty()) {
+    return UniqueString();
+  }
+
+  // find the last '.' component from the ID but don't count \.
+  const char* path = symbolPath.c_str();
+  ssize_t lastDot = findLastDot(path);
+
+  if (lastDot == -1) {
+    // no path component to remove, so return an empty string
+    return UniqueString();
+  }
+
+  // Otherwise, construct a UniqueString for the parent symbol path
+  return UniqueString::get(context, path, lastDot);
+}
+
+UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
+{
+  // If the symbol path is empty, return an empty string
+  if (symbolPath.isEmpty()) {
+    return UniqueString();
+  }
+
+  // find the last '.' component from the ID but don't count \.
+  const char* path = symbolPath.c_str();
+  ssize_t lastDot = findLastDot(path);
+
+  if (lastDot != -1) {
+    // skip past the final '.'
+    path = path + lastDot + 1;
+  }
+
+
+  // now find truncate it at a '#' but don't count \#
+  ssize_t end = 0;
+  ssize_t i = 1;
+  while (true) {
+    if (path[i] == '\0' ||
+        (path[i] == '#' && path[i-1] != '\\')) {
+      end = i;
+      break;
+    }
+    i++;
+  }
+
+  // compute the portion of the string before the #
+  auto s = std::string(path, end);
+
+  // now unquote
+  s = unescapeStringId(s);
+
+  // now get the UniqueString
+  return UniqueString::get(context, s);
+}
+
 ID ID::parentSymbolId(Context* context) const {
   if (postOrderId_ >= 0) {
     // Create an ID with postorder id -1 instead
     return ID(symbolPath_, -1, 0);
   }
 
-  // remove the last '.' component from the ID
-  const char* path = symbolPath_.c_str();
-  ssize_t lastDot = -1;
-  for (ssize_t i = 0; path[i]; i++) {
-    if (path[i] == '.') lastDot = i;
-  }
-
-  if (lastDot == -1) {
-    // no path component to remove, so return an empty ID
+  UniqueString parentSymPath = ID::parentSymbolPath(context, symbolPath_);
+  if (parentSymPath.isEmpty()) {
+    // no parent symbol path so return an empty ID
     return ID();
   }
 
   // Otherwise, construct an ID for the parent symbol
-  return ID(UniqueString::get(context, path, lastDot), -1, 0);
+  return ID(parentSymPath, -1, 0);
+}
+
+UniqueString ID::symbolName(Context* context) const {
+  return ID::innermostSymbolName(context, symbolPath_);
 }
 
 bool ID::contains(const ID& other) const {
@@ -79,6 +148,88 @@ int ID::compare(const ID& other) const {
 
   // if that wasn't different, compare the id
   return this->postOrderId() - other.postOrderId();
+}
+
+std::vector<std::pair<UniqueString,int>>
+ID::expandSymbolPath(Context* context, UniqueString symbolPath) {
+  std::vector<std::pair<UniqueString,int>> ret;
+
+  const char* s = symbolPath.c_str();
+  while (s && s[0] != '\0') {
+    const char* nextPeriod = nullptr;
+    // find the next period, but don't count \.
+    {
+      const char* p = s;
+      char cur = 0;
+      char last = 0;
+      while (true) {
+        cur = *p;
+        if (cur == '\0') {
+          break; // end of string
+        }
+        if (cur == '.' && last != '\\') {
+          nextPeriod = p;
+          break; // found the period
+        }
+        last = cur;
+        p++;
+      }
+    }
+
+    // compute location of the null byte or just after the next '.'
+    const char* next = nullptr;
+    if (nextPeriod == nullptr) {
+      // location of the null byte
+      next = s + strlen(s);
+    } else {
+      // just after the '.'
+      next = nextPeriod + 1;
+    }
+
+    // if there is a '#' in s..next, find it,
+    // but don't count \#
+    const char* nextPound = nullptr;
+    {
+      char cur = 0;
+      char last = 0;
+      for (const char* p = s; p < next; p++) {
+        cur = *p;
+        if (cur == '#' && last != '\\') {
+          nextPound = p;
+          break;
+        }
+        last = cur;
+      }
+    }
+
+    // compute the repeat count
+    int repeat = 0;
+    if (nextPound != nullptr) {
+      // convert the numeric repeat value to an integer
+      // note that atoi should stop at the first non-digit
+      repeat = atoi(nextPound + 1);
+    }
+
+    // compute location of the '#', '.', or the null byte,
+    // whichever comes first
+    const char* partEnd = nullptr;
+    if (nextPound != nullptr) {
+      partEnd = nextPound;
+    } else if (nextPeriod != nullptr) {
+      partEnd = nextPeriod;
+    } else {
+      partEnd = next; // next is location of null byte in this case
+    }
+
+    // compute the UniqueString containing just the symbol part
+    auto part = UniqueString::get(context, s, partEnd-s);
+
+    ret.emplace_back(part, repeat);
+
+    s = next;
+  }
+
+  return ret;
 }
 
 bool ID::update(chpl::ID& keep, chpl::ID& addin) {

@@ -37,7 +37,7 @@ using namespace types;
 using namespace uast;
 
 // error handler that causes the test to fail if it runs
-static void reportError(const ErrorMessage& err) {
+static void reportError(Context* context, const ErrorMessage& err) {
   printf("error encountered - %s\n", err.message().c_str());
   assert(false && "fatal error");
 }
@@ -47,7 +47,7 @@ static const Module* parseModule(Context* context, const char* src) {
   std::string contents = src;
   setFileText(context, path, contents);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
 
   return vec[0];

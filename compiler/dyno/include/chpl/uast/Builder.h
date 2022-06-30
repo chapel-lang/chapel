@@ -47,11 +47,14 @@ class AstNode;
  */
 class Builder final {
  private:
+  // stores symbol path and repeat number (>0 for syms with same name)
   using pathVecT = std::vector<std::pair<UniqueString,int>>;
+  // maps the name to the repeat number
   using declaredHereT = std::unordered_map<UniqueString,int>;
 
   Context* context_;
   UniqueString filepath_;
+  UniqueString startingSymbolPath_;
   AstList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
 
@@ -66,8 +69,10 @@ class Builder final {
   std::unordered_map<ID, const AstNode*> idToAst_;
   std::unordered_map<ID, ID> idToParent_;
 
-  Builder(Context* context, UniqueString filepath)
-    : context_(context), filepath_(filepath)
+  Builder(Context* context, UniqueString filepath,
+          UniqueString startingSymbolPath)
+    : context_(context), filepath_(filepath),
+      startingSymbolPath_(startingSymbolPath)
   {
   }
 
@@ -78,6 +83,19 @@ class Builder final {
                    declaredHereT& duplicates);
 
  public:
+  /** Construct a Builder for parsing a top-level module */
+  static owned<Builder> topLevelModuleBuilder(Context* context,
+                                              const char* filepath);
+
+  /** Construct a Builder for parsing an included module.
+      'parentSymbolPath' is the symbol path component of the ID
+      of the module containing the 'module include' statement.
+   */
+  static owned<Builder> includedModuleBuilder(Context* context,
+                                              const char* filepath,
+                                              UniqueString parentSymbolPath);
+
+  /** returns an owned topLevelModuleBuilder */
   static owned<Builder> build(Context* context, const char* filepath);
 
   Context* context() const { return context_; }
@@ -111,6 +129,11 @@ class Builder final {
     with this property.
    */
   static bool astTagIndicatesNewIdScope(asttags::AstTag tag);
+
+  /**
+    Compute the module name based on a file name.
+   */
+  static std::string filenameToModulename(const char* filename);
 
   // build methods are actually type methods on the individual AST
   // elements. This prevents the Builder API from growing unreasonably large.

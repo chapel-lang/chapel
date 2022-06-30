@@ -99,7 +99,8 @@ static ModuleSymbol* oldParserParseFile(const char* fileName,
                                         bool        include);
 
 // Callback to configure how dyno error messages are displayed.
-static void dynoParseFileErrorHandler(const chpl::ErrorMessage& err);
+static void dynoParseFileErrorHandler(chpl::Context* context,
+                                      const chpl::ErrorMessage& err);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -133,6 +134,8 @@ void parse() {
   checkConfigs();
 
   finishCountingTokens();
+
+  postConvertApplyFixups(gContext);
 
   parsed = true;
 }
@@ -718,6 +721,11 @@ static void maybePrintModuleFile(ModTag modTag, const char* path) {
   }
 }
 
+void noteParsedIncludedModule(ModuleSymbol* mod, const char* pathAstr) {
+  maybePrintModuleFile(mod->modTag, pathAstr);
+  gFilenameLookup.push_back(pathAstr);
+}
+
 static ModuleSymbol* oldParserParseFile(const char* path,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine,
@@ -866,10 +874,11 @@ static ModuleSymbol* oldParserParseFile(const char* path,
   return retval;
 }
 
-static void uASTDisplayError(const chpl::ErrorMessage& err) {
+static void uASTDisplayError(chpl::Context* context,
+                             const chpl::ErrorMessage& err) {
   //astlocMarker locMarker(err.location());
 
-  auto loc = err.location();
+  auto loc = err.location(context);
 
   const char* msg = err.message().c_str();
 
@@ -881,8 +890,8 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
       USR_WARN(loc,"%s", msg);
       break;
     case chpl::ErrorMessage::SYNTAX: {
-      const char* path = err.path().c_str();
-      const int line = err.line();
+      const char* path = loc.path().c_str();
+      const int line = loc.line();
       const int tagUsrFatalCont = 3;
       setupError("parser", path, line, tagUsrFatalCont);
       fprintf(stderr, "%s:%d: %s", path, line, "syntax error");
@@ -902,11 +911,12 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
 }
 
 // TODO: Add helpers to convert locations without passing IDs.
-static void dynoParseFileErrorHandler(const chpl::ErrorMessage& err) {
-  uASTDisplayError(err);
+static void dynoParseFileErrorHandler(chpl::Context* context,
+                                      const chpl::ErrorMessage& err) {
+  uASTDisplayError(context, err);
 
   for (auto& detail : err.details()) {
-    uASTDisplayError(detail);
+    uASTDisplayError(context, detail);
   }
 }
 
@@ -930,9 +940,13 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   auto path = chpl::UniqueString::get(gContext, fileName);
 
+  INT_ASSERT(!include);
+
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.
-  auto& builderResult = chpl::parsing::parseFile(gContext, path);
+  chpl::UniqueString emptySymbolPath;
+  auto& builderResult =
+    chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
   // Any errors while building will have already been emitted by the global
   // error handling callback that was set above. So just stop.
@@ -1017,14 +1031,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   USR_STOP();
 
   INT_ASSERT(lastModSym && numModSyms);
-
-  // Use this temporarily to check the contents of the implicit module.
-  // TODO (dlongnecke): Emit the errors in this helper function in the
-  // parse query instead when we have warnings (e.g. 'noteWarning').
-  if (numModSyms == 1 && lastModSym->hasFlag(FLAG_IMPLICIT_MODULE)) {
-    SET_LINENO(lastModSym);
-    containsOnlyModules(lastModSym->block, path.c_str());
-  }
 
   // All modules were already added to the done list in the loop above.
   // The non-uAST variant of this function returns 'nullptr' if multiple

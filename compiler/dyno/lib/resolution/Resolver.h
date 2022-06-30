@@ -42,11 +42,15 @@ struct Resolver {
   std::vector<const uast::Decl*> declStack;
   std::vector<const Scope*> scopeStack;
   bool signatureOnly = false;
-  const uast::Block* fnBody = nullptr;
   bool fieldOrFormalsComputed = false;
+  bool scopeResolveOnly = false;
+  const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
   const uast::Call* inLeafCall = nullptr;
+  bool receiverScopeComputed = false;
+  const Scope* savedReceiverScope = nullptr;
+  const types::CompositeType* savedReceiverType = nullptr;
 
   // results of the resolution process
 
@@ -83,6 +87,12 @@ struct Resolver {
                      const uast::AstNode* modStmt,
                      ResolutionResultByPostorderID& byPostorder);
 
+  // set up Resolver to scope resolve a Module
+  static Resolver
+  moduleStmtScopeResolver(Context* context, const uast::Module* mod,
+                          const uast::AstNode* modStmt,
+                          ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to resolve a potentially generic Function signature
   static Resolver
   initialSignatureResolver(Context* context, const uast::Function* fn,
@@ -104,6 +114,11 @@ struct Resolver {
                    const PoiScope* poiScope,
                    const TypedFnSignature* typedFnSignature,
                    ResolutionResultByPostorderID& byPostorder);
+
+  // set up Resolver to scope resolve a Function
+  static Resolver
+  functionScopeResolver(Context* context, const uast::Function* fn,
+                        ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to initially resolve field declaration types
   static Resolver
@@ -141,10 +156,23 @@ struct Resolver {
                       const PoiScope* poiScope,
                       ResolutionResultByPostorderID& byPostorder);
 
+  /* Get the formal types from a Resolver that computed them
+   */
+  std::vector<types::QualifiedType> getFormalTypes(const uast::Function* fn);
+
   /* Returns ErroneousType and emits the error message msg
      relevant to location for 'ast'.
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
+
+  /* Compute the receiver scope (when resolving a method)
+     and return nullptr if it is not applicable.
+   */
+  const Scope* methodReceiverScope();
+  /* Compute the receiver scope (when resolving a method)
+     and return nullptr if it is not applicable.
+   */
+  const types::CompositeType* methodReceiverType();
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.

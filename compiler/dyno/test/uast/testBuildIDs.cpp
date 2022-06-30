@@ -436,6 +436,43 @@ static void test4() {
   assert(modM->stmt(1)->id().parentSymbolId(ctx) == modM->id());
 }
 
+static void test5() {
+  Context context;
+  Context* ctx = &context;
+
+  const char* path = "path/to/file-name.sub.chpl";
+  auto builder = Builder::build(ctx, path);
+  Builder* b   = builder.get();
+  Location dummyLoc(UniqueString::get(ctx, path));
+
+  {
+    /* Create the AST for
+
+      x;
+
+     */
+
+    auto strX = UniqueString::get(ctx, "x");
+
+    b->addToplevelExpression(Identifier::build(b, dummyLoc, strX));
+  }
+
+  BuilderResult r = b->result();
+  assert(!r.numErrors());
+  auto implicitMod = r.singleModule();
+  assert(implicitMod->numStmts() == 1);
+  assert(implicitMod->stmt(0)->isIdentifier());
+
+  // now check the IDs
+  assert(implicitMod->id().postOrderId() == -1);
+  assert(implicitMod->id().numContainedChildren() == 1);
+  assert(implicitMod->id().symbolPath() == "file-name\\.sub");
+
+  assert(implicitMod->stmt(0)->id().postOrderId() == 0);
+  assert(implicitMod->stmt(0)->id().numContainedChildren() == 0);
+  assert(implicitMod->stmt(0)->id().symbolPath() == "file-name\\.sub");
+}
+
 
 int main(int argc, char** argv) {
   test0();
@@ -443,5 +480,7 @@ int main(int argc, char** argv) {
   test2();
   test3();
   test4();
+  test5();
+
   return 0;
 }

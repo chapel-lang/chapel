@@ -75,6 +75,32 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
   return QUERY_END(result);
 }
 
+static const ResolutionResultByPostorderID&
+scopeResolveModuleStmt(Context* context, ID id) {
+  QUERY_BEGIN(scopeResolveModuleStmt, context, id);
+
+  assert(id.postOrderId() >= 0);
+
+  // TODO: can we save space better here by having
+  // the ResolutionResultByPostorderID have a different offset
+  // (so it can contain only ids within the requested stmt) or
+  // maybe we can make it sparse with a hashtable or something?
+  ResolutionResultByPostorderID result;
+
+  ID moduleId = parsing::idToParentId(context, id);
+  auto moduleAst = parsing::idToAst(context, moduleId);
+  if (const Module* mod = moduleAst->toModule()) {
+    // Resolve just the requested statement
+    auto modStmt = parsing::idToAst(context, id);
+    auto visitor = Resolver::moduleStmtScopeResolver(context, mod, modStmt,
+                                                     result);
+    modStmt->traverse(visitor);
+  }
+
+  return QUERY_END(result);
+}
+
+
 
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
@@ -91,6 +117,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
         if (child->isComment() ||
             child->isTypeDecl() ||
             child->isFunction() ||
+            child->isModule() ||
             child->isUse() ||
             child->isImport()) {
           // ignore this statement since it is not relevant to
@@ -115,6 +142,50 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   }
 
   return QUERY_END(result);
+}
+
+const ResolutionResultByPostorderID&
+scopeResolveModule(Context* context, ID id) {
+  QUERY_BEGIN(scopeResolveModule, context, id);
+
+  const AstNode* ast = parsing::idToAst(context, id);
+  assert(ast != nullptr);
+
+  ResolutionResultByPostorderID result;
+
+  if (ast != nullptr) {
+    if (const Module* mod = ast->toModule()) {
+      result.setupForSymbol(mod);
+      for (auto child: mod->children()) {
+        if (child->isComment() ||
+            child->isTypeDecl() ||
+            child->isFunction() ||
+            child->isModule() ||
+            child->isUse() ||
+            child->isImport()) {
+          // ignore this statement since it is not relevant to
+          // the resolution of module initializers and module-level
+          // variables.
+        } else {
+          ID stmtId = child->id();
+          // resolve the statement
+          const ResolutionResultByPostorderID& resolved =
+            scopeResolveModuleStmt(context, stmtId);
+
+          // copy results for children and the node itself
+          int firstId = stmtId.postOrderId() - stmtId.numContainedChildren();
+          int lastId = firstId + stmtId.numContainedChildren();
+          for (int i = firstId; i <= lastId; i++) {
+            ID exprId(stmtId.symbolPath(), i, 0);
+            result.byIdExpanding(exprId) = resolved.byId(exprId);
+          }
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+
 }
 
 const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
@@ -224,24 +295,6 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 
 /////// function resolution
 
-static std::vector<types::QualifiedType>
-getFormalTypes(const Function* fn,
-               const ResolutionResultByPostorderID& r) {
-  std::vector<types::QualifiedType> formalTypes;
-  for (auto formal : fn->formals()) {
-    QualifiedType t = r.byAst(formal).type();
-    // compute concrete intent
-    bool isThis = false;
-    if (auto namedDecl = formal->toNamedDecl()) {
-      isThis = namedDecl->name() == USTR("this");
-    }
-    t = QualifiedType(resolveIntent(t, isThis), t.type(), t.param());
-
-    formalTypes.push_back(std::move(t));
-  }
-  return formalTypes;
-}
-
 static bool
 anyFormalNeedsInstantiation(Context* context,
                             const std::vector<types::QualifiedType>& formalTs,
@@ -350,7 +403,7 @@ typedSignatureInitialQuery(Context* context,
     // do not visit the return type or function body
 
     // now, construct a TypedFnSignature from the result
-    std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
+    std::vector<types::QualifiedType> formalTypes = visitor.getFormalTypes(fn);
     bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
                                                           untypedSig,
                                                           nullptr);
@@ -1267,7 +1320,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
     // do not visit the return type or function body
 
-    auto tmp = getFormalTypes(fn, r);
+    auto tmp = visitor.getFormalTypes(fn);
     formalTypes.swap(tmp);
     needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
                                                      untypedSignature,
@@ -1374,7 +1427,10 @@ resolveFunctionByInfoQuery(Context* context,
     resolvedPoiInfo.setResolved(true);
     resolvedPoiInfo.setPoiScope(nullptr);
 
-    owned<ResolvedFunction> resolved = toOwned(new ResolvedFunction(sig, fn->returnIntent(), resolutionById, resolvedPoiInfo));
+    owned<ResolvedFunction> resolved =
+      toOwned(new ResolvedFunction(sig, fn->returnIntent(),
+                                   std::move(resolutionById),
+                                   resolvedPoiInfo));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -1411,19 +1467,69 @@ const ResolvedFunction* resolveFunction(Context* context,
   return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
 }
 
+
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
-  auto func = parsing::idToAst(context, id)->toFunction();
-  if (func == nullptr)
+  if (id.isEmpty())
     return nullptr;
 
-  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, func);
+  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
-  if (sig->needsInstantiation())
+  if (sig->needsInstantiation()) {
     return nullptr;
+  }
+
+  auto whereFalse =
+    resolution::TypedFnSignature::WhereClauseResult::WHERE_FALSE;
+  if (sig->whereClauseResult() == whereFalse) {
+    return nullptr;
+  }
 
   const ResolvedFunction* ret = resolveFunction(context, sig, nullptr);
   return ret;
 }
+
+static const owned<ResolvedFunction>&
+scopeResolveFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(scopeResolveFunctionQuery, context, id);
+
+  const AstNode* ast = parsing::idToAst(context, id);
+  const Function* fn = ast->toFunction();
+
+  ResolutionResultByPostorderID resolutionById;
+  const TypedFnSignature* sig = nullptr;
+  owned<ResolvedFunction> result;
+
+  if (fn) {
+    auto visitor = Resolver::functionScopeResolver(context, fn, resolutionById);
+
+    // visit the children of fn to scope resolve
+    // (visiting the children because visiting a function will not
+    //  cause it to be scope resolved).
+    for (auto child: fn->children()) {
+      child->traverse(visitor);
+    }
+
+    sig = visitor.typedSignature;
+  }
+
+  result = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
+                                        std::move(resolutionById),
+                                        PoiInfo()));
+
+  return QUERY_END(result);
+}
+
+const ResolvedFunction* scopeResolveFunction(Context* context,
+                                                     ID id) {
+  if (id.isEmpty())
+    return nullptr;
+
+  const owned<ResolvedFunction>& result =
+    scopeResolveFunctionQuery(context, id);
+
+  return result.get();
+}
+
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r) {
@@ -1962,28 +2068,16 @@ filterCandidatesInstantiating(Context* context,
   }
 }
 
-// call can be nullptr; in that event, the CallInfo will be consulted
-// and it will search for something with 'ci.name()'.
+// always uses ci.name
 static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
-                 const Call* call,
                  const CallInfo& ci,
                  std::unordered_set<const Scope*>& visited) {
-  std::vector<BorrowedIdsWithName> ret;
-
-  // TODO: it would be nice if the caller could compute the name instead
-  const bool doLookupByName = (call == nullptr || call->isOpCall());
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
-  #ifndef NDEBUG
-  if (call != nullptr) {
-    if (auto op = call->toOpCall()) {
-      assert(op->op() == ci.name());
-    }
-  }
-  #endif
+  const Scope* scopeForReceiverType = nullptr;
 
   // For method calls, perform an initial lookup starting at the scope for
   // the definition of the receiver type, if it can be found.
@@ -1991,7 +2085,6 @@ lookupCalledExpr(Context* context,
     assert(ci.numActuals() >= 1);
 
     auto& receiverQualType = ci.actual(0).type();
-    const Scope* scopeForReceiverType = nullptr;
 
     // Try to fetch the scope of the receiver type's definition.
     if (auto receiverType = receiverQualType.type()) {
@@ -1999,31 +2092,13 @@ lookupCalledExpr(Context* context,
         scopeForReceiverType = scopeForId(context, compType->id());
       }
     }
-
-    // Lookup by name, as lookup for dot-exprs does not handle method calls.
-    if (scopeForReceiverType && !visited.count(scopeForReceiverType)) {
-      auto vec = lookupNameInScopeWithSet(context, scopeForReceiverType,
-                                          ci.name(),
-                                          config,
-                                          visited);
-      ret.swap(vec);
-    }
   }
 
-  std::vector<BorrowedIdsWithName> vec;
-  if (doLookupByName) {
-    vec = lookupNameInScopeWithSet(context, scope, ci.name(), config,
-                                   visited);
-  } else if (const AstNode* called = call->calledExpression()) {
-    vec = lookupInScopeWithSet(context, scope, called, config,
-                               visited);
-  }
+  UniqueString name = ci.name();
 
-  if (ret.size() > 0) {
-    ret.insert(ret.end(), vec.begin(), vec.end());
-  } else {
-    ret.swap(vec);
-  }
+  std::vector<BorrowedIdsWithName> ret =
+    lookupNameInScopeWithSet(context, scope, scopeForReceiverType,
+                             name, config, visited);
 
   return ret;
 }
@@ -2420,7 +2495,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   // next, look for candidates without using POI.
   {
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, inScope, call, ci, visited);
+    auto v = lookupCalledExpr(context, inScope, ci, visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2447,8 +2522,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
     }
 
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, curPoi->inScope(), call, ci,
-                              visited);
+    auto v = lookupCalledExpr(context, curPoi->inScope(), ci, visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);

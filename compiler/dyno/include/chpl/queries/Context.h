@@ -63,6 +63,9 @@ implement queries and how the query framework functions.
 
  */
 class Context {
+ public:
+  using ReportErrorFnType = void(*)(Context*, const ErrorMessage&);
+
  private:
   // map that supports uniqueCString / UniqueString
   using UniqueStringsTableType = std::unordered_set<chpl::detail::StringAndLength, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
@@ -105,8 +108,8 @@ class Context {
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
-  static void defaultReportError(const ErrorMessage& err);
-  void (*reportError)(const ErrorMessage& err) = defaultReportError;
+  static void defaultReportError(Context* context, const ErrorMessage& err);
+  ReportErrorFnType reportError = defaultReportError;
 
   // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
@@ -223,8 +226,7 @@ class Context {
   /**
    Set the error handling function
    */
-  void setErrorHandler(void (*reportError)(const ErrorMessage& err))
-  {
+  void setErrorHandler(ReportErrorFnType reportError) {
     this->reportError = reportError;
   }
 
@@ -356,21 +358,23 @@ class Context {
 
 
   /**
-    Return the file path for the file containing this ID.
-   */
-  UniqueString filePathForId(ID id);
+    Return 'true' if the filePathForId was found
+    (which can only happen because setFilePathForModuleID was already
+     called for this ID).
 
-  /**
-    Returns true if filePathForId is already populated for
-    this ID.
+    Returns the path by setting 'pathOut'.
+    Returns the parent symbol path (relevant for 'module include'
+    by setting 'parentSymbolPathOut'.
    */
-  bool hasFilePathForId(ID id);
+  bool filePathForId(ID id,
+                     UniqueString& pathOut,
+                     UniqueString& parentSymbolPathOut);
 
   /**
     Sets the file path for the given module ID. This
     is suitable to call from a parse query.
    */
-  void setFilePathForModuleID(ID moduleID, UniqueString path);
+  void setFilePathForModuleId(ID moduleID, UniqueString path);
 
   /**
     This function increments the current revision number stored

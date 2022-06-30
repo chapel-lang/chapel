@@ -90,6 +90,12 @@ class OwnedIdsWithName {
       }
     }
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -171,9 +177,7 @@ class BorrowedIdsWithName {
     return ret;
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-    ID().stringify(ss, stringKind);
-  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -227,12 +231,18 @@ class Scope {
   /** Return the parent scope for this scope. */
   const Scope* parentScope() const { return parentScope_; }
 
+  /** Return the module scope containing this scope,
+      or if it is a module scope, this scope. */
+  const Scope* moduleScope() const;
+
   /** Returns the AST tag of the construct that this Scope represents. */
   uast::asttags::AstTag tag() const { return tag_; }
 
   /** Return the ID of the Block or other AST node construct that this Scope
       represents. An empty ID indicates that this Scope is the root scope. */
   const ID& id() const { return id_; }
+
+  UniqueString name() const { return name_; }
 
   /** Returns 'true' if this Scope directly contains use or import statements
       including the automatic 'use' for the standard library. */
@@ -314,18 +324,21 @@ class VisibilitySymbols {
  public:
   /** The kind of import symbol */
   enum Kind {
-    /** the named symbol itself only (one name in names) */
+    /** the scope itself only (one name in names) */
     SYMBOL_ONLY,
-    /** (and names is empty) */
+    /** all the contents of the scope (and names is empty) */
     ALL_CONTENTS,
-    /** only the contents named in names */
+    /** only the contents of the scope named in names */
     ONLY_CONTENTS,
-    /** except the contents named in names (no renaming) */
+    /** contexnts of the scope except the contents named in names
+        (no renaming) */
     CONTENTS_EXCEPT,
   };
 
  private:
-  ID symbolId_;      // ID of the imported symbol, e.g. ID of a Module
+  const Scope* scope_; // Scope of the Module etc
+                       // This could technically be an ID but basically
+                       // anything we do with it needs a Scope* anyway.
   Kind kind_ = SYMBOL_ONLY;
   bool isPrivate_ = true;
 
@@ -336,14 +349,14 @@ class VisibilitySymbols {
 
  public:
   VisibilitySymbols() { }
-  VisibilitySymbols(ID symbolId, Kind kind, bool isPrivate,
+  VisibilitySymbols(const Scope* scope, Kind kind, bool isPrivate,
                     std::vector<std::pair<UniqueString,UniqueString>> names)
-    : symbolId_(symbolId), kind_(kind), isPrivate_(isPrivate),
+    : scope_(scope), kind_(kind), isPrivate_(isPrivate),
       names_(std::move(names))
   { }
 
-  /** Return the ID of the imported symbol, e.g. ID of a Module */
-  const ID &symbolId() const { return symbolId_; }
+  /** Return the imported scope */
+  const Scope* scope() const { return scope_; }
 
   /** Return the kind of the imported symbol */
   Kind kind() const { return kind_; }
@@ -367,7 +380,7 @@ class VisibilitySymbols {
   }
 
   bool operator==(const VisibilitySymbols &other) const {
-    return symbolId_ == other.symbolId_ &&
+    return scope_ == other.scope_ &&
            kind_ == other.kind_ &&
            names_ == other.names_ &&
            isPrivate_ == other.isPrivate_;
@@ -377,7 +390,7 @@ class VisibilitySymbols {
   }
 
   void swap(VisibilitySymbols& other) {
-    symbolId_.swap(other.symbolId_);
+    std::swap(scope_, other.scope_);
     std::swap(kind_, other.kind_);
     names_.swap(other.names_);
     std::swap(isPrivate_, other.isPrivate_);
@@ -389,7 +402,7 @@ class VisibilitySymbols {
   }
 
   void mark(Context* context) const {
-    symbolId_.mark(context);
+    context->markPointer(scope_);
     for (auto p : names_) {
       p.first.mark(context);
       p.second.mark(context);
@@ -421,11 +434,11 @@ class ResolvedVisibilityScope {
   }
 
   /** Add a visibility clause */
-  void addVisibilityClause(ID symbolId, VisibilitySymbols::Kind kind,
+  void addVisibilityClause(const Scope* scope, VisibilitySymbols::Kind kind,
                            bool isPrivate,
                            std::vector<std::pair<UniqueString,UniqueString>> n)
   {
-    visibilityClauses_.emplace_back(symbolId, kind, isPrivate, std::move(n));
+    visibilityClauses_.emplace_back(scope, kind, isPrivate, std::move(n));
   }
 
   bool operator==(const ResolvedVisibilityScope& other) const {

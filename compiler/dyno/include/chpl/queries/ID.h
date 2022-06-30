@@ -36,6 +36,7 @@ class Context;
 class ID final {
  private:
   // A path to the symbol, e.g. MyModule#0.MyFunction#1
+  // Note that this is escaped (\. and \# are not the same as . and #)
   UniqueString symbolPath_;
 
   // Within that symbol, what is the number of this node in
@@ -116,6 +117,12 @@ class ID final {
   ID parentSymbolId(Context* context) const;
 
   /**
+    If the ID represents a symbol, return the name of that symbol.
+    Otherwise, return the name of the symbol that contains the ID.
+   */
+  UniqueString symbolName(Context* context) const;
+
+  /**
     returns 'true' if the AST node with this ID contains the AST
     node with the other ID, including if they refer to the same AST node.
    */
@@ -128,6 +135,23 @@ class ID final {
       result  > 0 if this > other
    */
   int compare(const ID& other) const;
+
+  /** Given a symbol path, return the parent symbol path.
+      Returns an empty string if the symbol path was empty string.
+    */
+  static UniqueString parentSymbolPath(Context* context,
+                                       UniqueString symbolPath);
+
+  /** Given a symbol path, return the name of the innermost symbol */
+  static UniqueString innermostSymbolName(Context* context,
+                                          UniqueString symbolPath);
+
+  /**
+    Given a symbol path, expand it into a vector
+    of pairs, containing the path component and the repeat number.
+   */
+  static std::vector<std::pair<UniqueString,int>>
+  expandSymbolPath(Context* context, UniqueString symbolPath);
 
   bool operator==(const ID& other) const {
     (void)numChildIds_; // quiet nextLinter
