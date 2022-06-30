@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHPL_VERSION 1.26.0
+ENV CHPL_VERSION 1.27.0
 ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
 ENV CHPL_GMP     system
 ENV CHPL_LLVM    system
