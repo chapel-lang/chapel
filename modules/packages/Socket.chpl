@@ -241,9 +241,9 @@ proc ipAddr.writeThis(f) throws {
 }
 
 pragma "no doc"
-operator timeval.=(other: real) {
-  this.tv_sec = other:c_long;
-  this.tv_usec = (other - this.tv_sec) * 1000000;
+operator struct_timeval.=(other: real) {
+  this.tv_sec = (other:c_long):time_t;
+  this.tv_usec = ((other - this.tv_sec) * 1000000):suseconds_t;
 }
 
 pragma "no doc"
@@ -353,7 +353,7 @@ private extern proc event_base_got_break(base: c_ptr(event_base)):c_int;
 private extern proc event_base_loopbreak(base: c_ptr(event_base)):c_int;
 private extern proc event_new(base: c_ptr(event_base), fd: c_int, events: c_short,
                               callback: c_fn_ptr, callback_arg: c_void_ptr): c_ptr(event);
-private extern proc event_add(ev: c_ptr(event), timeout: c_ptr(timeval)):c_int;
+private extern proc event_add(ev: c_ptr(event), timeout: c_ptr(struct_timeval)):c_int;
 private extern proc event_del(ev: c_ptr(event)):c_int;
 private extern proc event_free(ev: c_ptr(event)):c_int;
 private extern proc event_remove_timer(ev: c_ptr(event)):c_int;
@@ -405,6 +405,14 @@ private extern const TCP_QUICKACK:c_int;
 private extern const TCP_SYNCNT:c_int;
 private extern const TCP_WINDOW_CLAMP:c_int;
 
+private extern const NI_MAXHOST:c_int;
+private extern const NI_MAXSERV:c_int;
+
+private extern const F_GETFL:c_int;
+private extern const F_SETFL:c_int;
+private extern const F_GETFD:c_int;
+private extern const F_SETFD:c_int;
+
 extern type sys_in_addr_t;
 extern type sys_in6_addr_t;
 
@@ -429,9 +437,12 @@ private extern proc sys_strerror(error:qio_err_t, ref string_out:c_string):qio_e
 private extern proc sys_readlink(path:c_string, ref string_out:c_string):qio_err_t;
 
 // types for 'sys_sockaddr_t' implementation
+pragma "no doc"
 extern type sys_sockaddr_storage_t;
+pragma "no doc"
 extern type socklen_t = int(32);
 
+pragma "no doc"
 extern record sys_sockaddr_t {
   var addr:sys_sockaddr_storage_t;
   var len:socklen_t;
@@ -551,8 +562,10 @@ extern record sys_sockaddr_t {
   :returns: a socket family
   :rtype: `c_int`
 */
+pragma "no doc"
 proc const ref sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
 
+pragma "no doc"
 extern "struct addrinfo" record sys_addrinfo_t {
   var ai_flags: c_int;
   var ai_family: c_int;
@@ -562,6 +575,7 @@ extern "struct addrinfo" record sys_addrinfo_t {
   var ai_next: c_ptr(sys_addrinfo_t);
 }
 
+pragma "no doc"
 type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
 
 proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }
@@ -630,13 +644,13 @@ record tcpListener {
     const client = server.accept()
 
   :arg timeout: time to wait for new connection.
-  :type timeval: :type:`~Sys.timeval`
+  :type struct_timeval: :type:`~OS.POSIX.struct_timeval`
   :return: accepted connection
   :rtype: `tcpConn`
   :throws Error: Upon timeout completion without
                   any new connection
 */
-proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws {
+proc tcpListener.accept(in timeout: struct_timeval = new struct_timeval(-1,0)):tcpConn throws {
   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
   var fdOut:fd_t;
   var err_out:qio_err_t = 0;
@@ -700,7 +714,7 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
 }
 
 proc tcpListener.accept(timeout: real): tcpConn throws {
-  return this.accept(timeout:timeval);
+  return this.accept(timeout:struct_timeval);
 }
 
 /*
@@ -790,7 +804,7 @@ const backlogDefault:uint(16) = (if SOMAXCONN <= 128 then SOMAXCONN else 128):ui
   :arg address: address to connect to
   :type address: :type:`ipAddr`
   :arg timeout: standard ipv6 address.
-  :type timeval: :type:`~Sys.timeval`
+  :type struct_timeval: :type:`~OS.POSIX.struct_timeval`
   :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: On failure to bind or listen on `address`
@@ -817,18 +831,18 @@ proc listen(in address: ipAddr, reuseAddr: bool = true,
   .. code-block:: Chapel
 
     const address = ipAddr.create("127.0.0.1", 8000, IPFamily.IPv4);
-    const timeout = new timeval(4,0);
+    const timeout = new struct_timeval(4,0);
     const connectedClient = connect(address, timeout);
 
   :arg address: address to connect to
   :type address: :type:`ipAddr`
   :arg timeout: time to wait for connection establishment.
-  :type timeval: :type:`~Sys.timeval`
+  :type struct_timeval: :type:`~OS.POSIX.struct_timeval`
   :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to connect
 */
-proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws {
+proc connect(const ref address: ipAddr, in timeout = new struct_timeval(-1,0)): tcpConn throws {
   var family = address.family;
   var socketFd = socket(family, SOCK_STREAM);
   setBlocking(socketFd, false);
@@ -866,7 +880,7 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
 }
 
 proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {
-  return connect(address, timeout:timeval);
+  return connect(address, timeout:struct_timeval);
 }
 
 /*
@@ -877,7 +891,7 @@ proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {
 
   .. code-block:: Chapel
 
-    const timeout = new timeval(4,0);
+    const timeout = new struct_timeval(4,0);
     const connectedClient = connect("google.com", "http", IPFamily.IPv4, timeout);
 
   :arg host: host to connect to or resolve if not in standard ip notation
@@ -887,14 +901,14 @@ proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {
   :arg family: type of socket family to connect to
   :type family: :type:`IPFamily`
   :arg timeout: time to wait for each possible connection.
-  :type timeval: :type:`~Sys.timeval`
+  :type struct_timeval: :type:`~OS.POSIX.struct_timeval`
   :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to resolve address or connect
                         to any of the resolved address in given `timeout`.
 */
 proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IPUnspec,
-             in timeout = new timeval(-1,0)): tcpConn throws {
+             in timeout = new struct_timeval(-1,0)): tcpConn throws {
   var result:sys_addrinfo_ptr_t;
   var hints = new sys_addrinfo_t();
   hints.ai_family = family:c_int;
@@ -925,7 +939,7 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
 
 proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IPUnspec,
              timeout:real): tcpConn throws {
-  return connect(host, service, family, timeout:timeval);
+  return connect(host, service, family, timeout:struct_timeval);
 }
 
 /*
@@ -936,7 +950,7 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
 
   .. code-block:: Chapel
 
-    const timeout = new timeval(4,0);
+    const timeout = new struct_timeval(4,0);
     const connectedClient = connect("google.com", 80, IPFamily.IPv4, timeout);
 
   :arg host: address of host to connect or resolve if not in ip notation
@@ -946,20 +960,20 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
   :arg family: type of socket family to connect to
   :type family: :type:`IPFamily`
   :arg timeout: time to wait for each possible connection.
-  :type timeval: :type:`~Sys.timeval`
+  :type struct_timeval: :type:`~OS.POSIX.struct_timeval`
   :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to resolve address or connect
                     to any of the resolved address in given `timeout`.
 */
 proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPUnspec,
-             timeout = new timeval(-1,0)): tcpConn throws {
+             timeout = new struct_timeval(-1,0)): tcpConn throws {
   return connect(host, port:string, family, timeout);
 }
 
 proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPUnspec,
              timeout:real): tcpConn throws {
-  return connect(host, port, family, timeout:timeval);
+  return connect(host, port, family, timeout:struct_timeval);
 }
 
 /*
@@ -1007,20 +1021,20 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, fla
 
   .. code-block:: Chapel
 
-    const timeout = new timeval(4,0);
+    const timeout = new struct_timeval(4,0);
     const socket = new udpSocket();
     const (data, sender) = socket.recvFrom(40, timeout);
 
   :arg bufferLen: number of bytes to read
   :type bufferLen: `int`
   :arg timeout: time to wait for data to arrive.
-  :type timeval: :type:`~Sys.timeval`
+  :type struct_timeval: :type:`~OS.POSIX.struct_timeval`
   :return: tuple of (data, address)
   :rtype: (:type:`~Bytes.bytes`, :type:`ipAddr`)
   :throws SystemError: Upon failure to receive any data
                     within given `timeout`.
 */
-proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
+proc udpSocket.recvfrom(bufferLen: int, in timeout = new struct_timeval(-1,0),
                         flags:c_int = 0):(bytes, ipAddr) throws {
   var err_out:qio_err_t = 0;
   var buffer = c_calloc(c_uchar, bufferLen);
@@ -1078,7 +1092,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
 }
 
 proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, ipAddr) throws {
-  return this.recvfrom(bufferLen, timeout:timeval, flags);
+  return this.recvfrom(bufferLen, timeout:struct_timeval, flags);
 }
 
 /*
@@ -1088,26 +1102,26 @@ proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, 
 
   .. code-block:: Chapel
 
-    const timeout = new timeval(4,0);
+    const timeout = new struct_timeval(4,0);
     const socket = new udpSocket();
     const data = socket.recv(40, timeout);
 
   :arg bufferLen: number of bytes to read
   :type bufferLen: `int`
   :arg timeout: time to wait for data to arrive.
-  :type timeval: :type:`~Sys.timeval`
+  :type struct_timeval: :type:`~OS.POSIX.struct_timeval`
   :return: data
   :rtype: :type:`~Bytes.bytes`
   :throws SystemError: Upon failure to receive any data
                         within given `timeout`.
 */
-proc udpSocket.recv(bufferLen: int, in timeout = new timeval(-1,0)) throws {
+proc udpSocket.recv(bufferLen: int, in timeout = new struct_timeval(-1,0)) throws {
   var (data, _) = this.recvfrom(bufferLen, timeout);
   return data;
 }
 
 proc udpSocket.recv(bufferLen: int, timeout: real) throws {
-  return this.recv(bufferLen, timeout:timeval);
+  return this.recv(bufferLen, timeout:struct_timeval);
 }
 
 pragma "no doc"
@@ -1119,7 +1133,7 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
 
   .. code-block:: Chapel
 
-    const timeout = new timeval(4,0);
+    const timeout = new struct_timeval(4,0);
     const socket = new udpSocket();
     const sentBytes = socket.send("hello world!":bytes, timeout);
 
@@ -1128,14 +1142,14 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
   :arg address: socket address for sending data
   :type address: :type:`ipAddr`
   :arg timeout: time to wait for data to arrive.
-  :type timeval: :type:`~Sys.timeval`
+  :type struct_timeval: :type:`~OS.POSIX.struct_timeval`
   :return: sentBytes
   :rtype: `c_ssize_t`
   :throws SystemError: Upon failure to send any data
                         within given `timeout`.
 */
 proc udpSocket.send(data: bytes, in address: ipAddr,
-                    in timeout = new timeval(-1,0)):c_ssize_t throws {
+                    in timeout = new struct_timeval(-1,0)):c_ssize_t throws {
   var err_out:qio_err_t = 0;
   var length:c_ssize_t;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
@@ -1184,7 +1198,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
 }
 
 proc udpSocket.send(data: bytes, in address: ipAddr, timeout: real) throws {
-  return this.send(data, address, timeout:timeval);
+  return this.send(data, address, timeout:struct_timeval);
 }
 
 pragma "no doc"

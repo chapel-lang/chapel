@@ -59,6 +59,7 @@ module Sys {
   // mferguson -- TODO -- is that still true? Even for LLVM?
 
   // fcntl command flags
+  // --- deprecated and moved to Socket as private ---
   extern const F_GETFL:c_int;
   extern const F_SETFL:c_int;
   extern const F_GETFD:c_int;
@@ -361,6 +362,8 @@ module Sys {
   // --- deprecated with no replacement ---
   extern const INET_ADDRSTRLEN:c_int;
   extern const INET6_ADDRSTRLEN:c_int;
+
+  //  --- deprecated and moved to Socket as private ---
   extern const NI_MAXHOST:c_int;
   extern const NI_MAXSERV:c_int;
 
