@@ -420,12 +420,12 @@ struct RstSignatureVisitor {
   bool enter(const ImagLiteral* l) { return enterLiteral(l); }
 
   bool enter(const StringLiteral* l) {
-    os_ << '"' << quoteStringForC(std::string(l->str().c_str())) << '"';
+    os_ << '"' << escapeStringC(std::string(l->str().c_str())) << '"';
     return false;
   }
 
   bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << quoteStringForC(std::string(l->str().c_str())) << '"';
+    os_ << "c\"" << escapeStringC(std::string(l->str().c_str())) << '"';
     return false;
   }
 
@@ -1146,8 +1146,10 @@ static const CommentMap&
 commentMap(Context* context, UniqueString path) {
   QUERY_BEGIN(commentMap, context, path);
   CommentMap result;
-
-  const auto& builderResult = parseFile(context, path);
+  UniqueString emptyParent;
+  const auto& builderResult = parseFileToBuilderResult(context,
+                                                       path,
+                                                       emptyParent);
 
   CommentVisitor cv{result};
   for (const auto& ast : builderResult.topLevelExpressions()) {
@@ -1164,7 +1166,12 @@ commentMap(Context* context, UniqueString path) {
 static const Comment* const& previousComment(Context* context, ID id) {
   QUERY_BEGIN(previousComment, context, id);
   const Comment* result = nullptr;
-  const auto& map = commentMap(context, context->filePathForId(id));
+  UniqueString modPath;
+  UniqueString parentPath;
+
+  assert(context->filePathForId(id, modPath, parentPath));
+
+  const auto& map = commentMap(context, modPath);
   auto it = map.find(id);
   if (it != map.end()) {
     result = it->second;
@@ -1353,7 +1360,10 @@ int main(int argc, char** argv) {
 
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
-    const BuilderResult& builderResult = parseFile(ctx, path);
+    UniqueString emptyParent;
+    const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
+                                                                  path,
+                                                                  emptyParent);
     // just display the first error message right now
     // this is a quick fix to stop the program from dying
     // in  a gross way when a file can't be located
