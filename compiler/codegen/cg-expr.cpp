@@ -4870,8 +4870,7 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   args.push_back(new_IntSymbol(call->astloc.lineno()));
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
-  // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass
-  // this variable to the launch call.
+  // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass // this variable to the launch call.
   #ifdef HAVE_LLVM  // Needed to suppress warning; should always be true in code path for GPU codegen
     GenInfo* info = gGenInfo;
     args.push_back(info->lvt->getValue("chpl_gpuBinary"));
@@ -4905,6 +4904,18 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
       }
     }
     else { // kernel args
+      // TODO we can probably catch this error earlier. But maybe before we do
+      // that we'll have gpu-driven communication?
+      // TODO we seem to have some code in dsiReallocate hitting this, as well.
+      // For now, just error for user modules
+      if (actual->getModule()->modTag == MOD_USER) {
+        if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+            actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+          USR_FATAL_CONT(actual, "Accessing potentially-remote variables from GPU kernels is not supported yet");
+          USR_FATAL_CONT(actualSym->defPoint, "Offending variable was declared here");
+        }
+      }
+
       Type* actualValType = actual->typeInfo()->getValType();
 
       // TODO can we use codegenArgForFormal instead of this logic?
