@@ -45,7 +45,7 @@ var threads_spawned: int = 0; // "Locked" by thread_cnt
 /**** UTS TreeNode Class ****/
 class TreeNode {
   var depth:   int;
-  var hash:    [1..20] uint(8);
+  var hasharr: [1..20] uint(8);
 
   // By default, children will be empty since it has range [1..0]
   var nChildren: int = 0;
@@ -73,7 +73,7 @@ class TreeNode {
     forall i in childDom {
       if debug then writeln("  + (", depth, ", ", i, ")");
       children[i]    = new unmanaged TreeNode(depth+1);
-      rng_spawn(hash[1], children[i]!.hash[1], (i-1):sha_int);
+      rng_spawn(hasharr[1], children[i]!.hasharr[1], (i-1):sha_int);
     }
 
     return nChildren;
@@ -104,7 +104,7 @@ class TreeNode {
       return B_0;
     
     else
-      return if to_prob(rng_rand(hash[1])) < nonLeafProb then nonLeafBF else 0;
+      return if to_prob(rng_rand(hasharr[1])) < nonLeafProb then nonLeafBF else 0;
   }
 
 
@@ -144,7 +144,7 @@ class TreeNode {
     var p: real = 1.0 / (1.0 + b_i);
 
     // get uniform random number on [0,1)
-    var u: real = to_prob(rng_rand(hash[1]));
+    var u: real = to_prob(rng_rand(hasharr[1]));
 
     // max number of children at this cumulative probability
     // (from inverse geometric cumulative density function)
@@ -293,7 +293,7 @@ proc main {
   var t_dfs   : Timer();
   var counted, created: int;
   var root = new unmanaged TreeNode(0);
-  rng_init(root.hash[1], SEED:sha_int);
+  rng_init(root.hasharr[1], SEED:sha_int);
 
   uts_showSearchParams();
 
