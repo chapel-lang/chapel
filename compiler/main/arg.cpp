@@ -485,8 +485,15 @@ static void ApplyValue(const ArgumentState*       state,
         break;
       }
       case 'U':
+      {
         *((size_t*) location) = str2uint64(value);
         break;
+      }
+      case 'X':
+      {
+        *((size_t*) location) = hexStr2uint64(value);
+        break;
+      }
     }
   }
 
@@ -706,6 +713,10 @@ static void process_arg(const ArgumentState*       state,
 
         case 'U':
           *((size_t*) desc->location) = std::stoull(arg);
+          break;
+
+        case 'X':
+          *((size_t*) desc->location) = std::stoull(arg, nullptr, 16);
           break;
 
         default:

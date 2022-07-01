@@ -124,14 +124,25 @@ template<typename... ArgTs>
 void Context::queryBeginTrace(const char* traceQueryName,
                               const std::tuple<ArgTs...>& tupleOfArg) {
 
-  if (breakSet || enableDebugTrace) {
+  if ((breakSet || enableDebugTrace)
+      && std::find(queryTraceIgnoreQueries.begin(),
+                   queryTraceIgnoreQueries.end(),
+                   traceQueryName) == queryTraceIgnoreQueries.end()) {
     auto args = queryArgsToStrings(tupleOfArg);
     size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
     if (enableDebugTrace) {
-      printf("QUERY BEGIN     %s (", traceQueryName);
+      queryTraceDepth++;
+      // QUERY BEGIN
+      setQueryDepthColor(queryTraceDepth, std::cout);
+      std::cout << queryTraceDepth
+                << " { "
+                << clearTerminalColor() << traceQueryName << " (";
       queryArgsPrint(tupleOfArg);
-      printf(")\n");
-      printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
+      std::cout << ") ";
+      setTerminalColor(CYAN, std::cout);
+      std::cout <<"hash: 0x"
+                << std::hex << queryAndArgsHash
+                << clearTerminalColor() << std::endl;
     }
     if (breakSet && queryAndArgsHash == breakOnHash) {
       debuggerBreakHere();
@@ -323,11 +334,28 @@ Context::queryEnd(
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
                                    std::move(result), /* forSetter */ false);
 
-  if (enableDebugTrace) {
-    bool changed = ret->lastChanged == this->currentRevisionNumber;
-    printf("QUERY END       %s (", traceQueryName);
-    queryArgsPrint(tupleOfArgs);
-    printf(") %s %p\n", changed?"UPDATED":"NO CHANGE", r);
+  if (enableDebugTrace
+      && std::find(queryTraceIgnoreQueries.begin(),
+                   queryTraceIgnoreQueries.end(),
+                   traceQueryName) == queryTraceIgnoreQueries.end()) {
+    // QUERY END
+    setQueryDepthColor(queryTraceDepth, std::cout);
+    std::cout << queryTraceDepth
+              << clearTerminalColor()
+              << "   " << traceQueryName
+              << " ";
+    if (ret->lastChanged == this->currentRevisionNumber) {
+      setTerminalColor(YELLOW, std::cout);
+      std::cout << "UPDATED";
+    } else {
+      setTerminalColor(GREEN, std::cout);
+      std::cout << "unchanged";
+    }
+    setQueryDepthColor(queryTraceDepth, std::cout);
+    std::cout << " } "
+              << clearTerminalColor()
+              << std::endl;
+    queryTraceDepth--;
     assert(r->lastChecked == this->currentRevisionNumber);
     //for (auto dep : r->dependencies) {
     //  printf("  with dependency %p %s\n", dep, dep->parentQueryMap->queryName);

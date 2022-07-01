@@ -75,6 +75,7 @@ class UntypedFnSignature {
 
     void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
       name.stringify(ss, stringKind);
+      ss << " ";
       if (decl != nullptr) {
         decl->stringify(ss, stringKind);
         ss << " ";

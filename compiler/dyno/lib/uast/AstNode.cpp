@@ -272,7 +272,8 @@ static void dumpMaxIdLen(const AstNode* ast, int& maxIdLen) {
 static void dumpHelper(std::ostream& ss,
                        const AstNode* ast,
                        int maxIdLen,
-                       int depth) {
+                       int depth,
+                       StringifyKind stringKind) {
   std::string idStr = getIdStr(ast);
   ss << std::setw(maxIdLen) << idStr;
 
@@ -303,10 +304,11 @@ static void dumpHelper(std::ostream& ss,
 
   //printf("(containing %i) ", ast->id().numContainedChildren());
   //printf("%p", ast);
-  ss << "\n";
+  if (stringKind == StringifyKind::DEBUG_DETAIL)
+    ss << "\n";
 
   for (const AstNode* child : ast->children()) {
-    dumpHelper(ss, child, maxIdLen, depth+1);
+    dumpHelper(ss, child, maxIdLen, depth+1, stringKind);
   }
 }
 
@@ -315,12 +317,11 @@ void AstNode::stringify(std::ostream& ss,
 
   if (stringKind == StringifyKind::CHPL_SYNTAX) {
     printChapelSyntax(ss, this);
-  }
-  else {
+  } else {
     int maxIdLen = 0;
     int leadingSpaces = 0;
     dumpMaxIdLen(this, maxIdLen);
-    dumpHelper(ss, this, maxIdLen, leadingSpaces);
+    dumpHelper(ss, this, maxIdLen, leadingSpaces, stringKind);
   }
 }
 
