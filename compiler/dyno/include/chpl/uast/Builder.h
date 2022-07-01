@@ -95,9 +95,6 @@ class Builder final {
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath);
 
-  /** returns a the result of createForTopLevelModule */
-  static owned<Builder> build(Context* context, const char* filepath);
-
   Context* context() const { return context_; }
 
   /**

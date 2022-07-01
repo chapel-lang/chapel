@@ -147,7 +147,7 @@ static  void test2() {
   Context context;
   Context* ctx = &context;
 
-  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
@@ -253,7 +253,7 @@ static void test3() {
   Context context;
   Context* ctx = &context;
 
-  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
@@ -317,7 +317,7 @@ static void test4() {
   Context context;
   Context* ctx = &context;
 
-  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
@@ -441,7 +441,7 @@ static void test5() {
   Context* ctx = &context;
 
   const char* path = "path/to/file-name.sub.chpl";
-  auto builder = Builder::build(ctx, path);
+  auto builder = Builder::createForTopLevelModule(ctx, path);
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, path));
 

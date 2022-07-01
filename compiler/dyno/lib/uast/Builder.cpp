@@ -98,10 +98,6 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
   return toOwned(b);
 }
 
-owned<Builder> Builder::build(Context* context, const char* filepath) {
-  return Builder::createForTopLevelModule(context, filepath);
-}
-
 void Builder::addToplevelExpression(owned<AstNode> e) {
   this->topLevelExpressions_.push_back(std::move(e));
 }
