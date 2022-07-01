@@ -68,7 +68,7 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
   if (const Module* mod = moduleAst->toModule()) {
     // Resolve just the requested statement
     auto modStmt = parsing::idToAst(context, id);
-    auto visitor = Resolver::moduleStmtResolver(context, mod, modStmt, result);
+    auto visitor = Resolver::createForModuleStmt(context, mod, modStmt, result);
     modStmt->traverse(visitor);
   }
 
@@ -92,8 +92,9 @@ scopeResolveModuleStmt(Context* context, ID id) {
   if (const Module* mod = moduleAst->toModule()) {
     // Resolve just the requested statement
     auto modStmt = parsing::idToAst(context, id);
-    auto visitor = Resolver::moduleStmtScopeResolver(context, mod, modStmt,
-                                                     result);
+    auto visitor =
+      Resolver::createForScopeResolvingModuleStmt(context, mod, modStmt,
+                                                  result);
     modStmt->traverse(visitor);
   }
 
@@ -395,7 +396,7 @@ typedSignatureInitialQuery(Context* context,
     }
 
     ResolutionResultByPostorderID r;
-    auto visitor = Resolver::initialSignatureResolver(context, fn, r);
+    auto visitor = Resolver::createForInitialSignature(context, fn, r);
     // visit the formals
     for (auto formal : fn->formals()) {
       formal->traverse(visitor);
@@ -474,9 +475,9 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       // Resolve the parent class type expression
       ResolutionResultByPostorderID r;
       auto visitor =
-        Resolver::parentClassResolver(context, c,
-                                      substitutions,
-                                      poiScope, r);
+        Resolver::createForParentClass(context, c,
+                                       substitutions,
+                                       poiScope, r);
       parentClassExpr->traverse(visitor);
 
       QualifiedType qt = r.byAst(parentClassExpr).type();
@@ -641,8 +642,8 @@ const ResolvedFields& resolveFieldDecl(Context* context,
       // handle resolving a not-yet-instantiated type
       ResolutionResultByPostorderID r;
       auto visitor =
-        Resolver::initialFieldStmtResolver(context, ad, fieldAst,
-                                           ct, r, useGenericFormalDefaults);
+        Resolver::createForInitialFieldStmt(context, ad, fieldAst,
+                                            ct, r, useGenericFormalDefaults);
 
       // resolve the field types and set them in 'result'
       fieldAst->traverse(visitor);
@@ -655,9 +656,9 @@ const ResolvedFields& resolveFieldDecl(Context* context,
       const PoiScope* poiScope = nullptr;
       ResolutionResultByPostorderID r;
       auto visitor =
-        Resolver::instantiatedFieldStmtResolver(context, ad, fieldAst, ct,
-                                                poiScope, r,
-                                                useGenericFormalDefaults);
+        Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
+                                                 poiScope, r,
+                                                 useGenericFormalDefaults);
 
       // resolve the field types and set them in 'result'
       fieldAst->traverse(visitor);
@@ -1307,9 +1308,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   if (fn != nullptr) {
     ResolutionResultByPostorderID r;
-    auto visitor = Resolver::instantiatedSignatureResolver(context, fn,
-                                                           substitutions,
-                                                           poiScope, r);
+    auto visitor = Resolver::createForInstantiatedSignature(context, fn,
+                                                            substitutions,
+                                                            poiScope, r);
     // visit the formals
     for (auto formal : fn->formals()) {
       formal->traverse(visitor);
@@ -1332,8 +1333,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
     // visit the fields
     ResolutionResultByPostorderID r;
     auto visitor =
-      Resolver::instantiatedSignatureFieldsResolver(context, ad, substitutions,
-                                                    poiScope, r);
+      Resolver::createForInstantiatedSignatureFields(context, ad, substitutions,
+                                                     poiScope, r);
     // visit the parent type
     if (auto cls = ad->toClass()) {
       if (auto parentClassExpr = cls->parentClass()) {
@@ -1416,8 +1417,8 @@ resolveFunctionByInfoQuery(Context* context,
 
   if (fn) {
     ResolutionResultByPostorderID resolutionById;
-    auto visitor = Resolver::functionResolver(context, fn, poiScope, sig,
-                                              resolutionById);
+    auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
+                                               resolutionById);
 
     // visit the function body
     fn->body()->traverse(visitor);
@@ -1500,7 +1501,8 @@ scopeResolveFunctionQuery(Context* context, ID id) {
   owned<ResolvedFunction> result;
 
   if (fn) {
-    auto visitor = Resolver::functionScopeResolver(context, fn, resolutionById);
+    auto visitor =
+      Resolver::createForScopeResolvingFunction(context, fn, resolutionById);
 
     // visit the children of fn to scope resolve
     // (visiting the children because visiting a function will not
@@ -1778,8 +1780,8 @@ const QualifiedType& returnType(Context* context,
     if (const AstNode* retType = fn->returnType()) {
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
-      auto visitor = Resolver::functionResolver(context, fn, poiScope, sig,
-                                                resolutionById);
+      auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
+                                                 resolutionById);
       retType->traverse(visitor);
       result = resolutionById.byAst(retType).type();
     } else {
