@@ -18,7 +18,7 @@ proc main(){
     // 256K through 8M bytes. (scaled down by 1024)
     const blockSizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384];
     param maxProblemSize = 16384;
-    param numMaxFloats = 1024 * maxProblemSize / numBytes(real(32)); // 4 is the size of real(32)
+    param numMaxFloats = 1024 * maxProblemSize / numBytes(real(32));
     param halfNumFloats = numMaxFloats/2;
 
     var hos: [0..#numMaxFloats] real(32);
@@ -32,7 +32,10 @@ proc main(){
         for pass in 0..#passes{
             for blkSize in blockSizes {
                 // Populate host with arbitrary memory
-                // TODO: Change arbitrary to random
+                // The reference (CUDA) implementation of SHOC fills hos
+                // with random values, in our implementation we fill with
+                // known sample values so we can later verify the result.
+                // This difference shouldn't impact performance.
                 for i in 0..#halfNumFloats {
                     hos[i] = i:int(32)%16:int(32) + 0.12:real(32);
                     hos[halfNumFloats+i] = hos[i] ;
@@ -136,18 +139,16 @@ proc main(){
                 timer.stop();
                 var timeElapsedInNanoseconds = timer.elapsed() * 1e9;
                 var triad = (numMaxFloats * 2.0) / timeElapsedInNanoseconds;
-                var bdwth = (numMaxFloats * numBytes(real(32)) * 3.0) // 4 is size of real(32)
+                var bdwth = (numMaxFloats * numBytes(real(32)) * 3.0)
                 /timeElapsedInNanoseconds;
 
                 if noisy {
                     writeln("TriadFlops\t",
-                    // "Block:%{#####}KB\t".format(blkSize),
                     "Block",blkSize, "KB\t",
                     "GFLOP/s\t",
                     triad);
 
                     writeln("TriadBdwth\t",
-                    // "Block:%{#####}KB\t".format(blkSize),
                     "Block",blkSize, "KB\t",
                     "GB/s\t",
                     bdwth);
@@ -175,7 +176,7 @@ proc main(){
                 // hos[i] = hos[i] * alpha + hos[i]
                 // Therefore the answers should be equal to that
                 // Each hos[i] after the computation is therefore as follows
-                // hos[i] = (i%10+0.12) * alpha + (i%10+0.12)
+                // hos[i] = (i%16+0.12) * alpha + (i%16+0.12)
                 // The first expected answer, for example, will then be 0.12*1.75 + 0.12 = 0.33
                 // Remember this was only for half of the memory.
                 // The other half was just a copy of the first half
@@ -183,17 +184,13 @@ proc main(){
                 for i in 0..#halfNumFloats {
                     var expected:real(32) = (i:int(32)%16:int(32) + 0.12:real(32)) * alpha + (i:int(32)%16:int(32) + 0.12:real(32));
                     var actual = hos[i];
-                    // if(!isclose(actual, expected)) {
-                    //     writeln("Pass: ", pass,
-                    //     "\nBlock Size:", blkSize,
-                    //     "\nIndex: ", i,
-                    //     "\nExpected: ", expected, "\nActual: ", actual);
-                    //     writeln(isclose(actual, expected));
-                    //     // tolerance-=1;
-                    //     // if(tolerance==0) then
-                    //     break;
-                    // }
-                    assert(isclose(hos[i] , expected));
+                    if(noisy && !isclose(actual, expected)) {
+                        writeln("Pass: ", pass,
+                        "\nBlock Size:", blkSize,
+                        "\nIndex: ", i,
+                        "\nExpected: ", expected, "\nActual: ", actual);
+                    }
+                    assert(isclose(actual , expected));
                     assert(hos[halfNumFloats+i] == hos[i]);
                 }
             }
