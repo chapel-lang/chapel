@@ -608,6 +608,11 @@ private extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optv
 private extern proc sys_listen(sockfd:fd_t, backlog:c_int):qio_err_t;
 private extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t;
 private extern proc sys_close(fd:fd_t):qio_err_t;
+private extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
+private extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
+private extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
+private extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
+private extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
 
 pragma "no doc"
 var event_loop_base:c_ptr(event_base);
@@ -706,7 +711,7 @@ proc tcpListener.accept(in timeout: struct_timeval = default_timeval()):tcpConn 
       }
       // no indefinitely blocking wait
       if timeout.tv_sec:int != -1 {
-        var totalTimeout = timeout.tv_sec:c_int*1000000 + timeout.tv_usec:c_int;
+        var totalTimeout = timeout.tv_sec:c_long*1000000 + timeout.tv_usec:c_long;
         // timer didn't elapsed
         if totalTimeout > t.elapsed(TimeUnits.microseconds) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
@@ -870,7 +875,7 @@ proc connect(const ref address: ipAddr, in timeout = default_timeval()): tcpConn
     event_del(writerEvent);
     event_free(writerEvent);
   }
-  err_out = event_add(writerEvent, if timeout.tv_sec == -1:c_int:time_t then nil else c_ptrTo(timeout));
+  err_out = event_add(writerEvent, if timeout.tv_sec:int == -1 then nil else c_ptrTo(timeout));
   if err_out != 0 {
     throw new Error("connect() failed");
   }
@@ -1065,7 +1070,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = default_timeval(),
   while err_out != 0 {
     var t: Timer;
     t.start();
-    err_out = event_add(internalEvent, if timeout.tv_sec == -1 then nil else c_ptrTo(timeout));
+    err_out = event_add(internalEvent, if timeout.tv_sec:int == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
       c_free(buffer);
       throw new Error("recv failed");
@@ -1083,13 +1088,13 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = default_timeval(),
         c_free(buffer);
         throw SystemError.fromSyserr(err_out,"recv failed");
       }
-      if timeout.tv_sec == -1:c_int:time_t {
-        var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
+      if timeout.tv_sec:int == -1 {
+        var totalTimeout = timeout.tv_sec:c_long*1000000 + timeout.tv_usec:c_long;
         if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
           const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
-          timeout.tv_sec = remainingSeconds;
-          timeout.tv_usec = remainingMicroSeconds;
+          timeout.tv_sec = remainingSeconds:time_t;
+          timeout.tv_usec = remainingMicroSeconds:suseconds_t;
         }
         c_free(buffer);
         throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
@@ -1175,7 +1180,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
   while err_out != 0 {
     var t: Timer;
     t.start();
-    err_out = event_add(internalEvent, if timeout.tv_sec == -1 then nil else c_ptrTo(timeout));
+    err_out = event_add(internalEvent, if timeout.tv_sec:int == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
       throw SystemError.fromSyserr(err_out, "send failed");
     }
@@ -1190,13 +1195,13 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
         throw SystemError.fromSyserr(err_out, "send failed");
       }
-      if timeout.tv_sec == -1:c_int:time_t {
-        var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
+      if timeout.tv_sec:int == -1 {
+        var totalTimeout = timeout.tv_sec:c_long*1000000 + timeout.tv_usec:c_long;
         if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
           const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
-          timeout.tv_sec = remainingSeconds;
-          timeout.tv_usec = remainingMicroSeconds;
+          timeout.tv_sec = remainingSeconds:time_t;
+          timeout.tv_usec = remainingMicroSeconds:suseconds_t;
         }
         throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
       }

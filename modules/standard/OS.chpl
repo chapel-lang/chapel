@@ -180,6 +180,9 @@ module OS {
     pragma "no doc"
     inline operator :(x:c_long, type t:suseconds_t)
       return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:suseconds_t, type t:int)
+      return __primitive("cast", t, x);
 
     /*
        Explicit conversions between ``time_t`` and ``c_int`` are

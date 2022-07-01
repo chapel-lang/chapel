@@ -598,13 +598,7 @@ module Sys {
   extern proc sys_dup(oldfd:fd_t, ref fd_out:fd_t):qio_err_t;
   extern proc sys_dup2(oldfd:fd_t, newfd:fd_t, ref fd_out:fd_t):qio_err_t;
   extern proc sys_pipe(ref read_fd_out:fd_t, ref write_fd_out:fd_t):qio_err_t;
-  extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
-  extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
-  extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_protocol(res:sys_addrinfo_ptr_t):c_int;
-  extern proc sys_getaddrinfo_addrlen(res:sys_addrinfo_ptr_t):socklen_t;
-  extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
-  extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
   extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:c_string, flags:c_int):qio_err_t;
   extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:fd_t, ref sockfd_out_b:fd_t):qio_err_t;
   extern proc sys_shutdown(sockfd:fd_t, how:c_int):qio_err_t;
@@ -625,6 +619,11 @@ module Sys {
   extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t;
   extern proc sys_listen(sockfd:fd_t, backlog:c_int):qio_err_t;
   extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t;
+  extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
+  extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
+  extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
+  extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
+  extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
 
   pragma "last resort"
   deprecated "'Sys.fd_set' is deprecated; please use 'OS.POSIX.fd_set' instead"
