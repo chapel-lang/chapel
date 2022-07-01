@@ -552,7 +552,7 @@ override proc CyclicDom.dsiDisplayRepresentation() {
 }
 
 // common redirects
-override proc CyclicDom.parSafe param {
+proc CyclicDom.parSafe param {
   compilerError("this domain type does not support 'parSafe'");
 }
 override proc CyclicDom.dsiLow           return whole.lowBound;

@@ -1044,21 +1044,9 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
         ret = getTheIteratorFn(iteratorClass);
   }
 
-  //
-  // TODO: Merging these code paths triggers weird forwarding errors for
-  // OwnedObject code. Might be because we discard "owned" in places
-  // we should not?
-  //
-  if (fn->isTypeMethod()) {
-    if (AggregateType* at = getReceiverClassType(ret)) {
-      INT_ASSERT(at->isClass());
-      return ret;
-    }
-  } else {
-    if (ret->_this)
-      if (AggregateType* at = toAggregateType(ret->_this->getValType()))
-        if (at->isClass())
-          return ret;
+  if (AggregateType* at = getReceiverClassType(ret)) {
+    INT_ASSERT(at->isClass());
+    return ret;
   }
 
   // otherwise, not a candidate.

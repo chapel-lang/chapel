@@ -618,7 +618,7 @@ proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
 }
 
 // common redirects
-override proc BlockCyclicDom.parSafe param {
+proc BlockCyclicDom.parSafe param {
   compilerError("this domain type does not support 'parSafe'");
 }
 override proc BlockCyclicDom.dsiLow           return whole.lowBound;
