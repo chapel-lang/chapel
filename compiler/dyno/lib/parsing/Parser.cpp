@@ -44,13 +44,13 @@ Parser::Parser(Context* context, UniqueString parentSymbolPath)
   : context_(context), parentSymbolPath_(parentSymbolPath) {
 }
 
-Parser Parser::topLevelModuleParser(Context* context) {
+Parser Parser::createForTopLevelModule(Context* context) {
   UniqueString emptySymbolPath;
   return Parser(context, emptySymbolPath);
 }
 
-Parser Parser::includedModuleParser(Context* context,
-                                    UniqueString parentSymbolPath) {
+Parser Parser::createForIncludedModule(Context* context,
+                                       UniqueString parentSymbolPath) {
   return Parser(context, parentSymbolPath);
 }
 
