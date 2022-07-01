@@ -82,24 +82,24 @@ std::string Builder::filenameToModulename(const char* filename) {
   }
 }
 
-owned<Builder> Builder::topLevelModuleBuilder(Context* context,
-                                              const char* filepath) {
+owned<Builder> Builder::createForTopLevelModule(Context* context,
+                                                const char* filepath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
   UniqueString startingSymbolPath;
   auto b = new Builder(context, uniqueFilename, startingSymbolPath);
   return toOwned(b);
 }
 
-owned<Builder> Builder::includedModuleBuilder(Context* context,
-                                              const char* filepath,
-                                              UniqueString parentSymbolPath) {
+owned<Builder> Builder::createForIncludedModule(Context* context,
+                                                const char* filepath,
+                                                UniqueString parentSymbolPath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
   auto b = new Builder(context, uniqueFilename, parentSymbolPath);
   return toOwned(b);
 }
 
 owned<Builder> Builder::build(Context* context, const char* filepath) {
-  return Builder::topLevelModuleBuilder(context, filepath);
+  return Builder::createForTopLevelModule(context, filepath);
 }
 
 void Builder::addToplevelExpression(owned<AstNode> e) {

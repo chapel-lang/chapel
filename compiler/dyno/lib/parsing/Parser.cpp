@@ -86,10 +86,10 @@ static void updateParseResult(ParserContext* parserContext) {
 BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   owned<Builder> builder;
   if (parentSymbolPath_.isEmpty()) {
-    builder = Builder::topLevelModuleBuilder(this->context(), path);
+    builder = Builder::createForTopLevelModule(this->context(), path);
   } else {
-    builder = Builder::includedModuleBuilder(this->context(), path,
-                                             parentSymbolPath_);
+    builder = Builder::createForIncludedModule(this->context(), path,
+                                               parentSymbolPath_);
   }
   ErrorMessage fileError;
 
@@ -180,10 +180,10 @@ BuilderResult Parser::parseString(const char* path, const char* str,
                                   ParserStats* parseStats) {
   owned<Builder> builder;
   if (parentSymbolPath_.isEmpty()) {
-    builder = Builder::topLevelModuleBuilder(this->context(), path);
+    builder = Builder::createForTopLevelModule(this->context(), path);
   } else {
-    builder = Builder::includedModuleBuilder(this->context(), path,
-                                             parentSymbolPath_);
+    builder = Builder::createForIncludedModule(this->context(), path,
+                                               parentSymbolPath_);
   }
 
   // Set the (global) parser debug state
