@@ -103,15 +103,20 @@ class Context {
   bool enableDebugTrace = false;
   bool enableQueryTiming = false;
   bool enableQueryTimingTrace = false;
+  bool currentTerminalSupportsColor_ = terminalSupportsColor(getenv("TERM"));
   bool breakSet = false;
   size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
   // tracks the nesting of queries, displayed during query tracing
   int queryTraceDepth = 0;
+
   // list of query names to ignore when tracing
-  const std::vector<std::string> queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
+  const std::vector<std::string>
+  queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
+
   // list of colors to use for open/close braces depending on query depth
-  const std::vector<TermColorName> queryDepthColor  = {blue, bright_yellow, magenta};
+  const std::vector<TermColorName>
+  queryDepthColor  = {BLUE, BRIGHT_YELLOW, MAGENTA};
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
@@ -124,8 +129,8 @@ class Context {
   }
 
   void setTerminalColor(TermColorName colorName, std::ostream& os) {
-    if (terminalSupportsColor(getenv("TERM"))) {
-      os << getTerminalColor(colorName);
+    if (currentTerminalSupportsColor_) {
+      os << getColorFormat(colorName);
     }
   }
 

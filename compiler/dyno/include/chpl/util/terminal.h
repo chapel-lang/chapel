@@ -26,26 +26,26 @@
 namespace chpl {
 
 enum TermColorName {
-    clear,
-    black,
-    red,
-    green,
-    yellow,
-    blue,
-    magenta,
-    cyan,
-    white,
-    bright_black,
-    bright_red,
-    bright_green,
-    bright_yellow,
-    bright_blue,
-    bright_magenta,
-    bright_cyan,
-    bright_white
+    CLEAR,
+    BLACK,
+    RED,
+    GREEN,
+    YELLOW,
+    BLUE,
+    MAGENTA,
+    CYAN,
+    WHITE,
+    BRIGHT_BLACK,
+    BRIGHT_RED,
+    BRIGHT_GREEN,
+    BRIGHT_YELLOW,
+    BRIGHT_BLUE,
+    BRIGHT_MAGENTA,
+    BRIGHT_CYAN,
+    BRIGHT_WHITE
 };
 
-std::string getTerminalColor(TermColorName colorName);
+std::string getColorFormat(TermColorName colorName);
 
 bool terminalSupportsColor(const char* term);
 

@@ -22,33 +22,33 @@
 #include "chpl/util/terminal.h"
 #include <cstring>
 #include <map>
-
+#include <unistd.h>
 
 namespace chpl {
 
 std::string getFgColorCode(TermColorName colorName);
 
 std::map<TermColorName, std::string> termColorMap = {
-    {clear, "0"},
-    {black,"30"},
-    {red,"31"},
-    {green, "32"},
-    {yellow, "33"},
-    {blue,"34"},
-    {magenta,"35"},
-    {cyan, "36"},
-    {white, "37"},
-    {bright_black, "90"},
-    {bright_red, "91"},
-    {bright_green, "92"},
-    {bright_yellow, "93"},
-    {bright_blue, "94"},
-    {bright_magenta, "95"},
-    {bright_cyan, "96"},
-    {bright_white, "97"}
+    {CLEAR,          "0"},
+    {BLACK,          "30"},
+    {RED,            "31"},
+    {GREEN,          "32"},
+    {YELLOW,         "33"},
+    {BLUE,           "34"},
+    {MAGENTA,        "35"},
+    {CYAN,           "36"},
+    {WHITE,          "37"},
+    {BRIGHT_BLACK,   "90"},
+    {BRIGHT_RED,     "91"},
+    {BRIGHT_GREEN,   "92"},
+    {BRIGHT_YELLOW,  "93"},
+    {BRIGHT_BLUE,    "94"},
+    {BRIGHT_MAGENTA, "95"},
+    {BRIGHT_CYAN,    "96"},
+    {BRIGHT_WHITE, "97"}
 };
 
-std::string getTerminalColor(TermColorName colorName) {
+std::string getColorFormat(TermColorName colorName) {
   std::string ret = "\033[";
   ret += getFgColorCode(colorName);
   ret += "m";
@@ -56,7 +56,7 @@ std::string getTerminalColor(TermColorName colorName) {
 }
 
 std::string clearTerminalColor() {
-  std::string ret = getTerminalColor(clear);
+  std::string ret = getColorFormat(CLEAR);
   return ret;
 }
 
@@ -87,6 +87,13 @@ bool terminalSupportsColor(const char* term) {
       break;
     }
   }
+
+  // Check if either output is to a tty.
+  if (isatty(fileno(stderr)) == 0 ||
+      isatty(fileno(stdout)) == 0) {
+    isColorTerm = false;
+  }
+
   return isColorTerm;
 }
 

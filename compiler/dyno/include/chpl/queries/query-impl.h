@@ -139,8 +139,8 @@ void Context::queryBeginTrace(const char* traceQueryName,
                 << clearTerminalColor() << traceQueryName << " (";
       queryArgsPrint(tupleOfArg);
       std::cout << ") ";
-      setTerminalColor(cyan, std::cout);
-      std::cout <<"QUERY+ARGS HASH: 0x"
+      setTerminalColor(CYAN, std::cout);
+      std::cout <<"hash: 0x"
                 << std::hex << queryAndArgsHash
                 << clearTerminalColor() << std::endl;
     }
@@ -345,11 +345,11 @@ Context::queryEnd(
               << "   " << traceQueryName
               << " ";
     if (ret->lastChanged == this->currentRevisionNumber) {
-      setTerminalColor(yellow, std::cout);
+      setTerminalColor(YELLOW, std::cout);
       std::cout << "UPDATED";
     } else {
-      setTerminalColor(green, std::cout);
-      std::cout << "NO CHANGE";
+      setTerminalColor(GREEN, std::cout);
+      std::cout << "unchanged";
     }
     setQueryDepthColor(queryTraceDepth, std::cout);
     std::cout << " } "

@@ -974,12 +974,6 @@ static void setupErrorFormatEscapes() {
       // Check the TERM variable.
       const char* term = getenv("TERM");
       isColorTerm = chpl::terminalSupportsColor(term);
-
-      // Check if errors will be output to a tty. If not,
-      // the format codes will just store "" and have no effect.
-      if (isatty(fileno(stderr)) == 0) {
-        isColorTerm = false;
-      }
     }
 
     if (isColorTerm) {
