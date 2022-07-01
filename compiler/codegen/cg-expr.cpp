@@ -4870,7 +4870,8 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   args.push_back(new_IntSymbol(call->astloc.lineno()));
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
-  // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass // this variable to the launch call.
+  // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass
+  // this variable to the launch call.
   #ifdef HAVE_LLVM  // Needed to suppress warning; should always be true in code path for GPU codegen
     GenInfo* info = gGenInfo;
     args.push_back(info->lvt->getValue("chpl_gpuBinary"));
