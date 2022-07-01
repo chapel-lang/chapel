@@ -1,55 +1,56 @@
 use Math;
 use GPUDiagnostics;
 
-config var i8: int(8) = 10;
-config var i16: int(16) = 10;
-config var i32: int(32) = 10;
-config var i64: int(64) = 10;
-config var u8: uint(8) = 10;
-config var u16: uint(16) = 10;
-config var u32: uint(32) = 10;
-config var u64: uint(64) = 10;
-
-config var im32: imag(32) = 10i;
-config var im64: imag(64) = 10i;
-
 config const verbose = false;
 
-/* TODO
-config var c64: complex(64) = 10+10i;
-config var c128: complex(128) = 10+10i;
-*/
+proc main() {
 
-config var r32: real(32) = 0.1;
-config var r64: real(64) = 0.1;
+  var i8: int(8) = 10;
+  var i16: int(16) = 10;
+  var i32: int(32) = 10;
+  var i64: int(64) = 10;
+  var u8: uint(8) = 10;
+  var u16: uint(16) = 10;
+  var u32: uint(32) = 10;
+  var u64: uint(64) = 10;
 
-config var r32b: real(32) = 10.0;
-config var r64b: real(64) = 10.0;
+  var im32: imag(32) = 10i;
+  var im64: imag(64) = 10i;
 
+  /* TODO
+  var c64: complex(64) = 10+10i;
+  var c128: complex(128) = 10+10i;
+  */
 
-on here.gpus[0] {
-  var R: [0..1] real;
-  var I: [0..1] imag;
-  var B: [0..1] bool;
+  var r32: real(32) = 0.1;
+  var r64: real(64) = 0.1;
 
-  const r = 0..0;
+  var r32b: real(32) = 10.0;
+  var r64b: real(64) = 10.0;
 
-  proc check(A, s) {
-    if getGPUDiagnostics()[0].kernel_launch !=1 then
-      writeln(s + " didn't result in kernel launch");
-    else if verbose then
-      writeln(s + " resulted in kernel launch");
+  on here.gpus[0] {
+    var R: [0..1] real;
+    var I: [0..1] imag;
+    var B: [0..1] bool;
 
-    const isCorrect = if A.eltType == bool then A[0]==A[1] else isclose(A[0],A[1]);
-    if !isCorrect then
-      writeln(s + " computed wrong result. ("+A[0]:string+", "+A[1]:string+")");
-    else if verbose then
-      writeln(s + " computed right result. ("+A[0]:string+", "+A[1]:string+")");
+    const r = 0..0;
 
-    resetGPUDiagnostics();
-  }
+    proc check(A, s) {
+      if getGPUDiagnostics()[0].kernel_launch !=1 then
+        writeln(s + " didn't result in kernel launch");
+      else if verbose then
+        writeln(s + " resulted in kernel launch");
 
-  startGPUDiagnostics();
+      const isCorrect = if A.eltType == bool then A[0]==A[1] else isclose(A[0],A[1]);
+      if !isCorrect then
+        writeln(s + " computed wrong result. ("+A[0]:string+", "+A[1]:string+")");
+      else if verbose then
+        writeln(s + " computed right result. ("+A[0]:string+", "+A[1]:string+")");
+
+      resetGPUDiagnostics();
+    }
+
+    startGPUDiagnostics();
 
 // foreach loops should result in a kernel launch that sets the 0th index of the array, the
 // following statement is outside the foreach, so wll execute on the host. We check whether they
@@ -289,5 +290,6 @@ foreach i in r do  R[0] =  y1(r64);   R[1] =  y1(r64);  check(R,"y1(r64)");
 foreach i in r do  R[0] =  yn(2,r32);   R[1] =  yn(2,r32);  check(R,"yn(2,r32)");
 foreach i in r do  R[0] =  yn(2,r64);   R[1] =  yn(2,r64);  check(R,"yn(2,r64)");
 
-  stopGPUDiagnostics();
+    stopGPUDiagnostics();
+  }
 }
