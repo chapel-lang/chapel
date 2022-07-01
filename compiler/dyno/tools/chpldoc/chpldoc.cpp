@@ -60,7 +60,6 @@ using namespace parsing;
 
 using CommentMap = std::unordered_map<ID, const Comment*>;
 
-std::unordered_set<asttags::AstTag> gUnhandled;
 static const int indentPerDepth = 3;
 std::string commentStyle_;
 bool writeStdOut_ = false;
@@ -358,7 +357,7 @@ static const char* kindToString(New::Management kind) {
   return "";
 }
 
-static bool isCalleeManagementKind(const AstNode* callee) {
+static bool isCalleReservedWord(const AstNode* callee) {
   if (callee->isIdentifier() &&
       (callee->toIdentifier()->name() == USTR("borrowed")
        || callee->toIdentifier()->name() == USTR("owned")
@@ -657,19 +656,41 @@ struct RstSignatureVisitor {
     }
     // handle printing parens around tuples
     // ex: 3*(4*string) != 3*4*string
-    if (isRHS && !needsParens && outerOp == USTR("*") &&
-          ((innerOp == USTR("*") && node->actual(pos)->isOpCall() &&
-            node->actual(pos)->toOpCall()->actual(0)->isIntLiteral() &&
-            (node->actual(pos)->toOpCall()->actual(1)->isTuple() ||
-             node->actual(pos)->toOpCall()->actual(1)->isIdentifier())) ||
-           (node->actual(0)->isIntLiteral() &&
-            (node->actual(pos)->isIdentifier() ||
-             node->actual(pos)->isFnCall())))) {
-      needsParens = true;
-    }
+    needsParens = tupleOpNeedsParens(node, needsParens, isRHS, outerOp,
+                                     innerOp);
     if (needsParens) os_ << "(";
     node->actual(pos)->traverse(*this);
     if (needsParens) os_ << ")";
+  }
+
+  // check if this is a start tuple decl, for example:
+  // 3*string or 2*(3*string), etc
+  bool isStarTupleDecl(UniqueString op, const OpCall* node) const {
+    // TODO: need to adjust the rules as to what exactly can construct
+    //  a star tuple, it's not clear how to filter FnCalls
+    //  ex: 3*(real(64)) is a * op with lhs = IntLiteral(3) and
+    //  rhs = FnCall(real->64)
+    bool ret = false;
+    if (node && op == USTR("*") && node->actual(0)->isIntLiteral() &&
+        (node->actual(1)->isIdentifier() ||
+         node->actual(1)->isTuple() ||
+         node->actual(1)->isFnCall())) {
+      ret = true;
+    }
+    return ret;
+  }
+
+  bool tupleOpNeedsParens(const OpCall* node, bool needsParens, bool isRHS,
+                          UniqueString& outerOp, UniqueString& innerOp) const {
+    if (needsParens || !isRHS) return needsParens;
+    bool ret = needsParens;
+    bool isOuterStarTuple = isStarTupleDecl(outerOp, node);
+    bool isInnerStarTuple = isStarTupleDecl(innerOp,
+                                            node->actual(1)->toOpCall());
+    if ((isOuterStarTuple || isInnerStarTuple)) {
+      ret = true;
+    }
+    return ret;
   }
 
   void printBinaryOp(const OpCall* node) {
@@ -703,7 +724,7 @@ struct RstSignatureVisitor {
     const AstNode* callee = call->calledExpression();
     assert(callee);
     callee->traverse(*this);
-    if (isCalleeManagementKind(callee)) {
+    if (isCalleReservedWord(callee)) {
       os_ << " ";
       call->actual(0)->traverse(*this);
     } else {
@@ -806,11 +827,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const AstNode* a) {
-    //printf("unhandled enter on PrettyPrintVisitor of %s\n",
-    //          asttags::tagToString(a->tag()));
-    //a->stringify(os_, StringifyKind::CHPL_SYNTAX);
     printChapelSyntax(os_, a);
-    //gUnhandled.insert(a->tag());
     return false;
   }
   void exit(const AstNode* a) {}
@@ -1000,7 +1017,9 @@ struct RstResultBuilder {
         }
       }
     }
-    // add the submodules to the end
+    // add the submodules to the end so that all the fields/functions of
+    // an individual module are printed together, and not interrupted by
+    // a submodule's declaration
     for (auto subModule : subModules) {
       children_.push_back(subModule);
     }
@@ -1230,20 +1249,19 @@ struct RstResultBuilder {
 */
 struct CommentVisitor {
   CommentMap& map;
-  /* Keep track of used comments here to prevent reusing a comment for a
-     module or class and the first method or attribute.
-   */
-  std::vector<const Comment*> usedComments_;
   const Comment* lastComment_ = nullptr;
 
   void put(const AstNode* n) {
     if (lastComment_) {
-      std::vector<const Comment*>::iterator it =
-          std::find(usedComments_.begin(), usedComments_.end(), lastComment_);
-      if (it == usedComments_.end()) {
-        usedComments_.push_back(lastComment_);
-        map.emplace(n->id(), lastComment_);
+      // check that we didn't already use this comment, which can happen
+      // if a module has a comment and it's first function does not,
+      // in that case we improperly apply the comment to both the module
+      // and the function.
+      for (const auto& mapEntry : map) {
+        if (mapEntry.second == lastComment_)
+          return;
       }
+      map.emplace(n->id(), lastComment_);
     }
   }
 
@@ -1581,16 +1599,6 @@ int main(int argc, char** argv) {
                   << (pair.second ? pair.second->str() : "<nullptr>") << "\n";
       }
     }
-  }
-
-  if (!gUnhandled.empty()) {
-    printf("ERROR did not pretty print %ld nodes with tags:\n",
-            gUnhandled.size());
-
-    for (auto tag : gUnhandled) {
-      printf("  %s\n", asttags::tagToString(tag));
-    }
-    return 1;
   }
 
   return 0;
