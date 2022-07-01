@@ -90,7 +90,23 @@ static void defaultReportErrorPrintDetail(Context* context,
 }
 
 void Context::defaultReportError(Context* context, const ErrorMessage& err) {
-  defaultReportErrorPrintDetail(context, err, "", "error");
+  // if the err came with a kind, use it, otherwise just call it an "error"
+  std::string errKindString;
+  switch (err.kind()) {
+    case ErrorMessage::Kind::WARNING:
+      errKindString = "warning";
+      break;
+    case ErrorMessage::Kind::NOTE:
+      errKindString = "note";
+      break;
+    case ErrorMessage::Kind::SYNTAX:
+      errKindString = "syntax";
+      break;
+    default:
+      errKindString = "error";
+  }
+
+  defaultReportErrorPrintDetail(context, err, "", errKindString.c_str());
 }
 
 // unique'd strings are preceded by 4 bytes of length, gcMark and doNotCollectMark
