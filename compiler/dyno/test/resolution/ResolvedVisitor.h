@@ -21,6 +21,7 @@
 #define CHPL_RESOLUTION_RESOLVED_VISITOR_H
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/uast/all-uast.h"
 
 namespace chpl {
 namespace resolution {

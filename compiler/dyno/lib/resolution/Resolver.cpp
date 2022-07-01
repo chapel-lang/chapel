@@ -2073,7 +2073,7 @@ bool Resolver::enter(const For* loop) {
 
         cur.exitScope(loop);
 
-        loopResults.push_back(cur.byPostorder);
+        loopResults.push_back(std::move(cur.byPostorder));
       }
 
       auto paramLoop = new ResolvedParamLoop(loop);

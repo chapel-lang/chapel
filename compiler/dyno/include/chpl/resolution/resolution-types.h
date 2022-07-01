@@ -26,10 +26,10 @@
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
 #include "chpl/uast/AstNode.h"
+#include "chpl/uast/For.h"
 #include "chpl/uast/Function.h"
 #include "chpl/util/bitmap.h"
 #include "chpl/util/memory.h"
-#include "chpl/uast/all-uast.h"
 
 #include <unordered_map>
 #include <utility>
@@ -1431,13 +1431,14 @@ class ResolvedFields {
 };
 
 class ResolvedParamLoop {
-  private:
-    const uast::For* loop_;
-    std::vector<ResolutionResultByPostorderID> loopBodies_;
-
   public:
     using LoopBodies = std::vector<ResolutionResultByPostorderID>;
 
+  private:
+    const uast::For* loop_;
+    LoopBodies loopBodies_;
+
+  public:
     ResolvedParamLoop(const uast::For* loop) : loop_(loop) { }
 
     const uast::For* loop() const {
