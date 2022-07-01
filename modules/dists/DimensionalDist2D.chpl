@@ -967,7 +967,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
 
 //== miscellanea
 
-proc DimensionalArr.idxType type return dom.idxType; // (could be a field)
+override proc DimensionalArr.idxType type return dom.idxType; // (could be a field)
 
 override proc DimensionalArr.dsiGetBaseDom() return dom;
 
