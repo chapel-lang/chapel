@@ -13,6 +13,8 @@ config var u64: uint(64) = 10;
 config var im32: imag(32) = 10i;
 config var im64: imag(64) = 10i;
 
+config const verbose = false;
+
 /* TODO
 config var c64: complex(64) = 10+10i;
 config var c128: complex(128) = 10+10i;
@@ -33,12 +35,16 @@ on here.gpus[0] {
   const r = 0..0;
 
   proc check(A, s) {
-    assert(getGPUDiagnostics()[0].kernel_launch == 1,
-           s + " didn't result in kernel launch");
+    if getGPUDiagnostics()[0].kernel_launch !=1 then
+      writeln(s + " didn't result in kernel launch");
+    else if verbose then
+      writeln(s + " resulted in kernel launch");
 
-    var isCorrect = if A.eltType == bool then A[0]==A[1] else isclose(A[0],A[1]);
-    assert(isCorrect,
-           s + " computed wrong result. ("+A[0]:string+", "+A[1]:string+")");
+    const isCorrect = if A.eltType == bool then A[0]==A[1] else isclose(A[0],A[1]);
+    if !isCorrect then
+      writeln(s + " computed wrong result. ("+A[0]:string+", "+A[1]:string+")");
+    else if verbose then
+      writeln(s + " computed right result. ("+A[0]:string+", "+A[1]:string+")");
 
     resetGPUDiagnostics();
   }
