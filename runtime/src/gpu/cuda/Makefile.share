@@ -19,11 +19,24 @@ gpu_cuda_LFLAGS += -lstdc++
 GEN_LFLAGS += -lstdc++
 
 SRCS = \
-	   -lstdc++ gpu-cuda-target.c \
+	   gpu-cuda-target.cc \
 
 GPU_SRCS = \
-	   gpu-cuda-target.c \
+	   gpu-cuda-target.cc \
+
+RUNTIME_INCLS += -I$(LLVM_INSTALL_DIR)/../../llvm-src/projects/openmp/libomptarget/include/
 
 GPU_OBJS = \
-	$(GPU_SRCS:%.c=$(GPU_OBJDIR)/%.o)
+	$(GPU_SRCS:%.cc=$(GPU_OBJDIR)/%.o)
+
+ifeq ($(CXX11_STD),unknown)
+  $(error CXX11_STD is not set for this compiler - update make/compiler/...)
+endif
+
+# Note: passing CXX11_STD in addition to RUNTIME_CXXFLAGS below
+# Hopefully RUNTIME_CXXFLAGS includes a C++ standard version. If not,
+# the preceeding CXX11_STD will apply.
+$(RUNTIME_OBJ_DIR)/gpu-cuda-target.o: gpu-cuda-target.cc \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CXX) -c $(CXX11_STD) $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
 

@@ -178,16 +178,16 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   chpl_gpu_test();
 
-  CHPL_GPU_LOG("Kernel launcher called. (subloc %d)\n"
-               "\tKernel: %s\n"
-               "\tGrid: %d,%d,%d\n"
-               "\tBlock: %d,%d,%d\n"
-               "\tNumArgs: %d\n",
-               chpl_task_getRequestedSubloc(),
-               name,
-               grd_dim_x, grd_dim_y, grd_dim_z,
-               blk_dim_x, blk_dim_y, blk_dim_z,
-               nargs);
+  CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
+                 "\tKernel: %s\n"
+                 "\tGrid: %d,%d,%d\n"
+                 "\tBlock: %d,%d,%d\n"
+                 "\tNumArgs: %d\n",
+                 chpl_task_getRequestedSubloc(),
+                 name,
+                 grd_dim_x, grd_dim_y, grd_dim_z,
+                 blk_dim_x, blk_dim_y, blk_dim_z,
+                 nargs);
 
   int i;
   void* function = chpl_gpu_getKernel(fatbinData, name);

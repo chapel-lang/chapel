@@ -31,8 +31,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 GPU_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
-TARGETS = \
-	$(GPU_OBJS) \
+TARGETS = $(GPU_OBJS)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 

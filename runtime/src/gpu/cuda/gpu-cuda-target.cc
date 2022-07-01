@@ -2,9 +2,10 @@
 #include "gpu-cuda-target.h"
 
 /*#ifdef __cplusplus*/
-#include "../../third-party/llvm/llvm-src/projects/openmp/libomptarget/src/device.h"
+#include "device.h"
 /*#endif*/
 
+extern "C" {
 
 void chpl_gpu_test() {
   printf("In gpu tsest\n");
@@ -12,3 +13,4 @@ void chpl_gpu_test() {
 
 
 
+}

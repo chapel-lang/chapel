@@ -20,6 +20,6 @@ GPU_SUBDIR = src/gpu/cuda
 
 GPU_OBJDIR = $(RUNTIME_BUILD)/$(GPU_SUBDIR)
 
-ALL_SRCS += $(CURDIR)/$(GPU_SUBDIR)/*.c
+ALL_SRCS += $(CURDIR)/$(GPU_SUBDIR)/*.cc
 
 include $(RUNTIME_ROOT)/$(GPU_SUBDIR)/Makefile.share
