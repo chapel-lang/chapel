@@ -125,12 +125,40 @@ static void test4() {
   assert(qt.type() == BoolType::get(context, 0));
 }
 
+static void test5() {
+  Context ctx;
+  Context* context = &ctx;
+
+  // configure context to fail test if there are any errors
+  context->setErrorHandler(reportError);
+
+  // both args are params, should make a param init expr
+  QualifiedType qt = parseTypeOfXInit(context,
+                                      "var x = true && false;");
+  assert(qt.isParamFalse());
+}
+
+static void test6() {
+  Context ctx;
+  Context* context = &ctx;
+
+  // configure context to fail test if there are any errors
+  context->setErrorHandler(reportError);
+
+  // both args are params, should make a param init expr
+  QualifiedType qt = parseTypeOfXInit(context,
+                                      "var x = false || true;");
+  assert(qt.isParamTrue());
+}
+
+
 int main() {
   test1();
   test2();
   test3();
   test4();
+  test5();
+  test6();
 
   return 0;
 }
-

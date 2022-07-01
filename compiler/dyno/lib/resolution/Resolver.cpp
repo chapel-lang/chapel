@@ -1569,7 +1569,7 @@ bool Resolver::enter(const Call* call) {
         // go ahead and evaluate the RHS
         op->actual(1)->traverse(*this);
         // look at the RHS type.
-        const QualifiedType& rhs = byPostorder.byAst(op->actual(0)).type();
+        const QualifiedType& rhs = byPostorder.byAst(op->actual(1)).type();
         if (lhs.isParamTrue() && rhs.isParamTrue()) {
           // if LHS and RHS are both param true, return param true.
           result = lhs;
@@ -1578,10 +1578,17 @@ bool Resolver::enter(const Call* call) {
           result = QualifiedType(QualifiedType::CONST_VAR,
                                  UnknownType::get(context));
         } else {
-          // TODO: check that LHS and RHS are both bool
-          // otherwise just return a Bool value
-          result = QualifiedType(QualifiedType::CONST_VAR,
-                                 BoolType::get(context, 0));
+          assert(rhs.type()->isBoolType() && lhs.type()->isBoolType());
+          if (rhs.isParam() && lhs.isParam()) {
+            // preserve param-ness
+            result = QualifiedType(QualifiedType::PARAM,
+                                   BoolType::get(context, 0),
+                                   BoolParam::get(context, 0));
+          } else {
+            // otherwise just return a Bool value
+            result = QualifiedType(QualifiedType::CONST_VAR,
+                                   BoolType::get(context, 0));
+          }
         }
       }
     } else if (op->op() == USTR("||")) {
@@ -1596,7 +1603,7 @@ bool Resolver::enter(const Call* call) {
         // go ahead and evaluate the RHS
         op->actual(1)->traverse(*this);
         // look at the RHS type.
-        const QualifiedType& rhs = byPostorder.byAst(op->actual(0)).type();
+        const QualifiedType& rhs = byPostorder.byAst(op->actual(1)).type();
         if (lhs.isParamFalse() && rhs.isParamFalse()) {
           // if LHS and RHS are both param false, return param false.
           result = lhs;
@@ -1605,10 +1612,17 @@ bool Resolver::enter(const Call* call) {
           result = QualifiedType(QualifiedType::CONST_VAR,
                                  UnknownType::get(context));
         } else {
-          // TODO: check that LHS and RHS are both bool
-          // otherwise just return a Bool value
-          result = QualifiedType(QualifiedType::CONST_VAR,
-                                 BoolType::get(context, 0));
+          assert(rhs.type()->isBoolType() && lhs.type()->isBoolType());
+          if (rhs.isParam() && lhs.isParam()) {
+            // preserve param-ness
+            result = QualifiedType(QualifiedType::PARAM,
+                                   BoolType::get(context, 0),
+                                   BoolParam::get(context, 1));
+          } else {
+            // otherwise just return a Bool value
+            result = QualifiedType(QualifiedType::CONST_VAR,
+                                   BoolType::get(context, 0));
+          }
         }
       }
     } else {
