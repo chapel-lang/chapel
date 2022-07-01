@@ -1105,7 +1105,22 @@ int flags_for_mmap_open(int flags)
   return acc | rest;
 }
 
+static qio_err_t sys_open(const char* pathname, int flags, mode_t mode, fd_t* fd_out)
+{
+  int got;
+  qio_err_t err_out;
 
+  got = open(pathname, flags, mode);
+  if( got != -1 ) {
+    *fd_out = got;
+    err_out = 0;
+  } else {
+    *fd_out = -1;
+    err_out = errno;
+  }
+
+  return err_out;
+}
 
 // mode should default to S_IRUSR | S_IWUSR | S_IRGRP |  S_IWGRP |  S_IROTH  |  S_IWOTH
 // iohints should default to 0

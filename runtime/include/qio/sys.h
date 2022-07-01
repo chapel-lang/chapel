@@ -169,9 +169,6 @@ const char* sys_strerror_syserr_str(syserr error, qio_err_t* err_in_strerror);
 qio_err_t sys_readlink(const char* path, const char** string_out);
 int sys_getenv(const char* name, const char** string_out);
 
-qio_err_t sys_open(const char* path, int flags, mode_t mode, fd_t* fd_out);
-
-
 qio_err_t sys_close(fd_t fd);
 
 qio_err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out);
