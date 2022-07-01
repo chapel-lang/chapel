@@ -53,9 +53,6 @@ class Parser final {
   static Parser createForIncludedModule(Context* context,
                                         UniqueString parentSymbolPath);
 
-  /* returns an owned topLevelModuleParser */
-  static owned<Parser> build(Context* context);
-
   ~Parser() = default;
 
   /**

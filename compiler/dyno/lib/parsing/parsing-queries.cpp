@@ -151,10 +151,10 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
   BuilderResult result(path);
   if (error.isEmpty()) {
     // if there was no error reading the file, proceed to parse
-    auto parser = Parser::build(context);
+    auto parser = Parser::createForTopLevelModule(context);
     const char* pathc = path.c_str();
     const char* textc = text.c_str();
-    parser->parseString(pathc, textc, parseStats);
+    parser.parseString(pathc, textc, parseStats);
   }
 }
 

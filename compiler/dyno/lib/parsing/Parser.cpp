@@ -54,11 +54,6 @@ Parser Parser::createForIncludedModule(Context* context,
   return Parser(context, parentSymbolPath);
 }
 
-owned<Parser> Parser::build(Context* context) {
-  UniqueString emptySymbolPath;
-  return toOwned(new Parser(context, emptySymbolPath));
-}
-
 static void updateParseResult(ParserContext* parserContext) {
 
   Builder* builder = parserContext->builder;

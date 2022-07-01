@@ -158,8 +158,8 @@ int main() {
   Context context;
   Context* ctx = &context;
 
-  auto parser = Parser::build(ctx);
-  Parser* p = parser.get();
+  auto parser = Parser::createForTopLevelModule(ctx);
+  Parser* p = &parser;
 
   testRange(p, "testRange0.chpl", "..", true, true);
   testRange(p, "testRange1.chpl", "..", true, false);

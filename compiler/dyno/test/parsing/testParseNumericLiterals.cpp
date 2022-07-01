@@ -135,8 +135,8 @@ int main() {
   Context context;
   Context* ctx = &context;
 
-  auto parser = Parser::build(ctx);
-  Parser* p = parser.get();
+  auto parser = Parser::createForTopLevelModule(ctx);
+  Parser* p = &parser;
 
   testIntLiteral(p, "testAb.chpl", "0b0", 0);
   testIntLiteral(p, "testAB.chpl", "0b0", 0);

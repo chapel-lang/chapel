@@ -515,12 +515,11 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
     inputText += (!value.empty()) ? value : "true";
     inputText += ";";
   }
-  auto parser = parsing::Parser::build(context());
-  parsing::Parser *p = parser.get();
+  auto parser = parsing::Parser::createForTopLevelModule(context());
   std::string path = "Command-line arg (";
   path += var->name().str();
   path += ")";
-  auto parseResult = p->parseString(path.c_str(), inputText.c_str());
+  auto parseResult = parser.parseString(path.c_str(), inputText.c_str());
   // Propagate any parse errors from the dummy node to builder errors
   if (parseResult.numErrors() > 0) {
    for (ErrorMessage error : parseResult.errors()) {
