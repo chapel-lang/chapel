@@ -109,7 +109,7 @@ static bool hasSubmodule(const Module* mod) {
   for (const AstNode* child : mod->stmts()) {
     if (auto mod = child->toModule())
       if (mod->visibility() != chpl::uast::Decl::PRIVATE && !isNoDoc(mod)) {
-      return true;
+        return true;
     }
   }
   return false;
@@ -448,12 +448,12 @@ struct RstSignatureVisitor {
   bool enter(const ImagLiteral* l) { return enterLiteral(l); }
 
   bool enter(const StringLiteral* l) {
-    os_ << '"' << escapeStringC(std::string(l->str().c_str())) << '"';
+    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
     return false;
   }
 
   bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << escapeStringC(std::string(l->str().c_str())) << '"';
+    os_ << "c\"" << escapeStringC(l->str().c_str()) << '"';
     return false;
   }
 
@@ -1011,7 +1011,15 @@ struct RstResultBuilder {
       return {};
     // lookup the module path
     std::vector<UniqueString> modulePath = getModulePath(context_, m->id());
-    std::string moduleName = modulePath.back().str();
+    std::string moduleName;
+    // build up the module path string using `.` to separate the components
+    for (auto p : modulePath) {
+      moduleName += p.str();
+      if (p != modulePath.back()) {
+        moduleName += ".";
+      }
+    }
+    assert(!moduleName.empty());
     const Comment* lastComment = nullptr;
     // header
     if (!textOnly_) {
@@ -1323,12 +1331,17 @@ static const std::vector<UniqueString>& getModulePath(Context* context, ID id) {
   QUERY_BEGIN(getModulePath, context, id);
   std::vector<UniqueString> result;
   if (!id.isEmpty()) {
-    const ID parentID = idToParentId(context, id);
-    if (!parentID.isEmpty()) {
-      const AstNode* parent = idToAst(context, parentID);
-      result.push_back(parent->id().symbolPath());
+    ID parentID = idToParentModule(context, id);
+    while (!parentID.isEmpty()) {
+      // a submodule
+      UniqueString modulePath = parentID.symbolName(context);
+      // place parent names in the front
+      result.insert(result.begin(), modulePath);
+      // see if we have another parent
+      parentID = idToParentModule(context, parentID);
     }
-    result.push_back(id.symbolPath());
+    // a top level module
+    result.push_back(id.symbolName(context));
   }
   return QUERY_END(result);
 }
@@ -1512,16 +1525,28 @@ int main(int argc, char** argv) {
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
     UniqueString emptyParent;
+
+    // TODO: Change which query we use to parse files as suggested by @mppf
+    // parseFileContainingIdToBuilderResult(Context* context, ID id);
+    // and then work with the module ID to find the preceeding comment.
     const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
                                                                   path,
                                                                   emptyParent);
-    // just display the first error message right now
-    // this is a quick fix to stop the program from dying
-    // in  a gross way when a file can't be located
+
     if (builderResult.numErrors() > 0) {
-      std::cerr << "Error parsing " << path << ": "
-                << builderResult.error(0).message() << "\n";
-      return 1;
+      // TODO: handle errors better, don't rely on parse query to emit them
+      // per @mppf: if dyno-chpldoc wants to quit on an error, it should
+      // configure Context::reportError to have a custom function that does so.
+
+      for (auto e : builderResult.errors()) {
+      // just display the error messages right now, see TODO above
+        if (e.kind() == ErrorMessage::Kind::ERROR ||
+            e.kind() == ErrorMessage::Kind::SYNTAX) {
+              std::cerr << "Error parsing " << path << ": "
+                        << builderResult.error(0).message() << "\n";
+              return 1;
+            }
+      }
     }
     if (!args.stdout) {
       auto name = moduleName(builderResult);
