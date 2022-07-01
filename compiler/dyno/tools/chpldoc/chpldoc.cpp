@@ -62,6 +62,7 @@ using CommentMap = std::unordered_map<ID, const Comment*>;
 
 std::unordered_set<asttags::AstTag> gUnhandled;
 static const int indentPerDepth = 3;
+std::string commentStyle_;
 
 const std::string templateUsage = R"RAW(**Usage**
 
@@ -76,6 +77,8 @@ or
 
    import $MODULE;)RAW";
 
+static std::vector<std::string> modulePath;
+
 static std::vector<std::string> splitLines(const std::string& s) {
   std::stringstream ss(s);
   std::string line;
@@ -84,6 +87,16 @@ static std::vector<std::string> splitLines(const std::string& s) {
     ret.push_back(line);
   }
   return ret;
+}
+
+static bool hasSubmodule(const Module* mod) {
+  for (const AstNode* child : mod->stmts()) {
+    if (child->isModule() &&
+        child->toModule()->visibility() != chpl::uast::Decl::PRIVATE) {
+      return true;
+    }
+  }
+  return false;
 }
 
 static std::string strip(const std::string& s, std::string pattern = "^\\s+|\\s+$") {
@@ -97,8 +110,17 @@ static std::string templateReplace(const std::string& templ,
   return std::regex_replace(templ, std::regex(std::string("\\$") + key), value);
 }
 
+static UniqueString getNodeName(AstNode* node) {
+  if (node->isNamedDecl()) {
+    return node->toNamedDecl()->name();
+  } else if (node->isIdentifier()) {
+    return node->toIdentifier()->name();
+  } else {
+    assert(false && "no name defined for node");
+  }
+}
 
-static char * checkProjectVersion(char * projectVersion) {
+static char* checkProjectVersion(char* projectVersion) {
   int length = strlen(projectVersion);
   int i = 0;
   int dot = 0;
@@ -199,23 +221,25 @@ static std::ostream& indentStream(std::ostream& os, size_t num) {
   return os;
 }
 
-// Remove the leading+trailing // or /* (*/)
+// Remove the leading+trailing commentStyle (/*+, *+/)
 // Dedent by the least amount of leading whitespace
 // Return is a list of strings which have no newline chars
-static std::vector<std::string> prettifyComment(const std::string& s) {
-  std::string ret = s;
-
-  if (ret.substr(0, 2) == "//") {
-    ret.erase(0, 2);
-  } else if (ret.substr(0, 2) == "/*") {
+static std::vector<std::string> prettifyComment(const std::string& comment, const std::string& commentStyle) {
+  std::string ret = comment;
+  std::string commentEnd = commentStyle;
+  reverse(commentEnd.begin(), commentEnd.end());
+  const int styleLen = commentStyle.size();
+  if (ret.substr(0, styleLen) == commentStyle) {
     size_t l = ret.length();
-    assert(ret.substr(l - 2, 2) == "*/" && "comment didn't end with */");
-    ret.erase(l - 2, 2);
-    ret.erase(0, 2);
+    if (ret.substr(l - styleLen, styleLen) != commentEnd)
+      return {};
+    ret.erase(l - styleLen, styleLen);
+    ret.erase(0, styleLen);
   } else {
-    assert(false && "comment didn't start with // or /*");
+    return {};
   }
-
+  // strip out newlines at the beginning or ending of a comment
+  // strip out * chars at beginning or end of string
   ret = strip(ret, "^\n+|\n+$");
 
   auto lines = splitLines(ret);
@@ -236,9 +260,9 @@ static std::vector<std::string> prettifyComment(const std::string& s) {
   return lines;
 }
 
-static std::string commentSynopsis(const Comment* c) {
+static std::string commentSynopsis(const Comment* c, const std::string& commentStyle) {
   if (!c) return "";
-  auto lines = prettifyComment(c->str());
+  auto lines = prettifyComment(c->str(), commentStyle);
   if (lines.empty()) return "";
   return lines[0];
 }
@@ -365,26 +389,6 @@ struct RstSignatureVisitor {
     return false;
   }
 
-//   bool enter(const MultiDecl* node) {
-//     std::string delimiter = "";
-//     for (auto decl : node->decls()) {
-//       os_ << delimiter;
-//       os_ << decl->toVariable()->name();
-//       if (const AstNode* te = decl->toVariable()->typeExpression()) {
-//         os_ << ": ";
-//         //te->traverse(*this);
-//         printChapelSyntax(os_, te);
-//       }
-//       if (const AstNode* ie = decl->toVariable()->initExpression()) {
-//         os_ << " = ";
-//         printChapelSyntax(os_, ie);
-// //        ie->traverse(*this);
-//       }
-//       delimiter = ", ";
-//     }
-//     return false;
-//   }
-
   bool enter(const Record* r) {
     os_ << r->name().c_str();
     return false;
@@ -392,6 +396,10 @@ struct RstSignatureVisitor {
 
   bool enter(const Class* c) {
     os_ << c->name().c_str();
+    if (c->parentClass()) {
+      os_ << " : ";
+      c->parentClass()->traverse(*this);
+    }
     return false;
   }
 
@@ -412,22 +420,22 @@ struct RstSignatureVisitor {
   bool enter(const ImagLiteral* l) { return enterLiteral(l); }
 
   bool enter(const StringLiteral* l) {
-    os_ << '"' << quoteStringForC(std::string(l->str().c_str())) << '"';
+    os_ << '"' << escapeStringC(std::string(l->str().c_str())) << '"';
     return false;
   }
 
   bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << quoteStringForC(std::string(l->str().c_str())) << '"';
+    os_ << "c\"" << escapeStringC(std::string(l->str().c_str())) << '"';
     return false;
   }
 
-  bool enter(const Dot *d) {
+  bool enter(const Dot* d) {
     d->receiver()->traverse(*this);
     os_ << "." << d->field().c_str();
     return false;
   }
 
-  bool enter(const New *d) {
+  bool enter(const New* d) {
     os_ << "new ";
     if (d->management() != New::Management::DEFAULT_MANAGEMENT) {
       os_ << kindToString(d->management()) << " ";
@@ -492,6 +500,10 @@ struct RstSignatureVisitor {
       os_ << kindToString(f->visibility()) << " ";
     }
 
+    if (f->isOverride()) {
+      os_ << "override ";
+    }
+
     // Function Name
     os_ << kindToString(f->kind());
     os_ << " ";
@@ -546,13 +558,17 @@ struct RstSignatureVisitor {
     // Return type
     if (const AstNode* e = f->returnType()) {
       os_ << ": ";
-      e->traverse(*this);
+      printChapelSyntax(os_, e);
     }
 
     // Return Intent
-//    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-//      os_ << " " << kindToString((IntentList) f->returnIntent());
-//    }
+    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
+        f->returnIntent() != Function::ReturnIntent::CONST) {
+      os_ << " " << kindToString((IntentList) f->returnIntent());
+    }
+
+    // throws
+    if (f->throws()) os_ << " throws";
 
     return false;
   }
@@ -592,7 +608,7 @@ struct RstSignatureVisitor {
       if (isPostFixBang) {
         os_ << "!";
       } else if (isNilable) {
-        os_ << "nilable";
+        os_ << "?";
       }
     } else if (call->isBinaryOp()) {
       assert(call->numActuals() == 2);
@@ -607,7 +623,9 @@ struct RstSignatureVisitor {
       call->actual(0)->traverse(*this);
       if (needsParens) os_ << ")";
       needsParens = false;
-      bool addSpace = wantSpaces(call->op(), true);
+      bool addSpace = (wantSpaces(call->op(), true) ||
+                       call->op()==USTR("by") ||
+                       call->op()==USTR("align"));
       if (addSpace)
         os_ << " ";
       os_ << call->op();
@@ -706,6 +724,16 @@ struct RstSignatureVisitor {
     return true;
   }
 
+  bool enter(const Use* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
+  bool enter(const Import* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
   bool enter(const VarArgFormal* node) {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;
@@ -797,18 +825,19 @@ struct RstResultBuilder {
   Context* context_;
   std::stringstream os_;
   std::vector<RstResult*> children_;
-
+  const std::string commentStyle = commentStyle_;
   static const int commentIndent = 3;
 
-  void showComment(const Comment* comment, bool indent=true) {
-    if (!comment) {
+  bool showComment(const Comment* comment, bool indent=true) {
+    if (!comment || comment->str().substr(0, 2) == "//") {
       os_ << '\n';
-      return;
+      return false;
     }
 
     int indentChars = indent ? commentIndent : 0;
-    auto lines = prettifyComment(comment->str());
-    os_ << '\n';
+    auto lines = prettifyComment(comment->str(), commentStyle);
+    if (!lines.empty())
+      os_ << '\n';
     for (const auto& line : lines) {
       if (line.empty()) {
         os_ << '\n';
@@ -816,30 +845,53 @@ struct RstResultBuilder {
         indentStream(os_, indentChars) << line << '\n';
       }
     }
-    os_ << '\n';
+    os_ << "\n";
+    return true;
   }
-  void showComment(const AstNode* node, bool indent=true) {
-    showComment(previousComment(context_, node->id()), indent);
+  bool showComment(const AstNode* node, bool indent=true) {
+    return showComment(previousComment(context_, node->id()), indent);
   }
 
   template<typename T>
-  void show(const std::string& kind, const T* node, bool indentComment=true) {
-    if (isNoDoc(node)) return;
+  bool show(const std::string& kind, const T* node, bool indentComment=true) {
+    if (isNoDoc(node)) return false;
 
     os_ << ".. " << kind << ":: ";
     RstSignatureVisitor ppv{os_};
     node->traverse(ppv);
     os_ << "\n";
 
-    showComment(node, indentComment);
+    bool commentShown = showComment(node, indentComment);
+
+    // TODO: Fix all this because why are we checking for specific node type here?
+    if (commentShown && node->isEnum()) {
+      os_ << "\n";
+    }
 
     if (auto attrs = node->attributes()) {
       if (attrs->isDeprecated()) {
-        indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
-        indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage().c_str();
-        os_ << "\n\n";
+        auto comment = previousComment(context_, node->id());
+        if (comment && !comment->str().empty() && comment->str().substr(0, 2) == "/*" &&
+            comment->str().find("deprecat") != std::string::npos ) {
+            // do nothing because deprecation was mentioned in doc comment
+        } else {
+          // write the deprecation warning and message
+          indentStream(os_, 1 * indentPerDepth) << ".. warning::\n\n";
+          if (attrs->deprecationMessage().isEmpty()) {
+            // write a generic message because there wasn't a specific one
+            indentStream(os_, 2 * indentPerDepth)
+                << getNodeName((AstNode*) node) << " is deprecated";
+            os_ << "\n\n";
+          } else {
+            // use the specific deprecation message
+            indentStream(os_, 2 * indentPerDepth)
+                << attrs->deprecationMessage().c_str();
+            os_ << "\n\n";
+          }
+        }
       }
     }
+    return commentShown;
   }
 
   void visitChildren(const AstNode* n) {
@@ -851,12 +903,26 @@ struct RstResultBuilder {
   }
 
   owned<RstResult> visit(const Module* m) {
+    if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m))
+      return {};
+    //store module path
+    modulePath.push_back(m->name().str());
+    // build the module name string
+    std::string moduleName;
+    std::string delim;
+    for (auto path : modulePath) {
+      moduleName += delim;
+      moduleName += path;
+      if (delim.empty()) {
+        delim = ".";
+      }
+    }
     // header
     os_ << ".. default-domain:: chpl\n\n";
     os_ << ".. module:: " << m->name().c_str() << '\n';
     const Comment* lastComment = previousComment(context_, m->id());
     if (lastComment) {
-      os_ << "    :synopsis: " << commentSynopsis(lastComment) << '\n';
+      os_ << "    :synopsis: " << commentSynopsis(lastComment, commentStyle) << '\n';
     }
     os_ << '\n';
 
@@ -866,23 +932,41 @@ struct RstResultBuilder {
 
     // usage
     // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
-    os_ << templateReplace(templateUsage, "MODULE", m->name().c_str()) << "\n";
+    os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
 
     showComment(lastComment, false);
+    if (hasSubmodule(m)) {
+      os_ << "**Submodules**" << std::endl << std::endl;
 
+      os_ << ".. toctree::" << std::endl;
+      indentStream(os_, 1 * indentPerDepth);
+
+      os_ << ":maxdepth: 1" << std::endl;
+      indentStream(os_, 1 * indentPerDepth);
+
+      os_ << ":glob:" << std::endl << std::endl;
+      indentStream(os_, 1 * indentPerDepth);
+
+      os_ << moduleName << "/*" << std::endl << std::endl;
+    }
     visitChildren(m);
 
+    // remove last entry from module path
+    modulePath.pop_back();
     return getResult();
   }
 
   owned<RstResult> visit(const Function* f) {
     // TODO this doesn't fire on privateProc either
-    if (f->visibility() == Decl::Visibility::PRIVATE)
+    if (f->visibility() == Decl::Visibility::PRIVATE || isNoDoc(f))
       return {};
     show(kindToRstString(f->isMethod(), f->kind()), f);
     return getResult();
   }
   owned<RstResult> visit(const Variable* v) {
+    if (v->visibility() == Decl::Visibility::PRIVATE || isNoDoc(v))
+      return {};
+
     if (v->isField())
       show("attribute", v);
     else
@@ -890,11 +974,13 @@ struct RstResultBuilder {
     return getResult();
   }
   owned<RstResult> visit(const Record* r) {
+    if (isNoDoc(r)) return {};
     show("record", r);
     visitChildren(r);
     return getResult(true);
   }
   owned<RstResult> visit(const Enum* e) {
+    if (isNoDoc(e)) return {};
     show("enum", e);
     return getResult();
   }
@@ -1060,8 +1146,10 @@ static const CommentMap&
 commentMap(Context* context, UniqueString path) {
   QUERY_BEGIN(commentMap, context, path);
   CommentMap result;
-
-  const auto& builderResult = parseFile(context, path);
+  UniqueString emptyParent;
+  const auto& builderResult = parseFileToBuilderResult(context,
+                                                       path,
+                                                       emptyParent);
 
   CommentVisitor cv{result};
   for (const auto& ast : builderResult.topLevelExpressions()) {
@@ -1078,7 +1166,12 @@ commentMap(Context* context, UniqueString path) {
 static const Comment* const& previousComment(Context* context, ID id) {
   QUERY_BEGIN(previousComment, context, id);
   const Comment* result = nullptr;
-  const auto& map = commentMap(context, context->filePathForId(id));
+  UniqueString modPath;
+  UniqueString parentPath;
+
+  assert(context->filePathForId(id, modPath, parentPath));
+
+  const auto& map = commentMap(context, modPath);
   auto it = map.find(id);
   if (it != map.end()) {
     result = it->second;
@@ -1191,7 +1284,7 @@ struct Args {
   std::string outputDir;
   bool processUsedModules = false;
   std::string author;
-  std::string commentStyle;
+  std::string commentStyle =  "/*";
   std::string projectVersion = "0.0.1";
   std::vector<std::string> files;
 };
@@ -1234,7 +1327,7 @@ static Args parseArgs(int argc, char **argv) {
   return ret;
 }
 
-// TODO what do we do if multiple modules are in one file?
+// TODO what do we do if multiple modules (submodules) are in one file?
 static std::string moduleName(const BuilderResult& builderResult) {
   for (const auto& ast : builderResult.topLevelExpressions()) {
     if (const Module* m = ast->toModule()) {
@@ -1250,7 +1343,11 @@ int main(int argc, char** argv) {
   Context *ctx = &context;
 
   Args args = parseArgs(argc, argv);
-
+  if (args.commentStyle.substr(0,2) != "/*") {
+    std::cerr << "error: comment label should start with /*" << std::endl;
+    return 1;
+  }
+  commentStyle_ = args.commentStyle;
   if (args.selfTest) {
     args.files.push_back("selftest.chpl");
     UniqueString path = UniqueString::get(ctx, "selftest.chpl");
@@ -1263,7 +1360,10 @@ int main(int argc, char** argv) {
 
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
-    const BuilderResult& builderResult = parseFile(ctx, path);
+    UniqueString emptyParent;
+    const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
+                                                                  path,
+                                                                  emptyParent);
     // just display the first error message right now
     // this is a quick fix to stop the program from dying
     // in  a gross way when a file can't be located

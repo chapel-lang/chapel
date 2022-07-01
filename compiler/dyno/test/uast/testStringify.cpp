@@ -96,6 +96,8 @@ static void test1(Parser* parser) {
   std::string testCode;
   testCode = R""""(
    use Map;
+   use throwing.doc.Inner;
+   import throwing.doc.Inner;
    require "foo.h", "foo.c";
    import Foo as X;
    include module Foo;
@@ -340,6 +342,7 @@ static void test1(Parser* parser) {
    for i in 1..10 do yield try! i;
   }
   XNew(ij) = (X(ij+north) + X(ij+south) + X(ij+east) + X(ij+west)) / 4.0;
+  proc multiDimension(): [1..3, 2..8] string {}
   )"""";
   auto parseResult = parser->parseString("Test1.chpl",
                                          testCode.c_str());
@@ -434,6 +437,8 @@ static void test3(Parser* parser) {
                    "difDecl(arg1: 3*string)")
   TEST_USER_STRING("proc multiDimension(arg2: 3*(4*complex)): 3*(4*complex) {}",
                    "multiDimension(arg2: 3*(4*complex))")
+  TEST_USER_STRING("proc multiDimension(): [1..3, 2..8] string {}",
+                   "multiDimension()")
 
 }
 
