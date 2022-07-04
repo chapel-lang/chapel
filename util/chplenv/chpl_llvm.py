@@ -52,7 +52,13 @@ def is_included_llvm_built():
 def compatible_platform_for_llvm():
     target_arch = chpl_arch.get('target')
     target_platform = chpl_platform.get('target')
-    return (target_arch != "i368" and target_platform != "linux32")
+
+    is32bit = target_platform == "linux32" or target_arch == "i368"
+    mac_arm = target_platform == 'darwin' and target_arch == 'arm64'
+
+    if is32bit or mac_arm:
+        return False
+    return True
 
 # returns a string of the supported llvm versions suitable for error msgs
 def llvm_versions_string():
