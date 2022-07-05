@@ -84,19 +84,16 @@ class Builder final {
 
  public:
   /** Construct a Builder for parsing a top-level module */
-  static owned<Builder> topLevelModuleBuilder(Context* context,
-                                              const char* filepath);
+  static owned<Builder> createForTopLevelModule(Context* context,
+                                                const char* filepath);
 
   /** Construct a Builder for parsing an included module.
       'parentSymbolPath' is the symbol path component of the ID
       of the module containing the 'module include' statement.
    */
-  static owned<Builder> includedModuleBuilder(Context* context,
-                                              const char* filepath,
-                                              UniqueString parentSymbolPath);
-
-  /** returns an owned topLevelModuleBuilder */
-  static owned<Builder> build(Context* context, const char* filepath);
+  static owned<Builder> createForIncludedModule(Context* context,
+                                                const char* filepath,
+                                                UniqueString parentSymbolPath);
 
   Context* context() const { return context_; }
 

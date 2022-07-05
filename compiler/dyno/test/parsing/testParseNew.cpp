@@ -181,12 +181,13 @@ static void test5(Parser* parser) {
   assert(newExpr->management() == New::UNMANAGED);
   assert(newExpr->typeExpression()->isIdentifier());
 }
+
 int main() {
   Context context;
   Context* ctx = &context;
 
-  auto parser = Parser::build(ctx);
-  Parser* p = parser.get();
+  auto parser = Parser::createForTopLevelModule(ctx);
+  Parser* p = &parser;
 
   test0(p);
   test1(p);

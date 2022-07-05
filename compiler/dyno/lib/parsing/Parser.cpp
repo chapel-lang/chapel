@@ -44,19 +44,14 @@ Parser::Parser(Context* context, UniqueString parentSymbolPath)
   : context_(context), parentSymbolPath_(parentSymbolPath) {
 }
 
-Parser Parser::topLevelModuleParser(Context* context) {
+Parser Parser::createForTopLevelModule(Context* context) {
   UniqueString emptySymbolPath;
   return Parser(context, emptySymbolPath);
 }
 
-Parser Parser::includedModuleParser(Context* context,
-                                    UniqueString parentSymbolPath) {
+Parser Parser::createForIncludedModule(Context* context,
+                                       UniqueString parentSymbolPath) {
   return Parser(context, parentSymbolPath);
-}
-
-owned<Parser> Parser::build(Context* context) {
-  UniqueString emptySymbolPath;
-  return toOwned(new Parser(context, emptySymbolPath));
 }
 
 static void updateParseResult(ParserContext* parserContext) {
@@ -91,10 +86,10 @@ static void updateParseResult(ParserContext* parserContext) {
 BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   owned<Builder> builder;
   if (parentSymbolPath_.isEmpty()) {
-    builder = Builder::topLevelModuleBuilder(this->context(), path);
+    builder = Builder::createForTopLevelModule(this->context(), path);
   } else {
-    builder = Builder::includedModuleBuilder(this->context(), path,
-                                             parentSymbolPath_);
+    builder = Builder::createForIncludedModule(this->context(), path,
+                                               parentSymbolPath_);
   }
   ErrorMessage fileError;
 
@@ -185,10 +180,10 @@ BuilderResult Parser::parseString(const char* path, const char* str,
                                   ParserStats* parseStats) {
   owned<Builder> builder;
   if (parentSymbolPath_.isEmpty()) {
-    builder = Builder::topLevelModuleBuilder(this->context(), path);
+    builder = Builder::createForTopLevelModule(this->context(), path);
   } else {
-    builder = Builder::includedModuleBuilder(this->context(), path,
-                                             parentSymbolPath_);
+    builder = Builder::createForIncludedModule(this->context(), path,
+                                               parentSymbolPath_);
   }
 
   // Set the (global) parser debug state

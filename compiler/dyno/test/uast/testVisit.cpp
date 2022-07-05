@@ -32,7 +32,7 @@ using namespace chpl;
 using namespace uast;
 
 static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
-  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 

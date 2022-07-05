@@ -102,9 +102,9 @@ struct GatherFieldsOrFormals {
 };
 
 Resolver
-Resolver::moduleStmtResolver(Context* context, const Module* mod,
-                             const AstNode* modStmt,
-                             ResolutionResultByPostorderID& byId) {
+Resolver::createForModuleStmt(Context* context, const Module* mod,
+                              const AstNode* modStmt,
+                              ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, mod, byId, nullptr);
   ret.curStmt = modStmt;
   ret.byPostorder.setupForSymbol(mod);
@@ -112,9 +112,10 @@ Resolver::moduleStmtResolver(Context* context, const Module* mod,
 }
 
 Resolver
-Resolver::moduleStmtScopeResolver(Context* context, const Module* mod,
-                                  const AstNode* modStmt,
-                                  ResolutionResultByPostorderID& byId) {
+Resolver::createForScopeResolvingModuleStmt(
+                              Context* context, const Module* mod,
+                              const AstNode* modStmt,
+                              ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, mod, byId, nullptr);
   ret.curStmt = modStmt;
   ret.byPostorder.setupForSymbol(mod);
@@ -123,8 +124,8 @@ Resolver::moduleStmtScopeResolver(Context* context, const Module* mod,
 }
 
 Resolver
-Resolver::initialSignatureResolver(Context* context, const Function* fn,
-                                   ResolutionResultByPostorderID& byId)
+Resolver::createForInitialSignature(Context* context, const Function* fn,
+                                    ResolutionResultByPostorderID& byId)
 {
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.signatureOnly = true;
@@ -134,11 +135,11 @@ Resolver::initialSignatureResolver(Context* context, const Function* fn,
 }
 
 Resolver
-Resolver::instantiatedSignatureResolver(Context* context,
-                                        const Function* fn,
-                                        const SubstitutionsMap& substitutions,
-                                        const PoiScope* poiScope,
-                                        ResolutionResultByPostorderID& byId) {
+Resolver::createForInstantiatedSignature(Context* context,
+                                         const Function* fn,
+                                         const SubstitutionsMap& substitutions,
+                                         const PoiScope* poiScope,
+                                         ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, fn, byId, poiScope);
   ret.substitutions = &substitutions;
   ret.signatureOnly = true;
@@ -148,11 +149,11 @@ Resolver::instantiatedSignatureResolver(Context* context,
 }
 
 Resolver
-Resolver::functionResolver(Context* context,
-                           const Function* fn,
-                           const PoiScope* poiScope,
-                           const TypedFnSignature* typedFnSignature,
-                           ResolutionResultByPostorderID& byId) {
+Resolver::createForFunction(Context* context,
+                            const Function* fn,
+                            const PoiScope* poiScope,
+                            const TypedFnSignature* typedFnSignature,
+                            ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, fn, byId, poiScope);
   ret.typedSignature = typedFnSignature;
   ret.signatureOnly = false;
@@ -184,9 +185,9 @@ Resolver::functionResolver(Context* context,
 }
 
 Resolver
-Resolver::functionScopeResolver(Context* context,
-                                const Function* fn,
-                                ResolutionResultByPostorderID& byId) {
+Resolver::createForScopeResolvingFunction(Context* context,
+                                          const Function* fn,
+                                          ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.typedSignature = nullptr; // re-set below
   ret.signatureOnly = true; // re-set below
@@ -237,12 +238,12 @@ Resolver::functionScopeResolver(Context* context,
 
 // set up Resolver to initially resolve field declaration types
 Resolver
-Resolver::initialFieldStmtResolver(Context* context,
-                                   const AggregateDecl* decl,
-                                   const AstNode* fieldStmt,
-                                   const CompositeType* compositeType,
-                                   ResolutionResultByPostorderID& byId,
-                                   bool useGenericFormalDefaults) {
+Resolver::createForInitialFieldStmt(Context* context,
+                                    const AggregateDecl* decl,
+                                    const AstNode* fieldStmt,
+                                    const CompositeType* compositeType,
+                                    ResolutionResultByPostorderID& byId,
+                                    bool useGenericFormalDefaults) {
   auto ret = Resolver(context, decl, byId, nullptr);
   ret.curStmt = fieldStmt;
   ret.inCompositeType = compositeType;
@@ -253,13 +254,13 @@ Resolver::initialFieldStmtResolver(Context* context,
 
 // set up Resolver to resolve instantiated field declaration types
 Resolver
-Resolver::instantiatedFieldStmtResolver(Context* context,
-                                        const AggregateDecl* decl,
-                                        const AstNode* fieldStmt,
-                                        const CompositeType* compositeType,
-                                        const PoiScope* poiScope,
-                                        ResolutionResultByPostorderID& byId,
-                                        bool useGenericFormalDefaults) {
+Resolver::createForInstantiatedFieldStmt(Context* context,
+                                         const AggregateDecl* decl,
+                                         const AstNode* fieldStmt,
+                                         const CompositeType* compositeType,
+                                         const PoiScope* poiScope,
+                                         ResolutionResultByPostorderID& byId,
+                                         bool useGenericFormalDefaults) {
   auto ret = Resolver(context, decl, byId, poiScope);
   ret.curStmt = fieldStmt;
   ret.inCompositeType = compositeType;
@@ -272,7 +273,7 @@ Resolver::instantiatedFieldStmtResolver(Context* context,
 // set up Resolver to resolve instantiated field declaration types
 // without knowing the CompositeType
 Resolver
-Resolver::instantiatedSignatureFieldsResolver(Context* context,
+Resolver::createForInstantiatedSignatureFields(Context* context,
                                      const AggregateDecl* decl,
                                      const SubstitutionsMap& substitutions,
                                      const PoiScope* poiScope,
@@ -287,11 +288,11 @@ Resolver::instantiatedSignatureFieldsResolver(Context* context,
 
 // set up Resolver to resolve a parent class type expression
 Resolver
-Resolver::parentClassResolver(Context* context,
-                              const AggregateDecl* decl,
-                              const SubstitutionsMap& substitutions,
-                              const PoiScope* poiScope,
-                              ResolutionResultByPostorderID& byId) {
+Resolver::createForParentClass(Context* context,
+                               const AggregateDecl* decl,
+                               const SubstitutionsMap& substitutions,
+                               const PoiScope* poiScope,
+                               ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, decl, byId, poiScope);
   ret.substitutions = &substitutions;
   ret.useGenericFormalDefaults = true;

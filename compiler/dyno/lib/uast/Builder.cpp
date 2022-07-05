@@ -82,24 +82,20 @@ std::string Builder::filenameToModulename(const char* filename) {
   }
 }
 
-owned<Builder> Builder::topLevelModuleBuilder(Context* context,
-                                              const char* filepath) {
+owned<Builder> Builder::createForTopLevelModule(Context* context,
+                                                const char* filepath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
   UniqueString startingSymbolPath;
   auto b = new Builder(context, uniqueFilename, startingSymbolPath);
   return toOwned(b);
 }
 
-owned<Builder> Builder::includedModuleBuilder(Context* context,
-                                              const char* filepath,
-                                              UniqueString parentSymbolPath) {
+owned<Builder> Builder::createForIncludedModule(Context* context,
+                                                const char* filepath,
+                                                UniqueString parentSymbolPath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
   auto b = new Builder(context, uniqueFilename, parentSymbolPath);
   return toOwned(b);
-}
-
-owned<Builder> Builder::build(Context* context, const char* filepath) {
-  return Builder::topLevelModuleBuilder(context, filepath);
 }
 
 void Builder::addToplevelExpression(owned<AstNode> e) {
@@ -515,12 +511,11 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
     inputText += (!value.empty()) ? value : "true";
     inputText += ";";
   }
-  auto parser = parsing::Parser::build(context());
-  parsing::Parser *p = parser.get();
+  auto parser = parsing::Parser::createForTopLevelModule(context());
   std::string path = "Command-line arg (";
   path += var->name().str();
   path += ")";
-  auto parseResult = p->parseString(path.c_str(), inputText.c_str());
+  auto parseResult = parser.parseString(path.c_str(), inputText.c_str());
   // Propagate any parse errors from the dummy node to builder errors
   if (parseResult.numErrors() > 0) {
    for (ErrorMessage error : parseResult.errors()) {

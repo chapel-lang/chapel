@@ -88,9 +88,9 @@ bool hasFileText(Context* context, const std::string& path) {
 static Parser helpMakeParser(Context* context,
                              UniqueString parentSymbolPath) {
   if (parentSymbolPath.isEmpty()) {
-    return Parser::topLevelModuleParser(context);
+    return Parser::createForTopLevelModule(context);
   } else {
-    return Parser::includedModuleParser(context, parentSymbolPath);
+    return Parser::createForIncludedModule(context, parentSymbolPath);
   }
 }
 
@@ -151,10 +151,10 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
   BuilderResult result(path);
   if (error.isEmpty()) {
     // if there was no error reading the file, proceed to parse
-    auto parser = Parser::build(context);
+    auto parser = Parser::createForTopLevelModule(context);
     const char* pathc = path.c_str();
     const char* textc = text.c_str();
-    parser->parseString(pathc, textc, parseStats);
+    parser.parseString(pathc, textc, parseStats);
   }
 }
 

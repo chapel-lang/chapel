@@ -44,17 +44,14 @@ class Parser final {
 
  public:
   /** Construct a parser for parsing a top-level module */
-  static Parser topLevelModuleParser(Context* context);
+  static Parser createForTopLevelModule(Context* context);
 
   /** Construct a parser for parsing an included module.
       'parentSymbolPath' is the symbol path component of the ID
       of the module containing the 'module include' statement.
    */
-  static Parser includedModuleParser(Context* context,
-                                     UniqueString parentSymbolPath);
-
-  /* returns an owned topLevelModuleParser */
-  static owned<Parser> build(Context* context);
+  static Parser createForIncludedModule(Context* context,
+                                        UniqueString parentSymbolPath);
 
   ~Parser() = default;
 

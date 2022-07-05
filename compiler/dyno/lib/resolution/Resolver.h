@@ -84,33 +84,34 @@ struct Resolver {
 
   // set up Resolver to resolve a Module
   static Resolver
-  moduleStmtResolver(Context* context, const uast::Module* mod,
-                     const uast::AstNode* modStmt,
-                     ResolutionResultByPostorderID& byPostorder);
+  createForModuleStmt(Context* context, const uast::Module* mod,
+                      const uast::AstNode* modStmt,
+                      ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to scope resolve a Module
   static Resolver
-  moduleStmtScopeResolver(Context* context, const uast::Module* mod,
-                          const uast::AstNode* modStmt,
-                          ResolutionResultByPostorderID& byPostorder);
+  createForScopeResolvingModuleStmt(
+                      Context* context, const uast::Module* mod,
+                      const uast::AstNode* modStmt,
+                      ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve a potentially generic Function signature
   static Resolver
-  initialSignatureResolver(Context* context, const uast::Function* fn,
-                           ResolutionResultByPostorderID& byPostorder);
+  createForInitialSignature(Context* context, const uast::Function* fn,
+                            ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve an instantiation of a Function signature
   static Resolver
-  instantiatedSignatureResolver(Context* context,
-                                const uast::Function* fn,
-                                const SubstitutionsMap& substitutions,
-                                const PoiScope* poiScope,
-                                ResolutionResultByPostorderID& byPostorder);
+  createForInstantiatedSignature(Context* context,
+                                 const uast::Function* fn,
+                                 const SubstitutionsMap& substitutions,
+                                 const PoiScope* poiScope,
+                                 ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve a Function body/return type after
   // instantiation (if any instantiation was needed)
   static Resolver
-  functionResolver(Context* context,
+  createForFunction(Context* context,
                    const uast::Function* fn,
                    const PoiScope* poiScope,
                    const TypedFnSignature* typedFnSignature,
@@ -118,44 +119,44 @@ struct Resolver {
 
   // set up Resolver to scope resolve a Function
   static Resolver
-  functionScopeResolver(Context* context, const uast::Function* fn,
-                        ResolutionResultByPostorderID& byPostorder);
+  createForScopeResolvingFunction(Context* context, const uast::Function* fn,
+                                  ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to initially resolve field declaration types
   static Resolver
-  initialFieldStmtResolver(Context* context,
-                           const uast::AggregateDecl* decl,
-                           const uast::AstNode* fieldStmt,
-                           const types::CompositeType* compositeType,
-                           ResolutionResultByPostorderID& byPostorder,
-                           bool useGenericFormalDefaults);
+  createForInitialFieldStmt(Context* context,
+                            const uast::AggregateDecl* decl,
+                            const uast::AstNode* fieldStmt,
+                            const types::CompositeType* compositeType,
+                            ResolutionResultByPostorderID& byPostorder,
+                            bool useGenericFormalDefaults);
 
   // set up Resolver to resolve instantiated field declaration types
   static Resolver
-  instantiatedFieldStmtResolver(Context* context,
-                                const uast::AggregateDecl* decl,
-                                const uast::AstNode* fieldStmt,
-                                const types::CompositeType* compositeType,
-                                const PoiScope* poiScope,
-                                ResolutionResultByPostorderID& byPostorder,
-                                bool useGenericFormalDefaults);
+  createForInstantiatedFieldStmt(Context* context,
+                                 const uast::AggregateDecl* decl,
+                                 const uast::AstNode* fieldStmt,
+                                 const types::CompositeType* compositeType,
+                                 const PoiScope* poiScope,
+                                 ResolutionResultByPostorderID& byPostorder,
+                                 bool useGenericFormalDefaults);
 
   // set up Resolver to resolve instantiated field declaration types
   // without knowing the CompositeType
   static Resolver
-  instantiatedSignatureFieldsResolver(Context* context,
-                                      const uast::AggregateDecl* decl,
-                                      const SubstitutionsMap& substitutions,
-                                      const PoiScope* poiScope,
-                                      ResolutionResultByPostorderID& byId);
+  createForInstantiatedSignatureFields(Context* context,
+                                       const uast::AggregateDecl* decl,
+                                       const SubstitutionsMap& substitutions,
+                                       const PoiScope* poiScope,
+                                       ResolutionResultByPostorderID& byId);
 
   // set up Resolver to resolve a parent class type expression
   static Resolver
-  parentClassResolver(Context* context,
-                      const uast::AggregateDecl* decl,
-                      const SubstitutionsMap& substitutions,
-                      const PoiScope* poiScope,
-                      ResolutionResultByPostorderID& byPostorder);
+  createForParentClass(Context* context,
+                       const uast::AggregateDecl* decl,
+                       const SubstitutionsMap& substitutions,
+                       const PoiScope* poiScope,
+                       ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve a param for loop body
   static Resolver paramLoopResolver(Resolver& parent,
