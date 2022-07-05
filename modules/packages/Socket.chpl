@@ -247,7 +247,7 @@ operator struct_timeval.=(other: real) {
 }
 
 /*
-  Get a :record:`~OS.POSIX.struct_timeval` set for indefinite timeout.
+  Get a :type:`~POSIX.struct_timeval` set for indefinite timeout.
 
   This is the default value used in various procedures in this module
 
@@ -665,7 +665,7 @@ record tcpListener {
     const client = server.accept()
 
   :arg timeout: time to wait for new connection.
-  :type timeout: `~OS.POSIX.struct_timeval`
+  :type timeout: `struct_timeval`
   :return: accepted connection
   :rtype: `tcpConn`
   :throws Error: Upon timeout completion without
@@ -862,7 +862,7 @@ proc listen(in address: ipAddr, reuseAddr: bool = true,
   :arg address: address to connect to
   :type address: :type:`ipAddr`
   :arg timeout: time to wait for connection establishment.
-  :type timeout: :type:`~OS.POSIX.struct_timeval`
+  :type timeout: :type:`~POSIX.struct_timeval`
   :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to connect
@@ -928,7 +928,7 @@ proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {
   :arg family: type of socket family to connect to
   :type family: :type:`IPFamily`
   :arg timeout: time to wait for each possible connection.
-  :type timeout: :type:`~OS.POSIX.struct_timeval`
+  :type timeout: :type:`~POSIX.struct_timeval`
   :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to resolve address or connect
@@ -989,7 +989,7 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
   :arg family: type of socket family to connect to
   :type family: :type:`IPFamily`
   :arg timeout: time to wait for each possible connection.
-  :type timeout: :type:`~OS.POSIX.struct_timeval`
+  :type timeout: :type:`~POSIX.struct_timeval`
   :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to resolve address or connect
@@ -1059,7 +1059,7 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, fla
   :arg bufferLen: number of bytes to read
   :type bufferLen: `int`
   :arg timeout: time to wait for data to arrive.
-  :type timeout: :type:`~OS.POSIX.struct_timeval`
+  :type timeout: :type:`~POSIX.struct_timeval`
   :return: tuple of (data, address)
   :rtype: (:type:`~Bytes.bytes`, :type:`ipAddr`)
   :throws SystemError: Upon failure to receive any data
@@ -1142,7 +1142,7 @@ proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, 
   :arg bufferLen: number of bytes to read
   :type bufferLen: `int`
   :arg timeout: time to wait for data to arrive.
-  :type timeout: :type:`~OS.POSIX.struct_timeval`
+  :type timeout: :type:`~POSIX.struct_timeval`
   :return: data
   :rtype: :type:`~Bytes.bytes`
   :throws SystemError: Upon failure to receive any data
@@ -1177,7 +1177,7 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
   :arg address: socket address for sending data
   :type address: :type:`ipAddr`
   :arg timeout: time to wait for data to arrive.
-  :type timeout: :type:`~OS.POSIX.struct_timeval`
+  :type timeout: :type:`~POSIX.struct_timeval`
   :return: sentBytes
   :rtype: `c_ssize_t`
   :throws SystemError: Upon failure to send any data
