@@ -1627,7 +1627,7 @@ static inline
 chpl_bool wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 {
   // Do nothing if we have already completed sn.
-  if( sn <= cache->completed_request_number ) return 0;
+  if( sn <= cache->completed_request_number ) return false;
   return do_wait_for(cache, sn);
 }
 
@@ -1902,7 +1902,7 @@ void validate_cache(struct rdcache_s* tree,
 static
 chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 {
-  chpl_bool waited = 0;
+  chpl_bool waited = false;
 
   TRACE_NB_PRINT(("%d: task %d wait_for(%i) completed=%i\n",
                   chpl_nodeID, (int)chpl_task_getId(),
@@ -1910,17 +1910,17 @@ chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 
   // Do nothing if there are no pending entries.
   if (cache->pending_first_entry < 0 || cache->pending_last_entry < 0) {
-    return 0;
+    return false;
   }
 
   // Do nothing if we don't have a valid sequence number to wait for.
   if (sn == NO_SEQUENCE_NUMBER) {
-    return 0;
+    return false;
   }
 
   // Do nothing if we have already completed sn.
   if (sn <= cache->completed_request_number) {
-    return 0;
+    return false;
   }
 
 #if VERIFY
@@ -1948,7 +1948,7 @@ chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
       // (this could cause a different task body to run)
       chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
 
-      waited = 1;
+      waited = true;
 
       if (EXTRA_YIELDS) {
         TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in do_wait_for "
