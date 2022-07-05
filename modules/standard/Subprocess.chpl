@@ -133,7 +133,6 @@ module Subprocess {
   use SysError;
   use CTypes;
   use OS.POSIX;
-  use OS;
   import SysBasic.{syserr, ENOERR};
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
@@ -381,6 +380,9 @@ module Subprocess {
     const ret:[1..0] string;
     return ret;
   }
+
+  pragma "no doc"
+  extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
 
   /* TODO:
      stdin stdout and stderr can be pipeStyle.pipe, existing file descriptor,
