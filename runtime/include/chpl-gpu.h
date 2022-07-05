@@ -21,6 +21,8 @@
 #ifndef _CHPL_GPU_H_
 #define _CHPL_GPU_H_
 
+#include "chpl-tasks.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -29,7 +31,9 @@ extern "C" {
 
 void chpl_gpu_init(void);
 bool chpl_gpu_has_context(void);
-bool chpl_gpu_running_on_gpu_locale(void);
+static inline bool chpl_gpu_running_on_gpu_locale(void) {
+  return chpl_task_getRequestedSubloc()>=0;
+}
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,

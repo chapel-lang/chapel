@@ -15,8 +15,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-SRCS = gpu-cuda.c
 
-GPU_SRCS = gpu-cuda.c
+RUNTIME_ROOT = ../../..
+RUNTIME_SUBDIR = src/gpu/cuda
 
-GPU_OBJS = $(GPU_SRCS:%.c=$(GPU_OBJDIR)/%.o)
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
+endif
+
+#
+# standard header
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.head
+
+GPU_OBJDIR = $(RUNTIME_OBJDIR)
+include Makefile.share
+
+TARGETS = $(GPU_OBJS)
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
+
+#
+# standard footer
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
