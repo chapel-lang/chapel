@@ -991,6 +991,9 @@ static void filterVirtualChildren() {
 typedef std::map<const char*, std::vector<FnSymbol*> > NameToFns;
 typedef std::map<AggregateType*, NameToFns > TypeToNameToFns;
 
+// Returns the receiver's canonical class type for a method on a class;
+// excludes methods on owned/shared records as they are not subject to
+// virtual dispatch
 static AggregateType* getReceiverClassType(FnSymbol* fn) {
   Type* thisType = fn->getReceiverType();
   // ignore methods on e.g. 'owned C'
