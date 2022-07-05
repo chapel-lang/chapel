@@ -23,7 +23,6 @@
   The Socket module focuses on connecting, accepting sockets and providing interface for
   communication between them. Also provided are some constant values representing
   common idioms in socket programming, such as standard Addresses, Families and Flags.
-  For more constants that can used alongside refer to :mod:`Sys`.
 
   To those familiar with the Unix socket API, the method names will feel familiar,
   though their usage will be somewhat simpler than the raw Unix socket API.
@@ -254,12 +253,8 @@ operator struct_timeval.=(other: real) {
   - `tv_sec` is assigned a value of ``-1``
   - `tv_usec` is assigned a value of ``0``
 */
-proc indefiniteTimeout {
-  var dtv : struct_timeval;
-  dtv.tv_sec = (-1):c_int:time_t;
-  dtv.tv_usec = 0:c_int:suseconds_t;
-  return dtv;
-}
+const indefiniteTimeout : struct_timeval;
+indefiniteTimeout = new struct_timeval(tv_sec=(-1):c_long:time_t, tv_usec=0:c_long:suseconds_t);
 
 pragma "no doc"
 private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):syserr;
@@ -392,20 +387,6 @@ private extern const IPPROTO_IP:c_int;
 private extern const IPPROTO_IPV6:c_int;
 private extern const IPPROTO_TCP:c_int;
 private extern const IPPROTO_UDP:c_int;
-
-private extern const SO_ACCEPTCONN:c_int;
-private extern const SO_BROADCAST:c_int;
-private extern const SO_DEBUG:c_int;
-private extern const SO_ERROR:c_int;
-private extern const SO_KEEPALIVE:c_int;
-private extern const SO_LINGER:c_int;
-private extern const SO_OOBINLINE:c_int;
-private extern const SO_RCVBUF:c_int;
-private extern const SO_RCVTIMEO:c_int;
-private extern const SO_REUSEADDR:c_int;
-private extern const SO_SNDBUF:c_int;
-private extern const SO_SNDTIMEO:c_int;
-private extern const SO_SECINFO:c_int;
 
 private extern const TCP_CORK:c_int;
 private extern const TCP_DEFER_ACCEPT:c_int;
@@ -665,7 +646,7 @@ record tcpListener {
     const client = server.accept()
 
   :arg timeout: time to wait for new connection.
-  :type timeout: `struct_timeval`
+  :type timeout: :type:`~POSIX.struct_timeval`
   :return: accepted connection
   :rtype: `tcpConn`
   :throws Error: Upon timeout completion without
@@ -697,7 +678,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
     var t: Timer;
     t.start();
     // make event active
-    err_out = event_add(internalEvent, if timeout.tv_sec:int == -1 then nil else c_ptrTo(timeout));
+    err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
       throw new Error("accept() failed");
     }
@@ -718,7 +699,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
         throw SystemError.fromSyserr(err_out, "accept() failed");
       }
       // no indefinitely blocking wait
-      if timeout.tv_sec:int != -1 {
+      if timeout.tv_sec:c_long != -1 {
         var totalTimeout = timeout.tv_sec:c_long*1000000 + timeout.tv_usec:c_long;
         // timer didn't elapsed
         if totalTimeout > t.elapsed(TimeUnits.microseconds) {
@@ -887,7 +868,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
     event_del(writerEvent);
     event_free(writerEvent);
   }
-  err_out = event_add(writerEvent, if timeout.tv_sec:int == -1 then nil else c_ptrTo(timeout));
+  err_out = event_add(writerEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
   if err_out != 0 {
     throw new Error("connect() failed");
   }
@@ -1088,7 +1069,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
   while err_out != 0 {
     var t: Timer;
     t.start();
-    err_out = event_add(internalEvent, if timeout.tv_sec:int == -1 then nil else c_ptrTo(timeout));
+    err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
       c_free(buffer);
       throw new Error("recv failed");
@@ -1106,7 +1087,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
         c_free(buffer);
         throw SystemError.fromSyserr(err_out,"recv failed");
       }
-      if timeout.tv_sec:int == -1 {
+      if timeout.tv_sec:c_long == -1 {
         var totalTimeout = timeout.tv_sec:c_long*1000000 + timeout.tv_usec:c_long;
         if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
@@ -1202,7 +1183,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
   while err_out != 0 {
     var t: Timer;
     t.start();
-    err_out = event_add(internalEvent, if timeout.tv_sec:int == -1 then nil else c_ptrTo(timeout));
+    err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
       throw SystemError.fromSyserr(err_out, "send failed");
     }
@@ -1217,7 +1198,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
         throw SystemError.fromSyserr(err_out, "send failed");
       }
-      if timeout.tv_sec:int == -1 {
+      if timeout.tv_sec:c_long == -1 {
         var totalTimeout = timeout.tv_sec:c_long*1000000 + timeout.tv_usec:c_long;
         if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
@@ -1251,6 +1232,21 @@ proc udpSocket.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
+
+extern const SO_ACCEPTCONN:c_int;
+extern const SO_BROADCAST:c_int;
+extern const SO_DEBUG:c_int;
+extern const SO_ERROR:c_int;
+extern const SO_KEEPALIVE:c_int;
+extern const SO_LINGER:c_int;
+extern const SO_OOBINLINE:c_int;
+extern const SO_RCVBUF:c_int;
+extern const SO_RCVTIMEO:c_int;
+extern const SO_REUSEADDR:c_int;
+extern const SO_SNDBUF:c_int;
+extern const SO_SNDTIMEO:c_int;
+extern const SO_SECINFO:c_int;
+
 pragma "no doc"
 proc setSockOpt(socketFd: fd_t, level: c_int, optname: c_int, ref value: c_int) throws {
   var optlen = sizeof(value):socklen_t;
@@ -1264,7 +1260,7 @@ proc setSockOpt(socketFd: fd_t, level: c_int, optname: c_int, ref value: c_int) 
 /*
   Set the value of the given socket option (see `setsockopt(2) </https://pubs.opengroup.org/onlinepubs/9699919799/functions/setsockopt.html#>`_)
   on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
-  are defined in the :mod:`Sys`.
+  are defined above.
 
   .. code-block:: Chapel
 
@@ -1367,7 +1363,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int) throws {
 /*
   Returns the value of the given socket option (see `getsockopt </https://pubs.opengroup.org/onlinepubs/9699919799/functions/getsockopt.html>`_)
   on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
-  are defined in :mod:`Sys` module.
+  are defined above.
 
   :arg socket: socket to set option on
   :type socket: `tcpConn` or `udpSocket` or `tcpListener`

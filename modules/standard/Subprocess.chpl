@@ -1136,7 +1136,7 @@ module Subprocess {
    */
   proc subprocess.abort() throws {
     try _throw_on_launch_error();
-    try this.sendPosixSignal(OS.POSIX.SIGABRT);
+    try this.sendPosixSignal(POSIX.SIGABRT);
   }
 
   /* Send the child process an alarm signal. The associated signal,
@@ -1145,7 +1145,7 @@ module Subprocess {
    */
   proc subprocess.alarm() throws {
     try _throw_on_launch_error();
-    try this.sendPosixSignal(OS.POSIX.SIGALRM);
+    try this.sendPosixSignal(POSIX.SIGALRM);
   }
 
   /*
@@ -1155,7 +1155,7 @@ module Subprocess {
    */
   proc subprocess.kill() throws {
     try _throw_on_launch_error();
-    try this.sendPosixSignal(OS.POSIX.SIGKILL);
+    try this.sendPosixSignal(POSIX.SIGKILL);
   }
 
   /*
@@ -1165,6 +1165,6 @@ module Subprocess {
    */
   proc subprocess.terminate() throws {
     try _throw_on_launch_error();
-    try this.sendPosixSignal(OS.POSIX.SIGTERM);
+    try this.sendPosixSignal(POSIX.SIGTERM);
   }
 }

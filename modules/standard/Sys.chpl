@@ -286,19 +286,45 @@ module Sys {
   extern const IPPROTO_UDP:c_int;
 
   // socket options
-  // --- deprecated and moved to Socket as private ---
+  // --- deprecated and moved to Socket ---
+  pragma "last resort"
+  deprecated "'Sys.SO_ACCEPTCONN' is deprecated; please use 'Socket.SO_ACCEPTCONN' instead"
   extern const SO_ACCEPTCONN:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_BROADCAST' is deprecated; please use 'Socket.SO_BROADCAST' instead"
   extern const SO_BROADCAST:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_DEBUG' is deprecated; please use 'Socket.SO_DEBUG' instead"
   extern const SO_DEBUG:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_ERROR' is deprecated; please use 'Socket.SO_ERROR' instead"
   extern const SO_ERROR:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_KEEPALIVE' is deprecated; please use 'Socket.SO_KEEPALIVE' instead"
   extern const SO_KEEPALIVE:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_LINGER' is deprecated; please use 'Socket.SO_LINGER' instead"
   extern const SO_LINGER:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_OOBINLINE' is deprecated; please use 'Socket.SO_OOBINLINE' instead"
   extern const SO_OOBINLINE:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_RCVBUF' is deprecated; please use 'Socket.SO_RCVBUF' instead"
   extern const SO_RCVBUF:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_RCVTIMEO' is deprecated; please use 'Socket.SO_RCVTIMEO' instead"
   extern const SO_RCVTIMEO:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_REUSEADDR' is deprecated; please use 'Socket.SO_REUSEADDR' instead"
   extern const SO_REUSEADDR:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_SNDBUF' is deprecated; please use 'Socket.SO_SNDBUF' instead"
   extern const SO_SNDBUF:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_SNDTIMEO' is deprecated; please use 'Socket.SO_SNDTIMEO' instead"
   extern const SO_SNDTIMEO:c_int;
+  pragma "last resort"
+  deprecated "'Sys.SO_SECINFO' is deprecated; please use 'Socket.SO_SECINFO' instead"
   extern const SO_SECINFO:c_int;
 
   // IP socket options
