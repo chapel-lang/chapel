@@ -2792,6 +2792,8 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
       }
     }
   }
+
+  checkSameNameFields();
 }
 
 AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
@@ -2889,6 +2891,49 @@ void AggregateType::addRootType() {
       super->addFlag(FLAG_SUPER_CLASS);
 
       fields.insertAtHead(new DefExpr(super));
+    }
+  }
+}
+
+void
+AggregateType::gatherAllFields(std::map<const char*, Symbol*> &allFields)
+{
+  // First, gather fields from parent classes
+  forv_Vec(AggregateType, pt, dispatchParents) {
+    pt->gatherAllFields(allFields);
+  }
+
+  // Then, gather fields from this class,
+  // ignoring the compiler-added 'super' field
+  for_fields(field, this) {
+    if (!field->hasFlag(FLAG_SUPER_CLASS)) {
+      allFields[field->name] = field;
+    }
+  }
+}
+
+void
+AggregateType::checkSameNameFields() {
+  std::map<const char*, Symbol*> allFields;
+
+  // First, gather fields from parent classes,
+  forv_Vec(AggregateType, pt, dispatchParents) {
+    pt->gatherAllFields(allFields);
+  }
+
+  // Then, gather fields from this class while checking
+  // that no field with the same name is defined in a parent class.
+  // But, ignore the compiler-added 'super' field.
+  for_fields(field, this) {
+    if (!field->hasFlag(FLAG_SUPER_CLASS)) {
+      auto pair = allFields.emplace(field->name, field);
+      bool inserted = pair.second;
+      if (!inserted) {
+        Symbol* parentField = pair.first->second;
+        USR_FATAL_CONT(field, "field '%s' has same name as parent class field",
+                       field->name);
+        USR_PRINT(parentField, "parent class field declared here");
+      }
     }
   }
 }

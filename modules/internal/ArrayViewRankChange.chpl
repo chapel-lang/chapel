@@ -392,17 +392,17 @@ module ArrayViewRankChange {
     // These would be forwarded to 'upDom' automatically,
     // except the "last resort" overloads BaseDom take precedence
     // over forwarding. So, define these explicitly.
-    proc parSafe return upDom.parSafe;
-    proc dsiLow return upDom.dsiLow;
-    proc dsiHigh return upDom.dsiHigh;
-    proc dsiStride return upDom.dsiStride;
-    proc dsiAlignment return upDom.dsiAlignment;
-    proc dsiFirst return upDom.dsiFirst;
-    proc dsiLast return upDom.dsiLast;
-    proc dsiAlignedlow return upDom.dsiAlignedlow;
-    proc dsiAlignedhigh return upDom.dsiAlignedhigh;
-    proc dsiIndexOrder return upDom.dsiIndexOrder;
-    proc dsiMakeIndexBuffer return upDom.dsiMakeIndexBuffer;
+    proc parSafe param return upDom.parSafe;
+    override proc dsiLow return upDom.dsiLow;
+    override proc dsiHigh return upDom.dsiHigh;
+    override proc dsiStride return upDom.dsiStride;
+    override proc dsiAlignment return upDom.dsiAlignment;
+    override proc dsiFirst return upDom.dsiFirst;
+    override proc dsiLast return upDom.dsiLast;
+    override proc dsiAlignedLow return upDom.dsiAlignedLow;
+    override proc dsiAlignedHigh return upDom.dsiAlignedHigh;
+    override proc dsiIndexOrder(i) return upDom.dsiIndexOrder(i);
+    override proc dsiMakeIndexBuffer(size) return upDom.dsiMakeIndexBuffer(size);
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array

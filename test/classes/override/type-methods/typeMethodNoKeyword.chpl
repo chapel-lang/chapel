@@ -6,13 +6,13 @@ class Building { var x: int = 0; }
 class Tower: Building { var height: int = 0; }
 
 class Animal {
-  var x: int = 0;
+  var y: int = 0;
   proc type doMakeBuilding() { return new Building(); }
   proc type doMakeSelf() { return new this(); }
 }
 
 class Cat: Animal {
-  var x: int = 0;
+  var m: int = 0;
   proc type doMakeBuilding() { return new Tower(); }
   proc type doMakeSelf() { return new this(); }
 }

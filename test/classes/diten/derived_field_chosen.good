@@ -1,3 +1,2 @@
-Base
-Base
-Base
+derived_field_chosen.chpl:9: error: field 's' has same name as parent class field
+derived_field_chosen.chpl:2: note: parent class field declared here

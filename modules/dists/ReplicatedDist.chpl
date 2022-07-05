@@ -302,14 +302,14 @@ proc Replicated.dsiIndexToLocale(indexx): locale {
 }
 
 // common redirects
-proc ReplicatedDom.dsiLow           return whole.lowBound;
-proc ReplicatedDom.dsiHigh          return whole.highBound;
-proc ReplicatedDom.dsiAlignedLow    return whole.alignedLow;
-proc ReplicatedDom.dsiAlignedHigh   return whole.alignedHigh;
-proc ReplicatedDom.dsiFirst         return whole.first;
-proc ReplicatedDom.dsiLast          return whole.last;
-proc ReplicatedDom.dsiStride        return whole.stride;
-proc ReplicatedDom.dsiAlignment     return whole.alignment;
+override proc ReplicatedDom.dsiLow           return whole.lowBound;
+override proc ReplicatedDom.dsiHigh          return whole.highBound;
+override proc ReplicatedDom.dsiAlignedLow    return whole.alignedLow;
+override proc ReplicatedDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc ReplicatedDom.dsiFirst         return whole.first;
+override proc ReplicatedDom.dsiLast          return whole.last;
+override proc ReplicatedDom.dsiStride        return whole.stride;
+override proc ReplicatedDom.dsiAlignment     return whole.alignment;
 proc ReplicatedDom.dsiNumIndices    return whole.sizeAs(uint);
 proc ReplicatedDom.dsiDim(d)        return whole.dim(d);
 proc ReplicatedDom.dsiDim(param d)  return whole.dim(d);

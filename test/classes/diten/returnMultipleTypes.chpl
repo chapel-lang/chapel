@@ -1,19 +1,19 @@
 class A {
-  var name:string = "A";
+  proc name:string { return "A"; }
   proc sayTypeName() {
     writeln("A");
   }
 }
 
 class B:A {
-  var name:string = "B";
+  override proc name:string { return "B"; }
   override proc sayTypeName() {
     writeln("B");
   }
 }
 
 class C:B {
-  var name:string = "C";
+  override proc name:string { return "C"; }
   override proc sayTypeName() {
     writeln("C");
   }

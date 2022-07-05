@@ -14,11 +14,13 @@ class myAbstractLocaleModel : myLocale {
 }
 
 class myNumaDomain : myAbstractLocaleModel {
-  const name: string;
+  const myname: string;
+
+  override proc name return myname;
   proc chpl_name() return name;
 
   proc init() {
-    name = "test";
+    myname = "test";
   }
 }
 

@@ -122,9 +122,9 @@ class PrivateDom: BaseRectangularDom {
   }
 
   proc dsiNumIndices return numLocales;
-  proc dsiLow return 0;
-  proc dsiHigh return numLocales-1;
-  proc dsiStride return 0;
+  override proc dsiLow return 0;
+  override proc dsiHigh return numLocales-1;
+  override proc dsiStride return 0;
   proc dsiSetIndices(x: domain) { halt("cannot reassign private domain"); }
   proc dsiGetIndices() { return {0..numLocales-1}; }
 

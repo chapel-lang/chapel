@@ -147,11 +147,11 @@ class SparseBlockDom: BaseSparseDomImpl {
     return dsiAdd((ind,));
   }
 
-  proc dsiFirst {
+  override proc dsiFirst {
     return min reduce ([l in locDoms] l!.mySparseBlock.first);
   }
 
-  proc dsiLast {
+  override proc dsiLast {
     return max reduce ([l in locDoms] l!.mySparseBlock.last);
   }
 

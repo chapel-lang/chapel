@@ -558,6 +558,8 @@ class UserMapAssocDom: BaseAssociativeDom {
       on dist.targetLocales(localeIdx) do
         delete locDoms(localeIdx);
   }
+
+  proc rank param { return 1; }
 }
 
 
@@ -918,6 +920,8 @@ class UserMapAssocArr: AbsBaseArr {
   proc dsiNumElements {
     return dom.dsiNumIndices;
   }
+
+  proc rank param { return 1; }
 }
 
 

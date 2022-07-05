@@ -585,7 +585,9 @@ module DefaultRectangular {
       // WANT: return * reduce (this(0..rank-1).size);
     }
 
-    proc dsiLow {
+    proc parSafe param { dnsError("parSafe"); }
+
+    override proc dsiLow {
       if rank == 1 {
         return ranges(0).lowBound;
       } else {
@@ -596,7 +598,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiHigh {
+    override proc dsiHigh {
       if rank == 1 {
         return ranges(0).highBound;
       } else {
@@ -607,7 +609,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiAlignedLow {
+    override proc dsiAlignedLow {
       if rank == 1 {
         return ranges(0).alignedLow;
       } else {
@@ -618,7 +620,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiAlignedHigh {
+    override proc dsiAlignedHigh {
       if rank == 1 {
         return ranges(0).alignedHigh;
       } else {
@@ -629,7 +631,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiStride {
+    override proc dsiStride {
       if rank == 1 {
         return ranges(0).stride;
       } else {
@@ -640,7 +642,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiAlignment {
+    override proc dsiAlignment {
       if rank == 1 {
         return ranges(0).alignment;
       } else {
@@ -651,7 +653,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiFirst {
+    override proc dsiFirst {
       if rank == 1 {
         return ranges(0).first;
       } else {
@@ -662,7 +664,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiLast {
+    override proc dsiLast {
       if rank == 1 {
         return ranges(0).last;
       } else {

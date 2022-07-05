@@ -1875,14 +1875,8 @@ module ArgumentParser {
   // A generic argument parser error
   pragma "no doc"
   class ArgumentError : Error {
-    var _msg:string;
-
     proc init(msg:string) {
-      this._msg = msg;
-    }
-
-    override proc message() {
-      return _msg;
+      super.init(msg);
     }
   }
 

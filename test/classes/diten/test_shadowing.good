@@ -1,4 +1,2 @@
-1
-Total is: 1
-60
-Total is: 1
+test_shadowing.chpl:9: error: field 'total' has same name as parent class field
+test_shadowing.chpl:2: note: parent class field declared here

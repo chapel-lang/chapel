@@ -328,7 +328,7 @@ class CSDom: BaseSparseDomImpl {
     return false;
   }
 
-  proc dsiFirst {
+  override proc dsiFirst {
     if _nnz == 0 then return (parentDom.lowBound) - (1,1);
     // find the corresponding index into startIdx
     for i in startIdxDom {
@@ -343,7 +343,7 @@ class CSDom: BaseSparseDomImpl {
     return (0, 0);
   }
 
-  proc dsiLast {
+  override proc dsiLast {
     if _nnz == 0 then return (parentDom.lowBound) - (1,1);
 
     const _lastIdx = _nnz-1;
