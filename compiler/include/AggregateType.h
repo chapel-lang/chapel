@@ -149,7 +149,11 @@ public:
 
   void                        addRootType();
 
-  void checkSameNameFields(std::map<const char*, Symbol*> &allFields);
+  // includes gathering fields from parent classes, transitively,
+  // and leaves out the 'super' field.
+  void gatherAllFields(std::map<const char*, Symbol*> &allFields);
+
+  void checkSameNameFields();
 
   void                        addClassToHierarchy();
 

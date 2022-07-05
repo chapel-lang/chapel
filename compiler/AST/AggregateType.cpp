@@ -2793,8 +2793,7 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
     }
   }
 
-  std::map<const char*, Symbol*> allFields;
-  checkSameNameFields(allFields);
+  checkSameNameFields();
 }
 
 AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
@@ -2897,11 +2896,29 @@ void AggregateType::addRootType() {
 }
 
 void
-AggregateType::checkSameNameFields(std::map<const char*, Symbol*> &allFields)
+AggregateType::gatherAllFields(std::map<const char*, Symbol*> &allFields)
 {
   // First, gather fields from parent classes
   forv_Vec(AggregateType, pt, dispatchParents) {
-    pt->checkSameNameFields(allFields);
+    pt->gatherAllFields(allFields);
+  }
+
+  // Then, gather fields from this class,
+  // ignoring the compiler-added 'super' field
+  for_fields(field, this) {
+    if (!field->hasFlag(FLAG_SUPER_CLASS)) {
+      allFields[field->name] = field;
+    }
+  }
+}
+
+void
+AggregateType::checkSameNameFields() {
+  std::map<const char*, Symbol*> allFields;
+
+  // First, gather fields from parent classes,
+  forv_Vec(AggregateType, pt, dispatchParents) {
+    pt->gatherAllFields(allFields);
   }
 
   // Then, gather fields from this class while checking
