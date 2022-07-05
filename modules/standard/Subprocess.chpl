@@ -1095,7 +1095,7 @@ module Subprocess {
   /*
     Send a signal to a child process.
 
-    Declarations for POSIX.1.2008 signals are provided in this module.
+    Declarations for POSIX.1.2008 signals are provided in the OS.POSIX module.
     These include `SIGABRT`, `SIGALRM`, `SIGBUS`, `SIGCHLD`, `SIGCONT`,
     `SIGFPE`, `SIGHUP`, `SIGILL`, `SIGINT`, `SIGKILL`, `SIGPIPE`, `SIGQUIT`,
     `SIGSEGV`, `SIGSTOP`, `SIGTERM`, `SIGTRAP`, `SIGTSTP`, `SIGTTIN`,
@@ -1133,7 +1133,6 @@ module Subprocess {
     the child process. See :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.abort() throws {
-    use OS.POSIX only SIGABRT;
     try _throw_on_launch_error();
     try this.sendPosixSignal(OS.POSIX.SIGABRT);
   }
@@ -1143,7 +1142,6 @@ module Subprocess {
      :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.alarm() throws {
-    use OS.POSIX only SIGALRM;
     try _throw_on_launch_error();
     try this.sendPosixSignal(OS.POSIX.SIGALRM);
   }
@@ -1154,7 +1152,6 @@ module Subprocess {
     :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.kill() throws {
-    use OS.POSIX only SIGKILL;
     try _throw_on_launch_error();
     try this.sendPosixSignal(OS.POSIX.SIGKILL);
   }
@@ -1165,7 +1162,6 @@ module Subprocess {
     :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.terminate() throws {
-    use OS.POSIX only SIGTERM;
     try _throw_on_launch_error();
     try this.sendPosixSignal(OS.POSIX.SIGTERM);
   }
