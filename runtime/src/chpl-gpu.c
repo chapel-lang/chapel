@@ -30,6 +30,8 @@
 
 #ifdef HAS_GPU_LOCALE
 
+#define USE_OMPTARGET_PLUGIN
+
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -65,6 +67,10 @@ static void chpl_gpu_cuda_check(int err, const char* file, int line) {
 CUcontext *chpl_gpu_primary_ctx;
 
 void chpl_gpu_init() {
+#ifdef USE_OMPTARGET_PLUGIN
+  chpl_gpu_test();
+  chpl_gpu_plugin_init_device();
+#else
   int         num_devices;
 
   // CUDA initialization
@@ -85,9 +91,11 @@ void chpl_gpu_init() {
 
     chpl_gpu_primary_ctx[i] = context;
   }
+#endif
 }
 
 static void chpl_gpu_ensure_context() {
+#ifndef USE_OMPTARGET_PLUGIN
   CUcontext next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()];
 
   if (!chpl_gpu_has_context()) {
@@ -106,6 +114,7 @@ static void chpl_gpu_ensure_context() {
       CUDA_CALL(cuCtxPushCurrent(next_context));
     }
   }
+#endif
 }
 
 static void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
@@ -319,7 +328,12 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
   CUdeviceptr ptr = 0;
   if (size > 0) {
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
+#ifdef USE_OMPTARGET_PLUGIN
+    ptr = (CUdeviceptr)chpl_gpu_plugin_mem_alloc(size, 0);
+    assert(ptr);
+#else
     CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
+#endif
     chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
 
     CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
