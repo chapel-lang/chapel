@@ -1621,15 +1621,15 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
 proc locale.umask(mask: int): int {
   import OS.POSIX.mode_t;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
-  extern proc chpl_int_to_mode(mode: int): mode_t;
-  extern proc chpl_mode_to_int(mode: mode_t): int;
+  extern proc chpl_int_to_mode(mode: c_int): mode_t;
+  extern proc chpl_mode_to_int(mode: mode_t): c_int;
 
   var result: int;
   on this {
-    var callRes = chpl_fs_umask(chpl_int_to_mode(mask));
+    var callRes = chpl_fs_umask(chpl_int_to_mode(mask.safeCast(c_int)));
     result = chpl_mode_to_int(callRes);
   }
-  return result;
+  return result.safeCast(int);
 }
 
 

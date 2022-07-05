@@ -263,6 +263,7 @@ module Sys {
 
   // recvmsg flags
   // --- deprecated with no replacement ---
+  extern const MSG_CMSG_CLOEXEC:c_int;
   extern const MSG_ERRQUEUE:c_int;
   extern const MSG_PEEK:c_int;
   extern const MSG_TRUNC:c_int;
