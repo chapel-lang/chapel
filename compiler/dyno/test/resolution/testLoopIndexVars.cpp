@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "ResolvedVisitor.h"
+
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -28,12 +30,14 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
 
+
 // always check assertions in this test
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
 
 #include <cassert>
+#include <map>
 
 using namespace chpl;
 using namespace parsing;
@@ -77,10 +81,41 @@ static const Module* parseModule(Context* context, std::string& str) {
   return parseModule(context, str.c_str());
 }
 
+struct ParamCollector {
+  using RV = ResolvedVisitor<ParamCollector>;
+
+  std::map<std::string, int> resolvedIdents;
+  std::multimap<std::string, int64_t> resolvedVals;
+
+  ParamCollector() { }
+
+  bool enter(const uast::VarLikeDecl* decl, RV& rv) {
+    if (decl->storageKind() == IntentList::PARAM ||
+        decl->storageKind() == IntentList::INDEX) {
+      const ResolvedExpression& rr = rv.byPostorder.byAst(decl);
+      auto val = rr.type().param()->toIntParam();
+      assert(val != nullptr);
+
+      resolvedVals.emplace(decl->name().str(), val->value());
+    }
+    return true;
+  }
+
+  bool enter(const uast::Identifier* ident, RV& rv) {
+    resolvedIdents[ident->name().str()] += 1;
+    return true;
+  }
+
+  bool enter(const uast::AstNode* ast, RV& rv) {
+    return true;
+  }
+  void exit(const uast::AstNode* ast, RV& rv) {
+  }
+};
+
 //
 // Testing resolution of loop index variables
 // TODO:
-// - param loops
 // - zippered iteration
 // - forall loops
 // - coforall loops
@@ -347,6 +382,104 @@ static void test9() {
   assert(errors.size() == 0);
 }
 
+static void test10() {
+  printf("test10\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  //
+  // Test iteration over an iterator call
+  //
+
+  auto iterText = R""""(
+                  var x = 0;
+                  for param i in 1..10 {
+                    param n = __primitive("+", i, i);
+                    __primitive("+=", x, n);
+                  }
+                  )"""";
+
+  const Module* m = parseModule(context, iterText);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  ParamCollector pc;
+  ResolvedVisitor<ParamCollector> rv(context, m, pc, rr);
+  m->traverse(rv);
+
+  const ResolvedExpression& re = rr.byAst(m->stmt(0));
+  assert(re.type().type() == IntType::get(context, 0));
+
+  std::map<std::string, int> resolvedIdents;
+  std::multimap<std::string, int64_t> resolvedVals;
+  for (int i = 1; i <= 10; i++) {
+    resolvedIdents["i"] += 2;
+    resolvedIdents["n"] += 1;
+    resolvedIdents["x"] += 1;
+    resolvedVals.emplace("i", i);
+    resolvedVals.emplace("n", i+i);
+  }
+  assert(resolvedIdents == pc.resolvedIdents);
+  assert(resolvedVals == pc.resolvedVals);
+}
+
+
+//
+// Test nested param loops
+//
+static void test11() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto loopText = R"""(
+  var sum = 0;
+
+  for param i in 1..3 {
+    param n = __primitive("+", i, i);
+    __primitive("+=", sum, n);
+
+    for param j in 1..5 {
+      param m = __primitive("+", n, j);
+      __primitive("+=", sum, m);
+    }
+  }
+  )""";
+  const Module* m = parseModule(context, loopText);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  ParamCollector pc;
+  ResolvedVisitor<ParamCollector> rv(context, m, pc, rr);
+  m->traverse(rv);
+
+  const ResolvedExpression& re = rr.byAst(m->stmt(0));
+  assert(re.type().type() == IntType::get(context, 0));
+
+  std::map<std::string, int> resolvedIdents;
+  std::multimap<std::string, int64_t> resolvedVals;
+  for (int i = 1; i <= 3; i++) {
+    resolvedIdents["i"] += 2;
+    resolvedIdents["n"] += 1;
+    resolvedIdents["sum"] += 1;
+
+    resolvedVals.emplace("i", i);
+    resolvedVals.emplace("n", i+i);
+
+    for (int j = 1; j <= 5; j++) {
+      resolvedIdents["j"] += 1;
+      resolvedIdents["n"] += 1;
+      resolvedIdents["m"] += 1;
+      resolvedIdents["sum"] += 1;
+
+      resolvedVals.emplace("j", j);
+      resolvedVals.emplace("m", i + i + j);
+    }
+  }
+
+  assert(resolvedIdents == pc.resolvedIdents);
+  assert(resolvedVals == pc.resolvedVals);
+}
+
+
 int main() {
   test1();
   test2();
@@ -357,6 +490,8 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
+  test11();
 
   return 0;
 }

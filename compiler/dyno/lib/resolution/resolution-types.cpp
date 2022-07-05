@@ -28,6 +28,7 @@
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Identifier.h"
+#include "chpl/uast/For.h"
 
 namespace chpl {
 namespace resolution {
@@ -180,6 +181,15 @@ void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
   vec.resize(bodyPostorder);
 
   symbolId = func->id();
+}
+void ResolutionResultByPostorderID::setupForParamLoop(const For* loop, ResolutionResultByPostorderID& parent) {
+  int bodyPostorder = 0;
+  if (loop && loop->body())
+    bodyPostorder = loop->body()->id().postOrderId();
+  assert(0 <= bodyPostorder);
+  vec.resize(bodyPostorder);
+
+  this->symbolId = parent.symbolId;
 }
 void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
   setupForSymbol(func);
