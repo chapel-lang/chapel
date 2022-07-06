@@ -239,12 +239,6 @@ proc ipAddr.writeThis(f) throws {
   f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
 }
 
-pragma "no doc"
-operator struct_timeval.=(other: real) {
-  this.tv_sec = (other:c_long):time_t;
-  this.tv_usec = ((other - this.tv_sec) * 1000000):suseconds_t;
-}
-
 /*
   Get a :type:`~POSIX.struct_timeval` set for indefinite timeout.
 

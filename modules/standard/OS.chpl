@@ -917,6 +917,12 @@ module OS {
       var tv_usec:suseconds_t; // and microseconds
     }
 
+    pragma "no doc"
+    operator struct_timeval.=(other: real) {
+      this.tv_sec = (other:c_long):time_t; // set the whole number of seconds
+      this.tv_usec = ((other - this.tv_sec) * 1000000):suseconds_t; // set any fractional portion of a second
+    }
+
     extern "struct timezone" record struct_timezone {
       var tz_minuteswest:c_int; // of Greenwich
       var tz_dsttime:c_int;     // type of dst correction to apply
