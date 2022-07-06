@@ -2538,6 +2538,8 @@ struct Converter {
         // Attaches def to function's formal list.
         if (conv) {
           buildFunctionFormal(fn, conv);
+          // Note the formal is converted so we can wire up SymExprs later
+          noteConvertedSym(decl, conv->sym);
         }
       }
     }
