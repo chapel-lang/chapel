@@ -151,6 +151,57 @@ static void test6() {
   assert(qt.isParamTrue());
 }
 
+static void test7() {
+  Context ctx;
+  Context* context = &ctx;
+
+  // configure context to fail test if there are any errors
+  context->setErrorHandler(reportError);
+
+  // both args are the (or) identity params, should make param false.
+  QualifiedType qt = parseTypeOfXInit(context,
+                                      "var x = false || false;");
+  assert(qt.isParamFalse());
+}
+
+static void test8() {
+  Context ctx;
+  Context* context = &ctx;
+
+  // configure context to fail test if there are any errors
+  context->setErrorHandler(reportError);
+
+  // both args are the (and) identity params, should make param true.
+  QualifiedType qt = parseTypeOfXInit(context,
+                                      "var x = true && true;");
+  assert(qt.isParamTrue());
+}
+
+static void test9() {
+  Context ctx;
+  Context* context = &ctx;
+
+  // configure context to fail test if there are any errors
+  context->setErrorHandler(reportError);
+
+  // the type of y is unknown, so the whole type is unknown.
+  QualifiedType qt = parseTypeOfXInit(context,
+                                      "var x = true && y;");
+  assert(qt.isUnknown());
+}
+
+static void test10() {
+  Context ctx;
+  Context* context = &ctx;
+
+  // configure context to fail test if there are any errors
+  context->setErrorHandler(reportError);
+
+  // the type of y is unknown, so the whole type is unknown.
+  QualifiedType qt = parseTypeOfXInit(context,
+                                      "var x = false || y;");
+  assert(qt.isUnknown());
+}
 
 int main() {
   test1();
@@ -159,6 +210,10 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
+  test8();
+  test9();
+  test10();
 
   return 0;
 }

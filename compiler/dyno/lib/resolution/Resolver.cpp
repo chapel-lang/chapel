@@ -1574,6 +1574,58 @@ void Resolver::exit(const TupleDecl* decl) {
   exitScope(decl);
 }
 
+
+types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
+  if (op->numActuals() != 2) {
+    return typeErr(op, "invalid op call");
+  }
+
+  bool isAnd = op->op() == USTR("&&");
+  // visit the LHS
+  op->actual(0)->traverse(*this);
+  // look at the LHS type. Is it param?
+  const QualifiedType& lhs = byPostorder.byAst(op->actual(0)).type();
+  // can we short circuit? e.g., is this false && x, or true || y?
+  bool shortCircuit = isAnd ? lhs.isParamFalse() : lhs.isParamTrue();
+  if (shortCircuit) {
+    // short circuit, no need to evaluate RHS.
+    return lhs;
+  }
+
+  // go ahead and evaluate the RHS
+  op->actual(1)->traverse(*this);
+  // look at the RHS type.
+  const QualifiedType& rhs = byPostorder.byAst(op->actual(1)).type();
+
+  // are we looking at true && true or false || false?
+  bool bothIdentity = isAnd
+    ? (lhs.isParamTrue() && rhs.isParamTrue())
+    : (lhs.isParamFalse() && rhs.isParamFalse());
+  if (bothIdentity) {
+    // true && true == true, false || false == false.
+    // return lhs type.
+    return lhs;
+  } else if (lhs.isUnknown() || rhs.isUnknown()) {
+    // if one is unknown, return unknown
+    return QualifiedType(QualifiedType::CONST_VAR,
+                         UnknownType::get(context));
+  } else {
+    assert(rhs.type()->isBoolType() && lhs.type()->isBoolType());
+    if (rhs.isParam() && lhs.isParam()) {
+      // preserve param-ness
+      // this case is only hit when the result is false (for &&)
+      // or when the result is true (for ||), so return !isAnd.
+      return QualifiedType(QualifiedType::PARAM,
+                             BoolType::get(context, 0),
+                             BoolParam::get(context, !isAnd));
+    } else {
+      // otherwise just return a Bool value
+      return QualifiedType(QualifiedType::CONST_VAR,
+                             BoolType::get(context, 0));
+    }
+  }
+}
+
 bool Resolver::enter(const Call* call) {
 
   inLeafCall = call;
@@ -1582,80 +1634,7 @@ bool Resolver::enter(const Call* call) {
   // if the LHS is param and false/true, respectively.
   auto op = call->toOpCall();
   if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
-    QualifiedType result;
-    if (op->numActuals() != 2) {
-      result = typeErr(op, "invalid op call");
-    } else if (op->op() == USTR("&&")) {
-      // visit the LHS
-      op->actual(0)->traverse(*this);
-      // look at the LHS type. Is it param?
-      const QualifiedType& lhs = byPostorder.byAst(op->actual(0)).type();
-      if (lhs.isParamFalse()) {
-        // OK, don't need to evaluate the RHS
-        result = lhs;
-      } else {
-        // go ahead and evaluate the RHS
-        op->actual(1)->traverse(*this);
-        // look at the RHS type.
-        const QualifiedType& rhs = byPostorder.byAst(op->actual(1)).type();
-        if (lhs.isParamTrue() && rhs.isParamTrue()) {
-          // if LHS and RHS are both param true, return param true.
-          result = lhs;
-        } else if (lhs.isUnknown() || rhs.isUnknown()) {
-          // if one is unknown, return unknown
-          result = QualifiedType(QualifiedType::CONST_VAR,
-                                 UnknownType::get(context));
-        } else {
-          assert(rhs.type()->isBoolType() && lhs.type()->isBoolType());
-          if (rhs.isParam() && lhs.isParam()) {
-            // preserve param-ness
-            result = QualifiedType(QualifiedType::PARAM,
-                                   BoolType::get(context, 0),
-                                   BoolParam::get(context, 0));
-          } else {
-            // otherwise just return a Bool value
-            result = QualifiedType(QualifiedType::CONST_VAR,
-                                   BoolType::get(context, 0));
-          }
-        }
-      }
-    } else if (op->op() == USTR("||")) {
-      // visit the LHS
-      op->actual(0)->traverse(*this);
-      // look at the LHS type. Is it param?
-      const QualifiedType& lhs = byPostorder.byAst(op->actual(0)).type();
-      if (lhs.isParamTrue()) {
-        // OK, don't need to evaluate the RHS
-        result = lhs;
-      } else {
-        // go ahead and evaluate the RHS
-        op->actual(1)->traverse(*this);
-        // look at the RHS type.
-        const QualifiedType& rhs = byPostorder.byAst(op->actual(1)).type();
-        if (lhs.isParamFalse() && rhs.isParamFalse()) {
-          // if LHS and RHS are both param false, return param false.
-          result = lhs;
-        } else if (lhs.isUnknown() || rhs.isUnknown()) {
-          // if one is unknown, return unknown
-          result = QualifiedType(QualifiedType::CONST_VAR,
-                                 UnknownType::get(context));
-        } else {
-          assert(rhs.type()->isBoolType() && lhs.type()->isBoolType());
-          if (rhs.isParam() && lhs.isParam()) {
-            // preserve param-ness
-            result = QualifiedType(QualifiedType::PARAM,
-                                   BoolType::get(context, 0),
-                                   BoolParam::get(context, 1));
-          } else {
-            // otherwise just return a Bool value
-            result = QualifiedType(QualifiedType::CONST_VAR,
-                                   BoolType::get(context, 0));
-          }
-        }
-      }
-    } else {
-      assert(false && "should not be reachable");
-    }
+    QualifiedType result = typeForBooleanOp(op);
     // Update the type of the && call
     byPostorder.byAst(op).setType(result);
     // Don't visit the children since we already did
