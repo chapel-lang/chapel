@@ -482,13 +482,12 @@
 %type <uniqueStr> fn_ident assignop_ident op_ident all_op_name opt_label_ident
 %type <uniqueStr> implements_type_ident implements_type_error_ident
 
+%type <commentsAndStmt> decl_base
 %type <commentsAndStmt> deprecated_decl_stmt
-%type <commentsAndStmt> deprecated_decl_base
 %type <commentsAndStmt> deprecated_enum_item
 %type <commentsAndStmt> deprecated_class_level_stmt
 
 %type <commentsAndStmt> unstable_decl_stmt
-%type <commentsAndStmt> unstable_decl_base
 %type <commentsAndStmt> unstable_enum_item
 %type <commentsAndStmt> unstable_class_level_stmt
 
@@ -823,12 +822,12 @@ tryable_stmt:
 ;
 
 deprecated_decl_stmt:
-  deprecated_decl_base
+  decl_base
 | TDEPRECATED STRINGLITERAL
   {
     context->noteDeprecation(@$, $2);
   }
-  deprecated_decl_base
+  decl_base
   {
     $$ = $4;
   }
@@ -836,24 +835,23 @@ deprecated_decl_stmt:
   {
     context->noteDeprecation(@$, nullptr);
   }
-  deprecated_decl_base
+  decl_base
   {
     $$ = $3;
   }
 ;
 
-deprecated_decl_base:
+decl_base:
   module_decl_stmt
 | class_level_stmt
 ;
 
 unstable_decl_stmt:
-  unstable_decl_base
-| TUNSTABLE STRINGLITERAL
+  TUNSTABLE STRINGLITERAL
   {
     context->noteUnstable(@$, $2);
   }
-  unstable_decl_base
+  decl_base
   {
     $$ = $4;
   }
@@ -861,15 +859,10 @@ unstable_decl_stmt:
   {
     context->noteUnstable(@$, nullptr);
   }
-  unstable_decl_base
+  decl_base
   {
     $$ = $3;
   }
-;
-
-unstable_decl_base:
-  module_decl_stmt
-| class_level_stmt
 ;
 
 module_decl_start:
@@ -1365,8 +1358,7 @@ deprecated_class_level_stmt:
 ;
 
 unstable_class_level_stmt:
-  class_level_stmt
-| TUNSTABLE STRINGLITERAL
+  TUNSTABLE STRINGLITERAL
   {
     context->noteUnstable(@$, $2);
   }
