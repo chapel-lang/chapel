@@ -2,6 +2,8 @@
 // are domains instead of arrays. Cf.
 //   test/arrays/ferguson/from-iterator/skyline.chpl
 
+use Sort;
+
 config const n = 2;
 var r = 1..n;
 
@@ -33,12 +35,12 @@ proc makeDomain(lowerBound:int, s:string) {
 
 // a forall expression
 var AAA = [s in rr] makeDomain(s);
-writeln("AAA.domain ", AAA.domain.sorted());
-writeln("AAA = ", AAA.sorted(new AAcomparator()));
+writeln("AAA.domain ", sorted(AAA.domain));
+writeln("AAA = ", sorted(AAA, new AAcomparator()));
 
 // a promoted expression
 var AAB = makeDomain(2, rr);
-writeln("AAB.domain ", AAB.domain.sorted());
-writeln("AAB = ", AAB.sorted(new AAcomparator()));
+writeln("AAB.domain ", sorted(AAB.domain));
+writeln("AAB = ", sorted(AAB, new AAcomparator()));
 
 record AAcomparator { proc key(a) return a.size; }

@@ -1590,6 +1590,7 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
+    deprecated "'Array.sorted' is deprecated, use 'Sort.sorted' instead"
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
@@ -1721,6 +1722,7 @@ module ChapelArray {
     }
 
     /* Reverse the order of the values in the array. */
+    deprecated "'Array.reverse' is deprecated"
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
@@ -1736,7 +1738,8 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-    proc find(val: this.eltType): (bool, index(this.domain)) {
+     deprecated "'Array.find' is deprecated, use a reduction like 'maxloc reduce zip(A == val, A.domain)' instead"
+     proc find(val: this.eltType): (bool, index(this.domain)) {
       for i in this.domain {
         if this[i] == val then return (true, i);
       }
@@ -1745,6 +1748,7 @@ module ChapelArray {
     }
 
     /* Return the number of times ``val`` occurs in the array. */
+    deprecated "'Array.count' is deprecated use a reduction like '+ reduce (A == val)' instead"
     proc count(val: this.eltType): int {
       return + reduce (this == val);
     }

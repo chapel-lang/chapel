@@ -42,8 +42,6 @@ local subdomains:
 is empty: false
 head: 1.6
 tail: 5.6
-find last: (true, 4)
-count last: 1
 equals same: true
 equals diff: false
 

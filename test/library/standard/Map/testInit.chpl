@@ -1,3 +1,4 @@
+use Sort;
 use Map;
 
 {
@@ -22,5 +23,5 @@ use Map;
   m[1] = "hello";
   m[4] = "world";
 
-  writeln(m.toArray().sorted());
+  writeln(sorted(m.toArray()));
 }
