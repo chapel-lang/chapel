@@ -17,7 +17,7 @@
 # limitations under the License.
 
 RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/gpu/cuda
+RUNTIME_SUBDIR = src/gpu/omp
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..

@@ -39,6 +39,9 @@ def get_cuda_libdevice_path():
         return libdevices[0]
 
 def get_runtime():
+    chpl_gpu_runtime = os.environ.get("CHPL_GPU")
+    if chpl_gpu_runtime:
+        return chpl_gpu_runtime
     return "cuda"
 
 def validate(chplLocaleModel, chplComm):
