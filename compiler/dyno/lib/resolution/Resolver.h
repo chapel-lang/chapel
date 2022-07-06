@@ -279,7 +279,7 @@ struct Resolver {
   // resolve a special op call such as tuple unpack assign
   bool resolveSpecialOpCall(const uast::Call* call);
 
-  // Figure out the type of a type-level && operation.
+  // Resolve a || or && operation.
   types::QualifiedType typeForBooleanOp(const uast::OpCall* op);
 
   // helper to resolve a special call
