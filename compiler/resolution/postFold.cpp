@@ -897,9 +897,8 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
   Expr* retval = sym;
 
   if (Symbol* val = paramMap.get(sym->symbol())) {
-    CallExpr* call = toCallExpr(sym->parentExpr);
+    if (CallExpr* call = toCallExpr(sym->parentExpr)) {
 
-    if (call && call->get(1) == sym) {
       // This is a place where param substitution has already determined the
       // value of a move or assignment. If it's a RVV, then we should ignore
       // the update because the RVV may have multiple valid defs in the AST
@@ -922,12 +921,17 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
       //
       // The substitution usually happens before resolution, so for
       // assignment, we key off of the name :-(
-      if (call->isPrimitive(PRIM_MOVE) || call->isNamedAstr(astrSassign)) {
-        if (sym->symbol()->hasFlag(FLAG_RVV)) {
-          call->convertToNoop();
-        }
+      if (call->isPrimitive(PRIM_MOVE) ||
+          call->isNamedAstr(astrSassign)) {
+        INT_ASSERT(call->numActuals() >= 2);
 
-        return retval;
+        if (call->get(1) == sym) {
+          if (sym->symbol()->hasFlag(FLAG_RVV)) {
+            call->convertToNoop();
+          }
+
+          return retval;
+        }
       }
     }
 

@@ -1,0 +1,1 @@
+CallInfinity.chpl:1: error: unresolved access of 'real(64)' by '()'
