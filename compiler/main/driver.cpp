@@ -1823,28 +1823,27 @@ int main(int argc, char* argv[]) {
 
     setupChplGlobals(argv[0]);
 
-    if (fDynoCompilerLibrary) {
-      // set the config names/values we processed earlier
-      chpl::parsing::setConfigSettings(gContext, gDynoParams);
-      // this should not be used after this point!
-      gDynoParams.clear();
+    // set the config names/values we processed earlier
+    chpl::parsing::setConfigSettings(gContext, gDynoParams);
+    // this should not be used after this point!
+    gDynoParams.clear();
 
-      // set up the module paths
-      std::string chpl_module_path;
-      if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
-        chpl_module_path = envvarpath;
-      }
-      chpl::parsing::setupModuleSearchPaths(gContext,
-                                            CHPL_HOME,
-                                            fMinimalModules,
-                                            CHPL_LOCALE_MODEL,
-                                            fEnableTaskTracking,
-                                            CHPL_TASKS,
-                                            CHPL_COMM,
-                                            CHPL_SYS_MODULES_SUBDIR,
-                                            chpl_module_path,
-                                            cmdLineModPaths);
+    // set up the module paths
+    std::string chpl_module_path;
+    if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
+      chpl_module_path = envvarpath;
     }
+
+    chpl::parsing::setupModuleSearchPaths(gContext,
+                                          CHPL_HOME,
+                                          fMinimalModules,
+                                          CHPL_LOCALE_MODEL,
+                                          fEnableTaskTracking,
+                                          CHPL_TASKS,
+                                          CHPL_COMM,
+                                          CHPL_SYS_MODULES_SUBDIR,
+                                          chpl_module_path,
+                                          cmdLineModPaths);
 
     postprocess_args();
 
