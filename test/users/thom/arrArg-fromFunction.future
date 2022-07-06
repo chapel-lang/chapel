@@ -1,0 +1,2 @@
+Should arrays returned by value be passable to [const] ref formals?
+#20166
