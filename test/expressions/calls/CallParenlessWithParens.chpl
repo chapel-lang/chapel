@@ -1,7 +1,7 @@
-proc foo param { return 0; }
+proc bar { return 0; }
 
 proc test() {
-  param x = foo();
+  var x = bar();
   writeln(x);
 }
 test();
