@@ -193,6 +193,10 @@ ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 5; echo "$$?"),1)
 SQUASH_WARN_GEN_CFLAGS += -Wno-incompatible-pointer-types
 endif
 
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 5; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-misleading-indentation
+endif
+
 #
 # Don't warn/error for tautological compares (ex. x == x)
 #
