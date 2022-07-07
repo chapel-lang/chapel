@@ -1157,25 +1157,6 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
   call->remove();
 }
 
-static void insertDestructorCalls() {
-  forv_expanding_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
-      Type* type = call->get(1)->typeInfo();
-
-      if (type->hasDestructor() == false) {
-        call->remove();
-      } else {
-        SET_LINENO(call);
-
-        call->replace(new CallExpr(type->getDestructor(),
-                                   call->get(1)->remove()));
-      }
-    } else if (call->isPrimitive(PRIM_AUTO_DESTROY_RUNTIME_TYPE)) {
-      lowerAutoDestroyRuntimeType(call);
-    }
-  }
-}
-
 // This routine inserts autoCopy calls ahead of yield statements as necessary,
 // so the calling routine "owns" the yielded value.
 // The copy is necessary when an iterator yields a variable (rather than an
@@ -1193,65 +1174,56 @@ static void insertDestructorCalls() {
 //
 // Note that for parallel iterators, yields can occur in task
 // functions (that aren't iterators themselves).
-static void insertCopiesForYields()
-{
-  // Examine all calls.
-  forv_expanding_Vec(CallExpr, call, gCallExprs)
-  {
-    // Select only yield primitives.
-    if (! call->isPrimitive(PRIM_YIELD))
-      continue;
+bool InsertCopiesForYields::shouldProcess(CallExpr* call) {
+  return call->isPrimitive(PRIM_YIELD) && call->parentSymbol != NULL;
+}
 
-    // Filter out calls that are not in the tree.
-    if (! call->parentSymbol)
-      continue;
+void InsertCopiesForYields::process(CallExpr* call) {
+  // This is the symbol passed back in the yield.
+  SymExpr* yieldedSe = toSymExpr(call->get(1));
+  Symbol* yieldedSym = yieldedSe->symbol();
 
-    // This is the symbol passed back in the yield.
-    SymExpr* yieldedSe = toSymExpr(call->get(1));
-    Symbol* yieldedSym = yieldedSe->symbol();
+  FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+  IteratorInfo* ii = inFn->iteratorInfo;
 
-    FnSymbol* inFn = toFnSymbol(call->parentSymbol);
-    IteratorInfo* ii = inFn->iteratorInfo;
-
-    // coforall functions in iterators don't seem to have ii
-    RetTag iteratorRetTag = RET_VALUE;
-    if (ii)
-      iteratorRetTag = ii->iteratorRetTag;
+  // coforall functions in iterators don't seem to have ii
+  RetTag iteratorRetTag = RET_VALUE;
+  if (ii)
+    iteratorRetTag = ii->iteratorRetTag;
 
 
-    // If the yielded symbol is subject to auto-copy/destroy discipline
-    // and it's returned by value (not by reference)
-    // and the yielded value is not an expression temporary
-    //  (e.g. for yield someCall(), the result of someCall() doesn't need copy)
-    // then we need to copy initialize into the yielded value.
-    if (typeNeedsCopyInitDeinit(yieldedSym->getValType()) &&
-        iteratorRetTag == RET_VALUE) {
+  // If the yielded symbol is subject to auto-copy/destroy discipline
+  // and it's returned by value (not by reference)
+  // and the yielded value is not an expression temporary
+  //  (e.g. for yield someCall(), the result of someCall() doesn't need copy)
+  // then we need to copy initialize into the yielded value.
+  if (typeNeedsCopyInitDeinit(yieldedSym->getValType()) &&
+      iteratorRetTag == RET_VALUE) {
 
-      SymExpr* foundSe = findSourceOfYield(call);
+    SymExpr* foundSe = findSourceOfYield(call);
 
-      // Now foundSe is in the last simple PRIM_MOVE that set some
-      // chain of symbols (leading to yield) and in particular it
-      // is the RHS of that move.
-      //
-      // Or foundSe is the argument to PRIM_YIELD.
+    // Now foundSe is in the last simple PRIM_MOVE that set some
+    // chain of symbols (leading to yield) and in particular it
+    // is the RHS of that move.
+    //
+    // Or foundSe is the argument to PRIM_YIELD.
 
-      // TODO - is the check for FLAG_INSERT_AUTO_DESTROY
-      // necessary here? Could this use doesValueReturnRequireCopy?
-      if (foundSe->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-          !foundSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
-        // Add an auto-copy here.
-        SET_LINENO(call);
-        Type* type = foundSe->symbol()->getValType();
-        Symbol* tmp = newTemp("_yield_expr_tmp_", type);
-        Expr* stmt = foundSe->getStmtExpr();
-        stmt->insertBefore(new DefExpr(tmp));
-        stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                           new CallExpr(getAutoCopyForType(type),
-                                        foundSe->copy(),
-                                        new SymExpr(gFalse))));
+    // TODO - is the check for FLAG_INSERT_AUTO_DESTROY
+    // necessary here? Could this use doesValueReturnRequireCopy?
+    if (foundSe->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+        !foundSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
+      // Add an auto-copy here.
+      SET_LINENO(call);
+      Type* type = foundSe->symbol()->getValType();
+      Symbol* tmp = newTemp("_yield_expr_tmp_", type);
+      Expr* stmt = foundSe->getStmtExpr();
+      stmt->insertBefore(new DefExpr(tmp));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                         new CallExpr(getAutoCopyForType(type),
+                                      foundSe->copy(),
+                                      new SymExpr(gFalse))));
 
-        foundSe->replace(new SymExpr(tmp));
-      }
+      foundSe->replace(new SymExpr(tmp));
     }
   }
 }
@@ -2017,33 +1989,37 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 *                                                                             *
 ************************************** | *************************************/
 
+bool CallDestructorsCallCleanup::shouldProcess(CallExpr* call) {
+  // we keep PRIM_ZIPs after resolution as markers to avoid copy elision for
+  // symbols that are used in zip clauses. At this point, we no longer need
+  // those
+  return call->isPrimitive(PRIM_END_OF_STATEMENT) ||
+         call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY) ||
+         call->isPrimitive(PRIM_ZIP);
+}
 
-static void removeEndOfStatementMarkersElidedCopyPrimsZips() {
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-      call->remove();
-    if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
-      call->primitive = primitives[PRIM_ASSIGN];
-
-    // we keep PRIM_ZIPs after resolution as markers to avoid copy elision for
-    // symbols that are used in zip clauses. At this point, we no longer need
-    // those
-    if (call->isPrimitive(PRIM_ZIP))
-      call->remove();
+void CallDestructorsCallCleanup::process(CallExpr* call) {
+  if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
+    call->primitive = primitives[PRIM_ASSIGN];
+  } else {
+    call->remove();
   }
 }
 
-static void removeElidedOnBlocks() {
-  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->isLoopStmt() == false) {
-      if (CallExpr* const info = block->blockInfoGet()) {
-        if (info->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
-          // Turn it into a regular block.
-          info->remove();
-        }
+bool RemoveElidedOnBlocks::shouldProcess(BlockStmt* block) {
+  if (block->inTree() && block->isLoopStmt() == false) {
+    if (CallExpr* const info = block->blockInfoGet()) {
+      if (info->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
+        return true;
       }
     }
   }
+  return false;
+}
+
+void RemoveElidedOnBlocks::process(BlockStmt* block) {
+  // Turn it into a regular block.
+  block->blockInfoGet()->remove();
 }
 
 bool AutoDestroyLoopExprTemps::shouldProcess(CallExpr* call) {
@@ -2093,6 +2069,31 @@ void AutoDestroyLoopExprTemps::process(CallExpr* call) {
   calledFn->insertBeforeEpilogue(destroy);
 }
 
+bool InsertDestructorCalls::shouldProcess(CallExpr* call) {
+  return call->isPrimitive(PRIM_CALL_DESTRUCTOR);
+}
+
+void InsertDestructorCalls::process(CallExpr* call) {
+  Type* type = call->get(1)->typeInfo();
+
+  if (type->hasDestructor() == false) {
+    call->remove();
+  } else {
+    SET_LINENO(call);
+
+    call->replace(new CallExpr(type->getDestructor(),
+                               call->get(1)->remove()));
+  }
+}
+
+bool LowerAutoDestroyRuntimeType::shouldProcess(CallExpr* call) {
+  return call->isPrimitive(PRIM_AUTO_DESTROY_RUNTIME_TYPE);
+}
+
+void LowerAutoDestroyRuntimeType::process(CallExpr* call) {
+  lowerAutoDestroyRuntimeType(call);
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Entry point                                                                 *
@@ -2109,12 +2110,12 @@ void callDestructors() {
   pm.runPass(CreateIteratorBreakBlocks(), gCallExprs);
   pm.runPass(FixupDestructors(), gFnSymbols);
   pm.runPass(AutoDestroyLoopExprTemps(), gCallExprs);
-
-  insertDestructorCalls();
+  pm.runPass(InsertDestructorCalls(), gCallExprs);
+  pm.runPass(LowerAutoDestroyRuntimeType(), gCallExprs);
 
   ReturnByRef::apply();
 
-  insertCopiesForYields();
+  pm.runPass(InsertCopiesForYields(), gCallExprs);
 
   lateConstCheck(NULL);
 
@@ -2133,6 +2134,6 @@ void callDestructors() {
   // TODO: I think 'dyno' can handle all of this elegantly.
   convertClassTypesToCanonical();
 
-  removeEndOfStatementMarkersElidedCopyPrimsZips();
-  removeElidedOnBlocks();
+  pm.runPass(CallDestructorsCallCleanup(), gCallExprs);
+  pm.runPass(RemoveElidedOnBlocks(), gBlockStmts);
 }
