@@ -9,8 +9,7 @@ if pathPrefix != "" {
   copyFile(infileName, pathPrefix + infileName);
 }
 
-const script = """
-#!/usr/bin/env bash
+const script = """#!/usr/bin/env bash
 # Requires that stdin is a list of integers, one per line
 # Writes the result back to stdout, one per line
 
