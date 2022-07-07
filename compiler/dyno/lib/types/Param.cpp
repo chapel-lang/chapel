@@ -122,6 +122,10 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
         }
         return ret;
       }
+    case paramtags::EnumParam:
+      {
+        assert(false && "case not handled");
+      }
     case paramtags::IntParam:
       {
         auto ip = (const IntParam*) p;

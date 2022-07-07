@@ -1911,6 +1911,35 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
+  if (receiver.type().kind() == QualifiedType::TYPE &&
+      receiver.type().type()->isEnumType()) {
+    // resolve E.x where E is an enum.
+    const EnumType* enumType = receiver.type().type()->toEnumType();
+    assert(enumType != nullptr);
+    assert(receiver.toId().isEmpty() == false);
+
+    LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
+    auto enumScope = scopeForId(context, receiver.toId());
+    auto vec = lookupNameInScope(context, enumScope,
+                                 /* receiverScope */ nullptr,
+                                 dot->field(), config);
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    if (vec.size() == 0) {
+      r.setType(typeErr(dot, "no enum element with given name"));
+    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+      // multiple candidates. report a type error, but the
+      // expression most likely has a type given by the enum.
+      r.setType(QualifiedType(QualifiedType::CONST_VAR, enumType));
+      typeErr(dot, "duplicate enum elements with given name");
+    } else {
+      auto id = vec[0].id(0);
+      auto newParam = EnumParam::get(context, id);
+      r.setToId(id);
+      r.setType(QualifiedType(QualifiedType::PARAM, enumType, newParam));
+    }
+    return;
+  }
+
   // Handle null, unknown, or erroneous receiver type
   if (receiver.type().type() == nullptr ||
       receiver.type().type()->isUnknownType()) {
@@ -1923,7 +1952,6 @@ void Resolver::exit(const Dot* dot) {
     r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
     return;
   }
-
 
   if (scopeResolveOnly)
     return;

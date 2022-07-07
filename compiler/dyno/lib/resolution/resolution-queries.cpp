@@ -605,6 +605,8 @@ initialTypeForTypeDeclQuery(Context* context, ID declId) {
         result = ClassType::get(context, bct, /*manager*/ nullptr, dec);
       }
     }
+  } else if (auto td = ast->toEnum()) {
+    result = EnumType::get(context, td->id(), td->name());
   }
 
   return QUERY_END(result);
