@@ -102,13 +102,13 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
 
 
 
-//bool chpl_gpu_is_device_ptr(void* ptr) {
-  //// TODO should we drop this function? I don't think libomptarget has a way of
-  //// doing this
-  ////chpl_internal_error("gpu is device ptr is not implemented yet");
-  //// this is all used for assertion, so maybe we can 
-  //return true;
-//}
+bool chpl_gpu_is_device_ptr(void* ptr) {
+  // TODO should we drop this function? I don't think libomptarget has a way of
+  // doing this
+  //chpl_internal_error("gpu is device ptr is not implemented yet");
+  // this is all used for assertion, so maybe we can 
+  return chpl_gpu_is_device_ptr_impl(ptr);
+}
 
 size_t chpl_gpu_get_alloc_size(void* ptr) {
   chpl_internal_error("gpu get alloc _size is not implemented yet");

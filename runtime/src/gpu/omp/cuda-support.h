@@ -18,6 +18,8 @@ static void chpl_gpu_cuda_check_impl(int err, const char* file, int line) {
   chpl_gpu_cuda_check_impl((int)call, __FILE__, __LINE__);\
 } while(0);
 
+// this is an internal helper only
+
 static inline
 void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
   //chpl_gpu_ensure_context();
@@ -34,8 +36,9 @@ void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
   return (void*)function;
 }
 
+// this is part of the interface (used by the module code as an extern)
 static inline
-bool chpl_gpu_is_device_ptr(void* ptr) {
+bool chpl_gpu_is_device_ptr_impl(void* ptr) {
   //chpl_gpu_ensure_context();
 
   unsigned int res;
