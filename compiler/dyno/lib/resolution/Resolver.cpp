@@ -1903,10 +1903,13 @@ void Resolver::exit(const Dot* dot) {
                                  /* receiverScope */ nullptr,
                                  dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
-    if (vec.size() == 0 || vec.size() > 1 || vec[0].numIds() > 1) {
-      // too many or no candidates. The dot expression doesn't specify a valid element.
-      // TODO should be report an error to the user here?
-      r.setType(QualifiedType());
+    if (vec.size() == 0) {
+      r.setType(typeErr(dot, "no enum element with given name"));
+    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+      // multiple candidates. report a type error, but the
+      // expression most likely has a type given by the enum.
+      r.setType(QualifiedType(QualifiedType::CONST_VAR, enumType));
+      typeErr(dot, "duplicate enum elements with given name");
     } else {
       auto id = vec[0].id(0);
       auto newParam = EnumParam::get(context, id);

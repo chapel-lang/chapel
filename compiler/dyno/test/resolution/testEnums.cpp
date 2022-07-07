@@ -105,8 +105,8 @@ static void test2() {
 
                          var x = color.red;
                          )"""");
-  assert(qt.kind() == QualifiedType::UNKNOWN);
-  assert(qt.type() == nullptr);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  assert(qt.type() && qt.type()->isEnumType());
 }
 
 static void test3() {
@@ -121,7 +121,7 @@ static void test3() {
                          var x = color.red;
                          )"""");
   assert(qt.kind() == QualifiedType::UNKNOWN);
-  assert(qt.type() == nullptr);
+  assert(qt.type() && qt.type()->isErroneousType());
 }
 
 int main() {
