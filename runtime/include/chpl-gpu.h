@@ -81,6 +81,14 @@ void chpl_gpu_launch_kernel_help(int ln,
                                         int nargs,
                                         va_list args);
 
+void chpl_gpu_launch_kernel_help_with_tripcount(int ln,
+                                        int32_t fn,
+                                        const char* fatbinData,
+                                        const char* name,
+                                        int nargs,
+                                        va_list args,
+                                        int num_threads, int blk_dim);
+
 #endif // HAS_GPU_LOCALE
 
 #ifdef __cplusplus
