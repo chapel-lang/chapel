@@ -168,9 +168,6 @@ $(CHPLDOC): $(CHPL)
 
 chpldoc: $(CHPLDOC)
 
-parser: FORCE
-	$(MAKE) -C parser parser
-
 $(COMPILER_BUILD):
 	mkdir -p $@
 

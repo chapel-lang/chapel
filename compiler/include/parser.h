@@ -37,6 +37,11 @@ extern int         yystartlineno;
 extern const char* yyfilename;
 extern BlockStmt*  yyblock;
 
+extern bool parsingPrivate;
+
+extern bool countTokens;
+extern bool printTokens;
+
 void               parse();
 
 void addInternalModulePath(const ArgumentDescription* desc,
@@ -50,10 +55,6 @@ void               addFlagModulePath(const char* newpath);
 
 void               addModuleToParseList(const char* name,
                                         VisibilityStmt* newUse);
-
-BlockStmt*         parseString(const char* string,
-                               const char* filename,
-                               const char* msg);
 
 // The new parser does not rely on yyfilename to set locations, so passing
 // in the submodule path allows for overriding that behavior.

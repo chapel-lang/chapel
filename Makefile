@@ -81,7 +81,7 @@ compiler: FORCE
 
 parser: FORCE
 	@echo "Making the parser..."
-	@cd compiler && $(MAKE) parser
+	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-parser
 
 modules: FORCE
 	@echo "Making the modules..."

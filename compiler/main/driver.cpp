@@ -28,7 +28,6 @@
 #include "chpl.h"
 #include "commonFlags.h"
 #include "config.h"
-#include "countTokens.h"
 #include "docsDriver.h"
 #include "files.h"
 #include "library.h"
@@ -1823,28 +1822,29 @@ int main(int argc, char* argv[]) {
     process_args(&sArgState, argc, argv);
 
     setupChplGlobals(argv[0]);
-    if (fDynoCompilerLibrary) {
-      // set the config names/values we processed earlier
-      chpl::parsing::setConfigSettings(gContext, gDynoParams);
-      // this should not be used after this point!
-      gDynoParams.clear();
 
-      // set up the module paths
-      std::string chpl_module_path;
-      if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
-        chpl_module_path = envvarpath;
-      }
-      chpl::parsing::setupModuleSearchPaths(gContext,
-                                            CHPL_HOME,
-                                            fMinimalModules,
-                                            CHPL_LOCALE_MODEL,
-                                            fEnableTaskTracking,
-                                            CHPL_TASKS,
-                                            CHPL_COMM,
-                                            CHPL_SYS_MODULES_SUBDIR,
-                                            chpl_module_path,
-                                            cmdLineModPaths);
+    // set the config names/values we processed earlier
+    chpl::parsing::setConfigSettings(gContext, gDynoParams);
+    // this should not be used after this point!
+    gDynoParams.clear();
+
+    // set up the module paths
+    std::string chpl_module_path;
+    if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
+      chpl_module_path = envvarpath;
     }
+
+    chpl::parsing::setupModuleSearchPaths(gContext,
+                                          CHPL_HOME,
+                                          fMinimalModules,
+                                          CHPL_LOCALE_MODEL,
+                                          fEnableTaskTracking,
+                                          CHPL_TASKS,
+                                          CHPL_COMM,
+                                          CHPL_SYS_MODULES_SUBDIR,
+                                          chpl_module_path,
+                                          cmdLineModPaths);
+
     postprocess_args();
 
     if (gContext != nullptr) {
