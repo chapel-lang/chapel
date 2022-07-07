@@ -3961,6 +3961,7 @@ void makeBinaryLLVM(void) {
   std::string ptxObjectFilename;
   std::string fatbinFilename;
   std::string omptargetImageFilename;
+    omptargetImageFilename = genIntermediateFilename("chpl__gpu_image.bc");
 
   if (gCodegenGPU == false) {
     moduleFilename = genIntermediateFilename("chpl__module.o");
@@ -3975,7 +3976,6 @@ void makeBinaryLLVM(void) {
     asmFilename = genIntermediateFilename("chpl__gpu_ptx.s");
     ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
-    omptargetImageFilename = genIntermediateFilename("chpl__gpu_image.fatbin");
   }
 
   if( saveCDir[0] != '\0' ) {
@@ -4264,30 +4264,31 @@ void makeBinaryLLVM(void) {
 
       mysystem(ptxCmd.c_str(), "PTX to  object file");
 
-      if (strncmp(fCUDAArch, "sm_", 3) != 0 || strlen(fCUDAArch) != 5) {
-        USR_FATAL("Unrecognized CUDA arch");
-      }
-
-      std::string computeCap = std::string("compute_") + fCUDAArch[3] +
-                                                         fCUDAArch[4];
-      std::string fatbinaryCmd = std::string("fatbinary -64 ") +
-                                 std::string("--create ") +
-                                 fatbinFilename.c_str() +
-                                 std::string(" --image=profile=") + fCUDAArch +
-                                 ",file=" + ptxObjectFilename.c_str() +
-                                 std::string(" --image=profile=") + computeCap +
-                                 ",file=" + asmFilename.c_str();
-
-      mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
-
       std::string clangOffloadWrapper = "/home/engin/code/chapel/versions/1/chapel/third-party/llvm/install/linux64-x86_64/bin/clang-offload-wrapper";
 
       std::string cowCmd = clangOffloadWrapper + std::string(" -o ") +
                            omptargetImageFilename +
                            std::string(" --target=nvptx64-nvidia-cuda ") +
-                           fatbinFilename;
+                           ptxObjectFilename;
 
       mysystem(cowCmd.c_str(), "fatbinary to omptarget image");
+
+      //if (strncmp(fCUDAArch, "sm_", 3) != 0 || strlen(fCUDAArch) != 5) {
+        //USR_FATAL("Unrecognized CUDA arch");
+      //}
+
+      //std::string computeCap = std::string("compute_") + fCUDAArch[3] +
+                                                         //fCUDAArch[4];
+      //std::string fatbinaryCmd = std::string("fatbinary -64 ") +
+                                 //std::string("--create ") +
+                                 //fatbinFilename.c_str() +
+                                 //std::string(" --image=profile=") + fCUDAArch +
+                                 //",file=" + ptxObjectFilename.c_str() +
+                                 //std::string(" --image=profile=") + computeCap +
+                                 //",file=" + asmFilename.c_str();
+
+      //mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
+
 
     }
   }
@@ -4298,6 +4299,26 @@ void makeBinaryLLVM(void) {
   // Just make the .o file for GPU code
   if (gCodegenGPU) {
     return;
+  }
+  //omptargetImageFilename
+  {
+    GenInfo* info = gGenInfo;
+
+    // load libdevice as a new module
+    llvm::SMDiagnostic err;
+    auto libdevice =
+      llvm::parseIRFile("/home/engin/code/chapel/versions/1/chapel/gen_code/chpl__gpu_image.bc",
+          err, info->llvmContext);
+    //
+    // adjust it
+    //const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
+    //libdevice->setTargetTriple(Triple.getTriple());
+    //libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
+
+    // link
+    //llvm::Linker::linkModules(*info->module, std::move(libdevice),
+        //llvm::Linker::Flags::None);
+
   }
 
   std::string options = "";
