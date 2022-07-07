@@ -280,7 +280,9 @@ handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
 
   if (!hasSpecifiedIndices) {
     INT_ASSERT(loopExpr->defIndices.length == 0); // no DefExprs to take care of
-    indices = new UnresolvedSymExpr("chpl__elidedIdx");
+    VarSymbol* var = new VarSymbol("chpl__elidedIdx");
+    var->addFlag(FLAG_INDEX_VAR);
+    indices = new DefExpr(var);
   }
 
   checkIndices(indices);

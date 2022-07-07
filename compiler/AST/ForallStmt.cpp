@@ -419,7 +419,8 @@ static int numIterablesToDestructure(ForallStmt* fs) {
 static void createAndAddIndexVar(AList& fIterVars, Symbol* idxVar) {
   idxVar->addFlag(FLAG_INDEX_VAR);
   idxVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  INT_ASSERT(idxVar->defPoint == NULL); // ensure we do not overwrite it
+  if (idxVar->defPoint && idxVar->defPoint->inTree())
+    idxVar->defPoint->remove();
   fIterVars.insertAtTail(new DefExpr(idxVar));
 }
 
@@ -447,6 +448,9 @@ static inline VarSymbol* indexExprToVarSymbol(BaseAST* index) {
     return new VarSymbol(USE->unresolved);
   if (VarSymbol* VS = toVarSymbol(index))
     return VS;
+  if (DefExpr* def = toDefExpr(index))
+    if (VarSymbol* VS = toVarSymbol(def->sym))
+      return VS;
   // Caller responsibility.
   return NULL;
 }
@@ -498,13 +502,20 @@ static void fsDestructureIndex(ForallStmt* fs, AList& fIterVars,
     // There is already a Symbol for it - use it.
     createAndAddIndexVar(fIterVars, indexSE->symbol());
 
-  } else {
+  } else if (isCallExpr(index)) {
     // We need to create an index variable and go from there.
-    INT_ASSERT(isCallExpr(index)); // need to implement the other cases
-
     VarSymbol* idxVar = createAndAddIndexVar(fIterVars, idxNum);
     destructureIndices(fs->loopBody(), index, new SymExpr(idxVar), false);
 
+  } else if (DefExpr* def = toDefExpr(index)) {
+    if (VarSymbol* var = toVarSymbol(def->sym)) {
+      // There is already a Symbol for it - use it.
+      createAndAddIndexVar(fIterVars, var);
+    } else {
+      INT_FATAL("case not handled");
+    }
+  } else {
+    INT_FATAL("case not handled");
   }
 }
 

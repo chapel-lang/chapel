@@ -256,8 +256,11 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   iterMove = new CallExpr(PRIM_MOVE, index, new CallExpr("iteratorIndex", iterator));
 
-  if (indices == 0)
-    indices = new UnresolvedSymExpr("chpl__elidedIdx");
+  if (indices == 0) {
+    VarSymbol* var = new VarSymbol("chpl__elidedIdx");
+    var->addFlag(FLAG_INDEX_VAR);
+    indices = new DefExpr(var);
+  }
 
   checkIndices(indices);
 

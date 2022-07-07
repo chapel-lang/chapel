@@ -1414,24 +1414,18 @@ struct Converter {
 
   /// IndexableLoops ///
 
-  // In the uAST, loop index variables are represented as Decl, but in the
-  // old AST they are represented as expressions.
+  // Help to convert loop index variables before loop bodies
+  // so that the Symbols are available to refer to in SymExprs.
   Expr* convertLoopIndexDecl(const uast::Decl* node) {
     if (node == nullptr) return nullptr;
 
     astlocMarker markAstLoc(node->id());
 
-    // Simple variables just get reverted to UnresolvedSymExpr.
+    // Simple variables get converted to DefExprs
     if (const uast::Variable* var = node->toVariable()) {
-      auto name = var->name();
-      if (Symbol* sym = findConvertedSym(var->id())) {
-        return new SymExpr(sym);
-      } else if (auto remap = reservedWordRemapForIdent(name)) {
-        return remap;
-      } else {
-        return new UnresolvedSymExpr(name.c_str());
-      }
+      return convertVariable(var, false);
     // For tuples, recursively call 'convertLoopIndexDecl' on each element.
+    // to produce a CallExpr containing DefExprs
     } else if (const uast::TupleDecl* td = node->toTupleDecl()) {
       CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
       for (auto decl : td->decls()) {
@@ -3001,7 +2995,7 @@ struct Converter {
         vs->addFlag(FLAG_TYPE_VARIABLE);
         break;
       case uast::IntentList::INDEX:
-        INT_FATAL("Index variables should be handled elsewhere");
+        vs->addFlag(FLAG_INDEX_VAR);
         break;
       default:
         break;
