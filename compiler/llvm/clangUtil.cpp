@@ -3960,7 +3960,6 @@ void makeBinaryLLVM(void) {
   std::string asmFilename;
   std::string ptxObjectFilename;
   std::string fatbinFilename;
-  std::string omptargetImageFilename;
 
   if (gCodegenGPU == false) {
     moduleFilename = genIntermediateFilename("chpl__module.o");
@@ -3975,7 +3974,6 @@ void makeBinaryLLVM(void) {
     asmFilename = genIntermediateFilename("chpl__gpu_ptx.s");
     ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
-    omptargetImageFilename = genIntermediateFilename("chpl__gpu_image.fatbin");
   }
 
   if( saveCDir[0] != '\0' ) {
@@ -4279,15 +4277,6 @@ void makeBinaryLLVM(void) {
                                  ",file=" + asmFilename.c_str();
 
       mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
-
-      std::string clangOffloadWrapper = "/home/engin/code/chapel/versions/1/chapel/third-party/llvm/install/linux64-x86_64/bin/clang-offload-wrapper";
-
-      std::string cowCmd = clangOffloadWrapper + std::string(" -o ") +
-                           omptargetImageFilename +
-                           std::string(" --target=nvptx64-nvidia-cuda ") +
-                           fatbinFilename;
-
-      mysystem(cowCmd.c_str(), "fatbinary to omptarget image");
 
     }
   }
