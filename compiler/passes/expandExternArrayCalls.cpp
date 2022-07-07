@@ -32,8 +32,6 @@
 #include <iostream>
 #include <set>
 
-static bool checkIsArray(ArgSymbol* formal, UnresolvedSymExpr* &eltType);
-static bool retExprTypeIsVoid(BlockStmt* retExprType);
 // The goal of this pass is to convert any extern proc declarations that
 // contain an array argument to take a c_ptr instead and provide a wrapping
 // function that can handle being passed a Chapel array.
@@ -62,106 +60,112 @@ static bool retExprTypeIsVoid(BlockStmt* retExprType);
 //      chpl__extern_array_print_array((c_ptrTo(x)):c_void_ptr, n);
 //    }
 
-void expandExternArrayCalls() {
+bool ExpandExternArrayCalls::shouldProcess(FnSymbol* fn) {
+  if (!fn->hasFlag(FLAG_EXTERN)) return false;
+
+  for_formals(formal, fn) {
+    if (isFormalArray(formal)) return true;
+  }
+
+  return false;
+}
+
+void ExpandExternArrayCalls::process(FnSymbol* fn) {
   std::set<Expr*> cptrScopes;
+  std::set<int> replaced_args;
+  int current_formal = -1;
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_EXTERN))
-      continue;
+  SET_LINENO(fn);
+  FnSymbol* fcopy = fn->copy();
 
-    FnSymbol* fcopy = NULL;
-    std::set<int> replaced_args;
-    int current_formal = 0;
+  for_formals(formal, fn) {
+    UnresolvedSymExpr* eltType = nullptr;
+    current_formal++;
 
-    for_formals(formal, fn) {
+    if (!isFormalArray(formal, &eltType)) continue;
+
+    replaced_args.insert(current_formal);
+
+    if (eltType) {
+      // replace '[] foo' with 'c_ptr(foo)'
+      SET_LINENO(formal);
+      formal->typeExpr->replace(
+          new BlockStmt(
+            new CallExpr("c_ptr", eltType->remove())));
+    } else {
+      // generic arrays are replaced with 'c_void_ptr'
+      SET_LINENO(formal);
+      formal->typeExpr->replace(
+          new BlockStmt(
+            new UnresolvedSymExpr("chpl__c_void_ptr")));
+    }
+  }
+
+  // There should always be something to do.
+  INT_ASSERT(replaced_args.size());
+
+  Expr* parentScope = fn->defPoint->parentExpr;
+  if (cptrScopes.count(parentScope) == 0) {
+    auto use = new UseStmt(new UnresolvedSymExpr("CTypes"), "", true);
+    auto useBlock = buildChapelStmt(use);
+    fn->defPoint->insertAfter(useBlock);
+    cptrScopes.insert(parentScope);
+  }
+
+  fn->defPoint->insertAfter(new DefExpr(fcopy));
+  fn->addFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG);
+  fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
+  fcopy->removeFlag(FLAG_EXTERN);
+  fcopy->removeFlag(FLAG_NO_FN_BODY);
+  fcopy->addFlag(FLAG_INLINE);
+
+  fcopy->cname = astr("chpl__extern_array_wrapper_", fcopy->cname);
+  fn->name = astr("chpl__extern_array_", fn->name);
+
+  // Create the function call and add the arguments one at time, replacing
+  // arrays when necessary
+  CallExpr* externCall = new CallExpr(fn);
+  current_formal = 0;
+  for_formals(formal, fcopy) {
+    if(replaced_args.count(current_formal)) {
       UnresolvedSymExpr* eltType = NULL;
-      if (checkIsArray(formal, eltType)) {
-        if (!fcopy) {
-          SET_LINENO(fn);
-          fcopy = fn->copy();
-        }
-
-        replaced_args.insert(current_formal);
-
-        if (eltType) {
-          // replace '[] foo' with 'c_ptr(foo)'
-          SET_LINENO(formal);
-          formal->typeExpr->replace(
-              new BlockStmt(
-                new CallExpr("c_ptr", eltType->remove())));
-        } else {
-          // generic arrays are replaced with 'c_void_ptr'
-          SET_LINENO(formal);
-          formal->typeExpr->replace(
-              new BlockStmt(
-                new UnresolvedSymExpr("chpl__c_void_ptr")));
-        }
-      }
-      current_formal++;
+      std::ignore = isFormalArray(formal, &eltType);
+      externCall->argList.insertAtTail(new CallExpr("chpl_arrayToPtr",
+                                                    new SymExpr(formal),
+                                                    new SymExpr((eltType ?
+                                                                 gFalse :
+                                                                 gTrue))));
+    } else {
+      externCall->argList.insertAtTail(new SymExpr(formal));
     }
+    current_formal++;
+  }
 
-    if (fcopy) {
-      SET_LINENO(fn);
-      Expr* parentScope = fn->defPoint->parentExpr;
-      if (cptrScopes.count(parentScope) == 0) {
-        BlockStmt* useBlock = buildChapelStmt(new UseStmt(new UnresolvedSymExpr("CTypes"), "",
-                                                        true));
-        fn->defPoint->insertAfter(useBlock);
-        cptrScopes.insert(parentScope);
-      }
-
-      fn->defPoint->insertAfter(new DefExpr(fcopy));
-      fn->addFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG);
-      fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
-      fcopy->removeFlag(FLAG_EXTERN);
-      fcopy->removeFlag(FLAG_NO_FN_BODY);
-      fcopy->addFlag(FLAG_INLINE);
-
-      fcopy->cname = astr("chpl__extern_array_wrapper_", fcopy->cname);
-      fn->name = astr("chpl__extern_array_", fn->name);
-
-      // Create the function call and add the arguments one at time, replacing
-      // arrays when necessary
-      CallExpr* externCall = new CallExpr(fn);
-      current_formal = 0;
-      for_formals(formal, fcopy) {
-        if(replaced_args.count(current_formal)) {
-          UnresolvedSymExpr* eltType = NULL;
-          checkIsArray(formal, eltType);
-          externCall->argList.insertAtTail(new CallExpr("chpl_arrayToPtr",
-                                                        new SymExpr(formal),
-                                                        new SymExpr((eltType ?
-                                                                     gFalse :
-                                                                     gTrue))));
-        } else {
-          externCall->argList.insertAtTail(new SymExpr(formal));
-        }
-        current_formal++;
-      }
-      bool retIsVoid = retExprTypeIsVoid(fn->retExprType);
-      if (fn->retType == dtVoid || retIsVoid) {
-        fcopy->body->replace(new BlockStmt(externCall));
-      } else {
-        fcopy->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, externCall)));
-      }
-    }
+  if (fn->retType == dtVoid || isRetExprVoid(fn->retExprType)) {
+    fcopy->body->replace(new BlockStmt(externCall));
+  } else {
+    auto body = new BlockStmt(new CallExpr(PRIM_RETURN, externCall));
+    fcopy->body->replace(body);
   }
 }
 
 // Returns true if formal is an array
 // After the function, eltType will be set to the element type of the array if
 // it is found, NULL otherwise
-bool checkIsArray(ArgSymbol* formal, UnresolvedSymExpr* &eltType) {
-  eltType = NULL;
+bool ExpandExternArrayCalls::isFormalArray(ArgSymbol* formal,
+                                           UnresolvedSymExpr** outType) {
   if (BlockStmt* bs = formal->typeExpr) {
     INT_ASSERT(bs->length() == 1);
     Expr* firstExpr = bs->body.first();
     INT_ASSERT(firstExpr);
     if (CallExpr* typeAsCall = toCallExpr(firstExpr)) {
       UnresolvedSymExpr* urSym = toUnresolvedSymExpr(typeAsCall->baseExpr);
-      if (urSym && strcmp(urSym->unresolved, "chpl__buildArrayRuntimeType") == 0) {
+      auto arrayRtTypeFn = "chpl__buildArrayRuntimeType";
+      if (urSym && !strcmp(urSym->unresolved, arrayRtTypeFn)) {
         if (typeAsCall->numActuals() > 1) {
-          eltType = toUnresolvedSymExpr(typeAsCall->get(2));
+          if (outType) {
+            *outType= toUnresolvedSymExpr(typeAsCall->get(2));
+          }
         }
         return true;
       }
@@ -170,7 +174,7 @@ bool checkIsArray(ArgSymbol* formal, UnresolvedSymExpr* &eltType) {
   return false;
 }
 
-bool retExprTypeIsVoid(BlockStmt* retExprType) {
+bool ExpandExternArrayCalls::isRetExprVoid(BlockStmt* retExprType) {
   if (retExprType != NULL && retExprType->body.length == 1) {
     if (SymExpr* se = toSymExpr(retExprType->body.only())) {
       if (se->symbol()->type == dtVoid) {
@@ -179,4 +183,9 @@ bool retExprTypeIsVoid(BlockStmt* retExprType) {
     }
   }
   return false;
+}
+
+void expandExternArrayCalls() {
+  PassManager pm;
+  pm.runPass<FnSymbol*>(ExpandExternArrayCalls(), gFnSymbols);
 }

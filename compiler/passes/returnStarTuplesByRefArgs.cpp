@@ -31,11 +31,11 @@
 #include <utility>
 
 
-bool returnStarTuplesByRefArgsPass1::shouldProcess(FnSymbol* fn) {
+bool ReturnStarTuplesByRefArgs1::shouldProcess(FnSymbol* fn) {
   return fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE);
 }
 
-void returnStarTuplesByRefArgsPass1::process(FnSymbol* fn) {
+void ReturnStarTuplesByRefArgs1::process(FnSymbol* fn) {
   SET_LINENO(fn);
 
   // MPF 2016-10-02: I expect this code is no longer necessary
@@ -89,13 +89,13 @@ void returnStarTuplesByRefArgsPass1::process(FnSymbol* fn) {
   }
 }
 
-bool returnStarTuplesByRefArgsPass2::shouldProcess(CallExpr* call) {
+bool ReturnStarTuplesByRefArgs2::shouldProcess(CallExpr* call) {
   return call->inTree() && (call->isPrimitive(PRIM_SET_MEMBER) ||
                             call->isPrimitive(PRIM_GET_MEMBER) ||
                             call->isPrimitive(PRIM_GET_MEMBER_VALUE));
 }
 
-void returnStarTuplesByRefArgsPass2::process(CallExpr* call) {
+void ReturnStarTuplesByRefArgs2::process(CallExpr* call) {
   Type* type = call->get(1)->getValType();
   if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     SET_LINENO(call);
@@ -138,8 +138,8 @@ void returnStarTuplesByRefArgs() {
   // TODO initializer_list doesn't play well here so we can't do it all in one call
   PassTList<FnSymbol*> passes;
   passes.push_back(std::make_unique<ComputeCallSitesPass>());
-  passes.push_back(std::make_unique<returnStarTuplesByRefArgsPass1>());
+  passes.push_back(std::make_unique<ReturnStarTuplesByRefArgs1>());
   pm.runPass(std::move(passes), gFnSymbols);
 
-  pm.runPass(returnStarTuplesByRefArgsPass2(), gCallExprs);
+  pm.runPass(ReturnStarTuplesByRefArgs2(), gCallExprs);
 }
