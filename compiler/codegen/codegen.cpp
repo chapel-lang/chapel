@@ -2501,15 +2501,15 @@ static void embedGpuCode() {
   // reads this .fatbin file and dumps its contents into a global variable in the generated code.
   // The compiled chapel program then calls into the runtime library, which reads this variable,
   // sends the code off to the GPU, and launches kernels as needed.
-  //SET_LINENO(rootModule);
+  SET_LINENO(rootModule);
   //std::string fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
-  //std::string omptargetImageFilename = genIntermediateFilename("chpl__gpu_image.fatbin");
+  std::string omptargetImageFilename = genIntermediateFilename("chpl__gpu_image.fatbin");
   std::string buffer;
-  //chpl::ErrorMessage err;
-  //chpl::readfile(omptargetImageFilename.c_str(), buffer, err);
-  //if(!err.isEmpty()) {
-    //USR_FATAL("%s", err.message().c_str());
-  //}
+  chpl::ErrorMessage err;
+  chpl::readfile(omptargetImageFilename.c_str(), buffer, err);
+  if(!err.isEmpty()) {
+    USR_FATAL("%s", err.message().c_str());
+  }
 
   genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());
 }
