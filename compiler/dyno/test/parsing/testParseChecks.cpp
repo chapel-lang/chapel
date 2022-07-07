@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
+#include "chpl/framework/compiler-configuration.h"
+#include "chpl/framework/CompilerFlags.h"
+#include "chpl/framework/Context.h"
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/Context.h"
-#include "chpl/queries/Flags.h"
-#include "chpl/queries/session-queries.h"
 #include "chpl/uast/all-uast.h"
 
 // always check assertions in this test
@@ -323,6 +323,7 @@ static void test12(Parser* parser) {
 
 // TODO: Cannot get the internal/bundled module stuff to work properly.
 static void test13(Parser* parser) {
+  Context* ctx = parser->context();
   auto br = parser->parseString("test13.chpl",
     R""""(
     proc _bad1() {}
@@ -333,35 +334,36 @@ static void test13(Parser* parser) {
     class chpl_bad6 {}
     )"""");
   assert(br.numErrors() == 6);
-  displayErrors(br);
-  assertErrorMatches(br, 0, "test13.chpl", 2,
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test13.chpl", 2,
                      "Symbol names with leading underscores (_bad1) "
                      "are unstable.");
-  assertErrorMatches(br, 1, "test13.chpl", 3,
+  assertErrorMatches(ctx, br, 1, "test13.chpl", 3,
                      "Symbol names with leading underscores (_bad2) "
                      "are unstable.");
-  assertErrorMatches(br, 2, "test13.chpl", 4,
+  assertErrorMatches(ctx, br, 2, "test13.chpl", 4,
                      "Symbol names with leading underscores (_bad3) "
                      "are unstable.");
-  assertErrorMatches(br, 3, "test13.chpl", 5,
+  assertErrorMatches(ctx, br, 3, "test13.chpl", 5,
                      "Symbol names beginning with 'chpl_' (chpl_bad4) "
                      "are unstable.");
-  assertErrorMatches(br, 4, "test13.chpl", 6,
+  assertErrorMatches(ctx, br, 4, "test13.chpl", 6,
                      "Symbol names beginning with 'chpl_' (chpl_bad5) "
                      "are unstable.");
-  assertErrorMatches(br, 5, "test13.chpl", 7,
+  assertErrorMatches(ctx, br, 5, "test13.chpl", 7,
                      "Symbol names beginning with 'chpl_' (chpl_bad6) "
                      "are unstable.");
 }
 
 static void test14(Parser* parser) {
+  Context* ctx = parser->context();
   auto br = parser->parseString("test14.chpl",
     R""""(
     union foo {}
     )"""");
   assert(br.numErrors() == 1);
-  displayErrors(br);
-  assertErrorMatches(br, 0, "test14.chpl", 2,
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test14.chpl", 2,
                      "Unions are currently unstable and are expected "
                      "to change in ways that will break their "
                      "current uses.");
@@ -389,10 +391,10 @@ int main() {
   test12(p);
 
   // Turn on the --warn-unstable flag for some warnings.
-  Flags list;
-  list.set(Flags::WARN_UNSTABLE, true);
+  CompilerFlags list;
+  list.set(CompilerFlags::WARN_UNSTABLE, true);
   ctx->advanceToNextRevision(false);
-  setFlagsList(ctx, list);
+  setCompilerFlags(ctx, list);
 
   test13(p);
   test14(p);

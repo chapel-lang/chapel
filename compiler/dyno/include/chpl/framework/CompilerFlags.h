@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_QUERIES_FLAGS_H
-#define CHPL_QUERIES_FLAGS_H
+#ifndef CHPL_FRAMEWORK_COMPILER_FLAGS_H
+#define CHPL_FRAMEWORK_COMPILER_FLAGS_H
 
-#include "chpl/queries/UniqueString.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/UniqueString.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/util/hash.h"
 
 namespace chpl {
@@ -33,7 +33,7 @@ namespace chpl {
   class is intended to be a convenient place to store various different
   boolean flags the compiler may need to check.
 */
-class Flags final {
+class CompilerFlags final {
 public:
   enum Name {
     UNKNOWN,
@@ -42,39 +42,39 @@ public:
   };
 
 private:
-  std::set<Flags::Name> active_;
+  std::set<CompilerFlags::Name> active_;
 
 public:
 
-  Flags() = default;
+  CompilerFlags() = default;
 
   /**
     Set a compiler flag.
   */
-  inline void set(Flags::Name flag, bool val) {
+  inline void set(CompilerFlags::Name flag, bool val) {
     if (val) active_.insert(flag); else active_.erase(flag);
   }
 
   /**
     Returns true if the given compiler flag is currently set.
   */
-  inline bool get(Flags::Name flag) const {
+  inline bool get(CompilerFlags::Name flag) const {
     return active_.find(flag) != active_.end();
   }
 
-  inline bool operator==(const Flags& other) const {
+  inline bool operator==(const CompilerFlags& other) const {
     return this->active_ == other.active_;
   }
 
-  inline bool operator!=(const Flags& other) const {
+  inline bool operator!=(const CompilerFlags& other) const {
     return !(*this == other);
   }
 
-  void swap(Flags& other) {
+  void swap(CompilerFlags& other) {
     std::swap(active_, other.active_);
   }
 
-  static bool update(Flags& keep, Flags& addin) {
+  static bool update(CompilerFlags& keep, CompilerFlags& addin) {
     return defaultUpdate(keep, addin);
   }
 

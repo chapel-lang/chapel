@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+#include "chpl/framework/global-strings.h"
 #include "chpl/uast/New.h"
 #include "chpl/uast/Builder.h"
-#include "chpl/queries/global-strings.h"
 
 namespace chpl {
 namespace uast {

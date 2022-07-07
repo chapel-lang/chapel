@@ -17,31 +17,25 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_QUERIES_SESSION_QUERIES_H
-#define CHPL_QUERIES_SESSION_QUERIES_H
-
-#include "chpl/queries/Flags.h"
+#include "chpl/framework/query-impl.h"
+#include "chpl/framework/compiler-configuration.h"
 
 namespace chpl {
 
 
-  /**
-    Get the flags for the current session. The class returned by this
-    query is not intended to store every possible flag - rather, it
-    acts as a convenient place to store binary flags in a single place.
-  */
-  const Flags& flagsList(Context* context);
+const CompilerFlags& compilerFlags(Context* context) {
+  QUERY_BEGIN_INPUT(compilerFlags, context);
+  CompilerFlags ret;
+  return QUERY_END(ret);
+}
 
-  /**
-    Set the flags for the current session.
-  */
-  void setFlagsList(Context* context, Flags list);
+void setCompilerFlags(Context* context, CompilerFlags list) {
+  QUERY_STORE_INPUT_RESULT(compilerFlags, context, list);
+}
 
-  /**
-    Returns true if a given flag is set.
-  */
-  bool isFlagSet(Context* context, Flags::Name flag);
+bool isCompilerFlagSet(Context* context, CompilerFlags::Name flag) {
+  auto& list = chpl::compilerFlags(context);
+  return list.get(flag);
+}
 
 } // end namespace chpl
-
-#endif

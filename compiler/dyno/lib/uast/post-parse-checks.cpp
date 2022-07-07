@@ -18,9 +18,9 @@
  * limitations under the License.
  */
 
+#include "chpl/framework/compiler-configuration.h"
+#include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/global-strings.h"
-#include "chpl/queries/session-queries.h"
 #include "chpl/uast/all-uast.h"
 #include <vector>
 
@@ -59,7 +59,7 @@ struct Visitor {
   void warn(const AstNode* node, const char* fmt, ...);
 
   // Return true if a given flag is set.
-  bool isFlagSet(Flags::Name flag) const;
+  bool isFlagSet(CompilerFlags::Name flag) const;
 
   // Return true if we are visiting user code.
   inline bool isUserCode() const { return isUserCode_; }
@@ -161,8 +161,8 @@ void Visitor::warn(const AstNode* node, const char* fmt, ...) {
   report(node, ErrorMessage::WARNING, fmt, vl);
 }
 
-bool Visitor::isFlagSet(Flags::Name flag) const {
-  return chpl::isFlagSet(context_, flag);
+bool Visitor::isFlagSet(CompilerFlags::Name flag) const {
+  return chpl::isCompilerFlagSet(context_, flag);
 }
 
 const AstNode* Visitor::parent(int depth) const {
@@ -430,7 +430,7 @@ void Visitor::checkConfigVar(const Variable* node) {
   } else if (parent(0)->isMultiDecl() || parent(0)->isTupleDecl()) {
 
     // Find first non tuple/multi decl...
-    for (int i = 0; i < numParents(); i++) {
+    for (int i = 0; i < parents_.size(); i++) {
       auto up = parent(i);
       if (up->isMultiDecl() || up->isTupleDecl()) continue;
       if (up->isModule()) doEmitError = false;
@@ -575,13 +575,13 @@ void Visitor::checkExportedName(const NamedDecl* node) {
 
 // TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
-  if (!isFlagSet(Flags::WARN_UNSTABLE)) return;
+  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
   warn(node, "Unions are currently unstable and are expected to change "
              "in ways that will break their current uses.");
 }
 
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
-  if (!isFlagSet(Flags::WARN_UNSTABLE)) return;
+  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
   if (!isUserCode()) return;
 
   auto name = node->name();
