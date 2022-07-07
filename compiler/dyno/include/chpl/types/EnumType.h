@@ -42,6 +42,7 @@ class EnumType final : public Type {
   }
 
   void markUniqueStringsInner(Context* context) const override {
+    id_.mark(context);
     name_.mark(context);
   }
 
