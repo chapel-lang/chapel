@@ -21,6 +21,7 @@ inline proc prefetch(ref x, len:int) {
 
 // Helper function we use in this test to invalidate pages we prefetched
 // into the remote cache
+pragma "insert line file info"
 extern proc chpl_cache_invalidate(node:c_int, raddr:c_void_ptr,
                                   size: c_size_t);
 
