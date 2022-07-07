@@ -40,6 +40,9 @@ module DistributedMap {
     pragma "no doc"
     var locks: [0..targetLocales.size] owned _LockWrapper;
 
+    pragma "no doc"
+    var localeHasher = hashAcrossLocales;
+
     // TODO: how to hash across locales?
 
     proc init(type keyType, type valType) {
@@ -155,5 +158,14 @@ module DistributedMap {
     proc updateAggregator(updater) {
       compilerError("unimplemented");
     }
+  }
+
+  /* Take key and number of locales, return locale and hash value */
+  proc hashAcrossLocales(key, numLocales: int): (int, int) {
+    // Based on keyToLocaleAndMapIdx from v1, but I'm sure there's a better
+    // way to do this (just trying to get something implemented)
+    const hash = chpl__defaultHashWrapper(key);
+    return (hash % numLocales,
+            (hash / numLocales));
   }
 }
