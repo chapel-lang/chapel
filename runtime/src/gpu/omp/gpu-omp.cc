@@ -5,28 +5,9 @@
 #include "chpl-tasks.h"
 #include "chpl-gpu-diags.h"
 #include "chpl-linefile-support.h"
+#include "cuda-support.h"
 
 #include "omptargetplugin.h"
-
-#include <cuda.h>
-#include <cuda_runtime.h>
-
-static void chpl_gpu_cuda_check(int err, const char* file, int line) {
-  if(err != CUDA_SUCCESS) {
-    const int msg_len = 256;
-    char msg[msg_len];
-
-    snprintf(msg, msg_len,
-             "%s:%d: Error calling CUDA function: (Code: %d)",
-             file, line, err);
-
-    chpl_internal_error(msg);
-  }
-}
-
-#define CUDA_CALL(call) do {\
-  chpl_gpu_cuda_check((int)call, __FILE__, __LINE__);\
-} while(0);
 
 typedef int32_t(init_device_fn)(int32_t);
 typedef int32_t(num_devices_fn)(void);
@@ -121,13 +102,13 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
 
 
 
-bool chpl_gpu_is_device_ptr(void* ptr) {
-  // TODO should we drop this function? I don't think libomptarget has a way of
-  // doing this
-  //chpl_internal_error("gpu is device ptr is not implemented yet");
-  // this is all used for assertion, so maybe we can 
-  return true;
-}
+//bool chpl_gpu_is_device_ptr(void* ptr) {
+  //// TODO should we drop this function? I don't think libomptarget has a way of
+  //// doing this
+  ////chpl_internal_error("gpu is device ptr is not implemented yet");
+  //// this is all used for assertion, so maybe we can 
+  //return true;
+//}
 
 size_t chpl_gpu_get_alloc_size(void* ptr) {
   chpl_internal_error("gpu get alloc _size is not implemented yet");
@@ -145,20 +126,6 @@ typedef struct PretendKernelTy {
   int max_threads_per_block;
 } kernel_t;
 
-static void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
-  //chpl_gpu_ensure_context();
-
-  CUmodule    cudaModule;
-  CUfunction  function;
-
-  // Create module for object
-  CUDA_CALL(cuModuleLoadData(&cudaModule, fatbinData));
-
-  // Get kernel function
-  CUDA_CALL(cuModuleGetFunction(&function, cudaModule, kernelName));
-
-  return (void*)function;
-}
 
 //void chpl_gpu_launch_kernel_help(int ln,
                                         //int32_t fn,
