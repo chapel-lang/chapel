@@ -222,13 +222,13 @@ void chpl_gpu_launch_kernel_help_with_tripcount(int ln,
                                                CHPL_RT_MD_GPU_KERNEL_ARG,
                                                ln, fn);
 
-      kernel_params[i] = &offloaded_arg;
+      kernel_params[i] = offloaded_arg;
 
       chpl_gpu_copy_host_to_device(offloaded_arg, cur_arg, cur_arg_size);
 
     }
     else {
-      kernel_params[i] = (void*)cur_arg;
+      kernel_params[i] = *((void**)cur_arg);
     }
   }
 
