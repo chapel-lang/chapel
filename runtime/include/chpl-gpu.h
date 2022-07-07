@@ -21,7 +21,10 @@
 #ifndef _CHPL_GPU_H_
 #define _CHPL_GPU_H_
 
+
+#include <stdbool.h>
 #include "chpl-tasks.h"
+#include "chpl-mem-desc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,6 +66,20 @@ void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n);
 void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n);
 
 bool chpl_gpu_is_device_ptr(void* ptr);
+
+// impl header
+void chpl_gpu_launch_kernel_help(int ln,
+                                        int32_t fn,
+                                        const char* fatbinData,
+                                        const char* name,
+                                        int grd_dim_x,
+                                        int grd_dim_y,
+                                        int grd_dim_z,
+                                        int blk_dim_x,
+                                        int blk_dim_y,
+                                        int blk_dim_z,
+                                        int nargs,
+                                        va_list args);
 
 #endif // HAS_GPU_LOCALE
 
