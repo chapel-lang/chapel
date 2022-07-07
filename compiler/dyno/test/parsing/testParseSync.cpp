@@ -25,7 +25,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Sync.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 
 
 // always check assertions in this test

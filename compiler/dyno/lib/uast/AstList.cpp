@@ -19,7 +19,7 @@
 
 #include "chpl/uast/ASTTypes.h"
 
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/AstNode.h"
 
 namespace chpl {

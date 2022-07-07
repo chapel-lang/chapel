@@ -44,7 +44,7 @@
 #include "resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/global-strings.h"
+#include "chpl/framework/global-strings.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"

@@ -20,9 +20,9 @@
 #ifndef CHPL_UAST_ASTTAG_H
 #define CHPL_UAST_ASTTAG_H
 
-#include "chpl/queries/mark-functions.h"
-#include "chpl/queries/update-functions.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/mark-functions.h"
+#include "chpl/framework/update-functions.h"
+#include "chpl/framework/stringify-functions.h"
 
 namespace chpl {
 namespace uast {

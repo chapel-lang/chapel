@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/ID.h"
+#include "chpl/framework/ID.h"
 
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/update-functions.h"
 
 #include <cstring>
 

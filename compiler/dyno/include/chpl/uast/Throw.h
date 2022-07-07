@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_THROW_H
 #define CHPL_UAST_THROW_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 
 namespace chpl {

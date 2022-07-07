@@ -20,9 +20,9 @@
 #include "chpl/resolution/scope-queries.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/global-strings.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/global-strings.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/uast/all-uast.h"
 
 #include "scope-help.h"

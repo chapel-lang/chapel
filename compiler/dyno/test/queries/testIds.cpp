@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ID.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ID.h"
+#include "chpl/framework/UniqueString.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

@@ -21,9 +21,9 @@
 #define CHPL_PARSING_PARSING_QUERIES_H
 
 #include "chpl/parsing/FileContents.h"
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ID.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ID.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"

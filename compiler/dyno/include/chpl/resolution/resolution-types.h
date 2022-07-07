@@ -20,7 +20,7 @@
 #ifndef CHPL_RESOLUTION_RESOLUTION_TYPES_H
 #define CHPL_RESOLUTION_RESOLUTION_TYPES_H
 
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/types/CompositeType.h"
 #include "chpl/types/QualifiedType.h"

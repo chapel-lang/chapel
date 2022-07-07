@@ -21,7 +21,7 @@
 #define CHPL_UAST_NAMEDDECL_H
 
 #include "chpl/uast/Decl.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/UniqueString.h"
 
 namespace chpl {
 namespace uast {

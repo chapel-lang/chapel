@@ -40,18 +40,18 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/Context.h"
-#include "chpl/queries/UniqueString.h"
-#include "chpl/queries/query-impl.h"
-#include "chpl/queries/stringify-functions.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/UniqueString.h"
+#include "chpl/framework/query-impl.h"
+#include "chpl/framework/stringify-functions.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
 #include "chpl/uast/chpl-syntax-printer.h"
-#include "chpl/queries/global-strings.h"
+#include "chpl/framework/global-strings.h"
 
 
 using namespace chpl;

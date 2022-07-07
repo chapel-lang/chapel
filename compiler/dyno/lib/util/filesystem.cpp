@@ -21,8 +21,8 @@
 
 #include "./my_strerror_r.h"
 
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/Location.h"
 
 #include <cerrno>
 

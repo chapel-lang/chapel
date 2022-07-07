@@ -21,7 +21,7 @@
 #define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
 #include "chpl/types/CompositeType.h"
-#include "chpl/queries/global-strings.h"
+#include "chpl/framework/global-strings.h"
 
 namespace chpl {
 namespace types {

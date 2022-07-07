@@ -25,8 +25,8 @@
 #ifndef CHPL_QUERIES_UNIQUE_STRING_H
 #define CHPL_QUERIES_UNIQUE_STRING_H
 
-#include "chpl/queries/UniqueString-detail.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/UniqueString-detail.h"
+#include "chpl/framework/stringify-functions.h"
 #include "chpl/util/hash.h"
 
 #include <cassert>

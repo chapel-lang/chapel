@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_MANAGE_H
 #define CHPL_UAST_MANAGE_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/As.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"

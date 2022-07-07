@@ -20,11 +20,11 @@
 #ifndef CHPL_QUERIES_QUERY_IMPL_H
 #define CHPL_QUERIES_QUERY_IMPL_H
 
-#include "chpl/queries/Context-detail.h"
-#include "chpl/queries/Context.h"
-#include "chpl/queries/mark-functions.h"
-#include "chpl/queries/update-functions.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/Context-detail.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/mark-functions.h"
+#include "chpl/framework/update-functions.h"
+#include "chpl/framework/stringify-functions.h"
 
 #ifndef CHPL_QUERY_TIMING_AND_TRACE_ENABLED
 #define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 1

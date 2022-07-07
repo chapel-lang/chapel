@@ -21,8 +21,8 @@
 #define CHPL_UAST_COMMENT_H
 
 #include "chpl/uast/AstNode.h"
-#include "chpl/queries/Location.h"
-#include "chpl/queries/CommentID.h"
+#include "chpl/framework/Location.h"
+#include "chpl/framework/CommentID.h"
 
 #include <string>
 

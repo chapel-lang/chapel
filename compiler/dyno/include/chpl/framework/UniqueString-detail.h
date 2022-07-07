@@ -27,7 +27,7 @@
 
 #include "chpl/util/memory.h"
 #include "chpl/util/string-escapes.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/stringify-functions.h"
 #include <cassert>
 #include <cstring>
 #include <functional>

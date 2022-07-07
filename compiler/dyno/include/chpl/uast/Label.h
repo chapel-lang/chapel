@@ -20,9 +20,9 @@
 #ifndef CHPL_UAST_LABEL_H
 #define CHPL_UAST_LABEL_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/Loop.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/UniqueString.h"
 
 
 namespace chpl {

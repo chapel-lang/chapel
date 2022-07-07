@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/ErrorMessage.h"
+#include "chpl/framework/ErrorMessage.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/AstNode.h"

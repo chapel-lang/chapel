@@ -20,8 +20,8 @@
 #ifndef CHPL_TYPES_PARAM_H
 #define CHPL_TYPES_PARAM_H
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/types/ParamTag.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/uast/PrimOp.h"

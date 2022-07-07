@@ -20,9 +20,9 @@
 #include "chpl/resolution/resolution-types.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/global-strings.h"
-#include "chpl/queries/query-impl.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/global-strings.h"
+#include "chpl/framework/query-impl.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"

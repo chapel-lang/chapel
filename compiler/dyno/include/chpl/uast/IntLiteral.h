@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_INTLITERAL_H
 #define CHPL_UAST_INTLITERAL_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/NumericLiteral.h"
 
 namespace chpl {
