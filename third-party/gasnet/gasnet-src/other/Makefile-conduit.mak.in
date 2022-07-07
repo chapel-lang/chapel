@@ -353,7 +353,7 @@ do-pkgconfig-conduit: force
 	@VARS="GASNET_CC GASNET_OPT_CFLAGS GASNET_MISC_CFLAGS \
                GASNET_MISC_CPPFLAGS GASNET_DEFINES GASNET_INCLUDES \
                GASNET_CXX GASNET_OPT_CXXFLAGS GASNET_MISC_CXXFLAGS GASNET_MISC_CXXCPPFLAGS \
-               GASNET_LD GASNET_LDFLAGS GASNET_LIBS" ; \
+               GASNET_LD GASNET_LDFLAGS GASNET_LIBS GASNET_PREFIX" ; \
          $(MAKE) --no-print-directory -f $(top_srcdir)/other/Makefile-echovar.mak VARS="$$VARS" echovars \
 	           >> $(pkgconfig_file)
 	@unset GASNET_DESC; \

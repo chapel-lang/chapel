@@ -235,7 +235,8 @@ do-pkgconfig-tools: force
 	@echo '# See the GASNet README for instructions on using these variables' >> $(pkgconfig_file)
 	@VARS="GASNETTOOLS_CC GASNETTOOLS_CPPFLAGS GASNETTOOLS_CFLAGS \
                GASNETTOOLS_CXX GASNETTOOLS_CXXFLAGS \
-               GASNETTOOLS_LD GASNETTOOLS_LDFLAGS GASNETTOOLS_LIBS" ; \
+               GASNETTOOLS_LD GASNETTOOLS_LDFLAGS GASNETTOOLS_LIBS \
+	       GASNET_PREFIX" ; \
            $(MAKE) --no-print-directory -f $(top_srcdir)/other/Makefile-echovar.mak VARS="$$VARS" echovars \
 	           >> $(pkgconfig_file)
 	@unset GASNET_DESC; \
