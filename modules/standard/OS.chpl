@@ -917,6 +917,8 @@ module OS {
       var tv_usec:suseconds_t; // and microseconds
     }
 
+    proc struct_timeval.init() {}
+
     proc struct_timeval.init(tv_sec: integral, tv_usec: integral) {
       this.tv_sec = tv_sec:time_t;
       this.tv_usec = tv_usec:suseconds_t;
