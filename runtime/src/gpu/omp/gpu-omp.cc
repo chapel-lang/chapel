@@ -11,10 +11,25 @@
 
 #include "omptargetplugin.h"
 
+// I stole this macro trick from chpl-comm-diags.h
+// For any `__tgt_rtl_X` add one `MACRO` call here.
+#define OMP_FN_ALL(MACRO) \
+  MACRO(init_device) \
+  MACRO(number_of_devices) \
+  MACRO(data_alloc) \
+  MACRO(data_exchange) \
+  MACRO(data_delete) \
+  MACRO(is_valid_binary)\
+  MACRO(run_target_team_region) \
+  MACRO(data_submit) \
+  MACRO(data_retrieve)
+
+
+// For any `__tgt_rtl_X` add one function typedef here
 typedef int32_t(init_device_fn)(int32_t);
-typedef int32_t(num_devices_fn)(void);
-typedef void *(mem_alloc_fn)(int32_t, int64_t, void*, int32_t);
-typedef void (data_exchange_fn)(int32_t, void*, int32_t, void*, int64_t);
+typedef int32_t(number_of_devices_fn)(void);
+typedef void *(data_alloc_fn)(int32_t, int64_t, void*, int32_t);
+typedef void  (data_exchange_fn)(int32_t, void*, int32_t, void*, int64_t);
 typedef int32_t (data_delete_fn)(int32_t, void*);
 typedef int32_t (is_valid_binary_fn)(__tgt_device_image*);
 typedef int32_t (run_target_team_region_fn)(int32_t, void*, void**, ptrdiff_t*,
@@ -25,16 +40,9 @@ typedef int32_t (data_retrieve_fn)(int32_t, void *, void *, int64_t);
 
 typedef struct chpl_gpu_plugin_rtl_s {
   void *handle = NULL;
-  init_device_fn *init_device = NULL;
-  num_devices_fn *num_devices = NULL;
-  mem_alloc_fn *mem_alloc = NULL;
-  data_exchange_fn *data_exchange = NULL;
-  data_delete_fn *data_delete = NULL;
-  is_valid_binary_fn *is_valid_binary = NULL;
-  run_target_team_region_fn *run_target_team_region = NULL;
-  data_submit_fn *data_submit = NULL;
-  data_retrieve_fn *data_retrieve = NULL;
-
+#define _OMP_FN_DECL(arg) arg##_fn *arg;
+  OMP_FN_ALL(_OMP_FN_DECL);
+#undef _OMP_FN_DECL
 } chpl_gpu_plugin_rtl_t;
 
 static chpl_gpu_plugin_rtl_t *rtl = NULL;
@@ -47,38 +55,17 @@ void chpl_gpu_impl_init() {
 
     rtl->handle = dlopen("/home/engin/code/chapel/versions/1/chapel/third-party/llvm/install/linux64-x86_64/lib/libomptarget.rtl.cuda.so", RTLD_NOW);
     assert(rtl->handle);
+#define _OMP_FN_LOAD(arg) \
+    do { \
+      (*rtl).arg = (arg##_fn*)dlsym(rtl->handle, "__tgt_rtl_" #arg);\
+      assert((*rtl).arg);\
+    } while(0);
 
-    rtl->num_devices = (num_devices_fn*)dlsym(rtl->handle, "__tgt_rtl_number_of_devices");
-    assert(rtl->num_devices);
-    //printf("%d\n", (*(rtl->num_devices))());
-
-    rtl->mem_alloc = (mem_alloc_fn*)dlsym(rtl->handle, "__tgt_rtl_data_alloc");
-    assert(rtl->mem_alloc);
-
-    rtl->init_device = (init_device_fn*)dlsym(rtl->handle, "__tgt_rtl_init_device");
-    assert(rtl->init_device);
-
-    rtl->data_exchange = (data_exchange_fn*)dlsym(rtl->handle, "__tgt_rtl_data_exchange");
-    assert(rtl->data_exchange);
-
-    rtl->data_delete = (data_delete_fn*)dlsym(rtl->handle, "__tgt_rtl_data_delete");
-    assert(rtl->data_delete);
-
-    rtl->is_valid_binary = (is_valid_binary_fn*)dlsym(rtl->handle, "__tgt_rtl_is_valid_binary");
-    assert(rtl->is_valid_binary);
-
-    rtl->run_target_team_region = (run_target_team_region_fn*)dlsym(rtl->handle, "__tgt_rtl_run_target_team_region");
-    assert(rtl->run_target_team_region);
-
-    rtl->data_submit = (data_submit_fn*)dlsym(rtl->handle, "__tgt_rtl_data_submit");
-    assert(rtl->data_submit);
-
-    rtl->data_retrieve = (data_retrieve_fn*)dlsym(rtl->handle, "__tgt_rtl_data_retrieve");
-    assert(rtl->data_retrieve);
+    OMP_FN_ALL(_OMP_FN_LOAD);
+#undef _OMP_FN_LOAD
 
     // TODO
     (*(rtl->init_device))(0);
-
 
     // TODO can we stick device_id into something task-private? We keep asking
     // for that in every function
@@ -87,7 +74,7 @@ void chpl_gpu_impl_init() {
 
 void* chpl_gpu_impl_mem_alloc(size_t size) {
   int32_t device_id = chpl_task_getRequestedSubloc();
-  void* res = (*(rtl->mem_alloc))(device_id, size, NULL, TARGET_ALLOC_SHARED);
+  void* res = (*(rtl->data_alloc))(device_id, size, NULL, TARGET_ALLOC_SHARED);
   assert(res);
 
   return res;
