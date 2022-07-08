@@ -38,7 +38,7 @@ void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
 
 // this is part of the interface (used by the module code as an extern)
 static inline
-bool chpl_gpu_is_device_ptr_impl(void* ptr) {
+bool chpl_gpu_common_is_device_ptr(void* ptr) {
   //chpl_gpu_ensure_context();
 
   unsigned int res;

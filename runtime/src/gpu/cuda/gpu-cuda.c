@@ -19,10 +19,8 @@
 
 #include "sys_basic.h"
 #include "chplrt.h"
-#include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-gpu.h"
-#include "chpl-gpu-diags.h"
 #include "chpl-tasks.h"
 #include "error.h"
 #include "chplcgfns.h"
@@ -33,16 +31,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <assert.h>
-
-static void CHPL_GPU_DEBUG(const char *str, ...) {
-  if (verbosity >= 2) {
-    va_list args;
-    va_start(args, str);
-    vfprintf(stdout, str, args);
-    va_end(args);
-    fflush(stdout);
-  }
-}
 
 static void chpl_gpu_cuda_check(int err, const char* file, int line) {
   if(err != CUDA_SUCCESS) {
@@ -147,16 +135,6 @@ bool chpl_gpu_is_device_ptr(void* ptr) {
   return false;
 }
 
-size_t chpl_gpu_get_alloc_size(void* ptr) {
-  chpl_gpu_ensure_context();
-
-  CUdeviceptr base;
-  size_t size;
-  CUDA_CALL(cuMemGetAddressRange(&base, &size, (CUdeviceptr)ptr));
-
-  return size;
-}
-
 static void chpl_gpu_launch_kernel_help(int ln,
                                         int32_t fn,
                                         const char* fatbinData,
@@ -216,9 +194,6 @@ static void chpl_gpu_launch_kernel_help(int ln,
     }
   }
 
-  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc());
-  chpl_gpu_diags_incr(kernel_launch);
-
   CHPL_GPU_DEBUG("Calling gpu function named %s\n", name);
 
   CUDA_CALL(cuLaunchKernel((CUfunction)function,
@@ -239,31 +214,23 @@ static void chpl_gpu_launch_kernel_help(int ln,
   chpl_free(kernel_params);
 }
 
-void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_host(void* dst, void* src, size_t n) {
   chpl_gpu_ensure_context();
-
-  assert(chpl_gpu_is_device_ptr(src));
-
-  CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
 
   CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
 }
 
-void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
+void chpl_gpu_impl_copy_host_to_device(void* dst, void* src, size_t n) {
   chpl_gpu_ensure_context();
-
-  assert(chpl_gpu_is_device_ptr(dst));
-
-  CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
 
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
 
-void chpl_gpu_launch_kernel(int ln, int32_t fn,
-                            const char* fatbinData, const char* name,
-                            int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                            int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                            int nargs, ...) {
+void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
+                                 const char* fatbinData, const char* name,
+                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                 int nargs, ...) {
   va_list args;
   va_start(args, nargs);
   chpl_gpu_launch_kernel_help(ln, fn,
@@ -274,9 +241,9 @@ void chpl_gpu_launch_kernel(int ln, int32_t fn,
   va_end(args);
 }
 
-void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
-                                 const char* fatbinData, const char* name,
-                                 int num_threads, int blk_dim, int nargs, ...) {
+void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
+                                      const char* fatbinData, const char* name,
+                                      int num_threads, int blk_dim, int nargs, ...) {
   int grd_dim = (num_threads+blk_dim-1)/blk_dim;
 
   va_list args;
@@ -289,7 +256,7 @@ void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   va_end(args);
 }
 
-bool chpl_gpu_has_context() {
+static bool chpl_gpu_has_context() {
   CUcontext cuda_context = NULL;
 
   CUresult ret = cuCtxGetCurrent(&cuda_context);
@@ -302,99 +269,89 @@ bool chpl_gpu_has_context() {
   }
 }
 
-void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
-                         int32_t lineno, int32_t filename) {
+void* chpl_gpu_impl_mem_alloc(size_t size) {
   chpl_gpu_ensure_context();
-
-  CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
-               chpl_lookupFilename(filename), lineno);
 
   CUdeviceptr ptr = 0;
-  if (size > 0) {
-    chpl_memhook_malloc_pre(1, size, description, lineno, filename);
-    CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
-    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
-
-    CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
-  }
-  else {
-    CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning NULL (size was 0)\n");
-  }
-
-
-  return (void*)ptr;
-
-}
-
-void* chpl_gpu_mem_calloc(size_t number, size_t size,
-                          chpl_mem_descInt_t description,
-                          int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_DEBUG("chpl_gpu_mem_calloc called. Size:%d\n", size);
-
-  CUdeviceptr ptr;
   CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
-  CUDA_CALL(cuMemsetD8(ptr, 0, size));
-  return (void*)ptr;
-}
-
-void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
-                           chpl_mem_descInt_t description,
-                           int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%d\n", size);
-
-  assert(chpl_gpu_is_device_ptr(memAlloc));
-
-  size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
-
-  if (size == cur_size) {
-    return memAlloc;
-  }
-
-  // TODO we could probably do something smarter, especially for the case where
-  // the new allocation size is smaller than the original allocation size.
-
-  CUdeviceptr ptr;
-  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
-  CUDA_CALL(cuMemcpyDtoD(ptr, (CUdeviceptr)memAlloc, cur_size));
-  CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+  assert(ptr!=0);
 
   return (void*)ptr;
 }
 
-void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
-                            chpl_mem_descInt_t description,
-                            int32_t lineno, int32_t filename) {
+void chpl_gpu_impl_mem_free(void* memAlloc) {
   chpl_gpu_ensure_context();
-
-  CHPL_GPU_DEBUG("chpl_gpu_mem_memalign called. Size:%d\n", size);
-  chpl_internal_error("Not ready to allocate aligned memory on GPU, yet.");
-
-  // ENGIN: I don't know if it is possible to allocate memory with custom
-  // alignment on GPU. It looks like GPUs typically have a default alignment
-  // (512?) that cannot be changed. I don't think we'd need more than that
-  // today, and if we want, we can play some pointer games to return something
-  // with a larger alignment here.
-
-  return NULL;
-}
-
-void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_DEBUG("chpl_gpu_mem_free called. Ptr:%p file:%s line:%d\n", memAlloc,
-               chpl_lookupFilename(filename), lineno);
-
-  chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
 
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
     CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
   }
 }
+
+/*void* chpl_gpu_impl_mem_calloc(size_t number, size_t size) {*/
+  /*chpl_gpu_ensure_context();*/
+
+  /*CUdeviceptr ptr;*/
+  /*CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));*/
+  /*CUDA_CALL(cuMemsetD8(ptr, 0, size));*/
+  /*return (void*)ptr;*/
+/*}*/
+
+/*void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,*/
+                           /*chpl_mem_descInt_t description,*/
+                           /*int32_t lineno, int32_t filename) {*/
+  /*chpl_gpu_ensure_context();*/
+
+  /*CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%d\n", size);*/
+
+  /*assert(chpl_gpu_is_device_ptr(memAlloc));*/
+
+  /*size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);*/
+
+  /*if (size == cur_size) {*/
+    /*return memAlloc;*/
+  /*}*/
+
+  /*// TODO we could probably do something smarter, especially for the case where*/
+  /*// the new allocation size is smaller than the original allocation size.*/
+
+  /*CUdeviceptr ptr;*/
+  /*CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));*/
+  /*CUDA_CALL(cuMemcpyDtoD(ptr, (CUdeviceptr)memAlloc, cur_size));*/
+  /*CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));*/
+
+  /*return (void*)ptr;*/
+/*}*/
+
+/*void* chpl_gpu_mem_memalign(size_t boundary, size_t size,*/
+                            /*chpl_mem_descInt_t description,*/
+                            /*int32_t lineno, int32_t filename) {*/
+  /*chpl_gpu_ensure_context();*/
+
+  /*CHPL_GPU_DEBUG("chpl_gpu_mem_memalign called. Size:%d\n", size);*/
+  /*chpl_internal_error("Not ready to allocate aligned memory on GPU, yet.");*/
+
+  /*// ENGIN: I don't know if it is possible to allocate memory with custom*/
+  /*// alignment on GPU. It looks like GPUs typically have a default alignment*/
+  /*// (512?) that cannot be changed. I don't think we'd need more than that*/
+  /*// today, and if we want, we can play some pointer games to return something*/
+  /*// with a larger alignment here.*/
+
+  /*return NULL;*/
+/*}*/
+
+// This can be used for proper reallocation
+static size_t chpl_gpu_get_alloc_size(void* ptr) {
+  chpl_gpu_ensure_context();
+
+  CUdeviceptr base;
+  size_t size;
+  CUDA_CALL(cuMemGetAddressRange(&base, &size, (CUdeviceptr)ptr));
+
+  return size;
+}
+
+
 
 #endif // HAS_GPU_LOCALE
 

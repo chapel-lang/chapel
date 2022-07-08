@@ -6,6 +6,8 @@
 #include "chpl-gpu-diags.h"
 #include "chpl-linefile-support.h"
 #include "cuda-support.h"
+#include "chpl-gpu.h"
+#include "chpl-gpu-impl.h"
 
 #include "omptargetplugin.h"
 
@@ -18,6 +20,7 @@ typedef int32_t (is_valid_binary_fn)(__tgt_device_image*);
 typedef int32_t (run_target_team_region_fn)(int32_t, void*, void**, ptrdiff_t*,
                                             int32_t, int32_t, int32_t, uint64_t);
 typedef int32_t (data_submit_fn)(int32_t, void *, void *, int64_t);
+typedef int32_t (data_retrieve_fn)(int32_t, void *, void *, int64_t);
 
 
 typedef struct chpl_gpu_plugin_rtl_s {
@@ -30,6 +33,7 @@ typedef struct chpl_gpu_plugin_rtl_s {
   is_valid_binary_fn *is_valid_binary = NULL;
   run_target_team_region_fn *run_target_team_region = NULL;
   data_submit_fn *data_submit = NULL;
+  data_retrieve_fn *data_retrieve = NULL;
 
 } chpl_gpu_plugin_rtl_t;
 
@@ -37,7 +41,7 @@ static chpl_gpu_plugin_rtl_t *rtl = NULL;
 
 extern "C" {
 
-void chpl_gpu_init() {
+void chpl_gpu_impl_init() {
   if (rtl == NULL) {
     rtl = (chpl_gpu_plugin_rtl_t*)chpl_malloc(sizeof(chpl_gpu_plugin_rtl_t));
 
@@ -69,54 +73,43 @@ void chpl_gpu_init() {
     rtl->data_submit = (data_submit_fn*)dlsym(rtl->handle, "__tgt_rtl_data_submit");
     assert(rtl->data_submit);
 
-    //int32_t subloc = chpl_task_getRequestedSubloc();
+    rtl->data_retrieve = (data_retrieve_fn*)dlsym(rtl->handle, "__tgt_rtl_data_retrieve");
+    assert(rtl->data_retrieve);
+
+    // TODO
     (*(rtl->init_device))(0);
+
+
+    // TODO can we stick device_id into something task-private? We keep asking
+    // for that in every function
   }
 }
 
-void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
-                         int32_t lineno, int32_t filename) {
-  // TODO
+void* chpl_gpu_impl_mem_alloc(size_t size) {
   int32_t device_id = chpl_task_getRequestedSubloc();
-    //printf("300 %d\n", device_id);
-  void* res = NULL;
-
-  if (size > 0) {
-    res = (*(rtl->mem_alloc))(device_id, size, NULL, TARGET_ALLOC_SHARED);
-    assert(res);
-  }
+  void* res = (*(rtl->mem_alloc))(device_id, size, NULL, TARGET_ALLOC_SHARED);
+  assert(res);
 
   return res;
 }
 
-void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
-                           chpl_mem_descInt_t description,
-                           int32_t lineno, int32_t filename) {
-  //printf("500\n");
+void chpl_gpu_impl_mem_free(void* memAlloc) {
   int32_t device_id = chpl_task_getRequestedSubloc();
-
-
-  void *res = chpl_gpu_mem_alloc(size, description, lineno, filename);
-
-  rtl->data_exchange(device_id, memAlloc, device_id, res, size);
   rtl->data_delete(device_id, memAlloc);
-
-  return res;
 }
 
+void chpl_gpu_impl_copy_device_to_host(void* dst, void* src, size_t n) {
+  int32_t device_id = chpl_task_getRequestedSubloc();
+  rtl->data_retrieve(device_id, dst, src, n);
+}
 
+void chpl_gpu_impl_copy_host_to_device(void* dst, void* src, size_t n) {
+  int32_t device_id = chpl_task_getRequestedSubloc();
+  rtl->data_submit(device_id, dst, src, n);
+}
 
 bool chpl_gpu_is_device_ptr(void* ptr) {
-  // TODO should we drop this function? I don't think libomptarget has a way of
-  // doing this
-  //chpl_internal_error("gpu is device ptr is not implemented yet");
-  // this is all used for assertion, so maybe we can 
-  return chpl_gpu_is_device_ptr_impl(ptr);
-}
-
-size_t chpl_gpu_get_alloc_size(void* ptr) {
-  chpl_internal_error("gpu get alloc _size is not implemented yet");
-  return 0;
+  return chpl_gpu_common_is_device_ptr(ptr);
 }
 
 bool chpl_gpu_has_context() {
@@ -143,19 +136,14 @@ typedef struct PretendKernelTy {
                                         //int blk_dim_z,
                                         //int nargs,
                                         //va_list args) {
-void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
-  int32_t device_id = chpl_task_getRequestedSubloc();
-
-  rtl->data_submit(device_id, dst, src, n);
-}
-
-void chpl_gpu_launch_kernel_help_with_tripcount(int ln,
-                                        int32_t fn,
-                                        const char* fatbinData,
-                                        const char* name,
-                                        int nargs,
-                                        va_list args,
-                                        int num_threads, int blk_dim) {
+static void chpl_gpu_impl_launch_kernel_help_with_tripcount(int ln,
+                                                            int32_t fn,
+                                                            const char* fatbinData,
+                                                            const char* name,
+                                                            int nargs,
+                                                            va_list args,
+                                                            int num_threads,
+                                                            int blk_dim) {
 
   //size_t fatbinSize = strlen(fatbinData);
   //size_t fatbinSize = 69096;
@@ -205,8 +193,6 @@ void chpl_gpu_launch_kernel_help_with_tripcount(int ln,
 
   ptrdiff_t *offsets = (ptrdiff_t*)chpl_calloc(nargs, sizeof(ptrdiff_t));
 
-  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc());
-  chpl_gpu_diags_incr(kernel_launch);
 
   int32_t ret = rtl->run_target_team_region(device_id, &kernel, kernel_params, offsets, nargs,
                               /*blocks_per_grid*/ -1, blk_dim, num_threads);
@@ -215,27 +201,25 @@ void chpl_gpu_launch_kernel_help_with_tripcount(int ln,
   //chpl_internal_error("gpu launch kernel help not implemented yet");
 }
 
-
-void* chpl_gpu_mem_calloc(size_t number, size_t size,
-                          chpl_mem_descInt_t description,
-                          int32_t lineno, int32_t filename) {
-
-  chpl_internal_error("gpu mem calloc not implemented yet");
-  return NULL;
+void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
+                                 const char* fatbinData, const char* name,
+                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                 int nargs, va_list args) {
+  chpl_internal_error("GPU kernels with custom shapes can't be launched with the 'omp' GPU layer");
 }
 
-void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
-                            chpl_mem_descInt_t description,
-                            int32_t lineno, int32_t filename) {
-  chpl_internal_error("gpu memalign not implemented yet");
-  return NULL;
+void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
+                                      const char* fatbinData, const char* name,
+                                      int num_threads, int blk_dim,
+                                      int nargs, va_list args) {
+
+  // TODO get rid of this function
+  chpl_gpu_impl_launch_kernel_help_with_tripcount(ln, fn,
+                                                  fatbinData, name,
+                                                  nargs, args, num_threads, blk_dim);
 }
 
-void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
-  int32_t device_id = chpl_task_getRequestedSubloc();
-  if (rtl->data_delete(device_id, memAlloc) == OFFLOAD_FAIL) {
-    chpl_mem_free(memAlloc, lineno, filename);
-  }
-}
+
 
 }  // extern "C"
