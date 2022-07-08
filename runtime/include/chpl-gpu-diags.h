@@ -25,7 +25,6 @@
 #include "chpl-atomics.h"
 #include "chpl-comm.h"
 #include "chpl-mem.h"
-//#include "chpl-gpu.h"
 #include "error.h"
 
 #ifdef __cplusplus

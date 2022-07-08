@@ -49,7 +49,6 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 }
 
 void chpl_gpu_init(void);
-//bool chpl_gpu_has_context(void);
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,
@@ -78,15 +77,6 @@ void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n);
 void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n);
 
 bool chpl_gpu_is_device_ptr(void* ptr);
-
-// impl header
-void chpl_gpu_launch_kernel_help_with_tripcount(int ln,
-                                        int32_t fn,
-                                        const char* fatbinData,
-                                        const char* name,
-                                        int nargs,
-                                        va_list args,
-                                        int num_threads, int blk_dim);
 
 // TODO do we really need to expose this?
 size_t chpl_gpu_get_alloc_size(void* ptr);
