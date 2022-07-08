@@ -173,6 +173,8 @@ static void chpl_gpu_impl_launch_kernel_help_with_tripcount(int ln,
 
   int32_t device_id = chpl_task_getRequestedSubloc();
 
+  CHPL_GPU_DEBUG("Creating kernel parameters\n");
+
   void** kernel_params = (void**)chpl_malloc(nargs*sizeof(void**));
 
   int i;
@@ -192,20 +194,29 @@ static void chpl_gpu_impl_launch_kernel_help_with_tripcount(int ln,
 
       chpl_gpu_copy_host_to_device(offloaded_arg, cur_arg, cur_arg_size);
 
+      CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
+                   i, kernel_params[i]);
     }
     else {
       kernel_params[i] = *((void**)cur_arg);
+      CHPL_GPU_DEBUG("\tKernel parameter %d: %p\n",
+                   i, kernel_params[i]);
     }
   }
 
   ptrdiff_t *offsets = (ptrdiff_t*)chpl_calloc(nargs, sizeof(ptrdiff_t));
 
 
-  int32_t ret = rtl->run_target_team_region(device_id, &kernel, kernel_params, offsets, nargs,
-                              /*blocks_per_grid*/ -1, blk_dim, num_threads);
+  int32_t ret = rtl->run_target_team_region(device_id, &kernel,
+                                            kernel_params, offsets, nargs,
+                                            /*blocks_per_grid*/ -1,
+                                            blk_dim, num_threads);
 
+  CHPL_GPU_DEBUG("run_target_team_region returned %s\n", name);
   assert(ret == OFFLOAD_SUCCESS);
-  //chpl_internal_error("gpu launch kernel help not implemented yet");
+
+  chpl_free(offsets);
+  chpl_free(kernel_params);
 }
 
 void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
