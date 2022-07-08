@@ -1772,8 +1772,8 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   const ref targetLocs = this.dsiTargetLocales();
   const firstLoc = targetLocs.domain.lowBound;
   var elemPerLoc: [targetLocs.domain] resType;
-  var inputReady$: [targetLocs.domain] sync int;
-  var outputReady$: [targetLocs.domain] unmanaged BoxedSync(resType)?;
+  var inputReady: [targetLocs.domain] sync int;
+  var outputReady: [targetLocs.domain] unmanaged BoxedSync(resType)?;
 
   const cachedPID = pid;
 
@@ -1804,13 +1804,13 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // Create a local ready var and store it back on the initiating
       // locale so it can notify us
-      const myOutputReady = new unmanaged BoxedSync(resType)?;
+      const myOutputReady = new unmanaged BoxedSync(resType);
 
       on elemPerLoc {
         // save our local scan total away and signal that it's ready
-        outputReady$[locid] = myOutputReady;
+        outputReady[locid] = myOutputReady;
         elemPerLoc[locid] = tot;
-        inputReady$[locid].writeEF(1);
+        inputReady[locid].writeEF(1);
       }
 
       // the "first" locale scans the per-locale contributions as they
@@ -1820,7 +1820,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
         var next: resType = metaop.identity;
         for locid in targetLocs.domain {
-          inputReady$[locid].readFE();
+          inputReady[locid].readFE();
 
           // store the scan value
           ref locVal = elemPerLoc[locid];
@@ -1836,7 +1836,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         }
 
         // Mark that scan values are ready
-        coforall (ready, elem) in zip(valIter(outputReady$), valIter(elemPerLoc)) do on ready {
+        coforall (ready, elem) in zip(valIter(outputReady), valIter(elemPerLoc)) do on ready {
           ready!.writeEF(elem);
         }
 
@@ -1844,7 +1844,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       }
 
       // block until our local value has been updated
-      const myadjust = myOutputReady!.readFE();
+      const myadjust = myOutputReady.readFE();
       if debugBlockScan then
         writeln(locid, ": myadjust = ", myadjust);
 
