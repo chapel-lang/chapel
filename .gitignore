@@ -208,6 +208,7 @@ cmake-build-debug/
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log
 
+/test/library/packages/Socket.compopts
 /test/library/packages/HDF5/ex_lite1.h5
 /test/library/packages/HDF5/ex_lite3.h5
 /test/library/packages/ZMQ/getLastEndpointHelper

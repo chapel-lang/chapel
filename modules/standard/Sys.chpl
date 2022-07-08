@@ -244,7 +244,7 @@ module Sys {
   deprecated "'Sys.AF_INET' is deprecated; please use 'Socket.AF_INET' instead"
   extern const AF_INET:c_int;
   pragma "last resort"
-  deprecated "'Sys.AF_INET' is deprecated; please use 'Socket.AF_INET' instead"
+  deprecated "'Sys.AF_INET6' is deprecated; please use 'Socket.AF_INET6' instead"
   extern const AF_INET6:c_int;
 
   // socket types
