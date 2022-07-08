@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-pkg-config --libs --cflags libevent > 'Socket.compopts'
+pkg-config --libs --cflags libevent > $CHPL_HOME/test/library/packages/Socket.compopts

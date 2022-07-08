@@ -1,5 +1,6 @@
 use UnitTest;
 use Socket;
+use OS.POSIX;
 
 proc test_send_recv(test: borrowed Test) throws {
   var host = "127.0.0.1";

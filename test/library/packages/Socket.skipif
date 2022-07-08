@@ -8,19 +8,19 @@ platform = os.getenv('CHPL_TARGET_PLATFORM')
 
 skip = False
 
-if platform != 'linux64':
-    skip = True
-else:
-    v = subprocess.check_output(['pkg-config', '--modversion', 'libevent'])
-    v = v.rstrip()
-    v = str(v, encoding='utf-8', errors='surrogateescape')
+# if platform != 'linux64':
+#     skip = True
+# else:
+#     v = subprocess.check_output(['pkg-config', '--modversion', 'libevent'])
+#     v = v.rstrip()
+#     v = str(v, encoding='utf-8', errors='surrogateescape')
 
-    if parse_version(v.split('-')[0]) < parse_version('2.1'):
-        # skip, version not is compatible.
-        skip = True
+#     if parse_version(v.split('-')[0]) < parse_version('2.1'):
+#         # skip, version not is compatible.
+#         skip = True
 
-    if os.getenv('CHPL_TASKS') == 'fifo' or os.getenv('CHPL_TARGET_COMPILER') == 'llvm':
-        skip = True
+#     if os.getenv('CHPL_TASKS') == 'fifo' or os.getenv('CHPL_TARGET_COMPILER') == 'llvm':
+#         skip = True
 
 
 print(skip)
