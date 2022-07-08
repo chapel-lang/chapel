@@ -1001,8 +1001,22 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
                          Symbol*            sym,
                          SymExpr*           symExpr) {
   Expr*   expr   = (symExpr != NULL) ? (Expr*) symExpr : (Expr*) usymExpr;
-  Symbol* parent = expr->parentSymbol;
   bool    isAggr = false;
+
+  // check for mentions of a parent type
+  // (workaround for primary methods with resolved receivers)
+  for (Symbol* parent = expr->parentSymbol;
+       parent && !isModuleSymbol(parent);
+       parent = parent->defPoint->parentSymbol) {
+    if (FnSymbol* method = toFnSymbol(parent)) {
+      if (method->_this != NULL) {
+        Type* type = method->_this->type;
+        if (type->symbol->name == usymExpr->unresolved) {
+          return;
+        }
+      }
+    }
+  }
 
   if (sym != NULL) {
     if (TypeSymbol* cts = toTypeSymbol(sym->defPoint->parentSymbol)) {
@@ -1010,7 +1024,9 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
     }
   }
 
-  while (isModuleSymbol(parent) == false) {
+  for (Symbol* parent = expr->parentSymbol;
+       parent && !isModuleSymbol(parent);
+       parent = parent->defPoint->parentSymbol) {
     if (FnSymbol* method = toFnSymbol(parent)) {
       // stopgap bug fix: do not let methods shadow symbols
       // that are more specific than methods
@@ -1041,8 +1057,6 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
         }
       }
     }
-
-    parent = parent->defPoint->parentSymbol;
   }
 }
 
@@ -1120,7 +1134,13 @@ static int computeNestedDepth(const char* name, Type* type) {
     // this symbol is first defined in
     AggregateType* ct = toAggregateType(type);
 
-    while (ct != NULL && ct->getField(name, false) == NULL) {
+    while (ct != NULL) {
+      if (ct->getField(name, false) != nullptr ||
+          0 == strcmp(name, ct->symbol->name)) {
+        // found it
+        break;
+      }
+
       retval = retval + 1;
       ct     = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
     }

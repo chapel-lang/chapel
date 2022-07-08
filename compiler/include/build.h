@@ -179,11 +179,6 @@ void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
 
 BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef);
 
-FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
-                              const char* name,
-                              IntentTag   thisTag,
-                              Expr*       receiver);
-
 void setupFunctionDecl(FnSymbol*   fn,
                        RetTag      optRetTag,
                        Expr*       optRetType,

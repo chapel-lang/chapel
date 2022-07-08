@@ -1918,45 +1918,6 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
   return blockFnDef;
 }
 
-// Replaces the dummy function name "_" with the real name, sets the 'this'
-// intent tag. For methods, it also adds a method tag and "this" declaration.
-// receiver is typically an UnresolvedSymExpr("class_name") in order
-// to declare a method outside of a record/class.
-FnSymbol*
-buildFunctionSymbol(FnSymbol*   fn,
-                    const char* name,
-                    IntentTag   thisTag,
-                    Expr*       receiver)
-{
-  fn->cname   = fn->name = astr(name);
-  fn->thisTag = thisTag;
-
-  if (fn->name == astrDeinit)
-    fn->addFlag(FLAG_DESTRUCTOR);
-
-  if (receiver)
-  {
-    ArgSymbol* arg = new ArgSymbol(thisTag,
-                                   "this",
-                                   dtUnknown,
-                                   receiver);
-    fn->_this = arg;
-    if (thisTag == INTENT_TYPE) {
-      setupTypeIntentArg(arg);
-    }
-
-    arg->addFlag(FLAG_ARG_THIS);
-    fn->insertFormalAtHead(new DefExpr(arg));
-
-    ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
-
-    fn->setMethod(true);
-    fn->insertFormalAtHead(new DefExpr(mt));
-  }
-
-  return fn;
-}
-
 void
 setupFunctionDecl(FnSymbol*   fn,
                   RetTag      optRetTag,
@@ -2822,7 +2783,7 @@ void redefiningReservedWordError(const char* name)
 }
 
 void updateOpThisTagOrErr(FnSymbol* fn) {
-  if (fn->thisTag == INTENT_BLANK) {
+  if (fn->thisTag == INTENT_BLANK || fn->thisTag == INTENT_TYPE) {
     fn->thisTag = INTENT_TYPE;
   } else {
     USR_FATAL_CONT(buildErrorStandin(),
