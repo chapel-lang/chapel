@@ -3858,7 +3858,7 @@ void ConvertedSymbolsMap::noteConvertedSym(const uast::AstNode* ast,
                                            Symbol* sym,
                                            bool trace) {
   if (trace) {
-    printf("Converted %s %s and noting it in %s\n",
+    printf("Converted sym %s %s and noting it in %s\n",
            astName(ast).c_str(), ast->id().str().c_str(),
            computeMapName(inSymbolId).c_str());
   }
@@ -3883,7 +3883,7 @@ void ConvertedSymbolsMap::noteConvertedFn(
                                 FnSymbol* fn,
                                 bool trace) {
   if (trace) {
-    printf("Converted %s %s and noting it in %s\n",
+    printf("Converted fn %s %s and noting it in %s\n",
            sig->untyped()->name().c_str(),
            sig->untyped()->id().str().c_str(),
            computeMapName(inSymbolId).c_str());
@@ -3935,12 +3935,12 @@ Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
   for (ConvertedSymbolsMap* cur = this;
        cur != nullptr;
        cur = cur->parentMap) {
-    auto it = syms.find(id);
-    if (it != syms.end()) {
+    auto it = cur->syms.find(id);
+    if (it != cur->syms.end()) {
       Symbol* ret = it->second;
       // already converted it, so return that
       if (trace) {
-        printf("Found %s %s in %s\n",
+        printf("Found sym %s %s in %s\n",
                ret->name, id.str().c_str(), inSymbolId.str().c_str());
       }
       return ret;
@@ -3948,7 +3948,7 @@ Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
   }
 
   if (trace) {
-    printf("Could not find %s in %s or parents\n",
+    printf("Could not find sym %s in %s or parents\n",
            id.str().c_str(), inSymbolId.str().c_str());
   }
 
@@ -3961,12 +3961,12 @@ FnSymbol* ConvertedSymbolsMap::findConvertedFn(
   for (ConvertedSymbolsMap* cur = this;
        cur != nullptr;
        cur = cur->parentMap) {
-    auto it = fns.find(sig);
-    if (it != fns.end()) {
+    auto it = cur->fns.find(sig);
+    if (it != cur->fns.end()) {
       FnSymbol* fn = it->second;
       // already converted it, so return that
       if (trace) {
-        printf("Found %s %s in %s\n",
+        printf("Found fn %s %s in %s\n",
                sig->untyped()->name().c_str(),
                sig->untyped()->id().str().c_str(),
                computeMapName(inSymbolId).c_str());
@@ -3976,7 +3976,7 @@ FnSymbol* ConvertedSymbolsMap::findConvertedFn(
   }
 
   if (trace) {
-    printf("Could not find %s in %s or parents\n",
+    printf("Could not find fn %s in %s or parents\n",
            sig->untyped()->id().str().c_str(),
            computeMapName(inSymbolId).c_str());
   }
@@ -4011,8 +4011,8 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context) {
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
     if (sym == nullptr) {
-      INT_FATAL("could not find target symbol for SymExpr fixup for %s",
-                target.str().c_str());
+      INT_FATAL("could not find target symbol for sym fixup for %s within %s",
+                target.str().c_str(), inSymbolId.str().c_str());
     }
     se->setSymbol(sym);
     if (fVerify) {
@@ -4030,7 +4030,9 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context) {
 
     FnSymbol* fn = findConvertedFn(target, /* trace */ false);
     if (fn == nullptr) {
-      INT_FATAL("could not find target function for SymExpr fixup");
+      INT_FATAL("could not find target function for call fixup %s within %s",
+                 target->untyped()->name().c_str(),
+                 inSymbolId.str().c_str());
     }
     se->setSymbol(fn);
     if (fVerify) {
