@@ -1,5 +1,4 @@
 #include "chplrt.h"
-#include "gpu-cuda-target.h"
 #include "dlfcn.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
