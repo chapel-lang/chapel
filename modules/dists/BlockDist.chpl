@@ -1777,6 +1777,9 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
   const cachedPID = pid;
 
+  param sameStaticDist = dsiStaticFastFollowCheck(res._value.type);
+  const sameDynamicDist = sameStaticDist && dsiDynamicFastFollowCheck(res);
+
   // Fire up tasks per participating locale
   coforall locid in targetLocs.domain {
     on targetLocs[locid] {
@@ -1790,7 +1793,12 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       const ref myLocDom = myLocArr.domain;
 
       // Compute the local pre-scan on our local array
-      const (numTasks, rngs, state, tot) = myLocArr._value.chpl__preScan(myop, res, myLocDom[dom]);
+      const (numTasks, rngs, state, tot) =
+        if sameStaticDist && sameDynamicDist then
+          myLocArr._value.chpl__preScan(myop, res._value.locArr[locid].myElems, myLocDom[dom])
+        else
+          myLocArr._value.chpl__preScan(myop, res, myLocDom[dom]);
+
       if debugBlockScan then
         writeln(locid, ": ", (numTasks, rngs, state, tot));
 
@@ -1848,7 +1856,11 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // have our local array compute its post scan with the globally
       // accurate state vector
-      myLocArr._value.chpl__postScan(op, res, numTasks, rngs, state);
+      if sameStaticDist && sameDynamicDist then
+        myLocArr._value.chpl__postScan(op, res._value.locArr[locid].myElems, numTasks, rngs, state);
+      else
+        myLocArr._value.chpl__postScan(op, res, numTasks, rngs, state);
+
       if debugBlockScan then
         writeln(locid, ": ", myLocArr);
 
