@@ -549,7 +549,6 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, ContextCallExpr, options, call, __VA_ARGS__);     \
     break;                                                              \
   case E_LoopExpr:                                                      \
-    AST_CALL_LIST(_a,  LoopExpr, defIndices,   call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, LoopExpr, indices,      call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, LoopExpr, iteratorExpr, call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, LoopExpr, cond,         call, __VA_ARGS__);      \

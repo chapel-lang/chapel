@@ -939,8 +939,9 @@ checkIndices(BaseAST* indices) {
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
       checkIndices(actual);
-  } else if (!isDefExpr(indices))
+  } else if (!isDefExpr(indices)) {
     USR_FATAL(indices, "invalid index expression");
+  }
 }
 
 static Expr* destructureIndicesAfter(Expr* insertAfter,

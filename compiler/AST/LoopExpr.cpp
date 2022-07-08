@@ -44,21 +44,25 @@
 #include <vector>
 
 // Finds all the UnresolvedSymExprs in the LoopExpr's indices expression and
-// populates a flat AList of DefExprs. Used during scope resolution.
-static void findLoopExprDefs(LoopExpr* fe, Expr* indices, AList& defIndices) {
+// populates a flat AList of DefExprs. Used during construction.
+/*static void findLoopExprDefs(LoopExpr* fe, Expr* indices, AList& defIndices) {
   if (CallExpr* call = toCallExpr(indices)) {
     for_actuals(act, call) {
       findLoopExprDefs(fe, act, defIndices);
     }
-  } else if (UnresolvedSymExpr* se = toUnresolvedSymExpr(indices)) {
-    VarSymbol* idx = new VarSymbol(se->unresolved);
+  } else if (DefExpr* def = toDefExpr(indices)) {
+    VarSymbol* idx = toVarSymbol(def->sym);
+    INT_ASSERT(idx);
     idx->addFlag(FLAG_INDEX_VAR);
     idx->addFlag(FLAG_INSERT_AUTO_DESTROY);
     idx->addFlag(FLAG_NO_DOC);
-    DefExpr* def = new DefExpr(idx);
-    defIndices.insertAtTail(def);
+    DefExpr* newDef = new DefExpr(idx);
+    defIndices.insertAtTail(newDef);
+    def->replace(new UnresolvedSymExpr(idx->name));
+  } else {
+    INT_FATAL("case not handled");
   }
-}
+}*/
 
 LoopExpr::LoopExpr(Expr* indices,
                    Expr* iteratorExpr,
@@ -89,11 +93,10 @@ LoopExpr::LoopExpr(Expr* indices,
     this->loopBody = new BlockStmt(loopBody);
   }
 
-  if (indices != NULL) {
-    findLoopExprDefs(this, indices, defIndices);
+  if (indices != nullptr) {
+    checkIndices(indices);
   }
 
-  defIndices.parent = this;
   gLoopExprs.add(this);
 }
 
@@ -107,16 +110,12 @@ LoopExpr::LoopExpr(bool forall, bool zippered, bool maybeArrayType) :
   zippered(zippered),
   maybeArrayType(maybeArrayType)
 {
-  defIndices.parent = this;
   gLoopExprs.add(this);
 }
 
 LoopExpr* LoopExpr::copyInner(SymbolMap* map) {
   LoopExpr* ret = new LoopExpr(forall, zippered, maybeArrayType);
 
-  for_alist(ind, defIndices) {
-    ret->defIndices.insertAtTail(COPY_INT(ind));
-  }
   ret->indices        = COPY_INT(indices);
   ret->iteratorExpr   = COPY_INT(iteratorExpr);
   ret->cond           = COPY_INT(cond);
@@ -150,9 +149,6 @@ LoopExpr::verify() {
 
 void LoopExpr::accept(AstVisitor* visitor) {
   if (visitor->enterLoopExpr(this)) {
-    for_alist(ind, defIndices) {
-      ind->accept(visitor);
-    }
     if (indices)      indices->accept(visitor);
     if (iteratorExpr) iteratorExpr->accept(visitor);
     if (cond)         cond->accept(visitor);
@@ -261,10 +257,15 @@ static void addIterRecShape(CallExpr* forallExprCall,
 }
 
 
-static void copyIndexDefs(LoopExpr* loopExpr, BlockStmt* indicesBlock,
+static void copyIndexDefs(Expr* indices, BlockStmt* indicesBlock,
                           SymbolMap* indicesMap) {
-  for_alist(expr, loopExpr->defIndices)
-    indicesBlock->insertAtTail(expr->copy(indicesMap));
+  if (CallExpr* call = toCallExpr(indices)) {
+    for_actuals(actual, call) {
+      copyIndexDefs(indices, indicesBlock, indicesMap);
+    }
+  } else if (DefExpr* def = toDefExpr(indices)) {
+    indicesBlock->insertAtTail(def->copy(indicesMap));
+  }
 }
 
 static Expr* removeOrNull(Expr* arg) { return arg ? arg->remove() : NULL; }
@@ -279,7 +280,6 @@ handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
   fn->addFlag(FLAG_MAYBE_TYPE);
 
   if (!hasSpecifiedIndices) {
-    INT_ASSERT(loopExpr->defIndices.length == 0); // no DefExprs to take care of
     VarSymbol* var = new VarSymbol("chpl__elidedIdx");
     var->addFlag(FLAG_INDEX_VAR);
     indices = new DefExpr(var);
@@ -376,8 +376,6 @@ handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
     thenStmt->insertAtTail(new CallExpr("compilerError", msg));
     thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, gNil));
   } else {
-    // Emphasize that there are no indices to substitute in 'expr'.
-    INT_ASSERT(loopExpr->defIndices.length == 0);
     BlockStmt* exprCopy = expr->copy();
     Expr* lastExpr = exprCopy->body.tail->remove();
     exprCopy->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
@@ -692,6 +690,7 @@ static void addOuterVariableFormals(FnSymbol* ifn,
   update_symbols(ifn, &ovMap);
 }
 
+/*
 static void adjustIndexDefPoints(FnSymbol* xifn, AList* indexDefs) {
   if (indexDefs->length == 0) return; // nothing to do
 
@@ -701,7 +700,7 @@ static void adjustIndexDefPoints(FnSymbol* xifn, AList* indexDefs) {
 
   for_alist(expr, *indexDefs)
     forLoop->insertAtHead(expr->remove());
-}
+}*/
 
 static void scopeResolveAndNormalize(FnSymbol* fn) {
   TransformLogicalShortCircuit vis;
@@ -817,9 +816,9 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
 
     // do we need to use this map since symbols have not been resolved?
     SymbolMap map;
-    AList indDefCopies;
+    /*AList indDefCopies;
     for_alist(defI, loopExpr->defIndices)
-      indDefCopies.insertAtTail(defI->copy(&map));
+      indDefCopies.insertAtTail(defI->copy(&map));*/
     Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
     Expr* bodyCopy = stmt->copy(&map);
     fifn->insertAtTail(
@@ -828,12 +827,12 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
           zippered,
           /* isForExpr */ true));
     addOuterVariableFormals(fifn, outerVars);
-    adjustIndexDefPoints(fifn, &indDefCopies);
+    /*adjustIndexDefPoints(fifn, &indDefCopies);*/
   }
 
   // Do this after fifn is created - so bodyCopy still references outerVars.
   addOuterVariableFormals(sifn, outerVars);
-  adjustIndexDefPoints(sifn, &loopExpr->defIndices);
+  /*adjustIndexDefPoints(sifn, &loopExpr->defIndices);*/
 
   if (insideArgSymbol) {
     fn->insertAtHead(new DefExpr(sifn));

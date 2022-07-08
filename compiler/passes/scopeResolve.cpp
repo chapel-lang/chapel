@@ -509,16 +509,27 @@ static void scopeResolve(IfExpr* ife, ResolveScope* scope) {
   scopeResolve(ife->getElseStmt(), scope);
 }
 
+static void gatherIndices(ResolveScope* scope, Expr* indices) {
+  if (indices == nullptr) {
+    // nothing to do
+  } else if (CallExpr* call = toCallExpr(indices)) {
+    for_actuals(actual, call) {
+      gatherIndices(scope, actual);
+    }
+  } else if (DefExpr* def = toDefExpr(indices)) {
+    scope->extend(def->sym);
+  } else {
+    INT_FATAL("case not handled");
+  }
+}
+
 static void scopeResolve(LoopExpr* fe, ResolveScope* parent) {
   scopeResolveExpr(fe->iteratorExpr, parent);
 
   ResolveScope* scope = new ResolveScope(fe, parent);
-  for_alist(ind, fe->defIndices) {
-    DefExpr* def = toDefExpr(ind);
-    scope->extend(def->sym);
-  }
 
-  if (fe->indices) scopeResolveExpr(fe->indices, scope);
+  gatherIndices(scope, fe->indices);
+
   if (fe->cond) scopeResolveExpr(fe->cond, scope);
 
   scopeResolveExpr(fe->loopBody, scope);
