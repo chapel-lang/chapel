@@ -115,7 +115,7 @@ void chpl_gpu_impl_copy_device_to_device(void* dst, void* src, size_t n) {
   rtl->data_exchange(device_id, src, device_id, dst, n);
 }
 
-bool chpl_gpu_is_device_ptr(void* ptr) {
+bool chpl_gpu_impl_is_device_ptr(void* ptr) {
   return chpl_gpu_common_is_device_ptr(ptr);
 }
 

@@ -24,6 +24,9 @@ void chpl_gpu_impl_copy_host_to_device(void* dst, void* src, size_t n);
 // this is all about copying within the same device that is on this subloc
 void chpl_gpu_impl_copy_device_to_device(void* dst, void* src, size_t n);
 
+// module code uses this to pick the right deallocator for a pointer
+bool chpl_gpu_impl_is_device_ptr(void* ptr);
+
 // TODO do we really need to expose this?
 size_t chpl_gpu_impl_get_alloc_size(void* ptr);
 

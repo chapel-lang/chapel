@@ -185,3 +185,7 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 
   return NULL;
 }
+
+bool chpl_gpu_is_device_ptr(void* ptr) {
+  return chpl_gpu_impl_is_device_ptr(ptr);
+}

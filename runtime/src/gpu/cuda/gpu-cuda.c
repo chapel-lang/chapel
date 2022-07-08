@@ -21,10 +21,13 @@
 #include "chplrt.h"
 #include "chpl-mem.h"
 #include "chpl-gpu.h"
+#include "chpl-gpu-impl.h"
 #include "chpl-tasks.h"
 #include "error.h"
 #include "chplcgfns.h"
 #include "gpu-cuda-target.h"
+#include "../common/cuda-utils.h"
+#include "../common/cuda-shared.h"
 
 #ifdef HAS_GPU_LOCALE
 
@@ -32,45 +35,18 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-static void chpl_gpu_cuda_check(int err, const char* file, int line) {
-  if(err != CUDA_SUCCESS) {
-    const int msg_len = 256;
-    char msg[msg_len];
+static CUcontext *chpl_gpu_primary_ctx;
 
-    snprintf(msg, msg_len,
-             "%s:%d: Error calling CUDA function: %s (Code: %d)",
-             file, line, cudaGetErrorString(err), err);
+static bool chpl_gpu_has_context() {
+  CUcontext cuda_context = NULL;
 
-    chpl_internal_error(msg);
+  CUresult ret = cuCtxGetCurrent(&cuda_context);
+
+  if (ret == CUDA_ERROR_NOT_INITIALIZED || ret == CUDA_ERROR_DEINITIALIZED) {
+    return false;
   }
-}
-
-#define CUDA_CALL(call) do {\
-  chpl_gpu_cuda_check((int)call, __FILE__, __LINE__);\
-} while(0);
-
-CUcontext *chpl_gpu_primary_ctx;
-
-void chpl_gpu_init() {
-  int         num_devices;
-
-  // CUDA initialization
-  CUDA_CALL(cuInit(0));
-
-  CUDA_CALL(cuDeviceGetCount(&num_devices));
-
-  chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*num_devices);
-
-  int i;
-  for (i=0 ; i<num_devices ; i++) {
-    CUdevice device;
-    CUcontext context;
-
-    CUDA_CALL(cuDeviceGet(&device, i));
-    CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
-    CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
-
-    chpl_gpu_primary_ctx[i] = context;
+  else {
+    return cuda_context != NULL;
   }
 }
 
@@ -95,44 +71,31 @@ static void chpl_gpu_ensure_context() {
   }
 }
 
-static void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
-  chpl_gpu_ensure_context();
+void chpl_gpu_impl_init() {
+  int         num_devices;
 
-  CUmodule    cudaModule;
-  CUfunction  function;
+  // CUDA initialization
+  CUDA_CALL(cuInit(0));
 
-  // Create module for object
-  CUDA_CALL(cuModuleLoadData(&cudaModule, fatbinData));
+  CUDA_CALL(cuDeviceGetCount(&num_devices));
 
-  // Get kernel function
-  CUDA_CALL(cuModuleGetFunction(&function, cudaModule, kernelName));
+  chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*num_devices);
 
-  return (void*)function;
+  int i;
+  for (i=0 ; i<num_devices ; i++) {
+    CUdevice device;
+    CUcontext context;
+
+    CUDA_CALL(cuDeviceGet(&device, i));
+    CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
+    CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+
+    chpl_gpu_primary_ctx[i] = context;
+  }
 }
 
-bool chpl_gpu_is_device_ptr(void* ptr) {
-  //chpl_gpu_ensure_context();
-
-  unsigned int res;
-
-  // We call CUDA_CALL later, because we want to treat some error codes
-  // separately
-  CUresult ret_val = cuPointerGetAttribute(&res, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-                                           (CUdeviceptr)ptr);
-
-  if (ret_val == CUDA_SUCCESS) {
-    return res == CU_MEMORYTYPE_DEVICE || res == CU_MEMORYTYPE_UNIFIED;
-  }
-  else if (ret_val == CUDA_ERROR_INVALID_VALUE ||
-           ret_val == CUDA_ERROR_NOT_INITIALIZED ||
-           ret_val == CUDA_ERROR_DEINITIALIZED) {
-    return false;  // this is a cpu pointer that CUDA doesn't even know about
-  }
-
-  // there must have been an error in calling the cuda function. report that.
-  CUDA_CALL(ret_val);
-
-  return false;
+bool chpl_gpu_impl_is_device_ptr(void* ptr) {
+  return chpl_gpu_common_is_device_ptr(ptr);
 }
 
 static void chpl_gpu_launch_kernel_help(int ln,
@@ -201,6 +164,31 @@ static void chpl_gpu_launch_kernel_help(int ln,
   chpl_free(kernel_params);
 }
 
+void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
+                                 const char* fatbinData, const char* name,
+                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                 int nargs, va_list args) {
+  chpl_gpu_launch_kernel_help(ln, fn,
+                              fatbinData, name,
+                              grd_dim_x, grd_dim_y, grd_dim_z,
+                              blk_dim_x, blk_dim_y, blk_dim_z,
+                              nargs, args);
+}
+
+void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
+                                      const char* fatbinData, const char* name,
+                                      int num_threads, int blk_dim, int nargs,
+                                      va_list args) {
+  int grd_dim = (num_threads+blk_dim-1)/blk_dim;
+
+  chpl_gpu_launch_kernel_help(ln, fn,
+                              fatbinData, name,
+                              grd_dim, 1, 1,
+                              blk_dim, 1, 1,
+                              nargs, args);
+}
+
 void chpl_gpu_impl_copy_device_to_host(void* dst, void* src, size_t n) {
   chpl_gpu_ensure_context();
 
@@ -216,50 +204,7 @@ void chpl_gpu_impl_copy_host_to_device(void* dst, void* src, size_t n) {
 void chpl_gpu_impl_copy_device_to_device(void* dst, void* src, size_t n) {
   chpl_gpu_ensure_context();
 
-  CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, src, n));
-}
-
-void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                 const char* fatbinData, const char* name,
-                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                 int nargs, ...) {
-  va_list args;
-  va_start(args, nargs);
-  chpl_gpu_launch_kernel_help(ln, fn,
-                              fatbinData, name,
-                              grd_dim_x, grd_dim_y, grd_dim_z,
-                              blk_dim_x, blk_dim_y, blk_dim_z,
-                              nargs, args);
-  va_end(args);
-}
-
-void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                      const char* fatbinData, const char* name,
-                                      int num_threads, int blk_dim, int nargs, ...) {
-  int grd_dim = (num_threads+blk_dim-1)/blk_dim;
-
-  va_list args;
-  va_start(args, nargs);
-  chpl_gpu_launch_kernel_help(ln, fn,
-                              fatbinData, name,
-                              grd_dim, 1, 1,
-                              blk_dim, 1, 1,
-                              nargs, args);
-  va_end(args);
-}
-
-static bool chpl_gpu_has_context() {
-  CUcontext cuda_context = NULL;
-
-  CUresult ret = cuCtxGetCurrent(&cuda_context);
-
-  if (ret == CUDA_ERROR_NOT_INITIALIZED || ret == CUDA_ERROR_DEINITIALIZED) {
-    return false;
-  }
-  else {
-    return cuda_context != NULL;
-  }
+  CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, n));
 }
 
 void* chpl_gpu_impl_mem_alloc(size_t size) {
@@ -334,16 +279,9 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
 /*}*/
 
 // This can be used for proper reallocation
-static size_t chpl_gpu_get_alloc_size(void* ptr) {
-  chpl_gpu_ensure_context();
-
-  CUdeviceptr base;
-  size_t size;
-  CUDA_CALL(cuMemGetAddressRange(&base, &size, (CUdeviceptr)ptr));
-
-  return size;
+size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
+  return chpl_gpu_common_get_alloc_size(ptr);
 }
-
 
 
 #endif // HAS_GPU_LOCALE
