@@ -79,9 +79,13 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
   // TODO
   int32_t device_id = chpl_task_getRequestedSubloc();
     //printf("300 %d\n", device_id);
-  void* res = (*(rtl->mem_alloc))(device_id, size, NULL, TARGET_ALLOC_SHARED);
-  assert(res);
-    //printf("400 %p\n", res);
+  void* res = NULL;
+
+  if (size > 0) {
+    res = (*(rtl->mem_alloc))(device_id, size, NULL, TARGET_ALLOC_SHARED);
+    assert(res);
+  }
+
   return res;
 }
 
