@@ -91,6 +91,8 @@ def get_runtime_link_args(runtime_subdir):
         gpu_runtime = chpl_gpu.get_runtime()
         if gpu_runtime == "omp":
             system.append("-ldl")
+            # append the rpath
+            bundled.append(chpl_gpu.get_link_args())
 
     # always link with the math library
     system.append("-lm")

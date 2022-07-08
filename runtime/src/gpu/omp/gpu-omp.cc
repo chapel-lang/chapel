@@ -52,8 +52,9 @@ void chpl_gpu_impl_init() {
   if (rtl == NULL) {
     rtl = (chpl_gpu_plugin_rtl_t*)chpl_malloc(sizeof(chpl_gpu_plugin_rtl_t));
 
-    rtl->handle = dlopen("/home/engin/code/chapel/versions/1/chapel/third-party/llvm/install/linux64-x86_64/lib/libomptarget.rtl.cuda.so", RTLD_NOW);
+    rtl->handle = dlopen("libomptarget.rtl.cuda.so", RTLD_NOW);
     assert(rtl->handle);
+
 #define _OMP_FN_LOAD(arg) \
     do { \
       (*rtl).arg = (arg##_fn*)dlsym(rtl->handle, "__tgt_rtl_" #arg);\
