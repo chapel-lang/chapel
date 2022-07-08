@@ -73,7 +73,7 @@ struct Visitor {
   const AstNode* searchParents(AstTag tag, const AstNode** last);
 
   // Search ancestors for the closest parent that is a decl.
-  const AstNode* searchParentsForDecl(const AstNode** last, int depth=0);
+  const AstNode* searchParentsForDecl(const AstNode** last, int declDepth=0);
 
   // Wrapper around 'node->dispatch'.
   void check(const AstNode* node);
@@ -194,22 +194,24 @@ Visitor::searchParents(AstTag tag, const AstNode** last) {
 }
 
 const AstNode*
-Visitor::searchParentsForDecl(const AstNode** last, int depth) {
+Visitor::searchParentsForDecl(const AstNode** last, int declDepth) {
   const AstNode* ret = nullptr;
   const AstNode* lastInWalk = nullptr;
-  int countDepth = 0;
+  int countDeclDepth = 0;
 
   for (int i = parents_.size() - 1; i >= 0; i--) {
     auto ast = parents_[i];
     if (ast->isDecl()) {
-      ret = ast;
-      if (countDepth >= depth) break;
-      countDepth++;
+      if (countDeclDepth >= declDepth) {
+        ret = ast;
+        break;
+      }
+      countDeclDepth++;
     }
     lastInWalk = ast;
   }
 
-  if (last) *last = lastInWalk;
+  if (last && ret) *last = lastInWalk;
   return ret;
 }
 
