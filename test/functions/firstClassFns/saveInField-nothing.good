@@ -1,3 +1,2 @@
-fcf with arg 2 unsuccessful
-fcf with arg 6 successful
-no fcf stored
+saveInField-nothing.chpl:3: error: cannot assign 'none' to a field of type 'shared chpl__fcf_type_int64_t_chpl_bool'
+saveInField-nothing.chpl:3: note: try removing the type declaration

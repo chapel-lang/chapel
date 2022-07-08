@@ -1,2 +1,2 @@
-bug: Can't use none with first class function fields
+error message: better message when trying to assign 'none' to field with a type
 #20175
