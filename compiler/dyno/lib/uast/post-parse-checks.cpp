@@ -430,7 +430,7 @@ void Visitor::checkConfigVar(const Variable* node) {
   } else if (parent(0)->isMultiDecl() || parent(0)->isTupleDecl()) {
 
     // Find first non tuple/multi decl...
-    for (int i = 0; i < parents_.size(); i++) {
+    for (int i = 0; ((size_t) i) < parents_.size(); i++) {
       auto up = parent(i);
       if (up->isMultiDecl() || up->isTupleDecl()) continue;
       if (up->isModule()) doEmitError = false;
