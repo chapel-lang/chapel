@@ -226,6 +226,10 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r);
 /**
   Compute the return/yield type for a function.
+
+  If the function returns a param, the param's value may not
+  be available. This is because the function body is not resolved when
+  the return type is explicitly declared.
  */
 const types::QualifiedType& returnType(Context* context,
                                        const TypedFnSignature* sig,
