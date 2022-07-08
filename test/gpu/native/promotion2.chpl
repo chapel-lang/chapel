@@ -1,7 +1,10 @@
+use GPUDiagnostics;
+
 config const n = 10;
 
 config const alpha = 10;
 
+startGPUDiagnostics();
 on here.getChild(1) {
   var A: [1..n] int;
   var B: [1..n] int;
@@ -17,6 +20,8 @@ on here.getChild(1) {
   A = foo(A);                       writeArr(A);
 
 }
+stopGPUDiagnostics();
+assert(getGPUDiagnostics()[0].kernel_launch == 7);
 
 proc foo(a: int) {
   return a+1;
