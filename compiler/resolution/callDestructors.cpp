@@ -1148,6 +1148,10 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
             }
 
             call->insertBefore(destroyCall);
+
+            if (destroyCall->isPrimitive(PRIM_AUTO_DESTROY_RUNTIME_TYPE)) {
+              lowerAutoDestroyRuntimeType(destroyCall);
+            }
           }
         }
       }
@@ -2087,7 +2091,7 @@ void InsertDestructorCalls::process(CallExpr* call) {
 }
 
 bool LowerAutoDestroyRuntimeType::shouldProcess(CallExpr* call) {
-  return call->isPrimitive(PRIM_AUTO_DESTROY_RUNTIME_TYPE);
+  return call->inTree() && call->isPrimitive(PRIM_AUTO_DESTROY_RUNTIME_TYPE);
 }
 
 void LowerAutoDestroyRuntimeType::process(CallExpr* call) {
