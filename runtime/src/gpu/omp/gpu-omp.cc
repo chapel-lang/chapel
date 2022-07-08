@@ -118,41 +118,19 @@ typedef struct PretendKernelTy {
 } kernel_t;
 
 
-//void chpl_gpu_launch_kernel_help(int ln,
-                                        //int32_t fn,
-                                        //const char* fatbinData,
-                                        //const char* name,
-                                        //int grd_dim_x,
-                                        //int grd_dim_y,
-                                        //int grd_dim_z,
-                                        //int blk_dim_x,
-                                        //int blk_dim_y,
-                                        //int blk_dim_z,
-                                        //int nargs,
-                                        //va_list args) {
-static void chpl_gpu_impl_launch_kernel_help_with_tripcount(int ln,
-                                                            int32_t fn,
-                                                            const char* fatbinData,
-                                                            const char* name,
-                                                            int nargs,
-                                                            va_list args,
-                                                            int num_threads,
-                                                            int blk_dim) {
+void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
+                                 const char* fatbinData, const char* name,
+                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                 int nargs, va_list args) {
+  chpl_internal_error("GPU kernels with custom shapes can't be launched with the 'omp' GPU layer");
+}
 
-  //size_t fatbinSize = strlen(fatbinData);
-  //size_t fatbinSize = 69096;
-  //const char* fatbinEnd = fatbinData + fatbinSize;
+void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
+                                      const char* fatbinData, const char* name,
+                                      int num_threads, int blk_dim,
+                                      int nargs, va_list args) {
 
-  //printf("fatbinSize %zu\n", fatbinSize);
-
-  //__tgt_device_image image;
-  //image.ImageStart = (void*)fatbinData;
-  //image.ImageEnd = (void*)fatbinEnd;
-  //image.EntriesBegin = NULL;
-  //image.EntriesEnd = NULL;
-
-  //printf("is valid %d\n", rtl->is_valid_binary(&image));
-  //printf("%p %p\n", __start_omp_offloading_entries, __stop_omp_offloading_entries);
   kernel_t kernel;
   kernel.function = chpl_gpu_getKernel(fatbinData, name);
   kernel.execution_mode = 1 << 1;
@@ -206,29 +184,7 @@ static void chpl_gpu_impl_launch_kernel_help_with_tripcount(int ln,
   chpl_free(kernel_params);
 }
 
-void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                 const char* fatbinData, const char* name,
-                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                 int nargs, va_list args) {
-  chpl_internal_error("GPU kernels with custom shapes can't be launched with the 'omp' GPU layer");
-}
-
-void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                      const char* fatbinData, const char* name,
-                                      int num_threads, int blk_dim,
-                                      int nargs, va_list args) {
-
-  // TODO get rid of this function
-  chpl_gpu_impl_launch_kernel_help_with_tripcount(ln, fn,
-                                                  fatbinData, name,
-                                                  nargs, args, num_threads, blk_dim);
-}
-
 size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
   return chpl_gpu_common_get_alloc_size(ptr);
 }
-
-
-
 }  // extern "C"
