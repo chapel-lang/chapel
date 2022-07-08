@@ -64,8 +64,10 @@ void chpl_gpu_impl_init() {
     OMP_FN_ALL(_OMP_FN_LOAD);
 #undef _OMP_FN_LOAD
 
-    // TODO
-    (*(rtl->init_device))(0);
+    const int32_t num_devices = rtl->number_of_devices();
+    for (int i=0; i<num_devices ; i++) {
+      rtl->init_device(i);
+    }
 
     // TODO can we stick device_id into something task-private? We keep asking
     // for that in every function
