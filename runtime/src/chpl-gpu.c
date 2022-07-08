@@ -64,6 +64,10 @@ void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
   CHPL_GPU_DEBUG("Copy successful\n");
 }
 
+size_t chpl_gpu_get_alloc_size(void* ptr) {
+  return chpl_gpu_impl_get_alloc_size(ptr);
+}
+
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
 
@@ -99,24 +103,59 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
 void* chpl_gpu_mem_calloc(size_t number, size_t size,
                           chpl_mem_descInt_t description,
                           int32_t lineno, int32_t filename) {
-  chpl_internal_error("Zero-allocating GPU memory is not supported yet");
-  return NULL;
 
-  /*CHPL_GPU_DEBUG("chpl_gpu_mem_calloc called. Size:%d\n", size);*/
+  CHPL_GPU_DEBUG("chpl_gpu_mem_calloc called. Size:%d file:%s line:%d\n", size,
+               chpl_lookupFilename(filename), lineno);
 
-  /*void* ptr = chpl_gpu_impl_mem_calloc(number, size, description, lineno, filename);*/
+  void *ptr = NULL;
 
-  /*CHPL_GPU_DEBUG("chpl_gpu_mem_calloc returning %p\n", (void*)ptr);*/
+  if (size > 0) {
+    // TODO this is a poor implementation -- CUDA has memset, that can help a
+    // bit, but omp doesn't expose it. I don't know whether performance here
+    // matters.
+    const size_t total_size = number*size;
 
-  /*return ptr;*/
+    void *host_mem = chpl_mem_calloc(number, size, description, lineno, filename);
+
+    chpl_memhook_malloc_pre(1, total_size, description, lineno, filename);
+    ptr = chpl_gpu_impl_mem_alloc(total_size);
+    chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename);
+
+    chpl_gpu_impl_copy_host_to_device(ptr, host_mem, total_size);
+
+    chpl_mem_free(host_mem, lineno, filename);
+
+    CHPL_GPU_DEBUG("chpl_gpu_mem_calloc returning %p\n", (void*)ptr);
+  }
+  else {
+    CHPL_GPU_DEBUG("chpl_gpu_mem_calloc returning NULL (size was 0)\n");
+  }
+
+  return ptr;
 }
 
 void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            chpl_mem_descInt_t description,
                            int32_t lineno, int32_t filename) {
-  chpl_internal_error("Reallocating GPU memory is not supported yet");
 
-  return NULL;
+  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%d\n", size);
+
+  assert(chpl_gpu_is_device_ptr(memAlloc));
+
+  size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
+  if (size == cur_size) {
+    return memAlloc;
+  }
+
+  // TODO we could probably do something smarter, especially for the case where
+  // the new allocation size is smaller than the original allocation size.
+  void* new_alloc = chpl_gpu_mem_alloc(size, description, lineno, filename);
+
+  const size_t copy_size = size < cur_size ? size : cur_size;
+  chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size);
+  chpl_gpu_mem_free(memAlloc, lineno, filename);
+
+  return new_alloc;
 }
 
 void* chpl_gpu_mem_memalign(size_t boundary, size_t size,

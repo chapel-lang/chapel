@@ -108,6 +108,13 @@ void chpl_gpu_impl_copy_host_to_device(void* dst, void* src, size_t n) {
   rtl->data_submit(device_id, dst, src, n);
 }
 
+void chpl_gpu_impl_copy_device_to_device(void* dst, void* src, size_t n) {
+  int32_t device_id = chpl_task_getRequestedSubloc();
+
+  // omptarget hhas the order swapped here, oops.
+  rtl->data_exchange(device_id, src, device_id, dst, n);
+}
+
 bool chpl_gpu_is_device_ptr(void* ptr) {
   return chpl_gpu_common_is_device_ptr(ptr);
 }
@@ -218,6 +225,10 @@ void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
   chpl_gpu_impl_launch_kernel_help_with_tripcount(ln, fn,
                                                   fatbinData, name,
                                                   nargs, args, num_threads, blk_dim);
+}
+
+size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
+  return chpl_gpu_common_get_alloc_size(ptr);
 }
 
 

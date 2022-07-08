@@ -99,6 +99,8 @@ void chpl_gpu_launch_kernel_help_with_tripcount(int ln,
                                         va_list args,
                                         int num_threads, int blk_dim);
 
+// TODO do we really need to expose this?
+size_t chpl_gpu_get_alloc_size(void* ptr);
 #endif // HAS_GPU_LOCALE
 
 #ifdef __cplusplus

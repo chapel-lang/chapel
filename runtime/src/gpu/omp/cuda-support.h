@@ -62,3 +62,13 @@ bool chpl_gpu_common_is_device_ptr(void* ptr) {
 
   return false;
 }
+//
+// This can be used for proper reallocation
+static size_t chpl_gpu_common_get_alloc_size(void* ptr) {
+  CUdeviceptr base;
+  size_t size;
+  CUDA_CALL_IMPL(cuMemGetAddressRange(&base, &size, (CUdeviceptr)ptr));
+
+  return size;
+}
+

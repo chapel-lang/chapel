@@ -226,6 +226,12 @@ void chpl_gpu_impl_copy_host_to_device(void* dst, void* src, size_t n) {
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
 
+void chpl_gpu_impl_copy_device_to_device(void* dst, void* src, size_t n) {
+  chpl_gpu_ensure_context();
+
+  CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, src, n));
+}
+
 void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                  const char* fatbinData, const char* name,
                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
