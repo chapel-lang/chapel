@@ -231,8 +231,6 @@ module Sys {
   // --- deprecated with no replacement ---
   extern const AF_UNIX:c_int;
   extern const AF_LOCAL:c_int;
-  extern const AF_INET:c_int;
-  extern const AF_INET6:c_int;
   extern const AF_IPX:c_int;
   extern const AF_NETLINK:c_int;
   extern const AF_X25:c_int;
@@ -240,6 +238,14 @@ module Sys {
   extern const AF_ATMPVC:c_int;
   extern const AF_APPLETALK:c_int;
   extern const AF_PACKET:c_int;
+
+  // --- deprecated and moved to Socket ---
+  pragma "last resort"
+  deprecated "'Sys.AF_INET' is deprecated; please use 'Socket.AF_INET' instead"
+  extern const AF_INET:c_int;
+  pragma "last resort"
+  deprecated "'Sys.AF_INET' is deprecated; please use 'Socket.AF_INET' instead"
+  extern const AF_INET6:c_int;
 
   // socket types
   // --- deprecated and moved to Socket as private ---

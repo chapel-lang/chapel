@@ -426,6 +426,9 @@ private extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref 
 private extern proc sys_strerror(error:qio_err_t, ref string_out:c_string):qio_err_t;
 private extern proc sys_readlink(path:c_string, ref string_out:c_string):qio_err_t;
 
+extern const AF_INET: c_int;
+extern const AF_INET6: c_int;
+
 // types for 'sys_sockaddr_t' implementation
 pragma "no doc"
 extern type sys_sockaddr_storage_t;

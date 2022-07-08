@@ -917,6 +917,16 @@ module OS {
       var tv_usec:suseconds_t; // and microseconds
     }
 
+    proc struct_timeval.init(tv_sec: integral, tv_usec: integral) {
+      this.tv_sec = tv_sec:time_t;
+      this.tv_usec = tv_usec:suseconds_t;
+    }
+
+    proc struct_timeval.init(tv_sec: time_t, tv_usec: suseconds_t) {
+      this.tv_sec = tv_sec;
+      this.tv_usec = tv_usec;
+    }
+
     pragma "no doc"
     operator struct_timeval.=(other: real) {
       this.tv_sec = (other:c_long):time_t; // set the whole number of seconds
