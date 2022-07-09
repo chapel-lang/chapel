@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# Custom sub_test to run issue tracker.
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $CWD/functions.bash
+
+subtest_start
+
+cp -r /users/stonea/public_html/ghTracker/graphData/html $CHPL_TEST_PERF_DIR
+
+subtest_end
