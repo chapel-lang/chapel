@@ -1,6 +1,6 @@
 prototype module OuterModule {
   module A {
-    use SysError;
+    use OS;
 
     proc deferThrow() throws {
       defer {

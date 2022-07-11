@@ -32,6 +32,7 @@
    In the second form, a ``syserr`` is returned in an out error argument.
 
  */
+deprecated "The SysError module is deprecated. Please use 'OS' instead"
 module SysError {
 
 use OS.POSIX;

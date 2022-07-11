@@ -430,7 +430,7 @@ import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 import OS.POSIX.{EBADF};
 use CTypes;
-public use SysError;
+public use OS;
 
 
 /*
@@ -5879,7 +5879,7 @@ module FormattedIO {
   use CTypes;
   use OS.POSIX;
   import SysBasic.{ENOERR,syserr};
-  use SysError;
+  use OS;
 //use IO;
 
 // ---------------------------------------------------------------
