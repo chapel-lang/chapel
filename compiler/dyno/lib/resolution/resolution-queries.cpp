@@ -1605,6 +1605,7 @@ struct ReturnTypeInferrer {
 
     QualifiedType::Kind kind = qt.kind();
     const Type* type = qt.type();
+    const Param* param = qt.param();
 
     // Functions that return tuples need to return
     // a value tuple (for value returns and type returns)
@@ -1618,8 +1619,12 @@ struct ReturnTypeInferrer {
     checkReturn(inExpr, qt);
 
     kind = (QualifiedType::Kind) returnIntent;
+    if (kind != QualifiedType::PARAM) {
+        // reset param value if we're not returning a param
+        param = nullptr;
+    }
 
-    returnedTypes.push_back(QualifiedType(kind, type));
+    returnedTypes.push_back(QualifiedType(kind, type, param));
   }
 
   QualifiedType returnedType() {

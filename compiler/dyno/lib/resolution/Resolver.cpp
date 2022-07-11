@@ -1830,13 +1830,15 @@ void Resolver::exit(const Call* call) {
       QualifiedType qt = actual.type();
       if (qt.isParam() && qt.param() == nullptr) {
         skip = true;
+      } else if (qt.isUnknown()) {
+        skip = true;
       } else if (const Type* t = qt.type()) {
         auto g = getTypeGenericity(context, t);
         bool isBuiltinGeneric = (g == Type::GENERIC &&
                                  (t->isAnyType() || t->isBuiltinType()));
         if (qt.isType() && isBuiltinGeneric && substitutions == nullptr) {
           skip = true;
-        } else if (t->isUnknownType() || t->isErroneousType()) {
+        } else if (t->isErroneousType()) {
           skip = true;
         } else if (!qt.isType() && g != Type::CONCRETE) {
           skip = true;
