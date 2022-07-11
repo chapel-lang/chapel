@@ -457,6 +457,14 @@ mode_t chpl_fs_umask(mode_t mask) {
   return umask(mask);
 }
 
+mode_t chpl_int_to_mode(int mode) {
+  return (mode_t)mode;
+}
+
+int chpl_mode_to_int(mode_t mode) {
+  return (int)mode;
+}
+
 /* Returns the current permissions on a file specified by name */
 qioerr chpl_fs_viewmode(int* ret, const char* name) {
   struct stat buf;

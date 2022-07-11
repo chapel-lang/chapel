@@ -3,7 +3,6 @@ Initializing Modules:
     OwnedObject
     Atomics
      MemConsistency
-    NetworkAtomics
     ChapelThreads
     ChapelTuple
      DSIUtil
@@ -24,7 +23,7 @@ Initializing Modules:
           IO
            POSIX
             OS
-           SysError
+            SysError
            FormattedIO
             Regex
          Sort

@@ -23,7 +23,7 @@ Initializing Modules:
           IO
            POSIX
             OS
-           SysError
+            SysError
            FormattedIO
             Regex
          Sort

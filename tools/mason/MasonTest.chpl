@@ -30,7 +30,7 @@ use MasonUpdate;
 use MasonUtils;
 use Path;
 use Subprocess;
-use Sys;
+use OS.POSIX;
 use TestResult;
 use Time;
 use TOML;

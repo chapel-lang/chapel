@@ -15,7 +15,7 @@ else:
     v = v.rstrip()
     v = str(v, encoding='utf-8', errors='surrogateescape')
 
-    if parse_version(v) < parse_version('2.1'):
+    if parse_version(v.split('-')[0]) < parse_version('2.1'):
         # skip, version not is compatible.
         skip = True
 
