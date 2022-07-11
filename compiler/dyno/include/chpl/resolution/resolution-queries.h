@@ -227,9 +227,10 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
 /**
   Compute the return/yield type for a function.
 
-  If the function returns a param, the param's value may not
+  TODO: If the function returns a param, the param's value may not
   be available. This is because the function body is not resolved when
-  the return type is explicitly declared.
+  the return type is explicitly declared. We probably still want to compute
+  the value in such cases, though.
  */
 const types::QualifiedType& returnType(Context* context,
                                        const TypedFnSignature* sig,
