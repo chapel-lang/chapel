@@ -25,7 +25,6 @@
 #include "chpl-tasks.h"
 #include "error.h"
 #include "chplcgfns.h"
-#include "gpu-cuda-target.h"
 #include "../common/cuda-utils.h"
 #include "../common/cuda-shared.h"
 
