@@ -537,6 +537,18 @@ static void ensureRequiredStandardModulesAreParsed() {
         }
       }
 
+      // Allow automatically-included standard libraries to be overridden
+      // by a user module.
+      // See also test/modules/bradc/userInsteadOfStandard.
+      // TODO: use a better strategy than this workaround in the future,
+      // such as ideas proposed in issue #19313.
+      if (0 == strcmp(modName, "AutoMath") ||
+          0 == strcmp(modName, "Errors") ||
+          0 == strcmp(modName, "ChapelIO") ||
+          0 == strcmp(modName, "Types")) {
+        foundInt = foundInt || foundUsr;
+      }
+
       // If we haven't found the standard version of the module,
       // then we need to parse it
       if (foundInt == false) {
