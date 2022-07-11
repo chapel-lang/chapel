@@ -799,7 +799,7 @@ void chpl_launcher_get_job_name(char *baseName, char *jobName, int jobLen) {
     prefix = "CHPL-";
   }
   if (name == NULL) {
-    snprintf(jobName, jobLen, "%s%.10s ", prefix, baseName);
+    snprintf(jobName, jobLen, "%s%.10s", prefix, baseName);
   } else {
     strncpy(jobName, name, jobLen);
     jobName[jobLen-1] = '\0';
