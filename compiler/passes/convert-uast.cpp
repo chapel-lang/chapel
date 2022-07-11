@@ -27,6 +27,7 @@
 
 #include "convert-uast.h"
 
+#include "CForLoop.h"
 #include "CatchStmt.h"
 #include "DeferStmt.h"
 #include "DoWhileStmt.h"
@@ -34,11 +35,14 @@
 #include "ForallStmt.h"
 #include "IfExpr.h"
 #include "ImportStmt.h"
+#include "LoopExpr.h"
+#include "ParamForLoop.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
 #include "config.h"
 #include "docsDriver.h"
+#include "global-ast-vecs.h"
 #include "optimizations.h"
 #include "parser.h"
 #include "resolution.h"
@@ -97,7 +101,7 @@ struct ConvertedSymbolsMap {
     return findMapContainingBoth(id, inSymbolId);
   }
 
-  void applyFixups(Context* context);
+  void applyFixups(Context* context, const uast::AstNode* inAst, bool trace);
 };
 
 // TODO: replace this global variable with a field in Converter
@@ -178,12 +182,13 @@ struct Converter {
   void noteIdentFixupNeeded(SymExpr* se, ID id);
   void noteCallFixupNeeded(SymExpr* se,
                            const resolution::TypedFnSignature* sig);
+  void noteAllContainedFixups(BaseAST* ast, int unused);
 
   // symStack helpers
   void pushToSymStack(
        const uast::AstNode* ast,
        const resolution::ResolutionResultByPostorderID* resolved);
-  void popFromSymStack(const uast::AstNode* ast);
+  void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
 
   const char* consumeLatestComment() {
     const char* ret = latestComment;
@@ -490,7 +495,7 @@ struct Converter {
             Symbol* sym = findConvertedSym(id);
             if (sym == nullptr) {
               // we will fix it later
-              sym = gFixupRequiredToken;
+              sym = new TemporaryConversionSymbol(id);
             }
 
             SymExpr* se = new SymExpr(sym);
@@ -500,10 +505,7 @@ struct Converter {
               ret = new CallExpr(se);
             }
 
-            if (sym == gFixupRequiredToken) {
-              // note the SymExpr needing fixing later
-              noteIdentFixupNeeded(se, id);
-            }
+            // fixup, if any, will noted in noteAllContainedFixups
 
             return ret;
           }
@@ -2692,7 +2694,7 @@ struct Converter {
     }
 
     // pop the function from the symStack
-    popFromSymStack(node);
+    popFromSymStack(node, fn);
 
     return fn;
   }
@@ -2792,11 +2794,6 @@ struct Converter {
     currentModuleName = name;
     auto body = createBlockWithStmts(node->stmts(), style);
 
-    // Pop the module after converting children.
-    INT_ASSERT(modStack.size() > 0 && modStack.back().mod == node);
-    this->modStack.pop_back();
-    popFromSymStack(node);
-
     ModuleSymbol* mod = buildModule(name,
                                     tag,
                                     body,
@@ -2813,6 +2810,11 @@ struct Converter {
 
     // Note the module is converted so we can wire up SymExprs later
     noteConvertedSym(node, mod);
+
+    // Pop the module after converting children.
+    INT_ASSERT(modStack.size() > 0 && modStack.back().mod == node);
+    this->modStack.pop_back();
+    popFromSymStack(node, mod);
 
     return mod;
   }
@@ -3323,7 +3325,7 @@ struct Converter {
     // Note the type is converted so we can wire up SymExprs later
     noteConvertedSym(node, ret->sym);
 
-    popFromSymStack(node);
+    popFromSymStack(node, ret->sym);
 
     return ret;
   }
@@ -3418,7 +3420,7 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
           Symbol* fn = findConvertedFn(sig);
           if (fn == nullptr) {
             // we will fix it later
-            fn = gFixupRequiredToken;
+            fn = new TemporaryConversionSymbol(sig);
           }
 
           // TODO: Do we need to remove the old baseExpr?
@@ -3426,10 +3428,7 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
           expr->baseExpr = se;
           parent_insert_help(expr, expr->baseExpr);
 
-          if (fn == gFixupRequiredToken) {
-            // note the SymExpr needing fixing later
-            noteCallFixupNeeded(se, sig);
-          }
+          // fixup, if any, will noted in noteAllContainedFixups
         }
       }
     }
@@ -3824,12 +3823,47 @@ static std::string astName(const uast::AstNode* ast) {
   }
 }
 
+void Converter::noteAllContainedFixups(BaseAST* ast, int unused) {
+  // Traverse over 'sym' but don't go in to nested submodules/fns/aggregates
+  // since we will have already gathered from those and we don't want
+  // this to be quadratic in time.
+  //
+  // Gather the fixups that need to be done.
+  // This is a separate traversal so that the build functios
+  // can copy the AST freely.
+
+  if (isModuleSymbol(ast) || isFnSymbol(ast)) {
+    return;
+  }
+  if (TypeSymbol* ts = toTypeSymbol(ast)) {
+    if (isAggregateType(ts->type)) {
+      return;
+    }
+  }
+
+  AST_CHILDREN_CALL(ast, noteAllContainedFixups, 0);
+
+  if (SymExpr* se = toSymExpr(ast)) {
+    if (auto tcs = toTemporaryConversionSymbol(se->symbol())) {
+      if (tcs->sig != nullptr) {
+        noteCallFixupNeeded(se, tcs->sig);
+      } else {
+        noteIdentFixupNeeded(se, tcs->symId);
+      }
+    }
+  }
+}
+
 void Converter::pushToSymStack(
      const uast::AstNode* ast,
      const resolution::ResolutionResultByPostorderID* resolved) {
   ConvertedSymbolsMap* parentMap = nullptr;
   if (symStack.size() > 0) {
-    parentMap = symStack.back().convertedSyms.get();
+    // Find the current top-level module from symStack and consider it the
+    // parent.
+    // We could track things in a more granular way but we might need to
+    // access something like A.B.C.D (where A, B, C are modules) later.
+    parentMap = symStack.front().convertedSyms.get();
   } else {
     parentMap = &gConvertedSyms;
   }
@@ -3840,10 +3874,16 @@ void Converter::pushToSymStack(
   }
   symStack.emplace_back(ast, resolved, parentMap);
 }
-void Converter::popFromSymStack(const uast::AstNode* ast) {
+
+
+void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
+  if (ret != nullptr) {
+    noteAllContainedFixups(ret, 0);
+  }
+
   if (symStack.size() > 0) {
     assert(symStack.back().ast == ast);
-    symStack.back().convertedSyms->applyFixups(context);
+    symStack.back().convertedSyms->applyFixups(context, ast, trace);
   } else {
     assert(false && "stack error");
   }
@@ -3863,18 +3903,6 @@ void ConvertedSymbolsMap::noteConvertedSym(const uast::AstNode* ast,
            computeMapName(inSymbolId).c_str());
   }
 
-  // for the symbol ID that the map is about, also add it to the
-  // parent map, since e.g. a module knows about submodules inside.
-  if (inSymbolId == ast->id()) {
-    if (parentMap != nullptr) {
-      if (trace) {
-        ID parentId = parentMap->inSymbolId;
-        printf(" also noting it in %s\n",
-               computeMapName(parentId).c_str());
-      }
-      parentMap->syms[ast->id()] = sym;
-    }
-  }
   syms[ast->id()] = sym;
 }
 
@@ -3889,18 +3917,6 @@ void ConvertedSymbolsMap::noteConvertedFn(
            computeMapName(inSymbolId).c_str());
   }
 
-  // for the symbol ID that the map is about, also add it to the
-  // parent map, since e.g. a module knows about submodules inside.
-  if (inSymbolId == sig->untyped()->id()) {
-    if (parentMap != nullptr) {
-      if (trace) {
-        ID parentId = parentMap->inSymbolId;
-        printf(" also noting it in %s\n",
-               computeMapName(parentId).c_str());
-      }
-      parentMap->fns.emplace(sig, fn);
-    }
-  }
   fns.emplace(sig, fn);
 }
 
@@ -3998,7 +4014,9 @@ ConvertedSymbolsMap* ConvertedSymbolsMap::findMapContainingBoth(ID id1,
   return nullptr;
 }
 
-void ConvertedSymbolsMap::applyFixups(chpl::Context* context) {
+void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
+                                      const uast::AstNode* inAst,
+                                      bool trace) {
 
   // Note: we should be able to minimize the fixups needed
   // by converting the modules in the initialization order
@@ -4007,7 +4025,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context) {
   for (const auto& p : identFixups) {
     SymExpr* se = p.first;
     ID target = p.second;
-    INT_ASSERT(se->symbol() == gFixupRequiredToken);
+    INT_ASSERT(isTemporaryConversionSymbol(se->symbol()));
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
     if (sym == nullptr) {
@@ -4026,7 +4044,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context) {
   for (const auto& p : callFixups) {
     SymExpr* se = p.first;
     const resolution::TypedFnSignature* target = p.second;
-    INT_ASSERT(se->symbol() == gFixupRequiredToken);
+    INT_ASSERT(isTemporaryConversionSymbol(se->symbol()));
 
     FnSymbol* fn = findConvertedFn(target, /* trace */ false);
     if (fn == nullptr) {
@@ -4041,6 +4059,20 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context) {
   }
   // clear gFnCallFixups since these have now been processed
   callFixups.clear();
+
+  // copy the syms and fns maps to the parent map if the symbols
+  // within could be visible elsewhere
+  if (parentMap && inAst) {
+    if (inAst->isModule() || inSymbolId == inAst->id()) {
+      if (trace) {
+        printf("Copying symbols from %s to parent %s\n",
+               computeMapName(inSymbolId).c_str(),
+               computeMapName(parentMap->inSymbolId).c_str());
+      }
+      parentMap->syms.insert(syms.begin(), syms.end());
+      parentMap->fns.insert(fns.begin(), fns.end());
+    }
+  }
 }
 
 
@@ -4069,10 +4101,14 @@ convertToplevelModule(chpl::Context* context,
 }
 
 void postConvertApplyFixups(chpl::Context* context) {
-  gConvertedSyms.applyFixups(context);
+  gConvertedSyms.applyFixups(context, nullptr, /* trace */ false);
 
-  // Ensure gFixupRequiredToken is no longer used.
-  INT_ASSERT(gFixupRequiredToken->firstSymExpr() == nullptr);
+  // Ensure no TemporaryConversionSymbol is still in tree
+  if (fVerify) {
+    forv_Vec(TemporaryConversionSymbol, t, gTemporaryConversionSymbols) {
+      INT_ASSERT(!t->inTree());
+    }
+  }
 
   // clear out the globals to save space
   // (in future, these will be fields in Converter,
