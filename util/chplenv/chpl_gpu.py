@@ -2,7 +2,8 @@ import utils
 import os
 import glob
 import chpl_locale_model
-from utils import error, memoize
+import chpl_llvm
+from utils import error, memoize, run_command
 
 def get():
     if chpl_locale_model.get() == 'gpu':
@@ -26,6 +27,7 @@ def get_cuda_path():
         return ""
 
 def get_cuda_libdevice_path():
+    # TODO this only makes sense when we are generating for nvidia
     chpl_cuda_path = get_cuda_path()
 
     # there can be multiple libdevices for multiple compute architectures. Not
@@ -38,6 +40,32 @@ def get_cuda_libdevice_path():
     else:
         return libdevices[0]
 
+def get_libomptarget_rtl():
+    chpl_gpu_runtime = get_runtime()
+    if chpl_gpu_runtime == "omp":
+        # TODO this needs to be able to find system libomptarget rtl as needed
+        llvm_config = chpl_llvm.get_llvm_config()
+        llvm_lib_dir = run_command([llvm_config, '--libdir']).strip()
+
+        rtl_path = os.path.join(llvm_lib_dir, "libomptarget.rtl.cuda.so")
+
+        if not os.path.exists(rtl_path):
+            error("Couldn't find libomptarget plugin library for cuda")
+
+        return llvm_lib_dir
+    else:
+        return ""
+
+def get_link_args():
+    if get_runtime() == "omp":
+      return "-Wl,-rpath,"+get_libomptarget_rtl()
+
+
+def get_runtime():
+    chpl_gpu_runtime = os.environ.get("CHPL_GPU")
+    if chpl_gpu_runtime:
+        return chpl_gpu_runtime
+    return "cuda"
 
 def validate(chplLocaleModel, chplComm):
     pass

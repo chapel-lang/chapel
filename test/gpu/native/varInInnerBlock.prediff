@@ -1,4 +1,0 @@
-#!/bin/sh
-
-awk '/NumArgs/ { print $NF; }' $2 > $2.awked
-mv $2.awked $2
