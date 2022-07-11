@@ -25,6 +25,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
+#include "common.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -38,17 +39,6 @@ using namespace parsing;
 using namespace resolution;
 using namespace types;
 using namespace uast;
-
-static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
 
 // assumes the last statement is a variable declaration for x
 // with an initialization expression.

@@ -25,6 +25,7 @@
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/Variable.h"
+#include "common.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -38,17 +39,6 @@ using namespace parsing;
 using namespace resolution;
 using namespace types;
 using namespace uast;
-
-static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
 
 static void test1() {
   printf("test1\n");

@@ -24,52 +24,13 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
+#include "common.h"
 
 #include <cassert>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace types;
-using namespace uast;
-
-static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
 
 // assumes the last statement is a variable declaration for x
 // with an initialization expression.
 // Returns the type of the initializer expression.
-static QualifiedType
-parseTypeOfXInit(Context* context, const char* program) {
-  auto m = parseModule(context, program);
-  assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
-  assert(x);
-  assert(x->name() == "x");
-  auto initExpr = x->initExpression();
-  assert(initExpr);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(initExpr).type();
-  // assert(qt.type());
-
-  return qt;
-}
-
 static void test1() {
   Context ctx;
   auto context = &ctx;
