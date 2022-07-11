@@ -330,6 +330,7 @@ proc getGitCode(gitListArg: list(3*string), show) {
         getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
         checkout = "git checkout master";
       }
+      writeln("Command: ", getDependency);
       runCommand(getDependency);
       gitC(destination, checkout);
     }

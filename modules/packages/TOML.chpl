@@ -259,6 +259,7 @@ module TomlParser {
     }
 
     proc parseInlineTbl(key: string) {
+      writeln("PARSING INLINE TABLE");
       var tblname: string;
       var tblD: domain(string);
       var tbl: [tblD] unmanaged Toml?;
@@ -274,25 +275,40 @@ module TomlParser {
       var temp = curTable;
       curTable = tblname;
       while top(source) != '}' {
-        parseAssign();
+        writeln(top(source));
+        writeln(source.currentLine!.A);
+        // this means that the value to assign is actually multiple assignments
+        if source.currentLine!.A[2].find(',') > 0 {
+          for str in source.currentLine!.A[2].split(',') do
+            source.currentLine!.A.append(str);
+          source.currentLine!.A.pop(2);
+          source.currentLine!.A.pop(2);
+          source.currentLine!.A.append('}');
+        }
+        writeln();
+        writeln(source.currentLine!.A);
+        writeln();
+        parseAssign(true);
         if top(source) == ',' {
           skipNext(source);
         }
       }
       skipNext(source);
       curTable = temp; // resets curTable after assignments to inline
+      writeln("DONE PARSING INLINE TABLE");
     }
 
-    proc parseAssign() {
+    proc parseAssign(doStuff=false) {
       try! {
         var key = getToken(source);
         var equals = getToken(source);
         if top(source) == '{' {
+          writeln("FOUND INLINE TABLE");
           skipNext(source);
           parseInlineTbl(key);
         }
         else {
-          var value = parseValue();
+          var value = parseValue(doStuff);
           if curTable.isEmpty() then rootTable[key] = value;
           else rootTable[curTable]![key] = value;
         }
@@ -318,10 +334,11 @@ module TomlParser {
     }
 
     /* Creates and returns a Toml parsed from tokens into respective type */
-    proc parseValue(): unmanaged Toml throws {
+    proc parseValue(doStuff=false): unmanaged Toml throws {
       var val: string;
       try! {
         val = top(source);
+        if doStuff then writeln("IN PARSE VALUE RIGHT CASE WITH ", val);
         // Array
         if val == '['  {
           skipNext(source);
@@ -344,7 +361,11 @@ module TomlParser {
         // Strings (includes multi-line)
         else if Str.match(val) {
           var toStr: string;
-          if val.startsWith('"""') {
+          if val.find(',') > 0 {
+            // this line contains multiple assignments
+            toStr = getToken(source).strip('"').strip("'");
+            return new unmanaged Toml(toStr);
+          } else if val.startsWith('"""') {
             toStr += getToken(source).strip('"""', true, false);
             while toStr.endsWith('"""') == false {
               toStr += " " + getToken(source);
