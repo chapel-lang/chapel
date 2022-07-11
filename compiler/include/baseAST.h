@@ -63,6 +63,7 @@
   macro(InterfaceSymbol) sep                       \
   macro(EnumSymbol)   sep                          \
   macro(LabelSymbol)  sep                          \
+  macro(TemporaryConversionSymbol)  sep            \
                                                    \
   macro(SymExpr) sep                               \
   macro(UnresolvedSymExpr) sep                     \
@@ -177,6 +178,7 @@ enum AstTag {
   E_InterfaceSymbol,
   E_EnumSymbol,
   E_LabelSymbol,
+  E_TemporaryConversionSymbol,
 
   E_PrimitiveType,
   E_ConstrainedType,
@@ -189,7 +191,7 @@ static inline bool isExpr(AstTag tag)
 { return tag >= E_SymExpr        && tag <= E_ExternBlockStmt; }
 
 static inline bool isSymbol(AstTag tag)
-{ return tag >= E_ModuleSymbol   && tag <= E_LabelSymbol; }
+{ return tag >= E_ModuleSymbol   && tag <= E_TemporaryConversionSymbol; }
 
 static inline bool isType(AstTag tag)
 { return tag >= E_PrimitiveType  && tag <= E_DecoratedClassType; }
@@ -353,6 +355,7 @@ def_is_ast(FnSymbol)
 def_is_ast(InterfaceSymbol)
 def_is_ast(EnumSymbol)
 def_is_ast(LabelSymbol)
+def_is_ast(TemporaryConversionSymbol)
 def_is_ast(PrimitiveType)
 def_is_ast(ConstrainedType)
 def_is_ast(EnumType)
@@ -408,6 +411,7 @@ def_to_ast(FnSymbol)
 def_to_ast(InterfaceSymbol)
 def_to_ast(EnumSymbol)
 def_to_ast(LabelSymbol)
+def_to_ast(TemporaryConversionSymbol)
 def_to_ast(Symbol)
 def_to_ast(PrimitiveType)
 def_to_ast(ConstrainedType)
@@ -468,6 +472,7 @@ def_less_ast(FnSymbol)
 def_less_ast(InterfaceSymbol)
 def_less_ast(EnumSymbol)
 def_less_ast(LabelSymbol)
+def_less_ast(TemporaryConversionSymbol)
 def_less_ast(Symbol)
 def_less_ast(PrimitiveType)
 def_less_ast(ConstrainedType)

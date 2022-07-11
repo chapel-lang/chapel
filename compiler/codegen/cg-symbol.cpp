@@ -3303,6 +3303,9 @@ void ModuleSymbol::codegenDef() {
 
 void LabelSymbol::codegenDef() { }
 
+void TemporaryConversionSymbol::codegenDef() {
+  INT_FATAL("should not be reached");
+}
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *

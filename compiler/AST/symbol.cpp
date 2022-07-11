@@ -1409,6 +1409,51 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
+TemporaryConversionSymbol::TemporaryConversionSymbol(chpl::ID symId)
+  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
+    symId(symId), sig(nullptr)
+{
+  gTemporaryConversionSymbols.add(this);
+}
+
+TemporaryConversionSymbol::TemporaryConversionSymbol(
+    const chpl::resolution::TypedFnSignature* sig)
+  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
+    symId(), sig(sig)
+{
+  gTemporaryConversionSymbols.add(this);
+}
+
+void TemporaryConversionSymbol::verify() {
+}
+
+TemporaryConversionSymbol*
+TemporaryConversionSymbol::copyInner(SymbolMap* map) {
+  TemporaryConversionSymbol* copy = nullptr;
+  if (sig) {
+    copy = new TemporaryConversionSymbol(sig);
+  } else {
+    copy = new TemporaryConversionSymbol(symId);
+  }
+  copy->copyFlags(this);
+  return copy;
+}
+
+void TemporaryConversionSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in TemporaryConversionSymbol::replaceChild");
+}
+
+void TemporaryConversionSymbol::accept(AstVisitor* visitor) {
+  visitor->visitTemporaryConversionSymbol(this);
+}
+
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 

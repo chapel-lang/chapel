@@ -76,6 +76,10 @@ void AstLogger::exitInterfaceSym(InterfaceSymbol* node) {
 void AstLogger::visitLabelSym(LabelSymbol* node) {
 }
 
+void
+AstLogger::visitTemporaryConversionSymbol(TemporaryConversionSymbol* node) {
+}
+
 bool AstLogger::enterModSym(ModuleSymbol* node) {
   return true;
 }

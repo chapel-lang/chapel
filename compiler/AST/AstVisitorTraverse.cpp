@@ -102,6 +102,12 @@ void AstVisitorTraverse::visitLabelSym(LabelSymbol* node)
 
 }
 
+void AstVisitorTraverse::visitTemporaryConversionSymbol(
+    TemporaryConversionSymbol* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterModSym(ModuleSymbol* node)
 {
   return true;

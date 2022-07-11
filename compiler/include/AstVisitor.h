@@ -32,6 +32,7 @@ class EnumSymbol;
 class FnSymbol;
 class InterfaceSymbol;
 class LabelSymbol;
+class TemporaryConversionSymbol;
 class ModuleSymbol;
 class TypeSymbol;
 class VarSymbol;
@@ -119,6 +120,7 @@ public:
   virtual void   exitInterfaceSym    (InterfaceSymbol*   node) = 0;
 
   virtual void   visitLabelSym       (LabelSymbol*       node) = 0;
+  virtual void visitTemporaryConversionSymbol(TemporaryConversionSymbol* node) = 0;
 
   virtual bool   enterModSym         (ModuleSymbol*      node) = 0;
   virtual void   exitModSym          (ModuleSymbol*      node) = 0;
