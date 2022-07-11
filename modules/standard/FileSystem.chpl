@@ -92,7 +92,7 @@
  */
 module FileSystem {
 
-  public use SysError;
+  public use OS;
   import SysBasic.{syserr, ENOERR};
   use Path;
   use HaltWrappers;
