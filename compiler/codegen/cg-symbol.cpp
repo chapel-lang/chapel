@@ -966,9 +966,15 @@ bool argMustUseCPtr(Type* type) {
       type->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
     return false;
 
+#ifdef HAVE_LLVM
+  // Pass extern records by pointer due to LLVM bug (see #19218)
+  bool recordNotRangeNotExtern = isRecord(type) &&
+                                 !type->symbol->hasFlag(FLAG_RANGE);
+#else
   bool recordNotRangeNotExtern = isRecord(type) &&
                                  !type->symbol->hasFlag(FLAG_RANGE) &&
                                  !type->symbol->hasFlag(FLAG_EXTERN);
+#endif
 
   return recordNotRangeNotExtern ||
          isUnion(type);
