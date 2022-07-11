@@ -23,7 +23,7 @@
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/IntentList.h"
 #include "chpl/uast/Variable.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 
 #include <cassert>
 

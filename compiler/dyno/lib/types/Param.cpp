@@ -19,7 +19,7 @@
 
 #include "chpl/types/Param.h"
 
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ComplexType.h"

@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/UniqueString.h"
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/util/string-escapes.h"
 
 #include <cassert>

@@ -20,7 +20,7 @@
 #ifndef CHPL_QUERIES_ID_H
 #define CHPL_QUERIES_ID_H
 
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/util/hash.h"
 
 namespace chpl {

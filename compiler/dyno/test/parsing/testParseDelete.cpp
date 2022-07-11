@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Delete.h"

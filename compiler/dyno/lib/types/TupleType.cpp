@@ -19,7 +19,7 @@
 
 #include "chpl/types/TupleType.h"
 
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/resolution/intents.h"
 
 namespace chpl {

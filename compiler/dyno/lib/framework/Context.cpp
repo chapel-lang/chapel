@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 
-#include "chpl/queries/query-impl.h"
-#include "chpl/queries/global-strings.h"
+#include "chpl/framework/query-impl.h"
+#include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/stringify-functions.h"
 
 #include <chrono>
 #include <fstream>
@@ -44,7 +44,7 @@ namespace chpl {
 
     static void initGlobalStrings() {
 #define X(field, str) globalStrings.field = UniqueString::get(&rootContext, str);
-#include "chpl/queries/all-global-strings.h"
+#include "chpl/framework/all-global-strings.h"
 #undef X
     }
   } // namespace detail

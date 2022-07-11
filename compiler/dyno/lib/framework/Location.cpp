@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/update-functions.h"
 
 namespace chpl {
 

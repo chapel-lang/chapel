@@ -20,10 +20,10 @@
 #ifndef CHPL_QUERIES_CONTEXT_H
 #define CHPL_QUERIES_CONTEXT_H
 
-#include "chpl/queries/Context-detail.h"
-#include "chpl/queries/ID.h"
-#include "chpl/queries/CommentID.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Context-detail.h"
+#include "chpl/framework/ID.h"
+#include "chpl/framework/CommentID.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
 #include "chpl/util/break.h"

@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_ATTRIBUTES_H
 #define CHPL_UAST_ATTRIBUTES_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Pragma.h"
 #include "chpl/util/iteration.h"

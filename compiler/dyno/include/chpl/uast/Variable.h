@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_VARIABLE_H
 #define CHPL_UAST_VARIABLE_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/IntentList.h"
 #include "chpl/uast/VarLikeDecl.h"

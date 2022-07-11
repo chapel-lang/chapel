@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/BytesLiteral.h"
 #include "chpl/uast/CStringLiteral.h"
 #include "chpl/uast/Module.h"

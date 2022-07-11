@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_CONTINUE_H
 #define CHPL_UAST_CONTINUE_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/Identifier.h"
 
 namespace chpl {

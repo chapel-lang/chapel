@@ -20,8 +20,8 @@
 #ifndef CHPL_QUERIES_ERRORMESSAGE_H
 #define CHPL_QUERIES_ERRORMESSAGE_H
 
-#include "chpl/queries/Location.h"
-#include "chpl/queries/ID.h"
+#include "chpl/framework/Location.h"
+#include "chpl/framework/ID.h"
 
 #include <cstdarg>
 #include <string>

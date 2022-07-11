@@ -24,7 +24,7 @@
 #include "alist.h"
 #include "baseAST.h"
 #include "ModuleSymbol.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 

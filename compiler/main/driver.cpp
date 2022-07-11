@@ -46,7 +46,7 @@
 #include "version.h"
 #include "visibleFunctions.h"
 
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 
 #include <inttypes.h>

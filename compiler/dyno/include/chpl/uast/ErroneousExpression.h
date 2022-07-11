@@ -21,7 +21,7 @@
 #define CHPL_UAST_ERRONEOUSEXPRESSION_H
 
 #include "chpl/uast/AstNode.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 
 namespace chpl {
 namespace uast {

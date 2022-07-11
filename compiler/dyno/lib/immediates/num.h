@@ -21,8 +21,8 @@
 #ifndef IMMEDIATES_NUM_H
 #define IMMEDIATES_NUM_H
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/UniqueString.h"
 
 #include <cassert>
 #include <cstdlib>

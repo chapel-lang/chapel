@@ -16,19 +16,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DYNO_QUERIES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/queries
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+endif
 
-ALL_SRCS += dyno/lib/queries/*.cpp
+COMPILER_ROOT = ../../..
+COMPILER_SUBDIR = dyno/lib/framework
 
-DYNO_QUERIES_SRCS =                                 \
-           Context.cpp                              \
-           ErrorMessage.cpp                         \
-           ID.cpp                                   \
-           Location.cpp                             \
-           UniqueString.cpp                         \
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
+include Makefile.include
 
-SRCS = $(DYNO_QUERIES_SRCS)
+TARGETS = $(DYNO_FRAMEWORK_OBJS)
 
-DYNO_QUERIES_OBJS = \
-	$(DYNO_QUERIES_SRCS:%.cpp=$(DYNO_QUERIES_OBJDIR)/%.$(OBJ_SUFFIX))
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot

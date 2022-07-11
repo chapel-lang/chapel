@@ -19,8 +19,8 @@
 
 #include "chpl/uast/Builder.h"
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ErrorMessage.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Module.h"
@@ -28,7 +28,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/OpCall.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/query-impl.h"
 
 #include <cstring>
 #include <string>

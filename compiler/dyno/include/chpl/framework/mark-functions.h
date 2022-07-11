@@ -31,7 +31,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/util/memory.h"
 
 namespace chpl {

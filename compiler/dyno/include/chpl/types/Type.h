@@ -20,8 +20,8 @@
 #ifndef CHPL_TYPES_TYPE_H
 #define CHPL_TYPES_TYPE_H
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/types/TypeTag.h"
 
 #include <deque>

@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_VARLIKEDECL_H
 #define CHPL_UAST_VARLIKEDECL_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/NamedDecl.h"
 #include "chpl/uast/IntentList.h"
 

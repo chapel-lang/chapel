@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/Location.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/Location.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Builder.h"

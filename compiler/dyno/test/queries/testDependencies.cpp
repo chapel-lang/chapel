@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/query-impl.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

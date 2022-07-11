@@ -21,7 +21,7 @@
 #define CHPL_UAST_ZIP_H
 
 #include "chpl/uast/Call.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 
 namespace chpl {
 namespace uast {

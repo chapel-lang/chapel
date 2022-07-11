@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_DOWHILE_H
 #define CHPL_UAST_DOWHILE_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Loop.h"
 
