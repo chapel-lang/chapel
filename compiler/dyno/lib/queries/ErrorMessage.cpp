@@ -28,7 +28,17 @@
 
 namespace chpl {
 
+// avoid an error along the lines of
+// error: pointer 'buf' may be used after 'void* realloc(void*, size_t)'
+ // which is a false positive for this code
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 12
+#define GCC_12_FALSE_POSITIVE_WORKAROUND
+#endif
 
+#ifdef GCC_12_FALSE_POSITIVE_WORKAROUND
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free"
+#endif
 static std::string vprint_to_string(const char* format, va_list vl) {
   // using an argument list after va_end is undefined
   // so in other words, can't use 'vl' more than once,
@@ -66,6 +76,9 @@ static std::string vprint_to_string(const char* format, va_list vl) {
   free(buf);
   return ret;
 }
+#ifdef GCC_12_FALSE_POSITIVE_WORKAROUND
+#pragma GCC diagnostic pop
+#endif
 
 ErrorMessage::ErrorMessage()
   : isDefaultConstructed_(true), kind_(ERROR), id_(), location_(), message_() {
