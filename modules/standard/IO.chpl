@@ -1825,8 +1825,7 @@ The system file descriptor will be closed when the Chapel file is closed.
   to files backed by non-seekable file descriptors.
 
 
-:arg fd: a system file descriptor (obtained with :proc:`Sys.sys_open` or
-         :proc:`Sys.sys_connect` for example).
+:arg fd: a system file descriptor.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
 :returns: an open :record:`file` using the specified file descriptor.

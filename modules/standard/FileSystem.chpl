@@ -1619,15 +1619,17 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
    :rtype: `int`
 */
 proc locale.umask(mask: int): int {
-  use Sys;
+  import OS.POSIX.mode_t;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
+  extern proc chpl_int_to_mode(mode: c_int): mode_t;
+  extern proc chpl_mode_to_int(mode: mode_t): c_int;
 
   var result: int;
   on this {
-    var callRes = chpl_fs_umask(mask.safeCast(mode_t));
-    result = callRes.safeCast(int);
+    var callRes = chpl_fs_umask(chpl_int_to_mode(mask.safeCast(c_int)));
+    result = chpl_mode_to_int(callRes);
   }
-  return result;
+  return result.safeCast(int);
 }
 
 

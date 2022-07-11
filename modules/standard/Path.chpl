@@ -67,7 +67,7 @@ module Path {
 
 use List;
 use IO;
-use Sys, OS.POSIX;
+use OS, OS.POSIX;
 use CTypes;
 
 /*
@@ -348,6 +348,9 @@ proc commonPath(paths: []): string {
 proc dirname(path: string): string {
   return splitPath(path)[0];
 }
+
+pragma "no doc"
+extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
 
 /* Expands any environment variables in the path of the form ``$<name>`` or
    ``${<name>}`` into their values.  If ``<name>`` does not exist, they are left
@@ -903,4 +906,3 @@ proc splitPath(path: string): (string, string) {
  }
 }
 } // end module Path
-

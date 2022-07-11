@@ -157,7 +157,6 @@ Curl Support Types and Functions
  */
 module Curl {
   public use IO, CTypes;
-  use Sys;
   use OS.POSIX;
   import SysBasic.{syserr,ENOERR};
 
@@ -505,7 +504,6 @@ module Curl {
     import Time;
     use IO;
     use Curl;
-    use Sys;
     use CTypes;
     use OS.POSIX;
     import SysBasic.{syserr,ENOERR,EEOF};
@@ -931,9 +929,9 @@ module Curl {
         if timeoutMillis < 0 then
           timeoutMillis = 0;
 
-        var timeout:timeval;
-        timeout.tv_sec = timeoutMillis / 1000;
-        timeout.tv_usec = (timeoutMillis % 1000) * 1000;
+        var timeout:struct_timeval;
+        timeout.tv_sec = (timeoutMillis / 1000):time_t;
+        timeout.tv_usec = ((timeoutMillis % 1000) * 1000):suseconds_t;
 
         mcode = curl_multi_fdset(curlm, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), maxfd);
         if mcode != CURLM_OK then
@@ -950,8 +948,7 @@ module Curl {
           Time.sleep(waitSeconds);
         } else {
           //writeln("selecting ", timeoutMillis);
-          var nset:c_int;
-          serr = Sys.sys_select(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout), nset);
+          serr = POSIX.select_posix(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout));
           if serr != 0 then
             return serr;
         }
@@ -1074,9 +1071,9 @@ module Curl {
         if timeoutMillis < 0 then
           timeoutMillis = 0;
 
-        var timeout:timeval;
-        timeout.tv_sec = timeoutMillis / 1000;
-        timeout.tv_usec = (timeoutMillis % 1000) * 1000;
+        var timeout:struct_timeval;
+        timeout.tv_sec = (timeoutMillis / 1000):time_t;
+        timeout.tv_usec = ((timeoutMillis % 1000) * 1000):suseconds_t;
 
         mcode = curl_multi_fdset(curlm, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), maxfd);
         if mcode != CURLM_OK then
@@ -1093,8 +1090,7 @@ module Curl {
           Time.sleep(waitSeconds);
         } else {
           //writeln("selecting ", timeoutMillis);
-          var nset:c_int;
-          serr = Sys.sys_select(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout), nset);
+          serr = POSIX.select_posix(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout));
           if serr != 0 then
             return serr;
         }

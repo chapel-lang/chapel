@@ -34,6 +34,7 @@
 
  */
 module OS {
+  private use CTypes;
   /*
      The ``OS.POSIX`` module provides definitions matching the POSIX
      programming interface, specifically POSIX.1-2017.  That standard
@@ -45,6 +46,8 @@ module OS {
   */
   module POSIX {
     public use CTypes;
+    private use SysError;
+    import SysBasic.{qio_err_t, fd_t};
 
     //
     // sys/types.h
@@ -171,6 +174,12 @@ module OS {
     pragma "no doc"
     inline operator :(x:c_int, type t:suseconds_t)
       return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_long, type t:suseconds_t)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:suseconds_t, type t:int)
+      return __primitive("cast", t, x);
 
     /*
        Explicit conversions between ``time_t`` and ``c_int`` are
@@ -182,6 +191,12 @@ module OS {
       return __primitive("cast", t, x);
     pragma "no doc"
     inline operator :(x:c_int, type t:time_t)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_long, type t:time_t)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:time_t, type t:int)
       return __primitive("cast", t, x);
 
     /*
@@ -646,6 +661,91 @@ module OS {
       return chpl_os_posix_errno_val();
     }
 
+    // Signals as required by POSIX.1-2008, 2013 edition
+    // See note below about signals intentionally not included
+
+    /* Abort Signal (from abort(3))
+    */
+    extern const SIGABRT: c_int;
+    /* Timer Signal (from alarm(2))
+    */
+    extern const SIGALRM: c_int;
+    /* Bus error (bad memory access)
+    */
+    extern const SIGBUS: c_int;
+    /* Child stopped or terminated
+    */
+    extern const SIGCHLD: c_int;
+    /* Continue if stopped
+    */
+    extern const SIGCONT: c_int;
+    /*Floating-point exception
+    */
+    extern const SIGFPE: c_int;
+    /* Hangup detected on controlling terminal
+    or death of controlling process
+    */
+    extern const SIGHUP: c_int;
+    /* Illegal Instruction
+    */
+    extern const SIGILL: c_int;
+    /* Interrupt from keyboard
+    */
+    extern const SIGINT: c_int;
+    /* Kill signal
+    */
+    extern const SIGKILL: c_int;
+    /* Broken pipe: write to pipe with no readers
+    */
+    extern const SIGPIPE: c_int;
+    /* Quit from keyboard
+    */
+    extern const SIGQUIT: c_int;
+    /* Invalid memory reference
+    */
+    extern const SIGSEGV: c_int;
+    /* Stop process
+    */
+    extern const SIGSTOP: c_int;
+    /* Termination signal
+    */
+    extern const SIGTERM: c_int;
+    /* Trace/breakpoint trap
+    */
+    extern const SIGTRAP: c_int;
+    /* Stop typed at terminal
+    */
+    extern const SIGTSTP: c_int;
+    /* Terminal input for background process
+    */
+    extern const SIGTTIN: c_int;
+    /* Terminal output for background process
+    */
+    extern const SIGTTOU: c_int;
+    /* Urgent condition on socket
+    */
+    extern const SIGURG: c_int;
+    /* User-defined signal 1
+    */
+    extern const SIGUSR1: c_int;
+    /* User-defined signal 2
+    */
+    extern const SIGUSR2: c_int;
+    /* CPU time limit exceeded
+    */
+    extern const SIGXCPU: c_int;
+    /* File size limit exceeded
+    */
+    extern const SIGXFSZ: c_int;
+
+    // These signals are not strictly required by POSIX.1.2008 2013 edition
+    // and so should not be included here:
+
+    // SIGPOLL is Obsolescent and optional as part of XSI STREAMS
+    // SIGPROF is Obsolescent and optional as part of XSI STREAMS
+    // SIGSYS is optional as part of X/Open Systems Interface
+    // SIGVTALRM is optional as part of X/Open Systems Interface
+
     //
     // fcntl.h
     //
@@ -815,6 +915,18 @@ module OS {
     extern "struct timeval" record struct_timeval {
       var tv_sec:time_t;       // seconds since Jan. 1, 1970
       var tv_usec:suseconds_t; // and microseconds
+    }
+
+    proc struct_timeval.init() {}
+
+    proc struct_timeval.init(tv_sec: integral, tv_usec: integral) {
+      this.tv_sec = tv_sec:time_t;
+      this.tv_usec = tv_usec:suseconds_t;
+    }
+
+    proc struct_timeval.init(tv_sec: time_t, tv_usec: suseconds_t) {
+      this.tv_sec = tv_sec;
+      this.tv_usec = tv_usec;
     }
 
     extern "struct timezone" record struct_timezone {
