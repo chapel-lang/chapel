@@ -1578,12 +1578,16 @@ struct Converter {
     } else if (node->isParam()) {
       INT_ASSERT(node->index() && node->index()->isVariable());
 
-      auto indexStr = astr(node->index()->toVariable()->name());
+      DefExpr* indexDef = toDefExpr(index);
+      INT_ASSERT(indexDef && isVarSymbol(indexDef->sym));
+
+      VarSymbol* indexVar = toVarSymbol(indexDef->sym);
+
       body = createBlockWithStmts(node->stmts(), node->blockStyle());
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
 
-      ret = buildParamForLoopStmt(indexStr, iteratorExpr, block);
+      ret = buildParamForLoopStmt(indexVar, iteratorExpr, block);
 
     } else {
       body = createBlockWithStmts(node->stmts(), node->blockStyle());

@@ -143,7 +143,7 @@ Expr* buildForallLoopExpr(Expr* indices,
                           bool zippered = false);
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
                                            bool recursiveCall = false);
-BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
+BlockStmt* buildParamForLoopStmt(VarSymbol* indexVar, Expr* range, BlockStmt* block);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);

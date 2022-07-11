@@ -1275,7 +1275,8 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
 
   // copy the indices and body together to get the
   // SymExprs referring to index variable DefExprs to line up
-  BlockStmt* indicesAndBodyCopy = indicesAndBody->copy();
+  SymbolMap tmpMap;
+  BlockStmt* indicesAndBodyCopy = indicesAndBody->copy(&tmpMap);
   Expr* indicesCopy = indicesAndBodyCopy->body.first();
   BlockStmt* bodyCopy = toBlockStmt(indicesAndBodyCopy->body.last());
   INT_ASSERT(indicesCopy && bodyCopy);
@@ -1306,9 +1307,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
 }
 
 
-BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmts) {
-  VarSymbol* indexVar = new VarSymbol(index);
-
+BlockStmt* buildParamForLoopStmt(VarSymbol* indexVar, Expr* range, BlockStmt* stmts) {
   return ParamForLoop::buildParamForLoop(indexVar, range, stmts);
 }
 
