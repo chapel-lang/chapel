@@ -267,6 +267,13 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
 
+#
+# Avoid false positive warnings about use-after free with realloc
+# that occur in GCC 12.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-use-after-free
+endif
 
 #
 # 2016/03/28: Help to protect the Chapel compiler from a partially
