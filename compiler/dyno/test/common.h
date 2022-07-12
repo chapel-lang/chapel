@@ -22,8 +22,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-namespace impl {
-
 using namespace chpl;
 using namespace resolution;
 using namespace types;
@@ -44,10 +42,6 @@ parseQualifiedTypeOfX(Context* context, const char* program);
 
 const Type*
 parseTypeOfX(Context* context, const char* program);
-
-} // end namespace impl
-
-using namespace impl;
 
 // always check assertions in this test
 #ifdef NDEBUG

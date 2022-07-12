@@ -22,8 +22,6 @@
 
 using namespace parsing;
 
-namespace impl {
-
 const Module* parseModule(Context* context, const char* src) {
   auto path = UniqueString::get(context, "input.chpl");
   std::string contents = src;
@@ -89,7 +87,4 @@ parseTypeOfX(Context* context, const char* program) {
 
   const Type* t = qt.type();
   return t;
-}
-
-
 }
