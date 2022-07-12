@@ -1179,6 +1179,7 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
   }
 
   assert(wrappedBaseExpression);
+  (void) wrappedBaseExpression;
 
   return fnCall;
 }
