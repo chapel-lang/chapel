@@ -13,25 +13,26 @@ for using Chapel:
   * You are using an environment that supports standard UNIX commands
     such as: ``cd, mkdir, rm, echo``
 
-  * You have a Bourne shell available at ``/bin/sh``, 'env' available at
-    ``/usr/bin/env``, and that 'env' can locate ``python3`` or ``python``
-    on your system.
+  * You have a Bourne shell available at ``/bin/sh`` and ``env`` available at
+    ``/usr/bin/env``.
 
-  * You have Python 2.7 or newer.
+  * You have Python 2.7 or newer available as either ``python3`` or
+    ``python`` and that ``env`` can locate it.
 
-  * You have access to gmake or a GNU-compatible version of make.
+  * You have access to ``gmake`` or a GNU-compatible version of ``make``.
 
   * You have access to standard C and C++14 compilers. The C++14 support
     is required for building the compiler itself. For GCC specifically,
     GCC 5 or newer is required for C++14 support. Note that C11 support,
     while not required, will enable faster atomic operations.
 
+  * CMake is available and ``cmake`` runs version 3.13.4 or later.
+
   * The LLVM backend is now the default and it is easiest to use it with
     a system-wide installation of LLVM. LLVM 11,12,13 and 14 are currently
     supported. If a system-wide installation of LLVM 11/12/13/14 is not
     available, you can use the bundled LLVM or disable LLVM support (see
-    :ref:`readme-chplenv.CHPL_LLVM`). Please note that building the
-    bundled LLVM requires cmake version 3.13.4 or later.
+    :ref:`readme-chplenv.CHPL_LLVM`).
 
 In addition, several optional components have additional requirements:
 
@@ -39,9 +40,6 @@ In addition, several optional components have additional requirements:
     or Chapel's test system. These additionally require ``python3-devel``
     or the equivalent package; ``python3`` and ``pip3`` commands; and the
     ``venv`` Python package.
-
-  * ``cmake`` 3.13.4 or later is required to build the bundled LLVM or
-    to build the complete documentation
 
   * ``doxygen`` is required to build the complete documentation
 
