@@ -655,17 +655,19 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
 static FnSymbol* trivialLeader          = NULL;
 static Type*     trivialLeaderYieldType = NULL;
 
-// Return a _build_tuple of fs's index variables.
+// Return a DefExpr or _build_tuple of DefExpr of fs's index variables.
+// Removes the DefExprs from fs->inductionVariables()
 static Expr* hzsMakeIndices(ForallStmt* fs) {
   if (fs->numInductionVars() == 1) {
     INT_ASSERT(fs->overTupleExpand());
-    return new SymExpr(fs->firstInductionVarDef()->sym);
+    return fs->firstInductionVarDef()->remove();
   }
 
   CallExpr* indices = new CallExpr("_build_tuple");
 
-  for_alist(inddef, fs->inductionVariables())
-    indices->insertAtTail(toDefExpr(inddef)->sym);
+  // Move the index variables' DefExprs to 'forLoop'.
+  while (Expr* inddef = fs->inductionVariables().tail)
+    indices->insertAtHead(inddef->remove());
 
   // Todo detect the case where the forall loop in the source code
   // had a single index variable. We can tell that by checking whether
