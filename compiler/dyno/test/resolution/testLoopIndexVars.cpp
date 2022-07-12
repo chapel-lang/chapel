@@ -29,6 +29,7 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
+#include "common.h"
 
 
 // always check assertions in this test
@@ -64,21 +65,6 @@ static auto recIter = std::string(R""""(
 std::vector<ErrorMessage> errors;
 static void collectErrors(Context* context, const ErrorMessage& err) {
   errors.push_back(err);
-}
-
-static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
-
-static const Module* parseModule(Context* context, std::string& str) {
-  return parseModule(context, str.c_str());
 }
 
 struct ParamCollector {

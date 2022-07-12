@@ -25,6 +25,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
+#include "common.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -38,17 +39,6 @@ using namespace parsing;
 using namespace resolution;
 using namespace types;
 using namespace uast;
-
-static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
 
 static void test1() {
   printf("test1\n");
@@ -207,7 +197,7 @@ static void test3() {
 // assumes the last statement is a variable declaration for x.
 // returns the type of that.
 static std::pair<const Type*, const ResolvedFields*>
-parseTypeOfX(Context* context, const char* program) {
+parseTypeAndFieldsOfX(Context* context, const char* program) {
   auto m = parseModule(context, program);
   assert(m->numStmts() > 0);
   const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
@@ -239,7 +229,7 @@ static void test4a() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { var field: int; }\n"
                                  "var x: R;\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -258,7 +248,7 @@ static void test4b() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { var field; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { var field; }\n"
                                  "var x: R(int);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -277,7 +267,7 @@ static void test5() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { type t; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { type t; }\n"
                                  "var x: R(int);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -308,7 +298,7 @@ static void test6() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { param p; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { param p; }\n"
                                  "var x: R(1);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -328,7 +318,7 @@ static void test7() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
                                  "var x: R(real);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -347,7 +337,7 @@ static void test8() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
                                  "var x: R;\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -366,7 +356,7 @@ static void test9() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { param p = 1; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
                                  "var x: R(2);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -386,7 +376,7 @@ static void test10() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { param p = 1; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
                                  "var x: R;\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -406,7 +396,7 @@ static void test11() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
                                  "var x: R();\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -425,7 +415,7 @@ static void test12() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
                                  "var x: R(?);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -444,7 +434,7 @@ static void test13() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { param p = 1; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
                                  "var x: R();\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -463,7 +453,7 @@ static void test14() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "record R { param p = 1; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
                                  "var x: R(?);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -483,7 +473,7 @@ static void test15() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: C;\n");
 
   auto ct = p.first->toClassType();
@@ -508,7 +498,7 @@ static void test16() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: C?;\n");
 
   auto ct = p.first->toClassType();
@@ -534,7 +524,7 @@ static void test17() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: borrowed C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -558,7 +548,7 @@ static void test18() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: borrowed C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -582,7 +572,7 @@ static void test19() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: unmanaged C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -606,7 +596,7 @@ static void test20() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: unmanaged C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -630,7 +620,7 @@ static void test21() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: owned C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -654,7 +644,7 @@ static void test22() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: owned C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -678,7 +668,7 @@ static void test23() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: shared C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -702,7 +692,7 @@ static void test23q() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: shared C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -726,7 +716,7 @@ static void test24() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field; }\n"
                                  "var x: C(int);\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -750,7 +740,7 @@ static void test25() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field; }\n"
                                  "var x: C(int)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -774,7 +764,7 @@ static void test26() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { var field; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { var field; }\n"
                                  "var x: borrowed C(int)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -798,7 +788,7 @@ static void test27() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { type t; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { type t; }\n"
                                  "var x: owned C(int)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -822,7 +812,7 @@ static void test28() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -846,7 +836,7 @@ static void test29() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: C();\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -870,7 +860,7 @@ static void test30() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: borrowed C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -894,7 +884,7 @@ static void test31() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: borrowed C()?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -918,7 +908,7 @@ static void test32() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: shared C(real)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -942,7 +932,7 @@ static void test33() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: C(real)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -966,7 +956,7 @@ static void test34() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: unmanaged C(real);\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -1040,7 +1030,7 @@ static void test35() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context,
+  auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           record R {
                             var a = 1;
@@ -1089,7 +1079,7 @@ static void test36() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context,
+  auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           class ClassA {
                             var field: object;
@@ -1122,7 +1112,7 @@ static void test37() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context,
+  auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           class ClassA {
                             var x: int;
@@ -1158,7 +1148,7 @@ static void test38() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context,
+  auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           class Parent {
                             var parentField:int;
@@ -1206,7 +1196,7 @@ static void test39() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context,
+  auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           class C {
                             var next: owned C;
@@ -1236,7 +1226,7 @@ static void test40() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context,
+  auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           proc useType(type t) {
                             var ret: t;
@@ -1260,7 +1250,7 @@ static void test41() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context,
+  auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           proc useType(type t) {
                             var ret: t;
@@ -1292,7 +1282,7 @@ static void test42() {
   Context ctx;
   Context* context = &ctx;
 
-  auto p = parseTypeOfX(context,
+  auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           proc useType(type t) {
                             var ret: t(1);

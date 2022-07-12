@@ -26,6 +26,7 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/Variable.h"
+#include "common.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -40,63 +41,15 @@ using namespace resolution;
 using namespace types;
 using namespace uast;
 
-static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
-
-// assumes the last statement is a variable declaration for x
-// with an initialization expression.
-// Returns the type of the initializer expression.
-static QualifiedType
-parseTypeOfXInit(Context* context, const char* program) {
-  auto m = parseModule(context, program);
-  assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
-  assert(x);
-  assert(x->name() == "x");
-  auto initExpr = x->initExpression();
-  assert(initExpr);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(initExpr).type();
-  assert(qt.type());
-
-  return qt;
-}
-
 
 // assumes the last statement is a variable declaration for x.
 // returns the type of that.
-static QualifiedType
-parseTypeOfX(Context* context, const char* program) {
-  auto m = parseModule(context, program);
-  assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
-  assert(x);
-  assert(x->name() == "x");
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type();
-  assert(qt.type());
-
-  return qt;
-}
-
 static void test1() {
   printf("test1\n");
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   var x = (1, 2);
                 )"""");
@@ -122,7 +75,7 @@ static void test2() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   type x = (int, real);
                 )"""");
@@ -144,7 +97,7 @@ static void test3() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   var r: R;
@@ -175,7 +128,7 @@ static void test4() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   type x = (R, R);
@@ -201,7 +154,7 @@ static void test5() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfX(context,
+  auto qt = resolveQualifiedTypeOfX(context,
                 R""""(
                   record R { }
                   var r: R;
@@ -228,7 +181,7 @@ static void test6() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   proc f() {
@@ -252,7 +205,7 @@ static void test7() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   var r: R;
@@ -277,7 +230,7 @@ static void test8() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   proc f() : (R, R) {
@@ -369,7 +322,7 @@ static void test11() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   proc f(in arg: (real, real)) { return arg; }
                   var x = f( (1,2) );
@@ -391,7 +344,7 @@ static void test12() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   proc f(in arg: (R, R)) { return arg; }
@@ -421,7 +374,7 @@ static void test13() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { param p; }
                   proc f(in arg: (R, R)) { return arg; }
@@ -453,7 +406,7 @@ static void test14() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   proc f(x: int, (y, z): (real, int)) { return (x, y, z); }
                   var x = f( 1, (2.0, 3) );
@@ -475,7 +428,7 @@ static void test15() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   var tup = (1, 2);
                   var x = ( (... tup), 3.0);
@@ -497,7 +450,7 @@ static void test16() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfX(context,
+  auto qt = resolveQualifiedTypeOfX(context,
                 R""""(
                   proc helper(a: int, b: real) { return b; }
                   var tup = (1, 2.0);

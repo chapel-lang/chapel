@@ -97,20 +97,4 @@ add_subdirectory(util)
 # Needs to happen in this file for ctest to work in this dir
 enable_testing()
 
-add_custom_target(tests)
-
-# define a function to simplify adding tests
-function(comp_unit_test target)
-  add_executable(${target} "${target}.cpp")
-  set_property(TARGET ${target} PROPERTY EXCLUDE_FROM_ALL)
-  set_target_properties(${target}  PROPERTIES LINK_DEPENDS_NO_SHARED true)
-  target_link_libraries(${target} libdyno)
-  target_include_directories(${target} PUBLIC
-                             ${CHPL_MAIN_INCLUDE_DIR}
-                             ${CHPL_INCLUDE_DIR})
-  add_dependencies(${target} libdyno)
-  add_test(NAME ${target} COMMAND ${target})
-  add_dependencies(tests ${target})
-endfunction(comp_unit_test)
-
 add_subdirectory(test)

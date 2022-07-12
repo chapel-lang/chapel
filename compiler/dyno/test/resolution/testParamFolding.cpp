@@ -22,6 +22,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "common.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -42,37 +43,9 @@ static void reportError(Context* context, const ErrorMessage& err) {
   assert(false && "fatal error");
 }
 
-static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
-
 // assumes the last statement is a variable declaration for x
 // with an initialization expression.
 // Returns the type of the initializer expression.
-static QualifiedType
-parseTypeOfXInit(Context* context, const char* program) {
-  auto m = parseModule(context, program);
-  assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
-  assert(x);
-  assert(x->name() == "x");
-  auto initExpr = x->initExpression();
-  assert(initExpr);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(initExpr).type();
-  assert(qt.type());
-
-  return qt;
-}
 
 static void test1() {
   Context ctx;
@@ -81,7 +54,7 @@ static void test1() {
   // configure context to fail test if there are any errors
   context->setErrorHandler(reportError);
 
-  QualifiedType qt = parseTypeOfXInit(context, "var x = true || f();");
+  QualifiedType qt = resolveTypeOfXInit(context, "var x = true || f();");
   assert(qt.isParamTrue());
 }
 
@@ -92,7 +65,7 @@ static void test2() {
   // configure context to fail test if there are any errors
   context->setErrorHandler(reportError);
 
-  QualifiedType qt = parseTypeOfXInit(context, "var x = false && f();");
+  QualifiedType qt = resolveTypeOfXInit(context, "var x = false && f();");
   assert(qt.isParamFalse());
 }
 
@@ -105,7 +78,7 @@ static void test3() {
   // configure context to fail test if there are any errors
   context->setErrorHandler(reportError);
 
-  QualifiedType qt = parseTypeOfXInit(context,
+  QualifiedType qt = resolveTypeOfXInit(context,
                                       "var a: bool; var x = a || true;");
   assert(!qt.isParam() && !qt.hasParamPtr());
   assert(qt.type() == BoolType::get(context, 0));
@@ -119,7 +92,7 @@ static void test4() {
   context->setErrorHandler(reportError);
 
   // 2nd argument param should not be folded
-  QualifiedType qt = parseTypeOfXInit(context,
+  QualifiedType qt = resolveTypeOfXInit(context,
                                       "var a: bool; var x = a && false;");
   assert(!qt.isParam() && !qt.hasParamPtr());
   assert(qt.type() == BoolType::get(context, 0));
@@ -133,7 +106,7 @@ static void test5() {
   context->setErrorHandler(reportError);
 
   // both args are params, should make a param init expr
-  QualifiedType qt = parseTypeOfXInit(context,
+  QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = true && false;");
   assert(qt.isParamFalse());
 }
@@ -146,7 +119,7 @@ static void test6() {
   context->setErrorHandler(reportError);
 
   // both args are params, should make a param init expr
-  QualifiedType qt = parseTypeOfXInit(context,
+  QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = false || true;");
   assert(qt.isParamTrue());
 }
@@ -159,7 +132,7 @@ static void test7() {
   context->setErrorHandler(reportError);
 
   // both args are the (or) identity params, should make param false.
-  QualifiedType qt = parseTypeOfXInit(context,
+  QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = false || false;");
   assert(qt.isParamFalse());
 }
@@ -172,7 +145,7 @@ static void test8() {
   context->setErrorHandler(reportError);
 
   // both args are the (and) identity params, should make param true.
-  QualifiedType qt = parseTypeOfXInit(context,
+  QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = true && true;");
   assert(qt.isParamTrue());
 }
@@ -185,7 +158,7 @@ static void test9() {
   context->setErrorHandler(reportError);
 
   // the type of y is unknown, so the whole type is unknown.
-  QualifiedType qt = parseTypeOfXInit(context,
+  QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = true && y;");
   assert(qt.isUnknown());
 }
@@ -198,7 +171,7 @@ static void test10() {
   context->setErrorHandler(reportError);
 
   // the type of y is unknown, so the whole type is unknown.
-  QualifiedType qt = parseTypeOfXInit(context,
+  QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = false || y;");
   assert(qt.isUnknown());
 }

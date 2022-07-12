@@ -16,51 +16,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
-#include "common.h"
+
+using namespace chpl;
+using namespace resolution;
+using namespace types;
+using namespace uast;
+
+// Get the top-level module resulting from parsing the given string.
+const Module* parseModule(Context* context, const char* src);
+const Module* parseModule(Context* context, std::string& str);
+
+// assumes the last statement is a variable declaration for x
+// with an initialization expression.
+// Returns the type of the initializer expression.
+QualifiedType
+resolveTypeOfXInit(Context* context, const char* program, bool requireTypeKnown = true);
+
+QualifiedType
+resolveQualifiedTypeOfX(Context* context, const char* program);
+
+const Type*
+resolveTypeOfX(Context* context, const char* program);
 
 // always check assertions in this test
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace types;
-using namespace uast;
-
-static void test1() {
-  printf("test1\n");
-  Context ctx;
-  Context* context = &ctx;
-
-  auto qt = resolveTypeOfXInit(context,
-                             R""""(
-                               record R {
-                                 var field: int;
-                               }
-                               var rec: R;
-                               var x = rec.field;
-                             )"""");
-
-  assert(qt.kind() == QualifiedType::REF);
-  assert(qt.type() == IntType::get(context, 0));
-}
-
-
-int main() {
-  test1();
-
-  return 0;
-}
