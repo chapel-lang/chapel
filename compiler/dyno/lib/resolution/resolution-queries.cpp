@@ -567,9 +567,10 @@ static void helpSetFieldTypes(const AstNode* ast,
                               ResolvedFields& fields) {
 
   if (auto var = ast->toVarLikeDecl()) {
+    bool hasTypeExpression = var->typeExpression() != nullptr;
     bool hasDefaultValue = initedInParent || var->initExpression() != nullptr;
     const ResolvedExpression& e = r.byAst(var);
-    fields.addField(var->name(), hasDefaultValue, var->id(), e.type());
+    fields.addField(var->name(), hasTypeExpression, hasDefaultValue, var->id(), e.type());
   } else if (auto mult = ast->toMultiDecl()) {
     for (auto decl : mult->decls()) {
       helpSetFieldTypes(decl, r, initedInParent, fields);
@@ -708,6 +709,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
         int n = resolvedFields.numFields();
         for (int i = 0; i < n; i++) {
           result.addField(resolvedFields.fieldName(i),
+                          resolvedFields.fieldHasTypeExpression(i),
                           resolvedFields.fieldHasDefaultValue(i),
                           resolvedFields.fieldDeclId(i),
                           resolvedFields.fieldType(i));

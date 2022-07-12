@@ -1310,18 +1310,22 @@ class FormalActualMap {
 class ResolvedFields {
   struct FieldDetail {
     UniqueString name;
+    bool hasTypeExpression = false;
     bool hasDefaultValue = false;
     ID declId;
     types::QualifiedType type;
 
     FieldDetail(UniqueString name,
+                bool hasTypeExpression,
                 bool hasDefaultValue,
                 ID declId,
                 types::QualifiedType type)
-      : name(name), hasDefaultValue(hasDefaultValue), declId(declId), type(type) {
+      : name(name), hasTypeExpression(hasTypeExpression),
+        hasDefaultValue(hasDefaultValue), declId(declId), type(type) {
     }
     bool operator==(const FieldDetail& other) const {
       return name == other.name &&
+             hasTypeExpression == other.hasTypeExpression &&
              hasDefaultValue == other.hasDefaultValue &&
              declId == other.declId &&
              type == other.type;
@@ -1330,7 +1334,7 @@ class ResolvedFields {
       return !(*this == other);
     }
     size_t hash() const {
-      return chpl::hash(name, hasDefaultValue, declId, type);
+      return chpl::hash(name, hasTypeExpression, hasDefaultValue, declId, type);
     }
 
     void mark(Context* context) const {
@@ -1363,10 +1367,11 @@ class ResolvedFields {
   }
 
   void addField(UniqueString name,
+                bool hasTypeExpression,
                 bool hasDefaultValue,
                 ID declId,
                 types::QualifiedType type) {
-    fields_.push_back(FieldDetail(name, hasDefaultValue, declId, type));
+    fields_.push_back(FieldDetail(name, hasTypeExpression, hasDefaultValue, declId, type));
   }
 
   void finalizeFields(Context* context);
@@ -1388,6 +1393,10 @@ class ResolvedFields {
   UniqueString fieldName(int i) const {
     assert(0 <= i && (size_t) i < fields_.size());
     return fields_[i].name;
+  }
+  bool fieldHasTypeExpression(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].hasTypeExpression;
   }
   bool fieldHasDefaultValue(int i) const {
     assert(0 <= i && (size_t) i < fields_.size());

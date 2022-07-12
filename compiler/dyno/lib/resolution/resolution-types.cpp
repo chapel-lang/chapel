@@ -339,7 +339,10 @@ void ResolvedFields::finalizeFields(Context* context) {
   // look at the fields and compute the summary information
   for (auto field : fields_) {
     auto g = getTypeGenericityIgnoring(context, field.type, ignore);
-    if (g != Type::CONCRETE) {
+    if (g != Type::CONCRETE && !field.hasTypeExpression) {
+      // XXX: as a temporary workaround to the insufficient
+      // genericity computation, skip types marked as generic
+      // that have a type expression.
       if (!field.hasDefaultValue) {
         allGenHaveDefault = false;
       }
