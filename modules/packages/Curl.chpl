@@ -508,6 +508,9 @@ module Curl {
     use OS.POSIX;
     import SysBasic.{syserr,ENOERR,EEOF};
 
+    pragma "no doc"
+    extern proc sys_select(nfds:c_int, readfds:c_ptr(fd_set), writefds:c_ptr(fd_set), exceptfds:c_ptr(fd_set), timeout:c_ptr(struct_timeval), ref nset:c_int):c_int;
+
     class CurlFile : QioPluginFile {
 
       var url_c: c_string;     // Path/URL
@@ -948,7 +951,8 @@ module Curl {
           Time.sleep(waitSeconds);
         } else {
           //writeln("selecting ", timeoutMillis);
-          serr = POSIX.select_posix(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout));
+          var nset: c_int;
+          serr = sys_select(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout), nset);
           if serr != 0 then
             return serr;
         }
@@ -1090,7 +1094,8 @@ module Curl {
           Time.sleep(waitSeconds);
         } else {
           //writeln("selecting ", timeoutMillis);
-          serr = POSIX.select_posix(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout));
+          var nset : c_int;
+          serr = sys_select(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout), nset);
           if serr != 0 then
             return serr;
         }
