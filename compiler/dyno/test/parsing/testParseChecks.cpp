@@ -20,7 +20,7 @@
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/CompilerFlags.h"
 #include "chpl/framework/Context.h"
-#include "chpl/parsing/Parser.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/all-uast.h"
 
 // always check assertions in this test
@@ -68,12 +68,16 @@ static void assertErrorMatches(Context* ctx, const BuilderResult& br,
   assert(output == expect);
 }
 
-static void test0(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test0.chpl",
+static void test0(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     var x: [?d] int;
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test0.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test0.chpl", 2,
@@ -81,12 +85,17 @@ static void test0(Parser* parser) {
                      "in formal argument types");
 }
 
-static void test1(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test1.chpl",
+static void test1(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     foo(bar=0, bar=1);
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test1.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test1.chpl", 2,
@@ -94,12 +103,17 @@ static void test1(Parser* parser) {
                      "the same function call.");
 }
 
-static void test2(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test2.chpl",
+static void test2(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     var x = new owned shared borrowed unmanaged C();
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test2.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 3);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test2.chpl", 2,
@@ -113,14 +127,19 @@ static void test2(Parser* parser) {
                      "borrowed unmanaged");
 }
 
-static void test3(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test3.chpl",
+static void test3(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     deinit(foo);
     a.deinit(foo, bar);
     a.b.deinit();
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test3.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 3);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test3.chpl", 2,
@@ -131,9 +150,10 @@ static void test3(Parser* parser) {
                      "direct calls to deinit() are not allowed");
 }
 
-static void test4(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test4.chpl",
+static void test4(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     private class C {}
     private record r {}
@@ -150,7 +170,11 @@ static void test4(Parser* parser) {
       private var x = 0;
     }
     for i in lo..hi do private var x = 0;
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test4.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 9);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test4.chpl", 2,
@@ -179,13 +203,18 @@ static void test4(Parser* parser) {
                      "module level declarations");
 }
 
-static void test5(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test5.chpl",
+static void test5(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     const x = noinit;
     const ref y = noinit;
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test5.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 2);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test5.chpl", 2,
@@ -196,9 +225,10 @@ static void test5(Parser* parser) {
                      "explicitly initialized");
 }
 
-static void test6(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test6.chpl",
+static void test6(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     proc foo() {
       config const x = 0;
@@ -206,7 +236,11 @@ static void test6(Parser* parser) {
       config param p = 0.0;
       config var z = 0;
     }
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test6.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 4);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test6.chpl", 3,
@@ -223,38 +257,53 @@ static void test6(Parser* parser) {
                      "scope");
 }
 
-static void test7(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test7.chpl",
+static void test7(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     export var x = 0;
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test7.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test7.chpl", 2,
                      "Export variables are not yet supported");
 }
 
-static void test8(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test8.chpl",
+static void test8(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     proc emptyBody();
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test8.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test8.chpl", 2,
                      "no-op procedures are only legal for extern functions");
 }
 
-static void test9(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test9.chpl",
+static void test9(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     extern proc shouldNotHaveBody() { writeln(0); }
     extern proc shouldNotThrow() throws;
     extern proc shouldNotDoEither() throws { writeln(0); }
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test9.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 4);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test9.chpl", 2,
@@ -267,27 +316,37 @@ static void test9(Parser* parser) {
                      "Extern functions cannot throw errors.");
 }
 
-static void test10(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test10.chpl",
+static void test10(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     export proc foo() where false {}
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test10.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test10.chpl", 2,
                      "Exported functions cannot have where clauses");
 }
 
-static void test11(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test11.chpl",
+static void test11(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     class C {
       proc this { return 0; }
       iter these { yield nil; }
     }
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test11.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 2);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test11.chpl", 3,
@@ -296,15 +355,20 @@ static void test11(Parser* parser) {
                      "method 'these' must have parentheses");
 }
 
-static void test12(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test12.chpl",
+static void test12(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
     R""""(
     proc f1(out x: int) type {}
     proc f2(inout x: int) type {}
     proc f3(out x: int) param {}
     proc f4(inout x: int) param {}
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test12.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 4);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test12.chpl", 2,
@@ -322,9 +386,17 @@ static void test12(Parser* parser) {
 }
 
 // TODO: Cannot get the internal/bundled module stuff to work properly.
-static void test13(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test13.chpl",
+static void test13(void) {
+  Context context;
+  Context* ctx = &context;
+
+  // Turn on the --warn-unstable flag for some warnings.
+  CompilerFlags list;
+  list.set(CompilerFlags::WARN_UNSTABLE, true);
+  ctx->advanceToNextRevision(false);
+  setCompilerFlags(ctx, list);
+
+  std::string text =
     R""""(
     proc _bad1() {}
     var _bad2 = 0;
@@ -332,7 +404,11 @@ static void test13(Parser* parser) {
     proc chpl_bad4() {}
     var chpl_bad5 = 0;
     class chpl_bad6 {}
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test13.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 6);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test13.chpl", 2,
@@ -355,12 +431,23 @@ static void test13(Parser* parser) {
                      "are unstable.");
 }
 
-static void test14(Parser* parser) {
-  Context* ctx = parser->context();
-  auto br = parser->parseString("test14.chpl",
+static void test14(void) {
+  Context context;
+  Context* ctx = &context;
+
+  // Turn on the --warn-unstable flag for some warnings.
+  CompilerFlags list;
+  list.set(CompilerFlags::WARN_UNSTABLE, true);
+  ctx->advanceToNextRevision(false);
+  setCompilerFlags(ctx, list);
+  std::string text =
     R""""(
     union foo {}
-    )"""");
+    )"""";
+  auto path = UniqueString::get(ctx, "test14.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test14.chpl", 2,
@@ -370,34 +457,21 @@ static void test14(Parser* parser) {
 }
 
 int main() {
-  Context context;
-  Context* ctx = &context;
-
-  auto parser = Parser::createForTopLevelModule(ctx);
-  Parser* p = &parser;
-
-  test0(p);
-  test1(p);
-  test2(p);
-  test3(p);
-  test4(p);
-  test5(p);
-  test6(p);
-  test7(p);
-  test8(p);
-  test9(p);
-  test10(p);
-  test11(p);
-  test12(p);
-
-  // Turn on the --warn-unstable flag for some warnings.
-  CompilerFlags list;
-  list.set(CompilerFlags::WARN_UNSTABLE, true);
-  ctx->advanceToNextRevision(false);
-  setCompilerFlags(ctx, list);
-
-  test13(p);
-  test14(p);
+  test0();
+  test1();
+  test2();
+  test3();
+  test4();
+  test5();
+  test6();
+  test7();
+  test8();
+  test9();
+  test10();
+  test11();
+  test12();
+  test13();
+  test14();
 
   return 0;
 }

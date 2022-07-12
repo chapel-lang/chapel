@@ -189,6 +189,8 @@ class ErrorMessage final {
 
   Kind kind() const { return kind_; }
 
+  inline ID id() const { return id_; }
+
   inline bool operator==(const ErrorMessage& other) const {
     return isDefaultConstructed_ == other.isDefaultConstructed_ &&
            kind_ == other.kind_ &&

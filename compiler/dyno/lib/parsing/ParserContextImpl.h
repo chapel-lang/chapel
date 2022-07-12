@@ -1108,7 +1108,8 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
     auto& child = builder->mutableRefToChildren(opCall)[0];
     if (FnCall* fnCall = child->toFnCall()) {
       child.release();
-      auto wrappedFn = this->wrapCalledExpressionInNew(location, management, fnCall);
+      auto wrappedFn = wrapCalledExpressionInNew(location, management,
+                                                 fnCall);
       child.reset(wrappedFn);
       return expr;
     } else {
@@ -1118,14 +1119,19 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
   } else {
     if (expr->isIdentifier() && expr->toIdentifier()->numChildren() == 0) {
       // try to capture case of new A; (new without parens)
-      this->raiseError(location, "type in 'new' expression is missing its argument list");
+      raiseError(location, "type in 'new' expression is missing its "
+                           "argument list");
     } else if (expr->isDot() ) {
-      // try to capture case of var z20a = new C().tmeth; and var z20c = new C()?.tmeth;
-      if (expr->toDot()->receiver()->isFnCall() || expr->toDot()->receiver()->isOpCall()) {
-        this->raiseError(location, "Please use parentheses to disambiguate dot expression after new");
+      // try to capture case of var z20a = new C().tmeth;
+      // and var z20c = new C()?.tmeth;
+      if (expr->toDot()->receiver()->isFnCall() ||
+          expr->toDot()->receiver()->isOpCall()) {
+        raiseError(location, "Please use parentheses to disambiguate "
+                             "dot expression after new");
       } else {
         // try to capture case of new M.Q;
-        this->raiseError(location, "type in 'new' expression is missing its argument list");
+        raiseError(location, "type in 'new' expression is missing its "
+                             "argument list");
       }
     } else {
       // It's an error for one reason or another. TODO: Specialize these
@@ -1143,26 +1149,33 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
                                                  New::Management management,
                                                  FnCall* fnCall) {
   assert(fnCall->calledExpression());
-
-  #ifndef NDEBUG
-    bool wrappedBaseExpression = false;
-  #endif
+  bool wrappedBaseExpression = false;
 
   // Find the child slot containing the called expression. Then remove it,
   // wrap it in a new expression, and swap in the new expression.
   for (auto& child : builder->mutableRefToChildren(fnCall)) {
-    if (child.get() == fnCall->calledExpression()) {
-      auto calledExpr = std::move(child).release();
-      assert(calledExpr);
-      auto newExpr = New::build(builder, convertLocation(location),
-                                toOwned(calledExpr),
-                                management);
-      child = std::move(newExpr);
-      #ifndef NDEBUG
-        wrappedBaseExpression = true;
-      #endif
-      break;
-    }
+    if (child.get() != fnCall->calledExpression()) continue;
+
+    // We have the base expression.
+    auto calledExpr = std::move(child).release();
+    assert(calledExpr);
+    auto newExpr = New::build(builder, convertLocation(location),
+                              toOwned(calledExpr),
+                              management);
+    child = std::move(newExpr);
+
+    // Extend the location of the call to the left and patch the location.
+    auto fnCallLoc = builder->getLocation(fnCall);
+    assert(!fnCallLoc.isEmpty());
+
+    auto updatedLoc = Location(fnCallLoc.path(), location.first_line,
+                               location.first_column,
+                               fnCallLoc.lastLine(),
+                               fnCallLoc.lastColumn());
+
+    builder->noteLocation(fnCall, std::move(updatedLoc));
+    wrappedBaseExpression = true;
+    break;
   }
 
   assert(wrappedBaseExpression);

@@ -101,9 +101,10 @@ static ModuleSymbol* parseFile(const char* fileName,
 
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
-// Callback to configure how dyno error messages are displayed.
-static void dynoParseFileErrorHandler(chpl::Context* context,
-                                      const chpl::ErrorMessage& err);
+static void dynoErrorHandler(chpl::Context* context,
+                             const chpl::ErrorMessage& err);
+
+static int dynoRealizeErrors(void);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -729,33 +730,114 @@ void noteParsedIncludedModule(ModuleSymbol* mod, const char* pathAstr) {
   gFilenameLookup.push_back(pathAstr);
 }
 
-static void uASTDisplayError(chpl::Context* context,
+static chpl::ID findIdForContainingDecl(chpl::ID id) {
+  if (id.isEmpty()) return chpl::ID();
+
+  auto ret = chpl::ID();
+  auto up = id;
+
+  while (1) {
+    up = chpl::parsing::idToParentId(gContext, up);
+    if (up.isEmpty()) break;
+    auto ast = chpl::parsing::idToAst(gContext, up);
+    INT_ASSERT(ast);
+    if (ast->isFunction() || ast->isModule()) {
+      ret = ast->id();
+      break;
+    }
+  }
+
+  return ret;
+}
+
+static const char* labelForContainingDeclFromId(chpl::ID id) {
+  auto ast = chpl::parsing::idToAst(gContext, id);
+  const char* preface = "function";
+  const char* name = nullptr;
+  bool doUseName = true;
+
+  if (auto fn = ast->toFunction()) {
+    name = astr(fn->name());
+
+    if (fn->name() == "init") {
+      preface = "initializer";
+      doUseName = false;
+    } else if (fn->kind() == chpl::uast::Function::ITER) {
+      preface = "iterator";
+    } else if (fn->isMethod()) {
+      preface = "method";
+    }
+  } else if (auto mod = ast->toModule()) {
+    if (mod->kind() == chpl::uast::Module::IMPLICIT) return nullptr;
+
+    name = astr(mod->name());
+    preface = "module";
+  }
+
+  // TODO: Why is this thing always 'astr'?
+  const char* ret = (doUseName && name)
+      ? astr(preface, " '", name, "'")
+      : astr(preface);
+
+  return ret;
+}
+
+// Print out 'in function/module/initializer' etc...
+static void maybePrintErrorHeader(chpl::ID id) {
+  static chpl::ID idForLastContainingDecl = chpl::ID();
+
+  // No ID associated with this error, so no UAST information.
+  if (id.isEmpty()) return;
+
+  auto declId = findIdForContainingDecl(id);
+
+  if (declId != idForLastContainingDecl) {
+    auto declLabelStr = labelForContainingDeclFromId(declId);
+
+    // No label was created, so we have nothing to print.
+    if (declLabelStr == nullptr) return;
+
+    auto& declLoc = chpl::parsing::locateId(gContext, declId);
+    auto line = declLoc.firstLine();
+    auto path = declLoc.path().c_str();
+
+    fprintf(stderr, "%s:%d: In %s:\n", path, line, declLabelStr);
+
+    // Set so that we don't print out the same header over and over.
+    idForLastContainingDecl = declId;
+  }
+}
+
+static void dynoDisplayError(chpl::Context* context,
                              const chpl::ErrorMessage& err) {
-  //astlocMarker locMarker(err.location());
-
-  auto loc = err.location(context);
-
   const char* msg = err.message().c_str();
+  auto loc = err.location(context);
+  auto id = err.id();
+
+  // For now have syntax errors just do their own thing (mimic old parser).
+  if (err.kind() == chpl::ErrorMessage::SYNTAX) {
+    const char* path = loc.path().c_str();
+    const int line = loc.line();
+    const int tagUsrFatalCont = 3;
+    setupError("parser", path, line, tagUsrFatalCont);
+    fprintf(stderr, "%s:%d: %s", path, line, "syntax error");
+    if (strlen(msg) > 0) {
+      fprintf(stderr, ": %s\n", msg);
+    } else {
+      fprintf(stderr, "\n");
+    }
+    return;
+  }
+
+  maybePrintErrorHeader(id);
 
   switch (err.kind()) {
     case chpl::ErrorMessage::NOTE:
-      USR_PRINT(loc,"%s", msg);
+      USR_PRINT(loc, "%s", msg);
       break;
     case chpl::ErrorMessage::WARNING:
-      USR_WARN(loc,"%s", msg);
+      USR_WARN(loc, "%s", msg);
       break;
-    case chpl::ErrorMessage::SYNTAX: {
-      const char* path = loc.path().c_str();
-      const int line = loc.line();
-      const int tagUsrFatalCont = 3;
-      setupError("parser", path, line, tagUsrFatalCont);
-      fprintf(stderr, "%s:%d: %s", path, line, "syntax error");
-      if (strlen(msg) > 0) {
-        fprintf(stderr, ": %s\n", msg);
-      } else {
-        fprintf(stderr, "\n");
-      }
-    } break;
     case chpl::ErrorMessage::ERROR:
       USR_FATAL_CONT(loc,"%s", msg);
       break;
@@ -765,14 +847,46 @@ static void uASTDisplayError(chpl::Context* context,
   }
 }
 
-// TODO: Add helpers to convert locations without passing IDs.
-static void dynoParseFileErrorHandler(chpl::Context* context,
-                                      const chpl::ErrorMessage& err) {
-  uASTDisplayError(context, err);
+//
+// TODO: The error handler would like to do something like fetch AST from
+// IDs, but it cannot due to the possibility of a query cycle:
+//
+// - The 'parseFileToBuilderResult' query is called
+// - Some errors are encountered
+// - Errors are reported to the context by the builder
+// - Which calls the custom error handler, which calls 'idToAst'...
+// - Which calls 'parseFileToBuilderResult' again!
+//
+// I'm sure there's a better way to avoid this cycle, but for right now
+// I am just going to store the errors and display them at a later point
+// after the parsing has completed.
+//
+// One option to fix this is to wield query powers and manually check
+// for and handle the recursion. Another option might be to make our
+// error handler more robust (e.g., make it a class, and separate out the
+// reporting and "realizing" of the errors, as we are doing here).
+//
+static std::vector<chpl::ErrorMessage> dynoErrorMessages;
 
-  for (auto& detail : err.details()) {
-    uASTDisplayError(context, detail);
+// Store a copy of the error, to be realized at a later point.
+static void dynoErrorHandler(chpl::Context* context,
+                             const chpl::ErrorMessage& err) {
+  dynoErrorMessages.push_back(err);
+}
+
+static int dynoRealizeErrors(void) {
+  int ret = dynoErrorMessages.size();
+
+  for (auto& err : dynoErrorMessages) {
+    dynoDisplayError(gContext, err);
+    for (auto& detail : err.details()) {
+      dynoDisplayError(gContext, detail);
+    }
   }
+
+  dynoErrorMessages.clear();
+
+  return ret;
 }
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
@@ -786,7 +900,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   }
 
   // TODO: Move this to the point where we set up the context.
-  gContext->setErrorHandler(&dynoParseFileErrorHandler);
+  gContext->setErrorHandler(&dynoErrorHandler);
 
   // Do not parse if we've already done so.
   if (haveAlreadyParsed(fileName)) {
@@ -803,11 +917,9 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   auto& builderResult =
     chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
-  // Any errors while building will have already been emitted by the global
-  // error handling callback that was set above. So just stop.
-  // TODO (dlongnecke): What if errors were emitted outside of / not noted
-  // by the builder result of this query?
-  if (builderResult.numErrors()) {
+
+  // TODO: Do we really want to stop now? Why not parse more modules?
+  if (dynoRealizeErrors()) {
     USR_STOP();
   }
 

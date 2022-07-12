@@ -100,7 +100,9 @@ struct Visitor {
   // Checks.
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
-  void checkNewClassDecorators(const FnCall* node);
+  bool handleNestedDecoratorsInNew(const FnCall* node);
+  bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
+  void checkForNestedClassDecorators(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
@@ -133,7 +135,7 @@ struct Visitor {
   void warnUnstableSymbolNames(const NamedDecl* node);
 
   // Visitors.
-  void visit(const AstNode* node);
+  inline void visit(const AstNode* node) {} // Do nothing by default.
   void visit(const FnCall* node);
   void visit(const Variable* node);
   void visit(const TypeQuery* node);
@@ -141,11 +143,13 @@ struct Visitor {
   void visit(const Union* node);
 };
 
+// Note that even though we pass in the IDs for error messages here, the
+// locations map is not actually populated for the user until after the
+// builder wraps up and produces a builder result.
 void Visitor::report(const AstNode* node, ErrorMessage::Kind kind,
                      const char* fmt,
                      va_list vl) {
-  auto loc = builder_.getLocation(node);
-  auto err = ErrorMessage::vbuild(kind, loc, fmt, vl);
+  auto err = ErrorMessage::vbuild(kind, node->id(), fmt, vl);
   builder_.addError(std::move(err));
 }
 
@@ -299,8 +303,6 @@ New::Management nestedExprManagementStyle(const AstNode* node) {
     }
   } else if (auto ident = node->toIdentifier()) {
     ret = New::stringToManagement(ident->name());
-  } else {
-    assert(false && "Not handled!");
   }
 
   return ret;
@@ -331,33 +333,71 @@ New::Management nestedExprManagementStyle(const AstNode* node) {
 //
 // Adjust this comment if our parsing strategy changes!
 //
-void Visitor::checkNewClassDecorators(const FnCall* node) {
+bool Visitor::handleNestedDecoratorsInNew(const FnCall* node) {
   auto calledExpr = node->calledExpression();
-  if (!calledExpr) return;
+  if (!calledExpr) return false;
 
   auto newExpr = calledExpr->toNew();
-  if (!newExpr) return;
+  if (!newExpr) return false;
 
+  const auto defMgt = New::DEFAULT_MANAGEMENT;
   auto outerMgt = newExpr->management();
   auto innerMgt = nestedExprManagementStyle(newExpr->typeExpression());
   auto nextCall = node->numActuals()
       ? node->actual(0)->toCall()
       : nullptr;
+  const AstNode* outerPin = newExpr;
+  const AstNode* innerPin = newExpr->typeExpression();
 
-  while (innerMgt != New::DEFAULT_MANAGEMENT) {
-    assert(outerMgt != New::DEFAULT_MANAGEMENT);
+  while (innerMgt != defMgt) {
+    assert(outerMgt != defMgt);
+
+    // TODO: Also error about 'please use class? instead of %s?'...
+    error(outerPin, "Type expression uses multiple class kinds: %s %s",
+                    New::managementToString(outerMgt),
+                    New::managementToString(innerMgt));
+
+    // Cycle _once_, to try and catch something like 'new owned owned'.
+    // Note that if a third pair of duplicate decorators exists, then
+    // the check for type constructors will handle that. This case has
+    // to be handled because the second decorator is stored in the
+    // new expression (a bit awkward).
+    outerPin = innerPin;
+    innerPin = nextCall;
+    outerMgt = innerMgt;
+    innerMgt = nextCall ? nestedExprManagementStyle(nextCall) : defMgt;
+    nextCall = nullptr;
+  }
+
+  return true;
+}
+
+bool
+Visitor::handleNestedDecoratorsInTypeConstructors(const FnCall* node) {
+  if (node->numActuals() != 1) return false;
+  if (!node->calledExpression()) return false;
+
+  const auto defMgt = New::DEFAULT_MANAGEMENT;
+  auto outerMgt = nestedExprManagementStyle(node);
+  auto innerMgt = nestedExprManagementStyle(node->actual(0));
+  if (outerMgt == defMgt) return false;
+
+  // Do not loop, as recursion will handle other decorator pairs.
+  if (innerMgt != defMgt) {
+    assert(outerMgt != defMgt);
 
     // TODO: Also error about 'please use class? instead of %s?'...
     error(node, "Type expression uses multiple class kinds: %s %s",
-                New::managementToString(outerMgt),
-                New::managementToString(innerMgt));
+               New::managementToString(outerMgt),
+               New::managementToString(innerMgt));
+  }
 
-    // Cycle to the next nested call (if any).
-    outerMgt = innerMgt;
-    innerMgt = nestedExprManagementStyle(nextCall);
-    nextCall = nextCall->numActuals()
-        ? nextCall->actual(0)->toCall()
-        : nullptr;
+  return true;
+}
+
+void Visitor::checkForNestedClassDecorators(const FnCall* node) {
+  if (!handleNestedDecoratorsInNew(node)) {
+    std::ignore = handleNestedDecoratorsInTypeConstructors(node);
   }
 }
 
@@ -599,12 +639,9 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   }
 }
 
-// Do nothing.
-void Visitor::visit(const AstNode* node) {}
-
 void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
-  checkNewClassDecorators(node);
+  checkForNestedClassDecorators(node);
   checkExplicitDeinitCalls(node);
 }
 
