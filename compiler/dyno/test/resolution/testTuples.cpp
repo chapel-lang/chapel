@@ -49,7 +49,7 @@ static void test1() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   var x = (1, 2);
                 )"""");
@@ -75,7 +75,7 @@ static void test2() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   type x = (int, real);
                 )"""");
@@ -97,7 +97,7 @@ static void test3() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   var r: R;
@@ -128,7 +128,7 @@ static void test4() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   type x = (R, R);
@@ -154,7 +154,7 @@ static void test5() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseQualifiedTypeOfX(context,
+  auto qt = resolveQualifiedTypeOfX(context,
                 R""""(
                   record R { }
                   var r: R;
@@ -181,7 +181,7 @@ static void test6() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   proc f() {
@@ -205,7 +205,7 @@ static void test7() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   var r: R;
@@ -230,7 +230,7 @@ static void test8() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   proc f() : (R, R) {
@@ -322,7 +322,7 @@ static void test11() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   proc f(in arg: (real, real)) { return arg; }
                   var x = f( (1,2) );
@@ -344,7 +344,7 @@ static void test12() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
                   proc f(in arg: (R, R)) { return arg; }
@@ -374,7 +374,7 @@ static void test13() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { param p; }
                   proc f(in arg: (R, R)) { return arg; }
@@ -406,7 +406,7 @@ static void test14() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   proc f(x: int, (y, z): (real, int)) { return (x, y, z); }
                   var x = f( 1, (2.0, 3) );
@@ -428,7 +428,7 @@ static void test15() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                 R""""(
                   var tup = (1, 2);
                   var x = ( (... tup), 3.0);
@@ -450,7 +450,7 @@ static void test16() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseQualifiedTypeOfX(context,
+  auto qt = resolveQualifiedTypeOfX(context,
                 R""""(
                   proc helper(a: int, b: real) { return b; }
                   var tup = (1, 2.0);

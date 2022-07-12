@@ -45,7 +45,7 @@ static void test1() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfXInit(context,
+  auto qt = resolveTypeOfXInit(context,
                              R""""(
                                record R {
                                  var field: int;

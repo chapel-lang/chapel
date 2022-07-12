@@ -35,13 +35,13 @@ const Module* parseModule(Context* context, std::string& str);
 // with an initialization expression.
 // Returns the type of the initializer expression.
 QualifiedType
-parseTypeOfXInit(Context* context, const char* program, bool requireTypeKnown = true);
+resolveTypeOfXInit(Context* context, const char* program, bool requireTypeKnown = true);
 
 QualifiedType
-parseQualifiedTypeOfX(Context* context, const char* program);
+resolveQualifiedTypeOfX(Context* context, const char* program);
 
 const Type*
-parseTypeOfX(Context* context, const char* program);
+resolveTypeOfX(Context* context, const char* program);
 
 // always check assertions in this test
 #ifdef NDEBUG

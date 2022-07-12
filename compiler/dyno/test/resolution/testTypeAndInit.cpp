@@ -43,7 +43,7 @@ using namespace uast;
 void test1() {
   Context ctx;
   auto context = &ctx;
-  auto qt = parseQualifiedTypeOfX(context,
+  auto qt = resolveQualifiedTypeOfX(context,
                              R""""(
                                var x: bool = true;
                              )"""");

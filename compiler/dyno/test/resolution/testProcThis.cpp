@@ -50,7 +50,7 @@ static void test1() {
   // configure context to fail test if there are any errors
   context->setErrorHandler(reportError);
 
-  QualifiedType qt = parseTypeOfXInit(context,
+  QualifiedType qt = resolveTypeOfXInit(context,
                 R""""(
                   module M {
                     record R { }

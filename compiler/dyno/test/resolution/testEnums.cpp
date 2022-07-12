@@ -34,7 +34,7 @@
 static void test1() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  parseTypeOfXInit(context,
+  QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          enum color {
                            red, green, blue
@@ -58,7 +58,7 @@ static void test1() {
 static void test2() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  parseTypeOfXInit(context,
+  QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          enum color {
                            red, red, blue
@@ -73,7 +73,7 @@ static void test2() {
 static void test3() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  parseTypeOfXInit(context,
+  QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          enum color {
                            green, blue

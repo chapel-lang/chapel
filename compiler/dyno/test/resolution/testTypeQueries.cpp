@@ -46,7 +46,7 @@ static void test1() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t1 = parseTypeOfX(context,
+  auto t1 = resolveTypeOfX(context,
                 R""""(
                   proc f(arg: ?) { return arg; }
                   var x = f(1);
@@ -54,7 +54,7 @@ static void test1() {
 
   assert(t1 && t1->isIntType());
 
-  auto t2 = parseTypeOfX(context,
+  auto t2 = resolveTypeOfX(context,
                 R""""(
                   proc f(arg: ?) { var ret: arg.type; return ret; }
                   var x = f(1);
@@ -62,7 +62,7 @@ static void test1() {
 
   assert(t2 && t2->isIntType());
 
-  auto t3 = parseTypeOfX(context,
+  auto t3 = resolveTypeOfX(context,
                 R""""(
                   proc f(arg: ?t) { var ret: arg.type; return ret; }
                   var x = f(1);
@@ -70,7 +70,7 @@ static void test1() {
 
   assert(t3 && t3->isIntType());
 
-  auto t4 = parseTypeOfX(context,
+  auto t4 = resolveTypeOfX(context,
                 R""""(
                   proc f(arg: ?t) { var ret: t; return ret; }
                   var x = f(1);
@@ -84,7 +84,7 @@ static void test2() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t = parseTypeOfX(context,
+  auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type tt; }
                   proc f(arg: ?) { return arg; }
@@ -105,7 +105,7 @@ static void test3() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t = parseTypeOfX(context,
+  auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type tt; }
                   proc f(arg: R(?)) { return arg; }
@@ -126,7 +126,7 @@ static void test4() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t = parseTypeOfX(context,
+  auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type tt; }
                   proc f(arg: R(?t)) { return arg; }
@@ -147,7 +147,7 @@ static void test5() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t = parseTypeOfX(context,
+  auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type tt; }
                   proc f(arg: R(?t)) { var ret: t; return ret; }
@@ -163,7 +163,7 @@ static void test6() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t = parseTypeOfX(context,
+  auto t = resolveTypeOfX(context,
                 R""""(
                   record RR { type ttt; }
                   record R { type tt; }
@@ -180,7 +180,7 @@ static void test7() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t = parseTypeOfX(context,
+  auto t = resolveTypeOfX(context,
                 R""""(
                   proc f(arg: int(?)) { return arg; }
                   var a: int(8);
@@ -197,7 +197,7 @@ static void test8() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t = parseTypeOfX(context,
+  auto t = resolveTypeOfX(context,
                 R""""(
                   proc f(arg: int(?w)) { return arg; }
                   var a: int(8);
@@ -214,7 +214,7 @@ static void test9() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t = parseTypeOfX(context,
+  auto t = resolveTypeOfX(context,
                 R""""(
                   proc f(arg: int(?w)) {
                     var y: uint(w);
@@ -293,7 +293,7 @@ static void test11() {
   Context ctx;
   Context* context = &ctx;
 
-  auto t = parseTypeOfX(context,
+  auto t = resolveTypeOfX(context,
                 R""""(
                   proc g(a: int(?w), b: int(__primitive("*", 2, w))) {
                     return b;

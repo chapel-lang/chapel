@@ -38,7 +38,7 @@ const Module* parseModule(Context* context, std::string& str) {
 }
 
 QualifiedType
-parseTypeOfXInit(Context* context, const char* program, bool requireTypeKnown) {
+resolveTypeOfXInit(Context* context, const char* program, bool requireTypeKnown) {
   auto m = parseModule(context, program);
   assert(m->numStmts() > 0);
   const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
@@ -56,7 +56,7 @@ parseTypeOfXInit(Context* context, const char* program, bool requireTypeKnown) {
 }
 
 QualifiedType
-parseQualifiedTypeOfX(Context* context, const char* program) {
+resolveQualifiedTypeOfX(Context* context, const char* program) {
   auto m = parseModule(context, program);
   assert(m->numStmts() > 0);
   const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
@@ -72,7 +72,7 @@ parseQualifiedTypeOfX(Context* context, const char* program) {
 }
 
 const Type*
-parseTypeOfX(Context* context, const char* program) {
+resolveTypeOfX(Context* context, const char* program) {
   auto m = parseModule(context, program);
   assert(m->numStmts() > 0);
   const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
