@@ -803,6 +803,18 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   FnSymbol* fifn = NULL;
 
   Expr* stmt = NULL; // Initialized by buildSerialIteratorFn.
+
+  // Copy the indices before the building serial iterator
+  // consumes these, if we will need a copy for a forall.
+  // The SymbolMap helps to keep the indices and uses of the indices
+  // coordinated.
+  SymbolMap map;
+  Expr* indicesCopy = nullptr;
+  if (forall && indices) {
+    indicesCopy = indices->copy(&map);
+  }
+
+  // note: consumes indices
   sifn = buildSerialIteratorFn(iteratorName, loopBody, cond, indices,
                                zippered, forall, stmt);
 
@@ -814,25 +826,18 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
     fifn = buildFollowerIteratorFn(iteratorName, zippered, forall,
                                    followerIterator);
 
-    // do we need to use this map since symbols have not been resolved?
-    SymbolMap map;
-    /*AList indDefCopies;
-    for_alist(defI, loopExpr->defIndices)
-      indDefCopies.insertAtTail(defI->copy(&map));*/
-    Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
     Expr* bodyCopy = stmt->copy(&map);
+
     fifn->insertAtTail(
         ForLoop::buildLoweredForallLoop(
           indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy),
           zippered,
           /* isForExpr */ true));
     addOuterVariableFormals(fifn, outerVars);
-    /*adjustIndexDefPoints(fifn, &indDefCopies);*/
   }
 
   // Do this after fifn is created - so bodyCopy still references outerVars.
   addOuterVariableFormals(sifn, outerVars);
-  /*adjustIndexDefPoints(sifn, &loopExpr->defIndices);*/
 
   if (insideArgSymbol) {
     fn->insertAtHead(new DefExpr(sifn));
