@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/ImagLiteral.h"
 #include "chpl/uast/IntLiteral.h"
 #include "chpl/uast/Module.h"
@@ -135,8 +135,8 @@ int main() {
   Context context;
   Context* ctx = &context;
 
-  auto parser = Parser::build(ctx);
-  Parser* p = parser.get();
+  auto parser = Parser::createForTopLevelModule(ctx);
+  Parser* p = &parser;
 
   testIntLiteral(p, "testAb.chpl", "0b0", 0);
   testIntLiteral(p, "testAB.chpl", "0b0", 0);

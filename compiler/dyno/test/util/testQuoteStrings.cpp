@@ -28,28 +28,54 @@
 
 using namespace chpl;
 
-static void checkQuoting(const char* input, const char* expect) {
+static void checkQuotingC(const char* input, const char* expect) {
   std::string input_s = input;
   std::string expect_s = expect;
 
-  std::string got = quoteStringForC(input_s);
-  assert(got == expect_s);
+  std::string quoted = escapeStringC(input_s);
+  assert(quoted == expect_s);
+
+  std::string quoted2 = escapeStringC(input);
+  assert(quoted2 == expect_s);
+
+  std::string unquoted = unescapeStringC(quoted.c_str());
+  assert(unquoted == input_s);
+}
+
+static void checkQuotingId(const char* input, const char* expect) {
+  std::string input_s = input;
+  std::string expect_s = expect;
+
+  std::string quoted = escapeStringId(input_s);
+  assert(quoted == expect_s);
+
+  std::string quoted2 = escapeStringId(input);
+  assert(quoted2 == expect_s);
+
+  std::string unquoted = unescapeStringId(quoted.c_str());
+  assert(unquoted == input_s);
 }
 
 int main(int argc, char** argv) {
 
-  checkQuoting("\a", "\\a");
-  checkQuoting("\"", "\\\"");
-  checkQuoting("?", "\\?");
-  checkQuoting("\x01", "\\x01");
+  checkQuotingC("a.b#3", "a.b#3");
+  checkQuotingC("\a", "\\a");
+  checkQuotingC("\"", "\\\"");
+  checkQuotingC("?", "\\?");
+  checkQuotingC("\x01", "\\x01");
 
   {
     char input[4] = {1, 'a', 'a', 0};
-    checkQuoting(input, "\\x01\\x61\\x61");
+    checkQuotingC(input, "\\x01\\x61\\x61");
   }
 
-  checkQuoting("\\ \? \a \b \f \n \r \t \v",
-               "\\\\ \\\? \\a \\b \\f \\n \\r \\t \\v");
+  checkQuotingC("\\ \? \a \b \f \n \r \t \v",
+                "\\\\ \\\? \\a \\b \\f \\n \\r \\t \\v");
+
+  checkQuotingId("\a", "\\a");
+  checkQuotingId("###", "\\#\\#\\#");
+  checkQuotingId("...", "\\.\\.\\.");
+  checkQuotingId("File.name", "File\\.name");
 
   return 0;
 }

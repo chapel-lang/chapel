@@ -212,16 +212,13 @@ SystemOrDie("rm examples"); # remove examples symbolic link
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
 
-print "[gen_release] Removing Makefiles that are not intended for release...\n";
-SystemOrDie("cd make/platform && rm Makefile.sunos_old");
+# print "[gen_release] Removing Makefiles that are not intended for release...\n";
 
-print "[gen_release] Removing compiler directories that are not intended for release...\n";
-SystemOrDie("cd compiler/include && rm -r sunos_old");
+# print "[gen_release] Removing compiler directories that are not intended for release...\n";
 
 print "[gen_release] Removing runtime directories that are not ready for release...\n";
 SystemOrDie("cd runtime/src/launch && rm -r dummy");
 SystemOrDie("cd runtime/src/launch && rm -r mpirun");
-SystemOrDie("cd runtime/include && rm -r sunos_old");
 
 print "[gen_release] Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");

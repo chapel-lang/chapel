@@ -20,7 +20,7 @@
 #ifndef CHPL_UTIL_FILESYSTEM_H
 #define CHPL_UTIL_FILESYSTEM_H
 
-#include "chpl/queries/ErrorMessage.h"
+#include "chpl/framework/ErrorMessage.h"
 
 #include <string>
 

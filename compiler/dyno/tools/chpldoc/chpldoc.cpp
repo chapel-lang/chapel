@@ -36,19 +36,23 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
+#include <queue>
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/Context.h"
-#include "chpl/queries/UniqueString.h"
-#include "chpl/queries/query-impl.h"
-#include "chpl/queries/stringify-functions.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/UniqueString.h"
+#include "chpl/framework/query-impl.h"
+#include "chpl/framework/stringify-functions.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/framework/global-strings.h"
+
 
 using namespace chpl;
 using namespace uast;
@@ -56,9 +60,11 @@ using namespace parsing;
 
 using CommentMap = std::unordered_map<ID, const Comment*>;
 
-std::unordered_set<asttags::AstTag> gUnhandled;
 static const int indentPerDepth = 3;
-
+std::string commentStyle_;
+bool writeStdOut_ = false;
+std::string outputDir_;
+bool textOnly_ = false;
 const std::string templateUsage = R"RAW(**Usage**
 
 .. code-block:: chapel
@@ -72,6 +78,22 @@ or
 
    import $MODULE;)RAW";
 
+const std::string textOnlyTemplateUsage = R"RAW(
+
+Usage:
+   use $MODULE;
+
+or
+
+   import $MODULE;)RAW";
+
+static bool isNoDoc(const Decl* e) {
+  if (auto attrs = e->attributes()) {
+    return attrs->hasPragma(pragmatags::PRAGMA_NO_DOC);
+  }
+  return false;
+}
+
 static std::vector<std::string> splitLines(const std::string& s) {
   std::stringstream ss(s);
   std::string line;
@@ -82,7 +104,18 @@ static std::vector<std::string> splitLines(const std::string& s) {
   return ret;
 }
 
-static std::string strip(const std::string& s, std::string pattern = "^\\s+|\\s+$") {
+static bool hasSubmodule(const Module* mod) {
+  for (const AstNode* child : mod->stmts()) {
+    if (auto mod = child->toModule())
+      if (mod->visibility() != chpl::uast::Decl::PRIVATE && !isNoDoc(mod)) {
+        return true;
+    }
+  }
+  return false;
+}
+
+static std::string strip(const std::string& s,
+                         std::string pattern = "^\\s+|\\s+$") {
   auto re = std::regex(pattern);
   return std::regex_replace(s, re, "");
 }
@@ -93,10 +126,97 @@ static std::string templateReplace(const std::string& templ,
   return std::regex_replace(templ, std::regex(std::string("\\$") + key), value);
 }
 
+static UniqueString getNodeName(AstNode* node) {
+  if (node->isNamedDecl()) {
+    return node->toNamedDecl()->name();
+  } else if (node->isIdentifier()) {
+    return node->toIdentifier()->name();
+  } else {
+    assert(false && "no name defined for node");
+  }
+}
+
+static char* checkProjectVersion(char* projectVersion) {
+  int length = strlen(projectVersion);
+  int i = 0;
+  int dot = 0;
+  bool check = true;
+  int tagIndex = 0;
+
+  // Supported version tags
+  const char * tags[] = {"alpha", "beta", "rc"};
+  const char * error = "";
+  for(i=0; i<length; i++) {
+    if(i>0 && projectVersion[i] == '.') {
+      if(projectVersion[i-1] != '.') {
+        dot++;
+        if(dot>2) {
+          error = "Required only two dots which separates three numbers";
+          check = false;
+          break;
+        }
+        if(i == length-1) {
+          error = "Cannot end with dot, can end with either number or tag";
+          check = false;
+          break;
+        }
+      } else {
+        error = "Missing number between dots";
+        check = false;
+        break;
+      }
+    } else if(projectVersion[i] == '-' && dot == 2) {
+      if(projectVersion[i-1] != '.') {
+        tagIndex = i+1;
+        break;
+      } else {
+        error = "Missing number before tag";
+        check = false;
+        break;
+      }
+    } else if(projectVersion[i] == '-' && dot != 2) {
+      error = "Required only two dots which separates three numbers";
+      check = false;
+      break;
+    } else if((int)projectVersion[i] > (int)'9' ||
+              (int)projectVersion[i] < (int)'0') {
+      error = "Invalid Characters, only digits and dots permitted before a hyphen";
+      check = false;
+      break;
+    }
+  }
+  if(dot != 2 && i == length) {
+    error = "Required two dots which separates three numbers";
+    check = false;
+  }
+  if(check && tagIndex>0) {
+    int count = sizeof(tags)/sizeof(*tags);
+    for(int i=0; i<count; i++) {
+      if(strcmp(projectVersion+tagIndex,tags[i]) == 0) {
+        check = true;
+        break;
+      } else {
+        error = "Tag not supported, supported tags are alpha/beta/rc";
+        check = false;
+      }
+    }
+  }
+  if(check) {
+    return projectVersion;
+  } else {
+    std::cerr << "error: Invalid version format: "
+              << projectVersion << " due to: " << error << std::endl;
+    exit(1);
+  }
+  return NULL;
+}
+
 static std::string indentLines(const std::string& s, int count) {
-  std::string replacement = "\n" + std::string(count, ' ');
+  if (s.empty())
+    return s;
   std::string head = std::string(count, ' ');
-  return head + std::regex_replace(s, std::regex("\n"), replacement);
+  std::string ret = head + s;
+  return ret;
 }
 
 static size_t countLeadingSpaces(const std::string& s) {
@@ -118,46 +238,56 @@ static std::ostream& indentStream(std::ostream& os, size_t num) {
   return os;
 }
 
-// Remove the leading+trailing // or /* (*/)
+// Remove the leading+trailing commentStyle (/*+, *+/)
 // Dedent by the least amount of leading whitespace
-// Return is a list of strings which have no newline chars
-static std::vector<std::string> prettifyComment(const std::string& s) {
-  std::string ret = s;
-
-  if (ret.substr(0, 2) == "//") {
-    ret.erase(0, 2);
-  } else if (ret.substr(0, 2) == "/*") {
+// Return is a list of strings which may have newline chars
+static std::vector<std::string> prettifyComment(const std::string& comment,
+                                                const std::string& commentStyle) {
+  std::string ret = comment;
+  std::string commentEnd = commentStyle;
+  reverse(commentEnd.begin(), commentEnd.end());
+  const int styleLen = commentStyle.size();
+  if (ret.substr(0, styleLen) == commentStyle) {
     size_t l = ret.length();
-    assert(ret.substr(l - 2, 2) == "*/" && "comment didn't end with */");
-    ret.erase(l - 2, 2);
-    ret.erase(0, 2);
+    if (ret.substr(l - styleLen, styleLen) != commentEnd)
+      // TODO: this is a broken comment at this point, no?
+      return {};
+    ret.erase(l - styleLen, styleLen);
+    ret.erase(0, styleLen);
   } else {
-    assert(false && "comment didn't start with // or /*");
+    return {};
   }
-
-  ret = strip(ret, "^\n+|\n+$");
 
   auto lines = splitLines(ret);
   if (lines.empty()) return lines;
 
   size_t toTrim = std::numeric_limits<size_t>::max();
-  for (const std::string& line : lines) {
-    if (line.empty()) continue;
-    toTrim = std::min(toTrim, countLeadingSpaces(line));
+  // exclude the first line from the minimum
+  for (auto it = lines.begin(); it < lines.end(); ++it) {
+    if (it->empty()) continue;
+    if (it == lines.begin()) {
+      *it = strip(*it, "^\\s+");
+      continue;
+    }
+    toTrim = std::min(toTrim, countLeadingSpaces(*it));
   }
 
-  assert(toTrim < std::numeric_limits<size_t>::max() && "probably an empty comment");
+  assert((toTrim < std::numeric_limits<size_t>::max() || lines.size()==1) &&
+          "probably an empty comment");
 
-  for (std::string& line : lines) {
-    line.erase(0, toTrim);
+
+  for (auto it = lines.begin(); it < lines.end(); ++it) {
+    if (it != lines.begin())
+      it->erase(0, toTrim);
   }
 
   return lines;
 }
 
-static std::string commentSynopsis(const Comment* c) {
+static std::string commentSynopsis(const Comment* c,
+                                   const std::string& commentStyle) {
   if (!c) return "";
-  auto lines = prettifyComment(c->str());
+  auto lines = prettifyComment(c->str(), commentStyle);
   if (lines.empty()) return "";
   return lines[0];
 }
@@ -165,8 +295,9 @@ static std::string commentSynopsis(const Comment* c) {
 static const char* kindToRstString(bool isMethod, Function::Kind kind) {
   switch (kind) {
   case Function::Kind::PROC: return isMethod ? "method" : "function";
-  case Function::Kind::ITER: return isMethod ? "itermethod" : "iter";
+  case Function::Kind::ITER: return isMethod ? "itermethod" : "iterfunction";
   case Function::Kind::OPERATOR: return "operator";
+  case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
@@ -187,52 +318,28 @@ static const char* kindToString(Function::Kind kind) {
   case Function::Kind::PROC: return "proc";
   case Function::Kind::ITER: return "iter";
   case Function::Kind::OPERATOR: return "operator";
+  case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
 }
 
-static const char* kindToString(Function::ReturnIntent kind) {
+static const char* kindToString(IntentList kind) {
   switch (kind) {
-  case Function::ReturnIntent::CONST: return "const";
-  case Function::ReturnIntent::REF: return "ref";
-  case Function::ReturnIntent::CONST_REF: return "const ref";
-  case Function::ReturnIntent::PARAM: return "param";
-  case Function::ReturnIntent::TYPE: return "type";
-  case Function::ReturnIntent::DEFAULT_RETURN_INTENT: assert(false);
+    case IntentList::CONST_INTENT: return "const";
+    case IntentList::VAR: return "var";
+    case IntentList::CONST_VAR: return "const";
+    case IntentList::CONST_REF: return "const ref";
+    case IntentList::REF: return "ref";
+    case IntentList::IN: return "in";
+    case IntentList::CONST_IN: return "const in";
+    case IntentList::OUT: return "out";
+    case IntentList::INOUT: return "inout";
+    case IntentList::PARAM: return "param";
+    case IntentList::TYPE: return "type";
+    case IntentList::DEFAULT_INTENT: assert(false);
+    default: return "";
   }
-  assert(false);
-  return "";
-}
-
-static const char* kindToString(Formal::Intent kind) {
-  switch (kind) {
-  case Formal::Intent::CONST: return "const";
-  case Formal::Intent::CONST_REF: return "const ref";
-  case Formal::Intent::REF: return "ref";
-  case Formal::Intent::IN: return "in";
-  case Formal::Intent::CONST_IN: return "const in";
-  case Formal::Intent::OUT: return "out";
-  case Formal::Intent::INOUT: return "inout";
-  case Formal::Intent::PARAM: return "param";
-  case Formal::Intent::TYPE: return "type";
-  case Formal::Intent::DEFAULT_INTENT: assert(false);
-  }
-  assert(false);
-  return "";
-}
-
-static const char* kindToString(Variable::Kind kind) {
-  switch (kind) {
-  case Variable::Kind::VAR: return "var";
-  case Variable::Kind::CONST: return "const";
-  case Variable::Kind::PARAM: return "param";
-  case Variable::Kind::TYPE: return "type";
-  case Variable::Kind::REF: return "ref";
-  case Variable::Kind::CONST_REF: return "const ref";
-  case Variable::Kind::INDEX: assert(false);
-  }
-  assert(false);
   return "";
 }
 
@@ -250,11 +357,17 @@ static const char* kindToString(New::Management kind) {
   return "";
 }
 
-static bool isNoDoc(const Decl* e) {
-  if (auto attrs = e->attributes()) {
-    return attrs->hasPragma(pragmatags::PRAGMA_NO_DOC);
-  }
-  return false;
+static bool isCalleReservedWord(const AstNode* callee) {
+  if (callee->isIdentifier() &&
+      (callee->toIdentifier()->name() == USTR("borrowed")
+       || callee->toIdentifier()->name() == USTR("owned")
+       || callee->toIdentifier()->name() == USTR("unmanaged")
+       || callee->toIdentifier()->name() == USTR("shared")
+       || callee->toIdentifier()->name() == USTR("sync")
+       || callee->toIdentifier()->name() == USTR("single")
+       || callee->toIdentifier()->name() == USTR("atomic")))
+      return true;
+    return false;
 }
 
 /**
@@ -271,12 +384,14 @@ etc.
  */
 struct RstSignatureVisitor {
   std::ostream& os_;
-
+  bool printingType_ = false;
   /** traverse each elt of begin..end, outputting `separator` between each.
    * `surroundBegin` and `surroundEnd` are output before and after respectively
    * if not null */
   template<typename It>
-  void interpose(It begin, It end, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
+  void interpose(It begin, It end, const char* separator,
+                 const char* surroundBegin=nullptr,
+                 const char* surroundEnd=nullptr) {
     bool first = true;
     if (surroundBegin) os_ << surroundBegin;
     for (auto it = begin; it != end; it++) {
@@ -288,7 +403,9 @@ struct RstSignatureVisitor {
   }
 
   template<typename T>
-  void interpose(T xs, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
+  void interpose(T xs, const char* separator,
+                 const char* surroundBegin=nullptr,
+                 const char* surroundEnd=nullptr) {
     interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
   }
 
@@ -298,7 +415,18 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const Record* r) {
+    // TODO: Shouldn't this be record, not Record?
+    if (textOnly_) os_ << "Record: ";
     os_ << r->name().c_str();
+    return false;
+  }
+
+  bool enter(const Class* c) {
+    os_ << c->name().c_str();
+    if (c->parentClass()) {
+      os_ << " : ";
+      c->parentClass()->traverse(*this);
+    }
     return false;
   }
 
@@ -319,22 +447,22 @@ struct RstSignatureVisitor {
   bool enter(const ImagLiteral* l) { return enterLiteral(l); }
 
   bool enter(const StringLiteral* l) {
-    os_ << '"' << quoteStringForC(std::string(l->str().c_str())) << '"';
+    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
     return false;
   }
 
   bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << quoteStringForC(std::string(l->str().c_str())) << '"';
+    os_ << "c\"" << escapeStringC(l->str().c_str()) << '"';
     return false;
   }
 
-  bool enter(const Dot *d) {
+  bool enter(const Dot* d) {
     d->receiver()->traverse(*this);
     os_ << "." << d->field().c_str();
     return false;
   }
 
-  bool enter(const New *d) {
+  bool enter(const New* d) {
     os_ << "new ";
     if (d->management() != New::Management::DEFAULT_MANAGEMENT) {
       os_ << kindToString(d->management()) << " ";
@@ -351,7 +479,7 @@ struct RstSignatureVisitor {
 
   bool enter(const EnumElement* e) {
     os_ << e->name().c_str();
-    if (const Expression* ie = e->initExpression()) {
+    if (const AstNode* ie = e->initExpression()) {
       os_ <<  " = ";
       ie->traverse(*this);
     }
@@ -363,44 +491,96 @@ struct RstSignatureVisitor {
       os_ << "config ";
     }
     if (v->kind() != Variable::Kind::INDEX) {
-      os_ << kindToString(v->kind()) << " ";
+      os_ << kindToString((IntentList) v->kind()) << " ";
     }
     os_ << v->name().c_str();
-    if (const Expression* te = v->typeExpression()) {
+    if (const AstNode* te = v->typeExpression()) {
+      printingType_ = true;
       os_ << ": ";
       te->traverse(*this);
+      printingType_ = false;
     }
-    if (const Expression* ie = v->initExpression()) {
+    if (const AstNode* ie = v->initExpression()) {
       os_ << " = ";
+      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+        printingType_ = true;
       ie->traverse(*this);
+      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+        printingType_ = false;
     }
     return false;
   }
 
   bool enter(const Formal* f) {
     if (f->intent() != Formal::DEFAULT_INTENT) {
-      os_ << kindToString(f->intent()) << " ";
+      os_ << kindToString((IntentList) f->intent()) << " ";
     }
     os_ << f->name().c_str();
-    if (const Expression* te = f->typeExpression()) {
+    if (const AstNode* te = f->typeExpression()) {
       os_ << ": ";
+      printingType_ = true;
       te->traverse(*this);
+      printingType_ = false;
     }
-    if (const Expression* ie = f->initExpression()) {
-      os_ << "=";
+    if (const AstNode* ie = f->initExpression()) {
+      os_ << " = ";
       ie->traverse(*this);
     }
     return false;
   }
 
   bool enter(const Function* f) {
+    // Linkage
+    if (f->linkage() == Decl::Linkage::EXPORT)
+      os_ << "export ";
+
     // Visibility
     if (f->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
       os_ << kindToString(f->visibility()) << " ";
     }
 
+    if (f->isOverride()) {
+      os_ << "override ";
+    }
+
     // Function Name
-    os_ << kindToString(f->kind()) << " " << f->name().c_str();
+    os_ << kindToString(f->kind());
+    os_ << " ";
+
+    // storage kind
+    if (f->thisFormal() != nullptr
+        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+      os_ << kindToString(f->thisFormal()->storageKind()) <<" ";
+    }
+
+    // print out the receiver type for secondary methods
+    if (f->isMethod() && !f->isPrimaryMethod()) {
+      auto typeExpr = f->thisFormal()->typeExpression();
+      assert(typeExpr);
+
+      if (auto ident = typeExpr->toIdentifier()) {
+        os_ << ident->name().str();
+      } else {
+        os_ << "(";
+        typeExpr->traverse(*this);
+        os_ << ")";
+      }
+
+      os_ << ".";
+    }
+
+    if (f->kind() == Function::Kind::OPERATOR && f->name() == USTR("=")) {
+      // TODO: remove this once the old parser is out of the question
+      // TODO: this is only here to support tests from the old parser
+      // printing extra spaces around an assignment operator
+      os_ << " ";
+      // Function Name
+      os_ << f->name().str();
+      os_ << " ";
+    } else {
+      // Function Name
+      os_ << f->name().str();
+    }
 
     // Formals
     int numThisFormal = f->thisFormal() ? 1 : 0;
@@ -415,43 +595,164 @@ struct RstSignatureVisitor {
     }
 
     // Return type
-    if (const Expression* e = f->returnType()) {
+    if (const AstNode* e = f->returnType()) {
       os_ << ": ";
+      printingType_ = true;
       e->traverse(*this);
+      printingType_ = false;
     }
 
     // Return Intent
-    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      os_ << " " << kindToString(f->returnIntent());
+    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
+        f->returnIntent() != Function::ReturnIntent::CONST) {
+      os_ << " " << kindToString((IntentList) f->returnIntent());
+    }
+
+    // throws
+    if (f->throws()) os_ << " throws";
+
+    return false;
+  }
+
+  bool isPostfix(const OpCall* op) {
+    return (op->isUnaryOp() &&
+            (op->op() == USTR("postfix!") || op->op() == USTR("?")));
+  }
+
+  void printUnaryOp(const OpCall* node) {
+    assert(node->numActuals() == 1);
+    UniqueString unaryOp;
+    bool isPostFixBang = false;
+    bool isNilable = false;
+    unaryOp = node->op();
+    if (unaryOp == USTR("postfix!")) {
+      isPostFixBang = true;
+      unaryOp = USTR("!");
+    } else if (node->op() == USTR("?")) {
+      if (node->actual(0)->isFnCall()) {
+        isNilable = true;
+      } else {
+        os_ << "nilable ";
+      }
+    } else {
+      os_ << unaryOp;
+    }
+    opHelper(node, 0, (isPostFixBang || isNilable));
+    if (isPostFixBang || isNilable) {
+      os_ << unaryOp;
+    }
+  }
+
+  void opHelper(const OpCall* node, int pos, bool postfix) {
+    bool needsParens = false;
+    bool isRHS = pos;
+    UniqueString outerOp, innerOp;
+    outerOp = node->op();
+    if (node->actual(pos)->isOpCall()) {
+      innerOp = node->actual(pos)->toOpCall()->op();
+      needsParens = needParens(outerOp, innerOp, node->isUnaryOp(), postfix,
+                               node->actual(pos)->toOpCall()->isUnaryOp(),
+                               isPostfix(node->actual(pos)->toOpCall()), isRHS);
+    }
+    // handle printing parens around tuples
+    // ex: 3*(4*string) != 3*4*string
+    needsParens = tupleOpNeedsParens(node, needsParens, isRHS, outerOp,
+                                     innerOp);
+    if (needsParens) os_ << "(";
+    node->actual(pos)->traverse(*this);
+    if (needsParens) os_ << ")";
+  }
+
+  // check if this is a start tuple decl, for example:
+  // 3*string or 2*(3*string), etc
+  bool isStarTupleDecl(UniqueString op, const OpCall* node) const {
+    // TODO: need to adjust the rules as to what exactly can construct
+    //  a star tuple, it's not clear how to filter FnCalls
+    //  ex: 3*(real(64)) is a * op with lhs = IntLiteral(3) and
+    //  rhs = FnCall(real->64)
+    bool ret = false;
+    if (node && op == USTR("*") && node->actual(0)->isIntLiteral() &&
+        (node->actual(1)->isIdentifier() ||
+         node->actual(1)->isTuple() ||
+         node->actual(1)->isFnCall())) {
+      ret = true;
+    }
+    return ret;
+  }
+
+  bool tupleOpNeedsParens(const OpCall* node, bool needsParens, bool isRHS,
+                          UniqueString& outerOp, UniqueString& innerOp) const {
+    if (needsParens || !isRHS) return needsParens;
+    bool ret = needsParens;
+    bool isOuterStarTuple = isStarTupleDecl(outerOp, node);
+    bool isInnerStarTuple = isStarTupleDecl(innerOp,
+                                            node->actual(1)->toOpCall());
+    if ((isOuterStarTuple || isInnerStarTuple)) {
+      ret = true;
+    }
+    return ret;
+  }
+
+  void printBinaryOp(const OpCall* node) {
+    assert(node->numActuals() == 2);
+    bool addSpace = wantSpaces(node->op(), printingType_) ||
+                    node->op() == USTR("by") ||
+                    node->op() == USTR("align") ||
+                    node->op() == USTR("reduce=") ||
+                    node->op() == USTR("reduce") ||
+                    node->op() == USTR("scan") ||
+                    node->op() == USTR("dmapped");
+    opHelper(node, 0, false);
+    if (addSpace && node->op() != USTR(":"))
+      os_ << " ";
+    os_ << node->op();
+    if (addSpace)
+      os_ << " ";
+    opHelper(node, 1, false);
+  }
+
+  bool enter(const OpCall* node) {
+    if (node->isUnaryOp()) {
+      printUnaryOp(node);
+    } else if (node->isBinaryOp()) {
+      printBinaryOp(node);
     }
     return false;
   }
 
-  bool enter(const OpCall* call) {
-    if (call->isUnaryOp()) {
-      os_ << call->op().c_str();
-      assert(call->numActuals() == 1);
-      call->actual(0)->traverse(*this);
-
-    } else if (call->isBinaryOp()) {
-      assert(call->numActuals() == 2);
-      call->actual(0)->traverse(*this);
-      os_ << call->op().c_str();
-      call->actual(1)->traverse(*this);
-    }
-    return false;
-  }
-
-  bool enter(const Call* call) {
-    const Expression* callee = call->calledExpression();
-    if (!callee) {
-      printf("ERROR %s\n", asttags::tagToString(call->tag()));
-      call->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-    }
-    assert(callee);  // This should be true because OpCall is handled
+  bool enter(const FnCall* call) {
+    const AstNode* callee = call->calledExpression();
+    assert(callee);
     callee->traverse(*this);
-    interpose(call->actuals(), ", ", "(", ")");
+    if (isCalleReservedWord(callee)) {
+      os_ << " ";
+      call->actual(0)->traverse(*this);
+    } else {
+      if (call->callUsedSquareBrackets()) {
+        os_ << "[";
+      } else {
+        os_ << "(";
+      }
+      std::string sep;
+      for (int i = 0; i < call->numActuals(); i++) {
+        os_ << sep;
+        if (call->isNamedActual(i)) {
+          os_ << call->actualName(i);
+          // The spaces around = are just to satisfy old tests
+          // TODO: Remove spaces around `=` when removing old parser
+          os_ << " = ";
+        }
 
+        call->actual(i)->traverse(*this);
+
+        sep = ", ";
+      }
+      if (call->callUsedSquareBrackets()) {
+        os_ << "]";
+      } else {
+        os_ << ")";
+      }
+    }
     return false;
   }
 
@@ -461,7 +762,17 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const Tuple* tup) {
-    interpose(tup->children(), ", ", "(", ")");
+    os_ << "(";
+    bool first = true;
+    for (auto it = tup->children().begin(); it != tup->children().end(); it++) {
+      if (!first) os_ << ", ";
+      (*it)->traverse(*this);
+      first = false;
+    }
+    if (tup->numChildren() == 1) {
+      os_ << ",";
+    }
+    os_ << ")";
     return false;
   }
 
@@ -481,18 +792,8 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  // TODO this isn't quite right currently, the dump for var x: [{1..3}] int = ...
-  // has the extra int. Maybe its not supposed to be a BracketLoop though?
-  // that would be more like [i in 0..15] writeln(i);
-  // M@26BracketLoop
-  // M@23  Domain
-  // M@22    Range
-  // M@20      IntLiteral
-  // M@21      IntLiteral
-  // M@25  Block
-  // M@24    Identifier int
   bool enter(const BracketLoop* bl) {
-    interpose(bl->children(), "", "[", "]");
+    printChapelSyntax(os_, bl);
     return false;
   }
 
@@ -500,10 +801,33 @@ struct RstSignatureVisitor {
     return true;
   }
 
+  bool enter(const Use* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
+  bool enter(const Import* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
+  bool enter(const VarArgFormal* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
+  bool enter(const TypeQuery* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
+  bool enter(const Conditional* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
   bool enter(const AstNode* a) {
-    printf("unhandled enter on PrettyPrintVisitor of %s\n", asttags::tagToString(a->tag()));
-    a->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-    gUnhandled.insert(a->tag());
+    printChapelSyntax(os_, a);
     return false;
   }
   void exit(const AstNode* a) {}
@@ -555,6 +879,25 @@ struct RstResult {
 
   void mark(const Context *c) const {}
 
+  void outputModule(std::string outDir, std::string name, int indentPerDepth) {
+    std::string ext = textOnly_ ? ".txt" : ".rst";
+    auto outpath = outDir + "/" + name + ext;
+
+    std::error_code err;
+    if (!std::filesystem::create_directories(outDir, err)) {
+      // TODO the above seems to return false when already exists,
+      // but I don't think that should be the case
+      // So check we really got an error
+      if (err) {
+        std::cerr << "Could not create " << outDir << " because "
+                  << err.message() << "\n";
+        return;
+      }
+    }
+    std::ofstream ofs = std::ofstream(outpath, std::ios::out);
+    output(ofs, indentPerDepth);
+  }
+
   void output(std::ostream& os, int indentPerDepth) {
     output(os, indentPerDepth, 0);
   }
@@ -571,108 +914,321 @@ struct RstResult {
 
 static const owned<RstResult>& rstDoc(Context * context, ID id);
 static const Comment* const& previousComment(Context* context, ID id);
+static const std::vector<UniqueString>& getModulePath(Context* context, ID id);
 
 struct RstResultBuilder {
   Context* context_;
   std::stringstream os_;
   std::vector<RstResult*> children_;
-
+  const std::string commentStyle = commentStyle_;
   static const int commentIndent = 3;
+  int indentDepth_ = 1;
 
-  void showComment(const Comment* comment, bool indent=true) {
-    if (!comment) {
+  bool showComment(const Comment* comment, bool indent=true) {
+    if (!comment || comment->str().substr(0, 2) == "//") {
       os_ << '\n';
-      return;
+      return false;
     }
-
-    int indentChars = indent ? commentIndent : 0;
-    auto lines = prettifyComment(comment->str());
-    os_ << '\n';
+    int addDepth = textOnly_ ? 1 : 0;
+    int indentChars = indent ? (addDepth + indentDepth_) * commentIndent : 0;
+    auto lines = prettifyComment(comment->str(), commentStyle);
+    if (!lines.empty())
+      os_ << '\n';
     for (const auto& line : lines) {
       if (line.empty()) {
-        os_ << '\n';
+        // insert blank spaces here to match test output from chpldoc
+        // TODO: See if spaces needed for the docs to format correctly
+        indentStream(os_, indentChars) << '\n';
       } else {
         indentStream(os_, indentChars) << line << '\n';
       }
     }
-    os_ << '\n';
+    return true;
   }
-  void showComment(const AstNode* node, bool indent=true) {
-    showComment(previousComment(context_, node->id()), indent);
+  bool showComment(const AstNode* node, bool indent=true) {
+    bool commentShown = showComment(previousComment(context_, node->id()), indent);
+    if (commentShown && ((textOnly_ && !node->isModule()) || !textOnly_)) os_ << "\n";
+    return commentShown;
   }
 
   template<typename T>
-  void show(const std::string& kind, const T* node, bool indentComment=true) {
-    if (isNoDoc(node)) return;
+  bool show(const std::string& kind, const T* node, bool indentComment=true) {
+    if (isNoDoc(node)) return false;
 
-    os_ << ".. " << kind << ":: ";
+    if (!textOnly_) os_ << ".. " << kind << ":: ";
     RstSignatureVisitor ppv{os_};
     node->traverse(ppv);
-    os_ << "\n";
+    if (!textOnly_) os_ << "\n";
+    bool commentShown = showComment(node, indentComment);
 
-    showComment(node, indentComment);
+    // TODO: Fix all this because why are we checking for specific node types?
+    if (commentShown && !textOnly_ && (node->isEnum() ||
+                                       node->isClass() ||
+                                       node->isRecord() ||
+                                       node->isModule())) {
+      os_ << "\n";
+    }
 
     if (auto attrs = node->attributes()) {
-      if (attrs->isDeprecated()) {
-        indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
-        indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage().c_str();
-        os_ << "\n\n";
+      if (attrs->isDeprecated() && !textOnly_) {
+        auto comment = previousComment(context_, node->id());
+        if (comment && !comment->str().empty() &&
+            comment->str().substr(0, 2) == "/*" &&
+            comment->str().find("deprecat") != std::string::npos ) {
+            // do nothing because deprecation was mentioned in doc comment
+        } else {
+          // write the deprecation warning and message
+          indentStream(os_, indentDepth_ * indentPerDepth) << ".. warning::\n\n";
+          indentStream(os_, (indentDepth_ + 1) * indentPerDepth);
+          if (attrs->deprecationMessage().isEmpty()) {
+            // write a generic message because there wasn't a specific one
+            os_ << getNodeName((AstNode*) node) << " is deprecated";
+          } else {
+            // use the specific deprecation message
+            os_ << strip(attrs->deprecationMessage().c_str());
+          }
+          os_ << "\n\n";
+        }
       }
     }
+    return commentShown;
   }
 
   void visitChildren(const AstNode* n) {
+    std::vector<RstResult*> subModules;
     for (auto child : n->children()) {
       if (auto &r = rstDoc(context_, child->id())) {
-        children_.push_back(r.get());
+        if (child->isModule()) {
+          if (!writeStdOut_) {
+            // lookup the module path
+            std::vector<UniqueString> modulePath = getModulePath(context_,
+                                                                 child->id());
+            modulePath.pop_back();
+            std::string parentPath = modulePath.back().str();
+            std::string outdir = outputDir_ + "/" + parentPath;
+            r->outputModule(outdir, child->toModule()->name().str(),
+                            indentPerDepth);
+
+          } else {
+            subModules.push_back(r.get());
+          }
+        } else {
+          children_.push_back(r.get());
+        }
       }
+    }
+    // add the submodules to the end so that all the fields/functions of
+    // an individual module are printed together, and not interrupted by
+    // a submodule's declaration
+    for (auto subModule : subModules) {
+      children_.push_back(subModule);
     }
   }
 
   owned<RstResult> visit(const Module* m) {
-    // header
-    os_ << ".. default-domain:: chpl\n\n";
-    os_ << ".. module:: " << m->name().c_str() << '\n';
-    const Comment* lastComment = previousComment(context_, m->id());
-    if (lastComment) {
-      os_ << "    :synopsis: " << commentSynopsis(lastComment) << '\n';
+    if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m))
+      return {};
+    // lookup the module path
+    std::vector<UniqueString> modulePath = getModulePath(context_, m->id());
+    std::string moduleName;
+    // build up the module path string using `.` to separate the components
+    for (auto p : modulePath) {
+      moduleName += p.str();
+      if (p != modulePath.back()) {
+        moduleName += ".";
+      }
     }
-    os_ << '\n';
+    assert(!moduleName.empty());
+    const Comment* lastComment = nullptr;
+    // header
+    if (!textOnly_) {
+      os_ << ".. default-domain:: chpl\n\n";
+      os_ << ".. module:: " << m->name().c_str() << '\n';
+      lastComment = previousComment(context_, m->id());
+      if (lastComment) {
+        indentStream(os_, 1 * indentPerDepth);
+        os_ << ":synopsis: " << commentSynopsis(lastComment, commentStyle)
+            << '\n';
+      }
+      os_ << '\n';
 
-    // module title
-    os_ << m->name().c_str() << "\n";
-    os_ << std::string(m->name().length(), '=') << "\n";
+      // module title
+      os_ << m->name().c_str() << "\n";
+      os_ << std::string(m->name().length(), '=') << "\n";
 
-    // usage
-    // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
-    os_ << templateReplace(templateUsage, "MODULE", m->name().c_str()) << "\n";
+      // usage
+      // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
+      os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
+    } else {
+      os_ << m->name().c_str();
+      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+      lastComment = previousComment(context_, m->id());
+    }
+    if (hasSubmodule(m)) {
+      if (!textOnly_) {
+        os_ << "\n";
+        os_ << "**Submodules**" << std::endl << std::endl;
 
-    showComment(lastComment, false);
+        os_ << ".. toctree::" << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
+
+        os_ << ":maxdepth: 1" << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
+
+        os_ << ":glob:" << std::endl << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
+
+        os_ << moduleName << "/*" << std::endl;
+      } else {
+        os_ << "\nSubmodules for this module are located in the ";
+        os_ << moduleName << "/ directory" << std::endl;
+      }
+    }
+    if (textOnly_) indentDepth_ --;
+    showComment(m, textOnly_);
+    if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
 
-    return getResult();
+    return getResult(textOnly_);
   }
 
   owned<RstResult> visit(const Function* f) {
-    // TODO this doesn't fire on privateProc either
-    if (f->visibility() == Decl::Visibility::PRIVATE)
+    if (f->visibility() == Decl::Visibility::PRIVATE || isNoDoc(f))
       return {};
+    bool doIndent = f->isMethod() && f->isPrimaryMethod();
+    if (doIndent) indentDepth_ ++;
     show(kindToRstString(f->isMethod(), f->kind()), f);
+    if (doIndent) indentDepth_ --;
     return getResult();
   }
+
   owned<RstResult> visit(const Variable* v) {
-    show("data", v);
+    if (v->visibility() == Decl::Visibility::PRIVATE || isNoDoc(v))
+      return {};
+
+    if (v->isField()) {
+      indentDepth_ ++;
+      show("attribute", v);
+      indentDepth_ --;
+    }
+    else if (v->storageKind() == IntentList::TYPE)
+      show("type", v);
+    else
+      show("data", v);
+
     return getResult();
   }
+
   owned<RstResult> visit(const Record* r) {
+    if (isNoDoc(r)) return {};
     show("record", r);
     visitChildren(r);
     return getResult(true);
   }
   owned<RstResult> visit(const Enum* e) {
+    if (isNoDoc(e)) return {};
     show("enum", e);
     return getResult();
+  }
+
+  owned<RstResult> visit(const MultiDecl* md) {
+    if (isNoDoc(md)) return {};
+
+    std::string kind;
+    std::queue<const AstNode*> expressions;
+
+    for (auto decl : md->decls()) {
+      if (decl->toVariable()->typeExpression() ||
+          decl->toVariable()->initExpression()) {
+        expressions.push(decl);
+        kind = decl->toVariable()->isField() ? "attribute" : "data";
+      }
+    }
+    std::string prevTypeExpression;
+    std::string prevInitExpression;
+    for (auto decl : md->decls()) {
+      if (kind=="attribute" && decl != md->decls().begin()->toDecl()) {
+        indentStream(os_, 1 * indentPerDepth);
+      }
+      // write kind
+      if (!textOnly_) os_ << ".. " << kind << ":: ";
+      if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
+        os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
+      }
+      // write name
+      os_ << decl->toVariable()->name();
+
+      if (expressions.empty()) {
+        assert(!prevTypeExpression.empty() || !prevInitExpression.empty());
+        multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+      } else {
+        // our decl doesn't have a typeExpression or initExpression,
+        // or it is the same one
+        // is previousInit or previousType set?
+        if (!prevInitExpression.empty() || !prevTypeExpression.empty()) {
+          multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+        } else { // use the expression in the queue
+          // take the one from the front of the expressions queue
+          if (auto te = expressions.front()->toVariable()->typeExpression()) {
+            //write out type expression->stringify
+            os_ << ": ";
+            te->stringify(os_, CHPL_SYNTAX);
+            //set previous type expression = ": variableName.type"
+            prevTypeExpression =
+                ": " + decl->toVariable()->name().str() + ".type";
+          }
+          if (auto exp = expressions.front()->toVariable()->initExpression()) {
+            // write out initExpression->stringify
+            os_ << " = ";
+            exp->stringify(os_, CHPL_SYNTAX);
+            // set previous init expression = "= variableName"
+            prevInitExpression = " = " + decl->toVariable()->name().str();
+          }
+        }
+        if (decl == expressions.front()) {
+          // our decl is the same as the first one in the queue, so we should
+          // pop it and clear the previousInit and previousType
+          expressions.pop();
+          prevTypeExpression.clear();
+          prevInitExpression.clear();
+        }
+      }
+      showComment(md, true);
+
+      if (auto attrs = md->attributes()) {
+        if (attrs->isDeprecated() && !textOnly_) {
+          indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
+          indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage();
+          os_ << "\n\n";
+        }
+      }
+      os_ << "\n";
+    }
+    return getResult();
+  }
+
+  void multiDeclHelper(const Decl* decl, std::string& prevTypeExpression,
+                       std::string& prevInitExpression) {
+    if (!prevTypeExpression.empty()) {
+      // write prevTypeExpression
+      os_ << prevTypeExpression;
+      // set prevTypeExpression = ": thisVariableName.type"
+      prevTypeExpression = ": " + decl->toVariable()->name().str() + ".type";
+    }
+    if (!prevInitExpression.empty()) {
+      // write prevInitExpression
+      os_ << prevInitExpression;
+      // set prevInitExpression  = "= thisVariableName"
+      prevInitExpression = " = " + decl->toVariable()->name().str();
+    }
+  }
+
+  owned<RstResult> visit(const Class* c) {
+    if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
+    show("class", c);
+    visitChildren(c);
+    return getResult(true);
   }
 
   // TODO all these nullptr gets stored in the query map... can we avoid that?
@@ -697,6 +1253,14 @@ struct CommentVisitor {
 
   void put(const AstNode* n) {
     if (lastComment_) {
+      // check that we didn't already use this comment, which can happen
+      // if a module has a comment and it's first function does not,
+      // in that case we improperly apply the comment to both the module
+      // and the function.
+      for (const auto& mapEntry : map) {
+        if (mapEntry.second == lastComment_)
+          return;
+      }
       map.emplace(n->id(), lastComment_);
     }
   }
@@ -735,8 +1299,10 @@ static const CommentMap&
 commentMap(Context* context, UniqueString path) {
   QUERY_BEGIN(commentMap, context, path);
   CommentMap result;
-
-  const auto& builderResult = parseFile(context, path);
+  UniqueString emptyParent;
+  const auto& builderResult = parseFileToBuilderResult(context,
+                                                       path,
+                                                       emptyParent);
 
   CommentVisitor cv{result};
   for (const auto& ast : builderResult.topLevelExpressions()) {
@@ -753,7 +1319,12 @@ commentMap(Context* context, UniqueString path) {
 static const Comment* const& previousComment(Context* context, ID id) {
   QUERY_BEGIN(previousComment, context, id);
   const Comment* result = nullptr;
-  const auto& map = commentMap(context, context->filePathForId(id));
+  UniqueString modPath;
+  UniqueString parentPath;
+
+  assert(context->filePathForId(id, modPath, parentPath));
+
+  const auto& map = commentMap(context, modPath);
   auto it = map.find(id);
   if (it != map.end()) {
     result = it->second;
@@ -771,6 +1342,25 @@ static const owned<RstResult>& rstDoc(Context* context, ID id) {
     result = node->dispatch<owned<RstResult>>(cqv);
   }
 
+  return QUERY_END(result);
+}
+
+static const std::vector<UniqueString>& getModulePath(Context* context, ID id) {
+  QUERY_BEGIN(getModulePath, context, id);
+  std::vector<UniqueString> result;
+  if (!id.isEmpty()) {
+    ID parentID = idToParentModule(context, id);
+    while (!parentID.isEmpty()) {
+      // a submodule
+      UniqueString modulePath = parentID.symbolName(context);
+      // place parent names in the front
+      result.insert(result.begin(), modulePath);
+      // see if we have another parent
+      parentID = idToParentModule(context, parentID);
+    }
+    // a top level module
+    result.push_back(id.symbolName(context));
+  }
   return QUERY_END(result);
 }
 
@@ -862,6 +1452,12 @@ struct Args {
   bool selfTest = false;
   bool stdout = false;
   bool dump = false;
+  bool textOnly = false;
+  std::string outputDir;
+  bool processUsedModules = false;
+  std::string author;
+  std::string commentStyle =  "/*";
+  std::string projectVersion = "0.0.1";
   std::vector<std::string> files;
 };
 
@@ -880,6 +1476,26 @@ static Args parseArgs(int argc, char **argv) {
       ret.stdout = true;
     } else if (std::strcmp("--dump", argv[i]) == 0) {
       ret.dump = true;
+    } else if (std::strcmp("--text-only", argv[i]) ==  0) {
+      ret.textOnly = true;
+    } else if (std::strcmp("--output-dir", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.outputDir = argv[i + 1];
+      i += 1;
+    } else if (std::strcmp("--author", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.author = argv[i + 1];
+      i += 1;
+    } else if (std::strcmp("--process-used-modules", argv[i]) ==  0) {
+      ret.processUsedModules = true;
+    } else if (std::strcmp("--comment-style", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.commentStyle = argv[i + 1];
+      i += 1;
+    } else if (std::strcmp("--project-version", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.projectVersion = checkProjectVersion(argv[i + 1]);
+      i += 1;
     } else {
       ret.files.push_back(argv[i]);
     }
@@ -887,10 +1503,14 @@ static Args parseArgs(int argc, char **argv) {
   return ret;
 }
 
-// TODO what do we do if multiple modules are in one file?
+// TODO what do we do if multiple modules (submodules) are in one file?
 static std::string moduleName(const BuilderResult& builderResult) {
   for (const auto& ast : builderResult.topLevelExpressions()) {
     if (const Module* m = ast->toModule()) {
+      /* TODO: This is wrong if the module is an implicit module and it just
+          imports or uses another module. In that case the name should be that
+          of the used or imported module.
+      */
       return m->name().str();
     }
   }
@@ -903,7 +1523,13 @@ int main(int argc, char** argv) {
   Context *ctx = &context;
 
   Args args = parseArgs(argc, argv);
-
+  writeStdOut_ = args.stdout;
+  textOnly_ = args.textOnly;
+  if (args.commentStyle.substr(0,2) != "/*") {
+    std::cerr << "error: comment label should start with /*" << std::endl;
+    return 1;
+  }
+  commentStyle_ = args.commentStyle;
   if (args.selfTest) {
     args.files.push_back("selftest.chpl");
     UniqueString path = UniqueString::get(ctx, "selftest.chpl");
@@ -916,39 +1542,53 @@ int main(int argc, char** argv) {
 
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
-    const BuilderResult& builderResult = parseFile(ctx, path);
+    UniqueString emptyParent;
 
-    std::ofstream ofs;
+    // TODO: Change which query we use to parse files as suggested by @mppf
+    // parseFileContainingIdToBuilderResult(Context* context, ID id);
+    // and then work with the module ID to find the preceeding comment.
+    const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
+                                                                  path,
+                                                                  emptyParent);
+
+    if (builderResult.numErrors() > 0) {
+      // TODO: handle errors better, don't rely on parse query to emit them
+      // per @mppf: if dyno-chpldoc wants to quit on an error, it should
+      // configure Context::reportError to have a custom function that does so.
+
+      for (auto e : builderResult.errors()) {
+      // just display the error messages right now, see TODO above
+        if (e.kind() == ErrorMessage::Kind::ERROR ||
+            e.kind() == ErrorMessage::Kind::SYNTAX) {
+              std::cerr << "Error parsing " << path << ": "
+                        << builderResult.error(0).message() << "\n";
+              return 1;
+            }
+      }
+    }
     if (!args.stdout) {
       auto name = moduleName(builderResult);
-      auto outdir = args.saveSphinx + "/source/modules";
-      auto outpath = outdir + "/" + name + ".rst";
-
-      std::error_code err;
-      if (!std::filesystem::create_directories(outdir, err)) {
-        // TODO the above seems to return false when already exists,
-        // but I don't think that should be the case
-        // So check we really got an error
-        if (err) {
-          std::cerr << "Could not create " << outdir << " because "
-                    << err.message() << "\n";
-          return 1;
+      if (!textOnly_)
+        outputDir_ = args.saveSphinx + "/source/modules";
+      else
+        outputDir_ = args.saveSphinx;
+      for (const auto& ast : builderResult.topLevelExpressions()) {
+        if (args.dump) {
+          ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
+        }
+        if (auto& r = rstDoc(ctx, ast->id())) {
+          r->outputModule(outputDir_, name, indentPerDepth);
         }
       }
-      // TODO is the output name from the module or filename?
-
-      // TODO nested modules need some context to end up in the right place
-      // (so this will probably go in the visitor)
-      ofs = std::ofstream(outpath, std::ios::out);
     }
-    std::ostream& os = args.stdout ? std::cout : ofs;
-
-    for (const auto& ast : builderResult.topLevelExpressions()) {
-      if (args.dump) {
-        ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-      }
-      if (auto& r = rstDoc(ctx, ast->id())) {
-        r->output(os, indentPerDepth);
+    else {
+      for (const auto& ast : builderResult.topLevelExpressions()) {
+        if (args.dump) {
+          ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
+        }
+        if (auto& r = rstDoc(ctx, ast->id())) {
+          r->output(std::cout, indentPerDepth);
+        }
       }
     }
 
@@ -959,14 +1599,6 @@ int main(int argc, char** argv) {
                   << (pair.second ? pair.second->str() : "<nullptr>") << "\n";
       }
     }
-  }
-
-  if (!gUnhandled.empty()) {
-    printf("ERROR did not pretty print %ld nodes with tags:\n", gUnhandled.size());
-    for (auto tag : gUnhandled) {
-      printf("  %s\n", asttags::tagToString(tag));
-    }
-    return 1;
   }
 
   return 0;

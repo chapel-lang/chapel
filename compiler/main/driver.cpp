@@ -28,7 +28,6 @@
 #include "chpl.h"
 #include "commonFlags.h"
 #include "config.h"
-#include "countTokens.h"
 #include "docsDriver.h"
 #include "files.h"
 #include "library.h"
@@ -47,7 +46,7 @@
 #include "version.h"
 #include "visibleFunctions.h"
 
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 
 #include <inttypes.h>
@@ -112,6 +111,8 @@ const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS = NULL;
 const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
+
+const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -965,6 +966,7 @@ Flag types:
   U = unsigned long
   N = --no-... flag, --no version sets to false
   n = --no-... flag, --no version sets to true
+  X = hexadecimal (converted to unsigned long)
 
 Record components:
  {"long option" (or "" for separators), 'short option', "description of option argument(s), if any", "option description", "option type", &affectedVariable, "environment variable name", setter_function},
@@ -1215,7 +1217,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"dyno", ' ', NULL, "Enable [disable] using dyno compiler library", "N", &fDynoCompilerLibrary, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
- {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "U", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
+ {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
 
 
  DRIVER_ARG_PRINT_CHPL_HOME,
@@ -1451,6 +1453,10 @@ static void setChapelEnvs() {
   CHPL_TARGET_SYSTEM_COMPILE_ARGS = envMap["CHPL_TARGET_SYSTEM_COMPILE_ARGS"];
   CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
   CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
+
+  if (localeUsesGPU()) {
+    CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
+  }
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
@@ -1816,28 +1822,29 @@ int main(int argc, char* argv[]) {
     process_args(&sArgState, argc, argv);
 
     setupChplGlobals(argv[0]);
-    if (fDynoCompilerLibrary) {
-      // set the config names/values we processed earlier
-      chpl::parsing::setConfigSettings(gContext, gDynoParams);
-      // this should not be used after this point!
-      gDynoParams.clear();
 
-      // set up the module paths
-      std::string chpl_module_path;
-      if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
-        chpl_module_path = envvarpath;
-      }
-      chpl::parsing::setupModuleSearchPaths(gContext,
-                                            CHPL_HOME,
-                                            fMinimalModules,
-                                            CHPL_LOCALE_MODEL,
-                                            fEnableTaskTracking,
-                                            CHPL_TASKS,
-                                            CHPL_COMM,
-                                            CHPL_SYS_MODULES_SUBDIR,
-                                            chpl_module_path,
-                                            cmdLineModPaths);
+    // set the config names/values we processed earlier
+    chpl::parsing::setConfigSettings(gContext, gDynoParams);
+    // this should not be used after this point!
+    gDynoParams.clear();
+
+    // set up the module paths
+    std::string chpl_module_path;
+    if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
+      chpl_module_path = envvarpath;
     }
+
+    chpl::parsing::setupModuleSearchPaths(gContext,
+                                          CHPL_HOME,
+                                          fMinimalModules,
+                                          CHPL_LOCALE_MODEL,
+                                          fEnableTaskTracking,
+                                          CHPL_TASKS,
+                                          CHPL_COMM,
+                                          CHPL_SYS_MODULES_SUBDIR,
+                                          chpl_module_path,
+                                          cmdLineModPaths);
+
     postprocess_args();
 
     if (gContext != nullptr) {

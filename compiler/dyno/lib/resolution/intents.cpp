@@ -65,7 +65,7 @@ static QualifiedType::Kind defaultIntentForType(const Type* t) {
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
 
-  if (t->isPrimitiveType())
+  if (t->isPrimitiveType() || t->isEnumType())
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||

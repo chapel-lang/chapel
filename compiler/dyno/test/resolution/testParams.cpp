@@ -43,7 +43,7 @@ static QualifiedType getTypeForFirstStmt(Context* context,
   auto path = UniqueString::get(context, "input.chpl");
   setFileText(context, path, program);
 
-  const ModuleVec& vec = parse(context, path);
+  const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);

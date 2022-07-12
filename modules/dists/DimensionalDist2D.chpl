@@ -358,6 +358,8 @@ class DimensionalArr : BaseRectangularArr {
   // same as 'dom'; for an alias (e.g. a slice), 'dom' of the original array
   const allocDom: dom.type; // must be a DimensionalDom
 
+  override proc rank param return dom.rank;
+
   proc targetIds return localAdescs.domain;
 
   // no subordinate 1-d array descriptors - we handle storage ourselves
@@ -843,14 +845,14 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
 }
 
 // common redirects
-proc DimensionalDom.dsiLow           return whole.lowBound;
-proc DimensionalDom.dsiHigh          return whole.highBound;
-proc DimensionalDom.dsiAlignedLow    return whole.alignedLow;
-proc DimensionalDom.dsiAlignedHigh   return whole.alignedHigh;
-proc DimensionalDom.dsiFirst         return whole.first;
-proc DimensionalDom.dsiLast          return whole.last;
-proc DimensionalDom.dsiStride        return whole.stride;
-proc DimensionalDom.dsiAlignment     return whole.alignment;
+override proc DimensionalDom.dsiLow           return whole.lowBound;
+override proc DimensionalDom.dsiHigh          return whole.highBound;
+override proc DimensionalDom.dsiAlignedLow    return whole.alignedLow;
+override proc DimensionalDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc DimensionalDom.dsiFirst         return whole.first;
+override proc DimensionalDom.dsiLast          return whole.last;
+override proc DimensionalDom.dsiStride        return whole.stride;
+override proc DimensionalDom.dsiAlignment     return whole.alignment;
 proc DimensionalDom.dsiNumIndices    return whole.sizeAs(uint);
 proc DimensionalDom.dsiDim(d)        return whole.dim(d);
 proc DimensionalDom.dsiDim(param d)  return whole.dim(d);
@@ -965,7 +967,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
 
 //== miscellanea
 
-proc DimensionalArr.idxType type return dom.idxType; // (could be a field)
+override proc DimensionalArr.idxType type return dom.idxType; // (could be a field)
 
 override proc DimensionalArr.dsiGetBaseDom() return dom;
 

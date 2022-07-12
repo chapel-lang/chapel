@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
@@ -279,8 +279,8 @@ int main() {
   Context context;
   Context* ctx = &context;
 
-  auto parser = Parser::build(ctx);
-  Parser* p = parser.get();
+  auto parser = Parser::createForTopLevelModule(ctx);
+  Parser* p = &parser;
 
   test1(p);
   test2(p);

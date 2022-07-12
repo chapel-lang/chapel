@@ -264,7 +264,7 @@ chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen) {
 // Find the named executable in the PATH, if it's there.
 //
 char *chpl_find_executable(const char *prog_name) {
-  const char *cmd_fmt = "/usr/bin/which --skip-alias --skip-functions %s";
+  const char *cmd_fmt = "which %s";
   const int cmd_len
             = strlen(cmd_fmt)     // 'which' command, as printf() format
               - 2                 //   length of "%s" specifier
@@ -799,7 +799,7 @@ void chpl_launcher_get_job_name(char *baseName, char *jobName, int jobLen) {
     prefix = "CHPL-";
   }
   if (name == NULL) {
-    snprintf(jobName, jobLen, "%s%.10s ", prefix, baseName);
+    snprintf(jobName, jobLen, "%s%.10s", prefix, baseName);
   } else {
     strncpy(jobName, name, jobLen);
     jobName[jobLen-1] = '\0';

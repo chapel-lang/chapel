@@ -1110,7 +1110,7 @@ private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_void_ptr;
 private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_void_ptr;
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
-private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyleInternal):syserr;
+private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyleInternal, bufIoMax:int(64)):syserr;
 
 private extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, ref path:c_string, ref offset:int(64)):syserr;
 
@@ -2138,7 +2138,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:f
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
     }
-    error = qio_channel_create(this._channel_internal, f._file_internal, hints, !writing, writing, start, end, local_style);
+    error = qio_channel_create(this._channel_internal, f._file_internal, hints, !writing, writing, start, end, local_style, 64*1024);
     // On return this._channel_internal.ref_cnt == 1.
     // Failure to check the error return code may result in a double-deletion error.
   }
@@ -4319,10 +4319,12 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
     }
 
     if t == string {
-      out_var = createStringWithOwnedBuffer(tx, length=lenread);
+      var tmp = createStringWithOwnedBuffer(tx, length=lenread);
+      out_var <=> tmp;
     }
     else {
-      out_var = createBytesWithOwnedBuffer(tx, length=lenread);
+      var tmp = createBytesWithOwnedBuffer(tx, length=lenread);
+      out_var <=> tmp;
     }
   }
 

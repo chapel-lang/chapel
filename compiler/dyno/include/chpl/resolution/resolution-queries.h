@@ -40,6 +40,13 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id);
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id);
 
 /**
+  Resolve the contents of a Module but don't resolve any paren-ful function
+  calls or establish types.
+ */
+const ResolutionResultByPostorderID& scopeResolveModule(Context* context,
+                                                        ID id);
+
+/**
   Compute the type for a NamedDecl with a particular id.
  */
 const types::QualifiedType& typeForModuleLevelSymbol(Context* context, ID id);
@@ -196,11 +203,17 @@ const ResolvedFunction* resolveFunction(Context* context,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
 
-
 /**
-  Resolves a concrete function using the above queries.
+  Helper to resolve a concrete function using the above queries.
+  Will return `nullptr` if the function is generic or has a `where false`.
   */
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
+
+/**
+  Compute a ResolvedFunction given a TypedFnSignature, but don't
+  do full resolution of types or paren-ful calls in the body.
+ */
+const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
 
 /**
   Returns the ResolvedFunction called by a particular
@@ -213,6 +226,11 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r);
 /**
   Compute the return/yield type for a function.
+
+  TODO: If the function returns a param, the param's value may not
+  be available. This is because the function body is not resolved when
+  the return type is explicitly declared. We probably still want to compute
+  the value in such cases, though.
  */
 const types::QualifiedType& returnType(Context* context,
                                        const TypedFnSignature* sig,

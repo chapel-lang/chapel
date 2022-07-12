@@ -25,7 +25,7 @@
 #include "stringutil.h"
 
 #include "baseAST.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "driver.h"
 #include "map.h"
 #include "misc.h"

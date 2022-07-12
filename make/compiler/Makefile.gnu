@@ -193,6 +193,10 @@ ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 5; echo "$$?"),1)
 SQUASH_WARN_GEN_CFLAGS += -Wno-incompatible-pointer-types
 endif
 
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 5; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-misleading-indentation
+endif
+
 #
 # Don't warn/error for tautological compares (ex. x == x)
 #
@@ -263,6 +267,13 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
 
+#
+# Avoid false positive warnings about use-after free with realloc
+# that occur in GCC 12.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-use-after-free
+endif
 
 #
 # 2016/03/28: Help to protect the Chapel compiler from a partially

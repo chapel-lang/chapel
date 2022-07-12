@@ -21,16 +21,13 @@
 #include "parser.h"
 
 #include "ImportStmt.h"
-#include "bison-chapel.h"
 #include "build.h"
 #include "config.h"
 #include "convert-uast.h"
-#include "countTokens.h"
 #include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
-#include "flex-chapel.h"
 #include "insertLineNumbers.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -42,9 +39,6 @@
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
 
-// Flip this to always parse with the new parser.
-#define ALWAYS_PARSE_WITH_DYNO 0
-
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
 #include "view.h"
 #endif
@@ -55,6 +49,10 @@ BlockStmt*           yyblock                       = NULL;
 const char*          yyfilename                    = NULL;
 int                  yystartlineno                 = 0;
 
+bool                 parsingPrivate                = true;
+
+bool                 countTokens                   = false;
+bool                 printTokens                   = false;
 ModTag               currentModuleType             = MOD_INTERNAL;
 const char*          currentModuleName             = NULL;
 
@@ -80,6 +78,16 @@ static void          parseDependentModules(bool isInternal);
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
 
+// TODO: Remove me.
+struct YYLTYPE {
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+  const char* comment;
+  const char* prevModule;
+};
+
 static void initializeGlobalParserState(const char* path, ModTag modTag,
                                         bool namedOnCommandLine,
                                         YYLTYPE* yylloc=nullptr);
@@ -93,13 +101,9 @@ static ModuleSymbol* parseFile(const char* fileName,
 
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
-static ModuleSymbol* oldParserParseFile(const char* fileName,
-                                        ModTag      modTag,
-                                        bool        namedOnCommandLine,
-                                        bool        include);
-
 // Callback to configure how dyno error messages are displayed.
-static void dynoParseFileErrorHandler(const chpl::ErrorMessage& err);
+static void dynoParseFileErrorHandler(chpl::Context* context,
+                                      const chpl::ErrorMessage& err);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -120,11 +124,13 @@ static const char*   searchThePath(const char*      modName,
 ************************************** | *************************************/
 
 void parse() {
-  yydebug = debugParserLevel;
 
-  if ((countTokens == true) || (fDynoCompilerLibrary && printTokens)) {
-    countTokensInCmdLineFiles();
+  // TODO: Runtime configuration of debug level for dyno parser.
+  if (debugParserLevel) {
+    INT_FATAL("The '%s' flag currently has no effect", "parser-debug");
   }
+
+  if (countTokens || printTokens) countTokensInCmdLineFiles();
 
   parseInternalModules();
 
@@ -132,7 +138,7 @@ void parse() {
 
   checkConfigs();
 
-  finishCountingTokens();
+  postConvertApplyFixups(gContext);
 
   parsed = true;
 }
@@ -294,22 +300,15 @@ static void countTokensInCmdLineFiles() {
 
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName) == true) {
-      if (fDynoCompilerLibrary) {
-        auto path = chpl::UniqueString::get(gContext, inputFileName);
-        parseStats.startCountingFileTokens(path.c_str());
-        chpl::parsing::countTokens(gContext, path, &parseStats);
-        parseStats.stopCountingFileTokens();
-      } else {
-        parseFile(inputFileName, MOD_USER, true, false);
-      }
+      auto path = chpl::UniqueString::get(gContext, inputFileName);
+      parseStats.startCountingFileTokens(path.c_str());
+      chpl::parsing::countTokens(gContext, path, &parseStats);
+      parseStats.stopCountingFileTokens();
     }
   }
-  if (fDynoCompilerLibrary) {
-    parseStats.finishCountingTokens();
-    clean_exit(0);
-  } else {
-    finishCountingTokens();
-  }
+
+  parseStats.finishCountingTokens();
+  clean_exit(0);
 }
 
 /************************************* | **************************************
@@ -538,6 +537,18 @@ static void ensureRequiredStandardModulesAreParsed() {
         }
       }
 
+      // Allow automatically-included standard libraries to be overridden
+      // by a user module.
+      // See also test/modules/bradc/userInsteadOfStandard.
+      // TODO: use a better strategy than this workaround in the future,
+      // such as ideas proposed in issue #19313.
+      if (0 == strcmp(modName, "AutoMath") ||
+          0 == strcmp(modName, "Errors") ||
+          0 == strcmp(modName, "ChapelIO") ||
+          0 == strcmp(modName, "Types")) {
+        foundInt = foundInt || foundUsr;
+      }
+
       // If we haven't found the standard version of the module,
       // then we need to parse it
       if (foundInt == false) {
@@ -630,7 +641,6 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool containsOnlyModules(BlockStmt* block, const char* path);
 static void addModuleToDoneList(ModuleSymbol* module);
 
 //
@@ -699,11 +709,7 @@ static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
                                bool        namedOnCommandLine,
                                bool        include) {
-  if (ALWAYS_PARSE_WITH_DYNO || fDynoCompilerLibrary) {
-    return dynoParseFile(path, modTag, namedOnCommandLine, include);
-  } else {
-    return oldParserParseFile(path, modTag, namedOnCommandLine, include);
-  }
+  return dynoParseFile(path, modTag, namedOnCommandLine, include);
 }
 
 static void maybePrintModuleFile(ModTag modTag, const char* path) {
@@ -718,158 +724,16 @@ static void maybePrintModuleFile(ModTag modTag, const char* path) {
   }
 }
 
-static ModuleSymbol* oldParserParseFile(const char* path,
-                                     ModTag      modTag,
-                                     bool        namedOnCommandLine,
-                                     bool        include) {
-  ModuleSymbol* retval = NULL;
-
-  INT_ASSERT(!fDynoCompilerLibrary && !ALWAYS_PARSE_WITH_DYNO);
-
-  // Make sure we haven't already parsed this file
-  if (haveAlreadyParsed(path)) {
-    return NULL;
-  }
-
-  if (FILE* fp = openInputFile(path)) {
-    gFilenameLookup.push_back(path);
-
-    // State for the lexer
-    int           lexerStatus  = 100;
-
-    // State for the parser
-    yypstate*     parser       = yypstate_new();
-    int           parserStatus = YYPUSH_MORE;
-    YYLTYPE       yylloc;
-    ParserContext context;
-
-    initializeGlobalParserState(path, modTag, namedOnCommandLine, &yylloc);
-
-    // look for the ArgumentParser and set flag to indicate we should copy
-    // the delimiter -- to the arguments passed to chapel program's main
-    if (modTag == MOD_STANDARD &&
-        strcmp("$CHPL_HOME/modules/packages/ArgumentParser.chpl",
-               cleanFilename(path)) == 0 ) {
-      mainPreserveDelimiter = true;
-    }
-
-    maybePrintModuleFile(modTag, path);
-
-
-    if (namedOnCommandLine == true) {
-      startCountingFileTokens(path);
-    }
-
-    yylex_init(&context.scanner);
-
-    stringBufferInit();
-
-    yyset_in(fp, context.scanner);
-
-    while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
-      YYSTYPE yylval;
-
-      lexerStatus = yylex(&yylval, &yylloc, context.scanner);
-
-      if        (lexerStatus >= 0) {
-        parserStatus          = yypush_parse(parser,
-                                             lexerStatus,
-                                             &yylval,
-                                             &yylloc,
-                                             &context);
-
-      } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
-        context.latestComment = yylval.pch;
-      } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
-        context.latestComment = NULL;
-      }
-    }
-
-    if (namedOnCommandLine == true) {
-      stopCountingFileTokens(context.scanner);
-    }
-
-    // Cleanup after the parser
-    yypstate_delete(parser);
-
-    // Cleanup after the lexer
-    yylex_destroy(context.scanner);
-
-    closeInputFile(fp);
-
-    // Halt now if there were parse errors.
-    USR_STOP();
-
-    if (yyblock == NULL) {
-      INT_FATAL("yyblock should always be non-NULL after yyparse()");
-    }
-
-    if (containsOnlyModules(yyblock, path) == true) {
-      ModuleSymbol* moduleLast  = 0;
-      int           moduleCount = 0;
-
-      for_alist(stmt, yyblock->body) {
-        if (DefExpr* defExpr = toDefExpr(stmt)) {
-          if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
-
-            defExpr->remove();
-
-            if (include == false) {
-              ModuleSymbol::addTopLevelModule(modSym);
-              if (namedOnCommandLine) {
-                modSym->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-              }
-            }
-
-            addModuleToDoneList(modSym);
-
-            moduleLast  = modSym;
-            moduleCount = moduleCount + 1;
-          }
-        }
-      }
-
-      if (moduleCount == 1) {
-        retval = moduleLast;
-      } else if (include) {
-        USR_FATAL(moduleLast, "included module file contains multiple modules");
-      }
-
-    } else {
-      const char* modName = filenameToModulename(path);
-
-      retval = buildModule(modName, modTag, yyblock, yyfilename, false, false, NULL);
-
-      if (include == false) {
-        ModuleSymbol::addTopLevelModule(retval);
-        if (namedOnCommandLine) {
-          retval->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-        }
-      }
-
-      retval->addFlag(FLAG_IMPLICIT_MODULE);
-
-      addModuleToDoneList(retval);
-    }
-
-    deinitializeGlobalParserState(&yylloc);
-
-  } else {
-    fprintf(stderr,
-            "ParseFile: Unable to open \"%s\" for reading\n",
-            path);
-  }
-  if (retval && strcmp(retval->name, "IO") == 0) {
-    ioModule = retval;
-  }
-
-  return retval;
+void noteParsedIncludedModule(ModuleSymbol* mod, const char* pathAstr) {
+  maybePrintModuleFile(mod->modTag, pathAstr);
+  gFilenameLookup.push_back(pathAstr);
 }
 
-static void uASTDisplayError(const chpl::ErrorMessage& err) {
+static void uASTDisplayError(chpl::Context* context,
+                             const chpl::ErrorMessage& err) {
   //astlocMarker locMarker(err.location());
 
-  auto loc = err.location();
+  auto loc = err.location(context);
 
   const char* msg = err.message().c_str();
 
@@ -881,8 +745,8 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
       USR_WARN(loc,"%s", msg);
       break;
     case chpl::ErrorMessage::SYNTAX: {
-      const char* path = err.path().c_str();
-      const int line = err.line();
+      const char* path = loc.path().c_str();
+      const int line = loc.line();
       const int tagUsrFatalCont = 3;
       setupError("parser", path, line, tagUsrFatalCont);
       fprintf(stderr, "%s:%d: %s", path, line, "syntax error");
@@ -902,11 +766,12 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
 }
 
 // TODO: Add helpers to convert locations without passing IDs.
-static void dynoParseFileErrorHandler(const chpl::ErrorMessage& err) {
-  uASTDisplayError(err);
+static void dynoParseFileErrorHandler(chpl::Context* context,
+                                      const chpl::ErrorMessage& err) {
+  uASTDisplayError(context, err);
 
   for (auto& detail : err.details()) {
-    uASTDisplayError(detail);
+    uASTDisplayError(context, detail);
   }
 }
 
@@ -930,9 +795,13 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   auto path = chpl::UniqueString::get(gContext, fileName);
 
+  INT_ASSERT(!include);
+
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.
-  auto& builderResult = chpl::parsing::parseFile(gContext, path);
+  chpl::UniqueString emptySymbolPath;
+  auto& builderResult =
+    chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
   // Any errors while building will have already been emitted by the global
   // error handling callback that was set above. So just stop.
@@ -1018,14 +887,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   INT_ASSERT(lastModSym && numModSyms);
 
-  // Use this temporarily to check the contents of the implicit module.
-  // TODO (dlongnecke): Emit the errors in this helper function in the
-  // parse query instead when we have warnings (e.g. 'noteWarning').
-  if (numModSyms == 1 && lastModSym->hasFlag(FLAG_IMPLICIT_MODULE)) {
-    SET_LINENO(lastModSym);
-    containsOnlyModules(lastModSym->block, path.c_str());
-  }
-
   // All modules were already added to the done list in the loop above.
   // The non-uAST variant of this function returns 'nullptr' if multiple
   // top level modules were produced by parsing the file.
@@ -1053,89 +914,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   }
 
   return ret;
-}
-
-static bool containsOnlyModules(BlockStmt* block, const char* path) {
-  int           moduleDefs     =     0;
-  bool          hasUses        = false;
-  bool          hasImports     = false;
-  bool          hasRequires    = false;
-  bool          hasOther       = false;
-  ModuleSymbol* lastModSym     =  NULL;
-  BaseAST*      lastModSymStmt =  NULL;
-  BaseAST*      firstOtherStmt =  NULL;
-
-  for_alist(stmt, block->body) {
-    if (BlockStmt* block = toBlockStmt(stmt))
-      stmt = block->body.first();
-
-    if (DefExpr* defExpr = toDefExpr(stmt)) {
-      ModuleSymbol* modSym = toModuleSymbol(defExpr->sym);
-
-      if (modSym != NULL && !modSym->hasFlag(FLAG_INCLUDED_MODULE)) {
-        lastModSym     = modSym;
-        lastModSymStmt = stmt;
-
-        moduleDefs++;
-      } else {
-        hasOther = true;
-        if (firstOtherStmt == NULL)
-          firstOtherStmt = stmt;
-      }
-
-    } else if (CallExpr* callexpr = toCallExpr(stmt)) {
-      if (callexpr->isPrimitive(PRIM_REQUIRE)) {
-        hasRequires = true;
-      } else {
-        hasOther = true;
-        if (firstOtherStmt == NULL)
-          firstOtherStmt = stmt;
-      }
-
-    } else if (isUseStmt(stmt)  == true) {
-      hasUses = true;
-
-    } else if (isImportStmt(stmt) == true) {
-      hasImports = true;
-
-    } else {
-      hasOther = true;
-      if (firstOtherStmt == NULL)
-        firstOtherStmt = stmt;
-    }
-  }
-
-  if ((hasUses == true || hasImports == true || hasRequires == true) &&
-      hasOther == false &&
-      moduleDefs == 1) {
-    const char* stmtKind = "require', 'use', and/or 'import";
-
-    USR_WARN(lastModSymStmt,
-             "as written, '%s' is a sub-module of the module created for "
-             "file '%s' due to the file-level '%s' statements.  If you "
-             "meant for '%s' to be a top-level module, move the '%s' "
-             "statements into its scope.",
-             lastModSym->name,
-             path,
-             stmtKind,
-             lastModSym->name,
-             stmtKind);
-
-  } else if (moduleDefs >= 1 && (hasUses || hasOther)) {
-    USR_WARN(firstOtherStmt,
-             "This file-scope code is outside of any "
-             "explicit module declarations (e.g., module %s), "
-             "so an implicit module named '%s' is being "
-             "introduced to contain the file's contents.",
-             lastModSym->name,
-             filenameToModulename(path));
-  }
-
-  return hasUses == false &&
-    hasImports == false &&
-    hasRequires == false &&
-    hasOther == false &&
-    moduleDefs > 0;
 }
 
 static void addModuleToDoneList(ModuleSymbol* module) {
@@ -1196,75 +974,6 @@ ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   chplParseStringMsg = s_chplParseStringMsg;
 
   return ret;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-BlockStmt* parseString(const char* string,
-                       const char* path,
-                       const char* msg) {
-  // State for the lexer
-  YY_BUFFER_STATE handle       =   0;
-  int             lexerStatus  = 100;
-  YYLTYPE         yylloc;
-
-  // State for the parser
-  yypstate*       parser       = yypstate_new();
-  int             parserStatus = YYPUSH_MORE;
-  ParserContext   context;
-
-  yylex_init(&(context.scanner));
-
-  stringBufferInit();
-
-  handle              = yy_scan_string(string, context.scanner);
-
-  yyblock             = NULL;
-  yyfilename          = path;
-
-  chplParseString     = true;
-  chplParseStringMsg  = msg;
-
-  yylloc.first_line   = 1;
-  yylloc.first_column = 0;
-
-  yylloc.last_line    = 1;
-  yylloc.last_column  = 0;
-
-  while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
-    YYSTYPE yylval;
-
-    lexerStatus  = yylex(&yylval, &yylloc, context.scanner);
-
-    if (lexerStatus >= 0) {
-      parserStatus          = yypush_parse(parser,
-                                           lexerStatus,
-                                           &yylval,
-                                           &yylloc,
-                                           &context);
-
-    } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
-      context.latestComment = yylval.pch;
-    } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
-      context.latestComment = NULL;
-    }
-  }
-
-  chplParseString    = false;
-  chplParseStringMsg = NULL;
-
-  // Cleanup after the parser
-  yypstate_delete(parser);
-
-  // Cleanup after the lexer
-  yy_delete_buffer(handle, context.scanner);
-  yylex_destroy(context.scanner);
-
-  return yyblock;
 }
 
 /************************************* | **************************************

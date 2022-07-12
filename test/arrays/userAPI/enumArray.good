@@ -87,8 +87,6 @@ local subdomains:
 is empty: false
 head: 1.8
 tail: 25.8
-find last: (true, (blue, violet))
-count last: 1
 equals same: true
 equals diff: false
 
@@ -203,8 +201,6 @@ local subdomains:
 is empty: false
 head: 1.8
 tail: 16.8
-find last: (true, (violet, violet))
-count last: 1
 equals same: true
 equals diff: false
 

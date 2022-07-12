@@ -20,7 +20,7 @@
 
 #include "chpl/types/Param.h"
 #include "chpl/uast/Pragma.h"
-#include "chpl/queries/global-strings.h"
+#include "chpl/framework/global-strings.h"
 
 #include <cerrno>
 #include <cfloat>

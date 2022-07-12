@@ -20,8 +20,8 @@
 #include "default-functions.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/global-strings.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/global-strings.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
@@ -65,8 +65,8 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS;
 
   auto vec = lookupNameInScope(context, scopeForReceiverType,
-                               name,
-                               config);
+                               /* receiver scope */ nullptr,
+                               name, config);
 
   // nothing found
   if (vec.size() == 0) return false;

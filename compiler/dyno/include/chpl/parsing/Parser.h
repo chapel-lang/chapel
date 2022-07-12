@@ -20,8 +20,8 @@
 #ifndef CHPL_PARSING_PARSER_H
 #define CHPL_PARSING_PARSER_H
 
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/util/memory.h"
@@ -36,36 +36,41 @@ namespace parsing {
   A class for parsing
 */
 class Parser final {
-  private:
-  // TODO: stuff to do with module search paths
-  // and then connect parsed modules to a query
-
-  // TODO: compile-time configuration variable settings
-  // need to be stored in here.
-
+ private:
   Context* context_;
-  Parser(Context* context);
+  UniqueString parentSymbolPath_;
 
-  public:
-    static owned<Parser> build(Context* context);
-    ~Parser() = default;
+  Parser(Context* context, UniqueString parentSymbolPath);
 
-    /**
-      Return the AST Context used by this Parser.
-    */
-    Context* context() { return context_; }
+ public:
+  /** Construct a parser for parsing a top-level module */
+  static Parser createForTopLevelModule(Context* context);
 
-    /**
-     Parse a file at a particular path.
-    */
-    uast::BuilderResult parseFile(const char* path,
+  /** Construct a parser for parsing an included module.
+      'parentSymbolPath' is the symbol path component of the ID
+      of the module containing the 'module include' statement.
+   */
+  static Parser createForIncludedModule(Context* context,
+                                        UniqueString parentSymbolPath);
+
+  ~Parser() = default;
+
+  /**
+    Return the AST Context used by this Parser.
+  */
+  Context* context() { return context_; }
+
+  /**
+   Parse a file at a particular path.
+  */
+  uast::BuilderResult parseFile(const char* path,
+                                ParserStats* parseStats=nullptr);
+  /**
+   Parse source code in a string.
+   'path' is only used for certain errors.
+  */
+  uast::BuilderResult parseString(const char* path, const char* str,
                                   ParserStats* parseStats=nullptr);
-    /**
-     Parse source code in a string.
-     'path' is only used for certain errors.
-    */
-    uast::BuilderResult parseString(const char* path, const char* str,
-                                    ParserStats* parseStats=nullptr);
 };
 
 } // end namespace parsing

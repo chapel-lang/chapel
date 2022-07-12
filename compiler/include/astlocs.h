@@ -24,8 +24,8 @@
 #include <cassert>
 #include <cstring>
 
-#include "chpl/queries/ID.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/ID.h"
+#include "chpl/framework/Location.h"
 #include "stringutil.h"
 
 class BaseAST;

@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Call.h"
@@ -61,7 +61,8 @@ static void printId(const AstNode* ast) {
 
 static const ResolvedExpression*
 resolvedExpressionForAst(Context* context, const AstNode* ast,
-                         const ResolvedFunction* inFn) {
+                         const ResolvedFunction* inFn,
+                         bool scopeResolveOnly) {
   if (!(ast->isLoop() || ast->isBlock())) {
     // compute the parent module or function
     int postorder = ast->id().postOrderId();
@@ -70,18 +71,28 @@ resolvedExpressionForAst(Context* context, const AstNode* ast,
       auto parentAst = idToAst(context, parentId);
       if (parentAst != nullptr) {
         if (parentAst->isModule()) {
-          const auto& byId = resolveModule(context, parentAst->id());
-          return &byId.byAst(ast);
+          if (scopeResolveOnly) {
+            const auto& byId = scopeResolveModule(context, parentAst->id());
+            return &byId.byAst(ast);
+          } else {
+            const auto& byId = resolveModule(context, parentAst->id());
+            return &byId.byAst(ast);
+          }
         } else if (auto parentFn = parentAst->toFunction()) {
           auto untyped = UntypedFnSignature::get(context, parentFn);
           // use inFn if it matches
           if (inFn && inFn->signature()->untyped() == untyped) {
             return &inFn->resolutionById().byAst(ast);
           } else {
-            auto typed = typedSignatureInitial(context, untyped);
-            if (!typed->needsInstantiation()) {
-              auto rFn = resolveFunction(context, typed, nullptr);
+            if (scopeResolveOnly) {
+              auto rFn = scopeResolveFunction(context, parentFn->id());
               return &rFn->resolutionById().byAst(ast);
+            } else {
+              auto typed = typedSignatureInitial(context, untyped);
+              if (!typed->needsInstantiation()) {
+                auto rFn = resolveFunction(context, typed, nullptr);
+                return &rFn->resolutionById().byAst(ast);
+              }
             }
           }
         }
@@ -96,10 +107,24 @@ static void
 computeAndPrintStuff(Context* context,
                      const AstNode* ast,
                      const ResolvedFunction* inFn,
-                     std::set<const ResolvedFunction*>& calledFns) {
+                     std::set<const ResolvedFunction*>& calledFns,
+                     bool scopeResolveOnly) {
+
+  // Scope resolve / resolve concrete functions before printing
+  if (auto fn = ast->toFunction()) {
+    if (scopeResolveOnly) {
+      inFn = scopeResolveFunction(context, fn->id());
+    } else {
+      auto untyped = UntypedFnSignature::get(context, fn);
+      auto typed = typedSignatureInitial(context, untyped);
+      if (!typed->needsInstantiation()) {
+        inFn = resolveFunction(context, typed, nullptr);
+      }
+    }
+  }
 
   for (const AstNode* child : ast->children()) {
-    computeAndPrintStuff(context, child, inFn, calledFns);
+    computeAndPrintStuff(context, child, inFn, calledFns, scopeResolveOnly);
   }
 
   /*
@@ -140,7 +165,8 @@ computeAndPrintStuff(Context* context,
   }*/
 
   int beforeCount = context->numQueriesRunThisRevision();
-  const ResolvedExpression* r = resolvedExpressionForAst(context, ast, inFn);
+  const ResolvedExpression* r =
+    resolvedExpressionForAst(context, ast, inFn, scopeResolveOnly);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
     for (const TypedFnSignature* sig : r->mostSpecific()) {
@@ -189,10 +215,12 @@ computeAndPrintStuff(Context* context,
 }
 
 static void usage(int argc, char** argv) {
-  printf("Usage: %s [--std] [--search path --search otherPath ...] "
-         "file.chpl otherFile.chpl ...\n"
+  printf("Usage: %s [args] file.chpl otherFile.chpl ...\n"
          "  --std enables the standard library\n"
-         "  --searchPath adjusts the search path\n", argv[0]);
+         "  --scope only performs scope resolution\n"
+         "  --trace enables query tracing\n"
+         "  --searchPath <path> adds to the module search path\n",
+         argv[0]);
 }
 
 static void setupSearchPaths(Context* ctx, bool enableStdLib,
@@ -224,6 +252,7 @@ int main(int argc, char** argv) {
   Context context;
   Context* ctx = &context;
   bool trace = false;
+  bool scopeResolveOnly = false;
   const char* chpl_home = nullptr;
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
@@ -240,6 +269,8 @@ int main(int argc, char** argv) {
       i++;
     } else if (0 == strcmp(argv[i], "--trace")) {
       trace = true;
+    } else if (0 == strcmp(argv[i], "--scope")) {
+      scopeResolveOnly = true;
     } else {
       files.push_back(argv[i]);
     }
@@ -275,12 +306,12 @@ int main(int argc, char** argv) {
     for (auto p: files) {
       auto filepath = UniqueString::get(ctx, p);
 
-      const ModuleVec& mods = parse(ctx, filepath);
+      const ModuleVec& mods = parseToplevel(ctx, filepath);
       for (const auto mod : mods) {
         mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
         printf("\n");
 
-        computeAndPrintStuff(ctx, mod, nullptr, calledFns);
+        computeAndPrintStuff(ctx, mod, nullptr, calledFns, scopeResolveOnly);
         printf("\n");
       }
     }
@@ -312,7 +343,8 @@ int main(int argc, char** argv) {
             printf("Instantiation is ");
             sig->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
             printf("\n");
-            computeAndPrintStuff(ctx, ast, calledFn, calledFns);
+            computeAndPrintStuff(ctx, ast, calledFn, calledFns,
+                                 scopeResolveOnly);
             printf("\n");
           }
         }

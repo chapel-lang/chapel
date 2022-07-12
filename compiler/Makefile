@@ -40,7 +40,7 @@ SUBDIRS = \
 	main \
 	dyno/lib/immediates \
 	dyno/lib/parsing \
-	dyno/lib/queries \
+	dyno/lib/framework \
 	dyno/lib/resolution \
 	dyno/lib/types \
 	dyno/lib/uast \
@@ -80,7 +80,7 @@ include llvm/Makefile.include
 include main/Makefile.include
 include dyno/lib/immediates/Makefile.include
 include dyno/lib/parsing/Makefile.include
-include dyno/lib/queries/Makefile.include
+include dyno/lib/framework/Makefile.include
 include dyno/lib/resolution/Makefile.include
 include dyno/lib/types/Makefile.include
 include dyno/lib/uast/Makefile.include
@@ -109,7 +109,7 @@ CHPL_OBJS = \
 	$(UTIL_OBJS) \
 	$(DYNO_IMMEDIATES_OBJS) \
 	$(DYNO_PARSING_OBJS) \
-	$(DYNO_QUERIES_OBJS) \
+	$(DYNO_FRAMEWORK_OBJS) \
 	$(DYNO_RESOLUTION_OBJS) \
 	$(DYNO_TYPES_OBJS) \
 	$(DYNO_UAST_OBJS) \
@@ -167,9 +167,6 @@ $(CHPLDOC): $(CHPL)
 	ln -s $(notdir $(CHPL)) $(CHPLDOC)
 
 chpldoc: $(CHPLDOC)
-
-parser: FORCE
-	$(MAKE) -C parser parser
 
 $(COMPILER_BUILD):
 	mkdir -p $@

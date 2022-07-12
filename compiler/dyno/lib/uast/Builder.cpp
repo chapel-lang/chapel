@@ -19,8 +19,8 @@
 
 #include "chpl/uast/Builder.h"
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ErrorMessage.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Module.h"
@@ -28,7 +28,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/OpCall.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/query-impl.h"
 
 #include <cstring>
 #include <string>
@@ -66,25 +66,35 @@ bool Builder::checkAllConfigVarsAssigned(Context* context) {
    return !anyBadConfigs;
  }
 
-static std::string filenameToModulename(const char* filename) {
+std::string Builder::filenameToModulename(const char* filename) {
   const char* moduleName = filename;
-  const char* firstSlash = strrchr(moduleName, '/');
+  const char* lastSlash = strrchr(moduleName, '/');
 
-  if (firstSlash) {
-    moduleName = firstSlash + 1;
+  if (lastSlash) {
+    moduleName = lastSlash + 1;
   }
 
-  const char* firstPeriod = strrchr(moduleName, '.');
-  if (firstPeriod) {
-    return std::string(moduleName, firstPeriod-moduleName);
+  const char* lastPeriod = strrchr(moduleName, '.');
+  if (lastPeriod) {
+    return std::string(moduleName, lastPeriod-moduleName);
   } else {
     return std::string(moduleName);
   }
 }
 
-owned<Builder> Builder::build(Context* context, const char* filepath) {
+owned<Builder> Builder::createForTopLevelModule(Context* context,
+                                                const char* filepath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
-  auto b = new Builder(context, uniqueFilename);
+  UniqueString startingSymbolPath;
+  auto b = new Builder(context, uniqueFilename, startingSymbolPath);
+  return toOwned(b);
+}
+
+owned<Builder> Builder::createForIncludedModule(Context* context,
+                                                const char* filepath,
+                                                UniqueString parentSymbolPath) {
+  auto uniqueFilename = UniqueString::get(context, filepath);
+  auto b = new Builder(context, uniqueFilename, parentSymbolPath);
   return toOwned(b);
 }
 
@@ -131,13 +141,31 @@ bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
 void Builder::createImplicitModuleIfNeeded() {
   bool containsOnlyModules = true;
   bool containsAnyModules = false;
+  bool containsUseImportOrRequire = false;
+  bool containsOther = false;
+  int nModules = 0;
+  const Module* lastModule = nullptr;
+  const AstNode* firstNonModule = nullptr;
+
   for (auto const& ownedExpression: topLevelExpressions_) {
-    if (ownedExpression->isComment()) {
+    const AstNode* ast = ownedExpression.get();
+    if (ast->isComment()) {
       // ignore comments for this analysis
-    } else if (ownedExpression->isModule()) {
+    } else if (ast->isModule()) {
       containsAnyModules = true;
+      lastModule = ast->toModule();
+      nModules++;
     } else {
       containsOnlyModules = false;
+      if (firstNonModule == nullptr) {
+        firstNonModule = ast;
+      }
+
+      if (ast->isUse() || ast->isImport() || ast->isRequire()) {
+        containsUseImportOrRequire = true;
+      } else {
+        containsOther = true;
+      }
     }
   }
   if (containsAnyModules && containsOnlyModules) {
@@ -145,19 +173,45 @@ void Builder::createImplicitModuleIfNeeded() {
     return;
   } else {
     // compute the basename of filename to get the inferred module name
-    std::string modname = filenameToModulename(filepath_.c_str());
+    std::string modname = Builder::filenameToModulename(filepath_.c_str());
     auto inferredModuleName = UniqueString::get(context_, modname);
     // create a new module containing all of the statements
     AstList stmts;
     stmts.swap(topLevelExpressions_);
     auto loc = Location(filepath_, 1, 1, 1, 1);
-    auto implicitModule = Module::build(this, std::move(loc),
-                                        /*attributes*/ nullptr,
-                                        Decl::DEFAULT_VISIBILITY,
-                                        inferredModuleName,
-                                        Module::IMPLICIT,
-                                        std::move(stmts));
-    topLevelExpressions_.push_back(std::move(implicitModule));
+    auto ownedModule = Module::build(this, std::move(loc),
+                                     /*attributes*/ nullptr,
+                                     Decl::DEFAULT_VISIBILITY,
+                                     inferredModuleName,
+                                     Module::IMPLICIT,
+                                     std::move(stmts));
+    const Module* implicitModule = ownedModule.get();
+    topLevelExpressions_.push_back(std::move(ownedModule));
+
+    // emit warnings as needed
+    if (containsUseImportOrRequire && !containsOther && nModules == 1) {
+      const char* stmtKind = "require', 'use', and/or 'import";
+      Location lastModuleLoc = notedLocations_[lastModule];
+      addError(ErrorMessage::warning(lastModuleLoc,
+               "as written, '%s' is a sub-module of the module created for "
+               "file '%s' due to the file-level '%s' statements.  If you "
+               "meant for '%s' to be a top-level module, move the '%s' "
+               "statements into its scope.",
+               lastModule->name().c_str(),
+               filepath_.c_str(),
+               stmtKind,
+               lastModule->name().c_str(),
+               stmtKind));
+    } else if (nModules >= 1 && !containsOnlyModules) {
+      Location firstNonModuleLoc = notedLocations_[firstNonModule];
+      addError(ErrorMessage::warning(firstNonModuleLoc,
+               "This file-scope code is outside of any "
+               "explicit module declarations (e.g., module %s), "
+               "so an implicit module named '%s' is being "
+               "introduced to contain the file's contents.",
+               lastModule->name().c_str(),
+               implicitModule->name().c_str()));
+    }
   }
 }
 
@@ -166,6 +220,11 @@ void Builder::assignIDs() {
   declaredHereT duplicates;
   int i = 0;
   int commentIndex = 0;
+
+  if (!startingSymbolPath_.isEmpty()) {
+    // start from the starting symbol path if it exists
+    pathVec = ID::expandSymbolPath(context_, startingSymbolPath_);
+  }
 
   for (auto const& ownedExpression: topLevelExpressions_) {
     AstNode* ast = ownedExpression.get();
@@ -252,21 +311,26 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   if (newScope) {
     // for scoping constructs, adjust the symbolPath and
     // then visit the defined symbol
-    UniqueString name = ast->toNamedDecl()->name();
+    UniqueString declName = ast->toNamedDecl()->name();
     int repeat = 0;
 
-    auto search = duplicates.find(name);
+    auto search = duplicates.find(declName);
     if (search != duplicates.end()) {
       // it's already there, so increment the repeat counter
       repeat = search->second;
       repeat++;
       search->second = repeat;
     } else {
-      duplicates.insert(search, std::make_pair(name, 0));
+      duplicates.insert(search, std::make_pair(declName, 0));
     }
 
+    // compute an escaped version of the name
+    // (in case it contains special characters used in ID like . and #)
+    std::string quotedNameString = escapeStringId(declName.c_str());
+    auto quotedName = UniqueString::get(context_, quotedNameString);
+
     // push the path component
-    pathVec.push_back(std::make_pair(name, repeat));
+    pathVec.push_back(std::make_pair(quotedName, repeat));
 
     // compute the string representing the path
     std::string pathStr;
@@ -283,7 +347,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
         pathStr += std::to_string(repeat);
       }
     }
-    auto newSymbolPath = UniqueString::get(this->context(), pathStr);
+    auto newSymbolPath = UniqueString::get(context_, pathStr);
+    assert(ID::expandSymbolPath(context_, newSymbolPath) == pathVec);
 
     // get a fresh postorder traversal counter and duplicates map
     int freshId = 0;
@@ -352,20 +417,15 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
   auto usedId = nameToConfigSettingId(context(), configNameUsed);
 
   if (usedId != var->id()) {
-    // TODO: Need a nicer way of constructing errors/notes/warnings without storing them in the context_
-    std::string err = "ambiguous config name (";
-    err += configNameUsed;
-    err += ")";
-    std::string otherLoc = "also defined here";
-    std::string disambiguate = "(disambiguate using -s<modulename>.";
-    disambiguate += configNameUsed;
-    disambiguate += "...)";
-    ErrorMessage errorMessage = ErrorMessage(var->id(), idToLocation_[var->id()], err, ErrorMessage::ERROR );
-    ErrorMessage noteOtherLoc = ErrorMessage(var->id(), idToLocation_[usedId], otherLoc, ErrorMessage::NOTE);
-    ErrorMessage noteDisambiguate = ErrorMessage(var->id(), idToLocation_[usedId], disambiguate, ErrorMessage::NOTE);
-    addError(errorMessage);
-    addError(noteOtherLoc);
-    addError(noteDisambiguate);
+    auto errorMessage = ErrorMessage::error(notedLocations_[var],
+        "ambiguous config name (%s)", configNameUsed.c_str());
+    auto noteOtherLoc = ErrorMessage::note(idToLocation_[usedId],
+        "also defined here");
+    auto noteDisambiguate = ErrorMessage::note(idToLocation_[usedId],
+        "(disambiguate using -s<modulename>.%s...)", configNameUsed.c_str());
+    errorMessage.addDetail(noteOtherLoc);
+    errorMessage.addDetail(noteDisambiguate);
+    addError(std::move(errorMessage));
   }
 }
 
@@ -405,13 +465,13 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
           std::cerr << "note: " + msg << std::endl;
         }
       }
-      if (!configMatched.first.empty() && configMatched.first != configPair.first) {
-        std::string errMsg = "config set ambiguously via '-s";
-        errMsg += configMatched.first;
-        errMsg += "' and '-s";
-        errMsg += configPair.first + "'";
-        ErrorMessage errorMessage = ErrorMessage(var->id(), notedLocations_[var], errMsg, ErrorMessage::ERROR);
-        addError(errorMessage);
+      if (!configMatched.first.empty() &&
+          configMatched.first != configPair.first) {
+
+        auto errorMessage = ErrorMessage::error(notedLocations_[var],
+            "config set ambiguously via '-s%s' and '-s%s'",
+            configMatched.first.c_str(), configPair.first.c_str());
+        addError(std::move(errorMessage));
       }
       configMatched = configPair;
     }
@@ -451,12 +511,11 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
     inputText += (!value.empty()) ? value : "true";
     inputText += ";";
   }
-  auto parser = parsing::Parser::build(context());
-  parsing::Parser *p = parser.get();
+  auto parser = parsing::Parser::createForTopLevelModule(context());
   std::string path = "Command-line arg (";
   path += var->name().str();
   path += ")";
-  auto parseResult = p->parseString(path.c_str(), inputText.c_str());
+  auto parseResult = parser.parseString(path.c_str(), inputText.c_str());
   // Propagate any parse errors from the dummy node to builder errors
   if (parseResult.numErrors() > 0) {
    for (ErrorMessage error : parseResult.errors()) {

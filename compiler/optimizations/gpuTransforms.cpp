@@ -187,8 +187,20 @@ bool GpuizableLoop::evaluateLoop(BlockStmt *blk, bool allowFnCalls) {
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
 
-  return shouldOutlineLoopHelp(blk, okFns, visitedFns, allowFnCalls) &&
-         attemptToExtractLoopInformation();
+  bool looksEligible =
+    shouldOutlineLoopHelp(blk, okFns, visitedFns, allowFnCalls) &&
+    attemptToExtractLoopInformation();
+
+  // We currently don't support launching kernels from kernels. So if
+  // the loop is within a function already marked for use on the GPU
+  // error out.
+  if(cfl->getFunction()->hasFlag(FLAG_GPU_CODEGEN)) {
+    USR_FATAL(cfl,
+      "GPU support does not currently allow nested kernel launches. Do you have\n"
+      "nested forall/foreach loops or looping over a multidimensional domain?");
+  }
+
+  return looksEligible;
 }
 
 bool GpuizableLoop::shouldOutlineLoopHelp(BlockStmt* blk,
@@ -517,7 +529,9 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
               if (symExpr == parent->get(2)) {  // this is a field
                 // do nothing
               }
-              else if (symExpr == parent->get(1)) {
+              else if (symExpr == parent->get(1)  ||
+                (parent->numActuals() >= 3 && symExpr == parent->get(3)))
+              {
                 addKernelArgument(sym);
               }
               else {

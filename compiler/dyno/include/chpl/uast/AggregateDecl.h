@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_AGGREGATEDECL_H
 #define CHPL_UAST_AGGREGATEDECL_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/TypeDecl.h"
 

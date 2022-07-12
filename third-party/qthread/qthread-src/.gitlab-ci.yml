@@ -1,6 +1,0 @@
-
-runTests:
-    script:
-        - ./autogen.sh
-        - ./configure --enable-picky
-        - make check

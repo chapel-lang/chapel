@@ -34,7 +34,7 @@ target_include_directories(libdyno-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(immediates)
 add_subdirectory(parsing)
-add_subdirectory(queries)
+add_subdirectory(framework)
 add_subdirectory(resolution)
 add_subdirectory(types)
 add_subdirectory(uast)

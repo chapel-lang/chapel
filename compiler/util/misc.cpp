@@ -23,7 +23,8 @@
 #include "astlocs.h"
 #include "baseAST.h"
 #include "chpl.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
+#include "chpl/util/terminal.h"
 #include "codegen.h"
 #include "driver.h"
 #include "expr.h"
@@ -970,33 +971,9 @@ static void setupErrorFormatEscapes() {
     // Other settings of these variables are for testing the formatting itself.
     bool isColorTerm = fUseColorTerminal;
     if (fDetectColorTerminal) {
-      // Check the TERM variable. This approach and these
-      // terminals are taken from googletest; see
-      // https://github.com/google/googletest/blob/master/googletest/src/gtest.cc#L3216
+      // Check the TERM variable.
       const char* term = getenv("TERM");
-      const char* colorTerms[] = {"xterm",
-                                  "xterm-color",
-                                  "xterm-256color",
-                                  "screen",
-                                  "screen-256color",
-                                  "tmux",
-                                  "tmux-256color",
-                                  "rxvt-unicode",
-                                  "rxvt-unicode-256color",
-                                  "linux",
-                                  "cygwin",
-                                  NULL};
-      if (term == NULL) term = "";
-      for (int i = 0; colorTerms[i] != NULL; i++) {
-        if (0 == strcmp(term, colorTerms[i]))
-          isColorTerm = true;
-      }
-
-      // Check if errors will be output to a tty. If not,
-      // the format codes will just store "" and have no effect.
-      if (isatty(fileno(stderr)) == 0) {
-        isColorTerm = false;
-      }
+      isColorTerm = chpl::terminalSupportsColor(term);
     }
 
     if (isColorTerm) {

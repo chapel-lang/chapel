@@ -644,6 +644,17 @@ qbuffer_iter_t qbuffer_end(qbuffer_t* buf)
   return ret;
 }
 
+int qbuffer_iter_at_part_end(qbuffer_t* buf, qbuffer_iter_t* iter)
+{
+  deque_iterator_t d_end = deque_end( & buf->deque );
+
+  if (deque_it_equals(iter->iter, d_end) ) {
+    return true;
+  }
+  qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter->iter);
+  return iter->offset == qbp->end_offset;
+}
+
 void qbuffer_iter_next_part(qbuffer_t* buf, qbuffer_iter_t* iter)
 {
   deque_iterator_t d_end = deque_end( & buf->deque );

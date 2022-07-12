@@ -19,16 +19,16 @@ class Parent {
 
 class Child : Parent {
   // ref + const ref
-  proc name ref return childName;
-  proc name2 const ref return childName;
+  override proc name ref return childName;
+  override proc name2 const ref return childName;
 
   // const ref + value
-  proc name3 return childName;
-  proc name4 const ref return childName;
+  override proc name3 return childName;
+  override proc name4 const ref return childName;
 
   // ref + value
-  proc name5 ref return childName;
-  proc name6 return childName;
+  override proc name5 ref return childName;
+  override proc name6 return childName;
 }
 
 

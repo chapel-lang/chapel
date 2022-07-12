@@ -653,11 +653,10 @@ def check_environment_with_args():
     # This should not affect Chapel program behavior but it might
     # affect other elements of the test system (e.g. `sort` called
     # in a prediff).
-    if not tgt_platform == "sunos":
-        os.environ["LC_COLLATE"] = "C"
-        os.environ["LANG"] = "en_US.UTF-8"
-        if "LC_ALL" in os.environ:
-            del os.environ["LC_ALL"]
+    os.environ["LC_COLLATE"] = "C"
+    os.environ["LANG"] = "en_US.UTF-8"
+    if "LC_ALL" in os.environ:
+        del os.environ["LC_ALL"]
 
     global log_file
     global tmp_log_file

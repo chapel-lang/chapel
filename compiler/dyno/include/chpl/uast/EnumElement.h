@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_ENUMELEMENT_H
 #define CHPL_UAST_ENUMELEMENT_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/NamedDecl.h"
 
 namespace chpl {

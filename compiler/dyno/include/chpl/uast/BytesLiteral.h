@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_BYTESLITERAL_H
 #define CHPL_UAST_BYTESLITERAL_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/Literal.h"
 #include "chpl/uast/StringLikeLiteral.h"
 

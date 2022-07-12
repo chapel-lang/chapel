@@ -20,14 +20,15 @@
 #include "chpl/resolution/resolution-types.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/global-strings.h"
-#include "chpl/queries/query-impl.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/global-strings.h"
+#include "chpl/framework/query-impl.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Identifier.h"
+#include "chpl/uast/For.h"
 
 namespace chpl {
 namespace resolution {
@@ -180,6 +181,15 @@ void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
   vec.resize(bodyPostorder);
 
   symbolId = func->id();
+}
+void ResolutionResultByPostorderID::setupForParamLoop(const For* loop, ResolutionResultByPostorderID& parent) {
+  int bodyPostorder = 0;
+  if (loop && loop->body())
+    bodyPostorder = loop->body()->id().postOrderId();
+  assert(0 <= bodyPostorder);
+  vec.resize(bodyPostorder);
+
+  this->symbolId = parent.symbolId;
 }
 void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
   setupForSymbol(func);
@@ -439,9 +449,6 @@ void CallInfo::stringify(std::ostream& ss,
     actual.stringify(ss, stringKind);
   }
   ss << ")";
-  if (stringKind != StringifyKind::CHPL_SYNTAX) {
-    ss << "\n";
-  }
 }
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {

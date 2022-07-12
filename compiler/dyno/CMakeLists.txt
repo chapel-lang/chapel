@@ -103,6 +103,7 @@ add_custom_target(tests)
 function(comp_unit_test target)
   add_executable(${target} "${target}.cpp")
   set_property(TARGET ${target} PROPERTY EXCLUDE_FROM_ALL)
+  set_target_properties(${target}  PROPERTIES LINK_DEPENDS_NO_SHARED true)
   target_link_libraries(${target} libdyno)
   target_include_directories(${target} PUBLIC
                              ${CHPL_MAIN_INCLUDE_DIR}

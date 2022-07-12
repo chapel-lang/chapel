@@ -1,3 +1,5 @@
+use Sort;
+
 enum E { a,b,c,d,e };
 
 var D: domain(E) = E.a..E.e;
@@ -8,36 +10,36 @@ D += E.d;
 
 var A: [D] int = [E.a=>1,E.b=>2,E.c=>3,E.d=>4,E.e=>5];
 
-for i in A.sorted() {
+for i in sorted(A) {
   writeln(i);
 }
 
-writeln(A.sorted());
-writeln(D.sorted());
+writeln(sorted(A));
+writeln(sorted(D));
 
 D.remove(E.c);
 
-for e in D.sorted() {
+for e in sorted(D) {
   writeln((e, A(e)));
 }
 
 enum F { a=1, b, c, d=-3, e, f };
 var D2: domain(F) = F.a..F.f;
  
-for i in D2.sorted() {
+for i in sorted(D2) {
   writeln(i);
 }
 
-writeln(D2.sorted());
+writeln(sorted(D2));
 
 var A2: [D2] int;
 for (a,i) in zip(A2, D2) {
   a = chpl__enumToOrder(i) + 1;
 }
 
-writeln(A2.sorted());
+writeln(sorted(A2));
 
-for d in D2.sorted() {
+for d in sorted(D2) {
   writeln((d, A2(d)));
 }
 

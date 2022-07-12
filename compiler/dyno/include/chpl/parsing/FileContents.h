@@ -20,9 +20,9 @@
 #ifndef CHPL_PARSING_FILE_CONTENTS_H
 #define CHPL_PARSING_FILE_CONTENTS_H
 
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/update-functions.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/update-functions.h"
+#include "chpl/framework/stringify-functions.h"
 
 #include <string>
 

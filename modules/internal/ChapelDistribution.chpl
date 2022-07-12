@@ -194,19 +194,16 @@ module ChapelDistribution {
     }
 
     pragma "no doc" pragma "last resort"
-    proc parSafe                  { dnsError("parSafe"); }
-
-    pragma "no doc" pragma "last resort"
     proc dsiLow                   { dnsError("low"); }
 
     pragma "no doc" pragma "last resort"
     proc dsiHigh                  { dnsError("high"); }
 
     pragma "no doc" pragma "last resort"
-    proc dsiAlignedlow            { dnsError("alignedLow"); }
+    proc dsiAlignedLow            { dnsError("alignedLow"); }
 
     pragma "no doc" pragma "last resort"
-    proc dsiAlignedhigh           { dnsError("alignedHigh"); }
+    proc dsiAlignedHigh           { dnsError("alignedHigh"); }
 
     pragma "no doc" pragma "last resort"
     proc dsiFirst                 { dnsError("first"); }
@@ -692,22 +689,22 @@ module ChapelDistribution {
     proc dsiDims() { return parentDom.dims(); }
     proc dsiNumIndices { return getNNZ(); }
     proc dsiSize { return getNNZ(); }
-    proc dsiLow { return parentDom.lowBound; }
-    proc dsiHigh { return parentDom.highBound; }
-    proc dsiStride { return parentDom.stride; }
-    proc dsiAlignment { return parentDom.alignment; }
-    proc dsiFirst {
+    override proc dsiLow { return parentDom.lowBound; }
+    override proc dsiHigh { return parentDom.highBound; }
+    override proc dsiStride { return parentDom.stride; }
+    override proc dsiAlignment { return parentDom.alignment; }
+    override proc dsiFirst {
       halt("dsiFirst is not implemented");
       const _tmp: rank*idxType;
       return _tmp;
     }
-    proc dsiLast {
+    override proc dsiLast {
       halt("dsiLast not implemented");
       const _tmp: rank*idxType;
       return _tmp;
     }
-    proc dsiAlignedLow { return parentDom.alignedLow; }
-    proc dsiAlignedHigh { return parentDom.alignedHigh; }
+    override proc dsiAlignedLow { return parentDom.alignedLow; }
+    override proc dsiAlignedHigh { return parentDom.alignedHigh; }
 
     override proc dsiMakeIndexBuffer(size) {
       return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
@@ -935,10 +932,6 @@ module ChapelDistribution {
         // unlink domain referred to by eltType
         chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
       }
-    }
-
-    proc rank param {
-      return 1;
     }
   }
 

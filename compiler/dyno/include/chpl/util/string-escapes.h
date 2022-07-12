@@ -24,11 +24,33 @@
 
 namespace chpl {
 
-/** escapes characters according to C quoting rules */
-std::string quoteStringForC(const std::string& s);
 
 /** checks for interior null bytes in the string */
 bool stringContainsZeroBytes(const char* s, size_t len);
+
+/** add \ escapes according to C quoting rules */
+std::string escapeStringC(const std::string& unescaped);
+
+/** add \ escapes according to C quoting rules */
+std::string escapeStringC(const char* unescaped);
+
+/** Unescape characters according to the C quoting rules.  */
+std::string unescapeStringC(const std::string& str);
+
+/** Unescape characters according to the C quoting rules.  */
+std::string unescapeStringC(const char* str);
+
+/** add \ escapes for storing something as a symbolPath in an ID */
+std::string escapeStringId(const std::string& unescaped);
+
+/** add \ escapes for storing something as a symbolPath in an ID */
+std::string escapeStringId(const char* unescaped);
+
+/** remove \ escapes from something stored as a symbolPath in an ID */
+std::string unescapeStringId(const std::string& str);
+
+/** remove \ escapes from something stored as a symbolPath in an ID */
+std::string unescapeStringId(const char* str);
 
 
 } // end namespace chpl

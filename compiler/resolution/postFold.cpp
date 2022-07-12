@@ -228,7 +228,7 @@ static std::string getStringAndIndexFromPrim(CallExpr* call, size_t* idx) {
   INT_ASSERT(se->symbol()->isParameter() == true);
 
   const char*       str       = get_string(se);
-  const std::string unescaped = unescapeString(str, se);
+  const std::string unescaped = chpl::unescapeStringC(str);
 
   if (call->numActuals() > 1) {
     SymExpr* ie = toSymExpr(call->get(2));
@@ -434,10 +434,9 @@ static Expr* postFoldPrimop(CallExpr* call) {
     INT_ASSERT(lhs && rhs);
 
     if (lhs->symbol()->isParameter() && rhs->symbol()->isParameter()) {
-      std::string lstr = unescapeString(get_string(lhs), lhs);
-      std::string rstr = unescapeString(get_string(rhs), rhs);
-
-      std::string concat = chpl::quoteStringForC(lstr+rstr);
+      std::string lstr = chpl::unescapeStringC(get_string(lhs));
+      std::string rstr = chpl::unescapeStringC(get_string(rhs));
+      std::string concat = chpl::escapeStringC(lstr+rstr);
 
       if (lhs->symbol()->type == dtString) {
         retval = new SymExpr(new_StringSymbol(astr(concat)));
@@ -456,8 +455,9 @@ static Expr* postFoldPrimop(CallExpr* call) {
     INT_ASSERT(se);
 
     if (se->symbol()->isParameter() == true) {
-      const char* str     = get_string(se);
-      const size_t nbytes = unescapeString(str, se).length();
+      const char* str         = get_string(se);
+      const std::string unesc = chpl::unescapeStringC(str);
+      const size_t nbytes     = unesc.length();
 
       retval = new SymExpr(new_IntSymbol(nbytes, INT_SIZE_DEFAULT));
 
@@ -470,7 +470,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     INT_ASSERT(se && se->symbol()->isParameter());
 
     const char* str         = get_string(se);
-    const std::string unesc = unescapeString(str, se);
+    const std::string unesc = chpl::unescapeStringC(str);
     const size_t nbytes     = unesc.length();
 
     // Don't bother looking at the first byte.
@@ -897,9 +897,8 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
   Expr* retval = sym;
 
   if (Symbol* val = paramMap.get(sym->symbol())) {
-    CallExpr* call = toCallExpr(sym->parentExpr);
+    if (CallExpr* call = toCallExpr(sym->parentExpr)) {
 
-    if (call && call->get(1) == sym) {
       // This is a place where param substitution has already determined the
       // value of a move or assignment. If it's a RVV, then we should ignore
       // the update because the RVV may have multiple valid defs in the AST
@@ -922,12 +921,17 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
       //
       // The substitution usually happens before resolution, so for
       // assignment, we key off of the name :-(
-      if (call->isPrimitive(PRIM_MOVE) || call->isNamedAstr(astrSassign)) {
-        if (sym->symbol()->hasFlag(FLAG_RVV)) {
-          call->convertToNoop();
-        }
+      if (call->isPrimitive(PRIM_MOVE) ||
+          call->isNamedAstr(astrSassign)) {
+        INT_ASSERT(call->numActuals() >= 2);
 
-        return retval;
+        if (call->get(1) == sym) {
+          if (sym->symbol()->hasFlag(FLAG_RVV)) {
+            call->convertToNoop();
+          }
+
+          return retval;
+        }
       }
     }
 

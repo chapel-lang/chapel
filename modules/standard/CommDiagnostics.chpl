@@ -283,6 +283,35 @@ module CommDiagnostics
       PUTs that required the cache to create a new page to store them.
      */
     var cache_put_misses: uint(64);
+    /*
+      Number of prefetches issued to the remote cache at the granularity of cache pages.
+      This counter is specifically triggered via calls to chpl_comm_remote_prefetch
+    */
+    var cache_num_prefetches : uint(64);
+    /*
+      Number of read aheads issued to the remote cache at the granularity of cache pages.
+    */
+    var cache_num_page_readaheads : uint(64);
+    /*
+      Number of cache pages that were prefetched but evicted from the cache before being accessed
+      (i.e., the prefetches were too early).
+    */
+    var cache_prefetch_unused : uint(64);
+    /*
+      Number of cache pages that were prefetched but did not arrive in the cache before being accessed
+      (i.e., the prefetches were too late).
+    */
+    var cache_prefetch_waited : uint(64);
+    /*
+      Number of cache pages that were read ahaead but evicted from the cache before being accessed
+      (i.e., the read aheads were too early).
+    */
+    var cache_readahead_unused : uint(64);
+    /*
+      Number of cache pages that were read ahead but did not arrive in the cache before being accessed
+      (i.e., the read aheads were too late).
+    */
+    var cache_readahead_waited : uint(64);
 
     proc writeThis(c) throws {
       use Reflection;

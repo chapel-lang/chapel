@@ -13,7 +13,7 @@ void check_mark_easy(void)
   err = qio_file_open_tmp(&f, 0, NULL);
   assert(!err);
 
-  err = qio_channel_create(&writing, f, 0, 0, 1, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&writing, f, 0, 0, 1, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_offset(true, writing, &offset);
@@ -57,7 +57,7 @@ void check_mark_easy(void)
   qio_channel_release(writing);
 
   // Read the data a byte at a time.
-  err = qio_channel_create(&reading, f, 0, 1, 0, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&reading, f, 0, 1, 0, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   assert('a' == qio_channel_read_byte(true, reading));
@@ -84,7 +84,7 @@ void check_mark(char* writepattern, char* readpattern)
   err = qio_file_open_tmp(&f, 0, NULL);
   assert(!err);
 
-  err = qio_channel_create(&writing, f, 0, 0, 1, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&writing, f, 0, 0, 1, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_offset(true, writing, &offset);
@@ -114,7 +114,7 @@ void check_mark(char* writepattern, char* readpattern)
   qio_channel_release(writing);
 
   // Read the data a byte at a time.
-  err = qio_channel_create(&reading, f, 0, 1, 0, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&reading, f, 0, 1, 0, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   for( i = 0; readpattern[i]; i++ ) {

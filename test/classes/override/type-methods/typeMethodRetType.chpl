@@ -3,18 +3,18 @@
 //
 
 class Car { var x: int = 0; }
-class Building { var x: int = 0; }
+class Building { var y: int = 0; }
 class Tower: Building { var height: int = 0; }
 
 class Animal {
-  var x: int = 0;
+  var z: int = 0;
   proc type getCarType() type { return Car; }
   proc type getBuildingType() type { return Building; }
   proc type getSelfType() type { return this; }
 }
 
 class Cat: Animal {
-  var x: int = 0;
+  var m: int = 0;
   override proc type getBuildingType() type { return Tower; }
   override proc type getSelfType() type { return this; }
 }

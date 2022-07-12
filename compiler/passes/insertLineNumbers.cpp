@@ -389,7 +389,7 @@ void InsertLineNumbers::process(FnSymbol *fn, CallExpr* call) {
 }
 
 // TODO move this into a more sensible home
-// ---------- InsertNilChecksPass ----------
+// ---------- InsertNilChecks ----------
 //
 // insert nil checks primitives in front of most member accesses
 //
@@ -398,7 +398,7 @@ void InsertLineNumbers::process(FnSymbol *fn, CallExpr* call) {
 //      invoke the destructor on NIL, so we avoid doing so when
 //      handling a call to a destructor.
 //
-bool InsertNilChecksPass::shouldProcess(CallExpr *call) {
+bool InsertNilChecks::shouldProcess(CallExpr *call) {
   if (!(call->isPrimitive(PRIM_GET_MEMBER) ||
         call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
         call->isPrimitive(PRIM_SET_MEMBER) ||
@@ -423,7 +423,7 @@ bool InsertNilChecksPass::shouldProcess(CallExpr *call) {
   return false;
 }
 
-void InsertNilChecksPass::process(CallExpr* call) {
+void InsertNilChecks::process(CallExpr* call) {
   Expr* arg0 = call->get(1);
   Expr* stmt = call->getStmtExpr();
 
@@ -470,7 +470,7 @@ void insertLineNumbers() {
     // insertNilChecks because it creates new CallExpr's, but we also know that
     // those new CallExpr's don't need to get processed
     std::vector<CallExpr*> toProcess(gCallExprs.begin(), gCallExprs.end());
-    pm.runPass<CallExpr*>(InsertNilChecksPass(), toProcess);
+    pm.runPass<CallExpr*>(InsertNilChecks(), toProcess);
   }
 
   // TODO: this is a WIP state on integrating with the PassManager

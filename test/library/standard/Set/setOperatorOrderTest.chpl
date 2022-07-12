@@ -1,3 +1,4 @@
+use Sort;
 use Set;
 
 record R {
@@ -48,5 +49,5 @@ writeln(s1 >= s2);
 writeln(s2 >= s1);
 
 proc printSortedSet(s) {
-  writeln(s.toArray().sorted());
+  writeln(sorted(s.toArray()));
 }

@@ -5,18 +5,19 @@
  Installation of the ZMQ library is detected with the find_library function,
  which looks for the appropriate dynamic library (e.g. libzmq.so).
  Note that if the dynamic library is found, this test assumes that the
- header and static library are available.
+ header and static library are available. Can be overridden with
+ `CHPL_TEST_NO_ZMQ=True`
 """
 
-from __future__ import print_function
 from ctypes.util import find_library
 import os
 
 # Is ZMQ available?
 zmq_found = find_library('zmq') is not None
+user_no_zmq = os.getenv('CHPL_TEST_NO_ZMQ') is not None
 
 # OK contains the conditions that must be met to run the test
-OK = zmq_found
+OK = zmq_found and not user_no_zmq
 
 # Skip if not OK
 print(not OK)

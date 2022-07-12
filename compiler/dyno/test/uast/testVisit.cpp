@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/Location.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/Location.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/uast/all-uast.h"
 
 // always check assertions in this test
@@ -32,7 +32,7 @@ using namespace chpl;
 using namespace uast;
 
 static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
-  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 

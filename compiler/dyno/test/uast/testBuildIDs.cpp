@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/Location.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/Location.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Builder.h"
@@ -147,7 +147,7 @@ static  void test2() {
   Context context;
   Context* ctx = &context;
 
-  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
@@ -253,7 +253,7 @@ static void test3() {
   Context context;
   Context* ctx = &context;
 
-  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
@@ -317,7 +317,7 @@ static void test4() {
   Context context;
   Context* ctx = &context;
 
-  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
@@ -436,6 +436,43 @@ static void test4() {
   assert(modM->stmt(1)->id().parentSymbolId(ctx) == modM->id());
 }
 
+static void test5() {
+  Context context;
+  Context* ctx = &context;
+
+  const char* path = "path/to/file-name.sub.chpl";
+  auto builder = Builder::createForTopLevelModule(ctx, path);
+  Builder* b   = builder.get();
+  Location dummyLoc(UniqueString::get(ctx, path));
+
+  {
+    /* Create the AST for
+
+      x;
+
+     */
+
+    auto strX = UniqueString::get(ctx, "x");
+
+    b->addToplevelExpression(Identifier::build(b, dummyLoc, strX));
+  }
+
+  BuilderResult r = b->result();
+  assert(!r.numErrors());
+  auto implicitMod = r.singleModule();
+  assert(implicitMod->numStmts() == 1);
+  assert(implicitMod->stmt(0)->isIdentifier());
+
+  // now check the IDs
+  assert(implicitMod->id().postOrderId() == -1);
+  assert(implicitMod->id().numContainedChildren() == 1);
+  assert(implicitMod->id().symbolPath() == "file-name\\.sub");
+
+  assert(implicitMod->stmt(0)->id().postOrderId() == 0);
+  assert(implicitMod->stmt(0)->id().numContainedChildren() == 0);
+  assert(implicitMod->stmt(0)->id().symbolPath() == "file-name\\.sub");
+}
+
 
 int main(int argc, char** argv) {
   test0();
@@ -443,5 +480,7 @@ int main(int argc, char** argv) {
   test2();
   test3();
   test4();
+  test5();
+
   return 0;
 }

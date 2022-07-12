@@ -916,14 +916,17 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
 }
 
 // common redirects
-proc BlockDom.dsiLow           return whole.lowBound;
-proc BlockDom.dsiHigh          return whole.highBound;
-proc BlockDom.dsiAlignedLow    return whole.alignedLow;
-proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
-proc BlockDom.dsiFirst         return whole.first;
-proc BlockDom.dsiLast          return whole.last;
-proc BlockDom.dsiStride        return whole.stride;
-proc BlockDom.dsiAlignment     return whole.alignment;
+proc BlockDom.parSafe param {
+  compilerError("this domain type does not support 'parSafe'");
+}
+override proc BlockDom.dsiLow           return whole.lowBound;
+override proc BlockDom.dsiHigh          return whole.highBound;
+override proc BlockDom.dsiAlignedLow    return whole.alignedLow;
+override proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc BlockDom.dsiFirst         return whole.first;
+override proc BlockDom.dsiLast          return whole.last;
+override proc BlockDom.dsiStride        return whole.stride;
+override proc BlockDom.dsiAlignment     return whole.alignment;
 proc BlockDom.dsiNumIndices    return whole.sizeAs(uint);
 proc BlockDom.dsiDim(d)        return whole.dim(d);
 proc BlockDom.dsiDim(param d)  return whole.dim(d);
@@ -1733,10 +1736,25 @@ override proc BlockArr.doiCanBulkTransferRankChange() param return true;
 
 config param debugBlockScan = false;
 
+/* Boxed sync with readFE/writeEF only, but works for arbitrary types. Not
+ * suitable for general use since there are races with when the value gets
+ * written to, but safe for single writer, single reader case here.
+ */
 class BoxedSync {
   type T;
-  var s: sync T;
-  forwarding s;
+  var s: sync int; // int over bool to enable native qthread sync
+  var res: T;
+
+  proc readFE(): T {
+    s.readFE();
+    return res;
+  }
+
+  proc writeEF(val: T): void {
+    res = val;
+    s.writeEF(1);
+  }
+
   // guard against dynamic dispatch trying to resolve write()ing the sync
   override proc writeThis(f) throws { }
 }
@@ -1754,8 +1772,13 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   const ref targetLocs = this.dsiTargetLocales();
   const firstLoc = targetLocs.domain.lowBound;
   var elemPerLoc: [targetLocs.domain] resType;
-  var inputReady$: [targetLocs.domain] sync bool;
-  var outputReady$: [targetLocs.domain] unmanaged BoxedSync(bool)?;
+  var inputReady: [targetLocs.domain] sync int;
+  var outputReady: [targetLocs.domain] unmanaged BoxedSync(resType)?;
+
+  const cachedPID = pid;
+
+  param sameStaticDist = dsiStaticFastFollowCheck(res._value.type);
+  const sameDynamicDist = sameStaticDist && dsiDynamicFastFollowCheck(res);
 
   // Fire up tasks per participating locale
   coforall locid in targetLocs.domain {
@@ -1764,23 +1787,31 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // set up some references to our LocBlockArr descriptor, our
       // local array, local domain, and local result elements
-      ref myLocArrDesc = locArr[locid];
+      const thisArr = if _privatization then chpl_getPrivatizedCopy(this.type, cachedPID) else this;
+      ref myLocArrDesc = thisArr.locArr[locid];
       ref myLocArr = myLocArrDesc.myElems;
       const ref myLocDom = myLocArr.domain;
 
       // Compute the local pre-scan on our local array
-      var (numTasks, rngs, state, tot) = myLocArr._value.chpl__preScan(myop, res, myLocDom[dom]);
+      const (numTasks, rngs, state, tot) =
+        if sameStaticDist && sameDynamicDist then
+          myLocArr._value.chpl__preScan(myop, res._value.locArr[locid].myElems, myLocDom[dom])
+        else
+          myLocArr._value.chpl__preScan(myop, res, myLocDom[dom]);
+
       if debugBlockScan then
         writeln(locid, ": ", (numTasks, rngs, state, tot));
 
       // Create a local ready var and store it back on the initiating
       // locale so it can notify us
-      var myOutputReady = new unmanaged BoxedSync(bool)?;
-      outputReady$[locid] = myOutputReady;
+      const myOutputReady = new unmanaged BoxedSync(resType);
 
-      // save our local scan total away and signal that it's ready
-      elemPerLoc[locid] = tot;
-      inputReady$[locid].writeEF(true);
+      on elemPerLoc {
+        // save our local scan total away and signal that it's ready
+        outputReady[locid] = myOutputReady;
+        elemPerLoc[locid] = tot;
+        inputReady[locid].writeEF(1);
+      }
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
@@ -1789,7 +1820,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
         var next: resType = metaop.identity;
         for locid in targetLocs.domain {
-          const locready = inputReady$[locid].readFE();
+          inputReady[locid].readFE();
 
           // store the scan value
           ref locVal = elemPerLoc[locid];
@@ -1798,17 +1829,22 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
           // accumulate to prep for the next iteration
           metaop.accumulateOntoState(next, locVal);
         }
-        // Mark that scan values are ready
-        coforall ready in outputReady$ do on ready {
-          ready!.writeEF(true);
+
+        // Iterator that yields values instead of references (to enable RVF)
+        iter valIter(iterable) {
+          for elem in iterable do yield elem;
         }
+
+        // Mark that scan values are ready
+        coforall (ready, elem) in zip(valIter(outputReady), valIter(elemPerLoc)) do on ready {
+          ready!.writeEF(elem);
+        }
+
         delete metaop;
       }
 
-      // block until someone tells us that our local value has been updated
-      // and then read it
-      const resready = myOutputReady!.readFE();
-      const myadjust = elemPerLoc[locid];
+      // block until our local value has been updated
+      const myadjust = myOutputReady.readFE();
       if debugBlockScan then
         writeln(locid, ": myadjust = ", myadjust);
 
@@ -1820,7 +1856,11 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // have our local array compute its post scan with the globally
       // accurate state vector
-      myLocArr._value.chpl__postScan(op, res, numTasks, rngs, state);
+      if sameStaticDist && sameDynamicDist then
+        myLocArr._value.chpl__postScan(op, res._value.locArr[locid].myElems, numTasks, rngs, state);
+      else
+        myLocArr._value.chpl__postScan(op, res, numTasks, rngs, state);
+
       if debugBlockScan then
         writeln(locid, ": ", myLocArr);
 

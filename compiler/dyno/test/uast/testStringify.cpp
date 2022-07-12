@@ -20,8 +20,8 @@
 #include <climits>
 #include <map>
 #include <vector>
-#include "chpl/queries/Context.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/chpl-syntax-printer.h"
@@ -96,6 +96,8 @@ static void test1(Parser* parser) {
   std::string testCode;
   testCode = R""""(
    use Map;
+   use throwing.doc.Inner;
+   import throwing.doc.Inner;
    require "foo.h", "foo.c";
    import Foo as X;
    include module Foo;
@@ -340,10 +342,16 @@ static void test1(Parser* parser) {
    for i in 1..10 do yield try! i;
   }
   XNew(ij) = (X(ij+north) + X(ij+south) + X(ij+east) + X(ij+west)) / 4.0;
+  proc multiDimension(): [1..3, 2..8] string {}
   )"""";
   auto parseResult = parser->parseString("Test1.chpl",
                                          testCode.c_str());
-  assert(!parseResult.numErrors());
+  for (int i = 0; i < parseResult.numErrors(); i++) {
+    const ErrorMessage& err = parseResult.error(i);
+    // ignore implicit module warning
+    assert(err.kind() != ErrorMessage::SYNTAX);
+    assert(err.kind() != ErrorMessage::ERROR);
+  }
   auto mod = parseResult.singleModule();
   assert(mod);
   stringifyNode(mod, CHPL_SYNTAX);
@@ -429,6 +437,8 @@ static void test3(Parser* parser) {
                    "difDecl(arg1: 3*string)")
   TEST_USER_STRING("proc multiDimension(arg2: 3*(4*complex)): 3*(4*complex) {}",
                    "multiDimension(arg2: 3*(4*complex))")
+  TEST_USER_STRING("proc multiDimension(): [1..3, 2..8] string {}",
+                   "multiDimension()")
 
 }
 
@@ -499,6 +509,13 @@ static void testDecl(Parser* parser) {
   TEST_CHPL_SYNTAX("config const (x, y): (int, int), (z, y): (bool, int);",
                    "config const (x, y): (int, int), (z, y): (bool, int);")
   TEST_CHPL_SYNTAX("config var (x,y) = (2,3);", "config var (x, y) = (2, 3);")
+  TEST_CHPL_SYNTAX("var aq = new owned Foo()?;", "var aq = new owned Foo()?;")
+  TEST_CHPL_SYNTAX("var eq = new Foo()?;", "var eq = new Foo()?;")
+  TEST_CHPL_SYNTAX("var x: atomic int;", "var x: atomic int;")
+  TEST_CHPL_SYNTAX("var domain7: domain(rank=3, idxType=int, stridable=false);",
+                   "var domain7: domain(rank = 3, idxType = int, stridable = false);")
+  TEST_CHPL_SYNTAX("var domain1: domain(keyType, parSafe=true);",
+                   "var domain1: domain(keyType, parSafe = true);")
 }
 
 //TODO: Write many more specific tests for the format of different node types
@@ -507,8 +524,8 @@ int main(int argc, char** argv) {
   Context context;
   Context* ctx = &context;
 
-  auto parser = Parser::build(ctx);
-  Parser* p = parser.get();
+  auto parser = Parser::createForTopLevelModule(ctx);
+  Parser* p = &parser;
 
   test1(p);
   test2(p);

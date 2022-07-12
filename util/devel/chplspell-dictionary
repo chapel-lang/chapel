@@ -3365,9 +3365,11 @@ FILEID: 515baeda-2ada-11e6-a3a6-10ddb1d4c3d5
 algebralib
 binarytrees
 chpldocumentation
+chplspell
 circularities
 cmath
 desync
+dndebug
 eigvalsh
 envs
 geany
@@ -3409,6 +3411,7 @@ subsymbols
 teardowns
 vundle
 whereami
+writemsg
 writethis
 xbabe
 
@@ -5573,6 +5576,7 @@ FILEID: e818580e-f560-11eb-bb15-35b7469d4b43
 parenless
 tnew
 tunmanaged
+usig
 
 FILEID: ec0917b4-f560-11eb-bb15-35b7469d4b43
 blockdim
@@ -6113,6 +6117,7 @@ intliteral
 parenless
 realliteral
 tlsbr
+tmeth
 trsbr
 uncasted
 
@@ -6123,6 +6128,9 @@ startloc
 todoexpr
 todolist
 todostmt
+yend
+yloc
+ystart
 yychpl
 
 FILEID: 95534796-9f74-11ec-866d-111c8d7a1817
@@ -6155,7 +6163,9 @@ eturn
 
 FILEID: 7415e1e6-9f75-11ec-866d-111c8d7a1817
 failbit
+innerprec
 ltlt
+outerprec
 rdbuf
 
 FILEID: 82e3c60c-9f75-11ec-866d-111c8d7a1817
@@ -6202,6 +6212,128 @@ vidia
 
 FILEID: 757a38be-a729-11ec-866d-111c8d7a1817
 strval
+
+FILEID: afa8039a-e3ab-11ec-a8be-cd81bce0efc4
+sexualized
+
+FILEID: b6b773fa-e3ab-11ec-a8be-cd81bce0efc4
+toktext
+
+FILEID: c15a9aee-e3ab-11ec-a8be-cd81bce0efc4
+emptystmt
+ndrst
+
+FILEID: c33f61fa-e3ab-11ec-a8be-cd81bce0efc4
+astlist
+
+FILEID: c4ce7bbe-e3ab-11ec-a8be-cd81bce0efc4
+astnode
+
+FILEID: c4ce7bbf-e3ab-11ec-a8be-cd81bce0efc4
+yychpl
+
+FILEID: ffedfa58-e3ab-11ec-a8be-cd81bce0efc4
+griddim
+
+FILEID: 1a2ad1ac-e3ac-11ec-a8be-cd81bce0efc4
+clst
+
+FILEID: 202a65c2-e3ac-11ec-a8be-cd81bce0efc4
+attribs
+
+FILEID: 2c60856a-e3ac-11ec-a8be-cd81bce0efc4
+iomanip
+setw
+
+FILEID: 3312420e-e3ac-11ec-a8be-cd81bce0efc4
+modindex
+
+FILEID: 5118f158-e3ac-11ec-a8be-cd81bce0efc4
+sfoo
+
+FILEID: 7eb6ec46-e3ac-11ec-a8be-cd81bce0efc4
+cabsf
+cacos
+cacosf
+cacosh
+cacoshf
+cargf
+casinf
+casinh
+casinhf
+catan
+catanf
+catanh
+catanhf
+ccos
+ccosf
+ccosh
+ccoshf
+cexp
+cexpf
+clogf
+conjf
+cprojf
+csin
+csinf
+csinh
+csinhf
+csqrt
+csqrtf
+ctan
+ctanf
+ctanh
+ctanhf
+rtol
+
+FILEID: bd895c06-e3ac-11ec-a8be-cd81bce0efc4
+accmode
+asctime
+atim
+basedefs
+blkcnt
+dsttime
+eownerdead
+errorfds
+fildes
+minuteswest
+mtim
+nlink
+oflag
+rdev
+sektion
+setsize
+timeptr
+tloc
+unistd
+
+FILEID: 12605982-e3ad-11ec-a8be-cd81bce0efc4
+atim
+atimespec
+blkcnt
+ctimespec
+mtim
+mtimespec
+nlink
+oflag
+rdev
+
+FILEID: 06d28642-e553-11ec-a8be-cd81bce0efc4
+ndrst
+
+FILEID: 06d28643-e553-11ec-a8be-cd81bce0efc4
+ndrst
+
+FILEID: 0b03fc3c-e553-11ec-a8be-cd81bce0efc4
+ndrst
+
+FILEID: d4c8ff4a-e553-11ec-a8be-cd81bce0efc4
+yyclearin
+yylloc
+yyrhsloc
+
+FILEID: da1e91c6-e553-11ec-a8be-cd81bce0efc4
+toktext
 
 NATURAL:
 aarch
@@ -6367,6 +6499,7 @@ benefitted
 bengali
 benharsh
 benhavns
+benjamin
 bentley
 berkeley
 bernstein
@@ -7220,11 +7353,13 @@ gotostmt
 gouy
 gperf
 gprof
+gpus
 graphemes
 graphfiles
 graphkeys
 graphtitle
 greek
+greenwich
 grep
 grepcomp
 grepdocs
@@ -7711,6 +7846,7 @@ loopback
 loopexprs
 lopez
 lossless
+losslessly
 lossy
 louis
 lowell
@@ -7868,6 +8004,7 @@ morecore
 moreso
 mosharaf
 moveprimitive
+mozilla
 mpicc
 mpich
 mpiexec
@@ -8012,6 +8149,7 @@ nodesets
 noexec
 noexit
 nohandle
+noindex
 noinit
 nomatch
 nonascii
@@ -8483,6 +8621,7 @@ rijndael
 rint
 rlimit
 roald
+robbins
 robert
 rochester
 roland
@@ -8629,6 +8768,7 @@ siek
 sigabrt
 sigaddset
 sigalrm
+sigaltstack
 sigbus
 sigchld
 sigcont
@@ -8870,6 +9010,7 @@ syscalls
 syserr
 syspreexec
 sysroot
+tabify
 tablesize
 tabsize
 tagalog

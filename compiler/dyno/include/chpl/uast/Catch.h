@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_CATCH_H
 #define CHPL_UAST_CATCH_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Variable.h"

@@ -25,7 +25,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Sync.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 
 
 // always check assertions in this test
@@ -177,8 +177,8 @@ int main() {
   Context context;
   Context* ctx = &context;
 
-  auto parser = Parser::build(ctx);
-  Parser* p = parser.get();
+  auto parser = Parser::createForTopLevelModule(ctx);
+  Parser* p = &parser;
 
   test0(p);
   test1(p);

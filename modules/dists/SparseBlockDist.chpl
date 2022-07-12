@@ -147,11 +147,11 @@ class SparseBlockDom: BaseSparseDomImpl {
     return dsiAdd((ind,));
   }
 
-  proc dsiFirst {
+  override proc dsiFirst {
     return min reduce ([l in locDoms] l!.mySparseBlock.first);
   }
 
-  proc dsiLast {
+  override proc dsiLast {
     return max reduce ([l in locDoms] l!.mySparseBlock.last);
   }
 
@@ -876,7 +876,8 @@ proc SparseBlockDom.dsiLocalSubdomain(loc: locale) {
     unimplementedFeatureHalt("the Sparse Block distribution",
                              "remote subdomain queries");
 
-  const (found, targetIdx) = dist.targetLocales.find(here);
+  const (found, targetIdx) = maxloc reduce
+    zip(dist.targetLocales == here, dist.targetLocales.domain);
   return locDoms[targetIdx]!.mySparseBlock;
 }
 

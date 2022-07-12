@@ -50,13 +50,10 @@ fi
 
 # test against Chapel release (checking our current test/cron directories)
 function test_release() {
-  # source older system llvm until we upgrade to 1.26
-  source $COMMON_DIR/setup_system_llvm.bash 11.0
-
   export CHPL_TEST_PERF_DESCRIPTION=release
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
   currentSha=`git rev-parse HEAD`
-  git checkout 1.25.1
+  git checkout 1.27.0
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/

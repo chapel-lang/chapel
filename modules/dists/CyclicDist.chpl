@@ -552,14 +552,17 @@ override proc CyclicDom.dsiDisplayRepresentation() {
 }
 
 // common redirects
-proc CyclicDom.dsiLow           return whole.lowBound;
-proc CyclicDom.dsiHigh          return whole.highBound;
-proc CyclicDom.dsiAlignedLow    return whole.alignedLow;
-proc CyclicDom.dsiAlignedHigh   return whole.alignedHigh;
-proc CyclicDom.dsiFirst         return whole.first;
-proc CyclicDom.dsiLast          return whole.last;
-proc CyclicDom.dsiStride        return whole.stride;
-proc CyclicDom.dsiAlignment     return whole.alignment;
+proc CyclicDom.parSafe param {
+  compilerError("this domain type does not support 'parSafe'");
+}
+override proc CyclicDom.dsiLow           return whole.lowBound;
+override proc CyclicDom.dsiHigh          return whole.highBound;
+override proc CyclicDom.dsiAlignedLow    return whole.alignedLow;
+override proc CyclicDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc CyclicDom.dsiFirst         return whole.first;
+override proc CyclicDom.dsiLast          return whole.last;
+override proc CyclicDom.dsiStride        return whole.stride;
+override proc CyclicDom.dsiAlignment     return whole.alignment;
 proc CyclicDom.dsiNumIndices    return whole.sizeAs(uint);
 proc CyclicDom.dsiDim(d)        return whole.dim(d);
 proc CyclicDom.dsiDim(param d)  return whole.dim(d);

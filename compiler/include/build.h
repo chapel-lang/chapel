@@ -24,7 +24,6 @@
 #include <set>
 #include <vector>
 
-#include "bison-chapel.h"
 #include "flags.h"
 #include "stmt.h"
 #include "vec.h"
@@ -38,6 +37,14 @@ class FnSymbol;
 class ImportStmt;
 class ModuleSymbol;
 class Type;
+
+struct PotentialRename {
+  enum { SINGLE, DOUBLE } tag;
+  union {
+    Expr* elem;
+    std::pair<Expr*, Expr*>* renamed;
+  };
+};
 
 Expr* lookupConfigVal(VarSymbol* var);
 

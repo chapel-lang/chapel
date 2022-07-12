@@ -46,6 +46,21 @@ fi
 test_compile prep
 test_compile flow
 test_compile icing
+test_compile drop
+test_compile potential
+test_compile potentialPrep
+test_compile geo
+test_compile thermo
+test_compile postLink
+# test_compile post   # this one requires the sortedSet patch (#19872)
+test_compile stochasticIcing
+test_compile octree
+test_compile eigenSolvePost
+test_compile externalSolverPost
+test_compile meshDeformation
+test_compile continuation
+test_compile stability
+test_compile coloring
 
 # copy the input data to the filesystem we're running on
 

@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_INTERFACE_H
 #define CHPL_UAST_INTERFACE_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/IntentList.h"

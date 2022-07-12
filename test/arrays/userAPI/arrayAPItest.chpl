@@ -78,8 +78,6 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln("is empty: ", X.isEmpty());
   writeln("head: ", X.head());
   writeln("tail: ", X.tail());
-  writeln("find last: ", X.find(X[X.domain.alignedHigh]));
-  writeln("count last: ", X.count(X[X.domain.alignedHigh]));
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
@@ -90,18 +88,9 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   for (i,x) in zip(reindexDom, X.reindex(reindexDom)) do
     writeln("reindexed X[", i, "] = ", x);
   writeln();
-  // Test vector ops
-  if testError == 10 then
-    X.reverse();
   // Test sparse-specific things
   if testError == 12 then
     writeln("IRV is: ", X.IRV);
-  // Test sorted iterator
-  if testError == 13 {
-    writeln("in sorted order: ");
-    for x in X.sorted() do
-      writeln(x);
-  }
 }
 
 proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
@@ -204,8 +193,6 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln("is empty: ", X.isEmpty());
   writeln("head: ", X.head());
   writeln("tail: ", X.tail());
-  writeln("find last: ", X.find(X[X.domain.alignedHigh]));
-  writeln("count last: ", X.count(X[X.domain.alignedHigh]));
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
@@ -220,18 +207,7 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
     writeln("reindexed X[", i, "] = ", x);
   writeln();
 
-  // Test vector ops
-  if testError == 10 then
-    X.reverse();
-  
   // Test sparse-specific things
   if testError == 12 then
     writeln("IRV is: ", X.IRV);
-
-  // Test sorted iterator
-  if testError == 13 {
-    writeln("in sorted order: ");
-    for x in X.sorted() do
-      writeln(x);
-  }
 }

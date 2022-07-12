@@ -24,7 +24,7 @@ int main(int argc, char** argv)
   err = qio_file_length(f, &len);
   assert(!err);
 
-  err = qio_channel_create(&ch, f, 0, 1, 1, len, INT64_MAX, NULL);
+  err = qio_channel_create(&ch, f, 0, 1, 1, len, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_write_amt(1, ch, testone, strlen(testone));
@@ -39,7 +39,7 @@ int main(int argc, char** argv)
   err = qio_file_length(f, &len);
   assert(!err);
 
-  err = qio_channel_create(&ch, f, 0, 1, 1, len, INT64_MAX, NULL);
+  err = qio_channel_create(&ch, f, 0, 1, 1, len, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_write_amt(1, ch, testtwo, strlen(testtwo));

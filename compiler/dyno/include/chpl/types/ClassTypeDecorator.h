@@ -21,7 +21,7 @@
 #define CHPL_TYPES_CLASS_TYPE_DECORATOR_H
 
 #include "chpl/util/hash.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/stringify-functions.h"
 
 #include <cassert>
 #include <utility>

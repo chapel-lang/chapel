@@ -49,7 +49,6 @@
 #include "chpl-export-wrappers.h"
 #include "chpl-external-array.h"
 #include "chpl-file-utils.h"
-#include <chplfp.h>
 #include "chpl-gpu.h"
 #include "chpl-gpu-diags.h"
 #include "chplglob.h"

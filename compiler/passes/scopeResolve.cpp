@@ -1610,12 +1610,20 @@ static void resolveEnumeratedTypes() {
 // Convert each "proc type C.myProc() ..." to, roughly:
 // "proc type any.myProc() where isSubtype(this.type, C) ..."
 //
+// This applies also to type and param-returning parenless methods.
 static void adjustTypeMethodsOnClasses() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->thisTag != INTENT_TYPE) continue; // handle only type methods
-
     ArgSymbol* thisArg = toArgSymbol(fn->_this);
-    Type*      thisType = thisArg->type;
+    bool typeRecvFn = (fn->thisTag == INTENT_TYPE);
+    bool parenlessTypeParamRet = fn->hasFlag(FLAG_NO_PARENS) &&
+                                 (fn->retTag == RET_PARAM ||
+                                  fn->retTag == RET_TYPE);
+    bool adjustThisFn = thisArg != nullptr &&
+                        (typeRecvFn || parenlessTypeParamRet);
+
+    if (adjustThisFn == false) continue;
+
+    Type* thisType = thisArg->type;
     if (! isClassLikeOrManaged(thisType)) continue;
 
     if (BlockStmt* typeBlock = thisArg->typeExpr) {

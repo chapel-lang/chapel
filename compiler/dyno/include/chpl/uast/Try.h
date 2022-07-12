@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_TRY_H
 #define CHPL_UAST_TRY_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Catch.h"

@@ -17,7 +17,7 @@ tags
 *.vagrant
 .vscode/
 .idea/
-cmake-build-debug/
+cmake-build-*/
 .cache/
 
 # Top level ignores.

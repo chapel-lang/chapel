@@ -1,0 +1,7 @@
+feature request: allow int strides for uint ranges
+#20034
+
+Per discussion in the issue, this future requests not just a better
+error message, but support for this case.
+
+The prediff is needed only for the .bad file.

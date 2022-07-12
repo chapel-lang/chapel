@@ -850,14 +850,14 @@ proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
 }
 
 // common redirects
-proc StencilDom.dsiLow           return whole.lowBound;
-proc StencilDom.dsiHigh          return whole.highBound;
-proc StencilDom.dsiAlignedLow    return whole.alignedLow;
-proc StencilDom.dsiAlignedHigh   return whole.alignedHigh;
-proc StencilDom.dsiFirst         return whole.first;
-proc StencilDom.dsiLast          return whole.last;
-proc StencilDom.dsiStride        return whole.stride;
-proc StencilDom.dsiAlignment     return whole.alignment;
+override proc StencilDom.dsiLow           return whole.lowBound;
+override proc StencilDom.dsiHigh          return whole.highBound;
+override proc StencilDom.dsiAlignedLow    return whole.alignedLow;
+override proc StencilDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc StencilDom.dsiFirst         return whole.first;
+override proc StencilDom.dsiLast          return whole.last;
+override proc StencilDom.dsiStride        return whole.stride;
+override proc StencilDom.dsiAlignment     return whole.alignment;
 proc StencilDom.dsiNumIndices    return whole.sizeAs(uint);
 proc StencilDom.dsiDim(d)        return whole.dim(d);
 proc StencilDom.dsiDim(param d)  return whole.dim(d);

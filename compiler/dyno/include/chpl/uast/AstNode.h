@@ -20,12 +20,12 @@
 #ifndef CHPL_UAST_ASTNODE_H
 #define CHPL_UAST_ASTNODE_H
 
-#include "chpl/queries/ID.h"
+#include "chpl/framework/ID.h"
 #include "chpl/uast/AstList.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/util/memory.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/stringify-functions.h"
 
 #include <cassert>
 #include <functional>

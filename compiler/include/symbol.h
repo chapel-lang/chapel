@@ -738,9 +738,6 @@ inline bool ShadowVarSymbol::isCompilerAdded() const {
 // Checks whether a string is valid in UTF8 encoding
 bool isValidString(std::string str, int64_t* numCodepoints);
 
-// Processes a char* to replace any escape sequences with the actual bytes
-std::string unescapeString(const char* const str, BaseAST* astForError);
-
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
 //
@@ -891,6 +888,8 @@ extern Symbol *gDummyWitness;
 // Pass this to a return-by-ref formal when the result is not needed.
 // Used when inlining iterators for ForallStmts.
 extern Symbol *gDummyRef;
+// used in convert-uast to mark a SymExpr needing future adjustment
+extern Symbol *gFixupRequiredToken;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;

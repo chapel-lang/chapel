@@ -62,7 +62,7 @@ proc writeFreqs(data, param nclSize) {
   var arr = for (k,v) in freqs.items() do (v,k);
 
   // print the array, sorted by decreasing frequency
-  for (f, s) in arr.sorted(reverseComparator) do
+  for (f, s) in sorted(arr, reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize), 
            (100.0 * f) / (data.size - nclSize));
   writeln();

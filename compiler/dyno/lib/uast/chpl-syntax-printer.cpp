@@ -19,7 +19,7 @@
 
 
 #include "chpl/uast/chpl-syntax-printer.h"
-#include "chpl/queries/global-strings.h"
+#include "chpl/framework/global-strings.h"
 
 
 using namespace chpl;
@@ -305,7 +305,8 @@ struct ChplSyntaxVisitor {
        || callee->toIdentifier()->name() == USTR("unmanaged")
        || callee->toIdentifier()->name() == USTR("shared")
        || callee->toIdentifier()->name() == USTR("sync")
-       || callee->toIdentifier()->name() == USTR("single")))
+       || callee->toIdentifier()->name() == USTR("single")
+       || callee->toIdentifier()->name() == USTR("atomic")))
         return true;
       return false;
   }
@@ -474,7 +475,7 @@ struct ChplSyntaxVisitor {
     if (isBracketLoopMaybeArrayType(node) &&
         node->iterand()->isDomain() &&
         node->iterand()->toDomain()->numExprs() == 1) {
-        printAst(node->iterand()->toDomain()->expr(0));
+      printAst(node->iterand()->toDomain()->expr(0));
     } else {
       printAst(node->iterand());
     }
@@ -509,7 +510,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const BytesLiteral* node) {
-    ss_ << "b\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
+    ss_ << "b\"" << escapeStringC(node->str().str()) << '"';
   }
 
   void visit(const Catch* node) {
@@ -611,7 +612,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const CStringLiteral* node) {
-    ss_ << "c\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
+    ss_ << "c\"" << escapeStringC(node->str().str()) << '"';
   }
 
   void visit(const Defer* node) {
@@ -636,10 +637,10 @@ struct ChplSyntaxVisitor {
     } else if (node->numExprs() == 0) {
       // do nothing
     } else {
-      if (node->expr(0)->isOpCall()) {
-        interpose(node->exprs(), ", ", "[", "]");
-      } else {
+      if (node->usedCurlyBraces()) {
         interpose(node->exprs(), ", ", "{", "}");
+      } else {
+        interpose(node->exprs(), ", ");
       }
     }
   }
@@ -1041,7 +1042,7 @@ struct ChplSyntaxVisitor {
   void visit(const PrimCall* node) {
     ss_ << "__primitive";
     ss_ << "(";
-    ss_ << '"' << quoteStringForC(primTagToName(node->prim())) << '"' << ", ";
+    ss_ << '"' << escapeStringC(primTagToName(node->prim())) << '"' << ", ";
     interpose(node->actuals(), ", ");
     ss_ << ")";
   }
@@ -1114,7 +1115,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const StringLiteral* node) {
-    ss_ << '"' << quoteStringForC(std::string(node->str().c_str())) << '"';
+    ss_ << '"' << escapeStringC(node->str().str()) << '"';
   }
 
   void visit(const Sync* node) {
@@ -1146,7 +1147,7 @@ struct ChplSyntaxVisitor {
       interpose(node->stmts(), "\n", "{\n","\n}", ";", true);
     }
     // if try block has catch blocks
-    if (!node->isTryBang()) {
+    if (!node->isTryBang() && node->numHandlers() > 0) {
       ss_ << " ";
       interpose(node->handlers(), " ", nullptr, nullptr, nullptr, true);
     }
@@ -1337,6 +1338,8 @@ namespace chpl {
     else if (USTR("**") == op)
       return 16;
     // reduce/scan/dmapped are precedence 15, but don't come through this path.
+    else if (USTR("reduce") == op || USTR("scan") == op || USTR("dmapped") == op)
+      return 15;
     else if (USTR("!") == op || USTR("~") == op)
       return 14;
     else if (USTR("*") == op ||
@@ -1366,8 +1369,7 @@ namespace chpl {
       return 3;
     else if (USTR("||") == op)
       return 2;
-    // by and align are precedence 1 too, but don't come through this path.
-    else if (USTR("#") == op)
+    else if (USTR("#") == op || USTR("by") == op || USTR("align") == op)
       return 1;
 
     return -1;

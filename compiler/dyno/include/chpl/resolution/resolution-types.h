@@ -20,12 +20,13 @@
 #ifndef CHPL_RESOLUTION_RESOLUTION_TYPES_H
 #define CHPL_RESOLUTION_RESOLUTION_TYPES_H
 
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/types/CompositeType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
 #include "chpl/uast/AstNode.h"
+#include "chpl/uast/For.h"
 #include "chpl/uast/Function.h"
 #include "chpl/util/bitmap.h"
 #include "chpl/util/memory.h"
@@ -75,6 +76,7 @@ class UntypedFnSignature {
 
     void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
       name.stringify(ss, stringKind);
+      ss << " ";
       if (decl != nullptr) {
         decl->stringify(ss, stringKind);
         ss << " ";
@@ -929,6 +931,8 @@ class CallResolutionResult {
   }
 };
 
+class ResolvedParamLoop;
+
 /**
   This type represents a resolved expression.
 */
@@ -952,6 +956,8 @@ class ResolvedExpression {
 
   // functions associated with or used to implement this expression
   std::vector<const TypedFnSignature*> associatedFns_;
+
+  const ResolvedParamLoop* paramLoop_ = nullptr;
 
  public:
   using AssociatedFns = std::vector<const TypedFnSignature*>;
@@ -978,6 +984,10 @@ class ResolvedExpression {
     return associatedFns_;
   }
 
+  const ResolvedParamLoop* paramLoop() const {
+    return paramLoop_;
+  }
+
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
 
@@ -997,12 +1007,15 @@ class ResolvedExpression {
     associatedFns_.push_back(fn);
   }
 
+  void setParamLoop(const ResolvedParamLoop* paramLoop) { paramLoop_ = paramLoop; }
+
   bool operator==(const ResolvedExpression& other) const {
     return type_ == other.type_ &&
            toId_ == other.toId_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
-           associatedFns_ == other.associatedFns_;
+           associatedFns_ == other.associatedFns_ &&
+           paramLoop_ == other.paramLoop_;
   }
   bool operator!=(const ResolvedExpression& other) const {
     return !(*this == other);
@@ -1013,6 +1026,7 @@ class ResolvedExpression {
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedFns_, other.associatedFns_);
+    std::swap(paramLoop_, other.paramLoop_);
   }
   static bool update(ResolvedExpression& keep, ResolvedExpression& addin) {
     return defaultUpdate(keep, addin);
@@ -1023,6 +1037,7 @@ class ResolvedExpression {
     mostSpecific_.mark(context);
     context->markPointer(poiScope_);
     for (auto tfs : associatedFns_) tfs->mark(context);
+    context->markPointer(paramLoop_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -1041,6 +1056,8 @@ class ResolvedExpression {
 class ResolutionResultByPostorderID {
  private:
   ID symbolId;
+  // TODO: replace this with a hashtable or at least
+  // something that doesn't have to start at 0
   std::vector<ResolvedExpression> vec;
 
  public:
@@ -1050,6 +1067,8 @@ class ResolutionResultByPostorderID {
   void setupForSignature(const uast::Function* func);
   /** prepare to resolve the body of the passed function */
   void setupForFunction(const uast::Function* func);
+  /** prepare to resolve the body of a For loop */
+  void setupForParamLoop(const uast::For* loop, ResolutionResultByPostorderID& parent);
 
   ResolvedExpression& byIdExpanding(const ID& id) {
     auto postorder = id.postOrderId();
@@ -1065,15 +1084,27 @@ class ResolutionResultByPostorderID {
   ResolvedExpression& byAstExpanding(const uast::AstNode* ast) {
     return byIdExpanding(ast->id());
   }
-  ResolvedExpression& byId(const ID& id) {
+
+  bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
-    assert(id.symbolPath() == symbolId.symbolPath());
-    assert(0 <= postorder && (size_t) postorder < vec.size());
+    if (id.symbolPath() == symbolId.symbolPath() &&
+        0 <= postorder && (size_t) postorder < vec.size())
+      return true;
+
+    return false;
+  }
+  bool hasAst(const uast::AstNode* ast) const {
+    return ast != nullptr && hasId(ast->id());
+  }
+
+  ResolvedExpression& byId(const ID& id) {
+    assert(hasId(id));
+    auto postorder = id.postOrderId();
     return vec[postorder];
   }
   const ResolvedExpression& byId(const ID& id) const {
+    assert(hasId(id));
     auto postorder = id.postOrderId();
-    assert(0 <= postorder && (size_t) postorder < vec.size());
     return vec[postorder];
   }
   ResolvedExpression& byAst(const uast::AstNode* ast) {
@@ -1081,6 +1112,26 @@ class ResolutionResultByPostorderID {
   }
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byId(ast->id());
+  }
+  ResolvedExpression* byIdOrNull(const ID& id) {
+    if (hasId(id)) {
+      auto postorder = id.postOrderId();
+      return &vec[postorder];
+    }
+    return nullptr;
+  }
+  const ResolvedExpression* byIdOrNull(const ID& id) const {
+    if (hasId(id)) {
+      auto postorder = id.postOrderId();
+      return &vec[postorder];
+    }
+    return nullptr;
+  }
+  ResolvedExpression* byAstOrNull(const uast::AstNode* ast) {
+    return byIdOrNull(ast->id());
+  }
+  const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    return byIdOrNull(ast->id());
   }
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
@@ -1126,7 +1177,7 @@ class ResolvedFunction {
                    ResolutionResultByPostorderID resolutionById,
                    PoiInfo poiInfo)
       : signature_(signature), returnIntent_(returnIntent),
-        resolutionById_(resolutionById), poiInfo_(poiInfo) {}
+        resolutionById_(std::move(resolutionById)), poiInfo_(poiInfo) {}
 
   /** The type signature */
   const TypedFnSignature* signature() const { return signature_; }
@@ -1378,6 +1429,52 @@ class ResolvedFields {
     }
     context->markPointer(type_);
   }
+};
+
+class ResolvedParamLoop {
+  public:
+    using LoopBodies = std::vector<ResolutionResultByPostorderID>;
+
+  private:
+    const uast::For* loop_;
+    LoopBodies loopBodies_;
+
+  public:
+    ResolvedParamLoop(const uast::For* loop) : loop_(loop) { }
+
+    const uast::For* loop() const {
+      return loop_;
+    }
+
+    const LoopBodies& loopBodies() const {
+      return loopBodies_;
+    }
+
+    void setLoopBodies(const LoopBodies& loopBodies) {
+      loopBodies_ = loopBodies;
+    }
+
+    void mark(Context* context) const {
+      for (auto postorder : loopBodies_) {
+        postorder.mark(context);
+      }
+      context->markPointer(loop_);
+    }
+
+    bool operator==(const ResolvedParamLoop& other) const {
+      return loop_ == other.loop_ &&
+             loopBodies_ == other.loopBodies_;
+    }
+    bool operator!=(const ResolvedParamLoop& other) const {
+      return !(*this == other);
+    }
+    void swap(ResolvedParamLoop& other) {
+      std::swap(loop_, other.loop_);
+      loopBodies_.swap(other.loopBodies_);
+    }
+    static bool update(ResolvedParamLoop& keep, ResolvedParamLoop& addin) {
+      return defaultUpdate(keep, addin);
+    }
 };
 
 /** See the documentation for types::CompositeType::SubstitutionsMap. */

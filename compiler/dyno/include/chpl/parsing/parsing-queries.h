@@ -21,9 +21,9 @@
 #define CHPL_PARSING_PARSING_QUERIES_H
 
 #include "chpl/parsing/FileContents.h"
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ID.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ID.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"
@@ -79,9 +79,24 @@ bool hasFileText(Context* context, const std::string& path);
   This query reads a file (with the fileText query) and then parses it.
 
   Any errors encountered will be reported to the Context.
- */
-const uast::BuilderResult& parseFile(Context* context, UniqueString path);
 
+  The 'parentSymbolPath' is relevant for submodules that are in separate files
+  with 'module include'. When parsing the included module for a 'module
+  include', 'parentSymbolPath' should match the symbolPath of the ID of the
+  module containing the 'module include' statement.
+
+  When parsing a toplevel module, 'parentSymbolPath' should be "".
+ */
+const uast::BuilderResult&
+parseFileToBuilderResult(Context* context, UniqueString path,
+                         UniqueString parentSymbolPath);
+
+/**
+ Like parseFileToBuilderResult but parses whatever file contained 'id'.
+ Useful for projection queries.
+ */
+const uast::BuilderResult*
+parseFileContainingIdToBuilderResult(Context* context, ID id);
 
 /**
   A function for counting the tokens when parsing
@@ -92,7 +107,8 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats);
 
 // These functions can't return the Location for a Comment
 // because Comments don't have IDs. If Locations for Comments are needed,
-// instead use the astToLocation field from the result of parseFile.
+// instead use the astToLocation field from the result of
+// parseFileToBuilderResult.
 
 /**
  This query returns the Location where a particular ID appeared.
@@ -109,8 +125,22 @@ const Location& locateAst(Context* context, const uast::AstNode* ast);
 using ModuleVec = std::vector<const uast::Module*>;
 /**
  This query returns a vector of parsed modules given a file path.
+
+  The 'parentSymbolPath' is relevant for submodules that are in separate files
+  with 'module include'. When parsing the included module for a 'module
+  include', 'parentSymbolPath' should match the symbolPath of the ID of the
+  module containing the 'module include' statement.
+
+  When parsing a toplevel module, 'parentSymbolPath' should be "".
+
  */
-const ModuleVec& parse(Context* context, UniqueString path);
+const ModuleVec& parse(Context* context, UniqueString path,
+                       UniqueString parentSymbolPath);
+
+/**
+ Convenience function to parse a file with parentSymbolPath="".
+ */
+const ModuleVec& parseToplevel(Context* context, UniqueString path);
 
 /**
   Return the current module search path.
@@ -189,6 +219,13 @@ bool idIsInBundledModule(Context* context, ID id);
 const uast::Module* getToplevelModule(Context* context, UniqueString name);
 
 /**
+ This query parses a submodule for 'include submodule'.
+ Returns nullptr if no such file can be found.
+ */
+const uast::Module* getIncludedSubmodule(Context* context,
+                                         ID includeModuleId);
+
+/**
  Returns the uast node with the given ID.
  */
 const uast::AstNode* idToAst(Context* context, ID id);
@@ -207,6 +244,12 @@ bool idIsParenlessFunction(Context* context, ID id);
  Returns the parent ID given an ID
  */
 const ID& idToParentId(Context* context, ID id);
+
+/**
+  Returns the ID for the module containing the given ID,
+  or the empty ID when given a toplevel module.
+ */
+ID idToParentModule(Context* context, ID id);
 
 /**
  Given an ID that represents a Function, get the declared return

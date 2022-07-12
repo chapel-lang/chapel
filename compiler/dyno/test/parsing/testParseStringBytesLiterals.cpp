@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/BytesLiteral.h"
 #include "chpl/uast/CStringLiteral.h"
 #include "chpl/uast/Module.h"
@@ -167,8 +167,8 @@ int main() {
   Context context;
   Context* ctx = &context;
 
-  auto parser = Parser::build(ctx);
-  Parser* p = parser.get();
+  auto parser = Parser::createForTopLevelModule(ctx);
+  Parser* p = &parser;
 
   testSingleLiteral(p, "test0.chpl", "hi", std::string("hi"));
   testTripleLiteral(p, "test2.chpl", "hi", std::string("hi"));

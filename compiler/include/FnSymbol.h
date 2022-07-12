@@ -258,7 +258,7 @@ public:
   void                       addConstrainedType(DefExpr* def);
   void                       addInterfaceConstraint(IfcConstraint* icon);
 
-  AggregateType*             getReceiverType()                           const;
+  Type*                      getReceiverType()                           const;
 
   bool                       isIterator()                                const;
 
