@@ -1436,35 +1436,21 @@ extern type fdflag_t = c_int;
 // extern type iohints = c_int;
 
 // https://man7.org/linux/man-pages/man2/posix_fadvise.2.html
-private const IOHINT_NONE: c_int = 0;
-private const IOHINT_SEQUENTIAL: c_int = 0;
-private const IOHINT_RANDOM: c_int = 0;
-private const IOHINT_PREFETCH: c_int = 0;
-private const IOHINT_MMAP: c_int = 0;
+private const IOHINT_NONE: int = 0x0;
+private const IOHINT_SEQUENTIAL: int = 0x1;
+private const IOHINT_RANDOM: int = 0x2;
+private const IOHINT_PREFETCH: int = 0x4;
+private const IOHINT_MMAP: int = 0x8;
 
 record ioHints {
   pragma "no doc"
-  var _internal : c_int;
+  var _internal : int;
 
-  proc type none {
-    return new ioHints(IOHINT_NONE);
-  }
-
-  proc type sequential {
-    return new ioHints(IOHINT_SEQUENTIAL);
-  }
-
-  proc type random {
-    return new ioHints(IOHINT_RANDOM);
-  }
-
-  proc type prefetch {
-    return new ioHints(IOHINT_PREFETCH);
-  }
-
-  proc type mmap {
-    return new ioHints(IOHINT_MMAP);
-  }
+  proc type none { return new ioHints(IOHINT_NONE); }
+  proc type sequential { return new ioHints(IOHINT_SEQUENTIAL); }
+  proc type random { return new ioHints(IOHINT_RANDOM); }
+  proc type prefetch { return new ioHints(IOHINT_PREFETCH); }
+  proc type mmap { return new ioHints(IOHINT_MMAP); }
 }
 
 operator ioHints.|(lhs: ioHints, rhs: ioHints) {
