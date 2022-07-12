@@ -613,6 +613,21 @@ ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
   return fs;
 }
 
+// like checkIndices in build.cpp but allows more patterns
+// TODO: adjust forall builders to conform to the same requirements
+// and just use checkIndices
+static void checkIndicesForall(BaseAST* indices) {
+  if (CallExpr* call = toCallExpr(indices)) {
+    if (!call->isNamed("_build_tuple"))
+      USR_FATAL(indices, "invalid index expression");
+    for_actuals(actual, call)
+      checkIndicesForall(actual);
+  } else if (!isSymExpr(indices) && !isUnresolvedSymExpr(indices) &&
+             !isDefExpr(indices))
+    USR_FATAL(indices, "invalid index expression");
+}
+
+
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
                              BlockStmt* body, bool zippered, bool serialOK)
 {
@@ -620,7 +635,7 @@ BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
 
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
-  checkIndices(indices);
+  checkIndicesForall(indices);
 
   ForallStmt* fs = ForallStmt::buildHelper(indices, iterator, intents, body,
                                            zippered, false);
