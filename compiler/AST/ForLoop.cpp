@@ -258,7 +258,6 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   if (indices == 0) {
     VarSymbol* var = new VarSymbol("chpl__elidedIdx");
-    var->addFlag(FLAG_INDEX_VAR);
     indices = new DefExpr(var);
   }
 
