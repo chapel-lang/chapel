@@ -1,0 +1,1 @@
+../../mason-test/test/compileerror.chpl

@@ -1,0 +1,12 @@
+Skipping registry update since no dependency found in manifest file.
+
+======================================================================
+ERROR test/compilererror.chpl: compilererror
+----------------------------------------------------------------------
+test/compilererror.chpl failed to compile
+Try running 'mason test --show' for more details
+----------------------------------------------------------------------
+Ran 1 test in n seconds
+
+FAILED (errors = 1 )
+compilation failed for test/compilererror.chpl

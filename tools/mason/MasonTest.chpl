@@ -279,8 +279,9 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
-          const errMsg = test + " failed to compile\n" +
-                         "Try running 'mason test --show' for more details";
+          var errMsg = test + " failed to compile";
+          if !show then
+            errMsg += "\nTry running 'mason test --show' for more details";
           result.addError(testName, test,  errMsg);
         }
         else {
