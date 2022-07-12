@@ -23,7 +23,7 @@
 
 #include "astutil.h"
 #include "baseAST.h"
-#include "chpl/queries/ID.h"
+#include "chpl/framework/ID.h"
 #include "chpl/resolution/resolution-types.h"
 #include "flags.h"
 #include "library.h"
