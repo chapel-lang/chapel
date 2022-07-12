@@ -1,6 +1,11 @@
 module Communication {
   private use CTypes;
 
+  // TODO
+  // The order of arguments (look at MPI, SHMEM, UPC)
+  // locale ID or locale?
+
+
   inline proc get(dst: c_ptr, src: c_ptr, locId: int, numBytes: int) {
     __primitive("chpl_comm_get", dst, locId, src, numBytes);
   }
