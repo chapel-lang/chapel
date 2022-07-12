@@ -278,8 +278,8 @@ module TomlParser {
         writeln(top(source));
         writeln(source.currentLine!.A);
         // this means that the value to assign is actually multiple assignments
-        if source.currentLine!.A[2].find(',') > 0 {
-          for str in source.currentLine!.A[2].split(',') do
+        if source.currentLine!.A[2].find(';') > 0 {
+          for str in source.currentLine!.A[2].split(';') do
             source.currentLine!.A.append(str);
           source.currentLine!.A.pop(2);
           source.currentLine!.A.pop(2);
