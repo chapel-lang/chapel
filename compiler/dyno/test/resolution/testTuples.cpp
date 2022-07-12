@@ -44,22 +44,6 @@ using namespace uast;
 
 // assumes the last statement is a variable declaration for x.
 // returns the type of that.
-static QualifiedType
-parseTypeOfX(Context* context, const char* program) {
-  auto m = parseModule(context, program);
-  assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
-  assert(x);
-  assert(x->name() == "x");
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type();
-  assert(qt.type());
-
-  return qt;
-}
-
 static void test1() {
   printf("test1\n");
   Context ctx;
@@ -170,7 +154,7 @@ static void test5() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfX(context,
+  auto qt = parseQualifiedTypeOfX(context,
                 R""""(
                   record R { }
                   var r: R;
@@ -466,7 +450,7 @@ static void test16() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfX(context,
+  auto qt = parseQualifiedTypeOfX(context,
                 R""""(
                   proc helper(a: int, b: real) { return b; }
                   var tup = (1, 2.0);

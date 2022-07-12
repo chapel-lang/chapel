@@ -40,29 +40,10 @@ using namespace resolution;
 using namespace types;
 using namespace uast;
 
-// assumes the last statement is a variable declaration for x
-// with an initialization expression.
-// Returns the type of the initializer expression.
-static QualifiedType
-parseTypeOfX(Context* context, const char* program) {
-  auto m = parseModule(context, program);
-  assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
-  assert(x);
-  assert(x->name() == "x");
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type();
-  assert(qt.type());
-
-  return qt;
-}
-
 void test1() {
   Context ctx;
   auto context = &ctx;
-  auto qt = parseTypeOfX(context,
+  auto qt = parseQualifiedTypeOfX(context,
                              R""""(
                                var x: bool = true;
                              )"""");

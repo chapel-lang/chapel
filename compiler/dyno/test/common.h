@@ -39,6 +39,12 @@ const Module* parseModule(Context* context, std::string& str);
 QualifiedType
 parseTypeOfXInit(Context* context, const char* program, bool requireTypeKnown = true);
 
+QualifiedType
+parseQualifiedTypeOfX(Context* context, const char* program);
+
+const Type*
+parseTypeOfX(Context* context, const char* program);
+
 } // end namespace impl
 
 using namespace impl;
