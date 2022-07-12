@@ -1436,35 +1436,74 @@ extern type fdflag_t = c_int;
 // extern type iohints = c_int;
 
 // https://man7.org/linux/man-pages/man2/posix_fadvise.2.html
-private const IOHINT_NONE: int = 0x0;
-private const IOHINT_SEQUENTIAL: int = 0x1;
-private const IOHINT_RANDOM: int = 0x2;
-private const IOHINT_PREFETCH: int = 0x4;
-private const IOHINT_MMAP: int = 0x8;
+private const IOHINT_NONE: int = 0x00;
+private const IOHINT_SEQUENTIAL: int = 0x10;
+private const IOHINT_RANDOM: int = 0x20;
+private const IOHINT_PREFETCH: int = 0x40;
+private const IOHINT_MMAP: int = 0x80;
 
+/* A value of the :type:`iohints` type defines a set of hints about the I/O that
+  the file or channel will perform.  These hints may be used by the
+  implementation to select optimized versions of the I/O operations.
+
+  Most hints have POSIX equivalents either associated with posix_fadvise() or
+  posix_madvise().
+*/
 record ioHints {
   pragma "no doc"
   var _internal : int;
 
+  /* Defines an empty set, which provides no hints.
+  Corresponds to 'POSIX_*_NORMAL'.
+  */
   proc type none { return new ioHints(IOHINT_NONE); }
+
+ /* Suggests that the file will be accessed sequentially
+  Corresponds to 'POSIX_*_SEQUENTIAL'
+  */
   proc type sequential { return new ioHints(IOHINT_SEQUENTIAL); }
+
+  /* Suggests that the file will be accessed randomly.
+  Corresponds to 'POSIX_*_RANDOM'.
+  */
   proc type random { return new ioHints(IOHINT_RANDOM); }
+
+  /* Suggests that the runtime/OS should immediately begin prefetching the file contents.
+  Corresponds to 'POSIX_*_WILLNEED'.
+  */
   proc type prefetch { return new ioHints(IOHINT_PREFETCH); }
+
+  /* Suggests that mmap should be used to access the file contents
+  */
   proc type mmap { return new ioHints(IOHINT_MMAP); }
+
+  pragma "no doc"
+  proc to_qio_hint_t(): qio_hint_t {
+    // temporary (need to look into runtime implementation)
+    return this._internal;
+  }
 }
 
+/* Compute the bitwise-or (union) of two ioHints
+*/
 operator ioHints.|(lhs: ioHints, rhs: ioHints) {
   return new ioHints(lhs._internal | rhs._internal);
 }
 
+/* Compute the bitwise-and (intersection) of two ioHints
+*/
 operator ioHints.&(lhs: ioHints, rhs: ioHints) {
   return new ioHints(lhs._internal & rhs._internal);
 }
 
+/* Compare two ioHints for equality
+*/
 operator ioHints.==(lhs: ioHints, rhs: ioHints) {
   return lhs._internal == rhs._internal;
 }
 
+/* Compare two ioHints for inequality
+*/
 operator ioHints.!=(lhs: ioHints, rhs: ioHints) {
   return !(lhs == rhs)
 }
