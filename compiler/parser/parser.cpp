@@ -918,10 +918,13 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
 
+  // Manually report any errors collected by the builder.
+  for (auto& e : builderResult.errors())
+    if (!e.isDefaultConstructed())
+      gContext->report(e);
+
   // TODO: Do we really want to stop now? Why not parse more modules?
-  if (dynoRealizeErrors()) {
-    USR_STOP();
-  }
+  if (dynoRealizeErrors()) USR_STOP();
 
   const chpl::uast::Comment* modComment = nullptr;
   ModuleSymbol* lastModSym = nullptr;
