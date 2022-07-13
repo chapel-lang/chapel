@@ -1242,8 +1242,8 @@ module TomlReader {
       var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
-      const doubleQuotes = '(".*?")',           // ""
-            singleQuotes = "('.*?')",           // ''
+      const doubleQuotes = '("[^,]*?")',           // ""
+            singleQuotes = "('[^,]*?')",           // ''
             bracketContents = "(\\[\\w+\\])",   // [_]
             brackets = "(\\[)|(\\])",           // []
             // TODO: fix table headers
