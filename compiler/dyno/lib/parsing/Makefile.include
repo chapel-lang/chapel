@@ -22,7 +22,7 @@ ALL_SRCS += dyno/lib/parsing/*.cpp
 
 DYNO_PARSING_SRCS =                                 \
            bison-chpl-lib.cpp                       \
-           flex-chpl-lib.cpp                        \
+           generated-lexer.cpp                      \
            parsing-queries.cpp                      \
            Parser.cpp                               \
            parser-stats.cpp                         \

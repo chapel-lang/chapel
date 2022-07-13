@@ -33,7 +33,7 @@ target_sources(libdyno-obj
                # these are generated
                bison-chpl-lib.cpp
                bison-chpl-lib.h
-               flex-chpl-lib.cpp
+               generated-lexer.cpp
                flex-chpl-lib.h
 
                # these are included from the generated files
