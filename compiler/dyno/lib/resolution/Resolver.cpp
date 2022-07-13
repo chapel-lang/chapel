@@ -1915,6 +1915,7 @@ void Resolver::exit(const Dot* dot) {
   }
 
   if (receiver.type().kind() == QualifiedType::TYPE &&
+      receiver.type().type() != nullptr &&
       receiver.type().type()->isEnumType()) {
     // resolve E.x where E is an enum.
     const EnumType* enumType = receiver.type().type()->toEnumType();
