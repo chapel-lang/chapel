@@ -372,17 +372,17 @@ static void test12(void) {
   assert(br.numErrors() == 4);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test12.chpl", 2,
-                     "Cannot use out in a function returning with "
-                     "'type' intent");
+                     "Cannot use 'out' intent in a function returning "
+                     "with 'type' intent");
   assertErrorMatches(ctx, br, 1, "test12.chpl", 3,
-                     "Cannot use inout in a function returning with "
-                     "'type' intent");
+                     "Cannot use 'inout' intent in a function returning "
+                     "with 'type' intent");
   assertErrorMatches(ctx, br, 2, "test12.chpl", 4,
-                     "Cannot use out in a function returning with "
-                     "'param' intent");
+                     "Cannot use 'out' intent in a function returning "
+                     "with 'param' intent");
   assertErrorMatches(ctx, br, 3, "test12.chpl", 5,
-                     "Cannot use inout in a function returning with "
-                     "'param' intent");
+                     "Cannot use 'inout' intent in a function returning "
+                     "with 'param' intent");
 }
 
 // TODO: Cannot get the internal/bundled module stuff to work properly.

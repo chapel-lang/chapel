@@ -70,9 +70,9 @@ timer.clear();
 //
 // Analyze and output results
 //
-if validate {
-  config const epsilon = 1.e-8;
+config const epsilon = 1.e-8;
 
+if validate {
   var aj=0.0, bj=2.0, cj=2.0;
   for 0..iterations do
     aj += bj+SCALAR*cj;

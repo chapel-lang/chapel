@@ -35,7 +35,7 @@
 static void checkNamedArguments(CallExpr* call);
 static void checkManagedClassKinds(CallExpr* call);
 static void checkExplicitDeinitCalls(CallExpr* call);
-static void checkPrivateDecls(DefExpr* def);
+// static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
@@ -91,7 +91,7 @@ checkParsed() {
       }
     }
 
-    checkPrivateDecls(def);
+    // checkPrivateDecls(def);
   }
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -239,6 +239,12 @@ static void checkExplicitDeinitCalls(CallExpr* call) {
   }
 }
 
+//
+// Comment this out for now in favor of code running in 'dyno'. Eventually
+// we will remove this check, hopefully at the same time as the rest of
+// the code in this pass.
+//
+/*
 static void checkPrivateDecls(DefExpr* def) {
   if (def->sym->hasFlag(FLAG_PRIVATE) == true) {
     // The symbol has been declared private.
@@ -313,6 +319,7 @@ static void checkPrivateDecls(DefExpr* def) {
     }
   }
 }
+*/
 
 
 static void

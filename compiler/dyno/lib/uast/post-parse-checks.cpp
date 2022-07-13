@@ -343,11 +343,15 @@ bool Visitor::handleNestedDecoratorsInNew(const FnCall* node) {
   const auto defMgt = New::DEFAULT_MANAGEMENT;
   auto outerMgt = newExpr->management();
   auto innerMgt = nestedExprManagementStyle(newExpr->typeExpression());
+
+  // No collision if the outer management is empty/default.
+  if (outerMgt == defMgt) return true;
+
+  const AstNode* outerPin = newExpr;
+  const AstNode* innerPin = newExpr->typeExpression();
   auto nextCall = node->numActuals()
       ? node->actual(0)->toCall()
       : nullptr;
-  const AstNode* outerPin = newExpr;
-  const AstNode* innerPin = newExpr->typeExpression();
 
   while (innerMgt != defMgt) {
     assert(outerMgt != defMgt);
@@ -558,14 +562,15 @@ void Visitor::checkFormalsForTypeOrParamProcs(const Function* node) {
     if (auto formal = decl->toFormal()) {
       if (formal->intent() == Formal::OUT ||
           formal->intent() == Formal::INOUT) {
-        doEmitError = true;
         formalIntentStr = formal->intent() == Formal::OUT ? "out" : "inout";
+        doEmitError = true;
       }
     }
 
     if (doEmitError) {
       assert(formalIntentStr);
-      error(decl, "Cannot use %s in a function returning with '%s' intent",
+      error(decl, "Cannot use '%s' intent in a function returning "
+                  "with '%s' intent",
                   formalIntentStr,
                   returnIntentStr);
     }
