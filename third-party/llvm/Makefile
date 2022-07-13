@@ -91,7 +91,7 @@ llvm-config: FORCE
 	  exit 1; \
 	fi
 	
-	cd $(LLVM_BUILD_DIR) && cmake \
+	cd $(LLVM_BUILD_DIR) && $(CMAKE) \
 	    -DCMAKE_INSTALL_PREFIX=$(LLVM_INSTALL_DIR) \
 	    -DCMAKE_C_COMPILER='$(CC)' \
 	    -DCMAKE_CXX_COMPILER='$(CXX)' \
@@ -129,7 +129,7 @@ llvm-config-support-only: FORCE
 	  exit 1; \
 	fi
 	
-	cd $(LLVM_SUPPORT_BUILD_DIR) && cmake \
+	cd $(LLVM_SUPPORT_BUILD_DIR) && $(CMAKE) \
 	    -DCMAKE_INSTALL_PREFIX=$(LLVM_SUPPORT_INSTALL_DIR) \
 	    -DCMAKE_C_COMPILER='$(CC)' \
 	    -DCMAKE_CXX_COMPILER='$(CXX)' \
@@ -157,8 +157,8 @@ llvm-build: FORCE
 	     $(MAKE) LLVMSupport && $(MAKE) ; \
 	else \
 	  cd $(LLVM_BUILD_DIR) && \
-	     cmake --build . --target LLVMSupport && \
-	     cmake --build . --target clang ; \
+	     $(CMAKE) --build . --target LLVMSupport && \
+	     $(CMAKE) --build . --target clang ; \
 	fi
 
 llvm-build-support-only: FORCE
@@ -167,7 +167,7 @@ llvm-build-support-only: FORCE
 	     $(MAKE) LLVMSupport ; \
 	else \
 	  cd $(LLVM_SUPPORT_BUILD_DIR) && \
-	     cmake --build . --target LLVMSupport ; \
+	     $(CMAKE) --build . --target LLVMSupport ; \
 	fi
 
 llvm-install: FORCE
@@ -180,11 +180,11 @@ llvm-install: FORCE
 	     $(MAKE) install ; \
 	else \
 	  cd $(LLVM_BUILD_DIR) && \
-	     cmake --build . --target install-cmake-exports && \
-	     cmake --build . --target install-LLVMSupport && \
-	     cmake --build . --target install-llvm-headers && \
-	     cmake --build . --target install-llvm-config && \
-	     cmake --build . --target install ; \
+	     $(CMAKE) --build . --target install-cmake-exports && \
+	     $(CMAKE) --build . --target install-LLVMSupport && \
+	     $(CMAKE) --build . --target install-llvm-headers && \
+	     $(CMAKE) --build . --target install-llvm-config && \
+	     $(CMAKE) --build . --target install ; \
 	fi
 
 
@@ -198,11 +198,11 @@ llvm-install-support-only: FORCE
 	     $(MAKE) install-llvm-headers ; \
 	else \
 	  cd $(LLVM_SUPPORT_BUILD_DIR) && \
-	     cmake --build . --target install-cmake-exports && \
-	     cmake --build . --target install-LLVMSupport && \
-	     cmake --build . --target install-LLVMDemangle && \
-	     cmake --build . --target install-llvm-config && \
-	     cmake --build . --target install-llvm-headers ; \
+	     $(CMAKE) --build . --target install-cmake-exports && \
+	     $(CMAKE) --build . --target install-LLVMSupport && \
+	     $(CMAKE) --build . --target install-LLVMDemangle && \
+	     $(CMAKE) --build . --target install-llvm-config && \
+	     $(CMAKE) --build . --target install-llvm-headers ; \
 	fi
 
 
