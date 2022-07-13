@@ -301,30 +301,6 @@ proc chplVersionError(brick:borrowed Toml) {
   }
 }
 
-proc getGitDeps(root: unmanaged Toml) {
-  // name of package mapped to the URL
-  var urls: map(string, string);
-  for key in root["dependencies"]!.A {
-    // commas currently don't play with TOML files,
-    // so cast to string rather than trying to search
-    // through the TOML
-    var tmp = root["dependencies"]![key]!:string;
-
-    // TODO: When supporting additional things, split
-    // on comma and then use that to determine the
-    // branch, etc.
-    
-    if tmp.find("git") != -1 {
-      var start = tmp.find("\"");
-      var end = tmp.rfind("\"");
-      var val = tmp[(start+1)..(end-1)];
-      urls[key] = val;
-    }
-  }
-  
-  return urls;
-}
-
 /* Responsible for creating the dependency tree
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
@@ -432,19 +408,22 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
   return depTree;
 }
 
-private proc addGitDeps(depTree: unmanaged Toml, ref gitDeps: map(string, string)) {
+private proc addGitDeps(depTree: unmanaged Toml, ref gitDeps) {
   for key in gitDeps {
-    if !depTree.pathExists(key) {
+    if !depTree.pathExists(key[0]) {
       var dt: domain(string);
       var depTbl: [dt] unmanaged Toml?;
-      depTree.set(key, depTbl);
+      depTree.set(key[0], depTbl);
+      depTree[key[0]]!.set("name", key[0]);
     }
-    depTree[key]!.set("url", gitDeps[key]);
-    depTree[key]!.set("name", key);
+    if key[1] == "git" then
+      depTree[key[0]]!.set("url", key[2]);
+    else
+      depTree[key[0]]!.set("branch", key[2]);
 
     // TODO: Fix version and chplversion
-    depTree[key]!.set("version", "0");
-    depTree[key]!.set("chplVersion", "1.27.0");
+    depTree[key[0]]!.set("version", "0");
+    depTree[key[0]]!.set("chplVersion", "1.27.0");
   }
   return depTree;
 }
@@ -548,5 +527,16 @@ private proc getDependencies(tomlTbl: unmanaged Toml) {
     }
   }
   return deps;
+}
+
+private proc getGitDeps(tomlTbl: unmanaged Toml) {
+  var gitDeps: list((string, string, unmanaged Toml?));
+  for k in tomlTbl["dependencies"]!.A {
+    for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
+      // name, branch, toml that it is set to
+      gitDeps.append((k, a, d));
+    }
+  }
+  return gitDeps;
 }
 
