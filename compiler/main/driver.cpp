@@ -357,13 +357,13 @@ static void setChplHomeDerivedVars() {
 
 static void saveChplHomeDerivedInEnv() {
   int rc;
-  envMap["CHPL_RUNTIME_LIB"] = strdup(CHPL_RUNTIME_LIB);
+  envMap["CHPL_RUNTIME_LIB"] = chplStrdup(CHPL_RUNTIME_LIB);
   rc = setenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_LIB");
-  envMap["CHPL_RUNTIME_INCL"] = strdup(CHPL_RUNTIME_INCL);
+  envMap["CHPL_RUNTIME_INCL"] = chplStrdup(CHPL_RUNTIME_INCL);
   rc = setenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_INCL");
-  envMap["CHPL_THIRD_PARTY"] = strdup(CHPL_THIRD_PARTY);
+  envMap["CHPL_THIRD_PARTY"] = chplStrdup(CHPL_THIRD_PARTY);
   rc = setenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
 }
@@ -443,7 +443,7 @@ static void setupChplHome(const char* argv0) {
       if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
       if( isMaybeChplHome(TEST_HOME) ) {
-        guess = strdup(TEST_HOME);
+        guess = chplStrdup(TEST_HOME);
 
         installed = true;
       }
@@ -595,7 +595,7 @@ static void setEnv(const ArgumentDescription* desc, const char* arg) {
     std::string env = std::string(desc->env);
     // Cut off underscore prefix so we are left with variable name
     env.erase(0, 1);
-    envMap[env] = strdup(arg);
+    envMap[env] = chplStrdup(arg);
 }
 
 static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unused) {
@@ -700,7 +700,7 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
   // 1. name=value -- set the config "name" to "value"
   // 2. name       -- set the config "name" to 'true'
 
-  char *name = strdup(arg_unused);
+  char *name = chplStrdup(arg_unused);
   char *value;
   value = strstr(name, "=");
   if (value) {
@@ -1397,10 +1397,10 @@ static void populateEnvMap() {
 
     // If key does not have a value in envMap, map it to the parsed value
     if (envMap.find(key) == envMap.end()) {
-      envMap[key] = strdup(value.c_str());
+      envMap[key] = chplStrdup(value.c_str());
     } else if (useDefaultEnv(key)) {
       envMap.erase(key);
-      envMap[key] = strdup(value.c_str());
+      envMap[key] = chplStrdup(value.c_str());
     }
 
     output.erase(0, linePos + lineDelimiter.length());

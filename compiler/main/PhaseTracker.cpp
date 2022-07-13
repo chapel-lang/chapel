@@ -283,7 +283,7 @@ Phase::Phase(const char*            name,
              PhaseTracker::SubPhase subPhase,
              unsigned long          startTime)
 {
-  mName      = (subPhase == PhaseTracker::kPrimary) ? strdup(name) : 0;
+  mName      = (subPhase == PhaseTracker::kPrimary) ? chplStrdup(name) : 0;
   mPassId    = passId;
   mSubPhase  = subPhase;
   mStartTime = startTime;

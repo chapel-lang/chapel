@@ -264,7 +264,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
    * stdout must be in a state such that the next character fprintf will print
    * is in startCol.
    */
-  char*       textDup   = strdup(text);
+  char*       textDup   = chplStrdup(text);
   const char* delims    = " ";
   char*       savePtr   = 0;
 
@@ -313,7 +313,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
 ************************************** | *************************************/
 
 void init_args(ArgumentState* state, const char* argv0) {
-  char* name = strdup(argv0);
+  char* name = chplStrdup(argv0);
 
   if (char* firstSlash = strrchr(name, '/')) {
     name  = firstSlash + 1;
@@ -528,7 +528,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
   char**               argv     = argvBase;
 
   for (int i = 0; i < argc; i++) {
-    argvSave[i] = strdup(aargv[i]);
+    argvSave[i] = chplStrdup(aargv[i]);
   }
 
   argvSave[argc] = NULL;
@@ -630,7 +630,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
         state->file_argument,
         sizeof(char*) * (state->nfile_arguments + 2));
 
-      state->file_argument[state->nfile_arguments++] = strdup(*argv);
+      state->file_argument[state->nfile_arguments++] = chplStrdup(*argv);
       state->file_argument[state->nfile_arguments]   = NULL;
     }
   }
@@ -741,7 +741,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
   const char* nodashes = flag;
   // skip past any '-' characters at the start of flag
   while (*nodashes == '-') nodashes++;
-  char* usearg = strdup(nodashes);
+  char* usearg = chplStrdup(nodashes);
   // Chop off the string after '='
   for (int i = 0; usearg[i]; i++) {
     if (usearg[i] == '=')

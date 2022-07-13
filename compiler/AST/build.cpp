@@ -287,7 +287,7 @@ SymExpr* buildRealLiteral(const char* pch) {
 
 
 SymExpr* buildImagLiteral(const char* pch) {
-  char* str = strdup(pch);
+  char* str = chplStrdup(pch);
   str[strlen(pch)-1] = '\0';
   SymExpr* se = new SymExpr(new_ImagSymbol(str));
   free(str);

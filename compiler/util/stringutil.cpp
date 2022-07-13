@@ -373,7 +373,7 @@ std::string ltrimAllLines(std::string s) {
  */
 void splitString(const std::string& s, std::vector<std::string>& vec, const char* delimiters) {
   if (!s.empty()) {
-    char* cStr = strdup(s.c_str());
+    char* cStr = chplStrdup(s.c_str());
     char* arg = strtok(cStr, delimiters);
     while (arg) {
       if (strlen(arg) > 0) {

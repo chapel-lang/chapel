@@ -74,7 +74,7 @@ std::vector<const char*>   libFiles;
 static const char* intDirName        = NULL;
 
 static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
-  char* dirString = strdup(pathVar);
+  char* dirString = chplStrdup(pathVar);
 
   char* colon;              // used to refer to ':'s in dirString
 
@@ -169,11 +169,11 @@ const char* makeTempDir(const char* dirPrefix) {
   } else {
     userid = passwdinfo->pw_name;
   }
-  char* myuserid = strdup(userid);
+  char* myuserid = chplStrdup(userid);
   removeSpacesBackslashesFromString(myuserid);
 
   const char* tmpDir = astr(tmpdirprefix, myuserid, tmpdirsuffix);
-  char* tmpDirMut = strdup(tmpDir);
+  char* tmpDirMut = chplStrdup(tmpDir);
   char* dirRes = mkdtemp(tmpDirMut);
 
   if (dirRes == NULL) {
@@ -1221,7 +1221,7 @@ char* findProgramPath(const char *argv0)
   path = getenv("PATH");
   if( path == NULL ) return NULL;
 
-  path = strdup(path);
+  path = chplStrdup(path);
   if( path == NULL ) return NULL;
 
   // Go through PATH changing ':' into '\0'
