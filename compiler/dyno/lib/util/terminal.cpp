@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+// needed to get fileno on some systems
+#define _POSIX_C_SOURCE 200809L
 
 #include "chpl/util/terminal.h"
 #include <cstring>
