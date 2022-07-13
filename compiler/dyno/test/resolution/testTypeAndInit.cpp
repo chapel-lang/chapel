@@ -40,7 +40,7 @@ using namespace resolution;
 using namespace types;
 using namespace uast;
 
-void test1() {
+static void test1() {
   Context ctx;
   auto context = &ctx;
   auto qt = resolveQualifiedTypeOfX(context,
