@@ -586,7 +586,7 @@ std::string runCommand(std::string& command) {
   std::string result = "";
 
   // Call command
-  FILE* pipe = popen(command.c_str(), "r");
+  FILE* pipe = chplPopen(command.c_str(), "r");
   if (!pipe) {
     USR_FATAL("running %s", command.c_str());
   }
@@ -598,7 +598,7 @@ std::string runCommand(std::string& command) {
     }
   }
 
-  if (pclose(pipe)) {
+  if (chplPclose(pipe)) {
     USR_FATAL("'%s' did not run successfully", command.c_str());
   }
 
@@ -952,7 +952,7 @@ const char* filenameToModulename(const char* filename) {
 
 void readArgsFromCommand(std::string cmd, std::vector<std::string>& args) {
   // Gather information from compileline into clangArgs.
-  if(FILE* fd = popen(cmd.c_str(),"r")) {
+  if(FILE* fd = chplPopen(cmd.c_str(),"r")) {
     int ch;
     // Read arguments.
     while( (ch = getc(fd)) != EOF ) {
@@ -970,7 +970,7 @@ void readArgsFromCommand(std::string cmd, std::vector<std::string>& args) {
       // First argument is the clang install directory...
       args.push_back(arg);
     }
-    pclose(fd);
+    chplPclose(fd);
   }
 }
 

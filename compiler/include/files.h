@@ -112,9 +112,18 @@ void expandInstallationPaths(std::vector<std::string>& args);
 
 bool isDirectory(const char* path);
 
-char*       chplRealPath(const char* path);
 char*       dirHasFile(const char* dir, const char* file);
 char*       findProgramPath(const char* argv0);
 bool        isSameFile(const char* pathA, const char* pathB);
+
+// portability wrappers since these require some special defines
+// to find them on some systems
+
+// same as realpath
+char* chplRealPath(const char* path);
+// same as popen
+FILE *chplPopen(const char *command, const char *type);
+// same as pclose
+int chplPclose(FILE *stream);
 
 #endif

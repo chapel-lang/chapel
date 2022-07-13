@@ -75,3 +75,11 @@ char* chplRealPath(const char* path) {
   free(buf);
   return ret;
 }
+
+FILE *chplPopen(const char *command, const char *type) {
+  return popen(command, type);
+}
+
+int chplPclose(FILE *stream) {
+  return pclose(stream);
+}
