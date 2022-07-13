@@ -498,6 +498,16 @@ all:
   03/14/22:
     - text: LLVM 13 upgrade
       config: chapcs
+  06/14/22:
+    - text: Improve BlockDist scan scalability (#19968)
+      config: 16-node-cs, 16-node-cs-hdr
+  06/29/22:
+    - text: Further reduce communication for BlockDist scans (#20100)
+      config: 16-node-cs, 16-node-cs-hdr
+  07/09/22:
+    - text: Bring block dist scan performance on par with local DR arrays (#19999)
+      config: 16-node-cs, 16-node-cs-hdr
+
 
 # End all
 
@@ -1087,6 +1097,9 @@ knucleotide: &knucleotide-base
     - Optimize ASCII strings (#16092)
   09/03/21:
     - Two little string optimizations (#18323)
+  06/08/22:
+    - IO Module readLine Refactor (#19937)
+
 knucleotide-submitted:
   <<: *knucleotide-base
 
@@ -2293,6 +2306,10 @@ arkouda: &arkouda-base
     - Use swap operator in radix sort instead of assignment operator (Bears-R-Us/arkouda#1419)
   06/07/22:
     - Closes 1455 pep8 formatting tests (Bears-R-Us/arkouda#1458)
+  07/02/22:
+    - Upgrade Arkouda release testing from 1.25.1 to 1.26.0 (#20151)
+  07/07/22:
+    - Upgrade Arkouda release testing from 1.26.0 to 1.27.0 (#20168)
 
 
 arkouda-string:
