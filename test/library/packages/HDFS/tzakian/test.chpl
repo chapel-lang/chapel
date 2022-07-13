@@ -1,4 +1,5 @@
-use HDFS, Sys, HDFStools, IO;
+use HDFS, HDFStools, IO;
+use OS.POSIX;
 
 bar("default");
 
@@ -25,5 +26,3 @@ proc bar(nm: string) {
   writer.close();
   outfile.close();
 }
-
-
