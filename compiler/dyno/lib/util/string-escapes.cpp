@@ -19,6 +19,8 @@
 
 #include "chpl/util/string-escapes.h"
 
+#include <cctype>
+
 namespace chpl {
 
 bool stringContainsZeroBytes(const char* s, size_t len) {
@@ -35,7 +37,7 @@ static char toHex(char c) {
 }
 
 static void addCharEscapeNonprint(std::string& s, char c) {
-  int escape = !(isascii(c) && isprint(c));
+  int escape = !(0 <= c && c <= 127) || !isprint(c);
   //
   // If the previous character sequence was a hex escape and the current
   // character is a hex digit, escape it also.  Otherwise, conforming
