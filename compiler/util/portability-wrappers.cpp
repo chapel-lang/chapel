@@ -18,6 +18,19 @@
  * limitations under the License.
  */
 
+// This file exists to get some C/POSIX functions that sometimes
+// require special #defines in order to access them.
+
+// get setenv
+#define _POSIX_C_SOURCE 200809L
+
+// get strdup
+#ifdef __STDC_ALLOC_LIB__
+#define __STDC_WANT_LIB_EXT2__ 1
+#else
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 // Get realpath on linux or cygwin
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
@@ -29,12 +42,29 @@
 #include "files.h"
 #include "stringutil.h"
 
-#include <limits.h>
-#include <stdlib.h>
+#include <climits>
+#include <cstdlib>
+#include <cstring>
 
-// would just use realpath, but it is not supported on all platforms.
-char* chplRealPath(const char* path)
-{
+// setenv itself isn't in C++14, so define a portability wrapper.
+int chplSetenv(const char *name, const char *value, int overwrite) {
+  return setenv(name, value, overwrite);
+}
+
+// strdup itself isn't in C++14 (but it is in C23 so it might get there
+// eventually) so define a portability wrapper.
+char* chplStrdup(const char* s) {
+  return strdup(s);
+}
+
+// strtok_r isn't in C++14 but it is available from POSIX
+char *chplStrtokR(char *str, const char *delim, char **saveptr) {
+  return strtok_r(str, delim, saveptr);
+}
+
+// would just use realpath, but it is not supported on all platforms
+// without some special defines, so define a portability wrapper.
+char* chplRealPath(const char* path) {
   // We would really rather use
   // char* got = realpath(path, NULL);
   // but that doesn't work on some Mac OS X versions.

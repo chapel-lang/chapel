@@ -18,12 +18,11 @@
 
 UTIL_SRCS = \
 	astlocs.cpp \
-	chplRealPath.cpp \
-	chplStrdup.cpp \
 	exprAnalysis.cpp \
 	files.cpp \
 	misc.cpp \
 	mysystem.cpp \
+	portability-wrappers.cpp \
 	stringutil.cpp \
 	timer.cpp \
 	tmpdirname.cpp

@@ -358,13 +358,13 @@ static void setChplHomeDerivedVars() {
 static void saveChplHomeDerivedInEnv() {
   int rc;
   envMap["CHPL_RUNTIME_LIB"] = chplStrdup(CHPL_RUNTIME_LIB);
-  rc = setenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, 1);
+  rc = chplSetenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_LIB");
   envMap["CHPL_RUNTIME_INCL"] = chplStrdup(CHPL_RUNTIME_INCL);
-  rc = setenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, 1);
+  rc = chplSetenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_INCL");
   envMap["CHPL_THIRD_PARTY"] = chplStrdup(CHPL_THIRD_PARTY);
-  rc = setenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, 1);
+  rc = chplSetenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
 }
 
@@ -462,7 +462,7 @@ static void setupChplHome(const char* argv0) {
       // Determined exe path, but don't have a env var set
       strncpy(CHPL_HOME, guess, FILENAME_MAX);
       // Also need to setenv in this case.
-      rc = setenv("CHPL_HOME", guess, 0);
+      rc = chplSetenv("CHPL_HOME", guess, 0);
       if( rc ) USR_FATAL("Could not setenv CHPL_HOME");
     }
   }
@@ -520,7 +520,7 @@ static void setupChplHome(const char* argv0) {
 
       // Don't overwrite CHPL_CONFIG so that a user-specified
       // one would be left alone.
-      rc = setenv("CHPL_CONFIG", CHPL_CONFIG, 0);
+      rc = chplSetenv("CHPL_CONFIG", CHPL_CONFIG, 0);
       if( rc ) USR_FATAL("Could not setenv CHPL_CONFIG");
     }
   }
@@ -536,7 +536,7 @@ static void setupChplLLVM(void) {
   // set CHPL_LLVM to 'none' if it isn't already set and we were built
   // without it
   if (getenv("CHPL_LLVM") == NULL) {
-    if (setenv("CHPL_LLVM", "none", 0) != 0) {
+    if (chplSetenv("CHPL_LLVM", "none", 0) != 0) {
       INT_FATAL("Problem setting CHPL_LLVM");
     }
     compilerSetChplLLVM = true;
@@ -757,7 +757,7 @@ static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
     envMap["CHPL_TARGET_COMPILER"] = "llvm";
     // set the environment variable for follow-on processes including
     // any printchplenv invocation
-    int rc = setenv("CHPL_TARGET_COMPILER", "llvm", 1);
+    int rc = chplSetenv("CHPL_TARGET_COMPILER", "llvm", 1);
     if( rc ) USR_FATAL("Could not setenv CHPL_TARGET_COMPILER");
   } else {
     fNoLlvmCodegen = true;

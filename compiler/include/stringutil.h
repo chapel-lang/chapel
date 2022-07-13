@@ -98,4 +98,10 @@ static inline bool isInitialUTF8Byte(unsigned char c)
 // just like the usual strdup but this one helps with portability
 char* chplStrdup(const char* s);
 
+// just like the usual setenv but this one helps with portability
+int chplSetenv(const char *name, const char *value, int overwrite);
+
+// just like strtok_r but this one helps with portability
+char *chplStrtokR(char *str, const char *delim, char **saveptr);
+
 #endif

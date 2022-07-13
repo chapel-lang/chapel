@@ -268,7 +268,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
   const char* delims    = " ";
   char*       savePtr   = 0;
 
-  char*       word      = strtok_r(textDup, delims, &savePtr);
+  char*       word      = chplStrtokR(textDup, delims, &savePtr);
 
   int         spaceLeft = 1 + endCol - startCol;
   bool        first     = true;
@@ -298,7 +298,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
       }
     }
 
-    word = strtok_r(NULL, delims, &savePtr);
+    word = chplStrtokR(NULL, delims, &savePtr);
   }
 
   free(textDup);
