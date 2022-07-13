@@ -18,16 +18,6 @@
  * limitations under the License.
  */
 
-// Get realpath on linux
-#ifdef __linux__
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-#ifndef _XOPEN_SOURCE_EXTENDED
-#define _XOPEN_SOURCE_EXTENDED 1
-#endif
-#endif
-
 #include "files.h"
 
 #include "beautify.h"
@@ -1061,21 +1051,6 @@ bool isDirectory(const char* path)
 
   return false;
 }
-
-// would just use realpath, but it is not supported on all platforms.
-char* chplRealPath(const char* path)
-{
-  // We would really rather use
-  // char* got = realpath(path, NULL);
-  // but that doesn't work on some Mac OS X versions.
-  char* buf = (char*) malloc(PATH_MAX);
-  char* got = realpath(path, buf);
-  char* ret = NULL;
-  if( got ) ret = strdup(got);
-  free(buf);
-  return ret;
-}
-
 
 // Returns a "real path" to the file in the directory,
 // or NULL if the file did not exist.

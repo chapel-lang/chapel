@@ -18,6 +18,7 @@
 
 UTIL_SRCS = \
 	astlocs.cpp \
+	chplRealPath.cpp \
 	chplStrdup.cpp \
 	exprAnalysis.cpp \
 	files.cpp \
