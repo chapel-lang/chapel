@@ -199,8 +199,8 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
       command += depSrc;
     }
 
-    for (_, name, version) in gitList {
-      var gitDepSrc = ' ' + gitDepPath + name + "-" + version + '/src/' + name + ".chpl";
+    for (_, name, branch) in gitList {
+      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
       command += gitDepSrc;
     }
 
@@ -252,10 +252,7 @@ proc genSourceList(lockFile: borrowed Toml) {
           // TODO: check if the branch is specified
           var branch = toml["branch"]!.s;
           gitList.append((url, name, branch));
-        } else {
-          writeln("frowns today :(");
         }
-        
       }
     }
   }
@@ -332,9 +329,19 @@ proc getGitCode(gitListArg: list(3*string), show) {
         getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
         checkout = "git checkout " + branch;
       }
-      writeln("Command: ", getDependency);
       runCommand(getDependency);
       gitC(destination, checkout);
+    } else {
+      writeln("Pulling latest changes for " + nameVers + "...");
+
+      var checkoutBranch = "git checkout -q " + branch;
+      var pullLatest = "git pull -q origin " + branch;
+      if show {
+        checkoutBranch = "git checkout " + branch;
+        pullLatest = "git pull origin " + branch;
+      }
+      gitC(destination, checkoutBranch);
+      gitC(destination, pullLatest);
     }
   }
 }
