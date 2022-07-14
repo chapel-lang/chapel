@@ -1,6 +1,8 @@
 # Where to find images
 
-* You can use singularity search to look for containers
+* You can use 'singularity search' to look for containers;
+  and see default library is https://cloud.sylabs.io/library/library/
+  e.g. https://cloud.sylabs.io/library/library/default/debian
 * You can find docker containers on https://hub.docker.com
 
 # Notes on writing .def files
@@ -25,8 +27,8 @@ singularity build --fakeroot singularity.sif singularity.def
 
 #To create an image for experimenting with where you can install
 # more packages etc, use this:
-# singularity build --sandbox --fakeroot singularity.sif singularity.def
-
+#   sudo singularity build --sandbox singularity.sif singularity.def
+#   sudo singularity shell --writable singularity.sif
 
 ## to run the runscript
 singularity run singularity.sif
