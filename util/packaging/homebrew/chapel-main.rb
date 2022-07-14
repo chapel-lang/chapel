@@ -1,6 +1,7 @@
 class Chapel < Formula
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
+  head "https://github.com/chapel-lang/chapel.git", branch: "main"
   url "https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz"
   sha256 "558b1376fb7757a5e1f254c717953f598a3e89850c8edd1936b8d09c464f3e8b"
   license "Apache-2.0"
@@ -14,6 +15,7 @@ class Chapel < Formula
     sha256 x86_64_linux:   "c4ccfadfa28118b70d76a324310dc17be9f351011490c7c29eb6dca5eb7ab093"
   end
 
+  depends_on "cmake"
   depends_on "gmp"
   # `chapel` scripts use python on PATH (e.g. checking `command -v python3`),
   # so it needs to depend on the currently linked Homebrew Python version.
