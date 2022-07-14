@@ -674,9 +674,12 @@ def get_clang_prgenv_args():
 
 # Filters out C++ compilation flags from llvm-config.
 # The flags are passed as a list of strings.
-# Returns a list of strings containing filtered flags.
+# Returns a list of strings containing the kept flags.
 def filter_llvm_config_flags(flags):
     ret = [ ]
+
+    platform_val = chpl_platform.get('host')
+    cygwin = platform_val.startswith('cygwin')
 
     for flag in flags:
         if (flag == '-DNDEBUG' or
@@ -684,7 +687,8 @@ def filter_llvm_config_flags(flags):
             flag == '-gsplit-dwarf' or
             flag.startswith('-O') or
             flag == '-pedantic' or
-            flag == '-Wno-class-memaccess'):
+            flag == '-Wno-class-memaccess' or
+            (cygwin and flag == '-std=c++14')):
             continue # filter out these flags
 
         if flag.startswith('-W'):
