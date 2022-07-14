@@ -249,7 +249,9 @@ proc genSourceList(lockFile: borrowed Toml) {
           //       we can just put it there and then do the
           //       transform from the toml -> lock file?
           var url = toml["url"]!.s;
-          gitList.append((url, name, version));
+          // TODO: check if the branch is specified
+          var branch = toml["branch"]!.s;
+          gitList.append((url, name, branch));
         } else {
           writeln("frowns today :(");
         }
@@ -315,9 +317,9 @@ proc getGitCode(gitListArg: list(3*string), show) {
   var gitList = gitListArg.toArray();
 
   var baseDir = MASON_HOME +'/git/';
-  forall (srcURL, name, version) in gitList {
+  forall (srcURL, name, branch) in gitList {
     // TODO: This shouldn't be based on version, but branch
-    const nameVers = name + "-" + version;
+    const nameVers = name + "-" + branch;
     const destination = baseDir + nameVers;
     // TODO: probably want to pull latest or something if it's main branch?
     if !depExists(nameVers, '/git/') {
@@ -325,10 +327,10 @@ proc getGitCode(gitListArg: list(3*string), show) {
       // TODO: We will want to checkout the revision requested
       var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
       // TODO: update this from hardcode master
-      var checkout = "git checkout -q master";
+      var checkout = "git checkout -q " + branch;
       if show {
         getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
-        checkout = "git checkout master";
+        checkout = "git checkout " + branch;
       }
       writeln("Command: ", getDependency);
       runCommand(getDependency);
