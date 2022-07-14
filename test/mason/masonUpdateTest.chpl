@@ -33,5 +33,4 @@ proc main() {
   remove(lf);
   temp.close();
   lock.close();
-  delete lockFile;
 }
