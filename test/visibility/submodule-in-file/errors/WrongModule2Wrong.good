@@ -1,1 +1,2 @@
+WrongModule2Wrong.chpl:1: In module 'WrongModule2':
 WrongModule2Wrong.chpl:2: error: Cannot include modules from a module whose name doesn't match its filename
