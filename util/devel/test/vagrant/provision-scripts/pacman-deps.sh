@@ -12,7 +12,7 @@ pacman --noconfirm -Syu
 pacman --noconfirm -S base-devel
 
 # install additional packages
-pacman --noconfirm -S cmake git
+pacman --noconfirm -S cmake git python
 
 # and LLVM stuff, this installs LLVM 13 as of 202205 version
 pacman --noconfirm -S llvm clang

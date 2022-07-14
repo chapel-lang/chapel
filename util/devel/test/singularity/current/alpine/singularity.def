@@ -1,0 +1,11 @@
+BootStrap: library
+From: alpine:latest
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/apk-deps.sh
+
+%runscript
+    ../../provision-scripts/run.sh

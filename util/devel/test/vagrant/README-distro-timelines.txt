@@ -33,7 +33,7 @@ Debian -- see https://wiki.debian.org/DebianReleases
 x 6 "squeeze"  long-term support until Feb 2016
 x 7 "wheezy"   long-term support until May 2018
 x 8 "jessie"   long-term support until May 2020
-  9 "stretch"  long-term support until Jun 2022
+x 9 "stretch"  long-term support until Jun 2022
  10 "buster"   long-term support until Jun 2024
  11 "bullseye" long-term support until Jun 2026
 
