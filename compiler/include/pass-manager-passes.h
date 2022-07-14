@@ -81,6 +81,36 @@ class AutoDestroyLoopExprTemps: public PassT<CallExpr*> {
   void process(CallExpr* call) override;
 };
 
+class InsertDestructorCalls: public PassT<CallExpr*> {
+  public:
+    bool shouldProcess(CallExpr* fn) override;
+    void process(CallExpr* fn) override;
+};
+
+class LowerAutoDestroyRuntimeType: public PassT<CallExpr*> {
+  public:
+    bool shouldProcess(CallExpr* fn) override;
+    void process(CallExpr* fn) override;
+};
+
+class InsertCopiesForYields: public PassT<CallExpr*> {
+  public:
+    bool shouldProcess(CallExpr* fn) override;
+    void process(CallExpr* fn) override;
+};
+
+class CallDestructorsCallCleanup: public PassT<CallExpr*> {
+  public:
+    bool shouldProcess(CallExpr* fn) override;
+    void process(CallExpr* fn) override;
+};
+
+class RemoveElidedOnBlocks: public PassT<BlockStmt*> {
+  public:
+    bool shouldProcess(BlockStmt* fn) override;
+    void process(BlockStmt* fn) override;
+};
+
 /**
   Adjust assignment of POD types to perform bitcopies.
 */
