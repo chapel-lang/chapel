@@ -18,7 +18,9 @@
 add_executable(chpldoc "chpldoc.cpp")
 # TODO: this is temporary so I could use std::filesystem
 set_property(TARGET chpldoc PROPERTY CXX_STANDARD 17)
-target_link_libraries(chpldoc $<TARGET_OBJECTS:libdyno-obj>)
+# TODO: Using LLVM here links against the shared library.
+# Linking against LLVMSupport (which grabs libLLVMSupport.a) was not working
+target_link_libraries(chpldoc LLVM $<TARGET_OBJECTS:libdyno-obj>)
 target_include_directories(chpldoc PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
