@@ -156,6 +156,11 @@ def check_llvm_packages(llvm_config):
             clang_cpp_lib = os.path.join("/usr/lib", clang_lib_name);
             clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
 
+        if usr_include_clang_ok and not clang_cpp_lib_ok:
+            # use e.g. /usr/lib64/libclang-cpp.so
+            clang_cpp_lib = os.path.join("/usr/lib64", clang_lib_name);
+            clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
+
     s = ''
     if not llvm_include_ok:
         s = "Could not find the LLVM header {0}".format(llvm_header)
