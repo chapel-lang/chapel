@@ -7,7 +7,5 @@ key = 'value' ";
 proc main() {
   var TomlData = parseToml(str);
   writeln(TomlData);
-
-  delete TomlData;
 }
 
