@@ -31,6 +31,11 @@ class CallInfo;
 class Expr;
 class FnSymbol;
 
+#include "llvm/ADT/SmallPtrSet.h"
+
+template <typename T, size_t N=8>
+using PtrSet = llvm::SmallPtrSet<T, N>;
+
 class VisibilityInfo {
 public:
   // for proper scope traversal
@@ -58,14 +63,14 @@ void       findVisibleFunctionsAllPOIs(CallInfo&       info,
 
 void       findVisibleFunctions(CallInfo&             info,
                                 VisibilityInfo*       visInfo,
-                                std::set<BlockStmt*>* visited,
+                                PtrSet<BlockStmt*>* visited,
                                 int*                  numVisitedP,
                                 Vec<FnSymbol*>&       visibleFns);
 
 void       getMoreVisibleFunctionsOrMethods(const char*  name,
                                 CallExpr*                call,
                                 VisibilityInfo*          visInfo,
-                                std::set<BlockStmt*>*    visited,
+                                PtrSet<BlockStmt*>*    visited,
                                 Vec<FnSymbol*>&          visibleFns);
 
 void       getVisibleFunctions(const char*      name,

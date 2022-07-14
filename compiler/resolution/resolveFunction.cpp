@@ -48,6 +48,7 @@
 #include "TryStmt.h"
 #include "view.h"
 #include "WhileStmt.h"
+#include "llvm/ADT/DenseSet.h"
 
 #include <set>
 
@@ -97,8 +98,10 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 void resolveSignature(FnSymbol* fn) {
   // Don't resolve formals for concrete functions
   // more often than necessary.
-  static std::set<FnSymbol*> done;
+  static llvm::DenseSet<FnSymbol*> done;
 
+  // This gets called about 10M times in arkouda and
+  // resolve goes from 30s to 28s
   if (done.find(fn) == done.end()) {
     done.insert(fn);
 

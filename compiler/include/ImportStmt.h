@@ -28,7 +28,12 @@
 
 class ResolveScope;
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 class ImportStmt final : public VisibilityStmt {
+
+  template <typename T, size_t N = 8> using PtrSet = llvm::SmallPtrSet<T, N>;
+
  public:
   ImportStmt(BaseAST* source, bool isPrivate = true);
   ImportStmt(BaseAST* source, const char* rename, bool isPrivate = true);
@@ -53,8 +58,8 @@ class ImportStmt final : public VisibilityStmt {
 
   BaseAST* getSearchScope() const override;
 
-  std::set<const char*> typeWasNamed(Type* t) const override;
-  void typeWasNamed(Type* t, std::set<const char*>* namedTypes) const;
+  PtrSet<const char*> typeWasNamed(Type* t) const override;
+  void typeWasNamed(Type* t, PtrSet<const char*>* namedTypes) const;
 
   bool skipSymbolSearch(const char* name) const override;
 

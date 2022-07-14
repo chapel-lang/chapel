@@ -406,15 +406,15 @@ void ImportStmt::validateUnqualified() {
 * to find its methods.                                                        *
 *                                                                             *
 ************************************** | *************************************/
-std::set<const char*> ImportStmt::typeWasNamed(Type* t) const {
-  std::set<const char*> namedTypes;
+ImportStmt::PtrSet<const char*> ImportStmt::typeWasNamed(Type* t) const {
+  PtrSet<const char*> namedTypes;
 
   typeWasNamed(t, &namedTypes);
   return namedTypes;
 }
 
 void ImportStmt::typeWasNamed(Type* t,
-                              std::set<const char*>* namedTypes) const {
+                              PtrSet<const char*>* namedTypes) const {
   // We don't define any symbols for unqualified access, so the type was not
   // listed
   if (!providesUnqualifiedAccess()) {

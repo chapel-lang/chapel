@@ -88,6 +88,12 @@ void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
     defExprs.push_back(defExpr);
 }
 
+void collectDefExprs(BaseAST* ast, llvm::SmallVectorImpl<DefExpr*>& defExprs) {
+  AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
+  if (DefExpr* defExpr = toDefExpr(ast))
+    defExprs.push_back(defExpr);
+}
+
 void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
   AST_CHILDREN_CALL(ast, collectForallStmts, forallStmts);
   if (ForallStmt* forall = toForallStmt(ast))
@@ -162,6 +168,12 @@ void computeHasToplevelYields(BaseAST* ast, bool& result) {
 
 
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    symExprs.push_back(symExpr);
+}
+
+void collectSymExprs(BaseAST* ast, llvm::SmallVectorImpl<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
     symExprs.push_back(symExpr);
@@ -377,6 +389,15 @@ void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet) {
 }
 
 void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet) {
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (isLcnSymbol(def->sym)) {
+      symSet.insert(def->sym);
+    }
+  }
+  AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
+}
+
+void collectSymbolSet(BaseAST* ast, llvm::SmallPtrSetImpl<Symbol*>& symSet) {
   if (DefExpr* def = toDefExpr(ast)) {
     if (isLcnSymbol(def->sym)) {
       symSet.insert(def->sym);
@@ -866,9 +887,9 @@ static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   if (types.set_in(ts)) return;
   types.set_add(ts);
-  std::vector<DefExpr*> defExprs;
+  llvm::SmallVector<DefExpr*, 32> defExprs;
   collectDefExprs(ts, defExprs);
-  for_vector(DefExpr, def, defExprs) {
+  for (DefExpr* def : defExprs) {
     if (def->sym->type)
       pruneVisit(def->sym, fns, types);
   }
@@ -881,9 +902,9 @@ static void
 pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   if (fns.set_in(fn)) return;
   fns.set_add(fn);
-  std::vector<SymExpr*> symExprs;
+  llvm::SmallVector<SymExpr*, 16> symExprs;
   collectSymExprs(fn, symExprs);
-  for_vector(SymExpr, se, symExprs) {
+  for(SymExpr* se : symExprs) {
     if (FnSymbol* next = toFnSymbol(se->symbol()))
       if (!fns.set_in(next))
         pruneVisit(next, fns, types);

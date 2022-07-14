@@ -43,6 +43,8 @@
 #include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
+#include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallVector.h"
 
 #include "global-ast-vecs.h"
 
@@ -50,6 +52,9 @@
 #include <map>
 #include <set>
 #include <stack>
+
+template<typename T, size_t N=8>
+using SmallVector = llvm::SmallVector<T, N>;
 
 /************************************* | **************************************
 *                                                                             *
@@ -90,7 +95,7 @@ static
 bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
-                            std::vector<Symbol*>& symbols,
+                            llvm::SmallVectorImpl<Symbol*>& symbols,
                             bool skipExternBlocks,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
@@ -1669,23 +1674,24 @@ static void lookup(const char*           name,
                    BaseAST*              context,
 
                    BaseAST*              scope,
-                   Vec<BaseAST*>&        visited,
+                   llvm::SmallPtrSetImpl<BaseAST*>&        visited,
 
-                   std::vector<Symbol*>& symbols,
+                   llvm::SmallVectorImpl<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
                    bool storeRenames,
                    std::map<Symbol*, VisibilityStmt*>& reexportPts);
 
 // Show what symbols from 'symbols' conflict with the given 'sym'.
 static void
-printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
+printConflictingSymbols(llvm::SmallVectorImpl<Symbol*>& symbols, Symbol* sym,
                         const char* nameUsed, bool storeRenames,
                         std::map<Symbol*, astlocT*> renameLocs,
                         std::map<Symbol*, VisibilityStmt*>& reexportPts)
 {
   Symbol* sampleFunction = NULL;
-  for_vector(Symbol, another, symbols) if (another != sym)
+  for(Symbol* another : symbols)
   {
+    if (another == sym) continue;
     if (isFnSymbol(another))
       sampleFunction = another;
     else {
@@ -1712,7 +1718,7 @@ printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
               "also defined as a function here (and possibly elsewhere)");
 }
 
-void checkConflictingSymbols(std::vector<Symbol *>& symbols,
+void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol *>& symbols,
                              const char* name,
                              BaseAST* context,
                              bool storeRenames,
@@ -1722,7 +1728,7 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
   // If they're all functions
   //   then      assume function resolution will be applied
   //   otherwise fail
-  for_vector(Symbol, sym, symbols) {
+  for(Symbol* sym : symbols) {
     if (!isFnSymbol(sym)) {
       if (std::count(failedUSymExprs.begin(),
                      failedUSymExprs.end(),
@@ -1747,7 +1753,7 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
   }
 }
 
-static void eliminateLastResortSyms(std::vector<Symbol*>& symbols) {
+static void eliminateLastResortSyms(SmallVector<Symbol*>& symbols) {
   bool anyLastResort = false;
   bool anyNotLastResort = false;
   for (auto sym : symbols) {
@@ -1762,7 +1768,7 @@ static void eliminateLastResortSyms(std::vector<Symbol*>& symbols) {
 
   if (anyLastResort && anyNotLastResort) {
     // Gather the not-last-resort symbols into tmp and swap
-    std::vector<Symbol*> tmp;
+    SmallVector<Symbol*> tmp;
     for (auto sym : symbols) {
       if (!sym->hasFlag(FLAG_LAST_RESORT))
         tmp.push_back(sym);
@@ -1780,7 +1786,7 @@ Symbol* lookupAndCount(const char*           name,
                        astlocT** renameLoc,
                        bool issueErrors) {
 
-  std::vector<Symbol*> symbols;
+  SmallVector<Symbol*> symbols;
   std::map<Symbol*, astlocT*> renameLocs;
   std::map<Symbol*, VisibilityStmt*> reexportPts;
   Symbol*              retval = NULL;
@@ -1837,11 +1843,11 @@ Symbol* lookup(const char* name, BaseAST* context) {
 
 void lookup(const char*           name,
             BaseAST*              context,
-            std::vector<Symbol*>& symbols,
+            llvm::SmallVectorImpl<Symbol*>& symbols,
             std::map<Symbol*, astlocT*>& renameLocs,
             std::map<Symbol*, VisibilityStmt*>& reexportPts,
             bool storeRenames) {
-  Vec<BaseAST*> visited;
+  llvm::SmallPtrSet<BaseAST*, 32> visited;
 
   lookup(name, context, context, visited, symbols, renameLocs, storeRenames,
          reexportPts);
@@ -1851,15 +1857,15 @@ static void lookup(const char*           name,
                    BaseAST*              context,
 
                    BaseAST*              scope,
-                   Vec<BaseAST*>&        visited,
+                   llvm::SmallPtrSetImpl<BaseAST*>&        visited,
 
-                   std::vector<Symbol*>& symbols,
+                   llvm::SmallVectorImpl<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
                    bool storeRenames,
                    std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
-  if (!visited.set_in(scope)) {
-    visited.set_add(scope);
+  if (!visited.contains(scope)) {
+    visited.insert(scope);
 
     if (lookupThisScopeAndUses(name, context, scope, symbols,
                                /* skipExternBlocks */ false,
@@ -1941,7 +1947,8 @@ static void lookup(const char*           name,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool      isRepeat(Symbol* toAdd, const std::vector<Symbol*>& symbols);
+static bool      isRepeat(Symbol* toAdd,
+                          const llvm::SmallVectorImpl<Symbol*>& symbols);
 
 static Symbol*   inSymbolTable(const char* name, BaseAST* scope);
 
@@ -1954,7 +1961,7 @@ static FnSymbol* getMethod(const char* name, Type* type);
 static void lookupUseImport(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
-                            std::vector<Symbol*>& symbols,
+                            llvm::SmallVectorImpl<Symbol*>& symbols,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
@@ -1965,7 +1972,7 @@ static void lookupUseImport(const char*           name,
 static void lookupUsedImportedMod(const char*           name,
                                   BaseAST*              context,
                                   BaseAST*              scope,
-                                  std::vector<Symbol*>& symbols,
+                                  llvm::SmallVectorImpl<Symbol*>& symbols,
                                   std::map<Symbol*, astlocT*>& renameLocs,
                                   bool storeRenames,
                                   bool forShadowScope,
@@ -1976,7 +1983,7 @@ static
 bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
-                            std::vector<Symbol*>& symbols,
+                            llvm::SmallVectorImpl<Symbol*>& symbols,
                             bool skipExternBlocks,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
@@ -2098,7 +2105,7 @@ bool lookupThisScopeAndUses(const char*           name,
 static void lookupUseImport(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
-                            std::vector<Symbol*>& symbols,
+                            llvm::SmallVectorImpl<Symbol*>& symbols,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
@@ -2295,7 +2302,7 @@ static void lookupUseImport(const char*           name,
 static void lookupUsedImportedMod(const char*           name,
                                   BaseAST*              context,
                                   BaseAST*              scope,
-                                  std::vector<Symbol*>& symbols,
+                                  llvm::SmallVectorImpl<Symbol*>& symbols,
                                   std::map<Symbol*, astlocT*>& renameLocs,
                                   bool storeRenames,
                                   bool forShadowScope,
@@ -2360,16 +2367,9 @@ static void lookupUsedImportedMod(const char*           name,
 
 
 // Returns true if the symbol is present in the vector, false otherwise
-static bool isRepeat(Symbol* toAdd, const std::vector<Symbol*>& symbols) {
-  for (std::vector<Symbol* >::const_iterator it = symbols.begin();
-       it != symbols.end();
-       ++it) {
-    if (*it == toAdd) {
-      return true;
-    }
-  }
-
-  return false;
+static bool isRepeat(Symbol* toAdd,
+                     const llvm::SmallVectorImpl<Symbol*>& symbols) {
+  return std::find(symbols.begin(), symbols.end(), toAdd) != symbols.end();
 }
 
 // Is this name defined in this scope?
@@ -2402,7 +2402,7 @@ Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
 
   // also check the uses of the module (e.g., for use CTypes, to find c_int),
   // but don't look in extern blocks (that would lead to an infinite loop).
-  std::vector<Symbol*> syms;
+  SmallVector<Symbol*> syms;
   std::map<Symbol*, astlocT*> renameLocs;
   std::map<Symbol*, VisibilityStmt*> reexportPts;
   lookupThisScopeAndUses(name, scope, scope, syms,
