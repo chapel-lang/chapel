@@ -55,8 +55,7 @@ proc masonModify(args: [] string) throws {
 
   const result = modifyToml(add, depArg.value(), extFlag.valueAsBool(),
                             sysFlag.valueAsBool(), projectHome);
-  generateToml(result[0], result[1]);
-  delete result[0];
+  generateToml(result[0]!, result[1]);
 }
 
 proc modifyToml(add: bool, spec: string, external: bool, system: bool,
@@ -65,7 +64,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
   const tomlPath = '/'.join(projectHome, tf);
   const openFile = openreader(tomlPath);
   const toml = parseToml(openFile);
-  var newToml: unmanaged Toml?;
+  var newToml: shared Toml?;
 
   try! {
 
@@ -126,11 +125,11 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
     writeln(e.message());
     exit(1);
   }
-  return (newToml!, tomlPath);
+  return (newToml, tomlPath);
 }
 
 /* Add a mason dependency to Mason.toml */
-private proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
+private proc masonAdd(toml: shared Toml, toAdd: string, version: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toAdd) {
       throw new owned MasonError("A dependency by that name already exists in Mason.toml");
@@ -142,7 +141,7 @@ private proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) thro
   // Create dependency table if it doesnt exist
   else {
     var tdom: domain(string);
-    var deps: [tdom] unmanaged Toml?;
+    var deps: [tdom] shared Toml?;
     toml.set("dependencies", deps);
     toml["dependencies"]!.set(toAdd, version);
   }
@@ -150,12 +149,11 @@ private proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) thro
 }
 
 /* Remove a mason dependency from Mason.toml */
-private proc masonRemove(toml: unmanaged Toml, toRm: string) throws {
+private proc masonRemove(toml: shared Toml, toRm: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toRm) {
       var old = toml["dependencies"]![toRm]!;
       toml["dependencies"]!.A.remove(toRm);
-      delete old;
     }
     else {
       throw new owned MasonError("No dependency exists by that name");
@@ -168,7 +166,7 @@ private proc masonRemove(toml: unmanaged Toml, toRm: string) throws {
 }
 
 /* Add a system dependency to Mason.toml */
-private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
+private proc masonSystemAdd(toml: shared Toml, toAdd: string, version: string) throws {
 
   if toml.pathExists("system") {
     if toml.pathExists("system." + toAdd) {
@@ -180,7 +178,7 @@ private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string
   }
   else {
     var pkgdom: domain(string);
-    var pkgdeps: [pkgdom] unmanaged Toml?;
+    var pkgdeps: [pkgdom] shared Toml?;
     toml.set("system", pkgdeps);
     toml["system"]!.set(toAdd, version);
   }
@@ -188,12 +186,11 @@ private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string
 }
 
 /* Remove a system dependency from Mason.toml */
-private proc masonSystemRemove(toml: unmanaged Toml, toRm: string) throws {
+private proc masonSystemRemove(toml: shared Toml, toRm: string) throws {
   if toml.pathExists("system") {
     if toml.pathExists("system." + toRm) {
       var old = toml["system"]![toRm]!;
       toml["system"]!.A.remove(toRm);
-      delete old;
     }
     else {
       throw new owned MasonError("No system dependency exists by " + toRm);
@@ -206,7 +203,7 @@ private proc masonSystemRemove(toml: unmanaged Toml, toRm: string) throws {
 }
 
 /* Add an external dependency to Mason.toml */
-private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, spec: string) throws {
+private proc masonExternalAdd(toml: shared Toml, toAdd: string, spec: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toAdd) {
       throw new owned MasonError("An external dependency by that name already exists in Mason.toml");
@@ -217,7 +214,7 @@ private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, spec: string)
   }
   else {
     var exdom: domain(string);
-    var exdeps: [exdom] unmanaged Toml?;
+    var exdeps: [exdom] shared Toml?;
     toml.set("external", exdeps);
     toml["external"]!.set(toAdd, spec);
   }
@@ -225,12 +222,11 @@ private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, spec: string)
 }
 
 /* Remove an external dependency from Mason.toml */
-private proc masonExternalRemove(toml: unmanaged Toml, toRm: string) throws {
+private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toRm) {
       var old = toml["external"]![toRm]!;
       toml["external"]!.A.remove(toRm);
-      delete old;
     }
     else {
       throw new owned MasonError("No external dependency exists by that name");

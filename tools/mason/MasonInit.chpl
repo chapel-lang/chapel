@@ -140,7 +140,7 @@ proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion,
     defaultChplVersion, defaultLicense) {
   const tomlPath = "./Mason.toml";
   const toParse = open(tomlPath, iomode.r);
-  const tomlFile = owned.create(parseToml(toParse));
+  const tomlFile = parseToml(toParse);
   if isMasonTomlPresent {
     if newPackageName != defaultPackageName then
       tomlFile["brick"]!.set("name", newPackageName);
@@ -164,7 +164,7 @@ proc readPartialSrc(){
 proc readPartialManifest() {
   var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense: string;
   const toParse = open("./Mason.toml", iomode.r);
-  const tomlFile = owned.create(parseToml(toParse));
+  const tomlFile = parseToml(toParse);
   if tomlFile.pathExists("brick.name") then
     defaultPackageName = tomlFile["brick"]!["name"]!.s;
   if tomlFile.pathExists("brick.version") then
@@ -271,7 +271,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     var chplVersion = "";
     var license = "None";
     const toParse = open(path + "/Mason.toml", iomode.r);
-    const tomlFile = owned.create(parseToml(toParse));
+    const tomlFile = parseToml(toParse);
 
     if !tomlFile.pathExists("brick") {
       if tomlFile.pathExists("name") ||
@@ -329,10 +329,10 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
 /*
 adds a section that is absent in the Mason.toml file
 */
-proc addSection(sectionName: string, path: string, tomlFile: owned Toml, show: bool) {
+proc addSection(sectionName: string, path: string, tomlFile: Toml, show: bool) {
   var tdom: domain(string);
   var tomlPath = path + "/Mason.toml";
-  var deps: [tdom] unmanaged Toml?;
+  var deps: [tdom] shared Toml?;
   tomlFile.set(sectionName, deps);
   generateToml(tomlFile, tomlPath);
   if show then writeln("Added [" + sectionName + "] section to Mason.toml");
@@ -347,7 +347,7 @@ proc createModule(path: string, packageName: string, show: bool) throws {
   if validatePackageName(packageName) {
     if isFile(path + "/Mason.toml") {
       const toParse = open(path + "/Mason.toml", iomode.r);
-      const tomlFile = owned.create(parseToml(toParse));
+      const tomlFile = parseToml(toParse);
       if tomlFile.pathExists("brick.name") {
           throw new owned MasonError("Cannot use '--name' here" +
                                 " since brick name already exists.");
@@ -374,7 +374,7 @@ proc validatePackageNameChecks(path: string, name: string) {
   try {
     if isFile(path + "/Mason.toml") {
       const toParse = open(path + "/Mason.toml", iomode.r);
-      const tomlFile = owned.create(parseToml(toParse));
+      const tomlFile = parseToml(toParse);
       if tomlFile.pathExists("brick.name") {
         const nameTOML = tomlFile["brick"]!["name"]!.s;
         if validateNameInit(nameTOML) then actualName = nameTOML;
