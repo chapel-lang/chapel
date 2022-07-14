@@ -759,28 +759,33 @@ extern const QIO_HINT_OWNED:c_int;
     to hint. Expect to use NONE most of the time.
     The other hints can be bitwise-ORed in.
  */
-// const IOHINT_NONE = 0:c_int;
+deprecated "'IOHINT_NONE' is deprecated; please use 'ioHints.empty' instead"
+const IOHINT_NONE = 0:c_int;
 
 /* IOHINT_RANDOM means we expect random access to a file */
-// const IOHINT_RANDOM = QIO_HINT_RANDOM;
+deprecated "'IOHINT_RANDOM' is deprecated; please use 'ioHints.random' instead"
+const IOHINT_RANDOM = QIO_HINT_RANDOM;
 
 /*  IOHINT_SEQUENTIAL means expect sequential access. On
     Linux, this should double the readahead.
  */
-// const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
+deprecated "'IOHINT_SEQUENTIAL' is deprecated; please use 'ioHints.sequential' instead"
+const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
 
 /*  IOHINT_CACHED means we expect the entire file
     to be cached and/or we pull it in all at
     once. May request readahead on the entire file.
  */
-// const IOHINT_CACHED = QIO_HINT_CACHED;
+deprecated "'IOHINT_CACHED' is deprecated; please use 'ioHints.prefetch' instead"
+const IOHINT_CACHED = QIO_HINT_CACHED;
 
 /*  IOHINT_PARALLEL means that we expect to have many
     channels working with this file in parallel.
     It might change the reading/writing implementation
     to something more efficient in that scenario.
  */
-// const IOHINT_PARALLEL = QIO_HINT_PARALLEL;
+deprecated "'IOHINT_PARALLEL' is deprecated"
+const IOHINT_PARALLEL = QIO_HINT_PARALLEL;
 
 pragma "no doc"
 extern type qio_file_ptr_t;
@@ -1435,12 +1440,11 @@ extern type fdflag_t = c_int;
 // */
 // extern type iohints = c_int;
 
-// https://man7.org/linux/man-pages/man2/posix_fadvise.2.html
-private const IOHINT_NONE: int = 0x00;
-private const IOHINT_SEQUENTIAL: int = 0x10;
-private const IOHINT_RANDOM: int = 0x20;
-private const IOHINT_PREFETCH: int = 0x40;
-private const IOHINT_MMAP: int = 0x80;
+private const IOHINTS_NONE:        c_int = 0;
+private const IOHINTS_SEQUENTIAL:  c_int = QIO_HINT_SEQUENTIAL;
+private const IOHINTS_RANDOM:      c_int = QIO_HINT_RANDOM;
+private const IOHINTS_PREFETCH:    c_int = QIO_HINT_CACHED;
+private const IOHINTS_MMAP:        c_int = QIO_METHOD_MMAP;
 
 /* A value of the :record:`ioHints` type defines a set of hints about the I/O that
   the file or channel will perform.  These hints may be used by the
@@ -1464,37 +1468,31 @@ private const IOHINT_MMAP: int = 0x80;
 */
 record ioHints {
   pragma "no doc"
-  var _internal : int;
+  var _internal : c_int;
 
   /* Defines an empty set, which provides no hints.
   Corresponds to 'POSIX_*_NORMAL'.
   */
-  proc type empty { return new ioHints(IOHINT_NONE); }
+  proc type empty { return new ioHints(IOHINTS_NONE); }
 
  /* Suggests that the file will be accessed sequentially.
   Corresponds to 'POSIX_*_SEQUENTIAL'
   */
-  proc type sequential { return new ioHints(IOHINT_SEQUENTIAL); }
+  proc type sequential { return new ioHints(IOHINTS_SEQUENTIAL); }
 
   /* Suggests that the file will be accessed randomly.
   Corresponds to 'POSIX_*_RANDOM'.
   */
-  proc type random { return new ioHints(IOHINT_RANDOM); }
+  proc type random { return new ioHints(IOHINTS_RANDOM); }
 
   /* Suggests that the runtime/OS should immediately begin prefetching the file contents.
   Corresponds to 'POSIX_*_WILLNEED'.
   */
-  proc type prefetch { return new ioHints(IOHINT_PREFETCH); }
+  proc type prefetch { return new ioHints(IOHINTS_PREFETCH); }
 
   /* Suggests that 'mmap' should be used to access the file contents
   */
-  proc type mmap { return new ioHints(IOHINT_MMAP); }
-
-  pragma "no doc"
-  proc to_qio_hint_t(): c_int {
-    // temporary (need to look into runtime implementation)
-    return this._internal.safeCast(c_int);
-  }
+  proc type mmap { return new ioHints(IOHINTS_MMAP); }
 }
 
 /* Compute the union of two sets of ioHints
@@ -1822,7 +1820,7 @@ private proc openHelper(path:string, mode:iomode, hints=ioHints.empty,
 
   error = qio_file_open_access(ret._file_internal,
                                path.encode(policy=encodePolicy.unescape).c_str(),
-                               _modestring(mode).c_str(), hints.to_qio_hint_t(), local_style);
+                               _modestring(mode).c_str(), hints._internal, local_style);
   if error then
     try ioerror(error, "in open", path);
 
@@ -1918,7 +1916,7 @@ The system file descriptor will be closed when the Chapel file is closed.
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
 proc openfd(fd: fd_t, hints=ioHints.empty):file throws {
-  return openfdHelper(fd, hints.to_qio_hint_t());
+  return openfdHelper(fd, hints._internal);
 }
 
 pragma "no doc"
@@ -1981,7 +1979,7 @@ private proc openfpHelper(fp: _file, hints=ioHints.empty,
   var local_style = style;
   var ret:file;
   ret.home = here;
-  var err = qio_file_init(ret._file_internal, fp, -1, hints.to_qio_hint_t(), local_style, 1);
+  var err = qio_file_init(ret._file_internal, fp, -1, hints._internal, local_style, 1);
 
   // On return either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
   // error should be nonzero in the latter case.
@@ -2229,7 +2227,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:f
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
     }
-    error = qio_channel_create(this._channel_internal, f._file_internal, hints.to_qio_hint_t(), !writing, writing, start, end, local_style, 64*1024);
+    error = qio_channel_create(this._channel_internal, f._file_internal, hints._internal, !writing, writing, start, end, local_style, 64*1024);
     // On return this._channel_internal.ref_cnt == 1.
     // Failure to check the error return code may result in a double-deletion error.
   }
