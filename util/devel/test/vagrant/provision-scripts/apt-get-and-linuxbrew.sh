@@ -7,7 +7,7 @@ sudo apt-get update
 # homebrew recommends installing this
 sudo apt-get install -y build-essential
 # many of these are in build-essential
-sudo apt-get install -y gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
+sudo apt-get install -y gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config
 
 export NONINTERACTIVE=1
 
@@ -25,7 +25,7 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 brew install gcc
 
 # install some dependencies in homebrew
-brew install python gmp llvm@12
+brew install cmake python gmp llvm@12
 
 
   # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
