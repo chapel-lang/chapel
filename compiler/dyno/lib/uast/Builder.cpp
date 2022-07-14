@@ -63,7 +63,7 @@ bool Builder::checkAllConfigVarsAssigned(Context* context) {
        anyBadConfigs = true;
      }
    }
-   return !anyBadConfigs;
+   return anyBadConfigs;
  }
 
 std::string Builder::filenameToModulename(const char* filename) {

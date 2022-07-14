@@ -131,6 +131,9 @@ void parse() {
     INT_FATAL("The '%s' flag currently has no effect", "parser-debug");
   }
 
+  auto oldErrorHandler = gContext->errorHandler();
+  gContext->setErrorHandler(&dynoErrorHandler);
+
   if (countTokens || printTokens) countTokensInCmdLineFiles();
 
   parseInternalModules();
@@ -140,6 +143,10 @@ void parse() {
   checkConfigs();
 
   postConvertApplyFixups(gContext);
+
+  if (dynoRealizeErrors()) USR_STOP();
+
+  gContext->setErrorHandler(oldErrorHandler);
 
   parsed = true;
 }
@@ -899,13 +906,8 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     INT_FATAL("compiler library context not initialized");
   }
 
-  // TODO: Move this to the point where we set up the context.
-  gContext->setErrorHandler(&dynoErrorHandler);
-
   // Do not parse if we've already done so.
-  if (haveAlreadyParsed(fileName)) {
-    return nullptr;
-  }
+  if (haveAlreadyParsed(fileName)) return nullptr;
 
   auto path = chpl::UniqueString::get(gContext, fileName);
 
@@ -923,7 +925,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     if (!e.isDefaultConstructed())
       gContext->report(e);
 
-  // TODO: Do we really want to stop now? Why not parse more modules?
   if (dynoRealizeErrors()) USR_STOP();
 
   const chpl::uast::Comment* modComment = nullptr;

@@ -254,6 +254,14 @@ class Context {
     this->reportError = reportError;
   }
 
+  ReportErrorFnType errorHandler() const {
+    return this->reportError;
+  }
+
+  static ReportErrorFnType defaultErrorHandler() {
+    return defaultReportError;
+  }
+
   /**
 
     Get or create a unique string and return it as a C string. If the passed
