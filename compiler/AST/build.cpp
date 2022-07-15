@@ -1255,8 +1255,11 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   checkControlFlow(body, "coforall statement");
 
   // insert temporary index when elided by user
-  if (!indices)
-    indices = new UnresolvedSymExpr("chpl__elidedIdx");
+  if (!indices) {
+    VarSymbol* var = new VarSymbol("chpl__elidedIdx");
+    indices = new DefExpr(var);
+  }
+
   checkIndices(indices);
   if (zippered) zipToTuple(iterator);
 
