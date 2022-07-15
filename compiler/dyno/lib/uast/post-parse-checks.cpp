@@ -113,6 +113,7 @@ struct Visitor {
   void checkProcedureRequiresParens(const Function* node);
   void checkOverrideNonMethod(const Function* node);
   void checkFormalsForTypeOrParamProcs(const Function* node);
+  void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
 
   /*
   TODO
@@ -577,6 +578,34 @@ void Visitor::checkFormalsForTypeOrParamProcs(const Function* node) {
   }
 }
 
+void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
+  // Currently, the uAST sets the primaryMethod field according to
+  // whether or not there was a receiver type, so
+  //   record R { proc R.bad() { } }
+  // will have primaryMethod=false even though it is contained in the Record.
+
+  if (const Formal* receiver = node->thisFormal()) {
+    if (!node->isPrimaryMethod()) {
+      const AstNode* last = nullptr;
+      auto parentDecl = searchParentsForDecl(&last);
+      if (parentDecl->isAggregateDecl()) {
+        // stringify the receiver type uAST for use in the error message
+        std::string receiverTypeStr = "<unknown>";
+        if (auto receiverType = receiver->typeExpression()) {
+          std::ostringstream ss;
+          receiverType->stringify(ss, StringifyKind::CHPL_SYNTAX);
+          receiverTypeStr = ss.str();
+        }
+
+        error(node, "Type binding clauses ('%s.' in this case) are not "
+                    "supported in declarations within a class, record "
+                    "or union",
+                    receiverTypeStr.c_str());
+      }
+    }
+  }
+}
+
 void Visitor::checkPrivateDecl(const Decl* node) {
   if (node->visibility() != Decl::PRIVATE) return;
 
@@ -667,6 +696,7 @@ void Visitor::visit(const Function* node) {
   checkProcedureRequiresParens(node);
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
+  checkNoReceiverClauseOnPrimaryMethod(node);
 }
 
 void Visitor::visit(const Union* node) {
