@@ -249,8 +249,15 @@ proc genSourceList(lockFile: borrowed Toml) {
           //       we can just put it there and then do the
           //       transform from the toml -> lock file?
           var url = toml["url"]!.s;
-          // TODO: check if the branch is specified
-          var branch = toml["branch"]!.s;
+
+          var branch: string;
+          // use branch if specified, else default to master
+          if toml["branch"] != nil {
+            branch = toml["branch"]!.s;
+          } else {
+            branch = "master";
+          }
+          
           gitList.append((url, name, branch));
         }
       }
