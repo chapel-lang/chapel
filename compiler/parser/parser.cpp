@@ -855,7 +855,7 @@ static void dynoDisplayError(chpl::Context* context,
 
   // Also show the details if there is additional information.
   for (const chpl::ErrorMessage& e : err.details()) {
-    uASTDisplayError(context, e);
+    dynoDisplayError(context, e);
   }
 }
 
