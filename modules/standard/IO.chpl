@@ -1918,23 +1918,17 @@ The system file descriptor will be closed when the Chapel file is closed.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
-proc openfd(fd: fd_t, hints=ioHints.empty):file throws {
-  return openfdHelper(fd, hints._internal);
+proc openfd(fd: fd_t, hints = ioHints.empty):file throws {
+  return openfdHelper(fd, hints);
 }
 
-pragma "no doc"
-// to address the use of "QIO_HINT_OWNED" in the Subprocess module
-proc openfd(fd: fd_t, hints: c_int):file throws {
-  return openfdHelper(fd, hints._internal);
-}
-
-private proc openfdHelper(fd: fd_t, hints: c_int,
+private proc openfdHelper(fd: fd_t, hints = ioHints.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
   extern proc chpl_cnullfile():_file;
-  var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style, 0);
+  var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
 
   // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
   // err should be nonzero in the latter case.

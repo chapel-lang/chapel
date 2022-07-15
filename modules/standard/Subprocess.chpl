@@ -584,7 +584,7 @@ module Subprocess {
       // goes out of scope, but the channel will still keep
       // the file alive by referring to it.
       try {
-        var stdin_file = openfd(stdin_fd, hints=QIO_HINT_OWNED);
+        var stdin_file = openfd(stdin_fd, hints=ioHints.direct(QIO_HINT_OWNED));
         ret.stdin_channel = stdin_file.writer();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -609,7 +609,7 @@ module Subprocess {
     if stdout_pipe {
       ret.stdout_pipe = true;
       try {
-        var stdout_file = openfd(stdout_fd, hints=QIO_HINT_OWNED);
+        var stdout_file = openfd(stdout_fd, hints=ioHints.direct(QIO_HINT_OWNED));
         ret.stdout_channel = stdout_file.reader();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -623,7 +623,7 @@ module Subprocess {
     if stderr_pipe {
       ret.stderr_pipe = true;
       try {
-        ret.stderr_file = openfd(stderr_fd, hints=QIO_HINT_OWNED);
+        ret.stderr_file = openfd(stderr_fd, hints=ioHints.direct(QIO_HINT_OWNED));
         ret.stderr_channel = ret.stderr_file.reader();
       } catch e: SystemError {
         ret.spawn_error = e.err;
