@@ -52,7 +52,7 @@ test_compile potentialPrep
 test_compile geo
 test_compile thermo
 test_compile postLink
-# test_compile post   # this one requires the sortedSet patch (#19872)
+test_compile post
 test_compile stochasticIcing
 test_compile octree
 test_compile eigenSolvePost
