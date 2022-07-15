@@ -19,8 +19,11 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(dyno VERSION 0.1)
 
+# Stuff to integrate LLVM support library into dyno
 option(DYNO_LLVM_COMP_ARGS "Override compile args for LLVM")
 option(DYNO_LLVM_LINK_ARGS "Override linker args for LLVM")
+string(STRIP ${DYNO_LLVM_COMP_ARGS} DYNO_LLVM_COMP_ARGS)
+string(STRIP ${DYNO_LLVM_LINK_ARGS} DYNO_LLVM_LINK_ARGS)
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
@@ -29,9 +32,6 @@ set(CHPL_INCLUDE_DIR      ${CMAKE_CURRENT_BINARY_DIR}/include)
 # save the version
 configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/config/config.h.cmake
                ${CHPL_INCLUDE_DIR}/chpl/config/config.h)
-
-# see https://llvm.org/docs/CMake.html
-# for instructions on extending this to include LLVM dependencies
 
 
 # request C++14
