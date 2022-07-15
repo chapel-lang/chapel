@@ -14,14 +14,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 add_executable(chpldoc "chpldoc.cpp")
 # TODO: this is temporary so I could use std::filesystem
 set_property(TARGET chpldoc PROPERTY CXX_STANDARD 17)
 # TODO: Using LLVM here links against the shared library.
 # Linking against LLVMSupport (which grabs libLLVMSupport.a) was not working
-target_link_libraries(chpldoc LLVM $<TARGET_OBJECTS:libdyno-obj>)
+message("LLVM_LIBS = ${LLVM_LIBS}")
+
+target_link_libraries(chpldoc ${LLVM_LIBS} $<TARGET_OBJECTS:libdyno-obj>)
+target_compile_definitions(chpldoc PUBLIC ${LLVM_DEFINITIONS})
 target_include_directories(chpldoc PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
-                           ${CHPL_INCLUDE_DIR})
+                           ${CHPL_INCLUDE_DIR}
+                           ${LLVM_INCLUDE_DIRS})
 add_dependencies(chpldoc libdyno-obj)

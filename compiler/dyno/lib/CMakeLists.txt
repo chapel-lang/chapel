@@ -25,7 +25,9 @@ set_property(TARGET libdyno-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
 # Include the public library .h files as well as any generated .h files
 target_include_directories(libdyno-obj PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
-                           ${CHPL_INCLUDE_DIR})
+                           ${CHPL_INCLUDE_DIR}
+                           ${LLVM_INCLUDE_DIRS}
+                           )
 
 
 # Library code can also use headers from the lib/ directory
@@ -43,4 +45,11 @@ add_subdirectory(util)
 add_library(libdyno SHARED $<TARGET_OBJECTS:libdyno-obj>)
 target_include_directories(libdyno PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
-                           ${CHPL_INCLUDE_DIR})
+                           ${CHPL_INCLUDE_DIR}
+                           ${LLVM_INCLUDE_DIRS})
+
+target_link_libraries(libdyno ${LLVM_LIBS})
+target_link_libraries(libdyno-obj ${LLVM_LIBS})
+
+target_compile_definitions(libdyno PUBLIC ${LLVM_DEFINITIONS})
+target_compile_definitions(libdyno-obj PUBLIC ${LLVM_DEFINITIONS})

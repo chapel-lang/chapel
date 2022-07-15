@@ -19,6 +19,10 @@
 
 #include "filesystem_help.h"
 
+// #ifdef HAVE_LLVM
+#include "llvm/Support/FileSystem.h"
+// #endif
+
 #include "./my_strerror_r.h"
 
 #include "chpl/framework/ErrorMessage.h"

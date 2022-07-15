@@ -29,34 +29,37 @@ configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/config/config.h.cmake
 
 # see https://llvm.org/docs/CMake.html
 # for instructions on extending this to include LLVM dependencies
-# TODO: Had some issues with Terminfo, and when using "none"
-# error stating:
-# The imported target "LLVMTableGen" references the file
-# chapel/third-party/llvm/install/support-only-linux64-x86_64/lib/libLLVMTableGen.a
-# but this file does not exist.
 set(chpl_home $ENV{CHPL_HOME})
+# set(CMAKE_VERBOSE_MAKEFILE ON)
+
 message("CHPL_HOME found at: ${chpl_home}")
 
 execute_process(COMMAND python ${chpl_home}/util/chplenv/chpl_llvm.py --llvm-config
         WORKING_DIRECTORY ${chpl_home}
         OUTPUT_VARIABLE llvm_config_cmd
         OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 message("llvm_config_cmd is: ${llvm_config_cmd}")
+
 execute_process(COMMAND ${llvm_config_cmd} --cmakedir
         OUTPUT_VARIABLE llvm_cmakedir
         OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 message("llvm_cmakedir found at: ${llvm_cmakedir}")
 
-find_package(LLVM REQUIRED PATHS ${llvm_cmakedir}
-        NO_DEFAULT_PATH NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH
-        NO_CMAKE_ENVIRONMENT_PATH NO_SYSTEM_ENVIRONMENT_PATH
-        NO_CMAKE_PACKAGE_REGISTRY
-        NO_CMAKE_SYSTEM_PATH
-        NO_CMAKE_SYSTEM_PACKAGE_REGISTRY)
+add_library(LLVMSupport INTERFACE)
 
+set(LLVM_ENABLE_TERMINFO FALSE)
+
+# TODO: Why have to force root like this?
+set(LLVM_ROOT ${llvm_cmakedir})
+# set(CMAKE_FIND_DEBUG_MODE TRUE)
+# TODO: Why isn't PATHS arg working as expected?
+find_package(LLVM REQUIRED CONFIG)
+# set(CMAKE_FIND_DEBUG_MODE FALSE)
+set(LLVM_ENABLE_TERMINFO FALSE)
 llvm_map_components_to_libnames(LLVM_LIBS support)
 
-# find_package(LLVMSupport REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
