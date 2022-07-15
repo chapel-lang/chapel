@@ -753,22 +753,9 @@ used to recursively hold tables and respective values
       return false;
     }
 
-    proc set(tbl: string, toml: shared Toml?) {
-      ref t = this(tbl);
-      if t == nil {
-        t = toml;
-      } else {
-        t = toml;
-      }
-    }
-
     proc set(tbl: string, toml: Toml) {
       ref t = this(tbl);
-      if t == nil {
-        t = toml;
-      } else {
-        t = toml;
-      }
+      t = toml;
     }
 
     proc set(tbl: string, s: string) {
