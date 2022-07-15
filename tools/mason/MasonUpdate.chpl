@@ -190,7 +190,6 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
 
   // Assert some expected fields are not nil
   if brick!['name'] == nil || brick!['version'] == nil{
-    writeln('need name and version');
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
@@ -404,7 +403,6 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then
     depTree[name]!.set("dependencies", depList.toArray());
-    
   return depTree;
 }
 
@@ -422,6 +420,9 @@ private proc addGitDeps(depTree: unmanaged Toml, ref gitDeps) {
       depTree[key[0]]!.set("branch", key[2]);
 
     // TODO: Fix version and chplversion
+    //       these should really be coming from the toml
+    //       file in the git repo manifest that isn't yet
+    //       downloaded
     depTree[key[0]]!.set("version", "0");
     depTree[key[0]]!.set("chplVersion", "1.27.0");
   }
