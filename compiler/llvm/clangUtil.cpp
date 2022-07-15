@@ -2565,12 +2565,6 @@ void runClang(const char* just_parse_filename) {
       genHeaderFilename = genIntermediateFilename("command-line-includes.h");
       FILE* fp =  openfile(genHeaderFilename.c_str(), "w");
 
-      //const char* ifdefStrBegin = "#ifdef __cplusplus\n"
-                                  //"extern \"C\" {\n"
-                                  //"#endif";
-
-      //fprintf(fp, "%s\n", ifdefStrBegin);
-
       int filenum = 0;
       while (const char* inputFilename = nthFilename(filenum++)) {
         if (isCHeader(inputFilename)) {
@@ -2578,10 +2572,6 @@ void runClang(const char* just_parse_filename) {
         }
       }
 
-      //const char* ifdefStrEnd = "#ifdef __cplusplus\n"
-                                //"}\n"
-                                //"#endif";
-      //fprintf(fp, "%s", ifdefStrEnd);
       closefile(fp);
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(genHeaderFilename);
