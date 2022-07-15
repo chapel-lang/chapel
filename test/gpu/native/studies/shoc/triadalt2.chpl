@@ -8,6 +8,7 @@ config const alpha = 1.75: real(32);
 config const noisy = false;
 config var tolerance = 1;
 config const output = true;
+config const perftest = false;
 
 
 proc main(){
@@ -16,7 +17,7 @@ proc main(){
 
     // Numbers just copied from cuda version
     // 256K through 8M bytes. (scaled down by 1024)
-    const blockSizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384];
+    const blockSizes = if(perftest) then [64, 16384] else [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384];
     param maxProblemSize = 16384;
     param numMaxFloats = 1024 * maxProblemSize / numBytes(real(32));
     param halfNumFloats = numMaxFloats/2;
@@ -152,6 +153,11 @@ proc main(){
             bdwthDB.printDatabaseStats();
             triadDB.printDatabaseStats();
             kernelDB.printDatabaseStats();
+        }
+        if(perftest){
+            bdwthDB.printPerfStats();
+            triadDB.printPerfStats();
+            kernelDB.printPerfStats();
         }
     }
     stopGPUDiagnostics();

@@ -103,6 +103,29 @@ module ResultDB {
             }
             writeln();
         }
+
+        proc printPerfStats(){
+            if(this.results.isEmpty()){
+                writeln("Map Empty");
+                return;
+            }
+            // For each blockSize calculate stats
+            for blockSize in this.results {
+                // Calc median
+                var median: real;
+                var resultSorted = this.results[blockSize];
+                resultSorted.sort();
+                // writeln(resultSorted.indices);
+                if(resultSorted.size % 2 == 0){
+                    median = resultSorted[(resultSorted.size-1)/2]; // -1 to get the actual last index
+                                                                    // because of  0-based indexing
+                } else {
+                    median = (resultSorted[(resultSorted.size)/2] +
+                                resultSorted[(resultSorted.size-2)/2]) / 2 ;
+                }
+                writeln(testName, " BlckSz: ", blockSize,"KB Median: ", median, " ", units);
+            }
+        }
     }
 }
 
