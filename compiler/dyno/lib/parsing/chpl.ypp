@@ -150,6 +150,7 @@
   // It is just saving some components of a function to be used
   // when building the FunctionDecl.
   struct FunctionParts {
+    bool isFunctionExpr;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
     Attributes* attributes;
@@ -392,7 +393,7 @@
 %token <uniqueStr> TNEW TNIL TNOINIT TNONE TNOTHING
 %token <uniqueStr> TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
 %token <uniqueStr> TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE
-%token <uniqueStr> TPROC TPROTOTYPE TPUBLIC
+%token <uniqueStr> TPROC TPROTOTYPE TPUBLIC TPROCLP
 %token <uniqueStr> TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE
 %token <uniqueStr> TSTRING TSUBDOMAIN TSYNC
@@ -437,7 +438,7 @@
 // keywords, operators, and punctuation that requires precedence
 //
 %left TNOELSE
-%left TELSE
+%left TELSE TTHROWS
 %left TCOMMA
 %left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
 // %left TOWNED TUNMANAGED TSHARED
@@ -545,7 +546,7 @@
 %type <exprList> type_alias_decl_stmt_inner_ls
 %type <commentsAndStmt> type_alias_decl_stmt_inner
 
-%type <functionParts> fn_decl_stmt
+%type <functionParts> fn_decl_stmt fn_expr fn_expr_inner fn_type
 %type <commentsAndStmt> fn_decl_stmt_complete
 %type <commentsAndStmt> class_decl_stmt
 %type <commentsAndStmt> enum_decl_stmt
@@ -555,19 +556,19 @@
 %type <commentsAndStmt> var_decl_stmt_inner
 
 
-%type <exprList> function_body_stmt opt_function_body_stmt
+%type <exprList> function_body_stmt opt_function_body_stmt fn_expr_body
 
 %type <commentsAndStmt> when_stmt
 %type <exprList> when_stmt_ls
 
 %type <expr> array_type
-%type <expr> opt_type opt_ret_type ret_array_type
+%type <expr> opt_type opt_ret_type ret_array_type ret_type colon_ret_type
+%type <expr> fn_type_ret_type
 %type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type
-%type <functionParts> lambda_decl_start
-%type <expr> lambda_decl_expr
 %type <typeDeclParts> enum_header_lcbr
 %type <exprList> enum_ls
 
+%type <expr> range_literal_expr cast_expr tuple_expand_expr
 %type <expr> zippered_iterator
 %type <expr> call_base_expr call_expr dot_expr
 %type <expr> lhs_expr
@@ -2230,49 +2231,6 @@ enum_item:
     }
 ;
 
-lambda_decl_start:
-  TLAMBDA
-    {
-      FunctionParts fp = context->makeFunctionParts(false, false);
-      context->noteDeclStartLoc(@1);
-      auto loc = context->declStartLoc(@$);
-      fp.comments = context->gatherComments(loc);
-      fp.attributes = context->buildAttributes(@$).release();
-      fp.visibility = context->visibility;
-      context->resetAttributePartsState();
-      fp.kind = Function::PROC;
-      $$ = fp;
-    }
-;
-
-lambda_decl_expr:
-  lambda_decl_start req_formal_ls opt_ret_tag opt_type
-  opt_lifetime_where
-    {
-      context->clearComments();
-      context->resetDeclState();
-      context->enterScope(asttags::Function, STR("lambda"));
-    }
-  function_body_stmt
-    {
-      FunctionParts fp = $1;
-      fp.name = context->buildIdent(@1, STR("lambda"));
-      fp.formals = $2;
-      fp.returnIntent = $3;
-      fp.returnType = $4;
-      WhereAndLifetime wl = $5;
-      fp.body = $7;
-
-      fp.lifetime = wl.lifetime;
-      fp.where = wl.where;
-
-      context->clearComments();
-      context->exitScope(asttags::Function, STR("lambda"));
-
-      $$ = context->buildLambda(@$, fp);
-    }
-;
-
 linkage_spec_empty:
 ;
 
@@ -2283,6 +2241,64 @@ linkage_spec:
 | TOVERRIDE          { context->noteDeclStartLoc(@1);
                        $$ = context->makeFunctionParts(false, true); }
 ;
+
+fn_type_ret_type:
+  type_level_expr         { $$ = $1; } // Can be replaced with 'expr'
+| ret_array_type          { $$ = $1; } // No replacement I can see
+| reserved_type_ident_use { $$ = context->buildIdent(@1, $1); } // OK
+| error
+  { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
+;
+
+fn_type:
+  TPROCLP formal_ls TRP opt_ret_tag TCOLON fn_type_ret_type opt_throws_error
+  {
+      /*
+      FunctionParts fp;
+      fp.isFunctionType = true;
+      fp.kind = $1;
+      fp.name = PODUniqueString();
+      fp.formals = $2;
+      fp.returnIntent = $4;
+      fp.returnType = $6;
+      fp.throws = ($7 == ThrowsTag_THROWS) ? true : false;
+      fp.body = nullptr;
+      */
+      FunctionParts fp;
+      $$ = fp;
+  }
+;
+
+// TODO: Have to figure out how to clear comments and stuff.
+// TODO: Do we have to enter/exit scope here? Probably?
+fn_expr:
+  TLAMBDA fn_expr_inner fn_expr_body
+  {
+    FunctionParts fp = $1;
+    fp.body = $2;
+    $$ = fp;
+  }
+;
+
+fn_expr_inner:
+  req_formal_ls opt_ret_tag colon_ret_type opt_throws_error
+    {
+      FunctionParts fp;
+      fp.kind = $1;
+      fp.name = PODUniqueString();
+      fp.formals = $1;
+      fp.returnIntent = $2;
+      fp.returnType = $3;
+      fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
+      $$ = fp;
+    }
+;
+
+// TODO: Could add other syntactic sugar(s) here.
+fn_expr_body:
+  block_stmt_body   { $$ = $1; }
+;
+
 
 fn_decl_stmt_complete:
   fn_decl_stmt
@@ -2588,8 +2604,8 @@ opt_ret_tag:
 ;
 
 opt_throws_error:
-          { $$ = ThrowsTag_DEFAULT; }
-| TTHROWS { $$ = ThrowsTag_THROWS; }
+          %prec TNOELSE   { $$ = ThrowsTag_DEFAULT; }
+| TTHROWS                 { $$ = ThrowsTag_THROWS; }
 
 opt_function_body_stmt:
   TSEMI               { context->clearComments(); $$ = nullptr; }
@@ -2812,7 +2828,6 @@ opt_init_expr:
 | TASSIGN opt_try_expr  { $$ = $2; }
 ;
 
-
 ret_array_type:
   TLSBR TRSBR type_level_expr
   {
@@ -2844,14 +2859,22 @@ ret_array_type:
   }
 ;
 
-opt_ret_type:
-                                 { $$ = nullptr; }
-| TCOLON type_level_expr         { $$ = $2; }
-| TCOLON ret_array_type          { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
+ret_type:
+  type_level_expr         { $$ = $1; }
+| ret_array_type          { $$ = $1; }
+| reserved_type_ident_use { $$ = context->buildIdent(@1, $1); }
+| error                   { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
+;
+
+colon_ret_type:
+  TCOLON ret_type { $$ = $2; }
 | error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
 ;
 
+opt_ret_type:
+                    { $$ = nullptr; }
+| colon_ret_type
+;
 
 opt_type:
                                  { $$ = nullptr; }
@@ -3015,6 +3038,8 @@ type_level_expr:
   { $$ = context->buildUnaryOp(@$, $2, $1); }
 | TQUESTION
   { $$ = context->buildIdent(@$, $1); }
+| fn_type
+  { $$ = context->buildFunctionType(@$, $1); }
 ;
 
 // TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
@@ -3056,11 +3081,6 @@ sub_type_level_expr:
 | TSHARED expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TBORROWED
-  { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
-| TBORROWED expr
-  { $$ = context->buildTypeConstructor(@$, $1, $2); }
-
-| TCLASS
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TRECORD
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
@@ -3301,7 +3321,6 @@ stmt_level_expr:
 | ident_expr
 | dot_expr
 | call_expr
-| lambda_decl_expr
 | new_expr
 | let_expr
 ;
@@ -3456,28 +3475,8 @@ let_expr:
   }
 ;
 
-/* exprs represent valid values and types. Any expression with a valid
-   type also has a valid value as types can appear on the rhs during
-   type-aliasing.  Hence, type_level_expr must be a subset of expr. */
-expr:
-  literal_expr
-| type_level_expr
-| for_expr
-| reduce_expr
-| scan_expr
-| lambda_decl_expr
-| new_expr
-| let_expr
-| ifc_constraint
-| TLP TDOTDOTDOT expr TRP
-  {
-    $$ = context->buildUnaryOp(@$, $2, $3);
-  }
-| expr TCOLON expr
-  {
-    $$ = context->buildBinOp(@$, $1, $2, $3);
-  }
-| expr TDOTDOT expr
+range_literal_expr:
+  expr TDOTDOT expr
   {
     $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT, toOwned($1),
                       toOwned($3)).release();
@@ -3510,7 +3509,6 @@ expr:
                       /*lowerBound*/ nullptr,
                       /*upperBound*/ nullptr).release();
   }
-
 /* The following cases would extend the current '..<' open range
    interval constructor to also support '<..' and '<..<'.  This
    concept didn't win enough support to merge as present, but are here
@@ -3532,7 +3530,37 @@ expr:
                       nullptr).release();
   }
 */
+;
 
+cast_expr:
+  expr TCOLON expr
+  {
+    $$ = context->buildBinOp(@$, $1, $2, $3);
+  }
+;
+
+tuple_expand_expr:
+  TLP TDOTDOTDOT expr TRP
+  {
+    $$ = context->buildUnaryOp(@$, $2, $3);
+  }
+;
+
+/* exprs represent valid values and types. Any expression with a valid
+   type also has a valid value as types can appear on the rhs during
+   type-aliasing.  Hence, type_level_expr must be a subset of expr. */
+expr:
+  literal_expr
+| type_level_expr
+| for_expr
+| reduce_expr
+| scan_expr
+| new_expr
+| let_expr
+| ifc_constraint
+| tuple_expand_expr
+| cast_expr
+| range_literal_expr
 ;
 
 opt_expr:
@@ -3564,7 +3592,6 @@ call_base_expr:
                                                              STR("postfix!"),
                                                              $1); }
 | sub_type_level_expr TQUESTION { $$ = context->buildUnaryOp(@$, $2, $1); }
-| lambda_decl_expr
 | str_bytes_literal
 ;
 

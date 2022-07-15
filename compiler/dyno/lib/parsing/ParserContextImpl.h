@@ -766,7 +766,8 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
 
 FunctionParts ParserContext::makeFunctionParts(bool isInline,
                                                bool isOverride) {
-  FunctionParts fp = {nullptr,
+  FunctionParts fp = {false,
+                      nullptr,
                       nullptr,
                       nullptr,
                       this->visibility,
@@ -783,6 +784,12 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       nullptr, nullptr, nullptr, nullptr,
                       nullptr};
   return fp;
+}
+
+Expression*
+ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
+  assert(false && "Not implemented yet!");
+  return nullptr;
 }
 
 CommentsAndStmt
