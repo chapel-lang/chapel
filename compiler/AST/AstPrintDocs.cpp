@@ -173,6 +173,10 @@ void AstPrintDocs::visitVarSym(VarSymbol* node) {
   node->printDocs(this->file, this->tabs);
 }
 
+bool AstPrintDocs::enterLoopExpr(LoopExpr* node) {
+  return false;
+}
+
 
 bool AstPrintDocs::enterBlockStmt(BlockStmt* node) {
   // Top level block statements have no parentExpr, only a parentSymbol.
