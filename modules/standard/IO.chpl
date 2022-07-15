@@ -1493,6 +1493,9 @@ record ioHints {
   /* Suggests that 'mmap' should be used to access the file contents
   */
   proc type mmap { return new ioHints(IOHINTS_MMAP); }
+
+  pragma "no doc"
+  proc type direct(constant: c_int) { return new ioHints(constant); }
 }
 
 /* Compute the union of two sets of ioHints
@@ -1922,7 +1925,7 @@ proc openfd(fd: fd_t, hints=ioHints.empty):file throws {
 pragma "no doc"
 // to address the use of "QIO_HINT_OWNED" in the Subprocess module
 proc openfd(fd: fd_t, hints: c_int):file throws {
-  return openfdHelper(fd, hints);
+  return openfdHelper(fd, hints._internal);
 }
 
 private proc openfdHelper(fd: fd_t, hints: c_int,
@@ -2034,7 +2037,7 @@ private proc opentmpHelper(hints=ioHints.empty,
   ret.home = here;
 
   // On return ret._file_internal.ref_cnt == 1.
-  var err = qio_file_open_tmp(ret._file_internal, hints, local_style);
+  var err = qio_file_open_tmp(ret._file_internal, hints._internal, local_style);
   if err then try ioerror(err, "in opentmp");
   return ret;
 }

@@ -54,7 +54,7 @@ proc main(args: [] string) {
 
   // Open a binary writer to stdout
   var binout = openfd(1).writer(iokind.native, locking=false, 
-                                hints=QIO_CH_ALWAYS_UNBUFFERED);
+                                hints=ioHints.direct(QIO_CH_ALWAYS_UNBUFFERED));
   binout.write(data);
 }
 

@@ -13,7 +13,7 @@ config const readSize = 16 * 1024;
 proc main(args: [] string) {
   const stdin = openfd(0);
   var input = stdin.reader(iokind.native, locking=false,
-                           hints=QIO_HINT_PARALLEL);
+                           hints=ioHints.direct(QIO_HINT_PARALLEL));
   var len = stdin.size;
   var data : [0..#len] uint(8);
   
@@ -61,7 +61,7 @@ proc main(args: [] string) {
   }
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
-                                     hints=QIO_CH_ALWAYS_UNBUFFERED);
+                                     hints=ioHints.direct(QIO_CH_ALWAYS_UNBUFFERED));
   stdoutBin.write(data);
 }
 

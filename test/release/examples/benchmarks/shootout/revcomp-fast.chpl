@@ -11,7 +11,7 @@ const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 proc main(args: [] string) {
   const stdin = openfd(0),
         input = stdin.reader(iokind.native, locking=false,
-                             hints=QIO_HINT_PARALLEL),
+                             hints=ioHints.direct(QIO_HINT_PARALLEL)),
         len = stdin.size;
   var data: [0..#len] uint(8);
 
@@ -54,7 +54,7 @@ proc main(args: [] string) {
 
   // write the data out to stdout once all tasks have completed
   const stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=QIO_CH_ALWAYS_UNBUFFERED);
+                                     hints=ioHints.direct(QIO_CH_ALWAYS_UNBUFFERED));
   stdoutBin.write(data);
 }
 
