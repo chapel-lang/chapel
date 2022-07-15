@@ -891,9 +891,6 @@ static int dynoRealizeErrors(void) {
 
   for (auto& err : dynoErrorMessages) {
     dynoDisplayError(gContext, err);
-    for (auto& detail : err.details()) {
-      dynoDisplayError(gContext, detail);
-    }
   }
 
   dynoErrorMessages.clear();
