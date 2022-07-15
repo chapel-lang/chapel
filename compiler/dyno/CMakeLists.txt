@@ -19,6 +19,9 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(dyno VERSION 0.1)
 
+option(DYNO_LLVM_COMP_ARGS "Override compile args for LLVM")
+option(DYNO_LLVM_LINK_ARGS "Override linker args for LLVM")
+
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
 set(CHPL_INCLUDE_DIR      ${CMAKE_CURRENT_BINARY_DIR}/include)
@@ -29,41 +32,6 @@ configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/config/config.h.cmake
 
 # see https://llvm.org/docs/CMake.html
 # for instructions on extending this to include LLVM dependencies
-set(chpl_home $ENV{CHPL_HOME})
-# set(CMAKE_VERBOSE_MAKEFILE ON)
-
-message("CHPL_HOME found at: ${chpl_home}")
-
-execute_process(COMMAND python ${chpl_home}/util/chplenv/chpl_llvm.py --llvm-config
-        WORKING_DIRECTORY ${chpl_home}
-        OUTPUT_VARIABLE llvm_config_cmd
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-message("llvm_config_cmd is: ${llvm_config_cmd}")
-
-execute_process(COMMAND ${llvm_config_cmd} --cmakedir
-        OUTPUT_VARIABLE llvm_cmakedir
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-message("llvm_cmakedir found at: ${llvm_cmakedir}")
-
-add_library(LLVMSupport INTERFACE)
-
-set(LLVM_ENABLE_TERMINFO FALSE)
-
-# TODO: Why have to force root like this?
-set(LLVM_ROOT ${llvm_cmakedir})
-# set(CMAKE_FIND_DEBUG_MODE TRUE)
-# TODO: Why isn't PATHS arg working as expected?
-find_package(LLVM REQUIRED CONFIG)
-# set(CMAKE_FIND_DEBUG_MODE FALSE)
-set(LLVM_ENABLE_TERMINFO FALSE)
-llvm_map_components_to_libnames(LLVM_LIBS support)
-
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-
 
 
 # request C++14

@@ -25,14 +25,14 @@ set_property(TARGET libdyno-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
 # Include the public library .h files as well as any generated .h files
 target_include_directories(libdyno-obj PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
-                           ${CHPL_INCLUDE_DIR}
-                           ${LLVM_INCLUDE_DIRS}
-                           )
+                           ${CHPL_INCLUDE_DIR})
 
 
 # Library code can also use headers from the lib/ directory
 # but these are not to be public
 target_include_directories(libdyno-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_compile_options(libdyno-obj PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${DYNO_LLVM_COMP_ARGS}>)
 
 add_subdirectory(immediates)
 add_subdirectory(parsing)
@@ -45,11 +45,5 @@ add_subdirectory(util)
 add_library(libdyno SHARED $<TARGET_OBJECTS:libdyno-obj>)
 target_include_directories(libdyno PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
-                           ${CHPL_INCLUDE_DIR}
-                           ${LLVM_INCLUDE_DIRS})
-
-target_link_libraries(libdyno ${LLVM_LIBS})
-target_link_libraries(libdyno-obj ${LLVM_LIBS})
-
-target_compile_definitions(libdyno PUBLIC ${LLVM_DEFINITIONS})
-target_compile_definitions(libdyno-obj PUBLIC ${LLVM_DEFINITIONS})
+                           ${CHPL_INCLUDE_DIR})
+target_link_options(libdyno INTERFACE SHELL:${DYNO_LLVM_LINK_ARGS})
