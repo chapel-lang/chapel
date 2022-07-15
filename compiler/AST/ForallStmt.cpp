@@ -564,6 +564,9 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
   } else if (UnresolvedSymExpr* indicesUSE = toUnresolvedSymExpr(indices)) {
     fsDestructureWhenSingleIdxVar(fs, fIterVars, indicesUSE, numIterables);
 
+  } else if (DefExpr* indicesDef = toDefExpr(indices)) {
+    fsDestructureWhenSingleIdxVar(fs, fIterVars, indicesDef, numIterables);
+
   } else {
     INT_ASSERT(false); // This case has not been considered.
 
