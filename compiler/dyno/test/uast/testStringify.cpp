@@ -138,7 +138,7 @@ static void test1(Parser* parser) {
      proc df(arg) { }
      proc const cnst(arg) const { }
      proc const ref cnstrf(arg) const ref { }
-     private proc ref rf(arg) ref : string where !(isDomainType(eltType) || isArrayType(eltType)) { }
+     proc ref rf(arg) ref : string where !(isDomainType(eltType) || isArrayType(eltType)) { }
      proc param prm(arg) param { }
      proc type tp(arg) type { }
    }
@@ -316,7 +316,7 @@ static void test1(Parser* parser) {
    var (x,y,(v,z)) :(string, real, (int, real));
    while true do
      ;
-   proc noOp(x:int);
+   proc noOp(x:int) {}
    {
      // not the body
    }
@@ -337,7 +337,7 @@ static void test1(Parser* parser) {
    import this.DefinesOp.align;
    import this.DefinesOp.+;
 
-  private proc param R.prm2(arg) param : string { }
+  proc param R.prm2(arg) param : string { }
   iter foo() {
    for i in 1..10 do yield try! i;
   }
@@ -350,6 +350,7 @@ static void test1(Parser* parser) {
     const ErrorMessage& err = parseResult.error(i);
     // ignore implicit module warning
     assert(err.kind() != ErrorMessage::SYNTAX);
+    std::cout << err.message().c_str() << std::endl;
     assert(err.kind() != ErrorMessage::ERROR);
   }
   auto mod = parseResult.singleModule();

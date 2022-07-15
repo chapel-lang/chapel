@@ -82,6 +82,7 @@ target_sources(libdyno-obj
                NumericLiteral.cpp
                On.cpp
                OpCall.cpp
+               post-parse-checks.cpp
                Pragma.cpp
                PrimCall.cpp
                PrimOp.cpp

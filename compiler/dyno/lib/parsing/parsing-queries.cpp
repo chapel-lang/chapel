@@ -112,13 +112,6 @@ parseFileToBuilderResult(Context* context, UniqueString path,
     const char* textc = text.c_str();
     BuilderResult tmpResult = parser.parseString(pathc, textc);
     result.swap(tmpResult);
-    // raise any errors encountered
-    for (const ErrorMessage& e : result.errors()) {
-      if (!e.isDefaultConstructed()) {
-        // report the error and save it for this query
-        context->report(e);
-      }
-    }
     BuilderResult::updateFilePaths(context, result);
   } else {
     // Error should have already been reported in the fileText query.
@@ -191,6 +184,12 @@ const ModuleVec& parse(Context* context, UniqueString path,
   // Get the result of parsing
   const BuilderResult& p = parseFileToBuilderResult(context, path,
                                                     parentSymbolPath);
+
+  // Report any errors encountered to the context.
+  for (auto& e : p.errors())
+    if (!e.isDefaultConstructed())
+      context->report(e);
+
   // Compute a vector of Modules
   ModuleVec result;
   for (auto topLevelExpression : p.topLevelExpressions()) {

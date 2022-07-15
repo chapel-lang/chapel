@@ -764,14 +764,11 @@ struct Converter {
     return buildRequireStmt(actuals);
   }
 
-  // Copy the body of 'buildIncludeModule' since it is heavily tied to the
-  // old parser's implementation.
   Expr* visit(const uast::Include* node) {
     bool isIncPrivate = node->visibility() == uast::Decl::PRIVATE;
 
     // Consume the comment but do not use it - module comment is used.
-    auto comment = consumeLatestComment();
-    (void) comment;
+    std::ignore = consumeLatestComment();
 
     const uast::Module* umod =
       parsing::getIncludedSubmodule(context, node->id());

@@ -18,6 +18,7 @@
 target_sources(libdyno-obj
                PRIVATE
 
+               compiler-configuration.cpp
                Context.cpp
                ErrorMessage.cpp
                ID.cpp

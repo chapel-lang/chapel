@@ -20,7 +20,8 @@ DYNO_FRAMEWORK_OBJDIR = $(COMPILER_BUILD)/dyno/lib/framework
 
 ALL_SRCS += dyno/lib/framework/*.cpp
 
-DYNO_FRAMEWORK_SRCS =                                 \
+DYNO_FRAMEWORK_SRCS =                               \
+           compiler-configuration.cpp               \
            Context.cpp                              \
            ErrorMessage.cpp                         \
            ID.cpp                                   \
