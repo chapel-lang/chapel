@@ -1428,7 +1428,14 @@ struct Converter {
 
     // Simple variables get converted to DefExprs
     if (const uast::Variable* var = node->toVariable()) {
+      if (var->name() == USTR("_")) {
+        // don't try to create a DefExpr for '_' and instead use
+        // an UnresolvedSymExpr for this case.
+        return new UnresolvedSymExpr("chpl__tuple_blank");
+      }
+
       return convertVariable(var, false);
+
     // For tuples, recursively call 'convertLoopIndexDecl' on each element.
     // to produce a CallExpr containing DefExprs
     } else if (const uast::TupleDecl* td = node->toTupleDecl()) {

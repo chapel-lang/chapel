@@ -940,6 +940,13 @@ checkIndices(BaseAST* indices) {
     for_actuals(actual, call)
       checkIndices(actual);
   } else if (!isDefExpr(indices)) {
+    if (UnresolvedSymExpr* use = toUnresolvedSymExpr(indices)) {
+      if (!strcmp(use->unresolved, "chpl__tuple_blank")) {
+        // OK
+        return;
+      }
+    }
+
     USR_FATAL(indices, "invalid index expression");
   }
 }
