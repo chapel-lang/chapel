@@ -1005,7 +1005,7 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
 
   // check for mentions of a parent type
   // (workaround for primary methods with resolved receivers)
-  for (Symbol* parent = expr->parentSymbol;
+/*  for (Symbol* parent = expr->parentSymbol;
        parent && !isModuleSymbol(parent);
        parent = parent->defPoint->parentSymbol) {
     if (FnSymbol* method = toFnSymbol(parent)) {
@@ -1016,7 +1016,7 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
         }
       }
     }
-  }
+  }*/
 
   if (sym != NULL) {
     if (TypeSymbol* cts = toTypeSymbol(sym->defPoint->parentSymbol)) {
