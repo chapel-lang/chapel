@@ -31,14 +31,12 @@
 #include <string.h>
 #include <sys/time.h> // for struct timeval
 
-#ifndef __cplusplus
 #include <complex.h>
-typedef float complex        _complex64;
-typedef double complex       _complex128;
-#else
-#include <complex>
-typedef std::complex<float>  _complex64;
-typedef std::complex<double> _complex128;
+typedef float _Complex        _complex64;
+typedef double _Complex       _complex128;
+
+#ifndef _Complex_I
+#define _Complex_I __builtin_complex(0.0,1.0)
 #endif
 
 #ifdef __cplusplus
@@ -244,18 +242,10 @@ typedef struct chpl_main_argument_s {
 } chpl_main_argument;
 
 static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
-#ifndef __cplusplus
   return re + im*_Complex_I;
-#else
-  return std::complex<double>(re, im);
-#endif
 }
 static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
-#ifndef __cplusplus
   return re + im*_Complex_I;
-#else
-  return std::complex<float>(re, im);
-#endif
 }
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {
