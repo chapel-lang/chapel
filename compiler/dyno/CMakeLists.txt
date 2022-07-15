@@ -22,6 +22,8 @@ project(dyno VERSION 0.1)
 # Stuff to integrate LLVM support library into dyno
 option(DYNO_LLVM_COMP_ARGS "Override compile args for LLVM")
 option(DYNO_LLVM_LINK_ARGS "Override linker args for LLVM")
+# remove whitespace or you'll get complaints about an error
+# according to policy CMP0004
 string(STRIP ${DYNO_LLVM_COMP_ARGS} DYNO_LLVM_COMP_ARGS)
 string(STRIP ${DYNO_LLVM_LINK_ARGS} DYNO_LLVM_LINK_ARGS)
 

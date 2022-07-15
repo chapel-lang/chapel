@@ -17,42 +17,28 @@
  * limitations under the License.
  */
 
-#include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/Module.h"
-#include "chpl/uast/Record.h"
-#include "chpl/uast/Variable.h"
-#include "common.h"
+#include "llvm/Support/FileSystem.h"
+
+#include <cassert>
+
 
 // always check assertions in this test
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
 
-#include <cassert>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace types;
-using namespace uast;
-
+// Filesystem create/delete works from LLVM support library.
 static void test1() {
-  Context ctx;
-  auto context = &ctx;
-  auto qt = resolveQualifiedTypeOfX(context,
-                             R""""(
-                               var x: bool = true;
-                             )"""");
-  qt.dump();
-  assert(qt.kind() == QualifiedType::VAR);
-  assert(qt.type()->isBoolType());
+  std::string dirname = "test1dir";
+  std::error_code err = llvm::sys::fs::create_directories(dirname);
+  assert(!err);
+  assert(llvm::sys::fs::is_directory(dirname));
+  err = llvm::sys::fs::remove_directories(dirname);
+  assert(!err);
 }
 
-int main() {
-    test1();
-    return 0;
+
+int main(int argc, char** argv) {
+  test1();
+  return 0;
 }

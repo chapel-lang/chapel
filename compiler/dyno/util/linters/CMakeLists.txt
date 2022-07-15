@@ -17,20 +17,19 @@
 
 add_executable(fieldsUsed "fieldsUsed.cpp")
 
+# This option is set from the call to CMake from compiler/dyno/Makefile.help
 option(DYNO_LINTERS_CLANG_CMAKE_PATH "Override the path to find a ClangConfig.cmake")
-# set(DYNO_LINTERS_CLANG_CMAKE_PATH  ${llvm_cmakedir})
+
+# TODO: Maybe we shouldn't set this for CHPL_LLVM=none?
 if(DYNO_LINTERS_CLANG_CMAKE_PATH)
   # this finds the target clang-cpp and also finds an appropriate LLVM version
+  set(Clang_ROOT ${DYNO_LINTERS_CLANG_CMAKE_PATH})
   # Not marked as required since this linter is optional
-
-  # TODO: Need to find the proper clang as it relates to our LLVM
-  # set(Clang_ROOT ${llvm_cmakedir})
-  # find_package(Clang)
-  #  PATHS ${DYNO_LINTERS_CLANG_CMAKE_PATH}
-  #  NO_DEFAULT_PATH)
-#  message("Using libclang from ${Clang_DIR}")
-# set(clang_cmake_file ${llvm_cmakedir}/clang/ClangConfig.cmake)
-  # Using LLVM here links against the shared library.
-  # Linking against LLVMSupport (which grabs libLLVMSupport.a) was giving me issues
-#  target_link_libraries(fieldsUsed ${LLVM_LIBS} clang-cpp)
+  find_package(Clang PATHS ${DYNO_LINTERS_CLANG_CMAKE_PATH} NO_DEFAULT_PATH)
+else()
+  find_package(Clang)
 endif()
+
+message("Using libclang from ${Clang_DIR}")
+
+target_link_libraries(fieldsUsed clang-cpp ${DYNO_LLVM_LINK_ARGS})
