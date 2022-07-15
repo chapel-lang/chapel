@@ -23,7 +23,6 @@ option(DYNO_LINTERS_CLANG_CMAKE_PATH "Override the path to find a ClangConfig.cm
 # TODO: Maybe we shouldn't set this for CHPL_LLVM=none?
 if(DYNO_LINTERS_CLANG_CMAKE_PATH)
   # this finds the target clang-cpp and also finds an appropriate LLVM version
-  set(Clang_ROOT ${DYNO_LINTERS_CLANG_CMAKE_PATH})
   # Not marked as required since this linter is optional
   find_package(Clang PATHS ${DYNO_LINTERS_CLANG_CMAKE_PATH} NO_DEFAULT_PATH)
 else()

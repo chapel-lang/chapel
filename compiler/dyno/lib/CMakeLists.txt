@@ -32,6 +32,9 @@ target_include_directories(libdyno-obj PUBLIC
 # but these are not to be public
 target_include_directories(libdyno-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+# SHELL: is needed here to remove unwanted quotes from the list of arguments
+# COMPILE_LANGUAGE:CXX is needed here to make sure we only set the flags
+# for C++ files, not C files.
 target_compile_options(libdyno-obj PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${DYNO_LLVM_COMP_ARGS}>)
 
 add_subdirectory(immediates)
