@@ -487,7 +487,8 @@ proc Block.init(boundingBox: domain,
   }
 
   const ranges = setupTargetLocRanges(rank, targetLocales);
-  this.targetLocDom = {(...ranges)};
+  const targetLocDomC = {(...ranges)};
+  this.targetLocDom = targetLocDomC;
   this.targetLocales = reshape(targetLocales, this.targetLocDom);
 
   // Instead of 'dummyLB', we could give 'locDistTemp' a nilable element type.
@@ -503,7 +504,7 @@ proc Block.init(boundingBox: domain,
     on loc {
       locDistTempElt = new unmanaged LocBlock(rank, idxType, locid,
                                               boundingBox, boundingBoxDims,
-                                              targetLocDom);
+                                              targetLocDomC);
     }
   }
 
