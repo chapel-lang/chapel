@@ -489,9 +489,13 @@ proc Block.init(boundingBox: domain,
   const ranges = setupTargetLocRanges(rank, targetLocales);
   const targetLocDomC = {(...ranges)};
   this.targetLocDom = targetLocDomC;
+  // TODO can we avoid the reshape (and allocation that comes from it) when
+  // rank==1 and using all Locales?
   this.targetLocales = reshape(targetLocales, this.targetLocDom);
 
   // Instead of 'dummyLB', we could give 'locDistTemp' a nilable element type.
+  // TODO are there new langauge features that let us write directly into
+  // locDist and avoid all these extra allocations?
   const dummyLB = new unmanaged LocBlock(rank, idxType, dummy=true);
   var locDistTemp: [targetLocDom] unmanaged LocBlock(rank, idxType) = dummyLB;
 
@@ -509,7 +513,8 @@ proc Block.init(boundingBox: domain,
   }
 
   delete dummyLB;
-  this.locDist = locDistTemp; //make this a serial loop instead?
+  this.locDist = locDistTemp; //make this a serial loop instead? // TODO seems
+  // like these are all small array assignments so creating tasks is a waste?
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
