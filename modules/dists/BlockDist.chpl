@@ -1341,10 +1341,13 @@ proc Block.init(other: Block, privateData,
                 type sparseLayoutType = other.sparseLayoutType) {
   this.rank = rank;
   this.idxType = idxType;
-  boundingBox = {(...privateData(0))};
-  targetLocDom = {(...privateData(1))};
-  targetLocales = other.targetLocales;
-  locDist = other.locDist;
+  boundingBox = {(...privateData(0))};  // 1 GET  (why not RVFd?)
+  targetLocDom = {(...privateData(1))}; // 1 GET  (why not RVFd?)
+  targetLocales = other.targetLocales;  // 9 GETS (why so many?, reconstruct wen using all locs instead of copying?)
+  locDist = other.locDist;              // 9 GETS (why so many?)
+  // To squash comm to make verbose diags easier to read
+  //targetLocales = Locales;
+  //locDist = new unmanaged LocBlock(rank, idxType, dummy=true);
   dataParTasksPerLocale = privateData(2);
   dataParIgnoreRunningTasks = privateData(3);
   dataParMinGranularity = privateData(4);
