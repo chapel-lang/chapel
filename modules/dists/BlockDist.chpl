@@ -614,11 +614,13 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
   var locDomsTemp: [this.targetLocDom]
                   unmanaged LocBlockDom(rank, idxType, stridable) = dummyLBD;
+  const cachedPID = pid;
   coforall (localeIdx, loc, locDomsTempElt)
            in zip(this.targetLocDom, this.targetLocales, locDomsTemp) {
     on loc {
+      var privThis = chpl_getPrivatizedCopy(this.type, cachedPID);
       locDomsTempElt = new unmanaged LocBlockDom(rank, idxType, stridable,
-                                                 this.getChunk(whole, localeIdx));
+                                                 privThis.getChunk(whole, localeIdx));
     }
   }
   delete dummyLBD;
@@ -993,10 +995,13 @@ proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 }
 
 proc BlockDom.setup() {
+  const distpid = dist.pid;
+  const wholeC = whole;
   coforall (localeIdx, loc, locDomsElt)
            in zip(dist.targetLocDom, dist.targetLocales, locDoms) {
     on loc {
-      locDomsElt.myBlock = dist.getChunk(whole, localeIdx);
+      var privdist = chpl_getPrivatizedCopy(dist.type, distpid);
+      locDomsElt.myBlock = privdist.getChunk(wholeC, localeIdx);
     }
   }
 }
