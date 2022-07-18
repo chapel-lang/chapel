@@ -78,7 +78,7 @@ or
 
    This function has both an argument and a return intent 
 
-.. function:: proc thirteen(inout val) param
+.. function:: proc thirteen(inout val) ref
 
    This function has both an argument intent and a return intent 
 
@@ -157,7 +157,7 @@ or
 
    This function has both an argument and a return intent 
 
-.. function:: proc thirteen(inout val) param
+.. function:: proc thirteen(inout val) ref
 
    This function has both an argument intent and a return intent 
 
