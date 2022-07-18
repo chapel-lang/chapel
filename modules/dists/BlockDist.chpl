@@ -1491,8 +1491,10 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 
   var locArrTemp: [privdom.dist.targetLocDom]
                      unmanaged LocBlockArr(eltType, rank, idxType, stridable)
-    = privatizeData.locarr;
+    = privatizeData.locarr; // 5 GETS
 
+  // TODO is this needed, can't we just use `locArrTemp[here.id]`? I guess that
+  // doesn't work if this locale isn't in the targetLocales?
   var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
   for localeIdx in privdom.dist.targetLocDom do
     if locArrTemp(localeIdx).locale.id == here.id then
