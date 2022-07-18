@@ -1335,30 +1335,38 @@ override proc BlockDom.dsiSupportsAutoLocalAccess() param {
 
 ///// Privatization and serialization ///////////////////////////////////////
 
+record BlockPrvData {
+  var boundingBoxDims;
+  var targetLocDomDims;
+  var targetLocales;
+  var locDist;
+  var dataParTasksPerLocale;
+  var dataParIgnoreRunningTasks;
+  var dataParMinGranularity;
+}
+
 proc Block.init(other: Block, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
                 type sparseLayoutType = other.sparseLayoutType) {
   this.rank = rank;
   this.idxType = idxType;
-  boundingBox = {(...privateData(0))};  // 1 GET  (why not RVFd?)
-  targetLocDom = {(...privateData(1))}; // 1 GET  (why not RVFd?)
-  targetLocales = other.targetLocales;  // 9 GETS (why so many?, reconstruct wen using all locs instead of copying?)
-  locDist = other.locDist;              // 9 GETS (why so many?)
-  // To squash comm to make verbose diags easier to read
-  //targetLocales = Locales;
-  //locDist = new unmanaged LocBlock(rank, idxType, dummy=true);
-  dataParTasksPerLocale = privateData(2);
-  dataParIgnoreRunningTasks = privateData(3);
-  dataParMinGranularity = privateData(4);
+  boundingBox = {(...privateData.boundingBoxDims)};
+  targetLocDom = {(...privateData.targetLocDomDims)};
+  targetLocales = privateData.targetLocales;  // 5 GETS (reconstruct when using all locs instead of copying?)
+  locDist = privateData.locDist;              // 5 GETS
+  dataParTasksPerLocale = privateData.dataParTasksPerLocale;
+  dataParIgnoreRunningTasks = privateData.dataParIgnoreRunningTasks;
+  dataParMinGranularity = privateData.dataParMinGranularity;
   this.sparseLayoutType = sparseLayoutType;
 }
 
 override proc Block.dsiSupportsPrivatization() param return _privatization;
 
 proc Block.dsiGetPrivatizeData() {
-  return (boundingBox.dims(), targetLocDom.dims(),
-          dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
+  return new BlockPrvData(boundingBox.dims(), targetLocDom.dims(),
+      targetLocales, locDist, dataParTasksPerLocale, dataParIgnoreRunningTasks,
+      dataParMinGranularity);
 }
 
 proc Block.dsiPrivatize(privatizeData) {
