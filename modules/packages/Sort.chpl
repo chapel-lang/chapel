@@ -3288,8 +3288,11 @@ module MSBRadixSort {
                  settings=new MSBRadixSortSettings());
   }
 
-  // startbit counts from 0 and is a multiple of RADIX_BITS
+  // forall with intents used in tuple expansion causes compilation errors,
+  // for now, explicitly thwart kernel generation here, as detecting intents is
+  // not easy that late in compilation
   pragma "no gpu codegen"
+  // startbit counts from 0 and is a multiple of RADIX_BITS
   proc msbRadixSort(A:[], start_n:A.idxType, end_n:A.idxType, criterion,
                     startbit:int, endbit:int,
                     settings /* MSBRadixSortSettings */)

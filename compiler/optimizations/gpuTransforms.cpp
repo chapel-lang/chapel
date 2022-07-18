@@ -213,7 +213,6 @@ bool GpuizableLoop::shouldOutlineLoopHelp(BlockStmt* blk,
            fn->fname(), fn->linenum(), fn->name, fn->id);
   }
 
-  // TODO this should walk up the call chain recursively
   FnSymbol *cur = blk->getFunction();
   while (cur) {
     if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
