@@ -29,5 +29,4 @@ proc test(goodLock: string, tf: string) {
   remove(lf);
   temp.close();
   lock.close();
-  delete lockFile;
 }

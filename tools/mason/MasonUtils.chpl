@@ -483,7 +483,7 @@ proc isIdentifier(name:string) {
 
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
-iter allFields(tomlTbl: unmanaged Toml) {
+iter allFields(tomlTbl: Toml) {
   for (k,v) in tomlTbl.A.items() {
     if v!.tag == fieldtag.fieldToml then
       continue;

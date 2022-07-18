@@ -402,7 +402,7 @@ proc branchMasonReg(username: string, name: string, safeDir: string, registryPat
 proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", iomode.r);
-    var tomlFile = owned.create(parseToml(toParse));
+    var tomlFile = (parseToml(toParse));
     const name = tomlFile['brick']!['name']!.s;
     return name;
   }
@@ -418,7 +418,7 @@ proc getPackageName() throws {
 private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string,registryPath : string, isLocal : bool) throws {
   try! {
     const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
-    var tomlFile:owned class? = owned.create(parseToml(toParse));
+    var tomlFile = (parseToml(toParse));
     const versionNum = tomlFile!['brick']!['version']!.s;
     if !isLocal {
       if !exists(safeDir + '/mason-registry/Bricks/') {
@@ -428,7 +428,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         mkdir(safeDir + "/mason-registry/Bricks/" + name);
       }
       if !exists(safeDir + '/mason-registry/Bricks/' + name + "/" + versionNum + ".toml") {
-        const baseToml = tomlFile:owned class;
+        const baseToml = tomlFile;
         var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
         const url = gitUrl();
@@ -451,7 +451,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         mkdir(safeDir + "/Bricks/" + name);
       }
       if !exists(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml") {
-        const baseToml = tomlFile:owned class;
+        const baseToml = tomlFile;
         var newToml = open(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
         baseToml["brick"]!.set("source", projectLocal);
@@ -667,7 +667,7 @@ private proc checkLicense(projectHome: string) throws {
   var defaultLicense = "None";
   if exists(joinPath(projectHome, "Mason.toml")) {
     const toParse = open(joinPath(projectHome, "Mason.toml"), iomode.r);
-    const tomlFile = owned.create(parseToml(toParse));
+    const tomlFile = (parseToml(toParse));
     if tomlFile.pathExists("brick.license") {
       defaultLicense = tomlFile["brick"]!["license"]!.s;
     }
@@ -811,7 +811,7 @@ proc gitTagVersionCheck(projectHome: string) throws {
   var tags = runCommand("git tag -l", true);
   var allTags = tags.split("\n");
   const toParse = open(projectHome + "/Mason.toml", iomode.r);
-  const tomlFile = owned.create(parseToml(toParse));
+  const tomlFile = (parseToml(toParse));
   var version = "v" + tomlFile["brick"]!["version"]!.s;
   for tag in allTags {
     if tag == version {
@@ -826,7 +826,7 @@ proc gitTagVersionCheck(projectHome: string) throws {
 proc namespaceCollisionCheck(projectHome: string) throws {
   var directoryName = basename(projectHome);
   const toParse = open(projectHome + "/Mason.toml", iomode.r);
-  const tomlFile = owned.create(parseToml(toParse));
+  const tomlFile = (parseToml(toParse));
   var packageName = tomlFile["brick"]!["name"]!.s;
   if packageName == directoryName then return true;
   else return false;
@@ -835,7 +835,7 @@ proc namespaceCollisionCheck(projectHome: string) throws {
 /* Mason toml file formatting */
 proc masonTomlFileCheck(projectHome: string) {
   const toParse = open(projectHome + "/Mason.toml", iomode.r);
-  const tomlFile = owned.create(parseToml(toParse));
+  const tomlFile = (parseToml(toParse));
   var missingFields : list(string);
   var name, chplVersion, version, source, author, license = false;
   if tomlFile.pathExists("brick.name") then name = true; else missingFields.append('name');

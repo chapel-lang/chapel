@@ -216,7 +216,7 @@ proc getPackageScores(res: [] string) {
   if isFile(pathToReg) then cacheExists = true;
   if !cacheExists then touch(pathToReg);
   const parse = open(pathToReg, iomode.r);
-  const cacheFile = owned.create(parseToml(parse));
+  const cacheFile = parseToml(parse);
   var packageScores: map(string, int);
   var packageName: string;
   // defaultScore = (8/12 * 100) = 66
@@ -258,7 +258,7 @@ proc findLatest(packageDir: string): VersionInfo {
     const chplVersion = getChapelVersionInfo();
 
     const manifestReader = openreader(packageDir + '/' + manifest);
-    const manifestToml = owned.create(parseToml(manifestReader));
+    const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
     if chplVersion < low || chplVersion > high then continue;
@@ -274,7 +274,7 @@ proc findLatest(packageDir: string): VersionInfo {
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
   const openFile = openreader(tomlFile);
-  const toml = owned.create(parseToml(openFile));
+  const toml = parseToml(openFile);
   writeln(toml);
   openFile.close();
 }
