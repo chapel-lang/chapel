@@ -582,6 +582,15 @@ void Visitor::checkPrivateDecl(const Decl* node) {
 
   if (node->isTypeDecl()) {
     error(node, "Can't apply private to types yet");
+    return;
+  }
+
+  if (auto var = node->toVariable()) {
+    if (var->kind() == Variable::TYPE &&
+        var->visibility() == Decl::PRIVATE) {
+      error(node, "Can't apply private to types yet");
+      return;
+    }
   }
 
   // Fetch the enclosing declaration. If we are top level then return.
