@@ -164,6 +164,7 @@ public:
 
 private:
   bool evaluateLoop(BlockStmt *blk, bool allowFnCalls);
+  bool functionDisablesOutlining(BlockStmt* blk);
   bool shouldOutlineLoopHelp(BlockStmt *blk, std::set<FnSymbol *> &okFns,
     std::set<FnSymbol *> visitedFns, bool allowFnCalls);
   bool attemptToExtractLoopInformation();
@@ -188,6 +189,7 @@ bool GpuizableLoop::evaluateLoop(BlockStmt *blk, bool allowFnCalls) {
   std::set<FnSymbol*> visitedFns;
 
   bool looksEligible =
+    !functionDisablesOutlining(blk) &&
     shouldOutlineLoopHelp(blk, okFns, visitedFns, allowFnCalls) &&
     attemptToExtractLoopInformation();
 
@@ -203,6 +205,26 @@ bool GpuizableLoop::evaluateLoop(BlockStmt *blk, bool allowFnCalls) {
   return looksEligible;
 }
 
+bool GpuizableLoop::functionDisablesOutlining(BlockStmt* blk) {
+  FnSymbol *cur = blk->getFunction();
+  while (cur) {
+    if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+      return true;
+    }
+
+    // this is obviously a weak implementation. But the purpose is to track the
+    // call chain from things like `coforall_fn`, `wrapcoforall_fn` etc, which
+    // are always single invocation
+    if (CallExpr *singleCall = cur->singleInvocation()) {
+      cur = singleCall->getFunction();
+    }
+    else {
+      break;
+    }
+  }
+  return false;
+}
+
 bool GpuizableLoop::shouldOutlineLoopHelp(BlockStmt* blk,
                                           std::set<FnSymbol*>& okFns,
                                           std::set<FnSymbol*> visitedFns,
@@ -211,21 +233,6 @@ bool GpuizableLoop::shouldOutlineLoopHelp(BlockStmt* blk,
   if (debugPrintGPUChecks) {
     printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
            fn->fname(), fn->linenum(), fn->name, fn->id);
-  }
-
-  FnSymbol *cur = blk->getFunction();
-  while (cur) {
-    if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-      std::cout << "Function in " << cur->stringLoc() << std::endl;
-      return false;
-    }
-
-    if (CallExpr *singleCall = cur->singleInvocation()) {
-      cur = singleCall->getFunction();
-    }
-    else {
-      cur = NULL; // iow, break
-    }
   }
 
   if (visitedFns.count(blk->getFunction()) != 0) {
