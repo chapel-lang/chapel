@@ -7,6 +7,7 @@ config const passes = 10;
 config const alpha = 1.75: real(32);
 config const noisy = false;
 config const output = true;
+config const perftest = false;
 
 proc main(){
     startGPUDiagnostics();
@@ -110,6 +111,10 @@ proc main(){
             flopsDB.printDatabaseStats();
             bdwthDB.printDatabaseStats();
             triadDB.printDatabaseStats();
+        }
+        if(perftest){
+            bdwthDB.printPerfStats();
+            triadDB.printPerfStats();
         }
     }
     stopGPUDiagnostics();

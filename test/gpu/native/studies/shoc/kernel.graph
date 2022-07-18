@@ -1,0 +1,5 @@
+perfkeys: Kernel Time BlckSz:    64KB Median:, Kernel Time BlckSz:    64KB Median:, Kernel Time BlckSz:    64KB Median:
+files: triad.dat, triadalt1.dat, triadalt2.dat
+graphkeys: Triad, TriadAlt1, TriadAlt2
+ylabel: Time (s)
+graphtitle: Kernel Time - 64KB
