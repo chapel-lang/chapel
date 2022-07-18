@@ -1443,11 +1443,18 @@ proc BlockDom.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc BlockDom.dsiGetReprivatizeData() return whole.dims();
+record BlockDomRePrvData {
+  var dims;
+  var locdoms;
+}
+
+proc BlockDom.dsiGetReprivatizeData() {
+  return new BlockDomRePrvData(whole.dims(), locDoms);
+}
 
 proc BlockDom.dsiReprivatize(other, reprivatizeData) {
-  locDoms = other.locDoms;
-  whole = {(...reprivatizeData)};
+  whole = {(...reprivatizeData.dims)};
+  locDoms = reprivatizeData.locdoms; // 6 GETs (called twice)
 }
 
 proc BlockArr.chpl__serialize()
