@@ -207,10 +207,26 @@ bool GpuizableLoop::shouldOutlineLoopHelp(BlockStmt* blk,
                                           std::set<FnSymbol*>& okFns,
                                           std::set<FnSymbol*> visitedFns,
                                           bool allowFnCalls) {
+  FnSymbol* fn = blk->getFunction();
   if (debugPrintGPUChecks) {
-    FnSymbol* fn = blk->getFunction();
     printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
            fn->fname(), fn->linenum(), fn->name, fn->id);
+  }
+
+  // TODO this should walk up the call chain recursively
+  FnSymbol *cur = blk->getFunction();
+  while (cur) {
+    if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+      std::cout << "Function in " << cur->stringLoc() << std::endl;
+      return false;
+    }
+
+    if (CallExpr *singleCall = cur->singleInvocation()) {
+      cur = singleCall->getFunction();
+    }
+    else {
+      cur = NULL; // iow, break
+    }
   }
 
   if (visitedFns.count(blk->getFunction()) != 0) {

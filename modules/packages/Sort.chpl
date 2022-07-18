@@ -3289,6 +3289,7 @@ module MSBRadixSort {
   }
 
   // startbit counts from 0 and is a multiple of RADIX_BITS
+  pragma "no gpu codegen"
   proc msbRadixSort(A:[], start_n:A.idxType, end_n:A.idxType, criterion,
                     startbit:int, endbit:int,
                     settings /* MSBRadixSortSettings */)
