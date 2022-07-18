@@ -171,9 +171,9 @@ module OS {
     pragma "no doc"
     inline operator :(x:suseconds_t, type t:c_int)
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:suseconds_t)
-      return __primitive("cast", t, x);
+    // pragma "no doc"
+    // inline operator :(x:c_int, type t:suseconds_t)
+    //   return __primitive("cast", t, x);
     pragma "no doc"
     inline operator :(x:c_long, type t:suseconds_t)
       return __primitive("cast", t, x);
@@ -189,9 +189,9 @@ module OS {
     pragma "no doc"
     inline operator :(x:time_t, type t:c_int)
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:time_t)
-      return __primitive("cast", t, x);
+    // pragma "no doc"
+    // inline operator :(x:c_int, type t:time_t)
+    //   return __primitive("cast", t, x);
     pragma "no doc"
     inline operator :(x:c_long, type t:time_t)
       return __primitive("cast", t, x);
