@@ -91,4 +91,13 @@ public:
 
 } // end namespace chpl
 
+namespace std {
+  template<> struct hash<chpl::CompilerFlags::Name> {
+    inline size_t operator()(const chpl::CompilerFlags::Name& k) const{
+      return (size_t) k;
+    }
+  };
+} // end namespace std
+
+
 #endif
