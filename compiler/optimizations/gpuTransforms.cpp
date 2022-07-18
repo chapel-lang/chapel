@@ -37,9 +37,9 @@
 
 #include "global-ast-vecs.h"
 
-bool debugPrintGPUChecks = false;
-bool allowFnCallsFromGPU = true;
-int indentGPUChecksLevel = 0;
+static bool debugPrintGPUChecks = false;
+static bool allowFnCallsFromGPU = true;
+static int indentGPUChecksLevel = 0;
 
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
@@ -136,99 +136,9 @@ static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
   return true;
 }
 
-// ----------------------------------------------------------------------------
-// GpuizableLoop
-// ----------------------------------------------------------------------------
-
-// Used to evaluate if a loop is eligible to be outlined into a GPU kernel and
-// extracts information about the loop's bounds and indices.
-class GpuizableLoop {
-  CForLoop* loop_ = nullptr;
-  bool isEligible_ = false;
-  Symbol* upperBound_ = nullptr;
-  std::vector<Symbol*> loopIndices_;
-  std::vector<Symbol*> lowerBounds_;
-
-public:
-  GpuizableLoop(BlockStmt* blk, bool allowFnCalls);
-
-  CForLoop* loop() const { return loop_; }
-  bool isEligible() const { return isEligible_; }
-  Symbol* upperBound() const { return upperBound_; }
-  const std::vector<Symbol*>& loopIndices() const { return loopIndices_; }
-  const std::vector<Symbol*>& lowerBounds() const { return lowerBounds_; }
-  bool isIndexVariable(Symbol* sym) const {
-    return std::find(loopIndices_.begin(), loopIndices_.end(), sym) !=
-      loopIndices_.end();
-  }
-
-private:
-  bool evaluateLoop(BlockStmt *blk, bool allowFnCalls);
-  bool functionDisablesOutlining(BlockStmt* blk);
-  bool shouldOutlineLoopHelp(BlockStmt *blk, std::set<FnSymbol *> &okFns,
-    std::set<FnSymbol *> visitedFns, bool allowFnCalls);
-  bool attemptToExtractLoopInformation();
-  bool extractIndicesAndLowerBounds();
-  bool extractUpperBound();
-};
-
-GpuizableLoop::GpuizableLoop(BlockStmt *blk, bool allowFnCalls) {
-  this->loop_ = toCForLoop(blk);
-  this->isEligible_ = evaluateLoop(blk, allowFnCalls);
-}
-
-bool GpuizableLoop::evaluateLoop(BlockStmt *blk, bool allowFnCalls) {
-  if (!blk->inTree())
-    return false;
-
-  CForLoop* cfl = toCForLoop(blk);
-  if (cfl && !cfl->isOrderIndependent())
-    return false;
-
-  std::set<FnSymbol*> okFns;
-  std::set<FnSymbol*> visitedFns;
-
-  bool looksEligible =
-    !functionDisablesOutlining(blk) &&
-    shouldOutlineLoopHelp(blk, okFns, visitedFns, allowFnCalls) &&
-    attemptToExtractLoopInformation();
-
-  // We currently don't support launching kernels from kernels. So if
-  // the loop is within a function already marked for use on the GPU
-  // error out.
-  if(cfl->getFunction()->hasFlag(FLAG_GPU_CODEGEN)) {
-    USR_FATAL(cfl,
-      "GPU support does not currently allow nested kernel launches. Do you have\n"
-      "nested forall/foreach loops or looping over a multidimensional domain?");
-  }
-
-  return looksEligible;
-}
-
-bool GpuizableLoop::functionDisablesOutlining(BlockStmt* blk) {
-  FnSymbol *cur = blk->getFunction();
-  while (cur) {
-    if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-      return true;
-    }
-
-    // this is obviously a weak implementation. But the purpose is to track the
-    // call chain from things like `coforall_fn`, `wrapcoforall_fn` etc, which
-    // are always single invocation
-    if (CallExpr *singleCall = cur->singleInvocation()) {
-      cur = singleCall->getFunction();
-    }
-    else {
-      break;
-    }
-  }
-  return false;
-}
-
-bool GpuizableLoop::shouldOutlineLoopHelp(BlockStmt* blk,
-                                          std::set<FnSymbol*>& okFns,
-                                          std::set<FnSymbol*> visitedFns,
-                                          bool allowFnCalls) {
+static bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
+                                        std::set<FnSymbol*>& okFns,
+                                        std::set<FnSymbol*> visitedFns) {
   FnSymbol* fn = blk->getFunction();
   if (debugPrintGPUChecks) {
     printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
@@ -257,7 +167,7 @@ bool GpuizableLoop::shouldOutlineLoopHelp(BlockStmt* blk,
         return false;
       }
     } else if (call->isResolved()) {
-      if (!allowFnCalls)
+      if (!allowFnCallsFromGPU)
         return false;
 
       FnSymbol* fn = call->resolvedFunction();
@@ -267,8 +177,7 @@ bool GpuizableLoop::shouldOutlineLoopHelp(BlockStmt* blk,
 
       indentGPUChecksLevel += 2;
       if (okFns.count(fn) != 0 ||
-          shouldOutlineLoopHelp(fn->body, okFns,
-                                visitedFns, allowFnCalls)) {
+          callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns)) {
         indentGPUChecksLevel -= 2;
         okFns.insert(fn);
       } else {
@@ -278,6 +187,102 @@ bool GpuizableLoop::shouldOutlineLoopHelp(BlockStmt* blk,
     }
   }
   return true;
+}
+
+
+
+// ----------------------------------------------------------------------------
+// GpuizableLoop
+// ----------------------------------------------------------------------------
+
+// Used to evaluate if a loop is eligible to be outlined into a GPU kernel and
+// extracts information about the loop's bounds and indices.
+class GpuizableLoop {
+  CForLoop* loop_ = nullptr;
+  FnSymbol* parentFn_ = nullptr;
+  bool isEligible_ = false;
+  Symbol* upperBound_ = nullptr;
+  std::vector<Symbol*> loopIndices_;
+  std::vector<Symbol*> lowerBounds_;
+
+public:
+  GpuizableLoop(BlockStmt* blk);
+
+  CForLoop* loop() const { return loop_; }
+  bool isEligible() const { return isEligible_; }
+  Symbol* upperBound() const { return upperBound_; }
+  const std::vector<Symbol*>& loopIndices() const { return loopIndices_; }
+  const std::vector<Symbol*>& lowerBounds() const { return lowerBounds_; }
+  bool isIndexVariable(Symbol* sym) const {
+    return std::find(loopIndices_.begin(), loopIndices_.end(), sym) !=
+      loopIndices_.end();
+  }
+
+private:
+  bool evaluateLoop();
+  bool parentFnAllowsGpuization();
+  bool callsInBodyAreGpuizable();
+  bool attemptToExtractLoopInformation();
+  bool extractIndicesAndLowerBounds();
+  bool extractUpperBound();
+};
+
+GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
+  INT_ASSERT(blk->getFunction());
+
+  this->loop_ = toCForLoop(blk);
+  this->parentFn_ = toFnSymbol(blk->getFunction());
+  this->isEligible_ = evaluateLoop();
+}
+
+bool GpuizableLoop::evaluateLoop() {
+  CForLoop *cfl = this->loop_;
+  INT_ASSERT(cfl);
+
+  if (!cfl->inTree())
+    return false;
+
+  if (!cfl->isOrderIndependent())
+    return false;
+
+  // We currently don't support launching kernels from kernels. So if
+  // the loop is within a function already marked for use on the GPU
+  // error out.
+  if(this->parentFn_->hasFlag(FLAG_GPU_CODEGEN)) {
+    USR_FATAL(cfl,
+      "GPU support does not currently allow nested kernel launches. Do you have\n"
+      "nested forall/foreach loops or looping over a multidimensional domain?");
+  }
+
+  return parentFnAllowsGpuization() &&
+         callsInBodyAreGpuizable() &&
+         attemptToExtractLoopInformation();
+}
+
+bool GpuizableLoop::parentFnAllowsGpuization() {
+  FnSymbol *cur = this->parentFn_;
+  while (cur) {
+    if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+      return false;
+    }
+
+    // this is obviously a weak implementation. But the purpose is to track the
+    // call chain from things like `coforall_fn`, `wrapcoforall_fn` etc, which
+    // are always single invocation
+    if (CallExpr *singleCall = cur->singleInvocation()) {
+      cur = singleCall->getFunction();
+    }
+    else {
+      break;
+    }
+  }
+  return true;
+}
+
+bool GpuizableLoop::callsInBodyAreGpuizable() {
+  std::set<FnSymbol*> okFns;
+  std::set<FnSymbol*> visitedFns;
+  return callsInBodyAreGpuizableHelp(this->loop_, okFns, visitedFns);
 }
 
 bool GpuizableLoop::attemptToExtractLoopInformation() {
@@ -742,7 +747,7 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        GpuizableLoop gpuLoop(loop, allowFnCallsFromGPU);
+        GpuizableLoop gpuLoop(loop);
         if (gpuLoop.isEligible()) {
           outlineEligibleLoop(fn, gpuLoop);
         }
@@ -755,12 +760,12 @@ static void logGpuizableLoops() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* forLoop = toForLoop(block)) {
       if (forLoop->isOrderIndependent())
-        if (GpuizableLoop(forLoop, allowFnCallsFromGPU).isEligible())
+        if (GpuizableLoop(forLoop).isEligible())
           if (debugPrintGPUChecks)
             printf("Found viable forLoop %s:%d[%d]\n",
                    forLoop->fname(), forLoop->linenum(), forLoop->id);
     } else if (CForLoop* forLoop = toCForLoop(block)) {
-      if (GpuizableLoop(forLoop, allowFnCallsFromGPU).isEligible())
+      if (GpuizableLoop(forLoop).isEligible())
         if (debugPrintGPUChecks)
           printf("Found viable CForLoop %s:%d[%d]\n",
                  forLoop->fname(), forLoop->linenum(), forLoop->id);
