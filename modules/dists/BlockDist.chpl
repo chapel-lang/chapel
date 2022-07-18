@@ -1453,8 +1453,11 @@ proc BlockDom.dsiGetReprivatizeData() {
 }
 
 proc BlockDom.dsiReprivatize(other, reprivatizeData) {
-  whole = {(...reprivatizeData.dims)};
-  locDoms = reprivatizeData.locdoms; // 6 GETs (called twice)
+  var newWhole = {(...reprivatizeData.dims)};
+  //if whole != newWhole { // TODO is this legal?
+    locDoms = reprivatizeData.locdoms; // 6 GETs (called twice)
+  //}
+  whole = newWhole;
 }
 
 proc BlockArr.chpl__serialize()
