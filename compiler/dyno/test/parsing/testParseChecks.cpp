@@ -170,12 +170,13 @@ static void test4(void) {
       private var x = 0;
     }
     for i in lo..hi do private var x = 0;
+    private type T = int;
     )"""";
   auto path = UniqueString::get(ctx, "test4.chpl");
   setFileText(ctx, path, text);
   auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 9);
+  assert(br.numErrors() == 10);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test4.chpl", 2,
                      "Can't apply private to types yet");
@@ -201,6 +202,8 @@ static void test4(void) {
   assertErrorMatches(ctx, br, 8, "test4.chpl", 16,
                      "Private declarations are meaningless outside of "
                      "module level declarations");
+  assertErrorMatches(ctx, br, 9, "test4.chpl", 17,
+                     "Can't apply private to types yet");
 }
 
 static void test5(void) {
