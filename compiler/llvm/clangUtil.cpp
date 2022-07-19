@@ -3531,6 +3531,52 @@ getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
   return argInfo;
 }
 
+bool useDarwinArmFix(ArgSymbol* formal) {
+  static bool isDarwin = strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0;
+  static bool isArm = strcmp(CHPL_TARGET_ARCH, "arm64") == 0;
+
+  if (isDarwin && isArm &&
+      formal->type->symbol->hasFlag(FLAG_EXTERN) &&
+      isRecord(formal->type)) {
+    return true;
+  }
+
+  return false;
+}
+
+//
+// Returns an ArgInfo for the given formal.
+//
+// This ArgInfo is acquired by manufacturing a function call in clang where the
+// formal is the only argument.
+//
+const clang::CodeGen::ABIArgInfo*
+getSingleCGArgInfo(ArgSymbol* formal) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+  INT_ASSERT(cCodeGen);
+  clang::CodeGen::CodeGenModule& CGM = cCodeGen->CGM();
+
+  llvm::SmallVector<clang::CanQualType,4> argTypesC;
+
+  // Convert formal to a Clang type.
+  clang::CanQualType argTyC = getClangFormalType(formal);
+  argTypesC.push_back(argTyC);
+
+  auto extInfo = clang::FunctionType::ExtInfo();
+
+  auto& CGI = clang::CodeGen::arrangeFreeFunctionCall(CGM, argTyC, argTypesC,
+                                 extInfo, clang::CodeGen::RequiredArgs::All);
+  llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI.arguments();
+  const clang::CodeGen::ABIArgInfo* argInfo = NULL;
+  argInfo = &a[0].info;
+
+  return argInfo;
+}
+
 static unsigned helpGetCTypeAlignment(const clang::QualType& qType) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
