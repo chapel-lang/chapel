@@ -866,6 +866,15 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
       }
 
       resolveBlockStmt(formal->typeExpr);
+      if (formal == _this) {
+        BaseAST* thisType = formal->typeExpr->body.tail;
+        if (SymExpr* se = toSymExpr(thisType)) {
+          Symbol* sym = se->symbol();
+          if (!toTypeSymbol(sym) && !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+            USR_FATAL(formal, "Method defined on non-type '%s'", sym->name);
+          }
+        }
+      }
       formal->type = formal->typeExpr->body.tail->getValType();
     }
 
