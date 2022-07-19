@@ -131,10 +131,20 @@ bool ID::contains(const ID& other) const {
     return thisId == -1 ||
            (thisFirstContained <= otherId && otherId <= thisId);
   } else {
-    // No need to consider the IDs in the event that thisPath
-    // is a prefix of otherPath. In that event, they are different
-    // symbols, but one is nested inside the other.
-    return otherPath.startsWith(thisPath);
+    if (!otherPath.startsWith(thisPath)) {
+      // thisPath is not a prefix of otherPath
+      return false;
+    } else if (this->postOrderId() != -1) {
+      // thisPath is a prefix of otherPath, but...
+      // E.g. MyModule@5 can't contain MyModule.function
+      return false;
+    } else if (otherPath.c_str()[thisPath.length()] != '.') {
+      // thisPath is a prefix of otherPath, but...
+      // E.g. MyMod doesn't contain MyModule
+      return false;
+    } else {
+      return true;
+    }
   }
 }
 

@@ -154,9 +154,67 @@ static void test2() {
 
 }
 
+static void test3() {
+  Context ctx;
+  Context* context = &ctx;
+
+  ID id1 = ID(UniqueString::get(context, "IO"), -1, 6);
+  ID id1a = ID(UniqueString::get(context, "IO"), 5, 0);
+  ID id2 = ID(UniqueString::get(context, "IO.open"), -1, 8);
+  ID id2a = ID(UniqueString::get(context, "IO.open"), 7, 0);
+  ID id3 = ID(UniqueString::get(context, "IO.openHelper"), -1, 13);
+  ID id3a = ID(UniqueString::get(context, "IO.openHelper"), 12, 0);
+
+  assert(id1.contains(id1));
+  assert(id1.contains(id1a));
+  assert(id1.contains(id2));
+  assert(id1.contains(id2a));
+  assert(id1.contains(id3));
+  assert(id1.contains(id3a));
+
+  assert(id1a.contains(id1a));
+  assert(!id1a.contains(id1));
+  assert(!id1a.contains(id2));
+  assert(!id1a.contains(id2a));
+  assert(!id1a.contains(id3));
+  assert(!id1a.contains(id3a));
+
+  assert(id2.contains(id2));
+  assert(id2.contains(id2a));
+  assert(!id2.contains(id3));
+  assert(!id2.contains(id3a));
+  assert(!id2.contains(id1));
+  assert(!id2.contains(id1a));
+
+  assert(id2a.contains(id2a));
+  assert(!id2a.contains(id1));
+  assert(!id2a.contains(id1a));
+  assert(!id2a.contains(id2));
+  assert(!id2a.contains(id3));
+  assert(!id2a.contains(id3a));
+
+  assert(id3.contains(id3));
+  assert(id3.contains(id3a));
+  assert(!id3.contains(id2));
+  assert(!id3.contains(id2a));
+  assert(!id3.contains(id1));
+  assert(!id3.contains(id1a));
+
+  assert(id3a.contains(id3a));
+  assert(!id3a.contains(id1));
+  assert(!id3a.contains(id1a));
+  assert(!id3a.contains(id2));
+  assert(!id3a.contains(id2a));
+  assert(!id3a.contains(id3));
+
+
+}
+
+
 int main() {
   test1();
   test2();
+  test3();
 
   return 0;
 }

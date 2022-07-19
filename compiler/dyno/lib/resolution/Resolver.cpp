@@ -1915,6 +1915,7 @@ void Resolver::exit(const Dot* dot) {
   }
 
   if (receiver.type().kind() == QualifiedType::TYPE &&
+      receiver.type().type() != nullptr &&
       receiver.type().type()->isEnumType()) {
     // resolve E.x where E is an enum.
     const EnumType* enumType = receiver.type().type()->toEnumType();
@@ -2051,6 +2052,11 @@ void Resolver::exit(const uast::New* node) {
 
 bool Resolver::enter(const For* loop) {
 
+  if (scopeResolveOnly) {
+    enterScope(loop);
+    return true;
+  }
+
   const AstNode* iterand = loop->iterand();
   iterand->traverse(*this);
   ResolvedExpression& iterandRE = byPostorder.byAst(iterand);
@@ -2152,7 +2158,7 @@ bool Resolver::enter(const For* loop) {
 
 void Resolver::exit(const For* loop) {
   // Param loops handle scope differently
-  if (loop->isParam() == false) {
+  if (loop->isParam() == false || scopeResolveOnly) {
     exitScope(loop);
   }
 }

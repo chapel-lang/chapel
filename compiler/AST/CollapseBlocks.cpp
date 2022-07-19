@@ -270,6 +270,13 @@ void CollapseBlocks::visitLabelSym(LabelSymbol* node)
 
 }
 
+void
+CollapseBlocks::visitTemporaryConversionSymbol(TemporaryConversionSymbol* node)
+{
+
+}
+
+
 bool CollapseBlocks::enterModSym(ModuleSymbol* node)
 {
   return false;
