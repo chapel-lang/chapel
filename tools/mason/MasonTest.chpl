@@ -215,7 +215,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
     getSrcCode(sourceList, show);
     getGitCode(gitList, show);
-    
+
     const project = lockFile["root"]!["name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
