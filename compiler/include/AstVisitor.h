@@ -32,8 +32,8 @@ class EnumSymbol;
 class FnSymbol;
 class InterfaceSymbol;
 class LabelSymbol;
-class TemporaryConversionSymbol;
 class ModuleSymbol;
+class TemporaryConversionSymbol;
 class TypeSymbol;
 class VarSymbol;
 
