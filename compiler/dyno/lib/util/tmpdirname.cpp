@@ -18,10 +18,19 @@
  * limitations under the License.
  */
 
-#ifndef _TMPDIRNAME_H_
-#define _TMPDIRNAME_H_
+#include <cstdio>
+#include <cstdlib>
+#include "chpl/util/tmpdirname.h"
 
-extern const char* tmpdirname;
-extern const char* doctmpdirname;
+namespace chpl {
+//
+// IF tmpdirname's name CHANGES, IT NEEDS TO CHANGE IN createGDBFile AS WELL
+//
+const char* tmpdirname = NULL;
+const char* doctmpdirname = NULL;
+//
+//          ^^^^^^^^^^
+//
 
-#endif
+
+} // end namespace chpl

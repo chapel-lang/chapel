@@ -38,6 +38,18 @@ bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
  */
 bool fileExists(const char* path);
 
+std::error_code ensureDirExists(std::string dirname, std::string  explanation);
+
+
+std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut);
+
+
+std::string getTempDir();
+
+std::error_code deleteDir(std::string dirname);
+
+void ensureTmpDirExists(std::string& saveCDir, std::string& intDirName);
+
 } // end namespace chpl
 
 #endif

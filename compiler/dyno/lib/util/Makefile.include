@@ -25,8 +25,10 @@ DYNO_UTIL_SRCS =      \
   bitmap.cpp \
   break.cpp \
   filesystem.cpp \
+  mysystem.cpp \
   string-escapes.cpp \
   terminal.cpp \
+  tmpdirname.cpp \
 
 
 SRCS = $(DYNO_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c

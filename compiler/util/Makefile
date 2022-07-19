@@ -48,5 +48,5 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 # within gdb whether or not we're compiling the whole thing in
 # debug mode.
 #
-$(OBJ_SUBDIR)/tmpdirname.o: tmpdirname.cpp $(OBJ_SUBDIR_MADE)
+$(OBJ_SUBDIR)/tmpdirname.o: ../dyno/lib/util/tmpdirname.cpp $(OBJ_SUBDIR_MADE)
 	$(CXX) -g -c $(COMP_CXXFLAGS) -o $@ $<

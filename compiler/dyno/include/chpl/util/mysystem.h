@@ -18,15 +18,28 @@
  * limitations under the License.
  */
 
-#include <cstdio>
-#include <cstdlib>
-#include "tmpdirname.h"
+#ifndef CHPL_UTIL_MYSYSTEM_H
+#define CHPL_UTIL_MYSYSTEM_H
 
-//
-// IF tmpdirname's name CHANGES, IT NEEDS TO CHANGE IN createGDBFile AS WELL
-//
-const char* tmpdirname = NULL;
-const char* doctmpdirname = NULL;
-//
-//          ^^^^^^^^^^
-//
+#include <string>
+#include <vector>
+
+extern bool printSystemCommands;
+
+namespace chpl {
+
+int myshell(std::string command,
+            std::string description,
+            bool        ignoreStatus = false,
+            bool        quiet = false);
+
+int mysystem(const std::vector<std::string> commandVec,
+             std::string description,
+             pid_t&      childPidOut,
+             bool        ignorestatus = false,
+             bool        quiet = false);
+
+#endif
+
+
+} // namespace chpl

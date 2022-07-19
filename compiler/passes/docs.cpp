@@ -40,9 +40,11 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
-#include "tmpdirname.h"
+#include "chpl/util/tmpdirname.h"
 
 #include "global-ast-vecs.h"
+
+using namespace chpl;
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;

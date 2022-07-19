@@ -29,6 +29,8 @@ target_sources(libdyno-obj
                break.cpp
                filesystem.cpp
                filesystem_help.h
+               mysystem.cpp
                string-escapes.cpp
                terminal.cpp
+               tmpdirname.cpp
               )

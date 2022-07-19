@@ -19,6 +19,7 @@
  */
 
 #include "mysystem.h"
+#include "chpl/util/mysystem.h"
 
 #include "misc.h"
 
@@ -32,31 +33,17 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-bool printSystemCommands = false;
+//bool printSystemCommands = false;
 
 int myshell(const char* command,
              const char* description,
              bool        ignoreStatus,
              bool        quiet) {
 
-  int status = 0;
-
-  if (printSystemCommands && !quiet) {
-    printf("\n# %s\n", description);
-    printf("%s\n", command);
-    fflush(stdout);
-    fflush(stderr);
-  }
-
-  // Treat a '#' at the start of a line as a comment
-  if (command[0] == '#')
-    return 0;
-
-  status = system(command);
+  int status = chpl::myshell(std::string(command), std::string(description), ignoreStatus, quiet);
 
   if (status == -1) {
     USR_FATAL("system() fork failed: %s", strerror(errno));
-
   } else if (status != 0 && ignoreStatus == false) {
     USR_FATAL("%s", description);
   }
@@ -79,49 +66,11 @@ int mysystem(const std::vector<std::string> commandVec,
              const char* description,
              bool        ignoreStatus,
              bool        quiet) {
-
-  // if an empty command passed, do nothing
-  if (commandVec.empty()) {
-    return 0;
-  }
-
-  // Join the elements of commandVec into a single space separated string
-  std::string commandStr = commandVec.front();
-  for (unsigned int i = 1; i < commandVec.size(); i++) {
-    commandStr += " " + commandVec.at(i);
-  }
-
-  int status = 0;
-  std::vector<const char*> execArgs;
-  for (unsigned int i = 0; i < commandVec.size(); ++i)
-      execArgs.push_back(commandVec[i].c_str());
-  execArgs.push_back(NULL);
-  execArgs.shrink_to_fit();
-
-  if (printSystemCommands && !quiet) {
-    printf("\n# %s\n", description);
-    printf("%s\n", commandStr.c_str());
-    fflush(stdout);
-    fflush(stderr);
-  }
-
-  // Treat a '#' at the start of a line as a comment
-  if (commandStr.c_str()[0] == '#')
-    return 0;
-
   pid_t childPid;
-
-  childPid = fork();
-
+  int status = chpl::mysystem(commandVec, std::string(description),
+                              childPid, ignoreStatus, quiet);
   if (childPid == 0) {
-    // in child process
-    execvp(execArgs[0], const_cast<char* const *> (execArgs.data()));
-  } else if (childPid > 0 ) {
-    // in parent process
-    waitpid(childPid, &status, 0);
-    // filter status down to key bits
-    status = WEXITSTATUS(status);
-    // generate an error if there was one and we weren't asked to ignore it
+    // if there was an error and we shouldn't ignore them, then exit
     if (status != 0 && !ignoreStatus) {
       USR_FATAL("%s", description);
     }
