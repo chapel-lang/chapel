@@ -586,8 +586,7 @@ void Visitor::checkPrivateDecl(const Decl* node) {
   }
 
   if (auto var = node->toVariable()) {
-    if (var->kind() == Variable::TYPE &&
-        var->visibility() == Decl::PRIVATE) {
+    if (var->kind() == Variable::TYPE) {
       error(node, "Can't apply private to types yet");
       return;
     }
