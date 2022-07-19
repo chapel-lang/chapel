@@ -1404,7 +1404,6 @@ extern type fdflag_t = c_int;
 //  QIO_HINT_BANDWIDTH,
 //  QIO_HINT_CACHED,
 //  QIO_HINT_NOREUSE
-/*
 
 private const IOHINTS_NONE:        c_int = 0;
 private const IOHINTS_SEQUENTIAL:  c_int = QIO_HINT_SEQUENTIAL;
