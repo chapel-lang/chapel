@@ -83,7 +83,7 @@ private proc getBuildInfo(projectHome: string) {
 
   // Get project source code and dependencies
   // TODO: Add some use of the gitDeps
-  const (sourceList, gitDeps) = genSourceList(lockFile);
+  const (sourceList, gitList) = genSourceList(lockFile);
 
   //
   // TODO: Temporarily use `toArray` here because `list` does not yet
@@ -91,6 +91,7 @@ private proc getBuildInfo(projectHome: string) {
   // have for good performance.
   //
   getSrcCode(sourceList, false);
+  getGitCode(gitList, false);
   const project = lockFile["root"]!["name"]!.s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
@@ -109,7 +110,7 @@ private proc getBuildInfo(projectHome: string) {
   toml.close();
 
 
-  return (sourceList, projectPath, compopts, exampleNames, perExampleOptions);
+  return (sourceList, gitList, projectPath, compopts, exampleNames, perExampleOptions);
 }
 
 // retrieves compopts and execopts for each example.
@@ -190,11 +191,14 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     // names of examples, example compopts
     var buildInfo = getBuildInfo(projectHome);
     const sourceList = buildInfo[0];
-    const projectPath = buildInfo[1];
-    const compopts = buildInfo[2];
-    const exampleNames = buildInfo[3];
-    const perExampleOptions = buildInfo[4];
+    const gitList = buildInfo[1];
+    const projectPath = buildInfo[2];
+    const compopts = buildInfo[3];
+    const exampleNames = buildInfo[4];
+    const perExampleOptions = buildInfo[5];
     const projectName = basename(stripExt(projectPath, ".chpl"));
+    //TODO: This build info is weird and only used here, we should
+    //      move away from this
 
     var numExamples = exampleNames.size;
     var examplesToRun = determineExamples(exampleNames, examplesRequested);
@@ -223,7 +227,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
             // get the string of dependencies for compilation
             // also names example as --main-module
-            const masonCompopts = getMasonDependencies(sourceList, exampleName);
+            const masonCompopts = getMasonDependencies(sourceList, gitList, exampleName);
             var allCompOpts = " ".join(" ".join(compopts.these()), masonCompopts,
                                        exampleCompopts);
 
@@ -285,8 +289,11 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
 }
 
 
+// TODO: This code (and presumably others) is copy-pasted
+//       from MasonTest.chpl. Move to utils?
 private proc getMasonDependencies(sourceList: list(3*string),
-                                 exampleName: string) {
+                                  gitList: list(3*string),
+                                  exampleName: string) {
 
   // Declare example to run as the main module
   var masonCompopts = " ".join(" --main-module", exampleName, " ");
@@ -298,6 +305,15 @@ private proc getMasonDependencies(sourceList: list(3*string),
     for (_, name, version) in sourceList {
       var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
       masonCompopts += depSrc;
+    }
+  }
+  if gitList.size > 0 {
+    const gitDepPath = MASON_HOME + '/git/';
+
+    // Add git dependencies
+    for (_, name, branch) in gitList {
+      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
+      masonCompopts += gitDepSrc;
     }
   }
   return masonCompopts;
