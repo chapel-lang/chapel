@@ -1405,6 +1405,9 @@ extern type fdflag_t = c_int;
 //  QIO_HINT_CACHED,
 //  QIO_HINT_NOREUSE
 
+deprecated "the 'iohints' type is deprecated; please use the 'ioHints' record type instead."
+extern type iohints = c_int;
+
 private const IOHINTS_NONE:        c_int = 0;
 private const IOHINTS_SEQUENTIAL:  c_int = QIO_HINT_SEQUENTIAL;
 private const IOHINTS_RANDOM:      c_int = QIO_HINT_RANDOM;
@@ -1415,7 +1418,7 @@ private const IOHINTS_MMAP:        c_int = QIO_METHOD_MMAP;
   the file or channel will perform.  These hints may be used by the
   implementation to select optimized versions of the I/O operations.
 
-  Most hints have POSIX equivalents either associated with posix_fadvise() or
+  Most hints have POSIX equivalents associated with posix_fadvise() and
   posix_madvise().
 
   .. code-block:: chapel
@@ -1428,7 +1431,7 @@ private const IOHINTS_MMAP:        c_int = QIO_METHOD_MMAP;
     // open a file using the hints
     var f: file;
     try! {
-      f = open("path/to/my/file.txt", iomode.r, iohints=hints);
+      f = open("path/to/my/file.txt", iomode.r, hints=hints);
     }
 */
 record ioHints {
@@ -1755,6 +1758,13 @@ proc open(path:string, mode:iomode, hints=ioHints.empty,
   return openHelper(path, mode, hints, style:iostyleInternal);
 }
 
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'open' that takes an 'ioHints' record instead."
+proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle): file throws {
+  return openHelper(path, mode, new ioHints(hints), style:iostyleInternal);
+}
+
 /*
 
 Open a file on a filesystem. Note that once the
@@ -1773,6 +1783,12 @@ to create a channel to actually perform I/O operations
 */
 proc open(path:string, mode:iomode, hints=ioHints.empty): file throws {
   return openHelper(path, mode, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'open' that takes an 'ioHints' record instead."
+proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE): file throws {
+  return openHelper(path, mode, new ioHints(hints));
 }
 
 private proc openHelper(path:string, mode:iomode, hints=ioHints.empty,
@@ -1857,6 +1873,12 @@ proc openfd(fd: fd_t, hints=ioHints.empty, style:iostyle):file throws {
   return openfdHelper(fd, hints, style: iostyleInternal);
 }
 
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openfd' that takes an 'ioHints' record instead."
+proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle):file throws {
+  return openfdHelper(fd, new ioHints(hints), style: iostyleInternal);
+}
+
 /*
 
 Create a Chapel file that works with a system file descriptor.  Note that once
@@ -1887,6 +1909,12 @@ proc openfd(fd: fd_t, hints = ioHints.empty):file throws {
   return openfdHelper(fd, hints);
 }
 
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openfd' that takes an 'ioHints' record instead."
+proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE):file throws {
+  return openfdHelper(fd, new ioHints(hints));
+}
+
 private proc openfdHelper(fd: fd_t, hints = ioHints.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
@@ -1912,6 +1940,13 @@ deprecated "openfp with a style argument is deprecated"
 proc openfp(fp: _file, hints=ioHints.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openfp' that takes an 'ioHints' record instead."
+proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle):file throws {
+  return openfpHelper(fp, new ioHints(hints), style: iostyleInternal);
+}
+
 /*
 
 Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
@@ -1934,6 +1969,12 @@ that once the file is open, you will need to use a :proc:`file.reader` or
  */
 proc openfp(fp: _file, hints=ioHints.empty):file throws {
   return openfpHelper(fp, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openfp' that takes an 'ioHints' record instead."
+proc openfp(fp: _file, hints:iohints=IOHINT_NONE):file throws {
+  return openfpHelper(fp, new ioHints(hints));
 }
 
 private proc openfpHelper(fp: _file, hints=ioHints.empty,
@@ -1962,6 +2003,12 @@ proc opentmp(hints=ioHints.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
 
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'opentmp' that takes an 'ioHints' record instead."
+proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle):file throws {
+  return opentmpHelper(new ioHints(hints), style: iostyleInternal);
+}
+
 /*
 
 Open a temporary file. Note that once the file is open, you will need to use a
@@ -1987,6 +2034,12 @@ that is, a new file is created that supports both writing and reading.
 */
 proc opentmp(hints=ioHints.empty):file throws {
   return opentmpHelper(hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'opentmp' that takes an 'ioHints' record instead."
+proc opentmp(hints:iohints=IOHINT_NONE):file throws {
+  return opentmpHelper(new ioHints(hints));
 }
 
 private proc opentmpHelper(hints=ioHints.empty,
@@ -2717,6 +2770,19 @@ proc openreader(path:string,
 // be closed once we no longer have any references to it (which in this case,
 // since we only will have one reference, will be right after we close this
 // channel presumably).
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openreader' that takes an 'ioHints' record instead."
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints=IOHINT_NONE,
+                style:iostyle)
+    : channel(false, kind, locking) throws {
+  return openreaderHelper(path, kind, locking, start, end, new ioHints(hints),
+                          style: iostyleInternal);
+}
+
 /*
 
 Open a file at a particular path and return a reading channel for it.
@@ -2752,6 +2818,16 @@ proc openreader(path:string,
   return openreaderHelper(path, kind, locking, start, end, hints);
 }
 
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openreader' that takes an 'ioHints' record instead."
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints=IOHINT_NONE)
+    : channel(false, kind, locking) throws {
+  return openreaderHelper(path, kind, locking, start, end, new ioHints(hints));
+}
+
 private proc openreaderHelper(path:string,
                               param kind=iokind.dynamic, param locking=true,
                               start:int(64) = 0, end:int(64) = max(int(64)),
@@ -2773,6 +2849,19 @@ proc openwriter(path:string,
   return openwriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
 }
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openwriter' that takes an 'ioHints' record instead."
+proc openwriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints=IOHINT_NONE,
+                style:iostyle)
+    : channel(true, kind, locking) throws {
+  return openwriterHelper(path, kind, locking, start, end, new ioHints(hints),
+                    style: iostyleInternal);
+}
+
 /*
 
 Open a file at a particular path and return a writing channel for it.
@@ -2806,6 +2895,16 @@ proc openwriter(path:string,
                 hints = ioHints.empty)
     : channel(true, kind, locking) throws {
   return openwriterHelper(path, kind, locking, start, end, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openwriter' that takes an 'ioHints' record instead."
+proc openwriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints=IOHINT_NONE)
+    : channel(true, kind, locking) throws {
+  return openwriterHelper(path, kind, locking, start, end, new ioHints(hints));
 }
 
 private proc openwriterHelper(path:string,
@@ -2869,6 +2968,13 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
   return this.readerHelper(kind, locking, start, end, hints);
 }
 
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'file.reader' that takes an 'ioHints' record instead."
+proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
+                 end:int(64) = max(int(64)), hints:iohints=IOHINT_NONE): channel(false, kind, locking) throws {
+  return this.readerHelper(kind, locking, start, end, new ioHints(hints));
+}
+
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        start:int(64) = 0, end:int(64) = max(int(64)),
@@ -2895,6 +3001,16 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
   return this.linesHelper(locking, start, end, hints,
                           local_style: iostyleInternal);
 }
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'file.lines' that takes an 'ioHints' record instead."
+proc file.lines(param locking:bool = true, start:int(64) = 0,
+                end:int(64) = max(int(64)), hints:iohints=IOHINT_NONE,
+                in local_style:iostyle) throws {
+  return this.linesHelper(locking, start, end, new ioHints(hints),
+                          local_style: iostyleInternal);
+}
+
 /* Iterate over all of the lines in a file.
 
    :returns: an object which yields strings read from the file
@@ -2905,6 +3021,14 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)),
                 hints = ioHints.empty) throws {
   return this.linesHelper(locking, start, end, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'file.lines' that takes an 'ioHints' record instead."
+proc file.lines(param locking:bool = true, start:int(64) = 0,
+                end:int(64) = max(int(64)),
+                hints:iohints=IOHINT_NONE) throws {
+  return this.linesHelper(locking, start, end, new ioHints(hints));
 }
 
 pragma "no doc"
@@ -2933,6 +3057,15 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  hints = ioHints.empty, style:iostyle):
                  channel(true,kind,locking) throws {
   return this.writerHelper(kind, locking, start, end, hints, style: iostyleInternal);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'file.writer' that takes an 'ioHints' record instead."
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:iohints=IOHINT_NONE, style:iostyle):
+                 channel(true,kind,locking) throws {
+  return this.writerHelper(kind, locking, start, end, new ioHints(hints), style: iostyleInternal);
 }
 
 /*
@@ -2981,6 +3114,15 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  hints = ioHints.empty):
                  channel(true,kind,locking) throws {
   return this.writerHelper(kind, locking, start, end, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'file.writer' that takes an 'ioHints' record instead."
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:iohints=IOHINT_NONE):
+                 channel(true,kind,locking) throws {
+  return this.writerHelper(kind, locking, start, end, new ioHints(hints));
 }
 
 pragma "no doc"

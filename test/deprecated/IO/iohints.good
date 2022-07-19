@@ -1,0 +1,17 @@
+iohints.chpl:4: warning: the 'iohints' type is deprecated; please use the 'ioHints' record type instead.
+iohints.chpl:5: warning: 'IOHINT_RANDOM' is deprecated; please use 'ioHints.random' instead
+iohints.chpl:6: warning: 'IOHINT_SEQUENTIAL' is deprecated; please use 'ioHints.sequential' instead
+iohints.chpl:7: warning: 'IOHINT_CACHED' is deprecated; please use 'ioHints.prefetch' instead
+iohints.chpl:8: warning: 'IOHINT_PARALLEL' is deprecated
+iohints.chpl:9: warning: 'IOHINT_NONE' is deprecated; please use 'ioHints.empty' instead
+iohints.chpl:11: warning: defaultIOStyle is deprecated due to returning a deprecated type
+iohints.chpl:14: warning: The 'iohints' type is deprecated; please use a variant of 'open' that takes an 'ioHints' record instead.
+iohints.chpl:15: warning: The 'iohints' type is deprecated; please use a variant of 'open' that takes an 'ioHints' record instead.
+iohints.chpl:17: warning: The 'iohints' type is deprecated; please use a variant of 'openfd' that takes an 'ioHints' record instead.
+iohints.chpl:18: warning: The 'iohints' type is deprecated; please use a variant of 'openfd' that takes an 'ioHints' record instead.
+iohints.chpl:20: warning: The 'iohints' type is deprecated; please use a variant of 'openfp' that takes an 'ioHints' record instead.
+iohints.chpl:21: warning: The 'iohints' type is deprecated; please use a variant of 'openfp' that takes an 'ioHints' record instead.
+iohints.chpl:23: warning: The 'iohints' type is deprecated; please use a variant of 'opentmp' that takes an 'ioHints' record instead.
+iohints.chpl:24: warning: The 'iohints' type is deprecated; please use a variant of 'opentmp' that takes an 'ioHints' record instead.
+iohints.chpl:26: warning: The 'iohints' type is deprecated; please use a variant of 'openreader' that takes an 'ioHints' record instead.
+iohints.chpl:27: warning: The 'iohints' type is deprecated; please use a variant of 'openreader' that takes an 'ioHints' record instead.
