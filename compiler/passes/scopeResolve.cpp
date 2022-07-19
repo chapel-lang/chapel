@@ -518,6 +518,12 @@ static void gatherIndices(ResolveScope* scope, Expr* indices) {
     }
   } else if (DefExpr* def = toDefExpr(indices)) {
     scope->extend(def->sym);
+  } else if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(indices)) {
+    if (0 == strcmp(urse->unresolved, "chpl__tuple_blank")) {
+      // nothing to do -- _ used as an index variable
+    } else {
+      INT_FATAL("case not handled");
+    }
   } else {
     INT_FATAL("case not handled");
   }
