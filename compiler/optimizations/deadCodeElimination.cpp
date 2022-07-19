@@ -87,13 +87,12 @@ static bool isDeadVariable(Symbol* var) {
 }
 
 void deadVariableElimination(FnSymbol* fn) {
-  llvm::SmallPtrSet<Symbol*, 32> symSet;
+  std::set<Symbol*> symSet;
   collectSymbolSet(fn, symSet);
 
   // Use 'symSet' and 'todo' together for a unique queue of symbols to process
   std::queue<Symbol*> todo;
-  // for_set(Symbol, sym, symSet) {
-  for(Symbol* sym : symSet) {
+  for_set(Symbol, sym, symSet) {
     todo.push(sym);
   }
 
