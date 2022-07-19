@@ -13,7 +13,7 @@ else
 endif
 
 # activate LLVM asserts if it's from `make ASSERTS=1`
-# or if CHPL_DEVELOPER is set
+# or if CHPL_LLVM_DEVELOPER is set
 CHPL_LLVM_ASSERTS := 0
 ifdef CHPL_LLVM_DEVELOPER
   CHPL_LLVM_ASSERTS := 1
