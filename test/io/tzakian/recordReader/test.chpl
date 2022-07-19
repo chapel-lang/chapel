@@ -3,7 +3,7 @@ use RecordParser, IO;
 // Allow test to run with mmap or without since this test has exposed
 // QIO errors in the past for one of these configurations.
 config const no_mmap=false;
-var hints=IOHINT_NONE;
+var hints=ioHints.empty;
 if no_mmap {
   hints = QIO_METHOD_PREADPWRITE;
 }
