@@ -107,6 +107,8 @@ struct ConvertedSymbolsMap {
 // TODO: replace this global variable with a field in Converter
 // once we have a single Converter instance that converts a module
 // and all of its dependencies.
+// At that time, the global scope can be represented by symStack[0]
+// and code containing a conditional to use gConvertedSyms can be removed.
 static ConvertedSymbolsMap gConvertedSyms;
 
 struct Converter {

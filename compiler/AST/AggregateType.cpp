@@ -577,6 +577,7 @@ void AggregateType::addDeclarations(Expr* expr) {
 }
 
 void AggregateType::addDeclaration(DefExpr* defExpr) {
+  // TODO: move the checking here to dyno's post-parse-checks.cpp
   if (defExpr->sym->hasFlag(FLAG_REF_VAR)) {
       USR_FATAL_CONT(defExpr,
                      "References cannot be members of classes "

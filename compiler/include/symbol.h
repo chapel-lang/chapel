@@ -685,7 +685,7 @@ public:
 ************************************** | *************************************/
 
 /* This type exists to be used temporarily during convert-uast.
-   By using this time, convert-uast code can robustly handle
+   By using this type, convert-uast code can robustly handle
    AST copies from an AST node refering to something not yet converted.
    */
 class TemporaryConversionSymbol final : public Symbol {
