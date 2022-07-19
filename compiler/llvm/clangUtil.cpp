@@ -3531,13 +3531,13 @@ getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
   return argInfo;
 }
 
-bool useDarwinArmFix(ArgSymbol* formal) {
+bool useDarwinArmFix(::Type* type) {
   static bool isDarwin = strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0;
   static bool isArm = strcmp(CHPL_TARGET_ARCH, "arm64") == 0;
 
-  if (isDarwin && isArm &&
-      formal->type->symbol->hasFlag(FLAG_EXTERN) &&
-      isRecord(formal->type)) {
+  if (type != nullptr && isDarwin && isArm &&
+      type->symbol->hasFlag(FLAG_EXTERN) &&
+      isRecord(type)) {
     return true;
   }
 
@@ -3551,7 +3551,7 @@ bool useDarwinArmFix(ArgSymbol* formal) {
 // formal is the only argument.
 //
 const clang::CodeGen::ABIArgInfo*
-getSingleCGArgInfo(ArgSymbol* formal) {
+getSingleCGArgInfo(::Type* type) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
@@ -3563,7 +3563,7 @@ getSingleCGArgInfo(ArgSymbol* formal) {
   llvm::SmallVector<clang::CanQualType,4> argTypesC;
 
   // Convert formal to a Clang type.
-  clang::CanQualType argTyC = getClangFormalType(formal);
+  clang::CanQualType argTyC = getClangType(type, false);
   argTypesC.push_back(argTyC);
 
   auto extInfo = clang::FunctionType::ExtInfo();

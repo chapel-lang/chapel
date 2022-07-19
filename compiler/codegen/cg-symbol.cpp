@@ -1961,8 +1961,8 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
     const clang::CodeGen::ABIArgInfo* argInfo = NULL;
     if (CGI) {
       argInfo = getCGArgInfo(CGI, clangArgNum);
-    } else if (useDarwinArmFix(formal)) {
-      argInfo = getSingleCGArgInfo(formal);
+    } else if (useDarwinArmFix(formal->type)) {
+      argInfo = getSingleCGArgInfo(formal->type);
     }
 
     if (formal->hasFlag(FLAG_NO_CODEGEN))
@@ -2594,8 +2594,8 @@ void FnSymbol::codegenDef() {
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
         argInfo = getCGArgInfo(CGI, clangArgNum);
-      } else if (useDarwinArmFix(arg)) {
-        argInfo = getSingleCGArgInfo(arg);
+      } else if (useDarwinArmFix(arg->type)) {
+        argInfo = getSingleCGArgInfo(arg->type);
       }
 
       // We should have already skipped past the sret above.
