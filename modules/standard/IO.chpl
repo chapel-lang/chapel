@@ -1406,40 +1406,6 @@ extern type fdflag_t = c_int;
 //  QIO_HINT_NOREUSE
 /*
 
-// A value of the :type:`iohints` type defines a set of hints about the I/O that
-// the file or channel will perform.  These hints may be used by the
-// implementation to select optimized versions of the I/O operations.
-
-// The :type:`iohints` type is implementation-defined.
-// The following :type:`iohints` constants are provided:
-
-//   * :const:`IOHINT_NONE` defines an empty set, which provides no hints.
-//   * :const:`IOHINT_RANDOM` suggests to expect random access.
-//   * :const:`IOHINT_SEQUENTIAL` suggests to expect sequential access.
-//   * :const:`IOHINT_CACHED` suggests that the file data is or should be
-//     cached in memory, possibly all at once.
-//   * :const:`IOHINT_PARALLEL` suggests to expect many channels
-//     working with this file in parallel.
-
-
-// Other hints might be added in the future.
-
-// The following binary operators are defined on :type:`iohints`:
-
-// * ``|`` for set union
-// * ``&`` for set intersection
-// * ``==`` for set equality
-// * ``!=`` for set inequality
-
-// When an :type:`iohints` formal argument has default intent, the
-// actual is copied as ``const in`` to the formal upon a function
-// call, and the formal cannot be assigned within the function.
-
-// The default value of the :type:`iohints` type is undefined.
-
-// */
-// extern type iohints = c_int;
-
 private const IOHINTS_NONE:        c_int = 0;
 private const IOHINTS_SEQUENTIAL:  c_int = QIO_HINT_SEQUENTIAL;
 private const IOHINTS_RANDOM:      c_int = QIO_HINT_RANDOM;
