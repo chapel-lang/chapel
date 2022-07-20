@@ -34,7 +34,11 @@ use TOML;
 
 
 /* Runs the .chpl files found within the /example directory */
-proc masonExample(args: [] string) {
+proc masonExample(args: [] string) throws {
+
+  const projectType = getProjectType();
+  if projectType == "light" then
+      throw new owned MasonError("Mason light projects do not currently support 'mason example'");
 
   var parser = new argumentParser();
 

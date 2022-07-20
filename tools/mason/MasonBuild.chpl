@@ -35,6 +35,10 @@ use TOML;
 
 proc masonBuild(args: [] string) throws {
 
+  const projectType = getProjectType();
+  if projectType == "light" then
+      throw new owned MasonError("Mason light projects do not currently support 'mason build'");
+
   var parser = new argumentParser(helpHandler=new MasonBuildHelpHandler());
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);

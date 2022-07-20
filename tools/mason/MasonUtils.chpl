@@ -480,6 +480,7 @@ proc isIdentifier(name:string) {
   return ok;
 }
 
+
 proc getMasonDependencies(sourceList: list(3*string),
                           gitList: list(3*string),
                           progName: string) {
@@ -506,6 +507,15 @@ proc getMasonDependencies(sourceList: list(3*string),
     }
   }
   return masonCompopts;
+}
+
+
+proc getProjectType(): string {
+  const cwd = here.cwd();
+  const projectHome = getProjectHome(cwd);
+  const toParse = open(projectHome + "/Mason.toml", iomode.r);
+  const tomlFile = parseToml(toParse);
+  return tomlFile["brick"]!["type"]!.s;
 }
 
 

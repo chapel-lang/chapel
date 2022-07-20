@@ -30,6 +30,10 @@ use TOML;
 
 proc masonRun(args: [] string) throws {
 
+  const projectType = getProjectType();
+  if projectType != "package" then
+      throw new owned MasonError("Only mason packages can be run, but this is a Mason " + projectType);
+
   var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
