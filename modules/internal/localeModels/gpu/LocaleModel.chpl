@@ -223,7 +223,7 @@ module LocaleModel {
                                 sid);
     }
     override proc chpl_name() {
-      return "node"+ parent.chpl_id():string + "-GPU" + sid:string;
+      return "node"+ chpl_id():string + "-GPU" + sid:string;
     }
 
     proc init() {
