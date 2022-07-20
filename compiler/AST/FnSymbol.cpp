@@ -866,12 +866,20 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
       }
 
       resolveBlockStmt(formal->typeExpr);
+
+      // Check that the user did not define a method on a non-type, as
+      // in 'proc myVar.foo() { ... }'.  It would be nice to extend
+      // this check to all formals, but as Vass explains in
+      // https://github.com/chapel-lang/chapel/pull/20262#issuecomment-1190259631
+      // this is not as trivial as one would hope currently.  Ideally,
+      // 'dyno' will do a better job with this.
       if (formal == _this) {
         BaseAST* thisType = formal->typeExpr->body.tail;
         if (SymExpr* se = toSymExpr(thisType)) {
           Symbol* sym = se->symbol();
-          if (!toTypeSymbol(sym) && !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-            USR_FATAL(formal, "Method defined on non-type '%s'", sym->name);
+          if (!isTypeSymbol(sym) && !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+            USR_FATAL_CONT(formal, "Method defined on non-type '%s'",
+                           sym->name);
           }
         }
       }
