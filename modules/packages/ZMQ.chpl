@@ -245,7 +245,7 @@ module ZMQ {
   private use ExplicitRefCount;
   private use IO;
   private use CTypes;
-  use SysError;
+  use OS;
   use OS.POSIX;
 
   private extern proc chpl_macro_int_errno():c_int;
@@ -1123,7 +1123,7 @@ module ZMQ {
 
     .. warning::
        The design for this subclass is subject to change.  We may look into
-       merging it with :class:`~SysError.SystemError`, and/or extend it to have
+       merging it with :class:`~OS.SystemError`, and/or extend it to have
        subclasses for the various ZMQ-specific failures.
   */
   class ZMQError: Error {

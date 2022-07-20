@@ -152,7 +152,7 @@ module BigInteger {
   use HaltWrappers;
   use CTypes;
   use SysBasic only syserr, EFORMAT, ENOERR;
-  use SysError;
+  use OS;
 
   /*
     .. warning::

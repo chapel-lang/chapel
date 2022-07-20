@@ -67,7 +67,7 @@ require "event2/thread.h";
 require "-levent";
 require "-levent_pthreads";
 
-public use SysError;
+public use OS;
 public use CTypes;
 use Time;
 use OS, OS.POSIX;

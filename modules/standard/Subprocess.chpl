@@ -130,7 +130,7 @@ other task is consuming it.
  */
 module Subprocess {
   public use IO;
-  use SysError;
+  use OS;
   use CTypes;
   use OS.POSIX;
   import SysBasic.{syserr, ENOERR};

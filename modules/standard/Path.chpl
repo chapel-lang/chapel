@@ -66,8 +66,8 @@
 module Path {
 
 use List;
-use SysError, IO;
-use OS.POSIX;
+use IO;
+use OS, OS.POSIX;
 use CTypes;
 
 /*

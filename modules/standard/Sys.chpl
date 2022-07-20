@@ -46,7 +46,7 @@ deprecated "The 'Sys' module has been deprecated; please find replacement symbol
 module Sys {
   import SysBasic.{qio_err_t, fd_t};
   private use CTypes;
-  private use SysError;
+  private use OS;
 
 
   // CONSTANTS

@@ -60,7 +60,7 @@ try {
   ---------------
 
   Developers can also write their own throwing functions, throwing and
-  consuming errors. While there are built-in :class:`SysError.SystemError`
+  consuming errors. While there are built-in :class:`OS.SystemError`
   types, developers can also create their own hierarchies.
 
   Only ``owned`` instances that are subtypes of ``Error`` can be thrown.
