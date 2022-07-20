@@ -25,6 +25,37 @@
 namespace chpl {
 namespace uast {
 
+const char*
+Function::returnIntentToString(Function::ReturnIntent intent) {
+  switch ((IntentList) intent) {
+    case uast::IntentList::CONST_INTENT: return "const";
+    case uast::IntentList::VAR: return "var";
+    case uast::IntentList::CONST_VAR: return "const var";
+    case uast::IntentList::CONST_REF: return "const ref";
+    case uast::IntentList::REF: return "ref";
+    case uast::IntentList::IN: return "in";
+    case uast::IntentList::CONST_IN: return "const in";
+    case uast::IntentList::OUT: return "out";
+    case uast::IntentList::INOUT: return "inout";
+    case uast::IntentList::PARAM: return "param";
+    case uast::IntentList::TYPE: return "type";
+    default: break;
+  }
+
+  return nullptr;
+}
+
+const char* Function::kindToString(Function::Kind kind) {
+  switch (kind) {
+    case uast::Function::Kind::PROC: return "proc";
+    case uast::Function::Kind::ITER: return "iter";
+    case uast::Function::Kind::OPERATOR: return "operator";
+    case uast::Function::Kind::LAMBDA: return "lambda";
+    default: break;
+  }
+
+  return nullptr;
+}
 
 owned<Function> Function::build(Builder* builder, Location loc,
                                 owned<Attributes> attributes,

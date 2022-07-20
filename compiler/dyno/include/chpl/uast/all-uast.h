@@ -54,6 +54,7 @@
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/ForwardingDecl.h"
 #include "chpl/uast/Function.h"
+#include "chpl/uast/FunctionSignature.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/ImagLiteral.h"
 #include "chpl/uast/Implements.h"

@@ -50,6 +50,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::EmptyStmt:
     case asttags::ErroneousExpression:
     case asttags::ExternBlock:
+    case asttags::FunctionSignature:
     case asttags::Identifier:
     case asttags::Import:
     case asttags::Include:

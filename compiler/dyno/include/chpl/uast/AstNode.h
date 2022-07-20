@@ -86,8 +86,31 @@ class AstNode {
     : tag_(tag), id_(), children_(std::move(children)) {
   }
 
-  /* Magic constant to indicate no such child exists. */
+  // Magic constant to indicate no such child exists.
   static const int NO_CHILD = -1;
+
+  // Quick way to return an already exhausted iterator.
+  template <typename T>
+  AstListIteratorPair<T> emptyIterator() const {
+    return AstListIteratorPair<T>(children_.end(), children_.end());
+  }
+
+  // Quick way to construct an iterator over a child range.
+  template <typename T>
+  AstListIteratorPair<T> childRange(int start, int num) const {
+    if (num <= 0) return emptyIterator<T>();
+    auto itStart = children_.begin() + start;
+    auto itEnd = itStart + num;
+    return AstListIteratorPair<T>(itStart, itEnd);
+  }
+
+  // As above, but untemplated.
+  AstListIteratorPair<AstNode> childRange(int start, int num) const {
+    if (num <= 0) return emptyIterator<AstNode>();
+    auto itStart = children_.begin() + start;
+    auto itEnd = itStart + num;
+    return AstListIteratorPair<AstNode>(itStart, itEnd);
+  }
 
   // called by the Builder
   void setID(ID id) { id_ = id; }

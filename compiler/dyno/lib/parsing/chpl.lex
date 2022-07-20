@@ -181,7 +181,7 @@ param            return processToken(yyscanner, TPARAM);
 pragma           return processToken(yyscanner, TPRAGMA);
 __primitive      return processToken(yyscanner, TPRIMITIVE);
 private          return processToken(yyscanner, TPRIVATE);
-proc[ \t]*"("    return processToken(yyscanner, TPROCLP);
+proc"("          return processToken(yyscanner, TPROCLP);
 proc             return processToken(yyscanner, TPROC);
 prototype        return processToken(yyscanner, TPROTOTYPE);
 public           return processToken(yyscanner, TPUBLIC);

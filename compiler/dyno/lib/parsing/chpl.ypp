@@ -150,7 +150,7 @@
   // It is just saving some components of a function to be used
   // when building the FunctionDecl.
   struct FunctionParts {
-    bool isFunctionExpr;
+    bool isBodyNonBlockExpression;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
     Attributes* attributes;
@@ -440,8 +440,14 @@
 %left TNOELSE
 %left TELSE TTHROWS
 %left TCOMMA
+
+// Add the 'internal_type_type_def' types here to resolve s/r for
+// function types/exprs, as well as TIDENT.
+%nonassoc TBOOL TINT TUINT TREAL TIMAG TCOMPLEX TBYTES TSTRING
+          TDOMAIN TINDEX TLOCALE TNOTHING TVOID TIDENT
+%nonassoc TFALSE TNONE TTHIS TTRUE
+
 %left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
-// %left TOWNED TUNMANAGED TSHARED
 %left TIN
 %left TALIGN TBY THASH
 %left TOR
@@ -462,12 +468,12 @@
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
+
 %right TBORROWED TOWNED TUNMANAGED TSHARED
 %left TQUESTION TBANG
 %right TNEW
 %left TDOT TLP TRSBR TLCBR
-%nonassoc TPRAGMA
-
+%nonassoc TPRAGMA TALIAS
 
 %type <throwsTag> opt_throws_error
 %type <moduleKind> opt_prototype
@@ -546,7 +552,7 @@
 %type <exprList> type_alias_decl_stmt_inner_ls
 %type <commentsAndStmt> type_alias_decl_stmt_inner
 
-%type <functionParts> fn_decl_stmt fn_expr fn_expr_inner fn_type
+%type <functionParts> fn_decl_stmt
 %type <commentsAndStmt> fn_decl_stmt_complete
 %type <commentsAndStmt> class_decl_stmt
 %type <commentsAndStmt> enum_decl_stmt
@@ -555,20 +561,22 @@
 %type <exprList> var_decl_stmt_inner_ls tuple_var_decl_stmt_inner_ls
 %type <commentsAndStmt> var_decl_stmt_inner
 
-
-%type <exprList> function_body_stmt opt_function_body_stmt fn_expr_body
+%type <exprList> function_body_stmt opt_function_body_stmt
 
 %type <commentsAndStmt> when_stmt
 %type <exprList> when_stmt_ls
 
 %type <expr> array_type
 %type <expr> opt_type opt_ret_type ret_array_type ret_type colon_ret_type
-%type <expr> fn_type_ret_type
-%type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type
+%type <expr> opt_colon_formal_type formal_array_type opt_formal_array_elt_type
+%type <expr> formal_type
+%type <functionParts> lambda_decl_start
+%type <expr> lambda_decl_expr
 %type <typeDeclParts> enum_header_lcbr
 %type <exprList> enum_ls
 
 %type <expr> range_literal_expr cast_expr tuple_expand_expr
+%type <expr> super_expr
 %type <expr> zippered_iterator
 %type <expr> call_base_expr call_expr dot_expr
 %type <expr> lhs_expr
@@ -587,7 +595,7 @@
 %type <expr> opt_init_type formal_var_arg_expr
 %type <expr> opt_try_expr opt_expr
 %type <expr> tuple_component tuple_var_decl_component
-%type <expr> formal
+%type <expr> formal named_formal
 %type <commentsAndStmt> enum_item
 %type <expr> query_expr ifc_constraint
 
@@ -599,6 +607,9 @@
 %type <withClause> opt_task_intent_ls task_intent_clause forall_intent_clause
 
 %type <functionParts> fn_decl_stmt_start fn_decl_stmt_inner
+%type <functionParts> fn_type fn_expr
+%type <exprList> fn_type_formal_ls opt_fn_type_formal_ls
+%type <expr> fn_type_formal
 %type <exprList> opt_formal_ls req_formal_ls formal_ls formal_ls_inner
 %type <expr> fn_decl_receiver_expr
 %type <functionKind> proc_iter_or_op
@@ -2231,6 +2242,49 @@ enum_item:
     }
 ;
 
+lambda_decl_start:
+  TLAMBDA
+    {
+      FunctionParts fp = context->makeFunctionParts(false, false);
+      context->noteDeclStartLoc(@1);
+      auto loc = context->declStartLoc(@$);
+      fp.comments = context->gatherComments(loc);
+      fp.attributes = context->buildAttributes(@$).release();
+      fp.visibility = context->visibility;
+      context->resetAttributePartsState();
+      fp.kind = Function::PROC;
+      $$ = fp;
+    }
+;
+
+lambda_decl_expr:
+  lambda_decl_start req_formal_ls opt_ret_tag opt_type
+  opt_lifetime_where
+    {
+      context->clearComments();
+      context->resetDeclState();
+      context->enterScope(asttags::Function, STR("lambda"));
+    }
+  function_body_stmt
+    {
+      FunctionParts fp = $1;
+      fp.name = context->buildIdent(@1, STR("lambda"));
+      fp.formals = $2;
+      fp.returnIntent = $3;
+      fp.returnType = $4;
+      WhereAndLifetime wl = $5;
+      fp.body = $7;
+
+      fp.lifetime = wl.lifetime;
+      fp.where = wl.where;
+
+      context->clearComments();
+      context->exitScope(asttags::Function, STR("lambda"));
+
+      $$ = context->buildLambda(@$, fp);
+    }
+;
+
 linkage_spec_empty:
 ;
 
@@ -2242,63 +2296,81 @@ linkage_spec:
                        $$ = context->makeFunctionParts(false, true); }
 ;
 
-fn_type_ret_type:
-  type_level_expr         { $$ = $1; } // Can be replaced with 'expr'
-| ret_array_type          { $$ = $1; } // No replacement I can see
-| reserved_type_ident_use { $$ = context->buildIdent(@1, $1); } // OK
-| error
-  { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
+opt_fn_type_formal_ls:
+                                          { $$ = context->makeList(); }
+| fn_type_formal_ls                       { $$ = $1; }
 ;
 
+fn_type_formal_ls:
+  fn_type_formal                          { $$ = context->makeList($1); }
+| fn_type_formal_ls TCOMMA fn_type_formal { $$ = context->appendList($1, $3); }
+;
+
+fn_type_formal:
+  named_formal %prec TTHROWS
+| required_intent_tag TCOLON formal_type
+  { $$ = context->buildFunctionTypeFormal(@$, @1, $1, $3); }
+| formal_type
+;
+
+//
+// TODO: If you want to have spaces between the 'proc' and '(' text in the
+// TPROCLP token you will need to unfactor a bunch of stuff revolving
+// around 'fn_decl_receiver_expr', e.g., consider:
+// 'proc (borrowed class?).hash()'
+// -> Can we revert to TPROC TLP and then use precedence to fix this?
+// TODO: We need the return expression to be 'ret_type', not 'expr'.
+//
 fn_type:
-  TPROCLP formal_ls TRP opt_ret_tag TCOLON fn_type_ret_type opt_throws_error
+  TPROCLP opt_fn_type_formal_ls TRP opt_ret_tag TCOLON expr opt_throws_error
   {
-      /*
-      FunctionParts fp;
-      fp.isFunctionType = true;
-      fp.kind = $1;
-      fp.name = PODUniqueString();
-      fp.formals = $2;
-      fp.returnIntent = $4;
-      fp.returnType = $6;
-      fp.throws = ($7 == ThrowsTag_THROWS) ? true : false;
-      fp.body = nullptr;
-      */
-      FunctionParts fp;
-      $$ = fp;
-  }
-;
-
-// TODO: Have to figure out how to clear comments and stuff.
-// TODO: Do we have to enter/exit scope here? Probably?
-fn_expr:
-  TLAMBDA fn_expr_inner fn_expr_body
-  {
-    FunctionParts fp = $1;
-    fp.body = $2;
+    FunctionParts fp = context->makeFunctionParts(false, false);
+    fp.kind = Function::PROC;
+    fp.name = context->buildIdent(@1, STR("proc"));
+    fp.formals = $2;
+    fp.returnIntent = $4;
+    fp.returnType = $6;
+    fp.throws = ($7 == ThrowsTag_THROWS) ? true : false;
+    fp.body = nullptr;
+    fp.comments = nullptr;
+    fp.attributes = nullptr;
+    fp.visibility = context->visibility;
     $$ = fp;
   }
 ;
 
-fn_expr_inner:
-  req_formal_ls opt_ret_tag colon_ret_type opt_throws_error
-    {
-      FunctionParts fp;
-      fp.kind = $1;
-      fp.name = PODUniqueString();
-      fp.formals = $1;
-      fp.returnIntent = $2;
-      fp.returnType = $3;
-      fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
-      $$ = fp;
-    }
+fn_expr:
+  fn_type
+  {
+    context->clearComments();
+    context->resetDeclState();
+    context->enterScope(asttags::Function, STR("proc"));
+  }
+  block_stmt_body
+  {
+    FunctionParts fp = $1;
+    fp.isBodyNonBlockExpression = false;
+    fp.body = $3;
+    context->clearComments();
+    context->exitScope(asttags::Function, STR("proc"));
+    $$ = fp;
+  }
+| fn_type TALIAS
+  {
+    context->clearComments();
+    context->resetDeclState();
+    context->enterScope(asttags::Function, STR("proc"));
+  }
+  expr
+  {
+    FunctionParts fp = $1;
+    fp.isBodyNonBlockExpression = true;
+    fp.body = context->makeList($4);
+    context->clearComments();
+    context->exitScope(asttags::Function, STR("proc"));
+    $$ = fp;
+  }
 ;
-
-// TODO: Could add other syntactic sugar(s) here.
-fn_expr_body:
-  block_stmt_body   { $$ = $1; }
-;
-
 
 fn_decl_stmt_complete:
   fn_decl_stmt
@@ -2480,7 +2552,8 @@ opt_formal_ls:
 ;
 
 req_formal_ls:
-  TLP formal_ls TRP  { $$ = $2; }
+  TLP TRP                   { $$ = context->makeList(); }
+| TLP formal_ls_inner TRP   { $$ = $2; }
 ;
 
 formal_ls_inner:
@@ -2494,7 +2567,11 @@ formal_ls:
 ;
 
 formal:
-  opt_formal_intent_tag ident_def opt_formal_type opt_init_expr
+  named_formal
+;
+
+named_formal:
+  opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
   {
     $$ = Formal::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
                        /*name*/ $2,
@@ -2503,7 +2580,7 @@ formal:
                        toOwned($4)).release();
     context->noteIsBuildingFormal(false);
   }
-| pragma_ls opt_formal_intent_tag ident_def opt_formal_type opt_init_expr
+| pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
   {
     auto attributes = context->buildAttributes(@$);
     $$ = Formal::build(BUILDER, LOC(@$), std::move(attributes),
@@ -2514,7 +2591,7 @@ formal:
     context->noteIsBuildingFormal(false);
     context->resetAttributePartsState();
   }
-| opt_formal_intent_tag ident_def opt_formal_type formal_var_arg_expr
+| opt_formal_intent_tag ident_def opt_colon_formal_type formal_var_arg_expr
   {
     $$ = VarArgFormal::build(BUILDER, LOC(@$),
                              /*attributes*/ nullptr,
@@ -2524,7 +2601,7 @@ formal:
                              toOwned($4)).release();
     context->noteIsBuildingFormal(false);
   }
-| pragma_ls opt_formal_intent_tag ident_def opt_formal_type formal_var_arg_expr
+| pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type formal_var_arg_expr
   {
     auto attributes = context->buildAttributes(@$);
     $$ = VarArgFormal::build(BUILDER, LOC(@$),
@@ -2536,7 +2613,7 @@ formal:
     context->noteIsBuildingFormal(false);
     context->resetAttributePartsState();
   }
-| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type
   opt_init_expr
   {
     $$ = TupleDecl::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
@@ -2548,7 +2625,7 @@ formal:
                           toOwned($6)).release();
     context->noteIsBuildingFormal(false);
   }
-| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type
   formal_var_arg_expr
   {
     $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
@@ -2556,7 +2633,7 @@ formal:
 ;
 
 opt_formal_intent_tag:
-  {
+  %prec TNEW {
     context->noteIsBuildingFormal(true);
     $$ = Formal::DEFAULT_INTENT;
   }
@@ -2954,12 +3031,16 @@ formal_array_type:
   }
 ;
 
-opt_formal_type:
+formal_type:
+  type_level_expr
+| query_expr
+| reserved_type_ident_use   { $$ = context->buildIdent(@1, $1); }
+| formal_array_type
+;
+
+opt_colon_formal_type:
                                  { $$ = nullptr; }
-| TCOLON type_level_expr         { $$ = $2; }
-| TCOLON query_expr              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
-| TCOLON formal_array_type       { $$ = $2; }
+| TCOLON formal_type             { $$ = $2; }
 ;
 
 /** EXPRESSIONS **************************************************************/
@@ -3042,7 +3123,8 @@ type_level_expr:
   { $$ = context->buildFunctionType(@$, $1); }
 ;
 
-// TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
+// TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?'
+// would not work.
 sub_type_level_expr:
   nil_expr
 | lhs_expr                  // var b: a.type || (?,?) || foo()
@@ -3081,6 +3163,10 @@ sub_type_level_expr:
 | TSHARED expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TBORROWED
+  { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+| TBORROWED expr
+  { $$ = context->buildTypeConstructor(@$, $1, $2); }
+| TCLASS
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TRECORD
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
@@ -3321,6 +3407,7 @@ stmt_level_expr:
 | ident_expr
 | dot_expr
 | call_expr
+| lambda_decl_expr
 | new_expr
 | let_expr
 ;
@@ -3546,15 +3633,18 @@ tuple_expand_expr:
   }
 ;
 
-/* exprs represent valid values and types. Any expression with a valid
-   type also has a valid value as types can appear on the rhs during
-   type-aliasing.  Hence, type_level_expr must be a subset of expr. */
+super_expr:
+  fn_expr { $$ = context->buildFunctionExpr(@$, $1); }
+| expr
+;
+
 expr:
   literal_expr
-| type_level_expr
 | for_expr
+| type_level_expr
 | reduce_expr
 | scan_expr
+| lambda_decl_expr
 | new_expr
 | let_expr
 | ifc_constraint
@@ -3571,7 +3661,7 @@ opt_expr:
 opt_try_expr:
   TTRY expr       { $$ = context->buildTryExpr(@$, $2, false); }
 | TTRYBANG expr   { $$ = context->buildTryExpr(@$, $2, true); }
-| expr            { $$ = $1; }
+| super_expr      { $$ = $1; }
 ;
 
 lhs_expr:

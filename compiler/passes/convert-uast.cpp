@@ -2800,6 +2800,11 @@ struct Converter {
     return fn;
   }
 
+  Expr* visit(const uast::FunctionSignature* node) {
+    assert(false && "Not implemented yet!");
+    return nullptr;
+  }
+
   Expr* visit(const uast::Function* node) {
     auto comment = consumeLatestComment();
     FnSymbol* fn = convertFunction(node, comment);

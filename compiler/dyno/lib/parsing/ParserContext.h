@@ -346,6 +346,17 @@ struct ParserContext {
   FunctionParts makeFunctionParts(bool isInline,
                                   bool isOverride);
 
+  AstNode*
+  buildFunctionExpr(YYLTYPE location, FunctionParts& fp);
+
+  AstNode*
+  buildFunctionType(YYLTYPE location, FunctionParts& fp);
+
+  AstNode*
+  buildFunctionTypeFormal(YYLTYPE loc, YYLTYPE locIntent,
+                          Formal::Intent intent,
+                          AstNode* formalType);
+
   CommentsAndStmt
   buildExternExportFunctionDecl(YYLTYPE location, FunctionParts& fp);
 

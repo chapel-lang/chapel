@@ -60,6 +60,7 @@
   AST_LEAF(EmptyStmt)                  //
   AST_LEAF(ErroneousExpression)        //
   AST_LEAF(ExternBlock)                // old AST: ExternBlockStmt
+  AST_NODE(FunctionSignature)          // old AST: ExternBlockStmt
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
   AST_NODE(Implements)                 // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt

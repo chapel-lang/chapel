@@ -53,7 +53,7 @@ class Function final : public NamedDecl {
     PROC,
     ITER,
     OPERATOR,
-    LAMBDA,
+    LAMBDA
   };
 
   enum ReturnIntent {
@@ -372,8 +372,11 @@ class Function final : public NamedDecl {
     assert(b != nullptr);
     return b->stmt(i);
   }
-};
 
+  static const char* returnIntentToString(ReturnIntent intent);
+
+  static const char* kindToString(Kind kind);
+};
 
 } // end namespace uast
 
@@ -397,22 +400,10 @@ template<> struct stringify<uast::Function::ReturnIntent> {
   void operator()(std::ostream& streamOut,
                   StringifyKind stringKind,
                   const uast::Function::ReturnIntent& stringMe) const {
-    std::string intent;
-    switch ((uast::IntentList) stringMe)  {
-    case uast::IntentList::CONST_INTENT: intent = "const"; break;
-    case uast::IntentList::VAR: intent = "var"; break;
-    case uast::IntentList::CONST_VAR: intent = "const var"; break;
-    case uast::IntentList::CONST_REF: intent = "const ref"; break;
-    case uast::IntentList::REF: intent = "ref"; break;
-    case uast::IntentList::IN: intent = "in"; break;
-    case uast::IntentList::CONST_IN: intent = "const in"; break;
-    case uast::IntentList::OUT: intent = "out"; break;
-    case uast::IntentList::INOUT: intent = "inout"; break;
-    case uast::IntentList::PARAM: intent = "param"; break;
-    case uast::IntentList::TYPE: intent = "type"; break;
-    default: intent = "uast:Function::ReturnIntent not recognized";
-    }
-    streamOut << intent;
+    std::string out;
+    auto str = uast::Function::returnIntentToString(stringMe);
+    out = str ? str : "uast:Function::ReturnIntent not recognized";
+    streamOut << out;
   }
 };
 
@@ -420,15 +411,10 @@ template<> struct stringify<uast::Function::Kind> {
   void operator()(std::ostream& streamOut,
                   StringifyKind stringKind,
                   const uast::Function::Kind& stringMe) const {
-  std::string kind;
-  switch (stringMe) {
-    case uast::Function::Kind::PROC: kind = "proc"; break;
-    case uast::Function::Kind::ITER:  kind = "iter"; break;
-    case uast::Function::Kind::OPERATOR:  kind = "operator"; break;
-    case uast::Function::Kind::LAMBDA:  kind = "lambda"; break;
-    default: kind = "uast::Function::Kind not recognized";
-  }
-    streamOut << kind;
+    std::string out;
+    auto str = uast::Function::kindToString(stringMe);
+    out = str ? str : "uast:Function::Kind not recognized";
+    streamOut << out;
   }
 };
 /// \endcond DO_NOT_DOCUMENT

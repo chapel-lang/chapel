@@ -786,8 +786,23 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
   return fp;
 }
 
-Expression*
+AstNode*
 ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
+  if (fp.isBodyNonBlockExpression) assert(false && "Not handled!");
+  auto ret = buildLambda(location, fp);
+  return ret;
+}
+
+AstNode*
+ParserContext::buildFunctionTypeFormal(YYLTYPE loc, YYLTYPE locIntent,
+                                       Formal::Intent intent,
+                                       AstNode* formalType) {
+  assert(false && "Not implemented yet!");
+  return nullptr;
+}
+
+AstNode*
+ParserContext::buildFunctionType(YYLTYPE location, FunctionParts& fp) {
   assert(false && "Not implemented yet!");
   return nullptr;
 }
