@@ -1,0 +1,1 @@
+methodOnValue.chpl:12: error: Method defined on non-type 'myR'
