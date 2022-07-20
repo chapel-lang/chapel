@@ -246,6 +246,11 @@ uast::AstTag idToTag(Context* context, ID id);
 bool idIsParenlessFunction(Context* context, ID id);
 
 /**
+ Returns true if the ID is a field in a record/class/union.
+ */
+bool idIsField(Context* context, ID id);
+
+/**
  Returns the parent ID given an ID
  */
 const ID& idToParentId(Context* context, ID id);
