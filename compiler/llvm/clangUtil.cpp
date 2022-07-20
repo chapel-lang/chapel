@@ -3531,6 +3531,78 @@ getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
   return argInfo;
 }
 
+//
+// Issue #19218 describes a bug encountered on darwin+arm64 machines where
+// passing an extern record by value in LLVM resulted in incorrect assembly
+// code.
+//
+// A fix is to use the `getSingleCGArgInfo` function to determine if Clang
+// would pass such an extern record by indirect pointer, and match that
+// behavior in our generated LLVM.
+//
+// This function returns true if we should use the ABI information from Clang
+// to apply the fix.
+//
+bool useDarwinArmFix(::Type* type) {
+  static bool isDarwin = strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0;
+  static bool isArm = strcmp(CHPL_TARGET_ARCH, "arm64") == 0;
+
+  if (type != nullptr && isDarwin && isArm &&
+      type->symbol->hasFlag(FLAG_EXTERN) &&
+      isRecord(type)) {
+    return true;
+  }
+
+  return false;
+}
+
+//
+// Returns an ArgInfo for the given formal.
+//
+// The ArgInfo is acquired by manufacturing a function call in clang where the
+// formal is the only argument.
+//
+// Note: this function exists as a workaround because `getClangABIInfo` only
+// works if all of the function's formals are extern types.
+// `getSingleCGArgInfo` is intended to be used in **any** situation where we
+// are passing an extern record by value.
+//
+// For example, in the following function we need to pass `A` by indirect
+// pointer, but `getClangABIInfo` cannot currently handle the formal `B`
+// because its type is not extern.
+//
+//   proc helper(in A : externRec, B : chapelRec)
+//
+// TODO: Update `getClangABIInfo` to handle formal types and return types that
+// are not extern types.
+//
+const clang::CodeGen::ABIArgInfo*
+getSingleCGArgInfo(::Type* type) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+  INT_ASSERT(cCodeGen);
+  clang::CodeGen::CodeGenModule& CGM = cCodeGen->CGM();
+
+  llvm::SmallVector<clang::CanQualType,4> argTypesC;
+
+  // Convert formal to a Clang type.
+  clang::CanQualType argTyC = getClangType(type, false);
+  argTypesC.push_back(argTyC);
+
+  auto extInfo = clang::FunctionType::ExtInfo();
+
+  auto& CGI = clang::CodeGen::arrangeFreeFunctionCall(CGM, argTyC, argTypesC,
+                                 extInfo, clang::CodeGen::RequiredArgs::All);
+  llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI.arguments();
+  const clang::CodeGen::ABIArgInfo* argInfo = NULL;
+  argInfo = &a[0].info;
+
+  return argInfo;
+}
+
 static unsigned helpGetCTypeAlignment(const clang::QualType& qType) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);

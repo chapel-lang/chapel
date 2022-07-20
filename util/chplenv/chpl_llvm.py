@@ -66,11 +66,8 @@ def compatible_platform_for_llvm():
     target_platform = chpl_platform.get('target')
 
     is32bit = target_platform == "linux32" or target_arch == "i368"
-    mac_arm = target_platform == 'darwin' and target_arch == 'arm64'
 
-    if is32bit or mac_arm:
-        return False
-    return True
+    return not is32bit
 
 # returns a string of the supported llvm versions suitable for error msgs
 def llvm_versions_string():
