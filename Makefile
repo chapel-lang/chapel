@@ -71,6 +71,7 @@ notcompiler: FORCE
 
 dyno: FORCE
 	@echo "Making the compiler library..."
+	@cd third-party && $(MAKE) llvm
 	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno
 
 compiler: FORCE
