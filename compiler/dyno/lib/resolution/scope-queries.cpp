@@ -552,9 +552,11 @@ lookupNameInScopeWithSet(Context* context,
                     name, config, visited, vec);
   }
 
-  doLookupInScope(context, scope,
-                  /* resolving scope */ nullptr,
-                  name, config, visited, vec);
+  if (scope) {
+    doLookupInScope(context, scope,
+                    /* resolving scope */ nullptr,
+                    name, config, visited, vec);
+  }
 
   return vec;
 }

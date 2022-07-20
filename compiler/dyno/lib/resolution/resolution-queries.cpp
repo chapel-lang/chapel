@@ -1943,11 +1943,6 @@ doIsCandidateApplicableInitial(Context* context,
 
   if (!candidateId.isEmpty()) {
     tag = parsing::idToTag(context, candidateId);
-    // could be a function, type for type construction, field
-    assert(isFunction(tag) || isTypeDecl(tag) || isVariable(tag));
-  } else {
-    assert(false && "case not handled");
-    return nullptr;
   }
 
   if (isTypeDecl(tag)) {
@@ -1956,16 +1951,25 @@ doIsCandidateApplicableInitial(Context* context,
     return typeConstructorInitial(context, t);
   }
 
-  if (isVariable(tag) &&
-      ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
-    // calling a field accessor
-    auto ct = ci.actual(0).type().type()->getCompositeType();
-    assert(ct);
-    assert(isNameOfField(context, ci.name(), ct));
-    return fieldAccessor(context, ct, ci.name());
+  if (isFormal(tag)) {
+    // not a candidate
+    return nullptr;
   }
 
-  assert(isFunction(tag) && "only fn case handled here");
+  if (isVariable(tag)) {
+    if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
+      // calling a field accessor
+      auto ct = ci.actual(0).type().type()->getCompositeType();
+      assert(ct);
+      assert(isNameOfField(context, ci.name(), ct));
+      return fieldAccessor(context, ct, ci.name());
+    } else {
+      // not a candidate
+      return nullptr;
+    }
+  }
+
+  assert(isFunction(tag) && "expected fn case only by this point");
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
