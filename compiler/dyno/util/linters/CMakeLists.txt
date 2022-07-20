@@ -18,9 +18,11 @@
 add_executable(fieldsUsed "fieldsUsed.cpp")
 
 # This option is set from the call to CMake from compiler/dyno/Makefile.help
+# TODO: use DYNO_LLVM_COMP_ARGS DYNO_LLVM_LINK_ARGS instead since
+# these should include clang arguments for CHPL_LLVM=system / CHPL_LLVM=bundled.
+# TODO: don't try to `find_package` if CHPL_LLVM=none
 option(DYNO_LINTERS_CLANG_CMAKE_PATH "Override the path to find a ClangConfig.cmake")
 
-# TODO: Maybe we shouldn't set this for CHPL_LLVM=none?
 if(DYNO_LINTERS_CLANG_CMAKE_PATH)
   # this finds the target clang-cpp and also finds an appropriate LLVM version
   # Not marked as required since this linter is optional

@@ -19,7 +19,10 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(dyno VERSION 0.1)
 
-# Stuff to integrate LLVM support library into dyno
+# Options to integrate LLVM support library into dyno
+# TODO: enable easier cmake builds of dyno (outside of Chapel's Makefiles)
+# by falling back on find_package(LLVM) if
+# DYNO_LLVM_COMP_ARGS / DYNO_LLVM_LINK_ARGS are empty.
 option(DYNO_LLVM_COMP_ARGS "Override compile args for LLVM")
 option(DYNO_LLVM_LINK_ARGS "Override linker args for LLVM")
 # remove whitespace or you'll get complaints about an error
