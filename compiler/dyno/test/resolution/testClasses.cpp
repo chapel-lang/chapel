@@ -92,7 +92,7 @@ static void test1() {
                                     ClassTypeDecorator::GENERIC_NONNIL));
 
   assert(methodT->formalName(0) == "this");
-  assert(methodT->formalType(0).kind() == QualifiedType::DEFAULT_INTENT);
+  assert(methodT->formalType(0).kind() == QualifiedType::CONST_IN);
   assert(methodT->formalType(0).type() == borrowedNonNil);
 
   assert(functionT->formalName(0) == "arg");
