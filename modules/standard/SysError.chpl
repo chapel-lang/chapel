@@ -28,7 +28,7 @@
 
    The IO module uses these routines in a way that supports error inspection
    and rapid prototyping. Most routines in the IO module have two forms.
-   In one form, a :class:`SystemError` is thrown when an error occurs.
+   In one form, a :class:`OS.SystemError` is thrown when an error occurs.
    In the second form, a ``syserr`` is returned in an out error argument.
 
  */
