@@ -20,9 +20,9 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include "chpl/util/tmpdirname.h"
+#include "tmpdirname.h"
 
-namespace chpl {
+
 //
 // IF tmpdirname's name CHANGES, IT NEEDS TO CHANGE IN createGDBFile AS WELL
 //
@@ -31,6 +31,3 @@ const char* doctmpdirname = NULL;
 //
 //          ^^^^^^^^^^
 //
-
-
-} // end namespace chpl

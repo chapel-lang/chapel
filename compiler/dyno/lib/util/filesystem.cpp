@@ -23,7 +23,7 @@
 
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/Location.h"
-#include "chpl/util/tmpdirname.h"
+
 #include "llvm/Support/FileSystem.h"
 
 #include <cerrno>
@@ -186,14 +186,13 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut) {
   return std::error_code();
 }
 
- void ensureTmpDirExists(std::string& saveCDir, std::string& intDirName) {
+ void ensureTmpDirExists(std::string& saveCDir, std::string& intDirName,
+                         std::string& tmpdirname) {
    if (saveCDir.empty()) {
-     if (tmpdirname == NULL) {
-       std::string dirName;
-       if (auto err = makeTempDir("chpl-", dirName)) {
+     if (tmpdirname.empty()) {
+       if (auto err = makeTempDir("chpl-", tmpdirname)) {
          return;
        }
-       tmpdirname = dirName.c_str();
        intDirName = tmpdirname;
      }
    } else {

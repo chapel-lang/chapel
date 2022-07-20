@@ -40,7 +40,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "chpl/util/filesystem.h"
-#include "chpl/util/tmpdirname.h"
+#include "tmpdirname.h"
 
 
 #include <pwd.h>
@@ -128,11 +128,13 @@ const char* makeTempDir(const char* dirPrefix) {
 }
 
 void ensureTmpDirExists() {
-  std::string cDir, intDir;
+  std::string cDir, intDir, tmpdir;
   cDir = std::string(saveCDir);
   if (intDirName != NULL) intDir = std::string(intDirName);
-  chpl::ensureTmpDirExists(cDir, intDir);
+  if (tmpdirname != NULL) tmpdir = std::string(tmpdir);
+  chpl::ensureTmpDirExists(cDir, intDir, tmpdir);
   if (!intDir.empty()) intDirName = astr(intDir);
+  if (!tmpdir.empty()) tmpdirname = astr(tmpdir);
 }
 
 void deleteDir(const char* dirname) {

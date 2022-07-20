@@ -28,7 +28,6 @@ DYNO_UTIL_SRCS =      \
   mysystem.cpp \
   string-escapes.cpp \
   terminal.cpp \
-  tmpdirname.cpp \
 
 
 SRCS = $(DYNO_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c
@@ -37,4 +36,3 @@ DYNO_UTIL_OBJS = \
 	$(DYNO_UTIL_SRCS:%.cpp=$(DYNO_UTIL_OBJDIR)/%.$(OBJ_SUFFIX)) \
         $(DYNO_UTIL_OBJDIR)/my_aligned_alloc.o \
         $(DYNO_UTIL_OBJDIR)/my_strerror_r.o \
-

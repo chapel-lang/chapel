@@ -48,7 +48,8 @@ std::string getTempDir();
 
 std::error_code deleteDir(std::string dirname);
 
-void ensureTmpDirExists(std::string& saveCDir, std::string& intDirName);
+void ensureTmpDirExists(std::string& saveCDir, std::string& intDirName,
+                        std::string& tmpdirname);
 
 } // end namespace chpl
 

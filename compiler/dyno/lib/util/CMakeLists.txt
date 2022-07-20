@@ -32,5 +32,4 @@ target_sources(libdyno-obj
                mysystem.cpp
                string-escapes.cpp
                terminal.cpp
-               tmpdirname.cpp
               )

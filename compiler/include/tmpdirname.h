@@ -18,16 +18,10 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UTIL_TMPDIRNAME_H
-#define CHPL_UTIL_TMPDIRNAME_H
-
-namespace chpl {
-
+#ifndef _TMPDIRNAME_H_
+#define _TMPDIRNAME_H_
 
 extern const char* tmpdirname;
 extern const char* doctmpdirname;
-
-
-} // end namespace chpl
 
 #endif

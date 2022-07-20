@@ -40,7 +40,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
-#include "chpl/util/tmpdirname.h"
+#include "tmpdirname.h"
 
 #include "global-ast-vecs.h"
 
