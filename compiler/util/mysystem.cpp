@@ -33,14 +33,15 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-//bool printSystemCommands = false;
+bool printSystemCommands = false;
 
 int myshell(const char* command,
              const char* description,
              bool        ignoreStatus,
              bool        quiet) {
 
-  int status = chpl::myshell(std::string(command), std::string(description), ignoreStatus, quiet);
+  int status = chpl::myshell(std::string(command), std::string(description),
+                             ignoreStatus, quiet, printSystemCommands);
 
   if (status == -1) {
     USR_FATAL("system() fork failed: %s", strerror(errno));
@@ -67,8 +68,8 @@ int mysystem(const std::vector<std::string> commandVec,
              bool        ignoreStatus,
              bool        quiet) {
   pid_t childPid;
-  int status = chpl::mysystem(commandVec, std::string(description),
-                              childPid, ignoreStatus, quiet);
+  int status = chpl::mysystem(commandVec, std::string(description), childPid,
+                              ignoreStatus, quiet, printSystemCommands);
   if (childPid == 0) {
     // if there was an error and we shouldn't ignore them, then exit
     if (status != 0 && !ignoreStatus) {

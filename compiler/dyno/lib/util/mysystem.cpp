@@ -20,10 +20,6 @@
 
 #include "chpl/util/mysystem.h"
 
-//#include "misc.h"
-//
-//#include "stringutil.h"
-
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -32,8 +28,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-bool printSystemCommands = false;
-
 
 namespace chpl {
 
@@ -41,7 +35,8 @@ namespace chpl {
 int myshell(std::string  command,
             std::string description,
             bool        ignoreStatus,
-            bool        quiet) {
+            bool        quiet,
+            bool        printSystemCommands) {
 
   int status = 0;
 
@@ -61,12 +56,14 @@ int myshell(std::string  command,
   return status;
 }
 
-
+// TODO: body of this function should call llvm::sys::ExecuteAndWait instead
+// see: https://llvm.org/doxygen/namespacellvm_1_1sys.html#a67688ad4697f1d516a7c71e41d78c5ba
 int mysystem(const std::vector<std::string> commandVec,
              std::string description,
              pid_t&      childPidOut,
              bool        ignoreStatus,
-             bool        quiet) {
+             bool        quiet,
+             bool        printSystemCommands) {
 
   // if an empty command passed, do nothing
   if (commandVec.empty()) {

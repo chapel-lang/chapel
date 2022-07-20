@@ -24,20 +24,20 @@
 #include <string>
 #include <vector>
 
-extern bool printSystemCommands;
-
 namespace chpl {
 
 int myshell(std::string command,
             std::string description,
             bool        ignoreStatus = false,
-            bool        quiet = false);
+            bool        quiet = false,
+            bool        printSystemCommands = false);
 
 int mysystem(const std::vector<std::string> commandVec,
              std::string description,
              pid_t&      childPidOut,
-             bool        ignorestatus = false,
-             bool        quiet = false);
+             bool        ignoreStatus = false,
+             bool        quiet = false,
+             bool        printSystemCommands = false);
 
 #endif
 

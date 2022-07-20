@@ -170,6 +170,9 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut) {
   removeSpacesBackslashesFromString(myuserid);
   std::string tmpDir = tmpdirprefix + std::string(myuserid) + tmpdirsuffix;
   char* tmpDirMut = strdup(tmpDir.c_str());
+  // TODO: we could use llvm::sys::fs::createUniqueDirectory instead of mkdtemp
+  // see the comment in LLVM source
+  // https://llvm.org/doxygen/Path_8cpp_source.html#l00883
   auto dirRes = std::string(mkdtemp(tmpDirMut));
   // get the posix error code if mkdtemp failed.
   int err = errno;
