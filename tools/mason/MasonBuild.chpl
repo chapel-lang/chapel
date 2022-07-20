@@ -238,7 +238,7 @@ proc genSourceList(lockFile: borrowed Toml) {
         var toml = lockFile[name]!;
         // TODO: What do we want to do with version for git deps?
         var version = toml["version"]!.s;
-        
+
         if toml.pathExists("source") {
           var source = toml["source"]!.s;
           sourceList.append((source, name, version));
@@ -252,7 +252,6 @@ proc genSourceList(lockFile: borrowed Toml) {
           } else {
             branch = "master";
           }
-          
           gitList.append((url, name, branch));
         }
       }
