@@ -598,6 +598,21 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
 }
 
+static const bool& idIsFieldQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsFieldQuery, context, id);
+
+  bool result = false;
+  if (auto ast = astForIDQuery(context, id))
+    if (auto var = ast->toVariable())
+      result = var->isField();
+
+  return QUERY_END(result);
+}
+
+bool idIsField(Context* context, ID id) {
+  return idIsFieldQuery(context, id);
+}
+
 const ID& idToParentId(Context* context, ID id) {
   QUERY_BEGIN(idToParentId, context, id);
 

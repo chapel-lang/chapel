@@ -63,6 +63,7 @@ using namespace chpl;
 
 namespace {
 
+const bool tryToScopeResolveEverything = false;
 
 struct ConvertedSymbolsMap {
   ID inSymbolId;
@@ -198,23 +199,22 @@ struct Converter {
     return ret;
   }
 
-  static bool shouldScopeResolve(UniqueString symbolPath) {
-    return fDynoCompilerLibrary;
+  bool shouldScopeResolve(ID symbolId) {
+    if (tryToScopeResolveEverything) return true;
+    return canScopeResolve &&
+           !chpl::parsing::idIsInBundledModule(context, symbolId);
   }
-  static bool shouldScopeResolve(ID symbolId) {
-    return shouldScopeResolve(symbolId.symbolPath());
-  }
-  static bool shouldScopeResolve(const uast::AstNode* node) {
+  bool shouldScopeResolve(const uast::AstNode* node) {
     return shouldScopeResolve(node->id());
   }
 
-  static bool shouldResolve(UniqueString symbolPath) {
+  bool shouldResolve(UniqueString symbolPath) {
     return false;
   }
-  static bool shouldResolve(ID symbolId) {
+  bool shouldResolve(ID symbolId) {
     return shouldResolve(symbolId.symbolPath());
   }
-  static bool shouldResolve(const uast::AstNode* node) {
+  bool shouldResolve(const uast::AstNode* node) {
     return shouldResolve(node->id());
   }
 
@@ -494,6 +494,40 @@ struct Converter {
         if (rr != nullptr) {
           auto id = rr->toId();
           if (!id.isEmpty()) {
+            // figure out if it is field access
+            bool isFieldAccess = false;
+            const uast::Formal* parentMethodThis = nullptr;
+            if (parsing::idIsField(context, id)) {
+              // are we in a method? if so, what is the 'this' formal?
+              for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
+                if (it->ast != nullptr) {
+                  if (auto inFn = it->ast->toFunction()) {
+                    if (inFn->isMethod()) {
+                      parentMethodThis = inFn->thisFormal();
+                      isFieldAccess = true;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+
+            // handle field access when only scope resolving
+            if (!shouldResolve(node) && isFieldAccess) {
+              // if we are just scope resolving, convert field
+              // access to this.field using a string literal to
+              // match production scope resolve
+              Symbol* thisSym = findConvertedSym(parentMethodThis->id());
+              INT_ASSERT(thisSym != nullptr);
+              auto ast = parsing::idToAst(context, id);
+              INT_ASSERT(ast && ast->isVariable());
+              auto var = ast->toVariable();
+              auto str = new_CStringSymbol(var->name().c_str());
+              CallExpr* ret = new CallExpr(".", thisSym, str);
+              return ret;
+            }
+
+            // handle other Identifiers
             Symbol* sym = findConvertedSym(id);
             if (sym == nullptr) {
               // we will fix it later
@@ -506,8 +540,13 @@ struct Converter {
               // it's a parenless function call so add a CallExpr
               ret = new CallExpr(se);
             }
+            if (isFieldAccess) {
+              INT_FATAL("resolving field access call not yet implemented");
+              // TODO: convert it to a call to the field accessor
+              // using the resolved TypedFnSignature from rr
+            }
 
-            // fixup, if any, will noted in noteAllContainedFixups
+            // fixup, if any, will be noted in noteAllContainedFixups
 
             return ret;
           }
@@ -3975,6 +4014,17 @@ Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
         printf("Found sym %s %s in %s\n",
                ret->name, id.str().c_str(), inSymbolId.str().c_str());
       }
+      // convert references to classes as anymanaged
+      // e.g. 'C' in 'typeFn(C)' refers to anymanaged C rather than borrowed C
+      if (TypeSymbol* ts = toTypeSymbol(ret)) {
+        if (AggregateType* at = toAggregateType(ts->type)) {
+          if (at->isClass()) {
+            Type* useType =
+              at->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
+            ret = useType->symbol;
+          }
+        }
+      }
       return ret;
     }
   }
@@ -4100,7 +4150,7 @@ convertToplevelModule(chpl::Context* context,
   Converter c(context, modTag, builderResult);
 
   c.canScopeResolve = fDynoCompilerLibrary;
-  c.trace = fDynoCompilerLibrary; // TODO: remove once things are working
+  c.trace = fDynoDebugTrace;
 
   // Maybe prepare a toplevel comment to attach to the module.
   if (comment) {

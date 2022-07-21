@@ -689,6 +689,19 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       ResolvedExpression& r = byPostorder.byAst(typeExpr);
       typeExprT = r.type();
       // otherwise, typeExprT can be empty/null
+
+      // for 'this' formals of class type, adjust them to be borrowed, so
+      // e.g. proc C.foo() { } has 'this' of type 'borrowed C'.
+      // This should not apply to parenthesized expressions.
+      if (isFormal && decl->name() == USTR("this") &&
+          typeExprT.type() != nullptr && typeExprT.type()->isClassType() &&
+          typeExpr->isIdentifier()) {
+        auto ct = typeExprT.type()->toClassType();
+        auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+        typeExprT = QualifiedType(typeExprT.kind(),
+                                  ct->withDecorator(context, dec),
+                                  typeExprT.param());
+      }
     }
 
     if (initExpr && !foundSubstitution) {
@@ -1769,22 +1782,23 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   }
 
   // Get the type of the called expression.
-  if (auto calledExpr = call->calledExpression()) {
-    ResolvedExpression& r = byPostorder.byAst(calledExpr);
-    calledType = r.type();
+  if (isMethodCall == false) {
+    if (auto calledExpr = call->calledExpression()) {
+      ResolvedExpression& r = byPostorder.byAst(calledExpr);
+      calledType = r.type();
 
-    if (isMethodCall == false &&
-        calledType.kind() != QualifiedType::UNKNOWN &&
-        calledType.kind() != QualifiedType::TYPE &&
-        calledType.kind() != QualifiedType::FUNCTION) {
-      // If e.g. x is a value (and not a function)
-      // then x(0) translates to x.this(0)
-      name = USTR("this");
-      // add the 'this' argument as well
-      isMethodCall = true;
-      actuals.push_back(CallInfoActual(calledType, USTR("this")));
-      // and reset calledType
-      calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      if (calledType.kind() != QualifiedType::UNKNOWN &&
+          calledType.kind() != QualifiedType::TYPE &&
+          calledType.kind() != QualifiedType::FUNCTION) {
+        // If e.g. x is a value (and not a function)
+        // then x(0) translates to x.this(0)
+        name = USTR("this");
+        // add the 'this' argument as well
+        isMethodCall = true;
+        actuals.push_back(CallInfoActual(calledType, USTR("this")));
+        // and reset calledType
+        calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      }
     }
   }
 
@@ -1866,6 +1880,13 @@ bool Resolver::enter(const Dot* dot) {
 }
 void Resolver::exit(const Dot* dot) {
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+
+  bool resolvingCalledDot = (inLeafCall &&
+                             dot == inLeafCall->calledExpression());
+  if (resolvingCalledDot) {
+    // we will handle it when resolving the FnCall
+    return;
+  }
 
   if (dot->field() == USTR("type")) {
     const Type* receiverType;

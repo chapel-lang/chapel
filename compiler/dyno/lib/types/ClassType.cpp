@@ -26,34 +26,65 @@ namespace types {
 
 void ClassType::stringify(std::ostream& ss,
                           chpl::StringifyKind stringKind) const {
-  long startPos = ss.tellp();
+
+  // compute the prefix to use
+  const char* prefix = "";
+  switch (decorator_.val()) {
+    case ClassTypeDecorator::BORROWED:
+    case ClassTypeDecorator::BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NILABLE:
+      prefix = "borrowed";
+      break;
+    case ClassTypeDecorator::UNMANAGED:
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
+      prefix = "unmanaged";
+      break;
+    case ClassTypeDecorator::MANAGED:
+    case ClassTypeDecorator::MANAGED_NONNIL:
+    case ClassTypeDecorator::MANAGED_NILABLE:
+      prefix = "";
+      break;
+    case ClassTypeDecorator::GENERIC:
+    case ClassTypeDecorator::GENERIC_NONNIL:
+    case ClassTypeDecorator::GENERIC_NILABLE:
+      prefix = "<any-management>";
+      break;
+  }
+
+  // compute the manager, if any
+  std::string manager;
   if (decorator_.isManaged()) {
     assert(manager_);
-    if (manager_->isAnyOwnedType())
-      ss << "owned";
-    else if (manager_->isAnySharedType())
-      ss << "shared";
-    else
-      manager_->stringify(ss, stringKind);
-  } else if (decorator_.isBorrowed()) {
-    ss << "borrowed";
-  } else if (decorator_.isUnmanaged()) {
-    ss << "unmanaged";
+    if (manager_->isAnyOwnedType()) {
+      manager = "owned";
+    } else if (manager_->isAnySharedType()) {
+      manager = "shared";
+    } else {
+      std::ostringstream ss2;
+      manager_->stringify(ss2, stringKind);
+      manager = ss2.str();
+    }
   }
 
-  if (startPos != ss.tellp()) {
-    ss << " ";
-  }
+  // at this point, either prefix or manager is not ""
+  // emit prefix
+  ss << prefix;
+  // emit manager
+  ss << manager;
+  // emit a space
+  ss << " ";
 
+  // emit basic class name
   assert(basicType_);
   basicType_->stringify(ss, stringKind);
 
+  // emit ? if nilable
   if (decorator_.isNilable()) {
     ss << "?";
   } else if (decorator_.isUnknownNilability()) {
     ss << " <unknown-nilability>";
   }
-
 }
 
 const owned<ClassType>&
