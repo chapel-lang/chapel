@@ -174,11 +174,11 @@ void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   symbolId = ast->id();
 }
 void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
-  int bodyPostorder = 0;
-  if (func && func->body())
-    bodyPostorder = func->body()->id().postOrderId();
-  assert(0 <= bodyPostorder);
-  vec.resize(bodyPostorder);
+  int maxPostorderId = 0;
+  if (func && func->numChildren() > 0)
+    maxPostorderId = func->child(func->numChildren() - 1)->id().postOrderId();
+  assert(0 <= maxPostorderId);
+  vec.resize(maxPostorderId + 1);
 
   symbolId = func->id();
 }
