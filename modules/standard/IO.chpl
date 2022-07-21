@@ -341,17 +341,17 @@ Their types' ``kind`` argument is ``dynamic``.
 Error Handling
 --------------
 
-Most I/O routines throw a :class:`SysError.SystemError`, and can be handled
+Most I/O routines throw a :class:`OS.SystemError`, and can be handled
 appropriately with ``try`` and ``catch``.
 
 Some of these subclasses commonly used within the I/O implementation include:
 
- * :class:`SysError.EOFError` - the end of file was reached
- * :class:`SysError.UnexpectedEOFError` - a read or write only returned part of the requested data
- * :class:`SysError.BadFormatError` - data read did not adhere to the requested format
+ * :class:`OS.EOFError` - the end of file was reached
+ * :class:`OS.UnexpectedEOFError` - a read or write only returned part of the requested data
+ * :class:`OS.BadFormatError` - data read did not adhere to the requested format
 
 An error code can be converted to a string using the function
-:proc:`SysError.errorToString()`.
+:proc:`OS.errorToString()`.
 
 .. _about-io-ensuring-successful-io:
 
@@ -430,7 +430,7 @@ import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF};
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 import OS.POSIX.{EBADF};
 use CTypes;
-public use SysError;
+public use OS;
 
 
 /*
@@ -5878,7 +5878,7 @@ module FormattedIO {
   use CTypes;
   use OS.POSIX;
   import SysBasic.{ENOERR,syserr};
-  use SysError;
+  use OS;
 //use IO;
 
 // ---------------------------------------------------------------

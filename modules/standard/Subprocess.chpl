@@ -130,7 +130,7 @@ other task is consuming it.
  */
 module Subprocess {
   public use IO;
-  use SysError;
+  use OS;
   use CTypes;
   use OS.POSIX;
   import SysBasic.{syserr, ENOERR};
@@ -381,9 +381,6 @@ module Subprocess {
     return ret;
   }
 
-  pragma "no doc"
-  extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
-
   /* TODO:
      stdin stdout and stderr can be pipeStyle.pipe, existing file descriptor,
      existing file object, or None. and stderr can be pipeStyle.stdout which
@@ -471,6 +468,7 @@ module Subprocess {
              param kind=iokind.dynamic, param locking=true) throws
   {
     use ChplConfig;
+    extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
 
     var stdin_fd:c_int = QIO_FD_FORWARD;
     var stdout_fd:c_int = QIO_FD_FORWARD;

@@ -1,4 +1,4 @@
-use SysError;
+use OS;
 
 var e = SystemError.fromSyserr(-1);
 

@@ -308,7 +308,7 @@ record LinkedList {
 
   pragma "no doc"
   proc readThis(f) throws {
-    use SysError;
+    use OS;
 
     //
     // Special handling for reading in order to handle reading an arbitrary

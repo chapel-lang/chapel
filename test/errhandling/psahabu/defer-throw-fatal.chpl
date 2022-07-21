@@ -1,4 +1,4 @@
-use SysError;
+use OS;
 
 config const i = 0;
 

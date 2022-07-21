@@ -1,4 +1,4 @@
-use SysError;
+use OS;
 
 proc main() {
   try! {
