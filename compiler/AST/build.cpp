@@ -935,12 +935,20 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
 void
 checkIndices(BaseAST* indices) {
   if (CallExpr* call = toCallExpr(indices)) {
-    if (!call->isNamed("_build_tuple"))
+    if (!call->isNamed("_build_tuple") || call->numActuals() == 0)
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
       checkIndices(actual);
-  } else if (!isSymExpr(indices) && !isUnresolvedSymExpr(indices))
+  } else if (!isDefExpr(indices)) {
+    if (UnresolvedSymExpr* use = toUnresolvedSymExpr(indices)) {
+      if (!strcmp(use->unresolved, "chpl__tuple_blank")) {
+        // OK
+        return;
+      }
+    }
+
     USR_FATAL(indices, "invalid index expression");
+  }
 }
 
 static Expr* destructureIndicesAfter(Expr* insertAfter,
@@ -948,6 +956,9 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
                                      Expr* init,
                                      bool coforall);
 
+// indices should be DefExprs or a CallExpr _build_tuple call
+// containing DefExprs or other _build_tuple calls.
+// indices will be destroyed in the process
 void destructureIndices(BlockStmt* block,
                         BaseAST* indices,
                         Expr* init,
@@ -975,6 +986,7 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
       insertAfter = checkCall;
 
       for_actuals(actual, call) {
+        actual->remove();
         if (UnresolvedSymExpr* use = toUnresolvedSymExpr(actual)) {
           if (!strcmp(use->unresolved, "chpl__tuple_blank")) {
             i++;
@@ -990,29 +1002,24 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
     } else {
       INT_FATAL("Unexpected call type");
     }
-  } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
-    VarSymbol* var = new VarSymbol(sym->unresolved);
-    DefExpr* def = new DefExpr(var);
-    insertAfter->insertAfter(def);
-    CallExpr* move = new CallExpr(PRIM_MOVE, var, init);
-    def->insertAfter(move);
-    insertAfter = move;
-    var->addFlag(FLAG_INDEX_VAR);
-    if (coforall)
-      var->addFlag(FLAG_COFORALL_INDEX_VAR);
-    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  } else if (SymExpr* sym = toSymExpr(indices)) {
-    // BHARSH TODO: I think this should be a PRIM_ASSIGN. I've seen a case
-    // where 'sym' becomes a reference.
-    CallExpr* move = new CallExpr(PRIM_MOVE, sym->symbol(), init);
-    insertAfter->insertAfter(move);
-    insertAfter = move;
-    sym->symbol()->addFlag(FLAG_INDEX_VAR);
-    if (coforall)
-      sym->symbol()->addFlag(FLAG_COFORALL_INDEX_VAR);
-    sym->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  } else if (DefExpr* d = toDefExpr(indices)) {
+    if (VarSymbol* var = toVarSymbol(d->sym)) {
+      // Add a new DefExpr for var. The old one will not be inserted.
+      DefExpr* def = new DefExpr(var);
+      INT_ASSERT(var->defPoint == def);
+      insertAfter->insertAfter(def);
+      CallExpr* move = new CallExpr(PRIM_MOVE, var, init);
+      def->insertAfter(move);
+      insertAfter = move;
+      var->addFlag(FLAG_INDEX_VAR);
+      if (coforall)
+        var->addFlag(FLAG_COFORALL_INDEX_VAR);
+      var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    } else {
+      INT_FATAL("Unexpected index variable");
+    }
   } else {
-    INT_FATAL("Unexpected");
+    INT_FATAL("Unexpected index expression");
   }
   return insertAfter;
 }
@@ -1255,8 +1262,11 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   checkControlFlow(body, "coforall statement");
 
   // insert temporary index when elided by user
-  if (!indices)
-    indices = new UnresolvedSymExpr("chpl__elidedIdx");
+  if (!indices) {
+    VarSymbol* var = new VarSymbol("chpl__elidedIdx");
+    indices = new DefExpr(var);
+  }
+
   checkIndices(indices);
   if (zippered) zipToTuple(iterator);
 
@@ -1269,8 +1279,30 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   coforallBlk->insertAtTail(new DefExpr(tmpIter));
   coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, tmpIter, iterator));
 
-  BlockStmt* vectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, copyByrefVars(byref_vars), body->copy(), zippered, /*bounded=*/true);
-  BlockStmt* nonVectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, byref_vars, body, zippered, /*bounded=*/false);
+  BlockStmt* indicesAndBody = new BlockStmt();
+  indicesAndBody->insertAtTail(indices);
+  indicesAndBody->insertAtTail(body);
+
+  // copy the indices and body together to get the
+  // SymExprs referring to index variable DefExprs to line up
+  SymbolMap tmpMap;
+  BlockStmt* indicesAndBodyCopy = indicesAndBody->copy(&tmpMap);
+  Expr* indicesCopy = indicesAndBodyCopy->body.first();
+  BlockStmt* bodyCopy = toBlockStmt(indicesAndBodyCopy->body.last());
+  INT_ASSERT(indicesCopy && bodyCopy);
+
+  // take everything back out of the temporary blocks
+  indicesCopy->remove();
+  bodyCopy->remove();
+  indices->remove();
+  body->remove();
+
+  BlockStmt* vectorCoforallBlk =
+    buildLoweredCoforall(indicesCopy, tmpIter, copyByrefVars(byref_vars),
+                         bodyCopy, zippered, /*bounded=*/true);
+  BlockStmt* nonVectorCoforallBlk =
+    buildLoweredCoforall(indices, tmpIter, byref_vars,
+                         body, zippered, /*bounded=*/false);
 
   VarSymbol* isBounded = newTemp("isBounded");
   isBounded->addFlag(FLAG_MAYBE_PARAM);
@@ -1285,9 +1317,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
 }
 
 
-BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmts) {
-  VarSymbol* indexVar = new VarSymbol(index);
-
+BlockStmt* buildParamForLoopStmt(VarSymbol* indexVar, Expr* range, BlockStmt* stmts) {
   return ParamForLoop::buildParamForLoop(indexVar, range, stmts);
 }
 
@@ -1895,45 +1925,6 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
   setupExternExportFunctionDecl(externOrExport, paramCNameExpr, fn);
 
   return blockFnDef;
-}
-
-// Replaces the dummy function name "_" with the real name, sets the 'this'
-// intent tag. For methods, it also adds a method tag and "this" declaration.
-// receiver is typically an UnresolvedSymExpr("class_name") in order
-// to declare a method outside of a record/class.
-FnSymbol*
-buildFunctionSymbol(FnSymbol*   fn,
-                    const char* name,
-                    IntentTag   thisTag,
-                    Expr*       receiver)
-{
-  fn->cname   = fn->name = astr(name);
-  fn->thisTag = thisTag;
-
-  if (fn->name == astrDeinit)
-    fn->addFlag(FLAG_DESTRUCTOR);
-
-  if (receiver)
-  {
-    ArgSymbol* arg = new ArgSymbol(thisTag,
-                                   "this",
-                                   dtUnknown,
-                                   receiver);
-    fn->_this = arg;
-    if (thisTag == INTENT_TYPE) {
-      setupTypeIntentArg(arg);
-    }
-
-    arg->addFlag(FLAG_ARG_THIS);
-    fn->insertFormalAtHead(new DefExpr(arg));
-
-    ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
-
-    fn->setMethod(true);
-    fn->insertFormalAtHead(new DefExpr(mt));
-  }
-
-  return fn;
 }
 
 void
@@ -2801,7 +2792,7 @@ void redefiningReservedWordError(const char* name)
 }
 
 void updateOpThisTagOrErr(FnSymbol* fn) {
-  if (fn->thisTag == INTENT_BLANK) {
+  if (fn->thisTag == INTENT_BLANK || fn->thisTag == INTENT_TYPE) {
     fn->thisTag = INTENT_TYPE;
   } else {
     USR_FATAL_CONT(buildErrorStandin(),

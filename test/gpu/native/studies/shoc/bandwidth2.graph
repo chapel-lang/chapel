@@ -1,0 +1,5 @@
+perfkeys: TriadBdwth BlckSz: 16384KB Median:, TriadBdwth BlckSz: 16384KB Median:, TriadBdwth BlckSz: 16384KB Median:, TriadBdwth BlckSz: 16384KB Median:
+files: triad.dat, triadalt1.dat, triadalt2.dat, triadchpl.dat
+graphkeys: Triad, TriadAlt1, TriadAlt2, TriachChpl
+ylabel: Bandwidth (GB/s)
+graphtitle: Triad Bandwidth - 16384KB

@@ -509,16 +509,33 @@ static void scopeResolve(IfExpr* ife, ResolveScope* scope) {
   scopeResolve(ife->getElseStmt(), scope);
 }
 
+static void gatherIndices(ResolveScope* scope, Expr* indices) {
+  if (indices == nullptr) {
+    // nothing to do
+  } else if (CallExpr* call = toCallExpr(indices)) {
+    for_actuals(actual, call) {
+      gatherIndices(scope, actual);
+    }
+  } else if (DefExpr* def = toDefExpr(indices)) {
+    scope->extend(def->sym);
+  } else if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(indices)) {
+    if (0 == strcmp(urse->unresolved, "chpl__tuple_blank")) {
+      // nothing to do -- _ used as an index variable
+    } else {
+      INT_FATAL("case not handled");
+    }
+  } else {
+    INT_FATAL("case not handled");
+  }
+}
+
 static void scopeResolve(LoopExpr* fe, ResolveScope* parent) {
   scopeResolveExpr(fe->iteratorExpr, parent);
 
   ResolveScope* scope = new ResolveScope(fe, parent);
-  for_alist(ind, fe->defIndices) {
-    DefExpr* def = toDefExpr(ind);
-    scope->extend(def->sym);
-  }
 
-  if (fe->indices) scopeResolveExpr(fe->indices, scope);
+  gatherIndices(scope, fe->indices);
+
   if (fe->cond) scopeResolveExpr(fe->cond, scope);
 
   scopeResolveExpr(fe->loopBody, scope);
@@ -990,8 +1007,22 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
                          Symbol*            sym,
                          SymExpr*           symExpr) {
   Expr*   expr   = (symExpr != NULL) ? (Expr*) symExpr : (Expr*) usymExpr;
-  Symbol* parent = expr->parentSymbol;
   bool    isAggr = false;
+
+  // check for mentions of a parent type
+  // (workaround for primary methods with resolved receivers)
+/*  for (Symbol* parent = expr->parentSymbol;
+       parent && !isModuleSymbol(parent);
+       parent = parent->defPoint->parentSymbol) {
+    if (FnSymbol* method = toFnSymbol(parent)) {
+      if (method->_this != NULL) {
+        Type* type = method->_this->type;
+        if (type->symbol->name == usymExpr->unresolved) {
+          return;
+        }
+      }
+    }
+  }*/
 
   if (sym != NULL) {
     if (TypeSymbol* cts = toTypeSymbol(sym->defPoint->parentSymbol)) {
@@ -999,7 +1030,9 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
     }
   }
 
-  while (isModuleSymbol(parent) == false) {
+  for (Symbol* parent = expr->parentSymbol;
+       parent && !isModuleSymbol(parent);
+       parent = parent->defPoint->parentSymbol) {
     if (FnSymbol* method = toFnSymbol(parent)) {
       // stopgap bug fix: do not let methods shadow symbols
       // that are more specific than methods
@@ -1030,8 +1063,6 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
         }
       }
     }
-
-    parent = parent->defPoint->parentSymbol;
   }
 }
 
@@ -1109,7 +1140,13 @@ static int computeNestedDepth(const char* name, Type* type) {
     // this symbol is first defined in
     AggregateType* ct = toAggregateType(type);
 
-    while (ct != NULL && ct->getField(name, false) == NULL) {
+    while (ct != NULL) {
+      if (ct->getField(name, false) != nullptr ||
+          0 == strcmp(name, ct->symbol->name)) {
+        // found it
+        break;
+      }
+
       retval = retval + 1;
       ct     = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
     }

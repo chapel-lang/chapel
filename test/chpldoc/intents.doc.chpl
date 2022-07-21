@@ -65,7 +65,7 @@ module Inner {
   }
 
   /* This function has both an argument intent and a return intent */
-  proc thirteen (inout val) param {
+  proc thirteen (inout val) ref {
 
   }
 
@@ -140,7 +140,7 @@ proc twelve (val: int) param {
 }
 
 /* This function has both an argument intent and a return intent */
-proc thirteen (inout val) param {
+proc thirteen (inout val) ref {
 
 }
 

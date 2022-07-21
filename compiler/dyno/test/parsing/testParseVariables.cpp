@@ -330,7 +330,7 @@ static void test6(Parser* parser) {
     "public config type foo = bar;\n"
     "config type foo;\n"
     "extern type foo = bar;\n"
-    "private extern type foo;\n");
+    "extern type foo;\n");
 
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
@@ -374,7 +374,7 @@ static void test6(Parser* parser) {
   assert(!var5->linkageName());
 
   auto var6 = mod->stmt(5)->toVariable();
-  assert(var6->visibility() == Decl::PRIVATE);
+  assert(var6->visibility() == Decl::DEFAULT_VISIBILITY);
   assert(var6->linkage() == Decl::EXTERN);
   assert(!var6->initExpression());
   assert(!var6->linkageName());

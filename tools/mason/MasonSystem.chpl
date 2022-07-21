@@ -207,8 +207,8 @@ proc pkgExists(pkgName: string) : bool {
 proc getPkgInfo(pkgName: string, version: string) throws {
 
   var pkgDom: domain(string);
-  var pkgToml: [pkgDom] unmanaged Toml?;
-  var pkgInfo = new unmanaged Toml(pkgToml);
+  var pkgToml: [pkgDom] shared Toml?;
+  var pkgInfo = new shared Toml(pkgToml);
 
   if pkgExists(pkgName) {
     // Pass "these" to join instead of converting the list to an array.
@@ -233,10 +233,10 @@ proc getPkgInfo(pkgName: string, version: string) throws {
 
 /* Given a toml of external dependencies returns
    the dependencies in a toml */
-proc getPCDeps(exDeps: unmanaged Toml) {
+proc getPCDeps(exDeps: Toml) {
 
   var exDom: domain(string);
-  var exDepTree: [exDom] unmanaged Toml?;
+  var exDepTree: [exDom] shared Toml?;
 
   for (name, vers) in exDeps.A.items() {
     try! {

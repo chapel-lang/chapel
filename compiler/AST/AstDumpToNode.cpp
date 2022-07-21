@@ -1615,6 +1615,15 @@ void AstDumpToNode::visitLabelSym(LabelSymbol* node)
 //
 //
 
+void AstDumpToNode::visitTemporaryConversionSymbol(TemporaryConversionSymbol* node)
+{
+  fprintf(mFP, "<conv>");
+}
+
+//
+//
+//
+
 bool AstDumpToNode::enterTypeSym(TypeSymbol* node)
 {
   enterNodeSym(node);

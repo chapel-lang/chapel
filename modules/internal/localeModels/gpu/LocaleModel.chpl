@@ -216,14 +216,15 @@ module LocaleModel {
 
   class GPULocale : AbstractLocaleModel {
     const sid: chpl_sublocID_t;
-    const name: string;
 
-    override proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
+    override proc chpl_id() return try! (parent._value:LocaleModel)._node_id; // top-level node id
     override proc chpl_localeid() {
       return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
                                 sid);
     }
-    override proc chpl_name() return name;
+    override proc chpl_name() {
+      return "node"+ parent.chpl_id():string + "-GPU" + sid:string;
+    }
 
     proc init() {
     }
@@ -239,7 +240,6 @@ module LocaleModel {
     proc init(_sid, _parent) {
       super.init(new locale(_parent));
       sid = _sid;
-      name = "node"+ _parent._node_id:string + "-GPU" + sid:string;
     }
 
     override proc writeThis(f) throws {

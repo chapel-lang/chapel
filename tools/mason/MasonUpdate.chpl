@@ -107,8 +107,6 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     genLock(lockFile, lockPath);
     // Close Memory
     openFile.close();
-    delete TomlFile;
-    delete lockFile;
 
   }
   catch e: MasonError {
@@ -304,12 +302,12 @@ proc chplVersionError(brick:borrowed Toml) {
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
    until each dep is recorded */
-private proc createDepTree(root: unmanaged Toml) {
+private proc createDepTree(root: Toml) {
   var dp: domain(string);
-  var dps: [dp] unmanaged Toml?;
-  var depTree = new unmanaged Toml(dps);
+  var dps: [dp] shared Toml?;
+  var depTree = new shared Toml(dps);
   if root.pathExists("brick") {
-    depTree.set("root", new unmanaged Toml(root["brick"]!));
+    depTree.set("root", new shared Toml(root["brick"]!));
   }
   else {
     stderr.writeln("Could not find brick; Mason cannot update");
@@ -361,8 +359,8 @@ private proc createDepTree(root: unmanaged Toml) {
   return depTree;
 }
 
-private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged Toml), name: string) : unmanaged Toml {
-  var depList: list(unmanaged Toml?);
+private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: string) : shared Toml {
+  var depList: list(shared Toml?);
   while deps.size > 0 {
     var dep = deps[0];
 
@@ -378,11 +376,11 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       chplVersion = verToUse["chplVersion"]!.s;
     }
 
-    depList.append(new unmanaged Toml(package));
+    depList.append(new shared Toml(package));
 
     if depTree.pathExists(package) == false {
       var dt: domain(string);
-      var depTbl: [dt] unmanaged Toml?;
+      var depTbl: [dt] shared Toml?;
       depTree.set(package, depTbl);
     }
     depTree[package]!.set("name", package);
@@ -395,7 +393,6 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       var manifests = getManifests(subDeps);
       var dependency = createDepTrees(depTree, manifests, package);
     }
-    delete dep;
     deps.pop(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
@@ -463,8 +460,8 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-private proc getManifests(deps: list((string, unmanaged Toml?))) {
-  var manifests: list(unmanaged Toml);
+private proc getManifests(deps: list((string, shared Toml?))) {
+  var manifests: list(shared Toml);
   for dep in deps {
     var name = dep(0);
     var version: string = dep(1)!.s;
@@ -493,9 +490,9 @@ private proc retrieveDep(name: string, version: string) {
 
 /* Checks if a dependency has deps; if so, the
    dependencies are returned as a (string, Toml) */
-private proc getDependencies(tomlTbl: unmanaged Toml) {
+private proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
-  var deps: list((string, unmanaged Toml?));
+  var deps: list((string, shared Toml?));
   for k in tomlTbl.A {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]!) {

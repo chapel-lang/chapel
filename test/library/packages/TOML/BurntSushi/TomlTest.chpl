@@ -18,6 +18,5 @@ proc main() {
   tomlData.writeJSON(jsonChannel);
 
   jsonChannel.close();
-  delete tomlData;
   tomlChannel.close();
 }

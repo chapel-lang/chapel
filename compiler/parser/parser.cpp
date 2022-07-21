@@ -852,6 +852,11 @@ static void dynoDisplayError(chpl::Context* context,
       INT_FATAL("Should not reach here!");
       break;
   }
+
+  // Also show the details if there is additional information.
+  for (const chpl::ErrorMessage& e : err.details()) {
+    dynoDisplayError(context, e);
+  }
 }
 
 //
@@ -886,9 +891,6 @@ static int dynoRealizeErrors(void) {
 
   for (auto& err : dynoErrorMessages) {
     dynoDisplayError(gContext, err);
-    for (auto& detail : err.details()) {
-      dynoDisplayError(gContext, detail);
-    }
   }
 
   dynoErrorMessages.clear();

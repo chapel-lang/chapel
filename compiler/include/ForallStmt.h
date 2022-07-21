@@ -139,7 +139,7 @@ public:
   void insertZipSym(Symbol *sym);
 
 private:
-  AList          fIterVars;
+  AList          fIterVars;    // DefExprs of the induction vars
   AList          fIterExprs;
   AList          fShadowVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present

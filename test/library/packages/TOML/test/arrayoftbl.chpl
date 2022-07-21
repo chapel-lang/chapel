@@ -7,6 +7,5 @@ proc main() {
   var tomlData = parseToml(tomlChannel);
   writeln(tomlData);
 
-  delete tomlData;
   tomlChannel.close();
 }
