@@ -63,6 +63,7 @@ using namespace chpl;
 
 namespace {
 
+const bool tryToScopeResolveEverything = false;
 
 struct ConvertedSymbolsMap {
   ID inSymbolId;
@@ -199,6 +200,7 @@ struct Converter {
   }
 
   bool shouldScopeResolve(ID symbolId) {
+    if (tryToScopeResolveEverything) return true;
     return canScopeResolve &&
            !chpl::parsing::idIsInBundledModule(context, symbolId);
   }

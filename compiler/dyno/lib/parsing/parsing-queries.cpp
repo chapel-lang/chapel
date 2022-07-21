@@ -602,15 +602,9 @@ static const bool& idIsFieldQuery(Context* context, ID id) {
   QUERY_BEGIN(idIsFieldQuery, context, id);
 
   bool result = false;
-  AstTag tag = idToTag(context, id);
-  if (asttags::isVariable(tag)) {
-    const AstNode* ast = astForIDQuery(context, id);
-    if (ast != nullptr) {
-      if (auto var = ast->toVariable()) {
-        result = var->isField();
-      }
-    }
-  }
+  if (auto ast = astForIDQuery(context, id))
+    if (auto var = ast->toVariable())
+      result = var->isField();
 
   return QUERY_END(result);
 }
