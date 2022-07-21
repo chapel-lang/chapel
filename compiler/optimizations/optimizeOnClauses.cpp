@@ -67,6 +67,7 @@ classifyPrimitive(CallExpr *call) {
       case PRIM_GET_USER_LINE:
       case PRIM_GET_USER_FILE:
       case PRIM_BLOCK_LOCAL:
+      case PRIM_GPU_SET_BLOCKSIZE:
         return FAST_AND_LOCAL;
 
       // Loops can have arbitrary trip counts, don't consider fast
