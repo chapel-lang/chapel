@@ -5010,10 +5010,6 @@ DEFINE_PRIM(GPU_SYNC_THREADS) {
 #endif
 }
 
-DEFINE_PRIM(GPU_SET_BLOCKSIZE) {
-  // processed by gpuOptimizations
-}
-
 DEFINE_PRIM(GET_REQUESTED_SUBLOC) { ret = codegenCallExpr("chpl_task_getRequestedSubloc"); }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {

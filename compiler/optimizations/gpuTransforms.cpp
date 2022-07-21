@@ -488,6 +488,8 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     CallExpr* call = toCallExpr(node);
     if(call && call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
         blockSize_ = toSymExpr(call->get(1));
+        call->remove();
+        copyNode = false;
     }
     else if (DefExpr* def = toDefExpr(node)) {
       copyNode = false; // we'll do it here to adjust our symbol map
@@ -545,10 +547,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
                 INT_FATAL("Malformed PRIM_GET_MEMBER_*");
               }
             }
-           else if(parent->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-              // This is handled at kernel launch time, don't pass into the kernel
-           }
-           else if (parent->isPrimitive()) {
+            else if (parent->isPrimitive()) {
               addKernelArgument(sym);
             }
             else if (FnSymbol* calledFn = parent->resolvedFunction()) {
@@ -665,6 +664,7 @@ static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
   call->insertAtTail(numThreads);  // total number of GPU threads
 
   if (info.blockSize_) {
+    // sets blockSize if specified with by "gpu set BlockSize" primitive
     call->insertAtTail(info.blockSize_->copy());
   } else {
     int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize : 512;

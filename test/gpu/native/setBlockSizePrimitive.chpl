@@ -1,3 +1,7 @@
+use GPUDiagnostics;
+
+startVerboseGPU();
+
 on here.gpus[0] {
   for j in 1..128 {
     foreach i in 0..0 {
@@ -5,3 +9,5 @@ on here.gpus[0] {
     }
   }
 }
+
+stopVerboseGPU();

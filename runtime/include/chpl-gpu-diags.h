@@ -138,10 +138,11 @@ int chpl_gpu_diags_is_enabled(void) {
     }                                                              \
   } while(0)
 
-#define chpl_gpu_diags_verbose_launch(ln, fn, device_id)     \
-  chpl_gpu_diags_verbose_printf(false, device_id,          \
-                                "%s:%d: kernel launch",    \
-                                chpl_lookupFilename(fn), ln)
+#define chpl_gpu_diags_verbose_launch( \
+  ln, fn, device_id, blk_dim_x, blk_dim_y, blk_dim_z) \
+    chpl_gpu_diags_verbose_printf(false, device_id,   \
+    "%s:%d: kernel launch (block size: %dx%dx%d)",    \
+    chpl_lookupFilename(fn), ln, blk_dim_x, blk_dim_y, blk_dim_z)
 
 #define chpl_gpu_diags_incr(_ctr)                                           \
   do {                                                                       \

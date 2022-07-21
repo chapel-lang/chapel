@@ -1,128 +1,129 @@
-	Block: 1,1,1
-	Block: 2,1,1
-	Block: 3,1,1
-	Block: 4,1,1
-	Block: 5,1,1
-	Block: 6,1,1
-	Block: 7,1,1
-	Block: 8,1,1
-	Block: 9,1,1
-	Block: 10,1,1
-	Block: 11,1,1
-	Block: 12,1,1
-	Block: 13,1,1
-	Block: 14,1,1
-	Block: 15,1,1
-	Block: 16,1,1
-	Block: 17,1,1
-	Block: 18,1,1
-	Block: 19,1,1
-	Block: 20,1,1
-	Block: 21,1,1
-	Block: 22,1,1
-	Block: 23,1,1
-	Block: 24,1,1
-	Block: 25,1,1
-	Block: 26,1,1
-	Block: 27,1,1
-	Block: 28,1,1
-	Block: 29,1,1
-	Block: 30,1,1
-	Block: 31,1,1
-	Block: 32,1,1
-	Block: 33,1,1
-	Block: 34,1,1
-	Block: 35,1,1
-	Block: 36,1,1
-	Block: 37,1,1
-	Block: 38,1,1
-	Block: 39,1,1
-	Block: 40,1,1
-	Block: 41,1,1
-	Block: 42,1,1
-	Block: 43,1,1
-	Block: 44,1,1
-	Block: 45,1,1
-	Block: 46,1,1
-	Block: 47,1,1
-	Block: 48,1,1
-	Block: 49,1,1
-	Block: 50,1,1
-	Block: 51,1,1
-	Block: 52,1,1
-	Block: 53,1,1
-	Block: 54,1,1
-	Block: 55,1,1
-	Block: 56,1,1
-	Block: 57,1,1
-	Block: 58,1,1
-	Block: 59,1,1
-	Block: 60,1,1
-	Block: 61,1,1
-	Block: 62,1,1
-	Block: 63,1,1
-	Block: 64,1,1
-	Block: 65,1,1
-	Block: 66,1,1
-	Block: 67,1,1
-	Block: 68,1,1
-	Block: 69,1,1
-	Block: 70,1,1
-	Block: 71,1,1
-	Block: 72,1,1
-	Block: 73,1,1
-	Block: 74,1,1
-	Block: 75,1,1
-	Block: 76,1,1
-	Block: 77,1,1
-	Block: 78,1,1
-	Block: 79,1,1
-	Block: 80,1,1
-	Block: 81,1,1
-	Block: 82,1,1
-	Block: 83,1,1
-	Block: 84,1,1
-	Block: 85,1,1
-	Block: 86,1,1
-	Block: 87,1,1
-	Block: 88,1,1
-	Block: 89,1,1
-	Block: 90,1,1
-	Block: 91,1,1
-	Block: 92,1,1
-	Block: 93,1,1
-	Block: 94,1,1
-	Block: 95,1,1
-	Block: 96,1,1
-	Block: 97,1,1
-	Block: 98,1,1
-	Block: 99,1,1
-	Block: 100,1,1
-	Block: 101,1,1
-	Block: 102,1,1
-	Block: 103,1,1
-	Block: 104,1,1
-	Block: 105,1,1
-	Block: 106,1,1
-	Block: 107,1,1
-	Block: 108,1,1
-	Block: 109,1,1
-	Block: 110,1,1
-	Block: 111,1,1
-	Block: 112,1,1
-	Block: 113,1,1
-	Block: 114,1,1
-	Block: 115,1,1
-	Block: 116,1,1
-	Block: 117,1,1
-	Block: 118,1,1
-	Block: 119,1,1
-	Block: 120,1,1
-	Block: 121,1,1
-	Block: 122,1,1
-	Block: 123,1,1
-	Block: 124,1,1
-	Block: 125,1,1
-	Block: 126,1,1
-	Block: 127,1,1
-	Block: 128,1,1
+warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 1x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 2x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 3x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 4x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 5x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 6x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 7x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 8x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 9x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 10x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 11x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 12x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 13x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 14x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 15x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 16x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 17x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 18x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 19x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 20x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 21x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 22x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 23x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 24x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 25x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 26x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 27x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 28x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 29x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 30x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 31x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 32x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 33x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 34x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 35x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 36x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 37x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 38x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 39x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 40x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 41x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 42x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 43x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 44x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 45x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 46x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 47x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 48x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 49x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 50x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 51x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 52x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 53x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 54x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 55x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 56x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 57x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 58x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 59x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 60x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 61x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 62x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 63x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 64x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 65x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 66x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 67x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 68x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 69x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 70x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 71x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 72x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 73x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 74x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 75x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 76x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 77x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 78x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 79x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 80x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 81x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 82x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 83x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 84x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 85x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 86x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 87x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 88x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 89x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 90x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 91x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 92x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 93x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 94x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 95x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 96x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 97x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 98x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 99x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 100x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 101x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 102x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 103x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 104x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 105x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 106x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 107x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 108x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 109x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 110x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 111x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 112x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 113x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 114x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 115x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 116x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 117x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 118x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 119x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 120x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 121x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 122x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 123x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 124x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 125x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 126x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 127x1x1)
+0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 128x1x1)
