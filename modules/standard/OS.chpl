@@ -45,7 +45,7 @@ module OS {
   */
   module POSIX {
     public use CTypes;
-    import SysBasic.{qio_err_t, fd_t};
+    import SysBasic.fd_t;
 
     //
     // sys/types.h
