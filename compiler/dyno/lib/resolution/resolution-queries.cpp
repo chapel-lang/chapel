@@ -1951,10 +1951,8 @@ doIsCandidateApplicableInitial(Context* context,
     return typeConstructorInitial(context, t);
   }
 
-  if (isFormal(tag)) {
-    // not a candidate
-    return nullptr;
-  }
+  // not a candidate
+  if (ci.isMethodCall() && isFormal(tag)) return nullptr;
 
   if (isVariable(tag)) {
     if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
