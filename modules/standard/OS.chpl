@@ -959,7 +959,7 @@ module OS {
 
   private use CTypes;
   private use POSIX;
-  import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,qio_err_t,ENOERR,syserr};
+  import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,ENOERR,syserr};
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s
      generated from ``syserr``. It provides factory methods to create different
@@ -980,7 +980,7 @@ module OS {
        from the internal ``err`` and the ``details`` string.
     */
     override proc message() {
-      var strerror_err: qio_err_t = ENOERR;
+      var strerror_err: c_int = ENOERR;
       var errstr              = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
       try! {
@@ -1252,7 +1252,7 @@ module OS {
   }
 
   // here's what we need from Sys
-  private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:qio_err_t):c_string;
+  private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:c_int):c_string;
 
   /* This function takes in a string and returns it in double-quotes,
      with internal double-quotes escaped with backslash.
@@ -1349,7 +1349,7 @@ module OS {
    */
   proc errorToString(error:syserr):string
   {
-    var strerror_err:qio_err_t = ENOERR;
+    var strerror_err:c_int = ENOERR;
     const errstr = sys_strerror_syserr_str(error, strerror_err);
     try! {
       return createStringWithOwnedBuffer(errstr);
