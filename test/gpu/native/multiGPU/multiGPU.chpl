@@ -27,14 +27,7 @@ assert(nLaunch == here.getChildCount()*4);
 
 proc assertElemVal(X, val) {
   if writeArrays {
-    // normally we can just do writeln(A), but we don't have a good way of
-    // having verbose GPU execution. So, if we do that the output is just too
-    // messy with verbose. If we had verbosity for only launches, things would
-    // have been much easier.
-    write("Array: ");
-    for x in X do
-      write(x, " ");
-    writeln();
+    writeln(X);
   }
 
   for x in X do assert(x == val, "Expected: ", val, " Actual: ", x);
