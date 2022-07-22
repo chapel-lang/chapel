@@ -107,12 +107,9 @@ void addIncInfo(const char* incDir) {
 }
 
 void ensureDirExists(const char* dirname, const char* explanation) {
-  // make std::strings from args and pass to chpl::ensureDirExists,
-  // check for errors, and report them
+  // forward to chpl::ensureDirExists(), check for errors, and report them
   std::string dirName = std::string(dirname);
-  std::string explanationString = std::string(explanation);
-  auto err = chpl::ensureDirExists(dirName, explanationString);
-  if (err) {
+  if (auto err = chpl::ensureDirExists(dirName)) {
     USR_FATAL("creating directory %s failed: %s\n", dirname,
                    err.message().c_str());
   }
@@ -120,20 +117,22 @@ void ensureDirExists(const char* dirname, const char* explanation) {
 
 const char* makeTempDir(const char* dirPrefix) {
  std::string tmpDirPath;
- if(auto err = chpl::makeTempDir(std::string(dirPrefix), tmpDirPath)) {
+ if (auto err = chpl::makeTempDir(std::string(dirPrefix), tmpDirPath)) {
   USR_FATAL(NULL, "%s", err.message().c_str());
  }
  return astr(tmpDirPath.c_str());
 }
 
 void ensureTmpDirExists() {
-  std::string cDir, intDir, tmpdir;
-  cDir = std::string(saveCDir);
-  if (intDirName != NULL) intDir = std::string(intDirName);
-  if (tmpdirname != NULL) tmpdir = std::string(tmpdir);
-  chpl::ensureTmpDirExists(cDir, intDir, tmpdir);
-  if (!intDir.empty()) intDirName = astr(intDir);
-  if (!tmpdir.empty()) tmpdirname = astr(tmpdir);
+ std::string cDir, intDir, tmpdir;
+ cDir = std::string(saveCDir);
+ if (intDirName != NULL) intDir = std::string(intDirName);
+ if (tmpdirname != NULL) tmpdir = std::string(tmpdirname);
+ if (auto err = chpl::ensureTmpDirExists(cDir, intDir, tmpdir)) {
+      USR_FATAL("creating temp directory failed: %s\n", err.message().c_str());
+ }
+ if (!intDir.empty()) intDirName = astr(intDir);
+ if (!tmpdir.empty()) tmpdirname = astr(tmpdir);
 }
 
 void deleteDir(const char* dirname) {

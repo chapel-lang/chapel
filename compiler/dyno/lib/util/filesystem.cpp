@@ -59,6 +59,25 @@ static std::string my_strerror(int errno_) {
   return std::string(errbuf);
 }
 
+/*
+ * Find the default tmp directory. Try getting the tmp dir from the ISO/IEC
+ * 9945 env var options first, then P_tmpdir, then "/tmp".
+ */
+static std::string getTempDir() {
+  std::vector<std::string> possibleDirsInEnv = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
+  for (unsigned int i = 0; i < possibleDirsInEnv.size(); i++) {
+    auto curDir = getenv(possibleDirsInEnv[i].c_str());
+    if (curDir != NULL) {
+      return curDir;
+    }
+  }
+#ifdef P_tmpdir
+  return P_tmpdir;
+#else
+  return "/tmp";
+#endif
+}
+
 FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut) {
   FILE* fp = fopen(path, mode);
   if (fp == nullptr) {
@@ -131,25 +150,6 @@ bool fileExists(const char* path) {
 }
 
 
-/*
- * Find the default tmp directory. Try getting the tmp dir from the ISO/IEC
- * 9945 env var options first, then P_tmpdir, then "/tmp".
- */
-std::string getTempDir() {
-  std::vector<std::string> possibleDirsInEnv = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
-  for (unsigned int i = 0; i < possibleDirsInEnv.size(); i++) {
-    auto curDir = getenv(possibleDirsInEnv[i].c_str());
-    if (curDir != NULL) {
-      return curDir;
-    }
-  }
-#ifdef P_tmpdir
-  return P_tmpdir;
-#else
-  return "/tmp";
-#endif
-}
-
 std::error_code deleteDir(std::string dirname) {
   // LLVM 5 added remove_directories
   return llvm::sys::fs::remove_directories(dirname, false);
@@ -180,7 +180,7 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut) {
 
   if (dirRes.empty()) {
     std::error_code ret = make_error_code(static_cast<std::errc>(err));
-  return ret;
+    return ret;
   }
 
   free(myuserid); myuserid = NULL;
@@ -190,25 +190,27 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut) {
   return std::error_code();
 }
 
- void ensureTmpDirExists(std::string& saveCDir, std::string& intDirName,
-                         std::string& tmpdirname) {
-   if (saveCDir.empty()) {
-     if (tmpdirname.empty()) {
-       if (auto err = makeTempDir("chpl-", tmpdirname)) {
-         return;
-       }
-       intDirName = tmpdirname;
-     }
-   } else {
-     if (intDirName != saveCDir) {
-       intDirName = saveCDir;
-       ensureDirExists(saveCDir, "ensuring --savec directory exists");
-     }
-   }
- }
-
-  std::error_code ensureDirExists(std::string dirname , std::string  explanation ) {
-    return llvm::sys::fs::create_directories(dirname);
+std::error_code ensureTmpDirExists(std::string& saveCDir,
+                                   std::string& intDirName,
+                                   std::string& tmpdirname) {
+  if (saveCDir.empty()) {
+    if (tmpdirname.empty()) {
+      if (auto err = makeTempDir("chpl-", tmpdirname)) {
+        return err;
+      }
+      intDirName = tmpdirname;
+    }
+  } else {
+    if (intDirName != saveCDir) {
+      intDirName = saveCDir;
+      return ensureDirExists(saveCDir);
+    }
   }
+  return std::error_code();
+}
+
+std::error_code ensureDirExists(std::string dirname) {
+  return llvm::sys::fs::create_directories(dirname);
+}
 
 } // namespace chpl

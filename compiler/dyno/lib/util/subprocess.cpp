@@ -76,7 +76,7 @@ int mysystem(const std::vector<std::string> commandVec,
     commandStr += " " + commandVec.at(i);
   }
 
-  int status = 0;
+  int status = -1;
   std::vector<const char*> execArgs;
   for (unsigned int i = 0; i < commandVec.size(); ++i) {
     execArgs.push_back(commandVec[i].c_str());

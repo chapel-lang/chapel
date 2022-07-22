@@ -38,17 +38,46 @@ bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
  */
 bool fileExists(const char* path);
 
-std::error_code ensureDirExists(std::string dirname, std::string  explanation);
+/**
+ * create the directory specified by argument dirname
+ *
+ * dirname the path of the directory to create
+ * std::error_code
+ */
+std::error_code ensureDirExists(std::string dirname);
 
 
+/**
+ * creates a directory in the temp location for the system
+ * with the pattern "dirPrefix-username.deleteme-XXXXXX/"
+ *
+ * dirPrefix a prefix to place in the directory name
+ * tmpDirPathOut reference to an empty string that will hold the path of the created directory
+ * returns std::error_code
+ */
 std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut);
 
-std::string getTempDir();
-
+/**
+ * forwards to llvm::sys::fs::remove_directories
+ *
+ * dirname the path of the directory to remove
+ * returns std::error_code
+ */
 std::error_code deleteDir(std::string dirname);
 
-void ensureTmpDirExists(std::string& saveCDir, std::string& intDirName,
-                        std::string& tmpdirname);
+
+/**
+ * make sure we have set up a temp directory for the use when generating C code.
+ * if we don't, create one.
+ *
+ * saveCDir the path of the directory to save the generated C code, if set
+ * intDirName the path to the intermediate directory
+ * tmpdirname the current temp directory name, if set
+ * returns std::error_code
+ */
+std::error_code ensureTmpDirExists(std::string& saveCDir,
+                                   std::string& intDirName,
+                                   std::string& tmpdirname);
 
 
 } // end namespace chpl

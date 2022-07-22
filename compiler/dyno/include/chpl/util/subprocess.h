@@ -27,13 +27,25 @@
 
 namespace chpl {
 
-
+// TODO: remove this completely, so only mysystem remains
 int myshell(std::string command,
             std::string description,
             bool        ignoreStatus = false,
             bool        quiet = false,
             bool        printSystemCommands = false);
 
+
+/**
+ * Launch a subprocess
+ *
+ * commandVec first element is the command to run, the rest are the arguments.
+ * description a string representation of the command to run
+ * childPidOut output parameter for the child's pid
+ * ignoreStatus if true, don't abort if the child exits with a non-zero
+ * quiet  if true, won't print systemCommands
+ * printSystemCommands if true, print the command to be run
+ * returns int as program exit status if fork successful, -1 otherwise
+ */
 int mysystem(const std::vector<std::string> commandVec,
              std::string description,
              pid_t&      childPidOut,
