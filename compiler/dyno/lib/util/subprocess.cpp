@@ -32,30 +32,6 @@
 namespace chpl {
 
 
-int myshell(std::string  command,
-            std::string description,
-            bool        ignoreStatus,
-            bool        quiet,
-            bool        printSystemCommands) {
-
-  int status = 0;
-
-  if (printSystemCommands && !quiet) {
-    printf("\n# %s\n", description.c_str());
-    printf("%s\n", command.c_str());
-    fflush(stdout);
-    fflush(stderr);
-  }
-
-  // Treat a '#' at the start of a line as a comment
-  if (command[0] == '#')
-    return 0;
-
-  status = system(command.c_str());
-
-  return status;
-}
-
 // TODO: body of this function should call llvm::sys::ExecuteAndWait instead
 // see: https://llvm.org/doxygen/namespacellvm_1_1sys.html#a67688ad4697f1d516a7c71e41d78c5ba
 int mysystem(const std::vector<std::string> commandVec,

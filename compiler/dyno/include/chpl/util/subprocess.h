@@ -27,13 +27,6 @@
 
 namespace chpl {
 
-// TODO: remove this completely, so only mysystem remains
-int myshell(std::string command,
-            std::string description,
-            bool        ignoreStatus = false,
-            bool        quiet = false,
-            bool        printSystemCommands = false);
-
 
 /**
  * Launch a subprocess
