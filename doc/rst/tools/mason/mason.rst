@@ -633,7 +633,9 @@ Without specifying the branch to be used, a default branch of `master` will be a
 
 Now, when running `mason build` or `mason update`, the latest changes from the repository will be pulled.
 
-Currently, the manifest file from git repository dependencies are not checked, so any essential information there will need to be manually copied into the `Mason.toml` from the depository using the dependency. This is currently a work in progress and will hopefully be fixed in the near future. Additionally, locking in the revision at the time of specification and allowing specific revisions to be specified are also works in progress.
+.. note::
+   
+   Currently, the manifest file from git repository dependencies are not checked, so any essential information there will need to be manually copied into the `Mason.toml` from the repository using the dependency. This is currently a work in progress and will hopefully be fixed in the near future. Additionally, locking in the revision at the time of specification and allowing specific revisions to be specified are also works in progress.
 
 
 
