@@ -38,6 +38,9 @@
 #include <filesystem>
 #include <queue>
 
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/Context.h"
@@ -50,6 +53,7 @@
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/util/filesystem.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/framework/global-strings.h"
 
@@ -134,6 +138,135 @@ static UniqueString getNodeName(AstNode* node) {
   } else {
     assert(false && "no name defined for node");
   }
+}
+
+static
+std::string runCommand(std::string& command) {
+  // Run arbitrary command and return result
+  char buffer[256];
+  std::string result = "";
+
+  // Call command
+  FILE* pipe = popen(command.c_str(), "r");
+  if (!pipe) {
+    // USR_FATAL("running %s", command.c_str());
+  }
+
+  // Read output of command into result via buffer
+  while (!feof(pipe)) {
+    if (fgets(buffer, 256, pipe) != NULL) {
+      result += buffer;
+    }
+  }
+
+  if (pclose(pipe)) {
+    // USR_FATAL("'%s' did not run successfully", command.c_str());
+  }
+
+  return result;
+}
+
+static int myshell(std::string command,
+                   std::string description,
+                   bool        ignoreStatus = false,
+                   bool        quiet = false,
+                   bool        printSystemCommands = false) {
+
+  int status = 0;
+
+  if (printSystemCommands && !quiet) {
+    printf("\n# %s\n", description.c_str());
+    printf("%s\n", command.c_str());
+    fflush(stdout);
+    fflush(stderr);
+  }
+
+  // Treat a '#' at the start of a line as a comment
+  if (command[0] == '#')
+    return 0;
+
+  status = system(command.c_str());
+
+  if (status == -1) {
+    // USR_FATAL("system() fork failed: %s", strerror(errno));
+
+  } else if (status != 0 && ignoreStatus == false) {
+    // USR_FATAL("%s", description);
+  }
+
+  return status;
+}
+// This also exists in runtime/src/qio/sys.c
+// returns 0 on success.
+static int sys_getcwd(char** path_out)
+{
+  int sz = 128;
+  char* buf;
+
+  buf = (char*) malloc(sz);
+  if( !buf ) return ENOMEM;
+
+  while( 1 ) {
+    if ( getcwd(buf, sz) != NULL ) {
+      break;
+
+    } else if ( errno == ERANGE ) {
+      // keep looping but with bigger buffer.
+      sz *= 2;
+
+      /*
+       * Realloc may return NULL, in which case we will need to free the memory
+       * initially pointed to by buf.  This is why we store the result of the
+       * call in newP instead of directly into buf.  If a non-NULL value is
+       * returned we update the buf pointer.
+       */
+      void* newP = realloc(buf, sz);
+
+      if (newP != NULL) {
+        buf = static_cast<char*>(newP);
+
+      } else {
+        free(buf);
+        return ENOMEM;
+      }
+
+    } else {
+      // Other error, stop.
+      free(buf);
+      return errno;
+    }
+  }
+
+  *path_out = buf;
+  return 0;
+}
+
+/*
+ * Returns the current working directory. Does not report failures. Use
+ * sys_getcwd() if you need error reports.
+ */
+static std::string getCwd() {
+  char* ret = nullptr;;
+  int rc;
+
+  rc = sys_getcwd(&ret);
+  if (rc == 0)
+    return std::string(ret);
+  else
+    return "";
+}
+
+static
+std::string getChplDepsApp() {
+  // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
+  std::string CHPL_HOME = getenv("CHPL_HOME");
+  std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" + CHPL_HOME + " python3 ";
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps";
+
+  std::string venvDir = runCommand(command);
+  venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
+
+  return venvDir;
 }
 
 static char* checkProjectVersion(char* projectVersion) {
@@ -1448,7 +1581,7 @@ module N { }
 
 // temporary CLI to get testing
 struct Args {
-  std::string saveSphinx = "docs";
+  std::string saveSphinx = "";
   bool selfTest = false;
   bool stdout = false;
   bool dump = false;
@@ -1459,13 +1592,16 @@ struct Args {
   std::string commentStyle =  "/*";
   std::string projectVersion = "0.0.1";
   std::vector<std::string> files;
+  bool printSystemCommands = false;
+  bool noHTML = false;
+
 };
 
 static Args parseArgs(int argc, char **argv) {
   Args ret;
   for (int i = 1; i < argc; i++) {
     if  (std::strcmp("--no-html", argv[i]) == 0){
-      // pass
+      ret.noHTML = true;
     } else if (std::strcmp("--save-sphinx", argv[i]) == 0) {
       assert(i < (argc - 1));
       ret.saveSphinx = argv[i + 1];
@@ -1496,6 +1632,8 @@ static Args parseArgs(int argc, char **argv) {
       assert(i < (argc - 1));
       ret.projectVersion = checkProjectVersion(argv[i + 1]);
       i += 1;
+    } else if (std::strcmp("--print-commands", argv[i]) == 0) {
+      ret.printSystemCommands = true;
     } else {
       ret.files.push_back(argv[i]);
     }
@@ -1518,6 +1656,71 @@ static std::string moduleName(const BuilderResult& builderResult) {
   return "";
 }
 
+/*
+ * Create new sphinx project at given location and return path where .rst files
+ * should be placed.
+ */
+static
+std::string generateSphinxProject(std::string dirpath, bool printSystemCommands) {
+  // Create the output dir under the docs output dir.
+  std::string sphinxDir = dirpath;
+  std::string CHPL_HOME = getenv("CHPL_HOME");
+  // Copy the sphinx template into the output dir.
+  std::string sphinxTemplate = CHPL_HOME + "/third-party/chpl-venv/chpldoc-sphinx-project/*";
+  std::string cmd = "cp -r " + sphinxTemplate + " " + sphinxDir + "/";
+  if( printSystemCommands ) {
+    printf("%s\n", cmd.c_str());
+  }
+  myshell(cmd, "copying chpldoc sphinx template", false, false,
+          printSystemCommands);
+
+  std::string moddir = sphinxDir + "/source/modules";
+  return moddir;
+}
+
+/*
+ * Invoke sphinx-build using sphinxDir to find conf.py and rst sources, and
+ * outputDir for generated html files.
+ */
+static
+void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
+                          std::string projectVersion, std::string author,
+                          bool printSystemCommands) {
+  std::string sphinxBuild = "python3 " + getChplDepsApp() + " sphinx-build";
+  std::string venvProjectVersion = projectVersion;
+
+  std::string envVars = "export CHPLDOC_AUTHOR='" + author + "' && " +
+                              "export CHPLDOC_PROJECT_VERSION='" + venvProjectVersion + "'";
+
+  // Run:
+  //   $envVars &&
+  //     sphinx-build -b html
+  //     -d $sphinxDir/build/doctrees -W
+  //     $sphinxDir/source $outputDir
+  std::string cmdPrefix = envVars + " && ";
+  std::string cmd = cmdPrefix + sphinxBuild + " -b html -d " +
+                    sphinxDir + "/build/doctrees" + " -W " +
+                    sphinxDir + "/source " + outputDir;
+  if( printSystemCommands ) {
+    printf("%s\n", cmd.c_str());
+  }
+  myshell(cmd, "building html output from chpldoc sphinx project");
+  printf("HTML files are at: %s\n", outputDir.c_str());
+}
+
+/* Create the directory (non-recursively). If an error occurs, exit and report
+ * error.
+ */
+static void makeDir(const char* dirpath) {
+  static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
+  int result = mkdir(dirpath, dirPerms);
+  if (result != 0 && errno != 0 && errno != EEXIST) {
+    // USR_FATAL("Failed to create directory: %s due to: %s",
+    //           dirpath, strerror(errno));
+  }
+}
+
+
 int main(int argc, char** argv) {
   Context context;
   Context *ctx = &context;
@@ -1539,6 +1742,41 @@ int main(int argc, char** argv) {
   if (args.files.size() > 1) {
     std::cerr << "WARNING only handling one file right now\n";
   }
+
+  // This is the final location for the output format (e.g. the html files.).
+  std::string docsOutputDir;
+  if (args.outputDir.length() > 0) {
+    docsOutputDir = args.outputDir;
+  } else {
+    docsOutputDir = std::string(getCwd()) + "/docs";
+  }
+
+  // Root of the sphinx project and generated rst files. If
+  // --docs-save-sphinx is not specified, it will be a temp dir.
+  std::string docsSphinxDir;
+  std::string doctmpdirname;
+  if (!args.saveSphinx.empty()) {
+    docsSphinxDir = args.saveSphinx;
+  } else {
+    makeTempDir("chpldoc-", doctmpdirname);
+    docsSphinxDir = doctmpdirname;
+  }
+
+  // Make the intermediate dir and output dir.
+   makeDir(docsSphinxDir.c_str());
+   makeDir(docsOutputDir.c_str());
+
+  // The location of intermediate rst files.
+  std::string docsRstDir;
+  if (textOnly_) {
+    // For text-only mode, the output and working location is the same.
+    docsRstDir = docsOutputDir;
+  } else {
+    // For rst mode, the working location is somewhere inside the temp dir.
+    docsRstDir = generateSphinxProject(docsSphinxDir, args.printSystemCommands);
+  }
+
+  outputDir_ = docsRstDir;
 
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
@@ -1564,14 +1802,16 @@ int main(int argc, char** argv) {
                         << builderResult.error(0).message() << "\n";
               return 1;
             }
+        else if (e.kind() == ErrorMessage::Kind::WARNING) {
+              std::cerr << e.location(ctx).path() << ":"
+                        << e.location(ctx).line() << ": warning: "
+                        << builderResult.error(0).message() << "\n";
+            }
       }
     }
     if (!args.stdout) {
       auto name = moduleName(builderResult);
-      if (!textOnly_)
-        outputDir_ = args.saveSphinx + "/source/modules";
-      else
-        outputDir_ = args.saveSphinx;
+
       for (const auto& ast : builderResult.topLevelExpressions()) {
         if (args.dump) {
           ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
@@ -1599,6 +1839,11 @@ int main(int argc, char** argv) {
                   << (pair.second ? pair.second->str() : "<nullptr>") << "\n";
       }
     }
+  }
+
+  if (!textOnly_ && !args.noHTML) {
+    generateSphinxOutput(docsSphinxDir, docsOutputDir,args.projectVersion,
+                         args.author, args.printSystemCommands);
   }
 
   return 0;
