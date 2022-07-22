@@ -8,7 +8,7 @@ config const writeArrays = false;
 
 
 startGPUDiagnostics();
-for subloc in 0..<here.getChildCount() do on here.gpus[subloc] {
+for gpu in here.gpus do on gpu {
   var A: [1..n] int;
   var B: [1..n] int;
   var C: [1..n] int;
