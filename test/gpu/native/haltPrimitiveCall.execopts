@@ -1,0 +1,2 @@
+--shouldHalt=true # haltPrimitiveCall.halt
+--shouldHalt=false # haltPrimitiveCall.noHalt

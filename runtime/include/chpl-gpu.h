@@ -53,6 +53,7 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
                             chpl_mem_descInt_t description,
                             int32_t lineno, int32_t filename);
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename);
+void chpl_gpu_memset(void* dst, int value, size_t n);
 size_t chpl_gpu_get_alloc_size(void* ptr);
 
 void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n);

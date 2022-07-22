@@ -344,6 +344,7 @@ class GpuKernel {
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
   void populateBody(CForLoop *loop, FnSymbol *outlinedFunction);
   void normalizeOutlinedFunction();
+  void handleHalts();
   void finalize();
 
   void generateIndexComputation();
@@ -360,7 +361,25 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   buildStubOutlinedFunction(insertionPoint);
   populateBody(gpuLoop.loop(), fn_);
   normalizeOutlinedFunction();
+  handleHalts();
   finalize();
+}
+
+void GpuKernel::handleHalts() {
+  FnSymbol* outlinedFn = fn();
+  std::vector<CallExpr*> calls;
+
+  ArgSymbol* haltFlag = new ArgSymbol(INTENT_REF, "kernelHalted", dtInt[INT_SIZE_32]);
+  outlinedFn->insertFormalAtTail(haltFlag);
+  collectCallExprs(outlinedFn, calls);
+
+  int callNum = 0;
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_RT_ERROR)) {
+      callNum++;
+      call->replace(new CallExpr(PRIM_MOVE, haltFlag, new_IntSymbol(callNum, INT_SIZE_32)));
+    }
+  }
 }
 
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
