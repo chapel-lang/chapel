@@ -69,6 +69,8 @@ std::string commentStyle_;
 bool writeStdOut_ = false;
 std::string outputDir_;
 bool textOnly_ = false;
+std::string CHPL_HOME = getenv("CHPL_HOME");
+
 const std::string templateUsage = R"RAW(**Usage**
 
 .. code-block:: chapel
@@ -259,9 +261,9 @@ static std::string getCwd() {
 static
 std::string getChplDepsApp() {
   // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
-  std::string CHPL_HOME = getenv("CHPL_HOME");
-  std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" + CHPL_HOME + " python3 ";
-  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps";
+  std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" +
+                         CHPL_HOME + " python3 ";
+  command += CHPL_HOME + "/util/chplenv/chpl_home_utils.py --chpldeps";
 
   std::string venvDir = runCommand(command);
   venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
@@ -1275,8 +1277,8 @@ struct RstResultBuilder {
       if (decl->toVariable()->typeExpression() ||
           decl->toVariable()->initExpression()) {
         expressions.push(decl);
-        kind = decl->toVariable()->isField() ? "attribute" : "data";
       }
+      kind = decl->toVariable()->isField() ? "attribute" : "data";
     }
     std::string prevTypeExpression;
     std::string prevInitExpression;
@@ -1293,8 +1295,13 @@ struct RstResultBuilder {
       os_ << decl->toVariable()->name();
 
       if (expressions.empty()) {
-        assert(!prevTypeExpression.empty() || !prevInitExpression.empty());
         multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+        // for when we have something like var x, y, z;
+        // if we want to print the following, uncomment the line below
+        // var x
+        // var y: x.type
+        // var z: y.type
+        // prevTypeExpression = ": " + decl->toVariable()->name().str() + ".type";
       } else {
         // our decl doesn't have a typeExpression or initExpression,
         // or it is the same one
@@ -1594,7 +1601,7 @@ struct Args {
   std::vector<std::string> files;
   bool printSystemCommands = false;
   bool noHTML = false;
-
+  std::string chplHome;
 };
 
 static Args parseArgs(int argc, char **argv) {
@@ -1634,6 +1641,10 @@ static Args parseArgs(int argc, char **argv) {
       i += 1;
     } else if (std::strcmp("--print-commands", argv[i]) == 0) {
       ret.printSystemCommands = true;
+    } else if (std::strcmp("--home", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.chplHome = argv[i + 1];
+      i += 1;
     } else {
       ret.files.push_back(argv[i]);
     }
@@ -1664,9 +1675,9 @@ static
 std::string generateSphinxProject(std::string dirpath, bool printSystemCommands) {
   // Create the output dir under the docs output dir.
   std::string sphinxDir = dirpath;
-  std::string CHPL_HOME = getenv("CHPL_HOME");
   // Copy the sphinx template into the output dir.
-  std::string sphinxTemplate = CHPL_HOME + "/third-party/chpl-venv/chpldoc-sphinx-project/*";
+  std::string sphinxTemplate = CHPL_HOME +
+                               "/third-party/chpl-venv/chpldoc-sphinx-project/*";
   std::string cmd = "cp -r " + sphinxTemplate + " " + sphinxDir + "/";
   if( printSystemCommands ) {
     printf("%s\n", cmd.c_str());
@@ -1690,7 +1701,8 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   std::string venvProjectVersion = projectVersion;
 
   std::string envVars = "export CHPLDOC_AUTHOR='" + author + "' && " +
-                              "export CHPLDOC_PROJECT_VERSION='" + venvProjectVersion + "'";
+                        "export CHPLDOC_PROJECT_VERSION='"
+                        + venvProjectVersion + "'";
 
   // Run:
   //   $envVars &&
@@ -1741,6 +1753,11 @@ int main(int argc, char** argv) {
 
   if (args.files.size() > 1) {
     std::cerr << "WARNING only handling one file right now\n";
+  }
+
+  // update CHPL_HOME if we got one from the command-line args
+  if (!args.chplHome.empty()) {
+    CHPL_HOME = args.chplHome;
   }
 
   // This is the final location for the output format (e.g. the html files.).
