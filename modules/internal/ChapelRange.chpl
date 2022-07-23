@@ -575,7 +575,7 @@ module ChapelRange {
     if isAmbiguous() {
       halt("Can't query the aligned bounds of an ambiguously aligned range");
     }
-    const low = chpl__idxToInt(lowBound);
+    const low = if hasLowBound() then chpl__idxToInt(lowBound) else _low;
     if !stridable then
       return low;
     else
@@ -683,7 +683,7 @@ module ChapelRange {
     if isAmbiguous() {
       halt("Can't query the aligned bounds of an ambiguously aligned range");
     }
-    const high = chpl__idxToInt(highBound);
+    const high = if hasHighBound() then chpl__idxToInt(highBound) else _high;
     if ! stridable then
       return high;
     else
