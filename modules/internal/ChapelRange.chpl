@@ -575,6 +575,11 @@ module ChapelRange {
     if isAmbiguous() {
       halt("Can't query the aligned bounds of an ambiguously aligned range");
     }
+    // TODO: This is a bit sloppy, and makes me wonder where else we could
+    // run into it.  I think that the fixes would be to (a) make an
+    // internal equivalent to the '._low' query that did something like
+    // this without ever triggering a compiler error and/or (b) optimize
+    // away _high and _low fields when they don't need to be stored.
     const low = if hasLowBound() then chpl__idxToInt(lowBound) else _low;
     if !stridable then
       return low;
