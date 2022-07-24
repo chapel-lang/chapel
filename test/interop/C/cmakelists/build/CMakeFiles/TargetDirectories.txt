@@ -1,0 +1,3 @@
+/Users/brandonneth/chapel/test/interop/C/cmakelists/build/CMakeFiles/cmakeTest.dir
+/Users/brandonneth/chapel/test/interop/C/cmakelists/build/CMakeFiles/edit_cache.dir
+/Users/brandonneth/chapel/test/interop/C/cmakelists/build/CMakeFiles/rebuild_cache.dir
