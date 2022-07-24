@@ -261,6 +261,45 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
 }
 
+void codegen_library_cmakelists() {
+  fprintf(stderr, "Generating CMakeList\n");
+  return;
+  std::string name = "";
+  int libLength = strlen("lib");
+  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  if (startsWithLib) {
+    name += &executableFilename[libLength];
+  } else {
+    // libname = executableFilename when executableFilename does not start with
+    // "lib"
+    name = executableFilename;
+  }
+
+  fileinfo makefile;
+  openLibraryHelperFile(&makefile, "Makefile", name.c_str());
+
+  // Save the CHPL_HOME location so it can be used in the other makefile
+  // variables instead of letting them be cluttered with its value
+  setupMakeEnvVars("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, makefile);
+  setupMakeEnvVars("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, makefile);
+  setupMakeEnvVars("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, makefile);
+  setupMakeEnvVars("CHPL_HOME", CHPL_HOME, makefile);
+
+  printMakefileIncludes(makefile);
+  printMakefileLibraries(makefile, name);
+
+  std::string compiler = getCompilelineOption("compiler");
+  fprintf(makefile.fptr, "CHPL_COMPILER = %s\n", compiler.c_str());
+
+  std::string linker = getCompilelineOption("linker");
+  fprintf(makefile.fptr, "CHPL_LINKER = %s\n", linker.c_str());
+
+  std::string linkerShared = getCompilelineOption("linkershared");
+  fprintf(makefile.fptr, "CHPL_LINKERSHARED = %s", linkerShared.c_str());
+
+  closeLibraryHelperFile(&makefile, false);
+}
+
 const char* getLibraryExtension() {
   if (fLibraryCompile) {
     if (fLinkStyle==LS_DYNAMIC) return ".so";
