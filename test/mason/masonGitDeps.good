@@ -1,1 +1,2 @@
- --main-module gitTest   /Users/ben.mcdonald/chapel/test/mason/mason_home/git/DummyRepo-master/src/DummyRepo.chpl /Users/ben.mcdonald/chapel/test/mason/mason_home/git/SecondRepo-test-branch/src/SecondRepo.chpl
+true
+true
