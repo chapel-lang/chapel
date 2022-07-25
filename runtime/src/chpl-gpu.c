@@ -241,9 +241,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
   *kernel_params[nargs] = chpl_gpu_mem_alloc(sizeof(int),
                                              CHPL_RT_MD_GPU_KERNEL_ARG,
                                              ln, fn);
-  
+
   chpl_gpu_memset(*kernel_params[nargs], 0, 1);
-  
+
   chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
       blk_dim_x, blk_dim_y, blk_dim_z);
 
