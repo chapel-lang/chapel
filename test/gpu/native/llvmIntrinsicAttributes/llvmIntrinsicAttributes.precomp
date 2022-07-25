@@ -14,5 +14,20 @@ $TARGET_CC -S -emit-llvm llvmIntrinsicAttributes.cu --cuda-gpu-arch=sm_60 -L/glo
 # the attributes on that declaration.
 
 CLANG_IR_DUMP_FILE="llvmIntrinsicAttributes-cuda-nvptx64-nvidia-cuda-sm_60.ll"
-grep "declare i32 @llvm.nvvm.read.ptx.sreg.tid.x() #2" $CLANG_IR_DUMP_FILE > llvmIntrinsicAttributes.good
-grep "attributes #2" $CLANG_IR_DUMP_FILE >> llvmIntrinsicAttributes.good
+GOOD_FILE="llvmIntrinsicAttributes.good"
+
+regex="declare i32 @llvm.nvvm.read.ptx.sreg.tid.x\(\) #([[:digit:]]*)"
+if [[ $(cat $CLANG_IR_DUMP_FILE) =~ $regex ]]
+then
+  id=${BASH_REMATCH[1]}
+  regex2="attributes #$id = \{([^\}]*)\}"
+  if [[ $(cat $CLANG_IR_DUMP_FILE) =~ $regex2 ]]
+  then
+    attributes=${BASH_REMATCH[1]}
+    echo $attributes > $GOOD_FILE
+  else
+    echo "(from .precomp script) Did not find expected attributes for @llvm.nvvm.read.ptx.sreg.tid.x()" #> $GOOD_FILE
+  fi
+else
+  echo "(from .precomp script) Did not find expected declaration: @llvm.nvvm.read.ptx.sreg.tid.x()" #> $GOOD_FILE
+fi

@@ -48,7 +48,7 @@
 module Buffers {
   use OS.POSIX;
   import SysBasic.{ENOERR,syserr};
-  use SysError;
+  use OS;
   private use CTypes;
 
   pragma "no doc"

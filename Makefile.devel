@@ -67,7 +67,7 @@ dyno-docs: FORCE
 clobber-dyno: FORCE
 	@cd compiler/dyno && $(MAKE) -f Makefile.help clobber-dyno
 
-test-dyno: FORCE
+test-dyno: dyno FORCE
 	@cd compiler/dyno && $(MAKE) -f Makefile.help test-dyno
 
 dyno-parser: FORCE

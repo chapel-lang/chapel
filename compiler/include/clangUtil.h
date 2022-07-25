@@ -99,6 +99,11 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);
 const clang::CodeGen::ABIArgInfo*
 getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg);
 
+const clang::CodeGen::ABIArgInfo*
+getSingleCGArgInfo(Type* type);
+
+bool useDarwinArmFix(Type* type);
+
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
 void finishCodegenLLVM();

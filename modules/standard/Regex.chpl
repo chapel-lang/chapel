@@ -340,7 +340,7 @@ Regular Expression Types and Methods
 
  */
 module Regex {
-  private use SysError, CTypes;
+  private use OS, CTypes;
 
 pragma "no doc"
 extern type qio_regex_t;

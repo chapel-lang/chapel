@@ -3009,6 +3009,8 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
     tsDec->copyFlags(at->symbol);
     tsDec->deprecationMsg = at->symbol->deprecationMsg;
     tsDec->addFlag(FLAG_NO_OBJECT);
+    // this flag avoids scope resolve considering it duplicative
+    tsDec->addFlag(FLAG_TEMP);
     // Propagate generic-ness to the decorated type
     if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
       tsDec->addFlag(FLAG_GENERIC);
