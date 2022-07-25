@@ -46,7 +46,7 @@ proc masonNew(args: [] string) throws {
                                  opts=["--name"]);
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
-  var packageFlag = parser.addFlag(name="package", defaultValue=false);
+  var appFlag = parser.addFlag(name="app", defaultValue=false);
   var libFlag = parser.addFlag(name="lib", defaultValue=false);
   var lightFlag = parser.addFlag(name="light", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
@@ -55,7 +55,7 @@ proc masonNew(args: [] string) throws {
 
   var vcs = !vcsFlag.valueAsBool();
   var show = showFlag.valueAsBool();
-  var isPackage = packageFlag.valueAsBool();
+  var isApplication = appFlag.valueAsBool();
   var isLibrary = libFlag.valueAsBool();
   var isLightweight = lightFlag.valueAsBool();
   
@@ -65,7 +65,7 @@ proc masonNew(args: [] string) throws {
   var chplVersion = '';
   var license = 'None';
   // Default created mason project is a package (has a main func)
-  var packageType = 'package';
+  var packageType = 'app';
 
   try! {
     if args.size == 1 {
@@ -83,8 +83,8 @@ proc masonNew(args: [] string) throws {
       } else {
         packageName = dirName;
       }
-      if isPackage then
-        packageType = "package";
+      if isApp then
+        packageType = "application";
       else if isLibrary then
         packageType = "library";
       else if isLightweight then
@@ -229,7 +229,7 @@ proc exitOnEOF(parameter) {
 /* Previews the Mason.toml file that is going to be created */
 proc previewMasonFile(packageName, version, chapelVersion, license) {
   // TODO: update hardcode
-  const baseToml = getBaseTomlString(packageName, version, chapelVersion, license, "package");
+  const baseToml = getBaseTomlString(packageName, version, chapelVersion, license, "application");
   writeln();
   writeln(baseToml);
 }
@@ -362,7 +362,7 @@ proc makeSrcDir(path:string) {
 /* Makes module file inside src/ */
 proc makeModule(path:string, fileName:string, packageType="package") {
   var libTemplate: string;
-  if packageType == "package" {
+  if packageType == "application" {
     libTemplate = '/* Documentation for ' + fileName +
       ' */\nmodule '+ fileName + ' {\n  proc main() {\n    writeln("New mason package: '+ fileName +'");\n  }\n}';
   } else if packageType == "library" {

@@ -164,9 +164,9 @@ class MasonDocHelpHandler : HelpHandler {
   }
 }
 
-class MasonLightHelpHandler : HelpHandler {
+class MasonModulesHelpHandler : HelpHandler {
   override proc printHelp() {
-    masonLightHelp();
+    masonModulesHelp();
   }
 }
 
@@ -197,7 +197,7 @@ proc masonHelp() {
   writeln('    test        Compile and run tests found in /test');
   writeln('    external    Integrate external dependencies into mason packages');
   writeln('    publish     Publish package to mason-registry');
-  writeln('    light       Interact with a lightweight mason project');
+  writeln('    modules     Print flags for including mason dependencies from TOML file');
 }
 
 proc masonRunHelp() {
@@ -258,9 +258,10 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
-  writeln('        --light                  Create a "lightweight" Mason package in current directory');
+  writeln('        --app                    Create a Mason "application" (package with main function)');
+  writeln('        --lib                    Create a Mason "library" (package without main function)');
+  writeln('        --light                  Create a Mason "lightweight" project (place a TOML file in current directory)');
   writeln('    --name <legalName>           Specify package name different from directory name');
-  
 }
 
 proc masonInitHelp(){
@@ -607,15 +608,10 @@ proc masonDocHelp() {
   writeln();
 }
 
-proc masonLightHelp() {
-  writeln("Interact with a lightweight mason project");
+proc masonModulesHelp() {
+  writeln("Print flags to include modules from a toml file");
   writeln();
   writeln('Usage:');
-  writeln('    mason light [options]');
-  writeln();
-  writeln('Options:');
-  writeln("    -h, --help                  Display this message");
-  writeln("        --new                   Create a new mason lightweight project in the current directory");
-  writeln("        --dependent-modules     Print the include paths to the dependent modules to be integrated into build step");
+  writeln('    mason modules');
   writeln();
 }
