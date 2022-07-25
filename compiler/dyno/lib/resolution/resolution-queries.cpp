@@ -1639,6 +1639,27 @@ struct ReturnTypeInferrer {
     }
   }
 
+  bool enter(const Conditional* cond) {
+    auto condition = cond->condition();
+    assert(condition != nullptr);
+    const ResolvedExpression& r = resolutionById.byAst(condition);
+    if (r.type().isParamTrue()) {
+      auto then = cond->thenBlock();
+      assert(then != nullptr);
+      then->traverse(*this);
+      return false;
+    } else if (r.type().isParamFalse()) {
+      auto else_ = cond->elseBlock();
+      if (else_) {
+        else_->traverse(*this);
+      }
+      return false;
+    }
+    return true;
+  }
+  void exit(const Conditional* cond){
+  }
+
   bool enter(const Return* ret) {
     if (const AstNode* expr = ret->value()) {
       noteReturnType(expr, ret);
