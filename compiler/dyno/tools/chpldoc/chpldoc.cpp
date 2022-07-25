@@ -1104,6 +1104,12 @@ struct RstResultBuilder {
       os_ << "\n";
     }
 
+    showDeprecationMessage(node, indentComment);
+    return commentShown;
+  }
+
+  template<typename T>
+  void showDeprecationMessage(const T* node, bool indentComment=true) {
     if (auto attrs = node->attributes()) {
       if (attrs->isDeprecated() && !textOnly_) {
         auto comment = previousComment(context_, node->id());
@@ -1113,8 +1119,13 @@ struct RstResultBuilder {
             // do nothing because deprecation was mentioned in doc comment
         } else {
           // write the deprecation warning and message
-          indentStream(os_, indentDepth_ * indentPerDepth) << ".. warning::\n\n";
-          indentStream(os_, (indentDepth_ + 1) * indentPerDepth);
+          int commentShift = 0;
+          if (indentComment) {
+            indentStream(os_, indentDepth_ * indentPerDepth);
+            commentShift = 1;
+          }
+          os_ << ".. warning::\n\n";
+          indentStream(os_, (indentDepth_ + commentShift) * indentPerDepth);
           if (attrs->deprecationMessage().isEmpty()) {
             // write a generic message because there wasn't a specific one
             os_ << getNodeName((AstNode*) node) << " is deprecated";
@@ -1126,7 +1137,6 @@ struct RstResultBuilder {
         }
       }
     }
-    return commentShown;
   }
 
   void visitChildren(const AstNode* n) {
@@ -1181,9 +1191,12 @@ struct RstResultBuilder {
       os_ << ".. module:: " << m->name().c_str() << '\n';
       lastComment = previousComment(context_, m->id());
       if (lastComment) {
-        indentStream(os_, 1 * indentPerDepth);
-        os_ << ":synopsis: " << commentSynopsis(lastComment, commentStyle)
-            << '\n';
+        auto synopsis = commentSynopsis(lastComment, commentStyle);
+        if (!synopsis.empty()) {
+          indentStream(os_, 1 * indentPerDepth);
+          os_ << ":synopsis: " << synopsis
+              << '\n';
+        }
       }
       os_ << '\n';
 
@@ -1221,6 +1234,7 @@ struct RstResultBuilder {
     }
     if (textOnly_) indentDepth_ --;
     showComment(m, textOnly_);
+    showDeprecationMessage(m, false);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
@@ -1652,20 +1666,6 @@ static Args parseArgs(int argc, char **argv) {
   return ret;
 }
 
-// TODO what do we do if multiple modules (submodules) are in one file?
-static std::string moduleName(const BuilderResult& builderResult) {
-  for (const auto& ast : builderResult.topLevelExpressions()) {
-    if (const Module* m = ast->toModule()) {
-      /* TODO: This is wrong if the module is an implicit module and it just
-          imports or uses another module. In that case the name should be that
-          of the used or imported module.
-      */
-      return m->name().str();
-    }
-  }
-  assert(false);
-  return "";
-}
 
 /*
  * Create new sphinx project at given location and return path where .rst files
@@ -1827,9 +1827,11 @@ int main(int argc, char** argv) {
       }
     }
     if (!args.stdout) {
-      auto name = moduleName(builderResult);
-
+      std::string name;
       for (const auto& ast : builderResult.topLevelExpressions()) {
+        if (ast->isModule())
+          name = ast->toModule()->name().str();
+
         if (args.dump) {
           ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
         }
