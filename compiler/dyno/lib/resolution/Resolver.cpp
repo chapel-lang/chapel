@@ -248,11 +248,11 @@ Resolver::createForInitialFieldStmt(Context* context,
                                     const AstNode* fieldStmt,
                                     const CompositeType* compositeType,
                                     ResolutionResultByPostorderID& byId,
-                                    bool useGenericFormalDefaults) {
+                                    DefaultsPolicy defaultsPolicy) {
   auto ret = Resolver(context, decl, byId, nullptr);
   ret.curStmt = fieldStmt;
   ret.inCompositeType = compositeType;
-  ret.useGenericFormalDefaults = useGenericFormalDefaults;
+  ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
   return ret;
 }
@@ -265,12 +265,12 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
                                          const CompositeType* compositeType,
                                          const PoiScope* poiScope,
                                          ResolutionResultByPostorderID& byId,
-                                         bool useGenericFormalDefaults) {
+                                         DefaultsPolicy defaultsPolicy) {
   auto ret = Resolver(context, decl, byId, poiScope);
   ret.curStmt = fieldStmt;
   ret.inCompositeType = compositeType;
   ret.substitutions = &compositeType->substitutions();
-  ret.useGenericFormalDefaults = useGenericFormalDefaults;
+  ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
   return ret;
 }
@@ -285,7 +285,7 @@ Resolver::createForInstantiatedSignatureFields(Context* context,
                                      ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, decl, byId, poiScope);
   ret.substitutions = &substitutions;
-  ret.useGenericFormalDefaults = false;
+  ret.defaultsPolicy = DefaultsPolicy::IGNORE;
   ret.byPostorder.setupForSymbol(decl);
   return ret;
 }
@@ -300,7 +300,7 @@ Resolver::createForParentClass(Context* context,
                                ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, decl, byId, poiScope);
   ret.substitutions = &substitutions;
-  ret.useGenericFormalDefaults = true;
+  ret.defaultsPolicy = DefaultsPolicy::USE;
   ret.byPostorder.setupForSymbol(decl);
   return ret;
 }
@@ -836,7 +836,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
                              qtKind == QualifiedType::PARAM;
         // infer the type of the variable from its initialization expr?
         bool inferFromInit = foundSubstitutionDefaultHint ||
-                             useGenericFormalDefaults;
+                             defaultsPolicy == DefaultsPolicy::USE;
         // in addition, always infer from init for a concrete type.
         // the non-concrete cases are like this, e.g.:
         //    type t = int;
@@ -856,7 +856,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
           if (isTypeOrParam && isField) {
             // a type or param field with initExpr is still generic, e.g.
             // record R { type t = int; }
-            // if that behavior is requested with !useGenericFormalDefaults
+            // if that behavior is requested with defaultsPolicy == IGNORE
             typeExprT = QualifiedType(QualifiedType::TYPE,
                                       AnyType::get(context));
           }
@@ -1327,10 +1327,15 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     }
 
     if (ct) {
+      auto newDefaultsPolicy = defaultsPolicy;
+      if (defaultsPolicy == DefaultsPolicy::FOR_OTHER_FIELDS &&
+          ct == inCompositeType) {
+        newDefaultsPolicy = DefaultsPolicy::USE;
+      }
       // if it is recursive within the current class/record, we can
       // call resolveField.
       const ResolvedFields& resolvedFields =
-        resolveFieldDecl(context, ct, id, useGenericFormalDefaults);
+        resolveFieldDecl(context, ct, id, newDefaultsPolicy);
       // find the field that matches
       int nFields = resolvedFields.numFields();
       for (int i = 0; i < nFields; i++) {

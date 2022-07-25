@@ -37,6 +37,10 @@
 namespace chpl {
 namespace resolution {
 
+typedef enum {
+  IGNORE, USE, FOR_OTHER_FIELDS
+} DefaultsPolicy;
+
 /**
   An untyped function signature. This is really just the part of a function
   including the formals. It exists so that the process of identifying
@@ -1499,6 +1503,26 @@ using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 /// \cond DO_NOT_DOCUMENT
 
+template<> struct stringify<resolution::DefaultsPolicy>
+{
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
+                  const resolution::DefaultsPolicy& stringMe) const {
+    using DefaultsPolicy = resolution::DefaultsPolicy;
+    switch (stringMe) {
+      case DefaultsPolicy::IGNORE:
+        streamOut << "IGNORE";
+        break;
+      case DefaultsPolicy::USE:
+        streamOut << "USE";
+        break;
+      case DefaultsPolicy::FOR_OTHER_FIELDS:
+        streamOut << "FOR_OTHER_FIELDS";
+        break;
+    }
+  }
+};
+
 template<> struct stringify<resolution::TypedFnSignature::WhereClauseResult>
 {
   void operator()(std::ostream& streamOut,
@@ -1528,6 +1552,13 @@ template<> struct stringify<resolution::TypedFnSignature::WhereClauseResult>
 
 
 namespace std {
+
+template<> struct hash<chpl::resolution::DefaultsPolicy>
+{
+  size_t operator()(const chpl::resolution::DefaultsPolicy& key) const {
+    return key;
+  }
+};
 
 template<> struct hash<chpl::resolution::UntypedFnSignature::FormalDetail>
 {
