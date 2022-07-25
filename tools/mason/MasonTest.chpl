@@ -369,34 +369,6 @@ private proc printTestResults(ref result, timeElapsed) {
 }
 
 
-private proc getMasonDependencies(sourceList: list(3*string),
-                                  gitList: list(3*string),
-                                  testName: string) {
-
-  // Declare test to run as the main module
-  var masonCompopts = " ".join(" --main-module", testName, " ");
-
-  if sourceList.size > 0 {
-    const depPath = MASON_HOME + "/src/";
-
-    // Add dependencies to project
-    for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
-    }
-  }
-  if gitList.size > 0 {
-    const gitDepPath = MASON_HOME + '/git/';
-
-    // Add git dependencies
-    for (_, name, branch) in gitList {
-      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-      masonCompopts += gitDepSrc;
-    }
-  }
-  return masonCompopts;
-}
-
 private proc getTests(lock: borrowed Toml, projectHome: string) {
   var testNames: list(string);
   const testPath = joinPath(projectHome, "test");

@@ -288,37 +288,6 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
   }
 }
 
-
-// TODO: This code (and presumably others) is copy-pasted
-//       from MasonTest.chpl. Move to utils?
-private proc getMasonDependencies(sourceList: list(3*string),
-                                  gitList: list(3*string),
-                                  exampleName: string) {
-
-  // Declare example to run as the main module
-  var masonCompopts = " ".join(" --main-module", exampleName, " ");
-
-  if sourceList.size > 0 {
-    const depPath = MASON_HOME + "/src/";
-
-    // Add dependencies to project
-    for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
-    }
-  }
-  if gitList.size > 0 {
-    const gitDepPath = MASON_HOME + '/git/';
-
-    // Add git dependencies
-    for (_, name, branch) in gitList {
-      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-      masonCompopts += gitDepSrc;
-    }
-  }
-  return masonCompopts;
-}
-
 private proc getExamples(toml: Toml, projectHome: string) {
   var exampleNames: list(string);
   const examplePath = joinPath(projectHome, "example");
