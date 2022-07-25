@@ -58,14 +58,22 @@ proc masonModules(args: [] string) throws {
   var lockFile = parseToml(toParse);
 
   // generate list of dependencies and get src code
-  var sourceList = genSourceList(lockFile);
+  var (sourceList, gitList) = genSourceList(lockFile);
   getSrcCode(sourceList, false);
+  getGitCode(gitList, false);
 
   const depPath = MASON_HOME + '/src/';
+  const gitDepPath = MASON_HOME + '/git/';
   var modules: string;
   for (_, name, version) in sourceList {
-    var depM = ' -M' + depPath + name + "-" + version + '/src/';
+    var depM = ' ' + depPath + name + "-" + version + '/src/';
     modules += depM;
   }
+
+  for (_, name, branch) in gitList {
+    var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
+    modules += gitDepSrc;
+  }
+  
   writeln(modules);
 }
