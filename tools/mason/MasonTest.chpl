@@ -52,7 +52,7 @@ proc masonTest(args: [] string) throws {
   const projectType = getProjectType();
   if projectType == "light" then
       throw new owned MasonError("Mason light projects do not currently support 'mason test'");
-  
+
   var parser = new argumentParser(helpHandler=new MasonTestHelpHandler());
 
   var runFlag = parser.addFlag(name="run",

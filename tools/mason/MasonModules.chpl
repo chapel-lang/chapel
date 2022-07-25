@@ -74,6 +74,6 @@ proc masonModules(args: [] string) throws {
     var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
     modules += gitDepSrc;
   }
-  
+
   writeln(modules);
 }

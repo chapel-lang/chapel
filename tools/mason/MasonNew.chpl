@@ -58,7 +58,7 @@ proc masonNew(args: [] string) throws {
   var isApplication = appFlag.valueAsBool();
   var isLibrary = libFlag.valueAsBool();
   var isLightweight = lightFlag.valueAsBool();
-  
+
   var packageName = '';
   var dirName = '';
   var version = '';
@@ -83,7 +83,7 @@ proc masonNew(args: [] string) throws {
       } else {
         packageName = dirName;
       }
-      if isApp then
+      if isApplication then
         packageType = "application";
       else if isLibrary then
         packageType = "library";
@@ -276,7 +276,7 @@ proc InitProject(dirName, packageName, vcs, show,
                  version: string, chplVersion: string, license: string,
                  packageType: string) throws {
   if packageType == "light" {
-    // TODO: add ability to get path and toml name from user 
+    // TODO: add ability to get path and toml name from user
     var lightDir = here.cwd();
     makeBasicToml(dirName=packageName, path=lightDir, version, chplVersion, license, packageType);
     writeln("Created new " + packageType + " project: " + lightDir);
