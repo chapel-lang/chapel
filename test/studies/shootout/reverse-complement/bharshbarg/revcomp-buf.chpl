@@ -137,7 +137,7 @@ proc main(args: [] string) {
   }
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=ioHints.direct(QIO_CH_ALWAYS_UNBUFFERED));
+                                     hints=ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
   //
   // This conversion wastes memory, but correct output requires array stdout
   // specifically at the moment.

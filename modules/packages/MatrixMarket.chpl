@@ -202,8 +202,8 @@ class MMReader {
    var finfo:MMInfo;
 
    proc init(const fname:string) {
-      fd = open(fname, iomode.r, hints=ioHints.sequential|ioHints.prefetch);
-      fin = fd.reader(start=0, hints=ioHints.sequential|ioHints.prefetch);
+      fd = open(fname, iomode.r, hints=ioHintSet.sequential|ioHintSet.prefetch);
+      fin = fd.reader(start=0, hints=ioHintSet.sequential|ioHintSet.prefetch);
    }
 
    proc read_header() {
@@ -223,7 +223,7 @@ class MMReader {
        // didn't find a percentage, rewind channel by length of read string...
        if percentfound.find("%") == -1 {
          fin.close();
-         fin = fd.reader(start=offset, hints=ioHints.sequential|ioHints.prefetch);
+         fin = fd.reader(start=offset, hints=ioHintSet.sequential|ioHintSet.prefetch);
          pctflag = true;
        }
      }

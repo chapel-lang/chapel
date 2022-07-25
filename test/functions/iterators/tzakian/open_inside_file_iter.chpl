@@ -1,6 +1,6 @@
 use IO;
 
-iter file.split(hints = ioHints.empty) {
+iter file.split(hints = ioHintSet.empty) {
   open(this.path, iomode.r, hints);
   yield 1;
 }
