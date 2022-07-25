@@ -316,8 +316,10 @@ private proc createDepTree(root: Toml) {
 
   if root.pathExists("dependencies") {
     var deps = getDependencies(root);
+    var gitDeps = getGitDeps(root);
     var manifests = getManifests(deps);
     depTree = createDepTrees(depTree, manifests, "root");
+    depTree = addGitDeps(depTree, gitDeps);
   }
 
   //
@@ -401,6 +403,28 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
   return depTree;
 }
 
+private proc addGitDeps(depTree: Toml, ref gitDeps) {
+  for key in gitDeps {
+    if !depTree.pathExists(key[0]) {
+      var dt: domain(string);
+      var depTbl: [dt] shared Toml?;
+      depTree.set(key[0], depTbl);
+      depTree[key[0]]!.set("name", key[0]);
+    }
+    if key[1] == "git" then
+      depTree[key[0]]!.set("url", key[2]!);
+    else
+      depTree[key[0]]!.set("branch", key[2]!);
+
+    // TODO: Fix version and chplversion
+    //       these should really be coming from the toml
+    //       file in the git repo manifest that isn't yet
+    //       downloaded
+    depTree[key[0]]!.set("version", "0");
+    depTree[key[0]]!.set("chplVersion", "1.27.0");
+  }
+  return depTree;
+}
 
 //
 // TODO: Accept an array of bricks
@@ -501,5 +525,16 @@ private proc getDependencies(tomlTbl: Toml) {
     }
   }
   return deps;
+}
+
+private proc getGitDeps(tomlTbl: Toml) {
+  var gitDeps: list((string, string, shared Toml?));
+  for k in tomlTbl["dependencies"]!.A {
+    for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
+      // name, branch, toml that it is set to
+      gitDeps.append((k, a, d));
+    }
+  }
+  return gitDeps;
 }
 

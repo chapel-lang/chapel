@@ -131,7 +131,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         }
 
         // generate list of dependencies and get src code
-        var sourceList = genSourceList(lockFile);
+        var (sourceList, gitList) = genSourceList(lockFile);
 
         if lockFile.pathExists('external') {
           spackInstalled();
@@ -142,6 +142,8 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         // have for good performance.
         //
         getSrcCode(sourceList, show);
+
+        getGitCode(gitList, show);
 
         // get compilation options including external dependencies
         const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
@@ -177,8 +179,9 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
                 release: bool, compopts: list(string), projectHome: string) : bool throws {
 
-  const sourceList = genSourceList(lockFile);
+  const (sourceList, gitList) = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
+  const gitDepPath = MASON_HOME + '/git/';
   const project = lockFile["root"]!["name"]!.s;
   const pathToProj = projectHome + '/src/'+ project + '.chpl';
   const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
@@ -194,6 +197,11 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     for (_, name, version) in sourceList {
       var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
       command += depSrc;
+    }
+
+    for (_, name, branch) in gitList {
+      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
+      command += gitDepSrc;
     }
 
     // Verbosity control
@@ -222,25 +230,41 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
    url and the name for local mason dependency pool */
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
+  var gitList: list((string, string, string));
   for (name, package) in lockFile.A.items() {
     if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
         var toml = lockFile[name]!;
+        // TODO: What do we want to do with version for git deps?
         var version = toml["version"]!.s;
-        var source = toml["source"]!.s;
-        sourceList.append((source, name, version));
+
+        if toml.pathExists("source") {
+          var source = toml["source"]!.s;
+          sourceList.append((source, name, version));
+        } else if toml.pathExists("url") {
+          var url = toml["url"]!.s;
+
+          var branch: string;
+          // use branch if specified, else default to master
+          if toml["branch"] != nil {
+            branch = toml["branch"]!.s;
+          } else {
+            branch = "master";
+          }
+          gitList.append((url, name, branch));
+        }
       }
     }
   }
-  return sourceList;
+  return (sourceList, gitList);
 }
 
 
 /* Checks to see if dependency has already been
    downloaded previously */
-proc depExists(dependency: string) {
-  var repos = MASON_HOME +'/src/';
+proc depExists(dependency: string, repo='/src/') {
+  var repos = MASON_HOME + repo;
   var exists = false;
   for dir in listdir(repos) {
     if dir == dependency then
@@ -274,6 +298,47 @@ proc getSrcCode(sourceListArg: list(3*string), show) {
       }
       runCommand(getDependency);
       gitC(destination, checkout);
+    }
+  }
+}
+
+proc getGitCode(gitListArg: list(3*string), show) {
+  if !isDir(MASON_HOME + '/git/') {
+    mkdir(MASON_HOME + '/git/', parents=true);
+  }
+
+  //
+  // TODO: Temporarily use `toArray` here because `list` does not yet
+  // support parallel iteration, which the `getSrcCode` method _must_
+  // have for good performance.
+  //
+  var gitList = gitListArg.toArray();
+
+  var baseDir = MASON_HOME +'/git/';
+  forall (srcURL, name, branch) in gitList {
+    const nameVers = name + "-" + branch;
+    const destination = baseDir + nameVers;
+    if !depExists(nameVers, '/git/') {
+      writeln("Downloading dependency: " + nameVers);
+      var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
+      var checkout = "git checkout -q " + branch;
+      if show {
+        getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
+        checkout = "git checkout " + branch;
+      }
+      runCommand(getDependency);
+      gitC(destination, checkout);
+    } else {
+      writeln("Pulling latest changes for " + nameVers + "...");
+
+      var checkoutBranch = "git checkout -q " + branch;
+      var pullLatest = "git pull -q origin " + branch;
+      if show {
+        checkoutBranch = "git checkout " + branch;
+        pullLatest = "git pull origin " + branch;
+      }
+      gitC(destination, checkoutBranch);
+      gitC(destination, pullLatest);
     }
   }
 }

@@ -211,9 +211,11 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     const lockFile = parseToml(toParse);
 
     // Get project source code and dependencies
-    const sourceList = genSourceList(lockFile);
+    const (sourceList, gitList) = genSourceList(lockFile);
 
     getSrcCode(sourceList, show);
+    getGitCode(gitList, show);
+
     const project = lockFile["root"]!["name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
@@ -266,7 +268,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
         // get the string of dependencies for compilation
         // also names test as --main-module
-        const masonCompopts = getMasonDependencies(sourceList, testName);
+        const masonCompopts = getMasonDependencies(sourceList, gitList, testName);
         const allCompOpts = "".join(" ".join(compopts.these()), masonCompopts);
         var testTemp: string = test;
         if cwd == projectHome && customTest {
@@ -366,24 +368,6 @@ private proc printTestResults(ref result, timeElapsed) {
   }
 }
 
-
-private proc getMasonDependencies(sourceList: list(3*string),
-                                 testName: string) {
-
-  // Declare test to run as the main module
-  var masonCompopts = " ".join(" --main-module", testName, " ");
-
-  if sourceList.size > 0 {
-    const depPath = MASON_HOME + "/src/";
-
-    // Add dependencies to project
-    for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
-    }
-  }
-  return masonCompopts;
-}
 
 private proc getTests(lock: borrowed Toml, projectHome: string) {
   var testNames: list(string);
