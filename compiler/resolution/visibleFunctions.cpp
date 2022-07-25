@@ -150,8 +150,6 @@ static void getVisibleMethodsVI(const char*           name,
 
 static void  buildVisibleFunctionMap();
 
-static void maybeRebuildVisibleFunctionMap();
-
 static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr);
 
 void getMoreVisibleFunctionsOrMethods(const char*     name,
@@ -180,7 +178,7 @@ void findVisibleFunctions(CallInfo&             info,
   //
   // update visible function map as necessary
   //
-  maybeRebuildVisibleFunctionMap();
+  recomputeVisibleFunctions();
 
   INT_ASSERT(call->isResolved() == false);
 
@@ -234,10 +232,8 @@ void findVisibleFunctions(CallInfo&             info,
   }
 }
 
-static void maybeRebuildVisibleFunctionMap() {
-  if (gFnSymbols.n != nVisibleFunctions) {
-    buildVisibleFunctionMap();
-  }
+void recomputeVisibleFunctions() {
+  if (gFnSymbols.n != nVisibleFunctions) buildVisibleFunctionMap();
 }
 
 static void buildVisibleFunctionMap() {
@@ -1233,8 +1229,6 @@ static void getVisibleFunctionsImpl(const char*       name,
   }
 
   BlockStmt* instantiationPt = getVisibleFnsInstantiationPt(block);
-
-  maybeRebuildVisibleFunctionMap();
 
   if (firstVisit && call->id == breakOnResolveID)
     getVisibleFnsShowBlock("fns", block, instantiationPt);
