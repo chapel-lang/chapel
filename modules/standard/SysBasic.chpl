@@ -53,7 +53,7 @@ use CTypes;
      if err then do writeln("err contains an error, ie err != ENOERR");
      if !err then do writeln("err does not contain an error; err == ENOERR");
 
-
+xs
    When a :type:`syserr` formal has default intent, the actual is copied to the
    formal upon a function call and the formal cannot be assigned within the
    function.
@@ -67,7 +67,12 @@ extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc
    clearer if you use qio_err_t to indicate arguments, variables, and return types
    that are system error codes.
  */
-extern type qio_err_t = c_int;
+// deprecated "'qio_err_t' has been deprecated; please use a 'CTypes.c_int' instead."
+// extern type qio_err_t = c_int;
+inline proc qio_err_t type {
+  compilerWarning("'qio_err_t' is deprecated; please use a 'CTypes.c_int' instead");
+  return c_int;
+}
 
 /* A system file descriptor. This is really just a `c_int`, but code is
    clearer if you use fd_t to indicate arguments, variables, and return types
@@ -84,7 +89,7 @@ private extern proc qio_int_to_err(a:int(32)):syserr;
 private extern proc qio_err_iserr(a:syserr):c_int;
 
 /* The error code indicating that no error occurred (Chapel specific) */
-inline proc ENOERR return 0:qio_err_t;
+inline proc ENOERR return 0:c_int;
 
 // When qio_err_t is no longer just int(32), will need to add cases for qio_err_t too.
 pragma "no doc"
@@ -142,23 +147,23 @@ private extern proc chpl_macro_int_EEOF():qio_err_t;
 
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
-inline proc EEOF return chpl_macro_int_EEOF():qio_err_t;
+inline proc EEOF return chpl_macro_int_EEOF():c_int;
 
-private extern proc chpl_macro_int_ESHORT():qio_err_t;
+private extern proc chpl_macro_int_ESHORT():c_int;
 
 /* An error code indicating that the end of file or the end of the
    input was reached before the requested amount of data could be read.
    (Chapel specific)
   */
-inline proc ESHORT return chpl_macro_int_ESHORT():qio_err_t;
+inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
 
-private extern proc chpl_macro_int_EFORMAT():qio_err_t;
+private extern proc chpl_macro_int_EFORMAT():c_int;
 
 /* An error code indicating a format error; for example when reading a quoted
    string literal, this would be returned if we never encountered the
    opening quote. (Chapel specific)
   */
-inline proc EFORMAT return chpl_macro_int_EFORMAT():qio_err_t;
+inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
 // system error numbers
 
@@ -172,155 +177,155 @@ inline proc EFORMAT return chpl_macro_int_EFORMAT():qio_err_t;
 // only. These descriptions aren't the authority on the matter.
 
 /* Invalid exchange (linux only) */
-extern const EBADE:qio_err_t;
+extern const EBADE:c_int;
 
 /* File descriptor in bad state (linux only) */
-extern const EBADFD:qio_err_t;
+extern const EBADFD:c_int;
 
 /* Invalid request descriptor (linux only) */
-extern const EBADR:qio_err_t;
+extern const EBADR:c_int;
 
 /* Invalid request code (linux only) */
-extern const EBADRQC:qio_err_t;
+extern const EBADRQC:c_int;
 
 /* Invalid slot (linux only) */
-extern const EBADSLT:qio_err_t;
+extern const EBADSLT:c_int;
 
 /* Channel number out of range (linux only) */
-extern const ECHRNG:qio_err_t;
+extern const ECHRNG:c_int;
 
 /* Communication error on send (linux only) */
-extern const ECOMM:qio_err_t;
+extern const ECOMM:c_int;
 
 /* Host is down. A socket operation failed because the destination host was
    down. (linux, FreeBSD)
  */
-extern const EHOSTDOWN:qio_err_t;
+extern const EHOSTDOWN:c_int;
 
 /* Is a named type file (linux only) */
-extern const EISNAM:qio_err_t;
+extern const EISNAM:c_int;
 
 /* Key has expired (linux only) */
-extern const EKEYEXPIRED:qio_err_t;
+extern const EKEYEXPIRED:c_int;
 
 /* Key was rejected by service (linux only) */
-extern const EKEYREJECTED:qio_err_t;
+extern const EKEYREJECTED:c_int;
 
 /* Key has been revoked (linux only) */
-extern const EKEYREVOKED:qio_err_t;
+extern const EKEYREVOKED:c_int;
 
 /* Level 2 halted (linux only) */
-extern const EL2HLT:qio_err_t;
+extern const EL2HLT:c_int;
 
 /* Level 2 not synchronized (linux only) */
-extern const EL2NSYNC:qio_err_t;
+extern const EL2NSYNC:c_int;
 
 /* Level 3 halted (linux only) */
-extern const EL3HLT:qio_err_t;
+extern const EL3HLT:c_int;
 
 /* Level 3 halted (linux only) */
-extern const EL3RST:qio_err_t;
+extern const EL3RST:c_int;
 
 /* Cannot access a needed shared library (linux only) */
-extern const ELIBACC:qio_err_t;
+extern const ELIBACC:c_int;
 
 /* Accessing a corrupted shared library (linux only) */
-extern const ELIBBAD:qio_err_t;
+extern const ELIBBAD:c_int;
 
 /* Attempting to link in too many shared libraries (linux only) */
-extern const ELIBMAX:qio_err_t;
+extern const ELIBMAX:c_int;
 
 /* lib section in a.out corrupted (linux only) */
-extern const ELIBSCN:qio_err_t;
+extern const ELIBSCN:c_int;
 
 /* Cannot exec a shared library directly (linux only) */
-extern const ELIBEXEC:qio_err_t;
+extern const ELIBEXEC:c_int;
 
 /* Wrong medium type (linux only) */
-extern const EMEDIUMTYPE:qio_err_t;
+extern const EMEDIUMTYPE:c_int;
 
 /* No  message is available on the STREAM head read queue (POSIX.1)
  */
-extern const ENODATA:qio_err_t;
+extern const ENODATA:c_int;
 
 /* Required key not available (linux only) */
-extern const ENOKEY:qio_err_t;
+extern const ENOKEY:c_int;
 
 /* No medium found (linux only) */
-extern const ENOMEDIUM:qio_err_t;
+extern const ENOMEDIUM:c_int;
 
 /* Machine is not on the network (linux only)
  */
-extern const ENONET:qio_err_t;
+extern const ENONET:c_int;
 
 /* Package not installed  (linux only)
  */
-extern const ENOPKG:qio_err_t;
+extern const ENOPKG:c_int;
 
 /* No STREAM resources (POSIX.1 XSI STREAMS option) */
-extern const ENOSR:qio_err_t;
+extern const ENOSR:c_int;
 
 /* Not a STREAM (POSIX.1 XSI STREAMS option) */
-extern const ENOSTR:qio_err_t;
+extern const ENOSTR:c_int;
 
 /* Block device required.
    A block device operation was attempted on a non-block device or file.
    (linux, FreeBSD)
  */
-extern const ENOTBLK:qio_err_t;
+extern const ENOTBLK:c_int;
 
 /* Name not unique on network (linux only) */
-extern const ENOTUNIQ:qio_err_t;
+extern const ENOTUNIQ:c_int;
 
 /* Protocol family not supported. The protocol family has not been configured
    into the system or no implementation for it exists. (linux, FreeBSD)
  */
-extern const EPFNOSUPPORT:qio_err_t;
+extern const EPFNOSUPPORT:c_int;
 
 /* Remote address changed (linux only) */
-extern const EREMCHG:qio_err_t;
+extern const EREMCHG:c_int;
 
 /* Object is remote (linux only) */
-extern const EREMOTE:qio_err_t;
+extern const EREMOTE:c_int;
 
 /* Remote I/O error (linux only) */
-extern const EREMOTEIO:qio_err_t;
+extern const EREMOTEIO:c_int;
 
 /* Interrupted system call should be restarted (linux only) */
-extern const ERESTART:qio_err_t;
+extern const ERESTART:c_int;
 
 /* Can't send after socket shutdown. A request to send data was disallowed
    because the socket had already been shut down with a previous shutdown system
    call.
  */
-extern const ESHUTDOWN:qio_err_t;
+extern const ESHUTDOWN:c_int;
 
 /* Socket type not supported. The support for the socket type has not been
    configured into the system or no implementation for it exists.
    (linux, FreeBSD)
  */
-extern const ESOCKTNOSUPPORT:qio_err_t;
+extern const ESOCKTNOSUPPORT:c_int;
 
 /* Streams pipe error (linux only) */
-extern const ESTRPIPE:qio_err_t;
+extern const ESTRPIPE:c_int;
 
 /* Timer expired (POSIX.1 XSI STREAMS option)
  */
-extern const ETIME:qio_err_t;
+extern const ETIME:c_int;
 
 /* Structure needs cleaning (linux only) */
-extern const EUCLEAN:qio_err_t;
+extern const EUCLEAN:c_int;
 
 /* Protocol driver not attached (linux only) */
-extern const EUNATCH:qio_err_t;
+extern const EUNATCH:c_int;
 
 /* Too many users. The quota system ran out of table entries.
    (linux, FreeBSD)
  */
-extern const EUSERS:qio_err_t;
+extern const EUSERS:c_int;
 
 /* Exchange full (linux only) */
-extern const EXFULL:qio_err_t;
+extern const EXFULL:c_int;
 
 deprecated "POSIX error codes defined in 'SysBasic' are deprecated; please use them from 'OS.POSIX' instead"
 extern const E2BIG:qio_err_t;

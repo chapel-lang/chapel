@@ -1,4 +1,5 @@
 use SysBasic;
+use CTypes;
 
 proc doDebugWrite(x, y):c_int {
   extern proc qio_int_to_err(a:int(32)):syserr;
