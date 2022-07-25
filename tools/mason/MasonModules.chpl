@@ -66,7 +66,7 @@ proc masonModules(args: [] string) throws {
   const gitDepPath = MASON_HOME + '/git/';
   var modules: string;
   for (_, name, version) in sourceList {
-    var depM = ' ' + depPath + name + "-" + version + '/src/';
+    var depM = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";;
     modules += depM;
   }
 
