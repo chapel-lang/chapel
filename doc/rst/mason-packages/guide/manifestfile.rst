@@ -3,7 +3,7 @@
 The Manifest File
 =================
 
-The ``Mason.toml`` manifest file is written in TOML(for more information see TOML section below).
+The ``Mason.toml`` manifest file is written in TOML (more information on the TOML format below).
 Each time a new package is created in Mason a standard TOML file is included in the top-level
 directory of the package.
 
@@ -41,7 +41,7 @@ The license field defaults to ``None``.
 TOML is the configuration language chosen by the chapel team for
 configuring programs written in chapel. A TOML file contains the
 necessary information to build a chapel program using mason.
-`TOML Spec <https://github.com/toml-lang/toml>`_.
+View documentation for the TOML format here: `TOML Spec <https://github.com/toml-lang/toml>`_.
 
 The Lock File
 =============

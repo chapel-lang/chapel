@@ -6,4 +6,4 @@ Mason
 
 Mason is Chapel's package manager
 
-For documentation on mason, please see Reference :ref:`mason-packages-index`.
+For documentation on mason, please see :ref:`mason-packages-index`.

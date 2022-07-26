@@ -6,7 +6,7 @@ Testing your Package
 Mason provides the functionality to test packages through the ``mason test``
 subcommand. There are two styles of writing mason tests:
 
-1. Tests that utilize the `UnitTest`` module to determine pass/fail status
+1. Tests that utilize the ``UnitTest`` module to determine pass/fail status
 2. Tests that rely on the exit code to determine pass/fail status
 
 Here is an example of a ``UnitTest``-based test:

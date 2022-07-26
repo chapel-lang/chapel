@@ -55,7 +55,7 @@ for the package. All dependencies for the package are listed in this file
 as well as additional metadata about the package.
 
 The ``src/`` folder is where the source code of the package should reside.
-As you might expect, the ``test/`` folder and the ``example`` folder hold
+As you might expect, the ``test/`` folder and the ``example/`` folder hold
 tests and examples for your package, respectively. We will get to the
 additional functionality that comes with these folders later.
 

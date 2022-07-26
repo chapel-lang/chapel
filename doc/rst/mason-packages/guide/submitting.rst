@@ -57,10 +57,13 @@ Semantic Versioning
 
 To assist version resolution, the mason registry will enforce the following conventions:
 
-The format for all versions will be a.b.c.
-   Major versions are denoted by a.
-   Minor versions are denoted by b.
-   Bug fixes are denoted by c.
+The format for all versions will be ``a.b.c``.
+   Major versions are denoted by ``a``.
+   
+   Minor versions are denoted by ``b``.
+   
+   Bug fixes are denoted by ``c``.
+   
 
 - If the major version is 0, no further conventions will be enforced.
 
