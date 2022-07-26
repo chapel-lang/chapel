@@ -269,8 +269,8 @@ be added to a CMake project to properly compile. Such a CMakeLists file can be
 generated using `--library-cmakelists`.
 
 This CMakeLists file defines `CHPL_INCLUDE_DIRS` and `CHPL_LINK_LIBS` which can
-be used in your CMake project. To incorporate your Chapel library into
-a target named `myTarget`, add the following lines to your CMakeLists:
+be used in your CMake project. To incorporate your Chapel library into a
+target named `myTarget`, add the following lines to your project's CMakeLists:
 
 .. code-block:: cmake
    include(path/to/generated/CmakeLists)
