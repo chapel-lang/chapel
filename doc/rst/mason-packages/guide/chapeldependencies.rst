@@ -27,3 +27,5 @@ To add a Chapel dependency without editing the ``Mason.toml`` manually, use the 
 command as follows::
 
   mason add MatrixMarket@0.1.0
+
+For example usage of a mason package, see :ref:`using-a-package`.

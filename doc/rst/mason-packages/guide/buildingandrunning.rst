@@ -1,5 +1,7 @@
 :title: Mason Guide: *Building and Running*
 
+.. _building-and-running:
+        
 Building and Running
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -8,7 +10,8 @@ When invoked, ``mason build [ options ]`` will do the following:
     - Run update to make sure any manual manifest edits are reflected in the dependency code.
     - Build ``MyPackage.chpl`` in the ``src/`` directory.
     - All packages are compiled into binaries and placed into ``target/``
-    - All options not recognized by ``mason`` will be forwarded to the chapel compiler(``chpl``)
+    - To forward options to the Chapel compiler(``chpl``), seperate them with a double dash
+       - e.g., mason build --force -- --savec tmpdir
 
 ``mason run [ options ]`` will, in turn:
 
@@ -35,7 +38,7 @@ For example, after ``mason run --build [ options ]``, the package directory appe
 As you can see, new files have been added to the package, the first of which
 is the ``Mason.lock``. You can think of this file as a snapshot of a single
 run of the program. This file "locks" in the settings in which the program
-ran upon invocation of ``mason run``. This file can be generated manually
+was built upon invocation of ``mason build``. This file can be generated manually
 with the ``mason update`` command. ``mason update`` will read the ``Mason.toml``,
 resolve dependencies, and generate the ``Mason.lock`` based on it's contents.
 
@@ -47,6 +50,10 @@ being produced, the ``--release`` flag can be thrown as follows:
 
 .. code-block:: sh
 
+   mason build --release --force
+   
+   OR
+   
    mason run --build --release --force
 
 The ``--release`` option adds the ``--fast`` argument to the compilation step.

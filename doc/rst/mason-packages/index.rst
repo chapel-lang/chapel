@@ -40,6 +40,7 @@ packages in your own code.
 
    start/installation
    start/helloworld
+   start/whymason
 
 
 .. _index-mason-guide:
