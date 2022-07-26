@@ -1109,7 +1109,13 @@ struct RstResultBuilder {
             std::vector<UniqueString> modulePath = getModulePath(context_,
                                                                  child->id());
             modulePath.pop_back();
-            std::string parentPath = modulePath.back().str();
+            std::string parentPath;
+            for (auto p : modulePath) {
+              parentPath += p.str();
+              if (p != modulePath.back()) {
+                parentPath += "/";
+              }
+            }
             std::string outdir = outputDir_ + "/" + parentPath;
             r->outputModule(outdir, child->toModule()->name().str(),
                             indentPerDepth);
@@ -1173,6 +1179,7 @@ struct RstResultBuilder {
       lastComment = previousComment(context_, m->id());
     }
     if (hasSubmodule(m)) {
+      moduleName = m->name().c_str();
       if (!textOnly_) {
         os_ << "\n";
         os_ << "**Submodules**" << std::endl << std::endl;
