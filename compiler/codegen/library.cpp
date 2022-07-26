@@ -303,14 +303,8 @@ static void printCMakeListsIncludes(fileinfo cmakelists) {
   varValue += includes;
 
   //switch from make to cmake
-  while((pos = varValue.find('(')) != std::string::npos) {
-    varValue[pos] = '{';
-  }
-  while((pos = varValue.find(')')) != std::string::npos) {
-    varValue[pos] = '}';
-  
-  fprintf(stderr, "set(CHPL_INCLUDE_DIRS \"${CMAKE_CURRENT_SOURCE_DIR}/%s %s", libDir, varValue.c_str());}
-  fprintf(cmakelists.fptr, "set(CHPL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/%s %s)\n\n", libDir, varValue.c_str());
+  varValue = makeToCMake(varValue);
+  fprintf(cmakelists.fptr, "set(CHPL_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} %s)\n\n", varValue.c_str());
 
 }
 
@@ -325,8 +319,7 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   //fprintf(cmakelists.fptr, "set(CHPL_LINK_LIBS -L%s %s",
   //        libDir,
   //        libname.c_str());
-  varValue += "-L${CMAKE_CURRENT_SOURCE_DIR}/";
-  varValue += libDir;
+  varValue += "-L${CMAKE_CURRENT_LIST_DIR}";
   varValue += " ";
   varValue += libname;
 
