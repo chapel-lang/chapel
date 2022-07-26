@@ -1,3 +1,5 @@
+:title: Mason Guide: *Building and Running*
+
 Building and Running
 ~~~~~~~~~~~~~~~~~~~~
 

@@ -1,3 +1,5 @@
+:title: Mason Guide: *Installation*
+
 Installation Instructions
 =========================
 

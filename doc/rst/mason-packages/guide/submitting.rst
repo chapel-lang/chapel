@@ -1,3 +1,5 @@
+:title: Mason Guide: *Submitting*
+
 .. _submit-a-package:
 
 Submit a Package

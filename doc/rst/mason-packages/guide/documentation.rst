@@ -1,3 +1,5 @@
+:title: Mason Guide: *Documentation*
+
 Documenting a Package
 ~~~~~~~~~~~~~~~~~~~~~
 

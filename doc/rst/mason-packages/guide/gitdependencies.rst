@@ -1,3 +1,5 @@
+:title: Mason Guide: *Git Dependencies*
+
 Specifying Dependencies from `git` Repositories
 ===============================================
 To depend on a library located in a git repository, a git key pointing to the repository URL is all that is required:

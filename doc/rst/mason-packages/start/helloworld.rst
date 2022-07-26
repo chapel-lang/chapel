@@ -1,3 +1,5 @@
+:title: Mason Guide: *Hello World*
+
 Using a Mason Package
 =====================
 

@@ -1,3 +1,5 @@
+:title: Mason Guide: *Manifest*
+
 The Manifest File
 =================
 

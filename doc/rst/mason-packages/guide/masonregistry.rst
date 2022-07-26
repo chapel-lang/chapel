@@ -1,3 +1,5 @@
+:title: Mason Guide: *Registry*
+
 Mason-Registry
 ==============
 

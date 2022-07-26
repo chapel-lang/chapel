@@ -1,3 +1,5 @@
+:title: Mason Guide: *Testing*
+
 Testing your Package
 ~~~~~~~~~~~~~~~~~~~~
 
