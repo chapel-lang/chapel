@@ -1978,10 +1978,11 @@ module ShallowCopy {
     }
   }
   proc shallowCopyPutGetRefs(ref dst, const ref src, numBytes: c_size_t) {
+    import Communication;
     if dst.locale.id == here.id {
-      __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes);
+      Communication.get(dst, src, src.locale.id, numBytes);
     } else if src.locale.id == here.id {
-      __primitive("chpl_comm_put", src, dst.locale.id, dst, numBytes);
+      Communication.put(dst, src, dst.locale.id, numBytes);
     } else {
       halt("Remote src and remote dst not yet supported");
     }
