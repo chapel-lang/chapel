@@ -1,4 +1,4 @@
-enum foo {@unstable a:, b, c};
+enum foo {@unstable a, b, c};
 enum foo2 {@unstable a,};
 
 proc main() {
@@ -11,4 +11,4 @@ proc main() {
     writeln(foo.a); //would be triggered because a is what's marked as unstable
 }
 
-main()
+main();
