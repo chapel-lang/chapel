@@ -22,6 +22,9 @@
 
    This module defines the error types :type:`syserr` and :type:`qio_err_t`.
 
+   NOTE: :type:`qio_err_t` has been deprecated. A :type:`~CTypes.c_int` should
+   be used instead.
+
    When should one use :type:`syserr` and when should one use :type:`qio_err_t`?
    :type:`qio_err_t` is a system error code (a `c_int` by a nicer name to
    indicate its purpose). :type:`syserr` is an enhanced error that might also
