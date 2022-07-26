@@ -5069,7 +5069,8 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     if        (call->get(3)->isWideRef()   == true)  {
       remoteAddr = codegenRaddr(remoteAddr);
 
-    } else if (t->hasFlag(FLAG_DATA_CLASS) == true)  {
+    } else if (t->hasFlag(FLAG_DATA_CLASS) == true ||
+               t == dtCVoidPtr->symbol)  {
       remoteAddr = codegenValue(remoteAddr);
 
     } else if (call->get(3)->isRef()        == false) {
