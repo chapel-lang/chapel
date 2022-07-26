@@ -233,19 +233,6 @@ static std::string getLibname(std::string name) {
   return libname;
 }
 
-// Helper to convert command lines flags from make syntax (using parens) to
-// CMake syntax (using brackets)
-static std::string makeToCMake(std::string str) {
-  std::size_t pos = std::string::npos;
-  while((pos = str.find('(')) != std::string::npos) {
-    str[pos] = '{';
-  }
-  while((pos = str.find(')')) != std::string::npos) {
-    str[pos] = '}';
-  }
-  return str;
-}
-
 // Helper to output the CHPL_LDFLAGS variable into the generated makefile
 static void printMakefileLibraries(fileinfo makefile, std::string name) {
   std::string libraries = getCompilelineOption("libraries");
@@ -280,6 +267,20 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   removeTrailingNewlines(libraries);
   fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
 }
+
+// Helper to convert command lines flags from make syntax (using parens) to
+// CMake syntax (using brackets)
+static std::string makeToCMake(std::string str) {
+  std::size_t pos = std::string::npos;
+  while((pos = str.find('(')) != std::string::npos) {
+    str[pos] = '{';
+  }
+  while((pos = str.find(')')) != std::string::npos) {
+    str[pos] = '}';
+  }
+  return str;
+}
+
 //Helper to output the CHPL_INCLUDE_DIRS variable into the generated CMakeLists
 static void printCMakeListsIncludes(fileinfo cmakelists) {
   std::string requireIncludes = "";
