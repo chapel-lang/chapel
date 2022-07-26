@@ -124,15 +124,17 @@ const char* makeTempDir(const char* dirPrefix) {
 }
 
 void ensureTmpDirExists() {
- std::string cDir, intDir, tmpdir;
- cDir = std::string(saveCDir);
- if (intDirName != NULL) intDir = std::string(intDirName);
- if (tmpdirname != NULL) tmpdir = std::string(tmpdirname);
- if (auto err = chpl::ensureTmpDirExists(cDir, intDir, tmpdir)) {
-      USR_FATAL("creating temp directory failed: %s\n", err.message().c_str());
- }
- if (!intDir.empty()) intDirName = astr(intDir);
- if (!tmpdir.empty()) tmpdirname = astr(tmpdir);
+  if (saveCDir[0] == '\0') {
+    if (tmpdirname == NULL) {
+      tmpdirname = makeTempDir("chpl-");
+      intDirName = tmpdirname;
+    }
+  } else {
+    if (intDirName != saveCDir) {
+      intDirName = saveCDir;
+      ensureDirExists(saveCDir, "ensuring --savec directory exists");
+    }
+  }
 }
 
 void deleteDir(const char* dirname) {

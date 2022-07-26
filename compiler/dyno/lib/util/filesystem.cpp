@@ -190,25 +190,6 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut) {
   return std::error_code();
 }
 
-std::error_code ensureTmpDirExists(std::string& saveCDir,
-                                   std::string& intDirName,
-                                   std::string& tmpdirname) {
-  if (saveCDir.empty()) {
-    if (tmpdirname.empty()) {
-      if (auto err = makeTempDir("chpl-", tmpdirname)) {
-        return err;
-      }
-      intDirName = tmpdirname;
-    }
-  } else {
-    if (intDirName != saveCDir) {
-      intDirName = saveCDir;
-      return ensureDirExists(saveCDir);
-    }
-  }
-  return std::error_code();
-}
-
 std::error_code ensureDirExists(std::string dirname) {
   return llvm::sys::fs::create_directories(dirname);
 }

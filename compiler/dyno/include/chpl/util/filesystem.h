@@ -66,21 +66,6 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut);
 std::error_code deleteDir(std::string dirname);
 
 
-/**
- * make sure we have set up a temp directory for the use when generating C code.
- * if we don't, create one. May update intDirName to saveCDir, or create a new
- * temporary directory and update the path in tmpdirname and intDirName.
- *
- * saveCDir the path of the directory to save the generated C code, if set
- * intDirName ref to the current path to the intermediate directory
- * tmpdirname ref to the current temp directory name, if set
- * returns std::error_code
- */
-std::error_code ensureTmpDirExists(std::string& saveCDir,
-                                   std::string& intDirName,
-                                   std::string& tmpdirname);
-
-
 } // end namespace chpl
 
 #endif

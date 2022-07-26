@@ -82,7 +82,7 @@ int mysystem(const std::vector<std::string> commandVec,
              bool        ignoreStatus,
              bool        quiet) {
   pid_t childPid = 0;
-  int status = chpl::mysystem(commandVec, std::string(description), childPid,
+  int status = chpl::executeAndWait(commandVec, std::string(description), childPid,
                               ignoreStatus, quiet, printSystemCommands);
   if (childPid == 0) {
     // if there was an error and we shouldn't ignore them, then exit

@@ -39,7 +39,7 @@ namespace chpl {
  * printSystemCommands if true, print the command to be run
  * returns int as program exit status if fork successful, -1 otherwise
  */
-int mysystem(const std::vector<std::string> commandVec,
+int executeAndWait(const std::vector<std::string> commandVec,
              std::string description,
              pid_t&      childPidOut,
              bool        ignoreStatus = false,
