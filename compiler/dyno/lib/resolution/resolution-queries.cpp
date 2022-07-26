@@ -2084,7 +2084,7 @@ static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const CallInfo& ci,
-                 std::unordered_set<const Scope*>& visited) {
+                 ScopeSet& visited) {
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
@@ -2496,7 +2496,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   // search for candidates at each POI until we have found a candidate
   CandidatesVec candidates;
   size_t firstPoiCandidate = 0;
-  std::unordered_set<const Scope*> visited;
+  ScopeSet visited;
 
   // inject compiler-generated candidates in a manner similar to below
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,

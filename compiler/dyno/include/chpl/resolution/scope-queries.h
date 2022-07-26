@@ -21,10 +21,12 @@
 #define CHPL_RESOLUTION_SCOPE_QUERIES_H
 
 #include "chpl/resolution/scope-types.h"
+#include "llvm/ADT/SmallPtrSet.h"
 
 namespace chpl {
 namespace resolution {
 
+  using ScopeSet = llvm::SmallPtrSet<const Scope*, 5>;
 
   /**
     Returns true if this AST type can create a scope.
@@ -88,7 +90,7 @@ namespace resolution {
                            const Scope* receiverScope,
                            UniqueString name,
                            LookupConfig config,
-                           std::unordered_set<const Scope*>& visited);
+                           ScopeSet& visited);
 
   /**
     Returns true if all of checkScope is visible from fromScope
