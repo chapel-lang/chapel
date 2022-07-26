@@ -1662,18 +1662,6 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   printf("HTML files are at: %s\n", outputDir.c_str());
 }
 
-/* Create the directory (non-recursively). If an error occurs, exit and report
- * error.
- */
-static void makeDir(const char* dirpath) {
-  static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
-  int result = mkdir(dirpath, dirPerms);
-  if (result != 0 && errno != 0 && errno != EEXIST) {
-    // USR_FATAL("Failed to create directory: %s due to: %s",
-    //           dirpath, strerror(errno));
-  }
-}
-
 
 int main(int argc, char** argv) {
   Context context;
@@ -1722,8 +1710,17 @@ int main(int argc, char** argv) {
   }
 
   // Make the intermediate dir and output dir.
-   makeDir(docsSphinxDir.c_str());
-   makeDir(docsOutputDir.c_str());
+   if (auto err = makeDir(docsSphinxDir)) {
+      std::cerr << "error: Failed to create directory: "
+                << docsSphinxDir << " due to: "
+                << err.message() << std::endl;
+      return 1;
+   }
+   if (auto err = makeDir(docsOutputDir)) {
+      std::cerr << "error: Failed to create directory: "
+                << docsOutputDir << " due to: "
+                << err.message() << std::endl;
+   }
 
   // The location of intermediate rst files.
   std::string docsRstDir;

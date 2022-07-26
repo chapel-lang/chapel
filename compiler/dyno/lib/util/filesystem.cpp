@@ -194,64 +194,40 @@ std::error_code ensureDirExists(std::string dirname) {
   return llvm::sys::fs::create_directories(dirname);
 }
 
-// This also exists in runtime/src/qio/sys.c
-// returns 0 on success.
-int sys_getcwd(std::string& path_out)
-{
-  int sz = 128;
-  char* buf;
-
-  buf = (char*) malloc(sz);
-  if( !buf ) return ENOMEM;
-
-  while( 1 ) {
-    if ( getcwd(buf, sz) != NULL ) {
-      break;
-
-    } else if ( errno == ERANGE ) {
-      // keep looping but with bigger buffer.
-      sz *= 2;
-
-      /*
-       * Realloc may return NULL, in which case we will need to free the memory
-       * initially pointed to by buf.  This is why we store the result of the
-       * call in newP instead of directly into buf.  If a non-NULL value is
-       * returned we update the buf pointer.
-       */
-      void* newP = realloc(buf, sz);
-
-      if (newP != NULL) {
-        buf = static_cast<char*>(newP);
-
-      } else {
-        free(buf);
-        return ENOMEM;
-      }
-
-    } else {
-      // Other error, stop.
-      free(buf);
-      return errno;
-    }
+// Functionality also exists in runtime/src/qio/sys.c
+// returns empty std::error_code on success.
+std::error_code currentWorkingDir(std::string& path_out) {
+  llvm::SmallString<128> buf;
+  if (std::error_code err = llvm::sys::fs::current_path(buf)) {
+    return err;
+  } else {
+    // buf.str() returns an LLVM::StringRef,
+    // so we call .str() on that to get a std::string.
+    path_out = buf.str().str();
+    return std::error_code();
   }
-
-  path_out = std::string(buf);
-  return 0;
 }
 
 /*
  * Returns the current working directory. Does not report failures. Use
- * sys_getcwd() if you need error reports.
+ * currentWorkingDir() if you need error reports.
  */
 std::string getCwd() {
   std::string ret;
-  int rc;
-
-  rc = sys_getcwd(ret);
-  if (rc == 0)
-    return ret;
-  else
+  if (auto err = currentWorkingDir(ret)) {
     return "";
+  } else {
+    return ret;
+  }
+}
+
+std::error_code makeDir(std::string dirpath) {
+  using namespace llvm::sys::fs;
+  if (auto err = create_directories(dirpath, true, perms::all_all)) {
+    return err;
+  } else {
+    return std::error_code();
+  }
 }
 
 

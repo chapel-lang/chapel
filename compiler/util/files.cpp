@@ -1023,7 +1023,7 @@ char* dirHasFile(const char *dir, const char *file)
 
 /*
  * Returns the current working directory. Does not report failures. Use
- * sys_getcwd() if you need error reports.
+ * chpl::currentWorkingDir if you need error reports.
  */
 const char* getCwd() {
   return astr(chpl::getCwd());
@@ -1068,10 +1068,10 @@ char* findProgramPath(const char *argv0)
   // Is argv0 a relative path?
   if( strchr(argv0, '/') != NULL ) {
     std::string cwd;
-    if( 0 == chpl::sys_getcwd(cwd) ) {
-      real = dirHasFile(astr(cwd), argv0);
-    } else {
+    if(auto err = chpl::currentWorkingDir(cwd)) {
       real = NULL;
+    } else {
+      real = dirHasFile(astr(cwd), argv0);
     }
     return real;
   }

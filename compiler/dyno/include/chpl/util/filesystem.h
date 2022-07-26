@@ -67,14 +67,25 @@ std::error_code deleteDir(std::string dirname);
 
 /*
  * Returns the current working directory. Does not report failures. Use
- * sys_getcwd() if you need error reports.
+ * currentWorkingDir() if you need error reports.
  */
 std::string getCwd();
 
-// This also exists in runtime/src/qio/sys.c
-// returns 0 on success.
-int sys_getcwd(std::string& path_out);
+/*
+ * Gets the current working directory
+ * (uses LLVM sys::fs::current_path internally).
+ */
+std::error_code currentWorkingDir(std::string& path_out);
 
+/**
+ * makes the directory and all intermediate directories in dirpath
+ * if they don't exist. Directory permissions are set to llvm::all-all.
+ * which should be equivalent to  S_IRWXU | S_IRWXG | S_IRWXO
+ *
+ * dirpath - the path of the directory to create
+ * returns - std::error_code
+ */
+std::error_code makeDir(std::string dirpath);
 
 } // end namespace chpl
 
