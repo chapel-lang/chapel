@@ -83,4 +83,10 @@ BlockStmt* getInstantiationPoint(Expr* expr);
 void       initTypeHelperNames();
 void       visibleFunctionsClear();
 
+// Not necessary to call this directly in most cases - but if making
+// a call to 'getVisibleFunctions' after some generic instantiation
+// has occurred, you may need to call this for functions in the
+// instantiated code to be visible.
+void recomputeVisibleFunctions();
+
 #endif
