@@ -201,13 +201,10 @@ static std::string getRequireLibraries() {
   for_vector(const char, libName, libFiles) {
     res += " -l";
     res += libName;
-
   }
 
   return res;
 }
-
-
 
 // Helper to output the CHPL_CFLAGS variable into the generated makefile
 static void printMakefileIncludes(fileinfo makefile) {
@@ -236,6 +233,8 @@ static std::string getLibname(std::string name) {
   return libname;
 }
 
+// Helper to convert command lines flags from make syntax (using parens) to
+// CMake syntax (using brackets)
 static std::string makeToCMake(std::string str) {
   std::size_t pos = std::string::npos;
   while((pos = str.find('(')) != std::string::npos) {
@@ -257,7 +256,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
           libDir,
           libname.c_str());
-  
+
   //
   // Multi-locale libraries require some extra libraries to be linked in order
   // to function correctly. For static libraries in particular, rather than
@@ -283,8 +282,6 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
 }
 //Helper to output the CHPL_INCLUDE_DIRS variable into the generated CMakeLists
 static void printCMakeListsIncludes(fileinfo cmakelists) {
-  std::string varValue = "";
-
   std::string requireIncludes = "";
   for_vector(const char, dirName, incDirs) {
     requireIncludes += " ";
@@ -298,6 +295,7 @@ static void printCMakeListsIncludes(fileinfo cmakelists) {
   }
   removeTrailingNewlines(includes);
 
+  std::string varValue = "";
   varValue = requireIncludes;
   varValue += " ";
   varValue += includes;
@@ -305,7 +303,6 @@ static void printCMakeListsIncludes(fileinfo cmakelists) {
   //switch from make to cmake
   varValue = makeToCMake(varValue);
   fprintf(cmakelists.fptr, "set(CHPL_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} %s)\n\n", varValue.c_str());
-
 }
 
 // Helper to output the CHPL_LINK_LIBS variable into the generated CMakeLists
@@ -316,13 +313,9 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
 
   std::string requires = getRequireLibraries();
 
-  //fprintf(cmakelists.fptr, "set(CHPL_LINK_LIBS -L%s %s",
-  //        libDir,
-  //        libname.c_str());
   varValue += "-L${CMAKE_CURRENT_LIST_DIR}";
   varValue += " ";
   varValue += libname;
-
 
   //
   // Multi-locale libraries require some extra libraries to be linked in order
@@ -333,13 +326,11 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   if (fMultiLocaleInterop) {
     std::string deps = getCompilelineOption("multilocale-lib-deps");
     removeTrailingNewlines(deps);
-    //fprintf(cmakelists.fptr, " %s", deps.c_str());
     varValue += " ";
     varValue += deps;
   }
 
   if (requires != "") {
-    //fprintf(cmakelists.fptr, "%s", requires.c_str());
     varValue += " ";
     varValue += requires;
   }
@@ -349,7 +340,6 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   // stopgap to make the GNU linker happy.
   //
   removeTrailingNewlines(libraries);
-  //fprintf(cmakelists.fptr, " %s %s)\n\n", libraries.c_str(), libname.c_str());
   varValue += " ";
   varValue += libraries;
   varValue += " ";
@@ -360,8 +350,6 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
 }
 
 void codegen_library_cmakelists() {
-  fprintf(stderr, "Generating CMakeList\n");
-
   std::string name = "";
   int libLength = strlen("lib");
   bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
@@ -385,19 +373,17 @@ void codegen_library_cmakelists() {
 
   printCMakeListsIncludes(cmakelists);
   printCMakeListsLibraries(cmakelists, name);
-  closeLibraryHelperFile(&cmakelists, false);
-  return;
 
   std::string compiler = getCompilelineOption("compiler");
-  fprintf(cmakelists.fptr, "CHPL_COMPILER = %s\n", compiler.c_str());
+  fprintf(cmakelists.fptr, "set(CHPL_COMPILER %s)\n", compiler.c_str());
 
   std::string linker = getCompilelineOption("linker");
-  fprintf(cmakelists.fptr, "CHPL_LINKER = %s\n", linker.c_str());
+  fprintf(cmakelists.fptr, "set(CHPL_LINKER %s)\n", linker.c_str());
 
   std::string linkerShared = getCompilelineOption("linkershared");
-  fprintf(cmakelists.fptr, "CHPL_LINKERSHARED = %s", linkerShared.c_str());
+  fprintf(cmakelists.fptr, "set(CHPL_LINKERSHARED %s)", linkerShared.c_str());
 
-  
+  closeLibraryHelperFile(&cmakelists, false);
 }
 
 const char* getLibraryExtension() {
