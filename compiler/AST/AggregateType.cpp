@@ -2371,6 +2371,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           arg->defaultExpr = new BlockStmt(defPoint->init->copy());
 
           // mimic normalize's hack_resolve_types
+          arg->typeExprFromDefaultExpr = true;
           arg->typeExpr = arg->defaultExpr->copy();
 
 
