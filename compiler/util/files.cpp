@@ -1020,65 +1020,13 @@ char* dirHasFile(const char *dir, const char *file)
   return real;
 }
 
-// This also exists in runtime/src/qio/sys.c
-// returns 0 on success.
-static int sys_getcwd(char** path_out)
-{
-  int sz = 128;
-  char* buf;
-
-  buf = (char*) malloc(sz);
-  if( !buf ) return ENOMEM;
-
-  while( 1 ) {
-    if ( getcwd(buf, sz) != NULL ) {
-      break;
-
-    } else if ( errno == ERANGE ) {
-      // keep looping but with bigger buffer.
-      sz *= 2;
-
-      /*
-       * Realloc may return NULL, in which case we will need to free the memory
-       * initially pointed to by buf.  This is why we store the result of the
-       * call in newP instead of directly into buf.  If a non-NULL value is
-       * returned we update the buf pointer.
-       */
-      void* newP = realloc(buf, sz);
-
-      if (newP != NULL) {
-        buf = static_cast<char*>(newP);
-
-      } else {
-        free(buf);
-        return ENOMEM;
-      }
-
-    } else {
-      // Other error, stop.
-      free(buf);
-      return errno;
-    }
-  }
-
-  *path_out = buf;
-  return 0;
-}
-
 
 /*
  * Returns the current working directory. Does not report failures. Use
  * sys_getcwd() if you need error reports.
  */
 const char* getCwd() {
-  char* ret = nullptr;;
-  int rc;
-
-  rc = sys_getcwd(&ret);
-  if (rc == 0)
-    return ret;
-  else
-    return "";
+  return astr(chpl::getCwd());
 }
 
 
@@ -1119,13 +1067,12 @@ char* findProgramPath(const char *argv0)
 
   // Is argv0 a relative path?
   if( strchr(argv0, '/') != NULL ) {
-    char* cwd = NULL;
-    if( 0 == sys_getcwd(&cwd) ) {
-      real = dirHasFile(cwd, argv0);
+    std::string cwd;
+    if( 0 == chpl::sys_getcwd(cwd) ) {
+      real = dirHasFile(astr(cwd), argv0);
     } else {
       real = NULL;
     }
-    free(cwd);
     return real;
   }
 

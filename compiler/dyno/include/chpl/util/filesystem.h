@@ -65,6 +65,16 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut);
  */
 std::error_code deleteDir(std::string dirname);
 
+/*
+ * Returns the current working directory. Does not report failures. Use
+ * sys_getcwd() if you need error reports.
+ */
+std::string getCwd();
+
+// This also exists in runtime/src/qio/sys.c
+// returns 0 on success.
+int sys_getcwd(std::string& path_out);
+
 
 } // end namespace chpl
 
