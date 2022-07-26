@@ -1,3 +1,5 @@
+:title: Mason Guide: *Basic Usage*
+
 Basic Usage
 ===========
 
