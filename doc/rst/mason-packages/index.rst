@@ -56,10 +56,21 @@ that make using mason worthwhile.
    :maxdepth: 1
    :glob:
 
-   guide/whymason
-ASDASBNOGEBIUEWGIOUEWHIO UPDATE BASED OFF RUST DOCS
-
-(more to come...)
+   guide/basicusage
+   guide/buildingandrunning
+   guide/buildinglargerpackages
+   guide/runtimearguments
+   guide/testing
+   guide/examples
+   guide/documentation
+   guide/chapeldependencies
+   guide/gitdependencies
+   guide/externaldependencies
+   guide/masonregistry
+   guide/submitting
+   guide/manifestfile
+   guide/environmentvariables
+   guide/namespacing
 
 
 .. _index-mason-reference:
