@@ -374,7 +374,7 @@ subcommand. There are two styles of writing mason tests:
 1. Tests that utilize the `UnitTest`` module to determine pass/fail status
 2. Tests that rely on the exit code to determine pass/fail status
 
-Here is an example of a ``UnitTest``-based tests:
+Here is an example of a ``UnitTest``-based test:
 
 .. code-block:: chpl
 
@@ -485,7 +485,7 @@ Tests can be listed in the ``Mason.toml`` as a TOML array of strings for the
             "test3.chpl"]
    version = "0.1.0"
 
-An user may also set the ``CHPL_COMM`` value for running the tests, e.g. ``none``, ``gasnet``, ``ugni`` using ``mason test --setComm``.
+A user may also set the ``CHPL_COMM`` value for running the tests, e.g. ``none``, ``gasnet``, ``ugni`` using ``mason test --setComm``.
 
 Creating and Running Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -643,7 +643,7 @@ Using Non-Chapel Dependencies
 =============================
 Mason allows for specification of external, non-Chapel dependencies through two
 mediums, ``Spack`` and ``pkg-config``. The following two sections document how to
-use ``mason external`` and ``mason system`` to interface with ``Spack`` and ``pkg-config``
+use ``mason external`` and ``mason system`` to interface with the ``Spack`` and ``pkg-config``
 packages respectively.
 
 
@@ -720,7 +720,7 @@ Using Spack Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Mason users can interface with ``Spack``, a package manager geared towards high performance
-computing. Through this integration, Mason user's now have
+computing. Through this integration, Mason users now have
 access to a large ecosystem of `packages <https://spack.readthedocs.io/en/latest/package_list.html#package-list>`_.
 Non-destructive installs, custom version and configurations, and simple package installation
 and uninstallation are a few of the features Mason gains through this integration.
@@ -754,7 +754,7 @@ will search for the package and produce the following output::
   ==> 2 packages.
   openssl  r-openssl
 
-Obviously there are two types of the package listed, so we need to figure out which one to use.
+Since there are two types of the package listed, we need to figure out which one to use.
 To find out more about a package, use ``mason external info <package>`` as follows::
 
   $ mason external info openssl
@@ -811,7 +811,7 @@ The command to install ``openssl`` version ``1.0.2k`` would be::
 Since the version was left out, version ``1.0.2k`` is used because Mason
 will always take the preferred version. This is a case where Spack's
 spec expression syntax can be used to specify exactly which package is desired.
-For example, other ways to install openSSL would be::
+For example, another way to install openSSL would be::
 
   mason external install openssl@1.0.2k
 
@@ -822,7 +822,7 @@ If we wanted to specify which compiler the package was built with::
 
 Mason will infer which compiler, in the case that the compiler is left out of the spec,
 by looking at the environment variable ``CHPL_TARGET_COMPILER``. For more information on
-how to use spec expressions, use the command ``mason external --spec`` which would output the following:
+how to use spec expressions, use the command ``mason external --spec`` which will output the following:
 
 .. code-block:: text
 
@@ -907,7 +907,7 @@ Resuming the example, the result of the install given ``openssl`` as the sole ar
 As shown, Mason not only goes and gets the package specified, but also all of the dependencies
 of the package specified. Packages are installed into unique directories such that it is impossible for package namespaces to collide.
 Each dependency is downloaded distinctly for a package so no previous installs will be broken by installing new packages.
-This way, multiple versions and builds of a package can be installed on a system and used without breaking anything.
+This way, multiple versions and builds of a package can be installed on a system and used without clashing with each other.
 
 **Specifying Spack packages in the manifest file**
 
@@ -1035,15 +1035,15 @@ Manual Steps:
       7) Open a PR in the mason-registry for your newly created branch containing just your <version>.toml.
       8) Wait for mason-registry gatekeepers to approve the PR.
 
-Once your package is uploaded, maintain the integrity of your package, and please notify the
-chapel team if your package should be taken down.
+Once your package is uploaded,  please notify the chapel team if your package should be taken down.
+Your package may be removed by the Mason gatekeepers if the integrity of the package is not maintained.
 
 
 
 If you have a personal remote registry, ``mason publish <path-to-registry>``  also accepts
 a remote path to a git repository. This will create a branch to your registry that adds
 your package, and you can approve the PR to merge your new package into your registry.
-Must ensure your package has a remote origin in order to publish remotely.
+Make sure to ensure that your package has a remote origin in order to publish remotely.
 
 Publishing to a personal remote registry
 
@@ -1164,7 +1164,7 @@ Mason can be configured by setting the following environment variables:
   ``name|`` part of a pair is omitted it is inferred to be the word following
   the final slash in ``location`` with any ``.git`` suffix removed.
 - ``MASON_OFFLINE`` : A boolean value that prevents mason from making calls that
-  require internet access when set to ``true``. Defaults to ``false``. Mason command
+  require internet access when set to ``true``. Defaults to ``false``. Mason commands
   that support a ``--[no-]update`` flag can override the ``MASON_OFFLINE`` setting
   when ``--update`` is explicitly passed.
 
@@ -1246,8 +1246,8 @@ The Lock File
 The lock file ``Mason.lock`` is generated after running a ``mason update`` command. The user should
 never manually edit the lock file as it is intended to "lock" in the settings of a certain
 package build iteration. ``Mason.lock`` is added by default to the .gitignore when a new package
-is created. If your intention is to create a binary application package that does not need to
-be re-compiled by mason then take the ``Mason.lock`` out of your .gitignore. An example of
+is created. If your intention is to create a binary application package thats lock file should not
+change, removing ``Mason.lock`` from your ``.gitignore`` could be a good idea. An example of
 a lock file is written below as if generated from the earlier example of a ``Mason.toml``:
 
 
