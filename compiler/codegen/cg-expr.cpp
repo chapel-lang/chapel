@@ -5048,7 +5048,8 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       }
 
       // c_ptr/ddata are already addresses, so dereference one level.
-      if (dt->hasFlag(FLAG_DATA_CLASS)) {
+      if (dt->hasFlag(FLAG_DATA_CLASS) ||
+          dt == dtCVoidPtr->symbol) {
         localAddr = codegenValue(localAddr);
       }
     }
