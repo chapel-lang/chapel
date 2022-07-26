@@ -22,9 +22,6 @@
 
    This module defines the error types :type:`syserr` and :type:`qio_err_t`.
 
-   NOTE: :type:`qio_err_t` has been deprecated. A :type:`~CTypes.c_int` should
-   be used instead.
-
    When should one use :type:`syserr` and when should one use :type:`qio_err_t`?
    :type:`qio_err_t` is a system error code (a `c_int` by a nicer name to
    indicate its purpose). :type:`syserr` is an enhanced error that might also
@@ -56,7 +53,6 @@ use CTypes;
      if err then do writeln("err contains an error, ie err != ENOERR");
      if !err then do writeln("err does not contain an error; err == ENOERR");
 
-xs
    When a :type:`syserr` formal has default intent, the actual is copied to the
    formal upon a function call and the formal cannot be assigned within the
    function.
@@ -70,12 +66,8 @@ extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc
    clearer if you use qio_err_t to indicate arguments, variables, and return types
    that are system error codes.
  */
-// deprecated "'qio_err_t' has been deprecated; please use a 'CTypes.c_int' instead."
-// extern type qio_err_t = c_int;
-inline proc qio_err_t type {
-  compilerWarning("'qio_err_t' is deprecated; please use a 'CTypes.c_int' instead");
-  return c_int;
-}
+deprecated "'qio_err_t' has been deprecated; please use a 'CTypes.c_int' instead."
+extern type qio_err_t = c_int;
 
 /* A system file descriptor. This is really just a `c_int`, but code is
    clearer if you use fd_t to indicate arguments, variables, and return types
