@@ -38,6 +38,34 @@ bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
  */
 bool fileExists(const char* path);
 
+/**
+ * create the directory specified by argument dirname
+ *
+ * dirname the path of the directory to create
+ * returns std::error_code
+ */
+std::error_code ensureDirExists(std::string dirname);
+
+
+/**
+ * creates a directory in the temp location for the system
+ * with the pattern "dirPrefix-username.deleteme-XXXXXX/"
+ *
+ * dirPrefix a prefix to place in the directory name
+ * tmpDirPathOut reference to an empty string that will hold the path of the created directory
+ * returns std::error_code
+ */
+std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut);
+
+/**
+ * forwards to llvm::sys::fs::remove_directories
+ *
+ * dirname the path of the directory to remove
+ * returns std::error_code
+ */
+std::error_code deleteDir(std::string dirname);
+
+
 } // end namespace chpl
 
 #endif

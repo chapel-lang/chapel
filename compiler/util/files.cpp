@@ -30,6 +30,8 @@
 
 #include "files.h"
 
+#include "chpl/util/filesystem.h"
+
 #include "beautify.h"
 #include "driver.h"
 #include "llvmVer.h"
@@ -40,10 +42,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "tmpdirname.h"
-
-#ifdef HAVE_LLVM
-#include "llvm/Support/FileSystem.h"
-#endif
 
 #include <pwd.h>
 #include <unistd.h>
@@ -56,6 +54,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
 
 char executableFilename[FILENAME_MAX + 1] = "";
 char libmodeHeadername[FILENAME_MAX + 1]  = "";
@@ -108,84 +107,20 @@ void addIncInfo(const char* incDir) {
 }
 
 void ensureDirExists(const char* dirname, const char* explanation) {
-#ifdef HAVE_LLVM
-  std::error_code err = llvm::sys::fs::create_directories(dirname);
-  if (err) {
-    USR_FATAL("creating directory %s failed: %s\n",
-              dirname,
-              err.message().c_str());
+  // forward to chpl::ensureDirExists(), check for errors, and report them
+  std::string dirName = std::string(dirname);
+  if (auto err = chpl::ensureDirExists(dirName)) {
+    USR_FATAL("creating directory %s failed: %s\n", dirname,
+                   err.message().c_str());
   }
-#else
-  const char* mkdircommand = "mkdir -p ";
-  const char* command = astr(mkdircommand, dirname);
-
-  mysystem(command, explanation);
-#endif
 }
-
-
-static void removeSpacesBackslashesFromString(char* str)
-{
-  char* src = str;
-  char* dst = str;
-  while (*src != '\0')
-  {
-    *dst = *src++;
-    if (*dst != ' ' && *dst != '\\')
-        dst++;
-  }
-  *dst = '\0';
-}
-
-
-/*
- * Find the default tmp directory. Try getting the tmp dir from the ISO/IEC
- * 9945 env var options first, then P_tmpdir, then "/tmp".
- */
-static const char* getTempDir() {
-  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
-  for (unsigned int i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
-    const char* curDir = getenv(possibleDirsInEnv[i]);
-    if (curDir != NULL) {
-      return curDir;
-    }
-  }
-#ifdef P_tmpdir
-  return P_tmpdir;
-#else
-  return "/tmp";
-#endif
-}
-
 
 const char* makeTempDir(const char* dirPrefix) {
-  const char* tmpdirprefix = astr(getTempDir(), "/", dirPrefix);
-  const char* tmpdirsuffix = ".deleteme-XXXXXX";
-
-  struct passwd* passwdinfo = getpwuid(geteuid());
-  const char* userid;
-  if (passwdinfo == NULL) {
-    userid = "anon";
-  } else {
-    userid = passwdinfo->pw_name;
-  }
-  char* myuserid = strdup(userid);
-  removeSpacesBackslashesFromString(myuserid);
-
-  const char* tmpDir = astr(tmpdirprefix, myuserid, tmpdirsuffix);
-  char* tmpDirMut = strdup(tmpDir);
-  char* dirRes = mkdtemp(tmpDirMut);
-
-  if (dirRes == NULL) {
-    USR_FATAL("unable to create temporary directory at %s\n", tmpDir);
-  }
-
-  free(myuserid); myuserid = NULL;
-
-  const char* ret = astr(dirRes);
-  free(tmpDirMut);
-
-  return ret;
+ std::string tmpDirPath;
+ if (auto err = chpl::makeTempDir(std::string(dirPrefix), tmpDirPath)) {
+  USR_FATAL(NULL, "%s", err.message().c_str());
+ }
+ return astr(tmpDirPath.c_str());
 }
 
 void ensureTmpDirExists() {
@@ -202,36 +137,13 @@ void ensureTmpDirExists() {
   }
 }
 
-
-#if !defined(HAVE_LLVM)
-static
-void deleteDirSystem(const char* dirname) {
-  const char* cmd = astr("rm -rf ", dirname);
-  mysystem(cmd, astr("removing directory: ", dirname));
-}
-#endif
-
-#ifdef HAVE_LLVM
-static
-void deleteDirLLVM(const char* dirname) {
-  // LLVM 5 added remove_directories
-  std::error_code err = llvm::sys::fs::remove_directories(dirname, false);
+void deleteDir(const char* dirname) {
+  auto err = chpl::deleteDir(std::string(dirname));
   if (err) {
     USR_FATAL("removing directory %s failed: %s\n",
               dirname,
               err.message().c_str());
   }
-}
-#endif
-
-
-
-void deleteDir(const char* dirname) {
-#ifdef HAVE_LLVM
-  deleteDirLLVM(dirname);
-#else
-  deleteDirSystem(dirname);
-#endif
 }
 
 
