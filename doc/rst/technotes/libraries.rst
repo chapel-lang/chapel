@@ -260,6 +260,24 @@ An example Makefile which uses the generated ``Makefile.foo`` looks like this:
 
 .. _Makefileless Compilation In Single Locale:
 
+CMake Helper
+~~~~~~~~~~~~
+
+Similar to the makefile helper, the Chapel compiler can also generate a
+CMakeLists file containing the includes directories and linker flags that must
+be added to a CMake project to properly compile. Such a CMakeLists file can be
+generated using `--library-cmakelists`.
+
+This CMakeLists file defines `CHPL_INCLUDE_DIRS` and `CHPL_LINK_LIBS` which can
+be used in your CMake project. To incorporate your Chapel library into
+a target named `myTarget`, add the following lines to your CMakeLists:
+
+.. code-block:: cmake
+   include(path/to/generated/CmakeLists)
+   target_include_directories(myTarget PUBLIC ${CHPL_INCLUDE_DIRS})
+   target_link_libraries(myTarget PUBLIC ${CHPL_LINK_LIBS})
+.. _CMake Helper Example:
+
 Makefile-less Compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -275,6 +293,7 @@ library):
 
 Note that ``compileline --compile-c++`` is also available for compiling a C++
 program.
+
 
 .. _readme-libraries.Python:
 
