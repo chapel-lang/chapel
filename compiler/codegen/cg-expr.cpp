@@ -2521,6 +2521,8 @@ GenRet codegenCallExprInner(GenRet function,
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
         argInfo = getCGArgInfo(CGI, i);
+      } else if (args[i].isLVPtr == GEN_VAL && useDarwinArmFix(args[i].chplType)) {
+        argInfo = getSingleCGArgInfo(args[i].chplType);
       }
 
       if (argInfo) {

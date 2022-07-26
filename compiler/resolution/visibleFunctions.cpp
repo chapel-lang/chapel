@@ -178,9 +178,7 @@ void findVisibleFunctions(CallInfo&             info,
   //
   // update visible function map as necessary
   //
-  if (gFnSymbols.n != nVisibleFunctions) {
-    buildVisibleFunctionMap();
-  }
+  recomputeVisibleFunctions();
 
   INT_ASSERT(call->isResolved() == false);
 
@@ -234,7 +232,9 @@ void findVisibleFunctions(CallInfo&             info,
   }
 }
 
-
+void recomputeVisibleFunctions() {
+  if (gFnSymbols.n != nVisibleFunctions) buildVisibleFunctionMap();
+}
 
 static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {

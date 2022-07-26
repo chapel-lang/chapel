@@ -171,7 +171,7 @@ module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
   import SysBasic.{ENOERR, syserr, EFORMAT, EEOF};
-  use SysError;
+  use OS;
 
   // TODO -- this should probably be private
   pragma "no doc"

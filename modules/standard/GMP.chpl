@@ -107,7 +107,7 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
 */
 module GMP {
   use CTypes;
-  use SysError;
+  use OS;
   use BigInteger;
   private use CTypes;
 

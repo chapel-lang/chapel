@@ -153,8 +153,8 @@ module TomlParser {
     var rootTable: shared Toml;
     var curTable: string;
 
-    const doubleQuotes = '".*?"',
-      singleQuotes = "'.*?'",
+    const doubleQuotes = '"[^,]*?"',
+      singleQuotes = "'[^,]*?'",
       bracket = '\\[|\\]',
       digit = "\\d+",
       keys = "^\\w+";
@@ -755,7 +755,7 @@ used to recursively hold tables and respective values
 
     proc set(tbl: string, toml: Toml) {
       ref t = this(tbl);
-      t = toml;
+      t = new shared Toml(toml);
     }
 
     proc set(tbl: string, s: string) {
@@ -1209,8 +1209,8 @@ module TomlReader {
       var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
-      const doubleQuotes = '(".*?")',           // ""
-            singleQuotes = "('.*?')",           // ''
+      const doubleQuotes = '("[^,]*?")',           // ""
+            singleQuotes = "('[^,]*?')",           // ''
             bracketContents = "(\\[\\w+\\])",   // [_]
             brackets = "(\\[)|(\\])",           // []
             // TODO: fix table headers

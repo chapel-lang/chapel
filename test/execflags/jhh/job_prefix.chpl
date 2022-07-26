@@ -1,4 +1,5 @@
-use Subprocess;
+use CTypes;
+extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
 
 writeln("job_prefix starting");
 var value_str:c_string;

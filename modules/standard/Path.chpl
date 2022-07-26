@@ -66,8 +66,8 @@
 module Path {
 
 use List;
-use SysError, IO;
-use OS.POSIX;
+use IO;
+use OS, OS.POSIX;
 use CTypes;
 
 /*
@@ -349,9 +349,6 @@ proc dirname(path: string): string {
   return splitPath(path)[0];
 }
 
-pragma "no doc"
-extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
-
 /* Expands any environment variables in the path of the form ``$<name>`` or
    ``${<name>}`` into their values.  If ``<name>`` does not exist, they are left
    in place. Returns the path which includes these expansions.
@@ -365,6 +362,8 @@ extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
    :rtype: `string`
 */
  proc expandVars(path: string): string {
+  extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";

@@ -413,6 +413,7 @@ public:
 
   IntentTag       intent;
   IntentTag       originalIntent; // stores orig intent after resolve intents
+  bool            typeExprFromDefaultExpr;
   BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
   BlockStmt*      defaultExpr;
 
