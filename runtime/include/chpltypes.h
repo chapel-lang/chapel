@@ -35,6 +35,7 @@
 typedef float _Complex        _complex64;
 typedef double _Complex       _complex128;
 
+// clang doesn't support _Complex_I but it does support __builtin_complex
 #ifndef _Complex_I
 #define _Complex_I __builtin_complex(0.0,1.0)
 #endif
