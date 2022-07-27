@@ -61,6 +61,21 @@ static void chpl_gpu_cuda_check(int err, const char* file, int line) {
   chpl_gpu_cuda_check((int)call, __FILE__, __LINE__);\
 } while(0);
 
+#define CUDA_CALL_CHECK_HALT(call, flag_ptr) do {             \
+  int flag;                                                   \
+  int callResult = (int)call;                                 \
+  /* read the halt flag */                                    \
+  chpl_gpu_copy_device_to_host(&flag, flag_ptr, sizeof(int)); \
+  if (flag != 0) {                                            \
+    const int msg_len = 256;                                  \
+    char msg[msg_len];                                        \
+    snprintf(msg, msg_len,                                    \
+             "Halt called from the gpu (Code: %d)", flag);    \
+    chpl_internal_error(msg);                                 \
+  }                                                           \
+  chpl_gpu_cuda_check(callResult, __FILE__, __LINE__);        \
+} while(0);
+
 CUcontext *chpl_gpu_primary_ctx;
 
 void chpl_gpu_init() {
@@ -189,7 +204,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
   int i;
   void* function = chpl_gpu_getKernel(fatbinData, name);
   // TODO: this should use chpl_mem_alloc
-  void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
+  // add one extra argument for a halt flag
+  void*** kernel_params = chpl_malloc((nargs+1)*sizeof(void**));
 
   assert(function);
   assert(kernel_params);
@@ -220,19 +236,29 @@ static void chpl_gpu_launch_kernel_help(int ln,
     }
   }
 
+  // one extra argument for a halt flag
+  kernel_params[nargs] = chpl_malloc(1*sizeof(CUdeviceptr));
+  *kernel_params[nargs] = chpl_gpu_mem_alloc(sizeof(int),
+                                             CHPL_RT_MD_GPU_KERNEL_ARG,
+                                             ln, fn);
+
+  chpl_gpu_memset(*kernel_params[nargs], 0, 1);
+
   chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
       blk_dim_x, blk_dim_y, blk_dim_z);
+
   chpl_gpu_diags_incr(kernel_launch);
 
   CHPL_GPU_DEBUG("Calling gpu function named %s\n", name);
 
-  CUDA_CALL(cuLaunchKernel((CUfunction)function,
-                           grd_dim_x, grd_dim_y, grd_dim_z,
-                           blk_dim_x, blk_dim_y, blk_dim_z,
-                           0,  // shared memory in bytes
-                           0,  // stream ID
-                           (void**)kernel_params,
-                           NULL));  // extra options
+  CUDA_CALL_CHECK_HALT(cuLaunchKernel((CUfunction)function,
+                                      grd_dim_x, grd_dim_y, grd_dim_z,
+                                      blk_dim_x, blk_dim_y, blk_dim_z,
+                                      0,  // shared memory in bytes
+                                      0,  // stream ID
+                                      (void**)kernel_params,
+                                      NULL), // extra options
+                       *kernel_params[nargs]); // kernel halted flag
 
   CHPL_GPU_DEBUG("Call returned %s\n", name);
 
@@ -262,6 +288,17 @@ void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
   CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
 
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
+}
+
+void chpl_gpu_memset(void* dst, int value, size_t n) {
+  chpl_gpu_ensure_context();
+
+  assert(chpl_gpu_is_device_ptr(dst));
+
+  CHPL_GPU_DEBUG("Setting %zu bytes to %d on device\n", n, value);
+
+  CUDA_CALL(cuMemsetD32((CUdeviceptr)dst, value, n));
+
 }
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
