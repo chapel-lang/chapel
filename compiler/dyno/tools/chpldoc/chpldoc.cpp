@@ -70,6 +70,7 @@ bool writeStdOut_ = false;
 std::string outputDir_;
 bool textOnly_ = false;
 std::string CHPL_HOME = getenv("CHPL_HOME");
+bool processUsedModules_ = false;
 
 const std::string templateUsage = R"RAW(**Usage**
 
@@ -1352,6 +1353,28 @@ struct RstResultBuilder {
     return getResult(true);
   }
 
+  owned<RstResult> visit(const Use* u) {
+    if (!processUsedModules_ || u->visibility() == chpl::uast::Decl::PRIVATE)
+      return {};
+    // need to locate the source file for module named in Use statement
+    // then parse it and generate docs for it
+    for (auto vis : u->visibilityClauses()) {
+      auto sym = vis->symbol();
+
+      if (sym->isIdentifier()) {
+        if (auto usedMod = getToplevelModule(context_, sym->toIdentifier()->name())) {
+          std::string name = usedMod->name().str();
+          if (auto& r = rstDoc(context_, usedMod->id())) {
+            r->outputModule(outputDir_, name, indentPerDepth);
+          }
+        }
+      }
+
+    }
+
+    return getResult(true);
+  }
+
   // TODO all these nullptr gets stored in the query map... can we avoid that?
   owned<RstResult> visit(const AstNode* n) { return {}; }
 
@@ -1700,6 +1723,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   commentStyle_ = args.commentStyle;
+  processUsedModules_ = args.processUsedModules;
   if (args.selfTest) {
     args.files.push_back("selftest.chpl");
     UniqueString path = UniqueString::get(ctx, "selftest.chpl");
