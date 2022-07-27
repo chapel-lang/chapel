@@ -1,5 +1,5 @@
 test:
-	cd build && cmake .. && make
+	cd build && cmake .. -DCMAKE_C_COMPILER=clang && make
 	build/cmakeTest
 
 
