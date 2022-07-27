@@ -233,6 +233,8 @@ module LocaleModelHelpSetup {
   proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string,
       numSublocales: int, type GPULocale){
 
+    local_name = getNodeName();
+
     // Cyclic (and likely other) distributions uses this variable to determine
     // how many data-parallel tasks to have per locale. If this gets set to 0
     // then we end up not processing things in the first locale.
