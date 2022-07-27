@@ -426,7 +426,7 @@ module IO {
       -- seems that we'd want some way to cache that...).
 */
 
-import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF,qio_err_t};
+import SysBasic.{syserr,EFORMAT,fd_t,ENOERR,EEOF};
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 import OS.POSIX.{EBADF};
 use CTypes;
@@ -4962,7 +4962,7 @@ proc readln(type t ...?numTypes) throws {
    :throws SystemError: Thrown if the file is not successfully deleted.
  */
 proc unlink(path:string) throws {
-  extern proc sys_unlink(path:c_string):qio_err_t;
+  extern proc sys_unlink(path:c_string): c_int;
   var err = sys_unlink(path.localize().c_str());
   if err then try ioerror(err:syserr, "in unlink", path);
 }

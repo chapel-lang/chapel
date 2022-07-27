@@ -1,13 +1,14 @@
 use SysBasic;
+use CTypes;
 
-proc doDebugWrite(x, y):qio_err_t {
+proc doDebugWrite(x, y):c_int {
   extern proc qio_int_to_err(a:int(32)):syserr;
 
   writeln("Debug Write: ", x, y);
   return qio_int_to_err(1);
 }
 
-proc test(arg:string, out error:qio_err_t):bool {
+proc test(arg:string, out error:c_int):bool {
   error = ENOERR;
   on Locales[0] {
     if ! error {
@@ -17,5 +18,5 @@ proc test(arg:string, out error:qio_err_t):bool {
   return error==ENOERR;
 }
 
-var e:qio_err_t = ENOERR;
+var e:c_int = ENOERR;
 test("hello", e);
