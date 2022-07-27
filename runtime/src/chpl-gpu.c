@@ -33,6 +33,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <assert.h>
+#include <stdbool.h>
 
 static void CHPL_GPU_DEBUG(const char *str, ...) {
   if (verbosity >= 2) {
