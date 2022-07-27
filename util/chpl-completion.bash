@@ -107,6 +107,7 @@ _chpl ()
 --lib-linkage \
 --lib-search-path \
 --library \
+--library-cmakelists \
 --library-dir \
 --library-fortran \
 --library-fortran-name \
