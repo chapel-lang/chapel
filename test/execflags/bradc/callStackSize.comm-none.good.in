@@ -1,1 +1,2 @@
+callStackSize.chpl:3: warning: 'locale.callStackSize' is deprecated.
 here.callStackSize = 1000000
