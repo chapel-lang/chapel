@@ -1,8 +1,4 @@
-#include "FooLibrary.h"
-
-void spoutWisdom(void) {
-  wisdom();
-}
+#include "cmakeLib.h"
 
 int main(int argc, char** argv) {
   chpl_library_init(argc, argv);
