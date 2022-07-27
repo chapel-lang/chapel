@@ -266,6 +266,7 @@ module ChapelLocale {
     stack for any task on the current locale, including the
     caller.
   */
+  deprecated "'locale.callStackSize' is deprecated."
   inline proc locale.callStackSize { return this._value.callStackSize; }
 
   /*
