@@ -26,7 +26,7 @@ module Communication {
 
   /*
    Copy potentially remote data into local memory.
-  
+
    :arg dest: Address in local memory where the data will be copied into
    :arg src: Address of the source in potentially remote memory
    :arg srcLocID: ID of the source locale
@@ -40,7 +40,7 @@ module Communication {
 
   /*
    Copy local data into potentially remote memory.
-  
+
    :arg dest: Address in potentially remote memory where the data will be copied
               into
    :arg src: Address of the source in local memory
