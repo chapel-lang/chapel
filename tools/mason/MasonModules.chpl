@@ -30,6 +30,14 @@ use MasonBuild;
 use Subprocess;
 use TOML;
 
+// A call to `mason modules` will print to screen the flags that are
+// required to include the mason packages specified in the TOML file
+// of a mason project.
+// For example, if a mason project had two dependencies, the result
+// would be a string of the paths to the modules that need to be added
+// to a command line `chpl` call to use those modules. This can allow
+// users to get compilation flags from mason without having to use
+// `mason build` in their project.
 proc masonModules(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonModulesHelpHandler());

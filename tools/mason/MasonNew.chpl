@@ -59,13 +59,16 @@ proc masonNew(args: [] string) throws {
   var isLibrary = libFlag.valueAsBool();
   var isLightweight = lightFlag.valueAsBool();
 
+  if isApplication + isLibrary + isLightweight > 1 then
+    throw new owned MasonError("A mason package cannot be of multiple types");
+
   var packageName = '';
   var dirName = '';
   var version = '';
   var chplVersion = '';
   var license = 'None';
   // Default created mason project is a package (has a main func)
-  var packageType = 'app';
+  var packageType = 'application';
 
   try! {
     if args.size == 1 {
