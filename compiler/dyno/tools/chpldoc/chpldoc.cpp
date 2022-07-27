@@ -1725,6 +1725,7 @@ int main(int argc, char** argv) {
       std::cerr << "error: Failed to create directory: "
                 << docsOutputDir << " due to: "
                 << err.message() << std::endl;
+      return 1;
    }
 
   // The location of intermediate rst files.

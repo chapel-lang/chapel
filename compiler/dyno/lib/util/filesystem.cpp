@@ -223,7 +223,7 @@ std::string getCwd() {
 
 std::error_code makeDir(std::string dirpath) {
   using namespace llvm::sys::fs;
-  if (auto err = create_directories(dirpath, true, perms::all_all)) {
+  if (auto err = create_directory(dirpath, true, perms::all_all)) {
     return err;
   } else {
     return std::error_code();

@@ -78,8 +78,9 @@ std::string getCwd();
 std::error_code currentWorkingDir(std::string& path_out);
 
 /**
- * makes the directory and all intermediate directories in dirpath
- * if they don't exist. Directory permissions are set to llvm::all-all.
+ * makes the directory in dirpath. Will fail if a directory in the path doesn't
+ * already exist.
+ * Directory permissions are set to llvm::all-all.
  * which should be equivalent to  S_IRWXU | S_IRWXG | S_IRWXO
  *
  * dirpath - the path of the directory to create
