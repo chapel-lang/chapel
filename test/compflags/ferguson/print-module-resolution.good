@@ -8,6 +8,8 @@ CTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes
 ChapelTaskData
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelTaskData
+Communication
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers.Communication
 ByteBufferHelpers
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers
 NVStringFactory
