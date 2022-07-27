@@ -5048,8 +5048,7 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       }
 
       // c_ptr/ddata are already addresses, so dereference one level.
-      if (dt->hasFlag(FLAG_DATA_CLASS) ||
-          dt == dtCVoidPtr->symbol) {
+      if (dt->hasFlag(FLAG_DATA_CLASS)) {
         localAddr = codegenValue(localAddr);
       }
     }
@@ -5070,8 +5069,7 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     if        (call->get(3)->isWideRef()   == true)  {
       remoteAddr = codegenRaddr(remoteAddr);
 
-    } else if (t->hasFlag(FLAG_DATA_CLASS) == true ||
-               t == dtCVoidPtr->symbol)  {
+    } else if (t->hasFlag(FLAG_DATA_CLASS) == true)  {
       remoteAddr = codegenValue(remoteAddr);
 
     } else if (call->get(3)->isRef()        == false) {

@@ -24,6 +24,8 @@
 module Communication {
   private use CTypes;
 
+  type argType = c_ptr(uint(8));
+
   /*
    Copy potentially remote data into local memory.
   
@@ -34,7 +36,7 @@ module Communication {
   */
   inline proc get(dest: c_void_ptr, src: c_void_ptr, srcLocID: int,
                   numBytes: integral) {
-    __primitive("chpl_comm_get", dest, srcLocID, src, numBytes);
+    __primitive("chpl_comm_get", dest:argType, srcLocID, src:argType, numBytes);
   }
 
   /*
@@ -48,6 +50,6 @@ module Communication {
   */
   inline proc put(dest: c_void_ptr, src: c_void_ptr, destLocID: int,
                   numBytes: integral) {
-    __primitive("chpl_comm_put", src, destLocID, dest, numBytes);
+    __primitive("chpl_comm_put", src:argType, destLocID, dest:argType, numBytes);
   }
 }
