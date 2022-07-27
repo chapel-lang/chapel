@@ -152,6 +152,7 @@ std::string runCommand(std::string& command) {
   FILE* pipe = popen(command.c_str(), "r");
   if (!pipe) {
     // USR_FATAL("running %s", command.c_str());
+    std::cerr << "error: running " << command << std::endl;
   }
 
   // Read output of command into result via buffer
@@ -163,6 +164,8 @@ std::string runCommand(std::string& command) {
 
   if (pclose(pipe)) {
     // USR_FATAL("'%s' did not run successfully", command.c_str());
+    std::cerr << "error: '" << command << "' did not run successfully"
+              << std::endl;
   }
 
   return result;
@@ -191,9 +194,11 @@ static int myshell(std::string command,
 
   if (status == -1) {
     // USR_FATAL("system() fork failed: %s", strerror(errno));
-
+    std::cerr << "error: system() fork failed: " << strerror(errno)
+              << std::endl;
   } else if (status != 0 && ignoreStatus == false) {
     // USR_FATAL("%s", description);
+    std::cerr << "error: " << description << std::endl;
   }
 
   return status;
