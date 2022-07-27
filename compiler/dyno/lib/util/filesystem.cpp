@@ -215,6 +215,7 @@ std::error_code makeDir(std::string dirpath) {
   } else {
     return std::error_code();
   }
+  return std::error_code();
 }
 
 
