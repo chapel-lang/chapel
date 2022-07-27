@@ -136,61 +136,6 @@ static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
   return true;
 }
 
-static bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
-                                        std::set<FnSymbol*>& okFns,
-                                        std::set<FnSymbol*> visitedFns) {
-  FnSymbol* fn = blk->getFunction();
-  if (debugPrintGPUChecks) {
-    printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
-           fn->fname(), fn->linenum(), fn->name, fn->id);
-  }
-
-  if (visitedFns.count(blk->getFunction()) != 0) {
-    if (blk->getFunction()->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
-      return true; // allow `halt` to be potentially called recursively
-    } else {
-      return false;
-    }
-  }
-
-  visitedFns.insert(blk->getFunction());
-
-  std::vector<CallExpr*> calls;
-  collectCallExprs(blk, calls);
-
-  for_vector(CallExpr, call, calls) {
-    if (call->primitive) {
-      // only primitives that are fast and local are allowed for now
-      bool inLocal = inLocalBlock(call);
-      int is = classifyPrimitive(call, inLocal);
-      if ((is != FAST_AND_LOCAL)) {
-        return false;
-      }
-    } else if (call->isResolved()) {
-      if (!allowFnCallsFromGPU)
-        return false;
-
-      FnSymbol* fn = call->resolvedFunction();
-
-      if (hasOuterVarAccesses(fn))
-        return false;
-
-      indentGPUChecksLevel += 2;
-      if (okFns.count(fn) != 0 ||
-          callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns)) {
-        indentGPUChecksLevel -= 2;
-        okFns.insert(fn);
-      } else {
-        indentGPUChecksLevel -= 2;
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-
-
 // ----------------------------------------------------------------------------
 // GpuizableLoop
 // ----------------------------------------------------------------------------
@@ -225,6 +170,10 @@ private:
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
   bool extractUpperBound();
+
+  bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
+                                   std::set<FnSymbol*>& okFns,
+                                   std::set<FnSymbol*> visitedFns);
 };
 
 GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
@@ -284,6 +233,61 @@ bool GpuizableLoop::callsInBodyAreGpuizable() {
   std::set<FnSymbol*> visitedFns;
   return callsInBodyAreGpuizableHelp(this->loop_, okFns, visitedFns);
 }
+
+bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
+                                                std::set<FnSymbol*>& okFns,
+                                                std::set<FnSymbol*> visitedFns) {
+  FnSymbol* fn = blk->getFunction();
+  if (debugPrintGPUChecks) {
+    printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
+           fn->fname(), fn->linenum(), fn->name, fn->id);
+  }
+
+  if (visitedFns.count(blk->getFunction()) != 0) {
+    if (blk->getFunction()->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
+      return true; // allow `halt` to be potentially called recursively
+    } else {
+      return false;
+    }
+  }
+
+  visitedFns.insert(blk->getFunction());
+
+  std::vector<CallExpr*> calls;
+  collectCallExprs(blk, calls);
+
+  for_vector(CallExpr, call, calls) {
+    if (call->primitive) {
+      // only primitives that are fast and local are allowed for now
+      bool inLocal = inLocalBlock(call);
+      int is = classifyPrimitive(call, inLocal);
+      if ((is != FAST_AND_LOCAL)) {
+        return false;
+      }
+    } else if (call->isResolved()) {
+      if (!allowFnCallsFromGPU)
+        return false;
+
+      FnSymbol* fn = call->resolvedFunction();
+
+      if (hasOuterVarAccesses(fn))
+        return false;
+
+      indentGPUChecksLevel += 2;
+      if (okFns.count(fn) != 0 ||
+          callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns)) {
+        indentGPUChecksLevel -= 2;
+        okFns.insert(fn);
+      } else {
+        indentGPUChecksLevel -= 2;
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
 
 bool GpuizableLoop::attemptToExtractLoopInformation() {
   // Pattern match loop boundaries to determine lower
