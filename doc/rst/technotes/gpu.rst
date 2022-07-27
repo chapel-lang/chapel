@@ -45,6 +45,8 @@ where your installation of CUDA exists. If the build system fails to do this,
 or you would like to use a different CUDA installation, you can set
 ``CHPL_CUDA_PATH`` environment variable to the CUDA installation root.
 
+``CHPL_TASKS=qthreads`` is required for GPU support.
+
 We also suggest setting ``CHPL_RT_NUM_THREADS_PER_LOCALE=1`` (this is necessary
 if using CUDA 10).
 
