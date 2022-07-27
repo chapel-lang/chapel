@@ -59,11 +59,52 @@ Manually edit the Mason.toml if multiple versions of the same package are listed
 Package names and versions are not validated upon adding
 ********************************************************************************
 $ mason build -h
+Compile a local package and all of its dependencies
+
+Usage:
+    mason build [options]
+
+Options:
+    -h, --help                   Display this message
+        --show                   Increase verbosity
+        --release                Compile to target/release with optimizations (--fast)
+        --force                  Force Mason to build the project
+        --example <example>      Build an example from the example/ directory
+        --[no-]update            [Do not] update the mason registry before building
+        --dependent-modules      Print the include paths to the dependent modules to be integrated into build step
+
+When --example is thrown without an example, all examples will be built
+When no options are provided, the following will take place:
+   - Build from mason project if Mason.lock present
+
+Compilation flags and arguments can be included after mason arguments.
+To ensure compilation flags and mason arguments to not conflict, separate them with a
+double dash(`--`). For example
+   e.g. mason build --force -- --savec tmpdir
 ********************************************************************************
-Failed to run cmd: 'mason build -h'
 $ mason run -h
+Run the compiled project and output to standard output
+
+Usage:
+   mason run [options]
+
+Options:
+    -h, --help                   Display this message
+        --build                  Compile before running binary
+        --show                   Increase verbosity
+        --example <example>      Run an example
+
+When --example is thrown without an example, all available examples will be listed
+
+When no options are provided, the following will take place:
+   - Execute binary from mason project if target/ is present
+   - If no target directory, build and run is Mason.toml is present
+
+Runtime arguments can be included after mason arguments.
+To ensure that runtime arguments and mason arguments do not conflict, separate them
+with a double dash(`--`). For example
+   e.g. mason run --build -- --runtimeArg=true
 ********************************************************************************
-Failed to run cmd: 'mason run -h'
 $ mason search -h
 Search the registry for a package
 
@@ -155,8 +196,26 @@ Options:
 
 ********************************************************************************
 $ mason test -h
+mason test works inside and outside of mason packages.
+Inside a mason package: run test files found in test/
+Outside of a mason package: run test files found in the provided path (defaults to '.').
+
+Usage:
+    mason test [options] <path>
+
+Options:
+    -h, --help                  Display this message
+        --show                  Direct output of tests to stdout
+        --no-run                Compile tests without running them
+        --keep-binary           Doesn't delete the binaries after running
+        --recursive             Descend recursively into subdirectories of given directories
+        --parallel              Run tests in parallel(sequential by default)
+        --[no]-update           [Do not] update the mason-registry when testing
+        --setComm               Set the CHPL_COMM value for running the tests,  e.g. none, gasnet, ugni
+
+Test configuration is up to the user
+Tests pass if they exit with status code 0
 ********************************************************************************
-Failed to run cmd: 'mason test -h'
 $ mason external -h
 Use, install and search for external packages to build Mason packages with
 

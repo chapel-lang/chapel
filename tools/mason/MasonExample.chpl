@@ -36,10 +36,6 @@ use TOML;
 /* Runs the .chpl files found within the /example directory */
 proc masonExample(args: [] string) throws {
 
-  const projectType = getProjectType();
-  if projectType == "light" then
-      throw new owned MasonError("Mason light projects do not currently support 'mason example'");
-
   var parser = new argumentParser();
 
   var runFlag = parser.addFlag(name="run",
@@ -54,6 +50,10 @@ proc masonExample(args: [] string) throws {
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var exampleOpts = parser.addOption(name="example", numArgs=0..);
+
+  const projectType = getProjectType();
+  if projectType == "light" then
+    throw new owned MasonError("Mason light projects do not currently support 'mason example'");
 
   try! {
     parser.parseArgs(args);
