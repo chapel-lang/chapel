@@ -27,7 +27,7 @@
 
    Each of the functions in this file provides the same functionality
    as the corresponding function without the ``sys_`` prefix, except that
-   the ``sys_`` versions all return an error code (of type :type:`~SysBasic.qio_err_t`)
+   the ``sys_`` versions all return an error code (of type :type:`~CTypes.c_int`)
    and return any other values (such as how much was read) through an out
    argument.
 

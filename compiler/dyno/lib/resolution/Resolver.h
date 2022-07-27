@@ -289,6 +289,11 @@ struct Resolver {
   // Resolve a || or && operation.
   types::QualifiedType typeForBooleanOp(const uast::OpCall* op);
 
+  // Handle ==, !=, and other operators as defined on types.
+  types::QualifiedType typeForTypeOperator(const uast::OpCall* op,
+                                           const types::QualifiedType& left,
+                                           const types::QualifiedType& right);
+
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
   // if it is a regular call.

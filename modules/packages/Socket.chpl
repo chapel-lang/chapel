@@ -72,7 +72,7 @@ public use CTypes;
 use Time;
 use OS, OS.POSIX;
 use IO;
-import SysBasic.{syserr, ENOERR, fd_t, qio_err_t};
+import SysBasic.{syserr, ENOERR, fd_t};
 
 /*
   Available values for different Internet
@@ -423,8 +423,8 @@ private extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys
 private extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
 private extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
 private extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
-private extern proc sys_strerror(error:qio_err_t, ref string_out:c_string):qio_err_t;
-private extern proc sys_readlink(path:c_string, ref string_out:c_string):qio_err_t;
+private extern proc sys_strerror(error:c_int, ref string_out:c_string):c_int;
+private extern proc sys_readlink(path:c_string, ref string_out:c_string):c_int;
 
 extern const AF_INET: c_int;
 extern const AF_INET6: c_int;
@@ -580,20 +580,20 @@ pragma "no doc" proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddr
 pragma "no doc" proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
 
 
-private extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):qio_err_t;
-private extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):qio_err_t;
-private extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):qio_err_t;
-private extern proc sys_bind(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
-private extern proc sys_connect(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
-private extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):qio_err_t;
+private extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):c_int;
+private extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):c_int;
+private extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):c_int;
+private extern proc sys_bind(sockfd:fd_t, const ref addr:sys_sockaddr_t):c_int;
+private extern proc sys_connect(sockfd:fd_t, const ref addr:sys_sockaddr_t):c_int;
+private extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):c_int;
 private extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
-private extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
-private extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
-private extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):qio_err_t;
-private extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t;
-private extern proc sys_listen(sockfd:fd_t, backlog:c_int):qio_err_t;
-private extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t;
-private extern proc sys_close(fd:fd_t):qio_err_t;
+private extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):c_int;
+private extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):c_int;
+private extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):c_int;
+private extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):c_int;
+private extern proc sys_listen(sockfd:fd_t, backlog:c_int):c_int;
+private extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):c_int;
+private extern proc sys_close(fd:fd_t):c_int;
 private extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
 private extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
 private extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
@@ -652,7 +652,7 @@ record tcpListener {
 proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn throws {
   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
   var fdOut:fd_t;
-  var err_out:qio_err_t = 0;
+  var err_out:c_int = 0;
   // try accept
   err_out = sys_accept(socketFd, client_addr, fdOut);
   // if error is not about blocking, throw error
@@ -1019,7 +1019,7 @@ proc udpSocket.close throws {
 }
 
 pragma "no doc"
-private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):qio_err_t;
+private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):c_int;
 
 /*
   Reads upto `bufferLen` bytes from the socket, and
@@ -1045,7 +1045,7 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, fla
 */
 proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
                         flags:c_int = 0):(bytes, ipAddr) throws {
-  var err_out:qio_err_t = 0;
+  var err_out:c_int = 0;
   var buffer = c_calloc(c_uchar, bufferLen);
   var length:c_ssize_t;
   var addressStorage = new sys_sockaddr_t();
@@ -1136,7 +1136,7 @@ proc udpSocket.recv(bufferLen: int, timeout: real) throws {
 }
 
 pragma "no doc"
-private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):qio_err_t;
+private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):c_int;
 
 /*
   Send `data` over socket to the provided address and
@@ -1163,7 +1163,7 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
 */
 proc udpSocket.send(data: bytes, in address: ipAddr,
                     in timeout = indefiniteTimeout):c_ssize_t throws {
-  var err_out:qio_err_t = 0;
+  var err_out:c_int = 0;
   var length:c_ssize_t;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
   if err_out == 0 {
