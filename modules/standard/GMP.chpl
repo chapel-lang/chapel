@@ -1145,7 +1145,7 @@ module GMP {
     // get a pointer to the limbs
     var dst_limbs_ptr = chpl_gmp_mpz_struct_limbs(ret[0]);
 
-    Communication.get(dst_limbs_ptr[0], src_limbs_ptr[0], src_locale,
+    Communication.get(dst_limbs_ptr, src_limbs_ptr, src_locale,
                       (new_size:c_size_t)*c_sizeof(mp_limb_t));
 
     // Update the sign and size of the number
