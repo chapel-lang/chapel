@@ -111,6 +111,41 @@ static std::vector<std::string> splitLines(const std::string& s) {
   return ret;
 }
 
+static std::string filenameFromModuleName(const Identifier* id, std::string docsWorkDir) {
+  std::string filename = id->name().str();
+  // this isn't the right name, might need to upper case first letter and add .chpl
+  filename = filename + ".chpl";
+
+
+  // if (mod->modTag == MOD_INTERNAL) {
+  //   filename = "internal-modules/";
+  // } else if (mod ->modTag == MOD_STANDARD) {
+  //   filename = "standard-modules/";
+  // } else {
+    size_t location = filename.rfind("/");
+    if (location != std::string::npos) {
+      filename = filename.substr(0, location + 1);
+
+      // Check for files starting with the CHPL_HOME internal modules
+      // path, and if we find one, chop everything but 'internal/' and
+      // whatever follows out of the path in order to create the
+      // appropriate relative path within the sphinx output directory.
+      // Also label such modules as MOD_INTERNAL for subsequent
+      // checks, like the one in ModuleSymbol::printDocs()
+      std::string modPath = CHPL_HOME + "/modules/";
+      std::string intModPath = modPath + "internal/";
+      if (strncmp(intModPath.c_str(), filename.c_str(), intModPath.length()) == 0) {
+        filename = filename.substr(strlen(modPath));
+        //mod->modTag = MOD_INTERNAL;
+      }
+    } else {
+      filename = "";
+    }
+  filename = docsWorkDir + "/" + filename;
+
+  return filename;
+}
+
 static bool hasSubmodule(const Module* mod) {
   for (const AstNode* child : mod->stmts()) {
     if (auto mod = child->toModule())
@@ -1362,6 +1397,7 @@ struct RstResultBuilder {
       auto sym = vis->symbol();
 
       if (sym->isIdentifier()) {
+        std::string fileName = filenameFromModuleName(sym->toIdentifier(), outputDir_);
         if (auto usedMod = getToplevelModule(context_, sym->toIdentifier()->name())) {
           std::string name = usedMod->name().str();
           if (auto& r = rstDoc(context_, usedMod->id())) {
@@ -1730,9 +1766,6 @@ int main(int argc, char** argv) {
     setFileText(ctx, path, testString);
   }
 
-  if (args.files.size() > 1) {
-    std::cerr << "WARNING only handling one file right now\n";
-  }
 
   // update CHPL_HOME if we got one from the command-line args
   if (!args.chplHome.empty()) {
@@ -1783,6 +1816,23 @@ int main(int argc, char** argv) {
   }
 
   outputDir_ = docsRstDir;
+  // std::string chplLocaleModel = getenv("CHPL_LOCALE_MODEL");
+  // std::string chplTasks = getenv("CHPL_TASKS");
+  // std::string chplComm = getenv("CHPL_COMM");
+  // std::string chplSysModulesSubdir = getenv("CHPL_SYS_MODULES_SUBDIR");
+  // std::string chplModulePath = getenv("CHPL_MODULE_PATH");
+  std::string modRoot = CHPL_HOME + "/modules";
+  std::string internal = modRoot + "/internal";
+  setInternalModulePath(ctx, UniqueString::get(ctx, internal));
+  std::string bundled = modRoot + "/";
+  setBundledModulePath(ctx, UniqueString::get(ctx, bundled));
+
+  // setupModuleSearchPaths(ctx, CHPL_HOME, false, chplLocaleModel, false,
+  //                           chplTasks,
+  //                           chplComm,
+  //                           chplSysModulesSubdir,
+  //                           chplModulePath,
+  //                           {});
 
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
