@@ -1211,6 +1211,25 @@ QualifiedType getInstantiationType(Context* context,
   return QualifiedType();
 }
 
+static bool varArgCountMatch(const VarArgFormal* formal,
+                             ResolutionResultByPostorderID& r) {
+  QualifiedType formalType = r.byAst(formal).type();
+  auto tupleType = formalType.type()->toTupleType();
+
+  if (formal->count() != nullptr) {
+    const ResolvedExpression& count = r.byAst(formal->count());
+    QualifiedType ct = count.type();
+    if (ct.isParam() && ct.param() != nullptr) {
+      if (auto ip = ct.param()->toIntParam()) {
+        assert(tupleType != nullptr && tupleType->isKnownSize());
+        return tupleType->numElements() == ip->value();
+      }
+    }
+  }
+
+  return true;
+}
+
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -1365,6 +1384,12 @@ const TypedFnSignature* instantiateSignature(Context* context,
     // visit the formals
     for (auto formal : fn->formals()) {
       formal->traverse(visitor);
+
+      if (auto varArgFormal = formal->toVarArgFormal()) {
+        if (!varArgCountMatch(varArgFormal, r)) {
+          return nullptr;
+        }
+      }
     }
     // visit the where clause
     if (auto whereClause = fn->whereClause()) {
