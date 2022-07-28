@@ -34,6 +34,7 @@
 #include <limits.h>
 
 #include "chpl-comp-detect-macros.h"
+#include "sys_basic.h"
 
 #ifdef __cplusplus
 extern "C" {
