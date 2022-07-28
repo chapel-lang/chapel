@@ -197,7 +197,8 @@ struct Resolver {
 
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
-                          const types::Type* actualType);
+                          const types::Type* actualType,
+                          bool isNonStarVarArg = false);
 
   /* When resolving a function with a TypeQuery, we need to
      resolve the type that is queried, since it can be used
@@ -211,7 +212,7 @@ struct Resolver {
      This function resolves the types of all TypeQuery nodes
      contained in the passed Formal (by updating 'byPostorder').
    */
-  void resolveTypeQueriesFromFormalType(const uast::Formal* formal,
+  void resolveTypeQueriesFromFormalType(const uast::VarLikeDecl* formal,
                                         types::QualifiedType formalType);
 
   // helper for getTypeForDecl -- checks the Kinds are compatible
