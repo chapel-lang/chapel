@@ -1,4 +1,4 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 PREDIFF_HOSTNAME
-LOCALE0.PREDIFF_HOSTNAME-GPU0
+LOCALE0-GPU0
 PREDIFF_HOSTNAME-GPU0

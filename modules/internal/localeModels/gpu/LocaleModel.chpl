@@ -244,7 +244,7 @@ module LocaleModel {
 
     override proc writeThis(f) throws {
       parent.writeThis(f);
-      f <~> '.'+name;
+      f <~> "-GPU" + sid:string;
     }
 
     override proc getChildCount(): int { return 0; }
