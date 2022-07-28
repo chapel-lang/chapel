@@ -40,16 +40,35 @@ module DistributedMap {
     pragma "no doc"
     var locks: [0..targetLocales.size] owned _LockWrapper;
 
+    // NOTE: this means that distributed maps that rely on the default hashing
+    // strategy will not be able to be stored in another data structure with
+    // distributed maps that specified their own hashing strategy (but that
+    // any distributed maps that specify their own hashing strategy *can* be
+    // stored in the same data structure as those that specified a different one
+    // Is that something we're okay with?
     pragma "no doc"
-    var localeHasher = hashAcrossLocales;
+    type funcType;
+    pragma "no doc"
+    var localeHasher: funcType;
 
-    // TODO: how to hash across locales?
-
+    /* Create a map with the specified key and value type, relying on the
+       default hasher across locales */
     proc init(type keyType, type valType) {
       this.keyType = keyType;
       this.valType = valType;
+      funcType = nothing;
+      localeHasher = none;
     }
-    // TODO: initializer that takes way to control hash across locales?
+
+    /* Create a map with the specified key type, value type, and hash function
+       across locales.
+    */
+    proc init(type keyType, type valType, hasher: func(keyType, int, int)) {
+      this.keyType = keyType;
+      this.valType = valType;
+      funcType = func(keyType, int, int);
+      localeHasher = hasher;
+    }
     // TODO: initializer that uses only a subset of the locales?
 
     // TODO: impl
@@ -67,9 +86,30 @@ module DistributedMap {
       compilerError("unimplemented");
     }
 
-    // TODO: impl
+    /*
+      Returns `true` if the given key is a member of this map, and `false`
+      otherwise.
+
+      :arg k: The key to test for membership.
+      :type k: keyType
+
+      :returns: Whether or not the given key is a member of this map.
+      :rtype: `bool`
+    */
     proc const contains(const k: keyType): bool {
-      compilerError("unimplemented");
+      var loc: int;
+      if (funcType != nothing) {
+        loc = localeHasher(key, targetLocales.size);
+      } else {
+        loc = hashAcrossLocales(key, targetLocales.size);
+      }
+
+      locks[loc].lock();
+
+      var (result, _) = tables[loc].findFullSlot(k);
+
+      locks[loc].unlock();
+      return result;
     }
 
     // TODO: impl
@@ -111,18 +151,75 @@ module DistributedMap {
       compilerError("unimplemented");
     }
 
-    // TODO: impl - maybe warn this is unsafe on its own?  Maybe don't provide?
-    //
-    // Could also take tactic of making it slow but safe - lock the appropriate
-    // place and add it as is, providing the alternative handling for
-    // performance.
+    // NOTE: Locks on the locale, so may be slower than we'd like?
+    /*
+      Adds a key-value pair to the map. Method returns `false` if the key
+      already exists in the map.
+
+     :arg k: The key to add to the map
+     :type k: keyType
+
+     :arg v: The value that maps to ``k``
+     :type v: valueType
+
+     :returns: `true` if `k` was not in the map and added with value `v`.
+               `false` otherwise.
+     :rtype: bool
+    */
     proc add(in k: keyType, in v: valType): bool lifetime this < v {
-      compilerError("unimplemented");
+      var loc: int;
+      if (funcType != nothing) {
+        loc = localeHasher(key, targetLocales.size);
+      } else {
+        loc = hashAcrossLocales(key, targetLocales.size);
+      }
+
+      locks[loc].lock();
+
+      var (found, slot) = tables[loc].findAvailableSlot(key);
+
+      // Only add if it wasn't already present
+      if (!found)
+        tables[loc].fillSlot(slot, key, val);
+
+      locks[loc].unlock();
+
+      return !found;
     }
 
-    // TODO: impl - maybe warn this is unsafe on its own?  Maybe don't provide?
+    // NOTE: Locks on the locale, so may be slower than we'd like?
+    /*
+      Sets the value associated with a key. Method returns `false` if the key
+      does not exist in the map.
+
+     :arg k: The key whose value needs to change
+     :type k: keyType
+
+     :arg v: The desired value to the key ``k``
+     :type k: valueType
+
+     :returns: `true` if `k` was in the map and its value is updated with `v`.
+               `false` otherwise.
+     :rtype: bool
+    */
     proc set(k: keyType, in v: valType): bool {
-      compilerError("unimplemented");
+      var loc: int;
+      if (funcType != nothing) {
+        loc = localeHasher(key, targetLocales.size);
+      } else {
+        loc = hashAcrossLocales(key, targetLocales.size);
+      }
+
+      locks[loc].lock();
+
+      var (found, slot) = tables[loc].findAvailableSlot(key);
+
+      if (found)
+        tables[loc].fillSlot(slot, key, val);
+
+      locks[loc].unlock();
+
+      return found;
     }
 
     // TODO: impl - maybe warn this is unsafe on its own?  Maybe don't provide?
@@ -158,14 +255,15 @@ module DistributedMap {
     proc updateAggregator(updater) {
       compilerError("unimplemented");
     }
-  }
 
-  /* Take key and number of locales, return locale and hash value */
-  proc hashAcrossLocales(key, numLocales: int): (int, int) {
-    // Based on keyToLocaleAndMapIdx from v1, but I'm sure there's a better
-    // way to do this (just trying to get something implemented)
-    const hash = chpl__defaultHashWrapper(key);
-    return (hash % numLocales,
-            (hash / numLocales));
+    // default function to hash across locales
+    pragma "no doc"
+    /* Take key and number of locales, return locale */
+    proc hashAcrossLocales(key: keyType, numLocales: int): int {
+      // Based on keyToLocaleAndMapIdx from v1, but I'm sure there's a better
+      // way to do this (just trying to get something implemented)
+      const hash = chpl__defaultHashWrapper(key);
+      return hash % numLocales;
+    }
   }
 }
