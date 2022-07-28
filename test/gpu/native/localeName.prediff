@@ -1,5 +1,5 @@
 #!/bin/bash
 
-hn=$(uname -n)
+hn=$(<localeName.hostname)
 sed "s/$hn/PREDIFF_HOSTNAME/" $2 > $2.predifftemp
 mv $2.predifftemp $2
