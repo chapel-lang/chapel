@@ -194,4 +194,28 @@ std::error_code ensureDirExists(std::string dirname) {
   return llvm::sys::fs::create_directories(dirname);
 }
 
+// Functionality also exists in runtime/src/qio/sys.c
+// returns empty std::error_code on success.
+std::error_code currentWorkingDir(std::string& path_out) {
+  llvm::SmallString<128> buf;
+  if (std::error_code err = llvm::sys::fs::current_path(buf)) {
+    return err;
+  } else {
+    // buf.str() returns an LLVM::StringRef,
+    // so we call .str() on that to get a std::string.
+    path_out = buf.str().str();
+    return std::error_code();
+  }
+}
+
+std::error_code makeDir(std::string dirpath) {
+  using namespace llvm::sys::fs;
+  if (auto err = create_directory(dirpath, true, perms::all_all)) {
+    return err;
+  } else {
+    return std::error_code();
+  }
+}
+
+
 } // namespace chpl
