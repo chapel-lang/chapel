@@ -67,7 +67,7 @@ proc masonUpdate(args: [?d] string) {
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
+proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
 
   try! {
     const cwd = here.cwd();
@@ -80,11 +80,11 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     if isFile(tomlPath) {
       if TomlFile.pathExists('dependencies') {
         if TomlFile['dependencies']!.A.size > 0 {
-          updateRegistry(skipUpdate);
+          updateRegistry(skipUpdate, show);
           updated = true;
         }
       }
-      if !updated {
+      if !updated && show {
         writeln("Skipping registry update since no dependency found in manifest file.");
       }
     }
@@ -155,7 +155,7 @@ proc checkRegistryChanged() {
 }
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(skipUpdate: bool) {
+proc updateRegistry(skipUpdate: bool, show=true) {
   if skipUpdate then return;
 
   checkRegistryChanged();
@@ -163,7 +163,7 @@ proc updateRegistry(skipUpdate: bool) {
 
     if isDir(registryHome) {
       var pullRegistry = 'git pull -q origin master';
-      writeln("Updating ", name);
+      if show then writeln("Updating ", name);
       gitC(registryHome, pullRegistry);
     }
     // Registry has moved or does not exist
@@ -172,7 +172,7 @@ proc updateRegistry(skipUpdate: bool) {
       const localRegistry = registryHome;
       mkdir(localRegistry, parents=true);
       const cloneRegistry = 'git clone -q ' + registry + ' .';
-      writeln("Updating ", name);
+      if show then writeln("Updating ", name);
       gitC(localRegistry, cloneRegistry);
     }
   }

@@ -28,7 +28,7 @@ use MasonUtils;
 use TOML;
 
 
-proc masonRun(args: [] string) throws {
+proc masonRun(args: [] string, checkProj=true) throws {
 
   var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
 
@@ -47,6 +47,12 @@ proc masonRun(args: [] string) throws {
 
   parser.parseArgs(args);
 
+  if checkProj {
+    const projectType = getProjectType();
+    if projectType != "application" then
+      throw new owned MasonError("Only mason packages can be run, but this is a Mason " + projectType);
+  }
+
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
   var execopts = new list(passArgs.values());
@@ -59,7 +65,7 @@ proc masonRun(args: [] string) throws {
     exit(0);
   } else if exampleOpts._present || buildFlag.valueAsBool() {
     // --example with value or build flag
-    masonBuildRun(args);
+    masonBuildRun(args, checkProj);
     exit(0);
   }
   runProjectBinary(show, release, execopts);
@@ -129,7 +135,7 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
 
 
 /* Builds program before running. */
-private proc masonBuildRun(args: [?d] string) {
+private proc masonBuildRun(args: [?d] string, checkProj=true) {
 
   var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
 
@@ -178,7 +184,7 @@ private proc masonBuildRun(args: [?d] string) {
       if release then execopts.append("--release");
       if force then execopts.append("--force");
       if show then execopts.append("--show");
-      masonExample(execopts.toArray());
+      masonExample(execopts.toArray(), checkProj);
     }
     else {
       var buildArgs: list(string);
@@ -188,7 +194,7 @@ private proc masonBuildRun(args: [?d] string) {
       if release then buildArgs.append("--release");
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
-      masonBuild(buildArgs.toArray());
+      masonBuild(buildArgs.toArray(), checkProj);
       for val in passArgs.values() do execopts.append(val);
       runProjectBinary(show, release, execopts);
     }

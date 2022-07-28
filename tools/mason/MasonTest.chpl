@@ -47,7 +47,7 @@ var files: list(string);
 /* Runs the .chpl files found within the /tests directory of Mason packages
    or files which in the path provided.
 */
-proc masonTest(args: [] string) throws {
+proc masonTest(args: [] string, checkProj=true) throws {
 
   var parser = new argumentParser(helpHandler=new MasonTestHelpHandler());
 
@@ -67,6 +67,12 @@ proc masonTest(args: [] string) throws {
   var otherArgs = parser.addArgument(name="others", numArgs=0..);
 
   parser.parseArgs(args);
+
+  if checkProj {
+    const projectType = getProjectType();
+    if projectType == "light" then
+      throw new owned MasonError("Mason light projects do not currently support 'mason test'");
+  }
 
   var skipUpdate = MASON_OFFLINE;
   var show = showFlag.valueAsBool();

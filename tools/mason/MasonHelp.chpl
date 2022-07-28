@@ -164,6 +164,11 @@ class MasonDocHelpHandler : HelpHandler {
   }
 }
 
+class MasonModulesHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonModulesHelp();
+  }
+}
 
 proc masonHelp() {
   writeln("Chapel's package manager");
@@ -192,6 +197,7 @@ proc masonHelp() {
   writeln('    test        Compile and run tests found in /test');
   writeln('    external    Integrate external dependencies into mason packages');
   writeln('    publish     Publish package to mason-registry');
+  writeln('    modules     Print flags for including mason dependencies from TOML file');
 }
 
 proc masonRunHelp() {
@@ -231,6 +237,7 @@ proc masonBuildHelp() {
   writeln('        --force                  Force Mason to build the project');
   writeln('        --example <example>      Build an example from the example/ directory');
   writeln('        --[no-]update            [Do not] update the mason registry before building');
+  writeln('        --dependent-modules      Print the include paths to the dependent modules to be integrated into build step');
   writeln();
   writeln('When --example is thrown without an example, all examples will be built');
   writeln('When no options are provided, the following will take place:');
@@ -251,6 +258,9 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
+  writeln('        --app                    Create a Mason "application" (package with main function)');
+  writeln('        --lib                    Create a Mason "library" (package without main function)');
+  writeln('        --light                  Create a Mason "lightweight" project (place a TOML file in current directory)');
   writeln('    --name <legalName>           Specify package name different from directory name');
 }
 
@@ -595,5 +605,13 @@ proc masonDocHelp() {
   writeln("Will generate documentation when ran inside a mason package.");
   writeln("Requires that chpldoc is set up in order to work.");
   writeln("For instructions on setting up chpldoc, please view its documentation.");
+  writeln();
+}
+
+proc masonModulesHelp() {
+  writeln("Print flags to include modules from a toml file");
+  writeln();
+  writeln('Usage:');
+  writeln('    mason modules');
   writeln();
 }
