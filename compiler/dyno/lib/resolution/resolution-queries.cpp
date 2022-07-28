@@ -1952,25 +1952,60 @@ isInitialTypedSignatureApplicable(Context* context,
 
   // Next, check that the types are compatible
   int formalIdx = 0;
+  int numVarArgActuals = 0;
+  QualifiedType varArgType;
   for (const FormalActual& entry : faMap.byFormals()) {
     const auto& actualType = entry.actualType();
 
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
-    if (entry.actualType().kind() == QualifiedType::UNKNOWN &&
-        entry.actualType().type() == nullptr &&
+    //
+    // TODO: set a flag in the entry rather than relying on some encoded
+    // property via QualifiedType.
+    if (actualType.kind() == QualifiedType::UNKNOWN &&
+        actualType.type() == nullptr &&
         !ci.hasQuestionArg()) {
       // use the default value - no need to check it matches formal
     } else {
-      const auto& formalType = tfs->formalType(formalIdx);
-      auto got = canPass(context, actualType, formalType);
+      const auto& formalType = tfs->formalType(entry.formalIdx());
+      CanPassResult got;
+      if (entry.isVarArgEntry()) {
+        if (varArgType == QualifiedType()) {
+          varArgType = formalType;
+        }
+        numVarArgActuals += 1;
+
+        // If the type is a VarArgTuple then we should use its 'star' type
+        // with 'canPass'.
+        //
+        // Note: Unless there was an error resolving the type, this tuple
+        // should be a VarArgTuple
+        //
+        // TODO: Should we update 'canPass' to reason about VarArgTuples?
+        const TupleType* tup = formalType.type()->toTupleType();
+        if (tup != nullptr && tup->isVarArgTuple()) {
+          got = canPass(context, actualType, tup->starType());
+        } else {
+          got = canPass(context, actualType, formalType);
+        }
+      } else {
+        got = canPass(context, actualType, formalType);
+      }
       if (!got.passes()) {
         return false;
       }
     }
 
     formalIdx++;
+  }
+
+  if (varArgType != QualifiedType()) {
+    const TupleType* tup = varArgType.type()->toTupleType();
+    if (tup != nullptr && tup->isVarArgTuple() &&
+        tup->isKnownSize() && numVarArgActuals != tup->numElements()) {
+      return false;
+    }
   }
 
   // check that the where clause applies
