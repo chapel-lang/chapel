@@ -760,6 +760,11 @@ CallExpr* FnSymbol::singleInvocation() const {
     if (se == parent->baseExpr) {
       retval = parent;
     }
+    else if (parent->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT)) {
+      if (se == parent->get(1)) {
+        retval = parent;
+      }
+    }
   }
 
   // The use is not as the callee, ex. as a FCF.

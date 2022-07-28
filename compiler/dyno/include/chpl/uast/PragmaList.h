@@ -400,6 +400,8 @@ PRAGMA(NO_RENAME, npr, "no rename", ncm)
 PRAGMA(NO_RVF, npr, "do not RVF", ncm)
 PRAGMA(NO_WIDE_CLASS, ypr, "no wide class", ncm)
 
+PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", ncm)
+
 // See ORDER_INDEPENDENT_YIELDING_LOOPS below
 PRAGMA(NOT_ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "not order independent yielding loops", "yielding loops in iterator itself are not order independent")
 
