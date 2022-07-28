@@ -184,59 +184,50 @@ module ChapelLocale {
   /*
     Get the hostname of this locale.
 
+    Returns the hostname acquired from the system call ``uname -n``.
+    Sub-locales have the same hostname as their parent.
+
     :returns: the hostname of the compute node associated with the locale
     :rtype: string
 
-  .. list-table::
-    :widths: 15 18 18
-    :header-rows: 1
-
-    * -
-      - locale ( `here` )
-      - sub-locale ( `here.gpus[0]` )
-    * - normal
-      - prod-1234
-      - prod-1234-GPU0
-    * - oversubscribed
-      - prod-1234
-      - prod-1234-GPU0
-
   */
-  inline proc locale.hostname {
+  inline proc locale.hostname: string {
     return this._value.hostname;
   }
 
   /*
-    Get the name of this locale.  In practice, this is often the
-    same as the hostname, though in some cases (like when using
-    local launchers), it may be modified.
+    Get the name of this locale.
 
-    :returns: locale name
-    :rtype: string
+    In general, this method returns the same string as :proc:`hostname`;
+    however, it will differ when called on a sub-locale (such as a GPU),
+    or when the program is being run in an oversubscribed manner.
+
+    The following table summarizes the various behaviors (where {hostname} is
+    the string returned by `here.hostname`, and {id} is the unique locale ID):
 
   .. list-table::
-    :widths: 15 18 18
+    :widths: 18 22 22
     :header-rows: 1
 
     * -
-      - locale ( `here` )
-      - sub-locale ( `here.gpus[0]` )
-    * - normal
-      - prod-1234
-      - prod-1234
-    * - oversubscribed
-      - prod-1234
-      - prod-1234
+      - locale ( `here.name` )
+      - sub-locale ( `here.gpus[0].name` )
+    * - normal allocation
+      - {hostname}
+      - {hostname}-GPU0
+    * - oversubscribed allocation
+      - {hostname}-{id}
+      - {hostname}-{id}-GPU0
+
+  :returns: the unique name of this locale
+  :rtype: string
   */
-  inline proc locale.name {
+  inline proc locale.name: string {
     return this._value.name;
   }
 
   /*
     Get the unique integer identifier for this locale.
-
-    :returns: locale number, in the range ``0..numLocales-1``
-    :rtype: int
 
     When called on a sub-locale, this method still returns the ID of the
     parent locale. So, for example, the following program prints true:
@@ -245,8 +236,11 @@ module ChapelLocale {
 
     writeln(here.id == here.gpus[0].id);
 
+  :returns: locale number, in the range ``0..numLocales-1``
+  :rtype: int
+
   */
-  inline proc locale.id {
+  inline proc locale.id: int {
     return this._value.id;
   }
 
