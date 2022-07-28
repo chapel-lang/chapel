@@ -422,17 +422,13 @@ private proc addGitDeps(depTree: Toml, ref gitDeps) {
       depTree.set(key[0], depTbl);
       depTree[key[0]]!.set("name", key[0]);
     }
-    depTree[key[0]]!.set("url", key[1]);
+    depTree[key[0]]!.set("source", key[1]);
     if key[2] != "HEAD" then
       depTree[key[0]]!.set("branch", key[2]);
     depTree[key[0]]!.set("rev", key[3]);
 
-    // TODO: Fix version and chplversion
-    //       these should really be coming from the toml
-    //       file in the git repo manifest that isn't yet
-    //       downloaded
+    // version of -1 is a special
     depTree[key[0]]!.set("version", "-1");
-    depTree[key[0]]!.set("chplVersion", "1.27.0");
   }
   return depTree;
 }
@@ -584,7 +580,6 @@ private proc pullGitDeps(gitDeps, show=false) {
   var gitDepMap: map(string, (string, string, string));
   
   // form map of name -> url, branch, revision
-  // TODO: need to allow user to specify revision
   for val in gitDeps {
     if val[1] == "git" then
       gitDepMap[val[0]][0] = val[2]!.s;
@@ -629,9 +624,9 @@ private proc pullGitDeps(gitDeps, show=false) {
       gitDepsWithRevision.append((val, srcURL, branch, revision));
     } else {
       if revision != "" {
-        writeln("Pulling latest changes for : " + nameVers + "...");
-        var pullDependency = "git pull -q origin " + branch;
-        if show then pullDependency = "git pull origin " + branch;
+        writeln("Fetching latest changes for: " + nameVers + "...");
+        var pullDependency = "git fetch -q --all";
+        if show then pullDependency = "git fetch --all";
         gitC(destination, pullDependency);
         
         writeln("Checking out specified revision for " + nameVers + "...");
@@ -641,9 +636,9 @@ private proc pullGitDeps(gitDeps, show=false) {
       
         gitC(destination, checkout);
       } else if branch != "HEAD" {
-        writeln("Pulling latest changes for " + nameVers + "...");
-        var pullDependency = "git pull -q origin " + branch;
-        if show then pullDependency = "git pull origin " + branch;
+        writeln("Fetching latest changes for: " + nameVers + "...");
+        var pullDependency = "git fetch -q --all";
+        if show then pullDependency = "git fetch --all";
         gitC(destination, pullDependency);
         
         writeln("Checking out specified revision for " + nameVers + "...");

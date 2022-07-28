@@ -245,14 +245,10 @@ proc genSourceList(lockFile: borrowed Toml) {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
         var toml = lockFile[name]!;
-        // TODO: What do we want to do with version for git deps?
         var version = toml["version"]!.s;
 
-        if toml.pathExists("source") {
-          var source = toml["source"]!.s;
-          sourceList.append((source, name, version));
-        } else if toml.pathExists("url") {
-          var url = toml["url"]!.s;
+        if toml.pathExists("rev") {
+          var url = toml["source"]!.s;
           var revision = toml["rev"]!.s;
 
           var branch: string;
@@ -263,6 +259,9 @@ proc genSourceList(lockFile: borrowed Toml) {
             branch = "HEAD";
           }
           gitList.append((url, name, branch, revision));
+        } else if toml.pathExists("source") {
+          var source = toml["source"]!.s;
+          sourceList.append((source, name, version));
         }
       }
     }
@@ -285,7 +284,7 @@ proc getSrcCode(sourceListArg: list(3*string), show) {
   var baseDir = MASON_HOME +'/src/';
   forall (srcURL, name, version) in sourceList {
     // version of -1 specifies a git dep
-    if version != -1 {
+    if version != "-1" {
       const nameVers = name + "-" + version;
       const destination = baseDir + nameVers;
       if !depExists(nameVers) {
