@@ -913,6 +913,9 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   if (auto tt = t->toTupleType()) {
     if (tt->instantiatedFromCompositeType() == nullptr)
       return Type::GENERIC;
+    if (tt->isKnownSize() == false) {
+      return Type::GENERIC;
+    }
   }
 
   // string and bytes types are never generic
