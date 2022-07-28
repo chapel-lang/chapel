@@ -1254,6 +1254,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
   Bitmap formalsInstantiated;
   int formalIdx = 0;
 
+  bool instantiateVarArgs = false;
+  std::vector<QualifiedType> varargsTypes;
+  int varArgIdx = -1;
+
   for (const FormalActual& entry : faMap.byFormals()) {
     bool addSub = false;
     QualifiedType useType;
@@ -1289,18 +1293,58 @@ const TypedFnSignature* instantiateSignature(Context* context,
       }
     }
 
-    // add the substitution if we identified that we need to
-    if (addSub) {
-      // add it to the substitutions map
-      substitutions.insert({entry.formal()->id(), useType});
-      // note that a substitution was used here
-      if ((size_t) formalIdx >= formalsInstantiated.size()) {
-        formalsInstantiated.resize(sig->numFormals());
+    // TODO: Should we compute the appropriate intent at this time?
+    // We currently rely on resolveNamedDecl to do this for us.
+    if (entry.isVarArgEntry()) {
+      // If any formal needs instantiating then we need to instantiate all
+      // the VarArgs
+      instantiateVarArgs = instantiateVarArgs || addSub;
+
+      // If the formal wasn't instantiated then use whatever type was computed.
+      if (!addSub) useType = entry.formalType();
+      varargsTypes.push_back(useType);
+
+      // Grab the index and formal when first encountering a VarArgFormal.
+      // Also increment the formalIdx once to stay aligned.
+      if (varArgIdx < 0) {
+        varArgIdx = formalIdx;
+        formalIdx += 1;
       }
-      formalsInstantiated.setBit(formalIdx, true);
+    } else {
+      // add the substitution if we identified that we need to
+      if (addSub) {
+        // add it to the substitutions map
+        substitutions.insert({entry.formal()->id(), useType});
+        // note that a substitution was used here
+        if ((size_t) formalIdx >= formalsInstantiated.size()) {
+          formalsInstantiated.resize(sig->numFormals());
+        }
+        formalsInstantiated.setBit(formalIdx, true);
+      }
+
+      formalIdx++;
+    }
+  }
+
+  // instantiate the VarArg formal if necessary
+  if (varargsTypes.size() > 0) {
+    const TupleType* tup = sig->formalType(varArgIdx).type()->toTupleType();
+    if (tup->isKnownSize() == false) {
+      instantiateVarArgs = true;
     }
 
-    formalIdx++;
+    if (instantiateVarArgs) {
+      const TupleType* t = TupleType::getVarArgTuple(context, varargsTypes);
+      auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
+      QualifiedType vat = QualifiedType(formal->storageKind(), t);
+      substitutions.insert({formal->id(), vat});
+
+      // note that a substitution was used here
+      if ((size_t) varArgIdx >= formalsInstantiated.size()) {
+        formalsInstantiated.resize(sig->numFormals());
+      }
+      formalsInstantiated.setBit(varArgIdx, true);
+    }
   }
 
   // use the existing signature if there were no substitutions
@@ -1313,6 +1357,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
   TypedFnSignature::WhereClauseResult where = TypedFnSignature::WHERE_NONE;
 
   if (fn != nullptr) {
+    // TODO: Save these results to re-use later.
     ResolutionResultByPostorderID r;
     auto visitor = Resolver::createForInstantiatedSignature(context, fn,
                                                             substitutions,
