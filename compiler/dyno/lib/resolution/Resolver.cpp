@@ -29,6 +29,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/uast/uast-util.h"
 
 #include <cstdio>
 #include <set>
@@ -662,6 +663,100 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
   return QualifiedType(declKind, typePtr, paramPtr);
 }
 
+static bool isValidVarArgCount(QualifiedType paramSize) {
+  if (paramSize.type() == nullptr ||
+      paramSize.type()->isErroneousType()) {
+    return false;
+  } else if (paramSize.isParam() == false) {
+    return false;
+  } else {
+    const Param* p = paramSize.param();
+    if (p == nullptr) {
+      // param n : int, args...n
+      return true;
+    } else if (p->isIntParam()) {
+      int64_t val = p->toIntParam()->value();
+      return val > 0;
+    } else if (p->isUintParam()) {
+      uint64_t val = p->toUintParam()->value();
+      return val > 0;
+    } else {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+//
+// This function expects to be called with a substitution for a
+// VarArgFormal. The substitution process will have chosen the correct
+// types for each element, but not the correct intents. This function
+// computes the appropriate intents and builds a new VarArgTuple.
+//
+// TODO: Should substitution creation do this for us?
+//
+static const Type* rebuildVarArgSub(Context* context,
+                                    QualifiedType::Kind qtKind,
+                                    const Type* typePtr) {
+  auto tuple = typePtr->toTupleType();
+  std::vector<QualifiedType> types;
+  bool paramIntent = qtKind == QualifiedType::PARAM;
+
+  // TODO: iterator for tuple elements
+  for (int i = 0; i < tuple->numElements(); i++) {
+    auto elt = tuple->elementType(i);
+
+    auto param = paramIntent ? elt.param() : nullptr;
+    auto formalQt = QualifiedType(qtKind, elt.type(), param);
+    auto newKind = resolveIntent(formalQt, false);
+
+    auto formalType = QualifiedType(newKind, elt.type(), param);
+    types.push_back(formalType);
+  }
+
+  return TupleType::getVarArgTuple(context, types);
+}
+
+//
+// This function is called in the case that there is no substitution. When
+// resolveNamedDecl processes such a case, it will compute the kind/type as if
+// for a normal formal. This function will attempt to use that kind/type as
+// the star-type for a VarArgTuple.
+//
+static const Type* computeVarArgTuple(Resolver& resolver,
+                                      const VarArgFormal* varArgs,
+                                      QualifiedType::Kind qtKind,
+                                      const Type* typePtr) {
+  Context* context = resolver.context;
+  auto& byPostorder = resolver.byPostorder;
+  auto tuple = typePtr->toTupleType();
+  bool isVarArgTuple = (tuple != nullptr && tuple->isVarArgTuple());
+  if (!isVarArgTuple) {
+    QualifiedType paramSize;
+    bool invalid = false;
+    if (auto count = varArgs->count()) {
+      if (count->isTypeQuery() == false &&
+          util::isQuestionMark(count) == false) {
+        ResolvedExpression& countVal = byPostorder.byAst(count);
+        paramSize = countVal.type();
+        invalid = !isValidVarArgCount(paramSize);
+      }
+    }
+
+    if (invalid) {
+      typePtr = ErroneousType::get(context);
+    } else {
+      auto newKind = resolveIntent(QualifiedType(qtKind, typePtr), false);
+      QualifiedType elt = QualifiedType(newKind, typePtr);
+      typePtr = TupleType::getVarArgTuple(context, paramSize, elt);
+    }
+  }
+
+  return typePtr;
+}
+
 // useType will be used to set the type if it is not nullptr
 void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   if (scopeResolveOnly)
@@ -680,6 +775,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   bool isField = false;
   bool isFormal = false;
   bool isFieldOrFormal = false;
+  bool isVarArgs = decl->isVarArgFormal();
 
   if (auto var = decl->toVarLikeDecl()) {
     // Figure out variable type based upon:
@@ -694,7 +790,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       if (var->isField())
         isField = true;
 
-    isFormal = decl->isFormal();
+    isFormal = decl->isFormal() || isVarArgs;
     isFieldOrFormal = isField || isFormal;
 
     bool foundSubstitution = false;
@@ -759,6 +855,11 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       typePtr = typeExprT.type();
       if (qtKind == QualifiedType::PARAM)
         paramPtr = typeExprT.param();
+
+      // rebuild the intents for each element
+      if (isVarArgs) {
+        typePtr = rebuildVarArgSub(context, qtKind, typePtr);
+      }
     } else {
       if (isFieldOrFormal && typeExpr == nullptr && initExpr == nullptr) {
         // Lack of initializer for a field/formal means the Any type
@@ -831,8 +932,11 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
 
   auto declaredKind = qtKind;
 
-  // compute the intent for formals (including type constructor formals)
-  if (isFormal || (signatureOnly && isField)) {
+  if (isVarArgs) {
+    typePtr = computeVarArgTuple(*this, decl->toVarArgFormal(),
+                                 qtKind, typePtr);
+  } else if (isFormal || (signatureOnly && isField)) {
+    // compute the intent for formals (including type constructor formals)
     bool isThis = decl->name() == USTR("this");
     auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
     // update qtKind with the result of resolving the intent
@@ -840,7 +944,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   }
 
   // adjust tuple declarations for value / referential tuples
-  if (typePtr != nullptr) {
+  if (typePtr != nullptr && decl->isVarArgFormal() == false) {
     if (auto tupleType = typePtr->toTupleType()) {
       if (declaredKind == QualifiedType::DEFAULT_INTENT ||
           declaredKind == QualifiedType::CONST_INTENT) {
