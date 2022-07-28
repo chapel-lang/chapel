@@ -111,10 +111,10 @@ static std::vector<std::string> splitLines(const std::string& s) {
   return ret;
 }
 
-static std::string filenameFromModuleName(const Identifier* id, std::string docsWorkDir) {
-  std::string filename = id->name().str();
+static std::string filenameFromModuleName(std::string name, std::string docsWorkDir) {
+  std::string filename = name;
   // this isn't the right name, might need to upper case first letter and add .chpl
-  filename = filename + ".chpl";
+  //filename = filename + ".chpl";
 
 
   // if (mod->modTag == MOD_INTERNAL) {
@@ -130,13 +130,10 @@ static std::string filenameFromModuleName(const Identifier* id, std::string docs
       // path, and if we find one, chop everything but 'internal/' and
       // whatever follows out of the path in order to create the
       // appropriate relative path within the sphinx output directory.
-      // Also label such modules as MOD_INTERNAL for subsequent
-      // checks, like the one in ModuleSymbol::printDocs()
       std::string modPath = CHPL_HOME + "/modules/";
       std::string intModPath = modPath + "internal/";
       if (strncmp(intModPath.c_str(), filename.c_str(), intModPath.length()) == 0) {
-        filename = filename.substr(strlen(modPath));
-        //mod->modTag = MOD_INTERNAL;
+        filename = filename.substr(modPath.length());
       }
     } else {
       filename = "";
@@ -428,7 +425,7 @@ static const char* kindToRstString(bool isMethod, Function::Kind kind) {
   switch (kind) {
   case Function::Kind::PROC: return isMethod ? "method" : "function";
   case Function::Kind::ITER: return isMethod ? "itermethod" : "iterfunction";
-  case Function::Kind::OPERATOR: return "operator";
+  case Function::Kind::OPERATOR: return isMethod ? "method" : "function";
   case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
@@ -1153,7 +1150,9 @@ struct RstResultBuilder {
               }
             }
             std::string outdir = outputDir_ + "/" + parentPath;
-            r->outputModule(outdir, child->toModule()->name().str(),
+            std::string workingDir = filenameFromModuleName(parentPath + "/", outdir);
+            makeDir(workingDir, true);
+            r->outputModule(workingDir, child->toModule()->name().str(),
                             indentPerDepth);
 
           } else {
@@ -1397,7 +1396,7 @@ struct RstResultBuilder {
       auto sym = vis->symbol();
 
       if (sym->isIdentifier()) {
-        std::string fileName = filenameFromModuleName(sym->toIdentifier(), outputDir_);
+        //std::string fileName = filenameFromModuleName(sym->toIdentifier(), outputDir_);
         if (auto usedMod = getToplevelModule(context_, sym->toIdentifier()->name())) {
           std::string name = usedMod->name().str();
           if (auto& r = rstDoc(context_, usedMod->id())) {
@@ -1821,18 +1820,17 @@ int main(int argc, char** argv) {
   // std::string chplComm = getenv("CHPL_COMM");
   // std::string chplSysModulesSubdir = getenv("CHPL_SYS_MODULES_SUBDIR");
   // std::string chplModulePath = getenv("CHPL_MODULE_PATH");
-  std::string modRoot = CHPL_HOME + "/modules";
-  std::string internal = modRoot + "/internal";
-  setInternalModulePath(ctx, UniqueString::get(ctx, internal));
-  std::string bundled = modRoot + "/";
-  setBundledModulePath(ctx, UniqueString::get(ctx, bundled));
-
   // setupModuleSearchPaths(ctx, CHPL_HOME, false, chplLocaleModel, false,
   //                           chplTasks,
   //                           chplComm,
   //                           chplSysModulesSubdir,
   //                           chplModulePath,
   //                           {});
+  std::string modRoot = CHPL_HOME + "/modules";
+  std::string internal = modRoot + "/internal";
+  setInternalModulePath(ctx, UniqueString::get(ctx, internal));
+  std::string bundled = modRoot + "/";
+  setBundledModulePath(ctx, UniqueString::get(ctx, bundled));
 
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
@@ -1875,7 +1873,9 @@ int main(int argc, char** argv) {
           ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
         }
         if (auto& r = rstDoc(ctx, ast->id())) {
-          r->outputModule(outputDir_, name, indentPerDepth);
+          std::string docsWorkingDir = filenameFromModuleName(cpath, outputDir_);
+          makeDir(docsWorkingDir, true);
+          r->outputModule(docsWorkingDir, name, indentPerDepth);
         }
       }
     }
