@@ -262,7 +262,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
           testPath = "".join(cwd,"/",test);
         }
         else {
-          testPath = "".join(projectHome, '/test/', test);
+          testPath = "".join('test/', test);
         }
         const testName = basename(stripExt(test, ".chpl"));
 

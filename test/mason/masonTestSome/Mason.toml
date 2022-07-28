@@ -3,4 +3,6 @@ name = "masonTestSome"
 version = "0.1.0"
 chplVersion = "1.20.0"
 
+tests = ["compilererror.chpl"]
+
 [dependencies]

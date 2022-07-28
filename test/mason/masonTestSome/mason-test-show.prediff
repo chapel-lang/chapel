@@ -8,7 +8,6 @@ with open(tmp_file, 'w') as tf:
   with open(out_file) as outf:
       for line in outf:
         line = re.sub(r'[0-9]+([.][0-9]+)? seconds', 'n seconds', line)
-        line = line.replace(CHPL_HOME,"",1).lstrip('/')
         tf.write(line)
 
 shutil.move(tmp_file, out_file)

@@ -1,12 +1,12 @@
 Skipping registry update since no dependency found in manifest file.
-test/mason/masonTestSome/test/compilererror.chpl:1: syntax error: near 'test'
+test/compilererror.chpl:1: syntax error: near 'test'
 
 ======================================================================
-ERROR test/compilererror.chpl: compilererror
+ERROR compilererror.chpl: compilererror
 ----------------------------------------------------------------------
-test/compilererror.chpl failed to compile
+compilererror.chpl failed to compile
 ----------------------------------------------------------------------
 Ran 1 test in n seconds
 
 FAILED (errors = 1 )
-compilation failed for test/compilererror.chpl
+compilation failed for compilererror.chpl
