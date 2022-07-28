@@ -1707,12 +1707,7 @@ void Resolver::prepareCallInfoActuals(const Call* call,
   for (int i = 0; i < call->numActuals(); i++) {
     auto actual = call->actual(i);
 
-    bool isQuestionMark = false;
-    if (auto id = actual->toIdentifier())
-      if (id->name() == USTR("?"))
-        isQuestionMark = true;
-
-    if (isQuestionMark) {
+    if (util::isQuestionMark(actual)) {
       if (hasQuestionArg) {
         context->error(actual, "Cannot have ? more than once in a call");
       }
