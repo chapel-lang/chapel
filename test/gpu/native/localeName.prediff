@@ -1,4 +1,5 @@
 #!/bin/bash
 
 hn=$(uname -n)
-sed "s/PREDIFF_HOSTNAME/$hn/" < localeName.good.in > localeName.good
+sed "s/$hn/PREDIFF_HOSTNAME/" $2 > $2.predifftemp  # Note the reversed find/replace
+mv $2.predifftemp $2
