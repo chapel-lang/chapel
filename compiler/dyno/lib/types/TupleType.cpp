@@ -21,6 +21,7 @@
 
 #include "chpl/framework/query-impl.h"
 #include "chpl/resolution/intents.h"
+#include "chpl/types/Param.h"
 
 namespace chpl {
 namespace types {
@@ -32,31 +33,38 @@ static ID idForTupElt(int i) {
 }
 
 void TupleType::computeIsStarTuple() {
-  int n = numElements();
-  QualifiedType eltT;
-  bool allEltTypesSame = true;
-  for (int i = 0; i < n; i++) {
-    if (i == 0) {
-      eltT = elementType(i);
-    } else {
-      if (eltT != elementType(i)) {
-        allEltTypesSame = false;
-        break;
+  if (isKnownSize_ == false) {
+    isStarTuple_ = true;
+  } else {
+    int n = numElements();
+    QualifiedType eltT;
+    bool allEltTypesSame = true;
+    for (int i = 0; i < n; i++) {
+      if (i == 0) {
+        eltT = elementType(i);
+      } else {
+        if (eltT != elementType(i)) {
+          allEltTypesSame = false;
+          break;
+        }
       }
     }
-  }
 
-  isStarTuple_ = allEltTypesSame;
+    isStarTuple_ = allEltTypesSame;
+  }
 }
 
 const owned<TupleType>&
 TupleType::getTupleType(Context* context, ID id, UniqueString name,
                         const TupleType* instantiatedFrom,
-                        SubstitutionsMap subs) {
-  QUERY_BEGIN(getTupleType, context, id, name, instantiatedFrom, subs);
+                        SubstitutionsMap subs,
+                        bool isVarArgTuple) {
+  QUERY_BEGIN(getTupleType, context, id, name, instantiatedFrom, subs,
+                            isVarArgTuple);
 
   auto result = toOwned(new TupleType(id, name,
-                                      instantiatedFrom, std::move(subs)));
+                                      instantiatedFrom, std::move(subs),
+                                      isVarArgTuple));
 
   return QUERY_END(result);
 }
@@ -115,7 +123,49 @@ TupleType::getGenericTupleType(Context* context) {
   return getTupleType(context, id, name, instantiatedFrom, subs).get();
 }
 
+const TupleType*
+TupleType::getVarArgTuple(Context* context,
+                          std::vector<QualifiedType> eltTypes) {
+  SubstitutionsMap subs;
+  int i = 0;
+  for (auto t : eltTypes) {
+    subs.emplace(idForTupElt(i), t);
+    i++;
+  }
+
+  auto name = UniqueString::get(context, "_tuple");
+  auto id = ID();
+  const TupleType* instantiatedFrom = getGenericTupleType(context);
+  return getTupleType(context, id, name, instantiatedFrom,
+                      std::move(subs), true).get();
+}
+
+const TupleType*
+TupleType::getVarArgTuple(Context* context,
+                          QualifiedType paramSize,
+                          QualifiedType varArgEltType) {
+  assert(varArgEltType != QualifiedType());
+
+  if (paramSize != QualifiedType() &&
+      paramSize.param() != nullptr) {
+    // Fixed size, we can at least create a star tuple of AnyType
+    int64_t numElements = paramSize.param()->toIntParam()->value();
+    std::vector<QualifiedType> eltTypes(numElements, varArgEltType);
+    return getVarArgTuple(context, eltTypes);
+  } else {
+    // Size unknown, store the expected element type
+    auto name = UniqueString::get(context, "_tuple");
+    auto id = ID();
+    const TupleType* instantiatedFrom = getGenericTupleType(context);
+    SubstitutionsMap subs;
+    subs.emplace(idForTupElt(-1), varArgEltType);
+    return getTupleType(context, id, name, instantiatedFrom,
+                        subs, true).get();
+  }
+}
+
 QualifiedType TupleType::elementType(int i) const {
+  assert(isKnownSize_);
   assert(0 <= i && (size_t) i < subs_.size());
   // find subs[id]
   auto search = subs_.find(idForTupElt(i));
@@ -127,14 +177,18 @@ QualifiedType TupleType::elementType(int i) const {
   }
 }
 
+QualifiedType TupleType::starType() const {
+  assert(isKnownSize_ == false || isStarTuple_);
+  return subs_.begin()->second;
+}
+
 const TupleType* TupleType::toValueTuple(Context* context) const {
   // Is it already a value tuple? If so, return that
   bool allValue = true;
   int n = numElements();
   for (int i = 0; i < n; i++) {
     auto kind = elementType(i).kind();
-    if (kind == QualifiedType::CONST_REF ||
-        kind == QualifiedType::REF)
+    if (kind != QualifiedType::VAR)
       allValue = false;
   }
 
