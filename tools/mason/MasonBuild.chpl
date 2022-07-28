@@ -33,7 +33,7 @@ use MasonExample;
 use Subprocess;
 use TOML;
 
-proc masonBuild(args: [] string) throws {
+proc masonBuild(args: [] string, checkProj=true) throws {
 
   var parser = new argumentParser(helpHandler=new MasonBuildHelpHandler());
 
@@ -51,9 +51,11 @@ proc masonBuild(args: [] string) throws {
     throw new owned MasonError("Examples do not support `--` syntax");
   }
 
-  const projectType = getProjectType();
-  if projectType == "light" then
-    throw new owned MasonError("Mason light projects do not currently support 'mason build'");
+  if checkProj {
+    const projectType = getProjectType();
+    if projectType == "light" then
+      throw new owned MasonError("Mason light projects do not currently support 'mason build'");
+  }
 
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
@@ -81,7 +83,7 @@ proc masonBuild(args: [] string) throws {
     if force then compopts.append("--force");
     // add expected arguments for masonExample
     compopts.insert(0,["example", "--example"]);
-    masonExample(compopts.toArray());
+    masonExample(compopts.toArray(), checkProj=checkProj);
   }
   else {
     if passArgs.hasValue() {
