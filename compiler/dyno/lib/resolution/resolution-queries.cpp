@@ -1996,16 +1996,6 @@ doIsCandidateApplicableInstantiating(Context* context,
   if (instantiated == nullptr)
     return nullptr;
 
-  // Next, check that the types are compatible
-  size_t nActuals = call.numActuals();
-  for (size_t i = 0; i < nActuals; i++) {
-    const QualifiedType& actualType = call.actual(i).type();
-    const QualifiedType& formalType = instantiated->formalType(i);
-    auto got = canPass(context, actualType, formalType);
-    if (!got.passes())
-      return nullptr;
-  }
-
   // check that the where clause applies
   if (instantiated->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
     return nullptr;
