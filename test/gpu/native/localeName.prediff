@@ -1,5 +1,5 @@
 #!/bin/bash
 
 hn=$(uname -n)
-sed "s/$hn/PREDIFF_HOSTNAME/" $2 > $2.predifftemp  # Note the reversed find/replace
+sed "s/$hn/PREDIFF_HOSTNAME/" $2 > $2.predifftemp
 mv $2.predifftemp $2
