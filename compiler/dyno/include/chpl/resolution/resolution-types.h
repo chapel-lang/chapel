@@ -1252,6 +1252,8 @@ class FormalActual {
   int actualIdx_ = -1;
   bool hasActual_ = false; // == false means uses formal default value
   bool formalInstantiated_ = false;
+  bool hasDefault_ = false;
+  bool isVarArgEntry_ = false;
 
  public:
   const types::QualifiedType& formalType() const { return formalType_; }
@@ -1261,6 +1263,8 @@ class FormalActual {
   int actualIdx() const { return actualIdx_; }
   bool hasActual() const { return hasActual_; }
   bool formalInstantiated() const { return formalInstantiated_; }
+  bool hasDefault() const { return hasDefault_; }
+  bool isVarArgEntry() const { return isVarArgEntry_; }
 };
 
 /** FormalActualMap maps formals to actuals */
