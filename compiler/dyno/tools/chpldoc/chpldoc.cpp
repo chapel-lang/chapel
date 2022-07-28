@@ -142,6 +142,20 @@ static UniqueString getNodeName(AstNode* node) {
   }
 }
 
+/*
+ * Returns the current working directory. Does not report failures. Use
+ * currentWorkingDir() if you need error reports.
+ */
+static
+std::string getCwd() {
+  std::string ret;
+  if (auto err = currentWorkingDir(ret)) {
+    return "";
+  } else {
+    return ret;
+  }
+}
+
 static
 std::string runCommand(std::string& command) {
   // Run arbitrary command and return result
@@ -1055,8 +1069,7 @@ struct RstResultBuilder {
     return commentShown;
   }
 
-  template<typename T>
-  void showDeprecationMessage(const T* node, bool indentComment=true) {
+  void showDeprecationMessage(const Decl* node, bool indentComment=true) {
     if (auto attrs = node->attributes()) {
       if (attrs->isDeprecated() && !textOnly_) {
         auto comment = previousComment(context_, node->id());

@@ -208,19 +208,6 @@ std::error_code currentWorkingDir(std::string& path_out) {
   }
 }
 
-/*
- * Returns the current working directory. Does not report failures. Use
- * currentWorkingDir() if you need error reports.
- */
-std::string getCwd() {
-  std::string ret;
-  if (auto err = currentWorkingDir(ret)) {
-    return "";
-  } else {
-    return ret;
-  }
-}
-
 std::error_code makeDir(std::string dirpath) {
   using namespace llvm::sys::fs;
   if (auto err = create_directory(dirpath, true, perms::all_all)) {

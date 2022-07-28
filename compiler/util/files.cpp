@@ -1026,7 +1026,12 @@ char* dirHasFile(const char *dir, const char *file)
  * chpl::currentWorkingDir if you need error reports.
  */
 const char* getCwd() {
-  return astr(chpl::getCwd());
+  std::string cwd;
+  if (auto err = chpl::currentWorkingDir(cwd)) {
+    return "";
+  } else {
+    return astr(cwd);
+  }
 }
 
 

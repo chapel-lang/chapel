@@ -66,12 +66,6 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut);
 std::error_code deleteDir(std::string dirname);
 
 /*
- * Returns the current working directory. Does not report failures. Use
- * currentWorkingDir() if you need error reports.
- */
-std::string getCwd();
-
-/*
  * Gets the current working directory
  * (uses LLVM sys::fs::current_path internally).
  */
