@@ -1996,7 +1996,7 @@ isInitialTypedSignatureApplicable(Context* context,
       const auto& formalType = tfs->formalType(entry.formalIdx());
       CanPassResult got;
       if (entry.isVarArgEntry()) {
-        if (varArgType == QualifiedType()) {
+        if (varArgType.isUnknown()) {
           varArgType = formalType;
         }
         numVarArgActuals += 1;
@@ -2025,7 +2025,7 @@ isInitialTypedSignatureApplicable(Context* context,
     formalIdx++;
   }
 
-  if (varArgType != QualifiedType()) {
+  if (!varArgType.isUnknown()) {
     const TupleType* tup = varArgType.type()->toTupleType();
     if (tup != nullptr && tup->isVarArgTuple() &&
         tup->isKnownSize() && numVarArgActuals != tup->numElements()) {
