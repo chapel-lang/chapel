@@ -186,6 +186,21 @@ module ChapelLocale {
 
     :returns: the hostname of the compute node associated with the locale
     :rtype: string
+
+  .. list-table::
+    :widths: 15 18 18
+    :header-rows: 1
+
+    * -
+      - locale ( `here` )
+      - sub-locale ( `here.gpus[0]` )
+    * - normal
+      - prod-1234
+      - prod-1234-GPU0
+    * - oversubscribed
+      - prod-1234
+      - prod-1234-GPU0
+
   */
   inline proc locale.hostname {
     return this._value.hostname;
@@ -198,6 +213,20 @@ module ChapelLocale {
 
     :returns: locale name
     :rtype: string
+
+  .. list-table::
+    :widths: 15 18 18
+    :header-rows: 1
+
+    * -
+      - locale ( `here` )
+      - sub-locale ( `here.gpus[0]` )
+    * - normal
+      - prod-1234
+      - prod-1234
+    * - oversubscribed
+      - prod-1234
+      - prod-1234
   */
   inline proc locale.name {
     return this._value.name;
@@ -208,6 +237,14 @@ module ChapelLocale {
 
     :returns: locale number, in the range ``0..numLocales-1``
     :rtype: int
+
+    When called on a sub-locale, this method still returns the ID of the
+    parent locale. So, for example, the following program prints true:
+
+  .. code-block:: chapel
+
+    writeln(here.id == here.gpus[0].id);
+
   */
   inline proc locale.id {
     return this._value.id;
