@@ -1,1 +1,4 @@
 #!/bin/bash
+
+hn=$(uname -n)
+sed "s/PREDIFF_HOSTNAME/$hn/" < localeName.good.in > localeName.good
