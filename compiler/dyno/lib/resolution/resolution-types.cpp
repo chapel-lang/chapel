@@ -24,11 +24,14 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/types/TupleType.h"
+#include "chpl/uast/uast-util.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
+#include "chpl/uast/VarArgFormal.h"
 
 namespace chpl {
 namespace resolution {
@@ -88,9 +91,18 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
       if (auto formal = decl->toFormal()) {
         name = formal->name();
         hasDefault = formal->initExpression() != nullptr;
+      } else if (auto varargs = decl->toVarArgFormal()) {
+        name = varargs->name();
+
+        // This should not be possible. Currently varargs with a default value
+        // will be considered a syntax error.
+        hasDefault = false;
+        assert(varargs->initExpression() == nullptr);
       }
 
-      formals.push_back(UntypedFnSignature::FormalDetail(name, hasDefault, decl));
+      auto fd = UntypedFnSignature::FormalDetail(name, hasDefault,
+                                                 decl, decl->isVarArgFormal());
+      formals.push_back(fd);
     }
 
     // find the unique-ified untyped signature
@@ -147,12 +159,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
 
   int i = 0;
   for (auto actual : call->actuals()) {
-    bool isQuestionMark = false;
-    if (auto id = actual->toIdentifier())
-      if (id->name() == USTR("?"))
-        isQuestionMark = true;
-
-    if (isQuestionMark) {
+    if (util::isQuestionMark(actual)) {
       hasQuestionArg_ = true;
     } else {
       UniqueString byName;

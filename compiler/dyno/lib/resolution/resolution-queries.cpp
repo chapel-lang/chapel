@@ -1050,7 +1050,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
 
         auto d = UntypedFnSignature::FormalDetail(f.fieldName(i),
                                                   f.fieldHasDefaultValue(i),
-                                                  fieldDecl);
+                                                  fieldDecl,
+                                                  fieldDecl->isVarArgFormal());
         formals.push_back(d);
         // formalType should have been set above
         assert(formalType.kind() != QualifiedType::UNKNOWN);

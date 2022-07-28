@@ -52,13 +52,16 @@ class UntypedFnSignature {
     UniqueString name;
     bool hasDefaultValue = false;
     const uast::Decl* decl = nullptr;
+    bool isVarArgs = false;
 
     FormalDetail(UniqueString name,
                  bool hasDefaultValue,
-                 const uast::Decl* decl)
+                 const uast::Decl* decl,
+                 bool isVarArgs = false)
       : name(name),
         hasDefaultValue(hasDefaultValue),
-        decl(decl)
+        decl(decl),
+        isVarArgs(isVarArgs)
     { }
 
     bool operator==(const FormalDetail& other) const {
@@ -267,6 +270,11 @@ class UntypedFnSignature {
   const uast::Decl* formalDecl(int i) const {
     assert(0 <= i && (size_t) i < formals_.size());
     return formals_[i].decl;
+  }
+
+  bool formalIsVarArgs(int i) const {
+    assert(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].isVarArgs;
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
