@@ -1,0 +1,6 @@
+--mode=errMode.getNegLoc   # errors.getNegLoc
+--mode=errMode.getHiLoc    # errors.getHiLoc
+--mode=errMode.getNegSize  # errors.getNegSize
+--mode=errMode.putNegLoc   # errors.putNegLoc
+--mode=errMode.putHiLoc    # errors.putHiLoc
+--mode=errMode.putNegSize  # errors.putNegSize

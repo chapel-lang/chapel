@@ -1,0 +1,1 @@
+errors.chpl:18: error: halt reached - The source locale ID (2) for Communication.get is out of bounds.

@@ -24,6 +24,11 @@
 module Communication {
   private use CTypes;
 
+  // This module may be used from internal modules that are resolved before
+  // Locale-related modules. So, we can't use `numLocales` or `Locales` here.
+  pragma "no doc"
+  private extern const chpl_numNodes: int(32);
+
   /*
    Copy potentially remote data into local memory.
 
@@ -34,6 +39,18 @@ module Communication {
   */
   inline proc get(dest: c_void_ptr, src: c_void_ptr, srcLocID: int,
                   numBytes: integral) {
+    if boundsChecking then {
+      if srcLocID < 0 || srcLocID >= chpl_numNodes {
+        halt("The source locale ID (", srcLocID,
+             ") for Communication.get is out of bounds.");
+      }
+
+      if numBytes < 0 {
+        halt("Number of bytes (", numBytes,
+             ") for Communication.get is negative.");
+      }
+    }
+
     __primitive("chpl_comm_get", dest:c_ptr(uint(8)), srcLocID,
                 src:c_ptr(uint(8)), numBytes);
   }
@@ -49,6 +66,17 @@ module Communication {
   */
   inline proc put(dest: c_void_ptr, src: c_void_ptr, destLocID: int,
                   numBytes: integral) {
+    if boundsChecking then {
+      if destLocID < 0 || destLocID >= chpl_numNodes {
+        halt("The destination locale ID (", destLocID,
+             ") for Communication.put is out of bounds.");
+      }
+
+      if numBytes < 0 {
+        halt("Number of bytes (", numBytes,
+             ") for Communication.put is negative.");
+      }
+    }
     __primitive("chpl_comm_put", src:c_ptr(uint(8)), destLocID,
                 dest:c_ptr(uint(8)), numBytes);
   }
