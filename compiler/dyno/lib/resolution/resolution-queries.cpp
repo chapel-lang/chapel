@@ -1280,34 +1280,36 @@ const TypedFnSignature* instantiateSignature(Context* context,
   for (const FormalActual& entry : faMap.byFormals()) {
     bool addSub = false;
     QualifiedType useType;
+    const auto& actualType = entry.actualType();
+    const auto& formalType = entry.formalType();
 
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
-    if (entry.actualType().kind() == QualifiedType::UNKNOWN &&
-        entry.actualType().type() == nullptr) {
+    if (actualType.kind() == QualifiedType::UNKNOWN &&
+        actualType.type() == nullptr) {
       if (call.hasQuestionArg()) {
         // don't add any substitution
       } else {
         // add a "use the default" hint substitution.
         addSub = true;
-        useType = entry.actualType();
+        useType = actualType;
       }
     } else {
-      auto got = canPass(context, entry.actualType(), entry.formalType());
+      auto got = canPass(context, actualType, formalType);
       assert(got.passes()); // should not get here otherwise
       if (got.instantiates()) {
         // add a substitution for a valid value
         if (!got.converts() && !got.promotes()) {
           // use the actual type since no conversion/promotion was needed
           addSub = true;
-          useType = entry.actualType();
+          useType = actualType;
         } else {
           // get instantiation type
           addSub = true;
           useType = getInstantiationType(context,
-                                         entry.actualType(),
-                                         entry.formalType());
+                                         actualType,
+                                         formalType);
         }
       }
     }
@@ -1320,7 +1322,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       instantiateVarArgs = instantiateVarArgs || addSub;
 
       // If the formal wasn't instantiated then use whatever type was computed.
-      if (!addSub) useType = entry.formalType();
+      if (!addSub) useType = formalType;
       varargsTypes.push_back(useType);
 
       // Grab the index and formal when first encountering a VarArgFormal.
