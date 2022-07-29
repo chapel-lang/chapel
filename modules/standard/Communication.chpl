@@ -20,6 +20,14 @@
 
 /*
  This module provides low-level communication procedures.
+
+   .. warning::
+
+    These procedures will perform very rudimentary error checking with checks
+    enabled. Namely, only locale IDs and data sizes are checked to make sure
+    they have reasonable values.  Validity of the addresses is not confirmed
+    under any circumstance.
+
 */
 module Communication {
   private use CTypes;
