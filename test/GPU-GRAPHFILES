@@ -6,3 +6,7 @@ gpu/native/studies/shoc/triad2.graph
 gpu/native/studies/shoc/bandwidth.graph
 
 gpu/native/streamPrototype/stream.graph
+
+gpu/native/studies/compiler-performance/transform.graph
+gpu/native/studies/compiler-performance/end-to-end.graph
+
