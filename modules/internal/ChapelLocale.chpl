@@ -182,10 +182,10 @@ module ChapelLocale {
   // Locale methods we want to have show up in chpldoc start here:
 
   /*
-    Get the hostname of this locale.
+    Get the hostname of the hardware associated with this locale.
 
-    Returns the hostname acquired from the system call ``uname -n``.
-    Sub-locales have the same hostname as their parent.
+    The behavior of this method does not differ for calls made from
+    sub-locales (Unlike :proc:`locale.name`).
 
     :returns: the hostname of the compute node associated with the locale
     :rtype: string
@@ -198,28 +198,44 @@ module ChapelLocale {
   /*
     Get the name of this locale.
 
-    In general, this method returns the same string as :proc:`hostname`;
-    however, it will differ when called on a sub-locale (such as a GPU),
-    or when the program is being run in an oversubscribed manner.
+    In general, this method returns the same string as :proc:`locale.hostname`;
+    however, it can differ when called on a sub-locale (such as a GPU),
+    or when the program is executed in an oversubscribed manner.
 
-    The following table summarizes the various behaviors (where {hostname} is
-    the string returned by `here.hostname`, and {id} is the unique locale ID):
+    The following table summarizes the various behaviors of this method (where
+    {hostname} is the string returned by `here.hostname`, and {id} is the locale's
+    unique integer ID):
 
   .. list-table::
-    :widths: 18 22 22
+    :widths: 25 22 22
     :header-rows: 1
 
-    * -
+    * - Configuration
       - locale ( `here.name` )
       - sub-locale ( `here.gpus[0].name` )
-    * - normal allocation
+    * - normal execution
       - {hostname}
       - {hostname}-GPU0
-    * - oversubscribed allocation
+    * - oversubscribed execution
+      - {hostname}
+      - {hostname}-GPU0
+    * - oversubscribed execution (gasnet*)
       - {hostname}-{id}
       - {hostname}-{id}-GPU0
 
-  :returns: the unique name of this locale
+  .. note::
+
+    When launching in an oversubscribed manner with `CHPL_COMM=gasnet`
+    and one of the following configurations:
+
+    - `CHPL_COMM_SUBSTRATE=udp` & `GASNET_SPAWNFN=L`
+    - `CHPL_COMM_SUBSTRATE=smp`
+
+    the locale's integer ID will also be included in it's name.
+
+    More information about these environment variables can be found here: :ref:`readme-multilocale`
+
+  :returns: the name of this locale
   :rtype: string
   */
   inline proc locale.name: string {
@@ -229,8 +245,9 @@ module ChapelLocale {
   /*
     Get the unique integer identifier for this locale.
 
-    When called on a sub-locale, this method still returns the ID of the
-    parent locale. So, for example, the following program prints true:
+    When called on a sub-locale, this method returns the ID of the
+    parent locale, not the sub-locale. So, for example, the following
+    program prints true:
 
   .. code-block:: chapel
 
