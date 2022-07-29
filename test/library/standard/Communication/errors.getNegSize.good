@@ -1,1 +1,1 @@
-errors.chpl:19: error: halt reached - Number of bytes (-10) for Communication.get is negative.
+errors.chpl:PREDIFFED_LINENO: error: halt reached - Number of bytes (-10) for Communication.get is negative.
