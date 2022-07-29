@@ -10,3 +10,4 @@ gpu/native/streamPrototype/stream.graph
 gpu/native/studies/compiler-performance/transform.graph
 gpu/native/studies/compiler-performance/end-to-end.graph
 
+gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph

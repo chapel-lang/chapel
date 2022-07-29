@@ -2,4 +2,4 @@ perfkeys: total time :, total time :
 files: jacobi.dat, math.dat
 graphkeys: jacobi, math
 ylabel: Time (s)
-graphtitle: Compilation Time (s)
+graphtitle: Compilation Time

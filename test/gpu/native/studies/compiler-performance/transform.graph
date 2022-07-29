@@ -2,4 +2,4 @@ perfkeys: GPU transformation time (s):, GPU transformation time (s):
 files: jacobi.dat, math.dat
 graphkeys: jacobi, math
 ylabel: Time (s)
-graphtitle: GPU Transformation Time  (s)
+graphtitle: GPU Transformation Time
