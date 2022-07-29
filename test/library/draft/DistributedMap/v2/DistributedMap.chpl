@@ -285,5 +285,17 @@ module DistributedMap {
       const hash = chpl__defaultHashWrapper(key);
       return hash % numLocales;
     }
+
+    // For debugging purposes, to ensure we're distributing the map properly
+    pragma "no doc"
+    proc chpl_verify() {
+      writeln("targetLocales = ", targetLocales);
+      writeln("locDom = ", locDom);
+      writeln("tables and locks locales");
+      for i in tables.domain {
+        writeln("tables[", i, "] is on locale ", tables[i].locale);
+        writeln("locks[", i, "] is also on locale ", locks[i].locale);
+      }
+    }
   }
 }

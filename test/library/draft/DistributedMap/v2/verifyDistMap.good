@@ -1,0 +1,15 @@
+targetLocales = LOCALE0 LOCALE1 LOCALE2 LOCALE3 LOCALE4 LOCALE5
+locDom = {0..5}
+tables and locks locales
+tables[0] is on locale LOCALE0
+locks[0] is also on locale LOCALE0
+tables[1] is on locale LOCALE1
+locks[1] is also on locale LOCALE1
+tables[2] is on locale LOCALE2
+locks[2] is also on locale LOCALE2
+tables[3] is on locale LOCALE3
+locks[3] is also on locale LOCALE3
+tables[4] is on locale LOCALE4
+locks[4] is also on locale LOCALE4
+tables[5] is on locale LOCALE5
+locks[5] is also on locale LOCALE5
