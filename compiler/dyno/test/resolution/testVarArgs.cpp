@@ -694,11 +694,11 @@ proc fn(param n : int, args...n) {
   assert(isParamEq(gc.onlyDecl("n"), 3));
 
   auto less = std::string(R"""(var x = fn(3, 1, 2.0);)""");
-  auto lc = customHelper(paramFn + less, true);
+  customHelper(paramFn + less, true);
   assert(errors.size() == 1 && errors[0].message() == errMsg);
 
   auto more = std::string(R"""(var x = fn(3, 1, 2.0, "hello", "oops");)""");
-  auto mc = customHelper(paramFn + more, true);
+  customHelper(paramFn + more, true);
   assert(errors.size() == 1 && errors[0].message() == errMsg);
 
   // non-integrals should not be valid in count-expressions
@@ -808,7 +808,7 @@ proc fn(left..., right...) {
 )""");
 
   auto multiCall = std::string(R"""(var x = fn(1,2,3,4,5);)""");
-  auto mcc = customHelper(multiVarArg + multiCall, true);
+  customHelper(multiVarArg + multiCall, true);
 }
 
 {
