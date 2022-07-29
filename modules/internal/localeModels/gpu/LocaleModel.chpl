@@ -223,7 +223,7 @@ module LocaleModel {
                                 sid);
     }
     override proc chpl_name() {
-      return "node"+ chpl_id():string + "-GPU" + sid:string;
+      return try! (parent._value:LocaleModel).local_name + "-GPU" + sid:string;
     }
 
     proc init() {
@@ -244,7 +244,7 @@ module LocaleModel {
 
     override proc writeThis(f) throws {
       parent.writeThis(f);
-      f <~> '.'+name;
+      f <~> "-GPU" + sid:string;
     }
 
     override proc getChildCount(): int { return 0; }
