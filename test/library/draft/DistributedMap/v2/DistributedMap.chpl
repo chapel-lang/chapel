@@ -84,9 +84,21 @@ module DistributedMap {
       compilerError("unimplemented");
     }
 
-    // TODO: impl
+    /*
+      The current number of keys contained in this map.
+    */
     inline proc const size {
-      compilerError("unimplemented");
+      for i in locDom {
+        locks[i].lock();
+      }
+
+      var res = + reduce tables.tableNumFullSlots;
+
+      for i in locDom {
+        locks[i].unlock();
+      }
+
+      return res;
     }
 
     // TODO: impl
