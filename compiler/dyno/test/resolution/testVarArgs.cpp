@@ -220,10 +220,17 @@ static bool isParamEq(QualifiedType qt, int n) {
 struct ArgInfo {
   using Pair = std::pair<IntentList,std::string>;
   std::vector<Pair> args;
+  bool isValuesOnly = false;
 
   static ArgInfo IRS(IntentList argKind = IntentList::VAR) {
     std::vector<std::string> types = {"int", "real", "string"};
     return ArgInfo(argKind, types);
+  }
+
+  static ArgInfo Values(std::vector<std::string> vals) {
+    ArgInfo ret(vals);
+    ret.isValuesOnly = true;
+    return ret;
   }
 
   ArgInfo() {}
@@ -251,6 +258,36 @@ struct ArgInfo {
     } else {
       return args.size();
     }
+  }
+
+  std::pair<std::string,std::string> buildArgStrings() {
+    std::string decls;
+    int i = 0;
+    std::string argList;
+    for (auto p : args) {
+      std::string argName = "arg" + std::to_string(i);
+      if (i > 0) argList += ",";
+      argList += isValuesOnly ? p.second : argName;
+      i += 1;
+
+      if (!isValuesOnly) {
+        bool isTypeActual = p.first == IntentList::TYPE;
+        std::string initExpr = isTypeActual ? p.second : typeToVal(p.second);
+        //stream << kindToString(p.first) << " " << argName;
+        std::string kind(kindToString(p.first));
+        decls += kind + " " + argName;
+        if (!isTypeActual) {
+          decls += " : " + p.second;
+        }
+        if (initExpr == "") {
+          decls += ";\n";
+        } else {
+          decls += " = " + initExpr + ";\n";
+        }
+      }
+    }
+
+    return std::pair<std::string,std::string>(decls,argList);
   }
 };
 
@@ -341,26 +378,9 @@ static std::string buildProgram(IntentList formalIntent,
   stream << "}\n\n";
 
   // Build the declarations for the actuals and the list of actuals
-  int i = 0;
-  std::string argList;
-  for (auto p : info.args) {
-    std::string argName = "arg" + std::to_string(i);
-    if (i > 0) argList += ", ";
-    argList += argName;
-    i += 1;
-
-    bool isTypeActual = p.first == IntentList::TYPE;
-    std::string initExpr = isTypeActual ? p.second : typeToVal(p.second);
-    stream << kindToString(p.first) << " " << argName;
-    if (!isTypeActual) {
-      stream << " : " << p.second;
-    }
-    if (initExpr == "") {
-      stream << ";\n";
-    } else {
-      stream << " = " << initExpr << ";\n";
-    }
-  }
+  auto declArgList = info.buildArgStrings();
+  stream << declArgList.first;
+  std::string argList = declArgList.second;
 
   stream << "var x = varArgFn(" << argList << ");\n";
   stream << "var y = normalFn(" << argList << ");\n";
@@ -604,6 +624,11 @@ static void typeQuery() {
               ArgInfo(3, "string"));
   testMatcher(IntentList::PARAM, "?i", "",
               ArgInfo(IntentList::PARAM, 3, "int"));
+
+  // Passing in params to default-intent should not result in the formals
+  // being treated as params
+  testMatcher(IntentList::DEFAULT_INTENT, "?t", "",
+              ArgInfo::Values({"true","false","true"}));
 
   // Errors
 
