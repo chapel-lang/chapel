@@ -289,7 +289,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         entry.hasActual_ = false;
         entry.formalIdx_ = i;
         entry.actualIdx_ = -1;
-        entry.formalType_ = formalQT; // TODO: pick this tuple apart
+        entry.formalType_ = formalQT;
         entry.formalInstantiated_ = formalInstantiated;
         entry.hasDefault_ = untyped->formalHasDefault(i);
         entry.isVarArgEntry_ = true;

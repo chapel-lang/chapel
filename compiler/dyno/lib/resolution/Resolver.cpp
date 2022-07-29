@@ -690,36 +690,6 @@ static bool isValidVarArgCount(QualifiedType paramSize) {
 
 
 //
-// This function expects to be called with a substitution for a
-// VarArgFormal. The substitution process will have chosen the correct
-// types for each element, but not the correct intents. This function
-// computes the appropriate intents and builds a new VarArgTuple.
-//
-// TODO: Should substitution creation do this for us?
-//
-static const Type* rebuildVarArgSub(Context* context,
-                                    QualifiedType::Kind qtKind,
-                                    const Type* typePtr) {
-  auto tuple = typePtr->toTupleType();
-  std::vector<QualifiedType> types;
-  bool paramIntent = qtKind == QualifiedType::PARAM;
-
-  // TODO: iterator for tuple elements
-  for (int i = 0; i < tuple->numElements(); i++) {
-    auto elt = tuple->elementType(i);
-
-    auto param = paramIntent ? elt.param() : nullptr;
-    auto formalQt = QualifiedType(qtKind, elt.type(), param);
-    auto newKind = resolveIntent(formalQt, false);
-
-    auto formalType = QualifiedType(newKind, elt.type(), param);
-    types.push_back(formalType);
-  }
-
-  return TupleType::getVarArgTuple(context, types);
-}
-
-//
 // This function is called in the case that there is no substitution. When
 // resolveNamedDecl processes such a case, it will compute the kind/type as if
 // for a normal formal. This function will attempt to use that kind/type as
@@ -855,11 +825,6 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       typePtr = typeExprT.type();
       if (qtKind == QualifiedType::PARAM)
         paramPtr = typeExprT.param();
-
-      // rebuild the intents for each element
-      if (isVarArgs) {
-        typePtr = rebuildVarArgSub(context, qtKind, typePtr);
-      }
     } else {
       if (isFieldOrFormal && typeExpr == nullptr && initExpr == nullptr) {
         // Lack of initializer for a field/formal means the Any type

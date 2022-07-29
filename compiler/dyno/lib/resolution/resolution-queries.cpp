@@ -1314,8 +1314,6 @@ const TypedFnSignature* instantiateSignature(Context* context,
       }
     }
 
-    // TODO: Should we compute the appropriate intent at this time?
-    // We currently rely on resolveNamedDecl to do this for us.
     if (entry.isVarArgEntry()) {
       // If any formal needs instantiating then we need to instantiate all
       // the VarArgs
@@ -1323,6 +1321,14 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
       // If the formal wasn't instantiated then use whatever type was computed.
       if (!addSub) useType = formalType;
+
+      QualifiedType::Kind qtKind = formalType.kind();
+      auto tempQT = QualifiedType(qtKind, useType.type());
+      auto newKind = resolveIntent(tempQT, false);
+
+      auto param = formalType.isParam() ? useType.param() : nullptr;
+      useType = QualifiedType(newKind, useType.type(), param);
+
       varargsTypes.push_back(useType);
 
       // Grab the index and formal when first encountering a VarArgFormal.
