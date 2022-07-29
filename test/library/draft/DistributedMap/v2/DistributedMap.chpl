@@ -26,7 +26,7 @@ module DistributedMap {
   private use IO;
 
   // TODO: document type, methods
-  class distributedMap {
+  record distributedMap {
     /* Type of map keys. */
     type keyType;
     /* Type of map values. */
@@ -79,9 +79,35 @@ module DistributedMap {
     }
     // TODO: initializer that uses only a subset of the locales?
 
-    // TODO: impl
+    // Note: no need to warn about invalidating references, we don't intend to
+    // return any
+    /*
+      Clears the contents of this map.
+    */
     proc clear() {
-      compilerError("unimplemented");
+      for i in locDom {
+        locks[i].lock();
+      }
+
+      // Maybe tune the parallelism in this.  After all, we know that no one
+      // else is doing anything in the data structure because of the previous
+      // locking ...
+      forall i in locDom {
+        on i {
+          for slot in tables[i].allSlots() {
+            if tables[i].isSlotFull(slot) {
+              var key: keyType;
+              var val: valType;
+              tables[i].clearSlot(slot, key, val);
+            }
+          }
+          tables[i].maybeShrinkAfterRemove();
+        }
+      }
+
+      for i in locDom {
+        locks[i].unlock();
+      }
     }
 
     /*
