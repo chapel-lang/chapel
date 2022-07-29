@@ -26,6 +26,8 @@
 /* X(identifier, chapel string name) */
 /* the identifier must be a legal C++ identifier */
 
+X(tombstone      , "<tombstone>")
+X(empty          , "<empty>")
 X(align          , "align")
 X(atomic         , "atomic")
 X(bool_          , "bool")

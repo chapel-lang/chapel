@@ -27,10 +27,34 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/util/iteration.h"
 #include "chpl/framework/stringify-functions.h"
+#include "chpl/framework/global-strings.h"
 
 #include <vector>
 #include <unordered_map>
 #include <utility>
+
+#include "llvm/ADT/DenseMap.h"
+
+namespace llvm {
+  template<> struct DenseMapInfo<chpl::ID> {
+    static bool isEqual(const chpl::ID& lhs, const chpl::ID& rhs) {
+      return lhs == rhs;
+    }
+
+    static size_t getHashValue(const chpl::ID& id) {
+      return chpl::hash(id);
+    }
+
+    static const chpl::ID getEmptyKey() {
+      return chpl::ID(USTR("<empty>"), -1, 0);
+    }
+
+    static const chpl::ID getTombstoneKey() {
+      return chpl::ID(USTR("<tombstone>"), -1, 0);
+    }
+  };
+}
+
 
 namespace chpl {
 
@@ -61,13 +85,13 @@ class BuilderResult final {
   std::vector<ErrorMessage> errors_;
 
   // Given an ID, what is the AstNode?
-  std::unordered_map<ID, const AstNode*> idToAst_;
+  llvm::DenseMap<ID, const AstNode*> idToAst_;
 
   // Given an ID, what is the parent ID?
-  std::unordered_map<ID, ID> idToParentId_;
+  llvm::DenseMap<ID, ID> idToParentId_;
 
   // Goes from ID to Location, applies to all AST nodes except Comment
-  std::unordered_map<ID, Location> idToLocation_;
+  llvm::DenseMap<ID, Location> idToLocation_;
 
   // Goes from Comment ID to Location, applies to all AST nodes except Comment
   std::vector<Location> commentIdToLocation_;
