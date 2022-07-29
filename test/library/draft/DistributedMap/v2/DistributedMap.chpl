@@ -21,6 +21,9 @@
 /* Attempt at starting a distributed map type */
 module DistributedMap {
   private use Map;
+  private use ChapelHashtable;
+  private use CyclicDist;
+  private use IO;
 
   // TODO: document type, methods
   class distributedMap {
@@ -33,18 +36,23 @@ module DistributedMap {
     const targetLocales = Locales;
 
     pragma "no doc"
-    var tables: [0..targetLocales.size] chpl__hashtable(keyType, valType);
+    const locDom = {0..<targetLocales.size}
+      dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+
+    pragma "no doc"
+    var tables: [locDom] chpl__hashtable(keyType, valType);
 
     // TODO: I seem to recall someone not liking the idea of a lock per locale,
     // remind myself of why and maybe do something different.
     pragma "no doc"
-    var locks: [0..targetLocales.size] owned _LockWrapper;
+    var locks: [locDom] owned _LockWrapper =
+      [i in locDom] new owned _LockWrapper();
 
     // NOTE: this means that distributed maps that rely on the default hashing
     // strategy will not be able to be stored in another data structure with
-    // distributed maps that specified their own hashing strategy (but that
-    // any distributed maps that specify their own hashing strategy *can* be
-    // stored in the same data structure as those that specified a different one
+    // distributed maps that specified their own hashing strategy (but that any
+    // distributed maps that specify their own hashing strategy *can* be stored
+    // in the same data structure as those that specified a different one)
     // Is that something we're okay with?
     pragma "no doc"
     type funcType;
@@ -99,17 +107,21 @@ module DistributedMap {
     proc const contains(const k: keyType): bool {
       var loc: int;
       if (funcType != nothing) {
-        loc = localeHasher(key, targetLocales.size);
+        loc = localeHasher(k, targetLocales.size);
       } else {
-        loc = hashAcrossLocales(key, targetLocales.size);
+        loc = hashAcrossLocales(k, targetLocales.size);
       }
 
-      locks[loc].lock();
+      var res: bool;
+      on loc {
+        locks[loc].lock();
 
-      var (result, _) = tables[loc].findFullSlot(k);
+        var (result, _) = tables[loc].findFullSlot(k);
 
-      locks[loc].unlock();
-      return result;
+        locks[loc].unlock();
+        res = result;
+      }
+      return res;
     }
 
     // TODO: impl
@@ -169,22 +181,26 @@ module DistributedMap {
     proc add(in k: keyType, in v: valType): bool lifetime this < v {
       var loc: int;
       if (funcType != nothing) {
-        loc = localeHasher(key, targetLocales.size);
+        loc = localeHasher(k, targetLocales.size);
       } else {
-        loc = hashAcrossLocales(key, targetLocales.size);
+        loc = hashAcrossLocales(k, targetLocales.size);
       }
 
-      locks[loc].lock();
+      var res: bool;
+      on loc {
+        locks[loc].lock();
 
-      var (found, slot) = tables[loc].findAvailableSlot(key);
+        var (found, slot) = tables[loc].findAvailableSlot(k);
 
-      // Only add if it wasn't already present
-      if (!found)
-        tables[loc].fillSlot(slot, key, val);
+        // Only add if it wasn't already present
+        if (!found) then
+          tables[loc].fillSlot(slot, k, v);
 
-      locks[loc].unlock();
+        locks[loc].unlock();
+        res = !found;
+      }
 
-      return !found;
+      return res;
     }
 
     // NOTE: Locks on the locale, so may be slower than we'd like?
@@ -205,21 +221,25 @@ module DistributedMap {
     proc set(k: keyType, in v: valType): bool {
       var loc: int;
       if (funcType != nothing) {
-        loc = localeHasher(key, targetLocales.size);
+        loc = localeHasher(k, targetLocales.size);
       } else {
-        loc = hashAcrossLocales(key, targetLocales.size);
+        loc = hashAcrossLocales(k, targetLocales.size);
       }
 
-      locks[loc].lock();
+      var res: bool;
+      on loc {
+        locks[loc].lock();
 
-      var (found, slot) = tables[loc].findAvailableSlot(key);
+        var (found, slot) = tables[loc].findAvailableSlot(k);
 
-      if (found)
-        tables[loc].fillSlot(slot, key, val);
+        if (found) then
+          tables[loc].fillSlot(slot, k, v);
 
-      locks[loc].unlock();
+        locks[loc].unlock();
+        res = found;
+      }
 
-      return found;
+      return res;
     }
 
     // TODO: impl - maybe warn this is unsafe on its own?  Maybe don't provide?
