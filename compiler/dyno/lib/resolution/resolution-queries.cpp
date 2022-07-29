@@ -1220,9 +1220,15 @@ static bool varArgCountMatch(const VarArgFormal* formal,
     const ResolvedExpression& count = r.byAst(formal->count());
     QualifiedType ct = count.type();
     if (ct.isParam() && ct.param() != nullptr) {
+      auto numElements = tupleType->numElements();
       if (auto ip = ct.param()->toIntParam()) {
-        assert(tupleType != nullptr && tupleType->isKnownSize());
-        return tupleType->numElements() == ip->value();
+        return numElements == ip->value();
+      } else if (auto up = ct.param()->toUintParam()) {
+        return (uint64_t)numElements == up->value();
+      } else {
+        // TODO: Error message about coercing non-integrals in the
+        // count-expression.
+        return false;
       }
     }
   }

@@ -701,6 +701,18 @@ proc fn(param n : int, args...n) {
   auto mc = customHelper(paramFn + more, true);
   assert(errors.size() == 1 && errors[0].message() == errMsg);
 
+  // non-integrals should not be valid in count-expressions
+  auto paramBoolFn = std::string(
+R"""(
+proc fn(param n : bool, args...n) {
+  var ret : args.type;
+  return ret;
+}
+fn(true, true);
+)""");
+  customHelper(paramBoolFn, true);
+  assert(errors.size() == 1 && errors[0].message() == errMsg);
+
   // TODO: Make sure uints resolve (cannot cast to param uints yet)
 }
 
