@@ -67,14 +67,15 @@ class UntypedFnSignature {
     bool operator==(const FormalDetail& other) const {
       return name == other.name &&
              hasDefaultValue == other.hasDefaultValue &&
-             decl == other.decl;
+             decl == other.decl &&
+             isVarArgs == other.isVarArgs;
     }
     bool operator!=(const FormalDetail& other) const {
       return !(*this == other);
     }
 
     size_t hash() const {
-      return chpl::hash(name, hasDefaultValue, decl);
+      return chpl::hash(name, hasDefaultValue, decl, isVarArgs);
     }
 
     void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
