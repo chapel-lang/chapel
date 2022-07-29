@@ -72,6 +72,8 @@ static std::map<std::string,int>                           testNameIndex;
 
 static Expr*          preFoldPrimInitVarForManagerResource(CallExpr* call);
 
+static Expr*          preFoldPrimResolves(CallExpr* call);
+
 static Expr*          preFoldPrimOp(CallExpr* call);
 
 static Expr*          preFoldNamed (CallExpr* call);
@@ -245,6 +247,7 @@ static bool recordContainsNonNilableOwned(Type* t) {
 
   return false;
 }
+
 static bool recordContainsOwned(Type* t) {
   if (isManagedPtrType(t) &&
       getManagedPtrManagerType(t) == dtOwned)
@@ -648,6 +651,129 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
       }
     }
   }
+
+  return ret;
+}
+
+static Expr* preFoldPrimResolves(CallExpr* call) {
+  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
+  // This primitive should only have one actual.
+  INT_ASSERT(call && call->numActuals() == 1);
+
+  auto exprToResolve = call->get(1);
+
+  // TODO: To resolve an arbitrary expression (e.g. the UnresolvedSymExpr
+  // for 'foo'), we need a way to back out without emitting errors.
+  // We'd also need to interact with scopeResolve as well. This will
+  // be much easier in a new compiler world.
+  if (!isCallExpr(exprToResolve)) {
+    INT_FATAL("PRIM_RESOLVES can only resolve CallExpr for now");
+  }
+
+  SET_LINENO(call);
+
+  // Insert a temporary block into the AST to use as a workspace.
+  auto tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
+  call->getStmtExpr()->insertAfter(tmpBlock);
+
+  // Remove the expression to resolve and insert it into the block.
+  exprToResolve->remove();
+  tmpBlock->insertAtTail(exprToResolve);
+
+  // Resolution depends on normalized AST (and the expression is not).
+  // TODO: Do we need to find/re-identify the call again?
+  normalize(tmpBlock);
+
+  bool didResolveExpr = true;
+
+  // Now that the block is normalized, we need to do a postorder traversal
+  // and resolve sub-expressions in a manner similar to normal resolution.
+  // However, calls should use 'tryResolveCall' so that we can back out
+  // if a particular call should fail to resolve.
+  for_exprs_postorder(expr, tmpBlock) {
+    const bool isTopLevelExpression = (expr->parentExpr == tmpBlock);
+    auto call = toCallExpr(expr);
+
+    // Start by prefolding all calls (e.g., to restructure partial calls).
+    expr = call && !isContextCallExpr(expr) ? preFold(call) : expr;
+    INT_ASSERT(expr);
+
+    // Go ahead and skip over context calls right away.
+    if (isContextCallExpr(expr)) continue;
+
+    // Unpack the call again since it might have been replaced.
+    call = toCallExpr(expr);
+
+    // TODO: Ways to keep type checking from issuing errors to STDERR, or
+    // redirecting it elsewhere? E.g. we could have code here to
+    // handle PRIM_MOVE setting the type of the LHS. Dyno should solve
+    // this, but we're not there yet.
+    if (!call) {
+      expr = resolveExpr(expr);
+      INT_ASSERT(expr);
+
+    // If it is a move, we need to handle checking the types manually,
+    // as the normal machinery will emit errors in the case of e.g.,
+    // a 'void' type subexpression being called.
+    } else if (call->isPrimitive()) {
+      switch (call->primitive->tag) {
+        case PRIM_MOVE: {
+          Type* lhsType = moveDetermineLhsType(call);
+          Type* rhsType = moveDetermineRhsType(call);
+          bool isBadMove = false;
+
+          isBadMove |= !moveIsAcceptable(call);
+          isBadMove |= (rhsType == dtVoid);
+          isBadMove |= !moveTypesAreAcceptable(lhsType, rhsType);
+
+          if (isBadMove) {
+            didResolveExpr = false;
+            break;
+
+          // Call into the normal path to perform additional lowering.
+          } else {
+            resolveExpr(call);
+          }
+        } break;
+        default: {
+          expr = resolveExpr(expr);
+        } break;
+      }
+
+    // Otherwise, it is a normal call, so rely on the 'tryResolveCall'
+    // machinery that has already been built for us.
+    } else {
+      const bool isPartialCall = call->partialTag;
+      bool doResolveDependencies = false;
+      auto resolvedFn = tryResolveCall(call, doResolveDependencies);
+
+      // Partial calls may not be resolved in the current iteration. But if
+      // the call is not partial and we did not resolve it, we can fail.
+      if (!resolvedFn) {
+        if (isPartialCall) continue;
+        didResolveExpr = false;
+        break;
+      }
+
+      // We may decide to resolve the function anyway.
+      if (resolvedFn && !resolvedFn->isResolved()) {
+        doResolveDependencies |= !isTopLevelExpression;
+        doResolveDependencies |= resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR);
+      }
+
+      if (doResolveDependencies && !resolvedFn->isResolved()) {
+        resolveFunction(resolvedFn);
+      }
+    }
+
+    if (!didResolveExpr) break;
+  }
+
+  // Remove the block and swap in the appropriate 'SymExpr'.
+  Expr* ret = didResolveExpr ? new SymExpr(gTrue) : new SymExpr(gFalse);
+  tmpBlock->remove();
+  call->replace(ret);
 
   return ret;
 }
@@ -1938,91 +2064,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_RESOLVES: {
-    if (call->id == breakOnResolveID) gdbShouldBreakHere();
-
-    // This primitive should only have one actual.
-    INT_ASSERT(call && call->numActuals() == 1);
-
-    auto exprToResolve = call->get(1);
-
-    // TODO: To resolve an arbitrary expression (e.g. the UnresolvedSymExpr
-    // for 'foo'), we need a way to back out of resolving any expression
-    // without emitting errors. We'd also need to interact with
-    // scopeResolve as well. This might be easier to do in a new
-    // compiler world.
-    if (!isCallExpr(exprToResolve)) {
-      INT_FATAL("PRIM_RESOLVES can only resolve CallExpr for now");
-    }
-
-    // Insert a temporary block into the AST to use as a workspace.
-    auto tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
-    call->getStmtExpr()->insertAfter(tmpBlock);
-
-    // Remove the expression to resolve and insert it into the block.
-    exprToResolve->remove();
-    tmpBlock->insertAtTail(exprToResolve);
-
-    // Resolution depends on normalized AST (and the expression is not).
-    normalize(tmpBlock);
-
-    bool didResolveExpr = true;
-
-    // Now that the block is normalized, we need to do a postorder traversal
-    // and resolve sub-expressions in a manner similar to normal resolution.
-    // However, calls should use 'tryResolveCall' so that we can back out
-    // if a particular call should fail to resolve.
-    for_exprs_postorder(expr, tmpBlock) {
-      CallExpr* call = toCallExpr(expr);
-
-      // Start by prefolding all calls (e.g. to eliminate partial calls).
-      expr = call && !isContextCallExpr(expr) ? preFold(call) : expr;
-      INT_ASSERT(expr);
-      call = toCallExpr(expr);
-
-      // Go ahead and skip over context calls right away.
-      if (isContextCallExpr(expr)) continue;
-
-      if (call && !call->isPrimitive()) {
-
-        // Partial calls will not be resolved in the current iteration.
-        const bool isPartialCall = call->partialTag;
-
-        // TODO: Might want to set this later, not sure yet.
-        const bool doResolveCalledFns = false;
-
-        FnSymbol* resolvedFn = tryResolveCall(call, doResolveCalledFns);
-
-        if (!resolvedFn && !isPartialCall) {
-          didResolveExpr = false;
-          break;
-        } else {
-
-          // Go ahead and eagerly resolve field accessors.
-          if (resolvedFn && !resolvedFn->isResolved()) {
-            if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)) {
-              resolveFunction(resolvedFn);
-            }
-          }
-        }
-
-      // TODO: Ways to keep type checking from issuing errors? E.g. we could
-      // have code here to handle PRIM_MOVE setting the type of the LHS.
-      } else {
-        expr = resolveExpr(expr);
-        INT_ASSERT(expr);
-      }
-    }
-
-    // We're done with the block, so remove it.
-    tmpBlock->remove();
-
-    // The output is a 'true' or 'false' expression.
-    auto output = didResolveExpr ? new SymExpr(gTrue) : new SymExpr(gFalse);
-
-    call->replace(output);
-    retval = output;
-
-  } break;
+    retval = preFoldPrimResolves(call);
+    break;
+  }
 
   case PRIM_STEAL: {
     SymExpr* se = toSymExpr(call->get(1));
