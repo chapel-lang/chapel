@@ -327,7 +327,7 @@ private proc createDepTree(root: Toml) {
     // add dependencies found in TOML files of git deps
     for m in gitManifests do
       manifests.append(m);
-    
+
     depTree = createDepTrees(depTree, manifests, "root");
     depTree = addGitDeps(depTree, gitDeps);
   }
@@ -574,11 +574,11 @@ private proc pullGitDeps(gitDeps, show=false) {
   if !isDir(MASON_HOME + '/git/') {
     mkdir(MASON_HOME + '/git/', parents=true);
   }
-  
+
   var gitDepsWithRevision: list((string, string, string, string));
 
   var gitDepMap: map(string, (string, string, string));
-  
+
   // form map of name -> url, branch, revision
   for val in gitDeps {
     if val[1] == "git" then
@@ -588,13 +588,13 @@ private proc pullGitDeps(gitDeps, show=false) {
     else if val[1] == "rev" then
       gitDepMap[val[0]][2] = val[2]!.s;
   }
-  
+
   // Pull git repositories so that we can have access to the
   // current revision and TOML file to get dependencies
   var baseDir = MASON_HOME +'/git/';
   for val in gitDepMap {
     var (srcURL, origBranch, revision) = gitDepMap[val];
-    
+
     // Default to head if branch isn't specified
     var branch = if origBranch == "" then "HEAD" else origBranch;
     const nameVers = val + "-" + branch;
@@ -612,10 +612,10 @@ private proc pullGitDeps(gitDeps, show=false) {
           getDependency = "git clone " + srcURL + ' ' + destination + '/';
           checkout = "git checkout " + toCheckout;
         }
-      
+
         gitC(destination, checkout);
       }
-      
+
       // get the revision to store in lock if not specified
       if revision == "" {
         var revParse = "git rev-parse HEAD";
@@ -628,27 +628,27 @@ private proc pullGitDeps(gitDeps, show=false) {
         var pullDependency = "git fetch -q --all";
         if show then pullDependency = "git fetch --all";
         gitC(destination, pullDependency);
-        
+
         writeln("Checking out specified revision for " + nameVers + "...");
         // Use the revision to checkout, if specified
         var checkout = "git checkout -q " + revision;
         if show then checkout = "git checkout " + revision;
-      
+
         gitC(destination, checkout);
       } else if branch != "HEAD" {
         writeln("Fetching latest changes for: " + nameVers + "...");
         var pullDependency = "git fetch -q --all";
         if show then pullDependency = "git fetch --all";
         gitC(destination, pullDependency);
-        
+
         writeln("Checking out specified revision for " + nameVers + "...");
 
         var checkout = "git checkout -q " + branch;
         if show then checkout = "git checkout " + branch;
-      
+
         gitC(destination, checkout);
       }
-      
+
       // get the revision to store in lock if not specified
       if revision == "" {
         var revParse = "git rev-parse HEAD";
