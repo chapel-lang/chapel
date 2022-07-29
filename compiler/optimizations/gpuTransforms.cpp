@@ -34,8 +34,11 @@
 #include "bb.h"
 #include "astutil.h"
 #include "optimizations.h"
+#include "timer.h"
 
 #include "global-ast-vecs.h"
+
+static Timer gpuTransformTimer;
 
 static bool debugPrintGPUChecks = false;
 static bool allowFnCallsFromGPU = true;
@@ -785,6 +788,14 @@ void gpuTransforms() {
   // For now, we are doing GPU outlining here. In the future, it should
   // probably be its own pass.
   if (localeUsesGPU()) {
+    if (fReportGpuTransformTime) gpuTransformTimer.start();
+
     outlineGPUKernels();
+
+    if (fReportGpuTransformTime) {
+      gpuTransformTimer.stop();
+      std::cout << "GPU transformation time (s): " <<
+                   gpuTransformTimer.elapsedSecs() << std::endl;
+    }
   }
 }
