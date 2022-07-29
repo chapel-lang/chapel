@@ -750,6 +750,19 @@ static void testCount() {
   // zero actuals, varargs require at least one
   testMatcher(IntentList::DEFAULT_INTENT, "int", "",
               ArgInfo(), true);
+
+  auto countTypeFn = std::string(
+R"""(
+proc fn(args:?t...?n) {
+  type tq = t;
+  param cq = n;
+}
+fn(1, 2, 3);
+)""");
+  auto results = customHelper(countTypeFn);
+  assert(isParamEq(results.onlyDecl("cq"), 3));
+  assert(results.onlyDecl("tq").type()->isIntType());
+
 }
 
 static void testAlignment() {

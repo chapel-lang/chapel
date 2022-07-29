@@ -106,7 +106,9 @@ struct GatherDecls {
       if (auto typeExpr = formal->typeExpression()) {
         GatherQueryDecls gatherQueryDecls(declared);
         typeExpr->traverse(gatherQueryDecls);
-      } else if (auto vararg = d->toVarArgFormal()) {
+      }
+
+      if (auto vararg = d->toVarArgFormal()) {
         if (auto count = vararg->count()) {
           GatherQueryDecls gatherQueryDecls(declared);
           count->traverse(gatherQueryDecls);
