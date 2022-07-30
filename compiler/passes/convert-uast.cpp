@@ -2291,7 +2291,9 @@ struct Converter {
         INT_ASSERT(formal->intent() == uast::Formal::DEFAULT_INTENT);
         INT_ASSERT(!formal->initExpression());
         INT_ASSERT(!formal->typeExpression());
-        conv = new DefExpr(new VarSymbol(formal->name().c_str()));
+        auto varSym = new VarSymbol(formal->name().c_str());
+        conv = new DefExpr(varSym);
+        noteConvertedSym(formal, varSym);
 
         // Should not be attaching comments to tuple formals.
         INT_ASSERT(!attachComments);
