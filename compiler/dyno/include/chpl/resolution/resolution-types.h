@@ -52,26 +52,30 @@ class UntypedFnSignature {
     UniqueString name;
     bool hasDefaultValue = false;
     const uast::Decl* decl = nullptr;
+    bool isVarArgs = false;
 
     FormalDetail(UniqueString name,
                  bool hasDefaultValue,
-                 const uast::Decl* decl)
+                 const uast::Decl* decl,
+                 bool isVarArgs = false)
       : name(name),
         hasDefaultValue(hasDefaultValue),
-        decl(decl)
+        decl(decl),
+        isVarArgs(isVarArgs)
     { }
 
     bool operator==(const FormalDetail& other) const {
       return name == other.name &&
              hasDefaultValue == other.hasDefaultValue &&
-             decl == other.decl;
+             decl == other.decl &&
+             isVarArgs == other.isVarArgs;
     }
     bool operator!=(const FormalDetail& other) const {
       return !(*this == other);
     }
 
     size_t hash() const {
-      return chpl::hash(name, hasDefaultValue, decl);
+      return chpl::hash(name, hasDefaultValue, decl, isVarArgs);
     }
 
     void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -267,6 +271,11 @@ class UntypedFnSignature {
   const uast::Decl* formalDecl(int i) const {
     assert(0 <= i && (size_t) i < formals_.size());
     return formals_[i].decl;
+  }
+
+  bool formalIsVarArgs(int i) const {
+    assert(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].isVarArgs;
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -1244,6 +1253,8 @@ class FormalActual {
   int actualIdx_ = -1;
   bool hasActual_ = false; // == false means uses formal default value
   bool formalInstantiated_ = false;
+  bool hasDefault_ = false;
+  bool isVarArgEntry_ = false;
 
  public:
   const types::QualifiedType& formalType() const { return formalType_; }
@@ -1253,6 +1264,8 @@ class FormalActual {
   int actualIdx() const { return actualIdx_; }
   bool hasActual() const { return hasActual_; }
   bool formalInstantiated() const { return formalInstantiated_; }
+  bool hasDefault() const { return hasDefault_; }
+  bool isVarArgEntry() const { return isVarArgEntry_; }
 };
 
 /** FormalActualMap maps formals to actuals */

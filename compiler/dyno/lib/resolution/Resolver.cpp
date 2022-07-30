@@ -29,6 +29,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/uast/uast-util.h"
 
 #include <cstdio>
 #include <set>
@@ -175,7 +176,11 @@ Resolver::createForFunction(Context* context,
     ResolvedExpression& r = ret.byPostorder.byAst(decl);
     r.setType(qt);
 
+    // TODO: Aren't these results already computed when we traverse formals
+    // in resolution-queries?
     if (auto formal = decl->toFormal())
+      ret.resolveTypeQueriesFromFormalType(formal, qt);
+    if (auto formal = decl->toVarArgFormal())
       ret.resolveTypeQueriesFromFormalType(formal, qt);
     if (auto td = decl->toTupleDecl())
       ret.resolveTupleUnpackDecl(td, qt);
@@ -425,9 +430,19 @@ static bool isCallToIntEtc(const AstNode* formalTypeExpr) {
   return false;
 }
 
+static void varArgTypeQueryError(Context* context,
+                                 const AstNode* node,
+                                 ResolvedExpression& result) {
+  context->error(node, "Cannot query type of variable arguments formal when types are not homogeneous");
+  auto errType = QualifiedType(QualifiedType::TYPE,
+                               ErroneousType::get(context));
+  result.setType(errType);
+}
+
 // helper for resolveTypeQueriesFromFormalType
 void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
-                                  const Type* actualType) {
+                                  const Type* actualType,
+                                  bool isNonStarVarArg) {
 
   // Give up if the type is nullptr or UnknownType or AnyType
   if (actualType == nullptr ||
@@ -441,9 +456,16 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
   if (formalTypeExpr->isIdentifier())
     return;
 
-  // Set the type that we know (since it was passed in)
-  ResolvedExpression& result = byPostorder.byAst(formalTypeExpr);
-  result.setType(QualifiedType(QualifiedType::TYPE, actualType));
+  if (formalTypeExpr->isTypeQuery()) {
+    ResolvedExpression& result = byPostorder.byAst(formalTypeExpr);
+
+    if (isNonStarVarArg) {
+      varArgTypeQueryError(context, formalTypeExpr, result);
+    } else {
+      // Set the type that we know (since it was passed in)
+      result.setType(QualifiedType(QualifiedType::TYPE, actualType));
+    }
+  }
 
   // Make recursive calls as needed to handle any TypeQuery nodes
   // nested within typeExpr.
@@ -455,10 +477,14 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
         if (auto tq = call->actual(0)->toTypeQuery()) {
           if (auto pt = actualType->toPrimitiveType()) {
             ResolvedExpression& resolvedWidth = byPostorder.byAst(tq);
-            auto p = IntParam::get(context, pt->bitwidth());
-            auto it = IntType::get(context, 0);
-            auto qt = QualifiedType(QualifiedType::PARAM, it, p);
-            resolvedWidth.setType(qt);
+            if (isNonStarVarArg) {
+              varArgTypeQueryError(context, call->actual(0), resolvedWidth);
+            } else {
+              auto p = IntParam::get(context, pt->bitwidth());
+              auto it = IntType::get(context, 0);
+              auto qt = QualifiedType(QualifiedType::PARAM, it, p);
+              resolvedWidth.setType(qt);
+            }
           }
         }
       }
@@ -487,9 +513,8 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       for (int i = 0; i < nActuals; i++) {
         // ignore actuals like ?
         // since these aren't type queries & don't match a formal
-        if (auto id = call->actual(i)->toIdentifier())
-          if (id->name() == USTR("?"))
-            continue;
+        if (util::isQuestionMark(call->actual(i)))
+          continue;
 
         const FormalActual* fa = faMap.byActualIdx(i);
         assert(fa != nullptr && fa->formal() != nullptr);
@@ -502,16 +527,31 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
         if (search != subs.end()) {
           QualifiedType fieldType = search->second;
           auto actual = call->actual(i);
-          resolveTypeQueries(actual, fieldType.type());
+          resolveTypeQueries(actual, fieldType.type(), isNonStarVarArg);
         }
       }
     }
   }
 }
 
-void Resolver::resolveTypeQueriesFromFormalType(const Formal* formal,
+void Resolver::resolveTypeQueriesFromFormalType(const VarLikeDecl* formal,
                                                 QualifiedType formalType) {
-  if (auto typeExpr = formal->typeExpression()) {
+  if (auto varargs = formal->toVarArgFormal()) {
+    const TupleType* tuple = formalType.type()->toTupleType();
+
+    // args...?n
+    if (auto countQuery = varargs->count()) {
+      auto intType = IntType::get(context, 0);
+      auto val = IntParam::get(context, tuple->numElements());
+      ResolvedExpression& result = byPostorder.byAst(countQuery);
+      result.setType(QualifiedType(QualifiedType::PARAM, intType, val));
+    }
+
+    if (auto typeExpr = formal->typeExpression()) {
+      QualifiedType useType = tuple->elementType(0);
+      resolveTypeQueries(typeExpr, useType.type(), !tuple->isStarTuple());
+    }
+  } else if (auto typeExpr = formal->typeExpression()) {
     resolveTypeQueries(typeExpr, formalType.type());
   }
 }
@@ -623,6 +663,70 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
   return QualifiedType(declKind, typePtr, paramPtr);
 }
 
+static bool isValidVarArgCount(QualifiedType paramSize) {
+  if (paramSize.type() == nullptr ||
+      paramSize.type()->isErroneousType()) {
+    return false;
+  } else if (paramSize.isParam() == false) {
+    return false;
+  } else {
+    const Param* p = paramSize.param();
+    if (p == nullptr) {
+      // param n : int, args...n
+      return true;
+    } else if (p->isIntParam()) {
+      int64_t val = p->toIntParam()->value();
+      return val > 0;
+    } else if (p->isUintParam()) {
+      uint64_t val = p->toUintParam()->value();
+      return val > 0;
+    } else {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+//
+// This function is called in the case that there is no substitution. When
+// resolveNamedDecl processes such a case, it will compute the kind/type as if
+// for a normal formal. This function will attempt to use that kind/type as
+// the star-type for a VarArgTuple.
+//
+static const Type* computeVarArgTuple(Resolver& resolver,
+                                      const VarArgFormal* varArgs,
+                                      QualifiedType::Kind qtKind,
+                                      const Type* typePtr) {
+  Context* context = resolver.context;
+  auto& byPostorder = resolver.byPostorder;
+  auto tuple = typePtr->toTupleType();
+  bool isVarArgTuple = (tuple != nullptr && tuple->isVarArgTuple());
+  if (!isVarArgTuple) {
+    QualifiedType paramSize;
+    bool invalid = false;
+    if (auto count = varArgs->count()) {
+      if (count->isTypeQuery() == false &&
+          util::isQuestionMark(count) == false) {
+        ResolvedExpression& countVal = byPostorder.byAst(count);
+        paramSize = countVal.type();
+        invalid = !isValidVarArgCount(paramSize);
+      }
+    }
+
+    if (invalid) {
+      typePtr = ErroneousType::get(context);
+    } else {
+      auto newKind = resolveIntent(QualifiedType(qtKind, typePtr), false);
+      QualifiedType elt = QualifiedType(newKind, typePtr);
+      typePtr = TupleType::getVarArgTuple(context, paramSize, elt);
+    }
+  }
+
+  return typePtr;
+}
+
 // useType will be used to set the type if it is not nullptr
 void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   if (scopeResolveOnly)
@@ -641,6 +745,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   bool isField = false;
   bool isFormal = false;
   bool isFieldOrFormal = false;
+  bool isVarArgs = decl->isVarArgFormal();
 
   if (auto var = decl->toVarLikeDecl()) {
     // Figure out variable type based upon:
@@ -655,7 +760,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       if (var->isField())
         isField = true;
 
-    isFormal = decl->isFormal();
+    isFormal = decl->isFormal() || isVarArgs;
     isFieldOrFormal = isField || isFormal;
 
     bool foundSubstitution = false;
@@ -792,8 +897,11 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
 
   auto declaredKind = qtKind;
 
-  // compute the intent for formals (including type constructor formals)
-  if (isFormal || (signatureOnly && isField)) {
+  if (isVarArgs) {
+    typePtr = computeVarArgTuple(*this, decl->toVarArgFormal(),
+                                 qtKind, typePtr);
+  } else if (isFormal || (signatureOnly && isField)) {
+    // compute the intent for formals (including type constructor formals)
     bool isThis = decl->name() == USTR("this");
     auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
     // update qtKind with the result of resolving the intent
@@ -801,7 +909,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   }
 
   // adjust tuple declarations for value / referential tuples
-  if (typePtr != nullptr) {
+  if (typePtr != nullptr && decl->isVarArgFormal() == false) {
     if (auto tupleType = typePtr->toTupleType()) {
       if (declaredKind == QualifiedType::DEFAULT_INTENT ||
           declaredKind == QualifiedType::CONST_INTENT) {
@@ -1367,7 +1475,7 @@ bool Resolver::enter(const TypeQuery* tq) {
   //   * if there is a substitution for 'arg', 't' should be computed from it
 
   // Find the parent Formal and check for a substitution for that Formal
-  const Formal* formal = nullptr;
+  const VarLikeDecl* formal = nullptr;
   bool foundFormalSubstitution = false;
   QualifiedType foundFormalType;
   for (auto it = declStack.rbegin(); it != declStack.rend(); ++it) {
@@ -1375,6 +1483,8 @@ bool Resolver::enter(const TypeQuery* tq) {
     if (auto fml = d->toFormal()) {
       formal = fml;
       break;
+    } else if (auto varargs = d->toVarArgFormal()) {
+      formal = varargs;
     }
   }
   if (formal != nullptr) {
@@ -1666,12 +1776,7 @@ void Resolver::prepareCallInfoActuals(const Call* call,
   for (int i = 0; i < call->numActuals(); i++) {
     auto actual = call->actual(i);
 
-    bool isQuestionMark = false;
-    if (auto id = actual->toIdentifier())
-      if (id->name() == USTR("?"))
-        isQuestionMark = true;
-
-    if (isQuestionMark) {
+    if (util::isQuestionMark(actual)) {
       if (hasQuestionArg) {
         context->error(actual, "Cannot have ? more than once in a call");
       }

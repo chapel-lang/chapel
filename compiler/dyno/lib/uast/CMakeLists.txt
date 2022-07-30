@@ -106,6 +106,7 @@ target_sources(libdyno-obj
                TupleDecl.cpp
                TypeDecl.cpp
                TypeQuery.cpp
+               uast-util.cpp
                UintLiteral.cpp
                Use.cpp
                Union.cpp

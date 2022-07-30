@@ -101,10 +101,18 @@ struct GatherDecls {
 
     // traverse inside to look for type queries &
     // add them to declared
-    if (auto fml = d->toFormal()) {
-      if (auto typeExpr = fml->typeExpression()) {
+    if (d->isFormal() || d->isVarArgFormal()) {
+      auto formal = d->toVarLikeDecl();
+      if (auto typeExpr = formal->typeExpression()) {
         GatherQueryDecls gatherQueryDecls(declared);
         typeExpr->traverse(gatherQueryDecls);
+      }
+
+      if (auto vararg = d->toVarArgFormal()) {
+        if (auto count = vararg->count()) {
+          GatherQueryDecls gatherQueryDecls(declared);
+          count->traverse(gatherQueryDecls);
+        }
       }
     }
 

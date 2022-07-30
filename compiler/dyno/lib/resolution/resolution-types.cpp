@@ -24,11 +24,14 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/types/TupleType.h"
+#include "chpl/uast/uast-util.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
+#include "chpl/uast/VarArgFormal.h"
 
 namespace chpl {
 namespace resolution {
@@ -88,9 +91,18 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
       if (auto formal = decl->toFormal()) {
         name = formal->name();
         hasDefault = formal->initExpression() != nullptr;
+      } else if (auto varargs = decl->toVarArgFormal()) {
+        name = varargs->name();
+
+        // This should not be possible. Currently varargs with a default value
+        // will be considered a syntax error.
+        hasDefault = false;
+        assert(varargs->initExpression() == nullptr);
       }
 
-      formals.push_back(UntypedFnSignature::FormalDetail(name, hasDefault, decl));
+      auto fd = UntypedFnSignature::FormalDetail(name, hasDefault,
+                                                 decl, decl->isVarArgFormal());
+      formals.push_back(fd);
     }
 
     // find the unique-ified untyped signature
@@ -147,12 +159,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
 
   int i = 0;
   for (auto actual : call->actuals()) {
-    bool isQuestionMark = false;
-    if (auto id = actual->toIdentifier())
-      if (id->name() == USTR("?"))
-        isQuestionMark = true;
-
-    if (isQuestionMark) {
+    if (util::isQuestionMark(actual)) {
       hasQuestionArg_ = true;
     } else {
       UniqueString byName;
@@ -217,51 +224,117 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   mappingIsValid_ = false;
   failingActualIdx_ = -1;
 
+  int numFormals = untyped->numFormals();
+  int numEntries = numFormals;
+
+  // The specified number of varargs in the formal isn't known at this point,
+  // so we need to build the entries in terms of the number of varargs that the
+  // caller is attempting to pass.
+  int attemptedNumVarArgs = 0;
+
   // allocate space in the arrays
-  byFormalIdx_.resize(untyped->numFormals());
+  byFormalIdx_.resize(numEntries);
   actualIdxToFormalIdx_.resize(call.numActuals());
 
   // initialize the FormalActual parts from the Formals
-  int formalIdx = 0;
-  int numFormals = untyped->numFormals();
+  int entryIdx = 0;
+  int numVarArgFormals = 0;
   for (int i = 0; i < numFormals; i++) {
-    FormalActual& entry = byFormalIdx_[formalIdx];
-    if (const Decl* decl = untyped->formalDecl(i)) {
-      entry.formal_ = decl;
-    }
+
+    const Decl* decl = untyped->formalDecl(i);
+    QualifiedType formalQT;
+    bool formalInstantiated = false;
+
     if (typed != nullptr) {
-      entry.formalType_ = typed->formalType(formalIdx);
+      formalQT = typed->formalType(i);
       if (typed->instantiatedFrom() != nullptr) {
-        entry.formalInstantiated_ = typed->formalIsInstantiated(i);
+        formalInstantiated = typed->formalIsInstantiated(i);
       }
     }
-    entry.hasActual_ = false;
-    entry.formalIdx_ = formalIdx;
-    entry.actualIdx_ = -1;
 
-    formalIdx++;
+    if (untyped->formalIsVarArgs(i) == false) {
+      FormalActual& entry = byFormalIdx_[entryIdx];
+
+      entry.formal_ = decl;
+      entry.hasActual_ = false;
+      entry.formalIdx_ = i;
+      entry.actualIdx_ = -1;
+      entry.formalType_ = formalQT;
+      entry.formalInstantiated_ = formalInstantiated;
+      entry.hasDefault_ = untyped->formalHasDefault(i);
+
+      entryIdx++;
+    } else {
+      numVarArgFormals += 1;
+
+      if (numVarArgFormals > 1) {
+        return false;
+      }
+
+      // zero-sized varargs not currently supported
+      int numExtra = call.numActuals() - numFormals;
+      attemptedNumVarArgs = std::max(numExtra + 1, 1);
+      numEntries = numFormals + attemptedNumVarArgs - 1;
+      byFormalIdx_.resize(numEntries);
+
+      if (formalQT.type() != nullptr) {
+        const TupleType* tup = formalQT.type()->toTupleType();
+        formalQT = tup->starType();
+      }
+
+      for (int j = 0; j < attemptedNumVarArgs; j++) {
+        FormalActual& entry = byFormalIdx_[entryIdx];
+
+        entry.formal_ = decl;
+        entry.hasActual_ = false;
+        entry.formalIdx_ = i;
+        entry.actualIdx_ = -1;
+        entry.formalType_ = formalQT;
+        entry.formalInstantiated_ = formalInstantiated;
+        entry.hasDefault_ = untyped->formalHasDefault(i);
+        entry.isVarArgEntry_ = true;
+
+        entryIdx++;
+      }
+    }
   }
+
+  assert(entryIdx == numEntries);
 
   // Match named actuals against formal names in the function signature.
   // Record successful matches in actualIdxToFormalIdx.
 
-  int actualIdx = 0;
-  formalIdx = 0;
-  for (const CallInfoActual& actual : call.actuals()) {
+  // TODO: This should just be a string to int map...
+  for (size_t actualIdx = 0; actualIdx < call.numActuals(); actualIdx++) {
+    const CallInfoActual& actual = call.actual(actualIdx);
     if (!actual.byName().isEmpty()) {
       bool match = false;
+      int entryIdx = 0;
       for (int i = 0; i < numFormals; i++) {
-        if (actual.byName() == untyped->formalName(i)) {
-          match = true;
-          FormalActual& entry = byFormalIdx_[i];
-          entry.hasActual_ = true;
-          entry.actualIdx_ = actualIdx;
-          entry.actualType_ = actual.type();
-          actualIdxToFormalIdx_[actualIdx] = formalIdx;
-          break;
-        }
+        FormalActual& entry = byFormalIdx_[entryIdx];
+        match = actual.byName() == untyped->formalName(i);
+        assert(entry.formal_ == untyped->formalDecl(i));
 
-        formalIdx++;
+        if (entry.isVarArgEntry_) {
+          // TODO: production compiler doesn't support named VarArgs, but
+          // that appears to be an implementation limitation...
+          if (match) {
+            failingActualIdx_ = actualIdx;
+            return false;
+          }
+          // Skip the other VarArgs
+          entryIdx += attemptedNumVarArgs;
+        } else {
+          if (match) {
+            entry.hasActual_ = true;
+            entry.actualIdx_ = actualIdx;
+            entry.actualType_ = actual.type();
+            actualIdxToFormalIdx_[actualIdx] = entryIdx;
+            break;
+          }
+
+          entryIdx++;
+        }
       }
 
       // Fail if no matching formal is found.
@@ -271,15 +344,14 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         return false;
       }
     }
-    actualIdx++;
   }
 
   // Fill in unmatched formals in sequence with the remaining actuals.
   // Record successful substitutions
-  formalIdx = 0;
-  actualIdx = 0;
+  entryIdx = 0;
+  int actualIdx = 0;
   for (const CallInfoActual& actual : call.actuals()) {
-    if (formalIdx >= (int) byFormalIdx_.size()) {
+    if (entryIdx >= numEntries) {
       // too many actuals
       failingActualIdx_ = actualIdx;
       return false;
@@ -287,23 +359,23 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
     if (actual.byName().isEmpty()) {
       // Skip any formals already matched to named arguments
-      while (byFormalIdx_[formalIdx].actualIdx_ >= 0) {
-        if (formalIdx + 1 >= (int) byFormalIdx_.size()) {
+      while (byFormalIdx_[entryIdx].hasActual_) {
+        if (entryIdx + 1 >= numEntries) {
           // too many actuals
           failingActualIdx_ = actualIdx;
           return false;
         }
-        formalIdx++;
+        entryIdx++;
       }
-      assert(formalIdx < (int) byFormalIdx_.size());
+      assert(entryIdx < numEntries);
 
       // TODO: special handling for operators
 
-      FormalActual& entry = byFormalIdx_[formalIdx];
+      FormalActual& entry = byFormalIdx_[entryIdx];
       entry.hasActual_ = true;
       entry.actualIdx_ = actualIdx;
       entry.actualType_ = actual.type();
-      actualIdxToFormalIdx_[actualIdx] = formalIdx;
+      actualIdxToFormalIdx_[actualIdx] = entryIdx;
     }
     actualIdx++;
   }
@@ -313,15 +385,15 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     // or have a default value.
     // This is left out for type constructors because presently
     // a partial instantiation is provided by simply leaving out arguments.
-    while (formalIdx < (int) byFormalIdx_.size()) {
-      if (byFormalIdx_[formalIdx].actualIdx_ < 0) {
-        if (!untyped->formalHasDefault(formalIdx)) {
+    for (;entryIdx < numEntries; entryIdx++) {
+      FormalActual& entry = byFormalIdx_[entryIdx];
+      if (entry.actualIdx_ < 0) {
+        if (entry.hasDefault() == false) {
           // formal was not provided and there is no default value
-          failingFormalIdx_ = formalIdx;
+          failingFormalIdx_ = entry.formalIdx();
           return false;
         }
       }
-      formalIdx++;
     }
   }
 
