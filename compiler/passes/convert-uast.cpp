@@ -1925,9 +1925,8 @@ struct Converter {
 
     if (auto ident = node->toIdentifier()) {
       auto name = ident->name();
-      if (Expr* e = resolvedIdentifier(ident)) {
-        return e;
-      } else if (name == USTR("atomic")) {
+
+      if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
         ret = new UnresolvedSymExpr("_singlevar");
