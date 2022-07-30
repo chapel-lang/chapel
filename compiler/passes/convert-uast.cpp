@@ -1140,6 +1140,17 @@ struct Converter {
         return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
       if (name == USTR("^"))
         return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
+
+      if (name.str() == "max")
+        return new UnresolvedSymExpr("MaxReduceScanOp");
+      if (name.str() == "maxloc")
+        return new UnresolvedSymExpr("maxloc");
+      if (name.str() == "min")
+        return new UnresolvedSymExpr("MinReduceScanOp");
+      if (name.str() == "minloc")
+        return new UnresolvedSymExpr("minloc");
+      if (name.str() == "minmax")
+        return new UnresolvedSymExpr("minmax");
     }
 
     auto ret = convertAST(node);
