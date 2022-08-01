@@ -28,9 +28,6 @@
 
 #include <cassert>
 
-// assumes the last statement is a variable declaration for x
-// with an initialization expression.
-// Returns the type of the initializer expression.
 static void test1() {
   Context ctx;
   auto context = &ctx;
