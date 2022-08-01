@@ -179,7 +179,7 @@ formatting. There is support for :ref:`formatted I/O <about-io-formatted-io>`
 with :proc:`FormattedIO.channel.readf` and :proc:`FormattedIO.channel.writef`.
 Also note that record or class implementations can provide custom functions
 implementing read or write operations for that type (see
-:ref:`readThis-writeThis-readWriteThis`).
+:ref:`readThis-writeThis`).
 
 .. _about-io-files:
 
@@ -2695,7 +2695,7 @@ proc channel._set_styleInternal(style: iostyleInternal) {
 
    Return the locale on which an ongoing I/O was started with a channel.
    This method will return ``nilLocale`` unless it is called on a channel that is
-   the formal argument to a `readThis`, `writeThis`, or `readWriteThis` method.
+   the formal argument to a `readThis` or `writeThis` method.
 
  */
 inline
@@ -2705,9 +2705,9 @@ proc channel.readWriteThisFromLocale() {
 
 // Returns the original locale that the I/O started on
 // Uses readWriteThisFromLocale in order to propagate that
-// information across readThis/writeThis/readWriteThis calls.
+// information across readThis/writeThis calls.
 // If readWriteThisFromLocale returns nil, that means the channel
-// was not created to call readThis/writeThis/readWriteThis and
+// was not created to call readThis/writeThis and
 // so the original locale of the I/O is `here`.
 pragma "no doc"
 inline
@@ -3907,7 +3907,7 @@ inline proc channel._readInner(ref args ...?k):void throws {
    :arg args: a list of arguments to read. Basic types are handled
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
-              in :ref:`readThis-writeThis-readWriteThis`.
+              in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` on end of file.
 
    :throws SystemError: Thrown if the channel could not be read.
@@ -4640,7 +4640,7 @@ proc channel.readln():bool throws {
               with zero or more such arguments. Basic types are handled
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
-              in :ref:`readThis-writeThis-readWriteThis`.
+              in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` upon end of file.
 
    :throws SystemError: Thrown if a line could not be read from the channel.
