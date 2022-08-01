@@ -127,9 +127,17 @@ module DistributedMap {
       return res;
     }
 
-    // TODO: impl
+    /*
+      Returns `true` if this map contains zero keys.
+
+      :returns: `true` if this map is empty.
+      :rtype: `bool`
+    */
     inline proc const isEmpty(): bool {
-      compilerError("unimplemented");
+      // TODO: size will lock in its body, is that sufficient protection?  It's
+      // not like the result can't be out of date once it's returned there
+      // either.
+      return size == 0;
     }
 
     /*
