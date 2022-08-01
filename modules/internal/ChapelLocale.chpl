@@ -189,7 +189,6 @@ module ChapelLocale {
 
     :returns: the hostname of the compute node associated with the locale
     :rtype: string
-
   */
   inline proc locale.hostname: string {
     return this._value.hostname;
@@ -211,27 +210,25 @@ module ChapelLocale {
     :header-rows: 1
 
     * - Configuration
-      - locale ( `here.name` )
-      - sub-locale ( `here.gpus[0].name` )
+      - locale (`here.name`)
+      - sub-locale (`here.gpus[0].name`)
     * - normal execution
       - {hostname}
       - {hostname}-GPU0
     * - oversubscribed execution
       - {hostname}
       - {hostname}-GPU0
-    * - oversubscribed execution (gasnet*)
+    * - oversubscribed execution with gasnet `(*)`
       - {hostname}-{id}
       - {hostname}-{id}-GPU0
 
   .. note::
 
-    When launching in an oversubscribed manner with `CHPL_COMM=gasnet`
-    and one of the following configurations:
+    `(*)`: This behavior occurs when launching in an oversubscribed manner
+    with `CHPL_COMM=gasnet` and one of the following configurations:
 
     - `CHPL_COMM_SUBSTRATE=udp` & `GASNET_SPAWNFN=L`
     - `CHPL_COMM_SUBSTRATE=smp`
-
-    the locale's integer ID will also be included in it's name.
 
     More information about these environment variables can be found here: :ref:`readme-multilocale`
 
