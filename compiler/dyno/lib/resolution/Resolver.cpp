@@ -2205,18 +2205,72 @@ void Resolver::exit(const uast::New* node) {
   }
 }
 
-bool Resolver::enter(const For* loop) {
+static QualifiedType resolveSerialIterType(Resolver& resolver,
+                                           const IndexableLoop* loop) {
+  Context* context = resolver.context;
+  const AstNode* iterand = loop->iterand();
+  iterand->traverse(resolver);
+  ResolvedExpression& iterandRE = resolver.byPostorder.byAst(iterand);
+
+  auto& MSC = iterandRE.mostSpecific();
+  bool isIter = MSC.isEmpty() == false &&
+                MSC.numBest() == 1 &&
+                MSC.only()->untyped()->kind() == uast::Function::Kind::ITER;
+
+  bool wasResolved = iterandRE.type().isUnknown() == false &&
+                     iterandRE.type().isErroneousType() == false;
+
+  QualifiedType idxType;
+
+  if (isIter) {
+    idxType = iterandRE.type();
+  } else if (wasResolved) {
+    //
+    // Resolve "iterand.these()"
+    //
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
+    auto ci = CallInfo (/* name */ USTR("these"),
+                        /* calledType */ iterandRE.type(),
+                        /* isMethod */ true,
+                        /* hasQuestionArg */ false,
+                        /* isParenless */ false,
+                        actuals);
+    auto inScope = resolver.scopeStack.back();
+    auto c = resolveGeneratedCall(context, iterand, ci, inScope, resolver.poiScope);
+
+    if (c.mostSpecific().only() != nullptr) {
+      idxType = c.exprType();
+      resolver.handleResolvedAssociatedCall(iterandRE, loop, ci, c);
+    } else {
+      idxType = QualifiedType(QualifiedType::UNKNOWN,
+                              ErroneousType::get(context));
+      std::ostringstream oss;
+      iterandRE.type().type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+      context->error(loop, "unable to iterate over values of type %s", oss.str().c_str());
+    }
+  } else {
+    idxType = QualifiedType(QualifiedType::UNKNOWN,
+                            ErroneousType::get(context));
+  }
+
+  return idxType;
+}
+
+bool Resolver::enter(const IndexableLoop* loop) {
 
   if (scopeResolveOnly) {
     enterScope(loop);
     return true;
   }
 
-  const AstNode* iterand = loop->iterand();
-  iterand->traverse(*this);
-  ResolvedExpression& iterandRE = byPostorder.byAst(iterand);
+  auto forLoop = loop->toFor();
+  bool isParamLoop = forLoop != nullptr && forLoop->isParam();
 
-  if (loop->isParam()) {
+  if (isParamLoop) {
+    const AstNode* iterand = loop->iterand();
+    iterand->traverse(*this);
+
     if (iterand->isRange() == false) {
       context->error(loop, "param loops may only iterate over range literals");
     } else {
@@ -2234,7 +2288,7 @@ bool Resolver::enter(const For* loop) {
       std::vector<ResolutionResultByPostorderID> loopResults;
       for (int64_t i = low->value(); i <= hi->value(); i++) {
         ResolutionResultByPostorderID bodyResults;
-        auto cur = Resolver::paramLoopResolver(*this, loop, bodyResults);
+        auto cur = Resolver::paramLoopResolver(*this, forLoop, bodyResults);
 
         cur.enterScope(loop);
 
@@ -2248,7 +2302,7 @@ bool Resolver::enter(const For* loop) {
         loopResults.push_back(std::move(cur.byPostorder));
       }
 
-      auto paramLoop = new ResolvedParamLoop(loop);
+      auto paramLoop = new ResolvedParamLoop(forLoop);
       paramLoop->setLoopBodies(loopResults);
       auto& resolvedLoopExpr = byPostorder.byAst(loop);
       resolvedLoopExpr.setParamLoop(paramLoop);
@@ -2258,62 +2312,28 @@ bool Resolver::enter(const For* loop) {
   } else {
     enterScope(loop);
 
-    auto& MSC = iterandRE.mostSpecific();
-    bool isIter = MSC.isEmpty() == false &&
-                  MSC.numBest() == 1 &&
-                  MSC.only()->untyped()->kind() == uast::Function::Kind::ITER;
-
-    bool wasResolved = iterandRE.type().isUnknown() == false &&
-                       iterandRE.type().isErroneousType() == false;
-
-    QualifiedType idxType;
-
-    if (isIter) {
-      idxType = iterandRE.type();
-    } else if (wasResolved) {
-      //
-      // Resolve "iterand.these()"
-      //
-      std::vector<CallInfoActual> actuals;
-      actuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
-      auto ci = CallInfo (/* name */ USTR("these"),
-                          /* calledType */ iterandRE.type(),
-                          /* isMethod */ true,
-                          /* hasQuestionArg */ false,
-                          /* isParenless */ false,
-                          actuals);
-      auto inScope = scopeStack.back();
-      auto c = resolveGeneratedCall(context, iterand, ci, inScope, poiScope);
-
-      if (c.mostSpecific().only() != nullptr) {
-        idxType = c.exprType();
-        handleResolvedAssociatedCall(iterandRE, loop, ci, c);
-      } else {
-        idxType = QualifiedType(QualifiedType::UNKNOWN,
-                                ErroneousType::get(context));
-        std::ostringstream oss;
-        iterandRE.type().type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-        context->error(loop, "unable to iterate over values of type %s", oss.str().c_str());
-      }
-    } else {
-      idxType = QualifiedType(QualifiedType::UNKNOWN,
-                              ErroneousType::get(context));
-    }
+    QualifiedType idxType = resolveSerialIterType(*this, loop);
 
     if (const Decl* idx = loop->index()) {
       ResolvedExpression& re = byPostorder.byAst(idx);
       re.setType(idxType);
     }
 
+    if (auto with = loop->withClause()) {
+      with->traverse(*this);
+    }
     loop->body()->traverse(*this);
   }
 
   return false;
 }
 
-void Resolver::exit(const For* loop) {
+void Resolver::exit(const IndexableLoop* loop) {
   // Param loops handle scope differently
-  if (loop->isParam() == false || scopeResolveOnly) {
+  auto forLoop = loop->toFor();
+  bool isParamLoop = forLoop != nullptr && forLoop->isParam();
+
+  if (isParamLoop == false || scopeResolveOnly) {
     exitScope(loop);
   }
 }
