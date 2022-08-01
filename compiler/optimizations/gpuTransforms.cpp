@@ -48,6 +48,15 @@ extern bool inLocalBlock(CallExpr *call);
 // Utilities
 // ----------------------------------------------------------------------------
 
+static bool isFieldAccessPrimitive(CallExpr *call) {
+  return call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+      call->isPrimitive(PRIM_GET_MEMBER) ||
+      call->isPrimitive(PRIM_SET_MEMBER) ||
+      call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
+      call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+      call->isPrimitive(PRIM_SET_SVEC_MEMBER);
+}
+
 // If any SymExpr is referring to a variable defined outside the
 // function return the SymExpr. Otherwise return nullptr
 static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
@@ -57,6 +66,11 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
         if (!var->isParameter() && var != gVoid) {
+          if (CallExpr* parent = toCallExpr(se->parentExpr)) {
+            if (isFieldAccessPrimitive(parent)) {
+              continue;
+            }
+          }
           return se;
         }
       }
@@ -560,12 +574,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
         }
         else {
           if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
-            if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                parent->isPrimitive(PRIM_GET_MEMBER) ||
-                parent->isPrimitive(PRIM_SET_MEMBER) ||
-                parent->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-                parent->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                parent->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+            if (isFieldAccessPrimitive(parent)) {
               if (symExpr == parent->get(2)) {  // this is a field
                 // do nothing
               }
