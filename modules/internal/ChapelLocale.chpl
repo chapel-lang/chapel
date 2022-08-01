@@ -145,22 +145,6 @@ module ChapelLocale {
       return this._value.chpl_name();
     }
 
-    inline proc defaultMemory() {
-      return this._value.defaultMemory();
-    }
-
-    inline proc largeMemory() {
-      return this._value.largeMemory();
-    }
-
-    inline proc lowLatencyMemory() {
-      return this._value.lowLatencyMemory();
-    }
-
-    inline proc highBandwidthMemory() {
-      return this._value.highBandwidthMemory();
-    }
-
     inline proc getChildCount() {
       return this._value.getChildCount();
     }
