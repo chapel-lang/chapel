@@ -86,6 +86,7 @@ Parallelism/Distributed Computing
    :maxdepth: 1
 
    Barriers <standard/Barriers>
+   Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
    VectorizingIterator <standard/VectorizingIterator>
 

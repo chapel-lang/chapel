@@ -1,0 +1,1 @@
+errors.chpl:PREDIFFED_LINENO: error: halt reached - Number of bytes (-10) for Communication.put is negative.

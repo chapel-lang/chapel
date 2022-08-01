@@ -75,6 +75,7 @@ MODULES_TO_DOCUMENT = \
 	standard/ChapelIO.chpl \
 	standard/ChplConfig.chpl \
 	standard/CommDiagnostics.chpl \
+	standard/Communication.chpl \
 	standard/GPUDiagnostics.chpl \
 	standard/CTypes.chpl \
 	standard/DateTime.chpl \
