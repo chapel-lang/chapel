@@ -701,8 +701,8 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   if (formalT->isAnyComplexType() && actualT->isComplexType())
     return true;
 
-  if (formalT->isAnyEnumType())
-    assert(false && "Not implemented yet"); // TODO: enumerated types
+  if (formalT->isAnyEnumType() && actualT->isEnumType())
+    return true;
 
   if (formalT->isAnyImagType() && actualT->isImagType())
     return true;
