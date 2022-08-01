@@ -192,7 +192,7 @@ if example == 0 || example == 3 {
 // we can optimize better (using ``mmap``, if you like details).
   {
     var f = open(testfile, iomode.r,
-                hints=ioHintSet.random | ioHintSet.prefetch | ioHintSet.direct(QIO_HINT_PARALLEL));
+                hints=ioHintSet.random | ioHintSet.prefetch);
 
     // This is a forall loop to do I/O in parallel!
     forall i in 0..#num by -1 {
