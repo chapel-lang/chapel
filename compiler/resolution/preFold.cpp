@@ -665,8 +665,7 @@ static Expr* preFoldPrimResolves(CallExpr* call) {
 
   // TODO: To resolve an arbitrary expression (e.g. the UnresolvedSymExpr
   // for 'foo'), we need a way to back out without emitting errors.
-  // We'd also need to interact with scopeResolve as well. This will
-  // be much easier in a new compiler world.
+  // We'd also need to interact with scopeResolve as well.
   if (!isCallExpr(exprToResolve)) {
     INT_FATAL("PRIM_RESOLVES can only resolve CallExpr for now");
   }
@@ -677,20 +676,16 @@ static Expr* preFoldPrimResolves(CallExpr* call) {
   auto tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
   call->getStmtExpr()->insertAfter(tmpBlock);
 
-  // Remove the expression to resolve and insert it into the block.
   exprToResolve->remove();
   tmpBlock->insertAtTail(exprToResolve);
 
   // Resolution depends on normalized AST (and the expression is not).
-  // TODO: Do we need to find/re-identify the call again?
   normalize(tmpBlock);
 
   bool didResolveExpr = true;
 
   // Now that the block is normalized, we need to do a postorder traversal
   // and resolve sub-expressions in a manner similar to normal resolution.
-  // However, calls should use 'tryResolveCall' so that we can back out
-  // if a particular call should fail to resolve.
   for_exprs_postorder(expr, tmpBlock) {
     const bool isTopLevelExpression = (expr->parentExpr == tmpBlock);
     auto call = toCallExpr(expr);
@@ -699,23 +694,20 @@ static Expr* preFoldPrimResolves(CallExpr* call) {
     expr = call && !isContextCallExpr(expr) ? preFold(call) : expr;
     INT_ASSERT(expr);
 
-    // Go ahead and skip over context calls right away.
     if (isContextCallExpr(expr)) continue;
 
     // Unpack the call again since it might have been replaced.
     call = toCallExpr(expr);
 
     // TODO: Ways to keep type checking from issuing errors to STDERR, or
-    // redirecting it elsewhere? E.g. we could have code here to
-    // handle PRIM_MOVE setting the type of the LHS. Dyno should solve
-    // this, but we're not there yet.
+    // redirecting it elsewhere? Or is dyno our only hope?
     if (!call) {
       expr = resolveExpr(expr);
       INT_ASSERT(expr);
 
-    // If it is a move, we need to handle checking the types manually,
-    // as the normal machinery will emit errors in the case of e.g.,
-    // a 'void' type subexpression being called.
+    // If it is a move, we need to handle type checking manually, as the
+    // normal path will emit errors in the case of e.g., a 'void' type
+    // sub-expression being called.
     } else if (call->isPrimitive()) {
       switch (call->primitive->tag) {
         case PRIM_MOVE: {
@@ -727,22 +719,20 @@ static Expr* preFoldPrimResolves(CallExpr* call) {
           isBadMove |= (rhsType == dtVoid);
           isBadMove |= !moveTypesAreAcceptable(lhsType, rhsType);
 
-          if (isBadMove) {
-            didResolveExpr = false;
-            break;
-
           // Call into the normal path to perform additional lowering.
-          } else {
+          if (!isBadMove) {
             resolveExpr(call);
+          } else {
+            didResolveExpr = false;
           }
         } break;
         default: {
           expr = resolveExpr(expr);
+          INT_ASSERT(expr);
         } break;
       }
 
-    // Otherwise, it is a normal call, so rely on the 'tryResolveCall'
-    // machinery that has already been built for us.
+    // Otherwise, it is a normal call, so rely on 'tryResolveCall'.
     } else {
       const bool isPartialCall = call->partialTag;
       bool doResolveDependencies = false;
@@ -770,7 +760,7 @@ static Expr* preFoldPrimResolves(CallExpr* call) {
     if (!didResolveExpr) break;
   }
 
-  // Remove the block and swap in the appropriate 'SymExpr'.
+  // Remove the block and swap in the result of resolving.
   Expr* ret = didResolveExpr ? new SymExpr(gTrue) : new SymExpr(gFalse);
   tmpBlock->remove();
   call->replace(ret);

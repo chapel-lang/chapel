@@ -1,0 +1,1 @@
+Errors in dependent functions should not terminate the compiler.
