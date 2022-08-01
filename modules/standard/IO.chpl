@@ -4921,13 +4921,6 @@ proc channel.readBytes(x, len:c_ssize_t) throws {
   if err then try this._ch_ioerror(err, "in channel.readBytes");
 }
 
-/* Wrapper class on a channel to make it only read values
-   of a single type. Also supports an iterator yielding
-   the read values.
- */
-deprecated "ItemReader is deprecated"
-type ItemReader = itemReaderInternal;
-
 pragma "no doc"
 record itemReaderInternal {
   /* What type do we read and yield? */
@@ -4955,44 +4948,6 @@ record itemReaderInternal {
       yield x;
     }
   }
-}
-
-/* Create and return an :record:`ItemReader` that can yield read values of
-   a single type.
- */
-deprecated "channel.itemReader is deprecated"
-proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
-  if writing then compilerError(".itemReader on write-only channel");
-  return new itemReaderInternal(ItemType, kind, locking, this);
-}
-
-deprecated "ItemWriter is deprecated"
-type ItemWriter = itemWriterInternal;
-
-pragma "no doc"
-record itemWriterInternal {
-  /* What type do we write? */
-  type ItemType;
-  /* the kind field for our channel */
-  param kind:iokind;
-  /* the locking field for our channel */
-  param locking:bool;
-  /* our channel */
-  var ch:channel(true,kind,locking);
-  /* write a single item, throwing on error */
-  proc write(arg:ItemType):bool throws {
-    return ch.write(arg);
-  }
-}
-
-/* Create and return an :record:`ItemWriter` that can write values of
-   a single type.
- */
-deprecated
-"channel.itemWriter is deprecated"
-proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
-  if !writing then compilerError(".itemWriter on read-only channel");
-  return new ItemWriter(ItemType, kind, locking, this);
 }
 
 // And now, the toplevel items.
