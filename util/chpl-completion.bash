@@ -304,6 +304,7 @@ _chpl ()
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
+--report-gpu-transform-time \
 --report-inlined-iterators \
 --report-inlining \
 --report-optimized-forall-unordered-ops \
