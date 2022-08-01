@@ -411,30 +411,6 @@ module ChapelLocale {
       return "";
     }
 
-    //
-    // Support for different types of memory:
-    // large, low latency, and high bandwidth
-    //
-    pragma "no doc"
-    proc defaultMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    pragma "no doc"
-    proc largeMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    pragma "no doc"
-    proc lowLatencyMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    pragma "no doc"
-    proc highBandwidthMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
     pragma "no doc"
     proc getChildCount() : int {
       HaltWrappers.pureVirtualMethodHalt();
