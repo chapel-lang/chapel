@@ -1358,7 +1358,6 @@ module TomlReader {
     }
 
     proc writeThis(f) throws {
-      // TODO: The `list` type currently doesn't support readWriteThis!
       f <~> this.A.toArray();
     }
   }
