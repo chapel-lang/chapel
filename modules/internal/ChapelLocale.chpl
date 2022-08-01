@@ -145,22 +145,6 @@ module ChapelLocale {
       return this._value.chpl_name();
     }
 
-    inline proc defaultMemory() {
-      return this._value.defaultMemory();
-    }
-
-    inline proc largeMemory() {
-      return this._value.largeMemory();
-    }
-
-    inline proc lowLatencyMemory() {
-      return this._value.lowLatencyMemory();
-    }
-
-    inline proc highBandwidthMemory() {
-      return this._value.highBandwidthMemory();
-    }
-
     inline proc getChildCount() {
       return this._value.getChildCount();
     }
@@ -425,30 +409,6 @@ module ChapelLocale {
     proc chpl_name() : string {
       HaltWrappers.pureVirtualMethodHalt();
       return "";
-    }
-
-    //
-    // Support for different types of memory:
-    // large, low latency, and high bandwidth
-    //
-    pragma "no doc"
-    proc defaultMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    pragma "no doc"
-    proc largeMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    pragma "no doc"
-    proc lowLatencyMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    pragma "no doc"
-    proc highBandwidthMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
     }
 
     pragma "no doc"

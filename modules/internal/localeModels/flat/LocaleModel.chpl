@@ -100,28 +100,6 @@ module LocaleModel {
     }
     override proc chpl_name() return local_name;
 
-    //
-    // Support for different types of memory:
-    // large, low latency, and high bandwidth
-    //
-    // The flat memory model assumes only one memory.
-    //
-    override proc defaultMemory() : locale {
-      return new locale(this);
-    }
-
-    override proc largeMemory() : locale {
-      return new locale(this);
-    }
-
-    override proc lowLatencyMemory() : locale {
-      return new locale(this);
-    }
-
-    override proc highBandwidthMemory() : locale {
-      return new locale(this);
-    }
-
     proc getChildSpace() return chpl_emptyLocaleSpace;
 
     override proc getChildCount() return 0;
