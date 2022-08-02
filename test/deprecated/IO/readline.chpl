@@ -25,22 +25,6 @@ proc test_readlines()
     assert( !got );
   }
 
-  {
-    var style = defaultIOStyleInternal();
-    style.string_format = iostringformat.toend:uint(8);
-    style.string_end = 0x0a;
-    var ch = f.reader(style=style);
-    for (line,i) in zip(ch.itemReader(string),1..) {
-      if i == 1 {
-        assert(line == "a b\n");
-      } else if i == 2 {
-        assert(line == "c d\n");
-      } else {
-        assert(false);
-      }
-    }
-  }
-
 
   {
     for (line,i) in zip(f.lines(),1..) {
