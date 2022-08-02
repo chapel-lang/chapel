@@ -1,6 +1,6 @@
 // tests convenience signatures for bit-I/O routines
 // these help avoid casting
-
+use FileSystem;
 use IO;
 
 config const test=1;
@@ -59,5 +59,5 @@ if test == 4 {
     assert(tmp == 0b011);
 }
 
-unlink(testfile);
+FileSystem.remove(testfile);
 

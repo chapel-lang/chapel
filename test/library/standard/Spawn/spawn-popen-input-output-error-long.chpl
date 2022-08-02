@@ -1,3 +1,4 @@
+use FileSystem;
 use Subprocess;
 
 {
@@ -40,4 +41,4 @@ sub.close();
 
 writeln("OK");
 
-unlink("stdout-stderr");
+FileSystem.remove("stdout-stderr");
