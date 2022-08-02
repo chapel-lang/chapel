@@ -1474,6 +1474,7 @@ proc file.init(x: file) {
   }
 }
 
+pragma "no doc"
 proc file.init=(x: file) {
   this.init(x);
 }
