@@ -26,8 +26,8 @@ proc main() {
     w.close();
   }
 
-  var configs = updateLock(true, tf=tf, lf=temp.tryGetPath());
-  var lock = open(temp.tryGetPath(), iomode.r);
+  var configs = updateLock(true, tf=tf, lf=temp.path);
+  var lock = open(temp.path, iomode.r);
   var lockFile = parseToml(lock);
   writeln(lockFile);
   remove(lf);
