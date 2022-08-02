@@ -1,1 +1,1 @@
-errors.chpl:PREDIFFED_LINENO: error: halt reached - The destination locale ID (2) for Communication.put is out of bounds.
+errors.chpl:PREDIFFED_LINENO: error: halt reached - The destination locale ID (PREDIFFED_LOCALEID) for Communication.put is out of bounds.
