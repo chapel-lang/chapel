@@ -284,11 +284,8 @@ if there was an error. See:
  * :proc:`channel.readbits`
  * :proc:`FormattedIO.channel.readf` (see also :ref:`about-io-formatted-io`)
 
-In addition, there are several convenient synonyms for :proc:`channel.write` and
-:proc:`channel.read`:
-
- * :proc:`channel.readwrite`
- * the `<~> operator`_
+In addition, there is a convenient synonym for :proc:`channel.write` and
+:proc:`channel.read`: the `<~> operator`
 
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 :proc:`channel.flush()` method. Flushing the buffer will make all writes available
@@ -3642,31 +3639,13 @@ proc channel.writeIt(const x) throws {
   }
 }
 
-/*
-   For a writing channel, writes as with :proc:`channel.write`.
-   For a reading channel, reads as with :proc:`channel.read`.
-   Stores any error encountered in the channel. Does not return anything.
-
-   :throws SystemError: When an IO error has occurred.
- */
-deprecated "channel.readwrite is deprecated"
-inline proc channel.readwrite(const x) throws where this.writing {
-  try this.writeIt(x);
-}
-// documented in the writing version.
-pragma "no doc"
-deprecated "channel.readwrite is deprecated"
-inline proc channel.readwrite(ref x) throws where !this.writing {
-  try this.readIt(x);
-}
-
   /*
 
      The _`<~> operator`
 
-     This `<~>` operator is the same as calling :proc:`channel.readwrite`,
-     except that it returns the channel so that multiple operator
-     calls can be chained together.
+     This `<~>` operator invokes `readThis` or `writeThis` with `x`, depending
+     on the type of channel. This operator returns a const reference to the
+     same channel so that multiple operator calls can be chained together.
 
      :returns: ch
      :throws SystemError: When an IO error has occurred.

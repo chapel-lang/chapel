@@ -96,7 +96,7 @@ module ProvidesOps {
     where ch.writing {
 
     writeln("In ProvidesOps.<~>");
-    try ch.readwrite(x.x);
+    try ch.write(x.x);
     return ch;
   }
 
