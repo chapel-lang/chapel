@@ -605,6 +605,13 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
             else {
               INT_FATAL("Unexpected call expression");
             }
+          } else if (CondStmt* cond = toCondStmt(symExpr->parentExpr)) {
+            // Parent is a conditional statement.
+            if (symExpr == cond->condExpr) {
+              addKernelArgument(sym);
+            }
+          } else {
+            INT_FATAL("Unexpected symbol expression");
           }
         }
       }
