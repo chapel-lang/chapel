@@ -342,7 +342,7 @@ proc graphNumVertices(G) return G.vertices.size;
 proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
   const f = open(prefix+suffix,
                  if forWriting then iomode.cw else iomode.r,
-                 IOHINT_SEQUENTIAL);
+                 ioHintSet.sequential);
   const chan = if forWriting
     then f.writer(iokind.big, false)
     else f.reader(iokind.big, false);

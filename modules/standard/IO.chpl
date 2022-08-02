@@ -759,20 +759,24 @@ extern const QIO_HINT_OWNED:c_int;
     to hint. Expect to use NONE most of the time.
     The other hints can be bitwise-ORed in.
  */
+deprecated "'IOHINT_NONE' is deprecated; please use 'ioHintSet.empty' instead"
 const IOHINT_NONE = 0:c_int;
 
 /* IOHINT_RANDOM means we expect random access to a file */
+deprecated "'IOHINT_RANDOM' is deprecated; please use 'ioHintSet.random' instead"
 const IOHINT_RANDOM = QIO_HINT_RANDOM;
 
 /*  IOHINT_SEQUENTIAL means expect sequential access. On
     Linux, this should double the readahead.
  */
+deprecated "'IOHINT_SEQUENTIAL' is deprecated; please use 'ioHintSet.sequential' instead"
 const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
 
 /*  IOHINT_CACHED means we expect the entire file
     to be cached and/or we pull it in all at
     once. May request readahead on the entire file.
  */
+deprecated "'IOHINT_CACHED' is deprecated; please use 'ioHintSet.prefetch' instead"
 const IOHINT_CACHED = QIO_HINT_CACHED;
 
 /*  IOHINT_PARALLEL means that we expect to have many
@@ -780,6 +784,7 @@ const IOHINT_CACHED = QIO_HINT_CACHED;
     It might change the reading/writing implementation
     to something more efficient in that scenario.
  */
+deprecated "'IOHINT_PARALLEL' is deprecated"
 const IOHINT_PARALLEL = QIO_HINT_PARALLEL;
 
 pragma "no doc"
@@ -1399,44 +1404,93 @@ extern type fdflag_t = c_int;
 //  QIO_HINT_BANDWIDTH,
 //  QIO_HINT_CACHED,
 //  QIO_HINT_NOREUSE
-/*
 
-A value of the :type:`iohints` type defines a set of hints about the I/O that
-the file or channel will perform.  These hints may be used by the
-implementation to select optimized versions of the I/O operations.
-
-The :type:`iohints` type is implementation-defined.
-The following :type:`iohints` constants are provided:
-
-  * :const:`IOHINT_NONE` defines an empty set, which provides no hints.
-  * :const:`IOHINT_RANDOM` suggests to expect random access.
-  * :const:`IOHINT_SEQUENTIAL` suggests to expect sequential access.
-  * :const:`IOHINT_CACHED` suggests that the file data is or should be
-    cached in memory, possibly all at once.
-  * :const:`IOHINT_PARALLEL` suggests to expect many channels
-    working with this file in parallel.
-
-
-Other hints might be added in the future.
-
-The following binary operators are defined on :type:`iohints`:
-
-* ``|`` for set union
-* ``&`` for set intersection
-* ``==`` for set equality
-* ``!=`` for set inequality
-
-When an :type:`iohints` formal argument has default intent, the
-actual is copied as ``const in`` to the formal upon a function
-call, and the formal cannot be assigned within the function.
-
-The default value of the :type:`iohints` type is undefined.
-
-*/
+deprecated "the 'iohints' type is deprecated; please use the 'ioHintSet' type instead."
 extern type iohints = c_int;
 
-/*
+private const IOHINTS_NONE:        c_int = 0;
+private const IOHINTS_SEQUENTIAL:  c_int = QIO_HINT_SEQUENTIAL;
+private const IOHINTS_RANDOM:      c_int = QIO_HINT_RANDOM;
+private const IOHINTS_PREFETCH:    c_int = QIO_HINT_CACHED;
+private const IOHINTS_MMAP:        c_int = QIO_METHOD_MMAP;
 
+/* A value of the :record:`ioHintSet` type defines a set of hints about
+  the I/O that the file or channel will perform.  These hints may be used
+  by the implementation to select optimized versions of the I/O operations.
+
+  Most hints have POSIX equivalents associated with posix_fadvise() and
+  posix_madvise().
+
+  .. code-block:: chapel
+
+    use IO;
+
+    // define a set of hints using a union operation
+    var hints = ioHintSet::sequential | ioHintSet::prefetch;
+
+    // open a file using the hints
+    var f: file;
+    try! {
+      f = open("path/to/my/file.txt", iomode.r, hints=hints);
+    }
+*/
+record ioHintSet {
+  pragma "no doc"
+  var _internal : c_int;
+
+  /* Defines an empty set, which provides no hints.
+  Corresponds to 'POSIX_*_NORMAL'.
+  */
+  proc type empty { return new ioHintSet(IOHINTS_NONE); }
+
+ /* Suggests that the file will be accessed sequentially.
+  Corresponds to 'POSIX_*_SEQUENTIAL'
+  */
+  proc type sequential { return new ioHintSet(IOHINTS_SEQUENTIAL); }
+
+  /* Suggests that the file will be accessed randomly.
+  Corresponds to 'POSIX_*_RANDOM'.
+  */
+  proc type random { return new ioHintSet(IOHINTS_RANDOM); }
+
+  /* Suggests that the runtime/OS should immediately begin prefetching the file contents.
+  Corresponds to 'POSIX_*_WILLNEED'.
+  */
+  proc type prefetch { return new ioHintSet(IOHINTS_PREFETCH); }
+
+  /* Suggests that 'mmap' should be used to access the file contents
+  */
+  proc type mmap { return new ioHintSet(IOHINTS_MMAP); }
+
+  pragma "no doc"
+  proc type direct(constant: c_int) { return new ioHintSet(constant); }
+}
+
+/* Compute the union of two ioHintSets
+*/
+operator ioHintSet.|(lhs: ioHintSet, rhs: ioHintSet) {
+  return new ioHintSet(lhs._internal | rhs._internal);
+}
+
+/* Compute the intersection of two ioHintSets
+*/
+operator ioHintSet.&(lhs: ioHintSet, rhs: ioHintSet) {
+  return new ioHintSet(lhs._internal & rhs._internal);
+}
+
+/* Compare two ioHintSets for equality
+*/
+operator ioHintSet.==(lhs: ioHintSet, rhs: ioHintSet) {
+  return lhs._internal == rhs._internal;
+}
+
+/* Compare two ioHintSets for inequality
+*/
+operator ioHintSet.!=(lhs: ioHintSet, rhs: ioHintSet) {
+  return !(lhs == rhs);
+}
+
+/*
 The :record:`file` type is implementation-defined.  A value of the
 :record:`file` type refers to the state that is used by the implementation to
 identify and interact with the OS file.
@@ -1701,7 +1755,7 @@ proc _modestring(mode:iomode) {
 deprecated "open with a style argument is deprecated"
 proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle): file throws {
-  return openHelper(path, mode, hints, style:iostyleInternal);
+  return openHelper(path, mode, new ioHintSet(hints), style:iostyleInternal);
 }
 
 /*
@@ -1715,16 +1769,22 @@ to create a channel to actually perform I/O operations
              whether or not to create the file if it doesn't exist.
              See :type:`iomode`.
 :arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :type:`iohints`.
+            this file. See :record:`ioHintSet`.
 :returns: an open file to the requested resource.
 
 :throws SystemError: Thrown if the file could not be opened.
 */
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE): file throws {
+proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
 }
 
-private proc openHelper(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'open' that takes an 'ioHintSet' instead."
+proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE): file throws {
+  return open(path, mode, new ioHintSet(hints));
+}
+
+private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
                         style:iostyleInternal = defaultIOStyleInternal()): file throws {
 
   var local_style = style;
@@ -1737,7 +1797,7 @@ private proc openHelper(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
 
   error = qio_file_open_access(ret._file_internal,
                                path.encode(policy=encodePolicy.unescape).c_str(),
-                               _modestring(mode).c_str(), hints, local_style);
+                               _modestring(mode).c_str(), hints._internal, local_style);
   if error then
     try ioerror(error, "in open", path);
 
@@ -1803,7 +1863,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
 
 deprecated "openfd with a style argument is deprecated"
 proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle):file throws {
-  return openfdHelper(fd, hints, style: iostyleInternal);
+  return openfdHelper(fd, new ioHintSet(hints), style: iostyleInternal);
 }
 
 /*
@@ -1827,22 +1887,28 @@ The system file descriptor will be closed when the Chapel file is closed.
 
 :arg fd: a system file descriptor.
 :arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :type:`iohints`.
+            this file. See :record:`ioHintSet`.
 :returns: an open :record:`file` using the specified file descriptor.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
-proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE):file throws {
+proc openfd(fd: fd_t, hints = ioHintSet.empty):file throws {
   return openfdHelper(fd, hints);
 }
 
-private proc openfdHelper(fd: fd_t, hints:iohints=IOHINT_NONE,
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openfd' that takes an 'ioHintSet' instead."
+proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE):file throws {
+  return openfd(fd, new ioHintSet(hints));
+}
+
+private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
   extern proc chpl_cnullfile():_file;
-  var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style, 0);
+  var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
 
   // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
   // err should be nonzero in the latter case.
@@ -1859,8 +1925,9 @@ private proc openfdHelper(fd: fd_t, hints:iohints=IOHINT_NONE,
 
 deprecated "openfp with a style argument is deprecated"
 proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle):file throws {
-  return openfpHelper(fp, hints, style: iostyleInternal);
+  return openfpHelper(fp, new ioHintSet(hints), style: iostyleInternal);
 }
+
 /*
 
 Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
@@ -1876,21 +1943,27 @@ that once the file is open, you will need to use a :proc:`file.reader` or
 
 :arg fp: a C ``FILE*`` to work with
 :arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :type:`iohints`.
+            this file. See :record:`ioHintSet`.
 :returns: an open :record:`file` that uses the underlying FILE* argument.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
-proc openfp(fp: _file, hints:iohints=IOHINT_NONE):file throws {
+proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
-private proc openfpHelper(fp: _file, hints:iohints=IOHINT_NONE,
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openfp' that takes an 'ioHintSet' instead."
+proc openfp(fp: _file, hints:iohints=IOHINT_NONE):file throws {
+  return openfp(fp, new ioHintSet(hints));
+}
+
+private proc openfpHelper(fp: _file, hints=ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
-  var err = qio_file_init(ret._file_internal, fp, -1, hints, local_style, 1);
+  var err = qio_file_init(ret._file_internal, fp, -1, hints._internal, local_style, 1);
 
   // On return either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
   // error should be nonzero in the latter case.
@@ -1908,7 +1981,7 @@ private proc openfpHelper(fp: _file, hints:iohints=IOHINT_NONE,
 
 deprecated "opentmp with a style argument is deprecated"
 proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle):file throws {
-  return opentmpHelper(hints, style: iostyleInternal);
+  return opentmpHelper(new ioHintSet(hints), style: iostyleInternal);
 }
 
 /*
@@ -1929,23 +2002,29 @@ that is, a new file is created that supports both writing and reading.
   that is, a new file is created that supports both writing and reading.
 
 :arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :type:`iohints`.
+            this file. See :record:`ioHintSet`.
 :returns: an open temporary file.
 
 :throws SystemError: Thrown if the temporary file could not be opened.
 */
-proc opentmp(hints:iohints=IOHINT_NONE):file throws {
+proc opentmp(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
 
-private proc opentmpHelper(hints:iohints=IOHINT_NONE,
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'opentmp' that takes an 'ioHintSet' instead."
+proc opentmp(hints:iohints=IOHINT_NONE):file throws {
+  return opentmp(new ioHintSet(hints));
+}
+
+private proc opentmpHelper(hints=ioHintSet.empty,
                            style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
 
   // On return ret._file_internal.ref_cnt == 1.
-  var err = qio_file_open_tmp(ret._file_internal, hints, local_style);
+  var err = qio_file_open_tmp(ret._file_internal, hints._internal, local_style);
   if err then try ioerror(err, "in opentmp");
   return ret;
 }
@@ -2130,7 +2209,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
 }
 
 pragma "no doc"
-proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyleInternal) {
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints: ioHintSet, start:int(64), end:int(64), in local_style:iostyleInternal) {
   this.init(writing, kind, locking);
   on f.home {
     this.home = f.home;
@@ -2138,7 +2217,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:f
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
     }
-    error = qio_channel_create(this._channel_internal, f._file_internal, hints, !writing, writing, start, end, local_style, 64*1024);
+    error = qio_channel_create(this._channel_internal, f._file_internal, hints._internal, !writing, writing, start, end, local_style, 64*1024);
     // On return this._channel_internal.ref_cnt == 1.
     // Failure to check the error return code may result in a double-deletion error.
   }
@@ -2656,16 +2735,17 @@ deprecated "openreader with a style argument is deprecated"
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE,
+                hints:iohints=IOHINT_NONE,
                 style:iostyle)
     : channel(false, kind, locking) throws {
-  return openreaderHelper(path, kind, locking, start, end, hints,
+  return openreaderHelper(path, kind, locking, start, end, new ioHintSet(hints),
                           style: iostyleInternal);
 }
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
 // since we only will have one reference, will be right after we close this
 // channel presumably).
+
 /*
 
 Open a file at a particular path and return a reading channel for it.
@@ -2688,7 +2768,7 @@ This function is equivalent to calling :proc:`open` and then
           channel should no longer be allowed to read. Defaults
           to a ``max(int(64))`` - meaning no end point.
 :arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :type:`iohints`.
+            this file. See :record:`ioHintSet`.
 :returns: an open reading channel to the requested resource.
 
 :throws SystemError: Thrown if a reading channel could not be returned.
@@ -2696,15 +2776,25 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE)
+                hints=ioHintSet.empty)
     : channel(false, kind, locking) throws {
   return openreaderHelper(path, kind, locking, start, end, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openreader' that takes an 'ioHintSet' instead."
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints=IOHINT_NONE)
+    : channel(false, kind, locking) throws {
+  return openreader(path, kind, locking, start, end, new ioHintSet(hints));
 }
 
 private proc openreaderHelper(path:string,
                               param kind=iokind.dynamic, param locking=true,
                               start:int(64) = 0, end:int(64) = max(int(64)),
-                              hints:iohints = IOHINT_NONE,
+                              hints=ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal())
   : channel(false, kind, locking) throws {
 
@@ -2716,12 +2806,13 @@ deprecated "openwriter with a style argument is deprecated"
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE,
+                hints:iohints=IOHINT_NONE,
                 style:iostyle)
     : channel(true, kind, locking) throws {
-  return openwriterHelper(path, kind, locking, start, end, hints,
+  return openwriterHelper(path, kind, locking, start, end, new ioHintSet(hints),
                     style: iostyleInternal);
 }
+
 /*
 
 Open a file at a particular path and return a writing channel for it.
@@ -2744,7 +2835,7 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
           channel should no longer be allowed to write. Defaults
           to a ``max(int(64))`` - meaning no end point.
 :arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :type:`iohints`.
+            this file. See :record:`ioHintSet`.
 :returns: an open writing channel to the requested resource.
 
 :throws SystemError: Thrown if a writing channel could not be returned.
@@ -2752,15 +2843,25 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE)
+                hints = ioHintSet.empty)
     : channel(true, kind, locking) throws {
   return openwriterHelper(path, kind, locking, start, end, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'openwriter' that takes an 'ioHintSet' instead."
+proc openwriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints=IOHINT_NONE)
+    : channel(true, kind, locking) throws {
+  return openwriter(path, kind, locking, start, end, new ioHintSet(hints));
 }
 
 private proc openwriterHelper(path:string,
                               param kind=iokind.dynamic, param locking=true,
                               start:int(64) = 0, end:int(64) = max(int(64)),
-                              hints:iohints = IOHINT_NONE,
+                              hints = ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal())
   : channel(true, kind, locking) throws {
 
@@ -2771,10 +2872,10 @@ private proc openwriterHelper(path:string,
 deprecated "reader with a style argument is deprecated"
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:iohints = IOHINT_NONE,
+                 hints:iohints=IOHINT_NONE,
                  style:iostyle): channel(false, kind, locking)
                  throws {
-  return this.readerHelper(kind, locking, start, end, hints, style: iostyleInternal);
+  return this.readerHelper(kind, locking, start, end, new ioHintSet(hints), style: iostyleInternal);
 }
 
 /*
@@ -2807,21 +2908,28 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
              channel should no longer be allowed to read. Defaults
              to a ``max(int(64))`` - meaning no end point.
    :arg hints: provide hints about the I/O that this channel will perform. See
-               :type:`iohints`. The default value of :const:`IOHINT_NONE`
-               will cause the channel to use the hints provided when opening
-               the file.
+               :record:`ioHintSet`. The default value of `ioHintSet.empty`
+               will cause the channel to use the hints provided when the
+               file was opened.
 
    :throws SystemError: Thrown if a file reader channel could not be returned.
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
-                 end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE): channel(false, kind, locking) throws {
+                 end:int(64) = max(int(64)), hints = ioHintSet.empty): channel(false, kind, locking) throws {
   return this.readerHelper(kind, locking, start, end, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'file.reader' that takes an 'ioHintSet' instead."
+proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
+                 end:int(64) = max(int(64)), hints:iohints=IOHINT_NONE): channel(false, kind, locking) throws {
+  return this.reader(kind, locking, start, end, new ioHintSet(hints));
 }
 
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        start:int(64) = 0, end:int(64) = max(int(64)),
-                       hints:iohints = IOHINT_NONE,
+                       hints = ioHintSet.empty,
                        style:iostyleInternal = this._style): channel(false, kind, locking) throws {
   // It is the responsibility of the caller to release the returned channel
   // if the error code is nonzero.
@@ -2839,11 +2947,12 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
 
 deprecated "lines with a local_style argument is deprecated"
 proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                end:int(64) = max(int(64)), hints:iohints=IOHINT_NONE,
                 in local_style:iostyle) throws {
-  return this.linesHelper(locking, start, end, hints,
+  return this.linesHelper(locking, start, end, new ioHintSet(hints),
                           local_style: iostyleInternal);
 }
+
 /* Iterate over all of the lines in a file.
 
    :returns: an object which yields strings read from the file
@@ -2852,13 +2961,21 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
  */
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE) throws {
+                hints = ioHintSet.empty) throws {
   return this.linesHelper(locking, start, end, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'file.lines' that takes an 'ioHintSet' instead."
+proc file.lines(param locking:bool = true, start:int(64) = 0,
+                end:int(64) = max(int(64)),
+                hints:iohints=IOHINT_NONE) throws {
+  return this.lines(locking, start, end, new ioHintSet(hints));
 }
 
 pragma "no doc"
 proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
-                      end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                      end:int(64) = max(int(64)), hints = ioHintSet.empty,
                       in local_style:iostyleInternal = this._style) throws {
   local_style.string_format = QIO_STRING_FORMAT_TOEND;
   local_style.string_end = 0x0a; // '\n'
@@ -2879,9 +2996,9 @@ proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
 deprecated "writer with a style argument is deprecated"
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:c_int = 0, style:iostyle):
+                 hints:iohints=IOHINT_NONE, style:iostyle):
                  channel(true,kind,locking) throws {
-  return this.writerHelper(kind, locking, start, end, hints, style: iostyleInternal);
+  return this.writerHelper(kind, locking, start, end, new ioHintSet(hints), style: iostyleInternal);
 }
 
 /*
@@ -2919,23 +3036,32 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
              channel should no longer be allowed to write. Defaults
              to a ``max(int(64))`` - meaning no end point.
    :arg hints: provide hints about the I/O that this channel will perform. See
-               :type:`iohints`. The default value of :const:`IOHINT_NONE`
-               will cause the channel to use the hints provided when opening
-               the file.
+               :record:`ioHintSet`. The default value of `ioHintSet.empty`
+               will cause the channel to use the hints provided when the
+               file was opened.
 
    :throws SystemError: Thrown if a file writer channel could not be returned.
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:c_int = 0):
+                 hints = ioHintSet.empty):
                  channel(true,kind,locking) throws {
   return this.writerHelper(kind, locking, start, end, hints);
+}
+
+pragma "last resort"
+deprecated "The 'iohints' type is deprecated; please use a variant of 'file.writer' that takes an 'ioHintSet' instead."
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:iohints=IOHINT_NONE):
+                 channel(true,kind,locking) throws {
+  return this.writer(kind, locking, start, end, new ioHintSet(hints));
 }
 
 pragma "no doc"
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        start:int(64) = 0, end:int(64) = max(int(64)),
-                       hints:c_int = 0, style:iostyleInternal = this._style):
+                       hints = ioHintSet.empty, style:iostyleInternal = this._style):
   channel(true,kind,locking) throws {
   // It is the responsibility of the caller to retain and release the returned
   // channel.

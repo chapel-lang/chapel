@@ -40,8 +40,8 @@ proc main(args: [] string) {
       process(data, start, idx-2);
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
-                                     hints=QIO_CH_ALWAYS_UNBUFFERED);
+  const stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                                     hints=ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
   stdoutBin.write(data);
 }
 
