@@ -5013,6 +5013,7 @@ proc file.fstype():int throws {
 
    :throws SystemError: Thrown if the chunk is not attained.
  */
+deprecated "file.getchunk is deprecated"
 proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) throws {
   var err:syserr = ENOERR;
   var s = 0;
