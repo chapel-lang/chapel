@@ -71,7 +71,7 @@ std::string outputDir_;
 bool textOnly_ = false;
 std::string CHPL_HOME = getenv("CHPL_HOME");
 bool processUsedModules_ = false;
-
+std::string docsWorkingDir_;
 const std::string templateUsage = R"RAW(**Usage**
 
 .. code-block:: chapel
@@ -376,11 +376,19 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
   std::string commentEnd = commentStyle;
   reverse(commentEnd.begin(), commentEnd.end());
   const int styleLen = commentStyle.size();
+  // try to match the commentStyle to the start and end of this comment
+  // and remove the comment indicators
   if (ret.substr(0, styleLen) == commentStyle) {
     size_t l = ret.length();
-    if (ret.substr(l - styleLen, styleLen) != commentEnd)
+    if (ret.substr(l - styleLen, styleLen) != commentEnd) {
       // TODO: this is a broken comment at this point, no?
+      //  we have to recognize this and handle it when we have the
+      //  filename and line information
+      //  fixing this will satisfy chpldoc/compflags/comment/badClose.doc.chpl
+      std::cerr << "warning: chpldoc comment not closed, ignoring comment: "
+                   "This comment is not closed properly" << std::endl;
       return {};
+    }
     ret.erase(l - styleLen, styleLen);
     ret.erase(0, styleLen);
   } else {
@@ -393,7 +401,7 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
   size_t toTrim = std::numeric_limits<size_t>::max();
   // exclude the first line from the minimum
   for (auto it = lines.begin(); it < lines.end(); ++it) {
-    if (it->empty()) continue;
+    if (strip(*it).empty()) continue;
     if (it == lines.begin()) {
       *it = strip(*it, "^\\s+");
       continue;
@@ -401,8 +409,12 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
     toTrim = std::min(toTrim, countLeadingSpaces(*it));
   }
 
-  assert((toTrim < std::numeric_limits<size_t>::max() || lines.size()==1) &&
-          "probably an empty comment");
+  // probably a comment with one leading text line and some trailing empty lines
+  if (!(toTrim < std::numeric_limits<size_t>::max() || lines.size()==1)) {
+    toTrim = 0;
+  }
+//  assert((toTrim < std::numeric_limits<size_t>::max() || lines.size()==1) &&
+//     h     "probably an empty comment");
 
 
   for (auto it = lines.begin(); it < lines.end(); ++it) {
@@ -418,7 +430,14 @@ static std::string commentSynopsis(const Comment* c,
   if (!c) return "";
   auto lines = prettifyComment(c->str(), commentStyle);
   if (lines.empty()) return "";
-  return lines[0];
+  uint i = 0;
+  // skip empty lines for synopsis collection
+  while (i < lines.size()) {
+    if (!lines[i].empty())
+    return strip(lines[i], "^\\s+");
+    i++;
+  }
+  return "";
 }
 
 static const char* kindToRstString(bool isMethod, Function::Kind kind) {
@@ -678,7 +697,9 @@ struct RstSignatureVisitor {
 
     // storage kind
     if (f->thisFormal() != nullptr
-        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT
+        && f->thisFormal()->storageKind() != IntentList::CONST_INTENT
+        && f->thisFormal()->storageKind() != IntentList::CONST_REF) {
       os_ << kindToString(f->thisFormal()->storageKind()) <<" ";
     }
 
@@ -723,18 +744,18 @@ struct RstSignatureVisitor {
       interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
     }
 
+    // Return Intent
+    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
+        f->returnIntent() != Function::ReturnIntent::CONST) {
+      os_ << " " << kindToString((IntentList) f->returnIntent());
+    }
+
     // Return type
     if (const AstNode* e = f->returnType()) {
       os_ << ": ";
       printingType_ = true;
       e->traverse(*this);
       printingType_ = false;
-    }
-
-    // Return Intent
-    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
-        f->returnIntent() != Function::ReturnIntent::CONST) {
-      os_ << " " << kindToString((IntentList) f->returnIntent());
     }
 
     // throws
@@ -1149,10 +1170,9 @@ struct RstResultBuilder {
                 parentPath += "/";
               }
             }
-            std::string outdir = outputDir_ + "/" + parentPath;
-            std::string workingDir = filenameFromModuleName(parentPath + "/", outdir);
-            makeDir(workingDir, true);
-            r->outputModule(workingDir, child->toModule()->name().str(),
+            std::string outdir = docsWorkingDir_ + "/" + parentPath;
+            std::string workingDir = filenameFromModuleName(parentPath, outdir);
+            r->outputModule(outdir, child->toModule()->name().str(),
                             indentPerDepth);
 
           } else {
@@ -1172,8 +1192,18 @@ struct RstResultBuilder {
   }
 
   owned<RstResult> visit(const Module* m) {
+    bool includedByDefault = false;
     if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m))
       return {};
+
+    bool isOnlyIncludes = true && m->numStmts() > 0;
+    for (auto stmt : m->stmts()) {
+      if (!stmt->isInclude()) {
+        isOnlyIncludes = false;
+        break;
+      }
+    }
+
     // lookup the module path
     std::vector<UniqueString> modulePath = getModulePath(context_, m->id());
     std::string moduleName;
@@ -1186,34 +1216,70 @@ struct RstResultBuilder {
     }
     assert(!moduleName.empty());
     const Comment* lastComment = nullptr;
+    if (auto attrs = m->attributes()) {
+      if (attrs->hasPragma(pragmatags::PRAGMA_MODULE_INCLUDED_BY_DEFAULT)) {
+        includedByDefault = true;
+      }
+    }
     // header
     if (!textOnly_) {
       os_ << ".. default-domain:: chpl\n\n";
-      os_ << ".. module:: " << m->name().c_str() << '\n';
-      lastComment = previousComment(context_, m->id());
-      if (lastComment) {
-        auto synopsis = commentSynopsis(lastComment, commentStyle);
-        if (!synopsis.empty()) {
-          indentStream(os_, 1 * indentPerDepth);
-          os_ << ":synopsis: " << synopsis
-              << '\n';
+      // This is hard coded in chapeldoc like this too
+      if (moduleName == "ChapelSysCTypes") {
+        // if (textOnly_) indentDepth_ --;
+        // showComment(m, textOnly_);
+        // showDeprecationMessage(m, false);
+        // if (textOnly_) indentDepth_ ++;
+        visitChildren(m);
+        return getResult(textOnly_);
+      }
+        os_ << ".. module:: " << m->name().c_str() << '\n';
+      // Don't index internal modules since that will make them show up
+      // in the module index (chpl-modindex.html).  This has the side
+      // effect of making references to the :mod: tag for the module
+      // illegal, which is appropriate since the modules are not
+      // user-facing.
+      if (idIsInInternalModule(context_, m->id())) {
+        os_ << "   :noindex:" << std::endl;
+      } else {
+        lastComment = previousComment(context_, m->id());
+        if (lastComment) {
+          auto synopsis = commentSynopsis(lastComment, commentStyle);
+          if (!synopsis.empty()) {
+            indentStream(os_, 1 * indentPerDepth);
+            os_ << ":synopsis: " << synopsis
+                << '\n';
+          }
         }
       }
-      os_ << '\n';
+        os_ << '\n';
 
-      // module title
-      os_ << m->name().c_str() << "\n";
-      os_ << std::string(m->name().length(), '=') << "\n";
+        // module title
+        os_ << m->name().c_str() << "\n";
+        os_ << std::string(m->name().length(), '=') << "\n";
 
-      // usage
-      // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
-      os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
-    } else {
-      os_ << m->name().c_str();
-      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
-      lastComment = previousComment(context_, m->id());
-    }
-    if (hasSubmodule(m)) {
+        // usage
+        if (includedByDefault) {
+          os_ << ".. note::" << std::endl << std::endl;
+          indentStream(os_, 1 * indentPerDepth);
+          os_ <<
+                "All Chapel programs automatically ``use`` this module by default.";
+          os_ << std::endl;
+          indentStream(os_, 1 * indentPerDepth);
+          os_ << "An explicit ``use`` statement is not necessary.";
+          os_ << std::endl;
+          // os_ << std::endl;
+        } else {
+          os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
+        }
+
+      } else {
+        os_ << m->name().c_str();
+        os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+        lastComment = previousComment(context_, m->id());
+      }
+
+    if (hasSubmodule(m) || isOnlyIncludes) {
       moduleName = m->name().c_str();
       if (!textOnly_) {
         os_ << "\n";
@@ -1863,6 +1929,7 @@ int main(int argc, char** argv) {
             }
       }
     }
+
     if (!args.stdout) {
       std::string name;
       for (const auto& ast : builderResult.topLevelExpressions()) {
@@ -1872,10 +1939,11 @@ int main(int argc, char** argv) {
         if (args.dump) {
           ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
         }
+        docsWorkingDir_ = filenameFromModuleName(cpath, outputDir_);
+
         if (auto& r = rstDoc(ctx, ast->id())) {
-          std::string docsWorkingDir = filenameFromModuleName(cpath, outputDir_);
-          makeDir(docsWorkingDir, true);
-          r->outputModule(docsWorkingDir, name, indentPerDepth);
+          makeDir(docsWorkingDir_, true);
+          r->outputModule(docsWorkingDir_, name, indentPerDepth);
         }
       }
     }
