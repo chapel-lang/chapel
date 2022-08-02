@@ -252,7 +252,7 @@ proc genSourceList(lockFile: borrowed Toml) {
           var revision = toml["rev"]!.s;
 
           var branch: string;
-          // use branch if specified, else default to master
+          // use branch if specified, else default to HEAD
           if toml["branch"] != nil {
             branch = toml["branch"]!.s;
           } else {
