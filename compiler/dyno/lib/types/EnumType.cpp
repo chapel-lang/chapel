@@ -41,4 +41,4 @@ void EnumType::stringify(std::ostream& ss, StringifyKind stringKind) const {
 }
 
 } // end namespace types
-} // end namesapce chpl
+} // end namespace chpl
