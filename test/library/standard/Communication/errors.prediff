@@ -1,4 +1,4 @@
 #!/bin/bash
 
-sed "s/\(errors\.chpl\):[[:digit:]]\+/\1:PREDIFFED_LINENO/" $2 > $2.prediffed
-sed "s/\(locale ID (\)[[:digit:]]\+/\1PREDIFFED_LOCALEID/" $2.prediffed > $2
+sed -r "s/errors\.chpl:[0-9]+/errors.chpl:PREDIFFED_LINENO/" $2 > $2.prediffed
+sed -r "s/locale ID \([0-9]+/locale ID (PREDIFFED_LOCALEID/" $2.prediffed > $2
