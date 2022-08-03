@@ -289,7 +289,7 @@ module CommDiagnostics
     */
     var cache_num_prefetches : uint(64);
     /*
-      Number of read aheads issued to the remote cache at the granularity of cache pages.
+      Number of readaheads issued to the remote cache at the granularity of cache pages.
     */
     var cache_num_page_readaheads : uint(64);
     /*
@@ -303,13 +303,13 @@ module CommDiagnostics
     */
     var cache_prefetch_waited : uint(64);
     /*
-      Number of cache pages that were read ahaead but evicted from the cache before being accessed
-      (i.e., the read aheads were too early).
+      Number of cache pages that were read ahead but evicted from the cache before being accessed
+      (i.e., the readaheads were too early).
     */
     var cache_readahead_unused : uint(64);
     /*
       Number of cache pages that were read ahead but did not arrive in the cache before being accessed
-      (i.e., the read aheads were too late).
+      (i.e., the readaheads were too late).
     */
     var cache_readahead_waited : uint(64);
 
