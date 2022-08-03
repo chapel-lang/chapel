@@ -137,7 +137,6 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
 
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
-
   chpl_gpu_impl_mem_free(memAlloc);
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is returning\n");
@@ -154,12 +153,13 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
   void *ptr = NULL;
 
   if (size > 0) {
-    // TODO this is a poor implementation -- CUDA has memset, that can help a
-    // bit, but omp doesn't expose it. I don't know whether performance here
-    // matters.
+    // TODO this is a really poor implementation -- CUDA has memset, that can
+    // help a bit, but omp doesn't expose it. I don't know whether performance
+    // here matters.
     const size_t total_size = number*size;
 
-    void *host_mem = chpl_mem_calloc(number, size, description, lineno, filename);
+    void *host_mem = chpl_mem_calloc(number, size, description, lineno,
+                                     filename);
 
     chpl_memhook_malloc_pre(1, total_size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_alloc(total_size);
