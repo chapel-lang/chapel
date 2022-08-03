@@ -78,6 +78,7 @@ module LocaleModelHelpRuntime {
 
   pragma "insert line file info"
   pragma "always resolve function"
+  pragma "codegen for CPU and GPU"
   proc chpl_nodeFromLocaleID(in loc: chpl_localeID_t)
     return chpl_rt_nodeFromLocaleID(loc);
 

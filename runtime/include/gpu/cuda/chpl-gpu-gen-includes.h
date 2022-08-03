@@ -70,6 +70,22 @@ __device__ static inline c_nodeid_t get_chpl_nodeID(void) {
   return 0;
 }
 
+__device__ static inline c_nodeid_t chpl_rt_nodeFromLocaleID(chpl_localeID_t loc) {
+  return loc.node;
+}
+
+__device__ static inline void chpl_gen_comm_get(void *addr, c_nodeid_t node,
+  void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
+{
+  // TODO
+}
+
+__device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
+  void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
+{
+  // TODO
+}
+
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_INCLUDES_H
