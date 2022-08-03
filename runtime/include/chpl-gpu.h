@@ -31,16 +31,14 @@ extern "C" {
 
 #ifdef HAS_GPU_LOCALE
 
-#define ENABLE_GPU_DEBUG 0
-
 static inline void CHPL_GPU_DEBUG(const char *str, ...) {
-#if ENABLE_GPU_DEBUG
-  va_list args;
-  va_start(args, str);
-  vfprintf(stdout, str, args);
-  va_end(args);
-  fflush(stdout);
-#endif
+  if (verbosity >= 2) {
+    va_list args;
+    va_start(args, str);
+    vfprintf(stdout, str, args);
+    va_end(args);
+    fflush(stdout);
+  }
 }
 
 static inline bool chpl_gpu_running_on_gpu_locale(void) {
