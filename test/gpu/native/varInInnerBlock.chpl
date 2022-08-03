@@ -1,8 +1,4 @@
-use GPUDiagnostics;
-
 config const n = 10;
-
-startGPUDiagnostics();
 on here.getChild(1) {
   var A: [1..n] int;
 
@@ -18,6 +14,3 @@ on here.getChild(1) {
 
   writeln(A);
 }
-stopGPUDiagnostics();
-
-assert(getGPUDiagnostics()[0].kernel_launch == 1);
