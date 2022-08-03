@@ -72,7 +72,7 @@ class Foo {
     where ch.writing {
 
     writeln("In DefinesOp.<~>");
-    try ch.readwrite(x.x);
+    ch.write(x.x);
     return ch;
   }
 
