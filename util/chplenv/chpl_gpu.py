@@ -2,7 +2,8 @@ import utils
 import os
 import glob
 import chpl_locale_model
-from utils import error, memoize
+import chpl_llvm
+from utils import error, memoize, run_command
 
 def get():
     if chpl_locale_model.get() == 'gpu':
@@ -26,6 +27,7 @@ def get_cuda_path():
         return ""
 
 def get_cuda_libdevice_path():
+    # TODO this only makes sense when we are generating for nvidia
     chpl_cuda_path = get_cuda_path()
 
     # there can be multiple libdevices for multiple compute architectures. Not
@@ -38,6 +40,15 @@ def get_cuda_libdevice_path():
     else:
         return libdevices[0]
 
+
+def get_runtime():
+    chpl_gpu_runtime = os.environ.get("CHPL_GPU_RUNTIME")
+    if chpl_gpu_runtime:
+        if chpl_gpu_runtime != "cuda":
+            error("Only 'cuda' supported for 'CHPL_GPU_RUNTIME'")
+        else:
+            return chpl_gpu_runtime
+    return "cuda"
 
 def validate(chplLocaleModel, chplComm):
     pass
