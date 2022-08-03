@@ -4108,7 +4108,7 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
 // Does not validate that the string has valid encoding -- the call
 // site should do that.
 // Assumes we are already on the locale with the channel and that
-// it is alrady locked.
+// it is already locked.
 private proc readStringBytesData(ref s /*: string or bytes*/,
                                  _channel_internal:qio_channel_ptr_t,
                                  nBytes: int,
@@ -4254,7 +4254,7 @@ proc channel.readLine(ref b: bytes,
     var err: syserr = ENOERR;
     var foundNewline = false;
     while !foundNewline {
-      // read a sigle byte
+      // read a single byte
       got = qio_channel_read_byte(false, this._channel_internal);
       if got == -EEOF {
         // encountered EOF
