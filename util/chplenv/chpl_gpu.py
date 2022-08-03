@@ -21,7 +21,7 @@ def get_cuda_path():
                                                                       "nvcc"])
 
     if exists and returncode == 0:
-        chpl_cuda_path = "/".join(my_stdout.strip().split("/")[:-2])
+        chpl_cuda_path = "/".join(os.path.realpath(my_stdout).strip().split("/")[:-2])
         return chpl_cuda_path
     else:
         return ""
