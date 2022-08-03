@@ -1759,7 +1759,7 @@ int main(int argc, char** argv) {
 
     // TODO: Change which query we use to parse files as suggested by @mppf
     // parseFileContainingIdToBuilderResult(Context* context, ID id);
-    // and then work with the module ID to find the preceeding comment.
+    // and then work with the module ID to find the preceding comment.
     const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
                                                                   path,
                                                                   emptyParent);
