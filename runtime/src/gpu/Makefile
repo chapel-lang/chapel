@@ -30,7 +30,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
 TARGETS =
 
-SUBDIRS = $(CHPL_MAKE_GPU)
+SUBDIRS = $(CHPL_MAKE_GPU_RUNTIME)
 
 FORCE:
 
