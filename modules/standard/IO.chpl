@@ -1525,6 +1525,7 @@ proc file.init(x: file) {
   }
 }
 
+pragma "no doc"
 proc file.init=(x: file) {
   this.init(x);
 }
@@ -1637,7 +1638,7 @@ proc file.close() throws {
   on this.home {
     err = qio_file_close(_file_internal);
   }
-  if err then try ioerror(err, "in file.close", this.tryGetPath());
+  if err then try ioerror(err, "in file.close", this._tryGetPath());
 }
 
 /*
@@ -1658,7 +1659,7 @@ proc file.fsync() throws {
     try this.checkAssumingLocal();
     err = qio_file_sync(_file_internal);
   }
-  if err then try ioerror(err, "in file.fsync", this.tryGetPath());
+  if err then try ioerror(err, "in file.fsync", this._tryGetPath());
 }
 
 
@@ -1696,18 +1697,24 @@ proc file.path : string throws {
   return ret;
 }
 
+pragma "no doc"
+proc file._tryGetPath() : string {
+  try {
+    return this.path;
+  } catch {
+    return "unknown";
+  }
+}
+
 /*
 
 Get the path to an open file, or return "unknown" if there was
 a problem getting the path to the open file.
 
 */
+deprecated "file.tryGetPath is deprecated"
 proc file.tryGetPath() : string {
-  try {
-    return this.path;
-  } catch {
-    return "unknown";
-  }
+  return this._tryGetPath();
 }
 
 /*
@@ -2937,7 +2944,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
     try this.checkAssumingLocal();
     ret = new channel(false, kind, locking, this, err, hints, start, end, style);
   }
-  if err then try ioerror(err, "in file.reader", this.tryGetPath());
+  if err then try ioerror(err, "in file.reader", this._tryGetPath());
 
   return ret;
 }
@@ -2985,7 +2992,7 @@ proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
     var ch = new channel(false, kind, locking, this, err, hints, start, end, local_style);
     ret = new itemReaderInternal(string, kind, locking, ch);
   }
-  if err then try ioerror(err, "in file.lines", this.tryGetPath());
+  if err then try ioerror(err, "in file.lines", this._tryGetPath());
 
   return ret;
 }
@@ -3070,7 +3077,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
     try this.checkAssumingLocal();
     ret = new channel(true, kind, locking, this, err, hints, start, end, style);
   }
-  if err then try ioerror(err, "in file.writer", this.tryGetPath());
+  if err then try ioerror(err, "in file.writer", this._tryGetPath());
 
   return ret;
 }
@@ -5067,6 +5074,7 @@ proc file.fstype():int throws {
 
    :throws SystemError: Thrown if the chunk is not attained.
  */
+deprecated "file.getchunk is deprecated"
 proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) throws {
   var err:syserr = ENOERR;
   var s = 0;
