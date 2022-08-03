@@ -43,7 +43,7 @@
 
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
-
+  AST_NODE(AnonFormal)                 //
   AST_NODE(As)                         //
   AST_NODE(Array)                      //
   AST_LEAF(Attributes)                 //
@@ -64,7 +64,7 @@
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
   AST_NODE(Implements)                 // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
-  AST_NODE(Include)
+  AST_NODE(Include)                    //
   AST_NODE(Label)                      //
   AST_NODE(Let)                        //
   AST_NODE(New)                        //

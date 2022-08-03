@@ -22,6 +22,7 @@ ALL_SRCS += dyno/lib/uast/*.h dyno/lib/uast/*.cpp
 
 DYNO_UAST_SRCS =                                 \
   AggregateDecl.cpp \
+  AnonFormal.cpp \
   Array.cpp \
   AstList.cpp \
   AstNode.cpp \
@@ -64,6 +65,7 @@ DYNO_UAST_SRCS =                                 \
   Formal.cpp \
   ForwardingDecl.cpp \
   Function.cpp \
+  FunctionSignature.cpp \
   Identifier.cpp \
   ImagLiteral.cpp \
   Implements.cpp \

@@ -220,6 +220,11 @@ class Function final : public NamedDecl {
   bool isPrimaryMethod() const { return primaryMethod_; }
   bool isParenless() const { return parenless_; }
 
+  bool isAnonymous() const {
+    auto ret = (kind() == LAMBDA || name() == "proc");
+    return ret;
+  }
+
   /**
    Return a way to iterate over the formals, including the method
    receiver, if present, as the first formal. This iterator may yield

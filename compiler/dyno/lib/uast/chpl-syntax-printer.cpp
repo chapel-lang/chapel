@@ -385,6 +385,38 @@ struct ChplSyntaxVisitor {
     }
   }
 
+  void printFunctionHelper(const FunctionSignature* node) {
+
+    // Print the receiver.
+    if (auto thisFormal = node->thisFormal()) {
+      if (thisFormal->intent () != Formal::DEFAULT_INTENT) {
+        ss_ << kindToString(node->thisFormal()->storageKind()) << " ";
+      }
+
+      if (auto te = thisFormal->typeExpression()) {
+        if (auto ident = te->toIdentifier()) {
+          ss_ << ident->name().str();
+        } else {
+          ss_ << "(";
+          te->dispatch<void>(*this);
+          ss_ << ")";
+        }
+
+        ss_ << ".";
+      }
+    }
+
+    // Print the formals (not including the receiver).
+    int numThisFormal = node->thisFormal() ? 1 : 0;
+    int nFormals = node->numFormals() - numThisFormal;
+    if (nFormals == 0) {
+      if (!node->isParenless()) ss_ << "()";
+    } else {
+      auto it = node->formals();
+      interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
+    }
+  }
+
   /*
    * Customized method to print just the function signature as required by
    * the old parser's `userSignature` field.
@@ -396,6 +428,10 @@ struct ChplSyntaxVisitor {
     if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
       ss_ << kindToString(node->visibility()) << " ";
     }
+    printFunctionHelper(node);
+  }
+
+  void printFunctionSignature(const FunctionSignature* node) {
     printFunctionHelper(node);
   }
 
@@ -1307,6 +1343,19 @@ namespace chpl {
     if (os.fail()) {
       os.clear();
     }
+    os.flush();
+  }
+
+  void printFunctionSignature(std::ostream& os,
+                              const FunctionSignature* node) {
+    auto v = ChplSyntaxVisitor();
+    v.printFunctionSignature(node);
+    // when using << with ss_.rdbuf(), if nothing gets added to os, then
+    // os goes into fail state
+    // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
+    // check for failbit and reset
+    os << v.ss_.rdbuf();
+    if (os.fail()) os.clear();
     os.flush();
   }
 

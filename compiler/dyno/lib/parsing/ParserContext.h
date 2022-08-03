@@ -353,9 +353,9 @@ struct ParserContext {
   buildFunctionType(YYLTYPE location, FunctionParts& fp);
 
   AstNode*
-  buildFunctionTypeFormal(YYLTYPE loc, YYLTYPE locIntent,
-                          Formal::Intent intent,
-                          AstNode* formalType);
+  buildAnonFormal(YYLTYPE location, YYLTYPE locIntent,
+                  Formal::Intent intent,
+                  AstNode* formalType);
 
   CommentsAndStmt
   buildExternExportFunctionDecl(YYLTYPE location, FunctionParts& fp);

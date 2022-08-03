@@ -786,6 +786,23 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
   return fp;
 }
 
+static AstNode*
+findErrorInFnBodyOrFormals(ParserContext* context, YYLTYPE location,
+                           FunctionParts& fp) {
+  if (fp.errorExpr) return fp.errorExpr;
+  if (fp.formals) {
+    for (auto ast : *fp.formals) {
+      if (!ast->isErroneousExpression()) continue;
+      auto loc = context->convertLocation(location);
+      auto errorExpr = ErroneousExpression::build(context->builder, loc);
+      fp.errorExpr = errorExpr.release();
+      return fp.errorExpr;
+    }
+  }
+
+  return nullptr;
+}
+
 AstNode*
 ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
   if (fp.isBodyNonBlockExpression) assert(false && "Not handled!");
@@ -794,17 +811,45 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
 }
 
 AstNode*
-ParserContext::buildFunctionTypeFormal(YYLTYPE loc, YYLTYPE locIntent,
-                                       Formal::Intent intent,
-                                       AstNode* formalType) {
-  assert(false && "Not implemented yet!");
-  return nullptr;
+ParserContext::buildAnonFormal(YYLTYPE location, YYLTYPE locIntent,
+                               Formal::Intent intent,
+                               AstNode* formalType) {
+  std::ignore = locIntent;
+  auto loc = convertLocation(location);
+  auto node = AnonFormal::build(builder, loc, intent, toOwned(formalType));
+  auto ret = node.release();
+  return ret;
 }
 
 AstNode*
 ParserContext::buildFunctionType(YYLTYPE location, FunctionParts& fp) {
-  assert(false && "Not implemented yet!");
-  return nullptr;
+  auto errorExpr = findErrorInFnBodyOrFormals(this, location, fp);
+  if (errorExpr != nullptr) {
+    this->clearComments();
+    return errorExpr;
+  }
+
+  std::ignore = toOwned(fp.name); // Consume to clean up.
+  auto loc = convertLocation(location);
+
+  auto kind = (FunctionSignature::Kind) fp.kind;
+  owned<Formal> receiver = nullptr;
+  auto returnIntent = (FunctionSignature::ReturnIntent) fp.returnIntent;
+  const bool parenless = false;
+  auto formals = consumeList(fp.formals);
+  auto returnType = toOwned(fp.returnType);
+  bool throws = fp.throws;
+
+  // TODO: Should this be location of whole type or just the start keyword?
+  auto node = FunctionSignature::build(builder, loc, kind,
+                                       std::move(receiver),
+                                       returnIntent,
+                                       parenless,
+                                       std::move(formals),
+                                       std::move(returnType),
+                                       throws);
+  auto ret = node.release();
+  return ret;
 }
 
 CommentsAndStmt
@@ -820,92 +865,84 @@ ParserContext::buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp) {
 
 CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
-  if (!fp.errorExpr) {
-    if (fp.formals) {
-      for (auto ast : *fp.formals) {
-        if (ast->isErroneousExpression()) {
-          auto loc = convertLocation(location);
-          auto errorExpr = ErroneousExpression::build(builder, loc);
-          fp.errorExpr = errorExpr.release();
-          break;
-        }
-      }
-    }
+  auto errorExpr = findErrorInFnBodyOrFormals(this, location, fp);
+  if (errorExpr != nullptr) {
+    CommentsAndStmt cs = {fp.comments, errorExpr};
+    this->clearComments();
+    return cs;
   }
 
   CommentsAndStmt cs = {fp.comments, nullptr};
-  if (fp.errorExpr == nullptr) {
-    // detect parenless functions
-    bool parenless = false;
-    if (fp.formals == parenlessMarker) {
-      parenless = true;
-      fp.formals = nullptr; // don't try to free the marker
+  assert(!fp.errorExpr);
+
+  bool parenless = (fp.formals == parenlessMarker);
+  if (parenless) fp.formals = nullptr; // Don't free the marker.
+
+  // Detect primary methods and create a receiver for them
+  bool primaryMethod = false;
+  auto scope = currentScope();
+  if (currentScopeIsAggregate()) {
+    if (fp.receiver == nullptr) {
+      auto loc = convertLocation(location);
+      auto ths = UniqueString::get(context(), "this");
+      UniqueString cls = scope.name;
+      fp.receiver = Formal::build(builder, loc, /*attributes*/ nullptr,
+                                  ths,
+                                  fp.thisIntent,
+                                  Identifier::build(builder, loc, cls),
+                                  nullptr).release();
+      primaryMethod = true;
     }
-    // Detect primary methods and create a receiver for them
-    bool primaryMethod = false;
-    auto scope = currentScope();
-    if (currentScopeIsAggregate()) {
-      if (fp.receiver == nullptr) {
-        auto loc = convertLocation(location);
-        auto ths = UniqueString::get(context(), "this");
-        UniqueString cls = scope.name;
-        fp.receiver = Formal::build(builder, loc, /*attributes*/ nullptr,
-                                    ths,
-                                    fp.thisIntent,
-                                    Identifier::build(builder, loc, cls),
-                                    nullptr).release();
-        primaryMethod = true;
-      }
-    }
-
-    owned<Block> body;
-    if (fp.body != nullptr) {
-      body = consumeToBlock(location, fp.body);
-    }
-
-    // Own the recorded identifier to clean it up, but grab its location.
-    owned<Identifier> identName = toOwned(fp.name);
-    assert(identName.get());
-    auto identNameLoc = builder->getLocation(identName.get());
-    assert(!identNameLoc.isEmpty());
-
-    // TODO: Right now this location is the start of the function, and
-    // it seems more natural for the location to be the symbol.
-    auto f = Function::build(builder, identNameLoc,
-                             toOwned(fp.attributes),
-                             fp.visibility,
-                             fp.linkage,
-                             toOwned(fp.linkageNameExpr),
-                             identName->name(),
-                             fp.isInline,
-                             fp.isOverride,
-                             fp.kind,
-                             toOwned(fp.receiver),
-                             fp.returnIntent,
-                             fp.throws,
-                             primaryMethod,
-                             parenless,
-                             this->consumeList(fp.formals),
-                             toOwned(fp.returnType),
-                             toOwned(fp.where),
-                             this->consumeList(fp.lifetime),
-                             std::move(body));
-
-    // If we are not a method then the receiver intent is discarded,
-    // because there is no receiver formal to store it in.
-    // So do the check now.
-    if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
-      const char* msg = fp.thisIntent == Formal::TYPE
-          ? "Missing type for secondary type method"
-          : "'this' intents can only be applied to methods";
-      noteError(location, msg);
-    }
-
-    cs.stmt = f.release();
-  } else {
-    cs.stmt = fp.errorExpr;
   }
+
+  owned<Block> body;
+  if (fp.body != nullptr) {
+    body = consumeToBlock(location, fp.body);
+  }
+
+  // Own the recorded identifier to clean it up, but grab its location.
+  owned<Identifier> identName = toOwned(fp.name);
+  assert(identName.get());
+  auto identNameLoc = builder->getLocation(identName.get());
+  assert(!identNameLoc.isEmpty());
+
+  // TODO: It would be nice to get both the location of the entire function
+  // as well as the location of the symbol.
+  auto f = Function::build(builder, identNameLoc,
+                           toOwned(fp.attributes),
+                           fp.visibility,
+                           fp.linkage,
+                           toOwned(fp.linkageNameExpr),
+                           identName->name(),
+                           fp.isInline,
+                           fp.isOverride,
+                           fp.kind,
+                           toOwned(fp.receiver),
+                           fp.returnIntent,
+                           fp.throws,
+                           primaryMethod,
+                           parenless,
+                           this->consumeList(fp.formals),
+                           toOwned(fp.returnType),
+                           toOwned(fp.where),
+                           this->consumeList(fp.lifetime),
+                           std::move(body));
+
+  // If we are not a method then the receiver intent is discarded,
+  // because there is no receiver formal to store it in.
+  // So do the check now.
+  // TODO: I think we should redundantly store the receiver intent
+  // in the function as well as the receiver formal.
+  if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
+    const char* msg = fp.thisIntent == Formal::TYPE
+        ? "Missing type for secondary type method"
+        : "'this' intents can only be applied to methods";
+    noteError(location, msg);
+  }
+
   this->clearComments();
+
+  cs.stmt = f.release();
   return cs;
 }
 
