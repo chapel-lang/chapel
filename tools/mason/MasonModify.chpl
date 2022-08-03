@@ -33,6 +33,7 @@ proc masonModify(args: [] string) throws {
 
   var extFlag = parser.addFlag("external", defaultValue=false);
   var sysFlag = parser.addFlag("system", defaultValue=false);
+  var skipCheckFlag = parser.addFlag("skip-check", defaultValue=false);
   var depArg = parser.addArgument("dep", numArgs=0..1);
 
   parser.parseArgs(args);
@@ -54,12 +55,13 @@ proc masonModify(args: [] string) throws {
   const projectHome = getProjectHome(cwd, "Mason.toml");
 
   const result = modifyToml(add, depArg.value(), extFlag.valueAsBool(),
-                            sysFlag.valueAsBool(), projectHome);
+                            sysFlag.valueAsBool(), skipCheckFlag.valueAsBool(),
+                            projectHome);
   generateToml(result[0]!, result[1]);
 }
 
 proc modifyToml(add: bool, spec: string, external: bool, system: bool,
-                projectHome: string, tf="Mason.toml") throws {
+                skipCheck: bool, projectHome: string, tf="Mason.toml") throws {
 
   const tomlPath = '/'.join(projectHome, tf);
   const openFile = openreader(tomlPath);
@@ -92,14 +94,17 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
         newToml = masonExternalAdd(toml, dependency, spec);
       }
       else {
-        // ensure that dependency exists and check package type
-        const depToml = getDepToml(dependency, version);
 
-        // Ensure path exists to maintain compatibility with old
-        // versions of TOML files which did not require the type tag.
-        if depToml.pathExists("brick.type") {
-          if depToml["brick.type"]!.s != "library" {
-            throw new owned MasonError("Only mason libraries can be added as dependencies");
+        if !skipCheck {
+          // ensure that dependency exists and check package type
+          const depToml = getDepToml(dependency, version);
+
+          // Ensure path exists to maintain compatibility with old
+          // versions of TOML files which did not require the type tag.
+          if depToml.pathExists("brick.type") {
+            if depToml["brick.type"]!.s != "library" {
+              throw new owned MasonError("Only mason libraries can be added as dependencies");
+            }
           }
         }
 
