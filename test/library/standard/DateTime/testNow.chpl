@@ -1,4 +1,4 @@
-use DateTime;
+use Time;
 
 // Make sure datetime.now() is within a day of date.today(). They could be
 // different if the time passes midnight betwen the two calls.

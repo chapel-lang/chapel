@@ -1,3 +1,4 @@
+renameDateTimeMethods.chpl:1: warning: 'DateTime' is deprecated. Please use 'Time' instead
 renameDateTimeMethods.chpl:6: warning: 'date.isoweekday()' is deprecated. Please use 'date.isoWeekday() instead
 renameDateTimeMethods.chpl:7: warning: 'date.isocalendar()' is deprecated. Please use 'date.isoCalendar()' instead
 renameDateTimeMethods.chpl:8: warning: 'date.isoformat()' is deprecated. Please use 'date.isoFormat()' instead

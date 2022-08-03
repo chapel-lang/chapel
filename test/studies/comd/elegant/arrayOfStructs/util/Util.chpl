@@ -39,12 +39,12 @@ inline proc dot(A:vec3, B:vec3) {
 }
 
 proc dateString() {
-  use DateTime;
+  use Time;
   return datetime.now().strftime("%F, %T");
 }
 
 proc timestampMessage(msg : string) {
-  use DateTime;
+  use Time;
   const timeStr = datetime.now().ctime();
   writeln(timeStr, ": ", msg);
   writeln();
