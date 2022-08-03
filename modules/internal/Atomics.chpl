@@ -226,6 +226,7 @@ module Atomics {
     proc init_helper(value:bool) {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
+      pragma "no gpu codegen"
       extern externFunc("init", bool, explicit=false)
         proc atomic_init(ref obj:externT(bool), value:bool): void;
 
@@ -417,6 +418,7 @@ module Atomics {
     proc init_helper(value:T) {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
+      pragma "no gpu codegen"
       extern externFunc("init", T, explicit=false)
         proc atomic_init(ref obj:externT(T), value:T): void;
 

@@ -287,6 +287,10 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
       FnSymbol* fn = call->resolvedFunction();
 
+      if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+        return false;
+      }
+
       if (hasOuterVarAccesses(fn))
         return false;
 
