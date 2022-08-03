@@ -111,33 +111,26 @@ static std::vector<std::string> splitLines(const std::string& s) {
   return ret;
 }
 
-static std::string filenameFromModuleName(std::string name, std::string docsWorkDir) {
+static std::string filenameFromModuleName(std::string name,
+                                          std::string docsWorkDir) {
+  // Borrowed from chpldoc
   std::string filename = name;
-  // this isn't the right name, might need to upper case first letter and add .chpl
-  //filename = filename + ".chpl";
+  size_t location = filename.rfind("/");
+  if (location != std::string::npos) {
+    filename = filename.substr(0, location + 1);
 
-
-  // if (mod->modTag == MOD_INTERNAL) {
-  //   filename = "internal-modules/";
-  // } else if (mod ->modTag == MOD_STANDARD) {
-  //   filename = "standard-modules/";
-  // } else {
-    size_t location = filename.rfind("/");
-    if (location != std::string::npos) {
-      filename = filename.substr(0, location + 1);
-
-      // Check for files starting with the CHPL_HOME internal modules
-      // path, and if we find one, chop everything but 'internal/' and
-      // whatever follows out of the path in order to create the
-      // appropriate relative path within the sphinx output directory.
-      std::string modPath = CHPL_HOME + "/modules/";
-      std::string intModPath = modPath + "internal/";
-      if (strncmp(intModPath.c_str(), filename.c_str(), intModPath.length()) == 0) {
-        filename = filename.substr(modPath.length());
-      }
-    } else {
-      filename = "";
+    // Check for files starting with the CHPL_HOME internal modules
+    // path, and if we find one, chop everything but 'internal/' and
+    // whatever follows out of the path in order to create the
+    // appropriate relative path within the sphinx output directory.
+    std::string modPath = CHPL_HOME + "/modules/";
+    std::string intModPath = modPath + "internal/";
+    if (strncmp(intModPath.c_str(), filename.c_str(), intModPath.length()) == 0) {
+      filename = filename.substr(modPath.length());
     }
+  } else {
+    filename = "";
+  }
   filename = docsWorkDir + "/" + filename;
 
   return filename;
@@ -198,7 +191,6 @@ std::string runCommand(std::string& command) {
   // Call command
   FILE* pipe = popen(command.c_str(), "r");
   if (!pipe) {
-    // USR_FATAL("running %s", command.c_str());
     std::cerr << "error: running " << command << std::endl;
   }
 
@@ -210,7 +202,6 @@ std::string runCommand(std::string& command) {
   }
 
   if (pclose(pipe)) {
-    // USR_FATAL("'%s' did not run successfully", command.c_str());
     std::cerr << "error: '" << command << "' did not run successfully"
               << std::endl;
   }
@@ -240,11 +231,9 @@ static int myshell(std::string command,
   status = system(command.c_str());
 
   if (status == -1) {
-    // USR_FATAL("system() fork failed: %s", strerror(errno));
     std::cerr << "error: system() fork failed: " << strerror(errno)
               << std::endl;
   } else if (status != 0 && ignoreStatus == false) {
-    // USR_FATAL("%s", description);
     std::cerr << "error: " << description << std::endl;
   }
 
@@ -383,7 +372,7 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
     if (ret.substr(l - styleLen, styleLen) != commentEnd) {
       // TODO: this is a broken comment at this point, no?
       //  we have to recognize this and handle it when we have the
-      //  filename and line information
+      //  filename and line information to report the comment's location
       //  fixing this will satisfy chpldoc/compflags/comment/badClose.doc.chpl
       std::cerr << "warning: chpldoc comment not closed, ignoring comment: "
                    "This comment is not closed properly" << std::endl;
@@ -413,9 +402,6 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
   if (!(toTrim < std::numeric_limits<size_t>::max() || lines.size()==1)) {
     toTrim = 0;
   }
-//  assert((toTrim < std::numeric_limits<size_t>::max() || lines.size()==1) &&
-//     h     "probably an empty comment");
-
 
   for (auto it = lines.begin(); it < lines.end(); ++it) {
     if (it != lines.begin())
@@ -425,6 +411,11 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
   return lines;
 }
 
+
+/*
+ *  Gets the first non-blank line of a comment and return it, stripped of any
+ *  leading whitespace. Returns an empty string if there are no non-blank lines.
+ */
 static std::string commentSynopsis(const Comment* c,
                                    const std::string& commentStyle) {
   if (!c) return "";
@@ -439,6 +430,7 @@ static std::string commentSynopsis(const Comment* c,
   }
   return "";
 }
+
 
 static const char* kindToRstString(bool isMethod, Function::Kind kind) {
   switch (kind) {
@@ -557,15 +549,141 @@ struct RstSignatureVisitor {
     interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
   }
 
-  bool enter(const Identifier* r) {
-    os_ << r->name().c_str();
+  template<typename T>
+  bool enterLiteral(const T* l) {
+    os_ << l->text().c_str();
     return false;
   }
 
-  bool enter(const Record* r) {
-    // TODO: Shouldn't this be record, not Record?
-    if (textOnly_) os_ << "Record: ";
-    os_ << r->name().c_str();
+    bool isPostfix(const OpCall* op) {
+    return (op->isUnaryOp() &&
+            (op->op() == USTR("postfix!") || op->op() == USTR("?")));
+  }
+
+  /*
+    helper for printing binary op calls, special handling for keyword operators
+    to conditionally add spaces around the operator
+  */
+  void printBinaryOp(const OpCall* node) {
+    assert(node->numActuals() == 2);
+    bool addSpace = wantSpaces(node->op(), printingType_) ||
+                    node->op() == USTR("by") ||
+                    node->op() == USTR("align") ||
+                    node->op() == USTR("reduce=") ||
+                    node->op() == USTR("reduce") ||
+                    node->op() == USTR("scan") ||
+                    node->op() == USTR("dmapped");
+    opHelper(node, 0, false);
+    if (addSpace && node->op() != USTR(":"))
+      os_ << " ";
+    os_ << node->op();
+    if (addSpace)
+      os_ << " ";
+    opHelper(node, 1, false);
+  }
+
+  /*
+    helper for printing unary op calls, special handling for nilable operator
+    to conditionally prepend nilable in replacement of the ? operator when the
+    actual is not a function call
+  */
+  void printUnaryOp(const OpCall* node) {
+    assert(node->numActuals() == 1);
+    UniqueString unaryOp;
+    bool isPostFixBang = false;
+    bool isNilable = false;
+    unaryOp = node->op();
+    if (unaryOp == USTR("postfix!")) {
+      isPostFixBang = true;
+      unaryOp = USTR("!");
+    } else if (node->op() == USTR("?")) {
+      if (node->actual(0)->isFnCall()) {
+        isNilable = true;
+      } else {
+        os_ << "nilable ";
+      }
+    } else {
+      os_ << unaryOp;
+    }
+    opHelper(node, 0, (isPostFixBang || isNilable));
+    if (isPostFixBang || isNilable) {
+      os_ << unaryOp;
+    }
+  }
+
+  /*
+    Helper for printing operands of binary and unary op calls
+  */
+  void opHelper(const OpCall* node, int pos, bool postfix) {
+    bool needsParens = false;
+    bool isRHS = pos;
+    UniqueString outerOp, innerOp;
+    outerOp = node->op();
+    if (node->actual(pos)->isOpCall()) {
+      innerOp = node->actual(pos)->toOpCall()->op();
+      needsParens = needParens(outerOp, innerOp, node->isUnaryOp(), postfix,
+                               node->actual(pos)->toOpCall()->isUnaryOp(),
+                               isPostfix(node->actual(pos)->toOpCall()), isRHS);
+    }
+    // handle printing parens around tuples
+    // ex: 3*(4*string) != 3*4*string
+    needsParens = tupleOpNeedsParens(node, needsParens, isRHS, outerOp,
+                                     innerOp);
+    if (needsParens) os_ << "(";
+    node->actual(pos)->traverse(*this);
+    if (needsParens) os_ << ")";
+  }
+
+  // check if this is a star tuple decl, for example:
+  // 3*string or 2*(3*string), etc
+  bool isStarTupleDecl(UniqueString op, const OpCall* node) const {
+    // TODO: need to adjust the rules as to what exactly can construct
+    //  a star tuple, it's not clear how to filter FnCalls
+    //  ex: 3*(real(64)) is a * op with lhs = IntLiteral(3) and
+    //  rhs = FnCall(real->64)
+    bool ret = false;
+    if (node && op == USTR("*") && node->actual(0)->isIntLiteral() &&
+        (node->actual(1)->isIdentifier() ||
+         node->actual(1)->isTuple() ||
+         node->actual(1)->isFnCall())) {
+      ret = true;
+    }
+    return ret;
+  }
+
+  /*
+    Helper to determine if we should print parens around a tuple, typically
+    because it is a star tuple declaration
+  */
+  bool tupleOpNeedsParens(const OpCall* node, bool needsParens, bool isRHS,
+                          UniqueString& outerOp, UniqueString& innerOp) const {
+    if (needsParens || !isRHS) return needsParens;
+    bool ret = needsParens;
+    bool isOuterStarTuple = isStarTupleDecl(outerOp, node);
+    bool isInnerStarTuple = isStarTupleDecl(innerOp,
+                                            node->actual(1)->toOpCall());
+    if ((isOuterStarTuple || isInnerStarTuple)) {
+      ret = true;
+    }
+    return ret;
+  }
+
+  bool enter(const Array* arr) {
+    interpose(arr->children(), ", ", "[", "]");
+    return false;
+  }
+
+  bool enter(const Block* b) {
+    return true;
+  }
+
+  bool enter(const BoolLiteral* b) {
+    os_ << (b->value() ? "true" : "false");
+    return false;
+  }
+
+  bool enter(const BracketLoop* bl) {
+    printChapelSyntax(os_, bl);
     return false;
   }
 
@@ -578,24 +696,8 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const BoolLiteral* b) {
-    os_ << (b->value() ? "true" : "false");
-    return false;
-  }
-
-  template<typename T>
-  bool enterLiteral(const T* l) {
-    os_ << l->text().c_str();
-    return false;
-  }
-
-  bool enter(const IntLiteral* l)  { return enterLiteral(l); }
-  bool enter(const UintLiteral* l) { return enterLiteral(l); }
-  bool enter(const RealLiteral* l) { return enterLiteral(l); }
-  bool enter(const ImagLiteral* l) { return enterLiteral(l); }
-
-  bool enter(const StringLiteral* l) {
-    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
+  bool enter(const Conditional* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;
   }
 
@@ -604,18 +706,14 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const Dot* d) {
-    d->receiver()->traverse(*this);
-    os_ << "." << d->field().c_str();
+  bool enter(const Domain* dom) {
+    interpose(dom->children(), ", ", "{", "}");
     return false;
   }
 
-  bool enter(const New* d) {
-    os_ << "new ";
-    if (d->management() != New::Management::DEFAULT_MANAGEMENT) {
-      os_ << kindToString(d->management()) << " ";
-    }
-    d->typeExpression()->traverse(*this);
+  bool enter(const Dot* d) {
+    d->receiver()->traverse(*this);
+    os_ << "." << d->field().c_str();
     return false;
   }
 
@@ -634,27 +732,38 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const Variable* v) {
-    if (v->isConfig()) {
-      os_ << "config ";
-    }
-    if (v->kind() != Variable::Kind::INDEX) {
-      os_ << kindToString((IntentList) v->kind()) << " ";
-    }
-    os_ << v->name().c_str();
-    if (const AstNode* te = v->typeExpression()) {
-      printingType_ = true;
-      os_ << ": ";
-      te->traverse(*this);
-      printingType_ = false;
-    }
-    if (const AstNode* ie = v->initExpression()) {
-      os_ << " = ";
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
-        printingType_ = true;
-      ie->traverse(*this);
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
-        printingType_ = false;
+  bool enter(const FnCall* call) {
+    const AstNode* callee = call->calledExpression();
+    assert(callee);
+    callee->traverse(*this);
+    if (isCalleReservedWord(callee)) {
+      os_ << " ";
+      call->actual(0)->traverse(*this);
+    } else {
+      if (call->callUsedSquareBrackets()) {
+        os_ << "[";
+      } else {
+        os_ << "(";
+      }
+      std::string sep;
+      for (int i = 0; i < call->numActuals(); i++) {
+        os_ << sep;
+        if (call->isNamedActual(i)) {
+          os_ << call->actualName(i);
+          // The spaces around = are just to satisfy old tests
+          // TODO: Remove spaces around `=` when removing old parser
+          os_ << " = ";
+        }
+
+        call->actual(i)->traverse(*this);
+
+        sep = ", ";
+      }
+      if (call->callUsedSquareBrackets()) {
+        os_ << "]";
+      } else {
+        os_ << ")";
+      }
     }
     return false;
   }
@@ -764,102 +873,32 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool isPostfix(const OpCall* op) {
-    return (op->isUnaryOp() &&
-            (op->op() == USTR("postfix!") || op->op() == USTR("?")));
+  bool enter(const Identifier* r) {
+    os_ << r->name().c_str();
+    return false;
   }
 
-  void printUnaryOp(const OpCall* node) {
-    assert(node->numActuals() == 1);
-    UniqueString unaryOp;
-    bool isPostFixBang = false;
-    bool isNilable = false;
-    unaryOp = node->op();
-    if (unaryOp == USTR("postfix!")) {
-      isPostFixBang = true;
-      unaryOp = USTR("!");
-    } else if (node->op() == USTR("?")) {
-      if (node->actual(0)->isFnCall()) {
-        isNilable = true;
-      } else {
-        os_ << "nilable ";
-      }
-    } else {
-      os_ << unaryOp;
-    }
-    opHelper(node, 0, (isPostFixBang || isNilable));
-    if (isPostFixBang || isNilable) {
-      os_ << unaryOp;
-    }
+  bool enter(const Import* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
   }
 
-  void opHelper(const OpCall* node, int pos, bool postfix) {
-    bool needsParens = false;
-    bool isRHS = pos;
-    UniqueString outerOp, innerOp;
-    outerOp = node->op();
-    if (node->actual(pos)->isOpCall()) {
-      innerOp = node->actual(pos)->toOpCall()->op();
-      needsParens = needParens(outerOp, innerOp, node->isUnaryOp(), postfix,
-                               node->actual(pos)->toOpCall()->isUnaryOp(),
-                               isPostfix(node->actual(pos)->toOpCall()), isRHS);
+  bool enter(const New* d) {
+    os_ << "new ";
+    if (d->management() != New::Management::DEFAULT_MANAGEMENT) {
+      os_ << kindToString(d->management()) << " ";
     }
-    // handle printing parens around tuples
-    // ex: 3*(4*string) != 3*4*string
-    needsParens = tupleOpNeedsParens(node, needsParens, isRHS, outerOp,
-                                     innerOp);
-    if (needsParens) os_ << "(";
-    node->actual(pos)->traverse(*this);
-    if (needsParens) os_ << ")";
+    d->typeExpression()->traverse(*this);
+    return false;
   }
 
-  // check if this is a start tuple decl, for example:
-  // 3*string or 2*(3*string), etc
-  bool isStarTupleDecl(UniqueString op, const OpCall* node) const {
-    // TODO: need to adjust the rules as to what exactly can construct
-    //  a star tuple, it's not clear how to filter FnCalls
-    //  ex: 3*(real(64)) is a * op with lhs = IntLiteral(3) and
-    //  rhs = FnCall(real->64)
-    bool ret = false;
-    if (node && op == USTR("*") && node->actual(0)->isIntLiteral() &&
-        (node->actual(1)->isIdentifier() ||
-         node->actual(1)->isTuple() ||
-         node->actual(1)->isFnCall())) {
-      ret = true;
-    }
-    return ret;
-  }
-
-  bool tupleOpNeedsParens(const OpCall* node, bool needsParens, bool isRHS,
-                          UniqueString& outerOp, UniqueString& innerOp) const {
-    if (needsParens || !isRHS) return needsParens;
-    bool ret = needsParens;
-    bool isOuterStarTuple = isStarTupleDecl(outerOp, node);
-    bool isInnerStarTuple = isStarTupleDecl(innerOp,
-                                            node->actual(1)->toOpCall());
-    if ((isOuterStarTuple || isInnerStarTuple)) {
-      ret = true;
-    }
-    return ret;
-  }
-
-  void printBinaryOp(const OpCall* node) {
-    assert(node->numActuals() == 2);
-    bool addSpace = wantSpaces(node->op(), printingType_) ||
-                    node->op() == USTR("by") ||
-                    node->op() == USTR("align") ||
-                    node->op() == USTR("reduce=") ||
-                    node->op() == USTR("reduce") ||
-                    node->op() == USTR("scan") ||
-                    node->op() == USTR("dmapped");
-    opHelper(node, 0, false);
-    if (addSpace && node->op() != USTR(":"))
-      os_ << " ";
-    os_ << node->op();
-    if (addSpace)
-      os_ << " ";
-    opHelper(node, 1, false);
-  }
+  /* Numeric Literals */
+  // TODO: Truncate precision of floating point literals to
+  //  match chpldoc's precision.
+  bool enter(const IntLiteral* l)  { return enterLiteral(l); }
+  bool enter(const UintLiteral* l) { return enterLiteral(l); }
+  bool enter(const RealLiteral* l) { return enterLiteral(l); }
+  bool enter(const ImagLiteral* l) { return enterLiteral(l); }
 
   bool enter(const OpCall* node) {
     if (node->isUnaryOp()) {
@@ -870,44 +909,26 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const FnCall* call) {
-    const AstNode* callee = call->calledExpression();
-    assert(callee);
-    callee->traverse(*this);
-    if (isCalleReservedWord(callee)) {
-      os_ << " ";
-      call->actual(0)->traverse(*this);
-    } else {
-      if (call->callUsedSquareBrackets()) {
-        os_ << "[";
-      } else {
-        os_ << "(";
-      }
-      std::string sep;
-      for (int i = 0; i < call->numActuals(); i++) {
-        os_ << sep;
-        if (call->isNamedActual(i)) {
-          os_ << call->actualName(i);
-          // The spaces around = are just to satisfy old tests
-          // TODO: Remove spaces around `=` when removing old parser
-          os_ << " = ";
-        }
-
-        call->actual(i)->traverse(*this);
-
-        sep = ", ";
-      }
-      if (call->callUsedSquareBrackets()) {
-        os_ << "]";
-      } else {
-        os_ << ")";
-      }
+  bool enter(const Range* range) {
+    if (auto lb = range->lowerBound()) {
+      lb->traverse(*this);
+    }
+    os_ << "..";
+    if (auto ub = range->upperBound()) {
+      ub->traverse(*this);
     }
     return false;
   }
 
-  bool enter(const Domain* dom) {
-    interpose(dom->children(), ", ", "{", "}");
+  bool enter(const Record* r) {
+    // TODO: Shouldn't this be record, not Record?
+    if (textOnly_) os_ << "Record: ";
+    os_ << r->name().c_str();
+    return false;
+  }
+
+  bool enter(const StringLiteral* l) {
+    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
     return false;
   }
 
@@ -926,37 +947,12 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const Array* arr) {
-    interpose(arr->children(), ", ", "[", "]");
-    return false;
-  }
-
-  bool enter(const Range* range) {
-    if (auto lb = range->lowerBound()) {
-      lb->traverse(*this);
-    }
-    os_ << "..";
-    if (auto ub = range->upperBound()) {
-      ub->traverse(*this);
-    }
-    return false;
-  }
-
-  bool enter(const BracketLoop* bl) {
-    printChapelSyntax(os_, bl);
-    return false;
-  }
-
-  bool enter(const Block* b) {
-    return true;
-  }
-
-  bool enter(const Use* node) {
+  bool enter(const TypeQuery* node) {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;
   }
 
-  bool enter(const Import* node) {
+  bool enter(const Use* node) {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;
   }
@@ -966,16 +962,32 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const TypeQuery* node) {
-    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+  bool enter(const Variable* v) {
+    if (v->isConfig()) {
+      os_ << "config ";
+    }
+    if (v->kind() != Variable::Kind::INDEX) {
+      os_ << kindToString((IntentList) v->kind()) << " ";
+    }
+    os_ << v->name().c_str();
+    if (const AstNode* te = v->typeExpression()) {
+      printingType_ = true;
+      os_ << ": ";
+      te->traverse(*this);
+      printingType_ = false;
+    }
+    if (const AstNode* ie = v->initExpression()) {
+      os_ << " = ";
+      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+        printingType_ = true;
+      ie->traverse(*this);
+      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+        printingType_ = false;
+    }
     return false;
   }
 
-  bool enter(const Conditional* node) {
-    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
-    return false;
-  }
-
+  // Defaults for all other node types not handled above
   bool enter(const AstNode* a) {
     printChapelSyntax(os_, a);
     return false;
@@ -1111,7 +1123,8 @@ struct RstResultBuilder {
     if (!textOnly_) os_ << "\n";
     bool commentShown = showComment(node, indentComment);
 
-    // TODO: Fix all this because why are we checking for specific node types?
+    // TODO: Fix all this because why are we checking for specific node types
+    //  just to add a newline?
     if (commentShown && !textOnly_ && (node->isEnum() ||
                                        node->isClass() ||
                                        node->isRecord() ||
@@ -1191,6 +1204,49 @@ struct RstResultBuilder {
     }
   }
 
+  /*
+    Helper for multi decls to make sure type and initializer information is
+    propagated down through each decl and changes as needed.
+  */
+  void multiDeclHelper(const Decl* decl, std::string& prevTypeExpression,
+                       std::string& prevInitExpression) {
+    if (!prevTypeExpression.empty()) {
+      // write prevTypeExpression
+      os_ << prevTypeExpression;
+      // set prevTypeExpression = ": thisVariableName.type"
+      prevTypeExpression = ": " + decl->toVariable()->name().str() + ".type";
+    }
+    if (!prevInitExpression.empty()) {
+      // write prevInitExpression
+      os_ << prevInitExpression;
+      // set prevInitExpression  = "= thisVariableName"
+      prevInitExpression = " = " + decl->toVariable()->name().str();
+    }
+  }
+
+  owned<RstResult> visit(const Class* c) {
+    if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
+    show("class", c);
+    visitChildren(c);
+    return getResult(true);
+  }
+
+  owned<RstResult> visit(const Enum* e) {
+    if (isNoDoc(e)) return {};
+    show("enum", e);
+    return getResult();
+  }
+
+  owned<RstResult> visit(const Function* f) {
+    if (f->visibility() == Decl::Visibility::PRIVATE || isNoDoc(f))
+      return {};
+    bool doIndent = f->isMethod() && f->isPrimaryMethod();
+    if (doIndent) indentDepth_ ++;
+    show(kindToRstString(f->isMethod(), f->kind()), f);
+    if (doIndent) indentDepth_ --;
+    return getResult();
+  }
+
   owned<RstResult> visit(const Module* m) {
     bool includedByDefault = false;
     if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m))
@@ -1224,12 +1280,10 @@ struct RstResultBuilder {
     // header
     if (!textOnly_) {
       os_ << ".. default-domain:: chpl\n\n";
-      // This is hard coded in chapeldoc like this too
+      // This is hard coded in chpldoc to recognize ChapelSysCTypes like this
+      //  the comment indicates it prevents sphinx from complaining about
+      //  duplicate definitions.
       if (moduleName == "ChapelSysCTypes") {
-        // if (textOnly_) indentDepth_ --;
-        // showComment(m, textOnly_);
-        // showDeprecationMessage(m, false);
-        // if (textOnly_) indentDepth_ ++;
         visitChildren(m);
         return getResult(textOnly_);
       }
@@ -1308,45 +1362,6 @@ struct RstResultBuilder {
     visitChildren(m);
 
     return getResult(textOnly_);
-  }
-
-  owned<RstResult> visit(const Function* f) {
-    if (f->visibility() == Decl::Visibility::PRIVATE || isNoDoc(f))
-      return {};
-    bool doIndent = f->isMethod() && f->isPrimaryMethod();
-    if (doIndent) indentDepth_ ++;
-    show(kindToRstString(f->isMethod(), f->kind()), f);
-    if (doIndent) indentDepth_ --;
-    return getResult();
-  }
-
-  owned<RstResult> visit(const Variable* v) {
-    if (v->visibility() == Decl::Visibility::PRIVATE || isNoDoc(v))
-      return {};
-
-    if (v->isField()) {
-      indentDepth_ ++;
-      show("attribute", v);
-      indentDepth_ --;
-    }
-    else if (v->storageKind() == IntentList::TYPE)
-      show("type", v);
-    else
-      show("data", v);
-
-    return getResult();
-  }
-
-  owned<RstResult> visit(const Record* r) {
-    if (isNoDoc(r)) return {};
-    show("record", r);
-    visitChildren(r);
-    return getResult(true);
-  }
-  owned<RstResult> visit(const Enum* e) {
-    if (isNoDoc(e)) return {};
-    show("enum", e);
-    return getResult();
   }
 
   owned<RstResult> visit(const MultiDecl* md) {
@@ -1430,51 +1445,51 @@ struct RstResultBuilder {
     return getResult();
   }
 
-  void multiDeclHelper(const Decl* decl, std::string& prevTypeExpression,
-                       std::string& prevInitExpression) {
-    if (!prevTypeExpression.empty()) {
-      // write prevTypeExpression
-      os_ << prevTypeExpression;
-      // set prevTypeExpression = ": thisVariableName.type"
-      prevTypeExpression = ": " + decl->toVariable()->name().str() + ".type";
-    }
-    if (!prevInitExpression.empty()) {
-      // write prevInitExpression
-      os_ << prevInitExpression;
-      // set prevInitExpression  = "= thisVariableName"
-      prevInitExpression = " = " + decl->toVariable()->name().str();
-    }
-  }
-
-  owned<RstResult> visit(const Class* c) {
-    if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
-    show("class", c);
-    visitChildren(c);
+  owned<RstResult> visit(const Record* r) {
+    if (isNoDoc(r)) return {};
+    show("record", r);
+    visitChildren(r);
     return getResult(true);
   }
 
-  owned<RstResult> visit(const Use* u) {
-    if (!processUsedModules_ || u->visibility() == chpl::uast::Decl::PRIVATE)
+  owned<RstResult> visit(const Variable* v) {
+    if (v->visibility() == Decl::Visibility::PRIVATE || isNoDoc(v))
       return {};
-    // need to locate the source file for module named in Use statement
-    // then parse it and generate docs for it
-    for (auto vis : u->visibilityClauses()) {
-      auto sym = vis->symbol();
 
-      if (sym->isIdentifier()) {
-        //std::string fileName = filenameFromModuleName(sym->toIdentifier(), outputDir_);
-        if (auto usedMod = getToplevelModule(context_, sym->toIdentifier()->name())) {
-          std::string name = usedMod->name().str();
-          if (auto& r = rstDoc(context_, usedMod->id())) {
-            r->outputModule(outputDir_, name, indentPerDepth);
-          }
-        }
-      }
-
+    if (v->isField()) {
+      indentDepth_ ++;
+      show("attribute", v);
+      indentDepth_ --;
     }
+    else if (v->storageKind() == IntentList::TYPE)
+      show("type", v);
+    else
+      show("data", v);
 
-    return getResult(true);
+    return getResult();
   }
+
+  // TODO: Finish implementing this, if needed to process used modules
+  // owned<RstResult> visit(const Use* u) {
+  //   if (!processUsedModules_ || u->visibility() == chpl::uast::Decl::PRIVATE)
+  //     return {};
+  //   // need to locate the source file for module named in Use statement
+  //   // then parse it and generate docs for it
+  //   for (auto vis : u->visibilityClauses()) {
+  //     auto sym = vis->symbol();
+
+  //     if (sym->isIdentifier()) {
+  //       if (auto usedMod = getToplevelModule(context_,
+  //                                            sym->toIdentifier()->name())) {
+  //         std::string name = usedMod->name().str();
+  //         if (auto& r = rstDoc(context_, usedMod->id())) {
+  //           r->outputModule(outputDir_, name, indentPerDepth);
+  //         }
+  //       }
+  //     }
+  //   }
+  //   return getResult(true);
+  // }
 
   // TODO all these nullptr gets stored in the query map... can we avoid that?
   owned<RstResult> visit(const AstNode* n) { return {}; }
@@ -1590,6 +1605,12 @@ static const owned<RstResult>& rstDoc(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+
+/*
+  Query to get the module path for a given id. Path may be just the name of
+  the module in the case of a top-level module, or it may contain the parent(s)
+  of the module if it is a submodule.
+*/
 static const std::vector<UniqueString>& getModulePath(Context* context, ID id) {
   QUERY_BEGIN(getModulePath, context, id);
   std::vector<UniqueString> result;
@@ -1691,7 +1712,7 @@ module N { }
   //   var nestedX = 22;
   // }
 
-// temporary CLI to get testing
+// Command line options and some defaults for dyno-chpldoc
 struct Args {
   std::string saveSphinx = "";
   bool selfTest = false;
@@ -1699,6 +1720,7 @@ struct Args {
   bool dump = false;
   bool textOnly = false;
   std::string outputDir;
+  // TODO: Do we want to continue supporting this feature?
   bool processUsedModules = false;
   std::string author;
   std::string commentStyle =  "/*";
@@ -1881,17 +1903,8 @@ int main(int argc, char** argv) {
   }
 
   outputDir_ = docsRstDir;
-  // std::string chplLocaleModel = getenv("CHPL_LOCALE_MODEL");
-  // std::string chplTasks = getenv("CHPL_TASKS");
-  // std::string chplComm = getenv("CHPL_COMM");
-  // std::string chplSysModulesSubdir = getenv("CHPL_SYS_MODULES_SUBDIR");
-  // std::string chplModulePath = getenv("CHPL_MODULE_PATH");
-  // setupModuleSearchPaths(ctx, CHPL_HOME, false, chplLocaleModel, false,
-  //                           chplTasks,
-  //                           chplComm,
-  //                           chplSysModulesSubdir,
-  //                           chplModulePath,
-  //                           {});
+  // TODO: Do we need to do this if we're building some other docs? Seems like
+  // these are project specific directories.
   std::string modRoot = CHPL_HOME + "/modules";
   std::string internal = modRoot + "/internal";
   setInternalModulePath(ctx, UniqueString::get(ctx, internal));
@@ -1939,10 +1952,17 @@ int main(int argc, char** argv) {
         if (args.dump) {
           ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
         }
+        // TODO: FIXME! this is a hack to get the full directory path that is
+        //  needed if/when we encounter any submodules while processing this
+        //  module, because the submodules should be in a directory relative
+        //  to the module, and if the module itself has a leading path, then
+        //  the submodule was being orphaned in a directory one level up.
+        //  for example: chpldoc modules/packages/BLAS.chpl
+        //  should create a directory modules/packages/BLAS/C_BLAS.rst
+        //  but was instead creating modules/BLAS/C_BLAS.rst
         docsWorkingDir_ = filenameFromModuleName(cpath, outputDir_);
 
         if (auto& r = rstDoc(ctx, ast->id())) {
-          makeDir(docsWorkingDir_, true);
           r->outputModule(docsWorkingDir_, name, indentPerDepth);
         }
       }
