@@ -60,6 +60,21 @@ on here.getChild(1) {
   writeArr(A);
 
 }
+
+on here.gpus[0] {
+  var A = [1,2,3,4,5];
+  var outerVar = true;
+
+  forall a in A {
+    if outerVar then
+      a += 1;
+    else
+      a -= 1;
+  }
+
+  writeArr(A);
+}
+
 stopGPUDiagnostics();
 
 writeln(getGPUDiagnostics());
