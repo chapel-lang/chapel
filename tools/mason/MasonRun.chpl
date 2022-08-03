@@ -50,7 +50,7 @@ proc masonRun(args: [] string, checkProj=true) throws {
   if checkProj {
     const projectType = getProjectType();
     if projectType != "application" then
-      throw new owned MasonError("Only mason packages can be run, but this is a Mason " + projectType);
+      throw new owned MasonError("Only mason applications can be run, but this is a Mason " + projectType);
   }
 
   var show = showFlag.valueAsBool();
