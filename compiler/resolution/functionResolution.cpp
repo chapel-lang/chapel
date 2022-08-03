@@ -3743,7 +3743,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
     retval->generateDeprecationWarning(info.call);
   }
 
-  if (retval && retval->hasFlag(FLAG_UNSTABLE)) {
+  if (retval && retval->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
     retval->generateUnstableWarning(info.call);
   }
   
