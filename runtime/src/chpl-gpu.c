@@ -43,7 +43,8 @@ void chpl_gpu_launch_kernel(int ln, int32_t fn,
   va_list args;
   va_start(args, nargs);
 
-  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc());
+  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
+                                blk_dim_x, blk_dim_y, blk_dim_z);
   chpl_gpu_diags_incr(kernel_launch);
 
   chpl_gpu_impl_launch_kernel(ln, fn,
@@ -72,7 +73,7 @@ void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   va_start(args, nargs);
 
   chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
-      blk_dim_x, blk_dim_y, blk_dim_z);
+      blk_dim, 1, 1);
   chpl_gpu_diags_incr(kernel_launch);
 
   chpl_gpu_impl_launch_kernel_flat(ln, fn,
