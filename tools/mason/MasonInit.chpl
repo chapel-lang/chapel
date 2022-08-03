@@ -322,7 +322,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
   }
   else {
     // TODO: update package to be either lib or whatever, not hardcode
-    makeBasicToml(name, path, "0.1.0", getChapelVersionStr(), "None", "package");
+    makeBasicToml(name, path, "0.1.0", getChapelVersionStr(), "None", "application");
     if show then writeln("Created Mason.toml file.");
   }
 }
