@@ -522,11 +522,13 @@ proc depExists(dependency: string, repo='/src/') {
 }
 
 
-proc getProjectType(): string {
+proc getProjectType(): string throws {
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd);
   const toParse = open(projectHome + "/Mason.toml", iomode.r);
   const tomlFile = parseToml(toParse);
+  if !tomlFile.pathExists("brick.type") then
+    throw new owned MasonError('Type not found in TOML file; please add a type="application" key');
   return tomlFile["brick"]!["type"]!.s;
 }
 
