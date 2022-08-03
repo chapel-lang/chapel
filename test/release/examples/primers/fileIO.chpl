@@ -10,6 +10,7 @@ config const example = 0;
 config const testfile = "test.bin";
 config const epsilon = 10e-13;
 
+use FileSystem;
 use IO;
 
 /*
@@ -151,9 +152,9 @@ if example == 0 || example == 2 {
   }
 
 // Now close the file, even though they are reference-counted like channels.
-// We can also remove the test file.
+// We can also remove the test file with :proc:`FileSystem.remove`.
   f.close();
-  unlink(testfile);
+  remove(testfile);
 }
 
 // Here is the slightly more complicated but faster version, using some hints.
@@ -210,7 +211,7 @@ if example == 0 || example == 3 {
     f.close();
   }
 
-  unlink(testfile);
+  remove(testfile);
 }
 
 /*
@@ -257,7 +258,7 @@ if example == 0 || example == 4 {
   }
 
   f.close();
-  unlink(testfile);
+  remove(testfile);
 }
 
 /*
@@ -276,11 +277,11 @@ if example == 0 || example == 5 {
   writeln("Running Example 5");
 
   try! {
-    // Who knows, maybe 1st unlink succeeds.
-    unlink(testfile);
+    // Who knows, maybe 1st removal succeeds.
+    remove(testfile);
 
     // File does not exist by now, for sure.
-    unlink(testfile);
+    remove(testfile);
 
     assert(false); // never reached
   } catch e: SystemError {

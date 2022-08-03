@@ -5021,6 +5021,7 @@ proc readln(type t ...?numTypes) throws {
 
    :throws SystemError: Thrown if the file is not successfully deleted.
  */
+deprecated "unlink is deprecated. Please use FileSystem.remove instead"
 proc unlink(path:string) throws {
   extern proc sys_unlink(path:c_string): c_int;
   var err = sys_unlink(path.localize().c_str());
