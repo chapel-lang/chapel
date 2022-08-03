@@ -3882,7 +3882,7 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
   // this to be quadratic in time.
   //
   // Gather the fixups that need to be done.
-  // This is a separate traversal so that the build functios
+  // This is a separate traversal so that the build functions
   // can copy the AST freely.
 
   if (depth > 0) {
