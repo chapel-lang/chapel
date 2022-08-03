@@ -235,6 +235,14 @@ module LocaleModelHelpSetup {
 
     local_name = getNodeName();
 
+    extern proc chpl_topo_getNumCPUsPhysical(accessible_only: bool): c_int;
+    dst.nPUsPhysAcc = chpl_topo_getNumCPUsPhysical(true);
+    dst.nPUsPhysAll = chpl_topo_getNumCPUsPhysical(false);
+
+    extern proc chpl_topo_getNumCPUsLogical(accessible_only: bool): c_int;
+    dst.nPUsLogAcc = chpl_topo_getNumCPUsLogical(true);
+    dst.nPUsLogAll = chpl_topo_getNumCPUsLogical(false);
+
     // Cyclic (and likely other) distributions uses this variable to determine
     // how many data-parallel tasks to have per locale. If this gets set to 0
     // then we end up not processing things in the first locale.
