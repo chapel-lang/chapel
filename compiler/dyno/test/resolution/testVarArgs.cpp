@@ -420,7 +420,7 @@ static void validate(std::string formalType,
   oss << "\n";
 
   oss << "=== comparing formals ===\n";
-  for (int i = 0; i < info.args.size(); i++) {
+  for (size_t i = 0; i < info.args.size(); i++) {
     QualifiedType elt = varArgType.type()->toTupleType()->elementType(i);
     std::string name = "formal_" + std::to_string(i);
     auto formal = col.onlyDecl(name);
@@ -437,7 +437,7 @@ static void validate(std::string formalType,
     oss << "\n=== comparing type queries ===\n";
     auto name = std::string(1, formalType[1]);
     auto varArgQuery = col.onlyDecl(name);
-    for (int i = 0; i < info.args.size(); i++) {
+    for (size_t i = 0; i < info.args.size(); i++) {
       std::string q = name + "_" + std::to_string(i);
       auto normalQuery = col.onlyDecl(q);
       oss << "  expecting: ";
