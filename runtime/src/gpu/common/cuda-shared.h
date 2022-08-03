@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#ifdef HAS_GPU_LOCALE
+
 #ifndef cuda_shared_h
 #define cuda_shared_h
 
@@ -76,4 +78,6 @@ size_t chpl_gpu_common_get_alloc_size(void* ptr) {
   return size;
 }
 
-#endif
+#endif // ifndef cuda_shared_h
+
+#endif // HAS_GPU_LOCALE

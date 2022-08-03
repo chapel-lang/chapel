@@ -43,6 +43,6 @@ static void chpl_gpu_cuda_check(int err, const char* file, int line) {
   chpl_gpu_cuda_check((int)call, __FILE__, __LINE__);\
 } while(0);
 
-#endif
+#endif // cuda_utils_h
 
-#endif
+#endif // HAS_GPU_LOCALE

@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#ifdef HAS_GPU_LOCALE
+
 #include "sys_basic.h"
 #include "chplrt.h"
 #include "chpl-mem.h"
@@ -27,8 +29,6 @@
 #include "chplcgfns.h"
 #include "../common/cuda-utils.h"
 #include "../common/cuda-shared.h"
-
-#ifdef HAS_GPU_LOCALE
 
 #include <cuda.h>
 #include <cuda_runtime.h>

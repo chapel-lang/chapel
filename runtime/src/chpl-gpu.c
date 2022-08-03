@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#ifdef HAS_GPU_LOCALE
+
 #include "chplrt.h"
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
@@ -218,3 +220,5 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 bool chpl_gpu_is_device_ptr(void* ptr) {
   return chpl_gpu_impl_is_device_ptr(ptr);
 }
+
+#endif
