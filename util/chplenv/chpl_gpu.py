@@ -41,7 +41,7 @@ def get_cuda_libdevice_path():
         libdevices = glob.glob(chpl_cuda_path+"/nvvm/libdevice/libdevice*.bc")
         if len(libdevices) == 0:
             error("Can't find libdevice. Please make sure your CHPL_CUDA_PATH is "
-                  "set such that CHPL_CUDA_PATH/bin/nvcc exists.")
+                  "set such that CHPL_CUDA_PATH/nvmm/libdevice/libdevice*.bc exists.")
         else:
             return libdevices[0]
 
