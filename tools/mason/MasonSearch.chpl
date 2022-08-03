@@ -134,23 +134,6 @@ proc masonSearch(ref args: list(string)) {
   }
 }
 
-/* Split pkg.0_1_0 to (pkg, 0.1.0) & viceversa */
-proc splitNameVersion(ref package: string, original: bool) {
-  if original {
-    var res = package.split('.');
-    var name = res[0];
-    var version = res[1];
-    version = version.replace('_', '.');
-    return name + ' (' + version + ')';
-  }
-  else {
-    package = package.replace('.', '_');
-    package = package.replace(' (', '.');
-    package = package.replace(')', '');
-    return package;
-  }
-}
-
 record RankResultsComparator {
   var query: string;
   var packageScores;
@@ -235,46 +218,4 @@ proc getPackageScores(res: [] string) {
 
 proc isHidden(name : string) : bool {
   return name.startsWith("_");
-}
-
-/* Search TOML files within a package directory to find the latest package
-   version number that is supported with current Chapel version */
-proc findLatest(packageDir: string): VersionInfo {
-  use Path;
-
-  var ret = new VersionInfo(0, 0, 0);
-  const suffix = ".toml";
-  const packageName = basename(packageDir);
-  for manifest in listdir(packageDir, files=true, dirs=false) {
-    // Check that it is a valid TOML file
-    if !manifest.endsWith(suffix) {
-      var warningStr = "File without '.toml' extension encountered - skipping ";
-      warningStr += packageName + " " + manifest;
-      stderr.writeln(warningStr);
-      continue;
-    }
-
-    // Skip packages that are out of version bounds
-    const chplVersion = getChapelVersionInfo();
-
-    const manifestReader = openreader(packageDir + '/' + manifest);
-    const manifestToml = parseToml(manifestReader);
-    const brick = manifestToml['brick'];
-    var (low, high) = parseChplVersion(brick);
-    if chplVersion < low || chplVersion > high then continue;
-
-    // Check that Chapel version is supported
-    const end = manifest.size - suffix.size;
-    const ver = new VersionInfo(manifest[0..<end]);
-    if ver > ret then ret = ver;
-  }
-  return ret;
-}
-
-/* Print a TOML file. Expects full path. */
-proc showToml(tomlFile : string) {
-  const openFile = openreader(tomlFile);
-  const toml = parseToml(openFile);
-  writeln(toml);
-  openFile.close();
 }

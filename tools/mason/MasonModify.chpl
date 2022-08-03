@@ -76,6 +76,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
       const split = spec.split('@');
       const dependency = split[0];
       const version = split[1];
+
       // Name and version checks are only valid for mason packages
       if !external && !system {
         checkDepName(dependency);
@@ -91,6 +92,17 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
         newToml = masonExternalAdd(toml, dependency, spec);
       }
       else {
+        // ensure that dependency exists and check package type
+        const depToml = getDepToml(dependency, version);
+
+        // Ensure path exists to maintain compatibility with old
+        // versions of TOML files which did not require the type tag.
+        if depToml.pathExists("brick.type") {
+          if depToml["brick.type"]!.s != "library" {
+            throw new owned MasonError("Only mason libraries can be added as dependencies");
+          }
+        }
+
         writeln(" ".join("Adding Mason dependency", dependency, "version", version));
         newToml = masonAdd(toml, dependency, version);
       }
