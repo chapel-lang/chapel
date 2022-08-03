@@ -40,31 +40,14 @@ def get_cuda_libdevice_path():
     else:
         return libdevices[0]
 
-def get_libomptarget_rtl():
-    chpl_gpu_runtime = get_runtime()
-    if chpl_gpu_runtime == "omp":
-        # TODO this needs to be able to find system libomptarget rtl as needed
-        llvm_config = chpl_llvm.get_llvm_config()
-        llvm_lib_dir = run_command([llvm_config, '--libdir']).strip()
-
-        rtl_path = os.path.join(llvm_lib_dir, "libomptarget.rtl.cuda.so")
-
-        if not os.path.exists(rtl_path):
-            error("Couldn't find libomptarget plugin library for cuda")
-
-        return llvm_lib_dir
-    else:
-        return ""
-
-def get_link_args():
-    if get_runtime() == "omp":
-      return "-Wl,-rpath,"+get_libomptarget_rtl()
-
 
 def get_runtime():
-    chpl_gpu_runtime = os.environ.get("CHPL_GPU")
+    chpl_gpu_runtime = os.environ.get("CHPL_GPU_RUNTIME")
     if chpl_gpu_runtime:
-        return chpl_gpu_runtime
+        if chpl_gpu_runtime != "cuda":
+            error("Only 'cuda' supported for 'CHPL_GPU_RUNTIME'")
+        else:
+            return chpl_gpu_runtime
     return "cuda"
 
 def validate(chplLocaleModel, chplComm):
