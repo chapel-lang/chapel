@@ -33,7 +33,7 @@ static void chpl_gpu_cuda_check(int err, const char* file, int line) {
 
     snprintf(msg, msg_len,
              "%s:%d: Error calling CUDA function: %s (Code: %d)",
-             file, line, cudaGetErrorString((cudaError)err), err);
+             file, line, cudaGetErrorString((cudaError_t)err), err);
 
     chpl_internal_error(msg);
   }
