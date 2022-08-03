@@ -225,58 +225,6 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
   }
 }
 
-/*void* chpl_gpu_impl_mem_calloc(size_t number, size_t size) {*/
-  /*chpl_gpu_ensure_context();*/
-
-  /*CUdeviceptr ptr;*/
-  /*CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));*/
-  /*CUDA_CALL(cuMemsetD8(ptr, 0, size));*/
-  /*return (void*)ptr;*/
-/*}*/
-
-/*void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,*/
-                           /*chpl_mem_descInt_t description,*/
-                           /*int32_t lineno, int32_t filename) {*/
-  /*chpl_gpu_ensure_context();*/
-
-  /*CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%d\n", size);*/
-
-  /*assert(chpl_gpu_is_device_ptr(memAlloc));*/
-
-  /*size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);*/
-
-  /*if (size == cur_size) {*/
-    /*return memAlloc;*/
-  /*}*/
-
-  /*// TODO we could probably do something smarter, especially for the case where*/
-  /*// the new allocation size is smaller than the original allocation size.*/
-
-  /*CUdeviceptr ptr;*/
-  /*CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));*/
-  /*CUDA_CALL(cuMemcpyDtoD(ptr, (CUdeviceptr)memAlloc, cur_size));*/
-  /*CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));*/
-
-  /*return (void*)ptr;*/
-/*}*/
-
-/*void* chpl_gpu_mem_memalign(size_t boundary, size_t size,*/
-                            /*chpl_mem_descInt_t description,*/
-                            /*int32_t lineno, int32_t filename) {*/
-  /*chpl_gpu_ensure_context();*/
-
-  /*CHPL_GPU_DEBUG("chpl_gpu_mem_memalign called. Size:%d\n", size);*/
-  /*chpl_internal_error("Not ready to allocate aligned memory on GPU, yet.");*/
-
-  /*// ENGIN: I don't know if it is possible to allocate memory with custom*/
-  /*// alignment on GPU. It looks like GPUs typically have a default alignment*/
-  /*// (512?) that cannot be changed. I don't think we'd need more than that*/
-  /*// today, and if we want, we can play some pointer games to return something*/
-  /*// with a larger alignment here.*/
-
-  /*return NULL;*/
-/*}*/
-
 // This can be used for proper reallocation
 size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
   return chpl_gpu_common_get_alloc_size(ptr);
