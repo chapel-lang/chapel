@@ -1184,17 +1184,6 @@ module Vector {
     }
 
     /*
-      Write the contents of this vector to a channel.
-
-      :arg ch: A channel to write to.
-    */
-    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
-    proc readWriteThis(ch: channel) throws {
-      if ch.writing then writeThis(ch);
-      else readThis(ch);
-    }
-
-    /*
       Returns `true` if this vector contains zero elements.
 
       :return: `true` if this vector is empty.

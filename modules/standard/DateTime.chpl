@@ -522,13 +522,6 @@ module DateTime {
       f <~> new ioLiteral('"');
   }
 
-  /* Read or write a date value from channel `f` */
-  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
-  proc date.readWriteThis(f) throws {
-    if f.writing then writeThis(f);
-    else readThis(f);
-  }
-
 
   /* Operators on date values */
   pragma "no doc"
@@ -828,13 +821,6 @@ module DateTime {
 
     if isjson then
       f <~> new ioLiteral('"');
-  }
-
-  /* Read or write a time value from channel `f` */
-  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
-  proc time.readWriteThis(f) throws {
-    if f.writing then writeThis(f);
-    else readThis(f);
   }
 
 
@@ -1496,13 +1482,6 @@ module DateTime {
 
     if isjson then
       f <~> new ioLiteral('"');
-  }
-
-  /* Read or write a datetime value from channel `f` */
-  deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
-  proc datetime.readWriteThis(f) throws {
-    if f.writing then writeThis(f);
-    else readThis(f);
   }
 
 
