@@ -29,6 +29,7 @@ module ChapelBase {
 
   public use ChapelStandard;
   use CTypes;
+  use ChplConfig;
 
   config param enablePostfixBangChecks = false;
 
@@ -817,7 +818,7 @@ module ChapelBase {
   //
   // More primitive funs
   //
-  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
+  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit, gpuInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
 
   config param chpl_arrayInitMethodRuntimeSelectable = false;
@@ -849,6 +850,9 @@ module ChapelBase {
       // Skip init for empty arrays. Needed for uints so that `s-1` in init_elts
       // code doesn't overflow.
       initMethod = ArrayInit.noInit;
+    } else if CHPL_LOCALE_MODEL == "gpu" &&
+              chpl_task_getRequestedSubloc() >= 0 {
+        initMethod = ArrayInit.gpuInit;
     } else if  !rootLocaleInitialized {
       // The parallel range iter uses 'here`/rootLocale, so fallback to serial
       // initialization if the root locale hasn't been setup. Only used early
@@ -894,6 +898,12 @@ module ChapelBase {
       }
       when ArrayInit.serialInit {
         for i in lo..s-1 {
+          pragma "no auto destroy" pragma "unsafe" var y: t;
+          __primitive("array_set_first", x, i, y);
+        }
+      }
+      when ArrayInit.gpuInit {
+        foreach i in lo..s-1 {
           pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }

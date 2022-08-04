@@ -329,6 +329,10 @@ void chpl_std_module_init(void) {
     // Note that in general, module code can contain "on" clauses
     // and should therefore not be called before the call to
     // chpl_comm_startPollingTask().
+    //
+#ifdef HAS_GPU_LOCALE
+    chpl_gpu_enable_device_alloc();
+#endif
 
     //
     // Permit the tasking layer to do anything it would like to now that
@@ -343,6 +347,14 @@ void chpl_std_module_init(void) {
     chpl_rt_preUserCodeHook();
     chpl_rt_postUserCodeHook();
   }
+
+}
+
+void chpl_std_module_finalize(void) {
+  // TODO do we need this?
+#ifdef HAS_GPU_LOCALE
+    chpl_gpu_disable_device_alloc();
+#endif
 
 }
 
