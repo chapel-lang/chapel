@@ -1453,20 +1453,26 @@ bool Resolver::enter(const Identifier* ident) {
             }
           }
         }
+      // Do not resolve function calls under 'scopeResolveOnly'
       } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
-        // resolve a parenless call
-        std::vector<CallInfoActual> actuals;
-        auto ci = CallInfo (/* name */ ident->name(),
-                            /* calledType */ QualifiedType(),
-                            /* isMethod */ false,
-                            /* hasQuestionArg */ false,
-                            /* isParenless */ true,
-                            actuals);
-        auto inScope = scopeStack.back();
-        auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
-        // save the most specific candidates in the resolution result for the id
-        ResolvedExpression& r = byPostorder.byAst(ident);
-        handleResolvedCall(r, ident, ci, c);
+        if (!scopeResolveOnly) {
+          // resolve a parenless call
+          std::vector<CallInfoActual> actuals;
+          auto ci = CallInfo (/* name */ ident->name(),
+                              /* calledType */ QualifiedType(),
+                              /* isMethod */ false,
+                              /* hasQuestionArg */ false,
+                              /* isParenless */ true,
+                              actuals);
+          auto inScope = scopeStack.back();
+          auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
+          // save the most specific candidates in the resolution result for the id
+          ResolvedExpression& r = byPostorder.byAst(ident);
+          handleResolvedCall(r, ident, ci, c);
+        }
+        return false;
+      } else if (scopeResolveOnly &&
+                 type.kind() == QualifiedType::FUNCTION) {
         return false;
       }
     }

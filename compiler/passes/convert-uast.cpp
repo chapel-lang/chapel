@@ -1140,6 +1140,17 @@ struct Converter {
         return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
       if (name == USTR("^"))
         return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
+
+      if (name == USTR("max"))
+        return new UnresolvedSymExpr("MaxReduceScanOp");
+      if (name == USTR("maxloc"))
+        return new UnresolvedSymExpr("maxloc");
+      if (name == USTR("min"))
+        return new UnresolvedSymExpr("MinReduceScanOp");
+      if (name == USTR("minloc"))
+        return new UnresolvedSymExpr("minloc");
+      if (name == USTR("minmax"))
+        return new UnresolvedSymExpr("minmax");
     }
 
     auto ret = convertAST(node);
@@ -1914,9 +1925,8 @@ struct Converter {
 
     if (auto ident = node->toIdentifier()) {
       auto name = ident->name();
-      if (Expr* e = resolvedIdentifier(ident)) {
-        return e;
-      } else if (name == USTR("atomic")) {
+
+      if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
         ret = new UnresolvedSymExpr("_singlevar");
@@ -2280,7 +2290,9 @@ struct Converter {
         INT_ASSERT(formal->intent() == uast::Formal::DEFAULT_INTENT);
         INT_ASSERT(!formal->initExpression());
         INT_ASSERT(!formal->typeExpression());
-        conv = new DefExpr(new VarSymbol(formal->name().c_str()));
+        auto varSym = new VarSymbol(formal->name().c_str());
+        conv = new DefExpr(varSym);
+        noteConvertedSym(formal, varSym);
 
         // Should not be attaching comments to tuple formals.
         INT_ASSERT(!attachComments);
