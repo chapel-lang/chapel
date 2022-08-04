@@ -1141,15 +1141,15 @@ struct Converter {
       if (name == USTR("^"))
         return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
 
-      if (name.str() == "max")
+      if (name == USTR("max"))
         return new UnresolvedSymExpr("MaxReduceScanOp");
-      if (name.str() == "maxloc")
+      if (name == USTR("maxloc"))
         return new UnresolvedSymExpr("maxloc");
-      if (name.str() == "min")
+      if (name == USTR("min"))
         return new UnresolvedSymExpr("MinReduceScanOp");
-      if (name.str() == "minloc")
+      if (name == USTR("minloc"))
         return new UnresolvedSymExpr("minloc");
-      if (name.str() == "minmax")
+      if (name == USTR("minmax"))
         return new UnresolvedSymExpr("minmax");
     }
 
