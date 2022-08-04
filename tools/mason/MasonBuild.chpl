@@ -201,11 +201,14 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     if sourceList.size > 0 then command += " --main-module " + project;
 
     for (_, name, version) in sourceList {
-      var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
-      command += depSrc;
+      // version of -1 specifies a git dep
+      if version != "-1" {
+        var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
+        command += depSrc;
+      }
     }
 
-    for (_, name, branch) in gitList {
+    for (_, name, branch, _) in gitList {
       var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
       command += gitDepSrc;
     }
@@ -236,29 +239,29 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
    url and the name for local mason dependency pool */
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
-  var gitList: list((string, string, string));
+  var gitList: list((string, string, string, string));
   for (name, package) in lockFile.A.items() {
     if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
         var toml = lockFile[name]!;
-        // TODO: What do we want to do with version for git deps?
         var version = toml["version"]!.s;
 
-        if toml.pathExists("source") {
-          var source = toml["source"]!.s;
-          sourceList.append((source, name, version));
-        } else if toml.pathExists("url") {
-          var url = toml["url"]!.s;
+        if toml.pathExists("rev") {
+          var url = toml["source"]!.s;
+          var revision = toml["rev"]!.s;
 
           var branch: string;
-          // use branch if specified, else default to master
+          // use branch if specified, else default to HEAD
           if toml["branch"] != nil {
             branch = toml["branch"]!.s;
           } else {
-            branch = "master";
+            branch = "HEAD";
           }
-          gitList.append((url, name, branch));
+          gitList.append((url, name, branch, revision));
+        } else if toml.pathExists("source") {
+          var source = toml["source"]!.s;
+          sourceList.append((source, name, version));
         }
       }
     }
@@ -266,18 +269,6 @@ proc genSourceList(lockFile: borrowed Toml) {
   return (sourceList, gitList);
 }
 
-
-/* Checks to see if dependency has already been
-   downloaded previously */
-proc depExists(dependency: string, repo='/src/') {
-  var repos = MASON_HOME + repo;
-  var exists = false;
-  for dir in listdir(repos) {
-    if dir == dependency then
-      exists = true;
-  }
-  return exists;
-}
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
@@ -292,23 +283,26 @@ proc getSrcCode(sourceListArg: list(3*string), show) {
 
   var baseDir = MASON_HOME +'/src/';
   forall (srcURL, name, version) in sourceList {
-    const nameVers = name + "-" + version;
-    const destination = baseDir + nameVers;
-    if !depExists(nameVers) {
-      writeln("Downloading dependency: " + nameVers);
-      var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
-      var checkout = "git checkout -q v" + version;
-      if show {
-        getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
-        checkout = "git checkout v" + version;
+    // version of -1 specifies a git dep
+    if version != "-1" {
+      const nameVers = name + "-" + version;
+      const destination = baseDir + nameVers;
+      if !depExists(nameVers) {
+        writeln("Downloading dependency: " + nameVers);
+        var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
+        var checkout = "git checkout -q v" + version;
+        if show {
+          getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
+          checkout = "git checkout v" + version;
+        }
+        runCommand(getDependency);
+        gitC(destination, checkout);
       }
-      runCommand(getDependency);
-      gitC(destination, checkout);
     }
   }
 }
 
-proc getGitCode(gitListArg: list(3*string), show) {
+proc getGitCode(gitListArg: list(4*string), show) {
   if !isDir(MASON_HOME + '/git/') {
     mkdir(MASON_HOME + '/git/', parents=true);
   }
@@ -321,30 +315,27 @@ proc getGitCode(gitListArg: list(3*string), show) {
   var gitList = gitListArg.toArray();
 
   var baseDir = MASON_HOME +'/git/';
-  forall (srcURL, name, branch) in gitList {
+  forall (srcURL, name, branch, revision) in gitList {
     const nameVers = name + "-" + branch;
     const destination = baseDir + nameVers;
     if !depExists(nameVers, '/git/') {
       writeln("Downloading dependency: " + nameVers);
       var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
-      var checkout = "git checkout -q " + branch;
+      var checkout = "git checkout -q " + revision;
       if show {
         getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
-        checkout = "git checkout " + branch;
+        checkout = "git checkout " + revision;
       }
       runCommand(getDependency);
       gitC(destination, checkout);
     } else {
-      writeln("Pulling latest changes for " + nameVers + "...");
+      writeln("Checking out specified revision for " + nameVers + "...");
 
-      var checkoutBranch = "git checkout -q " + branch;
-      var pullLatest = "git pull -q origin " + branch;
+      var checkoutBranch = "git checkout -q " + revision;
       if show {
-        checkoutBranch = "git checkout " + branch;
-        pullLatest = "git pull origin " + branch;
+        checkoutBranch = "git checkout " + revision;
       }
       gitC(destination, checkoutBranch);
-      gitC(destination, pullLatest);
     }
   }
 }

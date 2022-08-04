@@ -482,7 +482,7 @@ proc isIdentifier(name:string) {
 
 
 proc getMasonDependencies(sourceList: list(3*string),
-                          gitList: list(3*string),
+                          gitList: list(4*string),
                           progName: string) {
 
   // Declare example to run as the main module
@@ -501,7 +501,7 @@ proc getMasonDependencies(sourceList: list(3*string),
     const gitDepPath = MASON_HOME + '/git/';
 
     // Add git dependencies
-    for (_, name, branch) in gitList {
+    for (_, name, branch, _) in gitList {
       var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
       masonCompopts += gitDepSrc;
     }
@@ -509,12 +509,26 @@ proc getMasonDependencies(sourceList: list(3*string),
   return masonCompopts;
 }
 
+/* Checks to see if dependency has already been
+   downloaded previously */
+proc depExists(dependency: string, repo='/src/') {
+  var repos = MASON_HOME + repo;
+  var exists = false;
+  for dir in listdir(repos) {
+    if dir == dependency then
+      exists = true;
+  }
+  return exists;
+}
 
-proc getProjectType(): string {
+
+proc getProjectType(): string throws {
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd);
   const toParse = open(projectHome + "/Mason.toml", iomode.r);
   const tomlFile = parseToml(toParse);
+  if !tomlFile.pathExists("brick.type") then
+    throw new owned MasonError('Type not found in TOML file; please add a type="application" key');
   return tomlFile["brick"]!["type"]!.s;
 }
 

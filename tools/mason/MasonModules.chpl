@@ -78,7 +78,7 @@ proc masonModules(args: [] string) throws {
     modules += depM;
   }
 
-  for (_, name, branch) in gitList {
+  for (_, name, branch, _) in gitList {
     var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
     modules += gitDepSrc;
   }
