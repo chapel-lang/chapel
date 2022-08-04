@@ -2079,18 +2079,8 @@ static void fixAST() {
 
         if (Type* wide = wideClassMap.get(act->typeInfo())) {
           insertWideTemp(QualifiedType(QUAL_VAL, wide), act);
-        }
-        else if (Type* wide = wideRefMap.get(act->typeInfo())) {
-          insertWideTemp(QualifiedType(QUAL_WIDE_REF, wide), act);
         } else if (act->isRef()) {
-          Type* ty = act->typeInfo();
-          if (!ty->symbol->hasFlag(FLAG_REF))
-            ty = ty->refType;
-
-          Type* wide = wideRefMap.get(ty);
-          INT_ASSERT(wide);
-
-          insertWideTemp(QualifiedType(QUAL_WIDE_REF, wide), act);
+          insertWideTemp(QualifiedType(QUAL_WIDE_REF, act->typeInfo()), act);
         } else if (argMustUseCPtr(act->symbol()->type)) {
           // passing a non-ref thing, e.g. a record, to an arg expecting to be
           // given something by ref. This arg actually has the 'ref' kind,
