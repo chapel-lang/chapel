@@ -363,7 +363,7 @@ proc makeSrcDir(path:string) {
 }
 
 /* Makes module file inside src/ */
-proc makeModule(path:string, fileName:string, packageType="package") {
+proc makeModule(path:string, fileName:string, packageType="application") {
   var libTemplate: string;
   if packageType == "application" {
     libTemplate = '/* Documentation for ' + fileName +

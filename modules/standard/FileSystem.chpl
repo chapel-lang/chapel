@@ -1552,8 +1552,8 @@ proc sameFile(file1: file, file2: file): bool throws {
 
   var ret:c_int;
   var err = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
-  if err then try ioerror(err, "in sameFile " + file1.tryGetPath(),
-                          file2.tryGetPath());
+  if err then try ioerror(err, "in sameFile " + file1._tryGetPath(),
+                          file2._tryGetPath());
   return ret != 0;
 }
 
