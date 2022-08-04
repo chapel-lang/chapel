@@ -170,9 +170,33 @@ module DistributedMap {
       return res;
     }
 
-    // TODO: impl
-    proc extend(m: map(keyType, valType)) {
-      compilerError("unimplmented");
+    // TODO: Is it necessary to lock everything?  Maybe can do something fancy
+    // like figure out all the locales needed and then lock?
+    proc extend(pragma "intent ref maybe const formal"
+                m: map(keyType, valType)) {
+      for i in locDom {
+        locks[i].lock();
+      }
+
+      if !isCopyableType(keyType) || !isCopyableType(valType) then
+        compilerError("extending map with non-copyable type");
+
+      for key in m.keys() {
+        var loc: int;
+        if (funcType != nothing) {
+          loc = localeHasher(key, targetLocales.size);
+        } else {
+          loc = hashAcrossLocales(key, targetLocales.size);
+        }
+
+        var (_, slot) = tables[loc].findAvailableSlot(key);
+        var (_, slot2) = m.table.findAvailableSlot(key);
+        tables[loc].fillSlot(slot, key, m.table.table[slot2].val);
+      }
+
+      for i in locDom {
+        locks[i].unlock();
+      }
     }
 
     // TODO: impl and maybe equivalent on map type
