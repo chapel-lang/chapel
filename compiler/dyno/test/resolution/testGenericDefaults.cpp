@@ -98,8 +98,42 @@ static void test2() {
   assert(subs.size() == 0);
 }
 
+static void test3() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveQualifiedTypeOfX(context,
+                         R""""(
+                         proc id(type t) type return enum;
+
+                         record r {
+                           type typeWithDefault = int;
+                           var nonGenericField : id(typeWithDefault);
+                         }
+
+                         var x : r;
+                         )"""");
+  assert(qt.type() && qt.type()->isRecordType());
+  auto ct = qt.type()->toRecordType();
+  auto baseCt = ct->instantiatedFrom();
+  assert(baseCt == nullptr);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(context, ct,
+      chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(fields.numFields() == 2);
+  assert(fields.fieldName(0) == "typeWithDefault");
+  auto firstFieldType = fields.fieldType(0);
+  assert(firstFieldType.kind() == QualifiedType::TYPE);
+  assert(firstFieldType.type() && firstFieldType.type()->isAnyType());
+  assert(fields.fieldName(1) == "nonGenericField");
+  auto secondFieldType = fields.fieldType(1);
+  assert(secondFieldType.kind() == QualifiedType::VAR);
+  assert(secondFieldType.isUnknown());
+  auto& subs = ct->substitutions();
+  assert(subs.size() == 0);
+}
+
 int main() {
   test1();
   test2();
+  test3();
   return 0;
 }
