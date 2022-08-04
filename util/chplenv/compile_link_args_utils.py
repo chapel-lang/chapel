@@ -53,6 +53,10 @@ def get_runtime_includes_and_defines():
     if locale_model == "gpu":
         # this -D is needed since it affects code inside of headers
         bundled.append("-DHAS_GPU_LOCALE")
+        memtype = chpl_gpu.get_cuda_memtype()
+        if memtype == "uva":
+            bundled.append("-DCHPL_GPU_MEM_UVA")
+
         # If compiling for GPU locales, add CUDA runtime headers to include path
         cuda_path = chpl_gpu.get_cuda_path()
         system.append("-I" + os.path.join(cuda_path, "include"))

@@ -24,6 +24,7 @@
 #include "chpl-mem.h"
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
+#include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
 #include "error.h"
 #include "chplcgfns.h"
@@ -252,13 +253,13 @@ void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
   }
 }
 
-void chpl_gpu_impl_copy_device_to_host(void* dst, void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(src));
 
   CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
 }
 
-void chpl_gpu_impl_copy_host_to_device(void* dst, void* src, size_t n) {
+void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
@@ -318,13 +319,11 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 void* chpl_gpu_impl_mem_alloc(size_t size) {
   chpl_gpu_ensure_context();
 
-  CUdeviceptr ptr = 0;
 #ifdef CHPL_GPU_MEM_UVA
-  void* mem = chpl_mem_alloc(size, description, lineno, filename);
-  CHPL_GPU_DEBUG("\tregistering %p\n", mem);
-  CUDA_CALL(cuMemHostRegister(mem, size, CU_MEMHOSTREGISTER_PORTABLE));
-  CUDA_CALL(cuMemHostGetDevicePointer(&ptr, mem, 0));
+  void* ptr = 0;
+  CUDA_CALL(cuMemAllocHost(&ptr, size));
 #else
+  CUdeviceptr ptr = 0;
   CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 #endif
   assert(ptr!=0);
@@ -339,8 +338,7 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_UVA
     if (chpl_gpu_allocated_on_host(memAlloc)) {
-      CUDA_CALL(cuMemHostUnregister(memAlloc));
-      chpl_mem_free(memAlloc, lineno, filename);
+      CUDA_CALL(cuMemFreeHost(memAlloc));
     }
     else {
 #endif

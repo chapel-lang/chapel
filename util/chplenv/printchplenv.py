@@ -91,7 +91,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_GPU_CODEGEN', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_GPU_RUNTIME', RUNTIME | NOPATH, 'gpu'),
     ChapelEnv('  CHPL_CUDA_PATH', RUNTIME | NOPATH),
-    ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL | NOPATH),
+    ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', RUNTIME | NOPATH),
+    ChapelEnv('  CHPL_CUDA_MEMTYPE', INTERNAL | NOPATH),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
@@ -183,6 +184,7 @@ def compute_all_values():
     ENV_VALS['  CHPL_GPU_RUNTIME'] = chpl_gpu.get_runtime()
     ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_cuda_path()
     ENV_VALS['  CHPL_CUDA_LIBDEVICE_PATH'] = chpl_gpu.get_cuda_libdevice_path()
+    ENV_VALS['  CHPL_CUDA_MEMTYPE'] = chpl_gpu.get_cuda_memtype()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
@@ -310,6 +312,11 @@ def filter_tidy(chpl_env):
     comm = ENV_VALS['CHPL_COMM']
     llvm = ENV_VALS['CHPL_LLVM']
     locale_model = ENV_VALS['CHPL_LOCALE_MODEL']
+
+    gpu_vars = ('  CHPL_CUDA_PATH',
+                '  CHPL_CUDA_LIBDEVICE_PATH',
+                '  CHPL_CUDA_MEMTYPE')
+
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
@@ -322,9 +329,7 @@ def filter_tidy(chpl_env):
         return llvm != 'none'
     elif chpl_env.name == '  CHPL_LLVM_VERSION':
         return llvm != 'none'
-    elif chpl_env.name == '  CHPL_CUDA_PATH':
-        return locale_model == 'gpu'
-    elif chpl_env.name == '  CHPL_CUDA_LIBDEVICE_PATH':
+    elif chpl_env.name in gpu_vars:
         return locale_model == 'gpu'
     return True
 
