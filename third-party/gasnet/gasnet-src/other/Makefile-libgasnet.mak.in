@@ -237,7 +237,7 @@ do-pkgconfig-tools: force
                GASNETTOOLS_CXX GASNETTOOLS_CXXFLAGS \
                GASNETTOOLS_LD GASNETTOOLS_LDFLAGS GASNETTOOLS_LIBS \
 	       GASNET_PREFIX" ; \
-           $(MAKE) --no-print-directory -f $(top_srcdir)/other/Makefile-echovar.mak VARS="$$VARS" echovars \
+           $(MAKE) --no-print-directory -f $(top_srcdir)/other/Makefile-echovar.mak VARS="$$VARS" echovars-preserve-unset \
 	           >> $(pkgconfig_file)
 	@unset GASNET_DESC; \
 	if test -d $(top_srcdir)/.git ; then \
