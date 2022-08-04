@@ -519,6 +519,10 @@ proc getProjectType(): string {
   return tomlFile["brick"]!["type"]!.s;
 }
 
+/* Return parsed TOML file of name depName if it is located
+   in a registry in MASON_CACHED_REGISTRY. If dependency is
+   not found, throw an error. TODO: Currently does not check
+   on the version. */
 proc getDepToml(depName: string, depVersion: string) throws {
   const pattern = compile(depName, ignoreCase=true);
 
@@ -590,7 +594,8 @@ proc findLatest(packageDir: string): VersionInfo {
   return ret;
 }
 
-
+/* Reads the Chapel version specified by a mason project's
+   TOML file and returns the min and max compatible versions */
 proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   use Regex;
 
@@ -628,6 +633,8 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   return (low, high);
 }
 
+/* Ensure that Chapel version is properly formatted. Returns
+   a tuple of the low, high supported verisons.*/
 proc checkChplVersion(chplVersion, low, high) throws {
   use Regex;
   var lo, hi : VersionInfo;
