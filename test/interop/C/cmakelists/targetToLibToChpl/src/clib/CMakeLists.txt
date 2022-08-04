@@ -1,5 +1,5 @@
 add_library(cmakeLib cmakeLib.c)
 
-include(../../lib/CMakeLists.FooLibrary)
-target_include_directories(cmakeLib PUBLIC ${CHPL_INCLUDE_DIRS})
-target_link_libraries(cmakeLib PUBLIC ${CHPL_LINK_LIBS})
+include(../../lib/FooLibrary.cmake)
+target_include_directories(cmakeLib PUBLIC ${FooLibrary_INCLUDE_DIRS})
+target_link_libraries(cmakeLib PUBLIC ${FooLibrary_LINK_LIBS})

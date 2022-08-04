@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.21)
 
 add_executable(cmakeTest cmakeTest.c)
 
-include(lib/CMakeLists.FooLibrary)
-target_include_directories(cmakeTest PUBLIC ${CHPL_INCLUDE_DIRS})
-target_link_libraries(cmakeTest PUBLIC ${CHPL_LINK_LIBS})
-
+include(lib/FooLibrary.cmake)
+target_include_directories(cmakeTest PUBLIC ${FooLibrary_INCLUDE_DIRS})
+target_link_libraries(cmakeTest PUBLIC ${FooLibrary_LINK_LIBS})

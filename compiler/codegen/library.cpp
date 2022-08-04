@@ -282,7 +282,7 @@ static std::string makeToCMake(std::string str) {
 }
 
 //Helper to output the CHPL_INCLUDE_DIRS variable into the generated CMakeLists
-static void printCMakeListsIncludes(fileinfo cmakelists) {
+static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
   std::string requireIncludes = "";
   for_vector(const char, dirName, incDirs) {
     requireIncludes += " ";
@@ -303,7 +303,7 @@ static void printCMakeListsIncludes(fileinfo cmakelists) {
 
   //switch from make to cmake
   varValue = makeToCMake(varValue);
-  fprintf(cmakelists.fptr, "set(CHPL_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} %s)\n\n", varValue.c_str());
+  fprintf(cmakelists.fptr, "set(%s_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} %s)\n\n", name.c_str(), varValue.c_str());
 }
 
 // Helper to output the CHPL_LINK_LIBS variable into the generated CMakeLists
@@ -347,7 +347,7 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   varValue += libname;
 
   varValue = makeToCMake(varValue);
-  fprintf(cmakelists.fptr, "set(CHPL_LINK_LIBS %s)\n\n", varValue.c_str());
+  fprintf(cmakelists.fptr, "set(%s_LINK_LIBS %s)\n\n", name.c_str(), varValue.c_str());
 }
 
 void codegen_library_cmakelists() {
@@ -363,7 +363,7 @@ void codegen_library_cmakelists() {
   }
 
   fileinfo cmakelists;
-  openLibraryHelperFile(&cmakelists, "CMakeLists", name.c_str());
+  openLibraryHelperFile(&cmakelists, name.c_str(), "cmake");
 
   // Save the CHPL_HOME location so it can be used in the other
   // variables instead of letting them be cluttered with its value
@@ -372,17 +372,20 @@ void codegen_library_cmakelists() {
   setupCMakeEnvVars("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, cmakelists);
   setupCMakeEnvVars("CHPL_HOME", CHPL_HOME, cmakelists);
 
-  printCMakeListsIncludes(cmakelists);
+  printCMakeListsIncludes(cmakelists, name);
   printCMakeListsLibraries(cmakelists, name);
 
   std::string compiler = getCompilelineOption("compiler");
+  removeTrailingNewlines(compiler);
   fprintf(cmakelists.fptr, "set(CHPL_COMPILER %s)\n", compiler.c_str());
 
   std::string linker = getCompilelineOption("linker");
+  removeTrailingNewlines(linker);
   fprintf(cmakelists.fptr, "set(CHPL_LINKER %s)\n", linker.c_str());
 
   std::string linkerShared = getCompilelineOption("linkershared");
-  fprintf(cmakelists.fptr, "set(CHPL_LINKERSHARED %s)", linkerShared.c_str());
+  removeTrailingNewlines(linkerShared);
+  fprintf(cmakelists.fptr, "set(CHPL_LINKERSHARED %s)\n", linkerShared.c_str());
 
   closeLibraryHelperFile(&cmakelists, false);
 }
