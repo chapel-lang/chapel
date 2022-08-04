@@ -37,6 +37,18 @@
 namespace chpl {
 namespace resolution {
 
+typedef enum {
+  /** Do not use default values when determining field type. */
+  IGNORE_DEFAULTS,
+  /** Use default values when determining field type. */
+  USE_DEFAULTS,
+  /** Do not use default values for the current field (i.e. when set up
+     for resolving a field statement), but do use default values
+     for all other fields. This policy is useful when determining the
+     genericity of individual fields. */
+  USE_DEFAULTS_OTHER_FIELDS
+} DefaultsPolicy;
+
 /**
   An untyped function signature. This is really just the part of a function
   including the formals. It exists so that the process of identifying
@@ -1499,6 +1511,26 @@ using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 /// \cond DO_NOT_DOCUMENT
 
+template<> struct stringify<resolution::DefaultsPolicy>
+{
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
+                  const resolution::DefaultsPolicy& stringMe) const {
+    using DefaultsPolicy = resolution::DefaultsPolicy;
+    switch (stringMe) {
+      case DefaultsPolicy::IGNORE_DEFAULTS:
+        streamOut << "IGNORE_DEFAULTS";
+        break;
+      case DefaultsPolicy::USE_DEFAULTS:
+        streamOut << "USE_DEFAULTS";
+        break;
+      case DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS:
+        streamOut << "USE_DEFAULTS_OTHER_FIELDS";
+        break;
+    }
+  }
+};
+
 template<> struct stringify<resolution::TypedFnSignature::WhereClauseResult>
 {
   void operator()(std::ostream& streamOut,
@@ -1528,6 +1560,13 @@ template<> struct stringify<resolution::TypedFnSignature::WhereClauseResult>
 
 
 namespace std {
+
+template<> struct hash<chpl::resolution::DefaultsPolicy>
+{
+  size_t operator()(const chpl::resolution::DefaultsPolicy& key) const {
+    return key;
+  }
+};
 
 template<> struct hash<chpl::resolution::UntypedFnSignature::FormalDetail>
 {

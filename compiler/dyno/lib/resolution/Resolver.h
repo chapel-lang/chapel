@@ -26,7 +26,6 @@
 namespace chpl {
 namespace resolution {
 
-
 struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
@@ -34,7 +33,7 @@ struct Resolver {
   const uast::AstNode* curStmt = nullptr;
   const types::CompositeType* inCompositeType = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
-  bool useGenericFormalDefaults = false;
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const TypedFnSignature* typedSignature = nullptr;
   const PoiScope* poiScope = nullptr;
 
@@ -129,7 +128,7 @@ struct Resolver {
                             const uast::AstNode* fieldStmt,
                             const types::CompositeType* compositeType,
                             ResolutionResultByPostorderID& byPostorder,
-                            bool useGenericFormalDefaults);
+                            DefaultsPolicy defaultsPolicy);
 
   // set up Resolver to resolve instantiated field declaration types
   static Resolver
@@ -139,7 +138,7 @@ struct Resolver {
                                  const types::CompositeType* compositeType,
                                  const PoiScope* poiScope,
                                  ResolutionResultByPostorderID& byPostorder,
-                                 bool useGenericFormalDefaults);
+                                 DefaultsPolicy defaultsPolicy);
 
   // set up Resolver to resolve instantiated field declaration types
   // without knowing the CompositeType
