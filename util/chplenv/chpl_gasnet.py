@@ -1,5 +1,5 @@
 import chpl_compiler, chpl_comm_debug, chpl_comm_segment, chpl_comm_substrate
-import chpl_home_utils, compiler_utils, third_party_utils
+import overrides, chpl_home_utils, compiler_utils, third_party_utils
 from utils import error, warning, memoize
 import os
 
@@ -88,3 +88,57 @@ def get_link_args():
     tup = third_party_utils.pkgconfig_get_bundled_link_args(
                        'gasnet', get_uniq_cfg_path(), get_gasnet_pc_file())
     return (filter_link_args(tup[0]), filter_link_args(tup[1]))
+
+# returns the special linker to use, or None if there is none
+# (e.g. it might link with mpicc)
+@memoize
+def get_override_ld():
+    d = third_party_utils.read_bundled_pkg_config_file(
+                       'gasnet', get_uniq_cfg_path(), get_gasnet_pc_file())
+
+    if d == None:
+        return None # no ld override
+
+    if 'GASNET_LD' in d:
+        gasnet_ld = d['GASNET_LD']
+        gasnet_cc = d['GASNET_CC']
+        gasnet_cxx = d['GASNET_CXX']
+
+        ld = None # no ld override
+
+        gasnet_ld_requires_mpi = False
+        ld_name = os.path.basename(gasnet_ld).split()[0]
+        if 'mpi' in ld_name:
+            gasnet_ld_requires_mpi = True
+
+        mpi_cxx = overrides.get('MPI_CXX')
+        if not mpi_cxx:
+            mpi_cxx = 'mpicxx'
+
+        target_compiler_llvm = False
+        if chpl_compiler.get('target') == 'llvm':
+            target_compiler_llvm = True
+
+        # For the linker, we tend to want a C++ linker, in order to support
+        # linking in components developed in C++ like re2 or user C++ code.
+        # However, GASNet doesn't provide any guarantees that their linker
+        # will be a C++ compiler.  Based on conversation with the GASNet
+        # team, we should expect it either to be GASNET_CC, GASNET_CXX, or
+        # MPI_CC.  The following conditional handles these cases, switching
+        # to the C++ choice in the first and third cases.
+        if gasnet_ld == gasnet_cxx:
+            if not target_compiler_llvm:
+                ld = gasnet_ld # GASNet chose C++ linker so stick with it
+        elif gasnet_ld == gasnet_cc:
+            if not target_compiler_llvm:
+                ld = gasnet_cxx # GASNet chose C, so switch to C++
+        elif gasnet_ld_requires_mpi:
+            ld = mpi_cxx
+        else:
+            warning("GASNET_LD unexpectedly set to '{0}'. "
+                    "Please file a Chapel bug against this.".format(gasnet_ld))
+            ld = None
+
+        return ld
+
+    return None
