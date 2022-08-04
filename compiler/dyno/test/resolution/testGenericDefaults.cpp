@@ -47,7 +47,7 @@ static void test1() {
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt != nullptr);
   auto& fields = chpl::resolution::fieldsForTypeDecl(context, baseCt,
-      chpl::resolution::DefaultsPolicy::IGNORE);
+      chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
   auto firstFieldType = fields.fieldType(0);
@@ -84,7 +84,7 @@ static void test2() {
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt == nullptr);
   auto& fields = chpl::resolution::fieldsForTypeDecl(context, ct,
-      chpl::resolution::DefaultsPolicy::IGNORE);
+      chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
   auto firstFieldType = fields.fieldType(0);

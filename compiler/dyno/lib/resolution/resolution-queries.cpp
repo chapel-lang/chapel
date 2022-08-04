@@ -726,25 +726,25 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
 const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         const CompositeType* ct,
                                         DefaultsPolicy defaultsPolicy) {
-  if (defaultsPolicy == DefaultsPolicy::IGNORE){
-    return fieldsForTypeDeclQuery(context, ct, DefaultsPolicy::IGNORE);
+  if (defaultsPolicy == DefaultsPolicy::IGNORE_DEFAULTS){
+    return fieldsForTypeDeclQuery(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
   }
 
   // try first with defaultsPolicy=FOR_OTHER_FIELDS
   const auto& f = fieldsForTypeDeclQuery(context, ct,
-                                         DefaultsPolicy::FOR_OTHER_FIELDS);
+                                         DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS);
 
   // If defaultsPolicy=USE was requested and the type
   // is generic with defaults, compute the type again.
   // We do it this way so that we are more likely to be able to reuse the
   // result of the above query in most cases since most types
   // are not generic record/class with defaults.
-  if (defaultsPolicy == DefaultsPolicy::USE) {
+  if (defaultsPolicy == DefaultsPolicy::USE_DEFAULTS) {
     // if record is not generic with defaults, return its
     // uninstantiated fields. Otherwise, instantiate.
     auto finalDefaultsPolicy = f.isGenericWithDefaults() ?
-      DefaultsPolicy::USE :
-      DefaultsPolicy::IGNORE;
+      DefaultsPolicy::USE_DEFAULTS :
+      DefaultsPolicy::IGNORE_DEFAULTS;
     return fieldsForTypeDeclQuery(context, ct, finalDefaultsPolicy);
   }
 
@@ -756,14 +756,14 @@ static const CompositeType* getTypeWithDefaults(Context* context,
                                                 const CompositeType* ct) {
   // resolve the fields with DefaultsPolicy=FOR_OTHER_FIELDS
   const ResolvedFields& g = fieldsForTypeDecl(context, ct,
-                                              DefaultsPolicy::FOR_OTHER_FIELDS);
+                                              DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS);
   if (!g.isGenericWithDefaults()) {
     return ct;
   }
 
   // and with DefaultsPolicy=USE
   const ResolvedFields& r = fieldsForTypeDecl(context, ct,
-                                              DefaultsPolicy::USE);
+                                              DefaultsPolicy::USE_DEFAULTS);
 
   // for any field that has a different type in r than in g, add
   // a substitution, and get the type with those substitutions.
@@ -879,19 +879,21 @@ static Type::Genericity getFieldsGenericity(Context* context,
   }
 
   if (context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, DefaultsPolicy::IGNORE)) ||
+                              std::make_tuple(ct, DefaultsPolicy::IGNORE_DEFAULTS)) ||
       context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, DefaultsPolicy::USE)) ||
+                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS)) ||
       context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, DefaultsPolicy::FOR_OTHER_FIELDS))) {
+                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS))) {
     // TODO: is there a better way to avoid problems with recursion here?
     return Type::CONCRETE;
   }
 
   // we only care about whether or not each field is generic on its own
   // merit, as only these fields need defaults. Thus, we allow defaults
-  // for fields other than the one we are checking.
-  DefaultsPolicy defaultsPolicy = DefaultsPolicy::FOR_OTHER_FIELDS;
+  // for fields other than the one we are checking. In this way, we prevent
+  // some field (a) that depends on the value of field (b) from being
+  // marked generic just because (b) is generic.
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS;
   const ResolvedFields& f = fieldsForTypeDecl(context, ct,
                                               defaultsPolicy);
 
@@ -1044,7 +1046,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
     name = ct->name();
 
     // attempt to resolve the fields
-    DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE;
+    DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
     const ResolvedFields& f = fieldsForTypeDecl(context, ct,
                                                 defaultsPolicy);
 
@@ -1878,7 +1880,7 @@ static QualifiedType computeTypeOfField(Context* context,
 
     // Resolve the type of that field (or MultiDecl/TupleDecl)
     const auto& fields = resolveFieldDecl(context, ct, declId,
-                                          DefaultsPolicy::IGNORE);
+                                          DefaultsPolicy::IGNORE_DEFAULTS);
     int n = fields.numFields();
     for (int i = 0; i < n; i++) {
       if (fields.fieldDeclId(i) == fieldId) {

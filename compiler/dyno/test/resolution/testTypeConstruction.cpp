@@ -217,7 +217,7 @@ parseTypeAndFieldsOfX(Context* context, const char* program) {
 
   assert(ct != nullptr);
 
-  auto defaultsPolicy = DefaultsPolicy::IGNORE;
+  auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const ResolvedFields& f = fieldsForTypeDecl(context, ct,
                                               defaultsPolicy);
 
@@ -275,7 +275,7 @@ static void test5() {
 
   auto& initialFields = fieldsForTypeDecl(context,
                                           rt->instantiatedFrom(),
-                                          DefaultsPolicy::IGNORE);
+                                          DefaultsPolicy::IGNORE_DEFAULTS);
   assert(rt->instantiatedFrom()->instantiatedFrom() == nullptr);
   assert(initialFields.numFields() == 1);
   assert(initialFields.fieldName(0) == "t");
@@ -1183,7 +1183,7 @@ static void test38() {
   assert(pct->parentClassType()->isObjectType());
   assert(pct->parentClassType() == BasicClassType::getObjectType(context));
 
-  auto& parentFields = fieldsForTypeDecl(context, pct, DefaultsPolicy::IGNORE);
+  auto& parentFields = fieldsForTypeDecl(context, pct, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.numFields() == 1);
   assert(parentFields.fieldName(0) == "parentField");
   assert(parentFields.fieldHasDefaultValue(0) == false);

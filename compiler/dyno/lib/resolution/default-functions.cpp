@@ -128,7 +128,7 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   formalTypes.push_back(QualifiedType(QualifiedType::REF, compType));
 
   // consult the fields to build up the remaining untyped formals
-  const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE;
+  const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   auto& rf = fieldsForTypeDecl(context, compType, defaultsPolicy);
 
   // TODO: generic types

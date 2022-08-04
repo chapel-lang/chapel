@@ -33,7 +33,7 @@ struct Resolver {
   const uast::AstNode* curStmt = nullptr;
   const types::CompositeType* inCompositeType = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
-  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE;
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const TypedFnSignature* typedSignature = nullptr;
   const PoiScope* poiScope = nullptr;
 

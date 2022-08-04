@@ -38,7 +38,15 @@ namespace chpl {
 namespace resolution {
 
 typedef enum {
-  IGNORE, USE, FOR_OTHER_FIELDS
+  /** Do not use default values when determining field type. */
+  IGNORE_DEFAULTS,
+  /** Use default values when determining field type. */
+  USE_DEFAULTS,
+  /** Do not use default values for the current field (i.e. when set up
+     for resolving a field statement), but do use default values
+     for all other fields. This policy is useful when determining the
+     genericity of individual fields. */
+  USE_DEFAULTS_OTHER_FIELDS
 } DefaultsPolicy;
 
 /**
@@ -1510,14 +1518,14 @@ template<> struct stringify<resolution::DefaultsPolicy>
                   const resolution::DefaultsPolicy& stringMe) const {
     using DefaultsPolicy = resolution::DefaultsPolicy;
     switch (stringMe) {
-      case DefaultsPolicy::IGNORE:
-        streamOut << "IGNORE";
+      case DefaultsPolicy::IGNORE_DEFAULTS:
+        streamOut << "IGNORE_DEFAULTS";
         break;
-      case DefaultsPolicy::USE:
-        streamOut << "USE";
+      case DefaultsPolicy::USE_DEFAULTS:
+        streamOut << "USE_DEFAULTS";
         break;
-      case DefaultsPolicy::FOR_OTHER_FIELDS:
-        streamOut << "FOR_OTHER_FIELDS";
+      case DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS:
+        streamOut << "USE_DEFAULTS_OTHER_FIELDS";
         break;
     }
   }
