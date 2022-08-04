@@ -57,6 +57,8 @@ void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                  int num_threads, int blk_dim,
                                  int nargs, ...);
 
+void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
+                                   int32_t lineno, int32_t filename);
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename);
 void* chpl_gpu_mem_calloc(size_t number, size_t size,
@@ -70,10 +72,14 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
                             int32_t lineno, int32_t filename);
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename);
 
-void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n);
-void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n);
+void* chpl_gpu_memmove(void* dst, const void* src, size_t n);
+void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n);
+void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n);
 
-bool chpl_gpu_is_device_ptr(void* ptr);
+bool chpl_gpu_is_device_ptr(const void* ptr);
+
+void chpl_gpu_enable_device_alloc(void);
+void chpl_gpu_disable_device_alloc(void);
 
 // TODO do we really need to expose this?
 size_t chpl_gpu_get_alloc_size(void* ptr);
