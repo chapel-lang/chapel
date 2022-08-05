@@ -820,6 +820,7 @@ module ChapelBase {
   //
   enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit, gpuInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
+  config param chpl_defaultGpuArrayInitMethod = chpl_defaultArrayInitMethod;
 
   config param chpl_arrayInitMethodRuntimeSelectable = false;
   private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
@@ -842,6 +843,19 @@ module ChapelBase {
     }
   }
 
+  proc chpl_canDoGpuInit() param : bool {
+    return CHPL_LOCALE_MODEL=="gpu" &&
+           chpl_defaultGpuArrayInitMethod == ArrayInit.gpuInit;
+  }
+
+  proc chpl_shouldDoGpuInit(): bool {
+    extern proc chpl_task_getRequestedSubloc();
+    if chpl_canDoGpuInit() {
+      return chpl_shouldDoGpuInit();
+    }
+    return false;
+  }
+
   // s is the number of elements, t is the element type
   proc init_elts_method(s, type t) {
     var initMethod = chpl_getArrayInitMethod();
@@ -850,8 +864,7 @@ module ChapelBase {
       // Skip init for empty arrays. Needed for uints so that `s-1` in init_elts
       // code doesn't overflow.
       initMethod = ArrayInit.noInit;
-    } else if CHPL_LOCALE_MODEL == "gpu" &&
-              chpl_task_getRequestedSubloc() >= 0 {
+    } else if chpl_shouldDoGpuInit() {
         initMethod = ArrayInit.gpuInit;
     } else if  !rootLocaleInitialized {
       // The parallel range iter uses 'here`/rootLocale, so fallback to serial
