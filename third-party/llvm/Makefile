@@ -210,14 +210,14 @@ llvm: llvm-config llvm-build llvm-install
 
 llvm-clang: llvm
 
-# to build the LLVM support library even with CHPL_LLVM=none
+# to build the LLVM support library only for use with CHPL_LLVM=none
 llvm-support: llvm-config-support-only llvm-build-support-only llvm-install-support-only
 
 bundled: llvm
 
 system:
 
-none: llvm-support
+none:
 
 unset:
 	@echo "Error: Please set the environment variable CHPL_LLVM to a supported value."

@@ -131,17 +131,19 @@ $(LIBUNWIND_INSTALL_DIR): $(LIBUNWIND_DEPEND)
 	rm -rf $(LIBUNWIND_INSTALL_DIR) && rm -rf $(LIBUNWIND_BUILD_DIR)
 	cd libunwind && $(MAKE)
 
-# Check for LLVM_SUPPORT_INSTALL_DIR or LLVM_INSTALL_DIR,
-# depending on the configuration.
-LLVM_CHECK_INSTALL_DIR := $(LLVM_INSTALL_DIR)
-ifeq ($(CHPL_MAKE_LLVM), none)
-  LLVM_CHECK_INSTALL_DIR := $(LLVM_SUPPORT_INSTALL_DIR)
+ifeq ($(CHPL_MAKE_LLVM), bundled)
+llvm: $(LLVM_INSTALL_DIR)
+$(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
+	rm -rf $(LLVM_INSTALL_DIR)
+	cd llvm && $(MAKE) llvm
+else ifeq ($(CHPL_MAKE_LLVM_SUPPORT), bundled)
+llvm: $(LLVM_SUPPORT_INSTALL_DIR)
+$(LLVM_SUPPORT_INSTALL_DIR): $(LLVM_DEPEND)
+	rm -rf $(LLVM_SUPPORT_INSTALL_DIR)
+	cd llvm && $(MAKE) llvm-support
+else
+llvm:
 endif
-
-llvm: $(LLVM_CHECK_INSTALL_DIR)
-$(LLVM_CHECK_INSTALL_DIR): $(LLVM_DEPEND)
-	rm -rf $(LLVM_CHECK_INSTALL_DIR)
-	cd llvm && $(MAKE) $(CHPL_MAKE_LLVM)
 
 # Qthreads may use hwloc and/or jemalloc. Ensure they are built first.
 ifeq ($(CHPL_MAKE_HWLOC), bundled)
