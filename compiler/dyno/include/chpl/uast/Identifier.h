@@ -65,6 +65,11 @@ class Identifier final : public AstNode {
   UniqueString name() const { return name_; }
 };
 
+/*
+ * Returns true if 'node' is an Identifier with the name "?"
+ */
+bool isQuestionMark(const AstNode* node);
+
 
 } // end namespace uast
 } // end namespace chpl
