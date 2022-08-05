@@ -16,6 +16,17 @@ of indicating new words with an upper case letter and starting the
 identifier; where PascalCase starts the name with an upper case letter
 and camelCase starts with a lower case letter.
 
+When including acronyms in PascalCase or camelCase, treat the acronym as
+if it were a regular word. There is one exception - if using PascalCase
+and the acronym is the entire symbol name, then let the acronym be all
+uppercase.
+
+Here are a few examples:
+ * "rendered HTML DOM" in PascalCase is RenderedHtmlDom
+ * "rendered HTML DOM" in camelCase is renderedHtmlDom
+ * "HTML" in PascalCase is HTML
+ * "HTML" in camelCase is html
+
 Modules
 -------
 
