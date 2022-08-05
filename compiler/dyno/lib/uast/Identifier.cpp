@@ -19,6 +19,7 @@
 
 #include "chpl/uast/Identifier.h"
 
+#include "chpl/framework/global-strings.h"
 #include "chpl/uast/Builder.h"
 
 namespace chpl {
@@ -30,6 +31,18 @@ owned<Identifier> Identifier::build(Builder* builder,
   Identifier* ret = new Identifier(name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
+}
+
+bool isQuestionMark(const AstNode* node) {
+  if (node == nullptr) return false;
+
+  if (auto ident = node->toIdentifier()) {
+    if (ident->name() == USTR("?")) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 

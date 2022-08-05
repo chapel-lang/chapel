@@ -29,7 +29,6 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-#include "chpl/uast/uast-util.h"
 
 #include <cstdio>
 #include <set>
@@ -513,7 +512,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       for (int i = 0; i < nActuals; i++) {
         // ignore actuals like ?
         // since these aren't type queries & don't match a formal
-        if (util::isQuestionMark(call->actual(i)))
+        if (isQuestionMark(call->actual(i)))
           continue;
 
         const FormalActual* fa = faMap.byActualIdx(i);
@@ -708,7 +707,7 @@ static const Type* computeVarArgTuple(Resolver& resolver,
     bool invalid = false;
     if (auto count = varArgs->count()) {
       if (count->isTypeQuery() == false &&
-          util::isQuestionMark(count) == false) {
+          isQuestionMark(count) == false) {
         ResolvedExpression& countVal = byPostorder.byAst(count);
         paramSize = countVal.type();
         invalid = !isValidVarArgCount(paramSize);
@@ -1794,7 +1793,7 @@ void Resolver::prepareCallInfoActuals(const Call* call,
   for (int i = 0; i < call->numActuals(); i++) {
     auto actual = call->actual(i);
 
-    if (util::isQuestionMark(actual)) {
+    if (isQuestionMark(actual)) {
       if (hasQuestionArg) {
         context->error(actual, "Cannot have ? more than once in a call");
       }

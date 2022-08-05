@@ -109,7 +109,6 @@ DYNO_UAST_SRCS =                                 \
   TupleDecl.cpp \
   TypeDecl.cpp \
   TypeQuery.cpp \
-  uast-util.cpp \
   UintLiteral.cpp \
   Use.cpp \
   Union.cpp \
