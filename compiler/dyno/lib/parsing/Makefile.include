@@ -18,7 +18,7 @@
 
 DYNO_PARSING_OBJDIR = $(COMPILER_BUILD)/dyno/lib/parsing
 
-ALL_SRCS += dyno/lib/parsing/*.cpp
+ALL_SRCS += dyno/lib/parsing/*.h dyno/lib/parsing/*.cpp
 
 DYNO_PARSING_SRCS =                                 \
            bison-chpl-lib.cpp                       \

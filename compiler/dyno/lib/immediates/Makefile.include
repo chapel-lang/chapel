@@ -18,7 +18,7 @@
 
 DYNO_IMMEDIATES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/immediates
 
-ALL_SRCS += dyno/lib/immediates/*.cpp
+ALL_SRCS += dyno/lib/immediates/*.h dyno/lib/immediates/*.cpp
 
 DYNO_IMMEDIATES_SRCS =                              \
            ifa_vars.cpp                             \
