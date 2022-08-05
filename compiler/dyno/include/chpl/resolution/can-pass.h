@@ -173,6 +173,21 @@ CanPassResult canPass(Context* context,
   return CanPassResult::canPass(context, actualType, formalType);
 }
 
+/**
+  Given a list of types (e.g., the types of various return statements
+  in a function), determine the type, if any, that can be used to represent
+  all of them.
+
+  If useRequiredKind=true is specified, the requiredKind argument is treated
+  as a strict constraint on the kinds of the given types. For instance,
+  specifying requiredKind=PARAM and giving non-param types will
+  result in an UnknownType, even if the types can otherwise by unified.
+ */
+types::QualifiedType commonType(Context* context,
+                                const std::vector<types::QualifiedType>& types,
+                                bool useRequiredKind,
+                                types::QualifiedType::Kind requiredKind);
+
 
 } // end namespace resolution
 } // end namespace chpl

@@ -1709,7 +1709,6 @@ struct ReturnTypeInferrer {
 
     QualifiedType::Kind kind = qt.kind();
     const Type* type = qt.type();
-    const Param* param = qt.param();
 
     // Functions that return tuples need to return
     // a value tuple (for value returns and type returns)
@@ -1721,25 +1720,16 @@ struct ReturnTypeInferrer {
     }
 
     checkReturn(inExpr, qt);
-
-    kind = (QualifiedType::Kind) returnIntent;
-    if (kind != QualifiedType::PARAM) {
-        // reset param value if we're not returning a param
-        param = nullptr;
-    }
-
-    returnedTypes.push_back(QualifiedType(kind, type, param));
+    returnedTypes.push_back(std::move(qt));
   }
 
   QualifiedType returnedType() {
     if (returnedTypes.size() == 0) {
       return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-    } else if (returnedTypes.size() == 1) {
-      return returnedTypes[0];
     } else {
-      assert(false && "TODO");
-      QualifiedType ret;
-      return ret;
+      return commonType(context, returnedTypes,
+                        /* useRequiredKind */ true,
+                        (QualifiedType::Kind) returnIntent);
     }
   }
 
