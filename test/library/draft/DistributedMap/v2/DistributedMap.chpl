@@ -243,6 +243,10 @@ module DistributedMap {
       :yields: A reference to one of the keys contained in this map.
     */
     iter keys() const {
+      if !isCopyableType(keyType) then
+        compilerError('in distributedMap.keys(): map key type ' +
+                      keyType:string + ' is not copyable');
+
       foreach loc in locDom {
         for slot in tables[loc].allSlots() {
           if tables[loc].isSlotFull(slot) then
