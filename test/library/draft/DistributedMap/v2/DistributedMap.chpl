@@ -79,6 +79,15 @@ module DistributedMap {
     }
     // TODO: initializer that uses only a subset of the locales?
 
+    pragma "no doc"
+    proc getLocaleForKey(key: keyType): int {
+      if (funcType != nothing) {
+        return localeHasher(key, targetLocales.size);
+      } else {
+        return hashAcrossLocales(key, targetLocales.size);
+      }
+    }
+
     // Note: no need to warn about invalidating references, we don't intend to
     // return any
     /*
@@ -151,12 +160,7 @@ module DistributedMap {
       :rtype: `bool`
     */
     proc const contains(const k: keyType): bool {
-      var loc: int;
-      if (funcType != nothing) {
-        loc = localeHasher(k, targetLocales.size);
-      } else {
-        loc = hashAcrossLocales(k, targetLocales.size);
-      }
+      var loc: int = this.getLocaleForKey(k);
 
       var res: bool;
       on loc {
@@ -182,12 +186,7 @@ module DistributedMap {
         compilerError("extending map with non-copyable type");
 
       for key in m.keys() {
-        var loc: int;
-        if (funcType != nothing) {
-          loc = localeHasher(key, targetLocales.size);
-        } else {
-          loc = hashAcrossLocales(key, targetLocales.size);
-        }
+        var loc: int = this.getLocaleForKey(key);
 
         var (_, slot) = tables[loc].findAvailableSlot(key);
         var (_, slot2) = m.table.findAvailableSlot(key);
@@ -249,12 +248,7 @@ module DistributedMap {
      :rtype: bool
     */
     proc add(in k: keyType, in v: valType): bool lifetime this < v {
-      var loc: int;
-      if (funcType != nothing) {
-        loc = localeHasher(k, targetLocales.size);
-      } else {
-        loc = hashAcrossLocales(k, targetLocales.size);
-      }
+      var loc: int = this.getLocaleForKey(k);
 
       var res: bool;
       on loc {
@@ -289,12 +283,7 @@ module DistributedMap {
      :rtype: bool
     */
     proc set(k: keyType, in v: valType): bool {
-      var loc: int;
-      if (funcType != nothing) {
-        loc = localeHasher(k, targetLocales.size);
-      } else {
-        loc = hashAcrossLocales(k, targetLocales.size);
-      }
+      var loc: int = this.getLocaleForKey(k);
 
       var res: bool;
       on loc {
