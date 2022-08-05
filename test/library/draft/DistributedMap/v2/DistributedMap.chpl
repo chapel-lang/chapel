@@ -255,9 +255,29 @@ module DistributedMap {
       }
     }
 
-    // TODO: impl
+    /*
+      Iterates over the key-value pairs of this map.
+
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
+    */
     iter items() {
-      compilerError("unimplemented");
+      if !isCopyableType(keyType) then
+        compilerError('in distributedMap.items(): map key type ' +
+                      keyType:string + ' is not copyable');
+
+      if !isCopyableType(valType) then
+        compilerError('in distributedMap.items(): map value type ' +
+                      valType:string + ' is not copyable');
+
+      foreach loc in locDom {
+        for slot in tables[loc].allSlots() {
+          if tables[loc].isSlotFull(slot) {
+            ref tabEntry = tables[loc].table[slot];
+            yield (tabEntry.key, tabEntry.val);
+          }
+        }
+      }
     }
 
     // TODO: impl
