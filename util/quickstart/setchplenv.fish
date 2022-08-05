@@ -57,5 +57,6 @@ set -x CHPL_GMP none
 echo "Setting CHPL_RE2 to none"
 set -x CHPL_RE2 none
 
-echo "Setting CHPL_LLVM to none"
-set -x CHPL_LLVM none
+set -x USE_LLVM (eval "$CHPL_PYTHON" "$CHPL_HOME/util/chplenv/chpl_llvm.py" "--quickstart")
+echo "Setting CHPL_LLVM to $USE_LLVM"
+set -x CHPL_LLVM $USE_LLVM
