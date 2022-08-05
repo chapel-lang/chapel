@@ -1,0 +1,2 @@
+-M../../../release/examples/benchmarks/hpcc --no-checks
+--fast -M../../../release/examples/benchmarks/hpcc --no-checks
