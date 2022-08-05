@@ -205,6 +205,7 @@ extern int  debugShortLoc;
 extern bool fLibraryCompile;
 extern bool fLibraryFortran;
 extern bool fLibraryMakefile;
+extern bool fLibraryCMakeLists;
 extern bool fLibraryPython;
 
 extern bool fMultiLocaleInterop;

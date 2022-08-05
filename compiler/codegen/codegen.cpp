@@ -2625,6 +2625,9 @@ static void codegenPartTwo() {
   if (fLibraryCompile && fLibraryMakefile) {
     codegen_library_makefile();
   }
+  if (fLibraryCompile && fLibraryCMakeLists) {
+    codegen_library_cmakelists();
+  }
 
   // Vectors to store different symbol names to be used while generating header
   std::set<const char*> cnames;
