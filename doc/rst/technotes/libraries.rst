@@ -269,7 +269,7 @@ be added to a CMake project to properly compile. Such a CMakeLists file can be
 generated using ``--library-cmakelists``.
 
 For a Chapel library with the name ``FooLibrary``, this CMakeLists file defines
- ``FooLibrary_INCLUDE_DIRS`` and ``FooLibrary_LINK_LIBS`` which can
+``FooLibrary_INCLUDE_DIRS`` and ``FooLibrary_LINK_LIBS`` which can
 be used in your CMake project. To incorporate your Chapel library into a
 target named ``myTarget``, add the following lines to your project's CMakeLists:
 
