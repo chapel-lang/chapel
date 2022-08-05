@@ -268,11 +268,12 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
 }
 
-// Helper to convert command lines flags from make syntax (using parens) to
-// CMake syntax (using brackets)
+// Helper to convert command lines flags from make syntax to CMake syntax
+// by converting $(BLAH) to ${BLAH}
 static std::string makeToCMake(std::string str) {
   std::size_t pos = std::string::npos;
   while((pos = str.find('(')) != std::string::npos) {
+    INT_ASSERT(str[pos-1] == '$');
     str[pos] = '{';
   }
   while((pos = str.find(')')) != std::string::npos) {
@@ -281,7 +282,8 @@ static std::string makeToCMake(std::string str) {
   return str;
 }
 
-//Helper to output the CHPL_INCLUDE_DIRS variable into the generated CMakeLists
+//Helper to output the include directory variable into the generated CMakeLists
+// The variable name is the library name followed by _INCLUDE_DIRS
 static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
   std::string requireIncludes = "";
   for_vector(const char, dirName, incDirs) {
@@ -306,7 +308,8 @@ static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
   fprintf(cmakelists.fptr, "set(%s_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} %s)\n\n", name.c_str(), varValue.c_str());
 }
 
-// Helper to output the CHPL_LINK_LIBS variable into the generated CMakeLists
+// Helper to output the linker library variable into the generated CMakeLists
+// The variable name is the library name followed by _LINK_LIBS
 static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   std::string varValue = "";
   std::string libraries = getCompilelineOption("libraries");
