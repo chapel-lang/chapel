@@ -207,9 +207,18 @@ module DistributedMap {
     // TODO: getBorrowed? getValue (throws Map.KeyNotFoundError)? getAndRemove?
     // TODO: these?
 
-    // TODO: impl
-    iter keys() const ref {
-      compilerError("unimplemented");
+    /*
+      Iterates over the keys of this map.
+
+      :yields: A reference to one of the keys contained in this map.
+    */
+    iter keys() const {
+      foreach loc in locDom {
+        for slot in tables[loc].allSlots() {
+          if tables[loc].isSlotFull(slot) then
+            yield tables[loc].table[slot].key;
+        }
+      }
     }
 
     // TODO: impl
