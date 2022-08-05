@@ -94,6 +94,15 @@ void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  name);
 }
 
+void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
+  CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.", n, src, dst);
+
+  void* ret = chpl_gpu_impl_memmove(dst, src, n);
+
+  CHPL_GPU_DEBUG("Memmove successful\n");
+  return ret;
+}
+
 void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(src));
 
