@@ -198,15 +198,45 @@ module DistributedMap {
       }
     }
 
-    // TODO: impl and maybe equivalent on map type
-    proc extend(m: distributedMap(keyType, valType)) {
-      compilerError("unimplemented");
+    // TODO: maybe impl equivalent on map type
+    /*
+      Extends this map with the contents of the other, overwriting the values
+      for already-existing keys.
+
+      :arg m: The other map
+      :type m: distributedMap(keyType, valType)
+    */
+    proc extend(pragma "intent ref maybe const formal"
+                m: distributedMap(keyType, valType)) {
+      for i in locDom {
+        locks[i].lock();
+      }
+
+      if !isCopyableType(keyType) || !isCopyableType(valType) then
+        compilerError("extending map with non-copyable type");
+
+      // TODO: should we lock the provided map before doing this?  Or just the
+      // locale we find each key on?
+      for key in m.keys() {
+        var loc1: int = this.getLocaleForKey(key);
+        var loc2: int = m.getLocaleForKey(key);
+
+        var (_, slot) = tables[loc1].findAvailableSlot(key);
+        var (_, slot2) = m.tables[loc2].findAvailableSlot(key);
+        tables[loc1].fillSlot(slot, key, m.tables[loc2].table[slot2].val);
+      }
+
+      for i in locDom {
+        locks[i].unlock();
+      }
     }
 
     // TODO: proc this overloads?
     // TODO: getBorrowed? getValue (throws Map.KeyNotFoundError)? getAndRemove?
     // TODO: these?
 
+    // NOTE: doesn't return a `const ref` like its counterpart on serial maps,
+    // the reference could get invalidated
     /*
       Iterates over the keys of this map.
 
