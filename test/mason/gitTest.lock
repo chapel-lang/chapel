@@ -9,13 +9,15 @@ version = "0.1.0"
 branch = "master"
 chplVersion = "1.28.0..1.28.0"
 name = "DummyRepo"
-url = "https://dummyurl.com"
+source = "https://dummyurl.com"
+rev = "10"
 version = "0"
 
 [SecondRepo]
 branch = "test-branch"
 chplVersion = "1.28.0..1.28.0"
 name = "SecondRepo"
-url = "https://secondrepourl.com"
+source = "https://secondrepourl.com"
+rev = "10"
 version = "0"
 
