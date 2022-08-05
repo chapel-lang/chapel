@@ -849,9 +849,9 @@ module ChapelBase {
   }
 
   proc chpl_shouldDoGpuInit(): bool {
-    extern proc chpl_task_getRequestedSubloc();
+    extern proc chpl_task_getRequestedSubloc(): int(32);
     if chpl_canDoGpuInit() {
-      return chpl_shouldDoGpuInit();
+      return chpl_task_getRequestedSubloc()>=0;
     }
     return false;
   }
