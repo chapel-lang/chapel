@@ -25,9 +25,9 @@ To specify a different branch, the ``branch`` key can be used:
     [dependencies]
     HelloWorld = { git = "https://github.com/bmcdonald3/HelloWorld", branch = "test-branch" }
 
-When you have only a ``branch`` specified and not a ``rev``, your first run of ``mason build`` will lock in the revision in the ``Mason.lock`` file and will continue to use that revision until the ``mason update`` command is executed. The ``mason update`` command will fetch the latest changes and then update the revision used to the current tip of the specified ``branch``.
+When a ``branch`` tag is specified, your first run of ``mason build`` will lock in the revision in the ``Mason.lock`` file and will continue to use that revision until the ``mason update`` command is executed. The ``mason update`` command will fetch the latest changes and then update the revision used to the current tip of the specified ``branch``.
 
-If you would like to lock in a specific revision that should not be updated, a specific revision can be specified for your git dependency with the ``rev`` tag:
+If you would like to lock in a specific revision that should not be updated, a specific revision can be specified for your git dependency by explicitly specifying a ``rev`` tag, and this revision will never be modified by any mason command:
 
 .. code-block:: text
 

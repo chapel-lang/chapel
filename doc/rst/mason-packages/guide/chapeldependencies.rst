@@ -28,4 +28,4 @@ command as follows::
 
   mason add MatrixMarket@0.1.0
 
-For example usage of a mason package, see :ref:`using-a-package`.
+For example usage of a Mason package, see :ref:`using-a-package`.

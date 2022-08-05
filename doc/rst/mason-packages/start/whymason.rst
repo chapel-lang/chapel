@@ -4,7 +4,7 @@ Why would I want to use mason?
 ==============================
 
 So, you want to write some Chapel code and find yourself asking if it would
-make sense to use or if it would just end up adding needless overhead to your
+make sense to use mason or if it would just end up adding needless overhead to your
 project in the long run. Here's an answer for you: Yes! You should use mason!
 
 Using mason brings with it a number of valuable features that are not available
@@ -12,13 +12,13 @@ to users of the old-fashioned ``chpl`` command. Some of these are:
 
 * access to libraries contributed by the Chapel community (see :ref:`using-a-package`)
   
-* portable, easy build commands (see :ref:`building-and-running`)
+* portable, simple build commands (see :ref:`building-and-running`)
   
-* an existing testing framework to help test your code (see :ref:`testing-with-mason`)
+* a built-in testing framework to help test your code (see :ref:`testing-with-mason`)
   
 * make your code easily shareable on GitHub (see :ref:`mason-git-dependencies`)
   
-* contribute your own libraries to the existing mason registry (see :ref:`submit-a-package`)
+* contribute your own libraries and help the Chapel community grow (see :ref:`submit-a-package`)
   
 
 So, you see, a better question would be "Why not use mason?" instead of "Why use mason?"
@@ -48,57 +48,62 @@ themselves.
 
 When you create a mason application with ``mason new <package-name>`` or
 ``mason new <package-name> --app``, the default module created will have a ``main()`` function
-already in place. This is what drives your application and where the execution will happen from.
-This ``main()`` function is unique to the mason application mason applications are the only type
-of mason packages that can be ran via ``mason run``.
+already in place. This is what drives your application and where the execution will start.
+This ``main()`` function is unique to the mason application package type and makes it the only
+type of mason package that can be ran via ``mason run``.
 
 When compiling Chapel code, there can only be one ``main()`` function (or you will need to use the
-``--main-module`` flag to specify which one to run). What this means for mason applications is that
-that they are not designed to be imported into other code and have functions included in the
-application be run by other applications. Because of this, mason applications published to the mason
-registry can be downloaded, built, and run by running the ``mason install <application-name>`` command
-(which is currently a work in progress), but they cannot be added as a dependency with the
-``mason add <library-name@version>`` command. If you would like to create a library with functions
-to be exposed to other users, the mason library is what you are looking for.
+``--main-module`` flag to specify which one to run). This means that mason application package
+types are not meant to be used as dependencies for other mason packages and cannot be added as a
+dependency with the ``mason add <library-name@version>`` command. Rather, mason applications published
+to the mason registry can be downloaded, built, and run using the mason install <application-name>
+command (which is currently a work in progress). If you would like to create a library with functions
+to be exposed to other users, the mason library is what you are looking for (see :ref:`mason-libraries`).
 
 Some examples of when you would want to use a mason application as opposed to one of the other
 types are a benchmark that you would like others to be able to compile and execute in a reproducible
 way, an application that simulates the weather, or just about anywhere you have a cool program that
 you would like to share.
 
+.. _mason-libraries:
 
 Mason Libraries
 ~~~~~~~~~~~~~~~
 A mason library is meant to be a module that contains functions that are to be made accessible
 to other users. Mason libraries do not have a ``main()`` function and cannot be run with the
-``mason run`` command, but can be run through examples.
+``mason run`` command, but Mason library code can be executed through examples
+(see :ref:`mason-examples`).
 
-When you create a mason library with ``mason new <package-name> --lib``, the default module
-created will not have a ``main()`` function and will just be an empty module. In this module
-functions can be defined that other users can use.
+To start writing your own mason library, use the ``mason new <package-name> --lib`` command and
+mason will create an empty default module. Inside the empty module you can define the
+functions your library will provide to its users.
 
-Some examples of when you would want to use a mason library as opposed to one of the other
-types include adding a linear algebra library that could be useful to other users or for just
-about any set of functions that other users of Chapel may find useful.
+Some examples of when you would want to create a mason library as opposed to an application are:
+
+* You want to provide a linear algebra library for other Chapel programs
+
+* You have multiple Chapel projects that depend on a common set of functionality you wish to centralize
+  
+* You found some functionality missing from Chapel, and think others could benefit from your solution
 
 
 Mason Lightweight Projects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-A mason lightweight project is nothing than a mason manifest file that can track dependencies
-of mason packages that your project is using without being forced into the confines of a
-mason project structure, like you would be with a mason library or mason application. This
-means that you cannot use most of the mason commands, such as ``mason build`` or ``mason run``,
-but you can use mason libraries and get the compilation flags for using those libraries
-through the ``mason modules`` command.
+A mason lightweight project is simply a mason manifest file that tracks which mason packages your
+Chapel code depends on. This gives all Chapel users the ability to use mason libraries
+as dependencies, without forcing your project to use the folder structure defined for mason packages.
 
-When you create a lightweight mason project with ``mason new --light``, all that is created
-is a ``Mason.toml`` file in the current directory. Dependencies can then be added to that
-file as you would with any other mason project, using the ``mason add <package-name@ver>``
-command or specifying a git dependency.
+Lightweight packages cannot use most mason commands, such as ``mason build`` or ``mason run``, but a special
+``mason modules`` command allows you to get the ``chpl`` compiler flags necessary to include the list of
+dependencies in your Chapel project.
 
-Once dependencies are added to the ``Mason.toml`` that you would like to use, running a
-``mason modules`` command will print out the flags that should be added to your ``chpl``
-compilation step to use those libraries in your project.
+When you run the ``mason new --light`` command to create a lightweight package, mason creates a basic
+``Mason.toml`` file in the current directory. You can add dependencies to that file by using the
+``mason add <package-name@ver>`` command or specifying a git dependency (see :ref:`mason-git-dependencies`),
+the same as you would for other mason package types.
+
+After adding your project's dependencies to the ``Mason.toml`` file, use the ``mason modules`` command to
+print out the flags that should be added to your build system's chpl compilation step.
 
 The main reason you would use a lightweight mason project as opposed to one of the other
 types of mason project types would be in the case that you already have a project that is
