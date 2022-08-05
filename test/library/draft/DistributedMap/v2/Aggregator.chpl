@@ -41,5 +41,9 @@ module Aggregator {
     proc flush() {
       compilerError("unimplemented");
     }
+
+    proc deinit() {
+      flush();
+    }
   }
 }

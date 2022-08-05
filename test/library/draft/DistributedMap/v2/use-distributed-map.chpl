@@ -12,7 +12,7 @@ forall key in inputArr with
   agg.update(key);
 }
 
-agg.flush();
+// agg.flush(); // agg doesn't live outside the forall so can't flush here
 
 var first = true;
 for key in dm1.keys() { // won't be great perf but that's okay for now
