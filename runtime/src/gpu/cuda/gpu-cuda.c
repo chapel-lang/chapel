@@ -235,20 +235,24 @@ static bool chpl_gpu_allocated_on_host(const void* memAlloc) {
 }
 
 
-void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
-  if (!chpl_gpu_allocated_on_host(dst)) {
-    assert(chpl_gpu_allocated_on_host(src) && "D to D not supported");
-    chpl_gpu_copy_host_to_device(dst, src, n);
+void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
+  bool dst_on_host = chpl_gpu_allocated_on_host(dst);
+  bool src_on_host = chpl_gpu_allocated_on_host(src);
+
+  if (!dst_on_host && !src_on_host) {
+    chpl_gpu_impl_copy_device_to_device(dst, src, n);
     return dst;
   }
-  else if (!chpl_gpu_allocated_on_host(src)) {
-    assert(chpl_gpu_allocated_on_host(dst) && "D to D not supported");
-    chpl_gpu_copy_device_to_host(dst, src, n);
+  else if (!dst_on_host) {
+    chpl_gpu_impl_copy_host_to_device(dst, src, n);
+    return dst;
+  }
+  else if (!src_on_host) {
+    chpl_gpu_impl_copy_device_to_host(dst, src, n);
     return dst;
   }
   else {
-    assert(chpl_gpu_allocated_on_host(src) &&
-        chpl_gpu_allocated_on_host(dst));
+    assert(dst_on_host && src_on_host);
     return memmove(dst, src, n);
   }
 }
@@ -265,8 +269,8 @@ void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
 
-void chpl_gpu_impl_copy_device_to_device(void* dst, void* src, size_t n) {
-  chpl_gpu_ensure_context();
+void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
+  assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
 
   CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, n));
 }
