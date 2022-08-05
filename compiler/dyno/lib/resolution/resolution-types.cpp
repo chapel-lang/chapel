@@ -25,7 +25,6 @@
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/TupleType.h"
-#include "chpl/uast/uast-util.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
@@ -159,7 +158,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
 
   int i = 0;
   for (auto actual : call->actuals()) {
-    if (util::isQuestionMark(actual)) {
+    if (isQuestionMark(actual)) {
       hasQuestionArg_ = true;
     } else {
       UniqueString byName;
