@@ -39,7 +39,7 @@ CatchStmt* CatchStmt::build(const char* name, Expr* type, BlockStmt* body) {
 }
 
 CatchStmt* CatchStmt::build(const char* name, BlockStmt* body) {
-  return new CatchStmt(name, NULL, body);
+  return build(name, NULL, body);
 }
 
 CatchStmt* CatchStmt::build(BlockStmt* body) {
@@ -52,6 +52,7 @@ CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body)
   _name = name ? astr(name) : NULL;
   _type = type;
   _body = body;
+  _createdErr = false;
 
   gCatchStmts.add(this);
 }
@@ -175,6 +176,19 @@ void CatchStmt::verify() {
   }
 }
 
+void CatchStmt::createErrSym() {
+  if (!_createdErr) {
+    _createdErr = true;
+    // Previously we created the VarSymbol for a named error during the cleanup()
+    // stage. By moving this creation earlier we can support some ongoing dyno
+    // work in ``convert-uast``.
+    if (_name != NULL) {
+      VarSymbol* error = new VarSymbol(_name);
+      _body->insertAtHead(new DefExpr(error));
+    }
+  }
+}
+
 void CatchStmt::cleanup()
 {
   /*
@@ -202,6 +216,7 @@ void CatchStmt::cleanup()
        }
      }
    */
+  createErrSym();
 
   // Check isCatchall before setting _name or _type
   bool catchall = isCatchall();
@@ -243,13 +258,23 @@ void CatchStmt::cleanup()
 
   newBody->insertAtHead(castedDef);
 
-  if (catchall) {
-    VarSymbol* error = new VarSymbol(name);
+  VarSymbol* error = NULL;
+  DefExpr* errorDef = NULL;
+  if (_name != NULL) {
+    // Grab the VarSymbol we created during ::build()
+    // We 'remove()' the Def to insert it in the newBody with an init-expr.
+    errorDef = toDefExpr(oldBody->body.head->remove());
+    error = toVarSymbol(errorDef->sym);
+  } else {
+    error = new VarSymbol(name);
+    errorDef = new DefExpr(error);
+  }
 
+  if (catchall) {
     Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
     Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr("_owned", nonNilC));
 
-    DefExpr* errorDef = new DefExpr(error, toOwned);
+    errorDef->init = toOwned;
 
     newBody->insertAtTail(errorDef);
     newBody->insertAtTail(oldBody);
@@ -262,12 +287,10 @@ void CatchStmt::cleanup()
     CondStmt* cond = new CondStmt(errorExists, ifBody, elseBody);
     castedDef->insertAfter(cond);
 
-    VarSymbol* error = new VarSymbol(name);
-
     Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
     Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr("_owned", nonNilC));
 
-    DefExpr* errorDef = new DefExpr(error, toOwned);
+    errorDef->init = toOwned;
 
     ifBody->insertAtTail(errorDef);
     ifBody->insertAtTail(oldBody);
