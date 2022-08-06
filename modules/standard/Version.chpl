@@ -95,8 +95,16 @@ module Version {
                      param minor: int,
                      param update: int = 0,
                      param commit: string = ""): sourceVersion(?) {
-    return new sourceVersion(major, minor, update, commit);
+    return new sourceVersion(isParam=true, pmajor=major, pminor=minor,
+                             pupdate=update, pcommit=commit);
+  }
 
+  proc createVersion(major: int,
+                     minor: int,
+                     update: int = 0,
+                     commit: string = ""): sourceVersion(?) {
+    return new sourceVersion(isParam=false, cmajor=major, cminor=minor,
+                             cupdate=update, ccommit=commit);
   }
 
 
@@ -119,23 +127,62 @@ module Version {
   */
 
   record sourceVersion {
+
+    param isParam: bool;
+
     /*
       The major version number. For version ``2.0.1``, this would be ``2``.
     */
-    param major: int;
+    param pmajor = -1;
 
     /*
       The minor version number. For version ``2.0.1``, this would be ``0``.
     */
-    param minor: int;
+    param pminor = -1;
 
     /*
       The update version number. For version ``2.0.1``, this would be ``1``.
     */
-    param update: int;
+    param pupdate = -1;
 
     /* The commit ID of the version (e.g., a Git SHA) */
-    param commit: string = "";
+    param pcommit: string = "";
+
+    const cmajor, cminor, cupdate: if !isParam then int else nothing;
+    const ccommit: if !isParam then string else nothing;
+
+
+    proc major param where (isParam) {
+      return pmajor;
+    }
+
+    proc major where (!isParam) {
+      return cmajor;
+    }
+
+    proc minor param where (isParam) {
+      return pminor;
+    }
+
+    proc minor where (!isParam) {
+      return cminor;
+    }
+
+    proc update param where (isParam) {
+      return pupdate;
+    }
+
+    proc update where (!isParam) {
+      return cupdate;
+    }
+
+    proc commit param where (isParam) {
+      return pcommit;
+    }
+
+    proc commit where (!isParam) {
+      return ccommit;
+    }
 
     pragma "no doc"
     proc writeThis(s) throws {
@@ -143,15 +190,26 @@ module Version {
     }
   }
 
+
   // cast from sourceVersion to string
   pragma "no doc"
-  operator :(x: sourceVersion(?), type t: string) param {
-    if (x.commit == "") then
-      return ("version " + x.major:string + "." + x.minor:string + "." +
-              x.update:string);
+  operator :(x: sourceVersion(?), type t: string) param where (x.isParam) {
+    if (x.pcommit == "") then
+      return ("version " + x.pmajor:string + "." + x.pminor:string + "." +
+              x.pupdate:string);
     else
-      return ("version " + x.major:string + "." + x.minor:string + "." +
-              x.update:string + " (" + x.commit + ")");
+      return ("version " + x.pmajor:string + "." + x.pminor:string + "." +
+              x.pupdate:string + " (" + x.pcommit + ")");
+  }
+
+  pragma "no doc"
+  operator :(x: sourceVersion(?), type t: string) where (!x.isParam) {
+    if (x.ccommit == "") then
+      return ("version " + x.cmajor:string + "." + x.cminor:string + "." +
+              x.cupdate:string);
+    else
+      return ("version " + x.cmajor:string + "." + x.cminor:string + "." +
+              x.cupdate:string + " (" + x.ccommit + ")");
   }
 
 
@@ -166,17 +224,56 @@ module Version {
       return 1;
   }
 
+  private proc spaceship(x: int, y: int): int {
+    if x < y then
+      return -1;
+    else if x == y then
+      return 0;
+    else
+      return 1;
+  }
+
   private proc spaceship(v1: sourceVersion(?),
-                         v2: sourceVersion(?)) param : int {
-    param majComp = spaceship(v1.major, v2.major);
+                         v2: sourceVersion(?)) param : int
+                         where (v1.isParam && v2.isParam) {
+    param majComp = spaceship(v1.pmajor, v2.pmajor);
     if majComp != 0 {
       return majComp;
     } else {
-      param minComp = spaceship(v1.minor, v2.minor);
+      param minComp = spaceship(v1.pminor, v2.pminor);
       if minComp != 0 {
         return minComp;
       } else {
-        param upComp = spaceship(v1.update, v2.update);
+        param upComp = spaceship(v1.pupdate, v2.pupdate);
+        if upComp != 0 {
+          return upComp;
+        } else if v1.pcommit == v2.pcommit {
+          return 0;
+        } else if v1.pcommit == "" {
+          return 1;
+        } else if v2.pcommit == "" then {
+          return -1;
+        } else {
+          // sentinel for "not comparable"
+          return 2;
+        }
+      }
+    }
+  }
+
+
+  private proc spaceship(v1: sourceVersion(?),
+                         v2: sourceVersion(?)) : int
+                         where (!v1.isParam || !v2.isParam) {
+    const majComp = spaceship(v1.major, v2.major);
+    if majComp != 0 {
+      return majComp;
+    } else {
+      const minComp = spaceship(v1.minor, v2.minor);
+      if minComp != 0 {
+        return minComp;
+      } else {
+        const upComp = spaceship(v1.update, v2.update);
         if upComp != 0 {
           return upComp;
         } else if v1.commit == v2.commit {
@@ -196,7 +293,14 @@ module Version {
   // Comparisons between sourceVersions
 
   operator sourceVersion.==(v1: sourceVersion(?),
-                            v2: sourceVersion(?)) param : bool {
+                            v2: sourceVersion(?)) param : bool
+                            where (v1.isParam && v2.isParam) {
+    return spaceship(v1, v2) == 0;
+  }
+
+  operator sourceVersion.==(v1: sourceVersion(?),
+                            v2: sourceVersion(?)) : bool
+                            where (!v1.isParam || !v2.isParam) {
     return spaceship(v1, v2) == 0;
   }
 
@@ -206,31 +310,65 @@ module Version {
     have identical major, minor, update, and commit values.
   */
   operator sourceVersion.!=(v1: sourceVersion(?),
-                            v2: sourceVersion(?)) param : bool {
+                            v2: sourceVersion(?)) param : bool
+                            where (v1.isParam && v2.isParam) {
+    return spaceship(v1, v2) != 0;
+  }
+
+  operator sourceVersion.!=(v1: sourceVersion(?),
+                            v2: sourceVersion(?)) : bool
+                            where (!v1.isParam || !v2.isParam) {
     return spaceship(v1, v2) != 0;
   }
 
   operator sourceVersion.<(v1: sourceVersion(?),
-                           v2: sourceVersion(?)) param : bool {
+                           v2: sourceVersion(?)) param : bool
+                           where (v1.isParam && v2.isParam) {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval < 0;
   }
 
+  operator sourceVersion.<(v1: sourceVersion(?),
+                           v2: sourceVersion(?)) : bool
+                           where (!v1.isParam || !v2.isParam) {
+    const retval = spaceship(v1, v2);
+    assert(retval != 2, "can't compare versions that only differ by commit IDs");
+    return retval < 0;
+  }
+
   operator sourceVersion.<=(v1: sourceVersion(?),
-                            v2: sourceVersion(?)) param : bool {
+                            v2: sourceVersion(?)) param : bool
+                            where (v1.isParam && v2.isParam) {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval <= 0;
   }
 
+  operator sourceVersion.<=(v1: sourceVersion(?),
+                            v2: sourceVersion(?)) : bool
+                            where (!v1.isParam || !v2.isParam) {
+    const retval = spaceship(v1, v2);
+    assert(retval != 2, "can't compare versions that only differ by commit IDs");
+    return retval <= 0;
+  }
+
   operator sourceVersion.>(v1: sourceVersion(?),
-                           v2: sourceVersion(?)) param : bool {
+                           v2: sourceVersion(?)) param : bool
+                           where (v1.isParam && v2.isParam) {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
+    return retval > 0 && retval != 2;
+  }
+
+  operator sourceVersion.>(v1: sourceVersion(?),
+                           v2: sourceVersion(?)) : bool
+                           where (!v1.isParam || !v2.isParam) {
+    const retval = spaceship(v1, v2);
+    assert(retval != 2, "can't compare versions that only differ by commit IDs");
     return retval > 0 && retval != 2;
   }
 
@@ -248,10 +386,20 @@ module Version {
     pre-release.
   */
   operator sourceVersion.>=(v1: sourceVersion(?),
-                            v2: sourceVersion(?)) param : bool {
+                            v2: sourceVersion(?)) param : bool
+                            where (v1.isParam && v2.isParam) {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval >= 0 && retval != 2;
   }
+
+  operator sourceVersion.>=(v1: sourceVersion(?),
+                            v2: sourceVersion(?)) : bool
+                            where (!v1.isParam || !v2.isParam) {
+    const retval = spaceship(v1, v2);
+    assert(retval != 2, "can't compare versions that only differ by commit IDs");
+    return retval >= 0 && retval != 2;
+  }
+
 }
