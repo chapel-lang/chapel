@@ -182,7 +182,8 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isCobegin(tag)
          || asttags::isConditional(tag)
          || asttags::isSelect(tag)
-         || asttags::isTry(tag);
+         || asttags::isTry(tag)
+         || asttags::isCatch(tag);
 }
 
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
