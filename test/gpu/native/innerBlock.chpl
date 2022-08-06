@@ -1,7 +1,7 @@
 use GPUDiagnostics;
 
 startGPUDiagnostics();
-on here.getChild(1) {
+on here.gpus[0] {
   var A = [1,2,3,4,5];
   var outerVar = 10;
 
@@ -14,7 +14,7 @@ on here.getChild(1) {
   writeArr(A);
 }
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A = [1,2,3,4,5];
   var outerVar = 10;
 
@@ -29,7 +29,7 @@ on here.getChild(1) {
   writeArr(A);
 }
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A = [1,2,3,4,5];
   var outerVar = 10;
 
@@ -44,7 +44,7 @@ on here.getChild(1) {
   writeArr(A);
 }
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A = [1,2,3,4,5];
   var outerVar = 10;
 

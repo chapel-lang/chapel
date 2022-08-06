@@ -10,7 +10,7 @@ proc bar(i) {
 }
 
 startGPUDiagnostics();
-on here.getChild(1) {
+on here.gpus[0] {
   var A: [0..#n] int;
 
   forall i in 0..#n {

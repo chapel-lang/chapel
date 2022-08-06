@@ -23,7 +23,7 @@ stopGPUDiagnostics();
 
 const nLaunch = getGPUDiagnostics().kernel_launch;
 
-assert(nLaunch == here.getChildCount()*4);
+assert(nLaunch == here.gpus.size*4);
 
 proc assertElemVal(X, val) {
   if writeArrays {

@@ -31,5 +31,5 @@ writeln(A);
 
 const nLaunch = getGPUDiagnostics().kernel_launch;
 
-assert(nLaunch == here.getChildCount());
+assert(nLaunch == here.gpus.size);
 assert((+ reduce A) == n);
