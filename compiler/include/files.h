@@ -80,6 +80,7 @@ void      closefile(FILE*     thefile);
 
 FILE* openInputFile(const char* filename);
 void closeInputFile(FILE* infile);
+std::vector<std::string> getChplFilenames();
 bool isChplSource(const char* filename);
 bool isCHeader(const char* filename);
 bool isCSource(const char* filename);
