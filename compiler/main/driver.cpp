@@ -1885,6 +1885,8 @@ int main(int argc, char* argv[]) {
   if (fRunlldb)
     runCompilerInLLDB(argc, argv);
 
+  assertSourceFilesFound();
+
   runPasses(tracker, fDocs);
 
   tracker.StartPhase("driverCleanup");

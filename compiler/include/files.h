@@ -87,6 +87,7 @@ bool isCSource(const char* filename);
 bool isObjFile(const char* filename);
 void addSourceFiles(int numFilenames, const char* filename[]);
 void addSourceFile(const char* filename, const char* modFilename);
+void assertSourceFilesFound();
 const char* nthFilename(int i);
 void addLibPath(const char* filename);
 void addLibFile(const char* filename);

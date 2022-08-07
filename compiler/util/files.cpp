@@ -396,7 +396,9 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     }
   }
   inputFilenames[cursor] = NULL;
+}
 
+void assertSourceFilesFound() {
   if (!foundChplSource)
     USR_FATAL("Command line contains no .chpl source files");
 }
