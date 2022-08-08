@@ -265,6 +265,7 @@ void CatchStmt::cleanup()
     // We 'remove()' the Def to insert it in the newBody with an init-expr.
     errorDef = toDefExpr(oldBody->body.head->remove());
     error = toVarSymbol(errorDef->sym);
+    INT_ASSERT(error->name == _name);
   } else {
     error = new VarSymbol(name);
     errorDef = new DefExpr(error);
