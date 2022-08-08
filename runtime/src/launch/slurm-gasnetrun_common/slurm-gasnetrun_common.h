@@ -159,27 +159,6 @@ static int propagate_environment(char* buf)
   char *enviro_keys = chpl_get_enviro_keys(',');
   if (enviro_keys)
     len += sprintf(buf, " -E '%s'", enviro_keys);
-
-
-  // If any of the relevant character set environment variables
-  // are set, replicate the state of all of them.  This needs to
-  // be done separately from the -E mechanism because the launcher
-  // is written in Perl, which mangles the character set
-  // environment.
-  //
-  // Note that if we are setting these variables, and one or more
-  // of them is empty, we must set it with explicitly empty
-  // contents (e.g. LC_ALL= instead of -u LC_ALL) so that the
-  // Chapel launch mechanism will not overwrite it.
-  char *lang = getenv("LANG");
-  char *lc_all = getenv("LC_ALL");
-  char *lc_collate = getenv("LC_COLLATE");
-  if (lang || lc_all || lc_collate) {
-    len += sprintf(buf+len, " env");
-    len += sprintf(buf+len, " LANG=%s", lang ? lang : "");
-    len += sprintf(buf+len, " LC_ALL=%s", lc_all ? lc_all : "");
-    len += sprintf(buf+len, " LC_COLLATE=%s", lc_collate ? lc_collate : "");
-  }
   return len;
 }
 
