@@ -280,9 +280,22 @@ module DistributedMap {
       }
     }
 
-    // TODO: impl
-    iter values() ref {
-      compilerError("unimplemented");
+    /*
+      Iterates over the values of this map.
+
+      :yields: A reference to one of the values contained in this map.
+    */
+    iter values() const {
+      if !isCopyableType(valType) then
+        compilerError('in map.values(): map value type ' + valType:string +
+                      ' is not copyable');
+
+      foreach loc in locDom {
+        for slot in tables[loc].allSlots() {
+          if tables[loc].isSlotFull(slot) then
+            yield tables[loc].table[slot].val;
+        }
+      }
     }
 
     // TODO: impl
