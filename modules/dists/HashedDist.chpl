@@ -236,14 +236,14 @@ class Hashed : BaseDist {
   // print out the distribution
   //
   proc writeThis(x) throws {
-    x <~> "Hashed\n";
-    x <~> "-------\n";
-    x <~> "distributed using: " <~> mapper <~> "\n";
-    x <~> "across locales: " <~> targetLocales <~> "\n";
-    x <~> "indexed via: " <~> targetLocDom <~> "\n";
-    x <~> "resulting in: " <~> "\n";
+    x.writeln("Hashed");
+    x.writeln("-------");
+    x.writeln("distributed using: ", mapper);
+    x.writeln("across locales: ", targetLocales);
+    x.writeln("indexed via: ", targetLocDom);
+    x.writeln("resulting in: ");
     //for locid in targetLocDom do
-    //  x <~> "  [" <~> locid <~> "] " <~> locDist(locid) <~> "\n";
+    //  x.writeln("  [", locid, "] ", locDist(locid));
   }
 
   //
@@ -473,7 +473,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       //
       //        ("locale" + here.id + " owns: ").writeThis(x);
 
-        x <~> locDom;
+        x.write(locDom);
       //      }
   }
 
