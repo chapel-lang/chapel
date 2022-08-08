@@ -172,7 +172,7 @@ There is a tradeoff in the cache line size and in the cache page size:
   - larger cache lines might mean fewer gets/more cache hits
   - smaller cache pages mean less wasted space (imagine putting 1 byte per page)
   - larger cache pages mean larger aggregated operations
-    (since read ahead/write behind will only ever get a single cache page
+    (since readahead/write behind will only ever get a single cache page
      in one operation).
 
 We chose 64 bytes for the cache line size because on our Infiniband network, 64
@@ -543,7 +543,7 @@ raddr_t raddr_min(raddr_t a, raddr_t b)
 }
 
 // Used to distinguish between a cache page that was
-// prefetched or read ahaead.
+// prefetched or read ahead.
 enum {
   ENTRY_FLAGS_PREFETCHED = 1,
   ENTRY_FLAGS_READAHEADED = 2
@@ -963,7 +963,7 @@ struct rdcache_s* cache_create(void) {
 }
 
 // utility function to increment the counters for
-// unused prefetches and read aheads. By "unused", we
+// unused prefetches and readaheads. By "unused", we
 // mean that the entry was prefetched or read ahead but
 // never accessed before being evicted. We zero out the
 // prefetch_diags_flags at the end so we don't double count this event.
@@ -1354,7 +1354,7 @@ void aout_evict(struct rdcache_s* cache)
 
   z->queue = QUEUE_FREE;
 
-  // reset the prefetch/read ahead flags so we won't
+  // reset the prefetch/readahead flags so we won't
   // increment the counters for this entry.
   z->prefetch_diags_flags = 0;
 
@@ -1898,7 +1898,7 @@ void validate_cache(struct rdcache_s* tree,
 }
 
 // returns true if we actually had to wait. We use that info
-// for the "waited" prefetch/read-ahead counters
+// for the "waited" prefetch/readahead counters
 static
 chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 {
@@ -2027,7 +2027,7 @@ void unreserve_entry(struct rdcache_s* cache,
 
 // Utility function to increment the waited counters.
 // We call this when we had to wait for an inflight prefetch
-// or read ahead to complete when we tried to do a get. We zero
+// or readahead to complete when we tried to do a get. We zero
 // out the prefetch_diags_flags at the end so we don't double count the event.
 static
 void count_waited_prefetch(struct cache_entry_s* entry,
@@ -3102,7 +3102,7 @@ int cache_get_in_page(struct rdcache_s* cache,
   // Set the minimum sequence number
   entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
 
-  // Set the flag to indicate whether it was prefetched or read-aheaded
+  // Set the flag to indicate whether it was prefetched or readahead-ed
   if (isreadahead && !(entry->prefetch_diags_flags & ENTRY_FLAGS_READAHEADED)) {
     entry->prefetch_diags_flags |= ENTRY_FLAGS_READAHEADED;
     chpl_comm_diags_incr(cache_num_page_readaheads);
