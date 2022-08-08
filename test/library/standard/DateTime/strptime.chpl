@@ -1,4 +1,4 @@
-use DateTime;
+use Time;
 use UnitTest;
 
 proc test_microsecond(test: borrowed Test) throws {

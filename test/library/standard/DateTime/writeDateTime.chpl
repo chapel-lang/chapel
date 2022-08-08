@@ -1,4 +1,4 @@
-use DateTime;
+use Time;
 
 var t = new time(hour=3, minute=14, second=15, microsecond=926535);
 var d = new date(year=2718, month=2, day=8);

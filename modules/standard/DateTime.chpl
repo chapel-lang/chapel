@@ -34,7 +34,7 @@
 
    Operators are also supported for multiplying and dividing timedeltas.
  */
-
+deprecated "'DateTime' is deprecated. Please use 'Time' instead"
 module DateTime {
   import HaltWrappers;
   private use CTypes;

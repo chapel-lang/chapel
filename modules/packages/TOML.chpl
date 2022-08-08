@@ -132,7 +132,7 @@ Parser module with the Toml class for the Chapel TOML library.
 module TomlParser {
 
   private use Regex;
-  use DateTime;
+  use Time;
   use Map, List;
   import IO.channel;
   private use TOML.TomlReader;
