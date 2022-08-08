@@ -506,9 +506,20 @@ module DateTime {
     f.write(isoFormat());
   }
 
+  // Exists to support some common functionality for `datetime.readThis`
+  pragma "no doc"
+  proc date._readCore(f) throws {
+    const dash = new ioLiteral("-");
+
+    chpl_year = f.read(int);
+    f <~> dash;
+    chpl_month = f.read(int);
+    f <~> dash;
+    chpl_day = f.read(int);
+  }
+
   /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
   proc date.readThis(f) throws {
-    const dash = new ioLiteral("-");
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
@@ -516,7 +527,7 @@ module DateTime {
     if isjson then
       f <~> new ioLiteral('"');
 
-    f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
+    this._readCore(f);
 
     if isjson then
       f <~> new ioLiteral('"');
@@ -806,9 +817,22 @@ module DateTime {
     f.write(isoFormat());
   }
 
+  // Exists to support some common functionality for `datetime.readThis`
+  pragma "no doc"
+  proc time._readCore(f) throws {
+    const colon = new ioLiteral(":");
+
+    chpl_hour = f.read(int);
+    f <~> colon;
+    chpl_minute = f.read(int);
+    f <~> colon;
+    chpl_second = f.read(int);
+    f <~> new ioLiteral(".");
+    chpl_microsecond = f.read(int);
+  }
+
   /* Reads this `time` from ISO format: hh:mm:ss.sss */
   proc time.readThis(f) throws {
-    const colon = new ioLiteral(":");
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
@@ -816,8 +840,7 @@ module DateTime {
     if isjson then
       f <~> new ioLiteral('"');
 
-    f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
-      <~> new ioLiteral(".") <~> chpl_microsecond;
+    this._readCore(f);
 
     if isjson then
       f <~> new ioLiteral('"');
@@ -1466,8 +1489,6 @@ module DateTime {
 
   /* Reads this `datetime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
   proc datetime.readThis(f) throws {
-    const dash  = new ioLiteral("-"),
-          colon = new ioLiteral(":");
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
@@ -1475,10 +1496,9 @@ module DateTime {
     if isjson then
       f <~> new ioLiteral('"');
 
-    f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
-      <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
-      <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
-      <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
+    chpl_date._readCore(f);
+    f <~> new ioLiteral("T");
+    chpl_time._readCore(f);
 
     if isjson then
       f <~> new ioLiteral('"');
