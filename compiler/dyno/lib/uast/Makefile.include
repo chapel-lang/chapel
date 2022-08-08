@@ -18,7 +18,7 @@
 
 DYNO_UAST_OBJDIR = $(COMPILER_BUILD)/dyno/lib/uast
 
-ALL_SRCS += dyno/lib/uast/*.cpp
+ALL_SRCS += dyno/lib/uast/*.h dyno/lib/uast/*.cpp
 
 DYNO_UAST_SRCS =                                 \
   AggregateDecl.cpp \

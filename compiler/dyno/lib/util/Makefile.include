@@ -18,7 +18,7 @@
 
 DYNO_UTIL_OBJDIR = $(COMPILER_BUILD)/dyno/lib/util
 
-ALL_SRCS += dyno/lib/util/*.cpp
+ALL_SRCS += dyno/lib/util/*.h dyno/lib/util/*.cpp
 
 
 DYNO_UTIL_SRCS =      \

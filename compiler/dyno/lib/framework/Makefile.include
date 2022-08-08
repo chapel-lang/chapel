@@ -18,7 +18,7 @@
 
 DYNO_FRAMEWORK_OBJDIR = $(COMPILER_BUILD)/dyno/lib/framework
 
-ALL_SRCS += dyno/lib/framework/*.cpp
+ALL_SRCS += dyno/lib/framework/*.h dyno/lib/framework/*.cpp
 
 DYNO_FRAMEWORK_SRCS =                               \
            compiler-configuration.cpp               \
