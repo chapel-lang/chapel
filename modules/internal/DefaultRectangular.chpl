@@ -1659,9 +1659,15 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
-    f <~> new ioLiteral("{") <~> ranges(0);
-    for i in 1..rank-1 do
-      f <~> new ioLiteral(", ") <~> ranges(i);
+    f <~> new ioLiteral("{");
+    var first = true;
+    for i in 0..rank-1 {
+      if !first then f <~> new ioLiteral(", ");
+      else first = false;
+
+      if f.writing then f.write(ranges(i));
+      else ranges(i) = f.read(ranges(i).type);
+    }
     f <~> new ioLiteral("}");
   }
 
@@ -1711,6 +1717,7 @@ module DefaultRectangular {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
+    type eltType = arr.eltType;
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
@@ -1746,7 +1753,8 @@ module DefaultRectangular {
           else if isspace then f <~> new ioLiteral(" ");
           else if isjson || ischpl then f <~> new ioLiteral(", ");
           idx(dim) = j;
-          f <~> arr.dsiAccess(idx);
+          if f.writing then f.write(arr.dsiAccess(idx));
+          else arr.dsiAccess(idx) = f.read(eltType);
         }
       } else {
         for j in dom.dsiDim(dim) by makeStridePositive {
@@ -1852,7 +1860,7 @@ module DefaultRectangular {
           arr.dsiPostReallocate();
         }
 
-        f <~> arr.dsiAccess(offset + i);
+        arr.dsiAccess(offset + i) = f.read(eltType);
 
         i += 1;
       }
