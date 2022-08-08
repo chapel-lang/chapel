@@ -606,7 +606,11 @@ module Map {
             ch <~> new ioLiteral(", ");
           }
           ref tabEntry = table.table[slot];
-          ch <~> tabEntry.key <~> new ioLiteral(": ") <~> tabEntry.val;
+          ref key = tabEntry.key;
+          ref val = tabEntry.val;
+          if ch.writing then ch.write(key); else key = ch.read(key.type);
+          ch <~> new ioLiteral(": ");
+          if ch.writing then ch.write(val); else val = ch.read(val.type);
         }
       }
       ch <~> new ioLiteral("}");

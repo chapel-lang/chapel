@@ -718,13 +718,9 @@ module Random {
 
     pragma "no doc"
     proc writeThis(f) throws {
-      f <~> "RandomStreamInterface(eltType=";
-      f <~> eltType:string;
-      f <~> ", parSafe=";
-      f <~> parSafe;
-      f <~> ", seed=";
-      f <~> seed;
-      f <~> ")";
+      f.write("RandomStreamInterface(eltType=", eltType:string);
+      f.write(", parSafe=", parSafe);
+      f.write(", seed=", seed, ")");
     }
   }
 
@@ -1377,13 +1373,9 @@ module Random {
 
       pragma "no doc"
       override proc writeThis(f) throws {
-        f <~> "PCGRandomStream(eltType=";
-        f <~> eltType:string;
-        f <~> ", parSafe=";
-        f <~> parSafe;
-        f <~> ", seed=";
-        f <~> seed;
-        f <~> ")";
+        f.write("PCGRandomStream(eltType=", eltType:string);
+        f.write(", parSafe=", parSafe);
+        f.write(", seed=", seed, ")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //
@@ -2863,13 +2855,9 @@ module Random {
 
       pragma "no doc"
       override proc writeThis(f) throws {
-        f <~> "NPBRandomStream(eltType=";
-        f <~> eltType:string;
-        f <~> ", parSafe=";
-        f <~> parSafe;
-        f <~> ", seed=";
-        f <~> seed;
-        f <~> ")";
+        f.write("NPBRandomStream(eltType=", eltType:string);
+        f.write(", parSafe=", parSafe);
+        f.write(", seed=", seed, ")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //
