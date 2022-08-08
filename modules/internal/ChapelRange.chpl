@@ -1081,8 +1081,12 @@ operator :(r: range(?), type t: range(?)) {
     var boundedOther = new range(
                           idxType, BoundedRangeType.bounded,
                           s || this.stridable,
-                          if other.hasLowBound() then other._low else _low,
-                          if other.hasHighBound() then other._high else _high,
+                          if (other.boundedType == BoundedRangeType.bounded ||
+                              other.boundedType == BoundedRangeType.boundedLow)
+                            then other._low else _low,
+                          if (other.boundedType == BoundedRangeType.bounded ||
+                              other.boundedType == BoundedRangeType.boundedHigh)
+                            then other._high else _high,
                           other.stride,
                           chpl__idxToInt(other.alignment),
                           true);
@@ -2235,7 +2239,7 @@ operator :(r: range(?), type t: range(?)) {
   // The serial iterator for 'lo.. [by s]' ranges
   pragma "no doc"
   pragma "order independent yielding loops"
-  iter range.these() where !hasHighBound() {
+  iter range.these() where hasLowBound() && !hasHighBound() {
 
     boundsCheckUnboundedRange(this);
 
@@ -2272,7 +2276,7 @@ operator :(r: range(?), type t: range(?)) {
   // The serial iterator for '..hi [by s]' ranges
   pragma "no doc"
   pragma "order independent yielding loops"
-  iter range.these() where !hasLowBound() {
+  iter range.these() where !hasLowBound() && hasHighBound() {
 
     boundsCheckUnboundedRange(this);
 
@@ -2653,10 +2657,12 @@ operator :(r: range(?), type t: range(?)) {
   operator :(x: range(?), type t: string) {
     var ret: string;
 
-    if x.hasLowBound() then
+    if (x.boundedType == BoundedRangeType.bounded ||
+        x.boundedType == BoundedRangeType.boundedLow) then
       ret += x.lowBound:string;
     ret += "..";
-    if x.hasHighBound() {
+    if (x.boundedType == BoundedRangeType.bounded ||
+        x.boundedType == BoundedRangeType.boundedHigh) {
       // handle the special case of an empty range with a singleton idxType
       if (chpl__singleValIdxType(x.idxType) && x._high != x._low) {
         ret += "<" + x.lowBound:string;

@@ -711,10 +711,12 @@ module ChapelIO {
       alignCheckRange.normalizeAlignment();
     }
 
-    if hasLowBound() then
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedLow) then
       f <~> lowBound;
     f <~> new ioLiteral("..");
-    if hasHighBound() {
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedHigh) {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f <~> new ioLiteral("<") <~> lowBound;
       } else {
@@ -732,11 +734,15 @@ module ChapelIO {
 
   pragma "no doc"
   proc ref range.readThis(f) throws {
-    if hasLowBound() then f <~> _low;
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedLow) then
+      f <~> _low;
 
     f <~> new ioLiteral("..");
 
-    if hasHighBound() then f <~> _high;
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedHigh) then
+      f <~> _high;
 
     if stride != 1 then f <~> new ioLiteral(" by ") <~> stride;
 
