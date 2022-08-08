@@ -2361,6 +2361,16 @@ void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
   }
 }
 
+bool isConstrainedGenericSymbol(Symbol* sym) {
+  bool ret = false;
+  if (FnSymbol* fn = toFnSymbol(sym)) {
+    ret |= fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER);
+    ret |= fn->isConstrainedGeneric();
+  }
+  ret |= isInterfaceSymbol(sym);
+  return ret;
+}
+
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG) {
   if (FnSymbol* fn = toFnSymbol(sym)) {
     if (fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER)) {

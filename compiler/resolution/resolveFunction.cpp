@@ -436,8 +436,6 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
 ************************************** | *************************************/
 
 void resolveSpecifiedReturnType(FnSymbol* fn) {
-  Type* retType = NULL;
-
 
   // resolve specified return types for any 'out' intent formals
   for_formals(formal, fn) {
@@ -448,6 +446,11 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       }
     }
   }
+
+  // Stop if there is nothing else to do.
+  if (!fn->retExprType || fn->retType != dtUnknown) return;
+
+  Type* retType = NULL;
 
   resolveBlockStmt(fn->retExprType);
 
@@ -535,7 +538,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     if (fn->hasFlag(FLAG_EXTERN) == true) {
       resolveBlockStmt(fn->body);
 
-      resolveReturnType(fn);
+      resolveSpecifiedReturnType(fn);
 
     } else {
       if (fn->isIterator() == true) {

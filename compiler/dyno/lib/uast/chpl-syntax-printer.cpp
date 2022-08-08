@@ -806,6 +806,16 @@ struct ChplSyntaxVisitor {
     printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
+  void visit(const AnonFormal* node) {
+    if (node->intent() != Formal::DEFAULT_INTENT) {
+      ss_ << kindToString((IntentList) node->intent()) << " ";
+    }
+
+    if (auto te = node->typeExpression()) {
+      typeExpressionHelper(te);
+    }
+  }
+
   void visit(const Formal* node) {
     if (node->attributes()) ss_ << pragmaFlagsToString(node);
 

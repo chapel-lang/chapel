@@ -962,16 +962,19 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   } // PRIM_CALL_RESOLVES, PRIM_METHOD_CALL_RESOLVES
 
-  case PRIM_CAPTURE_FN_FOR_CHPL:
-  case PRIM_CAPTURE_FN_FOR_C: {
+  case PRIM_CAPTURE_FN_FOR_CHPL: {
     retval = fcfWrapperInstanceFromPrimCall(call);
     call->replace(retval);
     break;
   }
-
+  case PRIM_CAPTURE_FN_FOR_C: {
+    retval = fcfRawFunctionPointerFromPrimCall(call);
+    call->replace(retval);
+    break;
+  }
   case PRIM_CREATE_FN_TYPE: {
-    Type* parent = fcfWrapperTypeFromFuncFunction(call->argList, call);
-    retval = new SymExpr(parent->symbol);
+    Type* t = fcfWrapperSuperTypeFromFuncFnCall(call);
+    retval = new SymExpr(t->symbol);
     call->replace(retval);
     break;
   }

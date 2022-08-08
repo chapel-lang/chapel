@@ -20,8 +20,18 @@ module Motivators {
   }
   test2();
 
+  // Print some function types, one with named formals and one without.
+  proc test3() {
+    type F1 = proc(int, int): int;
+    assert(F1:string == "proc(int, int): int");
+    type F2 = proc(ref: int, ref: int): int;
+    assert(F2:string == "proc(ref: int, ref: int): int");
+    assert(proc(ref x: real): int:string == "proc(ref x: real): int");
+  }
+  test3();
+
   /*
-  proc test() {
+  proc test4() {
     extern proc foo(fn: proc(int, int): int): void;
     // Call 'foo' with our proc literal.
     foo(proc(x: int, y: int) {
@@ -31,6 +41,7 @@ module Motivators {
     var fn = proc(x: int, y: int) { return x + y; };
     foo(fn);
   }
+  test4();
   */
 
   /*

@@ -347,6 +347,29 @@ struct ParserContext {
                                   bool isOverride);
 
   AstNode*
+  buildFormal(YYLTYPE location, Formal::Intent intent,
+              PODUniqueString name,
+              AstNode* typeExpr,
+              AstNode* initExpr,
+              bool consumeAttributes=false);
+
+  AstNode*
+  buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
+                    PODUniqueString name,
+                    AstNode* typeExpr,
+                    AstNode* initExpr,
+                    bool consumeAttributes=false);
+
+  AstNode*
+  buildTupleFormal(YYLTYPE location, Formal::Intent intent,
+                   ParserExprList* components,
+                   AstNode* typeExpr,
+                   AstNode* initExpr);
+
+  AstNode*
+  consumeFormalToAnonFormal(AstNode* formal);
+
+  AstNode*
   buildFunctionExpr(YYLTYPE location, FunctionParts& fp);
 
   AstNode*
@@ -356,6 +379,12 @@ struct ParserContext {
   buildAnonFormal(YYLTYPE location, YYLTYPE locIntent,
                   Formal::Intent intent,
                   AstNode* formalType);
+
+  AstNode*
+  buildAnonFormal(YYLTYPE location, PODUniqueString name);
+
+  AstNode*
+  buildAnonFormal(YYLTYPE location, AstNode* formalType);
 
   CommentsAndStmt
   buildExternExportFunctionDecl(YYLTYPE location, FunctionParts& fp);

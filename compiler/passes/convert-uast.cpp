@@ -231,9 +231,10 @@ struct Converter {
 
   const char* convertLinkageNameAstr(const uast::Decl* node) {
     if (auto linkageName = node->linkageName()) {
-      if (auto linkageStr = linkageName->toStringLiteral()) {
-        return astr(linkageStr->str());
-      }
+      auto linkageStr = linkageName->toStringLiteral();
+      INT_ASSERT(linkageStr);
+      auto ret = astr(linkageStr->str());
+      return ret;
     }
 
     return nullptr;
@@ -2725,9 +2726,6 @@ struct Converter {
     RetTag retTag = convertRetTag(node->returnIntent());
 
     if (node->kind() == uast::Function::ITER) {
-      // TODO (dlongnecke): Move me to new frontend!
-      if (fn->hasFlag(FLAG_EXTERN))
-        USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
       fn->addFlag(FLAG_ITERATOR_FN);
 
     } else if (node->kind() == uast::Function::OPERATOR) {
@@ -2739,15 +2737,6 @@ struct Converter {
 
     } else if (node->kind() == uast::Function::LAMBDA) {
       fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
-
-      // TODO: move these to new frontend if they continue
-      // to be relevant as FCFs are improved.
-      if (retTag == RET_REF || retTag == RET_CONST_REF)
-        USR_FATAL(fn, "'ref' return types are not allowed in lambdas");
-      if (retTag == RET_PARAM)
-        USR_FATAL(fn, "'param' return types are not allowed in lambdas");
-      if (retTag == RET_TYPE)
-        USR_FATAL(fn, "'type' return types are not allowed in lambdas");
     }
 
     Expr* retType = nullptr;
@@ -2779,15 +2768,12 @@ struct Converter {
 
     BlockStmt* body = nullptr;
 
-    if (node->body() && node->linkage() != uast::Decl::EXTERN) {
+    if (node->body()) {
+      INT_ASSERT(node->linkage() != uast::Decl::EXTERN);
 
       // TODO: What about 'proc foo() return 0;'?
       auto style = uast::BlockStyle::EXPLICIT;
       body = createBlockWithStmts(node->stmts(), style);
-    } else {
-      if (node->numStmts()) {
-        USR_FATAL_CONT("Extern functions cannot have a body");
-      }
     }
 
     setupFunctionDecl(fn, retTag, retType, node->throws(),
@@ -2799,6 +2785,10 @@ struct Converter {
     if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
       Expr* linkageExpr = convertExprOrNull(node->linkageName());
+
+      // This thing sets the 'cname' if it's a string literal, attaches
+      // some flags, sets the return type to 'void' if no type is
+      // specified, and attaches a dummy formal for the C name (?).
       setupExternExportFunctionDecl(linkageFlag, linkageExpr, fn);
     }
 
@@ -2874,6 +2864,9 @@ struct Converter {
           // detect if components are formals.
           conv = buildTupleArgDefExpr(tag, tuple, type, init);
           INT_ASSERT(conv);
+        } else if (auto anon = decl->toAnonFormal()) {
+          conv = toDefExpr(convertAST(anon));
+          INT_ASSERT(conv);
         } else {
           INT_FATAL("Not handled yet!");
         }
@@ -2896,7 +2889,6 @@ struct Converter {
     // function resolution in the typical way - this symbol is only
     // a vehicle for its formals and return type.
     // auto convName = astr(uast::Function::kindToString(node->kind()));
-    fn = new FnSymbol(nullptr);
     fn->cname = nullptr;
 
     if (convertedReceiver) {
@@ -2926,8 +2918,19 @@ struct Converter {
   }
 
   Expr* visit(const uast::AnonFormal* node) {
-    assert(false && "Not implemented yet!");
-    return nullptr;
+    auto intent = convertFormalIntent(node->intent());
+    Expr* typeExpr = nullptr;
+
+    if (auto te = node->typeExpression()) {
+      typeExpr = convertAST(te);
+      INT_ASSERT(typeExpr);
+    }
+
+    auto convFormal = new ArgSymbol(intent, nullptr, dtUnknown, typeExpr);
+    convFormal->addFlag(FLAG_ANONYMOUS_FORMAL);
+
+    auto ret = new DefExpr(convFormal);
+    return ret;
   }
 
   Expr* visit(const uast::FunctionSignature* node) {
@@ -3373,7 +3376,6 @@ struct Converter {
       USR_FATAL(varSym, "external params are not supported");
     }
 
-    // TODO (dlongnecke): Should be sanitized by the new parser.
     if (useLinkageName && node->linkageName()) {
       INT_ASSERT(linkageFlag != FLAG_UNKNOWN);
       varSym->cname = convertLinkageNameAstr(node);

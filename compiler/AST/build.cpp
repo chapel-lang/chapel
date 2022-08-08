@@ -1896,10 +1896,6 @@ void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
     fn->addFlag(FLAG_LOCAL_ARGS);
     fn->addFlag(FLAG_EXPORT);
   }
-  if (fn->isIterator())
-  {
-    USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
-  }
 
   // Handle non-trivial param names that need to be resolved,
   // but don't do this under chpldoc

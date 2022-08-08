@@ -345,7 +345,13 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
    * finalizeCopy method will replace their corresponding nodes from the body
    * appropriately.
    */
-  if (this->getReturnSymbol() == gVoid) {
+  auto rvv = this->getReturnSymbol();
+
+  if (rvv == nullptr) {
+    // Case 0: Function has no body, and thus no RVV.
+    newFn->retSymbol = nullptr;
+
+  } else if (rvv == gVoid) {
     // Case 1: Function returns void.
     newFn->retSymbol = gVoid;
 
@@ -560,13 +566,17 @@ void FnSymbol::insertAtTail(const char* format, ...) {
 Symbol* FnSymbol::getReturnSymbol() {
   Symbol* retval = this->retSymbol;
 
+  if (this->hasFlag(FLAG_NO_FN_BODY)) {
+    INT_ASSERT(retval == nullptr);
+    return nullptr;
+  }
+
   if (retval == NULL) {
     CallExpr* ret = toCallExpr(body->body.last());
 
     if (ret != NULL && ret->isPrimitive(PRIM_RETURN) == true) {
       if (SymExpr* sym = toSymExpr(ret->get(1))) {
         retval = sym->symbol();
-
       } else {
         INT_FATAL(this, "function is not normal");
       }

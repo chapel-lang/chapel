@@ -811,6 +811,56 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
 }
 
 AstNode*
+ParserContext::buildFormal(YYLTYPE location, Formal::Intent intent,
+                           PODUniqueString name,
+                           AstNode* typeExpr,
+                           AstNode* initExpr,
+                           bool consumeAttributes) {
+  auto attr = consumeAttributes ? buildAttributes(location) : nullptr;
+  auto loc = convertLocation(location);
+  auto node = Formal::build(builder, loc, std::move(attr), name, intent,
+                            toOwned(typeExpr),
+                            toOwned(initExpr));
+  this->noteIsBuildingFormal(false);
+  if (consumeAttributes) resetAttributePartsState();
+  return node.release();
+}
+
+AstNode*
+ParserContext::buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
+                                 PODUniqueString name,
+                                 AstNode* typeExpr,
+                                 AstNode* initExpr,
+                                 bool consumeAttributes) {
+  auto attr = consumeAttributes ? buildAttributes(location) : nullptr;
+  auto loc = convertLocation(location);
+  auto node = VarArgFormal::build(builder, loc, std::move(attr), name,
+                                  intent,
+                                  toOwned(typeExpr),
+                                  toOwned(initExpr));
+  this->noteIsBuildingFormal(false);
+  if (consumeAttributes) resetAttributePartsState();
+  return node.release();
+}
+
+AstNode*
+ParserContext::buildTupleFormal(YYLTYPE location, Formal::Intent intent,
+                                ParserExprList* components,
+                                AstNode* typeExpr,
+                                AstNode* initExpr) {
+  auto loc = convertLocation(location);
+  auto node = TupleDecl::build(builder, loc, nullptr,
+                               this->visibility,
+                               this->linkage,
+                               ((TupleDecl::IntentOrKind) intent),
+                               this->consumeList(components),
+                               toOwned(typeExpr),
+                               toOwned(initExpr));
+  this->noteIsBuildingFormal(false);
+  return node.release();
+}
+
+AstNode*
 ParserContext::buildAnonFormal(YYLTYPE location, YYLTYPE locIntent,
                                Formal::Intent intent,
                                AstNode* formalType) {
@@ -819,6 +869,43 @@ ParserContext::buildAnonFormal(YYLTYPE location, YYLTYPE locIntent,
   auto node = AnonFormal::build(builder, loc, intent, toOwned(formalType));
   auto ret = node.release();
   return ret;
+}
+
+AstNode*
+ParserContext::buildAnonFormal(YYLTYPE location, PODUniqueString name) {
+  auto ident = this->buildIdent(location, name);
+  auto ret = this->buildAnonFormal(location, ident);
+  return ret;
+}
+
+AstNode*
+ParserContext::buildAnonFormal(YYLTYPE location, AstNode* formalType) {
+  auto loc = convertLocation(location);
+  auto node = AnonFormal::build(builder, loc, Formal::DEFAULT_INTENT,
+                                toOwned(formalType));
+  auto ret = node.release();
+  return ret;
+}
+
+AstNode*
+ParserContext::consumeFormalToAnonFormal(AstNode* ast) {
+  auto formal = ast->toFormal();
+
+  assert(formal);
+  assert(!formal->initExpression() && !formal->typeExpression());
+  assert(!formal->name().isEmpty());
+  assert(!formal->attributes());
+  assert(formal->visibility() == Decl::DEFAULT_VISIBILITY);
+
+  auto loc = builder->getLocation(formal);
+  assert(!loc.isEmpty());
+
+  // TODO: Fix the location...
+  auto typeExpr = Identifier::build(builder, loc, formal->name());
+  auto node = AnonFormal::build(builder, loc, formal->intent(),
+                                std::move(typeExpr));
+
+  return node.release();
 }
 
 AstNode*
@@ -837,6 +924,20 @@ ParserContext::buildFunctionType(YYLTYPE location, FunctionParts& fp) {
   auto returnIntent = (FunctionSignature::ReturnIntent) fp.returnIntent;
   const bool parenless = false;
   auto formals = consumeList(fp.formals);
+
+  // Workaround for parsing not being powerful enough to handle this case.
+  // In a function expr the formal expression 'x' is a generic formal, but
+  // in a function type it is the type 'x'.
+  for (auto& ast : formals) {
+    if (auto formal = ast->toFormal()) {
+      if (!formal->typeExpression() && !formal->initExpression()) {
+        auto moved = std::move(ast).release();
+        auto anon = consumeFormalToAnonFormal(moved);
+        ast = toOwned(anon);
+      }
+    }
+  }
+
   auto returnType = toOwned(fp.returnType);
   bool throws = fp.throws;
 

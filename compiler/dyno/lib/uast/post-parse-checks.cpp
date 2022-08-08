@@ -97,6 +97,9 @@ struct Visitor {
   //
   bool isParentFalseBlock(int depth=0) const;
 
+  bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
+  bool isNameReservedWord(const NamedDecl* node);
+
   // Checks.
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
@@ -115,6 +118,7 @@ struct Visitor {
   void checkOverrideNonMethod(const Function* node);
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
+  void checkLambdaReturnIntent(const Function* node);
 
   /*
   TODO
@@ -131,6 +135,8 @@ struct Visitor {
   // Called in the visitor loop to check against superclass types.
   void checkPrivateDecl(const Decl* node);
   void checkExportedName(const NamedDecl* node);
+  void checkReservedSymbolName(const NamedDecl* node);
+  void checkLinkageName(const NamedDecl* node);
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
@@ -228,7 +234,9 @@ void Visitor::check(const AstNode* node) {
   if (auto decl = node->toDecl()) checkPrivateDecl(decl);
   if (auto named = node->toNamedDecl()) {
     checkExportedName(named);
+    checkReservedSymbolName(named);
     warnUnstableSymbolNames(named);
+    checkLinkageName(named);
   }
 
   // Now run checks via visitor and recurse to children.
@@ -535,6 +543,10 @@ void Visitor::checkExternProcedure(const Function* node) {
   if (node->throws()) {
     error(node, "Extern functions cannot throw errors.");
   }
+
+  if (node->kind() == Function::ITER) {
+    error(node, "'iter' is not legal with 'extern'");
+  }
 }
 
 void Visitor::checkExportProcedure(const Function* node) {
@@ -622,6 +634,25 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   }
 }
 
+void Visitor::checkLambdaReturnIntent(const Function* node) {
+  if (node->kind() != Function::LAMBDA) return;
+
+  switch (node->returnIntent()) {
+    case Function::CONST_REF:
+    case Function::REF:
+      error(node, "'ref' return types are not allowed in lambdas");
+      break;
+    case Function::PARAM:
+      error(node, "'param' return types are not allowed in lambdas");
+      break;
+    case Function::TYPE:
+      error(node, "'type' return types are not allowed in lambdas");
+      break;
+    default:
+      break;
+  }
+}
+
 void Visitor::checkPrivateDecl(const Decl* node) {
   if (node->visibility() != Decl::PRIVATE) return;
 
@@ -673,6 +704,76 @@ void Visitor::checkExportedName(const NamedDecl* node) {
   (void) node;
 }
 
+bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
+  if (node->name() != USTR("this")) return false;
+  if (node->isFunction()) return false;
+  if (node->isFormal())
+    if (auto decl = searchParentsForDecl(nullptr))
+      if (auto fn = decl->toFunction())
+        if (fn->thisFormal() == node)
+          return false;
+  return true;
+}
+
+bool Visitor::isNameReservedWord(const NamedDecl* node) {
+  auto name = node->name();
+  if (isNamedThisAndNotReceiverOrFunction(node)) return true;
+  if (name == "none") return true;
+  if (name == "false") return true;
+  if (name == "true") return true;
+  return false;
+}
+
+// TODO: Maybe migrate this to a common place?
+static bool isNameReservedType(UniqueString name) {
+  if (name == USTR("bool")      ||
+      name == USTR("int")       ||
+      name == USTR("uint")      ||
+      name == USTR("real")      ||
+      name == USTR("imag")      ||
+      name == USTR("complex")   ||
+      name == USTR("bytes")     ||
+      name == USTR("string")    ||
+      name == USTR("sync")      ||
+      name == USTR("single")    ||
+      name == USTR("owned")     ||
+      name == USTR("shared")    ||
+      name == USTR("borrowed")  ||
+      name == USTR("unmanaged") ||
+      name == USTR("domain")    ||
+      name == USTR("index")     ||
+      name == USTR("locale")    ||
+      name == USTR("nothing")   ||
+      name == USTR("void"))
+    return true;
+  return false;
+}
+
+// TODO: May have to restrict errors to fire only for functions/formals.
+void Visitor::checkReservedSymbolName(const NamedDecl* node) {
+  auto name = node->name();
+  if (isNameReservedWord(node)) {
+    error(node, "attempt to redefine reserved word '%s'", name.c_str());
+  } else if (isNameReservedType(name)) {
+    error(node, "attempt to redefine reserved type '%s'", name.c_str());
+  }
+}
+
+void Visitor::checkLinkageName(const NamedDecl* node) {
+  auto linkageName = node->linkageName();
+  if (!linkageName) return;
+
+  assert(node->linkage() != Decl::DEFAULT_LINKAGE);
+
+  // Functions accept complex expressions for their linkage name.
+  if (node->isFunction()) return;
+
+  if (!linkageName->isStringLiteral()) {
+    error(linkageName, "the linkage name for '%s' must be a string literal",
+                       node->name().c_str());
+  }
+}
+
 // TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
   if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
@@ -722,6 +823,7 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
+  checkLambdaReturnIntent(node);
 }
 
 void Visitor::visit(const Union* node) {

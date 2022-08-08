@@ -439,16 +439,17 @@
 //
 %left TNOELSE
 %left TELSE TTHROWS
-%left TCOMMA
+
+
+// Right associative to encourage shifting to happen.
+%right TTYPE TPARAM TREF TVAR TCONST
+%right TCOMMA
 
 // Add the 'internal_type_type_def' types here to resolve s/r for
 // function types/exprs, as well as TIDENT.
 %nonassoc TBOOL TINT TUINT TREAL TIMAG TCOMPLEX TBYTES TSTRING
           TDOMAIN TINDEX TLOCALE TNOTHING TVOID TIDENT
 %nonassoc TFALSE TNONE TTHIS TTRUE
-
-// Right associative to encourage shifting to happen.
-%right TTYPE TPARAM TREF TVAR TCONST
 
 %left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
 %left TIN
@@ -486,7 +487,7 @@
 %type <returnTag>  opt_ret_tag
 %type <astTag> class_tag
 
-%type <uniqueStr> ident_use ident_def ident_fn_def
+%type <uniqueStr> ident_use ident_def reserved_word_ident
 %type <uniqueStr> internal_type_ident_def reserved_type_ident_use
 %type <uniqueStr> fn_ident assignop_ident op_ident all_op_name opt_label_ident
 %type <uniqueStr> implements_type_ident implements_type_error_ident
@@ -573,6 +574,7 @@
 %type <expr> opt_type opt_ret_type ret_array_type ret_type colon_ret_type
 %type <expr> opt_fn_type_ret_type
 %type <expr> opt_colon_formal_type formal_array_type opt_formal_array_elt_type
+%type <expr> colon_formal_type
 %type <expr> formal_type
 %type <functionParts> lambda_decl_start
 %type <expr> lambda_decl_expr
@@ -1240,27 +1242,17 @@ opt_label_ident:
 | TIDENT { $$ = $1; }
 ;
 
-ident_fn_def:
-  TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
-| TTHIS                    { $$ = $1; }
-| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
-| internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
-                             msg += $1.c_str();
-                             msg += "'";
-                             $$ = $1; ERROR(@$, msg); }
+reserved_word_ident:
+  TNONE
+| TTHIS
+| TFALSE
+| TTRUE
+| internal_type_ident_def
+;
 
 ident_def:
-  TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
-| TTHIS                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'this'"); }
-| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
-| internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
-                             msg += $1.c_str();
-                             msg += "'";
-                             $$ = $1; ERROR(@$, msg); }
+  TIDENT
+| reserved_word_ident
 ;
 
 /* Represents a use of an identifier. This is not used as often as you
@@ -1276,14 +1268,8 @@ ident_use:
 | TTHIS                    { $$ = $1; }
 ;
 
+/* Error message has been moved to post-parse. */
 internal_type_ident_def:
- /* These reserved words should generate an error if an attempt
-    is made to redefine them. The name returned from this nonterminal
-    will be used in the error message.
-
-    Uses of these types are parsed differently.
-    See scalar_type and reserved_type_ident_use.
-  */
   TBOOL
 | TINT
 | TUINT
@@ -2311,10 +2297,13 @@ fn_type_formal_ls:
 ;
 
 fn_type_formal:
-  named_formal %prec TTHROWS
+  named_formal
+  { $$ = $1; }
+  /* TODO: Would like to get rid of TCOLON here, but Bison... */
 | required_intent_tag TCOLON formal_type
   { $$ = context->buildAnonFormal(@$, @1, $1, $3); }
 | formal_type
+  { $$ = context->buildAnonFormal(@$, $1); }
 ;
 
 // TODO: We would like to replace the alternate with 'ret_type', but that
@@ -2351,6 +2340,7 @@ fn_type:
   }
 ;
 
+// TODO: This needs to use the old style formal list instead.
 fn_expr:
   fn_type
   {
@@ -2493,7 +2483,7 @@ fn_decl_receiver_expr:
 ;
 
 fn_ident:
-  ident_fn_def
+  ident_def
 | op_ident
 | ident_def TBANG
   {
@@ -2585,57 +2575,24 @@ formal:
 named_formal:
   opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
   {
-    $$ = Formal::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
-                       /*name*/ $2,
-                       /*intent*/ $1,
-                       toOwned($3),
-                       toOwned($4)).release();
-    context->noteIsBuildingFormal(false);
+    $$ = context->buildFormal(@$, $1, $2, $3, $4);
   }
 | pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
   {
-    auto attributes = context->buildAttributes(@$);
-    $$ = Formal::build(BUILDER, LOC(@$), std::move(attributes),
-                       /*name*/ $3,
-                       /*intent*/ $2,
-                       toOwned($4),
-                       toOwned($5)).release();
-    context->noteIsBuildingFormal(false);
-    context->resetAttributePartsState();
+    $$ = context->buildFormal(@$, $2, $3, $4, $5, true);
   }
 | opt_formal_intent_tag ident_def opt_colon_formal_type formal_var_arg_expr
   {
-    $$ = VarArgFormal::build(BUILDER, LOC(@$),
-                             /*attributes*/ nullptr,
-                             /*name*/ $2,
-                             /*intent*/ $1,
-                             toOwned($3),
-                             toOwned($4)).release();
-    context->noteIsBuildingFormal(false);
+    $$ = context->buildVarArgFormal(@$, $1, $2, $3, $4);
   }
 | pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type formal_var_arg_expr
   {
-    auto attributes = context->buildAttributes(@$);
-    $$ = VarArgFormal::build(BUILDER, LOC(@$),
-                             std::move(attributes),
-                             /*name*/ $3,
-                             /*intent*/ $2,
-                             toOwned($4),
-                             toOwned($5)).release();
-    context->noteIsBuildingFormal(false);
-    context->resetAttributePartsState();
+    $$ = context->buildVarArgFormal(@$, $2, $3, $4, $5, true);
   }
 | opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type
   opt_init_expr
   {
-    $$ = TupleDecl::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
-                          context->visibility,
-                          context->linkage,
-                          ((TupleDecl::IntentOrKind) $1),
-                          context->consumeList($3),
-                          toOwned($5),
-                          toOwned($6)).release();
-    context->noteIsBuildingFormal(false);
+    $$ = context->buildTupleFormal(@$, $1, $3, $5, $6);
   }
 | opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type
   formal_var_arg_expr
@@ -2645,7 +2602,7 @@ named_formal:
 ;
 
 opt_formal_intent_tag:
-  %prec TNEW {
+  %prec TFOR {
     context->noteIsBuildingFormal(true);
     $$ = Formal::DEFAULT_INTENT;
   }
@@ -3050,9 +3007,13 @@ formal_type:
 | formal_array_type
 ;
 
+colon_formal_type:
+  TCOLON formal_type             { $$ = $2; }
+;
+
 opt_colon_formal_type:
-                                 { $$ = nullptr; }
-| TCOLON formal_type             { $$ = $2; }
+                        { $$ = nullptr; }
+| colon_formal_type     { $$ = $1; }
 ;
 
 /** EXPRESSIONS **************************************************************/

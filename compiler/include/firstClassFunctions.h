@@ -29,8 +29,14 @@ class Type;
 
 Expr* fcfWrapperInstanceFromPrimCall(CallExpr* call);
 
-Type* fcfWrapperTypeFromFuncFunction(AList& argList, CallExpr* call);
+Expr* fcfRawFunctionPointerFromPrimCall(CallExpr* call);
 
-Type* fcfWrapperTypeFromFnType(FnSymbol* fnType);
+Expr* fcfWrapperInstanceFromFnExpr(FnSymbol* fn);
+
+Type* fcfWrapperSuperTypeFromFuncFnCall(CallExpr* call);
+
+Type* fcfWrapperSuperTypeFromFnType(FnSymbol* fn);
+
+const char* fcfWrapperTypeToString(Type* t);
 
 #endif

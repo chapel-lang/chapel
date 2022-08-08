@@ -64,6 +64,7 @@ PRAGMA(ALWAYS_RVF, ypr,
        "always RVF",
        "attach to a type to force RVF for objects of that type")
 PRAGMA(ANONYMOUS_FN, npr, "anonymous fn", ncm)
+PRAGMA(ANONYMOUS_FORMAL, npr, "anonymous formal", ncm)
 PRAGMA(DEAD_END_OF_BLOCK, ypr, "dead at end of block", ncm)
 PRAGMA(DEAD_LAST_MENTION, ypr, "dead after last mention", ncm)
 PRAGMA(DONT_ALLOW_REF, ypr, "do not allow ref", ncm)

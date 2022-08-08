@@ -1177,7 +1177,8 @@ static void licmFn(FnSymbol* fn) {
 
   std::vector<BasicBlock*> basicBlocks = *fn->basicBlocks;
 
-  BasicBlock* entryBlock = basicBlocks[0];
+  BasicBlock* entryBlock = basicBlocks.size() ? basicBlocks[0] : nullptr;
+  if (!entryBlock) return;
 
   unsigned nBlocks = basicBlocks.size();
 
