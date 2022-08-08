@@ -1229,6 +1229,12 @@ struct Converter {
       ret = CatchStmt::build(body);
     }
 
+    if (canScopeResolve && errorVar != nullptr) {
+      ret->createErrSym();
+      DefExpr* def = toDefExpr(body->body.head);
+      noteConvertedSym(errorVar, def->sym);
+    }
+
     INT_ASSERT(ret != nullptr);
 
     return ret;
