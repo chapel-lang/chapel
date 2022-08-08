@@ -773,7 +773,80 @@ module ChapelIO {
     try! {
       return stdout.writef(fmt);
     }
+      }
+
+  pragma "no doc"
+  private proc chpl_readNeedsIO(param name: string) param: string {
+    return name + "() is not available by default; try 'use IO;' or 'import IO;'";
   }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc read(ref args...?k) {
+    compilerError(chpl_readNeedsIO("read"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc read(type t) {
+    compilerError(chpl_readNeedsIO("read"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc read(type t ...?numTypes) where numTypes > 1 {
+    compilerError(chpl_readNeedsIO("read"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readln() {
+    compilerError(chpl_readNeedsIO("readln"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readln(ref args ...?k) {
+    compilerError(chpl_readNeedsIO("readln"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readln(type t) {
+    compilerError(chpl_readNeedsIO("readln"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readln(type t ...?numTypes) where numTypes > 1 {
+    compilerError(chpl_readNeedsIO("readln"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readline(arg: [] uint(8), out numRead: int,
+                start = 0: arg.idxType, amount = 0): bool throws {
+    compilerError(chpl_readNeedsIO("readline"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readline(ref arg: ?t) {
+    compilerError(chpl_readNeedsIO("readline"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readf(fmtStr: ?t, ref args ...?k) {
+    compilerError(chpl_readNeedsIO("readf"));
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readf(fmtStr: ?t) {
+    compilerError(chpl_readNeedsIO("readf"));
+  }
+
 
   pragma "no doc"
   proc chpl_stringify_wrapper(const args ...):string {
