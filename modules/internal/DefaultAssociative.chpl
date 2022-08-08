@@ -105,72 +105,70 @@ module DefaultAssociative {
                                                  initElts=initElts);
     }
 
-    proc dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
+    proc dsiSerialWrite(f) throws {
+      const binary = f.binary();
 
-      var binary = f.binary();
-
-      if f.writing {
-        if binary {
-          var numIndices: int = dsiNumIndices;
-          f <~> numIndices;
-          for idx in this {
-            f <~> idx;
-          }
-        } else {
-          var first = true;
-          f <~> new ioLiteral("{");
-          for idx in this {
-            if first then
-              first = false;
-            else
-              f <~> new ioLiteral(", ");
-            f <~> idx;
-          }
-          f <~> new ioLiteral("}");
+      if binary {
+        var numIndices: int = dsiNumIndices;
+        f <~> numIndices;
+        for idx in this {
+          f <~> idx;
         }
       } else {
-        // Clear the domain so it only contains indices read in.
-        dsiClear();
-
-        if binary {
-          var numIndices: int;
-          f <~> numIndices;
-          for i in 1..numIndices {
-            var idx: idxType;
-            f <~> idx;
-            dsiAdd(idx);
-          }
-        } else {
-          f <~> new ioLiteral("{");
-
-          var first = true;
-          var comma = new ioLiteral(",", true);
-          var end = new ioLiteral("}");
-
-          while true {
-
-            // Try reading an end curly. If we get it, then break.
-            try {
-              f <~> end;
-              break;
-            } catch err: BadFormatError {
-              // We didn't read an end brace, so continue on.
-            }
-
-            // Try reading a comma.
-            if !first then f <~> comma;
+        var first = true;
+        f <~> new ioLiteral("{");
+        for idx in this {
+          if first then
             first = false;
+          else
+            f <~> new ioLiteral(", ");
+          f <~> idx;
+        }
+        f <~> new ioLiteral("}");
+      }
+    }
+    proc dsiSerialRead(f) throws {
+      const binary = f.binary();
 
-            // Read an index.
-            var idx: idxType;
-            f <~> idx;
-            dsiAdd(idx);
+      // Clear the domain so it only contains indices read in.
+      dsiClear();
+
+      if binary {
+        var numIndices: int;
+        f <~> numIndices;
+        for i in 1..numIndices {
+          var idx: idxType;
+          f <~> idx;
+          dsiAdd(idx);
+        }
+      } else {
+        f <~> new ioLiteral("{");
+
+        var first = true;
+        var comma = new ioLiteral(",", true);
+        var end = new ioLiteral("}");
+
+        while true {
+
+          // Try reading an end curly. If we get it, then break.
+          try {
+            f <~> end;
+            break;
+          } catch err: BadFormatError {
+            // We didn't read an end brace, so continue on.
           }
+
+          // Try reading a comma.
+          if !first then f <~> comma;
+          first = false;
+
+          // Read an index.
+          var idx: idxType;
+          f <~> idx;
+          dsiAdd(idx);
         }
       }
     }
-    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
     //
     // Standard user domain interface
