@@ -1175,17 +1175,17 @@ module UnrolledLinkedList {
     proc writeThis(ch: channel) throws {
       _enter();
 
-      ch <~> "[";
+      ch.write("[");
 
       var first = true;
 
       for x in this {
-        if !first then ch <~> ", ";
+        if !first then ch.write(", ");
         else first = false;
-        ch <~> x;
+        ch.write(x);
       }
 
-      ch <~> "]";
+      ch.write("]");
 
       _leave();
     }
