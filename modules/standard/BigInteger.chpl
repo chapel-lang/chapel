@@ -151,7 +151,7 @@ module BigInteger {
   use GMP;
   use HaltWrappers;
   use CTypes;
-  use SysBasic only syserr, EFORMAT, ENOERR;
+  use SysBasic only EFORMAT, ENOERR;
   use OS;
 
   /*
@@ -251,7 +251,7 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    proc init(str: string, base: int = 0, out error: syserr) {
+    proc init(str: string, base: int = 0, out error: errorCode) {
       this.complete();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);

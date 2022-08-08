@@ -1057,7 +1057,7 @@ module ZMQ {
 
     pragma "no doc"
     proc throw_socket_error(socket_errno: c_int, err_fn: string) throws {
-      import SysBasic.syserr;
+      import OS.errorCode;
       var errmsg_zmq: string;
       try! {
         errmsg_zmq = createStringWithNewBuffer(zmq_strerror(socket_errno));
@@ -1065,7 +1065,7 @@ module ZMQ {
       var errmsg_fmt = "Error in Socket.%s(%s): %s\n";
       var errmsg_str = errmsg_fmt.format(err_fn, string:string, errmsg_zmq);
 
-      throw SystemError.fromSyserr(socket_errno:syserr, errmsg_str);
+      throw SystemError.fromSyserr(socket_errno:errorCode, errmsg_str);
     }
   } // record Socket
 

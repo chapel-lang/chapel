@@ -158,7 +158,8 @@ Curl Support Types and Functions
 module Curl {
   public use IO, CTypes;
   use OS.POSIX;
-  import SysBasic.{syserr,ENOERR};
+  import SysBasic.{ENOERR};
+  import OS.{errorCode};
 
   require "curl/curl.h";
   require "-lcurl";
@@ -320,7 +321,7 @@ module Curl {
      :arg str: a string argument to append
     */
   proc slist.append(str:string) throws {
-    var err: syserr = ENOERR;
+    var err: errorCode = ENOERR;
     on this.home {
       this.list = curl_slist_append(this.list, str.localize().c_str());
       if this.list == nil then
@@ -346,12 +347,12 @@ module Curl {
   // extern QIO functions
   private extern proc sys_iov_total_bytes(iov:c_ptr(qiovec_t), iovcnt:c_int):int(64);
   private extern proc qio_strdup(s: c_string): c_string;
-  private extern proc qio_mkerror_errno():syserr;
-  private extern proc qio_int_to_err(a:int(32)):syserr;
+  private extern proc qio_mkerror_errno():errorCode;
+  private extern proc qio_int_to_err(a:int(32)):errorCode;
   private extern proc qio_channel_nbytes_available_unlocked(ch:qio_channel_ptr_t):int(64);
-  private extern proc qio_channel_copy_to_available_unlocked(ch:qio_channel_ptr_t, ptr:c_void_ptr, len:c_ssize_t):syserr;
+  private extern proc qio_channel_copy_to_available_unlocked(ch:qio_channel_ptr_t, ptr:c_void_ptr, len:c_ssize_t):errorCode;
   private extern proc qio_channel_nbytes_write_behind_unlocked(ch:qio_channel_ptr_t):int(64);
-  private extern proc qio_channel_copy_from_buffered_unlocked(ch:qio_channel_ptr_t, ptr:c_void_ptr, len:c_ssize_t, ref n_written_out:c_ssize_t):syserr;
+  private extern proc qio_channel_copy_from_buffered_unlocked(ch:qio_channel_ptr_t, ptr:c_void_ptr, len:c_ssize_t, ref n_written_out:c_ssize_t):errorCode;
   private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
   private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
   private extern proc qio_channel_writable(ch:qio_channel_ptr_t):bool;
@@ -506,7 +507,8 @@ module Curl {
     use Curl;
     use CTypes;
     use OS.POSIX;
-    import SysBasic.{syserr,ENOERR,EEOF};
+    import SysBasic.{ENOERR,EEOF};
+    import OS.{errorCode};
 
     pragma "no doc"
     extern proc sys_select(nfds:c_int, readfds:c_ptr(fd_set), writefds:c_ptr(fd_set), exceptfds:c_ptr(fd_set), timeout:c_ptr(struct_timeval), ref nset:c_int):c_int;
@@ -521,7 +523,7 @@ module Curl {
       override proc setupChannel(out pluginChannel:unmanaged QioPluginChannel?,
                           start:int(64),
                           end:int(64),
-                          qioChannelPtr:qio_channel_ptr_t):syserr {
+                          qioChannelPtr:qio_channel_ptr_t):errorCode {
         var curlch = new unmanaged CurlChannel();
         curlch.curlf = this:unmanaged;
         curlch.qio_ch = qioChannelPtr;
@@ -529,7 +531,7 @@ module Curl {
         return start_channel(curlch, start, end);
       }
 
-      override proc filelength(out length:int(64)):syserr {
+      override proc filelength(out length:int(64)):errorCode {
         if this.length == -1 then {
           return ENOTSUP;
         }
@@ -537,24 +539,24 @@ module Curl {
         length = this.length;
         return ENOERR;
       }
-      override proc getpath(out path:c_string, out len:int(64)):syserr {
+      override proc getpath(out path:c_string, out len:int(64)):errorCode {
         path = qio_strdup(this.url_c);
         len = url_c.size;
         return ENOERR;
       }
 
-      override proc fsync():syserr {
+      override proc fsync():errorCode {
         return ENOSYS;
       }
-      override proc getChunk(out length:int(64)):syserr {
+      override proc getChunk(out length:int(64)):errorCode {
         return ENOSYS;
       }
       override proc getLocalesForRegion(start:int(64), end:int(64), out
-          localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
+          localeNames:c_ptr(c_string), ref nLocales:int(64)):errorCode {
         return ENOSYS;
       }
 
-      override proc close():syserr {
+      override proc close():errorCode {
         c_free(url_c:c_void_ptr);
         url_c = nil;
         return ENOERR;
@@ -568,16 +570,16 @@ module Curl {
       var curlm: c_ptr(CURLM);  // Curl multi handle
       var running_handles: c_int;
       var have_channel_lock:bool;
-      var saved_error:syserr = ENOERR;
+      var saved_error:errorCode = ENOERR;
 
-      override proc readAtLeast(amt:int(64)):syserr {
+      override proc readAtLeast(amt:int(64)):errorCode {
         return read_atleast(this, amt);
       }
-      override proc write(amt:int(64)):syserr {
+      override proc write(amt:int(64)):errorCode {
         return write_amount(this, amt);
       }
 
-      override proc close():syserr {
+      override proc close():errorCode {
         curl_multi_remove_handle(curlm, curl);
         curl_easy_cleanup(curl);
         curl_multi_cleanup(curlm);
@@ -788,7 +790,7 @@ module Curl {
 
     private proc start_channel(cc:CurlChannel,
                                start:int(64),
-                               end:int(64)): syserr {
+                               end:int(64)): errorCode {
 
       //writeln("start_channel");
 
@@ -854,7 +856,7 @@ module Curl {
     private proc curl_write_received(contents: c_void_ptr, size:c_size_t, nmemb:c_size_t, userp: c_void_ptr):c_size_t {
       var realsize:c_size_t = size * nmemb;
       var cc = userp:unmanaged CurlChannel?;
-      var err:syserr = ENOERR;
+      var err:errorCode = ENOERR;
 
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
@@ -878,7 +880,7 @@ module Curl {
     }
 
 
-    private proc read_atleast(cc:CurlChannel, requestedAmount:int(64)):syserr {
+    private proc read_atleast(cc:CurlChannel, requestedAmount:int(64)):errorCode {
       // mark the channel as already locked
       cc.have_channel_lock = true;
       defer {
@@ -890,7 +892,7 @@ module Curl {
       var curl = cc.curl;
       var curlm = cc.curlm;
       var mcode: CURLMcode;
-      var serr:syserr = ENOERR;
+      var serr:errorCode = ENOERR;
       var fdread: fd_set;
       var fdwrite: fd_set;
       var fdexcept: fd_set;
@@ -986,7 +988,7 @@ module Curl {
     private proc curl_read_buffered(contents: c_void_ptr, size:c_size_t, nmemb:c_size_t, userp: c_void_ptr):c_size_t {
       var realsize:c_size_t = size * nmemb;
       var cc = userp:unmanaged CurlChannel?;
-      var err:syserr = ENOERR;
+      var err:errorCode = ENOERR;
 
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
@@ -1017,7 +1019,7 @@ module Curl {
       return gotamt:c_size_t;
     }
 
-    private proc write_amount(cc:CurlChannel, requestedAmount:int(64)):syserr {
+    private proc write_amount(cc:CurlChannel, requestedAmount:int(64)):errorCode {
       // mark the channel as already locked
       cc.have_channel_lock = true;
       defer {
@@ -1032,7 +1034,7 @@ module Curl {
       var curlm = cc.curlm;
       var ccode: CURLcode;
       var mcode: CURLMcode;
-      var serr:syserr = ENOERR;
+      var serr:errorCode = ENOERR;
       var fdread: fd_set;
       var fdwrite: fd_set;
       var fdexcept: fd_set;
@@ -1128,7 +1130,7 @@ module Curl {
                      mode:iomode = iomode.r,
                      style:iostyleInternal = defaultIOStyleInternal()) throws {
 
-      var err_out: syserr = ENOERR;
+      var err_out: errorCode = ENOERR;
       var rc = 0;
       var filelength: int(64);
 

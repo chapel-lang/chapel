@@ -47,7 +47,7 @@
  */
 module Buffers {
   use OS.POSIX;
-  import SysBasic.{ENOERR,syserr};
+  import SysBasic.{ENOERR};
   use OS;
   private use CTypes;
 
@@ -66,25 +66,25 @@ module Buffers {
   private extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
   private extern proc qbytes_data(qb:qbytes_ptr_t):c_void_ptr;
 
-  private extern proc qbytes_create_iobuf(ref ret:qbytes_ptr_t):syserr;
-  private extern proc qbytes_create_calloc(ref ret:qbytes_ptr_t, len:int(64)):syserr;
+  private extern proc qbytes_create_iobuf(ref ret:qbytes_ptr_t):errorCode;
+  private extern proc qbytes_create_calloc(ref ret:qbytes_ptr_t, len:int(64)):errorCode;
 
   private extern proc qbuffer_iter_null():qbuffer_iter_t;
 
-  private extern proc qbuffer_create(ref buf:qbuffer_ptr_t):syserr;
+  private extern proc qbuffer_create(ref buf:qbuffer_ptr_t):errorCode;
   private extern proc qbuffer_retain(buf:qbuffer_ptr_t);
   private extern proc qbuffer_release(buf:qbuffer_ptr_t);
 
-  private extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes_buf:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
-  private extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):syserr;
-  private extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes_buf:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
-  private extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref bytes_out):syserr;
-  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
-  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):syserr;
-  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):syserr;
-  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
-  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):syserr;
-  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):syserr;
+  private extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes_buf:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):errorCode;
+  private extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):errorCode;
+  private extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes_buf:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):errorCode;
+  private extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref bytes_out):errorCode;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):errorCode;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):errorCode;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):errorCode;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):errorCode;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):errorCode;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):errorCode;
 
   private extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
   private extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
@@ -109,7 +109,7 @@ module Buffers {
 
   private extern proc bulk_get_bytes(src_locale:int, src_addr:qbytes_ptr_t):qbytes_ptr_t;
 
-  private extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_void_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):syserr;
+  private extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_void_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):errorCode;
 
   // Now define the Chapel types using the originals..
 
@@ -140,7 +140,7 @@ module Buffers {
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
    */
-  proc byteBuffer.init(len:int(64), out error:syserr) {
+  proc byteBuffer.init(len:int(64), out error:errorCode) {
     this.home = here;
     this.complete();
     error = qbytes_create_calloc(this._bytes_internal, len);
@@ -150,7 +150,7 @@ module Buffers {
   proc byteBuffer.init(len:int(64)) {
     this.home = here;
     this.complete();
-    var error:syserr = qbytes_create_calloc(this._bytes_internal, len);
+    var error:errorCode = qbytes_create_calloc(this._bytes_internal, len);
     if error then try! ioerror(error, "in bytes initializer");
     // The buffer is retained internally on initialization, but only on success.
   }
@@ -178,8 +178,8 @@ module Buffers {
   }
 
   pragma "no doc"
-  private proc create_iobuf(out error:syserr):byteBuffer {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  private proc create_iobuf(out error:errorCode):byteBuffer {
+    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
     var ret: bytes;
     try {
       ret = create_iobuf();
@@ -309,14 +309,14 @@ module Buffers {
      :arg error: (optional) capture an error that was encountered instead of
                   halting on error
    */
-  proc buffer.init(out error:syserr) {
+  proc buffer.init(out error:errorCode) {
     this.home = here;
     this.complete();
     error = qbuffer_create(this._buf_internal);
   }
   pragma "no doc"
   proc buffer.init() /*throws*/ {
-    var error:syserr = ENOERR;
+    var error:errorCode = ENOERR;
     this.home = here;
     this.complete();
     error = qbuffer_create(this._buf_internal);
@@ -332,7 +332,7 @@ module Buffers {
       this._buf_internal = x._buf_internal;
       this.complete();
     } else {
-      var error: syserr = ENOERR;
+      var error: errorCode = ENOERR;
       this.init(error);
       if error then halt("Got an error when initializing a new buffer.");
       var start_offset:int(64);
@@ -343,7 +343,7 @@ module Buffers {
         end_offset = qbuffer_end_offset(x._buf_internal);
       }
 
-      var allocErr:syserr = ENOERR;
+      var allocErr:errorCode = ENOERR;
       var b = new byteBuffer(end_offset - start_offset, error=allocErr);
       if allocErr then
         try! ioerror(allocErr, "could not allocate bytes in buffer copy");
@@ -358,7 +358,7 @@ module Buffers {
       var there_uid = here.id;
 
       on x.home {
-        var err:syserr = ENOERR;
+        var err:errorCode = ENOERR;
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
@@ -378,7 +378,7 @@ module Buffers {
    */
   proc buffer.flatten(range:buffer_range) throws {
     var ret: byteBuffer  = new byteBuffer();
-    var err: syserr = ENOERR;
+    var err: errorCode = ENOERR;
 
     if this.home == here {
       err = qbuffer_flatten(this._buf_internal, range.start._bufit_internal, range.end._bufit_internal, ret._bytes_internal);
@@ -402,8 +402,8 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.flatten(range:buffer_range, out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  proc buffer.flatten(range:buffer_range, out error:errorCode) {
+    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
     var ret: bytes;
     try {
       ret = this.flatten(range);
@@ -454,7 +454,7 @@ module Buffers {
       var there_uid = here.id;
 
       on x.home {
-        var err:syserr = ENOERR;
+        var err:errorCode = ENOERR;
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
@@ -495,7 +495,7 @@ module Buffers {
      :arg len_bytes: how many bytes to append to the buffer
   */
   proc buffer.append(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
-    var err:syserr = ENOERR;
+    var err:errorCode = ENOERR;
     on this.home {
       err = qbuffer_append(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
@@ -503,8 +503,8 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.append(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  proc buffer.append(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:errorCode) {
+    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
     try {
       this.append(b, skip_bytes, len_bytes);
     } catch e: SystemError {
@@ -525,7 +525,7 @@ module Buffers {
                 buffer to copy. Defaults to all of the buffer.
    */
   proc buffer.append(buf:buffer, part:buffer_range = buf.all()) throws {
-    var err:syserr = ENOERR;
+    var err:errorCode = ENOERR;
     on this.home {
       err = qbuffer_append_buffer(this._buf_internal, buf._buf_internal, part.start._bufit_internal, part.end._bufit_internal);
     }
@@ -533,8 +533,8 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.append(buf:buffer, part:buffer_range = buf.all(), out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  proc buffer.append(buf:buffer, part:buffer_range = buf.all(), out error:errorCode) {
+    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
     try {
       this.append(buf, part);
     } catch e: SystemError {
@@ -556,7 +556,7 @@ module Buffers {
      :arg len_bytes: how many bytes to append to the buffer
   */
   proc buffer.prepend(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
-    var err:syserr = ENOERR;
+    var err:errorCode = ENOERR;
     on this.home {
       err = qbuffer_prepend(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
@@ -564,8 +564,8 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.prepend(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  proc buffer.prepend(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:errorCode) {
+    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
     try {
       this.prepend(b, skip_bytes, len_bytes);
     } catch e: SystemError {
@@ -662,7 +662,7 @@ module Buffers {
   */
   proc buffer.copyout(it:buffer_iterator, ref value: ?T):buffer_iterator throws where isNumericType(T) {
     var ret:buffer_iterator;
-    var err:syserr = ENOERR;
+    var err:errorCode = ENOERR;
     ret.home = this.home;
     on this.home {
       var end:buffer_iterator = it;
@@ -680,7 +680,7 @@ module Buffers {
   pragma "no doc"
   proc buffer.copyout(it:buffer_iterator, ref value: string):buffer_iterator throws {
     var ret:buffer_iterator;
-    var err:syserr = ENOERR;
+    var err:errorCode = ENOERR;
     ret.home = this.home;
     on this.home {
       var start = it;
@@ -708,8 +708,8 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyout(it:buffer_iterator, ref value, out error:syserr):buffer_iterator {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  proc buffer.copyout(it:buffer_iterator, ref value, out error:errorCode):buffer_iterator {
+    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
     var ret: buffer_iterator;
     try {
       ret = this.copyout(it, value);
@@ -736,7 +736,7 @@ module Buffers {
   proc buffer.copyin(it:buffer_iterator, value: ?T): buffer_iterator
                      throws where isNumericType(T) {
     var ret:buffer_iterator;
-    var err:syserr = ENOERR;
+    var err:errorCode = ENOERR;
     ret.home = this.home;
     on this.home {
       //writeln("iterator on way in");
@@ -760,7 +760,7 @@ module Buffers {
   pragma "no doc"
   proc buffer.copyin(it:buffer_iterator, value: string):buffer_iterator throws {
     var ret:buffer_iterator;
-    var err:syserr = ENOERR;
+    var err:errorCode = ENOERR;
     ret.home = this.home;
     on this.home {
       var start = it;
@@ -787,8 +787,8 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyin(it:buffer_iterator, value, out error:syserr):buffer_iterator {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  proc buffer.copyin(it:buffer_iterator, value, out error:errorCode):buffer_iterator {
+    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
     var ret:buffer_iterator;
     try {
       ret = this.copyin(it, value);

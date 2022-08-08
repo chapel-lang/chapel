@@ -93,7 +93,7 @@
 module FileSystem {
 
   public use OS;
-  import SysBasic.{syserr, ENOERR};
+  import SysBasic.{ENOERR};
   use Path;
   use HaltWrappers;
   use CTypes;
@@ -185,9 +185,9 @@ private inline proc unescape(str: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc locale.chdir(name: string) throws {
-  extern proc chpl_fs_chdir(name: c_string):syserr;
+  extern proc chpl_fs_chdir(name: c_string):errorCode;
 
-  var err: syserr = ENOERR;
+  var err: errorCode = ENOERR;
   on this {
     err = chpl_fs_chdir(unescape(name).c_str());
   }
@@ -195,7 +195,7 @@ proc locale.chdir(name: string) throws {
 }
 
 pragma "no doc"
-proc locale.chdir(out error: syserr, name: string) {
+proc locale.chdir(out error: errorCode, name: string) {
   compilerWarning("This version of locale.chdir() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -226,14 +226,14 @@ proc locale.chdir(out error: syserr, name: string) {
                             permission to change the permissions
 */
 proc chmod(name: string, mode: int) throws {
-  extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
+  extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
 
   var err = chpl_fs_chmod(unescape(name).c_str(), mode);
   if err then try ioerror(err, "in chmod", name);
 }
 
 pragma "no doc"
-proc chmod(out error: syserr, name: string, mode: int) {
+proc chmod(out error: errorCode, name: string, mode: int) {
   compilerWarning("This version of chmod() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -261,14 +261,14 @@ proc chmod(out error: syserr, name: string, mode: int) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc chown(name: string, uid: int, gid: int) throws {
-  extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
+  extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):errorCode;
 
   var err = chpl_fs_chown(unescape(name).c_str(), uid:c_int, gid:c_int);
   if err then try ioerror(err, "in chown", name);
 }
 
 pragma "no doc"
-proc chown(out error: syserr, name: string, uid: int, gid: int) {
+proc chown(out error: errorCode, name: string, uid: int, gid: int) {
   compilerWarning("This version of chown() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -312,7 +312,7 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
   try {
     if (isDir(destFile)) {
       // destFile = joinPath(destFile, basename(src));
-      ioerror(EISDIR:syserr, "in copy(" + src + ", " + dest + ")");
+      ioerror(EISDIR:errorCode, "in copy(" + src + ", " + dest + ")");
 
       // Supporting a destination directory requires getting the basename from
       // the src (because we're using the same name) and joining it with the
@@ -327,7 +327,7 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
   try copyMode(src, destFile);
 
   if (metadata) {
-    extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): syserr;
+    extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): errorCode;
 
     // Copies the access time, and time of last modification.
     // Does not copy uid, gid, or mode
@@ -345,7 +345,7 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
 }
 
 pragma "no doc"
-proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) {
+proc copy(out error: errorCode, src: string, dest: string, metadata: bool = false) {
   compilerWarning("This version of copy() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -382,18 +382,18 @@ proc copyFile(src: string, dest: string) throws {
 
   if !(try exists(src)) then
     // Source didn't exist, we can't copy it.
-    try ioerror(ENOENT:syserr, "in copyFile(" + src + ", " + dest + ")");
+    try ioerror(ENOENT:errorCode, "in copyFile(" + src + ", " + dest + ")");
 
   try {
     if (isDir(src) || isDir(dest)) {
       // If the source is a directory, the user has made a mistake, so return
       // an error.  The same is true if the destination is a directory.
-      ioerror(EISDIR:syserr, "in copyFile(" + src + ", " + dest + ")");
+      ioerror(EISDIR:errorCode, "in copyFile(" + src + ", " + dest + ")");
     }
 
     if (sameFile(src, dest)) {
       // Check if the files are the same, error if yes
-      try ioerror(EINVAL:syserr, "in copyFile(" + src + ", " + dest + ")");
+      try ioerror(EINVAL:errorCode, "in copyFile(" + src + ", " + dest + ")");
     }
   } catch e: FileNotFoundError {
     // We don't care if dest did not exist before, we'll create or overwrite
@@ -458,7 +458,7 @@ proc copyFile(src: string, dest: string) throws {
 }
 
 pragma "no doc"
-proc copyFile(out error: syserr, src: string, dest: string) {
+proc copyFile(out error: errorCode, src: string, dest: string) {
   compilerWarning("This version of copyFile() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -496,8 +496,8 @@ proc copyMode(src: string, dest: string) throws {
 }
 
 pragma "no doc"
-proc copyMode(out error: syserr, src: string, dest: string) {
-  var err: syserr = ENOERR;
+proc copyMode(out error: errorCode, src: string, dest: string) {
+  var err: errorCode = ENOERR;
   try {
     copyMode(src, dest);
   } catch e: SystemError {
@@ -534,11 +534,11 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
   var expectedErrorCases = try exists(dest);
   if (expectedErrorCases) then
     // dest exists.  That's not ideal.
-    try ioerror(EEXIST:syserr, "in copyTree(" + src + ", " + dest + ")");
+    try ioerror(EEXIST:errorCode, "in copyTree(" + src + ", " + dest + ")");
 
   expectedErrorCases = !(try isDir(src));
   if (expectedErrorCases) then
-    try ioerror(ENOTDIR:syserr, "in copyTree(" + src + ", " + dest + ")");
+    try ioerror(ENOTDIR:errorCode, "in copyTree(" + src + ", " + dest + ")");
 
   var srcPath = try realPath(src);
   try copyTreeHelper(srcPath, dest, copySymbolically);
@@ -580,7 +580,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
 }
 
 pragma "no doc"
-proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
+proc copyTree(out error: errorCode, src: string, dest: string, copySymbolically: bool=false) {
   compilerWarning("This version of copyTree() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -606,10 +606,10 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc locale.cwd(): string throws {
-  extern proc chpl_fs_cwd(ref working_dir:c_string):syserr;
+  extern proc chpl_fs_cwd(ref working_dir:c_string):errorCode;
 
   var ret:string;
-  var err: syserr = ENOERR;
+  var err: errorCode = ENOERR;
   on this {
     var tmp:c_string;
     // c_strings can't cross on statements.
@@ -625,7 +625,7 @@ proc locale.cwd(): string throws {
 }
 
 pragma "no doc"
-proc locale.cwd(out error: syserr): string {
+proc locale.cwd(out error: errorCode): string {
   compilerWarning("This version of locale.cwd() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -652,7 +652,7 @@ proc locale.cwd(out error: syserr): string {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc exists(name: string): bool throws {
-  extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
+  extern proc chpl_fs_exists(ref result:c_int, name: c_string): errorCode;
 
   if (name.isEmpty()) {
     // chpl_fs_exists uses stat to determine if a file exists, which throws an
@@ -668,7 +668,7 @@ proc exists(name: string): bool throws {
 }
 
 pragma "no doc"
-proc exists(out error: syserr, name: string): bool {
+proc exists(out error: errorCode, name: string): bool {
   compilerWarning("This version of exists() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -739,7 +739,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getGID(name: string): int throws {
-  extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
+  extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): errorCode;
 
   var result: c_int;
   var err = chpl_fs_get_gid(result, unescape(name).c_str());
@@ -748,7 +748,7 @@ proc getGID(name: string): int throws {
 }
 
 pragma "no doc"
-proc getGID(out error: syserr, name: string): int {
+proc getGID(out error: errorCode, name: string): int {
   compilerWarning("This version of getGID() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -775,7 +775,7 @@ proc getGID(out error: syserr, name: string): int {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getMode(name: string): int throws {
-  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
 
   var ret:c_int;
   var err = chpl_fs_viewmode(ret, unescape(name).c_str());
@@ -784,7 +784,7 @@ proc getMode(name: string): int throws {
 }
 
 pragma "no doc"
-proc getMode(out error: syserr, name: string): int {
+proc getMode(out error: errorCode, name: string): int {
   compilerWarning("This version of getMode() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -808,7 +808,7 @@ proc getMode(out error: syserr, name: string): int {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getFileSize(name: string): int throws {
-  extern proc chpl_fs_get_size(ref result: int, filename: c_string):syserr;
+  extern proc chpl_fs_get_size(ref result: int, filename: c_string):errorCode;
 
   var result: int;
   var err = chpl_fs_get_size(result, unescape(name).c_str());
@@ -817,7 +817,7 @@ proc getFileSize(name: string): int throws {
 }
 
 pragma "no doc"
-proc getFileSize(out error: syserr, name: string): int {
+proc getFileSize(out error: errorCode, name: string): int {
   compilerWarning("This version of getFileSize() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -842,7 +842,7 @@ proc getFileSize(out error: syserr, name: string): int {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getUID(name: string): int throws {
-  extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
+  extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): errorCode;
 
   var result: c_int;
   var err = chpl_fs_get_uid(result, unescape(name).c_str());
@@ -851,7 +851,7 @@ proc getUID(name: string): int throws {
 }
 
 pragma "no doc"
-proc getUID(out error: syserr, name: string): int {
+proc getUID(out error: errorCode, name: string): int {
   compilerWarning("This version of getUID() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1016,7 +1016,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
                         to a valid file or directory.
 */
 proc isDir(name:string):bool throws {
-  extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
+  extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):errorCode;
 
   var ret:c_int;
   var doesExist = try exists(name);
@@ -1028,7 +1028,7 @@ proc isDir(name:string):bool throws {
 }
 
 pragma "no doc"
-proc isDir(out error:syserr, name:string):bool {
+proc isDir(out error:errorCode, name:string):bool {
   compilerWarning("This version of isDir() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1055,7 +1055,7 @@ proc isDir(out error:syserr, name:string):bool {
                         to a valid file or directory.
 */
 proc isFile(name:string):bool throws {
-  extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
+  extern proc chpl_fs_is_file(ref result:c_int, name: c_string):errorCode;
 
   var ret:c_int;
   var doesExist = try exists(name);
@@ -1067,7 +1067,7 @@ proc isFile(name:string):bool throws {
 }
 
 pragma "no doc"
-proc isFile(out error:syserr, name:string):bool {
+proc isFile(out error:errorCode, name:string):bool {
   compilerWarning("This version of isFile() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1095,7 +1095,7 @@ proc isFile(out error:syserr, name:string):bool {
                         to a valid file or directory.
 */
 proc isLink(name: string): bool throws {
-  extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
+  extern proc chpl_fs_is_link(ref result:c_int, name: c_string): errorCode;
 
   if (name.isEmpty()) {
     // chpl_fs_is_link uses lstat to determine if a path is a link, which throws
@@ -1111,7 +1111,7 @@ proc isLink(name: string): bool throws {
 }
 
 pragma "no doc"
-proc isLink(out error:syserr, name: string): bool {
+proc isLink(out error:errorCode, name: string): bool {
   compilerWarning("This version of isLink() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1139,7 +1139,7 @@ proc isLink(out error:syserr, name: string): bool {
 */
 proc isMount(name: string): bool throws {
 
-  extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
+  extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): errorCode;
 
   var doesExist = try exists(name);
   if !doesExist then return false;
@@ -1155,7 +1155,7 @@ proc isMount(name: string): bool throws {
 }
 
 pragma "no doc"
-proc isMount(out error:syserr, name: string): bool {
+proc isMount(out error:errorCode, name: string): bool {
   compilerWarning("This version of isMount() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1277,17 +1277,17 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
-  extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
+  extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):errorCode;
 
   if name.isEmpty() then
-    try ioerror(ENOENT:syserr, "mkdir called with illegal path: '" + name + "'");
+    try ioerror(ENOENT:errorCode, "mkdir called with illegal path: '" + name + "'");
 
   var err = chpl_fs_mkdir(unescape(name).c_str(), mode, parents);
   if err then try ioerror(err, "in mkdir", name);
 }
 
 pragma "no doc"
-proc mkdir(out error: syserr, name: string, mode: int = 0o777,
+proc mkdir(out error: errorCode, name: string, mode: int = 0o777,
            parents: bool=false) {
   compilerWarning("This version of isDir() is deprecated; " +
                   "please switch to a throwing version");
@@ -1328,7 +1328,7 @@ proc moveDir(src: string, dest: string) throws {
       // dest is a file, we can't move src within it!
       // Note: Python gives EEXIST in this case, but I think ENOTDIR is
       // clearer.
-      try ioerror(ENOTDIR:syserr, "in moveDir(" + src + ", " + dest + ")");
+      try ioerror(ENOTDIR:errorCode, "in moveDir(" + src + ", " + dest + ")");
     } else if (try isDir(dest)) {
       if (try sameFile(src, dest)) {
         // Python's behavior when calling move over the same directory for
@@ -1339,13 +1339,13 @@ proc moveDir(src: string, dest: string) throws {
       } else {
         // dest is a directory, we'll copy src inside it
         // NOT YET SUPPORTED.  Requires basename and joinPath
-        try ioerror(EISDIR:syserr, "unsupported operation in moveDir(" + src + ", " + dest + ")");
+        try ioerror(EISDIR:errorCode, "unsupported operation in moveDir(" + src + ", " + dest + ")");
       }
     } else {
       // What we've been provided is both not a file and not a directory.  Given
       // the expected behavior of isFile and isDir when it comes to symlinks,
       // I'm not sure how this case would arise.
-      try ioerror(ENOTDIR:syserr, "unsupported operation in moveDir(" + src + ", " + dest + ")");
+      try ioerror(ENOTDIR:errorCode, "unsupported operation in moveDir(" + src + ", " + dest + ")");
     }
   } else {
     try copyTree(src, dest, true);
@@ -1354,7 +1354,7 @@ proc moveDir(src: string, dest: string) throws {
 }
 
 pragma "no doc"
-proc moveDir(out error: syserr, src: string, dest: string) {
+proc moveDir(out error: errorCode, src: string, dest: string) {
   compilerWarning("This version of moveDir() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1379,7 +1379,7 @@ proc moveDir(out error: syserr, src: string, dest: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc rename(oldname: string, newname: string) throws {
-  extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
+  extern proc chpl_fs_rename(oldname: c_string, newname: c_string):errorCode;
 
   var err = chpl_fs_rename(unescape(oldname).c_str(),
                            unescape(newname).c_str());
@@ -1387,7 +1387,7 @@ proc rename(oldname: string, newname: string) throws {
 }
 
 pragma "no doc"
-proc rename(out error: syserr, oldname, newname: string) {
+proc rename(out error: errorCode, oldname, newname: string) {
   compilerWarning("This version of rename() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1408,14 +1408,14 @@ proc rename(out error: syserr, oldname, newname: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc remove(name: string) throws {
-  extern proc chpl_fs_remove(name: c_string):syserr;
+  extern proc chpl_fs_remove(name: c_string):errorCode;
 
   var err = chpl_fs_remove(unescape(name).c_str());
   if err then try ioerror(err, "in remove", name);
 }
 
 pragma "no doc"
-proc remove(out error: syserr, name: string) {
+proc remove(out error: errorCode, name: string) {
   try {
     remove(name);
   } catch e: SystemError {
@@ -1438,11 +1438,11 @@ proc remove(out error: syserr, name: string) {
 proc rmTree(root: string) throws {
   // root doesn't exist.  We can't remove something that isn't there
   var rootExists = try exists(root);
-  if !rootExists then try ioerror(ENOENT:syserr, "in rmTree(" + root + ")");
+  if !rootExists then try ioerror(ENOENT:errorCode, "in rmTree(" + root + ")");
 
   // We need it to be a directory!
   var rootIsDir = try isDir(root);
-  if !rootIsDir then try ioerror(ENOTDIR:syserr, "in rmTree(" + root + ")");
+  if !rootIsDir then try ioerror(ENOTDIR:errorCode, "in rmTree(" + root + ")");
 
   var rootPath = try realPath(root);
   try rmTreeHelper(rootPath);
@@ -1470,7 +1470,7 @@ private proc rmTreeHelper(root: string) throws {
 }
 
 pragma "no doc"
-proc rmTree(out error: syserr, root: string) {
+proc rmTree(out error: errorCode, root: string) {
   compilerWarning("This version of rmTree() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1500,7 +1500,7 @@ proc rmTree(out error: syserr, root: string) {
 */
 proc sameFile(file1: string, file2: string): bool throws {
   extern proc chpl_fs_samefile_string(ref ret: c_int,
-                                      file1: c_string, file2: c_string): syserr;
+                                      file1: c_string, file2: c_string): errorCode;
 
   var ret:c_int;
   var err = chpl_fs_samefile_string(ret, unescape(file1).c_str(),
@@ -1510,7 +1510,7 @@ proc sameFile(file1: string, file2: string): bool throws {
 }
 
 pragma "no doc"
-proc sameFile(out error: syserr, file1: string, file2: string): bool {
+proc sameFile(out error: errorCode, file1: string, file2: string): bool {
   compilerWarning("This version of sameFile() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1542,7 +1542,7 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
 */
 proc sameFile(file1: file, file2: file): bool throws {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
-                               file2: qio_file_ptr_t): syserr;
+                               file2: qio_file_ptr_t): errorCode;
 
   // If one of the files references a null file, propagate to avoid a segfault.
   try {
@@ -1558,7 +1558,7 @@ proc sameFile(file1: file, file2: file): bool throws {
 }
 
 pragma "no doc"
-proc sameFile(out error: syserr, file1: file, file2: file): bool {
+proc sameFile(out error: errorCode, file1: file, file2: file): bool {
   compilerWarning("This version of someFile() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -1581,7 +1581,7 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc symlink(oldName: string, newName: string) throws {
-  extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
+  extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): errorCode;
 
   var err = chpl_fs_symlink(unescape(oldName).c_str(),
                             unescape(newName).c_str());
@@ -1589,8 +1589,8 @@ proc symlink(oldName: string, newName: string) throws {
 }
 
 pragma "no doc"
-proc symlink(out error: syserr, oldName: string, newName: string) {
-  var err:syserr = ENOERR;
+proc symlink(out error: errorCode, oldName: string, newName: string) {
+  var err:errorCode = ENOERR;
   compilerWarning("This version of symlink() is deprecated; " +
                   "please switch to a throwing version");
   try {
