@@ -358,8 +358,8 @@ struct Resolver {
   bool enter(const uast::New* node);
   void exit(const uast::New* node);
 
-  bool enter(const uast::For* loop);
-  void exit(const uast::For* loop);
+  bool enter(const uast::IndexableLoop* loop);
+  void exit(const uast::IndexableLoop* loop);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);
