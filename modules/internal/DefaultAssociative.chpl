@@ -109,10 +109,9 @@ module DefaultAssociative {
       const binary = f.binary();
 
       if binary {
-        var numIndices: int = dsiNumIndices;
-        f <~> numIndices;
+        f.write(dsiNumIndices);
         for idx in this {
-          f <~> idx;
+          f.write(idx);
         }
       } else {
         var first = true;
@@ -122,7 +121,7 @@ module DefaultAssociative {
             first = false;
           else
             f <~> new ioLiteral(", ");
-          f <~> idx;
+          f.write(idx);
         }
         f <~> new ioLiteral("}");
       }
@@ -134,11 +133,9 @@ module DefaultAssociative {
       dsiClear();
 
       if binary {
-        var numIndices: int;
-        f <~> numIndices;
+        var numIndices: int = f.read(int);
         for i in 1..numIndices {
-          var idx: idxType;
-          f <~> idx;
+          var idx: idxType = f.read(idxType);
           dsiAdd(idx);
         }
       } else {
@@ -163,8 +160,7 @@ module DefaultAssociative {
           first = false;
 
           // Read an index.
-          var idx: idxType;
-          f <~> idx;
+          var idx: idxType = f.read(idxType);
           dsiAdd(idx);
         }
       }
@@ -665,11 +661,12 @@ module DefaultAssociative {
         else if isjson || ischpl then f <~> new ioLiteral(", ");
 
         if f.writing && ischpl {
-          f <~> key;
+          f.write(key);
           f <~> new ioLiteral(" => ");
         }
 
-        f <~> val;
+        if f.writing then f.write(val);
+        else val = f.read(eltType);
       }
 
       if printBraces then f <~> new ioLiteral("]");
@@ -707,12 +704,11 @@ module DefaultAssociative {
         }
 
         // Read a key.
-        var key: idxType;
-        f <~> key;
+        var key: idxType = f.read(idxType);
         f <~> new ioLiteral("=>");
 
         // Read the value.
-        f <~> dsiAccess(key);
+        dsiAccess(key) = f.read(eltType);
       }
 
       if !readEnd then f <~> closedBracket;
@@ -868,11 +864,12 @@ module DefaultAssociative {
       else if isjson || ischpl then f <~> new ioLiteral(", ");
 
       if f.writing && ischpl {
-        f <~> key;
+        f.write(key);
         f <~> new ioLiteral(" => ");
       }
 
-      f <~> arr.dsiAccess(key);
+      if f.writing then f.write(arr.dsiAccess(key));
+      else arr.dsiAccess(key) = f.read(arr.eltType);
     }
 
     if isjson || ischpl then f <~> new ioLiteral("]");
