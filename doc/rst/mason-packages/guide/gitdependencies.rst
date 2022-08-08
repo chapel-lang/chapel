@@ -36,3 +36,13 @@ If you would like to lock in a specific revision that should not be updated, a s
     HelloWorld = { git = "https://github.com/bmcdonald3/HelloWorld", rev = "43d462682851dd2fed6edf123e8fb699db124183" }
                 
 Now, when running ``mason build`` or ``mason update``, the latest changes will be fetched from the repository, but the commit specified by ``rev`` will always be checked out and never changed by mason.
+
+The examples above have used the inline subtable syntax to format the git dependency. Git dependencies can also be specified with subtable syntax and mason commands that modify the ``Mason.toml`` file may reformat dependencies to be of this format:
+
+.. code-block:: text
+
+
+    [dependencies.HelloWorld]
+    git = "https://github.com/bmcdonald3/HelloWorld"
+
+
