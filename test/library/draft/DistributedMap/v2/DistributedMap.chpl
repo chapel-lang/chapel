@@ -305,9 +305,46 @@ module DistributedMap {
       compilerError("unimplemented");
     }
 
-    // TODO: impl
+    // TODO: should this encode the locale hash in some way?
+    /*
+      Writes the contents of this map to a channel. The format looks like:
+
+        .. code-block:: chapel
+
+           {k1: v1, k2: v2, .... , kn: vn}
+
+      :arg ch: A channel to write to.
+    */
     proc writeThis(ch: channel) throws {
-      compilerError("unimplemented");
+      for i in locDom {
+        locks[i].lock();
+      }
+
+      var first = true;
+      ch.write("{");
+
+      for i in locDom {
+        on i {
+          for slot in tables[i].allSlots() {
+            if tables[i].isSlotFull(slot) {
+              if first {
+                first = false;
+              } else {
+                ch.write(", ");
+              }
+
+              ch.write(tables[i].table[slot].key, ": ",
+                       tables[i].table[slot].val);
+            }
+          }
+        }
+      }
+
+      ch.write("}");
+
+      for i in locDom {
+        locks[i].unlock();
+      }
     }
 
     // NOTE: Locks on the locale, so may be slower than we'd like?
