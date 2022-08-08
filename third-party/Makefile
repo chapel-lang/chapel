@@ -131,17 +131,28 @@ $(LIBUNWIND_INSTALL_DIR): $(LIBUNWIND_DEPEND)
 	rm -rf $(LIBUNWIND_INSTALL_DIR) && rm -rf $(LIBUNWIND_BUILD_DIR)
 	cd libunwind && $(MAKE)
 
-ifeq ($(CHPL_MAKE_LLVM), bundled)
+ifeq ($(CHPL_MAKE_LLVM), unset)
+# Print the error about needing to set CHPL_LLVM
+llvm: FORCE
+	cd llvm && $(MAKE) unset
+
+else ifeq ($(CHPL_MAKE_LLVM), bundled)
+# build the bundled LLVM
 llvm: $(LLVM_INSTALL_DIR)
 $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
 	rm -rf $(LLVM_INSTALL_DIR)
 	cd llvm && $(MAKE) llvm
+
 else ifeq ($(CHPL_MAKE_LLVM_SUPPORT), bundled)
+# build the bundled LLVM support library
 llvm: $(LLVM_SUPPORT_INSTALL_DIR)
 $(LLVM_SUPPORT_INSTALL_DIR): $(LLVM_DEPEND)
 	rm -rf $(LLVM_SUPPORT_INSTALL_DIR)
 	cd llvm && $(MAKE) llvm-support
+
 else
+
+# nothing to do for CHPL_LLVM=system / CHPL_LLVM_SUPPORT=system
 llvm:
 endif
 
