@@ -52,7 +52,7 @@ def is_included_llvm_built(llvm_val):
     llvm_subdir = None
     if llvm_val == 'bundled':
         llvm_subdir = get_bundled_llvm_dir()
-    elif llvm_val == 'none':
+    else:
         llvm_subdir = get_bundled_llvm_support_only_dir()
 
     llvm_header = os.path.join(llvm_subdir, 'include', 'llvm',
@@ -770,6 +770,10 @@ def get_host_compile_args():
     llvm_support_val = get_llvm_support()
     llvm_config = get_llvm_config()
 
+    # quit early if the llvm value is unset
+    if llvm_val == 'unset':
+        return (bundled, system)
+
     if llvm_support_val == 'system':
         # On Mac OS X with Homebrew, apply a workaround for issue #19217.
         # This avoids finding headers in the libc++ installed by llvm@12 e.g.
@@ -839,6 +843,10 @@ def get_host_link_args():
                        'coverage',
                        'coroutines',
                        'lto']
+
+    # quit early if the llvm value is unset
+    if llvm_val == 'unset':
+        return (bundled, system)
 
     # only use LLVMSupport for CHPL_LLVM=none
     if llvm_val == 'none':
