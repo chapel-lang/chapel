@@ -511,7 +511,7 @@ flattened ``TaskErrors`` error.
         } catch errors: TaskErrors { // not nested
           // all of e will be of runtime type DemoError in this example
           for e in errors {
-            writeln("Caught task error e ", e.message());
+            writeln("Caught task error e ", e!.message());
           }
         }
       }
@@ -536,7 +536,7 @@ flattened ``TaskErrors`` error.
           writeln("after cobegin block");
         } catch errors: TaskErrors {
           for e in errors {
-            writeln("Caught task error e ", e.message());
+            writeln("Caught task error e ", e!.message());
           }
         }
       }
@@ -567,7 +567,7 @@ may execute serially within a single task, it will always throw a
           writeln("after forall block");
         } catch errors: TaskErrors {
           for e in errors {
-            writeln("Caught task error e ", e.message());
+            writeln("Caught task error e ", e!.message());
           }
         }
       }
