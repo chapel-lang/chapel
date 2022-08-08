@@ -188,6 +188,7 @@ module DistributedMap {
       for key in m.keys() {
         var loc: int = this.getLocaleForKey(key);
 
+        // TODO: should there be an on statement here?
         var (_, slot) = tables[loc].findAvailableSlot(key);
         var (_, slot2) = m.table.findAvailableSlot(key);
         tables[loc].fillSlot(slot, key, m.table.table[slot2].val);
@@ -217,6 +218,7 @@ module DistributedMap {
 
       // TODO: should we lock the provided map before doing this?  Or just the
       // locale we find each key on?
+      // TODO: should there be an on statement here?
       for key in m.keys() {
         var loc1: int = this.getLocaleForKey(key);
         var loc2: int = m.getLocaleForKey(key);
