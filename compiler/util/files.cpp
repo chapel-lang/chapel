@@ -307,6 +307,17 @@ void closeInputFile(FILE* infile) {
 
 static const char** inputFilenames = NULL;
 
+std::vector<std::string> getChplFilenames() {
+  std::vector<std::string> ret;
+  int i = 0;
+  while (auto fname = nthFilename(i++)) {
+    if (isChplSource(fname)) {
+      ret.push_back(std::string(fname));
+    }
+  }
+  return ret;
+}
+
 
 static bool checkSuffix(const char* filename, const char* suffix) {
   const char* dot = strrchr(filename, '.');
@@ -385,7 +396,9 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     }
   }
   inputFilenames[cursor] = NULL;
+}
 
+void assertSourceFilesFound() {
   if (!foundChplSource)
     USR_FATAL("Command line contains no .chpl source files");
 }

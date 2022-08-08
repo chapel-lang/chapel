@@ -1838,6 +1838,8 @@ int main(int argc, char* argv[]) {
       chpl_module_path = envvarpath;
     }
 
+    addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
+
     chpl::parsing::setupModuleSearchPaths(gContext,
                                           CHPL_HOME,
                                           fMinimalModules,
@@ -1847,7 +1849,8 @@ int main(int argc, char* argv[]) {
                                           CHPL_COMM,
                                           CHPL_SYS_MODULES_SUBDIR,
                                           chpl_module_path,
-                                          cmdLineModPaths);
+                                          cmdLineModPaths,
+                                          getChplFilenames());
 
     postprocess_args();
 
@@ -1882,7 +1885,7 @@ int main(int argc, char* argv[]) {
   if (fRunlldb)
     runCompilerInLLDB(argc, argv);
 
-  addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
+  assertSourceFilesFound();
 
   runPasses(tracker, fDocs);
 
