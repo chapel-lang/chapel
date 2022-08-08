@@ -1,5 +1,7 @@
 :title: Mason Guide: *Testing*
 
+.. _testing-with-mason:
+        
 Testing your Package
 ~~~~~~~~~~~~~~~~~~~~
 

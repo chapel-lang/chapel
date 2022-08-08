@@ -1,5 +1,7 @@
 :title: Mason Guide: *Hello World*
 
+.. _using-a-package:
+        
 Using a Mason Package
 =====================
 
@@ -19,9 +21,9 @@ while keeping our directory structure nice and clean.
 
   .. code-block:: sh
 
-    mkdir HelloPackage
+
+    mason new HelloPackage
     cd HelloPackage
-    mason init
 
 At this point, mason will start prompting you for some basic information about
 your package. Since this package is just for getting started, all that you need
@@ -44,7 +46,7 @@ package. Let's signal to mason that we would like to install that package:
 
   .. code-block:: sh
 
-    mason add HelloWorld@1.0.0
+    mason add HelloWorld@0.1.0
 
 This will add the ``HelloWorld`` package to our ``Mason.toml`` file as a
 dependency (you can open the ``Mason.toml`` file to see the change).
