@@ -2,7 +2,7 @@ config const n = 10;
 
 config const alpha = 10;
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A: [1..n] int;
   var B: [1..n] int;
   var C: [1..n] int;

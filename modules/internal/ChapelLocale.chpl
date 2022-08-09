@@ -437,7 +437,7 @@ module ChapelLocale {
     }
 
     // Return array of gpu sublocale
-    proc gpus {
+    proc gpus const ref {
       return gpusImpl();
     }
 

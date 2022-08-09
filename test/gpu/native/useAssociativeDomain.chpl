@@ -5,7 +5,7 @@ use GPUDiagnostics;
 startGPUDiagnostics();
 
 var Days : domain(int) = {0, 10, 20};
-on here.getChild(1) {
+on here.gpus[0] {
   var A : [Days] real;
 
   // NOTE: Currently this does not generate a kernel launch
