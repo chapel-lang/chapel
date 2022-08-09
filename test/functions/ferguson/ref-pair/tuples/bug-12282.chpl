@@ -1,7 +1,7 @@
 record item {
   var data: int = 0;
 
-  proc writeThis(f) throws { f <~> data; }
+  proc writeThis(f) throws { f.write(data); }
 }
 
 record itemset {

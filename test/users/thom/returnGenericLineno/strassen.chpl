@@ -16,7 +16,7 @@ module Strassen
         }
         override proc writeThis(w) throws
         {
-          w <~> "StrassenFactory " <~> n;
+          w.write("StrassenFactory ", n);
         }
 
     }
@@ -26,7 +26,7 @@ module Strassen
         var n;
         proc writeThis(w) throws
         {
-          w <~> "Strassen " <~> n;
+          w.write("Strassen ", n);
         }
         override proc runKernel()
         {

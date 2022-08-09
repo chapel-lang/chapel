@@ -100,9 +100,9 @@ proc MyRecord.writeThis(f) throws {
 }
 
 proc MyRecord.readWriteHelper(f) throws {
-  f <~> i;
+  if f.writing then f.write(i); else i = f.read(int);
   f <~> new ioLiteral("\t");
-  f <~> r;
+  if f.writing then f.write(r); else r = f.read(real);
   f <~> new ioLiteral("\t");
 
   // When doing the string I/O, we need to specify that we'd like
@@ -111,7 +111,7 @@ proc MyRecord.readWriteHelper(f) throws {
   // on the caller setting the string formatting with the channel's
   // style.
   // In the future, we hope to allow readf in this situation. 
-  f <~> s;
+  if f.writing then f.write(s); else s = f.read(string);
 
   f <~> new ioLiteral("\n");
 }

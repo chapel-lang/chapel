@@ -14,7 +14,7 @@ module FileHashing {
     proc writeThis(f) throws {
       for component in hashVal {
         var s = try! "%08xu".format(component);
-        f <~> s;
+        f.write(s);
       }
     }
 

@@ -13,9 +13,9 @@ class mything {
   }
 
   proc readWriteHelper(rw) throws {
-    rw <~> x;
+    if rw.writing then rw.write(x); else x = rw.read(int);
     rw.readWriteLiteral(" ");
-    rw <~> y;
+    if rw.writing then rw.write(y); else y = rw.read(int);
     rw.readWriteNewline();
   }
 }

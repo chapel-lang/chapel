@@ -5,15 +5,15 @@ class mything {
   var y:int;
 
   proc readThis(r) throws {
-    r <~> x;
+    x = r.read(int);
     r <~> new ioLiteral(" ");
-    r <~> y;
+    y = r.read(int);
   }
 
   proc writeThis(w) throws {
-    w <~> x;
+    w.write(x);
     w <~> new ioLiteral(" ");
-    w <~> y;
+    w.write(y);
   }
 
 }
