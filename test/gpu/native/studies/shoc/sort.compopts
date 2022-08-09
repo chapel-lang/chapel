@@ -1,1 +1,1 @@
-result.chpl --main-module=sort --no-checks
+result.chpl --main-module=sort
