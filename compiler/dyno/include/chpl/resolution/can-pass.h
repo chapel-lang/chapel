@@ -174,9 +174,9 @@ CanPassResult canPass(Context* context,
 }
 
 /**
-  Given a list of types (e.g., the types of various return statements
+  Given a (non-empty) list of types (e.g., the types of various return statements
   in a function), determine the type, if any, that can be used to represent
-  all of them.
+  all of them. If such a type cannot be found, returns an empty QualifiedType.
 
   If useRequiredKind=true is specified, the requiredKind argument is treated
   as a strict constraint on the kinds of the given types. For instance,

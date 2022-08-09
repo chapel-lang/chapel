@@ -169,7 +169,7 @@ static void test4() {
       { "1" },
       { "2" }
   }, [](auto& qt) {
-    assert(qt.isUnknown());
+    assert(qt.isErroneousType());
   });
 }
 
@@ -191,7 +191,7 @@ static void test6() {
       { "", "int(32)" },
       { "", "string" }
   }, [](auto& qt) {
-    assert(qt.isUnknown());
+    assert(qt.isErroneousType());
   });
 }
 
@@ -238,7 +238,7 @@ static void test10() {
       { "", "int", /* generic, actual is int */ true },
       { "", "string" }
   }, [](auto& qt) {
-    assert(qt.isUnknown());
+    assert(qt.isErroneousType());
   });
 }
 
@@ -289,7 +289,7 @@ static void test13() {
       { "int" },
       { "bool" },
   }, [](auto& qt) {
-    assert(qt.kind() == QualifiedType::UNKNOWN);
+    assert(qt.isErroneousType());
   });
 }
 
@@ -299,13 +299,13 @@ static void test14() {
       { "int" },
       { "1" },
   }, [](auto& qt) {
-    assert(qt.kind() == QualifiedType::UNKNOWN);
+    assert(qt.isErroneousType());
   });
   testProgram("", "", {
       { "int" },
       { "1" },
   }, [](auto& qt) {
-    assert(qt.kind() == QualifiedType::UNKNOWN);
+    assert(qt.isErroneousType());
   });
 }
 
@@ -315,7 +315,7 @@ static void test15() {
       { "1" },
       { "2" },
   }, [](auto& qt) {
-    assert(qt.kind() == QualifiedType::UNKNOWN);
+    assert(qt.isErroneousType());
   });
 }
 
