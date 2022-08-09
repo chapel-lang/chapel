@@ -37,7 +37,7 @@ static char _nlbuf[16];
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales) {
-  const int maxlargc = 9 + chpl_get_charset_env_nargs();
+  const int maxlargc = 9;
   char *largv[maxlargc];
 
   snprintf(_nlbuf, sizeof(_nlbuf), "%d", numLocales);
@@ -52,7 +52,6 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   largv[6] = (char *) "0";
   largv[7] = (char*) "-E";
   largv[8] = chpl_get_enviro_keys(',');
-  largc += chpl_get_charset_env_args(&largv[largc]);
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
