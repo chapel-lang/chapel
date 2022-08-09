@@ -105,8 +105,8 @@ module Version {
     uses ``param`` values to represent its components in order to
     support compile-time comparison of version numbers which in turn
     permits code to specialize to specific versions of Chapel.  When
-    printed or converted to a string, it is represented as ``version
-    major.minor.update (commit)``.
+    printed or converted to a string, it is represented as
+    ``major.minor.update (commit)``.
 
     Note that ordered comparisons between two :type:`sourceVersion`
     values that only differ in their ``commit`` values are not
