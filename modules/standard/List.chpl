@@ -1770,7 +1770,7 @@ module List {
 
       if isBinary {
         // How many elements should we read (for binary mode)?
-        var num = ch.read(int);
+        const num = ch.read(int);
         for i in 0..#num {
           pragma "no auto destroy"
           var elt: eltType = ch.read(eltType);

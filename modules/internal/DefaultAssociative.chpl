@@ -133,10 +133,9 @@ module DefaultAssociative {
       dsiClear();
 
       if binary {
-        var numIndices: int = f.read(int);
+        const numIndices: int = f.read(int);
         for i in 1..numIndices {
-          var idx: idxType = f.read(idxType);
-          dsiAdd(idx);
+          dsiAdd(f.read(idxType));
         }
       } else {
         f <~> new ioLiteral("{");
@@ -160,8 +159,7 @@ module DefaultAssociative {
           first = false;
 
           // Read an index.
-          var idx: idxType = f.read(idxType);
-          dsiAdd(idx);
+          dsiAdd(f.read(idxType));
         }
       }
     }

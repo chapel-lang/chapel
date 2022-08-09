@@ -321,7 +321,7 @@ record LinkedList {
     const isChpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !isBinary;
 
     // How many elements should we read (for binary mode)?
-    var num : int = if isBinary then f.read(int) else 0;
+    const num : int = if isBinary then f.read(int) else 0;
 
     if isJson || isChpl then f <~> new ioLiteral("[");
 
@@ -368,8 +368,7 @@ record LinkedList {
         }
       }
 
-      var elt: eltType = f.read(eltType);
-      append(elt);
+      append(f.read(eltType));
       i += 1;
     }
 
