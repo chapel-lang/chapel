@@ -147,10 +147,10 @@ module Version {
   pragma "no doc"
   operator :(x: sourceVersion(?), type t: string) param {
     if (x.commit == "") then
-      return ("version " + x.major:string + "." + x.minor:string + "." +
+      return (x.major:string + "." + x.minor:string + "." +
               x.update:string);
     else
-      return ("version " + x.major:string + "." + x.minor:string + "." +
+      return (x.major:string + "." + x.minor:string + "." +
               x.update:string + " (" + x.commit + ")");
   }
 
