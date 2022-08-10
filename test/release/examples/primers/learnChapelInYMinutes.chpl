@@ -180,6 +180,12 @@ var old_that = thatInt;
 thisInt <=> thatInt; // Swap the values of thisInt and thatInt
 writeln((old_this == thatInt) && (old_that == thisInt));
 
+// The I/O operator ``<~>`` can also be used for reading or writing to a channel
+var numerator,denominator:int;
+stdout <~> "Enter a rational number:" <~> new ioNewline();
+stdin <~> numerator <~> new ioLiteral("/") <~> denominator;
+stdout <~> numerator <~> "/" <~> denominator <~> " ~= " <~> (numerator:real / denominator) <~> new ioNewline();
+
 // Operator overloads can also be defined, as we'll see with procedures.
 
 /*
