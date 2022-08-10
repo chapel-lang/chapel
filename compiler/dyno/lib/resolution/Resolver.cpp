@@ -2163,10 +2163,9 @@ void Resolver::resolveNewForRecord(const uast::New* node,
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
     auto managementStr = New::managementToString(node->management());
-    auto recordNameStr = recordType->name().c_str();
     context->error(node, "Cannot use new %s with record %s",
                          managementStr,
-                         recordNameStr);
+                         recordType->name().c_str());
   } else {
     auto qt = QualifiedType(QualifiedType::VAR, recordType);
     re.setType(qt);
