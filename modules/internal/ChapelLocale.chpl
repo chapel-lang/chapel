@@ -182,10 +182,7 @@ module ChapelLocale {
   // Locale methods we want to have show up in chpldoc start here:
 
   /*
-    Get the hostname of the hardware associated with this locale.
-
-    The behavior of this method does not differ for calls made from
-    sub-locales (Unlike :proc:`locale.name`).
+    Get the hostname of this locale.
 
     :returns: the hostname of the compute node associated with the locale
     :rtype: string
@@ -198,33 +195,28 @@ module ChapelLocale {
     Get the name of this locale.
 
     In general, this method returns the same string as :proc:`locale.hostname`;
-    however, it can differ when called on a sub-locale (such as a GPU),
-    or when the program is executed in an oversubscribed manner.
+    however, it can differ when the program is executed in an oversubscribed manner.
 
     The following table summarizes the various behaviors of this method (where
     {hostname} is the string returned by `here.hostname`, and {id} is the locale's
     unique integer ID):
 
   .. list-table::
-    :widths: 25 22 22
+    :widths: 25 25
     :header-rows: 1
 
     * - Configuration
-      - locale (`here.name`)
-      - sub-locale (`here.gpus[0].name`)
+      - `here.name`
     * - normal execution
       - {hostname}
-      - {hostname}-GPU0
-    * - oversubscribed execution
+    * - general oversubscribed execution
       - {hostname}
-      - {hostname}-GPU0
-    * - oversubscribed execution with gasnet `(*)`
+    * - oversubscribed execution with gasnet(*)
       - {hostname}-{id}
-      - {hostname}-{id}-GPU0
 
   .. note::
 
-    `(*)`: This behavior occurs when launching in an oversubscribed manner
+    (*)This behavior occurs when launching in an oversubscribed manner
     with `CHPL_COMM=gasnet` and one of the following configurations:
 
     - `CHPL_COMM_SUBSTRATE=udp` & `GASNET_SPAWNFN=L`
@@ -242,15 +234,7 @@ module ChapelLocale {
   /*
     Get the unique integer identifier for this locale.
 
-    When called on a sub-locale, this method returns the ID of the
-    parent locale, not the sub-locale. So, for example, the following
-    program prints true:
-
-  .. code-block:: chapel
-
-    writeln(here.id == here.gpus[0].id);
-
-  :returns: locale number, in the range ``0..numLocales-1``
+  :returns: index of this locale in the range ``0..numLocales-1``
   :rtype: int
 
   */
