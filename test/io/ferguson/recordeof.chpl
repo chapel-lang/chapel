@@ -20,7 +20,7 @@ proc MyRecord.writeThis(f) throws {
 }
 
 proc MyRecord.readWriteHelper(f) throws {
-  f <~> i;
+  if f.writing then f.write(i); else i = f.read(int);
   f <~> new ioLiteral("\n");
 }
 

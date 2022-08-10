@@ -1730,20 +1730,20 @@ module List {
 
       if isBinary {
         // Write the number of elements
-        ch <~> _size;
+        ch.write(_size);
       } else {
         ch <~> new ioLiteral("[");
       }
 
       for i in 0..(_size - 2) {
-        ch <~> _getRef(i);
+        ch.write(_getRef(i));
         if !isBinary {
           ch <~> new ioLiteral(", ");
         }
       }
 
       if _size > 0 then
-        ch <~> _getRef(_size-1);
+        ch.write(_getRef(_size-1));
 
       if !isBinary {
         ch <~> new ioLiteral("]");
@@ -1770,12 +1770,10 @@ module List {
 
       if isBinary {
         // How many elements should we read (for binary mode)?
-        var num = 0;
-        ch <~> num;
+        const num = ch.read(int);
         for i in 0..#num {
           pragma "no auto destroy"
-          var elt: eltType;
-          ch <~> elt;
+          var elt: eltType = ch.read(eltType);
           _appendByRef(elt);
         }
       } else {
@@ -1808,8 +1806,7 @@ module List {
 
           // read an element
           pragma "no auto destroy"
-          var elt: eltType;
-          ch <~> elt;
+          var elt: eltType = ch.read(eltType);
           _appendByRef(elt);
         }
 

@@ -283,7 +283,7 @@ record LinkedList {
 
     if binary {
       // Write the number of elements.
-      f <~> size;
+      f.write(size);
     }
     if isjson || ischpl {
       f <~> new ioLiteral("[");
@@ -297,7 +297,7 @@ record LinkedList {
         else if isjson || ischpl then f <~> new ioLiteral(", ");
       }
 
-      f <~> e;
+      f.write(e);
     }
 
     if isjson || ischpl {
@@ -321,9 +321,7 @@ record LinkedList {
     const isChpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !isBinary;
 
     // How many elements should we read (for binary mode)?
-    var num = 0;
-
-    if isBinary then f <~> num;
+    const num : int = if isBinary then f.read(int) else 0;
 
     if isJson || isChpl then f <~> new ioLiteral("[");
 
@@ -370,9 +368,7 @@ record LinkedList {
         }
       }
 
-      var elt: eltType;
-      f <~> elt;
-      append(elt);
+      append(f.read(eltType));
       i += 1;
     }
 

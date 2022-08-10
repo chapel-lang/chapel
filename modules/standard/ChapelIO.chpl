@@ -76,7 +76,7 @@ resolution error if the record NoRead is read.
     var x: int;
     var y: int;
     proc writeThis(f) throws {
-      f <~> "hello";
+      f.write("hello");
     }
     // Note that no readThis function will be generated.
   }
@@ -581,26 +581,23 @@ module ChapelIO {
   pragma "no doc"
   proc locale.writeThis(f) throws {
     // FIXME this doesn't resolve without `this`
-    f <~> this._instance;
+    f.write(this._instance);
   }
 
   pragma "no doc"
   proc _ddata.writeThis(f) throws {
     compilerWarning("printing _ddata class");
-    f <~> "<_ddata class cannot be printed>";
+    f.write("<_ddata class cannot be printed>");
   }
 
   pragma "no doc"
   proc chpl_taskID_t.writeThis(f) throws {
-    var tmp : uint(64) = this : uint(64);
-    f <~> (tmp);
+    f.write(this : uint(64));
   }
 
   pragma "no doc"
   proc chpl_taskID_t.readThis(f) throws {
-    var tmp : uint(64);
-    f <~> tmp;
-    this = tmp : chpl_taskID_t;
+    this = f.read(uint(64)) : chpl_taskID_t;
   }
 
   pragma "no doc"
@@ -643,19 +640,22 @@ module ChapelIO {
       end = new ioLiteral(")");
     }
 
+    proc helper(const ref arg) throws where f.writing { f.write(arg); }
+    proc helper(ref arg) throws where !f.writing { arg = f.read(arg.type); }
+
     if !binary {
       f <~> start;
     }
     if size > 1 {
-      f <~> this(0);
+      helper(this(0));
       for param i in 1..size-1 {
         if !binary {
           f <~> comma;
         }
-        f <~> this(i);
+        helper(this(i));
       }
     } else if size == 1 {
-      f <~> this(0);
+      helper(this(0));
       if !binary then
         f <~> comma1tup;
     } else {
@@ -679,41 +679,47 @@ module ChapelIO {
     }
 
     if hasLowBound() then
-      f <~> lowBound;
+      f.write(lowBound);
     f <~> new ioLiteral("..");
     if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
-        f <~> new ioLiteral("<") <~> lowBound;
+        f <~> new ioLiteral("<");
+        f.write(lowBound);
       } else {
-        f <~> highBound;
+        f.write(highBound);
       }
     }
-    if stride != 1 then
-      f <~> new ioLiteral(" by ") <~> stride;
+    if stride != 1 {
+      f <~> new ioLiteral(" by ");
+      f.write(stride);
+    }
 
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
-    if ! alignCheckRange.isNaturallyAligned() && aligned then
-      f <~> new ioLiteral(" align ") <~> chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride));
+    if ! alignCheckRange.isNaturallyAligned() && aligned {
+      f <~> new ioLiteral(" align ");
+      f.write(chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride)));
+    }
   }
 
   pragma "no doc"
   proc ref range.readThis(f) throws {
-    if hasLowBound() then f <~> _low;
+    if hasLowBound() then _low = f.read(_low.type);
 
     f <~> new ioLiteral("..");
 
-    if hasHighBound() then f <~> _high;
+    if hasHighBound() then _high = f.read(_high.type);
 
-    if stride != 1 then f <~> new ioLiteral(" by ") <~> stride;
+    if stride != 1 {
+      f <~> new ioLiteral(" by ");
+      stride = f.read(stride.type);
+    }
 
     try {
       f <~> new ioLiteral(" align ");
 
       if stridable {
-        var a: intIdxType;
-        f <~> a;
-        _alignment = a;
+        _alignment = f.read(intIdxType);
       } else {
         throw new owned
           BadFormatError("Range is not stridable, cannot store alignment");
@@ -728,7 +734,8 @@ module ChapelIO {
     // Most classes will define it like this:
     //      f <~> name;
     // but here it is defined thus for backward compatibility.
-    f <~> new ioLiteral("LOCALE") <~> chpl_id();
+    f <~> new ioLiteral("LOCALE");
+    f.write(chpl_id());
   }
 
   /* Errors can be printed out. In that event, they will
@@ -737,8 +744,7 @@ module ChapelIO {
   */
   pragma "no doc"
   override proc Error.writeThis(f) throws {
-    var description = chpl_describe_error(this);
-    f <~> description;
+    f.write(chpl_describe_error(this));
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */

@@ -572,29 +572,29 @@ module DefaultSparse {
 
   proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) throws {
     if (rank == 1) {
-      if printBrackets then f <~> "{";
+      if printBrackets then f.write("{");
       if (_nnz >= 1) {
-        f <~> _indices(0);
+        f.write(_indices(0));
         for i in 1.._nnz-1 {
-          f <~> " " <~> _indices(i);
+          f.write(" ", _indices(i));
         }
       }
-      if printBrackets then f <~> "}";
+      if printBrackets then f.write("}");
     } else {
-      if printBrackets then f <~> "{\n";
+      if printBrackets then f.write("{\n");
       if (_nnz >= 1) {
         var prevInd = _indices(0);
-        f <~> " " <~> prevInd;
+        f.write(" ", prevInd);
         for i in 1.._nnz-1 {
           if (prevInd(0) != _indices(i)(0)) {
-            f <~> "\n";
+            f.write("\n");
           }
           prevInd = _indices(i);
-          f <~> " " <~> prevInd;
+          f.write(" ", prevInd);
         }
-        f <~> "\n";
+        f.write("\n");
       }
-      if printBrackets then f <~> "}\n";
+      if printBrackets then f.write("}\n");
     }
   }
 
@@ -602,25 +602,25 @@ module DefaultSparse {
   proc DefaultSparseArr.dsiSerialWrite(f) throws {
     if (rank == 1) {
       if (dom._nnz >= 1) {
-        f <~> data(0);
+        f.write(data(0));
         for i in 1..dom._nnz-1 {
-          f <~> " " <~> data(i);
+          f.write(" ", data(i));
         }
       }
     } else {
       if (dom._nnz >= 1) {
         var prevInd = dom._indices(0);
-        f <~> data(0);
+        f.write(data(0));
         for i in 1..dom._nnz-1 {
           if (prevInd(0) != dom._indices(i)(0)) {
-            f <~> "\n";
+            f.write("\n");
           } else {
-            f <~> " ";
+            f.write(" ");
           }
           prevInd = dom._indices(i);
-          f <~> data(i);
+          f.write(data(i));
         }
-        f <~> "\n";
+        f.write("\n");
       }
     }
   }

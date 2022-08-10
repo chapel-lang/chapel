@@ -465,17 +465,17 @@ class PermutationMap {
     const padding = max( maxVal.size, minVal.size );
     const formatString = "%%%nn -> %%%nn".format( max(2,padding), padding );
     const inSpace = max(padding-2,0);
-    f <~> "Row map\n";
-    for i in 0..#inSpace do f <~> " ";
-    f <~> "in -> out\n";
+    f.writeln("Row map");
+    for i in 0..#inSpace do f.write(" ");
+    f.write("in -> out");
     for i in rowDom {
-      f <~> formatString.format( i, rowMap[i] ) <~> "\n";
+      f.writeln(formatString.format( i, rowMap[i] ));
     }
-    f <~> "Column map\n" ;
-    for i in 0..#inSpace do f <~> " ";
-    f <~> "in -> out\n";
+    f.writeln("Column map");
+    for i in 0..#inSpace do f.write(" ");
+    f.writeln("in -> out");
     for i in columnDom {
-      f <~> formatString.format( i, columnMap[i] ) <~> "\n";
+      f.write(formatString.format( i, columnMap[i] ));
     }
   }
 

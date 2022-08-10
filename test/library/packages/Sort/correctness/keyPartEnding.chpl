@@ -10,7 +10,7 @@ record TwoRepeated {
   proc writeThis(ch) throws {
     var a = (first:string)*nFirst;
     var b = (second:string)*nSecond;
-    ch <~> a <~> b;
+    ch.write(a, b);
   }
 }
 

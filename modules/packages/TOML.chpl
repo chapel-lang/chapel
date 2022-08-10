@@ -1358,7 +1358,7 @@ module TomlReader {
     }
 
     proc writeThis(f) throws {
-      f <~> this.A.toArray();
+      f.write(this.A.toArray());
     }
   }
 }

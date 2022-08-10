@@ -43,7 +43,7 @@ record buffer {
 
   // A standard implementation probably shouldn't offer this.
   proc writeThis(ch) {
-    for slot in this do ch <~> slot <~> " ";
+    for slot in this do ch.write(slot, " ");
   }
 }
 
