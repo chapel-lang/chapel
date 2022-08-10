@@ -16,6 +16,8 @@ module list
 # setup for XC perf (ugni, gnu, 28-core broadwell)
 module unload $(module -t list 2>&1 | grep PrgEnv-)
 module load PrgEnv-gnu
+# pin gcc 11.2.0 due to warnings with 12.1.0
+module swap gcc gcc/11.2.0
 module unload $(module -t list 2>&1 | grep craype-hugepages)
 module load craype-hugepages16M
 module unload perftools-base
