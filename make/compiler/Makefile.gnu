@@ -268,6 +268,27 @@ WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
 
 #
+# Avoid errors about uninitialized memory because they occur in LLVM headers
+# (should be fixed in LLVM 15 though).
+# We would like to know when this occurs, though, so don't turn off
+# the warning; just don't let it abort the build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=uninitialized
+endif
+
+#
+# Avoid errors about dependent template name because they occur in LLVM headers
+# (should be fixed in LLVM 15 though).
+# We would like to know when this occurs, though, so don't turn off
+# the warning; just don't let it abort the build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=missing-template-keyword
+endif
+
+
+#
 # Avoid false positive warnings about use-after free with realloc
 # that occur in GCC 12.
 #
