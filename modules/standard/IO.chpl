@@ -3478,6 +3478,7 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
 
 }
 
+pragma 'fn exempt instantiation limit'
 private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                 param kind:iokind,
                                 ref x:?t,
@@ -3497,6 +3498,7 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   return e;
 }
 
+pragma 'fn exempt instantiation limit'
 private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
@@ -3529,6 +3531,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   return e;
 }
 
+pragma 'fn exempt instantiation limit'
 private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
@@ -3579,6 +3582,7 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 }
 
 pragma "suppress lvalue error"
+pragma 'fn exempt instantiation limit'
 private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
