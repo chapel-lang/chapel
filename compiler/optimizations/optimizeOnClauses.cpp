@@ -298,6 +298,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_GRIDDIM_Z:
   case PRIM_GPU_ALLOC_SHARED:
   case PRIM_GPU_SYNC_THREADS:
+  case PRIM_ASSERT_ON_GPU:
   case PRIM_GET_REQUESTED_SUBLOC:
     return FAST_AND_LOCAL;
 
