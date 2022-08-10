@@ -54,7 +54,11 @@ def filter_compile_args(args):
     # certain flags from the gasnet .pc file
     more_filtered = [ ]
     for arg in ret:
-        if arg.startswith('-O') or arg == '-Winline' or arg == '-g':
+        skip_flag = (
+            arg.startswith('-O') or arg == '-Winline' or
+            arg == '-g' or arg == '-Wunused-result'
+        )
+        if skip_flag:
             pass # leave out this flag
         else:
             more_filtered.append(arg)
