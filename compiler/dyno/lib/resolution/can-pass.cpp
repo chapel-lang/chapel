@@ -1035,7 +1035,9 @@ class KindProperties {
     if (kind == QualifiedType::TYPE)
       return KindProperties(false, false, true, false);
     if (kind == QualifiedType::PARAM)
-      return KindProperties(false, false, false, true);
+      // Mark params as const to cover the case in which a
+      // param decays to a const var.
+      return KindProperties(true, false, false, true);
     auto isConst = isConstIntent(kind);
     auto isRef = isRefIntent(kind);
     return KindProperties(isConst, isRef, false, false);

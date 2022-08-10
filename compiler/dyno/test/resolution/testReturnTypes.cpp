@@ -19,6 +19,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
@@ -29,100 +30,87 @@
 #include <cassert>
 
 struct ReturnVariant {
-  bool literal;
   std::string intent;
   std::string type;
   std::string value;
-  bool generic;
 
-  ReturnVariant(std::string intent, std::string type, bool generic=false)
-    : literal(false), intent(std::move(intent)), type(std::move(type)),
-      value(""), generic(generic) {}
-
-  ReturnVariant(std::string value) : literal(true), intent(""), type(""), value(std::move(value)) {}
+  ReturnVariant(std::string intent, std::string type, std::string value)
+    : intent(std::move(intent)), type(std::move(type)), value(std::move(value)) {}
 };
 
-std::string buildProgram(std::string intent, std::string selectorValue, const std::vector<ReturnVariant>& variants) {
+ReturnVariant type(std::string value) {
+  return ReturnVariant("type", "", value);
+}
+
+ReturnVariant lit(std::string value) {
+  return ReturnVariant("param", "", value);
+}
+
+ReturnVariant decl(std::string intent, std::string type) {
+  return ReturnVariant(intent, type, "");
+}
+
+ReturnVariant ref(bool isConst = false) {
+  return ReturnVariant(isConst ? "const ref" : "ref", "r", "temp");
+}
+
+bool hasReference(const std::vector<ReturnVariant>& variants) {
+  for (auto& variant : variants) {
+    if (variant.intent.find("ref") != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string buildProgram(const std::vector<ReturnVariant>& variants) {
   std::ostringstream oss;
-  oss << "proc f(";
-  const char* trail = "";
-  if (selectorValue.empty() && variants.size() > 1) {
-    oss << "sel: int";
-    trail = ", ";
+  if (hasReference(variants)) {
+    // references need something to refer to, so create a temporary
+    // of a dummy record type.
+    oss << "record r {}" << std::endl;
+    oss << "var temp: r;" << std::endl;
   }
   for (size_t i = 0; i < variants.size(); i++) {
     const auto& variant = variants[i];
-    if (variant.literal) continue;
-    oss << trail << variant.intent << " arg" << i;
-    if (!variant.generic) {
-      oss << ":" << variant.type;
-    }
-    trail = ", ";
+    oss << variant.intent << " arg" << i;
+    if (!variant.type.empty()) oss << ": " << variant.type;
+    if (!variant.value.empty()) oss << " = " << variant.value;
+    oss << ";" << std::endl;
   }
-  oss << ") " << intent << "{" << std::endl;
 
-  if (variants.size() == 1) {
-    // don't need selector if n = 1
-    const auto& variant = variants[0];
-    oss << "  return "
-      << (variant.literal ? variant.value : "arg0") << ";";
-  } else {
-    if (!selectorValue.empty()) {
-      oss << "  param sel = " << selectorValue << ";" << std::endl;
-    }
-    for (size_t i = 0; i < variants.size(); i++) {
-      const auto& variant = variants[i];
-      if (i != 0) {
-        oss << " else ";
-      } else {
-        oss << "  ";
-      }
-      oss << "if " << "__primitive(\"==\", sel, " << i << ") {" << std::endl;
-      oss << "    return ";
-      if (variant.literal) {
-        oss << variant.value;
-      } else {
-        oss << "arg" << i;
-      }
-      oss << ";" << std::endl;
-      oss << "  }";
-    }
-  }
-  oss << std::endl << "}" << std::endl;
-
-  if (selectorValue.empty() && variants.size() > 1) {
-    oss << "var sel : int;" << std::endl;
-  }
-  for (size_t i = 0; i < variants.size(); i++) {
-    const auto& variant = variants[i];
-    if (variant.literal) continue;
-    oss << "var arg" << i << ": " << variant.type << ";" << std::endl;
-  }
-  oss << "var x = f(";
-  trail = "";
-  if (selectorValue.empty() && variants.size() > 1) {
-    oss << "sel";
-    trail = ", ";
-  }
-  for (size_t i = 0; i < variants.size(); i++) {
-    const auto& variant = variants[i];
-    if (variant.literal) continue;
-    oss << trail << "arg" << i;
-    trail = ", ";
-  }
-  oss << ");" << std::endl;
   return oss.str();
 }
 
+std::vector<QualifiedType>
+extractDefinedTypes(Context* context, const char* program, size_t startAt) {
+  std::vector<QualifiedType> types;
+  auto m = parseModule(context, program);
+  assert(m->numStmts() > 0);
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  for (size_t i = startAt; i < m->numStmts(); i++) {
+    auto argName = "arg" + std::to_string(i-startAt);
+    auto stmt = m->stmt(i)->toVariable();
+    assert(stmt && stmt->name().str() == argName);
+    types.push_back(rr.byAst(stmt).type());
+  }
+  return types;
+}
+
 template <typename F>
-void testProgram(std::string intent, std::string selectorValue,
-                 const std::vector<ReturnVariant>& variants, F func) {
+void testProgram(const std::vector<ReturnVariant>& variants, F func,
+                 QualifiedType::Kind kind = QualifiedType::DEFAULT_INTENT) {
   Context ctx;
   auto context = &ctx;
-  auto program = buildProgram(intent, selectorValue, variants);
+  auto program = buildProgram(variants);
   std::cout << "--- test program ---" << std::endl;
   std::cout << program.c_str() << std::endl;
-  QualifiedType qt =  resolveTypeOfXInit(context, program.c_str());
+  // If any references are there the first two statements are not variable
+  // declarations we want to include in the commonType test, so ignore them.
+  size_t offset = hasReference(variants) ? 2 : 0;
+  auto types = extractDefinedTypes(context, program.c_str(), offset);
+  auto qt = chpl::resolution::commonType(context, types,
+      kind != QualifiedType::UNKNOWN, kind);
   std::cout << "return type:" << std::endl;
   qt.dump();
   std::cout << std::endl;
@@ -131,8 +119,8 @@ void testProgram(std::string intent, std::string selectorValue,
 
 static void test1() {
   // test returning a single value from value-returning function
-  testProgram("", "", {
-      { "1" }
+  testProgram({
+      lit("1")
   }, [](auto& qt) {
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
@@ -142,9 +130,9 @@ static void test1() {
 static void test2() {
   // test returning multiple of the same type of values from
   // value-returning function
-  testProgram("", "", {
-      { "1" },
-      { "2" }
+  testProgram({
+      lit("1"),
+      lit("2")
   }, [](auto& qt) {
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
@@ -153,31 +141,31 @@ static void test2() {
 
 static void test3() {
   // test returning a param from a param-returning function
-  testProgram("param", "", {
-      { "1" }
+  testProgram({
+      lit("1")
   }, [](auto& qt) {
     assert(qt.type() && qt.type()->isIntType());
     assert(qt.kind() == QualifiedType::PARAM && qt.param());
     assert(qt.param()->toIntParam()->value() == 1);
-  });
+  }, QualifiedType::PARAM);
 }
 
 static void test4() {
   // test returning a param from an ambigous param-returning function
   // non-ambigous tests are in testParamIf.
-  testProgram("param", "", {
-      { "1" },
-      { "2" }
+  testProgram({
+      lit("1"),
+      lit("2")
   }, [](auto& qt) {
-    assert(qt.isErroneousType());
-  });
+    assert(qt.isUnknown());
+  }, QualifiedType::PARAM);
 }
 
 static void test5() {
   // test allowed coercions
-  testProgram("", "", {
-      { "", "int(32)" },
-      { "", "int(16)" }
+  testProgram({
+      decl("const", "int(32)"),
+      decl("const", "int(16)")
   }, [](auto& qt) {
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
@@ -187,19 +175,19 @@ static void test5() {
 
 static void test6() {
   // test disallowed coercions
-  testProgram("", "", {
-      { "", "int(32)" },
-      { "", "string" }
+  testProgram({
+      decl("const", "int(32)"),
+      decl("const", "string")
   }, [](auto& qt) {
-    assert(qt.isErroneousType());
+    assert(qt.isUnknown());
   });
 }
 
 static void test7() {
   // test param decaying to var
-  testProgram("", "", {
-      { "", "int(32)" },
-      { "1" }
+  testProgram({
+      decl("const", "int(32)"),
+      lit("1")
   }, [](auto& qt) {
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
@@ -208,9 +196,9 @@ static void test7() {
 
 static void test8() {
   // test param decaying to var, but for strings
-  testProgram("", "", {
-      { "", "string" },
-      { "\"hello\"" }
+  testProgram({
+      decl("const", "string"),
+      lit("\"hello\"")
   }, [](auto& qt) {
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isStringType());
@@ -218,109 +206,129 @@ static void test8() {
 }
 
 static void test9() {
-  // test generic formals with return type resolution.
-  // When the actual's type matches the fixed type in the
-  // body, all is well
-  testProgram("", "", {
-      { "", "string", /* generic, actual is string */ true },
-      { "", "string" }
+  // test multiple branches (not just two)
+  testProgram({
+      decl("const", "int(16)"),
+      lit("1"),
+      decl("const", "int"),
+      decl("const", "int(32)"),
   }, [](auto& qt) {
     assert(qt.kind() == QualifiedType::VAR);
-    assert(qt.type() && qt.type()->isStringType());
+    assert(qt.type() && qt.type()->isIntType());
+    assert(qt.type()->toIntType()->bitwidth() == 64);
   });
 }
 
 static void test10() {
-  // test generic formals with return type resolution.
-  // When the actual's type is mismatched from the fixed
-  // type in the body, we error.
-  testProgram("", "", {
-      { "", "int", /* generic, actual is int */ true },
-      { "", "string" }
+  // returning types from compile-time unknown function
+  testProgram({
+      type("int"),
+      type("int"),
   }, [](auto& qt) {
-    assert(qt.isErroneousType());
-  });
+    assert(qt.kind() == QualifiedType::TYPE);
+    assert(qt.type() && qt.type()->isIntType());
+    assert(qt.type()->toIntType()->bitwidth() == 64);
+  }, QualifiedType::TYPE);
+  testProgram({
+      type("int"),
+      type("bool"),
+  }, [](auto& qt) {
+    assert(qt.isUnknown());
+  }, QualifiedType::TYPE);
 }
 
 static void test11() {
-  // test multiple branches (not just two)
-  testProgram("", "", {
-      { "", "int(16)" },
-      { "1" },
-      { "", "int" },
-      { "", "int(32)" },
+  // test mixing types and values
+  testProgram({
+      type("int"),
+      lit("1"),
   }, [](auto& qt) {
-    assert(qt.kind() == QualifiedType::VAR);
-    assert(qt.type() && qt.type()->isIntType());
-    assert(qt.type()->toIntType()->bitwidth() == 64);
+    assert(qt.isUnknown());
+  }, QualifiedType::TYPE);
+  testProgram({
+      type("int"),
+      lit("1"),
+  }, [](auto& qt) {
+    assert(qt.isUnknown());
   });
 }
 
 static void test12() {
-  // returnign types from compile-time known function
-  testProgram("type", "0", {
-      { "int" },
-      { "bool" },
+  // test returning non-param from param-intent procedure
+  testProgram({
+      lit("1"),
+      lit("2"),
   }, [](auto& qt) {
-    assert(qt.kind() == QualifiedType::TYPE);
-    assert(qt.type() && qt.type()->isIntType());
-    assert(qt.type()->toIntType()->bitwidth() == 64);
-  });
-  testProgram("type", "1", {
-      { "int" },
-      { "bool" },
-  }, [](auto& qt) {
-    assert(qt.kind() == QualifiedType::TYPE);
-    assert(qt.type() && qt.type()->isBoolType());
-  });
+    assert(qt.isUnknown());
+  }, QualifiedType::PARAM);
 }
 
+// ================================================================
+// All tests after this point don't assume a specified return intent.
+// This is useful for testing commonType for things other than function
+// return values.
+// ================================================================
+
 static void test13() {
-  // returning types from compile-time unknown function
-  testProgram("type", "", {
-      { "int" },
-      { "int" },
+  testProgram({
+      ref(/* isConst */ true),
+      decl("var", "r"),
   }, [](auto& qt) {
-    assert(qt.kind() == QualifiedType::TYPE);
-    assert(qt.type() && qt.type()->isIntType());
-    assert(qt.type()->toIntType()->bitwidth() == 64);
-  });
-  testProgram("type", "", {
-      { "int" },
-      { "bool" },
-  }, [](auto& qt) {
-    assert(qt.isErroneousType());
-  });
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type() && qt.type()->isRecordType());
+  }, QualifiedType::UNKNOWN);
 }
 
 static void test14() {
-  // test mixing types and values
-  testProgram("type", "", {
-      { "int" },
-      { "1" },
+  testProgram({
+      ref(/* isConst */ true),
+      ref(/* isConst */ false),
   }, [](auto& qt) {
-    assert(qt.isErroneousType());
-  });
-  testProgram("", "", {
-      { "int" },
-      { "1" },
-  }, [](auto& qt) {
-    assert(qt.isErroneousType());
-  });
+    assert(qt.kind() == QualifiedType::CONST_REF);
+    assert(qt.type() && qt.type()->isRecordType());
+  }, QualifiedType::UNKNOWN);
 }
 
 static void test15() {
-  // test returning non-param from param-intent procedure
-  testProgram("param", "", {
-      { "1" },
-      { "2" },
+  testProgram({
+      ref(/* isConst */ false),
+      decl("var", "r"),
   }, [](auto& qt) {
-    assert(qt.isErroneousType());
-  });
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type() && qt.type()->isRecordType());
+  }, QualifiedType::UNKNOWN);
 }
 
-// TODO: test ref-ness calculation. Can't do right now since
-// we allow function return intents to override the computed ref-ness.
+static void test16() {
+  testProgram({
+      lit("1"),
+      decl("var", "int"),
+  }, [](auto& qt) {
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type() && qt.type()->isIntType());
+  }, QualifiedType::UNKNOWN);
+}
+
+static void test17() {
+  testProgram({
+      lit("1"),
+      lit("1"),
+  }, [](auto& qt) {
+    assert(qt.kind() == QualifiedType::PARAM);
+    assert(qt.type() && qt.type()->isIntType());
+    assert(qt.param() && qt.param()->toIntParam()->value() == 1);
+  }, QualifiedType::UNKNOWN);
+}
+
+static void test18() {
+  testProgram({
+      lit("1"),
+      lit("2"),
+  }, [](auto& qt) {
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type() && qt.type()->isIntType());
+  }, QualifiedType::UNKNOWN);
+}
 
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
 // looks like canPass doesn't handle this very well.
@@ -341,5 +349,8 @@ int main() {
   test13();
   test14();
   test15();
+  test16();
+  test17();
+  test18();
   return 0;
 }
