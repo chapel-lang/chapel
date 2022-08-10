@@ -287,6 +287,16 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=missing-template-keyword
 endif
 
+#
+# Avoid errors like '&expression' will never be NULL
+# because they occur in LLVM headers.
+# We would like to know when this occurs, though, so don't turn off
+# the warning; just don't let it abort the build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=address
+endif
+
 
 #
 # Avoid false positive warnings about use-after free with realloc
