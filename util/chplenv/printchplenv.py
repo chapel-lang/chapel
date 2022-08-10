@@ -412,6 +412,8 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
                 value = ENV_VALS['CHPL_RUNTIME_CPU']
             elif env.name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
                 value += '-debug'
+        # if env.name == 'CHPL_LOCALE_MODEL' and ENV_VALS['CHPL_LOCALE_MODEL'] == 'numa':
+        #         value += ' (deprecated)'
         ret.append(print_var(env.name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path

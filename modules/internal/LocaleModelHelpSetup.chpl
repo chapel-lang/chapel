@@ -84,6 +84,8 @@ module LocaleModelHelpSetup {
   }
 
   proc helpSetupRootLocaleNUMA(dst:borrowed RootLocale) {
+    compilerWarning("Compiling with 'CHPL_LOCALE_MODEL=numa' is deprecated; please use the 'flat' locale model instead");
+
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
