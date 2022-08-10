@@ -806,9 +806,9 @@ static void maybePrintErrorHeader(chpl::ID id) {
 
     auto& declLoc = chpl::parsing::locateId(gContext, declId);
     auto line = declLoc.firstLine();
-    auto path = declLoc.path().c_str();
+    auto path = declLoc.path();
 
-    fprintf(stderr, "%s:%d: In %s:\n", path, line, declLabelStr);
+    fprintf(stderr, "%s:%d: In %s:\n", path.c_str(), line, declLabelStr);
 
     // Set so that we don't print out the same header over and over.
     idForLastContainingDecl = declId;
@@ -823,11 +823,11 @@ static void dynoDisplayError(chpl::Context* context,
 
   // For now have syntax errors just do their own thing (mimic old parser).
   if (err.kind() == chpl::ErrorMessage::SYNTAX) {
-    const char* path = loc.path().c_str();
+    UniqueString path = loc.path();
     const int line = loc.line();
     const int tagUsrFatalCont = 3;
-    setupError("parser", path, line, tagUsrFatalCont);
-    fprintf(stderr, "%s:%d: %s", path, line, "syntax error");
+    setupError("parser", path.c_str(), line, tagUsrFatalCont);
+    fprintf(stderr, "%s:%d: %s", path.c_str(), line, "syntax error");
     if (strlen(msg) > 0) {
       fprintf(stderr, ": %s\n", msg);
     } else {
