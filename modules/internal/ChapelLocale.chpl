@@ -209,14 +209,14 @@ module ChapelLocale {
       - `here.name`
     * - normal execution
       - {hostname}
-    * - general oversubscribed execution
-      - {hostname}
-    * - oversubscribed execution with gasnet(*)
+    * - oversubscribed execution with gasnet\*
       - {hostname}-{id}
+    * - other oversubscribed execution
+      - {hostname}
 
   .. note::
 
-    (*)This behavior occurs when launching in an oversubscribed manner
+    \*This behavior occurs when launching in an oversubscribed manner
     with `CHPL_COMM=gasnet` and one of the following configurations:
 
     - `CHPL_COMM_SUBSTRATE=udp` & `GASNET_SPAWNFN=L`
