@@ -127,7 +127,7 @@ module ResultDB {
                     median = (resultSorted[(resultSorted.size)/2] +
                                 resultSorted[(resultSorted.size-2)/2]) / 2 ;
                 }
-                writeln(testName, " ",atts,": ", blockSize, attsSuffix," Median: ", median, " ", units);
+                writeln(testName, " ",atts," ", blockSize, attsSuffix," Median: ", median, " ", units);
             }
         }
     }
