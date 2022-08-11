@@ -236,7 +236,7 @@ module ChapelRange {
           alignment = 1;
       }
     }
-    
+
     this.init(idxType, boundedType, stridable,
               other._low, other._high,
               str,
@@ -808,7 +808,7 @@ module ChapelRange {
      partially bounded, the return value will not (cannot) be a
      `param`.
   */
-  proc range.hasFirst() param where !stridable && !hasHighBound()
+  proc range.hasFirst() param where !stridable
     return hasLowBound();
 
   pragma "no doc"
@@ -838,7 +838,7 @@ module ChapelRange {
      partially bounded, the return value will not (cannot) be a
      `param`.
   */
-  proc range.hasLast() param where !stridable && !hasLowBound()
+  proc range.hasLast() param where !stridable
     return hasHighBound();
 
   pragma "no doc"
@@ -2284,7 +2284,7 @@ operator :(r: range(?), type t: range(?)) {
     // terminate the C for loop, this iterator follows the boundedLow
     // case above.  See it for additional comments.
     var i: intIdxType;
-    const start = chpl__idxToInt(this.first);
+    const start = alignedHighAsInt;
     const end = if isBoolType(idxType) || isEnumType(idxType)
                   then chpl__idxToInt(this.last)
                   else min(intIdxType) - stride: intIdxType;
