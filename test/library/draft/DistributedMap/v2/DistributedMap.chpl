@@ -302,7 +302,15 @@ module DistributedMap {
 
     // TODO: impl
     proc readThis(ch: channel) throws {
+      for i in locDom {
+        locks[i].lock();
+      }
+
       compilerError("unimplemented");
+
+      for i in locDom {
+        locks[i].unlock();
+      }
     }
 
     // TODO: should this encode the locale hash in some way?
