@@ -433,9 +433,34 @@ module DistributedMap {
       }
     }
 
-    // TODO: impl - maybe warn this is unsafe on its own?  Maybe don't provide?
+    /*
+      Removes a key-value pair from the map, with the given key.
+
+     :arg k: The key to remove from the map
+
+     :returns: `false` if `k` was not in the map.  `true` if it was and removed.
+     :rtype: bool
+    */
     proc remove(k: keyType): bool {
-      compilerError("unimplemented");
+      var loc: int = this.getLocaleForKey(k);
+
+      var res: bool;
+      on loc {
+        locks[loc].lock();
+
+        var (found, slot) = tables[loc].findFullSlot(k);
+
+        if (found) {
+          var outKey: keyType, outVal: valType;
+          tables[loc].clearSlot(slot, outKey, outVal);
+          tables[loc].maybeShrinkAfterRemove();
+        }
+
+        locks[loc].unlock();
+        res = found;
+      }
+
+      return res;
     }
 
     // TODO: impl
