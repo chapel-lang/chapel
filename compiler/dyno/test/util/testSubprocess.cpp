@@ -65,13 +65,34 @@ static void checkEnv() {
   cmd.push_back("/usr/bin/env");
   rc = executeAndWait(cmd, "testing that env can be run", true);
   assert(rc == 0);
-
 }
+
+// check that running an empty command or a comment returns 0
+static void checkEmptyOrComment() {
+  int rc;
+  std::vector<std::string> cmd;
+
+  cmd.clear();
+  rc = executeAndWait(cmd, "empty command 1", true);
+  assert(rc == 0);
+
+  cmd.clear();
+  cmd.push_back("");
+  rc = executeAndWait(cmd, "empty command 2", true);
+  assert(rc == 0);
+
+  cmd.clear();
+  cmd.push_back("# this is a comment");
+  rc = executeAndWait(cmd, "comment command", true);
+  assert(rc == 0);
+}
+
 
 int main(int argc, char** argv) {
 
   checkNonexistent();
   checkEnv();
+  checkEmptyOrComment();
 
   return 0;
 }
