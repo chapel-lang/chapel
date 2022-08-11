@@ -171,29 +171,42 @@ module ChapelLocale {
     :returns: the hostname of the compute node associated with the locale
     :rtype: string
   */
-  inline proc locale.hostname {
+  inline proc locale.hostname: string {
     return this._value.hostname;
   }
 
   /*
-    Get the name of this locale.  In practice, this is often the
-    same as the hostname, though in some cases (like when using
-    local launchers), it may be modified.
+    Get the name of this locale.
 
-    :returns: locale name
-    :rtype: string
+    In general, this method returns the same string as :proc:`locale.hostname`;
+    however, it can differ when the program is executed in an oversubscribed manner.
+
+  .. note::
+
+    The locale's `id` (from :proc:`locale.id`) will be appended to the `hostname`
+    when launching in an oversubscribed manner with `CHPL_COMM=gasnet` and one of
+    the following configurations:
+
+    - `CHPL_COMM_SUBSTRATE=udp` & `GASNET_SPAWNFN=L`
+    - `CHPL_COMM_SUBSTRATE=smp`
+
+    More information about these environment variables can be found here: :ref:`readme-multilocale`
+
+  :returns: the name of this locale
+  :rtype: string
   */
-  inline proc locale.name {
+  inline proc locale.name: string {
     return this._value.name;
   }
 
   /*
     Get the unique integer identifier for this locale.
 
-    :returns: locale number, in the range ``0..numLocales-1``
-    :rtype: int
+  :returns: index of this locale in the range ``0..numLocales-1``
+  :rtype: int
+
   */
-  inline proc locale.id {
+  inline proc locale.id: int {
     return this._value.id;
   }
 
