@@ -1,3 +1,0 @@
-$CHPL_HOME/modules/internal/LocalesArray.chpl:45: warning: Compiling with 'CHPL_LOCALE_MODEL=numa' is deprecated; use the 'flat' locale model instead.
-Hello, world! (from subloc 0 of 2 named ND0 on locale 0 of 1)
-Hello, world! (from subloc 1 of 2 named ND1 on locale 0 of 1)

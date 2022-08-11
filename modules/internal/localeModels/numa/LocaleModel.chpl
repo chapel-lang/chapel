@@ -70,6 +70,7 @@ module LocaleModel {
     }
     override proc chpl_name() return ndName;
 
+    // deprecated "Compiling with 'CHPL_LOCALE_MODEL=numa' is deprecated; please use the 'flat' locale model instead"
     proc init() {
     }
 
