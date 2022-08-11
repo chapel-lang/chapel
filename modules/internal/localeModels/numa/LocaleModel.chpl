@@ -27,6 +27,7 @@
 // backward compatible with the architecture implicitly provided by
 // releases 1.6 and preceding.
 //
+
 module LocaleModel {
 
   public use LocaleModelHelpNUMA;
@@ -70,7 +71,6 @@ module LocaleModel {
     }
     override proc chpl_name() return ndName;
 
-    // deprecated "Compiling with 'CHPL_LOCALE_MODEL=numa' is deprecated; please use the 'flat' locale model instead"
     proc init() {
     }
 
@@ -91,11 +91,24 @@ module LocaleModel {
       halt("No children to iterate over.");
       yield -1;
     }
+    override proc _getChildCount(): int { return 0; }
+    iter getChildIndices() : int {
+      halt("No children to iterate over.");
+      yield -1;
+    }
+
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
     }
+
     pragma "unsafe"
     override proc getChild(idx:int) : locale {
+      halt("Cannot getChild with this locale type");
+      var ret: locale; // default-initialize
+      return ret;
+    }
+    pragma "unsafe"
+    override proc _getChild(idx:int) : locale {
       halt("Cannot getChild with this locale type");
       var ret: locale; // default-initialize
       return ret;
