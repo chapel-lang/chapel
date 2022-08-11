@@ -145,6 +145,7 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
+extern const char* CHPL_GPU_CODEGEN;
 extern const char* CHPL_GPU_SDK_PATH;
 
 extern bool  printPasses;
