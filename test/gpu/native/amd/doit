@@ -1,2 +1,2 @@
-// This will error out but notice that we generate dump/chpl__gpu.s
+# This will error out but notice that we generate dump/chpl__gpu.s
 chpl foo.chpl -o foo --savec dump
