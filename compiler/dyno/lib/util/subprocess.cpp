@@ -37,13 +37,8 @@ int executeAndWait(const std::vector<std::string>& commandVec,
                    const std::string& description,
                    bool printSystemCommands) {
 
-  // if an empty command passed, do nothing
-  if (commandVec.empty() || commandVec[0].empty()) {
-    return 0;
-  }
-
-  // Treat a '#' at the start of a line as a comment
-  if (commandVec[0][0] == '#') {
+  // if an empty command or comment is passed, do nothing
+  if (commandVec.empty() || commandVec[0].empty() || commandVec[0][0] == '#') {
     return 0;
   }
 
