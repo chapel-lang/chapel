@@ -2394,7 +2394,7 @@ operator :(r: range(?), type t: range(?)) {
 
     if debugChapelRange then
       chpl_debug_writeln("*** In range leader:"); // ", this);
-    const numSublocs = here.getChildCount();
+    const numSublocs = here._getChildCount();
 
     if localeModelPartitionsIterationOnSublocales && numSublocs != 0 {
       const len = this.sizeAs(intIdxType);
@@ -2426,7 +2426,7 @@ operator :(r: range(?), type t: range(?)) {
       }
 
       coforall chunk in 0..#numChunks {
-        local do on here.getChild(chunk) {
+        local do on here._getChild(chunk) {
           if debugDataParNuma {
             if chunk!=chpl_getSubloc() then
               chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",

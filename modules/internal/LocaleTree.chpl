@@ -39,12 +39,12 @@ module LocaleTree {
       var right: unmanaged BaseLocale? = nil;
       var child = (i+1)*2-1;    // Assumes that indices are dense.
       if child < numLocales {
-        left = rootLocale.getChild(child)._instance;
+        left = rootLocale._getChild(child)._instance;
         child += 1;
         if child < numLocales then
-          right = rootLocale.getChild(child)._instance;
+          right = rootLocale._getChild(child)._instance;
       }
-      on rootLocale.getChild(i) {
+      on rootLocale._getChild(i) {
         chpl_localeTree.left._instance = left;
         chpl_localeTree.right._instance = right;
       }
