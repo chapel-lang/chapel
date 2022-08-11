@@ -197,27 +197,11 @@ module ChapelLocale {
     In general, this method returns the same string as :proc:`locale.hostname`;
     however, it can differ when the program is executed in an oversubscribed manner.
 
-    The following table summarizes the various behaviors of this method (where
-    {hostname} is the string returned by `here.hostname`, and {id} is the locale's
-    unique integer ID):
-
-  .. list-table::
-    :widths: 25 25
-    :header-rows: 1
-
-    * - Configuration
-      - `here.name`
-    * - normal execution
-      - {hostname}
-    * - oversubscribed execution with gasnet\*
-      - {hostname}-{id}
-    * - other oversubscribed execution
-      - {hostname}
-
   .. note::
 
-    \*This behavior occurs when launching in an oversubscribed manner
-    with `CHPL_COMM=gasnet` and one of the following configurations:
+    The locale's `id` (from :proc:`locale.id`) will be appended to the `hostname`
+    when launching in an oversubscribed manner with `CHPL_COMM=gasnet` and one of
+    the following configurations:
 
     - `CHPL_COMM_SUBSTRATE=udp` & `GASNET_SPAWNFN=L`
     - `CHPL_COMM_SUBSTRATE=smp`
