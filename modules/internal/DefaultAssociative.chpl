@@ -676,7 +676,7 @@ module DefaultAssociative {
       const openBracket   = "[";
       const closedBracket = "]";
       var first = true;
-      var readEnd = false;
+      var readEnd = true;
 
       f._readLiteral(openBracket);
 
@@ -687,7 +687,7 @@ module DefaultAssociative {
           // Break if we read an immediate closed bracket.
           try {
             f._readLiteral(closedBracket);
-            readEnd = true;
+            readEnd = false;
             break;
           } catch err: BadFormatError {
             // We didn't read a closed bracket, so continue on.
@@ -711,7 +711,7 @@ module DefaultAssociative {
         dsiAccess(key) = f.read(eltType);
       }
 
-      if !readEnd then f._readLiteral(closedBracket);
+      if readEnd then f._readLiteral(closedBracket);
     }
 
     proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
