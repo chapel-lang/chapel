@@ -80,6 +80,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_TARGET_COMPILER_PRGENV', INTERNAL),
     ChapelEnv('  CHPL_TARGET_BUNDLED_COMPILE_ARGS', INTERNAL),
     ChapelEnv('  CHPL_TARGET_SYSTEM_COMPILE_ARGS', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_LD', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_TARGET_BUNDLED_LINK_ARGS', INTERNAL),
     ChapelEnv('  CHPL_TARGET_SYSTEM_LINK_ARGS', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
@@ -166,10 +167,12 @@ def compute_all_values():
     target_compiler_c = chpl_compiler.get_compiler_command('target', 'c')
     target_compiler_cpp = chpl_compiler.get_compiler_command('target', 'c++')
     target_compiler_prgenv = chpl_compiler.get_prgenv_compiler()
+    target_linker = compile_link_args_utils.get_target_link_command()
     ENV_VALS['CHPL_TARGET_COMPILER'] = target_compiler
     ENV_VALS['  CHPL_TARGET_CC'] = " ".join(target_compiler_c)
     ENV_VALS['  CHPL_TARGET_CXX'] = " ".join(target_compiler_cpp)
     ENV_VALS['  CHPL_TARGET_COMPILER_PRGENV'] = target_compiler_prgenv
+    ENV_VALS['  CHPL_TARGET_LD'] = " ".join(target_linker)
 
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
     ENV_VALS['CHPL_TARGET_CPU'] = chpl_cpu.get('target').cpu

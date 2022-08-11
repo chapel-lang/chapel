@@ -140,6 +140,7 @@ extern const char* CHPL_LLVM_CLANG_CXX;
 
 extern const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS;
+extern const char* CHPL_TARGET_LD;
 extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
