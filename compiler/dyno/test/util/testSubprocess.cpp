@@ -37,13 +37,13 @@ static void checkNonexistent() {
   cmd.push_back("./nonexistent-command");
   rc = executeAndWait(cmd, "nonexistent-command description", true);
   assert(rc != 0);
- 
+
   cmd.clear();
   cmd.push_back("./nonexistent-command");
   cmd.push_back("arg");
   rc = executeAndWait(cmd, "nonexistent-command description", true);
   assert(rc != 0);
-  
+
   cmd.clear();
   cmd.push_back("/this/path/does/not/exist");
   rc = executeAndWait(cmd, "path does not exist description", true);
