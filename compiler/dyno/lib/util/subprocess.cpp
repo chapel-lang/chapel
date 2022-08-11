@@ -33,9 +33,9 @@ namespace chpl {
 
 // TODO: body of this function should call llvm::sys::ExecuteAndWait instead
 // see: https://llvm.org/doxygen/namespacellvm_1_1sys.html#a67688ad4697f1d516a7c71e41d78c5ba
-int executeAndWait(const std::vector<std::string> commandVec,
-                   std::string description,
-                   bool        printSystemCommands) {
+int executeAndWait(const std::vector<std::string>& commandVec,
+                   const std::string& description,
+                   bool printSystemCommands) {
 
   // if an empty command passed, do nothing
   if (commandVec.empty() || commandVec[0].empty()) {

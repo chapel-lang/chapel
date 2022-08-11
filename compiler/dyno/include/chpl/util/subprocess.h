@@ -44,9 +44,9 @@ namespace chpl {
    255 if the exec call failed
    the exit code from the subprocess (0-255) otherwise
  */
-int executeAndWait(const std::vector<std::string> commandVec,
-             std::string description,
-             bool        printSystemCommands = false);
+int executeAndWait(const std::vector<std::string>& commandVec,
+                   const std::string& description,
+                   bool printSystemCommands = false);
 
 #endif
 
