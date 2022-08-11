@@ -853,12 +853,7 @@ static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
     // We need to preserve the type construction call so that the actuals
     // can be used later.
     } else if (auto se = toSymExpr(rhs->baseExpr)) {
-      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-        // TODO: Confirm the existence of 1+ runtime type actuals.
-        bool containsRuntimeType = false;
-        (void) containsRuntimeType;
-        isTypeVar = true;
-      }
+      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) isTypeVar = true;
     }
 
   } else {

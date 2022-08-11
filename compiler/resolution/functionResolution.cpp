@@ -11803,16 +11803,17 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
 // substitution. This is needed if the actual in the type construction call
 // is a runtime type. This will not work in all cases, in particular if
 // we have to chase a type more than once to find its constructor.
-static
-Expr* chaseTypeConstructorForActual(CallExpr* init, const char* subName,
-                                    int subIdx,
-                                    AggregateType* at) {
+// See: test/types/records/bugs/RuntimeTypeEscapes.chpl
+static Expr*
+chaseTypeConstructorForActual(CallExpr* init, const char* subName,
+                              int subIdx,
+                              AggregateType* at) {
   if (!init->isPrimitive(PRIM_DEFAULT_INIT_VAR)) return nullptr;
 
-  SymExpr* typeSymExpr = toSymExpr(init->get(2));
-  Symbol* typeSym = typeSymExpr->symbol();
+  auto seTypeSym = toSymExpr(init->get(2));
+  auto ts = seTypeSym->symbol();
 
-  INT_ASSERT(typeSym->hasFlag(FLAG_TYPE_VARIABLE));
+  INT_ASSERT(ts->hasFlag(FLAG_TYPE_VARIABLE));
 
   // Given (PRIM_INIT_VAR obj temp) where 'temp' is a type variable, look
   // for (PRIM_MOVE temp call), where 'call' is a type construction call,
@@ -11823,14 +11824,14 @@ Expr* chaseTypeConstructorForActual(CallExpr* init, const char* subName,
 
   // Check if the other use of 'temp' is a move.
   int numUses = 0;
-  for_SymbolSymExprs(se, typeSym) {
+  for_SymbolSymExprs(se, ts) {
 
     // Be conservative and limit to two uses.
     if (++numUses > 2) break;
 
     if (!se->inTree()) continue;
 
-    if (CallExpr* innerCall = toCallExpr(se->parentExpr)) {
+    if (auto innerCall = toCallExpr(se->parentExpr)) {
       if (innerCall->isPrimitive(PRIM_MOVE)) {
         move = innerCall;
         break;
@@ -11844,26 +11845,19 @@ Expr* chaseTypeConstructorForActual(CallExpr* init, const char* subName,
   if (!move) return nullptr;
 
   // The type variable from the PRIM_INIT_VAR should be on the LHS.
-  SymExpr* lhsSymExpr = toSymExpr(move->get(1));
-  INT_ASSERT(lhsSymExpr);
-  INT_ASSERT(lhsSymExpr->symbol() == typeSym);
+  auto seLhs = toSymExpr(move->get(1));
+  INT_ASSERT(seLhs);
+  INT_ASSERT(seLhs->symbol() == ts);
 
   CallExpr* typeConstructorCall = nullptr;
 
-  // See if the RHS of 'move' is a type construction call.
-  if (auto innerCall = toCallExpr(move->get(2))) {
-    if (auto baseSymExpr = toSymExpr(innerCall->baseExpr)) {
-      if (baseSymExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-        if (auto ts = toTypeSymbol(baseSymExpr->symbol())) {
-
-          // The base expression of the call must refer to 'at'.
-          if (ts->type == at) {
-            typeConstructorCall = innerCall;
-          }
-        }
-      }
-    }
-  }
+  // Check if the RHS of 'move' is a type construction call. If so, see
+  // if the base expression of that call refers to 'at'.
+  if (auto innerCall = toCallExpr(move->get(2)))
+    if (auto seBase = toSymExpr(innerCall->baseExpr))
+      if (seBase->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        if (auto ts = toTypeSymbol(seBase->symbol()))
+          if (ts->type == at) typeConstructorCall = innerCall;
 
   // No luck, so return early.
   if (!typeConstructorCall) return nullptr;
@@ -11877,10 +11871,8 @@ Expr* chaseTypeConstructorForActual(CallExpr* init, const char* subName,
     if (isNamedExpr(actual)) {
       isAnyActualNamed = true;
       break;
-    } else {
-      if (subIdx == idx++) {
-        ret = actual;
-      }
+    } else if (subIdx == idx++) {
+      ret = actual;
     }
   }
 
@@ -11926,35 +11918,41 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
       // type constructor and pass that to the initializer.
       } else {
 
-        CallExpr* init = isCallExpr(call) ? toCallExpr(call) : nullptr;
-        Expr* chase = chaseTypeConstructorForActual(init, keyName, idx, at);
-        bool propagatedActualFromTypeConstructor = false;
+        auto init = toCallExpr(call);
+        auto chase = chaseTypeConstructorForActual(init, keyName, idx, at);
+        bool recoveredRuntimeType = false;
 
         // If we found a type constructor with an actual matching this
         // substitution, then reuse the actual if it is a runtime type.
         if (chase) {
           if (auto chaseSymExpr = toSymExpr(chase)) {
             if (auto ts = chaseSymExpr->symbol()->type->symbol) {
-              if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-                if (ts->type == value->type) {
-                  propagatedActualFromTypeConstructor = true;
-
-                  VarSymbol* tmp = newTemp("runtime_temp");
-                  tmp->addFlag(FLAG_MAYBE_TYPE);
-                  Expr* copy = chase->copy();
-                  CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
-                  call->insertBefore(new DefExpr(tmp));
-                  call->insertBefore(move);
-                  resolveExpr(move);
-                  appendExpr = new SymExpr(tmp);
-                }
+              if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+                  ts->type == value->type) {
+                auto tmp = newTemp("runtime_temp");
+                tmp->addFlag(FLAG_MAYBE_TYPE);
+                auto copy = chase->copy();
+                auto move = new CallExpr(PRIM_MOVE, tmp, copy);
+                call->insertBefore(new DefExpr(tmp));
+                call->insertBefore(move);
+                resolveExpr(move);
+                appendExpr = new SymExpr(tmp);
+                recoveredRuntimeType = true;
               }
             }
           }
         }
 
         // No luck above, so create a temporary runtime type instead.
-        if (!propagatedActualFromTypeConstructor) {
+        // TODO: User error on this path?
+        if (!recoveredRuntimeType) {
+
+          // TODO: Improve this error, or just handle multiple indirections.
+          USR_WARN(call, "failed to locate the runtime type for field '%s' "
+                         "when default initializing '%s' - this may "
+                         "cause runtime errors",
+                         keyName,
+                         val->name);
 
           // BHARSH 2018-11-02: This technically generates code that would
           // crash at runtime because aggregate types don't contain the
