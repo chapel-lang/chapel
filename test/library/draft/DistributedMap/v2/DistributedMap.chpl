@@ -416,9 +416,21 @@ module DistributedMap {
       return res;
     }
 
-    // TODO: impl - maybe warn this is unsafe on its own?  Maybe don't provide?
+    /* If the map doesn't contain a value at position `k` add one and
+       set it to `v`. If the map already contains a value at position
+       `k`, update it to the value `v`.
+     */
     proc addOrSet(in k: keyType, in v: valType) {
-      compilerError("unimplemented");
+      var loc: int = this.getLocaleForKey(k);
+
+      on loc {
+        locks[loc].lock();
+
+        var (_, slot) = tables[loc].findAvailableSlot(k);
+        tables[loc].fillSlot(slot, k, v);
+
+        locks[loc].unlock();
+      }
     }
 
     // TODO: impl - maybe warn this is unsafe on its own?  Maybe don't provide?
