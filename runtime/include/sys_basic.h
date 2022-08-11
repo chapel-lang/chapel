@@ -113,11 +113,11 @@
 #endif
 #endif
 
-#if defined(HAS_GPU_LOCALE) && defined(CHPL_GEN_CODE)
-#define MAYBE_GPU __host__ __device__
-#else
+//#if defined(HAS_GPU_LOCALE) && defined(CHPL_GEN_CODE)
+//#define MAYBE_GPU __host__ __device__
+//#else
 #define MAYBE_GPU
-#endif
+//#endif
 
 
 #endif

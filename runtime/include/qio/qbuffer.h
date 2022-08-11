@@ -554,7 +554,7 @@ extern "C" {
 static inline intptr_t qio_ptr_diff(void* a, void* b)
 {
   if( a == NULL || b == NULL ) return 0;
-  return ((intptr_t)a) - ((intptr_t)b);
+  return ((intptr_t)(size_t)a) - ((intptr_t)(size_t)b);
 }
 
 /* Returns 1 if there is space for nbytes between cur and end
@@ -578,7 +578,7 @@ static inline void* qio_ptr_add(void* ptr, intptr_t amt)
  */
 static inline uintptr_t qio_ptr_align(void* ptr, uintptr_t align)
 {
- return (((uintptr_t)ptr) & (align - 1));
+ return (((uintptr_t)(size_t)ptr) & (align - 1));
 }
 
 #ifdef __cplusplus

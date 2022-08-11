@@ -83,7 +83,7 @@ enum { MAX_ERROR_OFFSET = GAI_ERROR_OFFSET+1000 };
 
 // Get the error code associated with a qioerr.
 static inline int32_t qio_err_to_int(qioerr a) {
-  intptr_t num = (intptr_t) a;
+  intptr_t num = (intptr_t)(size_t) a;
   if( num == 0 ) return 0;
   if( num & 1 ) {
     // byte-aligned so can't be an error record.

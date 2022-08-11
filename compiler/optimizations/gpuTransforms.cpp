@@ -910,6 +910,8 @@ static void logGpuizableLoops() {
 }
 
 void gpuTransforms() {
+  return;
+
   if (debugPrintGPUChecks) {
     logGpuizableLoops();
   }

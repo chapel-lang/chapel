@@ -1702,13 +1702,13 @@ void setupClang(GenInfo* info, std::string mainFile)
   if (job == NULL)
     USR_FATAL("Could not find cc1 command from clang driver");
 
-  if( printSystemCommands && developer ) {
+//  if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
     for ( auto a : job->getArguments() ) {
       printf("%s ", a);
     }
     printf("\n");
-  }
+ // }
 
   // Should this run
   // TheDriver.BuildCompilation
@@ -2390,7 +2390,7 @@ void runClang(const char* just_parse_filename) {
   // with our backend.
   const char* clangRequiredWarningFlags[] = {
     "-Wall",
-    "-Werror",
+    /* "-Werror", */
     "-Wpointer-arith",
     "-Wwrite-strings",
     "-Wno-strict-aliasing",
@@ -2525,6 +2525,8 @@ void runClang(const char* just_parse_filename) {
   for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
+  clangCCArgs.push_back(std::string("-I/usr/include/c++/12.1.0"));
+  clangCCArgs.push_back(std::string("-I/usr/include/c++/12.1.0/x86_64-pc-linux-gnu"));
 
   // Add C compilation flags from the command line (--ccflags arguments)
   splitStringWhitespace(ccflags, clangCCArgs);
@@ -2553,11 +2555,17 @@ void runClang(const char* just_parse_filename) {
     clangOtherArgs.push_back("--std=c++11");
     // Need to select CUDA mode in embedded clang to
     // activate the GPU target
-    clangOtherArgs.push_back("-x");
-    clangOtherArgs.push_back("cuda");
+//    clangOtherArgs.push_back("-x");
+//    clangOtherArgs.push_back("cuda");
 
-    std::string cudaGPUArch = std::string("--cuda-gpu-arch=") + fCUDAArch;
-    clangOtherArgs.push_back(cudaGPUArch);
+//    std::string cudaGPUArch = std::string("--cuda-gpu-arch=") + fCUDAArch;
+//    clangOtherArgs.push_back(cudaGPUArch);
+
+     clangOtherArgs.push_back("-x");
+     clangOtherArgs.push_back("c++");
+
+    clangOtherArgs.push_back("-target");
+    clangOtherArgs.push_back("amdgcn-amd-amdhsa");
   }
 
   // Always include sys_basic because it might change the
@@ -4047,7 +4055,8 @@ void makeBinaryLLVM(void) {
     preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
     opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    asmFilename = genIntermediateFilename("chpl__gpu_ptx.s");
+    //asmFilename = genIntermediateFilename("chpl__gpu_ptx.s");
+    asmFilename = genIntermediateFilename("chpl__gpu.s");
     ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
   }
@@ -4298,7 +4307,8 @@ void makeBinaryLLVM(void) {
     } else {
 
       llvm::CodeGenFileType asmFileType =
-        llvm::CodeGenFileType::CGFT_AssemblyFile;
+      //llvm::CodeGenFileType::CGFT_ObjectFile;
+      llvm::CodeGenFileType::CGFT_AssemblyFile;
 
       linkLibDevice();
 

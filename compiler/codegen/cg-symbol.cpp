@@ -2321,7 +2321,7 @@ void FnSymbol::codegenPrototype() {
     if (generatingGPUKernel) {
       func->setConvergent();
       if (!hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-        func->setCallingConv(llvm::CallingConv::PTX_Kernel);
+        func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
       }
     }
 
