@@ -1732,13 +1732,13 @@ module List {
         // Write the number of elements
         ch.write(_size);
       } else {
-        ch <~> new ioLiteral("[");
+        ch._writeLiteral("[");
       }
 
       for i in 0..(_size - 2) {
         ch.write(_getRef(i));
         if !isBinary {
-          ch <~> new ioLiteral(", ");
+          ch._writeLiteral(", ");
         }
       }
 
@@ -1746,7 +1746,7 @@ module List {
         ch.write(_getRef(_size-1));
 
       if !isBinary {
-        ch <~> new ioLiteral("]");
+        ch._writeLiteral("]");
       }
 
       _leave();
@@ -1780,7 +1780,7 @@ module List {
         var isFirst = true;
         var hasReadEnd = false;
 
-        ch <~> new ioLiteral("[");
+        ch._readLiteral("[");
 
         while !hasReadEnd {
           if isFirst {
@@ -1788,7 +1788,7 @@ module List {
 
             // Try reading an end bracket. If we don't, then continue on.
             try {
-              ch <~> new ioLiteral("]");
+              ch._readLiteral("]");
               hasReadEnd = true;
               break;
             } catch err: BadFormatError {
@@ -1798,7 +1798,7 @@ module List {
 
             // Try to read a comma. Break if we don't.
             try {
-              ch <~> new ioLiteral(",");
+              ch._readLiteral(",");
             } catch err: BadFormatError {
               break;
             }
@@ -1811,7 +1811,7 @@ module List {
         }
 
         if !hasReadEnd {
-          ch <~> new ioLiteral("]");
+          ch._readLiteral("]");
         }
       }
 

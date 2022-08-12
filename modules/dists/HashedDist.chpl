@@ -898,13 +898,13 @@ class UserMapAssocArr: AbsBaseArr {
 
     var printBraces = (isjson || ischpl);
 
-    if printBraces then f <~> new ioLiteral("[");
+    if printBraces then f._writeLiteral("[");
 
     var first = true;
     for locArr in locArrs {
       locArr!.myElems._value.dsiSerialReadWrite(f, printBraces=false, first);
     }
-    if printBraces then f <~> new ioLiteral("]");
+    if printBraces then f._writeLiteral("]");
 
   }
 
