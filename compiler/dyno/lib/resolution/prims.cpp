@@ -289,6 +289,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_ALLOC_SHARED:
     case PRIM_GPU_SYNC_THREADS:
     case PRIM_GPU_SET_BLOCKSIZE:
+    case PRIM_ASSERT_ON_GPU:
     case PRIM_SIZEOF_BUNDLE:
     case PRIM_SIZEOF_DDATA_ELEMENT:
     case PRIM_INIT_FIELDS:
