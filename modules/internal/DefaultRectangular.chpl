@@ -1729,13 +1729,13 @@ module DefaultRectangular {
       if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
-    proc writeSpaces(dim:int) throws {
+    proc rwSpaces(dim:int) throws {
       for i in 1..dim {
         rwLiteral(" ");
       }
     }
 
-    proc recursiveArrayWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+    proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
 
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
@@ -1749,7 +1749,7 @@ module DefaultRectangular {
       if isjson || ischpl {
         if dim != rank-1 {
           rwLiteral("[\n");
-          writeSpaces(dim+1); // space for the next dimension
+          rwSpaces(dim+1); // space for the next dimension
         } else rwLiteral("[");
       }
 
@@ -1769,13 +1769,13 @@ module DefaultRectangular {
           var lastIdx =  dom.dsiDim(dim).last;
           idx(dim) = j;
 
-          recursiveArrayWriter(idx, dim=dim+1,
+          recursiveArrayReaderWriter(idx, dim=dim+1,
                                last=(last || dim == 0) && (j == dom.dsiDim(dim).alignedHigh));
 
           if isjson || ischpl {
             if j != lastIdx {
               rwLiteral(",\n");
-              writeSpaces(dim+1);
+              rwSpaces(dim+1);
             }
           }
         }
@@ -1788,7 +1788,7 @@ module DefaultRectangular {
       } else if isjson || ischpl {
         if dim != rank-1 {
           rwLiteral("\n");
-          writeSpaces(dim); // space for this dimension
+          rwSpaces(dim); // space for this dimension
           rwLiteral("]");
         }
         else rwLiteral("]");
@@ -1826,7 +1826,7 @@ module DefaultRectangular {
       }
     } else {
       const zeroTup: rank*idxType;
-      recursiveArrayWriter(zeroTup);
+      recursiveArrayReaderWriter(zeroTup);
     }
   }
 
