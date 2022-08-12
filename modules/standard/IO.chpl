@@ -2748,8 +2748,17 @@ proc openreader(path:string,
                 hints:iohints=IOHINT_NONE,
                 style:iostyle)
     : channel(false, kind, locking) throws {
-  return openreaderHelper(path, kind, locking, start, end, new ioHintSet(hints),
+  return openreaderHelper(path, kind, locking, start..end, new ioHintSet(hints),
                           style: iostyleInternal);
+}
+
+pragma "last resort"
+deprecated "openreader with a start and/or end argument is deprecated.  Please use the new region argument instead"
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints=ioHintSet.empty): channel(false, kind, locking) throws {
+  return openreader(path, kind, locking, start..end, hints);
 }
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
@@ -2772,11 +2781,10 @@ This function is equivalent to calling :proc:`open` and then
               corresponding parameter of the :record:`channel` type.
               Defaults to true, but when safe, setting it to false
               can improve performance.
-:arg start: zero-based byte offset indicating where in the file the
-            channel should start reading. Defaults to 0.
-:arg end: zero-based byte offset indicating where in the file the
-          channel should no longer be allowed to read. Defaults
-          to a ``max(int(64))`` - meaning no end point.
+:arg region: zero-based byte offset indicating where in the file the
+            channel should start and stop reading. Defaults to
+            ``0..max(int(64))``, meaning from the start of the file to no
+            specified end point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :returns: an open reading channel to the requested resource.
@@ -2785,10 +2793,9 @@ This function is equivalent to calling :proc:`open` and then
  */
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty)
+                region: range(?) = 0.., hints=ioHintSet.empty)
     : channel(false, kind, locking) throws {
-  return openreaderHelper(path, kind, locking, start, end, hints);
+  return openreaderHelper(path, kind, locking, region, hints);
 }
 
 pragma "last resort"
@@ -2798,18 +2805,26 @@ proc openreader(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints=IOHINT_NONE)
     : channel(false, kind, locking) throws {
-  return openreader(path, kind, locking, start, end, new ioHintSet(hints));
+  return openreader(path, kind, locking, start..end, new ioHintSet(hints));
 }
 
 private proc openreaderHelper(path:string,
                               param kind=iokind.dynamic, param locking=true,
-                              start:int(64) = 0, end:int(64) = max(int(64)),
+                              region: range(?) = 0..,
                               hints=ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal())
   : channel(false, kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
-  return try fl.readerHelper(kind, locking, start, end, hints, style);
+  if (region.hasLowBound() && region.hasHighBound()) {
+    return try fl.readerHelper(kind, locking, region.low, region.high, hints,
+                               style);
+  } else if (region.hasLowBound()) {
+    return try fl.readerHelper(kind, locking, region.low, max(int(64)), hints,
+                               style);
+  } else {
+    return try fl.readerHelper(kind, locking, 0, region.high, hints, style);
+  }
 }
 
 deprecated "openwriter with a style argument is deprecated"
