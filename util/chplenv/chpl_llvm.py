@@ -104,6 +104,8 @@ def check_llvm_config(llvm_config):
 # Ensure that relevant LLVM-related header files and libraries have been
 # installed. If these are missing it usually indicates the user failed to
 # install some necessary package.
+#
+# Returns a tuple like (isOk, errorMessage)
 def check_llvm_packages(llvm_config):
     llvm_header = ''
     llvm_include_ok = False
@@ -388,13 +390,17 @@ def get_llvm_clang(lang):
 def has_compatible_installed_llvm():
     llvm_config = find_system_llvm_config()
 
-    if llvm_config:
-        clang_c_command = get_system_llvm_clang('c')
-        clang_cxx_command = get_system_llvm_clang('c++')
 
-        if (os.path.exists(clang_c_command) and
-            os.path.exists(clang_cxx_command)):
-            return True
+    if llvm_config:
+        (ok, errMsg) = check_llvm_packages(llvm_config)
+
+        if ok:
+            clang_c_command = get_system_llvm_clang('c')
+            clang_cxx_command = get_system_llvm_clang('c++')
+
+            if (os.path.exists(clang_c_command) and
+                os.path.exists(clang_cxx_command)):
+                return True
 
     # otherwise, something went wrong, so return False
     return False
@@ -415,6 +421,7 @@ def get():
                 llvm_val = 'bundled'
             elif has_compatible_installed_llvm():
                 llvm_val = 'system'
+            # otherwise, the default remains 'unset' -- ask user
 
         else:
             # This platform doesn't work with the LLVM backend
