@@ -473,9 +473,10 @@ module ChapelIO {
           const eq = if st == QIO_AGGREGATE_FORMAT_JSON then ":"
                      else "=";
 
-          try reader._readLiteral(eq);
+          try reader._readLiteral(eq, true);
 
           // We read the 'name = ', so now read the value!
+          __primitive("set_union_id", x, i);
           try reader.readIt(__primitive("field by num", x, i));
         }
 
