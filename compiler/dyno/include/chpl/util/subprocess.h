@@ -34,6 +34,9 @@ namespace chpl {
  commandVec
    first element is the command to run, the rest are the arguments.
 
+ envVec
+   a list of environment variables represented as strings
+
  description
    a string representation of the command to run
 
@@ -45,6 +48,7 @@ namespace chpl {
    the exit code from the subprocess (0-255) otherwise
  */
 int executeAndWait(const std::vector<std::string>& commandVec,
+                   const std::vector<std::string>& envVec,
                    const std::string& description,
                    bool printSystemCommands = false);
 

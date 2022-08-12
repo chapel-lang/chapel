@@ -34,9 +34,9 @@ namespace chpl {
 // TODO: body of this function should call llvm::sys::ExecuteAndWait instead
 // see: https://llvm.org/doxygen/namespacellvm_1_1sys.html#a67688ad4697f1d516a7c71e41d78c5ba
 int executeAndWait(const std::vector<std::string>& commandVec,
+                   const std::vector<std::string>& envVec,
                    const std::string& description,
                    bool printSystemCommands) {
-
   // if an empty command or comment is passed, do nothing
   if (commandVec.empty() || commandVec[0].empty() || commandVec[0][0] == '#') {
     return 0;
@@ -66,6 +66,12 @@ int executeAndWait(const std::vector<std::string>& commandVec,
   pid_t childPid = fork();
 
   if (childPid == 0) {
+    for (const auto& envStr : envVec) {
+      auto equalSign = envStr.find('=');
+      auto varName = envStr.substr(0, equalSign);
+      auto varValue = envStr.substr(equalSign+1, envStr.length()-equalSign-1);
+      setenv(varName.c_str(), varValue.c_str(), 1);
+    }
     // in child process
     execvp(execArgs[0], const_cast<char* const *> (execArgs.data()));
     // if execvp returned, there was an error
