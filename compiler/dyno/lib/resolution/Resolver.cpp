@@ -1774,6 +1774,55 @@ void Resolver::exit(const TupleDecl* decl) {
   exitScope(decl);
 }
 
+bool Resolver::enter(const Range* range) {
+  return true;
+}
+void Resolver::exit(const Range* range) {
+  const RecordType* rangeType = RecordType::getRangeType(context);
+  auto rangeAst = parsing::idToAst(context, rangeType->id());
+  if (!rangeAst) {
+    // The range record is part of the standard library, but
+    // it's possile to invoke the resolver without the stdlib.
+    // In this case, mark ranges as UnknownType, but do not error.
+    return;
+  }
+
+  ResolvedExpression& re = byPostorder.byAst(range);
+
+  std::vector<QualifiedType> suppliedTypes;
+  if (auto lower = range->lowerBound()) {
+    suppliedTypes.push_back(byPostorder.byAst(lower).type());
+  }
+  if (auto upper = range->upperBound()) {
+    suppliedTypes.push_back(byPostorder.byAst(upper).type());
+  }
+  assert(suppliedTypes.size() > 0 && "TODO");
+  auto boundType = commonType(context, suppliedTypes,
+                              /* useRequiredKind */ true,
+                              QualifiedType::DEFAULT_INTENT);
+  if (boundType.isUnknown()) {
+    re.setType(typeErr(range, "incompatible bound types for range"));
+    return;
+  }
+
+  // Use defaults for `stridable` and `boundedType`
+  const ResolvedFields& resolvedFields = fieldsForTypeDecl(context, rangeType,
+      DefaultsPolicy::USE_DEFAULTS);
+
+  assert(resolvedFields.fieldName(0) == "idxType");
+  assert(resolvedFields.fieldName(1) == "boundedType");
+  assert(resolvedFields.fieldName(2) == "stridable");
+
+  auto subMap = SubstitutionsMap();
+  subMap.insert({resolvedFields.fieldDeclId(0), std::move(boundType)});
+  subMap.insert({resolvedFields.fieldDeclId(1), resolvedFields.fieldType(1)});
+  subMap.insert({resolvedFields.fieldDeclId(2), resolvedFields.fieldType(2)});
+
+  const RecordType* rangeTypeInst =
+      RecordType::get(context, rangeType->id(), rangeType->name(),
+                      rangeType, std::move(subMap));
+  re.setType(QualifiedType(QualifiedType::CONST_VAR, rangeTypeInst));
+}
 
 types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
   if (op->numActuals() != 2) {
