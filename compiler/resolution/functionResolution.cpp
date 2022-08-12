@@ -1017,6 +1017,11 @@ static bool canParamCoerce(Type*   actualType,
       return true;
     }
 
+    if (is_int_type(actualType) &&
+        get_width(actualType) <= get_width(formalType)) {
+      return true;
+    }
+
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (fits_in_uint(get_width(formalType), var->immediate)) {
