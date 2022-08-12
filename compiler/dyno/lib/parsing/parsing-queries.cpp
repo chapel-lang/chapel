@@ -30,6 +30,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/TupleDecl.h"
+#include "chpl/util/subprocess.h"
 
 #include "../util/filesystem_help.h"
 
@@ -350,6 +351,82 @@ void setupModuleSearchPaths(Context* context,
 
   // Set the module search path.
   setModuleSearchPath(context, uSearchPath);
+}
+
+static void setChplEnv(Context* context, ChplEnvMap chplEnv) {
+  QUERY_STORE_INPUT_RESULT(getChplEnv, context, chplEnv);
+}
+
+const ChplEnvMap& getChplEnv(Context* context) {
+  QUERY_BEGIN_INPUT(getChplEnv, context);
+
+  // If it hasn't been set, return an empty map
+  ChplEnvMap result;
+
+  return QUERY_END(result);
+}
+
+const std::string& getChplEnvValue(Context* context,
+                                   std::string key,
+                                   std::string defaultValue) {
+  QUERY_BEGIN(getChplEnvValue, context, key, defaultValue);
+
+  std::string result;
+  auto& chplEnv = getChplEnv(context);
+  auto envIt = chplEnv.find(key);
+  if (envIt != chplEnv.end()) {
+    result = envIt->second;
+  } else {
+    result = defaultValue;
+  }
+
+  return QUERY_END(result);
+}
+
+void setupChplEnv(Context* context, const std::string& chplHome) {
+  std::vector<std::string> command = {
+    chplHome + "/util/printchplenv",
+    "--all", "--internal", "--no-tidy", "--simple"
+  };
+
+  std::vector<std::string> env;
+  env.push_back(std::string("CHPL_HOME=") + chplHome);
+  env.push_back("CHPLENV_SKIP_HOST=true");
+  env.push_back("CHPLENV_SUPPRESS_WARNINGS=true");
+
+  auto executeResult = executeAndWait(command, env, "run printchplenv", false);
+  auto& output = executeResult.second;
+  ChplEnvMap storeInto;
+  // TODO: the following code was copied from production compiler's file.cpp
+
+  // Lines
+  std::string line= "";
+  std::string lineDelimiter = "\n";
+  size_t linePos = 0;        // Line break position
+
+  // Tokens
+  std::string tokenDelimiter = "=";
+  size_t delimiterPos = 0;    // Position of delimiter
+  size_t valuePos = 0;        // Position of value
+
+  std::string key = "";
+  std::string value = "";
+
+  while ((linePos = output.find(lineDelimiter)) != std::string::npos) {
+    line = output.substr(0, linePos);
+
+    // Key is substring up until "=" on a given line
+    delimiterPos = line.find(tokenDelimiter);
+    key = line.substr(0, delimiterPos);
+
+    // Value is substring after "=" on a given line
+    valuePos = delimiterPos + tokenDelimiter.length();
+    value = line.substr(valuePos);
+
+    storeInto[key] = value;
+    output.erase(0, linePos + lineDelimiter.length());
+  }
+  setChplEnv(context, std::move(storeInto));
 }
 
 bool idIsInInternalModule(Context* context, ID id) {

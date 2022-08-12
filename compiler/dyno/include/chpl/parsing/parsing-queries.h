@@ -36,6 +36,7 @@ namespace chpl {
 namespace parsing {
 
 using ConfigSettingsList = std::vector<std::pair<std::string, std::string>>;
+using ChplEnvMap = std::unordered_map<std::string, std::string>;
 
 /**
  This query returns the contents of a file as the string field in the
@@ -207,6 +208,14 @@ void setupModuleSearchPaths(Context* context,
                             const std::string& chplModulePath,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames);
+
+const ChplEnvMap& getChplEnv(Context* context);
+
+const std::string& getChplEnvValue(Context* context,
+                                   std::string key,
+                                   std::string defaultValue);
+
+void setupChplEnv(Context* context, const std::string& chplHome);
 
 /**
  Returns true if the ID corresponds to something in an internal module.
