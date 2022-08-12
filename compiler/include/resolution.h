@@ -236,9 +236,8 @@ private:
 
 
 ResolutionCandidate*
-filterAndDisambiguateForInit(CallInfo&                        info,
-                             const Vec<ResolutionCandidate*>& origCandidates,
-                             Vec<ResolutionCandidate*>&       filteredCandidates);
+disambiguateForInit(CallInfo&                    info,
+                    Vec<ResolutionCandidate*>&   candidates);
 
 // Regular resolve functions
 void      resolveCall(CallExpr* call);
@@ -281,7 +280,6 @@ bool recordContainingCopyMutatesField(Type* at);
 
 // This one does not call USR_STOP
 void printResolutionErrorUnresolved(CallInfo&                  info,
-                                    Vec<ResolutionCandidate*>& candidates,
                                     Vec<FnSymbol*>&            visibleFns);
 
 void printResolutionErrorAmbiguous (CallInfo&                  info,
