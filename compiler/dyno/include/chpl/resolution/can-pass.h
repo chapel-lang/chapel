@@ -183,10 +183,12 @@ CanPassResult canPass(Context* context,
   specifying requiredKind=PARAM and giving non-param types will
   result in an UnknownType, even if the types can otherwise by unified.
  */
-types::QualifiedType commonType(Context* context,
-                                const std::vector<types::QualifiedType>& types,
+chpl::types::QualifiedType commonType(Context* context,
+                                const std::vector<chpl::types::QualifiedType>& types,
                                 bool useRequiredKind,
-                                types::QualifiedType::Kind requiredKind);
+                                chpl::types::QualifiedType::Kind requiredKind);
+// QualifiedType fully qualified here to prevent "reference target not found"
+// in Doxygen.
 
 
 } // end namespace resolution
