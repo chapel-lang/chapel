@@ -616,53 +616,53 @@ module ChapelIO {
   // Moved here to avoid circular dependencies in ChapelTuple.
   pragma "no doc"
   proc _tuple._readWriteHelper(f) throws {
-    var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
-    var start:ioLiteral;
-    var comma:ioLiteral;
-    var comma1tup:ioLiteral;
-    var end:ioLiteral;
-    var binary = f.binary();
+    const st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
+    const binary = f.binary();
 
-    if st == QIO_TUPLE_FORMAT_SPACE {
-      start = new ioLiteral("");
-      comma = new ioLiteral(" ");
-      comma1tup = new ioLiteral("");
-      end = new ioLiteral("");
-    } else if st == QIO_TUPLE_FORMAT_JSON {
-      start = new ioLiteral("[");
-      comma = new ioLiteral(", ");
-      comma1tup = new ioLiteral("");
-      end = new ioLiteral("]");
-    } else {
-      start = new ioLiteral("(");
-      comma = new ioLiteral(", ");
-      comma1tup = new ioLiteral(",");
-      end = new ioLiteral(")");
+    // Returns a 4-tuple containing strings representing:
+    // - start of a tuple
+    // - the comma/separator between elements
+    // - a comma/separator for 1-tuples
+    // - end of a tuple
+    proc getLiterals() : 4*string {
+      if st == QIO_TUPLE_FORMAT_SPACE {
+        return ("", " ", "", "");
+      } else if st == QIO_TUPLE_FORMAT_JSON {
+        return ("[", ", ", "", "]");
+      } else {
+        return ("(", ", ", ",", ")");
+      }
     }
+
+    const (start, comma, comma1tup, end) = getLiterals();
 
     proc helper(const ref arg) throws where f.writing { f.write(arg); }
     proc helper(ref arg) throws where !f.writing { arg = f.read(arg.type); }
 
+    proc rwLiteral(lit:string) throws {
+      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+    }
+
     if !binary {
-      f <~> start;
+      rwLiteral(start);
     }
     if size > 1 {
       helper(this(0));
       for param i in 1..size-1 {
         if !binary {
-          f <~> comma;
+          rwLiteral(comma);
         }
         helper(this(i));
       }
     } else if size == 1 {
       helper(this(0));
       if !binary then
-        f <~> comma1tup;
+        rwLiteral(comma1tup);
     } else {
       // size < 1, print nothing
     }
     if !binary {
-      f <~> end;
+      rwLiteral(end);
     }
   }
 
