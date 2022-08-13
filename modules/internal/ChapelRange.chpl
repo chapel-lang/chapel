@@ -808,7 +808,7 @@ module ChapelRange {
      partially bounded, the return value will not (cannot) be a
      `param`.
   */
-  proc range.hasFirst() param where !stridable
+  proc range.hasFirst() param where !stridable && !(hasLowBound() && hasHighBound())
     return hasLowBound();
 
   pragma "no doc"
@@ -838,7 +838,7 @@ module ChapelRange {
      partially bounded, the return value will not (cannot) be a
      `param`.
   */
-  proc range.hasLast() param where !stridable
+  proc range.hasLast() param where !stridable && !(hasLowBound() && hasHighBound())
     return hasHighBound();
 
   pragma "no doc"
