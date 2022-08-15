@@ -176,8 +176,8 @@ module ChapelRange {
                   param boundedType: BoundedRangeType,
                   param stridable: bool) {
     this.init(idxType, boundedType, stridable,
-              _low = chpl__defaultLowBound(idxType),
-              _high = chpl__defaultHighBound(idxType),
+              _low = chpl__defaultLowBound(idxType, boundedType),
+              _high = chpl__defaultHighBound(idxType, boundedType),
               _stride = 1:chpl__rangeStrideType(idxType),
               _alignment = 0:chpl__idxTypeToIntIdxType(idxType),
               _aligned = true);
@@ -223,6 +223,12 @@ module ChapelRange {
     if !stridable && s then
       compilerError("cannot initialize a non-stridable range from a stridable range");
 
+    const isEnumBool = isEnumType(idxType) || isBoolType(idxType);
+    const low = if isEnumBool && !other.hasLowBound() then 0 else other._low;
+    const high = if isEnumBool && !other.hasHighBound()
+                 then (if isEnumType(idxType) then idxType.size-1 else 1)
+                 else other._high;
+
     const str = if stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
 
     var alignment = chpl__idxToInt(other.alignment);
@@ -238,7 +244,7 @@ module ChapelRange {
     }
 
     this.init(idxType, boundedType, stridable,
-              other._low, other._high,
+              low, high,
               str,
               alignment,
               other.aligned || isBoolType(idxType) || isEnumType(idxType));
@@ -505,15 +511,11 @@ module ChapelRange {
     return false;
   /* Return true if argument ``r`` is a fully bounded range, false otherwise */
   proc isBoundedRange(r: range(?)) param
-    return isBoundedRange(r.boundedType);
-
-  pragma "no doc"
-  proc isBoundedRange(param B: BoundedRangeType) param
-    return B == BoundedRangeType.bounded;
+    return r.hasLowBound() && r.hasHighBound();
 
   /* Return true if this range is bounded */
   proc range.isBounded() param
-    return boundedType == BoundedRangeType.bounded;
+    return hasLowBound() && hasHighBound();
 
   /* This controls whether the :proc:`range.low`/:proc:`range.high`
      queries should return aligned values by default.  In future
@@ -945,13 +947,8 @@ module ChapelRange {
   }
 
   pragma "no doc"
-  operator ==(r1: range(?), r2: range(?)) param
-    where r1.boundedType != r2.boundedType
-  return false;
-
-  pragma "no doc"
   operator ==(r1: range(?), r2: range(?)): bool
-    where r1.boundedType == r2.boundedType
+    where r1.hasLowBound() == r2.hasLowBound() && r1.hasHighBound() == r2.hasHighBound()
   {
     // An ambiguous ranges cannot equal an unambiguous one
     //  even if all their parameters match.
@@ -986,6 +983,11 @@ module ChapelRange {
       return true;
     }
   }
+
+  // This is the catch-all if the previous overload doesn't catch
+  pragma "no doc"
+  operator ==(r1: range(?), r2: range(?)) param
+  return false;
 
   pragma "no doc"
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
@@ -2971,17 +2973,29 @@ operator :(r: range(?), type t: range(?)) {
     return isEnumType(t) && t.size == 1;
   }
 
-  proc chpl__defaultLowBound(type t) {
+  proc chpl__defaultLowBound(type t, boundedType: BoundedRangeType) {
     if chpl__singleValIdxType(t) {
+      return 0:chpl__idxTypeToIntIdxType(t);
+    } else if (boundedType == BoundedRangeType.boundedHigh ||
+               boundedType == BoundedRangeType.boundedNone) {
       return 0:chpl__idxTypeToIntIdxType(t);
     } else {
       return 1:chpl__idxTypeToIntIdxType(t);
     }
   }
 
-  proc chpl__defaultHighBound(type t) {
+  proc chpl__defaultHighBound(type t, boundedType: BoundedRangeType) {
     if chpl__singleValIdxType(t) {
       return -1:chpl__idxTypeToIntIdxType(t);
+    } else if (boundedType == BoundedRangeType.boundedLow ||
+               boundedType == BoundedRangeType.boundedNone) {
+      if isEnumType(t) {
+        return (t.size-1):chpl__idxTypeToIntIdxType(t);
+      } else if isBoolType(t) {
+        return 1:chpl__idxTypeToIntIdxType(t);
+      } else {
+        return 0:chpl__idxTypeToIntIdxType(t);
+      }
     } else {
       return 0:chpl__idxTypeToIntIdxType(t);
     }
