@@ -433,9 +433,12 @@ module ChapelArray {
                          definedConst: bool) {
     if definedConst {
       if dom.isRectangular() {
-        const distDom: domain(dom.rank,
+        const distDom = new _domain(d.newRectangularDom(
+                              dom.rank,
                               dom._value.idxType,
-                              dom._value.stridable) dmapped d = dom;
+                              dom._value.stridable,
+                              dom.dims(),
+                              definedConst));
         return distDom;
       } else {
         const distDom: domain(dom._value.idxType) dmapped d = dom;
@@ -444,7 +447,13 @@ module ChapelArray {
     }
     else {
       if dom.isRectangular() {
-        var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) dmapped d = dom;
+        var distDom = new _domain(d.newRectangularDom(
+                              dom.rank,
+                              dom._value.idxType,
+                              dom._value.stridable,
+                              dom.dims(),
+                              definedConst));
+
         return distDom;
       } else {
         var distDom: domain(dom._value.idxType) dmapped d = dom;
