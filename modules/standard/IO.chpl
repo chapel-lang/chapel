@@ -2803,7 +2803,7 @@ deprecated "The 'iohints' type is deprecated; please use a variant of 'openreade
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints=IOHINT_NONE)
+                hints:iohints)
     : channel(false, kind, locking) throws {
   return openreader(path, kind, locking, start..end, new ioHintSet(hints));
 }
