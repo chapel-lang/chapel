@@ -756,6 +756,10 @@ module ChapelRange {
      If the range is ambiguous, the behavior is undefined.
    */
   inline proc range.isEmpty() {
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then
+        return true;
+    }
     if boundsChecking && isAmbiguous() then
       HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
     else
@@ -786,6 +790,10 @@ module ChapelRange {
   proc range.sizeAs(type t: integral): t {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
+
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then return 0;
+    }
 
     // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
@@ -876,6 +884,10 @@ module ChapelRange {
      if the represented sequence is not defined. */
   inline proc range.contains(ind: idxType)
   {
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then return false;
+    }
+
     if this.isAmbiguous() then return false;
 
     const i = chpl__idxToInt(ind);
@@ -902,6 +914,10 @@ module ChapelRange {
    */
   inline proc range.contains(other: range(?))
   {
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then return other.size == 0;
+    }
+
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
     if this.isBounded() && this.sizeAs(uint) == 0 then
@@ -1066,6 +1082,10 @@ operator :(r: range(?), type t: range(?)) {
   inline proc range.boundsCheck(other: range(?e,?b,?s))
     where b == BoundedRangeType.boundedNone
   {
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then return false;
+    }
+
     if this.isAmbiguous() || other.isAmbiguous()
       then return false;
 
@@ -2306,6 +2326,9 @@ operator :(r: range(?), type t: range(?)) {
   pragma "order independent yielding loops"
   iter range.these()
     where hasLowBound() && hasHighBound() && stridable == true {
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then return;
+    }
     if (useOptimizedRangeIterators) {
       if boundsChecking {
         checkIfIterWillOverflow();
@@ -2335,6 +2358,9 @@ operator :(r: range(?), type t: range(?)) {
   pragma "order independent yielding loops"
   iter range.these()
   where hasLowBound() && hasHighBound() && stridable == false {
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then return;
+    }
     if (useOptimizedRangeIterators) {
       if boundsChecking then checkIfIterWillOverflow();
 
