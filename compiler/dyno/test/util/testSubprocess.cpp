@@ -35,24 +35,24 @@ static void checkNonexistent() {
 
   cmd.clear();
   cmd.push_back("./nonexistent-command");
-  rc = executeAndWait(cmd, {}, "nonexistent-command description", true);
+  rc = executeAndWait(cmd, {}, "nonexistent-command description", true).first;
   assert(rc != 0);
 
   cmd.clear();
   cmd.push_back("./nonexistent-command");
   cmd.push_back("arg");
-  rc = executeAndWait(cmd, {}, "nonexistent-command description", true);
+  rc = executeAndWait(cmd, {}, "nonexistent-command description", true).first;
   assert(rc != 0);
 
   cmd.clear();
   cmd.push_back("/this/path/does/not/exist");
-  rc = executeAndWait(cmd, {}, "path does not exist description", true);
+  rc = executeAndWait(cmd, {}, "path does not exist description", true).first;
   assert(rc != 0);
 
   cmd.clear();
   cmd.push_back("/this/path/does/not/exist");
   cmd.push_back("arg");
-  rc = executeAndWait(cmd, {}, "path does not exist description", true);
+  rc = executeAndWait(cmd, {}, "path does not exist description", true).first;
   assert(rc != 0);
 }
 
@@ -63,7 +63,7 @@ static void checkEnv() {
 
   cmd.clear();
   cmd.push_back("/usr/bin/env");
-  rc = executeAndWait(cmd, {}, "testing that env can be run", true);
+  rc = executeAndWait(cmd, {}, "testing that env can be run", true).first;
   assert(rc == 0);
 }
 
@@ -73,17 +73,17 @@ static void checkEmptyOrComment() {
   std::vector<std::string> cmd;
 
   cmd.clear();
-  rc = executeAndWait(cmd, {}, "empty command 1", true);
+  rc = executeAndWait(cmd, {}, "empty command 1", true).first;
   assert(rc == 0);
 
   cmd.clear();
   cmd.push_back("");
-  rc = executeAndWait(cmd, {}, "empty command 2", true);
+  rc = executeAndWait(cmd, {}, "empty command 2", true).first;
   assert(rc == 0);
 
   cmd.clear();
   cmd.push_back("# this is a comment");
-  rc = executeAndWait(cmd, {}, "comment command", true);
+  rc = executeAndWait(cmd, {}, "comment command", true).first;
   assert(rc == 0);
 }
 

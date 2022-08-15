@@ -43,14 +43,16 @@ namespace chpl {
  printSystemCommands if true, print the command to be run
 
  returns
+   a pair of exit code and the program output. the exit code is
    -1 if there was an error in fork, waitpid, or the child process was killed
    255 if the exec call failed
    the exit code from the subprocess (0-255) otherwise
  */
-int executeAndWait(const std::vector<std::string>& commandVec,
-                   const std::vector<std::string>& envVec,
-                   const std::string& description,
-                   bool printSystemCommands = false);
+std::pair<int, std::string>
+executeAndWait(const std::vector<std::string>& commandVec,
+               const std::vector<std::string>& envVec,
+               const std::string& description,
+               bool printSystemCommands = false);
 
 #endif
 
