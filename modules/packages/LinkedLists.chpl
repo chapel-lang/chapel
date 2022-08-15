@@ -286,22 +286,22 @@ record LinkedList {
       f.write(size);
     }
     if isjson || ischpl {
-      f <~> new ioLiteral("[");
+      f._writeLiteral("[");
     }
 
     var first = true;
     for e in this {
       if first then first = false;
       else {
-        if isspace then f <~> new ioLiteral(" ");
-        else if isjson || ischpl then f <~> new ioLiteral(", ");
+        if isspace then f._writeLiteral(" ");
+        else if isjson || ischpl then f._writeLiteral(", ");
       }
 
       f.write(e);
     }
 
     if isjson || ischpl {
-      f <~> new ioLiteral("]");
+      f._writeLiteral("]");
     }
 
   }
@@ -323,7 +323,7 @@ record LinkedList {
     // How many elements should we read (for binary mode)?
     const num : int = if isBinary then f.read(int) else 0;
 
-    if isJson || isChpl then f <~> new ioLiteral("[");
+    if isJson || isChpl then f._readLiteral("[");
 
     // Clear out existing elements in the list.
     destroy();
@@ -344,9 +344,9 @@ record LinkedList {
         // Try reading an end bracket. If we don't, then continue on.
         try {
           if isJson || isChpl {
-            f <~> new ioLiteral("]");
+            f._readLiteral("]");
           } else if isSpace {
-            f <~> new ioNewline(skipWhitespaceOnly=true);
+            f._readNewline();
           }
 
           hasReadEnd = true;
@@ -359,9 +359,9 @@ record LinkedList {
         // Try to read a space or a comma. Break if we don't.
         try {
           if isSpace {
-            f <~> new ioLiteral(" ");
+            f._readLiteral(" ");
           } else if isJson || isChpl {
-            f <~> new ioLiteral(",");
+            f._readLiteral(",");
           }
         } catch err: BadFormatError {
           break;
@@ -373,7 +373,7 @@ record LinkedList {
     }
 
     if !hasReadEnd then
-      if isJson || isChpl then f <~> new ioLiteral("]");
+      if isJson || isChpl then f._readLiteral("]");
   }
 }
 

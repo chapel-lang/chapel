@@ -3729,6 +3729,34 @@ proc channel.writeIt(const x) throws {
       this.readIt(iolit);
   }
 
+  pragma "no doc"
+  inline
+  proc channel._readLiteral(lit:string, ignoreWhitespace=true) throws {
+    var iolit = new ioLiteral(lit, ignoreWhitespace);
+    this.readIt(iolit);
+  }
+
+  pragma "no doc"
+  inline
+  proc channel._writeLiteral(lit:string) throws {
+    var iolit = new ioLiteral(lit);
+    this.writeIt(iolit);
+  }
+
+  pragma "no doc"
+  inline
+  proc channel._readNewline() throws {
+    var ionl = new ioNewline(true);
+    this.readIt(ionl);
+  }
+
+  pragma "no doc"
+  inline
+  proc channel._writeNewline() throws {
+    var ionl = new ioNewline(true);
+    this.writeIt(ionl);
+  }
+
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */

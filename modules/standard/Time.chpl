@@ -501,12 +501,12 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   // Exists to support some common functionality for `datetime.readThis`
   pragma "no doc"
   proc date._readCore(f) throws {
-    const dash = new ioLiteral("-");
+    const dash = "-";
 
     chpl_year = f.read(int);
-    f <~> dash;
+    f._readLiteral(dash);
     chpl_month = f.read(int);
-    f <~> dash;
+    f._readLiteral(dash);
     chpl_day = f.read(int);
   }
 
@@ -517,12 +517,12 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
 
     this._readCore(f);
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
   }
 
 
@@ -800,14 +800,14 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   // Exists to support some common functionality for `datetime.readThis`
   pragma "no doc"
   proc time._readCore(f) throws {
-    const colon = new ioLiteral(":");
+    const colon = ":";
 
     chpl_hour = f.read(int);
-    f <~> colon;
+    f._readLiteral(colon);
     chpl_minute = f.read(int);
-    f <~> colon;
+    f._readLiteral(colon);
     chpl_second = f.read(int);
-    f <~> new ioLiteral(".");
+    f._readLiteral(".");
     chpl_microsecond = f.read(int);
   }
 
@@ -818,12 +818,12 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
 
     this._readCore(f);
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
   }
 
 
@@ -1407,14 +1407,14 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
 
     chpl_date._readCore(f);
-    f <~> new ioLiteral("T");
+    f._readLiteral("T");
     chpl_time._readCore(f);
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
   }
 
 
