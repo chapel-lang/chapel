@@ -54,12 +54,12 @@ proc f(x, y) {
 }
 
 proc isProhibitedF(type t1, type t2) param {
-  if isImagType(t1) && !isImagType(t2) {
+/*  if isImagType(t1) && !isImagType(t2) {
     return true;
   }
   if !isImagType(t1) && isImagType(t2) {
     return true;
-  }
+  }*/
   return false;
 }
 
