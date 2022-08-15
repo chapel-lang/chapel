@@ -2822,8 +2822,10 @@ private proc openreaderHelper(path:string,
   } else if (region.hasLowBound()) {
     return try fl.readerHelper(kind, locking, region.low, max(int(64)), hints,
                                style);
-  } else {
+  } else if (region.hasHighBound()) {
     return try fl.readerHelper(kind, locking, 0, region.high, hints, style);
+  } else {
+    return try fl.readerHelper(kind, locking, 0, max(int(64)), hints, style);
   }
 }
 
