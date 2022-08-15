@@ -249,6 +249,17 @@ module ChapelRange {
       compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
   }
 
+
+  proc chpl_build_bounded_range(low: ?t, high: t) where isTuple(low) && isHomogeneousTuple(low) && low.size == high.size{
+    param s = low.size;
+    type eltType = low(0).type;
+    var ranges:  s*range(eltType);
+    for i in 0..<s do
+        ranges[i] = low[i]..high[i];
+    var d: domain(s) = ranges;
+    return d;
+  }
+
   proc chpl__nudgeLowBound(low) {
     return chpl__intToIdx(low.type, chpl__idxToInt(low) + 1);
   }
