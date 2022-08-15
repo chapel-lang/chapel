@@ -53,23 +53,37 @@ proc f(x, y) {
   writeln("  f(generic)");
 }
 
-
-proc isProhibitedAdd(type t1, type t2) param {
-  return isUintType(t1) && isIntType(t2) && numBits(t1) >= numBits(t2);
+proc isProhibitedF(type t1, type t2) param {
+  if isImagType(t1) && !isImagType(t2) {
+    return true;
+  }
+  if !isImagType(t1) && isImagType(t2) {
+    return true;
+  }
+  return false;
 }
 
 
 // next, call 'f' with all combinations of numeric types
 proc callF(type t1, type t2) {
-  writef(" Second actual %-12s -> ", t2:string);
+  {
+    writef(" Second actual %-12s -> ", t2:string);
+  }
+
   var x: t1;
   var y: t2;
-  f(x, y);
 
-  writef("      Reversed %-12s -> ", "");
-  f(y, x);
+  if (!isProhibitedF(t1, t2)) {
+    f(x, y);
 
-  if (!isProhibitedAdd(t1, t2) && !isProhibitedAdd(t2, t1)) {
+    writef("      Reversed %-12s -> ", "");
+    f(y, x);
+  } else {
+    writeln("  f skipped");
+  }
+
+
+  {
     writef("               %-12s ->   ", "+");
     writeln((x+y).type:string);
   }
