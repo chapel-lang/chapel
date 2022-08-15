@@ -232,7 +232,7 @@ module ChapelLocale {
 
     A *processing unit* or *PU* is an instance of the processor
     architecture, basically the thing that executes instructions.
-    :proc:`locale.numPus` tells how many of these are present on this
+    :proc:`locale.numPUs` tells how many of these are present on this
     locale.  It can count either physical PUs (commonly known as
     *cores*) or hardware threads such as hyperthreads and the like.
     It can also either take into account any OS limits on which PUs
@@ -259,8 +259,8 @@ module ChapelLocale {
     running programs within Cray batch jobs that have been set up
     with limited processor resources.
   */
-  inline proc locale.numPus(logical: bool = false, accessible: bool = true) {
-    return this._value.numPus(logical, accessible);
+  inline proc locale.numPUs(logical: bool = false, accessible: bool = true): int {
+    return this._value.numPUs(logical, accessible);
   }
 
   /*
@@ -336,7 +336,7 @@ module ChapelLocale {
     pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
 
     inline
-    proc numPus(logical: bool = false, accessible: bool = true)
+    proc numPUs(logical: bool = false, accessible: bool = true)
       return if logical
              then if accessible then nPUsLogAcc else nPUsLogAll
              else if accessible then nPUsPhysAcc else nPUsPhysAll;
