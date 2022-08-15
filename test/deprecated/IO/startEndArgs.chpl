@@ -12,6 +12,16 @@ f.close();
 // Here's the actual meat of the test
 var openreaderCheck1 = openreader(filename, start=5); // Should warn
 var readRes: string;
-var val = openreaderCheck1.readLine(readRes, stripNewline=true);
+openreaderCheck1.readLine(readRes, stripNewline=true);
 writeln(readRes);
 openreaderCheck1.close();
+
+var openreaderCheck2 = openreader(filename, end=7); // Should warn
+openreaderCheck2.readLine(readRes);
+writeln(readRes);
+openreaderCheck2.close();
+
+var openreaderCheck3 = openreader(filename, start=5, end=7); // Should warn
+openreaderCheck3.readLine(readRes);
+writeln(readRes);
+openreaderCheck3.close();

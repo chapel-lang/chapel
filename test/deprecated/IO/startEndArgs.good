@@ -1,2 +1,6 @@
 startEndArgs.chpl:13: warning: openreader with a start and/or end argument is deprecated.  Please use the new region argument instead
+startEndArgs.chpl:19: warning: openreader with a start and/or end argument is deprecated.  Please use the new region argument instead
+startEndArgs.chpl:24: warning: openreader with a start and/or end argument is deprecated.  Please use the new region argument instead
 is a file, I've counted it carefully.  It should be 77 characters long.
+Here is
+is
