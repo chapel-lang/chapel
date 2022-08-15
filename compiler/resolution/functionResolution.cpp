@@ -11808,10 +11808,16 @@ static Expr*
 chaseTypeConstructorForActual(CallExpr* init, const char* subName,
                               int subIdx,
                               AggregateType* at) {
-  if (!init->isPrimitive(PRIM_DEFAULT_INIT_VAR)) return nullptr;
+  if (!init || !init->isPrimitive(PRIM_DEFAULT_INIT_VAR)) return nullptr;
 
   auto seTypeSym = toSymExpr(init->get(2));
-  auto ts = seTypeSym->symbol();
+  auto ts = toTypeSymbol(seTypeSym->symbol());
+
+  // This function is only currently intended to chase resolved type
+  // construction calls (in which case the base expression should be
+  // pointing to a type symbol). This means that the chasing does not
+  // cross call boundaries (where we could be dealing with a formal).
+  if (!ts) return nullptr;
 
   INT_ASSERT(ts->hasFlag(FLAG_TYPE_VARIABLE));
 
@@ -11943,21 +11949,24 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
           }
         }
 
-        // No luck above, so create a temporary runtime type instead.
-        // TODO: User error on this path?
+        // No luck above, so create a temporary runtime type instead...
+        // BHARSH 2018-11-02: This technically generates code that would
+        // crash at runtime because aggregate types don't contain the
+        // runtime type information for their fields, so this temporary
+        // will go uninitialized.
         if (!recoveredRuntimeType) {
 
-          // TODO: Improve this error, or just handle multiple indirections.
-          USR_WARN(call, "failed to locate the runtime type for field '%s' "
-                         "when default initializing '%s' - this may "
-                         "cause runtime errors",
-                         keyName,
-                         val->name);
+          // TODO: When we remove this error we get some warnings pointing
+          // into module code, can we fix those/improve coverage?
+          auto fn = toFnSymbol(val->defPoint->parentSymbol);
+          if (fn && isUserRoutine(fn) && !val->hasFlag(FLAG_UNSAFE)) {
+            USR_WARN(call, "failed to locate the runtime type for field "
+                           "'%s' when default initializing '%s' - this "
+                           "may cause runtime errors",
+                           keyName,
+                           val->name);
+          }
 
-          // BHARSH 2018-11-02: This technically generates code that would
-          // crash at runtime because aggregate types don't contain the
-          // runtime type information for their fields, so this temporary
-          // will go uninitialized.
           VarSymbol* tmp = newTemp("default_runtime_temp");
           tmp->addFlag(FLAG_TYPE_VARIABLE);
           CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD,

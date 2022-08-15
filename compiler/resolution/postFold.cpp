@@ -111,22 +111,19 @@ Expr* postFold(Expr* expr) {
 
     } else if (call->isPrimitive() == true) {
       retval = postFoldPrimop(call);
+
+    // If the type construction call contains a runtime type, we need
+    // to hold onto that for later. Otherwise, fold the call away.
     } else if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-        bool containsRuntimeType = false;
-        for_actuals(actual, call) {
-          if (auto se = toSymExpr(actual)) {
-            auto ts = se->symbol()->type->symbol;
-            if (ts && ts->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-              containsRuntimeType = true;
-              break;
-            }
-          }
-        }
+        bool doFoldAway = true;
 
-        // If the type construction call contains a runtime type, we need
-        // to hold onto that for later, so don't fold it away.
-        if (!containsRuntimeType) {
+        if (auto fn = toFnSymbol(se->parentSymbol))
+          if (fn->name != astrNew)
+            if (isTypeConstructorWithRuntimeTypeActual(call))
+              doFoldAway = false;
+
+        if (doFoldAway) {
           retval = se->copy();
           call->replace(retval);
         }
@@ -853,7 +850,14 @@ static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
     // We need to preserve the type construction call so that the actuals
     // can be used later.
     } else if (auto se = toSymExpr(rhs->baseExpr)) {
-      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) isTypeVar = true;
+      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (isTypeConstructorWithRuntimeTypeActual(rhs)) {
+          isTypeVar = true;
+        } else {
+          INT_FATAL("Unexpected type constructor after prefold in '%s'",
+                    __FUNCTION__);
+        }
+      }
     }
 
   } else {

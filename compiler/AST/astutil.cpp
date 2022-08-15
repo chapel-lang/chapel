@@ -856,10 +856,28 @@ bool isTypeExpr(Expr* expr) {
 
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       retval = fn->retTag == RET_TYPE;
+
+    // TODO: Is it safe to just check if the base expression is a type?
+    } else if (isTypeConstructorWithRuntimeTypeActual(call)) {
+      retval = true;
     }
   }
 
   return retval;
+}
+
+bool isTypeConstructorWithRuntimeTypeActual(CallExpr* call) {
+  if (!call || call->isPrimitive()) return false;
+
+  auto se = toSymExpr(call->baseExpr);
+  if (!se || !se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) return false;
+
+  for_actuals(actual, call)
+    if (auto se = toSymExpr(actual))
+      if (auto sym = se->symbol()->type->symbol)
+        if (sym->hasFlag(FLAG_HAS_RUNTIME_TYPE)) return true;
+
+  return false;
 }
 
 static void pruneVisit(TypeSymbol*       ts,
