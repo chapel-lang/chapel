@@ -57,7 +57,7 @@ static void test3() {
                          var x = if b then 0 else "string";
                          )"""");
   qt.dump();
-  assert(qt.isUnknown());
+  assert(qt.isErroneousType());
 }
 
 static void test4() {
