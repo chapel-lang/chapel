@@ -181,7 +181,7 @@ CanPassResult canPass(Context* context,
   If useRequiredKind=true is specified, the requiredKind argument is treated
   as a strict constraint on the kinds of the given types. For instance,
   specifying requiredKind=PARAM and giving non-param types will
-  result in an UnknownType, even if the types can otherwise by unified.
+  result in an empty QualifiedType, even if the types can otherwise by unified.
  */
 chpl::types::QualifiedType commonType(Context* context,
                                 const std::vector<chpl::types::QualifiedType>& types,

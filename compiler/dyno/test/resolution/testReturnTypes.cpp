@@ -256,8 +256,8 @@ static void test11() {
 static void test12() {
   // test returning non-param from param-intent procedure
   testProgram({
+      decl("const", "int"),
       lit("1"),
-      lit("2"),
   }, [](auto& qt) {
     assert(qt.isUnknown());
   }, QualifiedType::PARAM);

@@ -1026,7 +1026,7 @@ class KindProperties {
   KindProperties() {}
 
   KindProperties(bool isConst, bool isRef, bool isType,
-                   bool isParam)
+                 bool isParam)
     : isConst(isConst), isRef(isRef), isType(isType),
       isParam(isParam), isValid(true) {}
 
@@ -1053,8 +1053,7 @@ class KindProperties {
 
   void combineWith(const KindProperties& other) {
     if (!isValid) return;
-    if (!other.isValid ||
-        (isType ^ other.isType)) {
+    if (!other.isValid || isType != other.isType) {
       // Can't mix types and non-types.
       invalidate();
       return;
@@ -1066,8 +1065,7 @@ class KindProperties {
 
   void strictCombineWith(const KindProperties& other) {
     if (!isValid) return;
-    if (!other.isValid ||
-        (isType ^ other.isType)) {
+    if (!other.isValid || isType != other.isType) {
       // Can't mix types and non-types.
       invalidate();
       return;
@@ -1115,9 +1113,9 @@ static QualifiedType findByPassing(Context* context,
 }
 
 QualifiedType commonType(Context* context,
-                                const std::vector<QualifiedType>& types,
-                                bool useRequiredKind,
-                                QualifiedType::Kind requiredKind) {
+                         const std::vector<QualifiedType>& types,
+                         bool useRequiredKind,
+                         QualifiedType::Kind requiredKind) {
   assert(types.size() > 0);
 
   // figure out the kind
@@ -1156,8 +1154,7 @@ QualifiedType commonType(Context* context,
   auto commonType = findByPassing(context, adjustedTypes);
   if (!commonType.isUnknown()) return commonType;
 
-  bool paramRequired = useRequiredKind &&
-    requiredKind == QualifiedType::PARAM;
+  bool paramRequired = useRequiredKind && requiredKind == QualifiedType::PARAM;
   if (bestKind == QualifiedType::PARAM && !paramRequired) {
     // We couldn't unify the types as params, but maybe if we downgrade
     // them to values, it'll work.
