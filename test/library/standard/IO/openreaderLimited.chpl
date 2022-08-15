@@ -11,3 +11,13 @@ var readChStart = openreader(filename, region=3..);
 readChStart.readLine(readRes, stripNewline=true);
 writeln(readRes);
 readChStart.close();
+
+var readChEnd = openreader(filename, region=..5);
+readChEnd.readLine(readRes);
+writeln(readRes);
+readChEnd.close();
+
+var readChStartAndEnd = openreader(filename, region=3..5);
+readChStartAndEnd.readLine(readRes);
+writeln(readRes);
+readChStartAndEnd.close();
