@@ -224,9 +224,12 @@ module ChapelRange {
       compilerError("cannot initialize a non-stridable range from a stridable range");
 
     const isEnumBool = isEnumType(idxType) || isBoolType(idxType);
-    const low = if isEnumBool && !other.hasLowBound() then 0 else other._low;
+    type bt = other.intIdxType;
+    const low = if isEnumBool && !other.hasLowBound() then 0:bt
+                                                      else other._low;
     const high = if isEnumBool && !other.hasHighBound()
-                 then (if isEnumType(idxType) then idxType.size-1 else 1)
+                 then (if isEnumType(idxType) then (idxType.size-1):bt
+                                              else 1:bt) // bool
                  else other._high;
 
     const str = if stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
