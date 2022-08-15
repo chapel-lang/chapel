@@ -71,28 +71,21 @@ proc masonNew(args: [] string) throws {
   var packageType = 'application';
 
   try! {
-    if args.size == 1 {
-      // TODO: should we move interactive mason creation?
-      var metadata = beginInteractiveSession('','','','');
-      packageName = metadata[0];
-      dirName = packageName;
-      version = metadata[1];
-      chplVersion = metadata[2];
-      license = metadata[3];
+    if dirArg.hasValue() then dirName = dirArg.value();
+    else if !isLightweight then
+      throw new owned MasonError("A package name must be specified");
+    if nameOpt.hasValue() {
+      packageName = nameOpt.value();
     } else {
-      if dirArg.hasValue() then dirName = dirArg.value();
-      if nameOpt.hasValue() {
-        packageName = nameOpt.value();
-      } else {
-        packageName = dirName;
-      }
-      if isApplication then
-        packageType = "application";
-      else if isLibrary then
-        packageType = "library";
-      else if isLightweight then
-        packageType = "light";
+      packageName = dirName;
     }
+    if isApplication then
+      packageType = "application";
+    else if isLibrary then
+      packageType = "library";
+    else if isLightweight then
+      packageType = "light";
+    
     if !isLightweight && validatePackageName(dirName=packageName) {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");
@@ -296,8 +289,6 @@ proc InitProject(dirName, packageName, vcs, show,
       makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license, packageType);
       makeSrcDir(dirName);
       makeModule(dirName, fileName=packageName, packageType);
-      makeTestDir(dirName);
-      makeExampleDir(dirName);
       writeln("Created new " + packageType + " project: " + dirName);
     }
     else {
