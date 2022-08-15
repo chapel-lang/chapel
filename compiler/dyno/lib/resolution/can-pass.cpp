@@ -1151,6 +1151,8 @@ QualifiedType commonType(Context* context,
   }
 
   // Try apply usual coercion rules to find common type
+  // Performance: if the types vector ever becomes very long,
+  // it might be worth using a unique'd vector here.
   auto commonType = findByPassing(context, adjustedTypes);
   if (!commonType.isUnknown()) return commonType;
 
