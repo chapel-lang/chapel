@@ -228,15 +228,16 @@ static void setupSearchPaths(Context* ctx, bool enableStdLib,
                              const std::vector<std::string>& cmdLinePaths,
                              const std::vector<std::string>& files) {
   if (enableStdLib) {
+    setupChplEnv(ctx, chpl_home);
     setupModuleSearchPaths(ctx,
                            chpl_home,
                            false,
-                           "flat",
+                           getChplEnvValue(ctx, "CHPL_LOCALE_MODEL", "flat"),
                            false,
-                           "qthreads",
-                           "none",
-                           "linux64-x86_64-gnu",
-                           "",
+                           getChplEnvValue(ctx, "CHPL_TASKS", "qthreads"),
+                           getChplEnvValue(ctx, "CHPL_COMM", "none"),
+                           getChplEnvValue(ctx, "CHPL_SYS_MODULES_SUBDIR", "linux64-x86_64-gnu"),
+                           getChplEnvValue(ctx, "CHPL_MODULE_PATH", ""),
                            cmdLinePaths,
                            files);
   } else {
