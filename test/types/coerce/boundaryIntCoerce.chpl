@@ -6,6 +6,7 @@ proc foo(x: real(64)) {
   writeln("in real64 foo");
 }
 
+/* disabled due to no int->complex coercions
 proc bar(x: complex(64)) {
   writeln("In complex64 bar");
 }
@@ -13,7 +14,7 @@ proc bar(x: complex(64)) {
 proc bar(x: complex(128)) {
   writeln("In complex128 bar");
 }
-
+*/
 proc baz(x: real(32)) {
   writeln("In baz");
 }
@@ -25,8 +26,8 @@ proc testit(type t) {
   writeln(t: string);
   foo(mx);
   foo(mn);
-  bar(mx);
-  bar(mn);
+  //bar(mx);
+  //bar(mn);
   if numBits(t) < 64 {
     baz(mx);
     baz(mn);
@@ -45,7 +46,7 @@ param int32minAsInt: int(64) = min(int(32));
 param int32maxAsInt: int(64) = max(uint(32));
 foo(int32maxAsInt);
 foo(int32minAsInt);
-bar(int32maxAsInt);
-bar(int32minAsInt);
+//bar(int32maxAsInt);
+//bar(int32minAsInt);
 baz(int32maxAsInt);
 baz(int32minAsInt);
