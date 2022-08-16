@@ -228,15 +228,21 @@ static void setupSearchPaths(Context* ctx, bool enableStdLib,
                              const std::vector<std::string>& cmdLinePaths,
                              const std::vector<std::string>& files) {
   if (enableStdLib) {
+    auto chplEnv = ctx->getChplEnv();
+    assert(!chplEnv.getError() && "not handling chplenv errors yet");
+
+    // CHPL_MODULE_PATH isn't always in the output; check if it's there.
+    auto it = chplEnv->find("CHPL_MODULE_PATH");
+    auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
     setupModuleSearchPaths(ctx,
                            chpl_home,
                            false,
-                           "flat",
+                           chplEnv->at("CHPL_LOCALE_MODEL"),
                            false,
-                           "qthreads",
-                           "none",
-                           "linux64-x86_64-gnu",
-                           "",
+                           chplEnv->at("CHPL_TASKS"),
+                           chplEnv->at("CHPL_COMM"),
+                           chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
+                           chplModulePath,
                            cmdLinePaths,
                            files);
   } else {
@@ -281,6 +287,7 @@ int main(int argc, char** argv) {
   if (enableStdLib) {
     if (const char* chpl_home_env  = getenv("CHPL_HOME")) {
       chpl_home = chpl_home_env;
+      context.setChplHome(chpl_home);
       printf("CHPL_HOME is set, so setting up search paths\n");
     } else {
       printf("--std only works when CHPL_HOME is set\n");

@@ -28,6 +28,7 @@
 #include "chpl/util/hash.h"
 #include "chpl/util/break.h"
 #include "chpl/util/terminal.h"
+#include "chpl/util/subprocess.h"
 
 #include <memory>
 #include <tuple>
@@ -68,6 +69,13 @@ class Context {
   using ReportErrorFnType = void(*)(Context*, const ErrorMessage&);
 
  private:
+  // The CHPL_HOME variable
+  const char* chplHome;
+
+  // State for printchplenv data
+  bool computedChplEnv = false;
+  ChplEnvMap chplEnv;
+
   // map that supports uniqueCString / UniqueString
   using UniqueStringsTableType = std::unordered_set<chpl::detail::StringAndLength, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
   UniqueStringsTableType uniqueStringsTable;
@@ -246,6 +254,22 @@ class Context {
    */
   Context();
   ~Context();
+
+  /**
+    Store a string corresponding to CHPL_HOME in the context. The context does
+    not take ownership of the string, so the argument should live at least as
+    long as the context itself.
+
+    Changing chplHome invalidates previous caches of printchplenv output.
+  */
+  void setChplHome(const char* chplHome);
+
+  /**
+    Run printchplenv, or return a cached result of doing so. To get output,
+    CHPL_HOME must have been provided via setChplHome; otherwise, the resulting
+    map will be empty.
+  */
+  llvm::ErrorOr<const ChplEnvMap&> getChplEnv();
 
   /**
    Set the error handling function

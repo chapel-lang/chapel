@@ -64,6 +64,24 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
+void Context::setChplHome(const char* chplHome) {
+  computedChplEnv = false;
+  chplEnv.clear();
+  this->chplHome = chplHome;
+}
+
+llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
+  if (chplHome == nullptr || computedChplEnv) return chplEnv;
+  auto chplEnvResult = ::chpl::getChplEnv({}, chplHome);
+  if (auto err = chplEnvResult.getError()) {
+    // forward error to caller
+    return err;
+  }
+  chplEnv = std::move(chplEnvResult.get());
+  computedChplEnv = true;
+  return chplEnv;
+}
+
 static void defaultReportErrorPrintDetail(Context* context,
                                           const ErrorMessage& err,
                                           const char* prefix,
