@@ -1193,10 +1193,10 @@ struct Converter {
         INT_ASSERT(svs);
 
       // Handle reductions in with clauses explicitly here.
-      } else if (const uast::Reduce* rd = expr->toReduce()) {
+      } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
 
-        Expr* ovar = convertAST(rd->iterand());
+        Expr* ovar = new UnresolvedSymExpr(rd->name().c_str());
         Expr* riExpr = convertScanReduceOp(rd->op());
         svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
       } else {
