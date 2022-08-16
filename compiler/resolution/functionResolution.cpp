@@ -11810,16 +11810,14 @@ chaseTypeConstructorForActual(CallExpr* init, const char* subName,
                               AggregateType* at) {
   if (!init || !init->isPrimitive(PRIM_DEFAULT_INIT_VAR)) return nullptr;
 
-  auto seTypeSym = toSymExpr(init->get(2));
-  auto ts = toTypeSymbol(seTypeSym->symbol());
+  auto seTypeVar = toSymExpr(init->get(2));
+  auto sym = seTypeVar->symbol();
 
-  // This function is only currently intended to chase resolved type
-  // construction calls (in which case the base expression should be
-  // pointing to a type symbol). This means that the chasing does not
-  // cross call boundaries (where we could be dealing with a formal).
-  if (!ts) return nullptr;
+  INT_ASSERT(sym->hasFlag(FLAG_TYPE_VARIABLE));
 
-  INT_ASSERT(ts->hasFlag(FLAG_TYPE_VARIABLE));
+  // This function is not currently capable of chasing interprocedurally,
+  // so if the init type is a formal, just bail out now.
+  if (!isVarSymbol(sym)) return nullptr;
 
   // Given (PRIM_INIT_VAR obj temp) where 'temp' is a type variable, look
   // for (PRIM_MOVE temp call), where 'call' is a type construction call,
@@ -11830,19 +11828,16 @@ chaseTypeConstructorForActual(CallExpr* init, const char* subName,
 
   // Check if the other use of 'temp' is a move.
   int numUses = 0;
-  for_SymbolSymExprs(se, ts) {
+  for_SymbolSymExprs(se, sym) {
 
     // Be conservative and limit to two uses.
     if (++numUses > 2) break;
-
     if (!se->inTree()) continue;
 
     if (auto innerCall = toCallExpr(se->parentExpr)) {
       if (innerCall->isPrimitive(PRIM_MOVE)) {
         move = innerCall;
         break;
-      } else {
-        INT_ASSERT(innerCall == init);
       }
     }
   }
@@ -11853,7 +11848,7 @@ chaseTypeConstructorForActual(CallExpr* init, const char* subName,
   // The type variable from the PRIM_INIT_VAR should be on the LHS.
   auto seLhs = toSymExpr(move->get(1));
   INT_ASSERT(seLhs);
-  INT_ASSERT(seLhs->symbol() == ts);
+  INT_ASSERT(seLhs->symbol() == sym);
 
   CallExpr* typeConstructorCall = nullptr;
 
