@@ -111,6 +111,13 @@ public:
   bool                    isInterimInstantiation;
   // Does any argument use promotion?
   bool                    anyPromotes;
+  // Have nImplicitConversions and nImplicitConversionsToTypeNotMentioned
+  // been computed?
+  bool                    nImplicitConversionsComputed;
+  // How many implicit conversions?
+  int                     nImplicitConversions;
+  // How many implicit conversions to a type not used in the call?
+  int                     nImplicitConversionsToTypeNotMentioned;
 
   Symbol*                 failingArgument; // actual or formal
   ResolutionCandidateFailureReason reason;

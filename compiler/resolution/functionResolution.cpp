@@ -5501,6 +5501,150 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
+static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
+  if (is_imag_type(actualVt) && is_complex_type(formalVt) &&
+      2*get_width(actualVt) == get_width(formalVt))
+    return true;
+
+  if (is_real_type(actualVt) && is_complex_type(formalVt) &&
+      2*get_width(actualVt) == get_width(formalVt))
+    return true;
+
+  return false;
+}
+
+static void countImplicitConversions(ResolutionCandidate* candidate,
+                                     const DisambiguationContext& DC,
+                                     int& implicitConversionCountOut,
+                                     int& impConvNotMentionedCountOut) {
+
+  // use saved counts from the ResolutionCandidate
+  if (candidate->nImplicitConversionsComputed) {
+    implicitConversionCountOut = candidate->nImplicitConversions;
+    impConvNotMentionedCountOut =
+      candidate->nImplicitConversionsToTypeNotMentioned;
+    return;
+  }
+
+  Vec<Type*> normalizedActualTypes;
+
+  for (int k = 0; k < DC.actuals->n; k++) {
+    Symbol*    actual  = DC.actuals->v[k];
+    ArgSymbol* formal = candidate->actualIdxToFormal[k];
+    Type* actualVt = actual->type->getValType();
+    Type* formalVt = formal->type->getValType();
+    if (formal->originalIntent == INTENT_OUT) {
+      actualVt = dtUnknown;
+    } else {
+      if (candidate->anyPromotes) {
+        while (actualVt->scalarPromotionType != nullptr) {
+          // run canDispatch to check for promotion
+          bool promotes = false;
+          bool paramNarrows = false;
+          canDispatch(actualVt, actual, formalVt, formal,
+                      candidate->fn, &promotes, &paramNarrows,
+                      /* param coercions only? */ false);
+          if (promotes) {
+            actualVt = actualVt->scalarPromotionType->getValType();
+          } else {
+            break;
+          }
+        }
+      }
+    }
+    normalizedActualTypes.push_back(actualVt);
+  }
+
+  // check the number of implicit conversions to types not used
+  // in the call.
+  int nImplicitConversionsToTypeNotMentioned = 0;
+  //int nNonThisImplicitConversions = 0;
+  int nImplicitConversions = 0;
+
+  for (int k = 0; k < DC.actuals->n; k++) {
+    ArgSymbol* formal = candidate->actualIdxToFormal[k];
+
+    if (formal->originalIntent == INTENT_OUT) {
+      continue; // type comes from call site so ignore it here
+    }
+
+    Type* actualVt = normalizedActualTypes.v[k];
+    Type* formalVt = formal->type->getValType();
+    if (actualVt == formalVt) {
+      // same type, nothing else to worry about here
+      continue;
+    }
+
+    // if we get here, an implicit conversion is required
+    if (isClassLikeOrManaged(actualVt) || isClassLikeOrManaged(formalVt) ||
+        isClassLikeOrPtr(actualVt) || isClassLikeOrPtr(formalVt)) {
+      // OK, don't worry about implicit conversion for class types here
+      continue;
+    }
+
+    if (actualVt == dtNil) {
+      // don't worry about converting 'nil' to something else
+      continue;
+    }
+
+    if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
+        formalVt->symbol->hasFlag(FLAG_TUPLE)) {
+      // don't worry about tuple types for now
+      // TODO: do worry about tuples containing numeric types that are
+      // converted
+      continue;
+    }
+
+    // TODO: remove this exception
+    if (isMatchingImagComplex(actualVt, formalVt)) {
+      // don't worry about imag vs complex
+      continue;
+    }
+
+    if (is_bool_type(actualVt) &&
+        (formalVt == dtInt[INT_SIZE_DEFAULT] || is_bool_type(formalVt))) {
+      // don't worry about bool types converting to default 'int'
+      // or to other bool sizes
+      continue;
+    }
+
+    // is it an implicit conversion to a formal type
+    // that is used in an actual of the call?
+    bool formalVtUsedInOtherActual = false;
+    for (int other = 0; other < DC.actuals->n; other++) {
+      ArgSymbol* otherFormal = candidate->actualIdxToFormal[other];
+      if (other == k || otherFormal->originalIntent == INTENT_OUT)
+        continue;
+
+      Type* otherFormalVt = otherFormal->type->getValType();
+      Type* otherActualVt = normalizedActualTypes.v[other];
+      if (otherFormalVt == formalVt &&
+          (otherActualVt == formalVt ||
+           isMatchingImagComplex(otherActualVt, formalVt))) {
+        formalVtUsedInOtherActual = true;
+        break;
+      }
+    }
+
+    nImplicitConversions++;
+    //if (!formal->hasFlag(FLAG_ARG_THIS)) {
+    //  nNonThisImplicitConversions++;
+    //}
+    if (!formalVtUsedInOtherActual) {
+      nImplicitConversionsToTypeNotMentioned++;
+    }
+  }
+
+  implicitConversionCountOut = nImplicitConversions;
+  impConvNotMentionedCountOut = nImplicitConversionsToTypeNotMentioned;
+
+  // save counts in the ResolutionCandidate
+  candidate->nImplicitConversionsComputed = true;
+  candidate->nImplicitConversions = nImplicitConversions;
+  candidate->nImplicitConversionsToTypeNotMentioned =
+    nImplicitConversionsToTypeNotMentioned;
+}
+
 static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     const DisambiguationContext& DC,
@@ -5514,12 +5658,68 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
   // If index i is set then we can skip testing function F_i because
   // we already know it can not be the best match.
   std::vector<bool> notBest(candidates.n, false);
+  // If index i is set we have ruled out that function
+  std::vector<bool> discarded(candidates.n, false);
+
+  if (candidates.n > 1) {
+    // compute minimum and maximum number of implicit conversions
+    // to a type not mentioned at the call site
+    int minImpConvToTypeNotMent = INT_MAX;
+    int maxImpConvToTypeNotMent = INT_MIN;
+    for (int i = 0; i < candidates.n; ++i) {
+      ResolutionCandidate* candidate = candidates.v[i];
+
+      int nImplicitConversions = 0;
+      int nImpConvToTypeNotMent = 0;
+
+      countImplicitConversions(candidate, DC,
+                               nImplicitConversions, nImpConvToTypeNotMent);
+
+      if (nImpConvToTypeNotMent < minImpConvToTypeNotMent) {
+        minImpConvToTypeNotMent = nImpConvToTypeNotMent;
+      }
+      if (nImpConvToTypeNotMent > maxImpConvToTypeNotMent) {
+        maxImpConvToTypeNotMent = nImpConvToTypeNotMent;
+      }
+    }
+
+    // if the min and max differ, discard any candidates
+    // that have more implicit conversions to a type not mentioned
+    // at the call site than the minumum.
+    if (minImpConvToTypeNotMent != maxImpConvToTypeNotMent) {
+      for (int i = 0; i < candidates.n; ++i) {
+        EXPLAIN("##########################\n");
+        EXPLAIN("# Filtering function %d #\n", i);
+        EXPLAIN("##########################\n\n");
+        ResolutionCandidate* candidate = candidates.v[i];
+        EXPLAIN("%s\n\n", toString(candidate->fn));
+
+        int nImplicitConversions = 0;
+        int nImpConvToTypeNotMent = 0;
+
+        // note: should use a cached value from previous loop
+        countImplicitConversions(candidate, DC,
+                                 nImplicitConversions, nImpConvToTypeNotMent);
+
+        if (nImpConvToTypeNotMent > minImpConvToTypeNotMent) {
+          EXPLAIN("X: Fn %d has too many conversions so is filtered out\n", i);
+          discarded[i] = true;
+        } else {
+          EXPLAIN("X: Fn %d is allowed\n", i);
+        }
+      }
+    }
+  }
 
   for (int i = 0; i < candidates.n; ++i) {
     ResolutionCandidate* candidate1         = candidates.v[i];
     bool                 singleMostSpecific = true;
 
     bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
+
+    if (discarded[i]) {
+      continue;
+    }
 
     EXPLAIN("##########################\n");
     EXPLAIN("# Considering function %d #\n", i);
@@ -5534,6 +5734,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
 
     for (int j = 0; j < candidates.n; ++j) {
       if (i == j) {
+        continue;
+      }
+      if (discarded[j]) {
         continue;
       }
 

@@ -52,6 +52,9 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
   fn = function;
   isInterimInstantiation = false;
   anyPromotes = false;
+  nImplicitConversionsComputed = false;
+  nImplicitConversions = 0;
+  nImplicitConversionsToTypeNotMentioned = 0;
   failingArgument = NULL;
   reason = RESOLUTION_CANDIDATE_MATCH;
 }
