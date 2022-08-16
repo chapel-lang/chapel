@@ -54,11 +54,11 @@ proc f(x, y) {
 }
 
 
-proc isProhibitedAdd(type t1, type t2) param {
+/*proc isProhibitedAdd(type t1, type t2) param {
   return (t1 == uint && isIntType(t2)) ||
          (isUintType(t1) && isIntType(t2) && numBits(t1) >= numBits(t2)) ||
          (t1 == uint && isUintType(t2) && t2 != uint); // bug workaround
-}
+}*/
 
 // next, call 'f' with all combinations of numeric types
 proc callF(type t1, param p2) {
@@ -69,7 +69,7 @@ proc callF(type t1, param p2) {
   writef("      Reversed %-12s -> ", "");
   f(p2, x);
 
-  if (!isProhibitedAdd(t1, p2.type) && !isProhibitedAdd(p2.type, t1)) {
+  /*if (!isProhibitedAdd(t1, p2.type) && !isProhibitedAdd(p2.type, t1)) */{
     writef("               %-12s ->   ", "+");
     writeln((x+p2).type:string);
   }
