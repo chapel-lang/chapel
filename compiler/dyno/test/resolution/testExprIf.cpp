@@ -31,60 +31,69 @@
 static void test1() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
+  QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
-                         enum color {
-                           red, green, blue
-                         }
-
-                         var x = color.red;
+                         var x : if true then string else "not-a-type";
                          )"""");
-  assert(qt.kind() == QualifiedType::PARAM);
-  assert(qt.type() && qt.type()->isEnumType());
-  assert(qt.param() && qt.param()->isEnumParam());
-
-  auto et = qt.type()->toEnumType();
-  auto ep = qt.param()->toEnumParam();
-  assert(et->id().contains(ep->value()));
-  auto enumAst = parsing::idToAst(context, et->id());
-  assert(enumAst && enumAst->isEnum());
-  auto elemAst = parsing::idToAst(context, ep->value());
-  assert(elemAst && elemAst->isEnumElement());
+  assert(qt.type() && qt.type()->isStringType());
 }
 
 static void test2() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
+  QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
-                         enum color {
-                           red, red, blue
-                         }
-
-                         var x = color.red;
+                         var x : if false then "not-a-type" else int;
                          )"""");
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-  assert(qt.type() && qt.type()->isEnumType());
+  assert(qt.type() && qt.type()->isIntType());
 }
 
 static void test3() {
   Context ctx;
   auto context = &ctx;
+  QualifiedType qt =  resolveQualifiedTypeOfX(context,
+                         R""""(
+                         var b : bool;
+                         var x = if b then 0 else "string";
+                         )"""");
+  qt.dump();
+  assert(qt.isErroneousType());
+}
+
+static void test4() {
+  Context ctx;
+  auto context = &ctx;
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
-                         enum color {
-                           green, blue
-                         }
-
-                         var x = color.red;
+                         var b : bool;
+                         var x = if b then 1 else 0;
                          )"""");
-  assert(qt.kind() == QualifiedType::UNKNOWN);
-  assert(qt.type() && qt.type()->isErroneousType());
+  qt.dump();
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+
+static void test5() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         record r {}
+                         var temp: r;
+                         const ref tempRef = temp;
+                         var b : bool;
+                         var x = if b then tempRef else new r();
+                         )"""");
+  qt.dump();
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  assert(qt.type() && qt.type()->isRecordType());
 }
 
 int main() {
   test1();
   test2();
   test3();
+  test4();
+  test5();
   return 0;
 }

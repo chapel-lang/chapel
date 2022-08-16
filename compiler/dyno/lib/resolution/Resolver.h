@@ -330,6 +330,9 @@ struct Resolver {
   void exitScope(const uast::AstNode* ast);
 
   // the visitor methods
+  bool enter(const uast::Conditional* cond);
+  void exit(const uast::Conditional* cond);
+
   bool enter(const uast::Literal* literal);
   void exit(const uast::Literal* literal);
 

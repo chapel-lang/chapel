@@ -1380,6 +1380,66 @@ void Resolver::exitScope(const AstNode* ast) {
   }
 }
 
+bool Resolver::enter(const uast::Conditional* cond) {
+  auto& r = byPostorder.byAst(cond);
+
+  // Try short-circuiting. Visit the condition to see if it is a param
+  cond->condition()->traverse(*this);
+  auto& condType = byPostorder.byAst(cond->condition()).type();
+  if (condType.isParamTrue()) {
+    // condition is param true, might as well only resolve `then` branch
+    cond->thenBlock()->traverse(*this);
+    if (cond->isExpressionLevel()) {
+      auto& thenType = byPostorder.byAst(cond->thenStmt(0)).type();
+      r.setType(thenType);
+    }
+    // No need to visit children again, or visit `else` branch.
+    return false;
+  } else if (condType.isParamFalse()) {
+    auto elseBlock = cond->elseBlock();
+    if (elseBlock == nullptr) {
+      // no else branch. leave the type unknown.
+      return false;
+    }
+    elseBlock->traverse(*this);
+    if (cond->isExpressionLevel()) {
+      auto& elseType = byPostorder.byAst(elseBlock->stmt(0)).type();
+      r.setType(elseType);
+    }
+    // No need to visit children again, especially `then` branch.
+    return false;
+  }
+
+  // We might as well visit the rest of the children here,
+  // since returning `true` at this point would cause a second visit
+  // to `cond->condition()`.
+  auto thenBlock = cond->thenBlock();
+  auto elseBlock = cond->elseBlock();
+  thenBlock->traverse(*this);
+  if (elseBlock) elseBlock->traverse(*this);
+
+  if (cond->isExpressionLevel()) {
+    std::vector<QualifiedType> returnTypes;
+    returnTypes.push_back(byPostorder.byAst(thenBlock->stmt(0)).type());
+    if (elseBlock != nullptr) {
+      returnTypes.push_back(byPostorder.byAst(elseBlock->stmt(0)).type());
+    }
+    // with useRequiredKind = false, the QualifiedType::Kind argument
+    // is ignored. Just pick a dummy value.
+    auto ifType = commonType(context, returnTypes,
+                             /* useRequiredKind */ false,
+                             QualifiedType::UNKNOWN);
+    if (ifType.isUnknown()) {
+      r.setType(typeErr(cond, "unable to reconcile branches of if-expression"));
+    } else {
+      r.setType(ifType);
+    }
+  }
+  return false;
+}
+void Resolver::exit(const uast::Conditional* cond) {
+}
+
 bool Resolver::enter(const Literal* literal) {
   ResolvedExpression& result = byPostorder.byAst(literal);
   result.setType(typeForLiteral(context, literal));
