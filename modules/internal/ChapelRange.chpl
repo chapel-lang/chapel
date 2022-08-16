@@ -2433,7 +2433,7 @@ operator :(r: range(?), type t: range(?)) {
     !localeModelPartitionsIterationOnSublocales
   {
     if !(hasLowBound() && hasHighBound()) {
-      compilerError("parallel iteration is not currently supported over ranges without low and high bounds");
+      compilerError("parallel iteration is not currently supported over ranges without bounds");
     }
     if boundsChecking && this.isAmbiguous() {
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
@@ -2476,7 +2476,7 @@ operator :(r: range(?), type t: range(?)) {
   iter range.these(param tag: iterKind) where tag == iterKind.leader
   {
     if !(hasLowBound() && hasHighBound()) then
-      compilerError("parallel iteration is not currently supported over ranges without low and high bounds");
+      compilerError("parallel iteration is not currently supported over ranges without bounds");
 
     if boundsChecking && this.isAmbiguous() then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
