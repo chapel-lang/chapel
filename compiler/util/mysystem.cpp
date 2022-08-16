@@ -81,8 +81,8 @@ int mysystem(const std::vector<std::string> commandVec,
              const char* description,
              bool        ignoreStatus,
              bool        quiet) {
-  int status = chpl::executeAndWait(commandVec, std::string(description),
-                                    printSystemCommands && !quiet);
+  int status = chpl::executeAndWait(commandVec, {}, std::string(description),
+                                    printSystemCommands && !quiet).first;
 
   // if there was an error fork/waiting
   if (status == -1) {
