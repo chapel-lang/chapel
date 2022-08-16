@@ -1079,6 +1079,11 @@ struct ChplSyntaxVisitor {
     if (node->iterand()->isOpCall()) ss_<<")";
   }
 
+  void visit(const ReduceIntent* node) {
+    printAst(node->op());
+    ss_ << " reduce " << node->name();
+  }
+
   void visit(const Require* node) {
     ss_ << "require ";
     interpose(node->exprs(), ", ");
