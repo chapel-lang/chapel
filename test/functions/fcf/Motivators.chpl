@@ -20,29 +20,51 @@ module Motivators {
   }
   test2();
 
-  // Print some function types, one with named formals and one without.
+  // Test printing function types, one with named formals and one without.
   proc test3() {
     type F1 = proc(int, int): int;
     assert(F1:string == "proc(int, int): int");
+
     type F2 = proc(ref: int, ref: int): int;
     assert(F2:string == "proc(ref: int, ref: int): int");
+
+    type F3 = proc(const x: real, in y: complex): void;
+    assert(F3:string == "proc(x: real, in y: complex)");
+
+    // Check to make sure printing temporaries also works as expected.
     assert(proc(ref x: real): int:string == "proc(ref x: real): int");
   }
   test3();
 
-  /*
   proc test4() {
+    type F1 = proc(int, int): int;
+    type F2 = proc(x: int, int): int;
+    assert(F1 != F2);
+  }
+  test4();
+
+  proc test5() {
+    extern {
+      #include <assert.h>
+      void foo(int64_t (*)(int64_t, int64_t));
+      void foo(int64_t (*fn)(int64_t, int64_t)) {
+        int n = fn(4, 4);
+        assert(n == 8);
+      }
+    }
+
     extern proc foo(fn: proc(int, int): int): void;
+
     // Call 'foo' with our proc literal.
     foo(proc(x: int, y: int) {
       return x + y;
     });
+
     // Call again but with a variable.
     var fn = proc(x: int, y: int) { return x + y; };
     foo(fn);
   }
-  test4();
-  */
+  test5();
 
   /*
   proc test() {

@@ -27,6 +27,7 @@
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
+#include "firstClassFunctions.h"
 #include "iterator.h"
 #include "stmt.h"
 #include "stlUtil.h"
@@ -545,46 +546,6 @@ checkCalls()
     checkBadAddrOf(call);
 }
 
-
-static bool isExternType(Type* t) {
-  // narrow references are OK but not wide references
-  if (t->isWideRef())
-    return false;
-
-  ClassTypeDecoratorEnum d = ClassTypeDecorator::UNMANAGED_NONNIL;
-  // unmanaged or borrowed classes are OK
-  if (isClassLikeOrManaged(t) || isClassLikeOrPtr(t))
-    d = removeNilableFromDecorator(classTypeDecorator(t));
-
-  TypeSymbol* ts = t->symbol;
-
-  EnumType* et = toEnumType(t);
-
-  return t->isRef() ||
-         d == ClassTypeDecorator::BORROWED ||
-         d == ClassTypeDecorator::UNMANAGED ||
-         (et && et->isConcrete()) ||
-         (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_STAR_TUPLE)) ||
-         ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||
-         ts->hasFlag(FLAG_DATA_CLASS) ||
-         ts->hasFlag(FLAG_C_PTR_CLASS) ||
-         ts->hasFlag(FLAG_C_ARRAY) ||
-         ts->hasFlag(FLAG_EXTERN) ||
-         ts->hasFlag(FLAG_EXPORT); // these don't exist yet
-}
-
-static bool isExportableType(Type* t) {
-
-  if (t == dtString || t == dtBytes) {
-    // string/bytes are OK in export functions
-    // because they are converted to wrapper
-    // functions
-    return true;
-  }
-
-  return isExternType(t);
-}
-
 // This function checks that the passed type is an acceptable
 // argument/return type for an extern/export function.
 //
@@ -650,6 +611,8 @@ static bool isErroneousExternExportArgIntent(ArgSymbol* formal) {
   // workaround for issue #15917
   if (valType == dtExternalArray || valType == dtOpaqueArray)
     return false;
+
+  if (valType->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
 
   return isRecord(valType) &&
          (formal->originalIntent == INTENT_BLANK ||

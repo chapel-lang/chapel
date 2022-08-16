@@ -39,4 +39,6 @@ Type* fcfWrapperSuperTypeFromFnType(FnSymbol* fn);
 
 const char* fcfWrapperTypeToString(Type* t);
 
+bool fcfIsValidExternType(Type* t);
+
 #endif

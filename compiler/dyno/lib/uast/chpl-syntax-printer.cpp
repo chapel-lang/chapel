@@ -431,10 +431,6 @@ struct ChplSyntaxVisitor {
     printFunctionHelper(node);
   }
 
-  void printFunctionSignature(const FunctionSignature* node) {
-    printFunctionHelper(node);
-  }
-
   void printLinkage(const Decl* node) {
     if (node->linkage() != Decl::Linkage::DEFAULT_LINKAGE) {
       ss_ << kindToString(node->linkage()) << " ";
@@ -881,6 +877,29 @@ struct ChplSyntaxVisitor {
     }
     else
       ss_ << ";";
+  }
+
+  void visit(const chpl::uast::FunctionSignature* node) {
+    // Function Kind (proc, iter, ...)
+    ss_ << kindToString(node->kind());
+    ss_ << " ";
+
+    printFunctionHelper(node);
+
+    // Return Intent
+    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+      ss_ << " " << kindToString((IntentList) node->returnIntent());
+    }
+
+    // Return type
+    if (const AstNode* e = node->returnType()) {
+      typeExpressionHelper(e);
+    }
+    ss_ << " ";
+
+    // where clause
+    // throws
+    if (node->throws()) ss_ << "throws ";
   }
 
   void visit(const chpl::uast::Identifier* node) {
@@ -1359,7 +1378,7 @@ namespace chpl {
   void printFunctionSignature(std::ostream& os,
                               const FunctionSignature* node) {
     auto v = ChplSyntaxVisitor();
-    v.printFunctionSignature(node);
+    v.visit(node);
     // when using << with ss_.rdbuf(), if nothing gets added to os, then
     // os goes into fail state
     // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
