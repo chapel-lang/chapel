@@ -1163,5 +1163,18 @@ const Scope* scopeForModule(Context* context, ID id) {
 }
 
 
+const
+std::vector<ID> findUsedImportedModules(Context* context,
+                                        const Scope* scope) {
+  auto result = resolveVisibilityStmts(context, scope);
+  std::vector<ID> ids;
+
+  for (const auto& r : result->visibilityClauses()) {
+    ids.push_back(r.scope()->id());
+  }
+  return ids;
+}
+
+
 } // end namespace resolution
 } // end namespace chpl
