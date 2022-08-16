@@ -5955,8 +5955,8 @@ static void testArgMapping(FnSymbol*                    fn1,
   } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
     if (paramWithDefaultSize)
       prefer1 = WEAKEST;
-//    else if (actualParam)
-//      prefer1 = WEAKER;
+    else if (actualParam)
+      prefer1 = WEAKER;
     else
       prefer1 = STRONG;
 
@@ -5965,8 +5965,8 @@ static void testArgMapping(FnSymbol*                    fn1,
   } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
     if (paramWithDefaultSize)
       prefer2 = WEAKEST;
-//    else if (actualParam)
-//      prefer2 = WEAKER;
+    else if (actualParam)
+      prefer2 = WEAKER;
     else
       prefer2 = STRONG;
 
