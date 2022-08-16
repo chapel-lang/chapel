@@ -202,8 +202,8 @@ module ChapelLocale {
   /*
     Get the unique integer identifier for this locale.
 
-  :returns: index of this locale in the range ``0..numLocales-1``
-  :rtype: int
+    :returns: index of this locale in the range ``0..numLocales-1``
+    :rtype: int
 
   */
   inline proc locale.id: int {
@@ -212,17 +212,18 @@ module ChapelLocale {
 
   /*
     Get the maximum task concurrency that one can expect to
-    achieve on this locale.  The value is an estimate by the
-    runtime tasking layer.  Typically it is the number of physical
-    processor cores available to the program.  Creating more tasks
-    than this will probably increase walltime rather than decrease
-    it.
+    achieve on this locale.
 
     :returns: the maximum number of tasks that can run in parallel
       on this locale
     :rtype: int
+
+    Note that the value is an estimate by the runtime tasking layer.
+    Typically it is the number of physical processor cores available
+    to the program.  Creating more tasks than this will probably increase
+    walltime rather than decrease it.
   */
-  inline proc locale.maxTaskPar : int { return this._value.maxTaskPar; }
+  inline proc locale.maxTaskPar: int { return this._value.maxTaskPar; }
 
   // the following are normally taken care of by `forwarding`. However, they
   // don't work if they are called in a promoted expression. See 15148
@@ -295,7 +296,7 @@ module ChapelLocale {
     them.
   */
   pragma "fn synchronization free"
-  proc locale.runningTasks() : int {
+  proc locale.runningTasks(): int {
     return this.runningTaskCnt();
   }
 
