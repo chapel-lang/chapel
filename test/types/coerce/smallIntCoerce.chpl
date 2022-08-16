@@ -17,7 +17,7 @@ proc baz(x: real(32)) {
 proc baz(x: real(64)) {
   writeln("In baz64");
 }
-
+/*  disabled due to no int->complex coercions
 proc goo(x: complex(64)) {
   writeln("In goo64");
 }
@@ -33,15 +33,15 @@ proc boo(x: complex(128)) {
 proc boo(x: complex(64)) {
   writeln("In boo64");
 }
-
+*/
 proc testit2(type t) {
   var x = 42: t;
   writeln(t:string);
   foo(x);
   bar(x);
   baz(x);
-  goo(x);
-  boo(x);
+  //goo(x);
+  //boo(x);
   writeln();
 }
 
