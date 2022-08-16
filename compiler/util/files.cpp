@@ -31,6 +31,7 @@
 #include "files.h"
 
 #include "chpl/util/filesystem.h"
+#include "chpl/util/subprocess.h"
 
 #include "beautify.h"
 #include "driver.h"
@@ -484,21 +485,6 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
-std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
-  // Run printchplenv script, passing currently known CHPL_vars as well
-  std::string command;
-
-  // Pass known variables in varMap into printchplenv by prepending to command
-  for (auto& ii : varMap)
-    command += ii.first + "=" + ii.second + " ";
-
-  command += "CHPLENV_SKIP_HOST=true ";
-  command += "CHPLENV_SUPPRESS_WARNINGS=true ";
-  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple";
-
-  return runCommand(command);
-}
-
 std::string getChplDepsApp() {
   // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
 
@@ -516,28 +502,13 @@ bool compilingWithPrgEnv() {
 }
 
 std::string runCommand(std::string& command) {
-  // Run arbitrary command and return result
-  char buffer[256];
-  std::string result = "";
-
-  // Call command
-  FILE* pipe = popen(command.c_str(), "r");
-  if (!pipe) {
-    USR_FATAL("running %s", command.c_str());
+  auto commandOutput = chpl::getCommandOutput(command);
+  if (auto err = commandOutput.getError()) {
+    USR_FATAL("failed to run '%s', error: %s",
+              command.c_str(),
+              err.message().c_str());
   }
-
-  // Read output of command into result via buffer
-  while (!feof(pipe)) {
-    if (fgets(buffer, 256, pipe) != NULL) {
-      result += buffer;
-    }
-  }
-
-  if (pclose(pipe)) {
-    USR_FATAL("'%s' did not run successfully", command.c_str());
-  }
-
-  return result;
+  return commandOutput.get();
 }
 
 const char* getIntermediateDirName() {
