@@ -242,22 +242,31 @@ module ChapelRange {
   }
   proc chpl_build_bounded_range(low: bool, high: bool)
     return new range(bool, low=low, high=high);
+  proc chpl_build_bounded_range(low: ?t1, high: ?t2)
+    where isTuple(low) && isTuple(high) &&
+          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
+          low.size == high.size &&
+            (isCoercible(low(0).type, high(0).type) ||
+             isCoercible(high(0).type, low(0).type))
+  {
+    param size = low.size;
+    type eltType;
+  if (low(0).type == high(0).type) {
+    eltType = low(0).type;
+  } else {
+    eltType = (low(0) + high(0)).type;
+  }
+    var ranges:  size*range(eltType);
+    for i in 0..<size do
+        ranges[i] = low[i]..high[i];
+    var d: domain(size, eltType, false) = ranges;
+    return d;
+  }
   proc chpl_build_bounded_range(low, high) {
     if (low.type == high.type) then
       compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
     else
       compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
-  }
-
-
-  proc chpl_build_bounded_range(low: ?t, high: t) where isTuple(low) && isHomogeneousTuple(low) && low.size == high.size{
-    param s = low.size;
-    type eltType = low(0).type;
-    var ranges:  s*range(eltType);
-    for i in 0..<s do
-        ranges[i] = low[i]..high[i];
-    var d: domain(s) = ranges;
-    return d;
   }
 
   proc chpl__nudgeLowBound(low) {
