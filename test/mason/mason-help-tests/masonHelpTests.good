@@ -7,6 +7,9 @@ Options:
     -h, --help                   Display this message
         --show                   Increase verbosity
         --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application" (package with main function)
+        --lib                    Create a Mason "library" (package without main function)
+        --light                  Create a Mason "lightweight" project (place a TOML file in current directory)
     --name <legalName>           Specify package name different from directory name
 ********************************************************************************
 $ mason init -h
@@ -68,6 +71,7 @@ Options:
         --force                  Force Mason to build the project
         --example <example>      Build an example from the example/ directory
         --[no-]update            [Do not] update the mason registry before building
+        --dependent-modules      Print the include paths to the dependent modules to be integrated into build step
 
 When --example is thrown without an example, all examples will be built
 When no options are provided, the following will take place:

@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_NEW_H
 #define CHPL_UAST_NEW_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 
 namespace chpl {
@@ -52,7 +52,16 @@ class New : public AstNode {
     UNMANAGED
   };
 
+  /**
+    Given a management style, return the Chapel keyword representing it.
+  */
   static const char* managementToString(Management management);
+
+  /**
+    Given a string, return a management style, or 'DEFAULT_MANAGEMENT' if
+    there was not a match.
+  */
+  static Management stringToManagement(UniqueString ustr);
 
  private:
   New(AstList children, New::Management management)

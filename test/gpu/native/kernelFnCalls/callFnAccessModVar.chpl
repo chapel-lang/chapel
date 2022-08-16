@@ -9,7 +9,7 @@ proc foo(i) {
 }
 
 startGPUDiagnostics();
-on here.getChild(1) {
+on here.gpus[0] {
   var A: [0..#n] real;
   forall i in 0..#n {
     A[i] = foo(i);

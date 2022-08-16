@@ -61,6 +61,7 @@ public:
   void   exitInterfaceSym    (InterfaceSymbol*   node) override;
 
   void   visitLabelSym       (LabelSymbol*       node) override;
+  void visitTemporaryConversionSymbol(TemporaryConversionSymbol* node)override;
 
   bool   enterModSym         (ModuleSymbol*      node) override;
   void   exitModSym          (ModuleSymbol*      node) override;

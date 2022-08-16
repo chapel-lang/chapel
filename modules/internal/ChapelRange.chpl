@@ -594,7 +594,7 @@ module ChapelRange {
   }
 
 
-  /* Returns true if this range's high bound is *not* :math:`infty`,
+  /* Returns true if this range's high bound is *not* :math:`\infty`,
      and false otherwise */
   proc range.hasHighBound() param
     return boundedType == BoundedRangeType.bounded ||
@@ -1505,12 +1505,6 @@ operator :(r: range(?), type t: range(?)) {
     chpl_check_step_integral(step);
     type strType = chpl__rangeStrideType(idxType);
 
-    // At present, step must coerce to range's intIdxType or strType.
-    if numBits(step.type) > numBits(strType) then
-      compilerError("can't apply 'by' to a range with idxType ",
-                    idxType:string, " using a step of type ",
-                    step.type:string);
-
     if boundsChecking {
       if step == 0 then
         HaltWrappers.boundsCheckHalt("the step argument of the 'by' operator is zero");
@@ -2021,12 +2015,12 @@ operator :(r: range(?), type t: range(?)) {
   // cases for when stride is a non-param int (don't want to deal with finding
   // chpl__diffMod and the likes, just create a non-anonymous range to iterate
   // over.)
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: int(w)) {
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: int(?w2)) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: int(w)) {
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: int(?w2)) {
     const r = low..high by stride;
     for i in r do yield i;
   }
@@ -2046,11 +2040,11 @@ operator :(r: range(?), type t: range(?)) {
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride : int(w)) {
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride : integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
@@ -2089,10 +2083,10 @@ operator :(r: range(?), type t: range(?)) {
 
 
   // cases for when stride is a uint (we know the stride is must be positive)
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
 

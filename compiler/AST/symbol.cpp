@@ -733,6 +733,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   LcnSymbol(E_ArgSymbol, iName, iType),
   intent(iIntent),
   originalIntent(iIntent),
+  typeExprFromDefaultExpr(false),
   typeExpr(NULL),
   defaultExpr(NULL),
   variableExpr(NULL),
@@ -807,6 +808,7 @@ ArgSymbol::copyInner(SymbolMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, name, type, COPY_INT(typeExpr),
                                 COPY_INT(defaultExpr), COPY_INT(variableExpr));
   ps->copyFlags(this);
+  ps->typeExprFromDefaultExpr = typeExprFromDefaultExpr;
   ps->cname = cname;
   ps->instantiatedFrom = instantiatedFrom;
   ps->originalIntent = this->originalIntent;
@@ -1402,6 +1404,51 @@ void LabelSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void LabelSymbol::accept(AstVisitor* visitor) {
   visitor->visitLabelSym(this);
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+TemporaryConversionSymbol::TemporaryConversionSymbol(chpl::ID symId)
+  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
+    symId(symId), sig(nullptr)
+{
+  gTemporaryConversionSymbols.add(this);
+}
+
+TemporaryConversionSymbol::TemporaryConversionSymbol(
+    const chpl::resolution::TypedFnSignature* sig)
+  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
+    symId(), sig(sig)
+{
+  gTemporaryConversionSymbols.add(this);
+}
+
+void TemporaryConversionSymbol::verify() {
+}
+
+TemporaryConversionSymbol*
+TemporaryConversionSymbol::copyInner(SymbolMap* map) {
+  TemporaryConversionSymbol* copy = nullptr;
+  if (sig) {
+    copy = new TemporaryConversionSymbol(sig);
+  } else {
+    copy = new TemporaryConversionSymbol(symId);
+  }
+  copy->copyFlags(this);
+  return copy;
+}
+
+void TemporaryConversionSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in TemporaryConversionSymbol::replaceChild");
+}
+
+void TemporaryConversionSymbol::accept(AstVisitor* visitor) {
+  visitor->visitTemporaryConversionSymbol(this);
+}
+
 
 /************************************* | **************************************
 *                                                                             *

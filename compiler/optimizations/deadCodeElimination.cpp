@@ -91,6 +91,8 @@ void deadVariableElimination(FnSymbol* fn) {
   collectSymbolSet(fn, symSet);
 
   // Use 'symSet' and 'todo' together for a unique queue of symbols to process
+  // Note: this code is sensitive to traversal order.
+  // Currently, symSet is iterated in Symbol::id order.
   std::queue<Symbol*> todo;
   for_set(Symbol, sym, symSet) {
     todo.push(sym);

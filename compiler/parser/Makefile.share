@@ -16,11 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PARSER_SRCS =                                                      \
-              bison-chapel.cpp                                     \
-              flex-chapel.cpp                                      \
-              countTokens.cpp                                      \
-              parser.cpp
+PARSER_SRCS = parser.cpp
 
 SRCS        = $(PARSER_SRCS)
 

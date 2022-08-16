@@ -1961,6 +1961,8 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
     const clang::CodeGen::ABIArgInfo* argInfo = NULL;
     if (CGI) {
       argInfo = getCGArgInfo(CGI, clangArgNum);
+    } else if (useDarwinArmFix(formal->type)) {
+      argInfo = getSingleCGArgInfo(formal->type);
     }
 
     if (formal->hasFlag(FLAG_NO_CODEGEN))
@@ -2258,7 +2260,9 @@ void FnSymbol::codegenPrototype() {
   if (hasFlag(FLAG_EXTERN) && !hasFlag(FLAG_GENERATE_SIGNATURE)) return;
   if (hasFlag(FLAG_NO_CODEGEN))   return;
   if (gCodegenGPU == true) {
-    if (hasFlag(FLAG_GPU_CODEGEN) == false) return;
+    if (hasFlag(FLAG_GPU_AND_CPU_CODEGEN) == false &&
+       hasFlag(FLAG_GPU_CODEGEN) == false)
+      return;
   }
 
   if( id == breakOnCodegenID ||
@@ -2592,6 +2596,8 @@ void FnSymbol::codegenDef() {
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
         argInfo = getCGArgInfo(CGI, clangArgNum);
+      } else if (useDarwinArmFix(arg->type)) {
+        argInfo = getSingleCGArgInfo(arg->type);
       }
 
       // We should have already skipped past the sret above.
@@ -3303,6 +3309,9 @@ void ModuleSymbol::codegenDef() {
 
 void LabelSymbol::codegenDef() { }
 
+void TemporaryConversionSymbol::codegenDef() {
+  INT_FATAL("should not be reached");
+}
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *

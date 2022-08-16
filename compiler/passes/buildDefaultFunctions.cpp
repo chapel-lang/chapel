@@ -1803,7 +1803,6 @@ FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
 }
 
 static void buildDefaultReadWriteFunctions(AggregateType* ct) {
-  bool hasReadWriteThis         = false;
   bool hasReadThis              = false;
   bool hasWriteThis             = false;
   bool makeReadThisAndWriteThis = true;
@@ -1825,14 +1824,6 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   // dsiSerialRead/Write() routines, so don't create functions for them.
   if (isArrayImplType(ct))
     return;
-
-  // If we have a readWriteThis, we'll call it from readThis/writeThis.
-  if (FnSymbol* fn = functionExists("readWriteThis", dtMethodToken, ct, dtAny)) {
-    if (fn->hasFlag(FLAG_DEPRECATED) == false) {
-      USR_WARN(fn, "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead.");
-    }
-    hasReadWriteThis = true;
-  }
 
   if (functionExists("writeThis", dtMethodToken, ct, dtAny)) {
     hasWriteThis = true;
@@ -1857,16 +1848,9 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     // Compiler generated versions of readThis/writeThis now throw.
     fn->throwsErrorInit();
 
-    if (hasReadWriteThis == true) {
-      Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
-
-      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
-
-    } else {
-      fn->insertAtTail(new CallExpr("writeThisDefaultImpl",
-                                    fileArg,
-                                    fn->_this));
-    }
+    fn->insertAtTail(new CallExpr("writeThisDefaultImpl",
+                                  fileArg,
+                                  fn->_this));
 
     normalize(fn);
   }
@@ -1902,16 +1886,9 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
     fn->retType = dtVoid;
 
-    if (hasReadWriteThis == true) {
-      Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
-
-      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
-
-    } else {
-      fn->insertAtTail(new CallExpr("readThisDefaultImpl",
-                                    fileArg,
-                                    fn->_this));
-    }
+    fn->insertAtTail(new CallExpr("readThisDefaultImpl",
+                                  fileArg,
+                                  fn->_this));
 
     DefExpr* def = new DefExpr(fn);
 

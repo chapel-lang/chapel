@@ -66,8 +66,8 @@
 module Path {
 
 use List;
-use SysError, IO;
-use Sys, OS.POSIX;
+use IO;
+use OS, OS.POSIX;
 use CTypes;
 
 /*
@@ -362,6 +362,8 @@ proc dirname(path: string): string {
    :rtype: `string`
 */
  proc expandVars(path: string): string {
+  extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
@@ -903,4 +905,3 @@ proc splitPath(path: string): (string, string) {
  }
 }
 } // end module Path
-

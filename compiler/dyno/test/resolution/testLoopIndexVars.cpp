@@ -29,6 +29,7 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
+#include "common.h"
 
 
 // always check assertions in this test
@@ -46,11 +47,11 @@ using namespace types;
 using namespace uast;
 
 static auto myiter = std::string(R""""(
-                     iter myiter() {
-                       yield 1;
-                     }
+iter myiter() {
+  yield 1;
+}
 
-                     )"""");
+)"""");
 
 static auto recIter = std::string(R""""(
                       record R {
@@ -64,21 +65,6 @@ static auto recIter = std::string(R""""(
 std::vector<ErrorMessage> errors;
 static void collectErrors(Context* context, const ErrorMessage& err) {
   errors.push_back(err);
-}
-
-static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
-
-static const Module* parseModule(Context* context, std::string& str) {
-  return parseModule(context, str.c_str());
 }
 
 struct ParamCollector {
@@ -113,40 +99,43 @@ struct ParamCollector {
   }
 };
 
+static void testSimpleLoop(std::string loopName) {
+  printf("testing simple loop '%s'\n", loopName.c_str());
+  Context ctx;
+  Context* context = &ctx;
+
+  auto loopText = myiter + loopName +
+R"""( i in myiter() {
+  var x = i;
+}
+)""";
+
+  printf("===== Resolving program =====\n");
+  printf("%s\n", loopText.c_str());
+  printf("=============================\n\n");
+
+  const Module* m = parseModule(context, loopText);
+  auto loop = m->stmt(1)->toIndexableLoop();
+  auto xVar = loop->body()->stmt(0);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  auto idxType = rr.byAst(loop->index()).type();
+  assert(idxType.type() == IntType::get(context, 0));
+
+  auto xType = rr.byAst(xVar).type();
+  assert(idxType == xType);
+}
+
 //
 // Testing resolution of loop index variables
 // TODO:
 // - zippered iteration
 // - forall loops
-// - coforall loops
 // - error messages
 //
 
-static void test1() {
-  printf("test1\n");
-  Context ctx;
-  Context* context = &ctx;
-
-  //
-  // Test iteration over an iterator call
-  //
-
-  auto iterText = myiter +
-                  R""""(
-                  for i in myiter() {
-                  }
-                  )"""";
-
-  const Module* m = parseModule(context, iterText);
-  auto loop = m->stmt(1)->toFor();
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  auto idx = rr.byAst(loop->index());
-  assert(idx.type().type() == IntType::get(context, 0));
-}
-
-static void test2() {
-  printf("test2\n");
+static void testAmbiguous() {
+  printf("testAmbiguous\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -175,8 +164,8 @@ static void test2() {
   assert(errors.size() == 1);
 }
 
-static void test3() {
-  printf("test3\n");
+static void testThese() {
+  printf("testThese\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -199,8 +188,8 @@ static void test3() {
   assert(idx.type().type() == IntType::get(context, 0));
 }
 
-static void test4() {
-  printf("test4\n");
+static void testTheseReturn() {
+  printf("testTheseReturn\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -225,8 +214,8 @@ static void test4() {
   assert(idx.type().type() == IntType::get(context, 0));
 }
 
-static void test5() {
-  printf("test5\n");
+static void testNoThese() {
+  printf("testNoThese\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -254,8 +243,8 @@ static void test5() {
   assert(errors.size() == 1);
 }
 
-static void test6() {
-  printf("test6\n");
+static void testAmbiguousThese() {
+  printf("testAmbiguousThese\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -288,8 +277,8 @@ static void test6() {
   assert(errors.size() == 1);
 }
 
-static void test7() {
-  printf("test7\n");
+static void testNoIndex() {
+  printf("testNoIndex\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -308,8 +297,8 @@ static void test7() {
   assert(errors.size() == 0);
 }
 
-static void test8() {
-  printf("test8\n");
+static void testTheseNoIndex() {
+  printf("testTheseNoIndex\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -341,8 +330,8 @@ static void test8() {
   assert(errors.size() == 0);
 }
 
-static void test9() {
-  printf("test9\n");
+static void testCForLoop() {
+  printf("testCForLoop\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -382,8 +371,8 @@ static void test9() {
   assert(errors.size() == 0);
 }
 
-static void test10() {
-  printf("test10\n");
+static void testParamFor() {
+  printf("testParamFor\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -426,8 +415,8 @@ static void test10() {
 //
 // Test nested param loops
 //
-static void test11() {
-  printf("test11\n");
+static void testNestedParamFor() {
+  printf("testNestedParamFor\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -481,17 +470,20 @@ static void test11() {
 
 
 int main() {
-  test1();
-  test2();
-  test3();
-  test4();
-  test5();
-  test6();
-  test7();
-  test8();
-  test9();
-  test10();
-  test11();
+  testSimpleLoop("for");
+  testSimpleLoop("coforall");
+  testSimpleLoop("foreach");
+
+  testAmbiguous();
+  testThese();
+  testTheseReturn();
+  testNoThese();
+  testAmbiguousThese();
+  testNoIndex();
+  testTheseNoIndex();
+  testCForLoop();
+  testParamFor();
+  testNestedParamFor();
 
   return 0;
 }

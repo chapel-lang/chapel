@@ -140,6 +140,7 @@ extern const char* CHPL_LLVM_CLANG_CXX;
 
 extern const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS;
+extern const char* CHPL_TARGET_LD;
 extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
@@ -205,6 +206,7 @@ extern int  debugShortLoc;
 extern bool fLibraryCompile;
 extern bool fLibraryFortran;
 extern bool fLibraryMakefile;
+extern bool fLibraryCMakeLists;
 extern bool fLibraryPython;
 
 extern bool fMultiLocaleInterop;
@@ -237,6 +239,7 @@ extern bool fReportPromotion;
 extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
+extern bool fReportGpuTransformTime;
 
 extern bool fPermitUnhandledModuleErrors;
 

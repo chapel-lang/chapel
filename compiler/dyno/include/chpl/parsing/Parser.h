@@ -20,8 +20,8 @@
 #ifndef CHPL_PARSING_PARSER_H
 #define CHPL_PARSING_PARSER_H
 
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/util/memory.h"

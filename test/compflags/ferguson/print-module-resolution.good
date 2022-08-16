@@ -8,6 +8,8 @@ CTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes
 ChapelTaskData
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelTaskData
+Communication
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers.Communication
 ByteBufferHelpers
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers
 NVStringFactory
@@ -96,8 +98,6 @@ OS
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.IO.POSIX.OS
 POSIX
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.IO.POSIX
-SysError
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.IO.SysError
 Regex
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.IO.FormattedIO.Regex
 FormattedIO

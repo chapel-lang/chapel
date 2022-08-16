@@ -115,8 +115,8 @@ void printStatistics(const char* pass) {
     nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint + nIfExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
     kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint + kIfExpr;
-  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol;
-  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol;
+  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol+nTemporaryConversionSymbol;
+  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol+kTemporaryConversionSymbol;
   int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nDecoratedClassType;
   int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kDecoratedClassType;
 
@@ -496,6 +496,7 @@ const char* BaseAST::astTagAsString() const {
     case E_InterfaceSymbol:    return "InterfaceSymbol";
     case E_EnumSymbol:         return "EnumSymbol";
     case E_LabelSymbol:        return "LabelSymbol";
+    case E_TemporaryConversionSymbol: return "TemporaryConversionSymbol";
     case E_SymExpr:            return "SymExpr";
     case E_UnresolvedSymExpr:  return "UnresolvedSymExpr";
     case E_DefExpr:            return "DefExpr";

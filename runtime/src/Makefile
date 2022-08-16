@@ -51,6 +51,7 @@ SUBDIRS = \
 	timers \
 	topo \
 	qio \
+	gpu \
 
 else
 TARGETS = \
@@ -61,6 +62,7 @@ TARGETS = \
 SUBDIRS = \
 	comm \
 	launch \
+	gpu \
 
 endif
 

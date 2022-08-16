@@ -419,7 +419,8 @@ static int numIterablesToDestructure(ForallStmt* fs) {
 static void createAndAddIndexVar(AList& fIterVars, Symbol* idxVar) {
   idxVar->addFlag(FLAG_INDEX_VAR);
   idxVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  INT_ASSERT(idxVar->defPoint == NULL); // ensure we do not overwrite it
+  if (idxVar->defPoint && idxVar->defPoint->inTree())
+    idxVar->defPoint->remove();
   fIterVars.insertAtTail(new DefExpr(idxVar));
 }
 
@@ -447,6 +448,9 @@ static inline VarSymbol* indexExprToVarSymbol(BaseAST* index) {
     return new VarSymbol(USE->unresolved);
   if (VarSymbol* VS = toVarSymbol(index))
     return VS;
+  if (DefExpr* def = toDefExpr(index))
+    if (VarSymbol* VS = toVarSymbol(def->sym))
+      return VS;
   // Caller responsibility.
   return NULL;
 }
@@ -498,13 +502,20 @@ static void fsDestructureIndex(ForallStmt* fs, AList& fIterVars,
     // There is already a Symbol for it - use it.
     createAndAddIndexVar(fIterVars, indexSE->symbol());
 
-  } else {
+  } else if (isCallExpr(index)) {
     // We need to create an index variable and go from there.
-    INT_ASSERT(isCallExpr(index)); // need to implement the other cases
-
     VarSymbol* idxVar = createAndAddIndexVar(fIterVars, idxNum);
     destructureIndices(fs->loopBody(), index, new SymExpr(idxVar), false);
 
+  } else if (DefExpr* def = toDefExpr(index)) {
+    if (VarSymbol* var = toVarSymbol(def->sym)) {
+      // There is already a Symbol for it - use it.
+      createAndAddIndexVar(fIterVars, var);
+    } else {
+      INT_FATAL("case not handled");
+    }
+  } else {
+    INT_FATAL("case not handled");
   }
 }
 
@@ -552,6 +563,9 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
 
   } else if (UnresolvedSymExpr* indicesUSE = toUnresolvedSymExpr(indices)) {
     fsDestructureWhenSingleIdxVar(fs, fIterVars, indicesUSE, numIterables);
+
+  } else if (DefExpr* indicesDef = toDefExpr(indices)) {
+    fsDestructureWhenSingleIdxVar(fs, fIterVars, indicesDef, numIterables);
 
   } else {
     INT_ASSERT(false); // This case has not been considered.
@@ -602,6 +616,21 @@ ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
   return fs;
 }
 
+// like checkIndices in build.cpp but allows more patterns
+// TODO: adjust forall builders to conform to the same requirements
+// and just use checkIndices
+static void checkIndicesForall(BaseAST* indices) {
+  if (CallExpr* call = toCallExpr(indices)) {
+    if (!call->isNamed("_build_tuple"))
+      USR_FATAL(indices, "invalid index expression");
+    for_actuals(actual, call)
+      checkIndicesForall(actual);
+  } else if (!isSymExpr(indices) && !isUnresolvedSymExpr(indices) &&
+             !isDefExpr(indices))
+    USR_FATAL(indices, "invalid index expression");
+}
+
+
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
                              BlockStmt* body, bool zippered, bool serialOK)
 {
@@ -609,7 +638,7 @@ BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
 
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
-  checkIndices(indices);
+  checkIndicesForall(indices);
 
   ForallStmt* fs = ForallStmt::buildHelper(indices, iterator, intents, body,
                                            zippered, false);

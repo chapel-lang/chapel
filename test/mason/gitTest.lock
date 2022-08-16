@@ -1,0 +1,23 @@
+
+[root]
+chplVersion = "1.28.0..1.28.0"
+license = "None"
+name = "apples"
+version = "0.1.0"
+
+[DummyRepo]
+branch = "master"
+chplVersion = "1.28.0..1.28.0"
+name = "DummyRepo"
+source = "https://dummyurl.com"
+rev = "10"
+version = "0"
+
+[SecondRepo]
+branch = "test-branch"
+chplVersion = "1.28.0..1.28.0"
+name = "SecondRepo"
+source = "https://secondrepourl.com"
+rev = "10"
+version = "0"
+

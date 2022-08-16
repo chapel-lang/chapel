@@ -21,7 +21,7 @@
 #ifndef _STRINGUTIL_H_
 #define _STRINGUTIL_H_
 
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/UniqueString.h"
 
 using chpl::UniqueString;
 

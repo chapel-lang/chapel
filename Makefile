@@ -71,6 +71,7 @@ notcompiler: FORCE
 
 dyno: FORCE
 	@echo "Making the compiler library..."
+	@cd third-party && $(MAKE) llvm
 	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno
 
 compiler: FORCE
@@ -81,7 +82,7 @@ compiler: FORCE
 
 parser: FORCE
 	@echo "Making the parser..."
-	@cd compiler && $(MAKE) parser
+	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-parser
 
 modules: FORCE
 	@echo "Making the modules..."

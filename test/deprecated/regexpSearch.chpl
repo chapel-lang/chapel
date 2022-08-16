@@ -1,11 +1,12 @@
 use Regex;
 
+config type t1 = string;
+
 {
   writeln("search string");
-  config type t = string;
 
-  var str = " test ":t;
-  var r = compile("(t)[a-z]+":t);
+  var str = " test ":t1;
+  var r = compile("(t)[a-z]+":t1);
   var cap:regexMatch;
 
   var match = str.search(needle=r, cap);
@@ -16,12 +17,13 @@ use Regex;
   writeln(str[match]);
 }
 
+config type t2 = bytes;
+
 {
   writeln("search bytes");
-  config type t = bytes;
 
-  var b = b" test ":t;
-  var r = compile("(t)[a-z]+":t);
+  var b = b" test ":t2;
+  var r = compile("(t)[a-z]+":t2);
   var cap:regexMatch;
 
   var match = b.search(needle=r, cap);

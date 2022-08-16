@@ -24,7 +24,6 @@
 #include <set>
 #include <vector>
 
-#include "bison-chapel.h"
 #include "flags.h"
 #include "stmt.h"
 #include "vec.h"
@@ -38,6 +37,14 @@ class FnSymbol;
 class ImportStmt;
 class ModuleSymbol;
 class Type;
+
+struct PotentialRename {
+  enum { SINGLE, DOUBLE } tag;
+  union {
+    Expr* elem;
+    std::pair<Expr*, Expr*>* renamed;
+  };
+};
 
 Expr* lookupConfigVal(VarSymbol* var);
 
@@ -136,7 +143,7 @@ Expr* buildForallLoopExpr(Expr* indices,
                           bool zippered = false);
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
                                            bool recursiveCall = false);
-BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
+BlockStmt* buildParamForLoopStmt(VarSymbol* indexVar, Expr* range, BlockStmt* block);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
@@ -171,11 +178,6 @@ void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
                                    FnSymbol* fn);
 
 BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef);
-
-FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
-                              const char* name,
-                              IntentTag   thisTag,
-                              Expr*       receiver);
 
 void setupFunctionDecl(FnSymbol*   fn,
                        RetTag      optRetTag,

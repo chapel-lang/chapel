@@ -577,6 +577,7 @@ void AggregateType::addDeclarations(Expr* expr) {
 }
 
 void AggregateType::addDeclaration(DefExpr* defExpr) {
+  // TODO: move the checking here to dyno's post-parse-checks.cpp
   if (defExpr->sym->hasFlag(FLAG_REF_VAR)) {
       USR_FATAL_CONT(defExpr,
                      "References cannot be members of classes "
@@ -606,66 +607,47 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
   } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
     methods.add(fn);
 
-    if (fn->_this) {
-      // get the name used in the type binding clause
-      // this is the way it comes from the parser (see fn_decl_stmt_inner)
-      ArgSymbol* thisArg = toArgSymbol(fn->_this);
+    ArgSymbol* arg = toArgSymbol(fn->_this);
 
-      INT_ASSERT(thisArg);
-      INT_ASSERT(thisArg->type == dtUnknown);
-
-      BlockStmt* bs = thisArg->typeExpr;
-      INT_ASSERT(bs && bs->length() == 1);
-
-      Expr* firstexpr = bs->body.first();
-      INT_ASSERT(firstexpr);
-
-      if (UnresolvedSymExpr* sym  = toUnresolvedSymExpr(firstexpr))
-        // ... then report it to the user
-        USR_FATAL_CONT(fn->_this,
-                     "Type binding clauses ('%s.' in this case) are not "
-                     "supported in declarations within a class, record "
-                     "or union",
-                     sym->unresolved);
-      else
-        // got more than just a name
-        USR_FATAL_CONT(fn->_this,
-                     "Type binding clauses (in this case, the parenthesized "
-                "expression preceding the dot before function name) are not "
-                     "supported in declarations within a class, record "
-                     "or union");
-
-    } else {
-      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
-
-      if (fn->name == astrInitEquals) {
-        if (fn->numFormals() != 1) {
-          USR_FATAL_CONT(fn, "%s.init= must have exactly one argument",
-                         this->name());
-        }
-      }
-
+    if (arg == nullptr) {
+      // Add the _this argument if there isn't already one
+      // (helps with buildForwardingExprFnDef)
+      arg = new ArgSymbol(fn->thisTag, "this", this);
       fn->_this = arg;
 
-      if (fn->hasFlag(FLAG_OPERATOR)) {
-        updateOpThisTagOrErr(fn);
-      }
-
-      if (fn->thisTag == INTENT_TYPE) {
-        arg->intent = INTENT_BLANK;
-        arg->addFlag(FLAG_TYPE_VARIABLE);
-      }
-
-      arg->addFlag(FLAG_ARG_THIS);
-
-      fn->insertFormalAtHead(new DefExpr(fn->_this));
+      fn->insertFormalAtHead(new DefExpr(arg));
       fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK,
                                                        "_mt",
                                                        dtMethodToken)));
-
-      fn->setMethod(true);
-      fn->addFlag(FLAG_METHOD_PRIMARY);
     }
+
+    if (fn->hasFlag(FLAG_METHOD_PRIMARY)) {
+      arg->type = this;
+      // workaround: clear the typeExpr
+      // (it is confusing the production scope resolver)
+      arg->typeExpr = nullptr;
+    }
+
+    if (fn->name == astrInitEquals) {
+      if (fn->numFormals() != 3) { // mt, this, other
+        USR_FATAL_CONT(fn, "%s.init= must have exactly one argument",
+                       this->name());
+      }
+    }
+
+    if (fn->hasFlag(FLAG_OPERATOR)) {
+      updateOpThisTagOrErr(fn);
+    }
+
+    if (fn->thisTag == INTENT_TYPE) {
+      arg->intent = INTENT_BLANK;
+      arg->addFlag(FLAG_TYPE_VARIABLE);
+    }
+
+    arg->addFlag(FLAG_ARG_THIS);
+
+    fn->setMethod(true);
+    fn->addFlag(FLAG_METHOD_PRIMARY);
   }
 
   if (defExpr->parentSymbol != NULL || defExpr->list != NULL) {
@@ -2389,6 +2371,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           arg->defaultExpr = new BlockStmt(defPoint->init->copy());
 
           // mimic normalize's hack_resolve_types
+          arg->typeExprFromDefaultExpr = true;
           arg->typeExpr = arg->defaultExpr->copy();
 
 
@@ -3027,6 +3010,8 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
     tsDec->copyFlags(at->symbol);
     tsDec->deprecationMsg = at->symbol->deprecationMsg;
     tsDec->addFlag(FLAG_NO_OBJECT);
+    // this flag avoids scope resolve considering it duplicative
+    tsDec->addFlag(FLAG_TEMP);
     // Propagate generic-ness to the decorated type
     if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
       tsDec->addFlag(FLAG_GENERIC);

@@ -20,8 +20,8 @@
 #ifndef CHPL_UAST_NUMERICLITERAL_H
 #define CHPL_UAST_NUMERICLITERAL_H
 
-#include "chpl/queries/Location.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Location.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/uast/Literal.h"
 
 namespace chpl {

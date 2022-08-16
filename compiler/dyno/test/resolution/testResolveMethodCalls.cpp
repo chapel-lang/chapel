@@ -22,6 +22,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "common.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -189,10 +190,34 @@ static void test2() {
   context->collectGarbage();
 }
 
+// test case to lock in correct behavior w.r.t. T being both a
+// field and a formal.
+static void test3() {
+  Context ctx;
+  Context* context = &ctx;
+
+  const char* contents = R""""(
+                              module M {
+                                record R {
+                                  type T;
+                                  proc foo(T: int) type {
+                                    return this.T;
+                                  }
+                                }
+                                var z: R(real);
+                                var arg: int;
+                                var x: z.foo(arg);
+                              }
+                         )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isRealType()); // and not real
+}
 
 int main() {
   test1();
   test2();
+  test3();
 
   return 0;
 }

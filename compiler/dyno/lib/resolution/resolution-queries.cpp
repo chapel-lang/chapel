@@ -20,10 +20,10 @@
 #include "chpl/resolution/resolution-queries.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/UniqueString.h"
-#include "chpl/queries/global-strings.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/UniqueString.h"
+#include "chpl/framework/global-strings.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/disambiguation.h"
 #include "chpl/resolution/intents.h"
@@ -605,6 +605,8 @@ initialTypeForTypeDeclQuery(Context* context, ID declId) {
         result = ClassType::get(context, bct, /*manager*/ nullptr, dec);
       }
     }
+  } else if (auto td = ast->toEnum()) {
+    result = EnumType::get(context, td->id(), td->name());
   }
 
   return QUERY_END(result);
@@ -617,8 +619,8 @@ const Type* initialTypeForTypeDecl(Context* context, ID declId) {
 const ResolvedFields& resolveFieldDecl(Context* context,
                                        const CompositeType* ct,
                                        ID fieldId,
-                                       bool useGenericFormalDefaults) {
-  QUERY_BEGIN(resolveFieldDecl, context, ct, fieldId, useGenericFormalDefaults);
+                                       DefaultsPolicy defaultsPolicy) {
+  QUERY_BEGIN(resolveFieldDecl, context, ct, fieldId, defaultsPolicy);
 
   ResolvedFields result;
   bool isObjectType = false;
@@ -643,7 +645,7 @@ const ResolvedFields& resolveFieldDecl(Context* context,
       ResolutionResultByPostorderID r;
       auto visitor =
         Resolver::createForInitialFieldStmt(context, ad, fieldAst,
-                                            ct, r, useGenericFormalDefaults);
+                                            ct, r, defaultsPolicy);
 
       // resolve the field types and set them in 'result'
       fieldAst->traverse(visitor);
@@ -658,7 +660,7 @@ const ResolvedFields& resolveFieldDecl(Context* context,
       auto visitor =
         Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
                                                  poiScope, r,
-                                                 useGenericFormalDefaults);
+                                                 defaultsPolicy);
 
       // resolve the field types and set them in 'result'
       fieldAst->traverse(visitor);
@@ -673,8 +675,8 @@ const ResolvedFields& resolveFieldDecl(Context* context,
 static
 const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                                              const CompositeType* ct,
-                                             bool useGenericFormalDefaults) {
-  QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, useGenericFormalDefaults);
+                                             DefaultsPolicy defaultsPolicy) {
+  QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, defaultsPolicy);
 
   ResolvedFields result;
 
@@ -701,7 +703,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
           child->isMultiDecl() ||
           child->isTupleDecl()) {
         const ResolvedFields& resolvedFields =
-          resolveFieldDecl(context, ct, child->id(), useGenericFormalDefaults);
+          resolveFieldDecl(context, ct, child->id(), defaultsPolicy);
         // Copy resolvedFields into result
         int n = resolvedFields.numFields();
         for (int i = 0; i < n; i++) {
@@ -723,18 +725,27 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
 
 const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         const CompositeType* ct,
-                                        bool useGenericFormalDefaults) {
+                                        DefaultsPolicy defaultsPolicy) {
+  if (defaultsPolicy == DefaultsPolicy::IGNORE_DEFAULTS){
+    return fieldsForTypeDeclQuery(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+  }
 
-  // try first with useGenericFormalDefaults=false
-  const auto& f = fieldsForTypeDeclQuery(context, ct, false);
+  // try first with defaultsPolicy=FOR_OTHER_FIELDS
+  const auto& f = fieldsForTypeDeclQuery(context, ct,
+                                         DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS);
 
-  // If useGenericFormalDefaults was requested and the type
+  // If defaultsPolicy=USE was requested and the type
   // is generic with defaults, compute the type again.
   // We do it this way so that we are more likely to be able to reuse the
   // result of the above query in most cases since most types
   // are not generic record/class with defaults.
-  if (useGenericFormalDefaults && f.isGenericWithDefaults()) {
-    return fieldsForTypeDeclQuery(context, ct, true);
+  if (defaultsPolicy == DefaultsPolicy::USE_DEFAULTS) {
+    // if record is not generic with defaults, return its
+    // uninstantiated fields. Otherwise, instantiate.
+    auto finalDefaultsPolicy = f.isGenericWithDefaults() ?
+      DefaultsPolicy::USE_DEFAULTS :
+      DefaultsPolicy::IGNORE_DEFAULTS;
+    return fieldsForTypeDeclQuery(context, ct, finalDefaultsPolicy);
   }
 
   // Otherwise, use the value we just computed.
@@ -743,14 +754,16 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
 
 static const CompositeType* getTypeWithDefaults(Context* context,
                                                 const CompositeType* ct) {
-  // resolve the fields with useGenericFormalDefaults=false
-  const ResolvedFields& g = fieldsForTypeDecl(context, ct, false);
+  // resolve the fields with DefaultsPolicy=FOR_OTHER_FIELDS
+  const ResolvedFields& g = fieldsForTypeDecl(context, ct,
+                                              DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS);
   if (!g.isGenericWithDefaults()) {
     return ct;
   }
 
-  // and with useGenericFormalDefaults=true
-  const ResolvedFields& r = fieldsForTypeDecl(context, ct, true);
+  // and with DefaultsPolicy=USE
+  const ResolvedFields& r = fieldsForTypeDecl(context, ct,
+                                              DefaultsPolicy::USE_DEFAULTS);
 
   // for any field that has a different type in r than in g, add
   // a substitution, and get the type with those substitutions.
@@ -866,18 +879,23 @@ static Type::Genericity getFieldsGenericity(Context* context,
   }
 
   if (context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, false)) ||
+                              std::make_tuple(ct, DefaultsPolicy::IGNORE_DEFAULTS)) ||
       context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, true))) {
+                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS)) ||
+      context->isQueryRunning(fieldsForTypeDeclQuery,
+                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS))) {
     // TODO: is there a better way to avoid problems with recursion here?
     return Type::CONCRETE;
   }
 
-  // this setting is irrelevant for this query since the
-  // isGenericWithDefaults will be computed either way.
-  bool useGenericFormalDefaults = false;
+  // we only care about whether or not each field is generic on its own
+  // merit, as only these fields need defaults. Thus, we allow defaults
+  // for fields other than the one we are checking. In this way, we prevent
+  // some field (a) that depends on the value of field (b) from being
+  // marked generic just because (b) is generic.
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS;
   const ResolvedFields& f = fieldsForTypeDecl(context, ct,
-                                              useGenericFormalDefaults);
+                                              defaultsPolicy);
 
   if (f.isGenericWithDefaults() &&
       (g == Type::CONCRETE || g == Type::GENERIC_WITH_DEFAULTS))
@@ -911,6 +929,9 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   if (auto tt = t->toTupleType()) {
     if (tt->instantiatedFromCompositeType() == nullptr)
       return Type::GENERIC;
+    if (tt->isKnownSize() == false) {
+      return Type::GENERIC;
+    }
   }
 
   // string and bytes types are never generic
@@ -1025,9 +1046,9 @@ typeConstructorInitialQuery(Context* context, const Type* t)
     name = ct->name();
 
     // attempt to resolve the fields
-    bool useGenericFormalDefaults = false;
+    DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
     const ResolvedFields& f = fieldsForTypeDecl(context, ct,
-                                                useGenericFormalDefaults);
+                                                defaultsPolicy);
 
     // find the generic fields from the type and add
     // these as type constructor arguments.
@@ -1045,7 +1066,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
 
         auto d = UntypedFnSignature::FormalDetail(f.fieldName(i),
                                                   f.fieldHasDefaultValue(i),
-                                                  fieldDecl);
+                                                  fieldDecl,
+                                                  fieldDecl->isVarArgFormal());
         formals.push_back(d);
         // formalType should have been set above
         assert(formalType.kind() != QualifiedType::UNKNOWN);
@@ -1205,6 +1227,31 @@ QualifiedType getInstantiationType(Context* context,
   return QualifiedType();
 }
 
+static bool varArgCountMatch(const VarArgFormal* formal,
+                             ResolutionResultByPostorderID& r) {
+  QualifiedType formalType = r.byAst(formal).type();
+  auto tupleType = formalType.type()->toTupleType();
+
+  if (formal->count() != nullptr) {
+    const ResolvedExpression& count = r.byAst(formal->count());
+    QualifiedType ct = count.type();
+    if (ct.isParam() && ct.param() != nullptr) {
+      auto numElements = tupleType->numElements();
+      if (auto ip = ct.param()->toIntParam()) {
+        return numElements == ip->value();
+      } else if (auto up = ct.param()->toUintParam()) {
+        return (uint64_t)numElements == up->value();
+      } else {
+        // TODO: Error message about coercing non-integrals in the
+        // count-expression.
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -1248,53 +1295,105 @@ const TypedFnSignature* instantiateSignature(Context* context,
   Bitmap formalsInstantiated;
   int formalIdx = 0;
 
+  bool instantiateVarArgs = false;
+  std::vector<QualifiedType> varargsTypes;
+  int varArgIdx = -1;
+
   for (const FormalActual& entry : faMap.byFormals()) {
     bool addSub = false;
     QualifiedType useType;
+    const auto& actualType = entry.actualType();
+    const auto& formalType = entry.formalType();
 
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
-    if (entry.actualType().kind() == QualifiedType::UNKNOWN &&
-        entry.actualType().type() == nullptr) {
+    if (actualType.kind() == QualifiedType::UNKNOWN &&
+        actualType.type() == nullptr) {
       if (call.hasQuestionArg()) {
         // don't add any substitution
       } else {
         // add a "use the default" hint substitution.
         addSub = true;
-        useType = entry.actualType();
+        useType = actualType;
       }
     } else {
-      auto got = canPass(context, entry.actualType(), entry.formalType());
+      auto got = canPass(context, actualType, formalType);
       assert(got.passes()); // should not get here otherwise
       if (got.instantiates()) {
         // add a substitution for a valid value
         if (!got.converts() && !got.promotes()) {
           // use the actual type since no conversion/promotion was needed
           addSub = true;
-          useType = entry.actualType();
+          useType = actualType;
         } else {
           // get instantiation type
           addSub = true;
           useType = getInstantiationType(context,
-                                         entry.actualType(),
-                                         entry.formalType());
+                                         actualType,
+                                         formalType);
         }
       }
     }
 
-    // add the substitution if we identified that we need to
-    if (addSub) {
-      // add it to the substitutions map
-      substitutions.insert({entry.formal()->id(), useType});
-      // note that a substitution was used here
-      if ((size_t) formalIdx >= formalsInstantiated.size()) {
-        formalsInstantiated.resize(sig->numFormals());
+    if (entry.isVarArgEntry()) {
+      // If any formal needs instantiating then we need to instantiate all
+      // the VarArgs
+      instantiateVarArgs = instantiateVarArgs || addSub;
+
+      // If the formal wasn't instantiated then use whatever type was computed.
+      if (!addSub) useType = formalType;
+
+      QualifiedType::Kind qtKind = formalType.kind();
+      auto tempQT = QualifiedType(qtKind, useType.type());
+      auto newKind = resolveIntent(tempQT, false);
+
+      auto param = formalType.isParam() ? useType.param() : nullptr;
+      useType = QualifiedType(newKind, useType.type(), param);
+
+      varargsTypes.push_back(useType);
+
+      // Grab the index and formal when first encountering a VarArgFormal.
+      // Also increment the formalIdx once to stay aligned.
+      if (varArgIdx < 0) {
+        varArgIdx = formalIdx;
+        formalIdx += 1;
       }
-      formalsInstantiated.setBit(formalIdx, true);
+    } else {
+      // add the substitution if we identified that we need to
+      if (addSub) {
+        // add it to the substitutions map
+        substitutions.insert({entry.formal()->id(), useType});
+        // note that a substitution was used here
+        if ((size_t) formalIdx >= formalsInstantiated.size()) {
+          formalsInstantiated.resize(sig->numFormals());
+        }
+        formalsInstantiated.setBit(formalIdx, true);
+      }
+
+      formalIdx++;
+    }
+  }
+
+  // instantiate the VarArg formal if necessary
+  if (varargsTypes.size() > 0) {
+    const TupleType* tup = sig->formalType(varArgIdx).type()->toTupleType();
+    if (tup->isKnownSize() == false) {
+      instantiateVarArgs = true;
     }
 
-    formalIdx++;
+    if (instantiateVarArgs) {
+      const TupleType* t = TupleType::getVarArgTuple(context, varargsTypes);
+      auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
+      QualifiedType vat = QualifiedType(formal->storageKind(), t);
+      substitutions.insert({formal->id(), vat});
+
+      // note that a substitution was used here
+      if ((size_t) varArgIdx >= formalsInstantiated.size()) {
+        formalsInstantiated.resize(sig->numFormals());
+      }
+      formalsInstantiated.setBit(varArgIdx, true);
+    }
   }
 
   // use the existing signature if there were no substitutions
@@ -1307,6 +1406,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
   TypedFnSignature::WhereClauseResult where = TypedFnSignature::WHERE_NONE;
 
   if (fn != nullptr) {
+    // TODO: Save these results to re-use later.
     ResolutionResultByPostorderID r;
     auto visitor = Resolver::createForInstantiatedSignature(context, fn,
                                                             substitutions,
@@ -1314,6 +1414,12 @@ const TypedFnSignature* instantiateSignature(Context* context,
     // visit the formals
     for (auto formal : fn->formals()) {
       formal->traverse(visitor);
+
+      if (auto varArgFormal = formal->toVarArgFormal()) {
+        if (!varArgCountMatch(varArgFormal, r)) {
+          return nullptr;
+        }
+      }
     }
     // visit the where clause
     if (auto whereClause = fn->whereClause()) {
@@ -1547,6 +1653,7 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
 struct ReturnTypeInferrer {
   // input
   Context* context;
+  const AstNode* astForErr;
   Function::ReturnIntent returnIntent;
   const ResolutionResultByPostorderID& resolutionById;
 
@@ -1554,8 +1661,10 @@ struct ReturnTypeInferrer {
   std::vector<QualifiedType> returnedTypes;
 
   ReturnTypeInferrer(Context* context,
+                     const AstNode* astForErr,
                      const ResolvedFunction& resolvedFn)
     : context(context),
+      astForErr(astForErr),
       returnIntent(resolvedFn.returnIntent()),
       resolutionById(resolvedFn.resolutionById()) {
   }
@@ -1614,22 +1723,44 @@ struct ReturnTypeInferrer {
     }
 
     checkReturn(inExpr, qt);
-
-    kind = (QualifiedType::Kind) returnIntent;
-
-    returnedTypes.push_back(QualifiedType(kind, type));
+    returnedTypes.push_back(std::move(qt));
   }
 
   QualifiedType returnedType() {
     if (returnedTypes.size() == 0) {
       return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-    } else if (returnedTypes.size() == 1) {
-      return returnedTypes[0];
     } else {
-      assert(false && "TODO");
-      QualifiedType ret;
-      return ret;
+      auto retType = commonType(context, returnedTypes,
+                                /* useRequiredKind */ true,
+                                (QualifiedType::Kind) returnIntent);
+      if (retType.isUnknown()) {
+        // Couldn't find common type, so return type is incorrect.
+        context->error(astForErr, "could not determine return type for function");
+        retType = QualifiedType(retType.kind(), ErroneousType::get(context));
+      }
+      return retType;
     }
+  }
+
+  bool enter(const Conditional* cond) {
+    auto condition = cond->condition();
+    assert(condition != nullptr);
+    const ResolvedExpression& r = resolutionById.byAst(condition);
+    if (r.type().isParamTrue()) {
+      auto then = cond->thenBlock();
+      assert(then != nullptr);
+      then->traverse(*this);
+      return false;
+    } else if (r.type().isParamFalse()) {
+      auto else_ = cond->elseBlock();
+      if (else_) {
+        else_->traverse(*this);
+      }
+      return false;
+    }
+    return true;
+  }
+  void exit(const Conditional* cond){
   }
 
   bool enter(const Return* ret) {
@@ -1748,7 +1879,7 @@ static QualifiedType computeTypeOfField(Context* context,
 
     // Resolve the type of that field (or MultiDecl/TupleDecl)
     const auto& fields = resolveFieldDecl(context, ct, declId,
-                                          /*useGenericFormalDefaults*/ false);
+                                          DefaultsPolicy::IGNORE_DEFAULTS);
     int n = fields.numFields();
     for (int i = 0; i < n; i++) {
       if (fields.fieldDeclId(i) == fieldId) {
@@ -1788,7 +1919,7 @@ const QualifiedType& returnType(Context* context,
       // resolve the function body
       const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
       // infer the return type
-      ReturnTypeInferrer visitor(context, *rFn);
+      ReturnTypeInferrer visitor(context, fn, *rFn);
       fn->body()->traverse(visitor);
       result = visitor.returnedType();
     }
@@ -1896,25 +2027,60 @@ isInitialTypedSignatureApplicable(Context* context,
 
   // Next, check that the types are compatible
   int formalIdx = 0;
+  int numVarArgActuals = 0;
+  QualifiedType varArgType;
   for (const FormalActual& entry : faMap.byFormals()) {
     const auto& actualType = entry.actualType();
 
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
-    if (entry.actualType().kind() == QualifiedType::UNKNOWN &&
-        entry.actualType().type() == nullptr &&
+    //
+    // TODO: set a flag in the entry rather than relying on some encoded
+    // property via QualifiedType.
+    if (actualType.kind() == QualifiedType::UNKNOWN &&
+        actualType.type() == nullptr &&
         !ci.hasQuestionArg()) {
       // use the default value - no need to check it matches formal
     } else {
-      const auto& formalType = tfs->formalType(formalIdx);
-      auto got = canPass(context, actualType, formalType);
+      const auto& formalType = tfs->formalType(entry.formalIdx());
+      CanPassResult got;
+      if (entry.isVarArgEntry()) {
+        if (varArgType.isUnknown()) {
+          varArgType = formalType;
+        }
+        numVarArgActuals += 1;
+
+        // If the type is a VarArgTuple then we should use its 'star' type
+        // with 'canPass'.
+        //
+        // Note: Unless there was an error resolving the type, this tuple
+        // should be a VarArgTuple
+        //
+        // TODO: Should we update 'canPass' to reason about VarArgTuples?
+        const TupleType* tup = formalType.type()->toTupleType();
+        if (tup != nullptr && tup->isVarArgTuple()) {
+          got = canPass(context, actualType, tup->starType());
+        } else {
+          got = canPass(context, actualType, formalType);
+        }
+      } else {
+        got = canPass(context, actualType, formalType);
+      }
       if (!got.passes()) {
         return false;
       }
     }
 
     formalIdx++;
+  }
+
+  if (!varArgType.isUnknown()) {
+    const TupleType* tup = varArgType.type()->toTupleType();
+    if (tup != nullptr && tup->isVarArgTuple() &&
+        tup->isKnownSize() && numVarArgActuals != tup->numElements()) {
+      return false;
+    }
   }
 
   // check that the where clause applies
@@ -1936,11 +2102,6 @@ doIsCandidateApplicableInitial(Context* context,
 
   if (!candidateId.isEmpty()) {
     tag = parsing::idToTag(context, candidateId);
-    // could be a function, type for type construction, field
-    assert(isFunction(tag) || isTypeDecl(tag) || isVariable(tag));
-  } else {
-    assert(false && "case not handled");
-    return nullptr;
   }
 
   if (isTypeDecl(tag)) {
@@ -1949,16 +2110,23 @@ doIsCandidateApplicableInitial(Context* context,
     return typeConstructorInitial(context, t);
   }
 
-  if (isVariable(tag) &&
-      ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
-    // calling a field accessor
-    auto ct = ci.actual(0).type().type()->getCompositeType();
-    assert(ct);
-    assert(isNameOfField(context, ci.name(), ct));
-    return fieldAccessor(context, ct, ci.name());
+  // not a candidate
+  if (ci.isMethodCall() && isFormal(tag)) return nullptr;
+
+  if (isVariable(tag)) {
+    if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
+      // calling a field accessor
+      auto ct = ci.actual(0).type().type()->getCompositeType();
+      assert(ct);
+      assert(isNameOfField(context, ci.name(), ct));
+      return fieldAccessor(context, ct, ci.name());
+    } else {
+      // not a candidate
+      return nullptr;
+    }
   }
 
-  assert(isFunction(tag) && "only fn case handled here");
+  assert(isFunction(tag) && "expected fn case only by this point");
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
@@ -1983,16 +2151,6 @@ doIsCandidateApplicableInstantiating(Context* context,
 
   if (instantiated == nullptr)
     return nullptr;
-
-  // Next, check that the types are compatible
-  size_t nActuals = call.numActuals();
-  for (size_t i = 0; i < nActuals; i++) {
-    const QualifiedType& actualType = call.actual(i).type();
-    const QualifiedType& formalType = instantiated->formalType(i);
-    auto got = canPass(context, actualType, formalType);
-    if (!got.passes())
-      return nullptr;
-  }
 
   // check that the where clause applies
   if (instantiated->whereClauseResult() == TypedFnSignature::WHERE_FALSE)

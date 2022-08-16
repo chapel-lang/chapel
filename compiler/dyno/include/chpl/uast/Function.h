@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_FUNCTION_H
 #define CHPL_UAST_FUNCTION_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/IntentList.h"

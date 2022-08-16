@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/Class.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Function.h"

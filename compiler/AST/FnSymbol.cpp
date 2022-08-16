@@ -760,6 +760,11 @@ CallExpr* FnSymbol::singleInvocation() const {
     if (se == parent->baseExpr) {
       retval = parent;
     }
+    else if (parent->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT)) {
+      if (se == parent->get(1)) {
+        retval = parent;
+      }
+    }
   }
 
   // The use is not as the callee, ex. as a FCF.
@@ -819,6 +824,31 @@ TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
   }
 }
 
+static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
+  if (! formal->typeExprFromDefaultExpr) {
+    BaseAST* typeExp = formal->typeExpr->body.tail;
+    if (SymExpr* se = toSymExpr(typeExp)) {
+      Symbol* sym = se->symbol();
+      if (!isTypeSymbol(sym) && !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (formal == enclosingFn->_this) {
+          USR_FATAL_CONT(formal, "Method defined on non-type '%s'",
+                         sym->name);
+        } else {
+          Immediate* imm = nullptr;
+          if (VarSymbol* var = toVarSymbol(sym)) imm = var->immediate;
+          USR_FATAL_CONT(typeExp, "The declared type of the formal "
+            "%s is non-type '%s'", formal->name,
+            imm == nullptr ? sym->name : imm->to_string().c_str());
+        }
+      }
+    } else if (CallExpr* call = toCallExpr(typeExp)) {
+      if (FnSymbol* target = call->resolvedFunction())
+        if (target->retTag != RET_TYPE)
+          USR_FATAL_CONT(typeExp, "The declared type of the formal "
+          "%s is given by non-type function '%s'", formal->name, target->name);
+    }
+  }
+}
 
 //
 // Scan the formals and return true if there are any
@@ -867,6 +897,7 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
 
       resolveBlockStmt(formal->typeExpr);
       formal->type = formal->typeExpr->body.tail->getValType();
+      checkFormalType(this, formal);
     }
 
     if (formal->originalIntent == INTENT_OUT) {

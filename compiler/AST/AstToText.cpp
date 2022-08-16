@@ -325,7 +325,7 @@ void AstToText::appendFormalType(ArgSymbol* arg)
     if (blockStmt->length() == 1)
     {
       // Do not print a synthesized typeExpr
-      if (typeExprCopiedFromDefaultExpr(arg) == false)
+      if (! arg->typeExprFromDefaultExpr)
       {
         mText += ": ";
         appendExpr(arg->typeExpr->body.get(1), true);
@@ -378,109 +378,6 @@ void AstToText::appendFormalType(ArgSymbol* arg)
     // Might become ASSERT in the future
     mText += " AppendType.02";
   }
-}
-
-//
-// Attempt to determine, heuristically, if normalize.hack_resolve_types()
-// has copied defaultExpr to typeExpr. We want to avoid printing this
-// synthesizedtypeExpr expression.
-//
-// The current minimum conditions for this are
-//
-//     a) typeExpr was NULL
-//     b) the defaultExpr is a blockStmt with 1 stmt
-//
-// Then it gets tricky. We fall back on a tree-recursion that tries to
-// determine if two expression are structurally "equal" in a manner that
-// appears to handle the current use cases.
-//
-//
-bool AstToText::typeExprCopiedFromDefaultExpr(ArgSymbol* arg) const
-{
-  BlockStmt* typeBlock    = arg->typeExpr;
-  BlockStmt* defaultBlock = arg->defaultExpr;
-  bool       retval       = false;
-
-  if (typeBlock != NULL && defaultBlock != NULL)
-  {
-    if (typeBlock->body.length == 1 && defaultBlock->body.length == 1)
-    {
-      Expr* typeExpr    = typeBlock->body.only();
-      Expr* defaultExpr = defaultBlock->body.only();
-
-      retval = exprTypeHackEqual(typeExpr, defaultExpr);
-    }
-  }
-
-  return retval;
-}
-
-// Compares two expressions for signs of the typeHack copy
-bool AstToText::exprTypeHackEqual(Expr* expr0, Expr* expr1) const
-{
-  bool retval = true;
-
-  if (expr0 == NULL && expr1 == NULL)
-  {
-    retval = true;
-  }
-
-  else if (isUnresolvedSymExpr(expr0) && isUnresolvedSymExpr(expr1))
-  {
-    UnresolvedSymExpr* sym0 = toUnresolvedSymExpr(expr0);
-    UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr1);
-
-    retval = (sym0->unresolved == sym1->unresolved);
-  }
-
-  else if (isSymExpr(expr0) && isSymExpr(expr1))
-  {
-    SymExpr* sym0 = toSymExpr(expr0);
-    SymExpr* sym1 = toSymExpr(expr1);
-
-    retval = (sym0->symbol() == sym1->symbol());
-  }
-
-  else if (isCallExpr(expr0) && isCallExpr(expr1))
-  {
-    CallExpr* call0 = toCallExpr(expr0);
-    CallExpr* call1 = toCallExpr(expr1);
-
-    if (call0->primitive != call1->primitive)
-      retval = false;
-
-    else if (call0->numActuals() != call1->numActuals())
-      retval = false;
-
-    else if (exprTypeHackEqual(call0->baseExpr, call1->baseExpr) == false)
-      retval = false;
-
-    else
-    {
-      for (int i = 1; i <= call0->numActuals() && retval == true; i++)
-        retval = exprTypeHackEqual(call0->get(i), call1->get(i));
-    }
-  }
-
-  // For proc of the form "proc foo(x = bar())",
-  //   expr0 wraps a FnSymbol
-  //   expr1 is the original function name
-  else if (isSymExpr(expr0) && isUnresolvedSymExpr(expr1))
-  {
-    SymExpr*           sym0 = toSymExpr(expr0);
-    FnSymbol*          fn   = toFnSymbol(sym0->symbol());
-
-    UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr1);
-
-    retval = (fn != 0 && strcmp(fn->name, sym1->unresolved) == 0);
-  }
-
-  else
-  {
-    retval = false;
-  }
-
-  return retval;
 }
 
 //

@@ -21,9 +21,10 @@
 #ifndef _SYMBOL_H_
 #define _SYMBOL_H_
 
-#include "baseAST.h"
-
 #include "astutil.h"
+#include "baseAST.h"
+#include "chpl/framework/ID.h"
+#include "chpl/resolution/resolution-types.h"
 #include "flags.h"
 #include "library.h"
 #include "type.h"
@@ -412,6 +413,7 @@ public:
 
   IntentTag       intent;
   IntentTag       originalIntent; // stores orig intent after resolve intents
+  bool            typeExprFromDefaultExpr;
   BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
   BlockStmt*      defaultExpr;
 
@@ -676,6 +678,41 @@ public:
   void  replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
   void  codegenDef()                                      override;
 };
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+/* This type exists to be used temporarily during convert-uast.
+   By using this type, convert-uast code can robustly handle
+   AST copies from an AST node referring to something not yet converted.
+   */
+class TemporaryConversionSymbol final : public Symbol {
+public:
+  chpl::ID symId;
+  const chpl::resolution::TypedFnSignature* sig;
+
+  TemporaryConversionSymbol(chpl::ID symId);
+  TemporaryConversionSymbol(const chpl::resolution::TypedFnSignature* sig);
+
+  void  verify()                                          override;
+  void  accept(AstVisitor* visitor)                       override;
+  DECLARE_SYMBOL_COPY(TemporaryConversionSymbol);
+  TemporaryConversionSymbol* copyInner(SymbolMap* map)    override;
+
+  void  replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
+  void  codegenDef()                                      override;
+};
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
 
 inline bool Symbol::hasFlag(Flag flag) const {
   CHECK_FLAG(flag);

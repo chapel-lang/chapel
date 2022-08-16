@@ -130,6 +130,13 @@ static void setupMakeEnvVars(std::string var, const char* value,
   fprintf(makefile.fptr, "%s = %s\n\n", var.c_str(), value);
 }
 
+// Save the value of the environment variable "var" into the CMake file, so it
+// can be referenced in the other variables for legibility purposes.
+static void setupCMakeEnvVars(std::string var, const char* value,
+                             fileinfo cmakelists) {
+  fprintf(cmakelists.fptr, "set(%s %s)\n\n", var.c_str(), value);
+}
+
 static void printMakefileIncludes(fileinfo makefile);
 static void printMakefileLibraries(fileinfo makefile, std::string name);
 
@@ -259,6 +266,131 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   //
   removeTrailingNewlines(libraries);
   fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
+}
+
+// Helper to convert command lines flags from make syntax to CMake syntax
+// by converting $(BLAH) to ${BLAH}
+static std::string makeToCMake(std::string str) {
+  std::size_t pos = std::string::npos;
+  while((pos = str.find('(')) != std::string::npos) {
+    INT_ASSERT(str[pos-1] == '$');
+    str[pos] = '{';
+  }
+  while((pos = str.find(')')) != std::string::npos) {
+    str[pos] = '}';
+  }
+  return str;
+}
+
+//Helper to output the include directory variable into the generated CMakeLists
+// The variable name is the library name followed by _INCLUDE_DIRS
+static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
+  std::string requireIncludes = "";
+  for_vector(const char, dirName, incDirs) {
+    requireIncludes += " ";
+    requireIncludes += dirName;
+  }
+
+  std::string includes = getCompilelineOption("includes-and-defines");
+  std::size_t pos = std::string::npos;
+  while((pos = includes.find("-I")) != std::string::npos) {
+    includes.erase(pos, 2);
+  }
+  removeTrailingNewlines(includes);
+
+  std::string varValue = "";
+  varValue = requireIncludes;
+  varValue += " ";
+  varValue += includes;
+
+  //switch from make to cmake
+  varValue = makeToCMake(varValue);
+  fprintf(cmakelists.fptr, "set(%s_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} %s)\n\n", name.c_str(), varValue.c_str());
+}
+
+// Helper to output the linker library variable into the generated CMakeLists
+// The variable name is the library name followed by _LINK_LIBS
+static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
+  std::string varValue = "";
+  std::string libraries = getCompilelineOption("libraries");
+  std::string libname = getLibname(name);
+
+  std::string requires = getRequireLibraries();
+
+  varValue += "-L${CMAKE_CURRENT_LIST_DIR}";
+  varValue += " ";
+  varValue += libname;
+
+  //
+  // Multi-locale libraries require some extra libraries to be linked in order
+  // to function correctly. For static libraries in particular, rather than
+  // try to link these dependencies at compile time, we shunt responsibility
+  // off to the user via use of `--library-cmakelists`.
+  //
+  if (fMultiLocaleInterop) {
+    std::string deps = getCompilelineOption("multilocale-lib-deps");
+    removeTrailingNewlines(deps);
+    varValue += " ";
+    varValue += deps;
+  }
+
+  if (requires != "") {
+    varValue += " ";
+    varValue += requires;
+  }
+
+  //
+  // Append the Chapel library as the last linker argument. We do this as a
+  // stopgap to make the GNU linker happy.
+  //
+  removeTrailingNewlines(libraries);
+  varValue += " ";
+  varValue += libraries;
+  varValue += " ";
+  varValue += libname;
+
+  varValue = makeToCMake(varValue);
+  fprintf(cmakelists.fptr, "set(%s_LINK_LIBS %s)\n\n", name.c_str(), varValue.c_str());
+}
+
+void codegen_library_cmakelists() {
+  std::string name = "";
+  int libLength = strlen("lib");
+  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  if (startsWithLib) {
+    name += &executableFilename[libLength];
+  } else {
+    // libname = executableFilename when executableFilename does not start with
+    // "lib"
+    name = executableFilename;
+  }
+
+  fileinfo cmakelists;
+  openLibraryHelperFile(&cmakelists, name.c_str(), "cmake");
+
+  // Save the CHPL_HOME location so it can be used in the other
+  // variables instead of letting them be cluttered with its value
+  setupCMakeEnvVars("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, cmakelists);
+  setupCMakeEnvVars("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, cmakelists);
+  setupCMakeEnvVars("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, cmakelists);
+  setupCMakeEnvVars("CHPL_HOME", CHPL_HOME, cmakelists);
+
+  printCMakeListsIncludes(cmakelists, name);
+  printCMakeListsLibraries(cmakelists, name);
+
+  std::string compiler = getCompilelineOption("compiler");
+  removeTrailingNewlines(compiler);
+  fprintf(cmakelists.fptr, "set(CHPL_COMPILER %s)\n", compiler.c_str());
+
+  std::string linker = getCompilelineOption("linker");
+  removeTrailingNewlines(linker);
+  fprintf(cmakelists.fptr, "set(CHPL_LINKER %s)\n", linker.c_str());
+
+  std::string linkerShared = getCompilelineOption("linkershared");
+  removeTrailingNewlines(linkerShared);
+  fprintf(cmakelists.fptr, "set(CHPL_LINKERSHARED %s)\n", linkerShared.c_str());
+
+  closeLibraryHelperFile(&cmakelists, false);
 }
 
 const char* getLibraryExtension() {

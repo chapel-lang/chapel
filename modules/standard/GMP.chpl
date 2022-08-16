@@ -107,7 +107,7 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
 */
 module GMP {
   use CTypes;
-  use SysError;
+  use OS;
   use BigInteger;
   private use CTypes;
 
@@ -1120,6 +1120,7 @@ module GMP {
                         src_locale: int,
                         in from: __mpz_struct,
                         copy_allocated:bool = false) {
+    import Communication;
 
     // Gather information from the source variable
     var src_nalloc = chpl_gmp_mpz_struct_nalloc(from);
@@ -1144,9 +1145,8 @@ module GMP {
     // get a pointer to the limbs
     var dst_limbs_ptr = chpl_gmp_mpz_struct_limbs(ret[0]);
 
-    __primitive("chpl_comm_get", dst_limbs_ptr[0],
-                                 src_locale, src_limbs_ptr[0],
-                                 (new_size:c_size_t)*c_sizeof(mp_limb_t));
+    Communication.get(dst_limbs_ptr, src_limbs_ptr, src_locale,
+                      (new_size:c_size_t)*c_sizeof(mp_limb_t));
 
     // Update the sign and size of the number
     chpl_gmp_mpz_set_sign_size(ret, src_sign_size);

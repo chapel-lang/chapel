@@ -20,13 +20,13 @@
 #ifndef CHPL_UAST_BUILDERRESULT_H
 #define CHPL_UAST_BUILDERRESULT_H
 
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/UniqueString.h"
-#include "chpl/queries/mark-functions.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/UniqueString.h"
+#include "chpl/framework/mark-functions.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/util/iteration.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/stringify-functions.h"
 
 #include <vector>
 #include <unordered_map>

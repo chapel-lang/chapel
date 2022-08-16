@@ -145,22 +145,6 @@ module ChapelLocale {
       return this._value.chpl_name();
     }
 
-    inline proc defaultMemory() {
-      return this._value.defaultMemory();
-    }
-
-    inline proc largeMemory() {
-      return this._value.largeMemory();
-    }
-
-    inline proc lowLatencyMemory() {
-      return this._value.lowLatencyMemory();
-    }
-
-    inline proc highBandwidthMemory() {
-      return this._value.highBandwidthMemory();
-    }
-
     inline proc getChildCount() {
       return this._value.getChildCount();
     }
@@ -187,29 +171,42 @@ module ChapelLocale {
     :returns: the hostname of the compute node associated with the locale
     :rtype: string
   */
-  inline proc locale.hostname {
+  inline proc locale.hostname: string {
     return this._value.hostname;
   }
 
   /*
-    Get the name of this locale.  In practice, this is often the
-    same as the hostname, though in some cases (like when using
-    local launchers), it may be modified.
+    Get the name of this locale.
 
-    :returns: locale name
-    :rtype: string
+    In general, this method returns the same string as :proc:`locale.hostname`;
+    however, it can differ when the program is executed in an oversubscribed manner.
+
+  .. note::
+
+    The locale's `id` (from :proc:`locale.id`) will be appended to the `hostname`
+    when launching in an oversubscribed manner with `CHPL_COMM=gasnet` and one of
+    the following configurations:
+
+    - `CHPL_COMM_SUBSTRATE=udp` & `GASNET_SPAWNFN=L`
+    - `CHPL_COMM_SUBSTRATE=smp`
+
+    More information about these environment variables can be found here: :ref:`readme-multilocale`
+
+  :returns: the name of this locale
+  :rtype: string
   */
-  inline proc locale.name {
+  inline proc locale.name: string {
     return this._value.name;
   }
 
   /*
     Get the unique integer identifier for this locale.
 
-    :returns: locale number, in the range ``0..numLocales-1``
-    :rtype: int
+  :returns: index of this locale in the range ``0..numLocales-1``
+  :rtype: int
+
   */
-  inline proc locale.id {
+  inline proc locale.id: int {
     return this._value.id;
   }
 
@@ -266,6 +263,7 @@ module ChapelLocale {
     stack for any task on the current locale, including the
     caller.
   */
+  deprecated "'locale.callStackSize' is deprecated."
   inline proc locale.callStackSize { return this._value.callStackSize; }
 
   /*
@@ -427,30 +425,6 @@ module ChapelLocale {
       return "";
     }
 
-    //
-    // Support for different types of memory:
-    // large, low latency, and high bandwidth
-    //
-    pragma "no doc"
-    proc defaultMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    pragma "no doc"
-    proc largeMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    pragma "no doc"
-    proc lowLatencyMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    pragma "no doc"
-    proc highBandwidthMemory() : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
     pragma "no doc"
     proc getChildCount() : int {
       HaltWrappers.pureVirtualMethodHalt();
@@ -476,7 +450,7 @@ module ChapelLocale {
     }
 
     // Return array of gpu sublocale
-    proc gpus {
+    proc gpus const ref {
       return gpusImpl();
     }
 

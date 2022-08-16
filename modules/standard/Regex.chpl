@@ -340,7 +340,7 @@ Regular Expression Types and Methods
 
  */
 module Regex {
-  private use SysError, CTypes;
+  private use OS, CTypes;
 
 pragma "no doc"
 extern type qio_regex_t;
@@ -1070,7 +1070,7 @@ record regex {
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    f <~> "new regex(\"" <~> pattern <~> "\")";
+    f.write("new regex(\"", pattern, "\")");
   }
 
   pragma "no doc"

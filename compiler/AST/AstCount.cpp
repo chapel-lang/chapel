@@ -121,6 +121,10 @@ void AstCount::visitLabelSym(LabelSymbol* node) {
   numLabelSymbol++;
 }
 
+void AstCount::visitTemporaryConversionSymbol(TemporaryConversionSymbol* node) {
+  numTemporaryConversionSymbol++;
+}
+
 bool AstCount::enterModSym(ModuleSymbol* node) {
   numModuleSymbol++;
   return true;

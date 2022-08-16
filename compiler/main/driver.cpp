@@ -28,7 +28,6 @@
 #include "chpl.h"
 #include "commonFlags.h"
 #include "config.h"
-#include "countTokens.h"
 #include "docsDriver.h"
 #include "files.h"
 #include "library.h"
@@ -47,7 +46,7 @@
 #include "version.h"
 #include "visibleFunctions.h"
 
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 
 #include <inttypes.h>
@@ -110,6 +109,7 @@ const char* CHPL_LLVM_CLANG_CXX = NULL;
 
 const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS = NULL;
+const char* CHPL_TARGET_LD = NULL;
 const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
@@ -126,6 +126,7 @@ static bool fBaseline = false;
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
+bool fLibraryCMakeLists = false;
 bool fLibraryPython = false;
 bool fMultiLocaleInterop = false;
 bool fMultiLocaleLibraryDebug = false;
@@ -258,6 +259,7 @@ bool fReportPromotion = false;
 bool fReportScalarReplace = false;
 bool fReportDeadBlocks = false;
 bool fReportDeadModules = false;
+bool fReportGpuTransformTime = false;
 bool fPermitUnhandledModuleErrors = false;
 #ifdef HAVE_LLVM_RV
 bool fRegionVectorizer = true;
@@ -302,7 +304,7 @@ bool fPrintAdditionalErrors;
 static
 bool fPrintChplSettings = false;
 
-bool fDynoCompilerLibrary = true;
+bool fDynoCompilerLibrary = false;
 bool fDynoDebugTrace = false;
 size_t fDynoBreakOnHash = 0;
 
@@ -1145,6 +1147,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
+ {"report-gpu-transform-time", ' ', NULL, "Print amount of time spent in GPU transformations", "F", &fReportGpuTransformTime, NULL, NULL},
  {"report-optimized-loop-iterators", ' ', NULL, "Print stats on optimized single loop iterators", "F", &fReportOptimizedLoopIterators, NULL, NULL},
  {"report-inlined-iterators", ' ', NULL, "Print stats on inlined iterators", "F", &fReportInlinedIterators, NULL, NULL},
  {"report-vectorized-loops", ' ', NULL, "Show which loops have vectorization hints", "F", &fReportVectorizedLoops, NULL, NULL},
@@ -1185,6 +1188,7 @@ static ArgumentDescription arg_desc[] = {
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
  {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, setLibmode},
+ {"library-cmakelists", ' ', NULL, "Generate a CMakeLists file to help use the generated library", "F", &fLibraryCMakeLists, NULL, setLibmode},
  {"library-fortran", ' ', NULL, "Generate a module compatible with Fortran", "F", &fLibraryFortran, NULL, setLibmode},
  {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
@@ -1452,6 +1456,7 @@ static void setChapelEnvs() {
 
   CHPL_TARGET_BUNDLED_COMPILE_ARGS = envMap["CHPL_TARGET_BUNDLED_COMPILE_ARGS"];
   CHPL_TARGET_SYSTEM_COMPILE_ARGS = envMap["CHPL_TARGET_SYSTEM_COMPILE_ARGS"];
+  CHPL_TARGET_LD = envMap["CHPL_TARGET_LD"];
   CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
   CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
 
@@ -1823,28 +1828,32 @@ int main(int argc, char* argv[]) {
     process_args(&sArgState, argc, argv);
 
     setupChplGlobals(argv[0]);
-    if (fDynoCompilerLibrary) {
-      // set the config names/values we processed earlier
-      chpl::parsing::setConfigSettings(gContext, gDynoParams);
-      // this should not be used after this point!
-      gDynoParams.clear();
 
-      // set up the module paths
-      std::string chpl_module_path;
-      if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
-        chpl_module_path = envvarpath;
-      }
-      chpl::parsing::setupModuleSearchPaths(gContext,
-                                            CHPL_HOME,
-                                            fMinimalModules,
-                                            CHPL_LOCALE_MODEL,
-                                            fEnableTaskTracking,
-                                            CHPL_TASKS,
-                                            CHPL_COMM,
-                                            CHPL_SYS_MODULES_SUBDIR,
-                                            chpl_module_path,
-                                            cmdLineModPaths);
+    // set the config names/values we processed earlier
+    chpl::parsing::setConfigSettings(gContext, gDynoParams);
+    // this should not be used after this point!
+    gDynoParams.clear();
+
+    // set up the module paths
+    std::string chpl_module_path;
+    if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
+      chpl_module_path = envvarpath;
     }
+
+    addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
+
+    chpl::parsing::setupModuleSearchPaths(gContext,
+                                          CHPL_HOME,
+                                          fMinimalModules,
+                                          CHPL_LOCALE_MODEL,
+                                          fEnableTaskTracking,
+                                          CHPL_TASKS,
+                                          CHPL_COMM,
+                                          CHPL_SYS_MODULES_SUBDIR,
+                                          chpl_module_path,
+                                          cmdLineModPaths,
+                                          getChplFilenames());
+
     postprocess_args();
 
     if (gContext != nullptr) {
@@ -1878,7 +1887,7 @@ int main(int argc, char* argv[]) {
   if (fRunlldb)
     runCompilerInLLDB(argc, argv);
 
-  addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
+  assertSourceFilesFound();
 
   runPasses(tracker, fDocs);
 

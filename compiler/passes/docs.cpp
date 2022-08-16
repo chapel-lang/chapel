@@ -42,6 +42,8 @@
 #include "stringutil.h"
 #include "tmpdirname.h"
 
+#include "chpl/util/filesystem.h"
+
 #include "global-ast-vecs.h"
 
 static int compareNames(const void* v1, const void* v2) {
@@ -257,11 +259,10 @@ void createDocsFileFolders(std::string filename) {
  * error.
  */
 static void makeDir(const char* dirpath) {
-  static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
-  int result = mkdir(dirpath, dirPerms);
-  if (result != 0 && errno != 0 && errno != EEXIST) {
+  std::string path = std::string(dirpath);
+  if (auto err = chpl::makeDir(path)) {
     USR_FATAL("Failed to create directory: %s due to: %s",
-              dirpath, strerror(errno));
+              dirpath, err.message().c_str());
   }
 }
 

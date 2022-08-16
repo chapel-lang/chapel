@@ -20,10 +20,10 @@
 #ifndef CHPL_TYPES_QUALIFIEDTYPE_H
 #define CHPL_TYPES_QUALIFIEDTYPE_H
 
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/uast/IntentList.h"
 #include "chpl/util/hash.h"
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/stringify-functions.h"
 #include "chpl/types/Type.h"
 
 #include <cstddef>

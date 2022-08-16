@@ -131,7 +131,7 @@ statement after the ``try``-``catch`` blocks.
 
    .. code-block:: chapel
 
-      use SysError;
+      use OS;
 
       proc catchingErrors() throws {
         try {
@@ -164,7 +164,7 @@ clauses, if any, match that error, the program halts.
 
    .. code-block:: chapel
 
-      use SysError;
+      use OS;
 
       proc catchingErrorsHalt() {
         try! {
@@ -238,7 +238,7 @@ error raised in a ``try`` block.
 
    .. code-block:: chapel
 
-      use SysError;
+      use OS;
 
       proc catchingErrorsPropagate() throws {
         try {
@@ -511,7 +511,7 @@ flattened ``TaskErrors`` error.
         } catch errors: TaskErrors { // not nested
           // all of e will be of runtime type DemoError in this example
           for e in errors {
-            writeln("Caught task error e ", e.message());
+            writeln("Caught task error e ", e!.message());
           }
         }
       }
@@ -536,7 +536,7 @@ flattened ``TaskErrors`` error.
           writeln("after cobegin block");
         } catch errors: TaskErrors {
           for e in errors {
-            writeln("Caught task error e ", e.message());
+            writeln("Caught task error e ", e!.message());
           }
         }
       }
@@ -567,7 +567,7 @@ may execute serially within a single task, it will always throw a
           writeln("after forall block");
         } catch errors: TaskErrors {
           for e in errors {
-            writeln("Caught task error e ", e.message());
+            writeln("Caught task error e ", e!.message());
           }
         }
       }
@@ -582,9 +582,9 @@ defined in the standard modules. ``Error`` may be used directly, and new
 subclass hierarchies may be created from it. See also
 the module documentation for :mod:`Errors`.
 
-A hierarchy for system errors is included in the ``SysError`` module,
+A hierarchy for system errors is included in the ``OS`` module,
 accessed with a ``use`` statement. See also
-the module documentation for :mod:`SysError`.
+the module documentation for :mod:`OS`.
 
    *Example (defining-errors.chpl)*.
 
@@ -592,7 +592,7 @@ the module documentation for :mod:`SysError`.
 
    .. code-block:: chapel
 
-      use SysError;
+      use OS;
 
       class DemoError : Error { }
 

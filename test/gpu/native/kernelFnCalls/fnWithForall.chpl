@@ -20,12 +20,12 @@ on here.gpus[0] {
   var A: [0..#n] real;
 
   foreach i in 0..#n {  // This is not a kernel, `foo` is too complicated
-    A[i] = foo(i);
+    A[i] = foo(i);      // This will cause n kernel launches from `foo`
   }
 
   writeln(A);
 
-  var x = foo(n); // This should cause n+1 kernel launches
+  var x = foo(n); // This should cause 1 more launch
   writeln(x);
 }
 

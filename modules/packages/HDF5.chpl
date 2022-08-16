@@ -75,7 +75,8 @@ module HDF5 {
      https://portal.hdfgroup.org/display/HDF5/HDF5
   */
   module C_HDF5 {
-    public use CTypes, Sys;
+    public use CTypes;
+    public use OS.POSIX only off_t;
 
     // Header given to c2chapel:
     require "hdf5_hl.h";

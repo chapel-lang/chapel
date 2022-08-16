@@ -23,7 +23,7 @@
 #include "astlocs.h"
 #include "baseAST.h"
 #include "chpl.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/util/terminal.h"
 #include "codegen.h"
 #include "driver.h"

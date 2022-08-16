@@ -26,7 +26,6 @@
 namespace chpl {
 namespace resolution {
 
-
 struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
@@ -34,7 +33,7 @@ struct Resolver {
   const uast::AstNode* curStmt = nullptr;
   const types::CompositeType* inCompositeType = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
-  bool useGenericFormalDefaults = false;
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const TypedFnSignature* typedSignature = nullptr;
   const PoiScope* poiScope = nullptr;
 
@@ -129,7 +128,7 @@ struct Resolver {
                             const uast::AstNode* fieldStmt,
                             const types::CompositeType* compositeType,
                             ResolutionResultByPostorderID& byPostorder,
-                            bool useGenericFormalDefaults);
+                            DefaultsPolicy defaultsPolicy);
 
   // set up Resolver to resolve instantiated field declaration types
   static Resolver
@@ -139,7 +138,7 @@ struct Resolver {
                                  const types::CompositeType* compositeType,
                                  const PoiScope* poiScope,
                                  ResolutionResultByPostorderID& byPostorder,
-                                 bool useGenericFormalDefaults);
+                                 DefaultsPolicy defaultsPolicy);
 
   // set up Resolver to resolve instantiated field declaration types
   // without knowing the CompositeType
@@ -197,7 +196,8 @@ struct Resolver {
 
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
-                          const types::Type* actualType);
+                          const types::Type* actualType,
+                          bool isNonStarVarArg = false);
 
   /* When resolving a function with a TypeQuery, we need to
      resolve the type that is queried, since it can be used
@@ -211,7 +211,7 @@ struct Resolver {
      This function resolves the types of all TypeQuery nodes
      contained in the passed Formal (by updating 'byPostorder').
    */
-  void resolveTypeQueriesFromFormalType(const uast::Formal* formal,
+  void resolveTypeQueriesFromFormalType(const uast::VarLikeDecl* formal,
                                         types::QualifiedType formalType);
 
   // helper for getTypeForDecl -- checks the Kinds are compatible
@@ -286,6 +286,14 @@ struct Resolver {
   // resolve a special op call such as tuple unpack assign
   bool resolveSpecialOpCall(const uast::Call* call);
 
+  // Resolve a || or && operation.
+  types::QualifiedType typeForBooleanOp(const uast::OpCall* op);
+
+  // Handle ==, !=, and other operators as defined on types.
+  types::QualifiedType typeForTypeOperator(const uast::OpCall* op,
+                                           const types::QualifiedType& left,
+                                           const types::QualifiedType& right);
+
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
   // if it is a regular call.
@@ -350,8 +358,8 @@ struct Resolver {
   bool enter(const uast::New* node);
   void exit(const uast::New* node);
 
-  bool enter(const uast::For* loop);
-  void exit(const uast::For* loop);
+  bool enter(const uast::IndexableLoop* loop);
+  void exit(const uast::IndexableLoop* loop);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);

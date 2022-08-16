@@ -1,4 +1,4 @@
-use DateTime;
+use Time;
 
 class FixedOffset: TZInfo {
   var offset: timedelta;

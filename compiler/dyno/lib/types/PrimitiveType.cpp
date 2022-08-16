@@ -26,7 +26,7 @@
 #include "chpl/types/RealType.h"
 #include "chpl/types/UintType.h"
 
-#include "chpl/queries/global-strings.h"
+#include "chpl/framework/global-strings.h"
 
 namespace chpl {
 namespace types {

@@ -19,7 +19,7 @@
 
 #include "chpl/types/Param.h"
 
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ComplexType.h"
@@ -121,6 +121,10 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
           assert(false && "case not handled");
         }
         return ret;
+      }
+    case paramtags::EnumParam:
+      {
+        assert(false && "case not handled");
       }
     case paramtags::IntParam:
       {

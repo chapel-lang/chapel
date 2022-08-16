@@ -41,18 +41,28 @@ docker cp chapel.rb <container name or container ID>:/home/linuxbrew/chapel.rb
 ```
 
 ## How to test formula changes
-To test local homebrew builds, the following items are needed: 
- - A Chapel tarball 
- - The sha256 for that tarball
+With the most recent release of Chapel, the formula has been updated to support 
+testing of the main trunk of the source tree.  This approach will clone the Chapel 
+repository locally and build from source.   The instructions for this approach
+are listed below: 
 
- The steps used to do this on a local system are as follows: 
+ - Rename `chapel-main.rb` to `chapel.rb`
+ - Run the following command: 
+   - `brew  install --HEAD chapel.rb` 
+ - Validate the build by running: 
+   - `chpl --version`
+   - Compile and run pidigits
+
+Alternatively, local testing can also be performed using a tarball, and the instructions
+for creating that artifact and building the homebrew package are listed below: 
+
  - Clone Chapel source 
  - Build the tarball via `./util/cron/create_tarball.bash`
  - Run `shasum -a 256 "url for the tarball"`
  - Verify the permissions on the tarball - it should be set to `644` if you are attempting to use a web location. 
  - Rename `chapel-main.rb` to `chapel.rb` 
  - Modify the `chapel.rb` file to include the tarball URL (this can be a network location or a local file) and sha256 value
- - Then the following commands can be run (https://github.com/Cray/chapel-private/issues/2866): 
+ - Then the following command can be run to build and install: 
    - `brew install --build-from-source chapel.rb`
  - Finally, the install can be validated by running: 
    - `chpl --version`

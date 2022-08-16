@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_IMPLEMENTS_H
 #define CHPL_UAST_IMPLEMENTS_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/NamedDecl.h"

@@ -38,20 +38,24 @@
 #include <filesystem>
 #include <queue>
 
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/Context.h"
-#include "chpl/queries/UniqueString.h"
-#include "chpl/queries/query-impl.h"
-#include "chpl/queries/stringify-functions.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/UniqueString.h"
+#include "chpl/framework/query-impl.h"
+#include "chpl/framework/stringify-functions.h"
+#include "chpl/framework/update-functions.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/util/filesystem.h"
 #include "chpl/uast/chpl-syntax-printer.h"
-#include "chpl/queries/global-strings.h"
+#include "chpl/framework/global-strings.h"
 
 
 using namespace chpl;
@@ -65,6 +69,8 @@ std::string commentStyle_;
 bool writeStdOut_ = false;
 std::string outputDir_;
 bool textOnly_ = false;
+std::string CHPL_HOME = getenv("CHPL_HOME");
+
 const std::string templateUsage = R"RAW(**Usage**
 
 .. code-block:: chapel
@@ -134,6 +140,96 @@ static UniqueString getNodeName(AstNode* node) {
   } else {
     assert(false && "no name defined for node");
   }
+}
+
+/*
+ * Returns the current working directory. Does not report failures. Use
+ * currentWorkingDir() if you need error reports.
+ */
+static
+std::string getCwd() {
+  std::string ret;
+  if (auto err = currentWorkingDir(ret)) {
+    return "";
+  } else {
+    return ret;
+  }
+}
+
+static
+std::string runCommand(std::string& command) {
+  // Run arbitrary command and return result
+  char buffer[256];
+  std::string result = "";
+
+  // Call command
+  FILE* pipe = popen(command.c_str(), "r");
+  if (!pipe) {
+    // USR_FATAL("running %s", command.c_str());
+    std::cerr << "error: running " << command << std::endl;
+  }
+
+  // Read output of command into result via buffer
+  while (!feof(pipe)) {
+    if (fgets(buffer, 256, pipe) != NULL) {
+      result += buffer;
+    }
+  }
+
+  if (pclose(pipe)) {
+    // USR_FATAL("'%s' did not run successfully", command.c_str());
+    std::cerr << "error: '" << command << "' did not run successfully"
+              << std::endl;
+  }
+
+  return result;
+}
+
+static int myshell(std::string command,
+                   std::string description,
+                   bool        ignoreStatus = false,
+                   bool        quiet = false,
+                   bool        printSystemCommands = false) {
+
+  int status = 0;
+
+  if (printSystemCommands && !quiet) {
+    printf("\n# %s\n", description.c_str());
+    printf("%s\n", command.c_str());
+    fflush(stdout);
+    fflush(stderr);
+  }
+
+  // Treat a '#' at the start of a line as a comment
+  if (command[0] == '#')
+    return 0;
+
+  status = system(command.c_str());
+
+  if (status == -1) {
+    // USR_FATAL("system() fork failed: %s", strerror(errno));
+    std::cerr << "error: system() fork failed: " << strerror(errno)
+              << std::endl;
+  } else if (status != 0 && ignoreStatus == false) {
+    // USR_FATAL("%s", description);
+    std::cerr << "error: " << description << std::endl;
+  }
+
+  return status;
+}
+
+
+static
+std::string getChplDepsApp() {
+  // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
+  std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" +
+                         CHPL_HOME + " python3 ";
+  command += CHPL_HOME + "/util/chplenv/chpl_home_utils.py --chpldeps";
+
+  std::string venvDir = runCommand(command);
+  venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
+
+  return venvDir;
 }
 
 static char* checkProjectVersion(char* projectVersion) {
@@ -969,6 +1065,11 @@ struct RstResultBuilder {
       os_ << "\n";
     }
 
+    showDeprecationMessage(node, indentComment);
+    return commentShown;
+  }
+
+  void showDeprecationMessage(const Decl* node, bool indentComment=true) {
     if (auto attrs = node->attributes()) {
       if (attrs->isDeprecated() && !textOnly_) {
         auto comment = previousComment(context_, node->id());
@@ -978,8 +1079,13 @@ struct RstResultBuilder {
             // do nothing because deprecation was mentioned in doc comment
         } else {
           // write the deprecation warning and message
-          indentStream(os_, indentDepth_ * indentPerDepth) << ".. warning::\n\n";
-          indentStream(os_, (indentDepth_ + 1) * indentPerDepth);
+          int commentShift = 0;
+          if (indentComment) {
+            indentStream(os_, indentDepth_ * indentPerDepth);
+            commentShift = 1;
+          }
+          os_ << ".. warning::\n\n";
+          indentStream(os_, (indentDepth_ + commentShift) * indentPerDepth);
           if (attrs->deprecationMessage().isEmpty()) {
             // write a generic message because there wasn't a specific one
             os_ << getNodeName((AstNode*) node) << " is deprecated";
@@ -991,7 +1097,6 @@ struct RstResultBuilder {
         }
       }
     }
-    return commentShown;
   }
 
   void visitChildren(const AstNode* n) {
@@ -1046,9 +1151,12 @@ struct RstResultBuilder {
       os_ << ".. module:: " << m->name().c_str() << '\n';
       lastComment = previousComment(context_, m->id());
       if (lastComment) {
-        indentStream(os_, 1 * indentPerDepth);
-        os_ << ":synopsis: " << commentSynopsis(lastComment, commentStyle)
-            << '\n';
+        auto synopsis = commentSynopsis(lastComment, commentStyle);
+        if (!synopsis.empty()) {
+          indentStream(os_, 1 * indentPerDepth);
+          os_ << ":synopsis: " << synopsis
+              << '\n';
+        }
       }
       os_ << '\n';
 
@@ -1086,6 +1194,7 @@ struct RstResultBuilder {
     }
     if (textOnly_) indentDepth_ --;
     showComment(m, textOnly_);
+    showDeprecationMessage(m, false);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
@@ -1142,8 +1251,8 @@ struct RstResultBuilder {
       if (decl->toVariable()->typeExpression() ||
           decl->toVariable()->initExpression()) {
         expressions.push(decl);
-        kind = decl->toVariable()->isField() ? "attribute" : "data";
       }
+      kind = decl->toVariable()->isField() ? "attribute" : "data";
     }
     std::string prevTypeExpression;
     std::string prevInitExpression;
@@ -1160,8 +1269,13 @@ struct RstResultBuilder {
       os_ << decl->toVariable()->name();
 
       if (expressions.empty()) {
-        assert(!prevTypeExpression.empty() || !prevInitExpression.empty());
         multiDeclHelper(decl, prevTypeExpression, prevInitExpression);
+        // for when we have something like var x, y, z;
+        // if we want to print the following, uncomment the line below
+        // var x
+        // var y: x.type
+        // var z: y.type
+        // prevTypeExpression = ": " + decl->toVariable()->name().str() + ".type";
       } else {
         // our decl doesn't have a typeExpression or initExpression,
         // or it is the same one
@@ -1448,7 +1562,7 @@ module N { }
 
 // temporary CLI to get testing
 struct Args {
-  std::string saveSphinx = "docs";
+  std::string saveSphinx = "";
   bool selfTest = false;
   bool stdout = false;
   bool dump = false;
@@ -1459,13 +1573,16 @@ struct Args {
   std::string commentStyle =  "/*";
   std::string projectVersion = "0.0.1";
   std::vector<std::string> files;
+  bool printSystemCommands = false;
+  bool noHTML = false;
+  std::string chplHome;
 };
 
 static Args parseArgs(int argc, char **argv) {
   Args ret;
   for (int i = 1; i < argc; i++) {
     if  (std::strcmp("--no-html", argv[i]) == 0){
-      // pass
+      ret.noHTML = true;
     } else if (std::strcmp("--save-sphinx", argv[i]) == 0) {
       assert(i < (argc - 1));
       ret.saveSphinx = argv[i + 1];
@@ -1496,6 +1613,12 @@ static Args parseArgs(int argc, char **argv) {
       assert(i < (argc - 1));
       ret.projectVersion = checkProjectVersion(argv[i + 1]);
       i += 1;
+    } else if (std::strcmp("--print-commands", argv[i]) == 0) {
+      ret.printSystemCommands = true;
+    } else if (std::strcmp("--home", argv[i]) == 0) {
+      assert(i < (argc - 1));
+      ret.chplHome = argv[i + 1];
+      i += 1;
     } else {
       ret.files.push_back(argv[i]);
     }
@@ -1503,20 +1626,60 @@ static Args parseArgs(int argc, char **argv) {
   return ret;
 }
 
-// TODO what do we do if multiple modules (submodules) are in one file?
-static std::string moduleName(const BuilderResult& builderResult) {
-  for (const auto& ast : builderResult.topLevelExpressions()) {
-    if (const Module* m = ast->toModule()) {
-      /* TODO: This is wrong if the module is an implicit module and it just
-          imports or uses another module. In that case the name should be that
-          of the used or imported module.
-      */
-      return m->name().str();
-    }
+
+/*
+ * Create new sphinx project at given location and return path where .rst files
+ * should be placed.
+ */
+static
+std::string generateSphinxProject(std::string dirpath, bool printSystemCommands) {
+  // Create the output dir under the docs output dir.
+  std::string sphinxDir = dirpath;
+  // Copy the sphinx template into the output dir.
+  std::string sphinxTemplate = CHPL_HOME +
+                               "/third-party/chpl-venv/chpldoc-sphinx-project/*";
+  std::string cmd = "cp -r " + sphinxTemplate + " " + sphinxDir + "/";
+  if( printSystemCommands ) {
+    printf("%s\n", cmd.c_str());
   }
-  assert(false);
-  return "";
+  myshell(cmd, "copying chpldoc sphinx template", false, false,
+          printSystemCommands);
+
+  std::string moddir = sphinxDir + "/source/modules";
+  return moddir;
 }
+
+/*
+ * Invoke sphinx-build using sphinxDir to find conf.py and rst sources, and
+ * outputDir for generated html files.
+ */
+static
+void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
+                          std::string projectVersion, std::string author,
+                          bool printSystemCommands) {
+  std::string sphinxBuild = "python3 " + getChplDepsApp() + " sphinx-build";
+  std::string venvProjectVersion = projectVersion;
+
+  std::string envVars = "export CHPLDOC_AUTHOR='" + author + "' && " +
+                        "export CHPLDOC_PROJECT_VERSION='"
+                        + venvProjectVersion + "'";
+
+  // Run:
+  //   $envVars &&
+  //     sphinx-build -b html
+  //     -d $sphinxDir/build/doctrees -W
+  //     $sphinxDir/source $outputDir
+  std::string cmdPrefix = envVars + " && ";
+  std::string cmd = cmdPrefix + sphinxBuild + " -b html -d " +
+                    sphinxDir + "/build/doctrees" + " -W " +
+                    sphinxDir + "/source " + outputDir;
+  if( printSystemCommands ) {
+    printf("%s\n", cmd.c_str());
+  }
+  myshell(cmd, "building html output from chpldoc sphinx project");
+  printf("HTML files are at: %s\n", outputDir.c_str());
+}
+
 
 int main(int argc, char** argv) {
   Context context;
@@ -1540,13 +1703,63 @@ int main(int argc, char** argv) {
     std::cerr << "WARNING only handling one file right now\n";
   }
 
+  // update CHPL_HOME if we got one from the command-line args
+  if (!args.chplHome.empty()) {
+    CHPL_HOME = args.chplHome;
+  }
+
+  // This is the final location for the output format (e.g. the html files.).
+  std::string docsOutputDir;
+  if (args.outputDir.length() > 0) {
+    docsOutputDir = args.outputDir;
+  } else {
+    docsOutputDir = getCwd() + "/docs";
+  }
+
+  // Root of the sphinx project and generated rst files. If
+  // --docs-save-sphinx is not specified, it will be a temp dir.
+  std::string docsSphinxDir;
+  std::string doctmpdirname;
+  if (!args.saveSphinx.empty()) {
+    docsSphinxDir = args.saveSphinx;
+  } else {
+    makeTempDir("chpldoc-", doctmpdirname);
+    docsSphinxDir = doctmpdirname;
+  }
+
+  // Make the intermediate dir and output dir.
+   if (auto err = makeDir(docsSphinxDir)) {
+      std::cerr << "error: Failed to create directory: "
+                << docsSphinxDir << " due to: "
+                << err.message() << std::endl;
+      return 1;
+   }
+   if (auto err = makeDir(docsOutputDir)) {
+      std::cerr << "error: Failed to create directory: "
+                << docsOutputDir << " due to: "
+                << err.message() << std::endl;
+      return 1;
+   }
+
+  // The location of intermediate rst files.
+  std::string docsRstDir;
+  if (textOnly_) {
+    // For text-only mode, the output and working location is the same.
+    docsRstDir = docsOutputDir;
+  } else {
+    // For rst mode, the working location is somewhere inside the temp dir.
+    docsRstDir = generateSphinxProject(docsSphinxDir, args.printSystemCommands);
+  }
+
+  outputDir_ = docsRstDir;
+
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
     UniqueString emptyParent;
 
     // TODO: Change which query we use to parse files as suggested by @mppf
     // parseFileContainingIdToBuilderResult(Context* context, ID id);
-    // and then work with the module ID to find the preceeding comment.
+    // and then work with the module ID to find the preceding comment.
     const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
                                                                   path,
                                                                   emptyParent);
@@ -1564,15 +1777,19 @@ int main(int argc, char** argv) {
                         << builderResult.error(0).message() << "\n";
               return 1;
             }
+        else if (e.kind() == ErrorMessage::Kind::WARNING) {
+              std::cerr << e.location(ctx).path() << ":"
+                        << e.location(ctx).line() << ": warning: "
+                        << builderResult.error(0).message() << "\n";
+            }
       }
     }
     if (!args.stdout) {
-      auto name = moduleName(builderResult);
-      if (!textOnly_)
-        outputDir_ = args.saveSphinx + "/source/modules";
-      else
-        outputDir_ = args.saveSphinx;
+      std::string name;
       for (const auto& ast : builderResult.topLevelExpressions()) {
+        if (ast->isModule())
+          name = ast->toModule()->name().str();
+
         if (args.dump) {
           ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
         }
@@ -1599,6 +1816,11 @@ int main(int argc, char** argv) {
                   << (pair.second ? pair.second->str() : "<nullptr>") << "\n";
       }
     }
+  }
+
+  if (!textOnly_ && !args.noHTML) {
+    generateSphinxOutput(docsSphinxDir, docsOutputDir,args.projectVersion,
+                         args.author, args.printSystemCommands);
   }
 
   return 0;

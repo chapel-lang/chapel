@@ -27,6 +27,7 @@ target_sources(libdyno-obj
                ClassTypeDecorator.cpp
                ComplexType.cpp
                CompositeType.cpp
+               EnumType.cpp
                ErroneousType.cpp
                ImagType.cpp
                IntType.cpp

@@ -8,9 +8,9 @@
 use IO;
 
 const stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                                   hints = QIO_CH_ALWAYS_UNBUFFERED),
+                                   hints = ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED)),
       stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
+                                   hints = ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
 
 config var readSize = 16384, // how much to read at a time
            n = 0;            // a dummy variable to support the CLBG framework

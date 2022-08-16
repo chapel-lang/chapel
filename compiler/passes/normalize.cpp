@@ -1419,7 +1419,7 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
     return;
 
   // Gather symexprs used in the statement
-  std::vector<SymExpr*> mentions;
+  llvm::SmallVector<SymExpr*, 32> mentions;
   collectSymExprs(node, mentions);
 
   SET_LINENO(node);
@@ -1444,7 +1444,7 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
   // the variable lifetime still matches the user's view of the code.
   // A reasonable alternative would be for transformations such as
   // the removal of .type blocks to add such SymExprs.
-  for_vector(SymExpr, se, mentions) {
+  for (SymExpr* se : mentions) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (!var->hasFlag(FLAG_TEMP) &&
           !var->isParameter() &&
@@ -3289,8 +3289,8 @@ static void hack_resolve_types(ArgSymbol* arg) {
           se = toSymExpr(arg->defaultExpr->body.tail);
         if (!se || se->symbol() != gTypeDefaultToken) {
           SET_LINENO(arg->defaultExpr);
-          // MPF: this seems wrong since the result is a value not
-          // a type.
+          // white lie: `typeExpr` should be a type, not a value
+          arg->typeExprFromDefaultExpr = true;
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
         }

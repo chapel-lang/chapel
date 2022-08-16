@@ -1,4 +1,4 @@
-use DateTime;
+use Time;
 
 proc test_basic_attributes() {
   var t = new time(12, 0);

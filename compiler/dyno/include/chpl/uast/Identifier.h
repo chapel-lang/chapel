@@ -20,8 +20,8 @@
 #ifndef CHPL_UAST_IDENTIFIER_H
 #define CHPL_UAST_IDENTIFIER_H
 
-#include "chpl/queries/Location.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Location.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/uast/AstNode.h"
 
 namespace chpl {
@@ -64,6 +64,11 @@ class Identifier final : public AstNode {
   static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);
   UniqueString name() const { return name_; }
 };
+
+/*
+ * Returns true if 'node' is an Identifier with the name "?"
+ */
+bool isQuestionMark(const AstNode* node);
 
 
 } // end namespace uast

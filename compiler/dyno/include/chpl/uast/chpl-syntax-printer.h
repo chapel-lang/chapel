@@ -21,7 +21,7 @@
 #ifndef CHPL_UAST_CHPL_SYNTAX_VISITOR_H
 #define CHPL_UAST_CHPL_SYNTAX_VISITOR_H
 
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/all-uast.h"

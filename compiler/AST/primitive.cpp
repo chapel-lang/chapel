@@ -868,6 +868,13 @@ initPrimitive() {
   // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)
   prim_def(PRIM_GPU_SYNC_THREADS, "gpu syncThreads", returnInfoVoid, true);
 
+  // If embedded inside a gpuizable loop will set the blocksize when the kernel
+  // for that loop launches.
+  prim_def(PRIM_GPU_SET_BLOCKSIZE, "gpu set blockSize", returnInfoVoid, true);
+
+  // Generates call that produces runtime error when not run by a GPU
+  prim_def(PRIM_ASSERT_ON_GPU, "chpl_assert_on_gpu", returnInfoVoid, true, true);
+
   // task primitives
   // get serial state
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);

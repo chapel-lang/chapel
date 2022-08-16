@@ -40,7 +40,7 @@ SUBDIRS = \
 	main \
 	dyno/lib/immediates \
 	dyno/lib/parsing \
-	dyno/lib/queries \
+	dyno/lib/framework \
 	dyno/lib/resolution \
 	dyno/lib/types \
 	dyno/lib/uast \
@@ -56,10 +56,12 @@ SUBDIRS = \
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
+ALL_HEADERS= */*.h dyno/include/chpl/*/*.h
+
 # Generate tags command, dependent on if Make variable, TAGS == 1
 ifeq ($(TAGS), 1)
-TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
-EBROWSE_COMMAND=-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
+TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(ALL_HEADERS)) || echo "$(CHPL_TAGS_UTIL) not available"
+EBROWSE_COMMAND=-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) $(ALL_HEADERS)) || echo "ebrowse not available"
 endif
 
 #
@@ -80,7 +82,7 @@ include llvm/Makefile.include
 include main/Makefile.include
 include dyno/lib/immediates/Makefile.include
 include dyno/lib/parsing/Makefile.include
-include dyno/lib/queries/Makefile.include
+include dyno/lib/framework/Makefile.include
 include dyno/lib/resolution/Makefile.include
 include dyno/lib/types/Makefile.include
 include dyno/lib/uast/Makefile.include
@@ -109,7 +111,7 @@ CHPL_OBJS = \
 	$(UTIL_OBJS) \
 	$(DYNO_IMMEDIATES_OBJS) \
 	$(DYNO_PARSING_OBJS) \
-	$(DYNO_QUERIES_OBJS) \
+	$(DYNO_FRAMEWORK_OBJS) \
 	$(DYNO_RESOLUTION_OBJS) \
 	$(DYNO_TYPES_OBJS) \
 	$(DYNO_UAST_OBJS) \
@@ -167,9 +169,6 @@ $(CHPLDOC): $(CHPL)
 	ln -s $(notdir $(CHPL)) $(CHPLDOC)
 
 chpldoc: $(CHPLDOC)
-
-parser: FORCE
-	$(MAKE) -C parser parser
 
 $(COMPILER_BUILD):
 	mkdir -p $@

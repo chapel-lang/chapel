@@ -23,7 +23,7 @@
 // this header includes some filesystem.cpp functions
 // that are not part of the public API
 
-#include "chpl/queries/ErrorMessage.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/util/filesystem.h"
 
 #include <cstdio>

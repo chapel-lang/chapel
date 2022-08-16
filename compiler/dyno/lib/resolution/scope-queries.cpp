@@ -20,9 +20,9 @@
 #include "chpl/resolution/scope-queries.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/global-strings.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/global-strings.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/uast/all-uast.h"
 
 #include "scope-help.h"
@@ -101,10 +101,18 @@ struct GatherDecls {
 
     // traverse inside to look for type queries &
     // add them to declared
-    if (auto fml = d->toFormal()) {
-      if (auto typeExpr = fml->typeExpression()) {
+    if (d->isFormal() || d->isVarArgFormal()) {
+      auto formal = d->toVarLikeDecl();
+      if (auto typeExpr = formal->typeExpression()) {
         GatherQueryDecls gatherQueryDecls(declared);
         typeExpr->traverse(gatherQueryDecls);
+      }
+
+      if (auto vararg = d->toVarArgFormal()) {
+        if (auto count = vararg->count()) {
+          GatherQueryDecls gatherQueryDecls(declared);
+          count->traverse(gatherQueryDecls);
+        }
       }
     }
 
@@ -174,7 +182,8 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isCobegin(tag)
          || asttags::isConditional(tag)
          || asttags::isSelect(tag)
-         || asttags::isTry(tag);
+         || asttags::isTry(tag)
+         || asttags::isCatch(tag);
 }
 
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
@@ -552,9 +561,11 @@ lookupNameInScopeWithSet(Context* context,
                     name, config, visited, vec);
   }
 
-  doLookupInScope(context, scope,
-                  /* resolving scope */ nullptr,
-                  name, config, visited, vec);
+  if (scope) {
+    doLookupInScope(context, scope,
+                    /* resolving scope */ nullptr,
+                    name, config, visited, vec);
+  }
 
   return vec;
 }

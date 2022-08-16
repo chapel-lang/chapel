@@ -2,5 +2,5 @@ use MasonTest;
 
 proc main() {
   const args = ["test"];
-  masonTest(args);
+  masonTest(args, checkProj=false);
 }

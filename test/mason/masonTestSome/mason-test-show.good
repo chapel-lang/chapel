@@ -1,0 +1,12 @@
+Skipping registry update since no dependency found in manifest file.
+test/compilererror.chpl:1: syntax error: near 'test'
+
+======================================================================
+ERROR compilererror.chpl: compilererror
+----------------------------------------------------------------------
+compilererror.chpl failed to compile
+----------------------------------------------------------------------
+Ran 1 test in n seconds
+
+FAILED (errors = 1 )
+compilation failed for compilererror.chpl

@@ -29,6 +29,11 @@ ifneq ($(NO_DEPEND), 1)
 DEPEND=1
 endif
 
+# enable assertions for 'make ASSERTS=1'
+ifeq ($(ASSERTS),1)
+  DYNO_ENABLE_ASSERTIONS = 1
+endif
+
 ifeq ($(CHPL_DEVELOPER), 0)
 OPTIMIZE=1
 else

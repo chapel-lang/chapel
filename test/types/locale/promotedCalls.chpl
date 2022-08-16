@@ -9,8 +9,4 @@ writeln(Locales.name);
 writeln(Locales.chpl_id());
 writeln(Locales.chpl_localeid());
 writeln(Locales.chpl_name());
-writeln(Locales.defaultMemory());
-writeln(Locales.largeMemory());
-writeln(Locales.lowLatencyMemory());
-writeln(Locales.highBandwidthMemory());
 writeln(Locales.getChildCount());

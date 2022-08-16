@@ -79,6 +79,9 @@ qioerr chpl_fs_symlink(const char* orig, const char* linkName);
 
 mode_t chpl_fs_umask(mode_t mask);
 
+mode_t chpl_int_to_mode(int mode);
+int chpl_mode_to_int(mode_t mode);
+
 qioerr chpl_fs_viewmode(int* ret, const char* name);
 
 #ifdef __cplusplus

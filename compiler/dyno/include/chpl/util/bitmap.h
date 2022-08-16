@@ -20,7 +20,7 @@
 #ifndef CHPL_UTIL_BITMAP_H
 #define CHPL_UTIL_BITMAP_H
 
-#include "chpl/queries/stringify-functions.h"
+#include "chpl/framework/stringify-functions.h"
 
 #include <cassert>
 #include <cstddef>

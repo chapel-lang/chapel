@@ -63,6 +63,14 @@ static bool passesSubtype(CanPassResult r) {
          r.conversionKind() == CanPassResult::SUBTYPE;
 }
 
+static bool passesInstantiates(CanPassResult r) {
+  return r.passes() &&
+         r.instantiates() &&
+         !r.promotes() &&
+         !r.converts() &&
+         r.conversionKind() == CanPassResult::NONE;
+}
+
 /*
 static bool passesOther(CanPassResult r) {
   return r.passes() &&
@@ -560,6 +568,22 @@ static void test7() {
   r = canPass(c, ownedChildQ,      unmanagedParentQ); assert(doesNotPass(r));
 }
 
+static void test8() {
+  printf("test8\n");
+  Context ctx;
+  Context* context = &ctx;
+  Context* c = context;
+
+  auto anyEnumType = QualifiedType(QualifiedType::VAR, AnyEnumType::get(c));
+  auto anEnum = QualifiedType(QualifiedType::VAR,
+      EnumType::get(context,
+                   ID(UniqueString::get(c, "someModule"), -1, 0),
+                   UniqueString::get(c, "someEnum")));
+
+  // test passing an enum type to `enum` works fine
+  CanPassResult r;
+  r = canPass(context, anEnum, anyEnumType); assert(passesInstantiates(r));
+}
 
 int main() {
   test1();
@@ -569,6 +593,7 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 
   return 0;
 }

@@ -21,9 +21,9 @@
 #define CHPL_PARSING_PARSING_QUERIES_H
 
 #include "chpl/parsing/FileContents.h"
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ID.h"
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ID.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"
@@ -78,7 +78,9 @@ bool hasFileText(Context* context, const std::string& path);
 /**
   This query reads a file (with the fileText query) and then parses it.
 
-  Any errors encountered will be reported to the Context.
+  Errors encountered are stored in the returned 'BuilderResult' and are
+  not reported to the Context. They must be handled manually, or they
+  can be reported by calling the 'parse' query instead.
 
   The 'parentSymbolPath' is relevant for submodules that are in separate files
   with 'module include'. When parsing the included module for a 'module
@@ -92,8 +94,8 @@ parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath);
 
 /**
- Like parseFileToBuilderResult but parses whatever file contained 'id'.
- Useful for projection queries.
+  Like parseFileToBuilderResult but parses whatever file contained 'id'.
+  Useful for projection queries.
  */
 const uast::BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id);
@@ -133,12 +135,15 @@ using ModuleVec = std::vector<const uast::Module*>;
 
   When parsing a toplevel module, 'parentSymbolPath' should be "".
 
+  Unlike 'parseFileToBuilderResult' this query will report any errors
+  encountered while parsing to the context.
  */
 const ModuleVec& parse(Context* context, UniqueString path,
                        UniqueString parentSymbolPath);
 
 /**
- Convenience function to parse a file with parentSymbolPath="".
+  Convenience function to parse a file with parentSymbolPath="". Any errors
+  encountered while parsing are reported to the context.
  */
 const ModuleVec& parseToplevel(Context* context, UniqueString path);
 
@@ -200,7 +205,8 @@ void setupModuleSearchPaths(Context* context,
                             const std::string& chplComm,
                             const std::string& chplSysModulesSubdir,
                             const std::string& chplModulePath,
-                            const std::vector<std::string>& cmdLinePaths);
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames);
 
 /**
  Returns true if the ID corresponds to something in an internal module.
@@ -239,6 +245,11 @@ uast::AstTag idToTag(Context* context, ID id);
  Returns true if the ID is a parenless function.
  */
 bool idIsParenlessFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID is a field in a record/class/union.
+ */
+bool idIsField(Context* context, ID id);
 
 /**
  Returns the parent ID given an ID

@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_FOREACH_H
 #define CHPL_UAST_FOREACH_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/IndexableLoop.h"
 #include "chpl/uast/WithClause.h"

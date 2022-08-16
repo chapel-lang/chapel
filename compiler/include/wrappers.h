@@ -23,20 +23,22 @@
 
 #include <vector>
 
+#include "llvm/ADT/SmallVector.h"
+
 class ArgSymbol;
 class CallInfo;
 class FnSymbol;
 
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
-                                std::vector<ArgSymbol*>& actualIdxToFormal,
+                                llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                 bool                     fastFollowerChecks);
 
 const char* unwrapFnName(FnSymbol* fn);
 
 bool isPromotionRequired(FnSymbol* fn,
                          CallInfo& info,
-                         std::vector<ArgSymbol*>& actualIdxToFormal);
+                         llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal);
 
 FnSymbol* findExistingDefaultedActualFn(FnSymbol* fn, ArgSymbol* formal);
 FnSymbol* getOrCreateDefaultedActualFn(FnSymbol* fn, ArgSymbol* formal);

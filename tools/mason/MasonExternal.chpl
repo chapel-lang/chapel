@@ -412,10 +412,10 @@ private proc editCompilers() {
 
 /* Given a toml of external dependencies returns
    the dependencies in a toml in lock file format */
-proc getExternalPackages(exDeps: unmanaged Toml) /* [domain(string)] unmanaged Toml? */ {
+proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
 
   var exDom: domain(string);
-  var exDepTree: [exDom] unmanaged Toml?;
+  var exDepTree: [exDom] shared Toml?;
 
   for (name, spc) in exDeps.A.items() {
     try! {
@@ -452,12 +452,12 @@ proc getExternalPackages(exDeps: unmanaged Toml) /* [domain(string)] unmanaged T
 
 
 /* Retrieves build information for MasonUpdate */
-proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml throws {
+proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml throws {
 
-  var depList: list(unmanaged Toml);
+  var depList: list(shared Toml);
   var spkgDom: domain(string);
-  var spkgToml: [spkgDom] unmanaged Toml?;
-  var spkgInfo = new unmanaged Toml(spkgToml);
+  var spkgToml: [spkgDom] shared Toml?;
+  var spkgInfo = new shared Toml(spkgToml);
 
   try {
     const specFields = getSpecFields(spec);
@@ -489,7 +489,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
         var name = depSpec[0];
 
         // put dep into current packages dep list
-        depList.append(new unmanaged Toml(name));
+        depList.append(new shared Toml(name));
 
         // get dependencies of dep
         var depsOfDep = getSpkgDependencies(dep);

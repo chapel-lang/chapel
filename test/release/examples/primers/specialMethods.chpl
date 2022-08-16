@@ -146,8 +146,8 @@ myD += myR;
 
 // The ``writeThis`` method defines how to write an instance of R to a
 // channel. We'll write the ``vals`` tuple between asterisks. See section
-// :ref:`readThis-writeThis-readWriteThis` for more information  on the
-// ``writeThis`` and ``readThis`` methods.
+// :ref:`readThis-writeThis` for more information  on the ``writeThis`` and
+// ``readThis`` methods.
 
 use IO; // required for file operations
 

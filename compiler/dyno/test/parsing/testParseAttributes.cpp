@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/all-uast.h"
 
 // always check assertions in this test

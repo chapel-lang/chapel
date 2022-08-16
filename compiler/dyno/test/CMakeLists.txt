@@ -15,6 +15,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# define target for the common code for all dyno tests
+add_library(tests-common OBJECT common.cpp)
+target_link_libraries(tests-common libdyno)
+
+add_custom_target(tests)
+set(CHPL_TEST_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR})
+
+# define a function to simplify adding tests
+function(comp_unit_test target)
+  add_executable(${target} "${target}.cpp")
+  set_property(TARGET ${target} PROPERTY EXCLUDE_FROM_ALL)
+  set_target_properties(${target}  PROPERTIES LINK_DEPENDS_NO_SHARED true)
+  target_link_libraries(${target} libdyno tests-common)
+  target_include_directories(${target} PUBLIC
+                             ${CHPL_MAIN_INCLUDE_DIR}
+                             ${CHPL_INCLUDE_DIR}
+                             ${CHPL_TEST_INCLUDE_DIR})
+  add_dependencies(${target} libdyno)
+  add_test(NAME ${target} COMMAND ${target})
+  add_dependencies(tests ${target})
+endfunction(comp_unit_test)
+
 add_subdirectory(parsing)
 add_subdirectory(queries)
 add_subdirectory(resolution)

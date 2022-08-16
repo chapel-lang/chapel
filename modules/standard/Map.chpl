@@ -597,33 +597,26 @@ module Map {
     proc _readWriteHelper(ch: channel) throws {
       _enter(); defer _leave();
       var first = true;
-      ch <~> new ioLiteral("{");
+      proc rwLiteral(lit:string) throws {
+        if ch.writing then ch._writeLiteral(lit); else ch._readLiteral(lit);
+      }
+      rwLiteral("{");
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           if first {
             first = false;
           } else {
-            ch <~> new ioLiteral(", ");
+            rwLiteral(", ");
           }
           ref tabEntry = table.table[slot];
-          ch <~> tabEntry.key <~> new ioLiteral(": ") <~> tabEntry.val;
+          ref key = tabEntry.key;
+          ref val = tabEntry.val;
+          if ch.writing then ch.write(key); else key = ch.read(key.type);
+          rwLiteral(": ");
+          if ch.writing then ch.write(val); else val = ch.read(val.type);
         }
       }
-      ch <~> new ioLiteral("}");
-    }
-
-    /*
-      Writes the contents of this map to a channel. The format looks like:
-
-        .. code-block:: chapel
-
-           {k1: v1, k2: v2, .... , kn: vn}
-
-      :arg ch: A channel to write to.
-    */
-    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
-    proc readWriteThis(ch: channel) throws {
-      _readWriteHelper(ch);
+      rwLiteral("}");
     }
 
     /*

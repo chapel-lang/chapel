@@ -67,7 +67,7 @@ proc masonUpdate(args: [?d] string) {
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
+proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
 
   try! {
     const cwd = here.cwd();
@@ -80,11 +80,11 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     if isFile(tomlPath) {
       if TomlFile.pathExists('dependencies') {
         if TomlFile['dependencies']!.A.size > 0 {
-          updateRegistry(skipUpdate);
+          updateRegistry(skipUpdate, show);
           updated = true;
         }
       }
-      if !updated {
+      if !updated && show {
         writeln("Skipping registry update since no dependency found in manifest file.");
       }
     }
@@ -107,8 +107,6 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     genLock(lockFile, lockPath);
     // Close Memory
     openFile.close();
-    delete TomlFile;
-    delete lockFile;
 
   }
   catch e: MasonError {
@@ -157,7 +155,7 @@ proc checkRegistryChanged() {
 }
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(skipUpdate: bool) {
+proc updateRegistry(skipUpdate: bool, show=true) {
   if skipUpdate then return;
 
   checkRegistryChanged();
@@ -165,7 +163,7 @@ proc updateRegistry(skipUpdate: bool) {
 
     if isDir(registryHome) {
       var pullRegistry = 'git pull -q origin master';
-      writeln("Updating ", name);
+      if show then writeln("Updating ", name);
       gitC(registryHome, pullRegistry);
     }
     // Registry has moved or does not exist
@@ -174,97 +172,10 @@ proc updateRegistry(skipUpdate: bool) {
       const localRegistry = registryHome;
       mkdir(localRegistry, parents=true);
       const cloneRegistry = 'git clone -q ' + registry + ' .';
-      writeln("Updating ", name);
+      if show then writeln("Updating ", name);
       gitC(localRegistry, cloneRegistry);
     }
   }
-}
-
-proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
-  use Regex;
-
-  if brick == nil {
-    stderr.writeln("Error: Unable to parse manifest file");
-    exit(1);
-  }
-
-  // Assert some expected fields are not nil
-  if brick!['name'] == nil || brick!['version'] == nil{
-    stderr.writeln("Error: Unable to parse manifest file");
-    exit(1);
-  }
-
-  if brick!['chplVersion'] == nil {
-    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
-    exit(1);
-  }
-
-  const chplVersion = brick!["chplVersion"]!.s;
-  var low, high : VersionInfo;
-
-  try {
-    var res = checkChplVersion(chplVersion, low, high);
-    low = res[0];
-    high = res[1];
-  } catch e : Error {
-    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
-    stderr.writeln("Details: ", e.message());
-    exit(1);
-  }
-
-  return (low, high);
-}
-
-proc checkChplVersion(chplVersion, low, high) throws {
-  use Regex;
-  var lo, hi : VersionInfo;
-  const formatMessage = "\n\n" +
-    "chplVersion format must be '<version>..<version>' or '<version>'\n" +
-    "A <version> must be in one of the following formats:\n" +
-    "  x.x.x\n" +
-    "  x.x\n" +
-    "where 'x' is a positive integer.\n";
-
-    var versions = chplVersion.split("..");
-    [v in versions] v = v.strip();
-
-    // Expecting 1 or 2 version strings
-    if versions.size > 2 || versions.size < 1 {
-      throw new owned MasonError("Expecting 1 or 2 versions in chplVersion range." + formatMessage);
-    } else if versions.size == 2 && (versions[0] == "" || versions[1] == "") {
-      throw new owned MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
-    }
-
-    proc parseString(ver:string): VersionInfo throws {
-      var ret : VersionInfo;
-
-      // Finds 'x.x' or 'x.x.x' where x is a positive number
-      const pattern = "^(\\d+\\.\\d+(\\.\\d+)?)$";
-      var semver : string;
-      if compile(pattern).match(ver, semver).matched == false {
-        throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
-      }
-      const nums = for s in semver.split(".") do s:int;
-      ret.major = nums[0];
-      ret.minor = nums[1];
-      if nums.size == 3 then ret.bug = nums[2];
-
-      return ret;
-    }
-
-    lo = parseString(versions[0]);
-
-    if (versions.size == 1) {
-      hi = new VersionInfo(max(int), max(int), max(int));
-    } else {
-      hi = parseString(versions[1]);
-    }
-     if (lo <= hi) == false then
-      throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + lo.str() + " > " + hi.str());
-
-      return (lo, hi);
 }
 
 proc verifyChapelVersion(brick:borrowed Toml) {
@@ -304,12 +215,12 @@ proc chplVersionError(brick:borrowed Toml) {
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
    until each dep is recorded */
-private proc createDepTree(root: unmanaged Toml) {
+private proc createDepTree(root: Toml) {
   var dp: domain(string);
-  var dps: [dp] unmanaged Toml?;
-  var depTree = new unmanaged Toml(dps);
+  var dps: [dp] shared Toml?;
+  var depTree = new shared Toml(dps);
   if root.pathExists("brick") {
-    depTree.set("root", new unmanaged Toml(root["brick"]!));
+    depTree.set("root", new shared Toml(root["brick"]!));
   }
   else {
     stderr.writeln("Could not find brick; Mason cannot update");
@@ -318,8 +229,20 @@ private proc createDepTree(root: unmanaged Toml) {
 
   if root.pathExists("dependencies") {
     var deps = getDependencies(root);
+
+    // gitDeps is a list of (name, url, branch, revision)
+    // git repositories that don't have a revision specified
+    // in the TOML will always be updated to the latest revision
+    var gitDeps = pullGitDeps(getGitDeps(root));
     var manifests = getManifests(deps);
+    var gitManifests = getGitManifests(gitDeps);
+
+    // add dependencies found in TOML files of git deps
+    for m in gitManifests do
+      manifests.append(m);
+
     depTree = createDepTrees(depTree, manifests, "root");
+    depTree = addGitDeps(depTree, gitDeps);
   }
 
   //
@@ -361,8 +284,8 @@ private proc createDepTree(root: unmanaged Toml) {
   return depTree;
 }
 
-private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged Toml), name: string) : unmanaged Toml {
-  var depList: list(unmanaged Toml?);
+private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: string) : shared Toml {
+  var depList: list(shared Toml?);
   while deps.size > 0 {
     var dep = deps[0];
 
@@ -378,11 +301,11 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       chplVersion = verToUse["chplVersion"]!.s;
     }
 
-    depList.append(new unmanaged Toml(package));
+    depList.append(new shared Toml(package));
 
     if depTree.pathExists(package) == false {
       var dt: domain(string);
-      var depTbl: [dt] unmanaged Toml?;
+      var depTbl: [dt] shared Toml?;
       depTree.set(package, depTbl);
     }
     depTree[package]!.set("name", package);
@@ -395,7 +318,6 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       var manifests = getManifests(subDeps);
       var dependency = createDepTrees(depTree, manifests, package);
     }
-    delete dep;
     deps.pop(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
@@ -404,6 +326,25 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
   return depTree;
 }
 
+private proc addGitDeps(depTree: Toml, ref gitDeps) {
+  //val url branch revision
+  for key in gitDeps {
+    if !depTree.pathExists(key[0]) {
+      var dt: domain(string);
+      var depTbl: [dt] shared Toml?;
+      depTree.set(key[0], depTbl);
+      depTree[key[0]]!.set("name", key[0]);
+    }
+    depTree[key[0]]!.set("source", key[1]);
+    if key[2] != "HEAD" then
+      depTree[key[0]]!.set("branch", key[2]);
+    depTree[key[0]]!.set("rev", key[3]);
+
+    // version of -1 is a special
+    depTree[key[0]]!.set("version", "-1");
+  }
+  return depTree;
+}
 
 //
 // TODO: Accept an array of bricks
@@ -463,8 +404,8 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-private proc getManifests(deps: list((string, unmanaged Toml?))) {
-  var manifests: list(unmanaged Toml);
+private proc getManifests(deps: list((string, shared Toml?))) {
+  var manifests: list(shared Toml);
   for dep in deps {
     var name = dep(0);
     var version: string = dep(1)!.s;
@@ -491,11 +432,36 @@ private proc retrieveDep(name: string, version: string) {
   exit(1);
 }
 
+/* Returns the Mason.toml for each dep listed as a Toml */
+private proc getGitManifests(deps: list((string, string, string, string))) {
+  var manifests: list(shared Toml);
+  for dep in deps {
+    var toAdd = retrieveGitDep(dep(0), dep(2));
+    manifests.append(toAdd);
+  }
+  return manifests;
+}
+
+/* Responsible for parsing the Mason.toml that have been
+   already pulled down from git dependencies */
+private proc retrieveGitDep(name: string, branch: string) {
+  var baseDir = MASON_HOME +'/git/';
+  const tomlPath = baseDir + "/"+name+"-"+branch+"/Mason.toml";
+  if isFile(tomlPath) {
+    var tomlFile = open(tomlPath, iomode.r);
+    var depToml = parseToml(tomlFile);
+    return depToml;
+  }
+
+  stderr.writeln("No toml file found in git dependency for " + name +'-'+ branch);
+  exit(1);
+}
+
 /* Checks if a dependency has deps; if so, the
    dependencies are returned as a (string, Toml) */
-private proc getDependencies(tomlTbl: unmanaged Toml) {
+private proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
-  var deps: list((string, unmanaged Toml?));
+  var deps: list((string, shared Toml?));
   for k in tomlTbl.A {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]!) {
@@ -504,5 +470,106 @@ private proc getDependencies(tomlTbl: unmanaged Toml) {
     }
   }
   return deps;
+}
+
+private proc getGitDeps(tomlTbl: Toml) {
+  var gitDeps: list((string, string, shared Toml?));
+  for k in tomlTbl["dependencies"]!.A {
+    for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
+      // name, type of field (url, branch, etc.), toml that it is set to
+      gitDeps.append((k, a, d));
+    }
+  }
+  return gitDeps;
+}
+
+private proc pullGitDeps(gitDeps, show=false) {
+  if !isDir(MASON_HOME + '/git/') {
+    mkdir(MASON_HOME + '/git/', parents=true);
+  }
+
+  var gitDepsWithRevision: list((string, string, string, string));
+
+  var gitDepMap: map(string, (string, string, string));
+
+  // form map of name -> url, branch, revision
+  for val in gitDeps {
+    if val[1] == "git" then
+      gitDepMap[val[0]][0] = val[2]!.s;
+    else if val[1] == "branch" then
+      gitDepMap[val[0]][1] = val[2]!.s;
+    else if val[1] == "rev" then
+      gitDepMap[val[0]][2] = val[2]!.s;
+  }
+
+  // Pull git repositories so that we can have access to the
+  // current revision and TOML file to get dependencies
+  var baseDir = MASON_HOME +'/git/';
+  for val in gitDepMap {
+    var (srcURL, origBranch, revision) = gitDepMap[val];
+
+    // Default to head if branch isn't specified
+    var branch = if origBranch == "" then "HEAD" else origBranch;
+    const nameVers = val + "-" + branch;
+    const destination = baseDir + nameVers;
+    if !depExists(nameVers, '/git/') {
+      writeln("Downloading dependency: " + nameVers);
+      var getDependency = "git clone -q "+ srcURL + ' ' + destination +'/';
+      runCommand(getDependency);
+
+      if (branch != "HEAD") || (revision != "") {
+        // Use the revision to checkout, if specified
+        var toCheckout = if revision != "" then revision else branch;
+        var checkout = "git checkout -q " + toCheckout;
+        if show {
+          getDependency = "git clone " + srcURL + ' ' + destination + '/';
+          checkout = "git checkout " + toCheckout;
+        }
+
+        gitC(destination, checkout);
+      }
+
+      // get the revision to store in lock if not specified
+      if revision == "" {
+        var revParse = "git rev-parse HEAD";
+        revision = gitC(destination, revParse, true).strip();
+      }
+      gitDepsWithRevision.append((val, srcURL, branch, revision));
+    } else {
+      if revision != "" {
+        writeln("Fetching latest changes for: " + nameVers + "...");
+        var pullDependency = "git fetch -q --all";
+        if show then pullDependency = "git fetch --all";
+        gitC(destination, pullDependency);
+
+        writeln("Checking out specified revision for " + nameVers + "...");
+        // Use the revision to checkout, if specified
+        var checkout = "git checkout -q " + revision;
+        if show then checkout = "git checkout " + revision;
+
+        gitC(destination, checkout);
+      } else if branch != "HEAD" {
+        writeln("Fetching latest changes for: " + nameVers + "...");
+        var pullDependency = "git fetch -q --all";
+        if show then pullDependency = "git fetch --all";
+        gitC(destination, pullDependency);
+
+        writeln("Checking out specified revision for " + nameVers + "...");
+
+        var checkout = "git checkout -q " + branch;
+        if show then checkout = "git checkout " + branch;
+
+        gitC(destination, checkout);
+      }
+
+      // get the revision to store in lock if not specified
+      if revision == "" {
+        var revParse = "git rev-parse HEAD";
+        revision = gitC(destination, revParse, true).strip();
+      }
+      gitDepsWithRevision.append((val, srcURL, branch, revision));
+    }
+  }
+  return gitDepsWithRevision;
 }
 

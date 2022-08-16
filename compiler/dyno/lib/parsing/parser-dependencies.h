@@ -21,10 +21,10 @@
 // It is split out into this separate file for easier maintenance.
 // It contains any #includes necessary for the parser.
 
-#include "chpl/queries/Context.h"
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/Location.h"
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/Location.h"
+#include "chpl/framework/UniqueString.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/all-uast.h"
 

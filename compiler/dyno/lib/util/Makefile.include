@@ -18,7 +18,7 @@
 
 DYNO_UTIL_OBJDIR = $(COMPILER_BUILD)/dyno/lib/util
 
-ALL_SRCS += dyno/lib/util/*.cpp
+ALL_SRCS += dyno/lib/util/*.h dyno/lib/util/*.cpp
 
 
 DYNO_UTIL_SRCS =      \
@@ -26,6 +26,7 @@ DYNO_UTIL_SRCS =      \
   break.cpp \
   filesystem.cpp \
   string-escapes.cpp \
+  subprocess.cpp \
   terminal.cpp \
 
 
@@ -35,4 +36,3 @@ DYNO_UTIL_OBJS = \
 	$(DYNO_UTIL_SRCS:%.cpp=$(DYNO_UTIL_OBJDIR)/%.$(OBJ_SUFFIX)) \
         $(DYNO_UTIL_OBJDIR)/my_aligned_alloc.o \
         $(DYNO_UTIL_OBJDIR)/my_strerror_r.o \
-

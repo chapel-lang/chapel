@@ -19,11 +19,15 @@ module ResultDB {
 
         var testName: string;
         var units: string;
+        var atts: string;
+        var attsSuffix: string;
         var results: sortedMap;
 
-        proc init(testName: string, units: string){
+        proc init(testName: string, units: string, atts = "BlckSz:", attsSuffix = "KB") {
             this.testName = testName;
             this.units = units;
+            this.atts = atts;
+            this.attsSuffix = attsSuffix;
             this.results = new sortedMap(string, list(real));
         }
 
@@ -73,7 +77,7 @@ module ResultDB {
                 var max = resultSorted.last();
 
                 // Write the result row
-                write(testName,"\tBlckSz:", blockSize,"KB\t", units,'\t');
+                write(testName,"\t", atts, blockSize, attsSuffix, "\t", units,'\t');
                 try! write("%7.4dr".format(median), '\t',
                     "%7.4dr".format(mean), '\t',
                     "%7.4dr".format(stdDev), '\t',
@@ -82,7 +86,7 @@ module ResultDB {
                 // write(median, '\t', mean, '\t', stdDev, '\t', min, '\t', max, '\t' );
                 // Write all runs
                 for res in this.results[blockSize] {
-                    try! write('\t', "%7.4dr".format(res));
+                    try! write("\t", "%7.4dr".format(res));
                     // write('\t', res );
                 }
                 writeln();
@@ -95,13 +99,36 @@ module ResultDB {
                 writeln("Map Empty");
                 return;
             }
-            write("\nTest\t\tAttributes\tUnits\tMedian\tMean\tStdDev\tMin\tMax\t");
+            write("\nTest\t\tAttributes\tUnits\t Median\t Mean\t StdDev\t Min\t Max\t");
 
             // Get number of trials and print em
-            for idx in 0..this.results.size{
-                write("\tTrial", idx);
+            for idx in 0..<this.results[this.results.keysToArray()[0]].size{
+                write("\t Trial", idx);
             }
             writeln();
+        }
+
+        proc printPerfStats(){
+            if(this.results.isEmpty()){
+                writeln("Map Empty");
+                return;
+            }
+            // For each blockSize calculate stats
+            for blockSize in this.results {
+                // Calc median
+                var median: real;
+                var resultSorted = this.results[blockSize];
+                resultSorted.sort();
+                // writeln(resultSorted.indices);
+                if(resultSorted.size % 2 == 0){
+                    median = resultSorted[(resultSorted.size-1)/2]; // -1 to get the actual last index
+                                                                    // because of  0-based indexing
+                } else {
+                    median = (resultSorted[(resultSorted.size)/2] +
+                                resultSorted[(resultSorted.size-2)/2]) / 2 ;
+                }
+                writeln(testName, " ",atts," ", blockSize, attsSuffix," Median: ", median, " ", units);
+            }
         }
     }
 }

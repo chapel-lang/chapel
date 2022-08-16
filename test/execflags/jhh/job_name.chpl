@@ -1,4 +1,5 @@
-use Sys;
+use CTypes;
+extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
 
 var value_str:c_string;
 var value:string;

@@ -107,6 +107,7 @@ _chpl ()
 --lib-linkage \
 --lib-search-path \
 --library \
+--library-cmakelists \
 --library-dir \
 --library-fortran \
 --library-fortran-name \
@@ -304,6 +305,7 @@ _chpl ()
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
+--report-gpu-transform-time \
 --report-inlined-iterators \
 --report-inlining \
 --report-optimized-forall-unordered-ops \

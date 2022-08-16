@@ -2890,6 +2890,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   Vec<FnSymbol*>     visibleFns;
 
+  // Call because generic instantiation may have occurred.
+  recomputeVisibleFunctions();
   getVisibleFunctions(flname, call, visibleFns);
 
   if (visibleFns.n > 1) {

@@ -23,7 +23,7 @@
 #include "chpl/uast/Interface.h"
 #include "chpl/uast/Implements.h"
 #include "chpl/uast/Module.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 
 
 // always check assertions in this test

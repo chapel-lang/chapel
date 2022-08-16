@@ -1,4 +1,5 @@
 
+use FileSystem;
 use IO;
 
 config const testfile="test.bin";
@@ -22,5 +23,5 @@ var f = open(testfile, iomode.cwr);
     assert(tmp == 0b011);
 }
 
-unlink(testfile);
+FileSystem.remove(testfile);
 

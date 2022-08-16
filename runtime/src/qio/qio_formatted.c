@@ -413,8 +413,9 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
 
       int64_t offset = qio_channel_offset_unlocked(ch);
       err = qio_file_length(ch->file, &file_len);
-      num = file_len - offset;
-      if (num < 0) {
+      if (file_len > offset) {
+        num = file_len - offset;
+      } else {
         num = 0;
       }
       if (err) {

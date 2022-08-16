@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_RECORD_H
 #define CHPL_UAST_RECORD_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/uast/AggregateDecl.h"
 
 namespace chpl {

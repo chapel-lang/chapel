@@ -24,6 +24,8 @@
 #include "baseAST.h"
 #include "vec.h"
 
+#include "llvm/ADT/SmallVector.h"
+
 #include <map>
 #include <vector>
 
@@ -100,8 +102,8 @@ public:
                                        VisibilityInfo* visInfo);
 
   FnSymbol*               fn;
-  std::vector<Symbol*>    formalIdxToActual;
-  std::vector<ArgSymbol*> actualIdxToFormal;
+  llvm::SmallVector<Symbol*, 8>    formalIdxToActual;
+  llvm::SmallVector<ArgSymbol*, 8> actualIdxToFormal;
 
   // One ImplementsStmt per IfcConstraint when 'fn' is CG
   std::vector<ImplementsStmt*> witnessIstms;

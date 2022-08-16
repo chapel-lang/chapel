@@ -18,7 +18,7 @@
  */
 
 #include "chpl/types/VoidType.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/query-impl.h"
 
 namespace chpl {
 namespace types {

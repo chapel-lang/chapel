@@ -1,4 +1,4 @@
-use DateTime;
+use Time;
 
 const ZERO = new timedelta(0);
 const HOUR = new timedelta(hours=1);

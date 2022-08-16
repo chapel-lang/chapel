@@ -1,0 +1,13 @@
+gpu/native/studies/shoc/bandwidth2.graph
+gpu/native/studies/shoc/triad.graph
+gpu/native/studies/shoc/kernel.graph
+gpu/native/studies/shoc/kernel2.graph
+gpu/native/studies/shoc/triad2.graph
+gpu/native/studies/shoc/bandwidth.graph
+
+gpu/native/streamPrototype/gpuStream.graph
+
+gpu/native/studies/compiler-performance/transform.graph
+gpu/native/studies/compiler-performance/end-to-end.graph
+
+gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph

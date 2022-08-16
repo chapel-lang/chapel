@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/FnCall.h"
@@ -144,7 +144,8 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   // TODO: There is discussion of whether this should be an error or not
-  // Brad says "I’d be most comfortable if it went back to being a syntax error in both the production and dyno compilers"
+  // Brad says "I’d be most comfortable if it went back to being a syntax
+  // error in both the production and dyno compilers"
   // It originated from test/users/thom/topLevelCode.chpl and causes some
   // discrepancy in the test result between dyno and production
   auto parseResult = parser->parseString("test3.chpl",
@@ -152,7 +153,8 @@ static void test3(Parser* parser) {
         "{\n //comment;\n"
         "}");
 
-  assert(!parseResult.numErrors());
+  // Now has error: "non-extern functions must have a body"!
+  assert(parseResult.numErrors() == 1);
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);

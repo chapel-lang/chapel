@@ -30,7 +30,7 @@ use MasonUpdate;
 use MasonUtils;
 use Path;
 use Subprocess;
-use Sys;
+use OS.POSIX;
 use TestResult;
 use Time;
 use TOML;
@@ -47,7 +47,7 @@ var files: list(string);
 /* Runs the .chpl files found within the /tests directory of Mason packages
    or files which in the path provided.
 */
-proc masonTest(args: [] string) throws {
+proc masonTest(args: [] string, checkProj=true) throws {
 
   var parser = new argumentParser(helpHandler=new MasonTestHelpHandler());
 
@@ -61,6 +61,7 @@ proc masonTest(args: [] string) throws {
   var parFlag = parser.addFlag(name="parallel", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var setCommOpt = parser.addOption(name="setComm", defaultValue="none");
+  var skipCheckFlag = parser.addFlag(name="skipCheck", defaultValue=false);
 
   // TODO: Why doesn't masonTest support a passthrough for values that should
   // go to the runtime?
@@ -72,12 +73,19 @@ proc masonTest(args: [] string) throws {
   var show = showFlag.valueAsBool();
   var run = !runFlag.valueAsBool();
   var parallel = parFlag.valueAsBool();
+  var skipCheck = skipCheckFlag.valueAsBool();
   keepExec = keepFlag.valueAsBool();
   subdir = recursFlag.valueAsBool();
   if updateFlag.hasValue() {
     skipUpdate = !updateFlag.valueAsBool();
   }
   if setCommOpt.hasValue() then setComm = setCommOpt.value();
+
+  if checkProj && !skipCheck {
+    const projectType = getProjectType();
+    if projectType == "light" then
+      throw new owned MasonError("Mason light projects do not currently support 'mason test'");
+  }
 
 
   var compopts: list(string);
@@ -208,12 +216,14 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
     // parse lockfile
     const toParse = open(projectHome + "/Mason.lock", iomode.r);
-    const lockFile = owned.create(parseToml(toParse));
+    const lockFile = parseToml(toParse);
 
     // Get project source code and dependencies
-    const sourceList = genSourceList(lockFile);
+    const (sourceList, gitList) = genSourceList(lockFile);
 
     getSrcCode(sourceList, show);
+    getGitCode(gitList, show);
+
     const project = lockFile["root"]!["name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
@@ -260,13 +270,13 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
           testPath = "".join(cwd,"/",test);
         }
         else {
-          testPath = "".join(projectHome, '/test/', test);
+          testPath = "".join('test/', test);
         }
         const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
         // also names test as --main-module
-        const masonCompopts = getMasonDependencies(sourceList, testName);
+        const masonCompopts = getMasonDependencies(sourceList, gitList, testName);
         const allCompOpts = "".join(" ".join(compopts.these()), masonCompopts);
         var testTemp: string = test;
         if cwd == projectHome && customTest {
@@ -279,8 +289,9 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
-          const errMsg = test + " failed to compile\n" +
-                         "Try running 'mason test --show' for more details";
+          var errMsg = test + " failed to compile";
+          if !show then
+            errMsg += "\nTry running 'mason test --show' for more details";
           result.addError(testName, test,  errMsg);
         }
         else {
@@ -365,24 +376,6 @@ private proc printTestResults(ref result, timeElapsed) {
   }
 }
 
-
-private proc getMasonDependencies(sourceList: list(3*string),
-                                 testName: string) {
-
-  // Declare test to run as the main module
-  var masonCompopts = " ".join(" --main-module", testName, " ");
-
-  if sourceList.size > 0 {
-    const depPath = MASON_HOME + "/src/";
-
-    // Add dependencies to project
-    for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
-    }
-  }
-  return masonCompopts;
-}
 
 private proc getTests(lock: borrowed Toml, projectHome: string) {
   var testNames: list(string);

@@ -32,7 +32,7 @@ module DefaultRectangular {
 
   use DSIUtil;
   public use ChapelArray;
-  use ChapelDistribution, ChapelRange, SysError, CTypes, CTypes;
+  use ChapelDistribution, ChapelRange, OS, CTypes, CTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
   public use ExternalArray; // OK: currently expected to be available by
@@ -1659,10 +1659,20 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
-    f <~> new ioLiteral("{") <~> ranges(0);
-    for i in 1..rank-1 do
-      f <~> new ioLiteral(", ") <~> ranges(i);
-    f <~> new ioLiteral("}");
+    inline proc rwLiteral(lit:string) throws {
+      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+    }
+
+    rwLiteral("{");
+    var first = true;
+    for i in 0..rank-1 {
+      if !first then rwLiteral(", ");
+      else first = false;
+
+      if f.writing then f.write(ranges(i));
+      else ranges(i) = f.read(ranges(i).type);
+    }
+    rwLiteral("}");
   }
 
   proc DefaultRectangularDom.doiToString() {
@@ -1711,16 +1721,21 @@ module DefaultRectangular {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
+    type eltType = arr.eltType;
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
-    proc writeSpaces(dim:int) throws {
+    inline proc rwLiteral(lit:string) throws {
+      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+    }
+
+    proc rwSpaces(dim:int) throws {
       for i in 1..dim {
-        f <~> new ioLiteral(" ");
+        rwLiteral(" ");
       }
     }
 
-    proc recursiveArrayWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+    proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
 
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
@@ -1733,9 +1748,9 @@ module DefaultRectangular {
 
       if isjson || ischpl {
         if dim != rank-1 {
-          f <~> new ioLiteral("[\n");
-          writeSpaces(dim+1); // space for the next dimension
-        } else f <~> new ioLiteral("[");
+          rwLiteral("[\n");
+          rwSpaces(dim+1); // space for the next dimension
+        } else rwLiteral("[");
       }
 
       if dim == rank-1 {
@@ -1743,23 +1758,24 @@ module DefaultRectangular {
         if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
-          else if isspace then f <~> new ioLiteral(" ");
-          else if isjson || ischpl then f <~> new ioLiteral(", ");
+          else if isspace then rwLiteral(" ");
+          else if isjson || ischpl then rwLiteral(", ");
           idx(dim) = j;
-          f <~> arr.dsiAccess(idx);
+          if f.writing then f.write(arr.dsiAccess(idx));
+          else arr.dsiAccess(idx) = f.read(eltType);
         }
       } else {
         for j in dom.dsiDim(dim) by makeStridePositive {
           var lastIdx =  dom.dsiDim(dim).last;
           idx(dim) = j;
 
-          recursiveArrayWriter(idx, dim=dim+1,
+          recursiveArrayReaderWriter(idx, dim=dim+1,
                                last=(last || dim == 0) && (j == dom.dsiDim(dim).alignedHigh));
 
           if isjson || ischpl {
             if j != lastIdx {
-              f <~> new ioLiteral(",\n");
-              writeSpaces(dim+1);
+              rwLiteral(",\n");
+              rwSpaces(dim+1);
             }
           }
         }
@@ -1767,113 +1783,21 @@ module DefaultRectangular {
 
       if isspace {
         if !last && dim != 0 {
-          f <~> new ioLiteral("\n");
+          rwLiteral("\n");
         }
       } else if isjson || ischpl {
         if dim != rank-1 {
-          f <~> new ioLiteral("\n");
-          writeSpaces(dim); // space for this dimension
-          f <~> new ioLiteral("]");
+          rwLiteral("\n");
+          rwSpaces(dim); // space for this dimension
+          rwLiteral("]");
         }
-        else f <~> new ioLiteral("]");
+        else rwLiteral("]");
       }
     }
 
-    if false && !f.writing && !f.binary() &&
-       rank == 1 && dom.dsiDim(0).stride == 1 &&
-       dom._arrs_containing_dom == 1 {
-
-      // resize-on-read implementation, disabled right now
-      // until we decide how it should work.
-
-      // Binary reads could also start out with a length.
-
-      // Special handling for reading 1-D stride-1 arrays in order
-      // to read them without requiring that the array length be
-      // specified ahead of time.
-
-      var binary = f.binary();
-      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
-      var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
-
-      if isjson || ischpl {
-        f <~> new ioLiteral("[");
-      }
-
-      var first = true;
-
-      var offset = dom.dsiDim(0).lowBound;
-      var i = 0;
-
-      var read_end = false;
-
-      while true {
-        if first {
-          first = false;
-          // but check for a ]
-          try {
-            if isjson || ischpl {
-              f <~> new ioLiteral("]");
-            } else if isspace {
-              f <~> new ioNewline(skipWhitespaceOnly=true);
-            }
-            read_end = true;
-            break;
-          } catch err: BadFormatError {
-            // Continue on if we didn't read a closing bracket.
-          }
-        } else {
-
-          // Try reading a comma/space. Break if we don't read one.
-          try {
-            if isspace then f <~> new ioLiteral(" ");
-            else if isjson || ischpl then f <~> new ioLiteral(",");
-          } catch err: BadFormatError {
-            break;
-          }
-        }
-
-        if i >= dom.dsiDim(0).sizeAs(int) {
-          // Create more space.
-          var sz = dom.dsiDim(0).sizeAs(int);
-          if sz < 4 then sz = 4;
-          sz = 2 * sz;
-
-          // like push_back
-          const newDom = {offset..#sz};
-
-          arr.dsiReallocate( newDom );
-          // This is different from how push_back does it
-          // because push_back might lead to a call to
-          // _reprivatize but I don't see how to do that here.
-          dom.dsiSetIndices( newDom.getIndices() );
-          arr.dsiPostReallocate();
-        }
-
-        f <~> arr.dsiAccess(offset + i);
-
-        i += 1;
-      }
-
-      if ! read_end {
-        if isjson || ischpl {
-          f <~> new ioLiteral("]");
-        }
-      }
-
-      {
-        // trim down to actual size read.
-        const newDom = {offset..#i};
-        arr.dsiReallocate( newDom );
-        dom.dsiSetIndices( newDom.getIndices() );
-        arr.dsiPostReallocate();
-      }
-
-    } else if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
-              _isSimpleIoType(arr.eltType) && f.binary() &&
-              isNative && arr.isDataContiguous(dom) {
+    if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
+       _isSimpleIoType(arr.eltType) && f.binary() &&
+       isNative && arr.isDataContiguous(dom) {
 
       // If we can, we would like to read/write the array as a single write op
       // since _ddata is just a pointer to the memory location we just pass
@@ -1902,7 +1826,7 @@ module DefaultRectangular {
       }
     } else {
       const zeroTup: rank*idxType;
-      recursiveArrayWriter(zeroTup);
+      recursiveArrayReaderWriter(zeroTup);
     }
   }
 

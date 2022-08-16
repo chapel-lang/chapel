@@ -100,7 +100,7 @@ const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
 const ResolvedFields& resolveFieldDecl(Context* context,
                                        const types::CompositeType* ct,
                                        ID fieldId,
-                                       bool useGenericFormalDefaults);
+                                       DefaultsPolicy defaultsPolicy);
 
 /**
   Compute the types of the fields for a CompositeType
@@ -120,7 +120,7 @@ const ResolvedFields& resolveFieldDecl(Context* context,
  */
 const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         const types::CompositeType* ct,
-                                        bool useGenericFormalDefaults);
+                                        DefaultsPolicy defaultsPolicy);
 
 /**
   Return true if 'name' is the name of a field for type 't'
@@ -226,6 +226,11 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r);
 /**
   Compute the return/yield type for a function.
+
+  TODO: If the function returns a param, the param's value may not
+  be available. This is because the function body is not resolved when
+  the return type is explicitly declared. We probably still want to compute
+  the value in such cases, though.
  */
 const types::QualifiedType& returnType(Context* context,
                                        const TypedFnSignature* sig,

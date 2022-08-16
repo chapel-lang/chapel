@@ -701,8 +701,8 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   if (formalT->isAnyComplexType() && actualT->isComplexType())
     return true;
 
-  if (formalT->isAnyEnumType())
-    assert(false && "Not implemented yet"); // TODO: enumerated types
+  if (formalT->isAnyEnumType() && actualT->isEnumType())
+    return true;
 
   if (formalT->isAnyImagType() && actualT->isImagType())
     return true;
@@ -977,6 +977,199 @@ CanPassResult CanPassResult::canPass(Context* context,
   return fail();
 }
 
+static bool isConstIntent(QualifiedType::Kind kind) {
+  switch (kind) {
+    case QualifiedType::CONST_INTENT:
+    case QualifiedType::CONST_VAR:
+    case QualifiedType::CONST_REF:
+    case QualifiedType::CONST_IN:
+    case QualifiedType::PARAM:
+    case QualifiedType::TYPE:
+    case QualifiedType::FUNCTION:
+    case QualifiedType::MODULE:
+      return true;
+    default:
+      return false;
+  }
+}
+
+static bool isRefIntent(QualifiedType::Kind kind) {
+  switch (kind) {
+    // assume we don't get CONST_INTENT or DEFAULT_INTENT here,
+    // since we don't know how to translate them.
+    case QualifiedType::CONST_REF:
+    case QualifiedType::REF:
+      return true;
+    default:
+      return false;
+  }
+}
+
+// When trying to combine two kinds, you can't just pick one.
+// For instance, if any type in the list is a value, the result
+// should be a value, and if any type in the list is const, the
+// result should be const. Thus, combining `const ref` and `var`
+// should result in `const var`.
+//
+// This class is used to describe the "mixing rules" of various kinds.
+// To this end, it breaks them down into their properties (const-ness,
+// ref-ness, etc) each of which are processed independently from
+// the others.
+class KindProperties {
+ private:
+  bool isConst = false;
+  bool isRef = false;
+  bool isType = false;
+  bool isParam = false;
+  bool isValid = false;
+
+  KindProperties() {}
+
+  KindProperties(bool isConst, bool isRef, bool isType,
+                 bool isParam)
+    : isConst(isConst), isRef(isRef), isType(isType),
+      isParam(isParam), isValid(true) {}
+
+ public:
+  static KindProperties fromKind(QualifiedType::Kind kind) {
+    if (kind == QualifiedType::TYPE)
+      return KindProperties(false, false, true, false);
+    if (kind == QualifiedType::PARAM)
+      // Mark params as const to cover the case in which a
+      // param decays to a const var.
+      return KindProperties(true, false, false, true);
+    auto isConst = isConstIntent(kind);
+    auto isRef = isRefIntent(kind);
+    return KindProperties(isConst, isRef, false, false);
+  }
+
+  void invalidate() {
+    isRef = isConst = isType = isParam = isValid = false;
+  }
+
+  void setParam(bool isParam) {
+    this->isParam = isParam;
+  }
+
+  void combineWith(const KindProperties& other) {
+    if (!isValid) return;
+    if (!other.isValid || isType != other.isType) {
+      // Can't mix types and non-types.
+      invalidate();
+      return;
+    }
+    isConst = isConst || other.isConst;
+    isRef = isRef && other.isRef;
+    isParam = isParam && other.isParam;
+  }
+
+  void strictCombineWith(const KindProperties& other) {
+    if (!isValid) return;
+    if (!other.isValid || isType != other.isType) {
+      // Can't mix types and non-types.
+      invalidate();
+      return;
+    }
+    if (isParam && !other.isParam) {
+      // If a param is required, can't return a non-param.
+      invalidate();
+      return;
+    }
+    // Ensuring that everything can actually be made
+    // into a reference and const will happen later.
+    // leave isRef and isConst as specified.
+    // We could do some checking now, but that might be a bit premature.
+  }
+
+  QualifiedType::Kind toKind() const {
+    if (!isValid) return QualifiedType::UNKNOWN;
+    if (isType) return QualifiedType::TYPE;
+    if (isParam) return QualifiedType::PARAM;
+    if (isConst) {
+      return isRef ? QualifiedType::CONST_REF : QualifiedType::CONST_VAR ;
+    } else {
+      return isRef ? QualifiedType::REF : QualifiedType::VAR ;
+    }
+  }
+
+  bool valid() const { return isValid; }
+};
+
+static QualifiedType findByPassing(Context* context,
+                                   const std::vector<QualifiedType>& types) {
+  for (auto& type : types) {
+    bool fitsOthers = true;
+    for (auto& otherType : types) {
+      if (otherType == type) continue;
+      auto passes = canPass(context, otherType, type);
+      if (!passes.passes() || passes.promotes()) {
+        fitsOthers = false;
+        break;
+      }
+    }
+    if (fitsOthers) return type;
+  }
+  return QualifiedType();
+}
+
+QualifiedType commonType(Context* context,
+                         const std::vector<QualifiedType>& types,
+                         bool useRequiredKind,
+                         QualifiedType::Kind requiredKind) {
+  assert(types.size() > 0);
+
+  // figure out the kind
+  auto properties = KindProperties::fromKind(types.front().kind());
+  for (auto& type : types) {
+    auto kind = type.kind();
+    auto typeProperties = KindProperties::fromKind(kind);
+    properties.combineWith(typeProperties);
+  }
+
+  if (useRequiredKind) {
+    // The caller enforces a particular kind on us. Make sure that the
+    // computed properties line up with the kind.
+    auto requiredProperties = KindProperties::fromKind(requiredKind);
+    requiredProperties.strictCombineWith(properties);
+    properties = requiredProperties;
+  }
+
+  if (!properties.valid()) return QualifiedType();
+  auto bestKind = properties.toKind();
+
+  // Create a new list of types with their kinds adjusted.
+  std::vector<QualifiedType> adjustedTypes;
+  for (const auto& type : types) {
+    const Param* param = type.param();
+    if (bestKind != QualifiedType::PARAM) {
+      // if we've dropped from params to values, clear the params
+      // from all types
+      param = nullptr;
+    }
+    auto adjustedType = QualifiedType(bestKind, type.type(), param);
+    adjustedTypes.push_back(std::move(adjustedType));
+  }
+
+  // Try apply usual coercion rules to find common type
+  // Performance: if the types vector ever becomes very long,
+  // it might be worth using a unique'd vector here.
+  auto commonType = findByPassing(context, adjustedTypes);
+  if (!commonType.isUnknown()) return commonType;
+
+  bool paramRequired = useRequiredKind && requiredKind == QualifiedType::PARAM;
+  if (bestKind == QualifiedType::PARAM && !paramRequired) {
+    // We couldn't unify the types as params, but maybe if we downgrade
+    // them to values, it'll work.
+    properties.setParam(false);
+    bestKind = properties.toKind();
+    for (auto& adjustedType : adjustedTypes) {
+      // adjust kind and strip param
+      adjustedType = QualifiedType(bestKind, adjustedType.type());
+    }
+    return findByPassing(context, adjustedTypes);
+  }
+  return QualifiedType();
+}
 
 } // end namespace resolution
 } // end namespace chpl

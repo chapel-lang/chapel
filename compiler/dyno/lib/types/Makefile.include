@@ -18,7 +18,7 @@
 
 DYNO_TYPES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/types
 
-ALL_SRCS += dyno/lib/types/*.cpp
+ALL_SRCS += dyno/lib/types/*.h dyno/lib/types/*.cpp
 
 DYNO_TYPES_SRCS =                                 \
   AnyType.cpp \
@@ -30,6 +30,7 @@ DYNO_TYPES_SRCS =                                 \
   ClassTypeDecorator.cpp \
   ComplexType.cpp \
   CompositeType.cpp \
+  EnumType.cpp \
   ErroneousType.cpp \
   ImagType.cpp \
   IntType.cpp \

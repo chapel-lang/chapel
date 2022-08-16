@@ -1057,32 +1057,17 @@ module ConcurrentMap {
       :arg ch: A channel to write to.
     */
     proc writeThis(f) throws {
-      ch <~> "{";
+      ch.write("{");
       var first = true;
       for (key, val) in this {
         if first {
-          ch <~> key <~> ": " <~> val;
+          ch.write(key, ": ", val);
           first = false;
         } else {
-          ch <~> ", " <~> key <~> ": " <~> val;
+          ch.write(", ", key, ": ", val);
         }
       }
-      ch <~> "}";
-    }
-
-    /*
-      Writes the contents of this map to a channel. The format looks like:
-
-        .. code-block:: chapel
-
-           {k1: v1, k2: v2, .... , kn: vn}
-
-      :arg ch: A channel to write to.
-    */
-    deprecated "'readWriteThis' methods are deprecated. Use 'readThis' and 'writeThis' methods instead."
-    proc readWriteThis(ch: channel) throws {
-      if ch.writing then writeThis(ch);
-      else readThis(ch);
+      ch.write("}");
     }
   }
 

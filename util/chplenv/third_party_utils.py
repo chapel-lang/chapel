@@ -124,30 +124,20 @@ def pkgconfig_get_system_compile_args(pkg):
 # paths to a previous third-party install directory with the current one.
 #
 # pkg is the name of the subdir in third-party
-# ucp is the unique config path
-# pcfile is the name of the .pc file
+# ucp is the unique config path (defaults to default_uniq_cfg_path())
+# pcfile is the name of the .pc file (defaults to <pkg>.pc)
 #
 # This function looks for
 #   third-party/<pkg>/install/<ucp>/lib/pkgconfig/<pcfile>
 #
 # Returns a 2-tuple of lists
 #  (compiler_bundled_args, compiler_system_args)
-def pkgconfig_get_bundled_compile_args(pkg, ucp, pcfile):
-    install_path = get_bundled_install_path(pkg, ucp)
+def pkgconfig_get_bundled_compile_args(pkg, ucp='', pcfile=''):
+    d = read_bundled_pkg_config_file(pkg, ucp, pcfile)
 
-    # give up early if the 3rd party package hasn't been built
-    if not os.path.exists(install_path):
+    # Return empty tuple if no .pc file was found (e.g. pkg not built yet)
+    if d == None:
         return ([ ], [ ])
-
-    pcpath = os.path.join(install_path, 'lib', 'pkgconfig', pcfile)
-
-    # if we get this far, we should have a .pc file. check that it exists.
-    if not os.access(pcpath, os.R_OK):
-        error("Could not find '{0}'".format(pcpath), ValueError)
-
-    d = read_pkg_config_file(pcpath,
-                             os.path.join('third-party', pkg, 'install', ucp),
-                             install_path)
 
     if 'Requires' in d and d['Requires']:
         warning("Simple pkg-config parser does not handle Requires")
@@ -215,6 +205,7 @@ def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
 def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
                                     static=pkgconfig_default_static(),
                                     add_rpath=True):
+
     # compute the default ucp
     if ucp == '':
         ucp = default_uniq_cfg_path()
@@ -223,22 +214,13 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
         pcfile = pkg + '.pc'
 
     install_path = get_bundled_install_path(pkg, ucp)
-
-    # give up early if the 3rd party package hasn't been built
-    if not os.path.exists(install_path):
-        return ([ ], [ ])
-
-
     lib_dir = os.path.join(install_path, 'lib')
-    pcpath = os.path.join(lib_dir, 'pkgconfig', pcfile)
 
-    # if we get this far, we should have a .pc file. check that it exists.
-    if not os.access(pcpath, os.R_OK):
-        error("Could not find '{0}'".format(pcpath), ValueError)
+    d = read_bundled_pkg_config_file(pkg, ucp, pcfile)
 
-    d = read_pkg_config_file(pcpath,
-                             os.path.join('third-party', pkg, 'install', ucp),
-                             install_path)
+    # Return empty tuple if no .pc file was found (e.g. pkg not built yet)
+    if d == None:
+        return ([ ], [ ])
 
     if 'Requires' in d and d['Requires']:
         warning("Simple pkg-config parser does not handle Requires")
@@ -352,7 +334,7 @@ def apply_pkgconfig_subs(s, d):
 # (i.e. Requires: lines). However this version is intended to
 # be sufficient for the third-party packages we do have.
 #
-# If find_third_party and replace_third_party are provided,
+# If find_third_party and replace_third_party not None,
 # they should be e.g.
 #   find_third_party=third-party/gasnet/install/some-ucp
 #   replace_third_party=/path/to/chpl-home/third-party/gasnet/install/some-ucp
@@ -362,9 +344,7 @@ def apply_pkgconfig_subs(s, d):
 #  $replace_third_party
 #
 @memoize
-def read_pkg_config_file(pcpath,
-                         find_third_party=None,
-                         replace_third_party=None):
+def read_pkg_config_file(pcpath, find_third_party, replace_third_party):
     ret = { }
 
     pattern = None
@@ -405,3 +385,42 @@ def read_pkg_config_file(pcpath,
                     ret[key] = val
 
     return ret
+
+# Helper function to call read_pkg_config_file for a bundled
+# pkg-config file.
+#
+# pkg should be the bundled package name (e.g. gasnet)
+# ucp is the unique config path (defaults to default_uniq_cfg_path())
+# pcfile is the .pc file name (defaults to <pkg>.pc)
+#
+# This function looks for
+#   third-party/<pkg>/install/<ucp>/lib/pkgconfig/<pcfile>
+#   where pcfile defaults to pkg.pc
+#
+# If the .pc file could not be read, returns None
+# Otherwise, returns the dictionary of values read from the .pc file
+def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
+    # compute the default ucp
+    if ucp == '':
+        ucp = default_uniq_cfg_path()
+    # compute the default pcfile name
+    if pcfile == '':
+        pcfile = pkg + '.pc'
+
+    install_path = get_bundled_install_path(pkg, ucp)
+
+    # give up early if the 3rd party package hasn't been built
+    if not os.path.exists(install_path):
+        return None
+
+    pcpath = os.path.join(install_path, 'lib', 'pkgconfig', pcfile)
+
+    # if we get this far, we should have a .pc file. check that it exists.
+    if not os.access(pcpath, os.R_OK):
+        error("Could not find '{0}'".format(pcpath), ValueError)
+        return None
+
+    find_path = os.path.join('third-party', pkg, 'install', ucp)
+    replace_path = install_path
+
+    return read_pkg_config_file(pcpath, find_path, replace_path)

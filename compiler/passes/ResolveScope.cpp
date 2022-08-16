@@ -52,10 +52,11 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "view.h"
+#include "llvm/ADT/DenseMap.h"
 
 ResolveScope* rootScope;
 
-static std::map<BaseAST*, ResolveScope*> sScopeMap;
+static llvm::DenseMap<BaseAST*, ResolveScope*> sScopeMap;
 
 ResolveScope* ResolveScope::getRootModule() {
   ResolveScope* retval = new ResolveScope(theProgram, NULL);
@@ -102,10 +103,9 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 }
 
 ResolveScope* ResolveScope::getScopeFor(BaseAST* ast) {
-  std::map<BaseAST*, ResolveScope*>::iterator it;
   ResolveScope*                               retval = NULL;
 
-  it = sScopeMap.find(ast);
+  auto it = sScopeMap.find(ast);
 
   if (it != sScopeMap.end()) {
     retval = it->second;
@@ -115,9 +115,7 @@ ResolveScope* ResolveScope::getScopeFor(BaseAST* ast) {
 }
 
 void ResolveScope::destroyAstMap() {
-  std::map<BaseAST*, ResolveScope*>::iterator it;
-
-  for (it = sScopeMap.begin(); it != sScopeMap.end(); it++) {
+  for (auto it = sScopeMap.begin(); it != sScopeMap.end(); it++) {
     delete it->second;
   }
 
@@ -1206,7 +1204,7 @@ ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
               bool followUses) {
   if (!this->canReexport) return NULL;
 
-  std::vector<Symbol *> symbols;
+  llvm::SmallVector<Symbol *, 4> symbols;
 
   bool traversedRenames = false;
   bool hasPublicVisStmt = false;

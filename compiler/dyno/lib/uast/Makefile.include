@@ -18,7 +18,7 @@
 
 DYNO_UAST_OBJDIR = $(COMPILER_BUILD)/dyno/lib/uast
 
-ALL_SRCS += dyno/lib/uast/*.cpp
+ALL_SRCS += dyno/lib/uast/*.h dyno/lib/uast/*.cpp
 
 DYNO_UAST_SRCS =                                 \
   AggregateDecl.cpp \
@@ -85,6 +85,7 @@ DYNO_UAST_SRCS =                                 \
   NumericLiteral.cpp \
   On.cpp \
   OpCall.cpp \
+  post-parse-checks.cpp \
   Pragma.cpp \
   PrimCall.cpp \
   PrimOp.cpp \

@@ -32,6 +32,8 @@
 
 #include <algorithm>
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 UseStmt::UseStmt(BaseAST* source, const char* modRename,
                  bool isPrivate) : VisibilityStmt(E_UseStmt) {
   this->isPrivate = isPrivate;
@@ -428,14 +430,14 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 * to find its methods.                                                        *
 *                                                                             *
 ************************************** | *************************************/
-std::set<const char*> UseStmt::typeWasNamed(Type* t) const {
-  std::set<const char*> namedTypes;
+PtrSet<const char*> UseStmt::typeWasNamed(Type* t) const {
+  PtrSet<const char*> namedTypes;
 
   typeWasNamed(t, &namedTypes);
   return namedTypes;
 }
 
-void UseStmt::typeWasNamed(Type* t, std::set<const char*>* namedTypes) const {
+void UseStmt::typeWasNamed(Type* t, PtrSet<const char*>* namedTypes) const {
   if (isPlainUse() == true) {
     // We don't limit the use in any way, so we don't need special handling to
     // find methods

@@ -5,7 +5,7 @@ proc foo(i) {
     halt("i is too big!");
 }
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A: [0..#n] real;
   forall i in 0..#n {
     foo(i);

@@ -23,6 +23,8 @@
 
 #include "baseAST.h"
 #include "alist.h"
+#include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallVector.h"
 
 #include <vector>
 #include <set>
@@ -66,6 +68,7 @@ void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
 void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs);
 void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts);
 void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs);
+void collectDefExprs(BaseAST* ast, llvm::SmallVectorImpl<DefExpr*>& defExprs);
 void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts);
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs);
 void collectMyCallExprs(BaseAST* ast,
@@ -73,6 +76,7 @@ void collectMyCallExprs(BaseAST* ast,
                         FnSymbol* fn);
 void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
+void collectSymExprs(BaseAST* ast, llvm::SmallVectorImpl<SymExpr*>& symExprs);
 void collectSymExprsFor(BaseAST* ast, Symbol* sym, std::vector<SymExpr*>& symExprs);
 void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
                         std::vector<SymExpr*>& symExprs);
@@ -106,6 +110,7 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
 //
 void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet);
 void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet);
+void collectSymbolSet(BaseAST* ast, llvm::SmallPtrSetImpl<Symbol*>& symSet);
 
 
 //

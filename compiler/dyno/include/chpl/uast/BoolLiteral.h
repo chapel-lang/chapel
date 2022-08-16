@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_BOOLLITERAL_H
 #define CHPL_UAST_BOOLLITERAL_H
 
-#include "chpl/queries/Location.h"
+#include "chpl/framework/Location.h"
 #include "chpl/types/Param.h"
 #include "chpl/uast/Literal.h"
 

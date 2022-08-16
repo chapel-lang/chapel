@@ -1,3 +1,4 @@
+use FileSystem;
 use IO;
 import SysBasic.EEOF;
 
@@ -121,5 +122,5 @@ for i in 0..sizes.size-1
   }
 }
 
-unlink(filename);
+FileSystem.remove(filename);
 

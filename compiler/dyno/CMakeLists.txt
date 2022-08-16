@@ -19,6 +19,17 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(dyno VERSION 0.1)
 
+# Options to integrate LLVM support library into dyno
+# TODO: enable easier cmake builds of dyno (outside of Chapel's Makefiles)
+# by falling back on find_package(LLVM) if
+# DYNO_LLVM_COMP_ARGS / DYNO_LLVM_LINK_ARGS are empty.
+option(DYNO_LLVM_COMP_ARGS "Override compile args for LLVM")
+option(DYNO_LLVM_LINK_ARGS "Override linker args for LLVM")
+# remove whitespace or you'll get complaints about an error
+# according to policy CMP0004
+string(STRIP ${DYNO_LLVM_COMP_ARGS} DYNO_LLVM_COMP_ARGS)
+string(STRIP ${DYNO_LLVM_LINK_ARGS} DYNO_LLVM_LINK_ARGS)
+
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
 set(CHPL_INCLUDE_DIR      ${CMAKE_CURRENT_BINARY_DIR}/include)
@@ -27,8 +38,6 @@ set(CHPL_INCLUDE_DIR      ${CMAKE_CURRENT_BINARY_DIR}/include)
 configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/config/config.h.cmake
                ${CHPL_INCLUDE_DIR}/chpl/config/config.h)
 
-# see https://llvm.org/docs/CMake.html
-# for instructions on extending this to include LLVM dependencies
 
 # request C++14
 set(CMAKE_CXX_STANDARD 14)
@@ -96,21 +105,5 @@ add_subdirectory(util)
 # Support for C++ compiler unit tests
 # Needs to happen in this file for ctest to work in this dir
 enable_testing()
-
-add_custom_target(tests)
-
-# define a function to simplify adding tests
-function(comp_unit_test target)
-  add_executable(${target} "${target}.cpp")
-  set_property(TARGET ${target} PROPERTY EXCLUDE_FROM_ALL)
-  set_target_properties(${target}  PROPERTIES LINK_DEPENDS_NO_SHARED true)
-  target_link_libraries(${target} libdyno)
-  target_include_directories(${target} PUBLIC
-                             ${CHPL_MAIN_INCLUDE_DIR}
-                             ${CHPL_INCLUDE_DIR})
-  add_dependencies(${target} libdyno)
-  add_test(NAME ${target} COMMAND ${target})
-  add_dependencies(tests ${target})
-endfunction(comp_unit_test)
 
 add_subdirectory(test)

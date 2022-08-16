@@ -267,6 +267,44 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
 
+#
+# Avoid errors about uninitialized memory because they occur in LLVM headers
+# (should be fixed in LLVM 15 though).
+# We would like to know when this occurs, though, so don't turn off
+# the warning; just don't let it abort the build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=uninitialized
+endif
+
+#
+# Avoid errors about dependent template name because they occur in LLVM headers
+# (should be fixed in LLVM 15 though).
+# We would like to know when this occurs, though, so don't turn off
+# the warning; just don't let it abort the build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=missing-template-keyword
+endif
+
+#
+# Avoid errors like '&expression' will never be NULL
+# because they occur in LLVM headers.
+# We would like to know when this occurs, though, so don't turn off
+# the warning; just don't let it abort the build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=address
+endif
+
+
+#
+# Avoid false positive warnings about use-after free with realloc
+# that occur in GCC 12.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-use-after-free
+endif
 
 #
 # 2016/03/28: Help to protect the Chapel compiler from a partially

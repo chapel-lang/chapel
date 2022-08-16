@@ -1,4 +1,4 @@
-use DateTime;
+use Time;
 
 class zone: TZInfo {
   /* The offset from UTC this class represents */

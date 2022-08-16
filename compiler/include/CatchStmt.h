@@ -74,6 +74,7 @@ public:
   Expr*               getNextExpr(Expr* expr) override;
   void                verify() override;
 
+  void                createErrSym();
   void                cleanup();
 
   GenRet              codegen() override;
@@ -83,6 +84,7 @@ public:
   const char* _name;
   Expr*       _type;
   BlockStmt*  _body;
+  bool  _createdErr;
 
 private:
   CatchStmt();

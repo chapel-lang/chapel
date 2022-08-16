@@ -85,7 +85,7 @@
 module Crypto {
 
   use C_OpenSSL;
-  use SysError;
+  use OS;
 
   private use IO;
   private use CTypes;

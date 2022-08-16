@@ -82,7 +82,7 @@ module LocaleModel {
     override proc writeThis(f) throws {
       if parent._instance then
         parent.writeThis(f);
-      f <~> '.'+ndName;
+      f.write('.'+ndName);
     }
 
     override proc getChildCount(): int { return 0; }
@@ -172,29 +172,6 @@ module LocaleModel {
     }
     override proc chpl_name() return local_name;
 
-    //
-    // Support for different types of memory:
-    // large, low latency, and high bandwidth
-    //
-    // The numa memory model currently assumes only one memory.
-    //
-    // ENGIN: Are these ever used?
-    override proc defaultMemory() : locale {
-      return new locale(this);
-    }
-
-    override proc largeMemory() : locale {
-      return new locale(this);
-    }
-
-    override proc lowLatencyMemory() : locale {
-      return new locale(this);
-    }
-
-    override proc highBandwidthMemory() : locale {
-      return new locale(this);
-    }
-
     proc getChildSpace() return childSpace;
 
     override proc getChildCount() return numSublocales;
@@ -275,7 +252,7 @@ module LocaleModel {
     proc local_name() return "rootLocale";
 
     override proc writeThis(f) throws {
-      f <~> name;
+      f.write(name);
     }
 
     override proc getChildCount() return this.myLocaleSpace.size;

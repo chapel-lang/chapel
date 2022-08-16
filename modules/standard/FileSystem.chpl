@@ -92,7 +92,7 @@
  */
 module FileSystem {
 
-  public use SysError;
+  public use OS;
   import SysBasic.{syserr, ENOERR};
   use Path;
   use HaltWrappers;
@@ -1552,8 +1552,8 @@ proc sameFile(file1: file, file2: file): bool throws {
 
   var ret:c_int;
   var err = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
-  if err then try ioerror(err, "in sameFile " + file1.tryGetPath(),
-                          file2.tryGetPath());
+  if err then try ioerror(err, "in sameFile " + file1._tryGetPath(),
+                          file2._tryGetPath());
   return ret != 0;
 }
 
@@ -1619,15 +1619,17 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
    :rtype: `int`
 */
 proc locale.umask(mask: int): int {
-  use Sys;
+  import OS.POSIX.mode_t;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
+  extern proc chpl_int_to_mode(mode: c_int): mode_t;
+  extern proc chpl_mode_to_int(mode: mode_t): c_int;
 
   var result: int;
   on this {
-    var callRes = chpl_fs_umask(mask.safeCast(mode_t));
-    result = callRes.safeCast(int);
+    var callRes = chpl_fs_umask(chpl_int_to_mode(mask.safeCast(c_int)));
+    result = chpl_mode_to_int(callRes);
   }
-  return result;
+  return result.safeCast(int);
 }
 
 

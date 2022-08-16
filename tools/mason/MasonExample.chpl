@@ -34,7 +34,7 @@ use TOML;
 
 
 /* Runs the .chpl files found within the /example directory */
-proc masonExample(args: [] string) {
+proc masonExample(args: [] string, checkProj=true) throws {
 
   var parser = new argumentParser();
 
@@ -50,6 +50,12 @@ proc masonExample(args: [] string) {
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var exampleOpts = parser.addOption(name="example", numArgs=0..);
+
+  if checkProj {
+    const projectType = getProjectType();
+    if projectType == "light" then
+      throw new owned MasonError("Mason light projects do not currently support 'mason example'");
+  }
 
   try! {
     parser.parseArgs(args);
@@ -78,11 +84,11 @@ private proc getBuildInfo(projectHome: string) {
   // parse lock and toml(examples dont make it to lock file)
   const lock = open(projectHome + "/Mason.lock", iomode.r);
   const toml = open(projectHome + "/Mason.toml", iomode.r);
-  const lockFile = owned.create(parseToml(lock));
-  const tomlFile = owned.create(parseToml(toml));
+  const lockFile = parseToml(lock);
+  const tomlFile = parseToml(toml);
 
   // Get project source code and dependencies
-  const sourceList = genSourceList(lockFile);
+  const (sourceList, gitList) = genSourceList(lockFile);
 
   //
   // TODO: Temporarily use `toArray` here because `list` does not yet
@@ -90,6 +96,7 @@ private proc getBuildInfo(projectHome: string) {
   // have for good performance.
   //
   getSrcCode(sourceList, false);
+  getGitCode(gitList, false);
   const project = lockFile["root"]!["name"]!.s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
@@ -108,7 +115,7 @@ private proc getBuildInfo(projectHome: string) {
   toml.close();
 
 
-  return (sourceList, projectPath, compopts, exampleNames, perExampleOptions);
+  return (sourceList, gitList, projectPath, compopts, exampleNames, perExampleOptions);
 }
 
 // retrieves compopts and execopts for each example.
@@ -189,11 +196,14 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     // names of examples, example compopts
     var buildInfo = getBuildInfo(projectHome);
     const sourceList = buildInfo[0];
-    const projectPath = buildInfo[1];
-    const compopts = buildInfo[2];
-    const exampleNames = buildInfo[3];
-    const perExampleOptions = buildInfo[4];
+    const gitList = buildInfo[1];
+    const projectPath = buildInfo[2];
+    const compopts = buildInfo[3];
+    const exampleNames = buildInfo[4];
+    const perExampleOptions = buildInfo[5];
     const projectName = basename(stripExt(projectPath, ".chpl"));
+    //TODO: This build info is weird and only used here, we should
+    //      move away from this
 
     var numExamples = exampleNames.size;
     var examplesToRun = determineExamples(exampleNames, examplesRequested);
@@ -222,7 +232,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
             // get the string of dependencies for compilation
             // also names example as --main-module
-            const masonCompopts = getMasonDependencies(sourceList, exampleName);
+            const masonCompopts = getMasonDependencies(sourceList, gitList, exampleName);
             var allCompOpts = " ".join(" ".join(compopts.these()), masonCompopts,
                                        exampleCompopts);
 
@@ -283,25 +293,6 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
   }
 }
 
-
-private proc getMasonDependencies(sourceList: list(3*string),
-                                 exampleName: string) {
-
-  // Declare example to run as the main module
-  var masonCompopts = " ".join(" --main-module", exampleName, " ");
-
-  if sourceList.size > 0 {
-    const depPath = MASON_HOME + "/src/";
-
-    // Add dependencies to project
-    for (_, name, version) in sourceList {
-      var depSrc = "".join(' ',depPath, name, "-", version, '/src/', name, ".chpl");
-      masonCompopts += depSrc;
-    }
-  }
-  return masonCompopts;
-}
-
 private proc getExamples(toml: Toml, projectHome: string) {
   var exampleNames: list(string);
   const examplePath = joinPath(projectHome, "example");
@@ -351,7 +342,7 @@ proc printAvailableExamples() {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
-    const toml = owned.create(parseToml(toParse));
+    const toml = parseToml(toParse);
     const examples = getExamples(toml, projectHome);
     writeln("--- available examples ---");
     for example in examples {

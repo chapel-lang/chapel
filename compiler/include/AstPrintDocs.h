@@ -44,6 +44,9 @@ public:
   void   exitModSym       (ModuleSymbol*      node) override;
   void   visitVarSym      (VarSymbol*         node) override;
 
+
+  bool   enterLoopExpr    (LoopExpr*          node) override;
+
   bool   enterBlockStmt   (BlockStmt*         node) override;
   bool   enterForallStmt  (ForallStmt*        node) override;
   bool   enterWhileDoStmt (WhileDoStmt*       node) override;

@@ -499,7 +499,7 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
 proc createGraphFile(prefix:string, suffix:string, param forWriting:bool) {
   return open(prefix+suffix,
               if forWriting then iomode.cw else iomode.r,
-              IOHINT_SEQUENTIAL);
+              ioHintSet.sequential);
 }
 
 proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {

@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Call.h"
@@ -225,7 +225,8 @@ static void usage(int argc, char** argv) {
 
 static void setupSearchPaths(Context* ctx, bool enableStdLib,
                              const char* chpl_home,
-                             const std::vector<std::string>& cmdLinePaths) {
+                             const std::vector<std::string>& cmdLinePaths,
+                             const std::vector<std::string>& files) {
   if (enableStdLib) {
     setupModuleSearchPaths(ctx,
                            chpl_home,
@@ -236,7 +237,8 @@ static void setupSearchPaths(Context* ctx, bool enableStdLib,
                            "none",
                            "linux64-x86_64-gnu",
                            "",
-                           cmdLinePaths);
+                           cmdLinePaths,
+                           files);
   } else {
     std::vector<UniqueString> uPaths;
     for (auto p: cmdLinePaths) {
@@ -299,7 +301,7 @@ int main(int argc, char** argv) {
     typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
     ctx->setDebugTraceFlag(trace);
 
-    setupSearchPaths(ctx, enableStdLib, chpl_home, cmdLinePaths);
+    setupSearchPaths(ctx, enableStdLib, chpl_home, cmdLinePaths, files);
 
     std::set<const ResolvedFunction*> calledFns;
 

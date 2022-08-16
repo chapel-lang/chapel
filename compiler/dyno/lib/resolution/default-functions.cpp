@@ -20,8 +20,8 @@
 #include "default-functions.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/global-strings.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/global-strings.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
@@ -128,8 +128,8 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   formalTypes.push_back(QualifiedType(QualifiedType::REF, compType));
 
   // consult the fields to build up the remaining untyped formals
-  const bool useGenericDefaults = false;
-  auto& rf = fieldsForTypeDecl(context, compType, useGenericDefaults);
+  const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  auto& rf = fieldsForTypeDecl(context, compType, defaultsPolicy);
 
   // TODO: generic types
   if (rf.isGeneric()) {

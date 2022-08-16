@@ -20,7 +20,7 @@
 #include "chpl/resolution/disambiguation.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"

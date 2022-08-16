@@ -554,23 +554,6 @@ int sys_getenv(const char* name, const char** string_out)
   }
 }
 
-qio_err_t sys_open(const char* pathname, int flags, mode_t mode, fd_t* fd_out)
-{
-  int got;
-  qio_err_t err_out;
-
-  got = open(pathname, flags, mode);
-  if( got != -1 ) {
-    *fd_out = got;
-    err_out = 0;
-  } else {
-    *fd_out = -1;
-    err_out = errno;
-  }
-
-  return err_out;
-}
-
 qio_err_t sys_close(fd_t fd)
 {
   int got;

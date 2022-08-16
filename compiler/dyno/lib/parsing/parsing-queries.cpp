@@ -20,8 +20,8 @@
 #include "chpl/parsing/parsing-queries.h"
 
 #include "chpl/parsing/Parser.h"
-#include "chpl/queries/ErrorMessage.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -112,13 +112,6 @@ parseFileToBuilderResult(Context* context, UniqueString path,
     const char* textc = text.c_str();
     BuilderResult tmpResult = parser.parseString(pathc, textc);
     result.swap(tmpResult);
-    // raise any errors encountered
-    for (const ErrorMessage& e : result.errors()) {
-      if (!e.isDefaultConstructed()) {
-        // report the error and save it for this query
-        context->report(e);
-      }
-    }
     BuilderResult::updateFilePaths(context, result);
   } else {
     // Error should have already been reported in the fileText query.
@@ -191,6 +184,12 @@ const ModuleVec& parse(Context* context, UniqueString path,
   // Get the result of parsing
   const BuilderResult& p = parseFileToBuilderResult(context, path,
                                                     parentSymbolPath);
+
+  // Report any errors encountered to the context.
+  for (auto& e : p.errors())
+    if (!e.isDefaultConstructed())
+      context->report(e);
+
   // Compute a vector of Modules
   ModuleVec result;
   for (auto topLevelExpression : p.topLevelExpressions()) {
@@ -263,6 +262,23 @@ void setBundledModulePath(Context* context, UniqueString path) {
   QUERY_STORE_INPUT_RESULT(bundledModulePathQuery, context, path);
 }
 
+static void addFilePathModules(std::vector<std::string>& searchPath,
+                               const std::vector<std::string>& inputFilenames) {
+  for (auto& fname : inputFilenames) {
+    auto idx = fname.find_last_of('/');
+    if (idx == std::string::npos) {
+      // local file
+      searchPath.push_back(".");
+    } else if (idx == 0) {
+      // root path: /foo.chpl
+      searchPath.push_back("/");
+    } else {
+      auto path = fname.substr(0, idx);
+      searchPath.push_back(path);
+    }
+  }
+}
+
 void setupModuleSearchPaths(Context* context,
                             const std::string& chplHome,
                             bool minimalModules,
@@ -272,7 +288,8 @@ void setupModuleSearchPaths(Context* context,
                             const std::string& chplComm,
                             const std::string& chplSysModulesSubdir,
                             const std::string& chplModulePath,
-                            const std::vector<std::string>& cmdLinePaths) {
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames) {
 
   std::string modRoot;
   if (!minimalModules) {
@@ -322,6 +339,8 @@ void setupModuleSearchPaths(Context* context,
   for (const auto& p : cmdLinePaths) {
     searchPath.push_back(p);
   }
+
+  addFilePathModules(searchPath, inputFilenames);
 
   // Convert them all to UniqueStrings.
   std::vector<UniqueString> uSearchPath;
@@ -597,6 +616,21 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 
 bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
+}
+
+static const bool& idIsFieldQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsFieldQuery, context, id);
+
+  bool result = false;
+  if (auto ast = astForIDQuery(context, id))
+    if (auto var = ast->toVariable())
+      result = var->isField();
+
+  return QUERY_END(result);
+}
+
+bool idIsField(Context* context, ID id) {
+  return idIsFieldQuery(context, id);
 }
 
 const ID& idToParentId(Context* context, ID id) {
