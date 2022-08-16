@@ -35,7 +35,9 @@ First actual int(64)
  Second actual uint(32)     ->   f(uint(32),uint(32))
       Reversed              ->   f(uint(32),uint(32))
                +            ->   uint(32)
- Second actual uint(64)     -> 
+ Second actual uint(64)     ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
 
  Second actual real(32)     ->   f(real(32),real(32))
       Reversed              ->   f(real(32),real(32))
@@ -280,10 +282,18 @@ First actual int(8)
       Reversed              ->   f(int(8),int(8))
                +            ->   int(8)
 
- Second actual uint(8)      -> 
- Second actual uint(16)     -> 
- Second actual uint(32)     -> 
- Second actual uint(64)     -> 
+ Second actual uint(8)      ->   f(uint(8),uint(8))
+      Reversed              ->   f(uint(8),uint(8))
+               +            ->   uint(8)
+ Second actual uint(16)     ->   f(uint(16),uint(16))
+      Reversed              ->   f(uint(16),uint(16))
+               +            ->   uint(16)
+ Second actual uint(32)     ->   f(uint(32),uint(32))
+      Reversed              ->   f(uint(32),uint(32))
+               +            ->   uint(32)
+ Second actual uint(64)     ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
 
  Second actual real(32)     ->   f(real(32),real(32))
       Reversed              ->   f(real(32),real(32))
@@ -339,9 +349,15 @@ First actual int(16)
  Second actual uint(8)      ->   f(int(16),int(16))
       Reversed              ->   f(int(16),int(16))
                +            ->   int(16)
- Second actual uint(16)     -> 
- Second actual uint(32)     -> 
- Second actual uint(64)     -> 
+ Second actual uint(16)     ->   f(uint(16),uint(16))
+      Reversed              ->   f(uint(16),uint(16))
+               +            ->   uint(16)
+ Second actual uint(32)     ->   f(uint(32),uint(32))
+      Reversed              ->   f(uint(32),uint(32))
+               +            ->   uint(32)
+ Second actual uint(64)     ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
 
  Second actual real(32)     ->   f(real(32),real(32))
       Reversed              ->   f(real(32),real(32))
@@ -400,8 +416,12 @@ First actual int(32)
  Second actual uint(16)     ->   f(int(32),int(32))
       Reversed              ->   f(int(32),int(32))
                +            ->   int(32)
- Second actual uint(32)     -> 
- Second actual uint(64)     -> 
+ Second actual uint(32)     ->   f(uint(32),uint(32))
+      Reversed              ->   f(uint(32),uint(32))
+               +            ->   uint(32)
+ Second actual uint(64)     ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
 
  Second actual real(32)     ->   f(real(32),real(32))
       Reversed              ->   f(real(32),real(32))
@@ -463,7 +483,9 @@ First actual int(64)
  Second actual uint(32)     ->   f(uint(32),uint(32))
       Reversed              ->   f(uint(32),uint(32))
                +            ->   uint(32)
- Second actual uint(64)     -> 
+ Second actual uint(64)     ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
 
  Second actual real(32)     ->   f(real(32),real(32))
       Reversed              ->   f(real(32),real(32))
@@ -503,7 +525,9 @@ First actual uint(8)
       Reversed              ->   f(generic)
                +            ->   complex(128)
 
- Second actual int(8)       -> 
+ Second actual int(8)       ->   f(uint(8),uint(8))
+      Reversed              ->   f(uint(8),uint(8))
+               +            ->   uint(8)
  Second actual int(16)      ->   f(int(16),int(16))
       Reversed              ->   f(int(16),int(16))
                +            ->   int(16)
@@ -525,6 +549,7 @@ First actual uint(8)
                +            ->   uint(32)
  Second actual uint(64)     ->   f(uint(64),uint(64))
       Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
 
  Second actual real(32)     ->   f(real(32),real(32))
       Reversed              ->   f(real(32),real(32))
@@ -564,8 +589,12 @@ First actual uint(16)
       Reversed              ->   f(generic)
                +            ->   complex(128)
 
- Second actual int(8)       -> 
- Second actual int(16)      -> 
+ Second actual int(8)       ->   f(uint(16),uint(16))
+      Reversed              ->   f(uint(16),uint(16))
+               +            ->   uint(16)
+ Second actual int(16)      ->   f(uint(16),uint(16))
+      Reversed              ->   f(uint(16),uint(16))
+               +            ->   uint(16)
  Second actual int(32)      ->   f(int(32),int(32))
       Reversed              ->   f(int(32),int(32))
                +            ->   int(32)
@@ -584,6 +613,7 @@ First actual uint(16)
                +            ->   uint(32)
  Second actual uint(64)     ->   f(uint(64),uint(64))
       Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
 
  Second actual real(32)     ->   f(real(32),real(32))
       Reversed              ->   f(real(32),real(32))
@@ -623,9 +653,15 @@ First actual uint(32)
       Reversed              ->   f(generic)
                +            ->   complex(128)
 
- Second actual int(8)       -> 
- Second actual int(16)      -> 
- Second actual int(32)      -> 
+ Second actual int(8)       ->   f(uint(32),uint(32))
+      Reversed              ->   f(uint(32),uint(32))
+               +            ->   uint(32)
+ Second actual int(16)      ->   f(uint(32),uint(32))
+      Reversed              ->   f(uint(32),uint(32))
+               +            ->   uint(32)
+ Second actual int(32)      ->   f(uint(32),uint(32))
+      Reversed              ->   f(uint(32),uint(32))
+               +            ->   uint(32)
  Second actual int(64)      ->   f(uint(32),uint(32))
       Reversed              ->   f(uint(32),uint(32))
                +            ->   uint(32)
@@ -641,6 +677,7 @@ First actual uint(32)
                +            ->   uint(32)
  Second actual uint(64)     ->   f(uint(64),uint(64))
       Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
 
  Second actual real(32)     ->   f(real(32),real(32))
       Reversed              ->   f(real(32),real(32))
@@ -667,7 +704,9 @@ First actual uint(32)
 
 First actual uint(64)
 
- Second actual int(64)      -> 
+ Second actual int(64)      ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
  Second actual real(64)     ->   f(real(64),real(64))
       Reversed              ->   f(real(64),real(64))
                +            ->   real(64)
@@ -678,17 +717,28 @@ First actual uint(64)
       Reversed              ->   f(generic)
                +            ->   complex(128)
 
- Second actual int(8)       -> 
- Second actual int(16)      -> 
- Second actual int(32)      -> 
- Second actual int(64)      -> 
+ Second actual int(8)       ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
+ Second actual int(16)      ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
+ Second actual int(32)      ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
+ Second actual int(64)      ->   f(uint(64),uint(64))
+      Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
 
  Second actual uint(8)      ->   f(uint(64),uint(64))
       Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
  Second actual uint(16)     ->   f(uint(64),uint(64))
       Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
  Second actual uint(32)     ->   f(uint(64),uint(64))
       Reversed              ->   f(uint(64),uint(64))
+               +            ->   uint(64)
  Second actual uint(64)     ->   f(uint(64),uint(64))
       Reversed              ->   f(uint(64),uint(64))
                +            ->   uint(64)
