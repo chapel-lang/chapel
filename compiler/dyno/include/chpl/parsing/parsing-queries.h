@@ -211,9 +211,8 @@ void setupModuleSearchPaths(Context* context,
 
 const ChplEnvMap& getChplEnv(Context* context);
 
-const std::string& getChplEnvValue(Context* context,
-                                   std::string key,
-                                   std::string defaultValue);
+const std::string& getChplEnvEntry(Context* context,
+                                   std::string key);
 
 void setupChplEnv(Context* context, const std::string& chplHome);
 

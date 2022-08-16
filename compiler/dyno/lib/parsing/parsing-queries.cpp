@@ -366,10 +366,9 @@ const ChplEnvMap& getChplEnv(Context* context) {
   return QUERY_END(result);
 }
 
-const std::string& getChplEnvValue(Context* context,
-                                   std::string key,
-                                   std::string defaultValue) {
-  QUERY_BEGIN(getChplEnvValue, context, key, defaultValue);
+const std::string& getChplEnvEntry(Context* context,
+                                   std::string key) {
+  QUERY_BEGIN(getChplEnvEntry, context, key);
 
   std::string result;
   auto& chplEnv = getChplEnv(context);
@@ -377,7 +376,7 @@ const std::string& getChplEnvValue(Context* context,
   if (envIt != chplEnv.end()) {
     result = envIt->second;
   } else {
-    result = defaultValue;
+    result = "";
   }
 
   return QUERY_END(result);
