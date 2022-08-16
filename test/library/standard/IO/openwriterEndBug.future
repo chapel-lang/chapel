@@ -1,0 +1,2 @@
+bug: Specifying end position other than the end of the file truncates it
+#20450
