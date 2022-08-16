@@ -6,7 +6,7 @@ proc Nil(): borrowed NilClass
   return gNil.borrow();
 
 proc isNil(x): bool {
-  if x.type <= NilClass then
+  if isSubtype(x.type, NilClass) then
     return true;
   else
     return false;

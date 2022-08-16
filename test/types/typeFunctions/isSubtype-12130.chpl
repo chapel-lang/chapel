@@ -3,8 +3,8 @@ class Generic {
 }
 
 var inst = (new owned Generic(10)).borrow();
-writeln(inst.type < Generic);
-writeln(inst.type > Generic);
+writeln(isProperSubtype(inst.type, Generic));
+writeln(isProperSubtype(Generic, inst.type));
 
-writeln(inst.type < borrowed Generic);
-writeln(inst.type > borrowed Generic);
+writeln(isProperSubtype(inst.type, borrowed Generic));
+writeln(isProperSubtype(borrowed Generic, inst.type));
