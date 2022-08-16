@@ -2232,6 +2232,11 @@ struct Converter {
     return buildReduceExpr(opExpr, dataExpr, zippered);
   }
 
+  Expr* visit(const uast::ReduceIntent* reduce) {
+    INT_FATAL("Should not be called directly!");
+    return nullptr;
+  }
+
   Expr* visit(const uast::Scan* node) {
     INT_ASSERT(node->numActuals() == 2);
     Expr* opExpr = convertScanReduceOp(node->op());

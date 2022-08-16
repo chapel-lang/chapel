@@ -81,6 +81,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::OpCall:
     case asttags::PrimCall:
     case asttags::Reduce:
+    case asttags::ReduceIntent:
     case asttags::Scan:
     case asttags::Tuple:
     case asttags::Zip:
