@@ -231,18 +231,18 @@ module ChapelRange {
   //
 
   // Range builders for fully bounded ranges
-  proc chpl_build_bounded_range(low: int(?w), high: int(w))
+  proc chpl_build_bounded_sequence(low: int(?w), high: int(w))
     return new range(int(w), low=low, high=high);
-  proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
+  proc chpl_build_bounded_sequence(low: uint(?w), high: uint(w))
     return new range(uint(w), low=low, high=high);
-  proc chpl_build_bounded_range(low: enum, high: enum) {
+  proc chpl_build_bounded_sequence(low: enum, high: enum) {
     if (low.type != high.type) then
       compilerError("ranges of enums must use a single enum type");
     return new range(low.type, low=low, high=high);
   }
-  proc chpl_build_bounded_range(low: bool, high: bool)
+  proc chpl_build_bounded_sequence(low: bool, high: bool)
     return new range(bool, low=low, high=high);
-  proc chpl_build_bounded_range(low: ?t1, high: ?t2)
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2)
     where isTuple(low) && isTuple(high) &&
           isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
           low.size == high.size &&
@@ -262,7 +262,7 @@ module ChapelRange {
     var d: domain(size, eltType, false) = ranges;
     return d;
   }
-  proc chpl_build_bounded_range(low, high) {
+  proc chpl_build_bounded_sequence(low, high) {
     if (low.type == high.type) then
       compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
     else
@@ -437,7 +437,7 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_bounded_count_for_param_loop_low(low, high, count) {
-    const r = chpl_build_bounded_range(low, high);  // generate normal error, if possible
+    const r = chpl_build_bounded_sequence(low, high);  // generate normal error, if possible
     // otherwise, fall back to this one:
     compilerError("can't apply '#' to a range with idxType ",
                   r.idxType:string, " using a count of type ",
@@ -458,7 +458,7 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_bounded_count_for_param_loop_high(low, high, count) {
-    const r = chpl_build_bounded_range(low, high);  // generate normal error, if possible
+    const r = chpl_build_bounded_sequence(low, high);  // generate normal error, if possible
     // otherwise, fall back to this one:
     compilerError("can't apply '#' to a range with idxType ",
                   r.idxType:string, " using a count of type ",
@@ -1944,10 +1944,10 @@ operator :(r: range(?), type t: range(?)) {
 
   //
   // These iterators exist so that argument coercion happens like it does for
-  // chpl_build_bounded_range and the by operator. They just forward to the
+  // chpl_build_bounded_sequence and the by operator. They just forward to the
   // "actual" iterators below which do not do any type checking on the
   // arguments. They are only intended to be used for bounded ranges. There
-  // must be versions for the cross product of 'chpl_build_bounded_range' and
+  // must be versions for the cross product of 'chpl_build_bounded_sequence' and
   // the 'by' operator. The low and high types must be the same, and the stride
   // can be the same sized signed or unsigned version of low/high
   //
@@ -2047,7 +2047,7 @@ operator :(r: range(?), type t: range(?)) {
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_range_iter(low, high, stride) {
-    chpl_build_bounded_range(low, high);  // use general error if possible
+    chpl_build_bounded_sequence(low, high);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
     if (low.type == high.type) then

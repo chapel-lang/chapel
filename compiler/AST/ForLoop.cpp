@@ -117,7 +117,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     // with:
     //
     // `chpl_direct_range_iter(low, high, stride)`
-    if (!count && range && range->isNamed("chpl_build_bounded_range"))
+    if (!count && range && range->isNamed("chpl_build_bounded_sequence"))
     {
       // replace the range construction with a direct range iterator
       Expr* low = range->get(1)->copy();

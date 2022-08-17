@@ -285,7 +285,7 @@ module String {
 
   // Helper routines in support of being able to use ranges of indices
   pragma "no doc"
-  proc chpl_build_bounded_range(low: ?t, high: t)
+  proc chpl_build_bounded_sequence(low: ?t, high: t)
     where t == byteIndex || t == codepointIndex
     return new range(t, low=low, high=high);
 
