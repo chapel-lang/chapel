@@ -1,0 +1,2 @@
+test1.chpl:5: warning: The variable 'msg' is unstable
+This is test1
