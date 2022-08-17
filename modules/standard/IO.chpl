@@ -287,6 +287,8 @@ if there was an error. See:
 In addition, there is a convenient synonym for :proc:`channel.write` and
 :proc:`channel.read`: the `<~> operator`
 
+.. note:: the <~> operator is deprecated
+
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 :proc:`channel.flush()` method. Flushing the buffer will make all writes available
 to other applications or other views of the file (e.g., it will call the OS call
@@ -3661,6 +3663,7 @@ proc channel.writeIt(const x) throws {
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref ch: channel, const x) const ref throws
   where ch.writing {
     try ch.writeIt(x);
@@ -3669,6 +3672,7 @@ proc channel.writeIt(const x) throws {
 
   // documented in the writing version.
   pragma "no doc"
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
     try ch.readIt(x);
@@ -3690,6 +3694,7 @@ proc channel.writeIt(const x) throws {
      works without requiring an explicit temporary value to store
      the ioLiteral.
    */
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
                               lit:ioLiteral) const ref throws
   where !r.writing {
@@ -3708,6 +3713,7 @@ proc channel.writeIt(const x) throws {
      works without requiring an explicit temporary value to store
      the ioNewline.
    */
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
                               nl:ioNewline) const ref throws
   where !r.writing {
