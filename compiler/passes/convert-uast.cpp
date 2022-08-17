@@ -1207,8 +1207,16 @@ struct Converter {
 
       if (parent->isBracketLoop() || parent->isForall() ||
           parent->isForeach()) {
+        noteConvertedSym(expr, svs);
         addForallIntent(ret, svs);
       } else {
+        auto r = symStack.back().resolved;
+        if (r != nullptr) {
+          const resolution::ResolvedExpression* rr = r->byAstOrNull(expr);
+          if (rr != nullptr) {
+            noteConvertedSym(expr, findConvertedSym(rr->toId()));
+          }
+        }
         addTaskIntent(ret, svs);
       }
     }
