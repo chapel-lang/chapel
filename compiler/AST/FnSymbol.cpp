@@ -241,6 +241,7 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
    */
   newFn->copyFlags(this);
   newFn->deprecationMsg = this->deprecationMsg;
+  newFn->unstableMsg = this->unstableMsg;
 
   if (this->throwsError() == true) {
     newFn->throwsErrorInit();
@@ -1227,6 +1228,11 @@ void FnSymbol::printDocs(std::ostream* file, unsigned int tabs) {
     if (this->hasFlag(FLAG_DEPRECATED)) {
       this->printDocsDeprecation(this->doc, file, tabs + 1,
                                  this->getDeprecationMsg(), true);
+    }
+    
+    if (this->hasFlag(FLAG_UNSTABLE)) {
+      this->printDocsUnstable(this->doc, file, tabs + 1,
+                              this->getUnstableMsg(), true);
     }
   }
 }

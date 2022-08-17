@@ -78,6 +78,11 @@ DefExpr* buildDeprecated(DefExpr* def, const char* msg);
 BlockStmt* buildDeprecated(BlockStmt* block);
 BlockStmt* buildDeprecated(BlockStmt* block, const char* msg);
 
+DefExpr* buildUnstable(DefExpr* def);
+DefExpr* buildUnstable(DefExpr* def, const char* msg);
+BlockStmt* buildUnstable(BlockStmt* block);
+BlockStmt* buildUnstable(BlockStmt* block, const char* msg);
+
 BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
 BlockStmt* buildUseStmt(Expr* mod, const char* rename,
                         std::vector<PotentialRename*>* names, bool except,

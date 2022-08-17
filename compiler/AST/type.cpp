@@ -421,6 +421,12 @@ void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
                                this->symbol->getDeprecationMsg(),
                                !fDocsTextOnly);
   }
+  
+  if (this->symbol->hasFlag(FLAG_UNSTABLE)) {
+    this->printDocsUnstable(this->symbol->doc, file, tabs + 1,
+                               this->symbol->getUnstableMsg(),
+                               !fDocsTextOnly);
+  }
 }
 
 
@@ -645,6 +651,12 @@ void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
   if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
     this->printDocsDeprecation(this->doc, file, tabs + 1,
                                this->symbol->getDeprecationMsg(),
+                               !fDocsTextOnly);
+  }
+
+  if (this->symbol->hasFlag(FLAG_UNSTABLE)) {
+    this->printDocsUnstable(this->doc, file, tabs + 1,
+                               this->symbol->getUnstableMsg(),
                                !fDocsTextOnly);
   }
 }

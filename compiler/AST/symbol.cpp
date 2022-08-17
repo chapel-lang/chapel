@@ -103,6 +103,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   fieldQualifiers(NULL),
   defPoint(NULL),
   deprecationMsg(""),
+  unstableMsg(""),
   symExprsHead(NULL),
   symExprsTail(NULL)
 {
@@ -450,8 +451,19 @@ const char* Symbol::getDeprecationMsg() const {
   if (deprecationMsg[0] == '\0') {
     const char* msg = astr(name, " is deprecated");
     return msg;
-  } else {
+  } 
+  else {
     return deprecationMsg.c_str();
+  }
+}
+
+const char* Symbol::getUnstableMsg() const {
+  if (unstableMsg[0] == '\0') {
+    const char* msg = astr(name, " is unstable");
+    return msg;
+  } 
+  else {
+    return unstableMsg.c_str();
   }
 }
 
@@ -490,6 +502,31 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   // created by the compiler or also deprecated.
   if (!compilerGenerated && !parentDeprecated) {
     USR_WARN(context, "%s", getSanitizedDeprecationMsg());
+  }
+}
+
+const char* Symbol::getSanitizedUnstableMsg() const {
+  std::string msg = getUnstableMsg();
+  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
+  msg = std::regex_replace(msg, std::regex(reStr), "$2");
+  return astr(msg.c_str());
+}
+
+void Symbol::generateUnstableWarning(Expr* context) {
+  Symbol* contextParent = context->parentSymbol;
+  bool parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+
+  while (contextParent != NULL && contextParent->defPoint != NULL &&
+         contextParent->defPoint->parentSymbol != NULL &&
+         parentUnstable != true && compilerGenerated != true) {
+    contextParent = contextParent->defPoint->parentSymbol;
+    parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  }
+
+  if (!compilerGenerated && !parentUnstable) {
+    USR_WARN(context, "%s", getSanitizedUnstableMsg());
   }
 }
 
@@ -702,6 +739,11 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   if (this->hasFlag(FLAG_DEPRECATED)) {
     this->printDocsDeprecation(this->doc, file, tabs + 1,
                                this->getDeprecationMsg(), !fDocsTextOnly);
+  }
+
+  if (this->hasFlag(FLAG_UNSTABLE)) {
+    this->printDocsUnstable(this->doc, file, tabs + 1,
+                               this->getUnstableMsg(), !fDocsTextOnly);
   }
 }
 
