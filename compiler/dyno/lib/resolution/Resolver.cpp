@@ -2414,6 +2414,90 @@ void Resolver::exit(const IndexableLoop* loop) {
   }
 }
 
+// Returns 'true' if a single Id was scope-resolved, in which case the function
+// will also return via the ID and QualifiedType formals.
+static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
+                                  ID& resolvedId, QualifiedType& type) {
+  auto& scopeStack = resolver.scopeStack;
+
+  // Look at the scope before the loop-statement
+  const Scope* scope = scopeStack[scopeStack.size()-2];
+  LookupConfig config = LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_PARENTS;
+
+  const Scope* receiverScope = resolver.methodReceiverScope();
+
+  auto vec = lookupNameInScope(resolver.context, scope, receiverScope,
+                               intent->name(), config);
+  if (vec.size() == 1) {
+    resolvedId = vec[0].id(0);
+    if (resolver.scopeResolveOnly == false) {
+      if (resolvedId.isEmpty()) {
+        type = typeForBuiltin(resolver.context, intent->name());
+      } else {
+        type = resolver.typeForId(resolvedId, /*localGenericToUnknown*/ true);
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool Resolver::enter(const ReduceIntent* reduce) {
+
+  ID id;
+  QualifiedType type;
+  ResolvedExpression& result = byPostorder.byAst(reduce);
+
+  if (computeTaskIntentInfo(*this, reduce, id, type)) {
+    result.setToId(id);
+  } else {
+    context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
+  }
+
+  // TODO: Resolve reduce-op with shadowed type
+  // E.g. "+ reduce x" --> "SumReduceOp(x.type)"
+  reduce->op()->traverse(*this);
+
+  return false;
+}
+
+void Resolver::exit(const ReduceIntent* reduce) {
+}
+
+bool Resolver::enter(const TaskVar* taskVar) {
+  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
+                            taskVar->initExpression() == nullptr;
+  if (isTaskIntent) {
+    ID id;
+    QualifiedType type;
+    ResolvedExpression& result = byPostorder.byAst(taskVar);
+    if (computeTaskIntentInfo(*this, taskVar, id, type)) {
+      QualifiedType taskVarType = QualifiedType(taskVar->storageKind(),
+                                                type.type());
+      result.setToId(id);
+
+      // TODO: Handle in-intents where type can change (e.g. array slices)
+      result.setType(taskVarType);
+    } else {
+      context->error(taskVar, "Unable to find declaration of \"%s\" for task intent", taskVar->name().c_str());
+    }
+    return false;
+  } else {
+    enterScope(taskVar);
+    return true;
+  }
+}
+void Resolver::exit(const TaskVar* taskVar) {
+  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
+                            taskVar->initExpression() == nullptr;
+  if (isTaskIntent == false) {
+    exitScope(taskVar);
+  }
+}
+
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);
 
