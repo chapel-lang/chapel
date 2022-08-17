@@ -70,7 +70,7 @@ class Context {
 
  private:
   // The CHPL_HOME variable
-  const std::string chplHome;
+  const std::string chplHome_;
   // Variables to explicitly set before getting chplenv
   const std::unordered_map<std::string, std::string> chplEnvOverrides;
 
@@ -259,6 +259,8 @@ class Context {
   Context(std::string chplHome = "",
           std::unordered_map<std::string, std::string> chplEnvOverrides = {});
   ~Context();
+
+  const std::string& chplHome() const;
 
   /**
     Run printchplenv, or return a cached result of doing so. To get output,

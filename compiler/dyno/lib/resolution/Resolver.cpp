@@ -1796,11 +1796,8 @@ void Resolver::exit(const Range* range) {
   if (auto upper = range->upperBound()) {
     suppliedTypes.push_back(byPostorder.byAst(upper).type());
   }
-  assert(suppliedTypes.size() > 0 && "TODO");
-  auto boundType = commonType(context, suppliedTypes,
-                              /* useRequiredKind */ true,
-                              QualifiedType::DEFAULT_INTENT);
-  if (boundType.isUnknown()) {
+  auto boundType = commonType(context, suppliedTypes);
+  if (!boundType) {
     re.setType(typeErr(range, "incompatible bound types for range"));
     return;
   }
@@ -1814,7 +1811,7 @@ void Resolver::exit(const Range* range) {
   assert(resolvedFields.fieldName(2) == "stridable");
 
   auto subMap = SubstitutionsMap();
-  subMap.insert({resolvedFields.fieldDeclId(0), std::move(boundType)});
+  subMap.insert({resolvedFields.fieldDeclId(0), std::move(boundType.getValue())});
   subMap.insert({resolvedFields.fieldDeclId(1), resolvedFields.fieldType(1)});
   subMap.insert({resolvedFields.fieldDeclId(2), resolvedFields.fieldType(2)});
 
