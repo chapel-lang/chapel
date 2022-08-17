@@ -38,23 +38,23 @@ struct ReturnVariant {
     : intent(std::move(intent)), type(std::move(type)), value(std::move(value)) {}
 };
 
-ReturnVariant type(std::string value) {
+static ReturnVariant type(std::string value) {
   return ReturnVariant("type", "", value);
 }
 
-ReturnVariant lit(std::string value) {
+static ReturnVariant lit(std::string value) {
   return ReturnVariant("param", "", value);
 }
 
-ReturnVariant decl(std::string intent, std::string type) {
+static ReturnVariant decl(std::string intent, std::string type) {
   return ReturnVariant(intent, type, "");
 }
 
-ReturnVariant ref(bool isConst = false) {
+static ReturnVariant ref(bool isConst = false) {
   return ReturnVariant(isConst ? "const ref" : "ref", "r", "temp");
 }
 
-bool hasReference(const std::vector<ReturnVariant>& variants) {
+static bool hasReference(const std::vector<ReturnVariant>& variants) {
   for (auto& variant : variants) {
     if (variant.intent.find("ref") != std::string::npos) {
       return true;
@@ -63,7 +63,7 @@ bool hasReference(const std::vector<ReturnVariant>& variants) {
   return false;
 }
 
-std::string buildProgram(const std::vector<ReturnVariant>& variants) {
+static std::string buildProgram(const std::vector<ReturnVariant>& variants) {
   std::ostringstream oss;
   if (hasReference(variants)) {
     // references need something to refer to, so create a temporary
@@ -82,13 +82,14 @@ std::string buildProgram(const std::vector<ReturnVariant>& variants) {
   return oss.str();
 }
 
-std::vector<QualifiedType>
-extractDefinedTypes(Context* context, const char* program, size_t startAt) {
+static std::vector<QualifiedType> extractDefinedTypes(Context* context,
+                                                      const char* program,
+                                                      size_t startAt) {
   std::vector<QualifiedType> types;
   auto m = parseModule(context, program);
   assert(m->numStmts() > 0);
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  for (size_t i = startAt; i < m->numStmts(); i++) {
+  for (int i = startAt; i < m->numStmts(); i++) {
     auto argName = "arg" + std::to_string(i-startAt);
     auto stmt = m->stmt(i)->toVariable();
     assert(stmt && stmt->name().str() == argName);
