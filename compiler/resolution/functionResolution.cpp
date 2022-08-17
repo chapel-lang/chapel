@@ -11954,7 +11954,11 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
           // TODO: When we remove this error we get some warnings pointing
           // into module code, can we fix those/improve coverage?
           auto fn = toFnSymbol(val->defPoint->parentSymbol);
-          if (fn && isUserRoutine(fn) && !val->hasFlag(FLAG_UNSAFE)) {
+          bool doEmitError = fn && isUserRoutine(fn) &&
+                             !val->hasFlag(FLAG_UNSAFE) &&
+                             !at->symbol->hasFlag(FLAG_SYNC) &&
+                             !at->symbol->hasFlag(FLAG_SINGLE);
+          if (doEmitError) {
             USR_WARN(call, "failed to locate the runtime type for field "
                            "'%s' when default initializing '%s' - this "
                            "may cause runtime errors",
