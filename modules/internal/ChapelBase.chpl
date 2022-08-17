@@ -2215,11 +2215,12 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   // non-param/param version not necessary since > above works fine for that
-  inline operator >(param a: uint(?w), b: uint(w)) param where a == 0 {
-    return false;
-  }
   inline operator >(param a: uint(?w), b: uint(w)) {
-    return __primitive(">", a, b);
+    if __primitive("==", a, 0) {
+      return false;
+    } else {
+      return __primitive(">", a, b);
+    }
   }
   inline operator >(param a: int(?w), b: int(w)) {
     return __primitive(">", a, b);
@@ -2236,11 +2237,12 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   // param/non-param version not necessary since < above works fine for that
-  inline operator <(a: uint(?w), param b: uint(w)) param where b == 0 {
-    return false;
-  }
   inline operator <(a: uint(?w), param b: uint(w)) {
-    return __primitive("<", a, b);
+    if __primitive("==", b, 0) {
+      return false;
+    } else {
+      return __primitive("<", a, b);
+    }
   }
   inline operator <(a: int(?w), param b: int(w)) {
     return __primitive("<", a, b);
@@ -2257,11 +2259,12 @@ module ChapelBase {
   }
 
   // non-param/param and param/non-param
-  inline operator >=(a: uint(?w), param b: uint(w)) param where b == 0 {
-    return true;
-  }
   inline operator >=(a: uint(?w), param b: uint(w)) {
-    return __primitive(">=", a, b);
+    if __primitive("==", b, 0) {
+      return true;
+    } else {
+      return __primitive(">=", a, b);
+    }
   }
   inline operator >=(a: int(?w), param b: int(w)) {
     return __primitive(">=", a, b);
@@ -2277,11 +2280,12 @@ module ChapelBase {
   }
 
   // non-param/param and param/non-param
-  inline operator <=(param a: uint(?w), b: uint(w)) param where a == 0 {
-    return true;
-  }
   inline operator <=(param a: uint(?w), b: uint(w)) {
-    return __primitive("<=", a, b);
+    if __primitive("==", a, 0) {
+      return true;
+    } else {
+      return __primitive("<=", a, b);
+    }
   }
   inline operator <=(param a: int(?w), b: int(w)) {
     return __primitive("<=", a, b);
