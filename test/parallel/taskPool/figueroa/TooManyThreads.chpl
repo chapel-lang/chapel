@@ -25,8 +25,6 @@ var total: int,
     count: int = numThreads,
      done: sync bool,
     ready: sync bool;
-ensureDefaultInit(ready);
-proc ensureDefaultInit(arg) { }
 
 proc foo (x) {
 
