@@ -741,9 +741,13 @@ module ChapelBase {
   inline proc _cond_test(x: bool) return x;
   inline proc _cond_test(x: int(?w)) return x != 0;
   inline proc _cond_test(x: uint(?w)) return x != 0;
-  inline proc _cond_test(x: sync(?t)) where isBoolType(t) || isIntegralType(t) {
+  inline proc _cond_test(x: sync(?t)) {
     compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
     return _cond_test(x.readFE());
+  }
+  inline proc _cond_test(x: single(?t)) {
+    compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
+    return _cond_test(x.readFF());
   }
 
   inline proc _cond_test(param x: bool) param return x;

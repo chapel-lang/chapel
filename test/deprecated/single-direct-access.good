@@ -21,7 +21,7 @@ single-direct-access.chpl:123: In function 'test12':
 single-direct-access.chpl:128: warning: Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one
 single-direct-access.chpl:138: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
 single-direct-access.chpl:142: In function 'test15':
-single-direct-access.chpl:146: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+single-direct-access.chpl:146: warning: direct reads of single variables are deprecated; please use 'readFF'
 single-direct-access.chpl:138: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
 test2
 a = 2 : int(64)
