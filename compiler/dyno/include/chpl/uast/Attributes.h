@@ -40,18 +40,27 @@ class Attributes final : public AstNode {
  private:
   std::set<PragmaTag> pragmas_;
   bool isDeprecated_;
+  bool isUnstable_; //new
   UniqueString deprecationMessage_;
+  UniqueString unstableMessage_;
 
   // TODO: Do we want to preserve the location of string literals used in
   // pragmas and deprecation messages?
-  Attributes(std::set<PragmaTag> pragmas, bool isDeprecated,
-             UniqueString deprecationMessage)
+  Attributes(std::set<PragmaTag> pragmas, bool isDeprecated,  //add new parameters for unstable -- must update new attributes in other folders as well to take in same # of parameters
+             UniqueString deprecationMessage,
+             bool isUnstable,
+             UniqueString unstableMessage)
     : AstNode(asttags::Attributes),
       pragmas_(std::move(pragmas)),
       isDeprecated_(isDeprecated),
-      deprecationMessage_(deprecationMessage) {
+      deprecationMessage_(deprecationMessage),
+      isUnstable_(isUnstable),
+      unstableMessage_(unstableMessage) {
     if (!deprecationMessage_.isEmpty()) {
       assert(isDeprecated_);
+    }
+    if (!unstableMessage_.isEmpty()) {
+      assert(isUnstable_);
     }
 
     // This might already be a compile-time invariant? Not sure...
@@ -62,11 +71,14 @@ class Attributes final : public AstNode {
     const Attributes* rhs = (const Attributes*)other;
     return this->pragmas_ == rhs->pragmas_ &&
       this->isDeprecated_ == rhs->isDeprecated_ &&
-      this->deprecationMessage_ == rhs->deprecationMessage_;
+      this->deprecationMessage_ == rhs->deprecationMessage_ &&
+      this->isUnstable_ == rhs->isUnstable_ &&
+      this->unstableMessage_ == rhs->unstableMessage_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
     deprecationMessage_.mark(context);
+    unstableMessage_.mark(context);
   }
 
  public:
@@ -75,7 +87,9 @@ class Attributes final : public AstNode {
   static owned<Attributes> build(Builder* builder, Location loc,
                                  std::set<PragmaTag> pragmas,
                                  bool isDeprecated,
-                                 UniqueString deprecationMessage);
+                                 UniqueString deprecationMessage,
+                                 bool isUnstable,
+                                 UniqueString unstableMessage);
 
   /**
     Returns true if the given pragma is set for this attributes.
@@ -104,10 +118,25 @@ class Attributes final : public AstNode {
   }
 
   /**
+    Returns true if the declaration associated with this attributes is
+    unstable.
+  */
+  bool isUnstable() const {
+    return isUnstable_;
+  }
+
+  /**
     Returns a deprecation message, or the empty string if it is not set.
   */
   UniqueString deprecationMessage() const {
     return deprecationMessage_;
+  }
+
+  /**
+    Returns an unstable message, or the empty string if it is not set.
+  */
+  UniqueString unstableMessage() const {
+    return unstableMessage_;
   }
 
 };
