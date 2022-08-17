@@ -2162,16 +2162,10 @@ enum_ls:
     context->appendList($1, $4);
     context->resetAttributePartsState();
   }
-
+|
   unstable_enum_item
   {
     $$ = context->makeList($1);
-    context->resetAttributePartsState();
-  }
-| enum_ls TCOMMA
-  {
-    $$ = $1;
-    context->clearCommentsBefore(@2);
     context->resetAttributePartsState();
   }
 | enum_ls TCOMMA
@@ -2208,12 +2202,12 @@ deprecated_enum_item:
 ;
 
 unstable_enum_item:
-  enum_item
-| TUNSTABLE STRINGLITERAL
+  TUNSTABLE STRINGLITERAL
   {
     context->noteUnstable(@$, $2);
   }
-  enum_item{
+  enum_item
+  {
     $$ = $4;
   }
 | TUNSTABLE
