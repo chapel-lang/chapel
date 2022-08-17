@@ -843,17 +843,12 @@ module ChapelBase {
     }
   }
 
-  proc chpl_canDoGpuInit() param : bool {
-    return CHPL_LOCALE_MODEL=="gpu" &&
-           chpl_defaultGpuArrayInitMethod == ArrayInit.gpuInit;
-  }
-
   proc chpl_shouldDoGpuInit(): bool {
     extern proc chpl_task_getRequestedSubloc(): int(32);
-    if chpl_canDoGpuInit() {
-      return chpl_task_getRequestedSubloc()>=0;
-    }
-    return false;
+    return
+      CHPL_LOCALE_MODEL=="gpu" &&
+      chpl_defaultGpuArrayInitMethod == ArrayInit.gpuInit &&
+      chpl_task_getRequestedSubloc() >= 0;
   }
 
   // s is the number of elements, t is the element type
@@ -916,7 +911,12 @@ module ChapelBase {
         }
       }
       when ArrayInit.gpuInit {
+        // This branch should only occur when we're on a GPU sublocale and the
+        // following `foreach` loop will become a kernel
         foreach i in lo..s-1 {
+          //assertOnGpu(); TODO: this assertion fails for a hello world style
+          // program investigate why (I don't think it's erroring out in user
+          // code but rather something from one of our standard modules).
           pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }

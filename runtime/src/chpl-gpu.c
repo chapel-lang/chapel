@@ -32,6 +32,10 @@ void chpl_gpu_init(void) {
   chpl_gpu_impl_init();
 }
 
+void chpl_gpu_on_std_modules_finished_initializing(void) {
+  chpl_gpu_impl_on_std_modules_finished_initializing();
+}
+
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
@@ -232,6 +236,10 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 
 bool chpl_gpu_is_device_ptr(const void* ptr) {
   return chpl_gpu_impl_is_device_ptr(ptr);
+}
+
+bool chpl_gpu_is_host_ptr(const void* ptr) {
+  return chpl_gpu_impl_is_host_ptr(ptr);
 }
 
 #endif

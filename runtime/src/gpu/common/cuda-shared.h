@@ -48,7 +48,7 @@ bool chpl_gpu_common_is_device_ptr(const void* ptr) {
 
   unsigned int res;
 
-#ifdef CHPL_GPU_MEM_UVA
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     // We call CUDA_CALL later, because we want to treat some error codes
     //   // separately
   CUresult ret_val = cuPointerGetAttribute(&res, CU_POINTER_ATTRIBUTE_MAPPED,

@@ -326,14 +326,20 @@ void chpl_std_module_init(void) {
     // Initialize the internal modules.
     chpl__init_PrintModuleInitOrder(0, myFilename);
     chpl__init_ChapelStandard(0, myFilename);
+
+    // We want to treat how we allocate arrays on GPUs differently
+    // for standard modules so we start the runtime assuming we're doing
+    // all initialization for the standard modules until this callback
+    // functiong gets called.  (see comments on the `impl` version of this
+    // function for more details on why).
+    #ifdef HAS_GPU_LOCALE
+    chpl_gpu_on_std_modules_finished_initializing();
+    #endif
+
     // Note that in general, module code can contain "on" clauses
     // and should therefore not be called before the call to
     // chpl_comm_startPollingTask().
     //
-#ifdef HAS_GPU_LOCALE
-    chpl_gpu_enable_device_alloc();
-#endif
-
     //
     // Permit the tasking layer to do anything it would like to now that
     // the standard modules are initialized.
@@ -347,15 +353,6 @@ void chpl_std_module_init(void) {
     chpl_rt_preUserCodeHook();
     chpl_rt_postUserCodeHook();
   }
-
-}
-
-void chpl_std_module_finalize(void) {
-  // TODO do we need this?
-#ifdef HAS_GPU_LOCALE
-    chpl_gpu_disable_device_alloc();
-#endif
-
 }
 
 //

@@ -46,6 +46,7 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 }
 
 void chpl_gpu_init(void);
+void chpl_gpu_on_std_modules_finished_initializing();
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,
@@ -77,9 +78,7 @@ void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n);
 void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n);
 
 bool chpl_gpu_is_device_ptr(const void* ptr);
-
-void chpl_gpu_enable_device_alloc(void);
-void chpl_gpu_disable_device_alloc(void);
+bool chpl_gpu_is_host_ptr(const void* ptr);
 
 // TODO do we really need to expose this?
 size_t chpl_gpu_get_alloc_size(void* ptr);

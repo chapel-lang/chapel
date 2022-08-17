@@ -75,13 +75,15 @@ static void chpl_gpu_ensure_context() {
 void chpl_gpu_impl_init() {
   int         num_devices;
 
-  CHPL_GPU_DEBUG("Initing GPU layer. (Memtype: %s)\n",
-#ifdef CHPL_GPU_MEM_UVA
-      "uva"
-#else
-      "uvm"
-#endif
-      );
+  CHPL_GPU_DEBUG("Initializing GPU layer.\n");
+  CHPL_GPU_DEBUG("  Memory allocation strategy for ---\n");
+  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+    CHPL_GPU_DEBUG("    array data: device memory\n");
+    CHPL_GPU_DEBUG("         other: page-locked host memory\n");
+  #else
+    CHPL_GPU_DEBUG("    array data: unified memory\n");
+    CHPL_GPU_DEBUG("         other: unified memory\n");
+  #endif
 
   // CUDA initialization
   CUDA_CALL(cuInit(0));
@@ -103,8 +105,55 @@ void chpl_gpu_impl_init() {
   }
 }
 
+static bool chpl_gpu_device_alloc = false;
+
+void chpl_gpu_impl_on_std_modules_finished_initializing(void) {
+  // The standard module has some memory that we allocate when we  are "on" a
+  // GPU sublocale when in fact we want to allocate it on the device. (As of
+  // the writing of this comment this is in `helpSetupLocaleGPU` in
+  // `LocaleModelHelpSetup`).
+  //
+  // Basically during the setup of the locale model we need to be "on" a given
+  // sublocale when we instantiate the object for it (the expectation is that
+  // the widepointer for a sublocale appears to be on that sublocale),
+  // but in practice we don't actually want the data for the GPU sublocale
+  // object to be on the GPU).
+  //
+  // It's a bit of a hack but to handle this we start off setting
+  // `chpl_gpu_device_alloc` to false indicating that we shouldn't actually
+  // do any allocations on the device. Once the standard modules have finished
+  // loading this callback function
+  // (`chpl_gpu_impl_on_std_modules_finished_initializing`) gets called and we
+  // flip the flag.
+  chpl_gpu_device_alloc = true;
+}
+
+
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   return chpl_gpu_common_is_device_ptr(ptr);
+}
+
+bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
+  unsigned int res;
+  CUresult ret_val = cuPointerGetAttribute(&res,
+                                           CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+                                           (CUdeviceptr)ptr);
+
+  if (ret_val != CUDA_SUCCESS) {
+    if (ret_val == CUDA_ERROR_INVALID_VALUE ||
+        ret_val == CUDA_ERROR_NOT_INITIALIZED ||
+        ret_val == CUDA_ERROR_DEINITIALIZED) {
+      return true;
+    }
+    else {
+      CUDA_CALL(ret_val);
+    }
+  }
+  else {
+    return res == CU_MEMORYTYPE_HOST;
+  }
+
+  return true;
 }
 
 static void chpl_gpu_launch_kernel_help(int ln,
@@ -131,15 +180,17 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   CHPL_GPU_DEBUG("Creating kernel parameters\n");
 
-  int* gpu_alloc_map = chpl_malloc(nargs*sizeof(int));
-
+  // Keep track of kernel parameters we dynamically allocate memory for so
+  // later on we know what we need to free.
+  bool* was_memory_dynamically_allocated_for_kernel_param =
+    chpl_malloc(nargs*sizeof(bool));
 
   for (i=0 ; i<nargs ; i++) {
     void* cur_arg = va_arg(args, void*);
     size_t cur_arg_size = va_arg(args, size_t);
 
     if (cur_arg_size > 0) {
-      gpu_alloc_map[i] = 1;
+      was_memory_dynamically_allocated_for_kernel_param[i] = true;
 
       // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
       kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
@@ -154,7 +205,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
                    i, *kernel_params[i]);
     }
     else {
-      gpu_alloc_map[i] = 0;
+      was_memory_dynamically_allocated_for_kernel_param[i] = false;
       kernel_params[i] = cur_arg;
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p\n",
                    i, kernel_params[i]);
@@ -177,8 +228,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   // free GPU memory allocated for kernel parameters
   for (i=0 ; i<nargs ; i++) {
-    if (gpu_alloc_map[i] == 1) {
-      chpl_gpu_mem_free(*kernel_params[i], 0, 0);
+    if (was_memory_dynamically_allocated_for_kernel_param[i]) {
+      chpl_gpu_mem_free(*kernel_params[i], ln, fn);
     }
   }
 
@@ -211,33 +262,9 @@ void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                               nargs, args);
 }
 
-static bool chpl_gpu_allocated_on_host(const void* memAlloc) {
-  unsigned int res;
-  CUresult ret_val = cuPointerGetAttribute(&res,
-                                           CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-                                           (CUdeviceptr)memAlloc);
-
-  if (ret_val != CUDA_SUCCESS) {
-    if (ret_val == CUDA_ERROR_INVALID_VALUE ||
-        ret_val == CUDA_ERROR_NOT_INITIALIZED ||
-        ret_val == CUDA_ERROR_DEINITIALIZED) {
-      return true;
-    }
-    else {
-      CUDA_CALL(ret_val);
-    }
-  }
-  else {
-    return res == CU_MEMORYTYPE_HOST;
-  }
-
-  return true;
-}
-
-
 void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
-  bool dst_on_host = chpl_gpu_allocated_on_host(dst);
-  bool src_on_host = chpl_gpu_allocated_on_host(src);
+  bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
+  bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
 
   if (!dst_on_host && !src_on_host) {
     chpl_gpu_impl_copy_device_to_device(dst, src, n);
@@ -275,16 +302,6 @@ void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
   CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, n));
 }
 
-static bool chpl_gpu_device_alloc = false;
-
-void chpl_gpu_enable_device_alloc() {
-  chpl_gpu_device_alloc = true;
-}
-
-void chpl_gpu_disable_device_alloc() {
-  chpl_gpu_device_alloc = false;
-}
-
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                int32_t lineno, int32_t filename) {
   chpl_gpu_ensure_context();
@@ -295,7 +312,7 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
   CUdeviceptr ptr = 0;
   if (size > 0) {
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
-#ifdef CHPL_GPU_MEM_UVA
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_device_alloc) {
       CUDA_CALL(cuMemAlloc(&ptr, size));
     }
@@ -323,7 +340,7 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 void* chpl_gpu_impl_mem_alloc(size_t size) {
   chpl_gpu_ensure_context();
 
-#ifdef CHPL_GPU_MEM_UVA
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   void* ptr = 0;
   CUDA_CALL(cuMemAllocHost(&ptr, size));
 #else
@@ -340,14 +357,14 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
 
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
-#ifdef CHPL_GPU_MEM_UVA
-    if (chpl_gpu_allocated_on_host(memAlloc)) {
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+    if (chpl_gpu_impl_is_host_ptr(memAlloc)) {
       CUDA_CALL(cuMemFreeHost(memAlloc));
     }
     else {
 #endif
     CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
-#ifdef CHPL_GPU_MEM_UVA
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     }
 #endif
   }

@@ -26,6 +26,7 @@ extern "C" {
 #endif
 
 void chpl_gpu_impl_init(void);
+void chpl_gpu_impl_on_std_modules_finished_initializing(void);
 
 void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                  const char* fatbinData, const char* name,
@@ -49,6 +50,8 @@ void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n);
 
 // module code uses this to pick the right deallocator for a pointer
 bool chpl_gpu_impl_is_device_ptr(const void* ptr);
+
+bool chpl_gpu_impl_is_host_ptr(const void* ptr);
 
 // TODO do we really need to expose this?
 size_t chpl_gpu_impl_get_alloc_size(void* ptr);

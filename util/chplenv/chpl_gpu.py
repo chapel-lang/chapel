@@ -29,12 +29,12 @@ def get_cuda_path():
 
     return ""
 
-def get_cuda_memtype():
-    memtype = os.environ.get("CHPL_CUDA_MEMTYPE")
+def get_gpu_mem_strategy():
+    memtype = os.environ.get("CHPL_GPU_MEM_STRATEGY")
     if memtype:
         # TODO check if meaningful
         return memtype
-    return "uvm"
+    return "page_migration"
 
 
 def get_cuda_libdevice_path():

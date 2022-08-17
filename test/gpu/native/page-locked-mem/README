@@ -1,7 +1,8 @@
 This directory is for tests that can run with page-locked-memory
-(CHPL_CUDA_MEMTYPE=uva) at the time we are enabling it. Down the road, as we
-have better support for GET/PUT and local data movement, we expect all tests to
-pass with that setting, and that setting to be the default.
+(CHPL_CUDA_MEM_STRATEGY=array_data_on_device) at the time we are enabling it.
+Down the road, as we have better support for GET/PUT and local data movement,
+we expect all tests to pass with that setting, and that setting to be the
+default.
 
 These tests are not the only ones that pass, but I didn't want to create full
 copy of the suite for now.
