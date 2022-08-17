@@ -5524,6 +5524,9 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
     return;
   }
 
+  bool forGenericInit = candidate->fn->isInitializer() ||
+                        candidate->fn->isCopyInit();
+
   Vec<Type*> normalizedActualTypes;
 
   for (int k = 0; k < DC.actuals->n; k++) {
@@ -5564,6 +5567,11 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
 
     if (formal->originalIntent == INTENT_OUT) {
       continue; // type comes from call site so ignore it here
+    }
+
+    // Initializer work-around: Skip _mt/_this for generic initializers
+    if (forGenericInit && k < 2) {
+      continue;
     }
 
     Type* actualVt = normalizedActualTypes.v[k];
