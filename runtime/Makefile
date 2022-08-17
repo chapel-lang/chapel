@@ -61,7 +61,7 @@ $(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv $(CHPL_MAKE_HOME)/util/c
 	# save output of printchplenv into #defines but munge away
 	# characters that can't be in #defines
 	@$(CHPL_MAKE_HOME)/util/printchplenv --runtime --no-tidy --anonymize --simple | \
-	  sed 's/^[ \t]*//;s/[ \t]*$$//' | \
+	  sed 's/^ *//;s/ *$$//' | \
 	  sed 's/[^0-9A-Za-z]/_/g' | \
 	  awk '{ print "#define " toupper($$1) }' >> $(CHPL_ENV_HEADER)
 	@echo "#endif /* _CHPL_ENV_GEN_H_ */" >> $(CHPL_ENV_HEADER)

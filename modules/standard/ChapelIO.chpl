@@ -167,25 +167,21 @@ module ChapelIO {
     // i is the field number of interest
     private
     proc ioFieldNameEqLiteral(ch, type t, param i) {
-      var st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      const st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       if st == QIO_AGGREGATE_FORMAT_JSON {
-        return new ioLiteral('"' +
-                             __primitive("field num to name", t, i) +
-                             '":');
+        return '"' + __primitive("field num to name", t, i) + '":';
       } else {
-        return new ioLiteral(__primitive("field num to name", t, i) + " = ");
+        return __primitive("field num to name", t, i) + " = ";
       }
     }
 
     private
     proc ioFieldNameLiteral(ch, type t, param i) {
-      var st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      const st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       if st == QIO_AGGREGATE_FORMAT_JSON {
-        return new ioLiteral('"' +
-                             __primitive("field num to name", t, i) +
-                             '"');
+        return '"' + __primitive("field num to name", t, i) + '"';
       } else {
-        return new ioLiteral(__primitive("field num to name", t, i));
+        return __primitive("field num to name", t, i);
       }
     }
 
@@ -210,14 +206,13 @@ module ChapelIO {
         for param i in 1..num_fields {
           if isIoField(x, i) {
             if !isBinary {
-              var comma = new ioLiteral(", ");
-              if !first then writer.writeIt(comma);
+              if !first then writer._writeLiteral(", ");
 
-              var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
-              writer.writeIt(eq);
+              const eq = ioFieldNameEqLiteral(writer, t, i);
+              writer._writeLiteral(eq);
             }
 
-            writer.writeIt(__primitive("field by num", x, i));
+            writer.write(__primitive("field by num", x, i));
 
             first = false;
           }
@@ -232,10 +227,10 @@ module ChapelIO {
               // store the union ID
               write(id);
             } else {
-              var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
-              writer.writeIt(eq);
+              const eq = ioFieldNameEqLiteral(writer, t, i);
+              writer._writeLiteral(eq);
             }
-            writer.writeIt(__primitive("field by num", x, i));
+            writer.write(__primitive("field by num", x, i));
           }
         }
       }
@@ -254,21 +249,13 @@ module ChapelIO {
     pragma "no doc"
     proc writeThisDefaultImpl(writer, x:?t) throws {
       if !writer.binary() {
-        var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        var start:ioLiteral;
-        if st == QIO_AGGREGATE_FORMAT_JSON {
-          start = new ioLiteral("{");
-        } else if st == QIO_AGGREGATE_FORMAT_CHPL {
-          start = new ioLiteral("new " + t:string + "(");
-        } else {
-          // the default 'braces' type
-          if isClassType(t) {
-            start = new ioLiteral("{");
-          } else {
-            start = new ioLiteral("(");
-          }
-        }
-        writer.writeIt(start);
+        const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        const start = if st == QIO_AGGREGATE_FORMAT_JSON then "{"
+                      else if st == QIO_AGGREGATE_FORMAT_CHPL
+                      then "new " + t:string + "("
+                      else if isClassType(t) then "{"
+                      else "(";
+        writer._writeLiteral(start);
       }
 
       var first = true;
@@ -276,20 +263,12 @@ module ChapelIO {
       writeThisFieldsDefaultImpl(writer, x, first);
 
       if !writer.binary() {
-        var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        var end:ioLiteral;
-        if st == QIO_AGGREGATE_FORMAT_JSON {
-          end = new ioLiteral("}");
-        } else if st == QIO_AGGREGATE_FORMAT_CHPL {
-          end = new ioLiteral(")");
-        } else {
-          if isClassType(t) {
-            end = new ioLiteral("}");
-          } else {
-            end = new ioLiteral(")");
-          }
-        }
-        writer.writeIt(end);
+        const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        const end = if st == QIO_AGGREGATE_FORMAT_JSON then "}"
+                    else if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
+                    else if isClassType(t) then "}"
+                    else ")";
+        writer._writeLiteral(end);
       }
     }
 
@@ -304,11 +283,10 @@ module ChapelIO {
 
       while true {
         if needsComma {
-          var comma = new ioLiteral(",", true);
 
           // Try reading a comma. If we don't, break out of the loop.
           try {
-            reader.readIt(comma);
+            reader._readLiteral(",", true);
             needsComma = false;
           } catch err: BadFormatError {
             break;
@@ -378,8 +356,7 @@ module ChapelIO {
           // Try reading a comma. If we don't, then break.
           if needsComma then
             try {
-              var comma = new ioLiteral(",", true);
-              reader.readIt(comma);
+              reader._readLiteral(",", true);
               needsComma = false;
             } catch err: BadFormatError {
               // Break out of the loop if we didn't read a comma.
@@ -407,10 +384,9 @@ module ChapelIO {
             if !isIoField(x, i) || hasReadFieldName || readField[i-1] then
               continue;
 
-            var fieldName = ioFieldNameLiteral(reader, t, i);
-
             try {
-              reader.readIt(fieldName);
+              const fieldName = ioFieldNameLiteral(reader, t, i);
+              reader._readLiteral(fieldName);
             } catch err: SystemError {
               // Try reading again with a different union element.
               if err.err == EFORMAT || err.err == EEOF then continue;
@@ -420,11 +396,10 @@ module ChapelIO {
             hasReadFieldName = true;
             needsComma = true;
 
-            var equalSign = if st == QIO_AGGREGATE_FORMAT_JSON
-              then new ioLiteral(":", true)
-              else new ioLiteral("=", true);
+            const equalSign = if st == QIO_AGGREGATE_FORMAT_JSON then ":"
+                              else "=";
 
-            try reader.readIt(equalSign);
+            try reader._readLiteral(equalSign, true);
 
             try reader.readIt(__primitive("field by num", x, i));
             readField[i-1] = true;
@@ -482,11 +457,9 @@ module ChapelIO {
         for param i in 1..numFields {
           if !isIoField(x, i) then continue;
 
-          var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-          var fieldName = ioFieldNameLiteral(reader, t, i);
-
           try {
-            reader.readIt(fieldName);
+            const fieldName = ioFieldNameLiteral(reader, t, i);
+            reader._readLiteral(fieldName);
           } catch err: SystemError {
 
             // Try reading again with a different union element.
@@ -496,13 +469,14 @@ module ChapelIO {
 
           hasFoundAtLeastOneField = true;
 
-          var eq = if st == QIO_AGGREGATE_FORMAT_JSON
-            then new ioLiteral(":", true)
-            else new ioLiteral("=", true);
+          const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+          const eq = if st == QIO_AGGREGATE_FORMAT_JSON then ":"
+                     else "=";
 
-          try readIt(eq);
+          try reader._readLiteral(eq, true);
 
           // We read the 'name = ', so now read the value!
+          __primitive("set_union_id", x, i);
           try reader.readIt(__primitive("field by num", x, i));
         }
 
@@ -521,11 +495,11 @@ module ChapelIO {
       const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
 
       if !reader.binary() {
-        var start = if st == QIO_AGGREGATE_FORMAT_CHPL
-          then new ioLiteral("new " + t:string + "(")
-          else new ioLiteral("{");
+        const start = if st == QIO_AGGREGATE_FORMAT_CHPL
+                      then "new " + t:string + "("
+                      else "{";
 
-        try reader.readIt(start);
+        try reader._readLiteral(start);
       }
 
       var needsComma = false;
@@ -537,11 +511,10 @@ module ChapelIO {
       try skipFieldsAtEnd(reader, needsComma);
 
       if !reader.binary() {
-        var end = if st == QIO_AGGREGATE_FORMAT_CHPL
-          then new ioLiteral(")")
-          else new ioLiteral("}");
+        const end = if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
+                    else "}";
 
-        try reader.readIt(end);
+        try reader._readLiteral(end);
       }
     }
 
@@ -550,18 +523,12 @@ module ChapelIO {
       const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
 
       if !reader.binary() {
-        var start: ioLiteral;
+        const start = if st ==  QIO_AGGREGATE_FORMAT_CHPL
+                      then "new " + t:string + "("
+                      else if st ==  QIO_AGGREGATE_FORMAT_JSON then "{"
+                      else "(";
 
-        select st {
-          when QIO_AGGREGATE_FORMAT_CHPL do
-            start = new ioLiteral("new " + t:string + "(");
-          when QIO_AGGREGATE_FORMAT_JSON do
-            start = new ioLiteral("{");
-          otherwise do
-            start = new ioLiteral("(");
-        }
-
-        try reader.readIt(start);
+        try reader._readLiteral(start);
       }
 
       var needsComma = false;
@@ -570,11 +537,10 @@ module ChapelIO {
       try skipFieldsAtEnd(reader, needsComma);
 
       if !reader.binary() {
-        var end: ioLiteral = if st == QIO_AGGREGATE_FORMAT_JSON
-          then new ioLiteral("}")
-          else new ioLiteral(")");
+        const end = if st == QIO_AGGREGATE_FORMAT_JSON then "}"
+                    else ")";
 
-        try reader.readIt(end);
+        try reader._readLiteral(end);
       }
     }
 
@@ -616,53 +582,53 @@ module ChapelIO {
   // Moved here to avoid circular dependencies in ChapelTuple.
   pragma "no doc"
   proc _tuple._readWriteHelper(f) throws {
-    var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
-    var start:ioLiteral;
-    var comma:ioLiteral;
-    var comma1tup:ioLiteral;
-    var end:ioLiteral;
-    var binary = f.binary();
+    const st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
+    const binary = f.binary();
 
-    if st == QIO_TUPLE_FORMAT_SPACE {
-      start = new ioLiteral("");
-      comma = new ioLiteral(" ");
-      comma1tup = new ioLiteral("");
-      end = new ioLiteral("");
-    } else if st == QIO_TUPLE_FORMAT_JSON {
-      start = new ioLiteral("[");
-      comma = new ioLiteral(", ");
-      comma1tup = new ioLiteral("");
-      end = new ioLiteral("]");
-    } else {
-      start = new ioLiteral("(");
-      comma = new ioLiteral(", ");
-      comma1tup = new ioLiteral(",");
-      end = new ioLiteral(")");
+    // Returns a 4-tuple containing strings representing:
+    // - start of a tuple
+    // - the comma/separator between elements
+    // - a comma/separator for 1-tuples
+    // - end of a tuple
+    proc getLiterals() : 4*string {
+      if st == QIO_TUPLE_FORMAT_SPACE {
+        return ("", " ", "", "");
+      } else if st == QIO_TUPLE_FORMAT_JSON {
+        return ("[", ", ", "", "]");
+      } else {
+        return ("(", ", ", ",", ")");
+      }
     }
+
+    const (start, comma, comma1tup, end) = getLiterals();
 
     proc helper(const ref arg) throws where f.writing { f.write(arg); }
     proc helper(ref arg) throws where !f.writing { arg = f.read(arg.type); }
 
+    proc rwLiteral(lit:string) throws {
+      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+    }
+
     if !binary {
-      f <~> start;
+      rwLiteral(start);
     }
     if size > 1 {
       helper(this(0));
       for param i in 1..size-1 {
         if !binary {
-          f <~> comma;
+          rwLiteral(comma);
         }
         helper(this(i));
       }
     } else if size == 1 {
       helper(this(0));
       if !binary then
-        f <~> comma1tup;
+        rwLiteral(comma1tup);
     } else {
       // size < 1, print nothing
     }
     if !binary {
-      f <~> end;
+      rwLiteral(end);
     }
   }
 
@@ -680,24 +646,24 @@ module ChapelIO {
 
     if hasLowBound() then
       f.write(lowBound);
-    f <~> new ioLiteral("..");
+    f._writeLiteral("..");
     if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
-        f <~> new ioLiteral("<");
+        f._writeLiteral("<");
         f.write(lowBound);
       } else {
         f.write(highBound);
       }
     }
     if stride != 1 {
-      f <~> new ioLiteral(" by ");
+      f._writeLiteral(" by ");
       f.write(stride);
     }
 
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if ! alignCheckRange.isNaturallyAligned() && aligned {
-      f <~> new ioLiteral(" align ");
+      f._writeLiteral(" align ");
       f.write(chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride)));
     }
   }
@@ -706,17 +672,17 @@ module ChapelIO {
   proc ref range.readThis(f) throws {
     if hasLowBound() then _low = f.read(_low.type);
 
-    f <~> new ioLiteral("..");
+    f._readLiteral("..");
 
     if hasHighBound() then _high = f.read(_high.type);
 
     if stride != 1 {
-      f <~> new ioLiteral(" by ");
+      f._readLiteral(" by ");
       stride = f.read(stride.type);
     }
 
     try {
-      f <~> new ioLiteral(" align ");
+      f._readLiteral(" align ");
 
       if stridable {
         _alignment = f.read(intIdxType);
@@ -731,10 +697,7 @@ module ChapelIO {
 
   pragma "no doc"
   override proc LocaleModel.writeThis(f) throws {
-    // Most classes will define it like this:
-    //      f <~> name;
-    // but here it is defined thus for backward compatibility.
-    f <~> new ioLiteral("LOCALE");
+    f._writeLiteral("LOCALE");
     f.write(chpl_id());
   }
 

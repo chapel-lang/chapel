@@ -87,9 +87,6 @@ var B: [0..#3] MyRecord;
    - f is a Writer or a Reader
    - the compiler will generate readThis/writeThis for you if you don't
      provide one
-   - the I/O operator <~> is available to read or write (depending
-     on which situation we are being called in). This operator will soon
-     be deprecated
  */
 proc MyRecord.readThis(f) throws {
   readWriteHelper(f);
@@ -100,10 +97,14 @@ proc MyRecord.writeThis(f) throws {
 }
 
 proc MyRecord.readWriteHelper(f) throws {
+  proc rwLiteral(lit:string) {
+    if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+  }
+
   if f.writing then f.write(i); else i = f.read(int);
-  f <~> new ioLiteral("\t");
+  rwLiteral("\t");
   if f.writing then f.write(r); else r = f.read(real);
-  f <~> new ioLiteral("\t");
+  rwLiteral("\t");
 
   // When doing the string I/O, we need to specify that we'd like
   // the string to be single-quoted. Unfortunately, readf is
@@ -113,7 +114,7 @@ proc MyRecord.readWriteHelper(f) throws {
   // In the future, we hope to allow readf in this situation. 
   if f.writing then f.write(s); else s = f.read(string);
 
-  f <~> new ioLiteral("\n");
+  rwLiteral("\n");
 }
 
 {

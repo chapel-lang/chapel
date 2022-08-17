@@ -3729,6 +3729,34 @@ proc channel.writeIt(const x) throws {
       this.readIt(iolit);
   }
 
+  pragma "no doc"
+  inline
+  proc channel._readLiteral(lit:string, ignoreWhitespace=true) throws {
+    var iolit = new ioLiteral(lit, ignoreWhitespace);
+    this.readIt(iolit);
+  }
+
+  pragma "no doc"
+  inline
+  proc channel._writeLiteral(lit:string) throws {
+    var iolit = new ioLiteral(lit);
+    this.writeIt(iolit);
+  }
+
+  pragma "no doc"
+  inline
+  proc channel._readNewline() throws {
+    var ionl = new ioNewline(true);
+    this.readIt(ionl);
+  }
+
+  pragma "no doc"
+  inline
+  proc channel._writeNewline() throws {
+    var ionl = new ioNewline(true);
+    this.writeIt(ionl);
+  }
+
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
@@ -4119,7 +4147,7 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
 // Does not validate that the string has valid encoding -- the call
 // site should do that.
 // Assumes we are already on the locale with the channel and that
-// it is alrady locked.
+// it is already locked.
 private proc readStringBytesData(ref s /*: string or bytes*/,
                                  _channel_internal:qio_channel_ptr_t,
                                  nBytes: int,
@@ -4265,7 +4293,7 @@ proc channel.readLine(ref b: bytes,
     var err: syserr = ENOERR;
     var foundNewline = false;
     while !foundNewline {
-      // read a sigle byte
+      // read a single byte
       got = qio_channel_read_byte(false, this._channel_internal);
       if got == -EEOF {
         // encountered EOF

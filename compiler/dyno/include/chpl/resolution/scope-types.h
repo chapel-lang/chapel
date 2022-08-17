@@ -330,7 +330,7 @@ class VisibilitySymbols {
     ALL_CONTENTS,
     /** only the contents of the scope named in names */
     ONLY_CONTENTS,
-    /** contexnts of the scope except the contents named in names
+    /** contents of the scope except the contents named in names
         (no renaming) */
     CONTENTS_EXCEPT,
   };

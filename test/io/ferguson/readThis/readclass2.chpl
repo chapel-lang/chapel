@@ -6,13 +6,13 @@ class mything {
 
   proc readThis(r) throws {
     x = r.read(int);
-    r <~> new ioLiteral(" ");
+    r._readLiteral(" ");
     y = r.read(int);
   }
 
   proc writeThis(w) throws {
     w.write(x);
-    w <~> new ioLiteral(" ");
+    w._writeLiteral(" ");
     w.write(y);
   }
 }

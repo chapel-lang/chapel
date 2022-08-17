@@ -3470,7 +3470,7 @@ module BigInteger {
 
   /*
    An `InversionError` is thrown if a :proc:`bigint.invert()` is attempted with
-   invalid arguments that result in a non-existant inverse. Specifically,
+   invalid arguments that result in a non-existent inverse. Specifically,
    if the arguments cause a divide by zero, this error notifies the caller
    that the internal value of the :record:`bigint` was left in an undefined state.
    */

@@ -86,6 +86,13 @@ __device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
   // TODO
 }
 
+__device__ __host__ static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
+
+__device__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) { /* no op */ }
+__host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
+  chpl_error("assertOnGpu() failed", lineno, filenameIdx);
+}
+
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_INCLUDES_H
