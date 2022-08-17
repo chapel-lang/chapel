@@ -1277,7 +1277,7 @@ operator :(r: range(?), type t: range(?)) {
   proc range.interior(offset: integral)
   {
     if boundsChecking then
-      if offset > this.sizeAs(uint) then
+      if abs(offset) > this.sizeAs(uint) then
         HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.sizeAs(uint):string);
 
     const i = offset.safeCast(intIdxType);
