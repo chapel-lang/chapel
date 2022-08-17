@@ -5664,6 +5664,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
   // If index i is set then we can skip testing function F_i because
   // we already know it can not be the best match.
   std::vector<bool> notBest(candidates.n, false);
+
+  /*
   // If index i is set we have ruled out that function
   std::vector<bool> discarded(candidates.n, false);
 
@@ -5672,6 +5674,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
     // to a type not mentioned at the call site
     int minImpConvToTypeNotMent = INT_MAX;
     int maxImpConvToTypeNotMent = INT_MIN;
+    int minImpConv = INT_MAX;
+    int maxImpConv = INT_MIN;
     for (int i = 0; i < candidates.n; ++i) {
       ResolutionCandidate* candidate = candidates.v[i];
 
@@ -5687,12 +5691,20 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       if (nImpConvToTypeNotMent > maxImpConvToTypeNotMent) {
         maxImpConvToTypeNotMent = nImpConvToTypeNotMent;
       }
+
+      if (nImplicitConversions < minImpConv) {
+        minImpConv = nImplicitConversions;
+      }
+      if (nImplicitConversions > maxImpConv) {
+        maxImpConv = nImplicitConversions;
+      }
+
     }
 
     // if the min and max differ, discard any candidates
     // that have more implicit conversions to a type not mentioned
     // at the call site than the minumum.
-    if (minImpConvToTypeNotMent != maxImpConvToTypeNotMent) {
+    if (minImpConv != maxImpConv) {
       for (int i = 0; i < candidates.n; ++i) {
         EXPLAIN("##########################\n");
         EXPLAIN("# Filtering function %d #\n", i);
@@ -5707,7 +5719,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
         countImplicitConversions(candidate, DC,
                                  nImplicitConversions, nImpConvToTypeNotMent);
 
-        if (nImpConvToTypeNotMent > minImpConvToTypeNotMent) {
+        if (nImplicitConversions > minImpConv) {
           EXPLAIN("X: Fn %d has too many conversions so is filtered out\n", i);
           discarded[i] = true;
         } else {
@@ -5715,7 +5727,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
         }
       }
     }
-  }
+  }*/
 
   for (int i = 0; i < candidates.n; ++i) {
     ResolutionCandidate* candidate1         = candidates.v[i];
@@ -5723,9 +5735,10 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
 
     bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
 
+    /*
     if (discarded[i]) {
       continue;
-    }
+    }*/
 
     EXPLAIN("##########################\n");
     EXPLAIN("# Considering function %d #\n", i);
@@ -5742,9 +5755,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       if (i == j) {
         continue;
       }
-      if (discarded[j]) {
+      /*if (discarded[j]) {
         continue;
-      }
+      }*/
 
       EXPLAIN("Comparing to function %d\n", j);
       EXPLAIN("-----------------------\n");
@@ -5941,24 +5954,40 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
         prefer2 = fn2where;
       }
     }
+
+    // tie-breaking in case it is not yet established which to prefer
+    if (!prefer1 && !prefer2) {
+      int nImplicitConversions1 = 0;
+      int nImpConvToTypeNotMent1 = 0;
+      int nImplicitConversions2 = 0;
+      int nImpConvToTypeNotMent2 = 0;
+
+      countImplicitConversions(candidate1, DC,
+                               nImplicitConversions1, nImpConvToTypeNotMent1);
+      countImplicitConversions(candidate2, DC,
+                               nImplicitConversions2, nImpConvToTypeNotMent2);
+
+      if (nImplicitConversions1 != nImplicitConversions2) {
+        EXPLAIN("\nU: preferring function with fewer implicit conversions\n");
+        prefer1 = nImplicitConversions1 < nImplicitConversions2;
+        prefer2 = nImplicitConversions2 < nImplicitConversions1;
+      }
+    }
   }
 
   INT_ASSERT(!(prefer1 && prefer2));
 
   if (prefer1) {
-    EXPLAIN("\nW: Fn %d is more specific than Fn %d\n",
-                                i, j);
+    EXPLAIN("\nW: Fn %d is more specific than Fn %d\n", i, j);
     return -1;
 
   } else if (prefer2) {
-    EXPLAIN("\nW: Fn %d is less specific than Fn %d\n",
-                                i, j);
+    EXPLAIN("\nW: Fn %d is less specific than Fn %d\n", i, j);
     return 1;
 
   } else {
     // Neither is more specific
-    EXPLAIN("\nW: Fn %d and Fn %d are equally specific\n",
-                                i, j);
+    EXPLAIN("\nW: Fn %d and Fn %d are equally specific\n", i, j);
     return 0;
   }
 }
