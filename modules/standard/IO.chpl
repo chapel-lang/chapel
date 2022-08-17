@@ -2985,8 +2985,16 @@ deprecated "lines with a local_style argument is deprecated"
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints:iohints=IOHINT_NONE,
                 in local_style:iostyle) throws {
-  return this.linesHelper(locking, start, end, new ioHintSet(hints),
+  return this.linesHelper(locking, start..end, new ioHintSet(hints),
                           local_style: iostyleInternal);
+}
+
+pragma "last resort"
+deprecated "file.lines with a start and/or end argument is deprecated.  Please use the new region argument instead"
+proc file.lines(param locking:bool = true, start:int(64) = 0,
+                end:int(64) = max(int(64)),
+                hints = ioHintSet.empty) throws {
+  return this.lines(locking, start..end, hints);
 }
 
 /* Iterate over all of the lines in a file.
@@ -2995,23 +3003,22 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
 
    :throws SystemError: Thrown if an object could not be returned.
  */
-proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)),
+proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws {
-  return this.linesHelper(locking, start, end, hints);
+  return this.linesHelper(locking, region, hints);
 }
 
 pragma "last resort"
 deprecated "The 'iohints' type is deprecated; please use a variant of 'file.lines' that takes an 'ioHintSet' instead."
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)),
-                hints:iohints=IOHINT_NONE) throws {
-  return this.lines(locking, start, end, new ioHintSet(hints));
+                hints:iohints) throws {
+  return this.lines(locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
-proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
-                      end:int(64) = max(int(64)), hints = ioHintSet.empty,
+proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
+                      hints = ioHintSet.empty,
                       in local_style:iostyleInternal = this._style) throws {
   local_style.string_format = QIO_STRING_FORMAT_TOEND;
   local_style.string_end = 0x0a; // '\n'
@@ -3021,7 +3028,20 @@ proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
   var err:syserr = ENOERR;
   on this.home {
     try this.checkAssumingLocal();
-    var ch = new channel(false, kind, locking, this, err, hints, start, end, local_style);
+    var ch: channel;
+    if (region.hasLowBound() && region.hasHighBound()) {
+      ch = new channel(false, kind, locking, this, err, hints, region.low,
+                       region.high, local_style);
+    } else if (region.hasLowBound()) {
+      ch = new channel(false, kind, locking, this, err, hints, region.low,
+                       max(int(64)), local_style);
+    } else if (region.hasHighBound()) {
+      ch = new channel(false, kind, locking, this, err, hints, 0, region.high,
+                       local_style);
+    } else {
+      ch = new channel(false, kind, locking, this, err, hints, 0, max(int(64)),
+                       local_style);
+    }
     ret = new itemReaderInternal(string, kind, locking, ch);
   }
   if err then try ioerror(err, "in file.lines", this._tryGetPath());

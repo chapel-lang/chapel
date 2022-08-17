@@ -25,3 +25,40 @@ var openreaderCheck3 = openreader(filename, start=5, end=7); // Should warn
 openreaderCheck3.readLine(readRes);
 writeln(readRes);
 openreaderCheck3.close();
+
+// Entering the file.reader phase
+var f2 = open(filename, iomode.r);
+
+var fileReaderCheck1 = f2.reader(start=5); // Should warn
+fileReaderCheck1.readLine(readRes, stripNewline=true);
+writeln(readRes);
+fileReaderCheck1.close();
+
+var fileReaderCheck2 = f2.reader(end=7); // Should warn
+fileReaderCheck2.readLine(readRes);
+writeln(readRes);
+fileReaderCheck2.close();
+
+var fileReaderCheck3 = f2.reader(start=5, end=7); // Should warn
+fileReaderCheck3.readLine(readRes);
+writeln(readRes);
+fileReaderCheck3.close();
+
+f2.close();
+
+// Test file.lines
+var f3 = open(filename, iomode.r);
+
+for line in f3.lines(start=5) {
+  writeln(line);
+}
+
+for line in f3.lines(end=7) {
+  writeln(line);
+}
+
+for line in f3.lines(start=5, end=7) {
+  writeln(line);
+}
+
+f3.close();
