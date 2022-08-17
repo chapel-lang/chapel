@@ -224,27 +224,10 @@ static void usage(int argc, char** argv) {
 }
 
 static void setupSearchPaths(Context* ctx, bool enableStdLib,
-                             const std::string& chpl_home,
                              const std::vector<std::string>& cmdLinePaths,
                              const std::vector<std::string>& files) {
   if (enableStdLib) {
-    auto chplEnv = ctx->getChplEnv();
-    assert(!chplEnv.getError() && "not handling chplenv errors yet");
-
-    // CHPL_MODULE_PATH isn't always in the output; check if it's there.
-    auto it = chplEnv->find("CHPL_MODULE_PATH");
-    auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
-    setupModuleSearchPaths(ctx,
-                           chpl_home,
-                           false,
-                           chplEnv->at("CHPL_LOCALE_MODEL"),
-                           false,
-                           chplEnv->at("CHPL_TASKS"),
-                           chplEnv->at("CHPL_COMM"),
-                           chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
-                           chplModulePath,
-                           cmdLinePaths,
-                           files);
+    setupModuleSearchPaths(ctx, false, false, cmdLinePaths, files);
   } else {
     std::vector<UniqueString> uPaths;
     for (auto p: cmdLinePaths) {
@@ -307,7 +290,7 @@ int main(int argc, char** argv) {
     typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
     ctx->setDebugTraceFlag(trace);
 
-    setupSearchPaths(ctx, enableStdLib, chpl_home, cmdLinePaths, files);
+    setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
 
     std::set<const ResolvedFunction*> calledFns;
 
