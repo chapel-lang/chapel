@@ -2424,7 +2424,8 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
   const Scope* scope = scopeStack[scopeStack.size()-2];
   LookupConfig config = LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS;
+                        LOOKUP_PARENTS |
+                        LOOKUP_INNERMOST;
 
   const Scope* receiverScope = resolver.methodReceiverScope();
 
@@ -2453,7 +2454,7 @@ bool Resolver::enter(const ReduceIntent* reduce) {
 
   if (computeTaskIntentInfo(*this, reduce, id, type)) {
     result.setToId(id);
-  } else {
+  } else if (!scopeResolveOnly) {
     context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
   }
 
@@ -2481,7 +2482,7 @@ bool Resolver::enter(const TaskVar* taskVar) {
 
       // TODO: Handle in-intents where type can change (e.g. array slices)
       result.setType(taskVarType);
-    } else {
+    } else if (!scopeResolveOnly) {
       context->error(taskVar, "Unable to find declaration of \"%s\" for task intent", taskVar->name().c_str());
     }
     return false;
