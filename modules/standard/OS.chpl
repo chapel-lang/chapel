@@ -1002,46 +1002,9 @@ module OS {
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
+    deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
     proc type fromSyserr(err: syserr, details: string = "") {
-      if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
-        return new owned BlockingIOError(details, err);
-      } else if err == ECHILD {
-        return new owned ChildProcessError(details, err);
-      } else if err == EPIPE || err == ESHUTDOWN {
-        return new owned BrokenPipeError(details, err);
-      } else if err == ECONNABORTED {
-        return new owned ConnectionAbortedError(details, err);
-      } else if err == ECONNREFUSED {
-        return new owned ConnectionRefusedError(details, err);
-      } else if err == ECONNRESET {
-        return new owned ConnectionResetError(details, err);
-      } else if err == EEXIST {
-        return new owned FileExistsError(details, err);
-      } else if err == ENOENT {
-        return new owned FileNotFoundError(details, err);
-      } else if err == EINTR {
-        return new owned InterruptedError(details, err);
-      } else if err == EISDIR {
-        return new owned IsADirectoryError(details, err);
-      } else if err == ENOTDIR {
-        return new owned NotADirectoryError(details, err);
-      } else if err == EACCES || err == EPERM {
-        return new owned PermissionError(details, err);
-      } else if err == ESRCH {
-        return new owned ProcessLookupError(details, err);
-      } else if err == ETIMEDOUT {
-        return new owned TimeoutError(details, err);
-      } else if err == EEOF {
-        return new owned EOFError(details, err);
-      } else if err == ESHORT {
-        return new owned UnexpectedEOFError(details, err);
-      } else if err == EFORMAT {
-        return new owned BadFormatError(details, err);
-      } else if err == EIO {
-        return new owned IOError(err, details);
-      }
-
-      return new owned SystemError(err, details);
+      return createSystemError(err, details);
     }
 
     /*
@@ -1053,10 +1016,76 @@ module OS {
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
+    deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
     proc type fromSyserr(err: int, details: string = "") {
-      return fromSyserr(err:syserr, details);
+      return createSystemError(err:syserr, details);
     }
   }
+
+  /*
+    Return the matching :class:`SystemError` subtype for a given ``syserr``,
+    with an optional string containing extra details.
+
+    :arg err: the syserr to generate from
+    :arg details: extra information to include with the error
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemError(err: syserr, details: string = "") {
+    if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
+      return new owned BlockingIOError(details, err);
+    } else if err == ECHILD {
+      return new owned ChildProcessError(details, err);
+    } else if err == EPIPE || err == ESHUTDOWN {
+      return new owned BrokenPipeError(details, err);
+    } else if err == ECONNABORTED {
+      return new owned ConnectionAbortedError(details, err);
+    } else if err == ECONNREFUSED {
+      return new owned ConnectionRefusedError(details, err);
+    } else if err == ECONNRESET {
+      return new owned ConnectionResetError(details, err);
+    } else if err == EEXIST {
+      return new owned FileExistsError(details, err);
+    } else if err == ENOENT {
+      return new owned FileNotFoundError(details, err);
+    } else if err == EINTR {
+      return new owned InterruptedError(details, err);
+    } else if err == EISDIR {
+      return new owned IsADirectoryError(details, err);
+    } else if err == ENOTDIR {
+      return new owned NotADirectoryError(details, err);
+    } else if err == EACCES || err == EPERM {
+      return new owned PermissionError(details, err);
+    } else if err == ESRCH {
+      return new owned ProcessLookupError(details, err);
+    } else if err == ETIMEDOUT {
+      return new owned TimeoutError(details, err);
+    } else if err == EEOF {
+      return new owned EOFError(details, err);
+    } else if err == ESHORT {
+      return new owned UnexpectedEOFError(details, err);
+    } else if err == EFORMAT {
+      return new owned BadFormatError(details, err);
+    } else if err == EIO {
+      return new owned IOError(err, details);
+    }
+
+    return new owned SystemError(err, details);
+  }
+
+  /*
+    Return the matching :class:`SystemError` subtype for a given error number,
+    with an optional string containing extra details.
+
+    :arg err: the number to generate from
+    :arg details: extra information to include with the error
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemError(err: int, details: string = "") {
+    return createSystemError(err:syserr, details);  
+  }
+
 
   /*
      :class:`BlockingIOError` is the subclass of :class:`SystemError`
@@ -1298,7 +1327,7 @@ module OS {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath +
                          " offset " + offset:string;
-      throw SystemError.fromSyserr(error, details);
+      throw createSystemError(error, details);
     }
   }
 
@@ -1310,7 +1339,7 @@ module OS {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath;
-      throw SystemError.fromSyserr(error, details);
+      throw createSystemError(error, details);
     }
   }
 
@@ -1319,7 +1348,7 @@ module OS {
   pragma "always propagate line file info"
   proc ioerror(error:syserr, msg:string) throws
   {
-    if error then throw SystemError.fromSyserr(error, msg);
+    if error then throw createSystemError(error, msg);
   }
 
   /* Create and throw an :class:`IOError` and include a formatted message
@@ -1339,7 +1368,7 @@ module OS {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     const details    = errstr + " " + msg + " with path " + quotedpath +
                        " offset " + offset:string;
-    throw SystemError.fromSyserr(EIO:syserr, details);
+    throw createSystemError(EIO:syserr, details);
   }
 
   /* Convert a syserr code to a human-readable string describing the error.
