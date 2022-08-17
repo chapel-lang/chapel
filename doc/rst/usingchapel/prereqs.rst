@@ -21,10 +21,18 @@ for using Chapel:
 
   * You have access to ``gmake`` or a GNU-compatible version of ``make``.
 
-  * You have access to standard C and C++14 compilers. The C++14 support
-    is required for building the compiler itself. For GCC specifically,
-    GCC 5 or newer is required for C++14 support. Note that C11 support,
-    while not required, will enable faster atomic operations.
+  * You have access to standard C and C++ compilers.
+
+    * Building the Chapel compiler and bundled components requires
+      C++14 and one of the following:
+
+      * GCC 7.1 or newer
+
+      * Clang 5.0 or newer
+
+      * Apple Clang 9.3 or newer
+
+    * C11 support, while not required, will enable faster atomic operations.
 
   * CMake is available and ``cmake`` runs version 3.13.4 or later.
 
