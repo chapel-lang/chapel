@@ -1083,7 +1083,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc createSystemError(err: int, details: string = "") {
-    return createSystemError(err:syserr, details);  
+    return createSystemError(err:syserr, details);
   }
 
 
