@@ -298,9 +298,9 @@ module ChapelBase {
   inline operator +(param a: real(?w), param b: real(w)) param return __primitive("+", a, b);
   inline operator +(param a: imag(?w), param b: imag(w)) param return __primitive("+", a, b);
   inline operator +(param a: complex(?w), param b: complex(w)) param return __primitive("+", a, b);
-  /*inline operator +(param a: real(?w), param b: imag(w)) param return __primitive("+", a, b);
+  inline operator +(param a: real(?w), param b: imag(w)) param return __primitive("+", a, b);
   inline operator +(param a: imag(?w), param b: real(w)) param return __primitive("+", a, b);
-  inline operator +(param a: real(?w), param b: complex(w*2)) param return
+  /*inline operator +(param a: real(?w), param b: complex(w*2)) param return
   __primitive("+", a, b);*/
 
   inline operator -(param a: int(?w), param b: int(w)) param return __primitive("-", a, b);
@@ -308,9 +308,9 @@ module ChapelBase {
   inline operator -(param a: real(?w), param b: real(w)) param return __primitive("-", a, b);
   inline operator -(param a: imag(?w), param b: imag(w)) param return __primitive("-", a, b);
   inline operator -(param a: complex(?w), param b: complex(w)) param return __primitive("-", a, b);
-  /*inline operator -(param a: real(?w), param b: imag(w)) param return __primitive("-", a, b);
+  inline operator -(param a: real(?w), param b: imag(w)) param return __primitive("-", a, b);
   inline operator -(param a: imag(?w), param b: real(w)) param return __primitive("-", a, b);
-  inline operator -(param a: real(?w), param b: complex(w*2)) param return
+  /*inline operator -(param a: real(?w), param b: complex(w*2)) param return
   __primitive("-", a, b);*/
 
   //

@@ -3135,7 +3135,8 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(type dstType:_array, rhs, definedConst: bool) {
+  proc chpl__coerceCopy(type dstType:_array, rhs, definedConst: bool)
+    where !isNumericType(rhs.type) {
     // assumes rhs is iterable (e.g. list)
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -3153,7 +3154,8 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(type dstType:_array, in rhs, definedConst: bool) {
+  proc chpl__coerceMove(type dstType:_array, in rhs, definedConst: bool)
+    where !isNumericType(rhs.type) {
     // assumes rhs is iterable (e.g. list)
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
