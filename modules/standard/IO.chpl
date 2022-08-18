@@ -2883,7 +2883,7 @@ private proc openwriterHelper(path:string,
   : channel(true, kind, locking) throws {
 
   var fl:file = try open(path, iomode.cw);
-  return try fl.writerHelper(kind, locking, start, end, hints, style);
+  return try fl.writerHelper(kind, locking, start..end, hints, style);
 }
 
 deprecated "reader with a style argument is deprecated"
@@ -3054,7 +3054,16 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints:iohints=IOHINT_NONE, style:iostyle):
                  channel(true,kind,locking) throws {
-  return this.writerHelper(kind, locking, start, end, new ioHintSet(hints), style: iostyleInternal);
+  return this.writerHelper(kind, locking, start..end, new ioHintSet(hints), style: iostyleInternal);
+}
+
+pragma "last resort"
+deprecated "file.writer with a start and/or end argument is deprecated.  Please use the new region argument instead"
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints = ioHintSet.empty):
+                 channel(true,kind,locking) throws {
+  return this.writer(kind, locking, start..end, hints);
 }
 
 /*
@@ -3086,11 +3095,10 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  corresponding parameter of the :record:`channel` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
-   :arg start: zero-based byte offset indicating where in the file the
-               channel should start writing. Defaults to 0.
-   :arg end: zero-based byte offset indicating where in the file the
-             channel should no longer be allowed to write. Defaults
-             to a ``max(int(64))`` - meaning no end point.
+   :arg region: zero-based byte offset indicating where in the file the
+               channel should start and stop writing. Defaults to
+               ``0..max(int(64))`` - meaning from the start of the file to no
+               specified end point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the channel to use the hints provided when the
@@ -3099,25 +3107,24 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
    :throws SystemError: Thrown if a file writer channel could not be returned.
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints = ioHintSet.empty):
+                 region: range(?) = 0.., hints = ioHintSet.empty):
                  channel(true,kind,locking) throws {
-  return this.writerHelper(kind, locking, start, end, hints);
+  return this.writerHelper(kind, locking, region, hints);
 }
 
 pragma "last resort"
 deprecated "The 'iohints' type is deprecated; please use a variant of 'file.writer' that takes an 'ioHintSet' instead."
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:iohints=IOHINT_NONE):
+                 hints:iohints):
                  channel(true,kind,locking) throws {
-  return this.writer(kind, locking, start, end, new ioHintSet(hints));
+  return this.writer(kind, locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
-                       start:int(64) = 0, end:int(64) = max(int(64)),
-                       hints = ioHintSet.empty, style:iostyleInternal = this._style):
+                       region: range(?) = 0.., hints = ioHintSet.empty,
+                       style:iostyleInternal = this._style):
   channel(true,kind,locking) throws {
   // It is the responsibility of the caller to retain and release the returned
   // channel.
@@ -3127,7 +3134,19 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   var err:syserr = ENOERR;
   on this.home {
     try this.checkAssumingLocal();
-    ret = new channel(true, kind, locking, this, err, hints, start, end, style);
+    if (region.hasLowBound() && region.hasHighBound()) {
+      ret = new channel(true, kind, locking, this, err, hints, region.low,
+                        region.high, style);
+    } else if (region.hasLowBound()) {
+      ret = new channel(true, kind, locking, this, err, hints, region.low,
+                        max(int(64)), style);
+    } else if (region.hasHighBound()) {
+      ret = new channel(true, kind, locking, this, err, hints, 0, region.high,
+                        style);
+    } else {
+      ret = new channel(true, kind, locking, this, err, hints, 0, max(int(64)),
+                        style);
+    }
   }
   if err then try ioerror(err, "in file.writer", this._tryGetPath());
 

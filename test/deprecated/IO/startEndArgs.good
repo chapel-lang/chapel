@@ -7,6 +7,9 @@ startEndArgs.chpl:42: warning: file.reader with a start and/or end argument is d
 startEndArgs.chpl:52: warning: file.lines with a start and/or end argument is deprecated.  Please use the new region argument instead
 startEndArgs.chpl:56: warning: file.lines with a start and/or end argument is deprecated.  Please use the new region argument instead
 startEndArgs.chpl:60: warning: file.lines with a start and/or end argument is deprecated.  Please use the new region argument instead
+startEndArgs.chpl:70: warning: file.writer with a start and/or end argument is deprecated.  Please use the new region argument instead
+startEndArgs.chpl:79: warning: file.writer with a start and/or end argument is deprecated.  Please use the new region argument instead
+startEndArgs.chpl:88: warning: file.writer with a start and/or end argument is deprecated.  Please use the new region argument instead
 is a file, I've counted it carefully.  It should be 77 characters long.
 Here is
 is
@@ -17,3 +20,6 @@ is a file, I've counted it carefully.  It should be 77 characters long.
 
 Here is
 is
+This is a file, I've counted it carefully.  It should be 76 characters long
+Here is a file, I've counted it carefully.  It should be 76 characters long
+Here is a file, I've counted so carefully.  It should be 76 characters long
