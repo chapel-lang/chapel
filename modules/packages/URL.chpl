@@ -146,7 +146,7 @@ module URL {
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.cw, style);
     return f.writer(kind=kind, locking=locking,
-                    start=start, end=end);
+                    region=start..end);
   }
 
 }

@@ -96,7 +96,7 @@ module MatrixMarket {
       proc init(type eltype, const fname:string) {
          this.eltype = eltype;
          fd = open(fname, iomode.cw);
-         fout = fd.writer(start=0);
+         fout = fd.writer(region=0..);
          headers_written=false;
       }
 
@@ -129,7 +129,7 @@ module MatrixMarket {
         // before we try to update it with a separate channel.
         fout.flush();
 
-         var tfout = fd.writer(start=HEADER_LINE.numBytes);
+         var tfout = fd.writer(region=HEADER_LINE.numBytes..);
          tfout.writef("%i %i %i", nrows, ncols, nnz);
          tfout.close();
       }
