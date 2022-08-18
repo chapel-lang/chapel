@@ -86,20 +86,14 @@ class DisambiguationState {
 public:
         DisambiguationState();
 
-  bool  fn1MoreSpecific;
-  bool  fn2MoreSpecific;
+  bool  fn1NonParamArgsPreferred;
+  bool  fn2NonParamArgsPreferred;
+
+  bool  fn1ParamArgsPreferred;
+  bool  fn2ParamArgsPreferred;
 
   bool  fn1Promotes;
   bool  fn2Promotes;
-
-  bool fn1WeakPreferred;
-  bool fn2WeakPreferred;
-
-  bool fn1WeakerPreferred;
-  bool fn2WeakerPreferred;
-
-  bool fn1WeakestPreferred;
-  bool fn2WeakestPreferred;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -172,7 +166,7 @@ static bool fits_in_uint(int width, Immediate* imm);
 static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm, bool realPart=true);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType, bool* paramNarrows);
 static bool
-moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
+moreSpecificCanDispatch(FnSymbol* fn, Type* actualType, Type* formalType);
 static BlockStmt* getParentBlock(Expr* expr);
 
 static void resolveTupleExpand(CallExpr* call);
@@ -1773,7 +1767,7 @@ static bool isGenericInstantiation(Type*     concrete,
 ************************************** | *************************************/
 
 static bool
-moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
+moreSpecificCanDispatch(FnSymbol* fn, Type* actualType, Type* formalType) {
   if (canDispatch(actualType, NULL, formalType, NULL, fn))
     return true;
   if (canInstantiate(actualType, formalType)) {
@@ -1969,6 +1963,7 @@ static Immediate* getImmediate(Symbol* actual) {
   return imm;
 }
 
+/*
 typedef enum {
   NUMERIC_TYPE_NON_NUMERIC,
   NUMERIC_TYPE_BOOL,
@@ -1996,6 +1991,7 @@ static numeric_type_t classifyNumericType(Type* t)
 // over f2Type.
 // This method implements rules such as that a bool would prefer to
 // coerce to 'int' over 'int(8)'.
+
 static bool prefersCoercionToOtherNumericType(Type* actualType,
                                               Type* f1Type,
                                               Type* f2Type,
@@ -2064,6 +2060,7 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
 
   return false;
 }
+*/
 
 static bool fits_in_bits_no_sign(int width, int64_t i) {
   // is it between -2**width .. 2**width, inclusive?
@@ -5320,20 +5317,21 @@ static int  compareSpecificity(ResolutionCandidate*         candidate1,
                                bool                         ignoreWhere,
                                bool                         forGenericInit);
 
-static void testArgMapping(FnSymbol*                    fn1,
-                           ArgSymbol*                   formal1,
-                           FnSymbol*                    fn2,
-                           ArgSymbol*                   formal2,
-                           Symbol*                      actual,
-                           const DisambiguationContext& DC,
-                           int                          i,
-                           int                          j,
-                           DisambiguationState&         DS);
+static int testArgMapping(FnSymbol*                    fn1,
+                          ArgSymbol*                   formal1,
+                          FnSymbol*                    fn2,
+                          ArgSymbol*                   formal2,
+                          Symbol*                      actual,
+                          const DisambiguationContext& DC,
+                          int                          i,
+                          int                          j,
+                          DisambiguationState&         DS,
+                          const char*&                 reason);
 
-static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
-                             ArgSymbol* formal2, Symbol* actual,
-                             const DisambiguationContext& DC, int i, int j,
-                             DisambiguationState& DS);
+static int testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
+                            ArgSymbol* formal2, Symbol* actual,
+                            const DisambiguationContext& DC, int i, int j,
+                            DisambiguationState& DS);
 
 ResolutionCandidate*
 disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
@@ -5868,21 +5866,45 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
       } else {
         // One of the two candidate functions was not an operator, but one
         // was so we need to do something special here.
-        testOpArgMapping(candidate1->fn, formal1, candidate2->fn, formal2,
-                         actual, DC, i, j, DS);
+        int p = testOpArgMapping(candidate1->fn, formal1,
+                                 candidate2->fn, formal2,
+                                 actual, DC, i, j, DS);
+        const char* reason = "operator method vs function";
+        if (p == 1) {
+          DS.fn1NonParamArgsPreferred = true;
+          EXPLAIN("%s: Fn %d is non-param preferred\n", reason, i);
+        } else if (p == 2) {
+          DS.fn2NonParamArgsPreferred = true;
+          EXPLAIN("%s: Fn %d is non-param preferred\n", reason, j);
+        }
         continue;
       }
     }
 
-    testArgMapping(candidate1->fn,
-                   formal1,
-                   candidate2->fn,
-                   formal2,
-                   actual,
-                   DC,
-                   i,
-                   j,
-                   DS);
+    bool actualParam = (getImmediate(actual) != NULL);
+
+    const char* reason = "";
+    int p = testArgMapping(candidate1->fn, formal1,
+                           candidate2->fn, formal2,
+                           actual, DC, i, j, DS, reason);
+
+    if (actualParam) {
+      if (p == 1) {
+        DS.fn1ParamArgsPreferred = true;
+        EXPLAIN("%s: Fn %d is param preferred\n", reason, i);
+      } else if (p == 2) {
+        DS.fn2ParamArgsPreferred = true;
+        EXPLAIN("%s: Fn %d is param preferred\n", reason, j);
+      }
+    } else {
+      if (p == 1) {
+        DS.fn1NonParamArgsPreferred = true;
+        EXPLAIN("%s: Fn %d is non-param preferred\n", reason, i);
+      } else if (p == 2) {
+        DS.fn2NonParamArgsPreferred = true;
+        EXPLAIN("%s: Fn %d is non-param preferred\n", reason, j);
+      }
+    }
   }
 
   if (DS.fn1Promotes != DS.fn2Promotes) {
@@ -5892,13 +5914,58 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     prefer1 = !DS.fn1Promotes;
     prefer2 = !DS.fn2Promotes;
 
-  } else if (DS.fn1MoreSpecific != DS.fn2MoreSpecific) {
-    EXPLAIN("\nP1: only one more specific argument mapping\n");
+  } else if (DS.fn1NonParamArgsPreferred != DS.fn2NonParamArgsPreferred) {
+    EXPLAIN("\nP: only one function has preferred non-param args\n");
 
-    prefer1 = DS.fn1MoreSpecific;
-    prefer2 = DS.fn2MoreSpecific;
+    prefer1 = DS.fn1NonParamArgsPreferred;
+    prefer2 = DS.fn2NonParamArgsPreferred;
 
-  } else {
+  } else if (DS.fn1ParamArgsPreferred != DS.fn2ParamArgsPreferred) {
+    EXPLAIN("\nP1: only one function has preferred param args\n");
+
+    prefer1 = DS.fn1ParamArgsPreferred;
+    prefer2 = DS.fn2ParamArgsPreferred;
+
+  }
+
+  // tie-breaking 1: number of implicit conversions
+  if (!prefer1 && !prefer2) {
+    int nImplicitConversions1 = 0;
+    int nImpConvToTypeNotMent1 = 0;
+    int nImplicitConversions2 = 0;
+    int nImpConvToTypeNotMent2 = 0;
+
+    countImplicitConversions(candidate1, DC,
+                             nImplicitConversions1, nImpConvToTypeNotMent1);
+    countImplicitConversions(candidate2, DC,
+                             nImplicitConversions2, nImpConvToTypeNotMent2);
+
+    if (nImplicitConversions1 != nImplicitConversions2) {
+      EXPLAIN("\nU: preferring function with fewer implicit conversions\n");
+      prefer1 = nImplicitConversions1 < nImplicitConversions2;
+      prefer2 = nImplicitConversions2 < nImplicitConversions1;
+    }
+  }
+
+  // tie-breaking 2: where clauses
+  if (!prefer1 && !prefer2 && !ignoreWhere) {
+    bool fn1where = candidate1->fn->where != NULL &&
+                    !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+    bool fn2where = candidate2->fn->where != NULL &&
+                    !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+
+    if (fn1where != fn2where) {
+      EXPLAIN("\nU: preferring function with where clause\n");
+
+      prefer1 = fn1where;
+      prefer2 = fn2where;
+    }
+  }
+
+  // tie-breaking 3: visibility
+  // TODO: should this visibility check be before the argument
+  // specificity checks?
+  if (!prefer1 && !prefer2) {
     MoreVisibleResult v = FOUND_NEITHER;
     // If the decision hasn't been made based on the argument mappings,
     // consider visibility...
@@ -5907,6 +5974,9 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
       v = isMoreVisible(DC.scope, candidate1->fn, candidate2->fn);
     }
 
+    // TODO: is this visibility check in the right place?
+    // Should it be before the argument preference check above?
+    // Or after the where clause check below?
     if (v == FOUND_F1_FIRST) {
       EXPLAIN("\nQ: preferring more visible function\n");
       prefer1 = true;
@@ -5914,64 +5984,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     } else if (v == FOUND_F2_FIRST) {
       EXPLAIN("\nR: preferring more visible function\n");
       prefer2 = true;
-
-    } else if (DS.fn1WeakPreferred != DS.fn2WeakPreferred) {
-      EXPLAIN("\nS: preferring based on weak preference\n");
-      prefer1 = DS.fn1WeakPreferred;
-      prefer2 = DS.fn2WeakPreferred;
-
-    } else if (DS.fn1WeakerPreferred != DS.fn2WeakerPreferred) {
-      EXPLAIN("\nS: preferring based on weaker preference\n");
-      prefer1 = DS.fn1WeakerPreferred;
-      prefer2 = DS.fn2WeakerPreferred;
-
-    } else if (DS.fn1WeakestPreferred != DS.fn2WeakestPreferred) {
-      EXPLAIN("\nS: preferring based on weakest preference\n");
-      prefer1 = DS.fn1WeakestPreferred;
-      prefer2 = DS.fn2WeakestPreferred;
-
-      /* A note about weak-prefers. Why are there 3 levels?
-
-         Something like 'param x:int(16) = 5' should be able to coerce to any
-         integral type. Meanwhile, 'param y = 5' should also be able to coerce
-         to any integral type. Now imagine we are resolving 'x+y'.  We
-         want it to resolve to the 'int(16)' version because 'x' has a type
-         specified, but 'y' is a default type. Before the 3 weak levels, this
-         version was chosen simply because non-default-sized ints didn't allow
-         param conversion.
-
-       */
-    } else if (!ignoreWhere) {
-      bool fn1where = candidate1->fn->where != NULL &&
-                      !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-      bool fn2where = candidate2->fn->where != NULL &&
-                      !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-
-      if (fn1where != fn2where) {
-        EXPLAIN("\nU: preferring function with where clause\n");
-
-        prefer1 = fn1where;
-        prefer2 = fn2where;
-      }
-    }
-
-    // tie-breaking in case it is not yet established which to prefer
-    if (!prefer1 && !prefer2) {
-      int nImplicitConversions1 = 0;
-      int nImpConvToTypeNotMent1 = 0;
-      int nImplicitConversions2 = 0;
-      int nImpConvToTypeNotMent2 = 0;
-
-      countImplicitConversions(candidate1, DC,
-                               nImplicitConversions1, nImpConvToTypeNotMent1);
-      countImplicitConversions(candidate2, DC,
-                               nImplicitConversions2, nImpConvToTypeNotMent2);
-
-      if (nImplicitConversions1 != nImplicitConversions2) {
-        EXPLAIN("\nU: preferring function with fewer implicit conversions\n");
-        prefer1 = nImplicitConversions1 < nImplicitConversions2;
-        prefer2 = nImplicitConversions2 < nImplicitConversions1;
-      }
     }
   }
 
@@ -5994,6 +6006,7 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
 // Calls canDispatch and does the initial EXPLAIN calls, which were otherwise
 // duplicated
+// Sets DS.fn1Promotes / DS.fn2Promotes
 static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
                              Type* fType, Type* actualType, bool actualParam,
                              bool* formalPromotes, bool* formalNarrows,
@@ -6044,23 +6057,29 @@ static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
  *                for the second function.
  * \param actual  The actual argument from the call site.
  * \param DC      The disambiguation context.
- * \param DS      The disambiguation state.
+ * \param DS      The disambiguation state -- set fn1Promotes/fn2Promotes.
+ *
+ * Returns:
+ *   0 if there is no preference between them
+ *   1 if fn1 is preferred
+ *   2 if fn2 is preferred
  */
-static void testArgMapping(FnSymbol*                    fn1,
-                           ArgSymbol*                   formal1,
-                           FnSymbol*                    fn2,
-                           ArgSymbol*                   formal2,
-                           Symbol*                      actual,
-                           const DisambiguationContext& DC,
-                           int                          i,
-                           int                          j,
-                           DisambiguationState&         DS) {
+static int testArgMapping(FnSymbol*                    fn1,
+                          ArgSymbol*                   formal1,
+                          FnSymbol*                    fn2,
+                          ArgSymbol*                   formal2,
+                          Symbol*                      actual,
+                          const DisambiguationContext& DC,
+                          int                          i,
+                          int                          j,
+                          DisambiguationState&         DS,
+                          const char*&                 reason) {
 
   // Give up early for out intent arguments
   // (these don't impact candidate selection)
   if (formal1->originalIntent == INTENT_OUT ||
       formal2->originalIntent == INTENT_OUT) {
-    return;
+    return 0;
   }
 
   // We only want to deal with the value types here, avoiding odd overloads
@@ -6079,28 +6098,15 @@ static void testArgMapping(FnSymbol*                    fn1,
   bool f1Param = formal1->hasFlag(FLAG_INSTANTIATED_PARAM);
   bool f2Param = formal2->hasFlag(FLAG_INSTANTIATED_PARAM);
 
-  bool actualParam = false;
-  bool paramWithDefaultSize = false;
-
-  // Don't enable param/ weak preferences for non-default sized param values.
-  // If somebody bothered to type the param, they probably want it to stay that
-  // way. This is a strategy to resolve ambiguity with e.g.
-  //  +(param x:int(32), param y:int(32)
-  //  +(param x:int(64), param y:int(64)
-  // called with
-  //  param x:int(32), param y:int(64)
-  if (getImmediate(actual) != NULL) {
-    actualParam = true;
-    paramWithDefaultSize = isNumericParamDefaultType(actualType);
-  }
+  bool actualParam = (getImmediate(actual) != NULL);
+  //bool paramWithDefaultSize = false;
 
   EXPLAIN("Actual's type: %s", toString(actualType));
   if (actualParam)
     EXPLAIN(" (param)");
-  if (paramWithDefaultSize)
-    EXPLAIN(" (default)");
   EXPLAIN("\n");
 
+  // Set fn1Promotes / fn2Promotes and do some EXPLAIN calls
   testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
                    &formal1Promotes, &formal1Narrows, DC, DS, 1);
 
@@ -6117,100 +6123,81 @@ static void testArgMapping(FnSymbol*                    fn1,
     actualScalarType = actualScalarType->getField("valType")->getValType();
   }
 
-  const char* reason = "";
-
-  typedef enum {
-    NONE,
-    WEAKEST,
-    WEAKER,
-    WEAK,
-    STRONG
-  } arg_preference_t;
-
-  arg_preference_t prefer1 = NONE;
-  arg_preference_t prefer2 = NONE;
-
-  if (f1Type == f2Type && f1Param && !f2Param) {
-    prefer1 = STRONG; reason = "same type, param vs not";
-
-  } else if (f1Type == f2Type && !f1Param && f2Param) {
-    prefer2 = STRONG; reason = "same type, param vs not";
-
-  } else if (!formal1Promotes && formal2Promotes) {
-    prefer1 = STRONG; reason = "no promotion vs promotes";
+  if (!formal1Promotes && formal2Promotes) {
+    reason = "no promotion vs promotes";
+    return 1;
 
   } else if (formal1Promotes && !formal2Promotes) {
-    prefer2 = STRONG; reason = "no promotion vs promotes";
+    reason = "no promotion vs promotes";
+    return 2;
 
   } else if (f1Type == f2Type           &&
              !formal1->instantiatedFrom &&
              formal2->instantiatedFrom) {
-    prefer1 = STRONG; reason = "concrete vs generic";
+    reason = "concrete vs generic";
+    return 1;
 
   } else if (f1Type == f2Type &&
              formal1->instantiatedFrom &&
              !formal2->instantiatedFrom) {
-    prefer2 = STRONG; reason = "concrete vs generic";
+    reason = "concrete vs generic";
+    return 2;
 
   } else if (formal1->instantiatedFrom != dtAny &&
              formal2->instantiatedFrom == dtAny) {
-    prefer1 = STRONG; reason = "generic any vs partially generic/concrete";
+    reason = "generic any vs partially generic/concrete";
+    return 1;
 
   } else if (formal1->instantiatedFrom == dtAny &&
              formal2->instantiatedFrom != dtAny) {
-    prefer2 = STRONG; reason = "generic any vs partially generic/concrete";
+    reason = "generic any vs partially generic/concrete";
+    return 2;
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
              formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    prefer1 = STRONG; reason = "partially generic vs generic";
+    reason = "partially generic vs generic";
+    return 1;
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
              !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    prefer2 = STRONG; reason = "partially generic vs generic";
+    reason = "partially generic vs generic";
+    return 2;
 
-  } else if (f1Param != f2Param && f1Param) {
-    prefer1 = WEAK; reason = "param vs not";
+  } else if (f1Param && !f2Param) {
+    reason = "param vs not";
+    return 1;
 
-  } else if (f1Param != f2Param && f2Param) {
-    prefer2 = WEAK; reason = "param vs not";
+  } else if (!f1Param && f2Param) {
+    reason = "param vs not";
+    return 2;
 
-  } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
+  /*} else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
     prefer1 = WEAK; reason = "no narrows vs narrows";
 
   } else if (!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
-    prefer2 = WEAK; reason = "no narrows vs narrows";
+    prefer2 = WEAK; reason = "no narrows vs narrows";*/
 
-  } else if (!actualParam && actualType == f1Type && actualType != f2Type) {
-    prefer1 = STRONG; reason = "actual type vs not";
+  } else if (actualType == f1Type && actualType != f2Type) {
+    reason = "actual type vs not";
+    return 1;
 
-  } else if (!actualParam && actualType == f2Type && actualType != f1Type) {
-    prefer2 = STRONG; reason = "actual type vs not";
+  } else if (actualType == f2Type && actualType != f1Type) {
+    reason = "actual type vs not";
+    return 2;
 
   } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
-    if (paramWithDefaultSize)
-      prefer1 = WEAKEST;
-    else if (actualParam)
-      prefer1 = WEAKER;
-    else
-      prefer1 = STRONG;
-
     reason = "scalar type vs not";
+    return 1;
 
   } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
-    if (paramWithDefaultSize)
-      prefer2 = WEAKEST;
-    else if (actualParam)
-      prefer2 = WEAKER;
-    else
-      prefer2 = STRONG;
-
     reason = "scalar type vs not";
+    return 2;
 
-  } else if (prefersCoercionToOtherNumericType(actualScalarType,
+  /*} else if (prefersCoercionToOtherNumericType(actualScalarType,
                                                f1Type, f2Type,
                                                paramWithDefaultSize)) {
     if (paramWithDefaultSize)
@@ -6229,48 +6216,34 @@ static void testArgMapping(FnSymbol*                    fn1,
       prefer2 = WEAKER;
 
     reason = "preferred coercion to other";
+  */
 
-  } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
-    prefer1 = actualParam ? WEAKEST : STRONG;
-    reason = "can dispatch";
+  } else if (f1Type != f2Type) {
+    bool fn1Dispatches = moreSpecificCanDispatch(fn1, f1Type, f2Type);
+    bool fn2Dispatches = moreSpecificCanDispatch(fn2, f2Type, f1Type);
 
-  } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
-    prefer2 = actualParam ? WEAKEST : STRONG;
-    reason = "can dispatch";
-
-  } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
-    // This int/uint rule supports choosing between an 'int' and 'uint'
-    // overload when passed say a uint(32).
-    prefer1 = actualParam ? WEAKEST : STRONG;
-    reason = "int vs uint";
-
-  } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
-    prefer2 = actualParam ? WEAKEST : STRONG;
-    reason = "int vs uint";
-
+    if (fn1Dispatches && !fn2Dispatches) {
+      reason = "can dispatch";
+      return 1;
+    } else if (!fn1Dispatches && fn2Dispatches) {
+      reason = "can dispatch";
+      return 2;
+    }
   }
 
-  if (prefer1 != NONE) {
-    const char* level = "";
-    if (prefer1 == STRONG)  { DS.fn1MoreSpecific = true;     level = "strong"; }
-    if (prefer1 == WEAK)    { DS.fn1WeakPreferred = true;    level = "weak"; }
-    if (prefer1 == WEAKER)  { DS.fn1WeakerPreferred = true;  level = "weaker"; }
-    if (prefer1 == WEAKEST) { DS.fn1WeakestPreferred = true; level = "weakest"; }
-    EXPLAIN("%s: Fn %d is %s preferred\n", reason, i, level);
-  } else if (prefer2 != NONE) {
-    const char* level = "";
-    if (prefer2 == STRONG)  { DS.fn2MoreSpecific = true;     level = "strong"; }
-    if (prefer2 == WEAK)    { DS.fn2WeakPreferred = true;    level = "weak"; }
-    if (prefer2 == WEAKER)  { DS.fn2WeakerPreferred = true;  level = "weaker"; }
-    if (prefer2 == WEAKEST) { DS.fn2WeakestPreferred = true; level = "weakest"; }
-    EXPLAIN("%s: Fn %d is %s preferred\n", reason, j, level);
-  }
+  return 0;
 }
 
-static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
-                             ArgSymbol* formal2, Symbol* actual,
-                             const DisambiguationContext& DC, int i, int j,
-                             DisambiguationState& DS) {
+/*
+ * Returns:
+ *   0 if there is no preference between them
+ *   1 if fn1 is preferred
+ *   2 if fn2 is preferred
+*/
+static int testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
+                            ArgSymbol* formal2, Symbol* actual,
+                            const DisambiguationContext& DC, int i, int j,
+                            DisambiguationState& DS) {
   // Validate our assumptions in this function - only operator functions should
   // return a NULL for the formal and they should only do so for method token
   // and "this" actuals.
@@ -6279,12 +6252,7 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
 
   Type* actualType = actual->type->getValType();
   bool actualParam = getImmediate(actual) != NULL;
-  const char* reason = "potentially optional argument present vs not";
-  const char* level = "weak";
-
   if (formal1 == NULL) {
-    EXPLAIN("Function 1 did not have a corresponding formal");
-    EXPLAIN("Function 1 is an operator standalone function");
     INT_ASSERT(formal2 != NULL);
 
     Type* f2Type = formal2->type->getValType();
@@ -6294,13 +6262,10 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
     testArgMapHelper(fn2, formal2, actual, f2Type, actualType, actualParam,
                      &formal2Promotes, &formal2Narrows, DC, DS, 2);
 
-    DS.fn2WeakPreferred = true;
-    EXPLAIN("%s: Fn % is %s preferred\n", reason, j, level);
+    return 2;
 
   } else {
     INT_ASSERT(formal2 == NULL);
-    EXPLAIN("Function 2 did not have a corresponding formal");
-    EXPLAIN("Function 2 is an operator standalone function");
 
     Type* f1Type = formal1->type->getValType();
     bool formal1Promotes = false;
@@ -6309,9 +6274,10 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
     testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
                      &formal1Promotes, &formal1Narrows, DC, DS, 1);
 
-    DS.fn1WeakPreferred = true;
-    EXPLAIN("%s: Fn % is %s preferred\n", reason, i, level);
+    return 1;
   }
+
+  return 0;
 }
 
 /************************************* | **************************************
@@ -12495,16 +12461,12 @@ DisambiguationContext::DisambiguationContext(CallInfo& info,
 ************************************** | *************************************/
 
 DisambiguationState::DisambiguationState() {
-  fn1MoreSpecific = false;
-  fn2MoreSpecific = false;
+  fn1NonParamArgsPreferred = false;
+  fn2NonParamArgsPreferred = false;
 
-  fn1Promotes     = false;
-  fn2Promotes     = false;
+  fn1ParamArgsPreferred     = false;
+  fn2ParamArgsPreferred     = false;
 
-  fn1WeakPreferred= false;
-  fn2WeakPreferred= false;
-  fn1WeakerPreferred= false;
-  fn2WeakerPreferred= false;
-  fn1WeakestPreferred= false;
-  fn2WeakestPreferred= false;
+  fn1Promotes = false;
+  fn2Promotes = false;
 }
