@@ -10,6 +10,19 @@ convenience and was obtained from
 Any Chapel issues that seem to be related to GASNet should be directed
 to the Chapel team at https://chapel-lang.org/bugs.html.
 
+Chapel modifications to GASNet
+==============================
+The modifications that we have made to the official GASNet release are
+as follows:
+
+* Pulled in an upstream patch for getting gasnet prefix out of .pc file
+   - https://bitbucket.org/berkeleylab/gasnet/commits/8f5f8a1ab
+* Pulled in an upstream patch to check if LD requires MPI using .pc file
+   - https://bitbucket.org/berkeleylab/gasnet/commits/a657aa1ef
+   - https://bitbucket.org/berkeleylab/gasnet/commits/12335d0fe
+   - https://bitbucket.org/berkeleylab/gasnet/commits/a57d84def
+* Pulled in an upstream fix for `--disable-full-path-expansion`
+   - https://bitbucket.org/berkeleylab/gasnet/commits/8f3eb926b
 
 Upgrading GASNet versions
 =========================
