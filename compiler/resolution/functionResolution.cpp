@@ -215,7 +215,6 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal);
 
 static bool  obviousMismatch(CallExpr* call, FnSymbol* fn);
-static bool  moveIsAcceptable(CallExpr* call);
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
 
@@ -7596,11 +7595,7 @@ static bool  moveSupportsUnresolvedFunctionReturn(CallExpr* call);
 
 static bool  isIfExprResult(Expr* LHS);
 
-static Type* moveDetermineRhsType(CallExpr* call);
-
-static Type* moveDetermineLhsType(CallExpr* call);
-
-static bool  moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
+static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call);
 
 static void  moveHaltForUnacceptableTypes(CallExpr* call);
 
@@ -7632,12 +7627,10 @@ static bool isMoveFromMain(CallExpr* call) {
   return false;
 }
 
-
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID) {
     gdbShouldBreakHere();
   }
-
 
   if (moveIsAcceptable(call) == false) {
     // NB: This call will not return
@@ -7654,7 +7647,7 @@ static void resolveMove(CallExpr* call) {
 
   } else {
     // These calls might modify the fields in call
-    Type* rhsType = moveDetermineRhsType(call);
+    Type* rhsType = moveDetermineRhsTypeErrorIfInvalid(call);
     Type* lhsType = moveDetermineLhsType(call);
     Expr* rhs     = call->get(2);
 
@@ -7678,7 +7671,7 @@ static void resolveMove(CallExpr* call) {
 //
 //
 
-static bool moveIsAcceptable(CallExpr* call) {
+bool moveIsAcceptable(CallExpr* call) {
   Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
   Expr*   rhs    = call->get(2);
   bool    retval = true;
@@ -7779,24 +7772,11 @@ static bool isIfExprResult(Expr* LHS) {
 //
 //
 
-// Determine type of RHS.
-// NB: This function may update the RHS
-static Type* moveDetermineRhsType(CallExpr* call) {
-  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
-  Expr*   rhs    = call->get(2);
-  Type*   retval = rhs->typeInfo();
+static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
+  Type* ret = moveDetermineRhsType(call);
 
-  // Workaround for order-of-resolution problems with extern type aliases
-  if (retval == dtUnknown) {
-    bool rhsIsTypeExpr = isTypeExpr(rhs);
-
-    if (rhsIsTypeExpr == true && isSymExpr(rhs) == true) {
-      // Try resolving type aliases now.
-      retval = resolveTypeAlias(toSymExpr(rhs));
-    }
-  }
-
-  if (retval == dtVoid) {
+  if (ret == dtVoid) {
+    Expr* rhs = call->get(2);
     if (CallExpr* rhsCall = toCallExpr(rhs)) {
       if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
         // `expandExternArrayCalls` can add void assignments when
@@ -7815,6 +7795,26 @@ static Type* moveDetermineRhsType(CallExpr* call) {
                     rhsName);
         }
       }
+    }
+  }
+
+  return ret;
+}
+
+// Determine type of RHS.
+// NB: This function may update the RHS
+Type* moveDetermineRhsType(CallExpr* call) {
+  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
+  Expr*   rhs    = call->get(2);
+  Type*   retval = rhs->typeInfo();
+
+  // Workaround for order-of-resolution problems with extern type aliases
+  if (retval == dtUnknown) {
+    bool rhsIsTypeExpr = isTypeExpr(rhs);
+
+    if (rhsIsTypeExpr == true && isSymExpr(rhs) == true) {
+      // Try resolving type aliases now.
+      retval = resolveTypeAlias(toSymExpr(rhs));
     }
   }
 
@@ -7848,7 +7848,7 @@ static Type* moveDetermineRhsType(CallExpr* call) {
   return retval;
 }
 
-static Type* moveDetermineLhsType(CallExpr* call) {
+Type* moveDetermineLhsType(CallExpr* call) {
   Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
 
   if (lhsSym->type == dtUnknown || lhsSym->type == dtNil) {
@@ -7870,7 +7870,7 @@ static Type* moveDetermineLhsType(CallExpr* call) {
 //
 //
 
-static bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType) {
+bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType) {
   bool retval = true;
 
   if (rhsType == dtUnknown) {
