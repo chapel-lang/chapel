@@ -1418,7 +1418,7 @@ bool Resolver::enter(const uast::Conditional* cond) {
   thenBlock->traverse(*this);
   if (elseBlock) elseBlock->traverse(*this);
 
-  if (cond->isExpressionLevel()) {
+  if (cond->isExpressionLevel() && !scopeResolveOnly) {
     std::vector<QualifiedType> returnTypes;
     returnTypes.push_back(byPostorder.byAst(thenBlock->stmt(0)).type());
     if (elseBlock != nullptr) {
