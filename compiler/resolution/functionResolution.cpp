@@ -94,6 +94,9 @@ public:
 
   bool  fn1Promotes;
   bool  fn2Promotes;
+
+  int   fn1NumParamNarrowing;
+  int   fn2NumParamNarrowing;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -5309,13 +5312,13 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     bool                         ignoreWhere,
                     Vec<ResolutionCandidate*>&   ambiguous);
 
-static int  compareSpecificity(ResolutionCandidate*         candidate1,
-                               ResolutionCandidate*         candidate2,
-                               const DisambiguationContext& DC,
-                               int                          i,
-                               int                          j,
-                               bool                         ignoreWhere,
-                               bool                         forGenericInit);
+static int compareSpecificity(ResolutionCandidate*         candidate1,
+                              ResolutionCandidate*         candidate2,
+                              const DisambiguationContext& DC,
+                              int                          i,
+                              int                          j,
+                              bool                         ignoreWhere,
+                              bool                         forGenericInit);
 
 static int testArgMapping(FnSymbol*                    fn1,
                           ArgSymbol*                   formal1,
@@ -5764,7 +5767,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
 
       EXPLAIN("%s\n", toString(candidate2->fn));
 
-      int cmp = compareSpecificity(candidate1,
+      int p = compareSpecificity(candidate1,
                                    candidate2,
                                    DC,
                                    i,
@@ -5772,11 +5775,11 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                                    ignoreWhere,
                                    forGenericInit);
 
-      if (cmp < 0) {
+      if (p == 1) {
         EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
         notBest[j] = true;
 
-      } else if (cmp > 0) {
+      } else if (p == 2) {
         EXPLAIN("X: Fn %d is a worse match than Fn %d\n\n\n", i, j);
         notBest[i] = true;
         singleMostSpecific = false;
@@ -5830,9 +5833,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
  *                    This is important for resolving return intent
  *                    overloads.
  *
- * \return -1 if fn1 is a more specific function than f2
- * \return 0 if fn1 and fn2 are equally specific
- * \return 1 if fn2 is a more specific function than f1
+ * \return 0 if neither fn1 nor fn2 is better
+ * \return 1 if fn1 is a more specific function than f2
+ * \return 2 if fn2 is a more specific function than f1
  */
 static int compareSpecificity(ResolutionCandidate*         candidate1,
                               ResolutionCandidate*         candidate2,
@@ -5928,7 +5931,7 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
   }
 
-  // tie-breaking 1: number of implicit conversions
+  // tie-breaking rule: number of implicit conversions
   if (!prefer1 && !prefer2) {
     int nImplicitConversions1 = 0;
     int nImpConvToTypeNotMent1 = 0;
@@ -5947,7 +5950,16 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     }
   }
 
-  // tie-breaking 2: where clauses
+  // tie-breaking rule: number of param narrowing conversions
+  if (!prefer1 && !prefer2) {
+    if (DS.fn1NumParamNarrowing != DS.fn2NumParamNarrowing) {
+      EXPLAIN("\nU: preferring function with fewer param narrowing conversions\n");
+      prefer1 = DS.fn1NumParamNarrowing < DS.fn2NumParamNarrowing;
+      prefer2 = DS.fn2NumParamNarrowing < DS.fn1NumParamNarrowing;
+    }
+  }
+
+  // tie-breaking rule: where clauses
   if (!prefer1 && !prefer2 && !ignoreWhere) {
     bool fn1where = candidate1->fn->where != NULL &&
                     !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
@@ -5962,7 +5974,7 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     }
   }
 
-  // tie-breaking 3: visibility
+  // tie-breaking rule: visibility
   // TODO: should this visibility check be before the argument
   // specificity checks?
   if (!prefer1 && !prefer2) {
@@ -5991,11 +6003,11 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
   if (prefer1) {
     EXPLAIN("\nW: Fn %d is more specific than Fn %d\n", i, j);
-    return -1;
+    return 1;
 
   } else if (prefer2) {
     EXPLAIN("\nW: Fn %d is less specific than Fn %d\n", i, j);
-    return 1;
+    return 2;
 
   } else {
     // Neither is more specific
@@ -6057,7 +6069,8 @@ static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
  *                for the second function.
  * \param actual  The actual argument from the call site.
  * \param DC      The disambiguation context.
- * \param DS      The disambiguation state -- set fn1Promotes/fn2Promotes.
+ * \param DS      The disambiguation state. This function
+ *                sets DS.fnXPromotes and DS.fnXNumParamNarrowing.
  *
  * Returns:
  *   0 if there is no preference between them
@@ -6121,6 +6134,13 @@ static int testArgMapping(FnSymbol*                    fn1,
 
   if (isSyncType(actualScalarType) || isSingleType(actualScalarType)) {
     actualScalarType = actualScalarType->getField("valType")->getValType();
+  }
+
+  if (actualParam && formal1Narrows) {
+    DS.fn1NumParamNarrowing++;
+  }
+  if (actualParam && formal2Narrows) {
+    DS.fn2NumParamNarrowing++;
   }
 
   if (!formal1Promotes && formal2Promotes) {
@@ -12469,4 +12489,7 @@ DisambiguationState::DisambiguationState() {
 
   fn1Promotes = false;
   fn2Promotes = false;
+
+  fn1NumParamNarrowing = 0;
+  fn2NumParamNarrowing = 0;
 }
