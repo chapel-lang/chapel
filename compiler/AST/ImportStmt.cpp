@@ -209,6 +209,10 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
           modSym->generateDeprecationWarning(this);
         }
 
+        if (modSym->hasFlag(FLAG_UNSTABLE)) {
+          modSym->generateUnstableWarning(this);
+        }
+
       } else {
         if (symAndName.second[0] != '\0') {
           if (isCallExpr(src) == false) {
@@ -392,6 +396,10 @@ void ImportStmt::validateUnqualified() {
 
           if (sym->hasFlag(FLAG_DEPRECATED)) {
             sym->generateDeprecationWarning(this);
+          }
+
+          if (sym->hasFlag(FLAG_UNSTABLE)) {
+            sym->generateUnstableWarning(this);
           }
         }
       }

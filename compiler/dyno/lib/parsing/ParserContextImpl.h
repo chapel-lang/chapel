@@ -152,8 +152,8 @@ owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
   auto node = Attributes::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
                                 attributeParts.isDeprecated,
-                                attributeParts.deprecationMessage,
                                 attributeParts.isUnstable,
+                                attributeParts.deprecationMessage,
                                 attributeParts.unstableMessage);
   return node;
 }
@@ -232,14 +232,14 @@ void ParserContext::resetAttributePartsState() {
   if (hasAttributeParts) {
     auto& pragmas = attributeParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeParts = { nullptr, false, UniqueString() };
+    attributeParts = { nullptr, false, false, UniqueString(), UniqueString() };
     hasAttributeParts = false;
   }
 
   assert(attributeParts.pragmas == nullptr);
   assert(!attributeParts.isDeprecated);
-  assert(attributeParts.deprecationMessage.isEmpty());
   assert(!attributeParts.isUnstable);
+  assert(attributeParts.deprecationMessage.isEmpty());
   assert(attributeParts.unstableMessage.isEmpty());
   assert(!hasAttributeParts);
 

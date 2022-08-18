@@ -8,3 +8,4 @@ unstable_class.chpl:23: warning: Class TestUnstableClass is unstable, use C2
 unstable_class.chpl:24: warning: Class TestUnstableClass is unstable, use C2
 {x = 1}
 2
+In TestUnstableClass.foo()

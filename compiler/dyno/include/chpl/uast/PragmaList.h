@@ -576,7 +576,7 @@ PRAGMA(TYPE_VARIABLE, npr, "type variable", "contains a type instead of a value"
 PRAGMA(UNCHECKED_THROWS,  ypr, "unchecked throws", "function throws but handling the errors is not required even in strict mode")
 PRAGMA(UNREF_FN,  ypr, "unref fn", "function to remove reference fields from tuples or copy array slices when returning")
 PRAGMA(UNSAFE,  ypr, "unsafe", "unsafe (disable lifetime and nilability checking)")
-PRAGMA(UNSTABLE, npr, "@unstable", "unstable")
+PRAGMA(UNSTABLE, npr, "@unstable", "applied to symbols that may misbehave or are subject to change in the future, hence unstable")
 PRAGMA(IGNORE_TRANSFER_ERRORS,  ypr, "ignore transfer errors", "ignore errors for ownership transfer from non-nilable owned")
 PRAGMA(FIND_USER_LINE,  ypr, "find user line", "report errors with user line number")
 PRAGMA(USER_VARIABLE_NAME,  npr, "user variable name", "temporary uses name of user variable")

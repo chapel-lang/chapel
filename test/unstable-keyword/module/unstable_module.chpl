@@ -2,12 +2,13 @@
 //compilation error
 use LinearAlgebra;
 
-@unstable "The module 'Linear Algebra' is unstable" var A = Matrix(4,4, eltType=int);
+@unstable "This Matrix which uses 'Linear Algebra' is unstable" var A = Matrix(4,4, eltType=int);
 A = 3;
 writeln(A);
 //Prints:
   //   3 3 3 3
   //   3 3 3 3 
+  //   3 3 3 3
   //   3 3 3 3
 
 writeln("matrix rank: ", A.rank); //2

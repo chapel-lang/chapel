@@ -56,8 +56,8 @@ struct ParserComment {
 struct AttributeParts {
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
-  UniqueString deprecationMessage;
   bool isUnstable;
+  UniqueString deprecationMessage;
   UniqueString unstableMessage;
 };
 
@@ -124,7 +124,7 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
-    this->attributeParts          = { nullptr, false, UniqueString() };
+    this->attributeParts          = { nullptr, false, false, UniqueString(), UniqueString() };
     this->hasAttributeParts       = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};

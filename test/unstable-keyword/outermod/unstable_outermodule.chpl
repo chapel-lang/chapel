@@ -19,7 +19,7 @@ module TestUnstableModule {
     {
       import this.Outer; // Should trigger Outer's message, but only once
 
-      writeln(Outer.y);
+      writeln(Outer.y); // Should trigger Outer's message
     }
   }
 }
