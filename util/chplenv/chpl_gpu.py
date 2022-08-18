@@ -29,6 +29,14 @@ def get_cuda_path():
 
     return ""
 
+def get_gpu_mem_strategy():
+    memtype = os.environ.get("CHPL_GPU_MEM_STRATEGY")
+    if memtype:
+        # TODO check if meaningful
+        return memtype
+    return "array_on_device"
+
+
 def get_cuda_libdevice_path():
     if chpl_locale_model.get() == 'gpu':
         # TODO this only makes sense when we are generating for nvidia
