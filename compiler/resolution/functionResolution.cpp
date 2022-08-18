@@ -2065,6 +2065,63 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
 }
 */
 
+// Returns:
+//   -1 if 't' is not a numeric type
+//   0 if 't' is a default numeric type ('int' 'bool' etc)
+//   n a positive integer width if 't' is a non-default numeric type
+static int classifyNumericWidth(Type* t)
+{
+  // The default size counts as 0
+  // (so we consider 'bool' the same as 'int')
+  if (t == dtInt[INT_SIZE_DEFAULT] ||
+      t == dtUInt[INT_SIZE_DEFAULT] ||
+      t == dtReal[FLOAT_SIZE_DEFAULT] ||
+      t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
+      t == dtBools[BOOL_SIZE_DEFAULT])
+    return 0;
+
+  if (is_enum_type(t))
+    return 0;
+
+  if (is_int_type(t) ||
+      is_uint_type(t) ||
+      is_real_type(t) ||
+      is_imag_type(t) ||
+      is_bool_type(t) ||
+      is_enum_type(t))
+    return get_width(t);
+
+  if (is_complex_type(t))
+    return get_width(t) / 2;
+
+  return -1;
+}
+
+
+// This method implements rules such as that a bool would prefer to
+// coerce to 'int' over 'int(8)'.
+// Returns
+//  0 if there is no preference
+//  1 if f1Type is better
+//  2 if f2Type is better
+static int prefersCoercionToOtherNumericType(Type* actualType,
+                                             Type* f1Type,
+                                             Type* f2Type) {
+  int acWidth = classifyNumericWidth(actualType);
+  int f1Width = classifyNumericWidth(f1Type);
+  int f2Width = classifyNumericWidth(f2Type);
+
+  if (acWidth == f1Width && acWidth != f2Width)
+    return 1;
+
+  if (acWidth != f1Width && acWidth == f2Width)
+    return 2;
+
+  return 0;
+}
+
+
 static bool fits_in_bits_no_sign(int width, int64_t i) {
   // is it between -2**width .. 2**width, inclusive?
   int64_t p = 1;
@@ -6203,14 +6260,6 @@ static int testArgMapping(FnSymbol*                    fn1,
     return 2;
   }
 
-  /* if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
-    prefer1 = WEAK; reason = "no narrows vs narrows";
-
-  } else if (!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
-    prefer2 = WEAK; reason = "no narrows vs narrows";
-    }
-    */
-
   if (actualType == f1Type && actualType != f2Type) {
     reason = "actual type vs not";
     return 1;
@@ -6231,36 +6280,25 @@ static int testArgMapping(FnSymbol*                    fn1,
     return 2;
   }
 
-  /* if (prefersCoercionToOtherNumericType(actualScalarType,
-                                               f1Type, f2Type,
-                                               paramWithDefaultSize)) {
-    if (paramWithDefaultSize)
-      prefer1 = WEAKEST;
-    else
-      prefer1 = WEAKER;
-
-    reason = "preferred coercion to other";
-
-  } else if (prefersCoercionToOtherNumericType(actualScalarType,
-                                               f2Type, f1Type,
-                                               paramWithDefaultSize)) {
-    if (paramWithDefaultSize)
-      prefer2 = WEAKEST;
-    else
-      prefer2 = WEAKER;
-
-    reason = "preferred coercion to other";
-    }
-  */
-
   if (f1Type != f2Type) {
+    int p = prefersCoercionToOtherNumericType(actualScalarType,
+                                              f1Type, f2Type);
+    if (p == 1) {
+      reason = "preferred coercion to other";
+      return 1;
+    }
+    if (p == 2) {
+      reason = "preferred coercion to other";
+      return 2;
+    }
+
     bool fn1Dispatches = moreSpecificCanDispatch(fn1, f1Type, f2Type);
     bool fn2Dispatches = moreSpecificCanDispatch(fn2, f2Type, f1Type);
-
     if (fn1Dispatches && !fn2Dispatches) {
       reason = "can dispatch";
       return 1;
-    } else if (!fn1Dispatches && fn2Dispatches) {
+    }
+    if (!fn1Dispatches && fn2Dispatches) {
       reason = "can dispatch";
       return 2;
     }
