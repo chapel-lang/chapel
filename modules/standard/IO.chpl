@@ -1410,6 +1410,7 @@ private const IOHINTS_SEQUENTIAL:  c_int = QIO_HINT_SEQUENTIAL;
 private const IOHINTS_RANDOM:      c_int = QIO_HINT_RANDOM;
 private const IOHINTS_PREFETCH:    c_int = QIO_HINT_CACHED;
 private const IOHINTS_MMAP:        c_int = QIO_METHOD_MMAP;
+private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
 
 /* A value of the :record:`ioHintSet` type defines a set of hints about
   the I/O that the file or channel will perform.  These hints may be used
@@ -1459,8 +1460,13 @@ record ioHintSet {
   */
   proc type mmap { return new ioHintSet(IOHINTS_MMAP); }
 
+  /* Suggests that 'mmap' should not be used to access the file contents.
+  Instead, pread/pwrite are used.
+  */
+  proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
+
   pragma "no doc"
-  proc type direct(constant: c_int) { return new ioHintSet(constant); }
+  proc type fromFlag(flag: c_int) { return new ioHintSet(flag); }
 }
 
 /* Compute the union of two ioHintSets

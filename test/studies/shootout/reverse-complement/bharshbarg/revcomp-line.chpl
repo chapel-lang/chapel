@@ -129,7 +129,7 @@ proc main(args: [] string) {
   }
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
-                                     hints=ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
+                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
   //
   // Necessary for now because list `readWriteThis` includes formatting chars,
   // while arrays do not.
