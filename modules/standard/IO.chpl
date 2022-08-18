@@ -2551,36 +2551,51 @@ inline proc channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
+deprecated "channel.seek with a start and/or end argument is deprecated.  Please use the new region argument instead"
+proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
+  this.seek(start..end);
+}
 /*
    Reset a channel to point to a new part of a file.
    This function allows one to jump to a different part of a
    file without creating a new channel. It can only be called
    on a channel with ``locking==false``.
 
-   Besides setting a new start position, this function allows
-   one to specify a new end position. Specifying the end position
-   is usually not necessary for correct behavior but it might be
+   The region specified must have a lower bound, but does not need to have
+   a high bound for correctness.  Specifying the high bound might be
    an important performance optimization since the channel will not
-   try to read data outside of the start..end region.
+   try to read data outside of the region.
 
    This function will, in most cases, discard the channel's buffer.
    When writing, the data will be saved to the file before discarding.
 
-   :arg start: the new start offset, measured in bytes and counting from 0
-   :arg end: optionally, a new end offset, measured in bytes and counting from 0
-   :throws: SystemError: if seeking failed. Possible reasons include
+   :arg region: the new region, measured in bytes and counting from 0
+   :throws SystemError: if seeking failed. Possible reasons include
                          that the file is not seekable, or that the
                          channel is marked.
+   :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
+proc channel.seek(region: range(?)) throws {
 
   if this.locking then
     compilerError("Cannot seek on a locking channel");
 
-  const err = qio_channel_seek(_channel_internal, start, end);
+  if (!region.hasLowBound()) {
+    throw new IllegalArgumentError("region", "must have a lower bound");
+  }
 
-  if err then
-    throw SystemError.fromSyserr(err);
+  if (region.hasHighBound()) {
+    const err = qio_channel_seek(_channel_internal, region.low, region.high);
+
+    if err then
+      throw SystemError.fromSyserr(err);
+
+  } else {
+    const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
+
+    if err then
+      throw SystemError.fromSyserr(err);
+  }
 }
 
 

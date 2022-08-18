@@ -77,7 +77,7 @@ writeln(readRes);
 validateFileWriter1.close();
 
 var fileWriterCheck2 = f4.writer(end=4); // should warn
-fileWriterCheck2.write("Here");
+fileWriterCheck2.write("This");
 fileWriterCheck2.close();
 
 var validateFileWriter2 = f4.reader();
@@ -95,3 +95,20 @@ writeln(readRes);
 validateFileWriter3.close();
 
 f4.close();
+
+// Test channel.seek
+
+var seekCh = openreader(filename, locking=false);
+seekCh.seek(13); // should warn
+seekCh.readLine(readRes, stripNewline=true);
+writeln(readRes);
+
+seekCh.seek(start=4); // should warn
+seekCh.readLine(readRes, stripNewline=true);
+writeln(readRes);
+
+seekCh.seek(0, 14); // should warn
+seekCh.readLine(readRes, stripNewline=true);
+writeln(readRes);
+
+seekCh.close();
