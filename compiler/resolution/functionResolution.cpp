@@ -5989,6 +5989,11 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   }
 
   // tie-breaking rule: number of implicit conversions
+  // e.g. to resolve an ambiguity with
+  //   proc f(x: int, y: int)
+  //   proc f(x: real(32), y: real(32))
+  //   proc f(x: real, y: real)
+  //   f(myInt64, 1.0:real(32))
   if (!prefer1 && !prefer2) {
     int nImplicitConversions1 = 0;
     int nImpConvToTypeNotMent1 = 0;
@@ -6008,6 +6013,10 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   }
 
   // tie-breaking rule: number of param narrowing conversions
+  // e.g. this rule prevents an ambiguity with
+  //   proc f(x: int,    y: int)
+  //   proc f(x: int(8), y: int(8))
+  //   f(1, 1:int(8))
   if (!prefer1 && !prefer2) {
     if (DS.fn1NumParamNarrowing != DS.fn2NumParamNarrowing) {
       EXPLAIN("\nU: preferring function with fewer param narrowing conversions\n");
@@ -6281,6 +6290,12 @@ static int testArgMapping(FnSymbol*                    fn1,
   }
 
   if (f1Type != f2Type) {
+    // e.g. to help with
+    //   sin(1) calling the real(64) version (vs real(32) version)
+    //
+    //   proc f(complex(64), complex(64))
+    //   proc f(complex(128), complex(128))
+    //   f(1.0, 1.0i) calling the complex(128) version
     int p = prefersCoercionToOtherNumericType(actualScalarType,
                                               f1Type, f2Type);
     if (p == 1) {
