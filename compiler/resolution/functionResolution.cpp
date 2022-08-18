@@ -6143,81 +6143,95 @@ static int testArgMapping(FnSymbol*                    fn1,
     DS.fn2NumParamNarrowing++;
   }
 
+  // consider promotion
   if (!formal1Promotes && formal2Promotes) {
     reason = "no promotion vs promotes";
     return 1;
+  }
 
-  } else if (formal1Promotes && !formal2Promotes) {
+  if (formal1Promotes && !formal2Promotes) {
     reason = "no promotion vs promotes";
     return 2;
+  }
 
-  } else if (f1Type == f2Type           &&
-             !formal1->instantiatedFrom &&
-             formal2->instantiatedFrom) {
+  // consider concrete vs generic functions
+  if (f1Type == f2Type           &&
+      !formal1->instantiatedFrom && formal2->instantiatedFrom) {
     reason = "concrete vs generic";
     return 1;
+  }
 
-  } else if (f1Type == f2Type &&
-             formal1->instantiatedFrom &&
-             !formal2->instantiatedFrom) {
+  if (f1Type == f2Type &&
+      formal1->instantiatedFrom && !formal2->instantiatedFrom) {
     reason = "concrete vs generic";
     return 2;
+  }
 
-  } else if (formal1->instantiatedFrom != dtAny &&
-             formal2->instantiatedFrom == dtAny) {
+  if (formal1->instantiatedFrom != dtAny &&
+      formal2->instantiatedFrom == dtAny) {
     reason = "generic any vs partially generic/concrete";
     return 1;
+  }
 
-  } else if (formal1->instantiatedFrom == dtAny &&
-             formal2->instantiatedFrom != dtAny) {
+  if (formal1->instantiatedFrom == dtAny &&
+      formal2->instantiatedFrom != dtAny) {
     reason = "generic any vs partially generic/concrete";
     return 2;
+  }
 
-  } else if (formal1->instantiatedFrom &&
-             formal2->instantiatedFrom &&
-             formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-             !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+  if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+      formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+      !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
     reason = "partially generic vs generic";
     return 1;
+  }
 
-  } else if (formal1->instantiatedFrom &&
-             formal2->instantiatedFrom &&
-             !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-             formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+  if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+      !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+      formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
     reason = "partially generic vs generic";
     return 2;
+  }
 
-  } else if (f1Param && !f2Param) {
+  if (f1Param && !f2Param) {
     reason = "param vs not";
     return 1;
+  }
 
-  } else if (!f1Param && f2Param) {
+  if (!f1Param && f2Param) {
     reason = "param vs not";
     return 2;
+  }
 
-  /*} else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
+  /* if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
     prefer1 = WEAK; reason = "no narrows vs narrows";
 
   } else if (!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
-    prefer2 = WEAK; reason = "no narrows vs narrows";*/
+    prefer2 = WEAK; reason = "no narrows vs narrows";
+    }
+    */
 
-  } else if (actualType == f1Type && actualType != f2Type) {
+  if (actualType == f1Type && actualType != f2Type) {
     reason = "actual type vs not";
     return 1;
+  }
 
-  } else if (actualType == f2Type && actualType != f1Type) {
+  if (actualType == f2Type && actualType != f1Type) {
     reason = "actual type vs not";
     return 2;
+  }
 
-  } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
+  if (actualScalarType == f1Type && actualScalarType != f2Type) {
     reason = "scalar type vs not";
     return 1;
+  }
 
-  } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
+  if (actualScalarType == f2Type && actualScalarType != f1Type) {
     reason = "scalar type vs not";
     return 2;
+  }
 
-  /*} else if (prefersCoercionToOtherNumericType(actualScalarType,
+  /* if (prefersCoercionToOtherNumericType(actualScalarType,
                                                f1Type, f2Type,
                                                paramWithDefaultSize)) {
     if (paramWithDefaultSize)
@@ -6236,9 +6250,10 @@ static int testArgMapping(FnSymbol*                    fn1,
       prefer2 = WEAKER;
 
     reason = "preferred coercion to other";
+    }
   */
 
-  } else if (f1Type != f2Type) {
+  if (f1Type != f2Type) {
     bool fn1Dispatches = moreSpecificCanDispatch(fn1, f1Type, f2Type);
     bool fn2Dispatches = moreSpecificCanDispatch(fn2, f2Type, f1Type);
 
