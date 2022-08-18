@@ -209,7 +209,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
           modSym->generateDeprecationWarning(this);
         }
 
-        if (modSym->hasFlag(FLAG_UNSTABLE)) {
+        if (modSym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
           modSym->generateUnstableWarning(this);
         }
 
@@ -398,7 +398,7 @@ void ImportStmt::validateUnqualified() {
             sym->generateDeprecationWarning(this);
           }
 
-          if (sym->hasFlag(FLAG_UNSTABLE)) {
+          if (sym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
             sym->generateUnstableWarning(this);
           }
         }

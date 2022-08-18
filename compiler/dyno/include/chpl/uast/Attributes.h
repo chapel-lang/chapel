@@ -47,7 +47,7 @@ class Attributes final : public AstNode {
   // TODO: Do we want to preserve the location of string literals used in
   // pragmas and deprecation messages?
   Attributes(std::set<PragmaTag> pragmas, 
-             bool isDeprecated,  //add new parameters for unstable -- must update new attributes in other folders as well to take in same # of parameters
+             bool isDeprecated,
              bool isUnstable,
              UniqueString deprecationMessage,
              UniqueString unstableMessage)
