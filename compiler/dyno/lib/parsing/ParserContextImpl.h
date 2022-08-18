@@ -226,7 +226,7 @@ void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
     }
 
     delete messageStr;
-  } 
+  }
 }
 void ParserContext::resetAttributePartsState() {
   if (hasAttributeParts) {

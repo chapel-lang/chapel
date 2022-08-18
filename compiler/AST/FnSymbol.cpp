@@ -1229,7 +1229,7 @@ void FnSymbol::printDocs(std::ostream* file, unsigned int tabs) {
       this->printDocsDeprecation(this->doc, file, tabs + 1,
                                  this->getDeprecationMsg(), true);
     }
-    
+
     if (this->hasFlag(FLAG_UNSTABLE)) {
       this->printDocsUnstable(this->doc, file, tabs + 1,
                               this->getUnstableMsg(), true);

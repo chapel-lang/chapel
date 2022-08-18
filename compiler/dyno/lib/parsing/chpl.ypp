@@ -2084,7 +2084,7 @@ class_level_stmt_ls:
 | class_level_stmt_ls unstable_class_level_stmt
   {
     context->appendList($1, $2);
-  }  
+  }
 | class_level_stmt_ls pragma_ls deprecated_class_level_stmt
   {
     context->appendList($1, context->buildPragmaStmt(@3, $3));
@@ -2169,7 +2169,7 @@ enum_ls:
   {
     context->appendList($1, $4);
     context->resetAttributePartsState();
-  } 
+  }
 
 ;
 

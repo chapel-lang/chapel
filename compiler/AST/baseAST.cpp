@@ -604,7 +604,7 @@ void BaseAST::printDocsUnstable(const char *doc, std::ostream *file,
   *file << std::endl;
   this->printTabs(file, tabs+1);
   *file << unstableMsg << std::endl;
-  
+
   if (extraLine) {
     *file << std::endl;
   }

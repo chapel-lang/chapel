@@ -421,7 +421,7 @@ void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
                                this->symbol->getDeprecationMsg(),
                                !fDocsTextOnly);
   }
-  
+
   if (this->symbol->hasFlag(FLAG_UNSTABLE)) {
     this->printDocsUnstable(this->symbol->doc, file, tabs + 1,
                                this->symbol->getUnstableMsg(),

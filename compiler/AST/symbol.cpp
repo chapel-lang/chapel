@@ -451,7 +451,7 @@ const char* Symbol::getDeprecationMsg() const {
   if (deprecationMsg[0] == '\0') {
     const char* msg = astr(name, " is deprecated");
     return msg;
-  } 
+  }
   else {
     return deprecationMsg.c_str();
   }
@@ -461,7 +461,7 @@ const char* Symbol::getUnstableMsg() const {
   if (unstableMsg[0] == '\0') {
     const char* msg = astr(name, " is unstable");
     return msg;
-  } 
+  }
   else {
     return unstableMsg.c_str();
   }

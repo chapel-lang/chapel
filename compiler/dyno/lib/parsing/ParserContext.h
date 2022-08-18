@@ -156,7 +156,7 @@ struct ParserContext {
   owned<Attributes> buildAttributes(YYLTYPE locationOfDecl);
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
   void noteDeprecation(YYLTYPE loc, AstNode* messageStr);
-  void noteUnstable(YYLTYPE loc, AstNode* messageStr); 
+  void noteUnstable(YYLTYPE loc, AstNode* messageStr);
   void resetAttributePartsState();
 
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);

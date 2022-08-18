@@ -830,7 +830,7 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
     if (outerMod->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
       outerMod->generateUnstableWarning(call);
     }
-    
+
     const char* rhsName = getNameFrom(call->get(2));
     INT_ASSERT(rhsName != NULL);
 

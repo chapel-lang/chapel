@@ -3746,7 +3746,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   if (retval && retval->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
     retval->generateUnstableWarning(info.call);
   }
-  
+
   return retval;
 }
 
