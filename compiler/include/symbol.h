@@ -236,11 +236,14 @@ public:
   Expr*              getInitialization()                       const;
 
   std::string deprecationMsg;
-
   const char* getDeprecationMsg() const;
-  const char* getSanitizedDeprecationMsg() const;
-
   void generateDeprecationWarning(Expr* context);
+
+  std::string unstableMsg;
+  const char* getUnstableMsg() const;
+  void generateUnstableWarning(Expr* context);
+
+  const char* getSanitizedMsg(std::string msg) const;
 
 protected:
                      Symbol(AstTag      astTag,

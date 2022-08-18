@@ -221,6 +221,10 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
         symAndName.first->generateDeprecationWarning(this);
       }
 
+      if (symAndName.first->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
+        symAndName.first->generateUnstableWarning(this);
+      }
+
     }
 
   } else {
@@ -380,6 +384,11 @@ void UseStmt::validateNamed() {
           if (sym->hasFlag(FLAG_DEPRECATED)) {
             sym->generateDeprecationWarning(this);
           }
+
+          if (sym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
+            sym->generateUnstableWarning(this);
+          }
+
         }
       }
     }
