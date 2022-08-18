@@ -202,8 +202,8 @@ module ChapelLocale {
   /*
     Get the unique integer identifier for this locale.
 
-  :returns: index of this locale in the range ``0..numLocales-1``
-  :rtype: int
+    :returns: index of this locale in the range ``0..numLocales-1``
+    :rtype: int
 
   */
   inline proc locale.id: int {
@@ -211,19 +211,26 @@ module ChapelLocale {
   }
 
   /*
-    This is the maximum task concurrency that one can expect to
-    achieve on this locale.  The value is an estimate by the
-    runtime tasking layer.  Typically it is the number of physical
-    processor cores available to the program.  Creating more tasks
-    than this will probably increase walltime rather than decrease
-    it.
+    Get the maximum task concurrency that one can expect to
+    achieve on this locale.
+
+    :returns: the maximum number of tasks that can run in parallel
+      on this locale
+    :rtype: int
+
+    Note that the value is an estimate by the runtime tasking layer.
+    Typically it is the number of physical processor cores available
+    to the program.  Executing a data-parallel construct with more
+    tasks this that is unlikely to improve performance.
   */
-  inline proc locale.maxTaskPar { return this._value.maxTaskPar; }
+  inline proc locale.maxTaskPar: int { return this._value.maxTaskPar; }
 
   // the following are normally taken care of by `forwarding`. However, they
   // don't work if they are called in a promoted expression. See 15148
 
   /*
+    Get the number of processing units available on this locale.
+
     A *processing unit* or *PU* is an instance of the processor
     architecture, basically the thing that executes instructions.
     :proc:`locale.numPUs` tells how many of these are present on this
@@ -243,8 +250,8 @@ module ChapelLocale {
     :returns: number of PUs
     :rtype: `int`
 
-    There are several things that can cause the OS to limit the
-    processor resources available to a Chapel program.  On plain
+    Note that there are several things that can cause the OS to limit
+    the processor resources available to a Chapel program.  On plain
     Linux systems using the ``taskset(1)`` command will do it.  On
     Cray systems the ``CHPL_LAUNCHER_CORES_PER_LOCALE`` environment
     variable may do it, indirectly via the system job launcher.
@@ -253,7 +260,7 @@ module ChapelLocale {
     running programs within Cray batch jobs that have been set up
     with limited processor resources.
   */
-  inline proc locale.numPUs(logical: bool = false, accessible: bool = true) {
+  inline proc locale.numPUs(logical: bool = false, accessible: bool = true): int {
     return this._value.numPUs(logical, accessible);
   }
 
@@ -267,6 +274,8 @@ module ChapelLocale {
   inline proc locale.callStackSize { return this._value.callStackSize; }
 
   /*
+    Get the number of tasks running on this locale.
+
     :returns: the number of tasks that have begun executing, but have not yet finished
     :rtype: `int`
 
@@ -287,7 +296,7 @@ module ChapelLocale {
     them.
   */
   pragma "fn synchronization free"
-  proc locale.runningTasks() {
+  proc locale.runningTasks(): int {
     return this.runningTaskCnt();
   }
 
