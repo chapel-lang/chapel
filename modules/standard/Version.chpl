@@ -103,8 +103,8 @@ module Version {
                      minor: int,
                      update: int = 0,
                      commit: string = ""): sourceVersion(?) {
-    return new sourceVersion(isParam=false, cmajor=major, cminor=minor,
-                             cupdate=update, ccommit=commit);
+    return new sourceVersion(isParam=false, vmajor=major, vminor=minor,
+                             vupdate=update, vcommit=commit);
   }
 
 
@@ -148,8 +148,8 @@ module Version {
     /* The commit ID of the version (e.g., a Git SHA) */
     param pcommit: string = "";
 
-    const cmajor, cminor, cupdate: if !isParam then int else nothing;
-    const ccommit: if !isParam then string else nothing;
+    var vmajor, vminor, vupdate: if !isParam then int else nothing;
+    var vcommit: if !isParam then string else nothing;
 
 
     proc major param where (isParam) {
@@ -157,7 +157,7 @@ module Version {
     }
 
     proc major where (!isParam) {
-      return cmajor;
+      return vmajor;
     }
 
     proc minor param where (isParam) {
@@ -165,7 +165,7 @@ module Version {
     }
 
     proc minor where (!isParam) {
-      return cminor;
+      return vminor;
     }
 
     proc update param where (isParam) {
@@ -173,7 +173,7 @@ module Version {
     }
 
     proc update where (!isParam) {
-      return cupdate;
+      return vupdate;
     }
 
     proc commit param where (isParam) {
@@ -181,7 +181,7 @@ module Version {
     }
 
     proc commit where (!isParam) {
-      return ccommit;
+      return vcommit;
     }
 
     pragma "no doc"
@@ -204,12 +204,12 @@ module Version {
 
   pragma "no doc"
   operator :(x: sourceVersion(?), type t: string) where (!x.isParam) {
-    if (x.ccommit == "") then
-      return ("version " + x.cmajor:string + "." + x.cminor:string + "." +
-              x.cupdate:string);
+    if (x.vcommit == "") then
+      return ("version " + x.vmajor:string + "." + x.vminor:string + "." +
+              x.vupdate:string);
     else
-      return ("version " + x.cmajor:string + "." + x.cminor:string + "." +
-              x.cupdate:string + " (" + x.ccommit + ")");
+      return ("version " + x.vmajor:string + "." + x.vminor:string + "." +
+              x.vupdate:string + " (" + x.vcommit + ")");
   }
 
 
