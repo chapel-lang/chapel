@@ -1460,7 +1460,7 @@ record ioHintSet {
   */
   proc type mmap { return new ioHintSet(IOHINTS_MMAP); }
 
-  /* Suggests that 'mmap' should not be used to acces the file contents.
+  /* Suggests that 'mmap' should not be used to access the file contents.
   Instead, pread/pwrite are used.
   */
   proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
