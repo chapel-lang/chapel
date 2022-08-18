@@ -34,7 +34,7 @@ def get_gpu_mem_strategy():
     if memtype:
         # TODO check if meaningful
         return memtype
-    return "page_migration"
+    return "array_on_device"
 
 
 def get_cuda_libdevice_path():
