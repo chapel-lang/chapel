@@ -3,26 +3,19 @@
 // but one of those for each numeric type
 
 proc f(x: integral, y: integral) {
-  writeln("  f(", x.type:string, ",", y.type:string, ")");
+  writeln("  f(integral, integral)");
 }
 proc f(x: chpl_anyreal, y: chpl_anyreal) {
-  writeln("  f(", x.type:string, ",", y.type:string, ")");
+  writeln("  f(anyreal, anyreal)");
 }
 proc f(x: chpl_anyimag, y: chpl_anyimag) {
-  writeln("  f(", x.type:string, ",", y.type:string, ")");
+  writeln("  f(anyimag, anyimag)");
 }
 proc f(x: chpl_anycomplex, y: chpl_anycomplex) {
-  writeln("  f(", x.type:string, ",", y.type:string, ")");
+  writeln("  f(anycomplex, anycomplex)");
 }
 proc f(x, y) {
-  writeln("  f(generic)");
-}
-
-proc isProhibitedAdd(type t1, type t2) param {
-  return isUintType(t1) && isIntType(t2) && numBits(t1) >= numBits(t2);
-//  return (t1 == uint && isIntType(t2)) ||
-//         (isUintType(t1) && isIntType(t2) && numBits(t1) >= numBits(t1)) ||
-//         (t1 == uint && isUintType(t2) && t2 != uint); // bug workaround
+  writeln("  f(generic, generic)");
 }
 
 // next, call 'f' with all combinations of numeric types
@@ -35,10 +28,8 @@ proc callF(type t1, type t2) {
   writef("      Reversed %-12s -> ", "");
   f(y, x);
 
-  if (!isProhibitedAdd(t1, t2) && !isProhibitedAdd(t2, t1)) {
-    writef("               %-12s ->   ", "+");
-    writeln((x+y).type:string);
-  }
+  writef("               %-12s ->   ", "+");
+  writeln((x+y).type:string);
 }
 
 proc callFVaryT2(type t1) {
