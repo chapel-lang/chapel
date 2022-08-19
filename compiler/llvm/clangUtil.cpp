@@ -4353,29 +4353,17 @@ void makeBinaryLLVM(void) {
 
   std::string options = "";
 
-
   std::string maino(CHPL_RUNTIME_LIB);
   maino += "/";
   maino += CHPL_RUNTIME_SUBDIR;
   maino += "/main.o";
 
-  // TODO: move this logic to printchplenv
-  std::string runtime_ld_override(CHPL_RUNTIME_LIB);
-  runtime_ld_override += "/";
-  runtime_ld_override += CHPL_RUNTIME_SUBDIR;
-  runtime_ld_override += "/override-ld";
-
-  std::vector<std::string> ldOverride;
-  readArgsFromFile(runtime_ld_override, ldOverride);
-  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
-  expandInstallationPaths(ldOverride);
-
   std::string clangCC = clangInfo->clangCC;
   std::string clangCXX = clangInfo->clangCXX;
   std::string useLinkCXX = clangCXX;
 
-  if (ldOverride.size() > 0)
-    useLinkCXX = ldOverride[0];
+  if (CHPL_TARGET_LD != nullptr && CHPL_TARGET_LD[0] != '\0')
+    useLinkCXX = CHPL_TARGET_LD;
 
   // start with arguments from CHPL_LLVM_CLANG_C unless
   // using a non-clang compiler to link

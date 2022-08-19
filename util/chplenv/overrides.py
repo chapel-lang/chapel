@@ -9,48 +9,71 @@ import sys
 from utils import memoize, warning
 
 # List of Chapel Environment Variables
+# Note: this array lists them in an order that matches
+#   printchplenv --all --no-tidy
+# But some variables are included here so that they can be overridden
+# in a chplconfig file even though they are not in that output.
+# When such variables are related to others, we include them in the same group.
 chplvars = [
              'CHPL_HOME',
+
              'CHPL_HOST_PLATFORM',
              'CHPL_HOST_COMPILER',
              'CHPL_HOST_CC',
              'CHPL_HOST_CXX',
              'CHPL_HOST_ARCH',
-             'CHPL_HOST_CPU',
-             'CHPL_HOST_MEM',
+             'CHPL_HOST_CPU', # note: not in printchplenv --all
+
              'CHPL_TARGET_PLATFORM',
              'CHPL_TARGET_COMPILER',
              'CHPL_TARGET_CC',
              'CHPL_TARGET_CXX',
+             'CHPL_TARGET_LD',
              'CHPL_TARGET_ARCH',
              'CHPL_TARGET_CPU',
-             'CHPL_TARGET_MEM',
+
              'CHPL_LOCALE_MODEL',
+             'CHPL_GPU_CODEGEN',
+             'CHPL_GPU_RUNTIME',
+             'CHPL_CUDA_PATH',
+
              'CHPL_COMM',
              'CHPL_COMM_SUBSTRATE',
              'CHPL_GASNET_SEGMENT',
              'CHPL_LIBFABRIC',
+
              'CHPL_TASKS',
              'CHPL_LAUNCHER',
              'CHPL_TIMERS',
              'CHPL_UNWIND',
+
+             'CHPL_HOST_MEM',
+             'CHPL_TARGET_MEM', # note: not in printchplenv --all
              'CHPL_MEM',
-             'CHPL_MAKE',
-             'CHPL_ATOMICS',
-             'CHPL_NETWORK_ATOMICS',
-             'CHPL_GMP',
-             'CHPL_HWLOC',
-             'CHPL_JEMALLOC',
+             'CHPL_JEMALLOC', # note: these 3 are not in printchplenv --all
              'CHPL_HOST_JEMALLOC',
              'CHPL_TARGET_JEMALLOC',
+
+             'CHPL_ATOMICS',
+             'CHPL_NETWORK_ATOMICS',
+
+             'CHPL_GMP',
+             'CHPL_HWLOC',
              'CHPL_RE2',
+
              'CHPL_LLVM',
+             'CHPL_LLVM_SUPPORT',
              'CHPL_LLVM_CONFIG',
+             # CHPL_LLVM_VERSION -- doesn't make sense to override it
+             'CHPL_LLVM_GCC_PREFIX', # not in printchplenv --all
+
              'CHPL_AUX_FILESYS',
              'CHPL_LIB_PIC',
              'CHPL_SANITIZE',
              'CHPL_SANITIZE_EXE',
-             'CHPL_LLVM_GCC_PREFIX',
+
+             # These are not in printchplenv --all
+             'CHPL_MAKE',
              'CHPL_HOST_USE_SYSTEM_LIBCXX',
            ]
 

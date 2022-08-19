@@ -74,6 +74,7 @@ void chpl_mem_exit(void);
 
 int chpl_mem_inited(void);
 
+extern void* chpl_gpu_memmove(void* dest, const void* src, size_t num);
 
 static inline
 void* chpl_mem_allocMany(size_t number, size_t size,
@@ -166,7 +167,11 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 static inline
 void* chpl_memmove(void* dest, const void* src, size_t num)
 {
-  return memmove(dest, src, num);
+#ifdef HAS_GPU_LOCALE
+    return chpl_gpu_memmove(dest, src, num);
+#else
+    return memmove(dest, src, num);
+#endif
 }
 
 // Query the allocator to ask for a good size to allocate that is at least

@@ -21,9 +21,10 @@ Overview
 To deploy code to a GPU, put the relevant code in an ``on`` statement targeting
 a GPU sublocale (i.e. ``here.gpus[0]``).
 
-Any arrays that are declared in the body of this ``on`` statement will be
+Any arrays that are declared by tasks executing on a GPU sublocale will be
 allocated into unified memory and will be accessible on the GPU. Chapel will
-generate CUDA kernels for all eligible loops in the ``on`` block. Loops are
+launch CUDA kernels for all eligible loops (instead of running the loop on the
+CPU) that are encountered by tasks executing on a GPU sublocale. Loops are
 eligible when:
 
 * They are order-independent (e.g., `forall` or `foreach`).
@@ -44,6 +45,8 @@ before building Chapel. Chapel's build system will automatically try and deduce
 where your installation of CUDA exists. If the build system fails to do this,
 or you would like to use a different CUDA installation, you can set
 ``CHPL_CUDA_PATH`` environment variable to the CUDA installation root.
+
+``CHPL_TASKS=qthreads`` is required for GPU support.
 
 We also suggest setting ``CHPL_RT_NUM_THREADS_PER_LOCALE=1`` (this is necessary
 if using CUDA 10).

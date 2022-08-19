@@ -53,6 +53,10 @@ def get_runtime_includes_and_defines():
     if locale_model == "gpu":
         # this -D is needed since it affects code inside of headers
         bundled.append("-DHAS_GPU_LOCALE")
+        memtype = chpl_gpu.get_gpu_mem_strategy()
+        if memtype == "array_on_device":
+            bundled.append("-DCHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE")
+
         # If compiling for GPU locales, add CUDA runtime headers to include path
         cuda_path = chpl_gpu.get_cuda_path()
         system.append("-I" + os.path.join(cuda_path, "include"))
@@ -200,3 +204,14 @@ def compute_internal_compile_link_args(runtime_subdir):
             'host_link': host_link,
             'target_compile': tgt_compile,
             'target_link': tgt_link}
+
+# return the target linker to use (it can be overriden by gasnet)
+# this function returns an array of arguments
+#  e.g. ['clang++', '--gcc-toolchain=/usr']
+def get_target_link_command():
+    if chpl_comm.get() == 'gasnet':
+        override_ld = chpl_gasnet.get_override_ld()
+        if override_ld != None:
+            return override_ld.split()
+
+    return chpl_compiler.get_compiler_command('target', 'cxx')

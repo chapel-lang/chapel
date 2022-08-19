@@ -4,5 +4,5 @@ testname=$1
 outfile=$2
 
 tmpfile=$outfile.prediff.tmp
-grep 'Kernel launch' $outfile | wc -l > $tmpfile
+grep 'Kernel launcher called' $outfile | wc -l > $tmpfile
 mv $tmpfile $outfile

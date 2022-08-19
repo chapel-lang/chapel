@@ -47,7 +47,7 @@ var files: list(string);
 /* Runs the .chpl files found within the /tests directory of Mason packages
    or files which in the path provided.
 */
-proc masonTest(args: [] string) throws {
+proc masonTest(args: [] string, checkProj=true) throws {
 
   var parser = new argumentParser(helpHandler=new MasonTestHelpHandler());
 
@@ -61,6 +61,7 @@ proc masonTest(args: [] string) throws {
   var parFlag = parser.addFlag(name="parallel", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var setCommOpt = parser.addOption(name="setComm", defaultValue="none");
+  var skipCheckFlag = parser.addFlag(name="skipCheck", defaultValue=false);
 
   // TODO: Why doesn't masonTest support a passthrough for values that should
   // go to the runtime?
@@ -72,12 +73,19 @@ proc masonTest(args: [] string) throws {
   var show = showFlag.valueAsBool();
   var run = !runFlag.valueAsBool();
   var parallel = parFlag.valueAsBool();
+  var skipCheck = skipCheckFlag.valueAsBool();
   keepExec = keepFlag.valueAsBool();
   subdir = recursFlag.valueAsBool();
   if updateFlag.hasValue() {
     skipUpdate = !updateFlag.valueAsBool();
   }
   if setCommOpt.hasValue() then setComm = setCommOpt.value();
+
+  if checkProj && !skipCheck {
+    const projectType = getProjectType();
+    if projectType == "light" then
+      throw new owned MasonError("Mason light projects do not currently support 'mason test'");
+  }
 
 
   var compopts: list(string);

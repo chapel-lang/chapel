@@ -1,0 +1,5 @@
+perfkeys: Performance (GB/s) =
+files: stream.dat
+graphkeys: Performance (GB/s)
+ylabel: Performance (GB/s)
+graphtitle: STREAM Performance (GB/s)

@@ -46,20 +46,33 @@ proc masonNew(args: [] string) throws {
                                  opts=["--name"]);
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var appFlag = parser.addFlag(name="app", defaultValue=false);
+  var libFlag = parser.addFlag(name="lib", defaultValue=false);
+  var lightFlag = parser.addFlag(name="light", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
 
   parser.parseArgs(args);
 
   var vcs = !vcsFlag.valueAsBool();
   var show = showFlag.valueAsBool();
+  var isApplication = appFlag.valueAsBool();
+  var isLibrary = libFlag.valueAsBool();
+  var isLightweight = lightFlag.valueAsBool();
+
+  if isApplication + isLibrary + isLightweight > 1 then
+    throw new owned MasonError("A mason package cannot be of multiple types");
+
   var packageName = '';
   var dirName = '';
   var version = '';
   var chplVersion = '';
   var license = 'None';
+  // Default created mason project is a package (has a main func)
+  var packageType = 'application';
 
   try! {
     if args.size == 1 {
+      // TODO: should we move interactive mason creation?
       var metadata = beginInteractiveSession('','','','');
       packageName = metadata[0];
       dirName = packageName;
@@ -73,13 +86,19 @@ proc masonNew(args: [] string) throws {
       } else {
         packageName = dirName;
       }
+      if isApplication then
+        packageType = "application";
+      else if isLibrary then
+        packageType = "library";
+      else if isLightweight then
+        packageType = "light";
     }
-    if validatePackageName(dirName=packageName) {
+    if !isLightweight && validatePackageName(dirName=packageName) {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");
       }
-      InitProject(dirName, packageName, vcs, show, version, chplVersion, license);
     }
+    InitProject(dirName, packageName, vcs, show, version, chplVersion, license, packageType);
   }
   catch e: MasonError {
     writeln(e.message());
@@ -212,7 +231,8 @@ proc exitOnEOF(parameter) {
 
 /* Previews the Mason.toml file that is going to be created */
 proc previewMasonFile(packageName, version, chapelVersion, license) {
-  const baseToml = getBaseTomlString(packageName, version, chapelVersion, license);
+  // TODO: update hardcode
+  const baseToml = getBaseTomlString(packageName, version, chapelVersion, license, "application");
   writeln();
   writeln(baseToml);
 }
@@ -256,25 +276,33 @@ proc validatePackageName(dirName) throws {
   directories such as .git, src, example, test
 */
 proc InitProject(dirName, packageName, vcs, show,
-                  version: string, chplVersion: string, license: string) throws {
-  if vcs {
-    gitInit(dirName, show);
-    addGitIgnore(dirName);
-  }
-  else {
-    mkdir(dirName);
-  }
-  // Confirm git init before creating files
-  if isDir(dirName) {
-    makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license);
-    makeSrcDir(dirName);
-    makeModule(dirName, fileName=packageName);
-    makeTestDir(dirName);
-    makeExampleDir(dirName);
-    writeln("Created new library project: " + dirName);
-  }
-  else {
-    throw new owned MasonError("Failed to create project");
+                 version: string, chplVersion: string, license: string,
+                 packageType: string) throws {
+  if packageType == "light" {
+    // TODO: add ability to get path and toml name from user
+    var lightDir = here.cwd();
+    makeBasicToml(dirName=packageName, path=lightDir, version, chplVersion, license, packageType);
+    writeln("Created new " + packageType + " project in current directory");
+  } else {
+    if vcs {
+      gitInit(dirName, show);
+      addGitIgnore(dirName);
+    }
+    else {
+      mkdir(dirName);
+    }
+    // Confirm git init before creating files
+    if isDir(dirName) {
+      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license, packageType);
+      makeSrcDir(dirName);
+      makeModule(dirName, fileName=packageName, packageType);
+      makeTestDir(dirName);
+      makeExampleDir(dirName);
+      writeln("Created new " + packageType + " project: " + dirName);
+    }
+    else {
+      throw new owned MasonError("Failed to create project");
+    }
   }
 }
 
@@ -294,22 +322,24 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
-proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string) {
+proc getBaseTomlString(packageName: string, version: string, chapelVersion: string,
+                       license: string, packageType: string) {
   const baseToml = """[brick]
 name="%s"
 version="%s"
 chplVersion="%s"
 license="%s"
+type="%s"
 
 [dependencies]
 
-""".format(packageName, version, chapelVersion, license);
+""".format(packageName, version, chapelVersion, license, packageType);
   return baseToml;
 }
 
 /* Creates the Mason.toml file */
 proc makeBasicToml(dirName: string, path: string, version: string,
-            chplVersion: string, license: string) {
+            chplVersion: string, license: string, packageType: string) {
   var defaultVersion: string = "0.1.0";
   var defaultChplVersion: string = getChapelVersionStr();
   var defaultLicense: string = "None";
@@ -319,7 +349,8 @@ proc makeBasicToml(dirName: string, path: string, version: string,
     then defaultChplVersion = chplVersion;
   if !license.isEmpty()
     then defaultLicense = license;
-  const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion, defaultLicense);
+  const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion,
+                                     defaultLicense, packageType);
   var tomlFile = open(path+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);
@@ -332,9 +363,15 @@ proc makeSrcDir(path:string) {
 }
 
 /* Makes module file inside src/ */
-proc makeModule(path:string, fileName:string) {
-  const libTemplate = '/* Documentation for ' + fileName +
-  ' */\nmodule '+ fileName + ' {\n  writeln("New library: '+ fileName +'");\n}';
+proc makeModule(path:string, fileName:string, packageType="application") {
+  var libTemplate: string;
+  if packageType == "application" {
+    libTemplate = '/* Documentation for ' + fileName +
+      ' */\nmodule '+ fileName + ' {\n  proc main() {\n    writeln("New mason package: '+ fileName +'");\n  }\n}';
+  } else if packageType == "library" {
+    libTemplate = '/* Documentation for ' + fileName +
+      ' */\nmodule '+ fileName + ' {\n  // Your library here\n}';
+  }
   var lib = open(path+'/src/'+fileName+'.chpl', iomode.cw);
   var libWriter = lib.writer();
   libWriter.write(libTemplate + '\n');

@@ -62,7 +62,7 @@ for i in 1..numIters {
 stopGPUDiagnostics();
 const nLaunch = getGPUDiagnostics().kernel_launch;
 
-assert(nLaunch == here.getChildCount()*numIters);
+assert(nLaunch == here.gpus.size*numIters);
 
 writeln(A);
 

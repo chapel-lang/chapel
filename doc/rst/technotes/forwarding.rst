@@ -157,11 +157,10 @@ normally in the function resolution process. As with other ambiguous
 function declarations, ambiguity errors will be reported at the call
 site.
 
-Note that special IO methods such as ``writeThis``,
-``readThis``, and ``readWriteThis`` are not forwarded since the compiler
-generates these for the type by default. Similarly, a field accessor will not
-get forwarded if the class defines a conflicting field or method name. Consider
-the example below:
+Note that special IO methods such as ``writeThis`` and ``readThis`` are not
+forwarded since the compiler generates these for the type by default.
+Similarly, a field accessor will not get forwarded if the class defines a
+conflicting field or method name. Consider the example below:
 
 .. code-block:: chapel
 

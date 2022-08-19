@@ -1,3 +1,4 @@
+use FileSystem;
 use Subprocess;
 
 {
@@ -28,4 +29,4 @@ assert(sub.exitCode == 0);
 
 sub.close();
 
-unlink("stdout-stderr");
+FileSystem.remove("stdout-stderr");

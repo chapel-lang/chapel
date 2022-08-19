@@ -1,5 +1,5 @@
 class NilClass { }
-override proc NilClass.writeThis(f) throws { f <~> "nil"; }
+override proc NilClass.writeThis(f) throws { f.write("nil"); }
 var gNil = new owned NilClass();
 
 proc Nil(): borrowed NilClass

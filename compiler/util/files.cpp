@@ -307,6 +307,17 @@ void closeInputFile(FILE* infile) {
 
 static const char** inputFilenames = NULL;
 
+std::vector<std::string> getChplFilenames() {
+  std::vector<std::string> ret;
+  int i = 0;
+  while (auto fname = nthFilename(i++)) {
+    if (isChplSource(fname)) {
+      ret.push_back(std::string(fname));
+    }
+  }
+  return ret;
+}
+
 
 static bool checkSuffix(const char* filename, const char* suffix) {
   const char* dot = strrchr(filename, '.');
@@ -385,7 +396,9 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     }
   }
   inputFilenames[cursor] = NULL;
+}
 
+void assertSourceFilesFound() {
   if (!foundChplSource)
     USR_FATAL("Command line contains no .chpl source files");
 }
@@ -1020,65 +1033,18 @@ char* dirHasFile(const char *dir, const char *file)
   return real;
 }
 
-// This also exists in runtime/src/qio/sys.c
-// returns 0 on success.
-static int sys_getcwd(char** path_out)
-{
-  int sz = 128;
-  char* buf;
-
-  buf = (char*) malloc(sz);
-  if( !buf ) return ENOMEM;
-
-  while( 1 ) {
-    if ( getcwd(buf, sz) != NULL ) {
-      break;
-
-    } else if ( errno == ERANGE ) {
-      // keep looping but with bigger buffer.
-      sz *= 2;
-
-      /*
-       * Realloc may return NULL, in which case we will need to free the memory
-       * initially pointed to by buf.  This is why we store the result of the
-       * call in newP instead of directly into buf.  If a non-NULL value is
-       * returned we update the buf pointer.
-       */
-      void* newP = realloc(buf, sz);
-
-      if (newP != NULL) {
-        buf = static_cast<char*>(newP);
-
-      } else {
-        free(buf);
-        return ENOMEM;
-      }
-
-    } else {
-      // Other error, stop.
-      free(buf);
-      return errno;
-    }
-  }
-
-  *path_out = buf;
-  return 0;
-}
-
 
 /*
  * Returns the current working directory. Does not report failures. Use
- * sys_getcwd() if you need error reports.
+ * chpl::currentWorkingDir if you need error reports.
  */
 const char* getCwd() {
-  char* ret = nullptr;;
-  int rc;
-
-  rc = sys_getcwd(&ret);
-  if (rc == 0)
-    return ret;
-  else
+  std::string cwd;
+  if (auto err = chpl::currentWorkingDir(cwd)) {
     return "";
+  } else {
+    return astr(cwd);
+  }
 }
 
 
@@ -1119,13 +1085,12 @@ char* findProgramPath(const char *argv0)
 
   // Is argv0 a relative path?
   if( strchr(argv0, '/') != NULL ) {
-    char* cwd = NULL;
-    if( 0 == sys_getcwd(&cwd) ) {
-      real = dirHasFile(cwd, argv0);
-    } else {
+    std::string cwd;
+    if(auto err = chpl::currentWorkingDir(cwd)) {
       real = NULL;
+    } else {
+      real = dirHasFile(astr(cwd), argv0);
     }
-    free(cwd);
     return real;
   }
 

@@ -100,31 +100,10 @@ module LocaleModel {
     }
     override proc chpl_name() return local_name;
 
-    //
-    // Support for different types of memory:
-    // large, low latency, and high bandwidth
-    //
-    // The flat memory model assumes only one memory.
-    //
-    override proc defaultMemory() : locale {
-      return new locale(this);
-    }
-
-    override proc largeMemory() : locale {
-      return new locale(this);
-    }
-
-    override proc lowLatencyMemory() : locale {
-      return new locale(this);
-    }
-
-    override proc highBandwidthMemory() : locale {
-      return new locale(this);
-    }
-
     proc getChildSpace() return chpl_emptyLocaleSpace;
 
     override proc getChildCount() return 0;
+    override proc _getChildCount() return 0;
 
     iter getChildIndices() : int {
       for idx in chpl_emptyLocaleSpace do
@@ -133,6 +112,13 @@ module LocaleModel {
 
     pragma "unsafe"
     override proc getChild(idx:int) : locale {
+      halt("requesting a child from a flat LocaleModel locale");
+      var tmp:locale; // nil
+      return tmp;
+    }
+
+    pragma "unsafe"
+    override proc _getChild(idx: int) : locale {
       halt("requesting a child from a flat LocaleModel locale");
       var tmp:locale; // nil
       return tmp;
@@ -197,10 +183,11 @@ module LocaleModel {
     proc local_name() return "rootLocale";
 
     override proc writeThis(f) throws {
-      f <~> name;
+      f.write(name);
     }
 
     override proc getChildCount() return this.myLocaleSpace.size;
+    override proc _getChildCount() return this.myLocaleSpace.size;
 
     proc getChildSpace() return this.myLocaleSpace;
 
@@ -210,6 +197,7 @@ module LocaleModel {
     }
 
     override proc getChild(idx:int) return this.myLocales[idx];
+    override proc _getChild(idx:int) return this.myLocales[idx];
 
     iter getChildren() : locale  {
       for loc in this.myLocales do

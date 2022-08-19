@@ -87,7 +87,7 @@ operator <~>(const ref ch: channel, const x: Foo) const ref throws
   where ch.writing {
 
   writeln("In DefinesOp.<~>");
-  try ch.readwrite(x.x);
+  ch.write(x.x);
   return ch;
 }
 

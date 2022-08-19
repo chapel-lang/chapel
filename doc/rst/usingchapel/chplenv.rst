@@ -385,6 +385,9 @@ CHPL_LOCALE_MODEL
 
    If unset, ``CHPL_LOCALE_MODEL`` defaults to ``flat``.
 
+   .. warning:: The NUMA locale model is deprecated and will be removed
+      in a future release.
+
    See :ref:`readme-localeModels` for more information about
    locale models.
 

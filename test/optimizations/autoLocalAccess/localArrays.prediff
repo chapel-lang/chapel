@@ -1,10 +1,19 @@
-#!/bin/sh
+#!/usr/bin/env python3
+import sys, re, shutil
 
-# count 'local _array accessor was called' lines and
-# count 'default _array accessor was called'
-nonloc=`grep 'default _array accessor was called' $2 | wc -l`
-loc=`grep 'local _array accessor was called' $2 | wc -l`
+test_name = sys.argv[1]
+out_file = sys.argv[2]
+tmp_file = out_file+'.prediff.tmp'
 
-grep -v '_array accessor was called' $2 >$2.tmp
-echo localAccess was called $loc times >> $2.tmp
-mv $2.tmp $2
+defStr="default _array accessor was called\n"
+locStr="local _array accessor was called\n"
+
+with open(tmp_file, 'w') as tf:
+    with open(out_file) as of:
+        contents = of.read()
+        numLocal = contents.count(locStr)
+        clean = contents.replace(defStr, "").replace(locStr, "")
+        tf.write(clean)
+        tf.write("localAccess was called %d times\n" % numLocal)
+
+shutil.move(tmp_file, out_file)

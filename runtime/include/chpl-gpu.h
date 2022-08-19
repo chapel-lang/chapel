@@ -22,6 +22,8 @@
 #define _CHPL_GPU_H_
 
 #include <stdbool.h>
+#include "chpl-tasks.h"
+#include "chpl-mem-desc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,9 +31,22 @@ extern "C" {
 
 #ifdef HAS_GPU_LOCALE
 
+static inline void CHPL_GPU_DEBUG(const char *str, ...) {
+  if (verbosity >= 2) {
+    va_list args;
+    va_start(args, str);
+    vfprintf(stdout, str, args);
+    va_end(args);
+    fflush(stdout);
+  }
+}
+
+static inline bool chpl_gpu_running_on_gpu_locale(void) {
+  return chpl_task_getRequestedSubloc()>=0;
+}
+
 void chpl_gpu_init(void);
-bool chpl_gpu_has_context(void);
-bool chpl_gpu_running_on_gpu_locale(void);
+void chpl_gpu_on_std_modules_finished_initializing(void);
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,
@@ -43,6 +58,8 @@ void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                  int num_threads, int blk_dim,
                                  int nargs, ...);
 
+void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
+                                   int32_t lineno, int32_t filename);
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename);
 void* chpl_gpu_mem_calloc(size_t number, size_t size,
@@ -55,13 +72,16 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
                             chpl_mem_descInt_t description,
                             int32_t lineno, int32_t filename);
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename);
+
+void* chpl_gpu_memmove(void* dst, const void* src, size_t n);
+void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n);
+void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n);
+
+bool chpl_gpu_is_device_ptr(const void* ptr);
+bool chpl_gpu_is_host_ptr(const void* ptr);
+
+// TODO do we really need to expose this?
 size_t chpl_gpu_get_alloc_size(void* ptr);
-
-void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n);
-void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n);
-
-bool chpl_gpu_is_device_ptr(void* ptr);
-
 #endif // HAS_GPU_LOCALE
 
 #ifdef __cplusplus

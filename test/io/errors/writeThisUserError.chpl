@@ -11,7 +11,7 @@ record foo {
   proc writeThis(ch: channel) throws {
     throw new
       IllegalArgumentError('User error thrown from writeThis!');
-    ch <~> x;
+    ch.write(x);
   }
 }
 

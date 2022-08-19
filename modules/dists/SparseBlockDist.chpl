@@ -230,16 +230,16 @@ class SparseBlockDom: BaseSparseDomImpl {
   //
   proc dsiSerialWrite(f) {
     if (rank == 1) {
-      f <~> "{";
+      f.write("{");
       for locdom in locDoms do {
         // on locdom do {
         if (locdom!.dsiNumIndices) {
-            f <~> " ";
+            f.write(" ");
             locdom!.dsiSerialWrite(f);
           }
           //}
       }
-      f <~> "}";
+      f.write("}");
     } else {
       compilerError("Can't write out multidimensional sparse distributed domains yet");
     }
@@ -369,7 +369,6 @@ class LocSparseBlockDom {
   proc dsiSerialWrite(w) {
     mySparseBlock._value.dsiSerialWrite(w, printBrackets=false);
     // w.write(mySparseBlock); // works, but gets brackets printed out redundantly
-    //    w <~> mySparseBlock;
   }
 
   proc dsiNumIndices {
@@ -791,16 +790,16 @@ proc LocSparseBlockArr.this(i) ref {
 //
 proc SparseBlockArr.dsiSerialWrite(f) {
   if (rank == 1) {
-    f <~> "[";
+    f.write("[");
     for locarr in locArr do {
       // on locdom do {
       if (locarr!.locDom.dsiNumIndices) {
-        f <~> " ";
+        f.write(" ");
         locarr!.dsiSerialWrite(f);
       }
       // }
     }
-    f <~> "]";
+    f.write("]");
   } else {
     compilerError("Can't write out multidimensional sparse distributed arrays yet");
   }

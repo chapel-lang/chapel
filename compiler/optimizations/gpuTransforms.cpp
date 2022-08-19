@@ -34,8 +34,11 @@
 #include "bb.h"
 #include "astutil.h"
 #include "optimizations.h"
+#include "timer.h"
 
 #include "global-ast-vecs.h"
+
+static Timer gpuTransformTimer;
 
 static bool debugPrintGPUChecks = false;
 static bool allowFnCallsFromGPU = true;
@@ -48,6 +51,15 @@ extern bool inLocalBlock(CallExpr *call);
 // Utilities
 // ----------------------------------------------------------------------------
 
+static bool isFieldAccessPrimitive(CallExpr *call) {
+  return call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+      call->isPrimitive(PRIM_GET_MEMBER) ||
+      call->isPrimitive(PRIM_SET_MEMBER) ||
+      call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
+      call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+      call->isPrimitive(PRIM_SET_SVEC_MEMBER);
+}
+
 // If any SymExpr is referring to a variable defined outside the
 // function return the SymExpr. Otherwise return nullptr
 static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
@@ -57,6 +69,11 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
         if (!var->isParameter() && var != gVoid) {
+          if (CallExpr* parent = toCallExpr(se->parentExpr)) {
+            if (isFieldAccessPrimitive(parent)) {
+              continue;
+            }
+          }
           return se;
         }
       }
@@ -269,6 +286,10 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
         return false;
 
       FnSymbol* fn = call->resolvedFunction();
+
+      if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+        return false;
+      }
 
       if (hasOuterVarAccesses(fn))
         return false;
@@ -521,6 +542,13 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
         blockSize_ = toSymExpr(call->get(1));
         call->remove();
         copyNode = false;
+    } else if(call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+      // The outlined kernel can only be executed on the GPU so there's no need
+      // to copy it over. Note: not all device functions are kernels so this does
+      // not ensure that this assertion won't work its way into functions
+      // called from the kernel, but we remove it here anyway cause why not, it's
+      // a slight optimization.
+      copyNode = false;
     }
     else if (DefExpr* def = toDefExpr(node)) {
       copyNode = false; // we'll do it here to adjust our symbol map
@@ -560,12 +588,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
         }
         else {
           if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
-            if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                parent->isPrimitive(PRIM_GET_MEMBER) ||
-                parent->isPrimitive(PRIM_SET_MEMBER) ||
-                parent->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-                parent->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                parent->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+            if (isFieldAccessPrimitive(parent)) {
               if (symExpr == parent->get(2)) {  // this is a field
                 // do nothing
               }
@@ -593,6 +616,13 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
             else {
               INT_FATAL("Unexpected call expression");
             }
+          } else if (CondStmt* cond = toCondStmt(symExpr->parentExpr)) {
+            // Parent is a conditional statement.
+            if (symExpr == cond->condExpr) {
+              addKernelArgument(sym);
+            }
+          } else {
+            INT_FATAL("Unexpected symbol expression");
           }
         }
       }
@@ -785,6 +815,14 @@ void gpuTransforms() {
   // For now, we are doing GPU outlining here. In the future, it should
   // probably be its own pass.
   if (localeUsesGPU()) {
+    if (fReportGpuTransformTime) gpuTransformTimer.start();
+
     outlineGPUKernels();
+
+    if (fReportGpuTransformTime) {
+      gpuTransformTimer.stop();
+      std::cout << "GPU transformation time (s): " <<
+                   gpuTransformTimer.elapsedSecs() << std::endl;
+    }
   }
 }

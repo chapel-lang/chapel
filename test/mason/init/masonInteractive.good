@@ -10,9 +10,10 @@ name="project"
 version="1.2.3"
 chplVersion="1.21.0"
 license="MIT"
+type="application"
 
 [dependencies]
 
 
 
-Is this okay ? (Y/N): Created new library project: project
+Is this okay ? (Y/N): Created new application project: project

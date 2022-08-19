@@ -3247,7 +3247,7 @@ module ChapelArray {
   pragma "no copy returns owned"
   pragma "ignore transfer errors"
   // This function has foralls that have PRIM_ASSIGN in them. They are typically
-  // subject to normalization and as part of gpuization we create temproraries
+  // subject to normalization and as part of gpuization we create temporaries
   // for those primitive calls. But those temporaries don't get resolved. I
   // imagine we'll need to have this function work on GPUs, or be callable from
   // GPUs. So, we'll need to fix that.

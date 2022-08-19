@@ -34,7 +34,7 @@ use TOML;
 
 
 /* Runs the .chpl files found within the /example directory */
-proc masonExample(args: [] string) {
+proc masonExample(args: [] string, checkProj=true) throws {
 
   var parser = new argumentParser();
 
@@ -50,6 +50,12 @@ proc masonExample(args: [] string) {
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var exampleOpts = parser.addOption(name="example", numArgs=0..);
+
+  if checkProj {
+    const projectType = getProjectType();
+    if projectType == "light" then
+      throw new owned MasonError("Mason light projects do not currently support 'mason example'");
+  }
 
   try! {
     parser.parseArgs(args);
@@ -82,7 +88,6 @@ private proc getBuildInfo(projectHome: string) {
   const tomlFile = parseToml(toml);
 
   // Get project source code and dependencies
-  // TODO: Add some use of the gitDeps
   const (sourceList, gitList) = genSourceList(lockFile);
 
   //

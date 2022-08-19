@@ -262,6 +262,23 @@ void setBundledModulePath(Context* context, UniqueString path) {
   QUERY_STORE_INPUT_RESULT(bundledModulePathQuery, context, path);
 }
 
+static void addFilePathModules(std::vector<std::string>& searchPath,
+                               const std::vector<std::string>& inputFilenames) {
+  for (auto& fname : inputFilenames) {
+    auto idx = fname.find_last_of('/');
+    if (idx == std::string::npos) {
+      // local file
+      searchPath.push_back(".");
+    } else if (idx == 0) {
+      // root path: /foo.chpl
+      searchPath.push_back("/");
+    } else {
+      auto path = fname.substr(0, idx);
+      searchPath.push_back(path);
+    }
+  }
+}
+
 void setupModuleSearchPaths(Context* context,
                             const std::string& chplHome,
                             bool minimalModules,
@@ -271,7 +288,8 @@ void setupModuleSearchPaths(Context* context,
                             const std::string& chplComm,
                             const std::string& chplSysModulesSubdir,
                             const std::string& chplModulePath,
-                            const std::vector<std::string>& cmdLinePaths) {
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames) {
 
   std::string modRoot;
   if (!minimalModules) {
@@ -321,6 +339,8 @@ void setupModuleSearchPaths(Context* context,
   for (const auto& p : cmdLinePaths) {
     searchPath.push_back(p);
   }
+
+  addFilePathModules(searchPath, inputFilenames);
 
   // Convert them all to UniqueStrings.
   std::vector<UniqueString> uSearchPath;

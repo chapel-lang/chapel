@@ -81,13 +81,9 @@ Using Spack Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Mason users can interface with ``Spack``, a package manager geared towards high performance
-computing. Through this integration, Mason users now have
-access to a large ecosystem of `packages <https://spack.readthedocs.io/en/latest/package_list.html#package-list>`_.
-Non-destructive installs, custom version and configurations, and simple package installation
-and uninstallation are a few of the features Mason gains through this integration.
+computing, through the ``mason external`` command. For a list of available ``Spack`` packages,
+see: `packages <https://spack.readthedocs.io/en/latest/package_list.html#package-list>`_.
 
-Mason users can access Spack through the ``mason external`` command. Spack provides Mason users with the ability
-to install and use any package in the `Spack registry <https://spack.readthedocs.io/en/latest/package_list.html#package-list>`_.
 This interface is analogous to the previous example except when a package is missing, user's can download that package
 through the Spack integration. The following is a workflow of finding, installing, and adding a Spack dependency to a Mason Package.
 

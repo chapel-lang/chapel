@@ -122,6 +122,27 @@
   "a7eb801c-f560-11eb-bb15-35b7469d4b43": [
     "compiler/dyno/README"
   ],
+  "92d71e1a-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/framework/Context-detail.h"
+  ],
+  "7bff0162-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/framework/Context.h"
+  ],
+  "8cade56e-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/framework/ErrorMessage.h"
+  ],
+  "7a8e3a00-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/framework/UniqueString.h"
+  ],
+  "9a17c742-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/framework/all-global-strings.h"
+  ],
+  "a1dfe432-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/framework/global-strings.h"
+  ],
+  "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/include/chpl/framework/stringify-functions.h"
+  ],
   "b6b773fa-e3ab-11ec-a8be-cd81bce0efc4": [
     "compiler/dyno/include/chpl/parsing/parser-stats.h"
   ],
@@ -488,6 +509,12 @@
   "6e8fb3ba-9f6f-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/util/iteration.h"
   ],
+  "f8771086-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/framework/Context.cpp"
+  ],
+  "ffd515bc-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/framework/ErrorMessage.cpp"
+  ],
   "360f852e-9f74-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/immediates/num.cpp"
   ],
@@ -557,6 +584,18 @@
   "7415e1e6-9f75-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/uast/chpl-syntax-printer.cpp"
   ],
+  "079d1948-12c1-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/uast/post-parse-checks.cpp"
+  ],
+  "b4d7b308-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/util/filesystem.cpp"
+  ],
+  "f0807cd2-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/util/subprocess.cpp"
+  ],
+  "eda6a798-12c0-11ed-a8be-cd81bce0efc4": [
+    "compiler/dyno/lib/util/terminal.cpp"
+  ],
   "c2297db6-9f75-11ec-866d-111c8d7a1817": [
     "compiler/dyno/tools/chpldoc/chpldoc.cpp"
   ],
@@ -583,6 +622,9 @@
   "12c3b64e-0c12-11e7-980e-10ddb1d4c3d5": [
     "compiler/include/countTokens.h",
     "compiler/parser/countTokens.cpp"
+  ],
+  "22756090-12c1-11ed-a8be-cd81bce0efc4": [
+    "compiler/include/driver.h"
   ],
   "dbbd3434-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/include/expr.h"
@@ -613,6 +655,9 @@
   ],
   "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/parser.h"
+  ],
+  "26485862-12c1-11ed-a8be-cd81bce0efc4": [
+    "compiler/include/pass-manager-passes.h"
   ],
   "9431bc08-f560-11eb-bb15-35b7469d4b43": [
     "compiler/include/primitive_list.h"
@@ -938,6 +983,18 @@
   ],
   "466a4d0e-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/tuples.rst"
+  ],
+  "58f7ebce-12c1-11ed-a8be-cd81bce0efc4": [
+    "doc/rst/mason-packages/guide/externaldependencies.rst"
+  ],
+  "ddf8ff20-12c1-11ed-a8be-cd81bce0efc4": [
+    "doc/rst/mason-packages/guide/gitdependencies.rst"
+  ],
+  "d8e2a70c-12c1-11ed-a8be-cd81bce0efc4": [
+    "doc/rst/mason-packages/guide/submitting.rst"
+  ],
+  "e1a9c8a2-12c1-11ed-a8be-cd81bce0efc4": [
+    "doc/rst/mason-packages/index.rst"
   ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
     "doc/rst/platforms/aws.rst"

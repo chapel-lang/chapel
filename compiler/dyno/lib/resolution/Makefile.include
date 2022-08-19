@@ -18,7 +18,7 @@
 
 DYNO_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/dyno/lib/resolution
 
-ALL_SRCS += dyno/lib/resolution/*.cpp
+ALL_SRCS += dyno/lib/resolution/*.h dyno/lib/resolution/*.cpp
 
 DYNO_RESOLUTION_SRCS =                              \
            Resolver.cpp                             \

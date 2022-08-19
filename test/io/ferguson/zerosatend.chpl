@@ -1,4 +1,5 @@
 
+use FileSystem;
 use IO;
 
 config var testfile = "test.dat";
@@ -45,5 +46,5 @@ var n = sz / 8;
   assert( j == 0 );
 }
 
-unlink(testfile);
+FileSystem.remove(testfile);
 

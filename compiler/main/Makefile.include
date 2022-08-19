@@ -18,6 +18,6 @@
 
 MAIN_OBJDIR = $(COMPILER_BUILD)/main
 
-ALL_SRCS += main/*.h main/*.cpp
+ALL_SRCS += main/*.cpp
 
 include $(COMPILER_ROOT)/main/Makefile.share

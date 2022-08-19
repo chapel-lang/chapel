@@ -37,9 +37,9 @@
 bool printSystemCommands = false;
 
 int myshell(const char* command,
-             const char* description,
-             bool        ignoreStatus,
-             bool        quiet) {
+            const char* description,
+            bool        ignoreStatus,
+            bool        quiet) {
 
   int status = 0;
 
@@ -57,7 +57,7 @@ int myshell(const char* command,
   status = system(command);
 
   if (status == -1) {
-    USR_FATAL("system() fork failed: %s", strerror(errno));
+    USR_FATAL("%s: system() fork failed: %s", description, strerror(errno));
 
   } else if (status != 0 && ignoreStatus == false) {
     USR_FATAL("%s", description);
@@ -81,17 +81,16 @@ int mysystem(const std::vector<std::string> commandVec,
              const char* description,
              bool        ignoreStatus,
              bool        quiet) {
-  pid_t childPid = 0;
-  int status = chpl::executeAndWait(commandVec, std::string(description), childPid,
-                              ignoreStatus, quiet, printSystemCommands);
-  if (childPid == 0) {
-    // if there was an error and we shouldn't ignore them, then exit
-    if (status != 0 && !ignoreStatus) {
-      USR_FATAL("%s", description);
-    }
-  // handle the case when the child couldn't be forked
-  } else if (childPid == -1) {
-    USR_FATAL("fork() failed: %s", strerror(errno));
+  int status = chpl::executeAndWait(commandVec, std::string(description),
+                                    printSystemCommands && !quiet);
+
+  // if there was an error fork/waiting
+  if (status == -1) {
+    USR_FATAL("%s", description);
+
+  } else if (status != 0 && ignoreStatus == false) {
+    USR_FATAL("%s", description);
   }
+
   return status;
 }

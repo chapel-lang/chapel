@@ -350,7 +350,7 @@ writeln();
 // * ``stridable``: A ``bool`` indicating whether or not the range can have a stride other than 1 (defaults to ``false``)
 //
 // Like other variables, range types can be inferred by the compiler
-// from the initializing expression for simpicity, as in the previous
+// from the initializing expression for simplicity, as in the previous
 // examples.  However, they can also be specified if desired.  Here
 // are some examples that are equivalent to ones we've seen before:
 //

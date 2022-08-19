@@ -75,8 +75,9 @@ export CHPL_RE2
 echo "                           ...none"
 echo " "
 
+USE_LLVM=`$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_llvm.py --quickstart`
 echo "Setting CHPL_LLVM to..."
-CHPL_LLVM=none
+CHPL_LLVM=$USE_LLVM
 export CHPL_LLVM
-echo "                           ...none"
+echo "                           ...$USE_LLVM"
 echo " "

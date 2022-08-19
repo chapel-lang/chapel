@@ -239,7 +239,7 @@ module HTable {
     */
     proc writeThis(f) {
       for ii in 1..nFields {
-        f <~> names[ii]:string <~> new ioLiteral(" ") <~> offsets[ii] <~> new ioNewline();
+        f.write(names[ii]:string, new ioLiteral(" "), offsets[ii], new ioNewline());
       }
     }
 

@@ -1,4 +1,4 @@
-use DateTime;
+use Time;
 
 proc test_basic_attributes() {
   var dt = new datetime(2002, 3, 1, 12, 0);

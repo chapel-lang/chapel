@@ -333,6 +333,14 @@ void expandInitFieldPrims();
 
 void removeCopyFns(Type* t);
 
+bool moveIsAcceptable(CallExpr* call);
+
+Type* moveDetermineLhsType(CallExpr* call);
+
+Type* moveDetermineRhsType(CallExpr* call);
+
+bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
+
 std::set<Type*> getWellKnownTypesSet();
 bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
 

@@ -413,6 +413,20 @@ struct Converter {
       }
     }
 
+    if (!attr->isUnstable()) {
+      INT_ASSERT(attr->unstableMessage().isEmpty());
+    }
+
+    if (attr->isUnstable()) {
+      INT_ASSERT(!sym->hasFlag(FLAG_UNSTABLE));
+      sym->addFlag(FLAG_UNSTABLE);
+
+      auto msg = attr->unstableMessage();
+      if (!msg.isEmpty()) {
+        sym->unstableMsg = astr(msg);
+      }
+    }
+
     for (auto pragma : attr->pragmas()) {
       Flag flag = convertPragmaToFlag(pragma);
       if (flag != FLAG_UNKNOWN) {
@@ -1140,6 +1154,17 @@ struct Converter {
         return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
       if (name == USTR("^"))
         return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
+
+      if (name == USTR("max"))
+        return new UnresolvedSymExpr("MaxReduceScanOp");
+      if (name == USTR("maxloc"))
+        return new UnresolvedSymExpr("maxloc");
+      if (name == USTR("min"))
+        return new UnresolvedSymExpr("MinReduceScanOp");
+      if (name == USTR("minloc"))
+        return new UnresolvedSymExpr("minloc");
+      if (name == USTR("minmax"))
+        return new UnresolvedSymExpr("minmax");
     }
 
     auto ret = convertAST(node);
@@ -1216,6 +1241,12 @@ struct Converter {
       ret = CatchStmt::build(name, body);
     } else {
       ret = CatchStmt::build(body);
+    }
+
+    if (canScopeResolve && errorVar != nullptr) {
+      ret->createErrSym();
+      DefExpr* def = toDefExpr(body->body.head);
+      noteConvertedSym(errorVar, def->sym);
     }
 
     INT_ASSERT(ret != nullptr);
@@ -1914,9 +1945,8 @@ struct Converter {
 
     if (auto ident = node->toIdentifier()) {
       auto name = ident->name();
-      if (Expr* e = resolvedIdentifier(ident)) {
-        return e;
-      } else if (name == USTR("atomic")) {
+
+      if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
         ret = new UnresolvedSymExpr("_singlevar");
@@ -2280,7 +2310,9 @@ struct Converter {
         INT_ASSERT(formal->intent() == uast::Formal::DEFAULT_INTENT);
         INT_ASSERT(!formal->initExpression());
         INT_ASSERT(!formal->typeExpression());
-        conv = new DefExpr(new VarSymbol(formal->name().c_str()));
+        auto varSym = new VarSymbol(formal->name().c_str());
+        conv = new DefExpr(varSym);
+        noteConvertedSym(formal, varSym);
 
         // Should not be attaching comments to tuple formals.
         INT_ASSERT(!attachComments);
@@ -3882,7 +3914,7 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
   // this to be quadratic in time.
   //
   // Gather the fixups that need to be done.
-  // This is a separate traversal so that the build functios
+  // This is a separate traversal so that the build functions
   // can copy the AST freely.
 
   if (depth > 0) {

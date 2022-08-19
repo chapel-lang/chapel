@@ -24,7 +24,7 @@ var copyIn = 0.0,
 startGPUDiagnostics();
 totalTimer.start();
 if useGPU {
-  on here.getChild(1) {
+  on here.gpus[0] {
     detailTimer.start();
     var B = A;
     detailTimer.stop();

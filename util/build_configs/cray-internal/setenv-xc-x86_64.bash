@@ -311,7 +311,7 @@ else
     fi
 
     gen_version_gcc=8.1.0
-    gen_version_intel=19.1.2.254
+    gen_version_intel=2022.0.1
     gen_version_cce=10.0.3
 
     target_cpu_module=craype-sandybridge
@@ -333,7 +333,7 @@ else
     function load_prgenv_intel() {
 
         local target_prgenv="PrgEnv-intel"
-        local target_compiler="intel"
+        local target_compiler="intel-classic"
         local target_version=$gen_version_intel
 
         # unload any existing PrgEnv
@@ -341,6 +341,8 @@ else
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
+        # unload clang-based intel so we can load intel-classic
+        unload_module intel
         load_module_version $target_compiler $target_version
     }
 

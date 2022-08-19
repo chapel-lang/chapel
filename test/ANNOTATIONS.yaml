@@ -2312,6 +2312,8 @@ arkouda: &arkouda-base
     - Upgrade Arkouda release testing from 1.26.0 to 1.27.0 (#20168)
   07/15/22:
     - Closes 1220 Implementing Chapel's Random module to resolve modulo bias (Bears-R-Us/arkouda#1542)
+  08/11/22:
+    - Reduce sort bucket exchange overhead (Bears-R-Us/arkouda#1635)
 
 
 arkouda-string:

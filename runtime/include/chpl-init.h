@@ -46,6 +46,7 @@ void chpl_library_init(int argc, char* argv[]);
 void chpl_library_finalize(void);
 
 void chpl_std_module_init(void);
+void chpl_std_module_finalize(void);
 
 #ifdef __cplusplus
 }

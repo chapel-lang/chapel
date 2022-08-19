@@ -6,7 +6,7 @@ module CheckHttpSetOpt {
   use RunServer;
   use URL;
   use Curl;
-  use DateTime;
+  use Time;
 
   extern const CURLOPT_VERBOSE: CURLoption;
   extern const CURLOPT_FILETIME: CURLoption;

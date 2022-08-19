@@ -28,7 +28,9 @@ namespace uast {
 owned<Attributes> Attributes::build(Builder* builder, Location loc,
                                     std::set<PragmaTag> pragmas,
                                     bool isDeprecated,
-                                    UniqueString deprecationMessage) {
+                                    bool isUnstable,
+                                    UniqueString deprecationMessage,
+                                    UniqueString unstableMessage) {
   #ifndef NDEBUG
     for (auto tag : pragmas) {
       assert(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
@@ -36,7 +38,9 @@ owned<Attributes> Attributes::build(Builder* builder, Location loc,
   #endif
 
   Attributes* ret = new Attributes(std::move(pragmas), isDeprecated,
-                                   deprecationMessage);
+                                   isUnstable,
+                                   deprecationMessage,
+                                   unstableMessage);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -236,11 +236,14 @@ public:
   Expr*              getInitialization()                       const;
 
   std::string deprecationMsg;
-
   const char* getDeprecationMsg() const;
-  const char* getSanitizedDeprecationMsg() const;
-
   void generateDeprecationWarning(Expr* context);
+
+  std::string unstableMsg;
+  const char* getUnstableMsg() const;
+  void generateUnstableWarning(Expr* context);
+
+  const char* getSanitizedMsg(std::string msg) const;
 
 protected:
                      Symbol(AstTag      astTag,
@@ -687,7 +690,7 @@ public:
 
 /* This type exists to be used temporarily during convert-uast.
    By using this type, convert-uast code can robustly handle
-   AST copies from an AST node refering to something not yet converted.
+   AST copies from an AST node referring to something not yet converted.
    */
 class TemporaryConversionSymbol final : public Symbol {
 public:

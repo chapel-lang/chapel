@@ -132,7 +132,7 @@ Parser module with the Toml class for the Chapel TOML library.
 module TomlParser {
 
   private use Regex;
-  use DateTime;
+  use Time;
   use Map, List;
   import IO.channel;
   private use TOML.TomlReader;
@@ -1358,8 +1358,7 @@ module TomlReader {
     }
 
     proc writeThis(f) throws {
-      // TODO: The `list` type currently doesn't support readWriteThis!
-      f <~> this.A.toArray();
+      f.write(this.A.toArray());
     }
   }
 }

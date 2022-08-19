@@ -32,15 +32,28 @@ namespace types {
 class TupleType final : public CompositeType {
  private:
   bool isStarTuple_ = false; // i.e. all elements have the same type
+  bool isVarArgTuple_ = false;
+  bool isKnownSize_ = true;
 
   void computeIsStarTuple();
 
   TupleType(ID id, UniqueString name,
             const TupleType* instantiatedFrom,
-            SubstitutionsMap subs)
+            SubstitutionsMap subs,
+            bool isVarArgTuple)
     : CompositeType(typetags::TupleType, id, name,
-                    instantiatedFrom, std::move(subs))
+                    instantiatedFrom, std::move(subs)),
+      isVarArgTuple_(isVarArgTuple)
   {
+    // Let a single entry in the SubstitutionsMap with a postOrderId of '-1'
+    // represent the star-type of a tuple with an unknown size. This is a
+    // useful representation for VarArgs.
+    if (subs_.size() == 1) {
+      auto& elt = subs_.begin()->first;
+      if (elt.postOrderId() == -1) {
+        isKnownSize_ = false;
+      }
+    }
     computeIsStarTuple();
   }
 
@@ -58,7 +71,8 @@ class TupleType final : public CompositeType {
   static const owned<TupleType>&
   getTupleType(Context* context, ID id, UniqueString name,
                const TupleType* instantiatedFrom,
-               SubstitutionsMap subs);
+               SubstitutionsMap subs,
+               bool isVarArgTuple = false);
 
  public:
   /** Return a value tuple type based on the vector of actual types. */
@@ -69,14 +83,27 @@ class TupleType final : public CompositeType {
   static const TupleType*
   getReferentialTuple(Context* context, std::vector<const Type*> eltTypes);
 
+  static const TupleType*
+  getVarArgTuple(Context* context, std::vector<QualifiedType> eltTypes);
+
+  static const TupleType*
+  getVarArgTuple(Context* context,
+                 QualifiedType paramSize,
+                 QualifiedType starEltType);
+
   /** Return the generic tuple type `_tuple` */
   static const TupleType* getGenericTupleType(Context* context);
 
   ~TupleType() = default;
 
-  /** Returns the number of tuple elements */
+  /** Returns the number of tuple elements.
+      Returns '-1' if the size is not known. */
   int numElements() const {
-    return subs_.size();
+    if (isKnownSize_) {
+      return subs_.size();
+    } else {
+      return -1;
+    }
   }
 
   /** Return the type of the i'th element */
@@ -85,6 +112,12 @@ class TupleType final : public CompositeType {
   /** Return true if this is a *star tuple* - that is, all of the
       element types are the same. */
   bool isStarTuple() const { return isStarTuple_; }
+
+  bool isVarArgTuple() const { return isVarArgTuple_; }
+
+  bool isKnownSize() const { return isKnownSize_; }
+
+  QualifiedType starType() const;
 
   /** Return the value tuple variant of this tuple type */
   const TupleType* toValueTuple(Context* context) const;

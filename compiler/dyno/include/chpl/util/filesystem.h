@@ -65,6 +65,22 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut);
  */
 std::error_code deleteDir(std::string dirname);
 
+/*
+ * Gets the current working directory
+ * (uses LLVM sys::fs::current_path internally).
+ */
+std::error_code currentWorkingDir(std::string& path_out);
+
+/**
+ * makes the directory in dirpath. Will fail if a directory in the path doesn't
+ * already exist.
+ * Directory permissions are set to llvm::all-all.
+ * which should be equivalent to  S_IRWXU | S_IRWXG | S_IRWXO
+ *
+ * dirpath - the path of the directory to create
+ * returns - std::error_code
+ */
+std::error_code makeDir(std::string dirpath);
 
 } // end namespace chpl
 

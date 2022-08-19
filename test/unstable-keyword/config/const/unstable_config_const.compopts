@@ -1,0 +1,3 @@
+ # unstable_config_const.unset.good
+--no-warn-unstable # unstable_config_const.unset.good
+--warn-unstable # unstable_config_const.set.good
