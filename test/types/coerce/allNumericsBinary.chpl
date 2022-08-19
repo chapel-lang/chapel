@@ -53,17 +53,6 @@ proc f(x, y) {
   writeln("  f(generic)");
 }
 
-proc isProhibitedF(type t1, type t2) param {
-/*  if isImagType(t1) && !isImagType(t2) {
-    return true;
-  }
-  if !isImagType(t1) && isImagType(t2) {
-    return true;
-  }*/
-  return false;
-}
-
-
 // next, call 'f' with all combinations of numeric types
 proc callF(type t1, type t2) {
   {
@@ -73,20 +62,14 @@ proc callF(type t1, type t2) {
   var x: t1;
   var y: t2;
 
-  if (!isProhibitedF(t1, t2)) {
-    f(x, y);
+  f(x, y);
 
-    writef("      Reversed %-12s -> ", "");
-    f(y, x);
-  } else {
-    writeln("  f skipped");
-  }
+  writef("      Reversed %-12s -> ", "");
+  f(y, x);
 
 
-  {
-    writef("               %-12s ->   ", "+");
-    writeln((x+y).type:string);
-  }
+  writef("               %-12s ->   ", "+");
+  writeln((x+y).type:string);
 }
 
 proc callFVaryT2(type t1) {
