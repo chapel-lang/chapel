@@ -1118,8 +1118,10 @@ static bool canParamCoerce(Type*   actualType,
 
     // don't coerce bools to complexes (per spec: "unintended by programmer")
 
-    // don't coerce integers to complexes either
-    // (avoids an ambiguity problem in the test allNumericsBinary.chpl)
+    // coerce any integer type to any width complex
+    if (is_int_type(actualType) || is_uint_type(actualType)) {
+      return true;
+    }
 
     // coerce real/imag from smaller size
     if (is_real_type(actualType) &&
