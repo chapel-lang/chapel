@@ -3,7 +3,7 @@
 
 class VectorListElement {  var x;  }
 
-const VLE = new borrowed VectorListElement(7);
+const VLE = (new owned VectorListElement(7)).borrow();
 
 proc p1(): VectorListElement { return VLE; }
 writeln(p1());

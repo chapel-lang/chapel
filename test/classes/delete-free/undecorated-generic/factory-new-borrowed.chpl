@@ -13,8 +13,8 @@ proc main() {
   var b = new owned MyClass();
   compilerWarning("new owned MyClass() : " + b.type:string, errorDepth=0);
 
-  var c = new borrowed MyClass();
-  compilerWarning("new borrowed MyClass() : " + c.type:string, errorDepth=0);
+  var c = (new owned MyClass()).borrow();
+  compilerWarning("(new owned MyClass() : " + c.type:string, errorDepth=0)).borrow();
 
   factory("MyClass", MyClass);
 

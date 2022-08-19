@@ -19,7 +19,7 @@ class E : C {
   }
 }
 
-var e:borrowed C = new borrowed E(4);
+var e:borrowed C = (new owned E(4)).borrow();
 
 writeln(e.bbox(1));
 writeln(e.bbox(2));

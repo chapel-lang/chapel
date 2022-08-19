@@ -627,7 +627,7 @@ module DataFrames {
 
     override
     proc add(rhs : borrowed Series): owned Series {
-      return rhs.uni(this, new borrowed SeriesAdd(eltType));
+      return rhs.uni(this, (new owned SeriesAdd(eltType))).borrow();
     }
 
     override
@@ -638,7 +638,7 @@ module DataFrames {
 
     override
     proc subtr(rhs): owned Series {
-      return rhs.uni(this, new borrowed SeriesSubtr(eltType));
+      return rhs.uni(this, (new owned SeriesSubtr(eltType))).borrow();
     }
 
     override
@@ -649,7 +649,7 @@ module DataFrames {
 
     override
     proc mult(rhs): owned Series {
-      return rhs.uni(this, new borrowed SeriesMult(eltType));
+      return rhs.uni(this, (new owned SeriesMult(eltType))).borrow();
     }
 
     override
@@ -660,27 +660,27 @@ module DataFrames {
 
     override
     proc lt_scalar(n): owned Series {
-      return this.map(new borrowed SeriesLessThan(n));
+      return this.map((new owned SeriesLessThan(n))).borrow();
     }
 
     override
     proc gt_scalar(n): owned Series {
-      return this.map(new borrowed SeriesGreaterThan(n));
+      return this.map((new owned SeriesGreaterThan(n))).borrow();
     }
 
     override
     proc eq_scalar(n): owned Series {
-      return this.map(new borrowed SeriesEqualTo(n));
+      return this.map((new owned SeriesEqualTo(n))).borrow();
     }
 
     override
     proc lteq_scalar(n): owned Series {
-      return this.map(new borrowed SeriesLessThanEqualTo(n));
+      return this.map((new owned SeriesLessThanEqualTo(n))).borrow();
     }
 
     override
     proc gteq_scalar(n): owned Series {
-      return this.map(new borrowed SeriesGreaterThanEqualTo(n));
+      return this.map((new owned SeriesGreaterThanEqualTo(n))).borrow();
     }
 
     /*

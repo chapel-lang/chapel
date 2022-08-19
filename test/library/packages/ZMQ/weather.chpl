@@ -61,7 +61,7 @@ proc Launcher(exec: string) {
 }
 
 proc Master(exec: string) {
-  var rand = new borrowed RandomStream(real,13); rand.getNext();
+  var rand = (new owned RandomStream(real,13); rand.getNext()).borrow();
   var ctxt: Context;
   var sock = ctxt.socket(ZMQ.PUB);
   sock.bind("tcp://*:5556");

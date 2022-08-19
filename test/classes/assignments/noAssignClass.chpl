@@ -195,7 +195,7 @@ var myB = new unmanaged B(42), myB2 = new B(33);
 myB = myB2;
 writeln(myB, myB2);
 
-var myC = new borrowed C(42), myC2 = new C(33);
+var myC = (new owned C(42), myC2 = new C(33)).borrow();
 myC = myC2;
 writeln(myC, myC2);
 
@@ -215,7 +215,7 @@ var myG = new G(42), myG2 = new G(33);
 myG = myG2;
 writeln(myG, myG2);
 
-var myH = new borrowed H(42), myH2 = new H(33);
+var myH = (new owned H(42), myH2 = new H(33)).borrow();
 myH = myH2;
 writeln(myH, myH2);
 
@@ -245,7 +245,7 @@ var myM = new unmanaged M(42), myM2 = new M(33);
 myM = myM2;
 writeln(myM, myM2);
 
-var myN = new borrowed N(42), myN2 = new N(33);
+var myN = (new owned N(42), myN2 = new N(33)).borrow();
 myN = myN2;
 writeln(myN, myN2);
 
@@ -265,7 +265,7 @@ var myS = new S(42), myS2 = new S(33);
 myS = myS2;
 writeln(myS, myS2);
 
-var myT = new borrowed T(42), myT2 = new T(33);
+var myT = (new owned T(42), myT2 = new T(33)).borrow();
 myT = myT2;
 writeln(myT, myT2);
 

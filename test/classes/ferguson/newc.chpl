@@ -6,7 +6,7 @@ proc getC type {
   return borrowed C;
 }
 
-var x = new borrowed C(10);
+var x = (new owned C(10)).borrow();
 writeln(x);
 
 var y = new getC(10);

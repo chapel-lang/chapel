@@ -18,10 +18,10 @@ module TestReturningIteratorYield {
     return arg0;
   }
   proc test() {
-    var a0 = new borrowed MyClass(0);
-    var a1 = new borrowed MyClass(1);
-    var a2 = new borrowed MyClass(2);
-    var a3 = new borrowed MyClass(3);
+    var a0 = (new owned MyClass(0)).borrow();
+    var a1 = (new owned MyClass(1)).borrow();
+    var a2 = (new owned MyClass(2)).borrow();
+    var a3 = (new owned MyClass(3)).borrow();
 
     var x = getfirstborrow(a0, a1, a2, a3);
     writeln(x);

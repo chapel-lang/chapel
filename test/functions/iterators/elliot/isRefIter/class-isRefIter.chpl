@@ -31,7 +31,7 @@ class C {
 //
 // ensure ref iterators are correctly identified
 //
-var c = new borrowed C();
+var c = (new owned C()).borrow();
 writeln(isRefIter(c.myValIter()));
 writeln(isRefIter(c.myRefIter()));
 

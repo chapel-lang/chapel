@@ -2,6 +2,6 @@ class C {
   var x: int;
 }
 
-var c = new borrowed C(2);
+var c = (new owned C(2)).borrow();
 
 writeln(c:int);

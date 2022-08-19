@@ -30,8 +30,8 @@ module w {
   var oq = new owned     CC("owned?",     int, RT)?;  test(oq);
   var sb = new shared    CC("shared",     int, RT);   test(sb);
   var sq = new shared    CC("shared?",    int, RT)?;  test(sq);
-  var bb = new borrowed  CC("borrowed",   int, RT);   test(bb);
-  var bq = new borrowed  CC("borrowed?",  int, RT)?;  test(bq);
+  var bb = (new owned  CC("borrowed",   int, RT);   test(bb)).borrow();
+  var bq = (new owned  CC("borrowed?",  int, RT)?;  test(bq)).borrow();
   var ub = new unmanaged CC("unmanaged",  int, RT);   test(ub);  delete ub;
   var uq = new unmanaged CC("unmanaged?", int, RT)?;  test(uq);  delete uq;
 

@@ -12,7 +12,7 @@ class MyClass {
 }
 
 proc main() {
-  var c : borrowed MyClass = new borrowed MyClass(50);
+  var c : borrowed MyClass = (new owned MyClass(50)).borrow();
 
   writeln(c);
 }

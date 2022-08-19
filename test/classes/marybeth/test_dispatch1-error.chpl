@@ -23,10 +23,10 @@ proc displayshoe (item:borrowed shoe) {
   item.display();
 }
 
-var shoe1:borrowed shoe = new borrowed shoe(9.5,"brown");
-var shoe2:borrowed pumps = new borrowed shoe(8.0,"navy");
+var shoe1:borrowed shoe = (new owned shoe(9.5,"brown")).borrow();
+var shoe2:borrowed pumps = (new owned shoe(8.0,"navy")).borrow();
 shoe2.heel = 1.0;
-var shoe3:borrowed boots = new borrowed pumps(7.0,"white",3.0);
+var shoe3:borrowed boots = (new owned pumps(7.0,"white",3.0)).borrow();
 displayshoe(shoe1);
 displayshoe(shoe2);
 displayshoe(shoe3);

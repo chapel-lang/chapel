@@ -1,3 +1,3 @@
 class C { }
 
-var bC = new borrowed C();
+var bC = (new owned C()).borrow();

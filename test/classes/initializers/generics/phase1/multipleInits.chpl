@@ -12,7 +12,7 @@ class LotsOFields {
 }
 
 proc main() {
-  var c = new borrowed LotsOFields(2, 6.3, true);
+  var c = (new owned LotsOFields(2, 6.3, true)).borrow();
 
   writeln(c.type: string);
   writeln(c);

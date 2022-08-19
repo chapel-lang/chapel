@@ -48,9 +48,9 @@ class contain {
 
 
 proc main () {
-  var a : borrowed aclass(int)  = new borrowed aclass(int);
-  var b : borrowed bclass(bool) = new borrowed bclass(bool);
-  var c : borrowed contain      = new borrowed contain();
+  var a : borrowed aclass(int)  = (new owned aclass(int)).borrow();
+  var b : borrowed bclass(bool) = (new owned bclass(bool)).borrow();
+  var c : borrowed contain      = (new owned contain()).borrow();
 
   c.objs.append(b);
   c.objs.append(a);

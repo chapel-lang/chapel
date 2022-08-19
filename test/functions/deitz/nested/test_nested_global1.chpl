@@ -2,7 +2,7 @@ class C {
   var x : int;
 }
 
-var c = new borrowed C(x = 2);
+var c = (new owned C(x = 2)).borrow();
 
 proc foo(type t) {
   var x : t;

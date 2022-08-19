@@ -15,7 +15,7 @@ writeln("returned from foo()\n");
 
 proc bar() {
   writeln("entering bar");
-  new borrowed C(2);
+  (new owned C(2)).borrow();
   writeln("exiting bar");
 }
 

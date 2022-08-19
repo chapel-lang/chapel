@@ -7,9 +7,9 @@ class C {
   var a = A(2) + 2;
 }
 
-var c = new borrowed C();
+var c = (new owned C()).borrow();
 A(2) = 2;
-var d = new borrowed C();
+var d = (new owned C()).borrow();
 
 writeln(c);
 writeln(d);

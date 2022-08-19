@@ -10,8 +10,8 @@ proc print(c : borrowed Cons) {
   }
 }
 
-var a = new borrowed Cons(1, new borrowed Cons(2, nil));
-var b = new borrowed Cons(1.0, new borrowed Cons(2.0, nil));
+var a = (new owned Cons(1, new borrowed Cons(2, nil))).borrow();
+var b = (new owned Cons(1.0, new borrowed Cons(2.0, nil))).borrow();
 
 print(a);
 print(b);

@@ -17,10 +17,10 @@ class Test {
   { var quests = tests; writeln(quests); }  // access all varargs collectively
 }
 
-const obj = new borrowed object();
-const jbo = new borrowed object();
+const obj = (new owned object()).borrow();
+const jbo = (new owned object()).borrow();
 {
-const ttt = new borrowed Test();
+const ttt = (new owned Test()).borrow();
 ttt.dependsOn(obj);
 ttt.dependsOnX(obj);
 ttt.dependsOnY(obj);

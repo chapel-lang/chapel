@@ -18,7 +18,7 @@ proc foo(c : borrowed C) {
 
 var c : borrowed C?;
 
-c = new borrowed C();
+c = (new owned C()).borrow();
 foo(c!);
-c = new borrowed D();
+c = (new owned D()).borrow();
 foo(c!);

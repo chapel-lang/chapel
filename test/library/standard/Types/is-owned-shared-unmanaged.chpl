@@ -12,7 +12,7 @@ var o:owned MyClass?;
 var s:shared MyClass?;
 var u:unmanaged MyClass?;
 var b:borrowed MyClass?;
-var c:MyClass = new borrowed MyClass(1);
+var c:MyClass = (new owned MyClass(1)).borrow();
 
 proc myassert(param got) {
   if got != true then

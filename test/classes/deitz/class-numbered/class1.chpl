@@ -3,7 +3,7 @@ class foo {
   var f : real;
 }
 
-var x : borrowed foo = new borrowed foo();
+var x : borrowed foo = (new owned foo()).borrow();
 
 writeln("x: (", x.i, ", ", x.f, ")");
 
@@ -24,6 +24,6 @@ y.i = -2;
 writeln("x: (", x.i, ", ", x.f, ")");
 
 
-var z : borrowed foo = new borrowed foo(i=12,f=18.2);
+var z : borrowed foo = (new owned foo(i=12,f=18.2)).borrow();
 
 writeln("z: (", z.i, ", ", z.f, ")");

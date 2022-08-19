@@ -2,10 +2,10 @@ class C { var x: int = 1; }
 
 
 // borrowed - owned - unmanaged - shared
-var bb = new borrowed borrowed C(1);
-var bo = new borrowed owned C(1);
-var bu = new borrowed unmanaged C(1);
-var bs = new borrowed shared C(1);
+var bb = (new owned borrowed C(1)).borrow();
+var bo = (new owned owned C(1)).borrow();
+var bu = (new owned unmanaged C(1)).borrow();
+var bs = (new owned shared C(1)).borrow();
 var ob = new owned borrowed C(1);
 var oo = new owned owned C(1);
 var ou = new owned unmanaged C(1);

@@ -84,7 +84,7 @@ module Impl {
     writeln(aa);
 
     var a = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=int);
-    var d = new borrowed ListerParent(rank=1, idxType=int, stridable=false);
+    var d = (new owned ListerParent(rank=1, idxType=int, stridable=false)).borrow();
     d.lst.append(a);
 
     test(d);

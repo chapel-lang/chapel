@@ -15,7 +15,7 @@ proc foo(x: borrowed C(t=?tt, r=?rr),
 
 var myC = new borrowed C(int, 2),
     myC2 = new borrowed C(int, 2),
-    myC3 = new borrowed C(real, 3);
+    myC3 = (new owned C(real, 3)).borrow();
 
 foo(myC, myC2);
 foo(myC, myC3);
