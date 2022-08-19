@@ -165,6 +165,7 @@ static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
 static bool hasUserAssign(Type* type);
 static void resolveOther();
 static bool fits_in_int(int width, Immediate* imm);
+static bool is_negative(Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
 static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm, bool realPart=true);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType, bool* paramNarrows);
@@ -581,6 +582,7 @@ static bool fits_in_int_helper(int width, int64_t val) {
 }
 
 static bool fits_in_int(int width, Immediate* imm) {
+  // TODO: should this consider real or complex?
   if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     return fits_in_int_helper(width, i);
@@ -589,6 +591,15 @@ static bool fits_in_int(int width, Immediate* imm) {
     if (u > INT64_MAX)
       return false;
     return fits_in_int_helper(width, (int64_t)u);
+  }
+
+  return false;
+}
+
+static bool is_negative(Immediate* imm) {
+  if (imm->const_kind == NUM_KIND_INT) {
+    int64_t i = imm->int_value();
+    return (i < 0);
   }
 
   return false;
@@ -610,6 +621,7 @@ static bool fits_in_uint_helper(int width, uint64_t val) {
 }
 
 static bool fits_in_uint(int width, Immediate* imm) {
+  // TODO: should this consider real or complex?
   if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     if (i < 0)
@@ -1012,17 +1024,26 @@ static bool canParamCoerce(Type*   actualType,
       return true;
     }
 
+    Immediate* imm = nullptr;
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      imm = var->immediate;
+    }
+
+    // Don't allow coercion from a negative param to a uint
+    if (imm && is_negative(imm)) {
+      return false;
+    }
+
     if (is_int_type(actualType) &&
         get_width(actualType) <= get_width(formalType)) {
+      // int can coerce to uint, with the above exception for negative params
       return true;
     }
 
-    if (VarSymbol* var = toVarSymbol(actualSym)) {
-      if (var->immediate) {
-        if (fits_in_uint(get_width(formalType), var->immediate)) {
-          *paramNarrows = true;
-          return true;
-        }
+    if (imm) {
+      if (fits_in_uint(get_width(formalType), imm)) {
+        *paramNarrows = true;
+        return true;
       }
     }
   }
