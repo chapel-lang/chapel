@@ -249,6 +249,8 @@ twoInts(i16, *) variants
 64, 64
 64, 8
 64, 64
+64, 64
+64, 64
 
 
 
@@ -270,6 +272,8 @@ twoInts(i32, *) variants
 64, 64
 64, 64
 64, 8
+64, 64
+64, 64
 64, 64
 
 
@@ -337,7 +341,11 @@ twoInts(I16, *) variants
 64, 64
 64, 8
 64, 64
+64, 64
+64, 64
 64, 8
+64, 64
+64, 64
 64, 64
 
 
@@ -357,7 +365,11 @@ twoInts(I32, *) variants
 64, 64
 64, 8
 64, 64
+64, 64
+64, 64
 64, 8
+64, 64
+64, 64
 64, 64
 
 
@@ -1294,6 +1306,8 @@ allSigs(i16, *) variants
 64, 64
 64, param 8
 64, param 64
+64, param 64
+64, param 64
 64, sizes
 64, sizes
 64, sizes
@@ -1315,6 +1329,8 @@ allSigs(i32, *) variants
 64, 64
 64, 64
 64, param 8
+64, param 64
+64, param 64
 64, param 64
 64, sizes
 64, sizes
@@ -1382,7 +1398,11 @@ param 64, param 64
 param 64, 64
 param 64, 8
 param 64, 64
+param 64, 64
+param 64, 64
 param 64, param 8
+param 64, param 64
+param 64, param 64
 param 64, param 64
 param 64, sizes
 param 64, sizes
@@ -1402,7 +1422,11 @@ param 64, param 64
 param 64, 64
 param 64, 8
 param 64, 64
+param 64, 64
+param 64, 64
 param 64, param 8
+param 64, param 64
+param 64, param 64
 param 64, param 64
 param 64, sizes
 param 64, sizes

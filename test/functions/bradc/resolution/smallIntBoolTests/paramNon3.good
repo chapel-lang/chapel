@@ -1,4 +1,6 @@
-paramNon3.chpl:49: error: unresolved call 'plus(uint(64), int(64))'
-paramNon3.chpl:49: note: all candidates were discarded because each has too many implicit conversions
-paramNon3.chpl:11: note: candidate discarded: plus(x: real(32), y: real(32))
-paramNon3.chpl:11: note: candidate discarded: plus(x: real(64), y: real(64))
+In int version
+5
+In uint version
+4
+In real version
+5.0
