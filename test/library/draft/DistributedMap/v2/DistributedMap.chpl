@@ -317,13 +317,49 @@ module DistributedMap {
       }
     }
 
-    // TODO: impl
+    // TODO: if writeThis encodes the locale hash, this should react to it
+    // Right now, it's not easy to call read with a distributedMap as a type
+    // argument because of how we store the hasher object.
+    /*
+      Reads the contents of this map from a channel. The format looks like:
+
+        .. code-block:: chapel
+
+           {k1: v1, k2: v2, .... , kn: vn}
+
+      :arg ch: A channel to read from.
+    */
     proc readThis(ch: channel) throws {
       for i in locDom {
         locks[i].lock();
       }
 
-      compilerError("unimplemented");
+      var first = true;
+      ch._readLiteral("{");
+
+      while true {
+        if first {
+          first = false;
+        } else {
+          try {
+            ch._readLiteral(", ");
+          } catch {
+            // If we can't find the `, ` then it's probably the end of the map
+            break;
+          }
+        }
+
+        var key: keyType;
+        var val: valType;
+
+        ch.read(key);
+        ch._readLiteral(": ");
+        ch.read(val);
+
+        this.addOrSetUnlocked(key, val);
+      }
+
+      ch._readLiteral("}");
 
       for i in locDom {
         locks[i].unlock();
