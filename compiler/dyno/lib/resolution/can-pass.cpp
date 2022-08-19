@@ -1112,15 +1112,22 @@ static QualifiedType findByPassing(Context* context,
   return QualifiedType();
 }
 
-QualifiedType commonType(Context* context,
-                         const std::vector<QualifiedType>& types,
-                         bool useRequiredKind,
-                         QualifiedType::Kind requiredKind) {
+bool commonType(Context* context,
+                const std::vector<QualifiedType>& types,
+                bool useRequiredKind,
+                QualifiedType::Kind requiredKind,
+                QualifiedType& outCommonType) {
   assert(types.size() > 0);
 
   // figure out the kind
   auto properties = KindProperties::fromKind(types.front().kind());
   for (auto& type : types) {
+    if (type.isUnknown()) {
+      // if any type is unknown, we can't figure out the common type,
+      // but it's not an error.
+      outCommonType = QualifiedType();
+      return true;
+    }
     auto kind = type.kind();
     auto typeProperties = KindProperties::fromKind(kind);
     properties.combineWith(typeProperties);
@@ -1134,7 +1141,8 @@ QualifiedType commonType(Context* context,
     properties = requiredProperties;
   }
 
-  if (!properties.valid()) return QualifiedType();
+  // We can't reconcile the intents. Return with error.
+  if (!properties.valid()) return false;
   auto bestKind = properties.toKind();
 
   // Create a new list of types with their kinds adjusted.
@@ -1154,7 +1162,10 @@ QualifiedType commonType(Context* context,
   // Performance: if the types vector ever becomes very long,
   // it might be worth using a unique'd vector here.
   auto commonType = findByPassing(context, adjustedTypes);
-  if (!commonType.isUnknown()) return commonType;
+  if (!commonType.isUnknown()) {
+    outCommonType = std::move(commonType);
+    return true;
+  }
 
   bool paramRequired = useRequiredKind && requiredKind == QualifiedType::PARAM;
   if (bestKind == QualifiedType::PARAM && !paramRequired) {
@@ -1166,9 +1177,14 @@ QualifiedType commonType(Context* context,
       // adjust kind and strip param
       adjustedType = QualifiedType(bestKind, adjustedType.type());
     }
-    return findByPassing(context, adjustedTypes);
+
+    commonType = findByPassing(context, adjustedTypes);
+    if (!commonType.isUnknown()) {
+      outCommonType = std::move(commonType);
+      return true;
+    }
   }
-  return QualifiedType();
+  return false;
 }
 
 } // end namespace resolution

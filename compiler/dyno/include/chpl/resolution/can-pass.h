@@ -176,17 +176,20 @@ CanPassResult canPass(Context* context,
 /**
   Given a (non-empty) list of types (e.g., the types of various return statements
   in a function), determine the type, if any, that can be used to represent
-  all of them. If such a type cannot be found, returns an empty QualifiedType.
+  all of them. Returns a boolean representing whether or not a common
+  type was found; if it was, the outType reference is set to said type.
 
   If useRequiredKind=true is specified, the requiredKind argument is treated
   as a strict constraint on the kinds of the given types. For instance,
   specifying requiredKind=PARAM and giving non-param types will
-  result in an empty QualifiedType, even if the types can otherwise by unified.
+  result in failure to find a common type, even if the types can otherwise
+  by unified.
  */
-chpl::types::QualifiedType commonType(Context* context,
-                                const std::vector<chpl::types::QualifiedType>& types,
-                                bool useRequiredKind,
-                                chpl::types::QualifiedType::Kind requiredKind);
+bool commonType(Context* context,
+                const std::vector<chpl::types::QualifiedType>& types,
+                bool useRequiredKind,
+                chpl::types::QualifiedType::Kind requiredKind,
+                chpl::types::QualifiedType& outType);
 // QualifiedType fully qualified here to prevent "reference target not found"
 // in Doxygen.
 
