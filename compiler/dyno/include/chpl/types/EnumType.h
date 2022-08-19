@@ -54,6 +54,9 @@ class EnumType final : public Type {
   /** Get an enum type for an ID. */
   static const EnumType* get(Context* context, ID id, UniqueString name);
 
+  /** Get the type for a range's BoundedRangeType */
+  static const EnumType* getBoundedRangeTypeType(Context* context);
+
   ~EnumType() = default;
 
   virtual void stringify(std::ostream& ss,

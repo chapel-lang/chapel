@@ -35,7 +35,7 @@ using namespace chpl::types;
 void setupContext(Context* ctx, const ChplEnvMap& chplEnv) {
 }
 
-QualifiedType getRangeIndexType(Context* context, const RecordType* r) {
+QualifiedType getRangeIndexType(Context* context, const RecordType* r, const std::string& ensureBoundedType) {
   assert(r->name() == "range");
   auto fields = fieldsForTypeDecl(context, r, DefaultsPolicy::IGNORE_DEFAULTS);
 
@@ -46,6 +46,12 @@ QualifiedType getRangeIndexType(Context* context, const RecordType* r) {
   auto bounded = fields.fieldType(1);
   assert(bounded.kind() == QualifiedType::PARAM);
   assert(bounded.type()->isEnumType());
+  assert(bounded.param() != nullptr);
+  auto boundedValue = bounded.param()->toEnumParam();
+  auto id = boundedValue->value();
+  auto astNode = idToAst(context, id)->toNamedDecl();
+  assert(astNode != nullptr);
+  assert(astNode->name().str() == ensureBoundedType);
 
   auto stridable = fields.fieldType(2);
   assert(stridable.isParamTrue() || stridable.isParamFalse());
@@ -77,7 +83,7 @@ static void test2(Context* context) {
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
-  auto idxType = getRangeIndexType(context, rangeType);
+  auto idxType = getRangeIndexType(context, rangeType, "bounded");
   assert(idxType.type() != nullptr);
   auto idxTypeInt = idxType.type()->toIntType();
   assert(idxTypeInt->bitwidth() == 64);
@@ -97,7 +103,7 @@ static void test3(Context* context) {
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
-  auto idxType = getRangeIndexType(context, rangeType);
+  auto idxType = getRangeIndexType(context, rangeType, "bounded");
   assert(idxType.type() != nullptr);
   auto idxTypeInt = idxType.type()->toIntType();
   assert(idxTypeInt->bitwidth() == 32);
@@ -116,7 +122,7 @@ static void test4(Context* context) {
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
-  auto idxType = getRangeIndexType(context, rangeType);
+  auto idxType = getRangeIndexType(context, rangeType, "boundedLow");
   assert(idxType.type() != nullptr);
   auto idxTypeInt = idxType.type()->toIntType();
   assert(idxTypeInt->bitwidth() == 32);
@@ -135,22 +141,40 @@ static void test5(Context* context) {
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
-  auto idxType = getRangeIndexType(context, rangeType);
+  auto idxType = getRangeIndexType(context, rangeType, "boundedHigh");
   assert(idxType.type() != nullptr);
   auto idxTypeInt = idxType.type()->toIntType();
   assert(idxTypeInt->bitwidth() == 16);
+}
+
+static void test6(Context* context) {
+  // test range without bound
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         var y : int;
+                         var x = ..;
+                         )"""", true);
+  assert(qt.type() != nullptr);
+  auto rangeType = qt.type()->toRecordType();
+  assert(rangeType != nullptr);
+  auto idxType = getRangeIndexType(context, rangeType, "boundedNone");
+  assert(idxType.type() != nullptr);
+  auto idxTypeInt = idxType.type()->toIntType();
+  assert(idxTypeInt->bitwidth() == 64);
 }
 
 int main() {
   // first test runs without environment and stdlib.
   test1();
 
-  Context context;
+  Context context(getenv("CHPL_HOME"));
   auto ctx = &context;
-  ctx->setChplHome(getenv("CHPL_HOME"));
   test2(ctx);
   test3(ctx);
   test4(ctx);
   test5(ctx);
+  test6(ctx);
   return 0;
 }

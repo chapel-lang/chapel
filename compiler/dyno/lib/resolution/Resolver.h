@@ -294,6 +294,11 @@ struct Resolver {
                                            const types::QualifiedType& left,
                                            const types::QualifiedType& right);
 
+  types::QualifiedType typeForEnumElement(const types::EnumType* type,
+                                          UniqueString elemName,
+                                          const uast::AstNode* astForErr,
+                                          ID& outElemId);
+
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
   // if it is a regular call.
