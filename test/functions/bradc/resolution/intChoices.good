@@ -8,8 +8,8 @@ int8or64 variants:
 64
 64
 8
-64
-64
+8
+8
 64
 
 
@@ -32,7 +32,7 @@ int8or32 variants:
 32
 
 8
-32
+8
 32
 8
 
@@ -176,8 +176,8 @@ twoInts(RED, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -200,8 +200,8 @@ twoInts(Red, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -224,8 +224,8 @@ twoInts(i8, *) variants
 8, 64
 8, 64
 8, 8
-8, 64
-8, 64
+8, 8
+8, 8
 8, 64
 
 
@@ -248,8 +248,8 @@ twoInts(i16, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -272,8 +272,8 @@ twoInts(i32, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -296,8 +296,8 @@ twoInts(i64, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -320,8 +320,8 @@ twoInts(I8, *) variants
 8, 64
 8, 64
 8, 8
-8, 64
-8, 64
+8, 8
+8, 8
 8, 64
 
 
@@ -337,50 +337,50 @@ twoInts(I8, *) variants
 twoInts(I16, *) variants
 
 
-64, 64
-64, 64
-64, 8
-64, 64
-64, 64
-64, 64
-64, 8
-64, 64
-64, 64
-64, 64
+8, 64
+8, 64
+8, 8
+8, 64
+8, 64
+8, 64
+8, 8
+8, 8
+8, 8
+8, 64
 
 
 
 
-64, 64
-64, 64
-64, 64
-64, 64
-64, 64
-64, 64
+8, 64
+8, 64
+8, 64
+8, 64
+8, 64
+8, 64
 
 twoInts(I32, *) variants
 
 
-64, 64
-64, 64
-64, 8
-64, 64
-64, 64
-64, 64
-64, 8
-64, 64
-64, 64
-64, 64
+8, 64
+8, 64
+8, 8
+8, 64
+8, 64
+8, 64
+8, 8
+8, 8
+8, 8
+8, 64
 
 
 
 
-64, 64
-64, 64
-64, 64
-64, 64
-64, 64
-64, 64
+8, 64
+8, 64
+8, 64
+8, 64
+8, 64
+8, 64
 
 twoInts(I64, *) variants
 
@@ -392,8 +392,8 @@ twoInts(I64, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -512,8 +512,8 @@ twoInts(SMALL, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -536,8 +536,8 @@ twoInts(BIG, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -560,8 +560,8 @@ twoInts(Small, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -584,8 +584,8 @@ twoInts(Big, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -608,8 +608,8 @@ twoInts(126, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -632,8 +632,8 @@ twoInts(131072, *) variants
 64, 64
 64, 64
 64, 8
-64, 64
-64, 64
+64, 8
+64, 8
 64, 64
 
 
@@ -1185,8 +1185,8 @@ color, 64
 color, 64
 color, 64
 color, param 8
-color, param 64
-color, param 64
+color, param 8
+color, param 8
 color, param 64
 color, sizes
 color, sizes
@@ -1209,8 +1209,8 @@ color, 64
 color, 64
 color, 64
 color, param 8
-color, param 64
-color, param 64
+color, param 8
+color, param 8
 color, param 64
 color, sizes
 color, sizes
@@ -1233,8 +1233,8 @@ param 64, 64
 param 64, 64
 param 64, 64
 param 64, param 8
-param 64, param 64
-param 64, param 64
+param 64, param 8
+param 64, param 8
 param 64, param 64
 param 64, sizes
 param 64, sizes
@@ -1257,8 +1257,8 @@ allSigs(Red, *) variants
 64, 64
 64, 64
 64, param 8
-64, param 64
-64, param 64
+64, param 8
+64, param 8
 64, param 64
 64, sizes
 64, sizes
@@ -1281,8 +1281,8 @@ allSigs(i8, *) variants
 8, 64
 8, 64
 8, param 8
-8, param 64
-8, param 64
+8, param 8
+8, param 8
 8, param 64
 8, sizes
 8, sizes
@@ -1305,8 +1305,8 @@ allSigs(i16, *) variants
 64, 64
 64, 64
 64, param 8
-64, param 64
-64, param 64
+64, param 8
+64, param 8
 64, param 64
 64, sizes
 64, sizes
@@ -1329,8 +1329,8 @@ allSigs(i32, *) variants
 64, 64
 64, 64
 64, param 8
-64, param 64
-64, param 64
+64, param 8
+64, param 8
 64, param 64
 64, sizes
 64, sizes
@@ -1353,8 +1353,8 @@ allSigs(i64, *) variants
 64, 64
 64, 64
 64, param 8
-64, param 64
-64, param 64
+64, param 8
+64, param 8
 64, param 64
 64, sizes
 64, sizes
@@ -1377,8 +1377,8 @@ param 8, 64
 param 8, 64
 param 8, 64
 param 8, param 8
-param 8, param 64
-param 8, param 64
+param 8, param 8
+param 8, param 8
 param 8, param 64
 param 8, sizes
 param 8, sizes
@@ -1392,52 +1392,52 @@ param 8, param 64
 param 8, param 64
 
 allSigs(I16, *) variants
-param 64, color
-param 64, color
-param 64, param 64
-param 64, 64
-param 64, 8
-param 64, 64
-param 64, 64
-param 64, 64
-param 64, param 8
-param 64, param 64
-param 64, param 64
-param 64, param 64
-param 64, sizes
-param 64, sizes
-param 64, sizes
-param 64, sizes
-param 64, param 64
-param 64, param 64
-param 64, 64
-param 64, 64
-param 64, param 64
-param 64, param 64
+param 8, color
+param 8, color
+param 8, param 64
+param 8, 64
+param 8, 8
+param 8, 64
+param 8, 64
+param 8, 64
+param 8, param 8
+param 8, param 8
+param 8, param 8
+param 8, param 64
+param 8, sizes
+param 8, sizes
+param 8, sizes
+param 8, sizes
+param 8, param 64
+param 8, param 64
+param 8, 64
+param 8, 64
+param 8, param 64
+param 8, param 64
 
 allSigs(I32, *) variants
-param 64, color
-param 64, color
-param 64, param 64
-param 64, 64
-param 64, 8
-param 64, 64
-param 64, 64
-param 64, 64
-param 64, param 8
-param 64, param 64
-param 64, param 64
-param 64, param 64
-param 64, sizes
-param 64, sizes
-param 64, sizes
-param 64, sizes
-param 64, param 64
-param 64, param 64
-param 64, 64
-param 64, 64
-param 64, param 64
-param 64, param 64
+param 8, color
+param 8, color
+param 8, param 64
+param 8, 64
+param 8, 8
+param 8, 64
+param 8, 64
+param 8, 64
+param 8, param 8
+param 8, param 8
+param 8, param 8
+param 8, param 64
+param 8, sizes
+param 8, sizes
+param 8, sizes
+param 8, sizes
+param 8, param 64
+param 8, param 64
+param 8, 64
+param 8, 64
+param 8, param 64
+param 8, param 64
 
 allSigs(I64, *) variants
 param 64, color
@@ -1449,8 +1449,8 @@ param 64, 64
 param 64, 64
 param 64, 64
 param 64, param 8
-param 64, param 64
-param 64, param 64
+param 64, param 8
+param 64, param 8
 param 64, param 64
 param 64, sizes
 param 64, sizes
@@ -1473,8 +1473,8 @@ sizes, 64
 sizes, 64
 sizes, 64
 sizes, param 8
-sizes, param 64
-sizes, param 64
+sizes, param 8
+sizes, param 8
 sizes, param 64
 sizes, sizes
 sizes, sizes
@@ -1497,8 +1497,8 @@ sizes, 64
 sizes, 64
 sizes, 64
 sizes, param 8
-sizes, param 64
-sizes, param 64
+sizes, param 8
+sizes, param 8
 sizes, param 64
 sizes, sizes
 sizes, sizes
@@ -1521,8 +1521,8 @@ sizes, 64
 sizes, 64
 sizes, 64
 sizes, param 8
-sizes, param 64
-sizes, param 64
+sizes, param 8
+sizes, param 8
 sizes, param 64
 sizes, sizes
 sizes, sizes
@@ -1545,8 +1545,8 @@ sizes, 64
 sizes, 64
 sizes, 64
 sizes, param 8
-sizes, param 64
-sizes, param 64
+sizes, param 8
+sizes, param 8
 sizes, param 64
 sizes, sizes
 sizes, sizes
@@ -1569,8 +1569,8 @@ param 64, 64
 param 64, 64
 param 64, 64
 param 64, param 8
-param 64, param 64
-param 64, param 64
+param 64, param 8
+param 64, param 8
 param 64, param 64
 param 64, sizes
 param 64, sizes
@@ -1593,8 +1593,8 @@ param 64, 64
 param 64, 64
 param 64, 64
 param 64, param 8
-param 64, param 64
-param 64, param 64
+param 64, param 8
+param 64, param 8
 param 64, param 64
 param 64, sizes
 param 64, sizes
@@ -1617,8 +1617,8 @@ allSigs(Small, *) variants
 64, 64
 64, 64
 64, param 8
-64, param 64
-64, param 64
+64, param 8
+64, param 8
 64, param 64
 64, sizes
 64, sizes
@@ -1641,8 +1641,8 @@ allSigs(Big, *) variants
 64, 64
 64, 64
 64, param 8
-64, param 64
-64, param 64
+64, param 8
+64, param 8
 64, param 64
 64, sizes
 64, sizes
@@ -1665,8 +1665,8 @@ param 64, 64
 param 64, 64
 param 64, 64
 param 64, param 8
-param 64, param 64
-param 64, param 64
+param 64, param 8
+param 64, param 8
 param 64, param 64
 param 64, sizes
 param 64, sizes
@@ -1689,8 +1689,8 @@ param 64, 64
 param 64, 64
 param 64, 64
 param 64, param 8
-param 64, param 64
-param 64, param 64
+param 64, param 8
+param 64, param 8
 param 64, param 64
 param 64, sizes
 param 64, sizes
