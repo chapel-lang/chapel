@@ -174,6 +174,23 @@ module DistributedMap {
       return res;
     }
 
+    // WARNING: This method is unlocked and for performance purposes.  It should
+    // only be used when you know you control the accesses to the map and will
+    // be managing race conditions yourself
+    pragma "no doc"
+    proc const containsUnlocked(const k: keyType): bool {
+      var loc: int = this.getLocaleForKey(k);
+
+      var res: bool;
+      on loc {
+
+        var (result, _) = tables[loc].findFullSlot(k);
+
+        res = result;
+      }
+      return res;
+    }
+
     // TODO: Is it necessary to lock everything?  Maybe can do something fancy
     // like figure out all the locales needed and then lock?
     proc extend(pragma "intent ref maybe const formal"
@@ -390,6 +407,27 @@ module DistributedMap {
       return res;
     }
 
+    // WARNING: This method is unlocked and for performance purposes.  It should
+    // only be used when you know you control the accesses to the map and will
+    // be managing race conditions yourself
+    pragma "no doc"
+    proc addUnlocked(in k: keyType, in v: valType): bool lifetime this < v {
+      var loc: int = this.getLocaleForKey(k);
+
+      var res: bool;
+      on loc {
+        var (found, slot) = tables[loc].findAvailableSlot(k);
+
+        // Only add if it wasn't already present
+        if (!found) then
+          tables[loc].fillSlot(slot, k, v);
+
+        res = !found;
+      }
+
+      return res;
+    }
+
     // NOTE: Locks on the locale, so may be slower than we'd like?
     /*
       Sets the value associated with a key. Method returns `false` if the key
@@ -424,6 +462,27 @@ module DistributedMap {
       return res;
     }
 
+    // WARNING: This method is unlocked and for performance purposes.  It should
+    // only be used when you know you control the accesses to the map and will
+    // be managing race conditions yourself
+    pragma "no doc"
+    proc setUnlocked(k: keyType, in v: valType): bool {
+      var loc: int = this.getLocaleForKey(k);
+
+      var res: bool;
+      on loc {
+        var (found, slot) = tables[loc].findAvailableSlot(k);
+
+        if (found) then
+          tables[loc].fillSlot(slot, k, v);
+
+        res = found;
+      }
+
+      return res;
+
+    }
+
     /* If the map doesn't contain a value at position `k` add one and
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
@@ -438,6 +497,19 @@ module DistributedMap {
         tables[loc].fillSlot(slot, k, v);
 
         locks[loc].unlock();
+      }
+    }
+
+    // WARNING: This method is unlocked and for performance purposes.  It should
+    // only be used when you know you control the accesses to the map and will
+    // be managing race conditions yourself
+    pragma "no doc"
+    proc addOrSetUnlocked(in k: keyType, in v: valType) {
+      var loc: int = this.getLocaleForKey(k);
+
+      on loc {
+        var (_, slot) = tables[loc].findAvailableSlot(k);
+        tables[loc].fillSlot(slot, k, v);
       }
     }
 
@@ -465,6 +537,29 @@ module DistributedMap {
         }
 
         locks[loc].unlock();
+        res = found;
+      }
+
+      return res;
+    }
+
+    // WARNING: This method is unlocked and for performance purposes.  It should
+    // only be used when you know you control the accesses to the map and will
+    // be managing race conditions yourself
+    pragma "no doc"
+    proc removeUnlocked(k: keyType): bool {
+      var loc: int = this.getLocaleForKey(k);
+
+      var res: bool;
+      on loc {
+        var (found, slot) = tables[loc].findFullSlot(k);
+
+        if (found) {
+          var outKey: keyType, outVal: valType;
+          tables[loc].clearSlot(slot, outKey, outVal);
+          // tables[loc].maybeShrinkAfterRemove(); // Should do when done w/ all
+        }
+
         res = found;
       }
 
