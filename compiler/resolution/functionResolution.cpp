@@ -5737,6 +5737,14 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     Vec<ResolutionCandidate*>&   ambiguous) {
 
 
+  // Disable implicit conversion to remove nilability
+  // for disambiguation
+  int saveGenerousResolutionForErrors = 0;
+  if (generousResolutionForErrors > 0) {
+    saveGenerousResolutionForErrors = generousResolutionForErrors;
+    generousResolutionForErrors = 0;
+  }
+
   // MPF note: A more straightforwardly O(n) version of this
   // function did not appear to be faster. See history of this comment.
 
@@ -5879,6 +5887,10 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
 
     if (singleMostSpecific) {
       EXPLAIN("Y: Fn %d is the best match.\n\n\n", i);
+
+      if (saveGenerousResolutionForErrors > 0)
+        generousResolutionForErrors = saveGenerousResolutionForErrors;
+
       return candidate1;
 
     } else {
@@ -5893,6 +5905,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       ambiguous.add(candidates.v[i]);
     }
   }
+
+  if (saveGenerousResolutionForErrors > 0)
+    generousResolutionForErrors = saveGenerousResolutionForErrors;
 
   return NULL;
 }
