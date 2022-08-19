@@ -145,6 +145,11 @@ module ChapelLocale {
       return this._value.chpl_name();
     }
 
+    inline proc _getChildCount() {
+      return this._value._getChildCount();
+    }
+
+    deprecated "'locale.getChildCount' is deprecated"
     inline proc getChildCount() {
       return this._value.getChildCount();
     }
@@ -435,6 +440,13 @@ module ChapelLocale {
     }
 
     pragma "no doc"
+    proc _getChildCount() : int {
+      HaltWrappers.pureVirtualMethodHalt();
+      return 0;
+    }
+
+    pragma "no doc"
+    deprecated "'locale.getChildCount' is deprecated"
     proc getChildCount() : int {
       HaltWrappers.pureVirtualMethodHalt();
       return 0;
@@ -454,6 +466,12 @@ module ChapelLocale {
     }
 
     pragma "no doc"
+    proc _getChild(idx:int) : locale {
+      HaltWrappers.pureVirtualMethodHalt();
+    }
+
+    pragma "no doc"
+    deprecated "'locale.getChild' is deprecated"
     proc getChild(idx:int) : locale {
       HaltWrappers.pureVirtualMethodHalt();
     }
@@ -502,8 +520,14 @@ module ChapelLocale {
     override proc chpl_name() : string {
       return "dummy-locale";
     }
+    override proc _getChildCount() : int {
+      return 0;
+    }
     override proc getChildCount() : int {
       return 0;
+    }
+    override proc _getChild(idx:int) : locale {
+      return new locale(this);
     }
     override proc getChild(idx:int) : locale {
       return new locale(this);
@@ -725,8 +749,8 @@ module ChapelLocale {
 
   pragma "no doc"
   proc chpl_singletonCurrentLocaleInitPrivateSublocs(arg: locale) {
-    for i in 0..#arg.getChildCount() {
-      var subloc = arg.getChild(i);
+    for i in 0..#arg._getChildCount() {
+      var subloc = arg._getChild(i);
 
       var val = subloc._instance:unmanaged AbstractLocaleModel?;
       if val == nil then
