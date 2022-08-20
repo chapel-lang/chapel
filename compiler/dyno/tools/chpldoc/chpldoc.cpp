@@ -72,7 +72,6 @@ std::string outputDir_;
 bool textOnly_ = false;
 std::string CHPL_HOME = getenv("CHPL_HOME");
 bool processUsedModules_ = false;
-std::string docsWorkingDir_;
 const std::string templateUsage = R"RAW(**Usage**
 
 .. code-block:: chapel
@@ -1180,40 +1179,14 @@ struct RstResultBuilder {
   }
 
   void visitChildren(const AstNode* n) {
-    // std::vector<RstResult*> subModules;
     for (auto child : n->children()) {
-      if (auto &r = rstDoc(context_, child->id())) {
-        if (child->isModule()) {
-          // if (!writeStdOut_) {
-          //   // lookup the module path
-          //   std::vector<UniqueString> modulePath = getModulePath(context_,
-          //                                                        child->id());
-          //   modulePath.pop_back();
-          //   std::string parentPath;
-          //   for (auto p : modulePath) {
-          //     parentPath += p.str();
-          //     if (p != modulePath.back()) {
-          //       parentPath += "/";
-          //     }
-          //   }
-          //   std::string outdir = docsWorkingDir_ + "/" + parentPath;
-          //   r->outputModule(outdir, child->toModule()->name().str(),
-          //                   indentPerDepth);
-
-          // } else {
-          //   subModules.push_back(r.get());
-          // }
-        } else {
+      // don't visit child modules as they were gathered earlier
+      if (!child->isModule()) {
+        if (auto &r = rstDoc(context_, child->id())) {
           children_.push_back(r.get());
         }
       }
     }
-    // add the submodules to the end so that all the fields/functions of
-    // an individual module are printed together, and not interrupted by
-    // a submodule's declaration
-    // for (auto subModule : subModules) {
-    //   children_.push_back(subModule);
-    // }
   }
 
   /*
@@ -1258,11 +1231,6 @@ struct RstResultBuilder {
     if (doIndent) indentDepth_ --;
     return getResult();
   }
-
-  // owned<RstResult> visit(const Include* i) {
-
-  //   return getResult();
-  // }
 
   owned<RstResult> visit(const Module* m) {
     bool includedByDefault = false;
@@ -1348,7 +1316,6 @@ struct RstResultBuilder {
           indentStream(os_, 1 * indentPerDepth);
           os_ << "An explicit ``use`` statement is not necessary.";
           os_ << std::endl;
-          // os_ << std::endl;
         } else {
           os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
         }
@@ -1386,21 +1353,6 @@ struct RstResultBuilder {
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
-    // Process used modules if flag was set
-    // if (processUsedModules_) {
-    //   auto scope = resolution::scopeForModule(context_, m->id());
-    //   auto used = resolution::findUsedImportedModules(context_, scope);
-    //   for (auto id: used) {
-    //     if (idIsInInternalModule(context_, id) || idIsInBundledModule(context_, id)) {
-    //       continue;
-    //     }
-    //     std::string outdir = docsWorkingDir_;
-    //     auto node = idToAst(context_,id);
-    //     if (auto& r = rstDoc(context_, id)) {
-    //       r->outputModule(outdir, node->toModule()->name().str(), indentPerDepth);
-    //     }
-    //   }
-    // }
 
     return getResult(textOnly_);
   }
@@ -1534,7 +1486,12 @@ struct GatherModulesVisitor {
         if (idIsInBundledModule(context_, id)) {
           continue;
         }
-        modules.insert(id);
+        // only add it and visit its children if we haven't seen it already
+        if (modules.find(id) == modules.end()) {
+          modules.insert(id);
+          auto ast = idToAst(context_, id);
+          ast->traverse(*this);
+        }
       }
     }
   }
@@ -1549,7 +1506,8 @@ struct GatherModulesVisitor {
 
   // will handle a use or import multiple times in the case that a module has
   // multiple use statements.
-  // every time handleUseOrImport is called, it will add the module to the set
+  // every time handleUseOrImport is called, it will try to add the module
+  // to the set
   void exit(const Use* node) {
     handleUseOrImport(node);
   }
@@ -1984,14 +1942,12 @@ int main(int argc, char** argv) {
   }
 
   outputDir_ = docsRstDir;
-  // TODO: Do we need to do this if we're building some other docs? Seems like
-  // these are project specific directories.
+
   std::string modRoot = CHPL_HOME + "/modules";
   std::string internal = modRoot + "/internal";
-  //setInternalModulePath(ctx, UniqueString::get(ctx, internal));
   std::string bundled = modRoot + "/";
-  //setBundledModulePath(ctx, UniqueString::get(ctx, bundled));
-  // std::vector<std::string>;
+
+  // TODO: Get these values dynamically
   chpl::parsing::setupModuleSearchPaths(ctx,
                                       CHPL_HOME,
                                       false, //minimal modules
@@ -2005,8 +1961,7 @@ int main(int argc, char** argv) {
                                       args.files);
   GatherModulesVisitor gather(ctx);
 
-
-
+  // evaluate all the files and gather the modules
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
     UniqueString emptyParent;
@@ -2047,20 +2002,6 @@ int main(int argc, char** argv) {
     }
     // gather all the top level and used/imported/included module IDs
     for (const auto& ast : builderResult.topLevelExpressions()) {
-
-      // TODO: FIXME! this is a hack to get the full directory path that is
-      //  needed if/when we encounter any submodules while processing this
-      //  module, because the submodules should be in a directory relative
-      //  to the module, and if the module itself has a leading path, then
-      //  the submodule was being orphaned in a directory one level up.
-      //  for example: chpldoc modules/packages/BLAS.chpl
-      //  should create a directory modules/packages/BLAS/C_BLAS.rst
-      //  but was instead creating modules/BLAS/C_BLAS.rst
-      // docsWorkingDir_ = filenameFromModuleName(cpath, outputDir_);
-
-      // if (auto& r = rstDoc(ctx, ast->id())) {
-      //   r->outputModule(docsWorkingDir_, name, indentPerDepth);
-      // }
       ast->traverse(gather);
     }
   }
@@ -2068,27 +2009,30 @@ int main(int argc, char** argv) {
   for (auto id : gather.modules) {
     if (auto& r = rstDoc(ctx, id)) {
       if (!args.stdout) {
-        std::string name;
-        const AstNode* ast = idToAst(ctx, id);
-        if (ast->isModule()) {
-          name = ast->toModule()->name().str();
-        }
         // given a module ID we can get the path to the file that we parsed
         UniqueString filePath;
         UniqueString parentSymbol;
         ctx->filePathForId(id, filePath, parentSymbol);
+        std::string parentPath;
+        auto pathVec = id.expandSymbolPath(ctx, id.symbolPath());
+        pathVec.pop_back(); // strip last entry - name of this module
+        for (auto path : pathVec) {
+          for (int i = 0; i <= path.second; i++) {
+            if (path.first != id.symbolName(ctx)) {
+              parentPath += unescapeStringId(path.first.str()) + "/";
+            }
+          }
+        }
+        std::string docsWorkingDir_ = filenameFromModuleName(filePath.c_str(), outputDir_);
+        std::string outdir = docsWorkingDir_;
+        // TODO: This is an ugly hack to handle included module paths
+        if (parentSymbol.isEmpty()) {
+          outdir += "/" + parentPath;
+        }
 
-        // TODO: FIXME! this is a hack to get the full directory path that is
-        //  needed if/when we encounter any submodules while processing this
-        //  module, because the submodules should be in a directory relative
-        //  to the module, and if the module itself has a leading path, then
-        //  the submodule was being orphaned in a directory one level up.
-        //  for example: chpldoc modules/packages/BLAS.chpl
-        //  should create a directory modules/packages/BLAS/C_BLAS.rst
-        //  but was instead creating modules/BLAS/C_BLAS.rst
-        docsWorkingDir_ = filenameFromModuleName(filePath.c_str(), outputDir_);
-
-        r->outputModule(docsWorkingDir_, name, indentPerDepth);
+        std::string moduleName = id.symbolName(ctx).str();
+        // need to check for a parent module in the path and add it to the directory structure if it exists
+        r->outputModule(outdir, moduleName, indentPerDepth);
       } else {
         r->output(std::cout, indentPerDepth);
       }

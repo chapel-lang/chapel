@@ -1,7 +1,7 @@
-module A {
-  use B;
+module ModuleA {
+  use ModuleB;
 }
 
-module B {
-  use A;
+module ModuleB {
+  use ModuleA;
 }
