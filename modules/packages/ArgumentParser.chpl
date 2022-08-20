@@ -241,7 +241,7 @@
 
  */
 
-module ArgumentParser {
+@unstable "ArgumentParser is unstable." module ArgumentParser {
   use List;
   use Map;
   use IO;
@@ -255,9 +255,6 @@ module ArgumentParser {
   // TODO: Implement Help message and formatting
   // TODO: Move logic splitting '=' into '_match'
   // TODO: Add public github issue when available
-
-  if chpl_warnUnstable then
-    compilerWarning("ArgumentParser is unstable.");
 
   pragma "no doc"
   enum argKind { positional, subcommand, option, flag, passthrough };

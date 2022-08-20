@@ -860,9 +860,7 @@ module Bytes {
         ``bytes.dedent`` is not considered stable and is subject to change in
         future Chapel releases.
   */
-  proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
-    if chpl_warnUnstable then
-      compilerWarning("bytes.dedent is subject to change in the future.");
+  @unstable "bytes.dedent is subject to change in the future." proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
     return doDedent(this, columns, ignoreFirst);
   }
 

@@ -1793,12 +1793,9 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
+    @unstable "bulkAdd() is subject to change in the future." proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
-      if chpl_warnUnstable then compilerWarning(
-        "bulkAdd() is subject to change in the future.");
-
       if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
@@ -1837,10 +1834,7 @@ module ChapelDomain {
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
-    inline proc makeIndexBuffer(size: int) {
-      if chpl_warnUnstable then compilerWarning(
-        "makeIndexBuffer() is subject to change in the future.");
-
+    @unstable "makeIndexBuffer() is subject to change in the future." inline proc makeIndexBuffer(size: int) {
       return _value.dsiMakeIndexBuffer(size);
     }
 
@@ -1895,9 +1889,6 @@ module ChapelDomain {
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
-      if chpl_warnUnstable then compilerWarning(
-        "bulkAdd() is subject to change in the future.");
-
       if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);

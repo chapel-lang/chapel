@@ -27,13 +27,9 @@
 // backward compatible with the architecture implicitly provided by
 // releases 1.6 and preceding.
 //
-module LocaleModel {
-
-  if chpl_warnUnstable {
-    compilerWarning("GPU support is a prototype in this version of Chapel.",
-                    " As such, the interface is unstable and expected to",
-                    " change in the forthcoming releases.");
-  }
+@unstable "GPU support is a prototype in this version of Chapel. 
+          As such, the interface is unstable and expected to change 
+          in the forthcoming releases." module LocaleModel {
 
   public use LocaleModelHelpGPU;
 

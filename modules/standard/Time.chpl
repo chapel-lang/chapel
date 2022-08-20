@@ -573,7 +573,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     pragma "no doc"
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     pragma "no doc"
-    var chpl_tzinfo: shared TZInfo?;
+    @unstable "tzinfo is unstable; its type may change in the future" : shared TZInfo?;
 
     /* The hour represented by this `time` value */
     proc hour {
@@ -623,9 +623,6 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    */
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
                  in tzinfo: shared TZInfo?) {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -687,9 +684,6 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    */
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
                     in tzinfo) {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -1024,9 +1018,6 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc datetime.init(year, month, day,
                      hour=0, minute=0, second=0, microsecond=0,
                      in tzinfo) {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
   }
@@ -1067,9 +1058,6 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=timeSinceEpoch(1));
     } else {
-      if chpl_warnUnstable {
-        compilerWarning("tzinfo is unstable; its type may change in the future");
-      }
       const timeSinceEpoch = getTimeOfDay();
       const td = new timedelta(seconds=timeSinceEpoch(0),
                                microseconds=timeSinceEpoch(1));
@@ -1103,9 +1091,6 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=t(1));
     } else {
-      if chpl_warnUnstable {
-        compilerWarning("tzinfo is unstable; its type may change in the future");
-      }
       var dt = datetime.utcFromTimestamp(timestamp);
       return (dt + tz!.utcOffset(dt)).replace(tzinfo=tz);
     }
@@ -1170,9 +1155,6 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the date and time converted into the timezone in the argument */
   proc datetime.astimezone(in tz: shared TZInfo) {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     if tzinfo == tz {
       return this;
     }
