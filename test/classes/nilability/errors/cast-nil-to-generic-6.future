@@ -1,4 +1,0 @@
-bug: iterator yields a generic type
-#14148
-
-This code is a small reproducer for the code in the first comment of #14148.

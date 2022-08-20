@@ -1,0 +1,8 @@
+error message: confusing error message about generic yield type
+
+The presence `yield new RR(real)` should indicate the concrete
+yield type to the compiler. Short of that, we want the error
+to be clear about the problem so the user can fix it.
+
+See also:
+  test/studies/adventOfCode/2021/bradc/futures/day18-bug.future
