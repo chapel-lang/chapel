@@ -230,7 +230,26 @@ module ChapelRange {
   // Range builders:  used by the parser to create literal ranges
   //
 
+  private
+  proc computeParamRangeIndexType(type t1, type t2) type {
+    // if either type is int, return the other type
+    // (so that the type of the 'int' is ignored)
+    if t1 == int {
+      return t2;
+    } else if t2 == int {
+      return t1;
+    } else {
+      // otherwise, use the type that '+' would produce.
+      var x1: t1; var x2: t2;
+      return (x1+x2).type;
+    }
+  }
+
   // Range builders for fully bounded ranges
+  proc chpl_build_bounded_range(param low: integral, param high: integral) {
+    type idxType = computeParamRangeIndexType(low.type, high.type);
+    return new range(idxType, low=low, high=high);
+  }
   proc chpl_build_bounded_range(low: int(?w), high: int(w))
     return new range(int(w), low=low, high=high);
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
@@ -1937,6 +1956,14 @@ operator :(r: range(?), type t: range(?)) {
   // which always have stride 1.
   //
 
+  iter chpl_direct_range_iter(param low: integral, param high: integral) {
+    type idxType = computeParamRangeIndexType(low.type, high.type);
+    for i in chpl_direct_param_stride_range_iter(low: idxType,
+                                                 high: idxType,
+                                                 1:idxType) do
+      yield i;
+  }
+
   iter chpl_direct_range_iter(low: int(?w), high: int(w)) {
     for i in chpl_direct_param_stride_range_iter(low, high, 1:int(w)) do
       yield i;
@@ -1978,6 +2005,14 @@ operator :(r: range(?), type t: range(?)) {
   // cases for when stride is a non-param int (don't want to deal with finding
   // chpl__diffMod and the likes, just create a non-anonymous range to iterate
   // over.)
+  iter chpl_direct_strided_range_iter(param low: integral,
+                                      param high: integral,
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+
+
   iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride: int(?w2)) {
     const r = low..high by stride;
     for i in r do yield i;
