@@ -1,4 +1,0 @@
-typeMathError1.chpl:1: error: ambiguous call 'chpl_build_bounded_range(1: int(32), 100: uint(32))'
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note: candidates are: chpl_build_bounded_range(low, high)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: int(32), high: int(32))
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note:                 chpl_build_bounded_range(low: uint(32), high: uint(32))
