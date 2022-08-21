@@ -5508,7 +5508,7 @@ static int disambiguateByMatch(CallInfo&                  info,
 
       // If there are *any* type/param candidates, we need to cause ambiguity
       // if they are not selected... including consideration of where clauses.
-      bestValue  = disambiguateByMatch(candidates, DC, false, candidates);
+      bestValue  = disambiguateByMatch(candidates, DC, false, ambiguous);
       if (bestValue)
         retval = 1;
       else
