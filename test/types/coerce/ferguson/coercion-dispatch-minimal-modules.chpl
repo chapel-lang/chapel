@@ -147,7 +147,7 @@ var foo1 = foo(v8, pi);
 check(c"foo1", int(8), foo1.type);
 
 var foo2 = foo(p8, pi);
-check(c"foo2", int(8), foo2.type);
+check(c"foo2", int(64), foo2.type);
 
 var foo3 = foo(v8, p16);
 check(c"foo3", int(8), foo3.type);
@@ -159,7 +159,7 @@ var foo5 = foo(p32, pu32);
 check(c"foo5", int(32), foo5.type);
 
 var foo6 = foo(p32, pi);
-check(c"foo6", int(32), foo6.type);
+check(c"foo6", int(64), foo6.type);
 
 var foo7 = foo(p8, p32);
 check(c"foo7", int(32), foo7.type);

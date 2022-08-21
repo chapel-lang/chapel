@@ -8,11 +8,11 @@ v8 expect int(8), found int(8)
 v16 expect int(16), found int(16)
 vu expect uint, found uint
 foo1 expect int(8), found int(8)
-foo2 expect int(8), found int(8)
+foo2 expect int, found int
 foo3 expect int(8), found int(8)
 foo4 expect int(16), found int(16)
 foo5 expect int(32), found int(32)
-foo6 expect int(32), found int(32)
+foo6 expect int, found int
 foo7 expect int(32), found int(32)
 bar1 expect int(16), found int(16)
 bar2 expect int(32), found int(32)
