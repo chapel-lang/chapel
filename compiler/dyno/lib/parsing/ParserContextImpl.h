@@ -2117,6 +2117,31 @@ AstNode* ParserContext::buildReduce(YYLTYPE location,
   return node.release();
 }
 
+AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
+                                          YYLTYPE locOp,
+                                          PODUniqueString op,
+                                          AstNode* iterand) {
+  auto ident = buildIdent(locOp, op);
+  return buildReduceIntent(location, locOp, ident, iterand);
+}
+
+AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
+                                          YYLTYPE locOp,
+                                          AstNode* op,
+                                          AstNode* iterand) {
+  (void) locOp;
+  const Identifier* ident = iterand->toIdentifier();
+  if (ident == nullptr) {
+    noteError(location, "Expected identifier for reduce intent name");
+    auto loc = convertLocation(location);
+    return ErroneousExpression::build(builder, loc).release();
+  }
+  auto node = ReduceIntent::build(builder, convertLocation(location),
+                                  toOwned(op),
+                                  ident->name());
+  return node.release();
+}
+
 AstNode* ParserContext::buildScan(YYLTYPE location,
                                   YYLTYPE locOp,
                                   PODUniqueString op,

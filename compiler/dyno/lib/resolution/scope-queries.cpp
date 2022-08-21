@@ -150,6 +150,11 @@ struct GatherDecls {
   }
   void exit(const Include* d) { }
 
+  bool enter(const WithClause* with) {
+    return true;
+  }
+  void exit(const WithClause* with) { }
+
   // ignore other AST nodes
   bool enter(const AstNode* ast) {
     return false;

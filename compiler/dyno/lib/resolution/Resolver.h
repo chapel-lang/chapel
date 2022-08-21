@@ -364,6 +364,12 @@ struct Resolver {
   bool enter(const uast::IndexableLoop* loop);
   void exit(const uast::IndexableLoop* loop);
 
+  bool enter(const uast::ReduceIntent* reduce);
+  void exit(const uast::ReduceIntent* reduce);
+
+  bool enter(const uast::TaskVar* taskVar);
+  void exit(const uast::TaskVar* taskVar);
+
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);
   void exit(const uast::AstNode* ast);

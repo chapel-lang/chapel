@@ -10869,7 +10869,7 @@ yyreduce:
   case 610: /* intent_expr: reduce_scan_op_expr TREDUCE ident_expr  */
 #line 3363 "chpl.ypp"
   {
-    (yyval.expr) = context->buildReduce((yyloc), (yylsp[-2]), (yyvsp[-2].uniqueStr), (yyvsp[0].expr));
+    (yyval.expr) = context->buildReduceIntent((yyloc), (yylsp[-2]), (yyvsp[-2].uniqueStr), (yyvsp[0].expr));
   }
 #line 10875 "bison-chpl-lib.cpp"
     break;
@@ -10877,7 +10877,7 @@ yyreduce:
   case 611: /* intent_expr: expr TREDUCE ident_expr  */
 #line 3367 "chpl.ypp"
   {
-    (yyval.expr) = context->buildReduce((yyloc), (yylsp[-2]), (yyvsp[-2].expr), (yyvsp[0].expr));
+    (yyval.expr) = context->buildReduceIntent((yyloc), (yylsp[-2]), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
 #line 10883 "bison-chpl-lib.cpp"
     break;

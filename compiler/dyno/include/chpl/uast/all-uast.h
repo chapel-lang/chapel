@@ -76,6 +76,7 @@
 #include "chpl/uast/RealLiteral.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Reduce.h"
+#include "chpl/uast/ReduceIntent.h"
 #include "chpl/uast/Require.h"
 #include "chpl/uast/Return.h"
 #include "chpl/uast/Scan.h"

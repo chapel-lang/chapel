@@ -1193,10 +1193,10 @@ struct Converter {
         INT_ASSERT(svs);
 
       // Handle reductions in with clauses explicitly here.
-      } else if (const uast::Reduce* rd = expr->toReduce()) {
+      } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
 
-        Expr* ovar = convertAST(rd->iterand());
+        Expr* ovar = new UnresolvedSymExpr(rd->name().c_str());
         Expr* riExpr = convertScanReduceOp(rd->op());
         svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
       } else {
@@ -1207,8 +1207,16 @@ struct Converter {
 
       if (parent->isBracketLoop() || parent->isForall() ||
           parent->isForeach()) {
+        noteConvertedSym(expr, svs);
         addForallIntent(ret, svs);
       } else {
+        auto r = symStack.back().resolved;
+        if (r != nullptr) {
+          const resolution::ResolvedExpression* rr = r->byAstOrNull(expr);
+          if (rr != nullptr) {
+            noteConvertedSym(expr, findConvertedSym(rr->toId()));
+          }
+        }
         addTaskIntent(ret, svs);
       }
     }
@@ -2230,6 +2238,11 @@ struct Converter {
     Expr* dataExpr = convertAST(node->iterand());
     bool zippered = node->iterand()->isZip();
     return buildReduceExpr(opExpr, dataExpr, zippered);
+  }
+
+  Expr* visit(const uast::ReduceIntent* reduce) {
+    INT_FATAL("Should not be called directly!");
+    return nullptr;
   }
 
   Expr* visit(const uast::Scan* node) {
