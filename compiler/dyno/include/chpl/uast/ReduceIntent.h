@@ -55,10 +55,10 @@ class ReduceIntent final : public NamedDecl {
 
   ReduceIntent(AstList children, UniqueString name)
       : NamedDecl(asttags::ReduceIntent, std::move(children),
-                  /* attributesChildNum= */ -1,
+                  /* attributesChildNum= */ AstNode::NO_CHILD,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
-                  /*linkageNameChildNum=*/ -1,
+                  /*linkageNameChildNum=*/ AstNode::NO_CHILD,
                   name) {
     assert(numChildren() == 1);
   }
