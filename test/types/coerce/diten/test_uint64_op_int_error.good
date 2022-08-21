@@ -1,6 +1,1 @@
-test_uint64_op_int_error.chpl:4: error: unresolved call '**(uint(64), int(64))'
-test_uint64_op_int_error.chpl:4: note: all candidates were discarded because each has too many implicit conversions
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: **(a: real(32), b: real(32))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: **(a: real(64), b: real(64))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: **(a: complex(64), b: complex(64))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: candidate discarded: **(a: complex(128), b: complex(128))
+1
