@@ -2012,13 +2012,14 @@ operator :(r: range(?), type t: range(?)) {
     for i in r do yield i;
   }
 
-
-  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride: int(?w2)) {
+  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w),
+                                      stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride: int(?w2)) {
+  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w),
+                                      stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
@@ -2038,6 +2039,13 @@ operator :(r: range(?), type t: range(?)) {
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
+  iter chpl_direct_strided_range_iter(param low: integral,
+                                      param high: integral,
+                                      param stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+
   iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), param stride : integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
