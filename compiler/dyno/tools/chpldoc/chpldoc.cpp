@@ -1518,7 +1518,9 @@ struct GatherModulesVisitor {
 
   void exit(const Include* node) {
     if (auto mod = getIncludedSubmodule(context_, node->id())) {
-      modules.insert(mod->id());
+      if (!isNoDoc(mod)) {
+        modules.insert(mod->id());
+      }
     }
   }
 
