@@ -3340,6 +3340,67 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   return ret;
 }
 
+static void warnIfMisleadingNew(CallExpr* call, Type* lhs, Type* rhs) {
+  // return 'true' for:
+  //  * lhs type is borrowed
+  //  * rhs type is owned/shared/unmanaged
+  //  * rhs represents a 'new' expression
+  if (isBorrowedClass(lhs) &&
+      (isUnmanagedClass(rhs) || isManagedPtrType(rhs))) {
+
+    // check for rhs being a 'new' expression using pattern matching
+    Symbol* dst = nullptr;
+    Symbol* src = nullptr;
+    bool foundNew = false;
+    if (call->numActuals() >= 2) {
+      if (call->isPrimitive(PRIM_INIT_VAR) ||
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          dst = se->symbol();
+        }
+        if (SymExpr* se = toSymExpr(call->get(2))) {
+          src = se->symbol();
+        }
+      } else if (call->isNamedAstr(astrSassign)) {
+        int i = 1;
+        if (call->get(1)->typeInfo() == dtMethodToken) {
+          i += 2; // pass method token and (type) this arg
+        }
+        if (i+1 <= call->numActuals()) {
+          if (SymExpr* se = toSymExpr(call->get(i))) {
+            dst = se->symbol();
+          }
+          if (SymExpr* se = toSymExpr(call->get(i+1))) {
+            src = se->symbol();
+          }
+        }
+      }
+    }
+
+    // rely on FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW which
+    // is introduced for temporaries storing the result of a 'new' expression
+    if (src &&
+        src->hasFlag(FLAG_TEMP) &&
+        src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) {
+      foundNew = true;
+    }
+
+    if (foundNew && dst && !dst->hasFlag(FLAG_TEMP)) {
+      USR_WARN(userCall(call),
+               "here, '%s' is set to the result of borrowing from a 'new'",
+               dst->name);
+      USR_PRINT(userCall(call),
+                "if you meant to save the result of new, change "
+                "the type of '%s' to not be 'borrowed'",
+                dst->name);
+      USR_PRINT(userCall(call),
+                "if you meant to refer to another variable storing the 'new', "
+                "use an explicit variable, e.g. "
+                "'var myOwned = new C(); var myBorrowed = myOwned.borrow();'");
+    }
+  }
+}
+
 static
 void resolveNormalCallAdjustAssign(CallExpr* call) {
   if (call->isNamedAstr(astrSassign)) {
@@ -3389,6 +3450,9 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
           new UnresolvedSymExpr("chpl__compilerGeneratedAssignSyncSingle");
         call->baseExpr->replace(newBase);
       }
+
+      // warn for misleading new in assign statement
+      warnIfMisleadingNew(call, targetType->getValType(), srcType);
     }
   }
 }
@@ -7023,6 +7087,9 @@ void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
   if (managementMismatch(lhs, rhs))
     USR_FATAL(userCall(call), "cannot %s '%s' from a '%s'",
               describeLHS(call, ""), toString(lhs), toString(rhs));
+
+  // warn for misleading new in init or split-init
+  warnIfMisleadingNew(call, lhs, rhs);
 }
 
 /************************************* | **************************************
