@@ -2798,8 +2798,8 @@ This function is equivalent to calling :proc:`open` and then
               can improve performance.
 :arg region: zero-based byte offset indicating where in the file the
             channel should start and stop reading. Defaults to
-            ``0..max(int(64))``, meaning from the start of the file to no
-            specified end point.
+            ``0..``, meaning from the start of the file to no specified end
+            point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :returns: an open reading channel to the requested resource.
@@ -2945,8 +2945,7 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                  can improve performance.
    :arg region: zero-based byte offset indicating where in the file the
                channel should start and stop reading. Defaults to
-               ``0..max(int(64))`` - meaning from the start of the file to no
-               end point.
+               ``0..`` - meaning from the start of the file to no end point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the channel to use the hints provided when the
@@ -3112,8 +3111,8 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  can improve performance.
    :arg region: zero-based byte offset indicating where in the file the
                channel should start and stop writing. Defaults to
-               ``0..max(int(64))`` - meaning from the start of the file to no
-               specified end point.
+               ``0..`` - meaning from the start of the file to no specified end
+               point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the channel to use the hints provided when the
