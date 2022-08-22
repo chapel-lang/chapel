@@ -24,12 +24,6 @@ alignTypeError1.chpl:23: error: can't align a range with idxType int(64) using a
 alignTypeError1.chpl:23: error: illegal use of function that does not return a value: 'chpl_align'
 alignTypeError1.chpl:24: error: can't align a range with idxType int(64) using a value of type uint(64)
 alignTypeError1.chpl:24: error: illegal use of function that does not return a value: 'chpl_align'
-alignTypeError1.chpl:25: error: can't align a range with idxType uint(64) using a value of type int(8)
-alignTypeError1.chpl:25: error: illegal use of function that does not return a value: 'chpl_align'
-alignTypeError1.chpl:26: error: can't align a range with idxType uint(64) using a value of type int(16)
-alignTypeError1.chpl:26: error: illegal use of function that does not return a value: 'chpl_align'
-alignTypeError1.chpl:27: error: can't align a range with idxType uint(64) using a value of type int(32)
-alignTypeError1.chpl:27: error: illegal use of function that does not return a value: 'chpl_align'
 alignTypeError1.chpl:28: error: can't align a range with idxType uint(8) using a value of type uint(64)
 alignTypeError1.chpl:28: error: illegal use of function that does not return a value: 'chpl_align'
 alignTypeError1.chpl:29: error: can't align a range with idxType uint(8) using a value of type uint(32)
@@ -42,19 +36,7 @@ alignTypeError1.chpl:32: error: can't align a range with idxType uint(16) using 
 alignTypeError1.chpl:32: error: illegal use of function that does not return a value: 'chpl_align'
 alignTypeError1.chpl:33: error: can't align a range with idxType uint(16) using a value of type uint(64)
 alignTypeError1.chpl:33: error: illegal use of function that does not return a value: 'chpl_align'
-alignTypeError1.chpl:34: error: can't align a range with idxType uint(32) using a value of type int(8)
-alignTypeError1.chpl:34: error: illegal use of function that does not return a value: 'chpl_align'
-alignTypeError1.chpl:35: error: can't align a range with idxType uint(32) using a value of type int(16)
-alignTypeError1.chpl:35: error: illegal use of function that does not return a value: 'chpl_align'
-alignTypeError1.chpl:36: error: can't align a range with idxType uint(32) using a value of type int(32)
-alignTypeError1.chpl:36: error: illegal use of function that does not return a value: 'chpl_align'
 alignTypeError1.chpl:37: error: can't align a range with idxType uint(32) using a value of type uint(64)
 alignTypeError1.chpl:37: error: illegal use of function that does not return a value: 'chpl_align'
 alignTypeError1.chpl:38: error: can't align a range with idxType uint(32) using a value of type uint(64)
 alignTypeError1.chpl:38: error: illegal use of function that does not return a value: 'chpl_align'
-alignTypeError1.chpl:39: error: can't align a range with idxType uint(64) using a value of type int(8)
-alignTypeError1.chpl:39: error: illegal use of function that does not return a value: 'chpl_align'
-alignTypeError1.chpl:40: error: can't align a range with idxType uint(64) using a value of type int(16)
-alignTypeError1.chpl:40: error: illegal use of function that does not return a value: 'chpl_align'
-alignTypeError1.chpl:41: error: can't align a range with idxType uint(64) using a value of type int(32)
-alignTypeError1.chpl:41: error: illegal use of function that does not return a value: 'chpl_align'
