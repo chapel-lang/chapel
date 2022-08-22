@@ -1033,7 +1033,7 @@ module OS {
   pragma "always propagate line file info"
   proc createSystemError(err: syserr, details: string = "") {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
-      return new owned BlockingIOError(details, err);
+      return new owned BlockingIoError(details, err);
     } else if err == ECHILD {
       return new owned ChildProcessError(details, err);
     } else if err == EPIPE || err == ESHUTDOWN {
@@ -1061,13 +1061,13 @@ module OS {
     } else if err == ETIMEDOUT {
       return new owned TimeoutError(details, err);
     } else if err == EEOF {
-      return new owned EOFError(details, err);
+      return new owned EofError(details, err);
     } else if err == ESHORT {
-      return new owned UnexpectedEOFError(details, err);
+      return new owned UnexpectedEofError(details, err);
     } else if err == EFORMAT {
       return new owned BadFormatError(details, err);
     } else if err == EIO {
-      return new owned IOError(err, details);
+      return new owned IoError(err, details);
     }
 
     return new owned SystemError(err, details);
