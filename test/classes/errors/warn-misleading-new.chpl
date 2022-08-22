@@ -119,7 +119,7 @@ proc test4nn() {
   var z: borrowed C? = myBorrowed;
   // warn
   x = new owned C?();
-  x = new shared C?();
-  x = new C?();
+  y = new shared C?();
+  z = new C?();
 }
 test4nn();
