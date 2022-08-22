@@ -231,23 +231,24 @@ module ChapelRange {
   //
 
   private
-  proc computeParamRangeIndexType(type t1, type t2) type {
-    // if either type is int, return the other type
-    // (so that the type of the 'int' is ignored)
-    if t1 == int {
-      return t2;
-    } else if t2 == int {
-      return t1;
+  proc computeParamRangeIndexType(param low, param high) type {
+    // if either type is int, and the int value fits in the other type,
+    // return the other type
+    if low.type == int &&
+       min(high.type) <= low && low <= max(high.type) {
+      return high.type;
+    } else if high.type == int &&
+              min(low.type) <= high && high <= max(low.type) {
+      return low.type;
     } else {
       // otherwise, use the type that '+' would produce.
-      var x1: t1; var x2: t2;
-      return (x1+x2).type;
+      return (low+high).type;
     }
   }
 
   // Range builders for fully bounded ranges
   proc chpl_build_bounded_range(param low: integral, param high: integral) {
-    type idxType = computeParamRangeIndexType(low.type, high.type);
+    type idxType = computeParamRangeIndexType(low, high);
     return new range(idxType, low=low, high=high);
   }
   proc chpl_build_bounded_range(low: int(?w), high: int(w))
@@ -313,24 +314,16 @@ module ChapelRange {
   //
   // Necessary for coercion support
   /////////////////////////////////////////////////////////////////////
-  proc chpl_compute_low_param_loop_bound(param low: int(?w),
-                                         param high: int(w)) param {
-    return low;
+  proc chpl_compute_low_param_loop_bound(param low: integral,
+                                         param high: integral) param {
+    type t = computeParamRangeIndexType(low, high);
+    return low:t;
   }
 
-  proc chpl_compute_high_param_loop_bound(param low: int(?w),
-                                          param high: int(w)) param {
-    return high;
-  }
-
-  proc chpl_compute_low_param_loop_bound(param low: uint(?w),
-                                         param high: uint(w)) param {
-    return low;
-  }
-
-  proc chpl_compute_high_param_loop_bound(param low: uint(?w),
-                                          param high: uint(w)) param {
-    return high;
+  proc chpl_compute_high_param_loop_bound(param low: integral,
+                                          param high: integral) param {
+    type t = computeParamRangeIndexType(low, high);
+    return high:t;
   }
 
   proc chpl_compute_low_param_loop_bound(param low: enum,
@@ -1957,7 +1950,7 @@ operator :(r: range(?), type t: range(?)) {
   //
 
   iter chpl_direct_range_iter(param low: integral, param high: integral) {
-    type idxType = computeParamRangeIndexType(low.type, high.type);
+    type idxType = computeParamRangeIndexType(low, high);
     for i in chpl_direct_param_stride_range_iter(low: idxType,
                                                  high: idxType,
                                                  1:idxType) do
@@ -2008,7 +2001,8 @@ operator :(r: range(?), type t: range(?)) {
   iter chpl_direct_strided_range_iter(param low: integral,
                                       param high: integral,
                                       stride: integral) {
-    const r = low..high by stride;
+    type idxType = computeParamRangeIndexType(low, high);
+    const r = low:idxType..high:idxType by stride;
     for i in r do yield i;
   }
 
