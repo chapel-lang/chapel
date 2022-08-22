@@ -1071,7 +1071,7 @@ module OS {
 
   pragma "no doc"
   deprecated "'BlockingIOError' is deprecated, please use 'BlockingIoError' instead"
-  class BlockingIOError {}
+  class BlockingIOError: SystemError {}
 
   /*
      :class:`ChildProcessError` is the subclass of :class:`SystemError`
@@ -1227,7 +1227,7 @@ module OS {
 
   pragma "no doc"
   deprecated "'IOError' is deprecated, please use 'IoError' instead"
-  class IOError {}
+  class IOError: SystemError {}
 
   /*
      :class:`EofError` is the subclass of :class:`IoError` corresponding to
@@ -1241,7 +1241,7 @@ module OS {
 
   pragma "no doc"
   deprecated "'EOFError is deprecated, please use 'EofError instedad"
-  class EOFError : EofError {}
+  class EOFError : IoError {}
 
   /*
      :class:`UnexpectedEofError` is the subclass of :class:`IoError`
@@ -1255,7 +1255,7 @@ module OS {
 
   pragma "no doc"
   deprecated "'UnexpectedEOFError' is deprecated, please use 'UnexpectedEofError' instead"
-  class UnexpectedEOFError : UnexpectedEofError {}
+  class UnexpectedEOFError : IoError {}
 
   /*
      :class:`BadFormatError` is the subclass of :class:`IoError` corresponding
