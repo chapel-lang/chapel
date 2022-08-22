@@ -9,7 +9,8 @@ proc test1() {
 }
 
 proc test2() {
-  var instance:borrowed MyClass(int) = new owned MyClass(1);
+  var myOwned = new owned MyClass(1);
+  var instance:borrowed MyClass(int) = myOwned;
 }
 
 proc acceptMyClass(c:borrowed MyClass) {
