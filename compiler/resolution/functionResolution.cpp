@@ -11950,9 +11950,6 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         // runtime type information for their fields, so this temporary
         // will go uninitialized.
         if (!recoveredRuntimeType) {
-
-          // TODO: When we remove this error we get some warnings pointing
-          // into module code, can we fix those/improve coverage?
           auto fn = toFnSymbol(val->defPoint->parentSymbol);
           bool doEmitError = fn && isUserRoutine(fn) &&
                              !val->hasFlag(FLAG_UNSAFE) &&
