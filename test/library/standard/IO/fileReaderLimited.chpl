@@ -1,6 +1,6 @@
 use IO;
 
-var filename = "fileReaderLimited.txt";
+var filename = "openreaderLimited.txt";
 var f = open(filename, iomode.r);
 var readCh = f.reader();
 var readRes: string;
