@@ -734,10 +734,9 @@ proc InitProject(dirName, packageName, vcs, show,
                  version: string, chplVersion: string, license: string,
                  packageType: string) throws {
   if packageType == "light" {
-    // TODO: add ability to get path and toml name from user
     const path = if dirName == "" then here.cwd() else dirName;
-    makeBasicToml(dirName=packageName, path=path, version, chplVersion, license, packageType);
-    writeln("Created new " + packageType + " project " + packageName);
+    const lightName = if packageName == "" then basename(here.cwd()) else packageName;
+    makeBasicToml(dirName=lightName, path=path, version, chplVersion, license, packageType);
   } else {
     if vcs {
       gitInit(dirName, show);
@@ -751,12 +750,15 @@ proc InitProject(dirName, packageName, vcs, show,
       makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license, packageType);
       makeSrcDir(dirName);
       makeModule(dirName, fileName=packageName, packageType);
-      writeln("Created new " + packageType + " project: " + dirName);
     }
     else {
       throw new owned MasonError("Failed to create project");
     }
   }
+  if packageName != "" then
+    writeln("Created new " + packageType + " project: " + packageName);
+  else
+    writeln("Created new " + packageType + " project: " + basename(here.cwd()));
 }
 
 /* Iterator to collect fields from a toml
