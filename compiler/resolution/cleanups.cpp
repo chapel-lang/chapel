@@ -218,6 +218,7 @@ static void removeRandomPrimitive(CallExpr* call) {
           call->remove();
 
       // Remove type construction calls that contain runtime types, now.
+      // They may have been used to default-init but are no longer needed.
       } else if (auto innerCall = toCallExpr(call->get(2))) {
         auto baseExpr = innerCall->baseExpr;
 
