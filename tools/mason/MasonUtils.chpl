@@ -736,6 +736,7 @@ proc InitProject(dirName, packageName, vcs, show,
   if packageType == "light" {
     const path = if dirName == "" then here.cwd() else dirName;
     const lightName = if packageName == "" then basename(here.cwd()) else packageName;
+    mkdir(dirName);
     makeBasicToml(dirName=lightName, path=path, version, chplVersion, license, packageType);
   } else {
     if vcs {
