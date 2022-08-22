@@ -38,75 +38,78 @@ Initializes a library project in a project directory
   or mason init (inside project directory)
 */
 proc masonInit(args: [] string) throws {
-
   var parser = new argumentParser(helpHandler=new MasonInitHelpHandler());
-
-  var defaultFlag = parser.addFlag(name="default",
-                                   opts=["-d","--default"],
-                                   defaultValue=false);
   var nameOpt = parser.addOption(name="legalname",
                                  opts=["--name"]);
-
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
+  var vcsFlag = parser.addFlag(name="vcs",
+                               opts=["--no-vcs"],
+                               defaultValue=false);
+  var appFlag = parser.addFlag(name="app", defaultValue=false);
+  var libFlag = parser.addFlag(name="lib", defaultValue=false);
+  var lightFlag = parser.addFlag(name="light", defaultValue=false);
 
 
   parser.parseArgs(args);
 
+  var vcs = !vcsFlag.valueAsBool();
+  var show = showFlag.valueAsBool();
+  var isApplication = appFlag.valueAsBool();
+  var isLibrary = libFlag.valueAsBool();
+  var isLightweight = lightFlag.valueAsBool();
+
+  if isApplication + isLibrary + isLightweight > 1 then
+    throw new owned MasonError("A mason package cannot be of multiple types");
+
+  var packageName = '';
+  var dirName = '';
+  var version = '';
+  var chplVersion = '';
+  var license = 'None';
+  // Default created mason project is a package (has a main func)
+  var packageType = 'application';
+
   try! {
-    var dirName = '';
     var show = showFlag.valueAsBool();
-    var packageName = '';
-    var defaultBehavior = defaultFlag.valueAsBool();
     if nameOpt.hasValue() then packageName = nameOpt.value();
     if dirArg.hasValue() then dirName = dirArg.value();
+    if nameOpt.hasValue() {
+      packageName = nameOpt.value();
+    } else {
+      packageName = dirName;
+    }
+    if isApplication then
+      packageType = "application";
+    else if isLibrary then
+      packageType = "library";
+    else if isLightweight then
+      packageType = "light";
 
     if dirName == '' {
-      if defaultBehavior {
-        const cwd = here.cwd();
-        var name = basename(cwd);
-        const path = '.';
-        if packageName.size > 0 then name = packageName;
-        var resName = validatePackageNameChecks(path, name);
-        name = resName;
-        validateMasonFile(path, name, show);
-        var isInitialized = validateInit(path, name, true, show, false);
-        if isInitialized > 0 then
-        writeln("Initialized new library project: " + name);
+      const cwd = here.cwd();
+      var name = basename(cwd);
+      const path = '.';
+      if packageName.size > 0 then name = packageName;
+
+      // If TOML file exists, send message that package is already
+      // initialized and give some info on what they might want to
+      // do instead.
+      if isFile(cwd + '/Mason.toml') {
+        writeln("Mason.toml already exists for current project. " +
+                "Remove or rename the existing manifest file and rerun " +
+                "`mason init` to initialize a new project.");
+      } else if exists(cwd + '/src/') {
+        writeln("/src/ directory already exists for current project. " +
+                "Remove or rename the /src/ direcotry and rerun " +
+                "`mason init` to initialize a new project. " +
+                "Alternatively, run `mason new --light` to add only a " +
+                "manifest file.");
       } else {
-        // check if Mason.toml file and src/moduleFile is present
-        var isMasonTomlPresent = false;
-        var isSrcPresent = false;
-        if isFile('./Mason.toml') then isMasonTomlPresent = true;
-        if isDir('./src') then isSrcPresent = true;
-        // parse values from TOML File && module file
-        var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense, moduleName: string;
-        if isMasonTomlPresent then
-          (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense) = readPartialManifest();
-        if isSrcPresent then
-          moduleName = readPartialSrc();
-       // begin interactive session and get values input by user
-        var result = beginInteractiveSession(defaultPackageName, defaultVersion,
-                                              defaultChplVersion, defaultLicense);
-        const newPackageName = result[0],
-              newVersion = result[1],
-              newChplVersion = result[2],
-              newLicense = result[3];
-        // validate Mason.toml file
-        validateMasonFile('.', newPackageName, show);
-        isMasonTomlPresent = true;
-        // overwrite to update existing values in Mason.toml
-        overwriteTomlFileValues(isMasonTomlPresent, newPackageName,
-          newVersion, newChplVersion, newLicense, defaultPackageName, defaultVersion,
-          defaultChplVersion, defaultLicense);
-        if newPackageName + '.chpl' != moduleName {
-          if isFile('./src/' + moduleName) then rename('src/' + moduleName, 'src/' + newPackageName + '.chpl');
-        }
-        var isInitialized = validateInit('.', newPackageName, true, show, true);
-        writeln("Initialized new library project: " + newPackageName);
+        // We can create the /src/ dir and Mason.toml
+        InitProject(cwd, name, vcs, show, version, chplVersion, license, packageType);
       }
-    }
-    else {
+    } else {
       // if the target directory in path doesn't exist, throw error
       // if target directory exists, check for files && validate
       // create folders and toml file without overwriting anything

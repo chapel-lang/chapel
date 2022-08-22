@@ -262,41 +262,6 @@ proc validatePackageName(dirName) throws {
   }
 }
 
-/*
-  Takes projectName, vcs (version control), show as inputs and
-  initializes a library project at a directory of given projectName
-  A library project consists of .gitignore file, Mason.toml file, and
-  directories such as .git, src, example, test
-*/
-proc InitProject(dirName, packageName, vcs, show,
-                 version: string, chplVersion: string, license: string,
-                 packageType: string) throws {
-  if packageType == "light" {
-    // TODO: add ability to get path and toml name from user
-    var lightDir = here.cwd();
-    makeBasicToml(dirName=packageName, path=lightDir, version, chplVersion, license, packageType);
-    writeln("Created new " + packageType + " project in current directory");
-  } else {
-    if vcs {
-      gitInit(dirName, show);
-      addGitIgnore(dirName);
-    }
-    else {
-      mkdir(dirName);
-    }
-    // Confirm git init before creating files
-    if isDir(dirName) {
-      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license, packageType);
-      makeSrcDir(dirName);
-      makeModule(dirName, fileName=packageName, packageType);
-      writeln("Created new " + packageType + " project: " + dirName);
-    }
-    else {
-      throw new owned MasonError("Failed to create project");
-    }
-  }
-}
-
 /* Runs the git init command */
 proc gitInit(dirName: string, show: bool) {
   var initialize = "git init -q " + dirName;
