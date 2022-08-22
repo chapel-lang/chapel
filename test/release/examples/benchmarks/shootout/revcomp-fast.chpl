@@ -32,7 +32,7 @@ proc main(args: [] string) {
       proc findNextDesc() throws {
         try {
           input.advancePastByte(">".toByte());
-        } catch (e:EOFError) {
+        } catch (e:EofError) {
           return (true, len-1);
         }
         return (false, input.offset()-1);

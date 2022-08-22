@@ -345,8 +345,8 @@ appropriately with ``try`` and ``catch``.
 
 Some of these subclasses commonly used within the I/O implementation include:
 
- * :class:`OS.EOFError` - the end of file was reached
- * :class:`OS.UnexpectedEOFError` - a read or write only returned part of the requested data
+ * :class:`OS.EofError` - the end of file was reached
+ * :class:`OS.UnexpectedEofError` - a read or write only returned part of the requested data
  * :class:`OS.BadFormatError` - data read did not adhere to the requested format
 
 An error code can be converted to a string using the function
@@ -2480,7 +2480,7 @@ proc channel.advance(amount:int(64)) throws {
    Reads until ``byte`` is found and then leave the channel offset
    just after it.
 
-   :throws EOFError: if the requested `byte` could not be found.
+   :throws EofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
 proc channel.advancePastByte(byte:uint(8)) throws {
@@ -4050,7 +4050,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
  */
 proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
@@ -4200,7 +4200,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   :returns: `true` if a line was read without error, `false` upon EOF
 
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc channel.readLine(ref s: string,
                       maxSize=-1,
@@ -4285,7 +4285,7 @@ proc channel.readLine(ref s: string,
   :returns: `true` if a line was read without error, `false` upon EOF
 
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc channel.readLine(ref b: bytes,
                       maxSize=-1,
@@ -4372,7 +4372,7 @@ proc channel.readLine(ref b: bytes,
   :returns: The data that was read.
 
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;
