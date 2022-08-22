@@ -3339,9 +3339,10 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
 static void warnIfMisleadingNew(CallExpr* call, Type* lhs, Type* rhs) {
   // return 'true' for:
   //  * lhs type is borrowed
-  //  * rhs type is owned/shared
+  //  * rhs type is owned/shared/unmanaged
   //  * rhs represents a 'new' expression
-  if (isBorrowedClass(lhs) && isManagedPtrType(rhs)) {
+  if (isBorrowedClass(lhs) &&
+      (isUnmanagedClass(rhs) || isManagedPtrType(rhs))) {
 
     // check for rhs being a 'new' expression using pattern matching
     Symbol* dst = nullptr;
