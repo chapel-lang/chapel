@@ -735,9 +735,9 @@ proc InitProject(dirName, packageName, vcs, show,
                  packageType: string) throws {
   if packageType == "light" {
     // TODO: add ability to get path and toml name from user
-    var lightDir = here.cwd();
-    makeBasicToml(dirName=packageName, path=lightDir, version, chplVersion, license, packageType);
-    writeln("Created new " + packageType + " project in current directory");
+    const path = if dirName == "" then here.cwd() else dirName;
+    makeBasicToml(dirName=packageName, path=path, version, chplVersion, license, packageType);
+    writeln("Created new " + packageType + " project " + packageName);
   } else {
     if vcs {
       gitInit(dirName, show);
