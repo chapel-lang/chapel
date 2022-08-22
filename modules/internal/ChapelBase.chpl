@@ -1636,6 +1636,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anycomplex)
     return (x.re, x.im):t;
 
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anycomplex) throws
     return (x:real, 0):t;
 
@@ -1657,6 +1658,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anyimag)
     return __primitive("cast", t, x.im);
 
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anyimag)  throws
     return x:real:imag;
 
