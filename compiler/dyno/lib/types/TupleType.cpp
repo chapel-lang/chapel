@@ -144,10 +144,9 @@ const TupleType*
 TupleType::getVarArgTuple(Context* context,
                           QualifiedType paramSize,
                           QualifiedType varArgEltType) {
-  assert(!varArgEltType.isUnknown());
+  assert(!varArgEltType.isUnknownKindOrType());
 
-  if (!paramSize.isUnknown() &&
-      paramSize.param() != nullptr) {
+  if (!paramSize.isUnknown()) {
     // Fixed size, we can at least create a star tuple of AnyType
     int64_t numElements = paramSize.param()->toIntParam()->value();
     std::vector<QualifiedType> eltTypes(numElements, varArgEltType);
