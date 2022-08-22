@@ -273,8 +273,11 @@ proc masonInitHelp(){
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
+  writeln('        --no-vcs                 Do not initialize a git repository');
+  writeln('        --app                    Create a Mason "application" (package with main function)');
+  writeln('        --lib                    Create a Mason "library" (package without main function)');
+  writeln('        --light                  Create a Mason "lightweight" project (place a TOML file in current directory)');
   writeln('    --name <legalName>           Specify package name different from directory name');
-  writeln('    -d, --default                Override interactive session and initialize project');
 }
 
 proc masonSearchHelp() {
