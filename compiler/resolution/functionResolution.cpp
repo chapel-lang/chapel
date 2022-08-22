@@ -3447,7 +3447,7 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
       }
 
       // warn for misleading new in assign statement
-      warnIfMisleadingNew(call, targetType, srcType);
+      warnIfMisleadingNew(call, targetType->getValType(), srcType);
     }
   }
 }
