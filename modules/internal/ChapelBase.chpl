@@ -1456,14 +1456,17 @@ module ChapelBase {
   inline operator :(x:chpl_anyreal, type t:chpl_anyreal)
     return __primitive("cast", t, x);
 
-  @unstable "enum-to-bool casts are likely to be deprecated in the future" inline operator :(x:enum, type t:chpl_anybool) throws {
+  @unstable "enum-to-bool casts are likely to be deprecated in the future"
+  inline operator :(x:enum, type t:chpl_anybool) throws {
     return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
   // is generated for each enum in buildDefaultFunctions
   inline operator :(x: enum, type t:enum) where x.type == t
     return x;
-  @unstable "enum-to-float casts are likely to be deprecated in the future" inline operator :(x: enum, type t:chpl_anyreal) throws {
+
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
+  inline operator :(x: enum, type t:chpl_anyreal) throws {
     return x: int: real;
   }
 

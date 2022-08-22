@@ -573,7 +573,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     pragma "no doc"
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     pragma "no doc"
-    @unstable "tzinfo is unstable; its type may change in the future" : shared TZInfo?;
+    var chpl_tzinfo: shared TZInfo?;
 
     /* The hour represented by this `time` value */
     proc hour {
@@ -621,6 +621,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`, and `timezone`.  All arguments are optional
    */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
                  in tzinfo: shared TZInfo?) {
     if hour < 0 || hour >= 24 then
@@ -682,6 +683,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Replace the `hour`, `minute`, `second`, `microsecond` and `tzinfo` in a
      `time` to create a new `time`. All arguments are optional.
    */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
                     in tzinfo) {
     const newhour = if hour != -1 then hour else this.hour;
@@ -1015,6 +1017,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
      `month`, and `day` arguments are required, the rest are optional.
    */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc datetime.init(year, month, day,
                      hour=0, minute=0, second=0, microsecond=0,
                      in tzinfo) {
@@ -1081,6 +1084,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* The `datetime` that is `timestamp` seconds from the epoch */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc type datetime.fromTimestamp(timestamp: real,
                                    in tz: shared TZInfo?) {
     if tz.borrow() == nil {
@@ -1154,6 +1158,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return the date and time converted into the timezone in the argument */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc datetime.astimezone(in tz: shared TZInfo) {
     if tzinfo == tz {
       return this;

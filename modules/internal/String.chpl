@@ -1916,7 +1916,8 @@ module String {
         ``string.dedent`` is not considered stable and is subject to change in
         future Chapel releases.
   */
-  @unstable "string.dedent is subject to change in the future." proc string.dedent(columns=0, ignoreFirst=true) : string {
+  @unstable "string.dedent is subject to change in the future."
+  proc string.dedent(columns=0, ignoreFirst=true) : string {
     return doDedent(this, columns, ignoreFirst);
   }
 

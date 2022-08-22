@@ -854,13 +854,9 @@ module Bytes {
                         first line.
 
       :returns: A new :type:`bytes` with indentation removed.
-
-      .. warning::
-
-        ``bytes.dedent`` is not considered stable and is subject to change in
-        future Chapel releases.
   */
-  @unstable "bytes.dedent is subject to change in the future." proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
+  @unstable "bytes.dedent is subject to change in the future."
+  proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
     return doDedent(this, columns, ignoreFirst);
   }
 

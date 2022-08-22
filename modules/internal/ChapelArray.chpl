@@ -1883,7 +1883,8 @@ module ChapelArray {
      as argument ``that`` and all elements of this array are
      equal to the corresponding element in ``that``. Otherwise
      return false. */
-  @unstable "the 'Array.equals()' method is unstable" proc _array.equals(that: _array): bool {
+  @unstable "the 'Array.equals()' method is unstable"
+  proc _array.equals(that: _array): bool {
     //
     // quick path for identical arrays
     //
