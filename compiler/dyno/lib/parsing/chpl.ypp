@@ -397,7 +397,7 @@
 %token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE
 %token <uniqueStr> TSTRING TSUBDOMAIN TSYNC
 %token <uniqueStr> TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
-%token <uniqueStr> TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
+%token <uniqueStr> TUINT TUNDERSCORE TUNION TUNMANAGED TUNSTABLE TUSE
 %token <uniqueStr> TVAR TVOID
 %token <uniqueStr> TWHEN TWHERE TWHILE TWITH
 %token <uniqueStr> TYIELD
@@ -482,10 +482,14 @@
 %type <uniqueStr> fn_ident assignop_ident op_ident all_op_name opt_label_ident
 %type <uniqueStr> implements_type_ident implements_type_error_ident
 
+%type <commentsAndStmt> decl_base
 %type <commentsAndStmt> deprecated_decl_stmt
-%type <commentsAndStmt> deprecated_decl_base
 %type <commentsAndStmt> deprecated_enum_item
 %type <commentsAndStmt> deprecated_class_level_stmt
+
+%type <commentsAndStmt> unstable_decl_stmt
+%type <commentsAndStmt> unstable_enum_item
+%type <commentsAndStmt> unstable_class_level_stmt
 
 // statement lists
 %type <exprList> program
@@ -639,6 +643,7 @@ pragma_ls:
 stmt:
   tryable_stmt      // (no '->finishStmt()' required b/c 'tryable_stmt' did it)
 | deprecated_decl_stmt      { $$ = context->finishStmt($1); }
+| unstable_decl_stmt        { $$ = context->finishStmt($1); }
 | include_module_stmt       { $$ = context->finishStmt($1); }
 | block_stmt                { $$ = context->finishStmt($1); }
 | use_stmt                  { $$ = context->finishStmt($1); }
@@ -817,12 +822,12 @@ tryable_stmt:
 ;
 
 deprecated_decl_stmt:
-  deprecated_decl_base
+  decl_base
 | TDEPRECATED STRINGLITERAL
   {
     context->noteDeprecation(@$, $2);
   }
-  deprecated_decl_base
+  decl_base
   {
     $$ = $4;
   }
@@ -830,15 +835,34 @@ deprecated_decl_stmt:
   {
     context->noteDeprecation(@$, nullptr);
   }
-  deprecated_decl_base
+  decl_base
   {
     $$ = $3;
   }
 ;
 
-deprecated_decl_base:
+decl_base:
   module_decl_stmt
 | class_level_stmt
+;
+
+unstable_decl_stmt:
+  TUNSTABLE STRINGLITERAL
+  {
+    context->noteUnstable(@$, $2);
+  }
+  decl_base
+  {
+    $$ = $4;
+  }
+| TUNSTABLE
+  {
+    context->noteUnstable(@$, nullptr);
+  }
+  decl_base
+  {
+    $$ = $3;
+  }
 ;
 
 module_decl_start:
@@ -1326,6 +1350,25 @@ deprecated_class_level_stmt:
 | TDEPRECATED
   {
     context->noteDeprecation(@$, nullptr);
+  }
+  class_level_stmt
+  {
+    $$ = $3;
+  }
+;
+
+unstable_class_level_stmt:
+  TUNSTABLE STRINGLITERAL
+  {
+    context->noteUnstable(@$, $2);
+  }
+  class_level_stmt
+  {
+    $$ = $4;
+  }
+| TUNSTABLE
+  {
+    context->noteUnstable(@$, nullptr);
   }
   class_level_stmt
   {
@@ -2038,7 +2081,15 @@ class_level_stmt_ls:
   {
     context->appendList($1, $2);
   }
+| class_level_stmt_ls unstable_class_level_stmt
+  {
+    context->appendList($1, $2);
+  }
 | class_level_stmt_ls pragma_ls deprecated_class_level_stmt
+  {
+    context->appendList($1, context->buildPragmaStmt(@3, $3));
+  }
+| class_level_stmt_ls pragma_ls unstable_class_level_stmt
   {
     context->appendList($1, context->buildPragmaStmt(@3, $3));
   }
@@ -2103,6 +2154,23 @@ enum_ls:
     context->appendList($1, $4);
     context->resetAttributePartsState();
   }
+|
+  unstable_enum_item
+  {
+    $$ = context->makeList($1);
+    context->resetAttributePartsState();
+  }
+| enum_ls TCOMMA
+  {
+    context->clearCommentsBefore(@2);
+    context->resetAttributePartsState();
+  }
+  unstable_enum_item
+  {
+    context->appendList($1, $4);
+    context->resetAttributePartsState();
+  }
+
 ;
 
 deprecated_enum_item:
@@ -2118,6 +2186,25 @@ deprecated_enum_item:
 | TDEPRECATED
   {
     context->noteDeprecation(@$, nullptr);
+  }
+  enum_item
+  {
+    $$ = $3;
+  }
+;
+
+unstable_enum_item:
+  TUNSTABLE STRINGLITERAL
+  {
+    context->noteUnstable(@$, $2);
+  }
+  enum_item
+  {
+    $$ = $4;
+  }
+| TUNSTABLE
+  {
+    context->noteUnstable(@$, nullptr);
   }
   enum_item
   {

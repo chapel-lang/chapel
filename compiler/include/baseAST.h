@@ -274,6 +274,10 @@ public:
                                          unsigned int tabs,
                                          const char* deprecationMsg,
                                          bool extraLine);
+  void              printDocsUnstable(const char *doc, std::ostream *file,
+                                         unsigned int tabs,
+                                         const char* unstableMsg,
+                                         bool extraLine);
 
   static  const     std::string tabText;
 

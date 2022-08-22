@@ -112,8 +112,10 @@ in memory.
 
 .. warning::
 
-  The ``CHPL_LOCALE_MODEL=numa`` configuration is currently not supported by
+  The ``CHPL_LOCALE_MODEL=numa``\* configuration is currently not supported by
   this module.
+
+  \*The NUMA Locale model is deprecated.
 
 .. MKL Documentation References
 

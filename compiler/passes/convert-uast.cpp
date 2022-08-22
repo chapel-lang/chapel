@@ -413,6 +413,20 @@ struct Converter {
       }
     }
 
+    if (!attr->isUnstable()) {
+      INT_ASSERT(attr->unstableMessage().isEmpty());
+    }
+
+    if (attr->isUnstable()) {
+      INT_ASSERT(!sym->hasFlag(FLAG_UNSTABLE));
+      sym->addFlag(FLAG_UNSTABLE);
+
+      auto msg = attr->unstableMessage();
+      if (!msg.isEmpty()) {
+        sym->unstableMsg = astr(msg);
+      }
+    }
+
     for (auto pragma : attr->pragmas()) {
       Flag flag = convertPragmaToFlag(pragma);
       if (flag != FLAG_UNKNOWN) {

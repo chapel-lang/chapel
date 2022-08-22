@@ -1,0 +1,4 @@
+unstable_initializer.chpl:14: In function 'main':
+unstable_initializer.chpl:17: warning: this initializer is unstable
+(v1 = 5)
+(v1 = 7)

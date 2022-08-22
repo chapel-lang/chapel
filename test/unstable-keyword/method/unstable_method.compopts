@@ -1,0 +1,3 @@
+ # unstable_method.unset.good
+--no-warn-unstable # unstable_method.unset.good
+--warn-unstable # unstable_method.set.good

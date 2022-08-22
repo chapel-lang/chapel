@@ -41,6 +41,7 @@ extensions = [
 
 breathe_default_project = "dyno"
 
+nitpick_ignore_regex = [('cpp:identifier', r'llvm(:.*)?')]
 nitpick_ignore = []
 for line in open('../util/nitpick_ignore'):
     if line.strip() == "" or line.startswith("#"):
