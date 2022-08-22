@@ -1088,7 +1088,7 @@ module OS {
 
 
   /*
-     :class:`BlockingIOError` is the subclass of :class:`SystemError`
+     :class:`BlockingIoError` is the subclass of :class:`SystemError`
      corresponding to :const:`SysBasic.EAGAIN`, :const:`SysBasic.EALREADY`,
      :const:`SysBasic.EWOULDBLOCK`, and :const:`SysBasic.EINPROGRESS`.
   */
