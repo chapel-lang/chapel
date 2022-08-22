@@ -101,15 +101,15 @@ proc masonInit(args: [] string) throws {
     // initialized and give some info on what they might want to
     // do instead.
     if isFile(path + '/Mason.toml') {
-      writeln("Mason.toml already exists for current project. " +
-              "Remove or rename the existing manifest file and rerun " +
-              "`mason init` to initialize a new project.");
+      throw new owned MasonError("Mason.toml already exists for current project. " +
+                                 "Remove or rename the existing manifest file and rerun " +
+                                 "`mason init` to initialize a new project.");
     } else if isDir(path + '/src/') {
-      writeln("/src/ directory already exists for current project. " +
-              "Remove or rename the /src/ direcotry and rerun " +
-              "`mason init` to initialize a new project. " +
-              "Alternatively, run `mason new --light` to add only a " +
-              "manifest file.");
+      throw new owned MasonError("/src/ directory already exists for current project. " +
+                                 "Remove or rename the /src/ direcotry and rerun " +
+                                 "`mason init` to initialize a new project. " +
+                                 "Alternatively, run `mason new --light` to add only a " +
+                                 "manifest file.");
     } else {
       // We can create the /src/ dir and Mason.toml
       if dirName == '' then
@@ -117,6 +117,10 @@ proc masonInit(args: [] string) throws {
       else
         InitProject(path, name, vcs, show, version, chplVersion, license, packageType);
     }
+    writeln("Tip: To convert existing code to a mason project, " +
+            "move the driver application to the `src/" + name + ".chpl`" +
+            " file. For adding other source code, using submodules is the " +
+            "recommended approach to avoid namespace collisions.");
   }
   catch e: MasonError {
     writeln(e.message());
