@@ -700,9 +700,9 @@ proc stringStyleWithLengthInternal(lengthBytes:int) throws {
     when 4 do x = iostringstyle.len4b_data;
     when 8 do x = iostringstyle.len8b_data;
     otherwise
-      throw SystemError.fromSyserr(EINVAL,
-                                   "Invalid string length prefix " +
-                                   lengthBytes:string);
+      throw createSystemError(EINVAL,
+                              "Invalid string length prefix " +
+                              lengthBytes:string);
   }
   return x;
 }
@@ -1557,9 +1557,9 @@ operator file.=(ref ret:file, x:file) {
 pragma "no doc"
 proc file.checkAssumingLocal() throws {
   if is_c_nil(_file_internal) then
-    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
+    throw createSystemError(EBADF, "Operation attempted on an invalid file");
   if !qio_file_isopen(_file_internal) then
-    throw SystemError.fromSyserr(EBADF, "Operation attempted on closed file");
+    throw createSystemError(EBADF, "Operation attempted on closed file");
 }
 
 /* Throw an error if `this` is not a valid representation of an OS file.
@@ -1640,7 +1640,7 @@ proc file._style:iostyleInternal throws {
  */
 proc file.close() throws {
   if is_c_nil(_file_internal) then
-    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
+    throw createSystemError(EBADF, "Operation attempted on an invalid file");
 
   var err:syserr = ENOERR;
   on this.home {
@@ -2410,7 +2410,7 @@ inline proc channel.lock() throws {
   var err:syserr = ENOERR;
 
   if is_c_nil(_channel_internal) then
-    throw SystemError.fromSyserr(EINVAL, "Operation attempted on an invalid channel");
+    throw createSystemError(EINVAL, "Operation attempted on an invalid channel");
 
   if locking {
     on this.home {
@@ -2527,7 +2527,7 @@ proc channel.mark() throws where this.locking == false {
   const err = qio_channel_mark(false, _channel_internal);
 
   if err then
-    throw SystemError.fromSyserr(err);
+    throw createSystemError(err);
 
   return offset;
 }
@@ -2582,7 +2582,7 @@ proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
   const err = qio_channel_seek(_channel_internal, start, end);
 
   if err then
-    throw SystemError.fromSyserr(err);
+    throw createSystemError(err);
 }
 
 
@@ -2621,7 +2621,7 @@ proc channel._mark() throws {
   const err = qio_channel_mark(false, _channel_internal);
 
   if err then
-    throw SystemError.fromSyserr(err);
+    throw createSystemError(err);
 
   return offset;
 }
@@ -4564,7 +4564,7 @@ proc channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) t
     }
   }
   if (e != ENOERR) {
-    throw SystemError.fromSyserr(e);
+    throw createSystemError(e);
   }
 }
 
@@ -4619,7 +4619,7 @@ proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native
   if (e == EEOF) {
     return false;
   } else if (e != ENOERR) {
-    throw SystemError.fromSyserr(e);
+    throw createSystemError(e);
   }
   return true;
 }
@@ -4913,7 +4913,7 @@ proc channel.close() throws {
   var err:syserr = ENOERR;
 
   if is_c_nil(_channel_internal) then
-    throw SystemError.fromSyserr(EINVAL, "cannot close invalid channel");
+    throw createSystemError(EINVAL, "cannot close invalid channel");
 
   on this.home {
     err = qio_channel_close(locking, _channel_internal);
