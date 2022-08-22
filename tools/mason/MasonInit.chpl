@@ -86,49 +86,36 @@ proc masonInit(args: [] string) throws {
     else if isLightweight then
       packageType = "light";
 
-    if dirName == '' {
-      const cwd = here.cwd();
-      var name = basename(cwd);
-      const path = '.';
-      if packageName.size > 0 then name = packageName;
+    const cwd = here.cwd();
+    var name = if dirName == '' then basename(cwd) else basename(dirName);
+    const path = if dirName == '' then '.' else dirName;
+    if packageName.size > 0 then name = packageName;
 
-      // If TOML file exists, send message that package is already
-      // initialized and give some info on what they might want to
-      // do instead.
-      if isFile(cwd + '/Mason.toml') {
-        writeln("Mason.toml already exists for current project. " +
-                "Remove or rename the existing manifest file and rerun " +
-                "`mason init` to initialize a new project.");
-      } else if exists(cwd + '/src/') {
-        writeln("/src/ directory already exists for current project. " +
-                "Remove or rename the /src/ direcotry and rerun " +
-                "`mason init` to initialize a new project. " +
-                "Alternatively, run `mason new --light` to add only a " +
-                "manifest file.");
-      } else {
-        // We can create the /src/ dir and Mason.toml
-        InitProject(cwd, name, vcs, show, version, chplVersion, license, packageType);
-      }
-    } else {
-      // if the target directory in path doesn't exist, throw error
-      // if target directory exists, check for files && validate
-      // create folders and toml file without overwriting anything
-      // if TOML file exists, check for values in it and validate
-      const path = dirName;
-      if isDir(path) {
-        var name = basename(dirName);
-        if packageName.size > 0 then name = packageName;
-        var resName = validatePackageNameChecks(path, name);
-        name = resName;
-        validateMasonFile(path, name, show);
-        var isInitialized = validateInit(path, name, true, show, false);
-        if isInitialized > 0 then
-        writeln("Initialized new library project in " + path + ": " + name);
-      }
-      else {
+    if dirName != '' then
+      if !isDir(path) then
         throw new owned MasonError("Directory does not exist: " + path +
-                              " \nDid you mean 'mason new' to create a new project from scratch?");
-      }
+                                   " Did you mean 'mason new' to create a " +
+                                   "new project from scratch?");
+      
+    // If TOML file exists, send message that package is already
+    // initialized and give some info on what they might want to
+    // do instead.
+    if isFile(path + '/Mason.toml') {
+      writeln("Mason.toml already exists for current project. " +
+              "Remove or rename the existing manifest file and rerun " +
+              "`mason init` to initialize a new project.");
+    } else if isDir(path + '/src/') {
+      writeln("/src/ directory already exists for current project. " +
+              "Remove or rename the /src/ direcotry and rerun " +
+              "`mason init` to initialize a new project. " +
+              "Alternatively, run `mason new --light` to add only a " +
+              "manifest file.");
+    } else {
+      // We can create the /src/ dir and Mason.toml
+      if dirName == '' then
+        InitProject(cwd, name, vcs, show, version, chplVersion, license, packageType);
+      else
+        InitProject(path, name, vcs, show, version, chplVersion, license, packageType);
     }
   }
   catch e: MasonError {
