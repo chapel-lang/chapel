@@ -1892,6 +1892,73 @@ isDefinedInUseImport(BlockStmt* block, FnSymbol* fn,
   return false;
 }
 
+// Returns a distance measure used to compare the visibility
+// of two functions.
+//
+// Enclosing scope adds 2 distance
+// Shadow scope adds 1 distance
+//
+// Returns -1 if the function is not found here
+// or if the block was already visited.
+static int
+computeVisibilityDistanceInternal(BlockStmt* block, FnSymbol* fn,
+                                  int distance, Vec<BlockStmt*>& visited) {
+  // if the block was already visited, we should have
+  // already gathered the distance if it was there at all
+  if (visited.set_in(block))
+    return -1;
+
+  // first, check things in the current block or
+  // from use/import that don't use a shadow scope
+  bool foundHere = isDefinedInBlock(block, fn) ||
+                   isDefinedInUseImport(block, fn,
+                                        /* allowPrivateUseImp */ true,
+                                        /* forShadowScope */ false,
+                                        visited);
+
+
+  if (foundHere) {
+    return distance;
+  }
+
+  // next, check anything from a use/import in the
+  // current block that uses a shadow scope
+  bool foundShadowHere = isDefinedInUseImport(block, fn,
+                                              /* allowPrivateUseImp */ true,
+                                              /* forShadowScope */ true,
+                                              visited);
+
+  if (foundShadowHere) {
+    return distance+1;
+  }
+
+  // next, check parent scope, recursively
+  if (BlockStmt* parentBlock = getParentBlock(block)) {
+    return computeVisibilityDistanceInternal(parentBlock, fn,
+                                             distance+2, visited);
+  }
+
+  return -1;
+}
+
+// Returns a distance measure used to compare the visibility
+// of two functions.
+//
+// Returns -1 if the function is not found here
+static int computeVisibilityDistance(Expr* expr, FnSymbol* fn) {
+  //
+  // call helper function with visited set to avoid infinite recursion
+  //
+  Vec<BlockStmt*> visited;
+  BlockStmt* block = toBlockStmt(expr);
+  if (!block)
+    block = getParentBlock(expr);
+
+  return computeVisibilityDistanceInternal(block, fn, 0, visited);
+}
+
+
+
 static MoreVisibleResult
 isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
                       Vec<BlockStmt*>& visited1, Vec<BlockStmt*>& visited2) {
@@ -5397,7 +5464,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                               const DisambiguationContext& DC,
                               int                          i,
                               int                          j,
-                              bool                         ignoreWhere,
                               bool                         forGenericInit);
 
 static int testArgMapping(FnSymbol*                    fn1,
@@ -5595,16 +5661,16 @@ static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
 static void countImplicitConversions(ResolutionCandidate* candidate,
                                      const DisambiguationContext& DC,
                                      int& implicitConversionCountOut,
-                                     int& impConvNotMentionedCountOut) {
+                                     int& paramNarrowingCountOut) {
 
   // use saved counts from the ResolutionCandidate
   if (candidate->nImplicitConversionsComputed) {
     implicitConversionCountOut = candidate->nImplicitConversions;
-    impConvNotMentionedCountOut =
-      candidate->nImplicitConversionsToTypeNotMentioned;
+    paramNarrowingCountOut = candidate->nParamNarrowingImplicitConversions;
     return;
   }
 
+  int numParamNarrowing = 0;
   bool forGenericInit = candidate->fn->isInitializer() ||
                         candidate->fn->isCopyInit();
 
@@ -5618,11 +5684,18 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
     if (formal->originalIntent == INTENT_OUT) {
       actualVt = dtUnknown;
     } else {
+      bool promotes = false;
+      bool paramNarrows = false;
+      canDispatch(actualVt, actual, formalVt, formal, candidate->fn,
+                  &promotes, &paramNarrows);
+
+      if (paramNarrows) {
+        numParamNarrowing++;
+      }
+
       if (candidate->anyPromotes) {
         while (actualVt->scalarPromotionType != nullptr) {
           // run canDispatch to check for promotion
-          bool promotes = false;
-          bool paramNarrows = false;
           canDispatch(actualVt, actual, formalVt, formal,
                       candidate->fn, &promotes, &paramNarrows,
                       /* param coercions only? */ false);
@@ -5637,10 +5710,7 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
     normalizedActualTypes.push_back(actualVt);
   }
 
-  // check the number of implicit conversions to types not used
-  // in the call.
-  int nImplicitConversionsToTypeNotMentioned = 0;
-  //int nNonThisImplicitConversions = 0;
+  // TODO: simplify the count of implicit conversions
   int nImplicitConversions = 0;
 
   for (int k = 0; k < DC.actuals->n; k++) {
@@ -5697,6 +5767,7 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
 
     // is it an implicit conversion to a formal type
     // that is used in an actual of the call?
+    /*
     bool formalVtUsedInOtherActual = false;
     for (int other = 0; other < DC.actuals->n; other++) {
       ArgSymbol* otherFormal = candidate->actualIdxToFormal[other];
@@ -5711,123 +5782,83 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
         formalVtUsedInOtherActual = true;
         break;
       }
-    }
+    }*/
 
     nImplicitConversions++;
     //if (!formal->hasFlag(FLAG_ARG_THIS)) {
     //  nNonThisImplicitConversions++;
     //}
-    if (!formalVtUsedInOtherActual) {
-      nImplicitConversionsToTypeNotMentioned++;
-    }
+    //if (!formalVtUsedInOtherActual) {
+    //  nImplicitConversionsToTypeNotMentioned++;
+    //}
   }
 
   implicitConversionCountOut = nImplicitConversions;
-  impConvNotMentionedCountOut = nImplicitConversionsToTypeNotMentioned;
+  paramNarrowingCountOut = numParamNarrowing;
 
   // save counts in the ResolutionCandidate
   candidate->nImplicitConversionsComputed = true;
   candidate->nImplicitConversions = nImplicitConversions;
-  candidate->nImplicitConversionsToTypeNotMentioned =
-    nImplicitConversionsToTypeNotMentioned;
+  candidate->nParamNarrowingImplicitConversions = numParamNarrowing;
 }
 
-static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous) {
-
-
-  // Disable implicit conversion to remove nilability
-  // for disambiguation
-  int saveGenerousResolutionForErrors = 0;
-  if (generousResolutionForErrors > 0) {
-    saveGenerousResolutionForErrors = generousResolutionForErrors;
-    generousResolutionForErrors = 0;
-  }
-
-  // MPF note: A more straightforwardly O(n) version of this
-  // function did not appear to be faster. See history of this comment.
-
-  // If index i is set then we can skip testing function F_i because
-  // we already know it can not be the best match.
-  std::vector<bool> notBest(candidates.n, false);
-
-  /*
-  // If index i is set we have ruled out that function
-  std::vector<bool> discarded(candidates.n, false);
-
-  if (candidates.n > 1) {
-    // compute minimum and maximum number of implicit conversions
-    // to a type not mentioned at the call site
-    int minImpConvToTypeNotMent = INT_MAX;
-    int maxImpConvToTypeNotMent = INT_MIN;
-    int minImpConv = INT_MAX;
-    int maxImpConv = INT_MIN;
-    for (int i = 0; i < candidates.n; ++i) {
-      ResolutionCandidate* candidate = candidates.v[i];
-
-      int nImplicitConversions = 0;
-      int nImpConvToTypeNotMent = 0;
-
-      countImplicitConversions(candidate, DC,
-                               nImplicitConversions, nImpConvToTypeNotMent);
-
-      if (nImpConvToTypeNotMent < minImpConvToTypeNotMent) {
-        minImpConvToTypeNotMent = nImpConvToTypeNotMent;
-      }
-      if (nImpConvToTypeNotMent > maxImpConvToTypeNotMent) {
-        maxImpConvToTypeNotMent = nImpConvToTypeNotMent;
-      }
-
-      if (nImplicitConversions < minImpConv) {
-        minImpConv = nImplicitConversions;
-      }
-      if (nImplicitConversions > maxImpConv) {
-        maxImpConv = nImplicitConversions;
-      }
-
-    }
-
-    // if the min and max differ, discard any candidates
-    // that have more implicit conversions to a type not mentioned
-    // at the call site than the minumum.
-    if (minImpConv != maxImpConv) {
-      for (int i = 0; i < candidates.n; ++i) {
-        EXPLAIN("##########################\n");
-        EXPLAIN("# Filtering function %d #\n", i);
-        EXPLAIN("##########################\n\n");
-        ResolutionCandidate* candidate = candidates.v[i];
-        EXPLAIN("%s\n\n", toString(candidate->fn));
-
-        int nImplicitConversions = 0;
-        int nImpConvToTypeNotMent = 0;
-
-        // note: should use a cached value from previous loop
-        countImplicitConversions(candidate, DC,
-                                 nImplicitConversions, nImpConvToTypeNotMent);
-
-        if (nImplicitConversions > minImpConv) {
-          EXPLAIN("X: Fn %d has too many conversions so is filtered out\n", i);
-          discarded[i] = true;
-        } else {
-          EXPLAIN("X: Fn %d is allowed\n", i);
-        }
-      }
-    }
-  }*/
-
+// If any candidate does not require promotion,
+// eliminate candidates that do require promotion.
+static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
+                                  const DisambiguationContext& DC,
+                                  std::vector<bool>&           discarded) {
+  int nPromoting = 0;
+  int nNotPromoting = 0;
   for (int i = 0; i < candidates.n; ++i) {
-    ResolutionCandidate* candidate1         = candidates.v[i];
-    bool                 singleMostSpecific = true;
-
-    bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
-
-    /*
     if (discarded[i]) {
       continue;
-    }*/
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    if (candidate->anyPromotes) {
+      nPromoting++;
+    } else {
+      nNotPromoting++;
+    }
+  }
+
+  if (nPromoting > 0 && nNotPromoting > 0) {
+    for (int i = 0; i < candidates.n; ++i) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      if (candidate->anyPromotes) {
+        EXPLAIN("%s\n\n", toString(candidate->fn));
+        EXPLAIN("X: Fn %d promotes but others do not\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
+
+// Discard any candidate that has a worse argument mapping than another
+// candidate.
+static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
+                             const DisambiguationContext& DC,
+                             std::vector<bool>&           discarded) {
+
+  // If index i is set then we can skip testing function F_i because
+  // we already know it can not be the best match
+  // because it is a less good match than another candidate.
+  std::vector<bool> notBest(candidates.n, false);
+
+  for (int i = 0; i < candidates.n; ++i) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate1 = candidates.v[i];
+
+    bool forGenericInit = candidate1->fn->isInitializer() ||
+                          candidate1->fn->isCopyInit();
 
     EXPLAIN("##########################\n");
     EXPLAIN("# Considering function %d #\n", i);
@@ -5844,9 +5875,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       if (i == j) {
         continue;
       }
-      /*if (discarded[j]) {
+      if (discarded[j]) {
         continue;
-      }*/
+      }
 
       EXPLAIN("Comparing to function %d\n", j);
       EXPLAIN("-----------------------\n");
@@ -5855,13 +5886,14 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
 
       EXPLAIN("%s\n", toString(candidate2->fn));
 
-      int p = compareSpecificity(candidate1,
-                                   candidate2,
-                                   DC,
-                                   i,
-                                   j,
-                                   ignoreWhere,
-                                   forGenericInit);
+      // Consider the relationship among the arguments
+      // Note that this part is a partial order;
+      // in other words, "incomparable" is an option when comparing
+      // two candidates.
+      int p = compareSpecificity(candidate1, candidate2,
+                                 DC,
+                                 i, j,
+                                 forGenericInit);
 
       if (p == 1) {
         EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
@@ -5870,48 +5902,290 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       } else if (p == 2) {
         EXPLAIN("X: Fn %d is a worse match than Fn %d\n\n\n", i, j);
         notBest[i] = true;
-        singleMostSpecific = false;
         break;
       } else {
-        EXPLAIN("X: Fn %d is a as good a match as Fn %d\n\n\n", i, j);
-        singleMostSpecific = false;
-        if (notBest[j]) {
-          // Inherit the notBest status of what we are comparing against
-          //
-          // If this candidate is equally as good as something that wasn't
-          // the best, then it is also not the best (or else there is something
-          // terribly wrong with our compareSpecificity function).
-          notBest[i] = true;
+        if (p == -1) {
+          EXPLAIN("X: Fn %d is incomparable with Fn %d\n\n\n", i, j);
+        } else if (p == 0) {
+          EXPLAIN("X: Fn %d is as good a match as Fn %d\n\n\n", i, j);
+          if (notBest[j]) {
+            notBest[i] = true;
+            break;
+          }
         }
-        break;
       }
     }
+  }
 
-    if (singleMostSpecific) {
-      EXPLAIN("Y: Fn %d is the best match.\n\n\n", i);
+  // Now, discard any candidates that were worse than another candidate
+  for (int i = 0; i < candidates.n; ++i) {
+    if (notBest[i]) {
+      discarded[i] = true;
+    }
+  }
+}
+
+// Discard any candidate that has more implicit conversions
+// than another candidate.
+// After that, discard any candidate that has more param narrowing
+// conversions than another candidate.
+//
+// The number of conversions rule resolves an ambiguity with:
+//   proc f(x: int, y: int)
+//   proc f(x: real(32), y: real(32))
+//   proc f(x: real, y: real)
+//   f(myInt64, 1.0:real(32))
+// The number of param conversions resolves an ambiguity with:
+//   proc f(x: int,    y: int)
+//   proc f(x: int(8), y: int(8))
+//   f(1, 1:int(8))
+static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
+                                    const DisambiguationContext& DC,
+                                    std::vector<bool>&           discarded) {
+  int minImpConv = INT_MAX;
+  int maxImpConv = INT_MIN;
+
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    int impConv = 0;
+    int narrowing = 0;
+
+    countImplicitConversions(candidate, DC, impConv, narrowing);
+    if (impConv < minImpConv) {
+      minImpConv = impConv;
+    }
+    if (impConv > maxImpConv) {
+      maxImpConv = impConv;
+    }
+  }
+
+  if (minImpConv < maxImpConv) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      int impConv = 0;
+      int narrowing = 0;
+
+      countImplicitConversions(candidate, DC, impConv, narrowing);
+      if (impConv > minImpConv) {
+        EXPLAIN("X: Fn %d has more implicit conversions\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+
+  int minNarrowing = INT_MAX;
+  int maxNarrowing = INT_MIN;
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    int impConv = 0;
+    int narrowing = 0;
+
+    countImplicitConversions(candidate, DC, impConv, narrowing);
+    if (narrowing < minNarrowing) {
+      minNarrowing = narrowing;
+    }
+    if (narrowing > maxNarrowing) {
+      maxNarrowing = narrowing;
+    }
+  }
+
+  if (minNarrowing < maxNarrowing) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      int impConv = 0;
+      int narrowing = 0;
+
+      countImplicitConversions(candidate, DC, impConv, narrowing);
+      if (narrowing > minNarrowing) {
+        EXPLAIN("X: Fn %d has more param narrowing conversions\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
+// If some candidates have 'where' clauses and others do not,
+// discard those without 'where' clauses
+static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
+                                     const DisambiguationContext& DC,
+                                     std::vector<bool>&           discarded) {
+  int nWhere = 0;
+  int nNoWhere = 0;
+  for (int i = 0; i < candidates.n; ++i) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    bool where = candidate->fn->where != NULL &&
+                 !candidate->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+
+    if (where) {
+      nWhere++;
+    } else {
+      nNoWhere++;
+    }
+  }
+
+  if (nWhere > 0 && nNoWhere > 0) {
+    for (int i = 0; i < candidates.n; ++i) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      bool where = candidate->fn->where != NULL &&
+                   !candidate->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+      if (!where) {
+        EXPLAIN("X: Fn %d does not have 'where' but others do\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
+// Discard candidates with further visibility distance
+// than other candidates.
+static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
+                                   const DisambiguationContext& DC,
+                                   std::vector<bool>&           discarded) {
+  int minDistance = INT_MAX;
+  int maxDistance = INT_MIN;
+
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    int distance = computeVisibilityDistance(DC.scope, candidate->fn);
+
+    if (distance < minDistance) {
+      minDistance = distance;
+    }
+    if (distance > maxDistance) {
+      maxDistance = distance;
+    }
+  }
+
+  if (minDistance < maxDistance) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      int distance = computeVisibilityDistance(DC.scope, candidate->fn);
+
+      if (distance > minDistance) {
+        EXPLAIN("X: Fn %d has further visibility distance\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    Vec<ResolutionCandidate*>&   ambiguous) {
+
+  // Disable implicit conversion to remove nilability
+  // for disambiguation
+  int saveGenerousResolutionForErrors = 0;
+  if (generousResolutionForErrors > 0) {
+    saveGenerousResolutionForErrors = generousResolutionForErrors;
+    generousResolutionForErrors = 0;
+  }
+
+  // If index i is set we have ruled out that function
+  std::vector<bool> discarded(candidates.n, false);
+
+  // If any candidate does not require promotion,
+  // eliminate candidates that do require promotion.
+  discardWorsePromoting(candidates, DC, discarded);
+
+  // Consider the relationship among the arguments
+  // Note that this part is a partial order;
+  // in other words, "incomparable" is an option when comparing
+  // two candidates. However, it should be transitive.
+  // Discard any candidate that has a worse argument mapping than another
+  // candidate.
+  discardWorseArgs(candidates, DC, discarded);
+
+  // Apply further filtering to the set of candidates
+
+  // Discard any candidate that has more implicit conversions
+  // than another candidate.
+  // After that, discard any candidate that has more param narrowing
+  // conversions than another candidate.
+  discardWorseConversions(candidates, DC, discarded);
+
+  if (!ignoreWhere) {
+    // If some candidates have 'where' clauses and others do not,
+    // discard those without 'where' clauses
+    discardWorseWhereClauses(candidates, DC, discarded);
+  }
+
+  // If some candidates are less visible than other candidates,
+  // discard those with less visibility.
+  discardWorseVisibility(candidates, DC, discarded);
+
+  // If there is just 1 candidate at this point, return it
+  {
+    int only = -1;
+    int currentCandidates = 0;
+    for (int i = 0; i < candidates.n; ++i) {
+      if (discarded[i]) {
+        continue;
+      }
+      only = i; 
+      currentCandidates++;
+    }
+
+    if (currentCandidates == 1) {
+      EXPLAIN("Y: Fn %d is the best match.\n\n\n", only);
 
       if (saveGenerousResolutionForErrors > 0)
         generousResolutionForErrors = saveGenerousResolutionForErrors;
 
-      return candidate1;
-
-    } else {
-      EXPLAIN("Y: Fn %d is NOT the best match.\n\n\n", i);
+      return candidates.v[only];
     }
   }
 
-  EXPLAIN("Z: No non-ambiguous best match.\n\n");
-
-  for (int i = 0; i < candidates.n; ++i) {
-    if (notBest[i] == false) {
-      ambiguous.add(candidates.v[i]);
+  // There was more than one best candidate.
+  // So, add whatever is left to 'ambiguous'
+  // and return NULL.
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
     }
+
+    EXPLAIN("Z: Fn %d is one of the best matches\n", i);
+    ambiguous.add(candidates.v[i]);
   }
 
   if (saveGenerousResolutionForErrors > 0)
     generousResolutionForErrors = saveGenerousResolutionForErrors;
 
-  return NULL;
+  return nullptr;
 }
 
 /** Determines if fn1 is a better match than fn2.
@@ -5923,12 +6197,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
  * \param candidate1 The function on the left-hand side of the comparison.
  * \param candidate2 The function on the right-hand side of the comparison.
  * \param DC         The disambiguation context.
- * \param ignoreWhere Set to `true` to ignore `where` clauses when
- *                    deciding if one match is better than another.
- *                    This is important for resolving return intent
- *                    overloads.
  *
- * \return 0 if neither fn1 nor fn2 is better
+ * \return -1 if the two functions are incomparable
+ * \return 0 if the two functions are equally specific
  * \return 1 if fn1 is a more specific function than f2
  * \return 2 if fn2 is a more specific function than f1
  */
@@ -5937,7 +6208,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                               const DisambiguationContext& DC,
                               int                          i,
                               int                          j,
-                              bool                         ignoreWhere,
                               bool                         forGenericInit) {
 
   DisambiguationState DS;
@@ -5947,6 +6217,9 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
   bool                prefer1 = false;
   bool                prefer2 = false;
+
+  int                 nArgsSame = 0;
+  int                 nArgsIncomparable = 0;
 
   for (int k = start; k < DC.actuals->n; ++k) {
     Symbol*    actual  = DC.actuals->v[k];
@@ -5986,6 +6259,12 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                            candidate2->fn, formal2,
                            actual, DC, i, j, DS, reason);
 
+    if (p == -1) {
+      nArgsIncomparable++;
+    } else if (p == 0) {
+      nArgsSame++;
+    }
+
     if (actualParam) {
       if (p == 1) {
         DS.fn1ParamArgsPreferred = true;
@@ -6005,14 +6284,7 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     }
   }
 
-  if (DS.fn1Promotes != DS.fn2Promotes) {
-    EXPLAIN("\nP: only one of the functions requires argument promotion\n");
-
-    // Prefer the version that did not promote
-    prefer1 = !DS.fn1Promotes;
-    prefer2 = !DS.fn2Promotes;
-
-  } else if (DS.fn1NonParamArgsPreferred != DS.fn2NonParamArgsPreferred) {
+  if (DS.fn1NonParamArgsPreferred != DS.fn2NonParamArgsPreferred) {
     EXPLAIN("\nP: only one function has preferred non-param args\n");
 
     prefer1 = DS.fn1NonParamArgsPreferred;
@@ -6026,85 +6298,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
   }
 
-  // tie-breaking rule: number of implicit conversions
-  // e.g. to resolve an ambiguity with
-  //   proc f(x: int, y: int)
-  //   proc f(x: real(32), y: real(32))
-  //   proc f(x: real, y: real)
-  //   f(myInt64, 1.0:real(32))
-  if (!prefer1 && !prefer2) {
-    int nImplicitConversions1 = 0;
-    int nImpConvToTypeNotMent1 = 0;
-    int nImplicitConversions2 = 0;
-    int nImpConvToTypeNotMent2 = 0;
-
-    countImplicitConversions(candidate1, DC,
-                             nImplicitConversions1, nImpConvToTypeNotMent1);
-    countImplicitConversions(candidate2, DC,
-                             nImplicitConversions2, nImpConvToTypeNotMent2);
-
-    if (nImplicitConversions1 != nImplicitConversions2) {
-      EXPLAIN("\nU: preferring function with fewer implicit conversions\n");
-      prefer1 = nImplicitConversions1 < nImplicitConversions2;
-      prefer2 = nImplicitConversions2 < nImplicitConversions1;
-    }
-  }
-
-  // tie-breaking rule: number of param narrowing conversions
-  // e.g. this rule prevents an ambiguity with
-  //   proc f(x: int,    y: int)
-  //   proc f(x: int(8), y: int(8))
-  //   f(1, 1:int(8))
-  if (!prefer1 && !prefer2) {
-    if (DS.fn1NumParamNarrowing != DS.fn2NumParamNarrowing) {
-      EXPLAIN("\nU: preferring function with fewer param narrowing conversions\n");
-      prefer1 = DS.fn1NumParamNarrowing < DS.fn2NumParamNarrowing;
-      prefer2 = DS.fn2NumParamNarrowing < DS.fn1NumParamNarrowing;
-    }
-  }
-
-  // tie-breaking rule: where clauses
-  if (!prefer1 && !prefer2 && !ignoreWhere) {
-    bool fn1where = candidate1->fn->where != NULL &&
-                    !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-    bool fn2where = candidate2->fn->where != NULL &&
-                    !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-
-    if (fn1where != fn2where) {
-      EXPLAIN("\nU: preferring function with where clause\n");
-
-      prefer1 = fn1where;
-      prefer2 = fn2where;
-    }
-  }
-
-  // tie-breaking rule: visibility
-  // TODO: should this visibility check be before the argument
-  // specificity checks?
-  if (!prefer1 && !prefer2) {
-    MoreVisibleResult v = FOUND_NEITHER;
-    // If the decision hasn't been made based on the argument mappings,
-    // consider visibility...
-    // But, do not consider visibility for methods in disambiguation.
-    if (!(candidate1->fn->isMethod() || candidate2->fn->isMethod())) {
-      v = isMoreVisible(DC.scope, candidate1->fn, candidate2->fn);
-    }
-
-    // TODO: is this visibility check in the right place?
-    // Should it be before the argument preference check above?
-    // Or after the where clause check below?
-    if (v == FOUND_F1_FIRST) {
-      EXPLAIN("\nQ: preferring more visible function\n");
-      prefer1 = true;
-
-    } else if (v == FOUND_F2_FIRST) {
-      EXPLAIN("\nR: preferring more visible function\n");
-      prefer2 = true;
-    }
-  }
-
-  INT_ASSERT(!(prefer1 && prefer2));
-
   if (prefer1) {
     EXPLAIN("\nW: Fn %d is more specific than Fn %d\n", i, j);
     return 1;
@@ -6114,7 +6307,13 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     return 2;
 
   } else {
-    // Neither is more specific
+    if (nArgsIncomparable > 0 ||
+        (DS.fn1NonParamArgsPreferred && DS.fn2NonParamArgsPreferred) ||
+        (DS.fn1ParamArgsPreferred && DS.fn2ParamArgsPreferred)) {
+      EXPLAIN("\nW: Fn %d and Fn %d are incomparable\n", i, j);
+      return -1;
+    }
+
     EXPLAIN("\nW: Fn %d and Fn %d are equally specific\n", i, j);
     return 0;
   }
@@ -6177,7 +6376,8 @@ static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
  *                sets DS.fnXPromotes and DS.fnXNumParamNarrowing.
  *
  * Returns:
- *   0 if there is no preference between them
+ *  -1 if the two formals are incomparable
+ *   0 if the two formals have the same level of preference
  *   1 if fn1 is preferred
  *   2 if fn2 is preferred
  */
@@ -6196,8 +6396,9 @@ static int testArgMapping(FnSymbol*                    fn1,
   // (these don't impact candidate selection)
   if (formal1->originalIntent == INTENT_OUT ||
       formal2->originalIntent == INTENT_OUT) {
-    return 0;
+    return -1;
   }
+
 
   // We only want to deal with the value types here, avoiding odd overloads
   // working (or not) due to _ref.
@@ -6357,7 +6558,13 @@ static int testArgMapping(FnSymbol*                    fn1,
     }
   }
 
-  return 0;
+  if (f1Type == f2Type) {
+    // the formals are the same in terms of preference
+    return 0;
+  }
+
+  // the formals are incomparable
+  return -1;
 }
 
 /*

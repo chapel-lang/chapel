@@ -116,8 +116,10 @@ public:
   bool                    nImplicitConversionsComputed;
   // How many implicit conversions?
   int                     nImplicitConversions;
-  // How many implicit conversions to a type not used in the call?
-  int                     nImplicitConversionsToTypeNotMentioned;
+  // How many param-narrowing implicit conversions?
+  int                     nParamNarrowingImplicitConversions;
+
+  // What is the visibility distance?
 
   Symbol*                 failingArgument; // actual or formal
   ResolutionCandidateFailureReason reason;
