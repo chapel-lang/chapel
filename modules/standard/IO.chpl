@@ -2582,19 +2582,20 @@ proc channel.seek(region: range(?)) throws {
 
   if (!region.hasLowBound()) {
     throw new IllegalArgumentError("region", "must have a lower bound");
-  }
-
-  if (region.hasHighBound()) {
-    const err = qio_channel_seek(_channel_internal, region.low, region.high);
-
-    if err then
-      throw SystemError.fromSyserr(err);
 
   } else {
-    const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
+    if (region.hasHighBound()) {
+      const err = qio_channel_seek(_channel_internal, region.low, region.high);
 
-    if err then
-      throw SystemError.fromSyserr(err);
+      if err then
+        throw SystemError.fromSyserr(err);
+
+    } else {
+      const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
+
+      if err then
+        throw SystemError.fromSyserr(err);
+    }
   }
 }
 
