@@ -23,8 +23,6 @@
 
 #include <string>
 #include <vector>
-#include <unordered_map>
-#include <map>
 #include <system_error>
 
 #include "llvm/Support/ErrorOr.h"
@@ -63,26 +61,6 @@ int executeAndWait(const std::vector<std::string>& commandVec,
     containing the command's output.
  */
 llvm::ErrorOr<std::string> getCommandOutput(const std::string& command);
-
-using ChplEnvMap = std::unordered_map<std::string, std::string>;
-
-/**
-  Run printchplenv and collect its output into a map.
-
-  varMap
-    additional environment variables to feed to printchplenv
-
-  chplHome
-    the CHPL_HOME environment variable, to locate printchplenv
-
-  returns
-    an error code if something went wrong while running printchplenv,
-    or a map containing key-value pairs for each variable in
-    printchplenv's output.
- */
-llvm::ErrorOr<ChplEnvMap>
-getChplEnv(const std::map<std::string, const char*>& varMap,
-           const char* chplHome);
 
 } // namespace chpl
 

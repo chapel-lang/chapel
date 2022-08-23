@@ -49,7 +49,7 @@ namespace chpl {
     }
   } // namespace detail
 
-  Context::Context() {
+  Context::Context(std::string chplHome) : chplHome(std::move(chplHome)) {
     if (this == &detail::rootContext) {
       detail::initGlobalStrings();
       for (auto& v : uniqueStringsTable) {
@@ -64,15 +64,10 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
-void Context::setChplHome(const char* chplHome) {
-  computedChplEnv = false;
-  chplEnv.clear();
-  this->chplHome = chplHome;
-}
 
 llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
-  if (chplHome == nullptr || computedChplEnv) return chplEnv;
-  auto chplEnvResult = ::chpl::getChplEnv({}, chplHome);
+  if (chplHome.empty() || computedChplEnv) return chplEnv;
+  auto chplEnvResult = ::chpl::getChplEnv({}, chplHome.c_str());
   if (auto err = chplEnvResult.getError()) {
     // forward error to caller
     return err;

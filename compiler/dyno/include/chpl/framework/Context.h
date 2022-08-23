@@ -28,7 +28,7 @@
 #include "chpl/util/hash.h"
 #include "chpl/util/break.h"
 #include "chpl/util/terminal.h"
-#include "chpl/util/subprocess.h"
+#include "chpl/util/chplenv.h"
 
 #include <memory>
 #include <tuple>
@@ -70,7 +70,7 @@ class Context {
 
  private:
   // The CHPL_HOME variable
-  const char* chplHome;
+  std::string chplHome;
 
   // State for printchplenv data
   bool computedChplEnv = false;
@@ -250,24 +250,17 @@ class Context {
 
  public:
   /**
-    Create a new AST Context.
+    Create a new AST Context. Optionally, specify the value of the
+    CHPL_HOME environment variable, which is used for determining
+    chapel environment varaibles.
    */
-  Context();
+  Context(std::string chplHome = "");
   ~Context();
 
   /**
-    Store a string corresponding to CHPL_HOME in the context. The context does
-    not take ownership of the string, so the argument should live at least as
-    long as the context itself.
-
-    Changing chplHome invalidates previous caches of printchplenv output.
-  */
-  void setChplHome(const char* chplHome);
-
-  /**
     Run printchplenv, or return a cached result of doing so. To get output,
-    CHPL_HOME must have been provided via setChplHome; otherwise, the resulting
-    map will be empty.
+    CHPL_HOME must have been provided via the constructor; otherwise, the
+    resulting map will be empty.
   */
   llvm::ErrorOr<const ChplEnvMap&> getChplEnv();
 

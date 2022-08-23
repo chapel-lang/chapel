@@ -48,7 +48,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/util/subprocess.h"
+#include "chpl/util/chplenv.h"
 
 #include <inttypes.h>
 #include <string>
