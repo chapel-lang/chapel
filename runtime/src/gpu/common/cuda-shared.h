@@ -44,10 +44,19 @@ void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
 
 // this is part of the interface (used by the module code as an extern)
 static inline
-bool chpl_gpu_common_is_device_ptr(void* ptr) {
+bool chpl_gpu_common_is_device_ptr(const void* ptr) {
 
   unsigned int res;
 
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+    // We call CUDA_CALL later, because we want to treat some error codes
+    // separately
+  CUresult ret_val = cuPointerGetAttribute(&res, CU_POINTER_ATTRIBUTE_MAPPED,
+                                           (CUdeviceptr)ptr);
+
+  if (ret_val == CUDA_SUCCESS) {
+    return res;
+#else
   // We call CUDA_CALL later, because we want to treat some error codes
   // separately
   CUresult ret_val = cuPointerGetAttribute(&res, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
@@ -55,6 +64,7 @@ bool chpl_gpu_common_is_device_ptr(void* ptr) {
 
   if (ret_val == CUDA_SUCCESS) {
     return res == CU_MEMORYTYPE_DEVICE || res == CU_MEMORYTYPE_UNIFIED;
+#endif
   }
   else if (ret_val == CUDA_ERROR_INVALID_VALUE ||
            ret_val == CUDA_ERROR_NOT_INITIALIZED ||

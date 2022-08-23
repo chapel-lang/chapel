@@ -27,6 +27,7 @@
 // backward compatible with the architecture implicitly provided by
 // releases 1.6 and preceding.
 //
+
 module LocaleModel {
 
   public use LocaleModelHelpNUMA;
@@ -90,11 +91,24 @@ module LocaleModel {
       halt("No children to iterate over.");
       yield -1;
     }
+    override proc _getChildCount(): int { return 0; }
+    iter getChildIndices() : int {
+      halt("No children to iterate over.");
+      yield -1;
+    }
+
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
     }
+
     pragma "unsafe"
     override proc getChild(idx:int) : locale {
+      halt("Cannot getChild with this locale type");
+      var ret: locale; // default-initialize
+      return ret;
+    }
+    pragma "unsafe"
+    override proc _getChild(idx:int) : locale {
       halt("Cannot getChild with this locale type");
       var ret: locale; // default-initialize
       return ret;
@@ -175,6 +189,7 @@ module LocaleModel {
     proc getChildSpace() return childSpace;
 
     override proc getChildCount() return numSublocales;
+    override proc _getChildCount() return numSublocales;
 
     iter getChildIndices() : int {
       for idx in childSpace do
@@ -182,6 +197,12 @@ module LocaleModel {
     }
 
     override proc getChild(idx:int) : locale {
+      if boundsChecking then
+        if (idx < 0) || (idx >= numSublocales) then
+          halt("sublocale child index out of bounds (",idx,")");
+      return new locale(childLocales[idx]);
+    }
+    override proc _getChild(idx:int) : locale {
       if boundsChecking then
         if (idx < 0) || (idx >= numSublocales) then
           halt("sublocale child index out of bounds (",idx,")");
@@ -256,6 +277,7 @@ module LocaleModel {
     }
 
     override proc getChildCount() return this.myLocaleSpace.size;
+    override proc _getChildCount() return this.myLocaleSpace.size;
 
     proc getChildSpace() return this.myLocaleSpace;
 
@@ -265,6 +287,7 @@ module LocaleModel {
     }
 
     override proc getChild(idx:int) return this.myLocales[idx];
+    override proc _getChild(idx:int) return this.myLocales[idx];
 
     iter getChildren() : locale  {
       for loc in this.myLocales do
@@ -278,7 +301,7 @@ module LocaleModel {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
       if chpl_isActualSublocID(subloc) then
-        return (myLocales[node:int].getChild(subloc:int)):locale;
+        return (myLocales[node:int]._getChild(subloc:int)):locale;
       else {
         const n = node:int;
         const l = myLocales[n];

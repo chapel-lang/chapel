@@ -42,11 +42,6 @@ namespace resolution {
    */
   const Scope* scopeForModule(Context* context, ID moduleId);
 
-  /**
-    Gather the IDs of Use/Import statements within a scope.
-   */
-  const std::vector<ID>& findUseImportStmts(Context* context,
-                                            const Scope* scope);
  /**
     Find what a name might refer to.
 
@@ -115,6 +110,17 @@ namespace resolution {
   const InnermostMatch& findInnermostDecl(Context* context,
                                           const Scope* scope,
                                           UniqueString name);
+
+
+  /**
+   * Given a scope, returns a list of IDs for all the modules that were either
+   * used or imported in that scope. May return an empty vector if no modules
+   * were used or imported in the scope.
+   */
+  const
+  std::vector<ID> findUsedImportedModules(Context* context,
+                                           const Scope* scope);
+
 
 
 } // end namespace resolution

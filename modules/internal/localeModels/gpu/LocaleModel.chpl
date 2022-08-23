@@ -248,6 +248,8 @@ module LocaleModel {
     }
 
     override proc getChildCount(): int { return 0; }
+    override proc _getChildCount(): int { return 0; }
+
     iter getChildIndices() : int {
       halt("No children to iterate over.");
       yield -1;
@@ -256,6 +258,10 @@ module LocaleModel {
       halt("Cannot add children to this locale type.");
     }
     override proc getChild(idx:int) : locale {
+      halt("requesting a child from a GPULocale locale");
+      return new locale(this);
+    }
+    override proc _getChild(idx:int) : locale {
       halt("requesting a child from a GPULocale locale");
       return new locale(this);
     }
@@ -340,6 +346,7 @@ module LocaleModel {
     proc getChildSpace() return childSpace;
 
     override proc getChildCount() return numSublocales;
+    override proc _getChildCount() return numSublocales;
 
     iter getChildIndices() : int {
       for idx in {0..#numSublocales} do // chpl_emptyLocaleSpace do
@@ -347,6 +354,12 @@ module LocaleModel {
     }
 
     override proc getChild(idx:int) : locale {
+      if boundsChecking then
+        if (idx < 0) || (idx >= numSublocales) then
+          halt("sublocale child index out of bounds (",idx,")");
+      return new locale(childLocales[idx]);
+    }
+    override proc _getChild(idx:int) : locale {
       if boundsChecking then
         if (idx < 0) || (idx >= numSublocales) then
           halt("sublocale child index out of bounds (",idx,")");
@@ -421,6 +434,7 @@ module LocaleModel {
     }
 
     override proc getChildCount() return this.myLocaleSpace.size;
+    override proc _getChildCount() return this.myLocaleSpace.size;
 
     proc getChildSpace() return this.myLocaleSpace;
 
@@ -430,6 +444,7 @@ module LocaleModel {
     }
 
     override proc getChild(idx:int) return this.myLocales[idx];
+    override proc _getChild(idx:int) return this.myLocales[idx];
 
     iter getChildren() : locale  {
       for loc in this.myLocales do
@@ -445,7 +460,7 @@ module LocaleModel {
       if (subloc == c_sublocid_none) || (subloc == c_sublocid_any) then
         return (myLocales[node:int]):locale;
       else
-        return (myLocales[node:int].getChild(subloc:int)):locale;
+        return (myLocales[node:int]._getChild(subloc:int)):locale;
     }
 
     proc deinit() {

@@ -56,7 +56,9 @@ struct ParserComment {
 struct AttributeParts {
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
+  bool isUnstable;
   UniqueString deprecationMessage;
+  UniqueString unstableMessage;
 };
 
 struct ParserContext {
@@ -122,7 +124,7 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
-    this->attributeParts          = { nullptr, false, UniqueString() };
+    this->attributeParts          = { nullptr, false, false, UniqueString(), UniqueString() };
     this->hasAttributeParts       = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
@@ -154,6 +156,7 @@ struct ParserContext {
   owned<Attributes> buildAttributes(YYLTYPE locationOfDecl);
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
   void noteDeprecation(YYLTYPE loc, AstNode* messageStr);
+  void noteUnstable(YYLTYPE loc, AstNode* messageStr);
   void resetAttributePartsState();
 
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);
@@ -550,6 +553,14 @@ struct ParserContext {
   AstNode* buildReduce(YYLTYPE location, YYLTYPE locOp,
                        AstNode* op,
                        AstNode* iterand);
+
+  AstNode* buildReduceIntent(YYLTYPE location, YYLTYPE locOp,
+                             PODUniqueString op,
+                             AstNode* iterand);
+
+  AstNode* buildReduceIntent(YYLTYPE location, YYLTYPE locOp,
+                             AstNode* op,
+                             AstNode* iterand);
 
   AstNode* buildScan(YYLTYPE location, YYLTYPE locOp,
                      PODUniqueString op,

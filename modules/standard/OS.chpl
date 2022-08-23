@@ -1002,46 +1002,9 @@ module OS {
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
+    deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
     proc type fromSyserr(err: syserr, details: string = "") {
-      if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
-        return new owned BlockingIOError(details, err);
-      } else if err == ECHILD {
-        return new owned ChildProcessError(details, err);
-      } else if err == EPIPE || err == ESHUTDOWN {
-        return new owned BrokenPipeError(details, err);
-      } else if err == ECONNABORTED {
-        return new owned ConnectionAbortedError(details, err);
-      } else if err == ECONNREFUSED {
-        return new owned ConnectionRefusedError(details, err);
-      } else if err == ECONNRESET {
-        return new owned ConnectionResetError(details, err);
-      } else if err == EEXIST {
-        return new owned FileExistsError(details, err);
-      } else if err == ENOENT {
-        return new owned FileNotFoundError(details, err);
-      } else if err == EINTR {
-        return new owned InterruptedError(details, err);
-      } else if err == EISDIR {
-        return new owned IsADirectoryError(details, err);
-      } else if err == ENOTDIR {
-        return new owned NotADirectoryError(details, err);
-      } else if err == EACCES || err == EPERM {
-        return new owned PermissionError(details, err);
-      } else if err == ESRCH {
-        return new owned ProcessLookupError(details, err);
-      } else if err == ETIMEDOUT {
-        return new owned TimeoutError(details, err);
-      } else if err == EEOF {
-        return new owned EOFError(details, err);
-      } else if err == ESHORT {
-        return new owned UnexpectedEOFError(details, err);
-      } else if err == EFORMAT {
-        return new owned BadFormatError(details, err);
-      } else if err == EIO {
-        return new owned IOError(err, details);
-      }
-
-      return new owned SystemError(err, details);
+      return createSystemError(err, details);
     }
 
     /*
@@ -1053,21 +1016,91 @@ module OS {
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
+    deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
     proc type fromSyserr(err: int, details: string = "") {
-      return fromSyserr(err:syserr, details);
+      return createSystemError(err:syserr, details);
     }
   }
 
   /*
-     :class:`BlockingIOError` is the subclass of :class:`SystemError`
+    Return the matching :class:`SystemError` subtype for a given ``syserr``,
+    with an optional string containing extra details.
+
+    :arg err: the syserr to generate from
+    :arg details: extra information to include with the error
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemError(err: syserr, details: string = "") {
+    if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
+      return new owned BlockingIoError(details, err);
+    } else if err == ECHILD {
+      return new owned ChildProcessError(details, err);
+    } else if err == EPIPE || err == ESHUTDOWN {
+      return new owned BrokenPipeError(details, err);
+    } else if err == ECONNABORTED {
+      return new owned ConnectionAbortedError(details, err);
+    } else if err == ECONNREFUSED {
+      return new owned ConnectionRefusedError(details, err);
+    } else if err == ECONNRESET {
+      return new owned ConnectionResetError(details, err);
+    } else if err == EEXIST {
+      return new owned FileExistsError(details, err);
+    } else if err == ENOENT {
+      return new owned FileNotFoundError(details, err);
+    } else if err == EINTR {
+      return new owned InterruptedError(details, err);
+    } else if err == EISDIR {
+      return new owned IsADirectoryError(details, err);
+    } else if err == ENOTDIR {
+      return new owned NotADirectoryError(details, err);
+    } else if err == EACCES || err == EPERM {
+      return new owned PermissionError(details, err);
+    } else if err == ESRCH {
+      return new owned ProcessLookupError(details, err);
+    } else if err == ETIMEDOUT {
+      return new owned TimeoutError(details, err);
+    } else if err == EEOF {
+      return new owned EofError(details, err);
+    } else if err == ESHORT {
+      return new owned UnexpectedEofError(details, err);
+    } else if err == EFORMAT {
+      return new owned BadFormatError(details, err);
+    } else if err == EIO {
+      return new owned IoError(err, details);
+    }
+
+    return new owned SystemError(err, details);
+  }
+
+  /*
+    Return the matching :class:`SystemError` subtype for a given error number,
+    with an optional string containing extra details.
+
+    :arg err: the number to generate from
+    :arg details: extra information to include with the error
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemError(err: int, details: string = "") {
+    return createSystemError(err:syserr, details);
+  }
+
+
+  /*
+     :class:`BlockingIoError` is the subclass of :class:`SystemError`
      corresponding to :const:`SysBasic.EAGAIN`, :const:`SysBasic.EALREADY`,
      :const:`SysBasic.EWOULDBLOCK`, and :const:`SysBasic.EINPROGRESS`.
   */
-  class BlockingIOError : SystemError {
+  class BlockingIoError : SystemError {
     proc init(details: string = "", err: syserr = EWOULDBLOCK:syserr) {
       super.init(err, details);
     }
   }
+
+  pragma "no doc"
+  deprecated "'BlockingIOError' is deprecated, please use 'BlockingIoError' instead"
+  class BlockingIOError: SystemError {}
 
   /*
      :class:`ChildProcessError` is the subclass of :class:`SystemError`
@@ -1210,42 +1243,54 @@ module OS {
   }
 
   /*
-     :class:`IOError` is the subclass of :class:`SystemError` that serves as the
+     :class:`IoError` is the subclass of :class:`SystemError` that serves as the
      base class for all errors regarding inputs and their formatting.
      They are typically not directly generated by the OS, but they are
      used and emitted by the IO module.
   */
-  class IOError : SystemError {
+  class IoError : SystemError {
     proc init(err: syserr, details: string = "") {
       super.init(err, details);
     }
   }
 
+  pragma "no doc"
+  deprecated "'IOError' is deprecated, please use 'IoError' instead"
+  class IOError: SystemError {}
+
   /*
-     :class:`EOFError` is the subclass of :class:`IOError` corresponding to
+     :class:`EofError` is the subclass of :class:`IoError` corresponding to
      :const:`SysBasic.EEOF`.
   */
-  class EOFError : IOError {
+  class EofError : IoError {
     proc init(details: string = "", err: syserr = EEOF:syserr) {
       super.init(err, details);
     }
   }
 
+  pragma "no doc"
+  deprecated "'EOFError is deprecated, please use 'EofError instedad"
+  class EOFError : IoError {}
+
   /*
-     :class:`UnexpectedEOFError` is the subclass of :class:`IOError`
+     :class:`UnexpectedEofError` is the subclass of :class:`IoError`
      corresponding to :const:`SysBasic.ESHORT`.
   */
-  class UnexpectedEOFError : IOError {
+  class UnexpectedEofError : IoError {
     proc init(details: string = "", err: syserr = ESHORT:syserr) {
       super.init(err, details);
     }
   }
 
+  pragma "no doc"
+  deprecated "'UnexpectedEOFError' is deprecated, please use 'UnexpectedEofError' instead"
+  class UnexpectedEOFError : IoError {}
+
   /*
-     :class:`BadFormatError` is the subclass of :class:`IOError` corresponding
+     :class:`BadFormatError` is the subclass of :class:`IoError` corresponding
      to :const:`SysBasic.EFORMAT`.
   */
-  class BadFormatError : IOError {
+  class BadFormatError : IoError {
     proc init(details: string = "", err: syserr = EFORMAT:syserr) {
       super.init(err, details);
     }
@@ -1298,7 +1343,7 @@ module OS {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath +
                          " offset " + offset:string;
-      throw SystemError.fromSyserr(error, details);
+      throw createSystemError(error, details);
     }
   }
 
@@ -1310,7 +1355,7 @@ module OS {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath;
-      throw SystemError.fromSyserr(error, details);
+      throw createSystemError(error, details);
     }
   }
 
@@ -1319,10 +1364,10 @@ module OS {
   pragma "always propagate line file info"
   proc ioerror(error:syserr, msg:string) throws
   {
-    if error then throw SystemError.fromSyserr(error, msg);
+    if error then throw createSystemError(error, msg);
   }
 
-  /* Create and throw an :class:`IOError` and include a formatted message
+  /* Create and throw an :class:`IoError` and include a formatted message
      based on the provided arguments.
 
      :arg errstr: the error string
@@ -1330,7 +1375,7 @@ module OS {
      :arg path: a path to print out that is related to the error
      :arg offset: an offset to print out that is related to the error
 
-     :throws IOError: always throws an IOError
+     :throws IoError: always throws an IoError
    */
   pragma "insert line file info"
   pragma "always propagate line file info"
@@ -1339,7 +1384,7 @@ module OS {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     const details    = errstr + " " + msg + " with path " + quotedpath +
                        " offset " + offset:string;
-    throw SystemError.fromSyserr(EIO:syserr, details);
+    throw createSystemError(EIO:syserr, details);
   }
 
   /* Convert a syserr code to a human-readable string describing the error.

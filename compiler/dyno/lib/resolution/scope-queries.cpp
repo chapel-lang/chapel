@@ -150,6 +150,11 @@ struct GatherDecls {
   }
   void exit(const Include* d) { }
 
+  bool enter(const WithClause* with) {
+    return true;
+  }
+  void exit(const WithClause* with) { }
+
   // ignore other AST nodes
   bool enter(const AstNode* ast) {
     return false;
@@ -1155,6 +1160,19 @@ const InnermostMatch& findInnermostDecl(Context* context,
 
 const Scope* scopeForModule(Context* context, ID id) {
   return scopeForId(context, id);
+}
+
+
+const
+std::vector<ID> findUsedImportedModules(Context* context,
+                                        const Scope* scope) {
+  auto result = resolveVisibilityStmts(context, scope);
+  std::vector<ID> ids;
+
+  for (const auto& r : result->visibilityClauses()) {
+    ids.push_back(r.scope()->id());
+  }
+  return ids;
 }
 
 

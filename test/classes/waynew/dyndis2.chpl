@@ -38,8 +38,9 @@ class contain {
 
   proc xxx() {
     var something: borrowed somedata(int)?;
+    var myOwned = new owned somedata( int, 10);
 
-    something = new owned somedata( int, 10);
+    something = myOwned;
 
     for e in objs do
        e.jam( 99, something!);

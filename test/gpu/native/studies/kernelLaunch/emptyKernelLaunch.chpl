@@ -10,11 +10,10 @@ config const n = 1;
 
 var t = new Timer();
 
+if validate then startGPUDiagnostics();
+var numLaunches = 0;
+
 on here.gpus[0] {
-  if validate then startGPUDiagnostics();
-
-  var numLaunches = 0;
-
   t.start();
   do {
     for useless in 1..granularity {
@@ -23,16 +22,16 @@ on here.gpus[0] {
     numLaunches += granularity;
   } while t.elapsed() < timeLimit;
   t.stop();
+}
 
-  if validate {
-    stopGPUDiagnostics();
-    assert(getGPUDiagnostics()[0].kernel_launch == numLaunches);
-  }
+if validate {
+  stopGPUDiagnostics();
+  assert(getGPUDiagnostics()[0].kernel_launch == numLaunches);
+}
 
-  if report {
-    const perLaunchTime = t.elapsed()/numLaunches;
-    writeln("Total test time (s): ", t.elapsed());
-    writeln("Number of launches: ", numLaunches);
-    writeln("Average kernel launch time (ms): ", perLaunchTime*1_000);
-  }
+if report {
+  const perLaunchTime = t.elapsed()/numLaunches;
+  writeln("Total test time (s): ", t.elapsed());
+  writeln("Number of launches: ", numLaunches);
+  writeln("Average kernel launch time (ms): ", perLaunchTime*1_000);
 }

@@ -1,0 +1,3 @@
+ # unstable_proc.unset.good
+--no-warn-unstable # unstable_proc.unset.good
+--warn-unstable # unstable_proc.set.good

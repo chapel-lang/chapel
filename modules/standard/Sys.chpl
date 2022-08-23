@@ -523,7 +523,7 @@ module Sys {
 
       var err_out = sys_host_sys_sockaddr_t(this, buffer, NI_MAXHOST, length);
       if err_out != 0 {
-        throw SystemError.fromSyserr(err_out);
+        throw createSystemError(err_out);
       }
 
       return createStringWithOwnedBuffer(buffer, length, NI_MAXHOST);
@@ -544,7 +544,7 @@ module Sys {
 
       var err_out = sys_port_sys_sockaddr_t(this, port);
       if err_out != 0 {
-        throw SystemError.fromSyserr(err_out);
+        throw createSystemError(err_out);
       }
 
       return port;

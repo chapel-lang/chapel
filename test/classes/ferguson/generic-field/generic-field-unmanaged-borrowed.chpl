@@ -44,8 +44,10 @@ proc test1b() {
   var b = new unmanaged ClassB(2);
   var c = new unmanaged ClassB(3);
   var x = new owned GenericClassUnmanaged(a);
-  var y:borrowed GenericClassUnmanaged = new owned GenericClassUnmanaged(b);
-  var z:borrowed GenericClassUnmanaged(unmanaged ClassB) = new owned GenericClassUnmanaged(c);
+  var myOwnedY = new owned GenericClassUnmanaged(b);
+  var y:borrowed GenericClassUnmanaged = myOwnedY;
+  var myOwnedZ = new owned GenericClassUnmanaged(c);
+  var z:borrowed GenericClassUnmanaged(unmanaged ClassB) = myOwnedZ;
 
   writeln(x.type:string, " ", x);
   writeln(y.type:string, " ", y);
@@ -80,6 +82,7 @@ proc test2b() {
   var a = (new owned ClassB(1)).borrow();
   var b = (new owned ClassB(2)).borrow();
   var c = (new owned ClassB(3)).borrow();
+
   var x = (new owned GenericClassBorrowed(a)).borrow();
   var y:borrowed GenericClassBorrowed = new owned GenericClassBorrowed(b);
   var z:borrowed GenericClassBorrowed(borrowed ClassB) = new owned GenericClassBorrowed(c);

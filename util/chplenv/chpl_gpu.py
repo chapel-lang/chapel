@@ -29,6 +29,17 @@ def get_cuda_path():
 
     return ""
 
+def get_gpu_mem_strategy():
+    memtype = os.environ.get("CHPL_GPU_MEM_STRATEGY")
+    if memtype:
+        valid_options = ["array_on_device", "unified_memory"]
+        if memtype not in valid_options:
+            error("CHPL_GPU_MEM_STRATEGY must be set to one of: %s" %
+                 ", ".join(valid_options));
+        return memtype
+    return "unified_memory"
+
+
 def get_cuda_libdevice_path():
     if chpl_locale_model.get() == 'gpu':
         # TODO this only makes sense when we are generating for nvidia

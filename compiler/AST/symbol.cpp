@@ -103,6 +103,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   fieldQualifiers(NULL),
   defPoint(NULL),
   deprecationMsg(""),
+  unstableMsg(""),
   symExprsHead(NULL),
   symExprsTail(NULL)
 {
@@ -450,8 +451,19 @@ const char* Symbol::getDeprecationMsg() const {
   if (deprecationMsg[0] == '\0') {
     const char* msg = astr(name, " is deprecated");
     return msg;
-  } else {
+  }
+  else {
     return deprecationMsg.c_str();
+  }
+}
+
+const char* Symbol::getUnstableMsg() const {
+  if (unstableMsg[0] == '\0') {
+    const char* msg = astr(name, " is unstable");
+    return msg;
+  }
+  else {
+    return unstableMsg.c_str();
   }
 }
 
@@ -460,8 +472,7 @@ const char* Symbol::getDeprecationMsg() const {
 // for when generating the docs). See:
 // https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
 // for information on the markup.
-const char* Symbol::getSanitizedDeprecationMsg() const {
-  std::string msg = getDeprecationMsg();
+const char* Symbol::getSanitizedMsg(std::string msg) const {
   // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
   //       show up in sanitized message).
   // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
@@ -489,7 +500,30 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
   if (!compilerGenerated && !parentDeprecated) {
-    USR_WARN(context, "%s", getSanitizedDeprecationMsg());
+    USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
+  }
+}
+
+//based on generateDeprecationWarning
+void Symbol::generateUnstableWarning(Expr* context) {
+  Symbol* contextParent = context->parentSymbol;
+  bool parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+
+  // Traverse until we find an unstable parent symbol, a compiler generated
+  // parent symbol, or until we reach the highest outer scope
+  while (contextParent != NULL && contextParent->defPoint != NULL &&
+         contextParent->defPoint->parentSymbol != NULL &&
+         parentUnstable != true && compilerGenerated != true) {
+    contextParent = contextParent->defPoint->parentSymbol;
+    parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  }
+
+  // Only generate the warning if the location with the reference is not
+  // created by the compiler or also unstable.
+  if (!compilerGenerated && !parentUnstable) {
+    USR_WARN(context, "%s", getSanitizedMsg(getUnstableMsg()));
   }
 }
 
@@ -702,6 +736,11 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   if (this->hasFlag(FLAG_DEPRECATED)) {
     this->printDocsDeprecation(this->doc, file, tabs + 1,
                                this->getDeprecationMsg(), !fDocsTextOnly);
+  }
+
+  if (this->hasFlag(FLAG_UNSTABLE)) {
+    this->printDocsUnstable(this->doc, file, tabs + 1,
+                               this->getUnstableMsg(), !fDocsTextOnly);
   }
 }
 
