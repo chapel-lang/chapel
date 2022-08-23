@@ -6,10 +6,10 @@ class C {
 var A: [1..5] shared C?;
 
 on Locales(1) {
-  [i in A.domain] A(i) = new C(i);
+  [i in A.domain] A(i) = new shared C(i)?;
 }
 
-[i in A.domain] A(i)!.next = new C(i+1);
+[i in A.domain] A(i)!.next = new shared C(i+1)?;
 
 var B = A!.next;
 local {

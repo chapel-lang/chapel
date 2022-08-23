@@ -344,7 +344,7 @@ module SharedObject {
 
     // Issue a compiler error for illegal uses.
     pragma "no doc"
-    deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
+    //deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
     proc type create(source) {
       compilerError("cannot create a 'shared' from ", source.type:string);
     }
@@ -354,7 +354,7 @@ module SharedObject {
        The result type preserves nilability of the argument type.
        If the argument is non-nilable, it must be recognized by the compiler
        as an expiring value. */
-    deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
+    //deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
     inline proc type create(pragma "nil from arg" in take: owned) {
       var result : shared = take;
       return result;
@@ -362,7 +362,7 @@ module SharedObject {
 
     /* Creates a new `shared` class reference to the argument.
        The result has the same type as the argument. */
-deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
+    //deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
     inline proc type create(pragma "nil from arg" in src: shared) {
       return src;
     }
@@ -374,7 +374,7 @@ deprecated "'shared.create' is deprecated. Please use the assignment operator '=
        It is an error to directly delete the class instance
        after passing it to `shared.create()`. */
     pragma "unsafe"
-deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
+    //deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
     inline proc type create(pragma "nil from arg" p : unmanaged) {
       // 'result' may have a non-nilable type
       var result: (p.type : shared);
@@ -639,11 +639,11 @@ deprecated "'shared.create' is deprecated. Please use the assignment operator '=
     if p != nil then
       rc = new unmanaged ReferenceCount();
 
-    var tmp:t;
+    var tmp: shared t.chpl_t?;
     tmp.chpl_p = p;
     tmp.chpl_pn = rc;
 
-    return tmp;
+    return try! tmp:shared t.chpl_t;
   }
 
   pragma "no doc"
