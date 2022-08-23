@@ -56,6 +56,7 @@
 #include "chpl/util/filesystem.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/framework/global-strings.h"
+#include "chpl/resolution/scope-queries.h"
 
 
 using namespace chpl;
@@ -69,9 +70,8 @@ std::string commentStyle_;
 bool writeStdOut_ = false;
 std::string outputDir_;
 bool textOnly_ = false;
-std::string CHPL_HOME = getenv("CHPL_HOME");
+std::string CHPL_HOME;
 bool processUsedModules_ = false;
-std::string docsWorkingDir_;
 const std::string templateUsage = R"RAW(**Usage**
 
 .. code-block:: chapel
@@ -359,8 +359,9 @@ static std::ostream& indentStream(std::ostream& os, size_t num) {
 // Remove the leading+trailing commentStyle (/*+, *+/)
 // Dedent by the least amount of leading whitespace
 // Return is a list of strings which may have newline chars
-static std::vector<std::string> prettifyComment(const std::string& comment,
-                                                const std::string& commentStyle) {
+static std::string prettifyComment(const std::string& comment,
+                                       const std::string& commentStyle,
+                                       std::vector<std::string>& lines) {
   std::string ret = comment;
   std::string commentEnd = commentStyle;
   reverse(commentEnd.begin(), commentEnd.end());
@@ -374,18 +375,18 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
       //  we have to recognize this and handle it when we have the
       //  filename and line information to report the comment's location
       //  fixing this will satisfy chpldoc/compflags/comment/badClose.doc.chpl
-      std::cerr << "warning: chpldoc comment not closed, ignoring comment: "
-                   "This comment is not closed properly" << std::endl;
-      return {};
+      auto msg = "chpldoc comment not closed, ignoring comment: "
+                 "This comment is not closed properly\n";
+      return msg;
     }
     ret.erase(l - styleLen, styleLen);
     ret.erase(0, styleLen);
   } else {
-    return {};
+    return "";
   }
 
-  auto lines = splitLines(ret);
-  if (lines.empty()) return lines;
+  lines = splitLines(ret);
+  if (lines.empty()) return "";
 
   size_t toTrim = std::numeric_limits<size_t>::max();
   // exclude the first line from the minimum
@@ -408,7 +409,7 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
       it->erase(0, toTrim);
   }
 
-  return lines;
+  return "";
 }
 
 
@@ -417,9 +418,13 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
  *  leading whitespace. Returns an empty string if there are no non-blank lines.
  */
 static std::string commentSynopsis(const Comment* c,
-                                   const std::string& commentStyle) {
+                                   const std::string& commentStyle,
+                                   std::string& errMsg) {
   if (!c) return "";
-  auto lines = prettifyComment(c->str(), commentStyle);
+
+  std::vector<std::string> lines;
+  errMsg = prettifyComment(c->str(), commentStyle, lines);
+
   if (lines.empty()) return "";
   uint i = 0;
   // skip empty lines for synopsis collection
@@ -893,8 +898,6 @@ struct RstSignatureVisitor {
   }
 
   /* Numeric Literals */
-  // TODO: Truncate precision of floating point literals to
-  //  match chpldoc's precision.
   bool enter(const IntLiteral* l)  { return enterLiteral(l); }
   bool enter(const UintLiteral* l) { return enterLiteral(l); }
   bool enter(const RealLiteral* l) { return enterLiteral(l); }
@@ -1086,14 +1089,15 @@ struct RstResultBuilder {
   static const int commentIndent = 3;
   int indentDepth_ = 1;
 
-  bool showComment(const Comment* comment, bool indent=true) {
+  bool showComment(const Comment* comment, std::string& errMsg, bool indent=true) {
     if (!comment || comment->str().substr(0, 2) == "//") {
       os_ << '\n';
       return false;
     }
     int addDepth = textOnly_ ? 1 : 0;
     int indentChars = indent ? (addDepth + indentDepth_) * commentIndent : 0;
-    auto lines = prettifyComment(comment->str(), commentStyle);
+    std::vector<std::string> lines;
+    errMsg = prettifyComment(comment->str(), commentStyle, lines);
     if (!lines.empty())
       os_ << '\n';
     for (const auto& line : lines) {
@@ -1108,7 +1112,16 @@ struct RstResultBuilder {
     return true;
   }
   bool showComment(const AstNode* node, bool indent=true) {
-    bool commentShown = showComment(previousComment(context_, node->id()), indent);
+    std::string errMsg;
+    auto lastComment = previousComment(context_, node->id());
+    bool commentShown = showComment(lastComment, errMsg, indent);
+    if (!errMsg.empty()) {
+      // process the warning about comments
+      auto br = parseFileContainingIdToBuilderResult(context_, node->id());
+      auto loc = br->commentToLocation(lastComment);
+      auto err = ErrorMessage(ErrorMessage::Kind::WARNING, loc, errMsg);
+      context_->report(err);
+    }
     if (commentShown && ((textOnly_ && !node->isModule()) || !textOnly_)) os_ << "\n";
     return commentShown;
   }
@@ -1122,7 +1135,6 @@ struct RstResultBuilder {
     node->traverse(ppv);
     if (!textOnly_) os_ << "\n";
     bool commentShown = showComment(node, indentComment);
-
     // TODO: Fix all this because why are we checking for specific node types
     //  just to add a newline?
     if (commentShown && !textOnly_ && (node->isEnum() ||
@@ -1167,40 +1179,13 @@ struct RstResultBuilder {
   }
 
   void visitChildren(const AstNode* n) {
-    std::vector<RstResult*> subModules;
     for (auto child : n->children()) {
-      if (auto &r = rstDoc(context_, child->id())) {
-        if (child->isModule()) {
-          if (!writeStdOut_) {
-            // lookup the module path
-            std::vector<UniqueString> modulePath = getModulePath(context_,
-                                                                 child->id());
-            modulePath.pop_back();
-            std::string parentPath;
-            for (auto p : modulePath) {
-              parentPath += p.str();
-              if (p != modulePath.back()) {
-                parentPath += "/";
-              }
-            }
-            std::string outdir = docsWorkingDir_ + "/" + parentPath;
-            std::string workingDir = filenameFromModuleName(parentPath, outdir);
-            r->outputModule(outdir, child->toModule()->name().str(),
-                            indentPerDepth);
-
-          } else {
-            subModules.push_back(r.get());
-          }
-        } else {
+      // don't visit child modules as they were gathered earlier
+      if (!child->isModule()) {
+        if (auto &r = rstDoc(context_, child->id())) {
           children_.push_back(r.get());
         }
       }
-    }
-    // add the submodules to the end so that all the fields/functions of
-    // an individual module are printed together, and not interrupted by
-    // a submodule's declaration
-    for (auto subModule : subModules) {
-      children_.push_back(subModule);
     }
   }
 
@@ -1249,17 +1234,18 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Module* m) {
     bool includedByDefault = false;
-    if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m))
-      return {};
 
-    bool isOnlyIncludes = true && m->numStmts() > 0;
+    // see if we have any included modules we should add a submodule toctree for
+    bool hasIncludes = false;
     for (auto stmt : m->stmts()) {
-      if (!stmt->isInclude()) {
-        isOnlyIncludes = false;
-        break;
+      if (auto inc = stmt->toInclude()) {
+        auto incMod = getIncludedSubmodule(context_, inc->id());
+        if (!isNoDoc(incMod)) {
+          hasIncludes = true;
+          break;
+        }
       }
     }
-
     // lookup the module path
     std::vector<UniqueString> modulePath = getModulePath(context_, m->id());
     std::string moduleName;
@@ -1298,7 +1284,15 @@ struct RstResultBuilder {
       } else {
         lastComment = previousComment(context_, m->id());
         if (lastComment) {
-          auto synopsis = commentSynopsis(lastComment, commentStyle);
+          std::string errMsg;
+          auto synopsis = commentSynopsis(lastComment, commentStyle, errMsg);
+          if (!errMsg.empty()) {
+            // process the warning about comments
+            auto br = parseFileContainingIdToBuilderResult(context_, m->id());
+            auto loc = br->commentToLocation(lastComment);
+            auto err = ErrorMessage(ErrorMessage::Kind::WARNING, loc, errMsg);
+            context_->report(err);
+          }
           if (!synopsis.empty()) {
             indentStream(os_, 1 * indentPerDepth);
             os_ << ":synopsis: " << synopsis
@@ -1322,7 +1316,6 @@ struct RstResultBuilder {
           indentStream(os_, 1 * indentPerDepth);
           os_ << "An explicit ``use`` statement is not necessary.";
           os_ << std::endl;
-          // os_ << std::endl;
         } else {
           os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
         }
@@ -1333,7 +1326,7 @@ struct RstResultBuilder {
         lastComment = previousComment(context_, m->id());
       }
 
-    if (hasSubmodule(m) || isOnlyIncludes) {
+    if (hasSubmodule(m) || hasIncludes) {
       moduleName = m->name().c_str();
       if (!textOnly_) {
         os_ << "\n";
@@ -1469,28 +1462,6 @@ struct RstResultBuilder {
     return getResult();
   }
 
-  // TODO: Finish implementing this, if needed to process used modules
-  // owned<RstResult> visit(const Use* u) {
-  //   if (!processUsedModules_ || u->visibility() == chpl::uast::Decl::PRIVATE)
-  //     return {};
-  //   // need to locate the source file for module named in Use statement
-  //   // then parse it and generate docs for it
-  //   for (auto vis : u->visibilityClauses()) {
-  //     auto sym = vis->symbol();
-
-  //     if (sym->isIdentifier()) {
-  //       if (auto usedMod = getToplevelModule(context_,
-  //                                            sym->toIdentifier()->name())) {
-  //         std::string name = usedMod->name().str();
-  //         if (auto& r = rstDoc(context_, usedMod->id())) {
-  //           r->outputModule(outputDir_, name, indentPerDepth);
-  //         }
-  //       }
-  //     }
-  //   }
-  //   return getResult(true);
-  // }
-
   // TODO all these nullptr gets stored in the query map... can we avoid that?
   owned<RstResult> visit(const AstNode* n) { return {}; }
 
@@ -1498,6 +1469,71 @@ struct RstResultBuilder {
     return std::make_unique<RstResult>(os_.str(), children_, indentChildren);
   }
 };
+
+
+struct GatherModulesVisitor {
+  std::set<ID> modules;
+  Context* context_;
+  GatherModulesVisitor(Context* context) {
+      context_ = context;
+  }
+
+  void handleUseOrImport(const AstNode* node) {
+    if (processUsedModules_) {
+      auto scope = resolution::scopeForId(context_, node->id());
+      auto used = resolution::findUsedImportedModules(context_, scope);
+      for (auto id: used) {
+        if (idIsInBundledModule(context_, id)) {
+          continue;
+        }
+        // only add it and visit its children if we haven't seen it already
+        if (modules.find(id) == modules.end()) {
+          modules.insert(id);
+          auto ast = idToAst(context_, id);
+          ast->traverse(*this);
+        }
+      }
+    }
+  }
+
+  bool enter(const Module* m) {
+    if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m)) {
+      return false;
+    }
+    modules.insert(m->id());
+    return true;
+  }
+
+  // will handle a use or import multiple times in the case that a module has
+  // multiple use statements.
+  // every time handleUseOrImport is called, it will try to add the module
+  // to the set
+  void exit(const Use* node) {
+    handleUseOrImport(node);
+  }
+
+  void exit(const Import* node) {
+    handleUseOrImport(node);
+  }
+
+  void exit(const Include* node) {
+    if (auto mod = getIncludedSubmodule(context_, node->id())) {
+      if (!isNoDoc(mod)) {
+        modules.insert(mod->id());
+      }
+    }
+  }
+
+  bool enter(const AstNode* n) {
+    return true;
+  }
+
+  void exit(const AstNode* n) {
+    // do nothing
+  }
+
+};
+
 
 /**
  Visitor that collects a mapping from ID -> comment
@@ -1556,16 +1592,24 @@ struct CommentVisitor {
  because the doc comment for a Module is its previous sibling
  */
 static const CommentMap&
-commentMap(Context* context, UniqueString path) {
-  QUERY_BEGIN(commentMap, context, path);
+commentMap(Context* context, ID id) {
+
+  // TODO:
+  //  redundant work done if we read through a parent module and read its submodule symbols
+  //  then later we read the submodule symbols without the parent as well
+  // Possible solution -> write into helper function that calls a query (commentMapQuery) and (commentMap)
+  // ID has symbol path, so we can compute the parent symbol from there by getting it from ID function to split path
+  // if it is !empty, compute all the parent ids, loop over from rootest to leafest
+  // builderResultForID (is the id we care about is IN the builder result)
+  // if it is in the BR, use the comment map associated with the BR
+  // otherwise call commentMap to generate a new one
+  QUERY_BEGIN(commentMap, context, id);
   CommentMap result;
-  UniqueString emptyParent;
-  const auto& builderResult = parseFileToBuilderResult(context,
-                                                       path,
-                                                       emptyParent);
+  const auto& builderResult = parseFileContainingIdToBuilderResult(context,
+                                                       id);
 
   CommentVisitor cv{result};
-  for (const auto& ast : builderResult.topLevelExpressions()) {
+  for (const auto& ast : builderResult->topLevelExpressions()) {
     ast->traverse(cv);
   }
 
@@ -1581,10 +1625,8 @@ static const Comment* const& previousComment(Context* context, ID id) {
   const Comment* result = nullptr;
   UniqueString modPath;
   UniqueString parentPath;
-
   assert(context->filePathForId(id, modPath, parentPath));
-
-  const auto& map = commentMap(context, modPath);
+  const auto& map = commentMap(context, id);
   auto it = map.find(id);
   if (it != map.end()) {
     result = it->second;
@@ -1720,7 +1762,6 @@ struct Args {
   bool dump = false;
   bool textOnly = false;
   std::string outputDir;
-  // TODO: Do we want to continue supporting this feature?
   bool processUsedModules = false;
   std::string author;
   std::string commentStyle =  "/*";
@@ -1854,9 +1895,12 @@ int main(int argc, char** argv) {
   }
 
 
-  // update CHPL_HOME if we got one from the command-line args
+  // update CHPL_HOME if we got one from the command-line args, or use the
+  // environment variable.
   if (!args.chplHome.empty()) {
     CHPL_HOME = args.chplHome;
+  } else {
+    CHPL_HOME = getenv("CHPL_HOME");
   }
 
   // This is the final location for the output format (e.g. the html files.).
@@ -1903,17 +1947,37 @@ int main(int argc, char** argv) {
   }
 
   outputDir_ = docsRstDir;
-  // TODO: Do we need to do this if we're building some other docs? Seems like
-  // these are project specific directories.
+
   std::string modRoot = CHPL_HOME + "/modules";
   std::string internal = modRoot + "/internal";
-  setInternalModulePath(ctx, UniqueString::get(ctx, internal));
   std::string bundled = modRoot + "/";
-  setBundledModulePath(ctx, UniqueString::get(ctx, bundled));
 
+  // TODO: Get these values dynamically
+  chpl::parsing::setupModuleSearchPaths(ctx,
+                                      CHPL_HOME,
+                                      false, //minimal modules
+                                      "flat", //locale model
+                                      false, //task tracking
+                                      "qthreads", //CHPL_TASKS,
+                                      "none", //CHPL_COMM,
+                                      "linux64-x86_64-llvm", // CHPL_SYS_MODULES_SUBDIR,
+                                      "", //chpl_module_path,
+                                      {},
+                                      args.files);
+  GatherModulesVisitor gather(ctx);
+
+  // evaluate all the files and gather the modules
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
     UniqueString emptyParent;
+
+    std::vector<UniqueString> paths;
+    size_t location = cpath.rfind("/");
+    paths.push_back(UniqueString::get(ctx,"./"));
+    if (location != std::string::npos) {
+      paths.push_back(UniqueString::get(ctx, cpath.substr(0, location + 1)));
+    }
+    setModuleSearchPath(ctx, paths);
 
     // TODO: Change which query we use to parse files as suggested by @mppf
     // parseFileContainingIdToBuilderResult(Context* context, ID id);
@@ -1933,59 +1997,53 @@ int main(int argc, char** argv) {
             e.kind() == ErrorMessage::Kind::SYNTAX) {
               std::cerr << "Error parsing " << path << ": "
                         << builderResult.error(0).message() << "\n";
+              context.report(e);
               return 1;
             }
         else if (e.kind() == ErrorMessage::Kind::WARNING) {
-              std::cerr << e.location(ctx).path() << ":"
-                        << e.location(ctx).line() << ": warning: "
-                        << builderResult.error(0).message() << "\n";
+              context.report(e);
             }
       }
     }
-
-    if (!args.stdout) {
-      std::string name;
-      for (const auto& ast : builderResult.topLevelExpressions()) {
-        if (ast->isModule())
-          name = ast->toModule()->name().str();
-
-        if (args.dump) {
-          ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-        }
-        // TODO: FIXME! this is a hack to get the full directory path that is
-        //  needed if/when we encounter any submodules while processing this
-        //  module, because the submodules should be in a directory relative
-        //  to the module, and if the module itself has a leading path, then
-        //  the submodule was being orphaned in a directory one level up.
-        //  for example: chpldoc modules/packages/BLAS.chpl
-        //  should create a directory modules/packages/BLAS/C_BLAS.rst
-        //  but was instead creating modules/BLAS/C_BLAS.rst
-        docsWorkingDir_ = filenameFromModuleName(cpath, outputDir_);
-
-        if (auto& r = rstDoc(ctx, ast->id())) {
-          r->outputModule(docsWorkingDir_, name, indentPerDepth);
-        }
-      }
-    }
-    else {
-      for (const auto& ast : builderResult.topLevelExpressions()) {
-        if (args.dump) {
-          ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-        }
-        if (auto& r = rstDoc(ctx, ast->id())) {
-          r->output(std::cout, indentPerDepth);
-        }
-      }
-    }
-
-    if (args.dump) {
-      const auto& map = commentMap(ctx, path);
-      for (const auto& pair : map) {
-        std::cerr << pair.first.symbolPath().c_str() << " "
-                  << (pair.second ? pair.second->str() : "<nullptr>") << "\n";
-      }
+    // gather all the top level and used/imported/included module IDs
+    for (const auto& ast : builderResult.topLevelExpressions()) {
+      ast->traverse(gather);
     }
   }
+
+  for (auto id : gather.modules) {
+    if (auto& r = rstDoc(ctx, id)) {
+      if (!args.stdout) {
+        // given a module ID we can get the path to the file that we parsed
+        UniqueString filePath;
+        UniqueString parentSymbol;
+        ctx->filePathForId(id, filePath, parentSymbol);
+        std::string moduleName = id.symbolName(ctx).str();
+        std::string parentPath;
+        auto pathVec = id.expandSymbolPath(ctx, id.symbolPath());
+        // remove last entry
+        pathVec.pop_back();
+        for (auto path : pathVec) {
+          for (int i = 0; i <= path.second; i++) {
+            if (path.first != id.symbolName(ctx)) {
+              parentPath += unescapeStringId(path.first.str()) + "/";
+            }
+          }
+        }
+        std::string docsWorkingDir_ = filenameFromModuleName(filePath.c_str(), outputDir_);
+        std::string outdir = docsWorkingDir_;
+        // TODO: This is an ugly hack to handle included module paths
+        if (parentSymbol.isEmpty()) {
+          outdir += "/" + parentPath;
+        }
+
+        // need to check for a parent module in the path and add it to the directory structure if it exists
+        r->outputModule(outdir, moduleName, indentPerDepth);
+      } else {
+        r->output(std::cout, indentPerDepth);
+      }
+     }
+   }
 
   if (!textOnly_ && !args.noHTML) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,args.projectVersion,
