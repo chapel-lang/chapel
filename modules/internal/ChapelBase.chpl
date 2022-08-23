@@ -1479,19 +1479,17 @@ module ChapelBase {
   inline operator :(x:chpl_anyreal, type t:chpl_anyreal)
     return __primitive("cast", t, x);
 
+  @unstable "enum-to-bool casts are likely to be deprecated in the future"
   inline operator :(x:enum, type t:chpl_anybool) throws {
-    if chpl_warnUnstable {
-      compilerWarning("enum-to-bool casts are likely to be deprecated in the future");
-    }    return x: int: bool;
+    return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
   // is generated for each enum in buildDefaultFunctions
   inline operator :(x: enum, type t:enum) where x.type == t
     return x;
+
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anyreal) throws {
-    if chpl_warnUnstable {
-      compilerWarning("enum-to-float casts are likely to be deprecated in the future");
-    }
     return x: int: real;
   }
 
@@ -1638,6 +1636,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anycomplex)
     return (x.re, x.im):t;
 
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anycomplex) throws
     return (x:real, 0):t;
 
@@ -1659,6 +1658,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anyimag)
     return __primitive("cast", t, x.im);
 
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anyimag)  throws
     return x:real:imag;
 

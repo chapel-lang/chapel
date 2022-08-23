@@ -1793,12 +1793,10 @@ module ChapelDomain {
     }
 
     pragma "no doc"
+    @unstable "bulkAdd() is subject to change in the future."
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
-      if chpl_warnUnstable then compilerWarning(
-        "bulkAdd() is subject to change in the future.");
-
       if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
@@ -1829,18 +1827,11 @@ module ChapelDomain {
      automatically commit indices to the sparse domain as the buffer fills up.
      Indices are also committed when the buffer goes out of scope.
 
-       .. note::
-
-          The interface and implementation are not stable and may change in the
-          future.
-
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
+    @unstable "makeIndexBuffer() is subject to change in the future."
     inline proc makeIndexBuffer(size: int) {
-      if chpl_warnUnstable then compilerWarning(
-        "makeIndexBuffer() is subject to change in the future.");
-
       return _value.dsiMakeIndexBuffer(size);
     }
 
@@ -1866,11 +1857,6 @@ module ChapelDomain {
          addition should occur is unknown. We expect this to change in the
          future.
 
-       .. note::
-
-          The interface and implementation are not stable and may change in the
-          future.
-
        :arg inds: Indices to be added. ``inds`` must be an array of
                   ``rank*idxType``, except for 1-D domains, where it must be
                   an array of ``idxType``.
@@ -1892,12 +1878,10 @@ module ChapelDomain {
        :returns: Number of indices added to the domain
        :rtype: int
     */
+    @unstable "bulkAdd() is subject to change in the future."
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
-      if chpl_warnUnstable then compilerWarning(
-        "bulkAdd() is subject to change in the future.");
-
       if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
