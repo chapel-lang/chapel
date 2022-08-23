@@ -261,7 +261,7 @@ static Collector customHelper(std::string program, Context* context, bool fail =
   return pc;
 }
 
-void kindHelper(IntentList kind) {
+static void kindHelper(IntentList kind) {
   Context* context = getNewContext();
 
   std::string program;
@@ -296,7 +296,7 @@ void kindHelper(IntentList kind) {
   }
 }
 
-void testKinds() {
+static void testKinds() {
   kindHelper(IntentList::REF);
   kindHelper(IntentList::CONST_INTENT);
   kindHelper(IntentList::CONST_REF);
@@ -304,7 +304,7 @@ void testKinds() {
   kindHelper(IntentList::CONST_IN);
 }
 
-void testReduce() {
+static void testReduce() {
   Context* context = getNewContext();
   // Very simple test focusing on scope resolution
   std::string program = R"""(
