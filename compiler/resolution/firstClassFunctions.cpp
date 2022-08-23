@@ -71,7 +71,7 @@ using SharedFcfSuperInfo = std::shared_ptr<FcfSuperInfo>;
 
 static std::map<const char*, SharedFcfSuperInfo> superNameToInfo;
 static std::map<Type*, SharedFcfSuperInfo> typeToInfo;
-static std::map<FnSymbol*, FnSymbol*> payloadToSharedChildFactory;
+static std::map<FnSymbol*, FnSymbol*> payloadToSharedParentFactory;
 static std::map<FnSymbol*, bool> payloadToResolved;
 static const char* superTypePrefix = "chpl_fcf_";
 static VarSymbol* dummyFcfError = nullptr;
@@ -162,9 +162,9 @@ attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
                             FnSymbol* payload);
 
 static FnSymbol*
-attachChildSharedFactory(const SharedFcfSuperInfo info,
-                         AggregateType* child,
-                         FnSymbol* payload);
+insertSharedParentFactory(const SharedFcfSuperInfo info,
+                          AggregateType* child,
+                          FnSymbol* payload);
 
 /************************************* | *************************************
 *                                                                            *
@@ -295,9 +295,9 @@ Expr* fcfWrapperInstanceFromPrimCall(CallExpr *call) {
   }
 
   // Reuse cached FCF wrapper if it already exists.
-  if (payloadToSharedChildFactory.find(payload) !=
-      payloadToSharedChildFactory.end()) {
-    auto ret = new CallExpr(payloadToSharedChildFactory[payload]);
+  if (payloadToSharedParentFactory.find(payload) !=
+      payloadToSharedParentFactory.end()) {
+    auto ret = new CallExpr(payloadToSharedParentFactory[payload]);
     return ret;
   }
 
@@ -312,11 +312,11 @@ Expr* fcfWrapperInstanceFromPrimCall(CallExpr *call) {
   std::ignore = attachChildThis(info, child, payload);
   std::ignore = attachChildWriteThis(info, child, payload);
   std::ignore = attachChildPayloadPtrGetter(info, child, payload);
-  auto wrapper = attachChildSharedFactory(info, child, payload);
+  auto wrapper = insertSharedParentFactory(info, child, payload);
 
   CallExpr* ret = new CallExpr(wrapper);
 
-  payloadToSharedChildFactory[payload] = wrapper;
+  payloadToSharedParentFactory[payload] = wrapper;
 
   return ret;
 }
@@ -327,12 +327,11 @@ Expr* fcfRawFunctionPointerFromPrimCall(CallExpr* call) {
   UnresolvedSymExpr* use = toUnresolvedSymExpr(call->get(1));
   FnSymbol* payload = findFunctionFromNameMaybeError(use, call);
 
-  if (!payload) {
+  if (!payload || !checkAndResolveFunction(payload, use)) {
     auto dummy = getDummyFcfErrorInsertedAtProgram(call);
     return new SymExpr(dummy);
   }
 
-  // TODO: Will this conflict with our new lowering?
   auto ret = new SymExpr(payload);
 
   return ret;
@@ -598,24 +597,27 @@ attachSuperRetTypeGetter(AggregateType* super, Type* retType) {
   ret->addFlag(FLAG_INLINE);
   ret->addFlag(FLAG_COMPILER_GENERATED);
   ret->retTag = RET_TYPE;
-  ret->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
-                                        "_mt",
-                                        dtMethodToken));
+  ret->setMethod(true);
+  ret->addFlag(FLAG_METHOD_PRIMARY);
+  ret->addFlag(FLAG_NO_PARENS);
+  ret->cname = astr("chpl_get_",
+                    super->symbol->cname,
+                    "_",
+                    ret->cname);
+
+  auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+  ret->insertFormalAtTail(mt);
+
   auto receiver = new ArgSymbol(INTENT_BLANK, "this", super);
   receiver->addFlag(FLAG_ARG_THIS);
   ret->insertFormalAtTail(receiver);
+  ret->_this = receiver;
+
   ret->insertAtTail(new CallExpr(PRIM_RETURN, retType->symbol));
+
   super->methods.add(ret);
   super->symbol->defPoint->insertBefore(new DefExpr(ret));
   normalize(ret);
-  ret->setMethod(true);
-  ret->addFlag(FLAG_METHOD_PRIMARY);
-  ret->name = astr("chpl_get_",
-                   super->symbol->name,
-                   "_",
-                   ret->name);
-  ret->addFlag(FLAG_NO_PARENS);
-  ret->_this = receiver;
 
   return ret;
 }
@@ -859,7 +861,7 @@ attachChildWriteThis(const SharedFcfSuperInfo info,
 
   ret->body->useListAdd(new UseStmt(ioModule, "", false));
   ret->getModule()->moduleUseAdd(ioModule);
-  auto str = new_StringSymbol(payload->name);
+  auto str = new_StringSymbol(astr(payload->name, "()"));
   auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("writeIt"),
                                 str);
   ret->insertAtTail(new CallExpr(writeCall));
@@ -905,9 +907,9 @@ attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
 }
 
 static FnSymbol*
-attachChildSharedFactory(const SharedFcfSuperInfo info,
-                         AggregateType* child,
-                         FnSymbol* payload) {
+insertSharedParentFactory(const SharedFcfSuperInfo info,
+                          AggregateType* child,
+                          FnSymbol* payload) {
   AggregateType* super = info->type;
   FnSymbol* ret = new FnSymbol("wrapper");
 

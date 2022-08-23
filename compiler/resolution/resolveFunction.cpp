@@ -1011,9 +1011,9 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
   bool skipArray = doNotUnaliasArray(fn);
   bool skipTuple = doNotChangeTupleTypeRefLevel(fn, true);
 
-  if (skipArray && skipTuple)
-    // neither tuple nor array unref is necessary, so return
-    return;
+  // neither tuple nor array unref is necessary, so return
+  if (skipArray && skipTuple) return;
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
 
   Symbol* ret = fn->getReturnSymbol();
 
@@ -1883,8 +1883,10 @@ static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
 // resolveSpecifiedReturnType handles the case that the type is
 // specified explicitly.
 void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
 
-  bool isIterator = fn->isIterator(); // TODO - do we need || fn->iteratorInfo != NULL;
+  // TODO - do we need || fn->iteratorInfo != NULL;
+  bool isIterator = fn->isIterator();
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;
 
@@ -2008,7 +2010,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 }
 
 void resolveReturnType(FnSymbol* fn) {
-  return resolveReturnTypeAndYieldedType(fn, NULL);
+  resolveReturnTypeAndYieldedType(fn, NULL);
 }
 
 

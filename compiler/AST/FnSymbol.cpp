@@ -101,7 +101,7 @@ void FnSymbol::verify() {
   if (_this && _this->defPoint->parentSymbol != this)
     INT_FATAL(this, "Each method must contain a 'this' declaration.");
 
-  if (normalized) {
+  if (!this->hasFlag(FLAG_NO_FN_BODY) && normalized) {
     CallExpr* last = toCallExpr(body->body.last());
 
     if (last == NULL || last->isPrimitive(PRIM_RETURN) == false) {
