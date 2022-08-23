@@ -119,7 +119,7 @@ proc test() {
   run(new shared C?());
 
   // borrowed, OK
-  run((new owned C?())).borrow();
+  run((new owned C?()).borrow());
 
   // unmanaged, OK
   run(new unmanaged C?());

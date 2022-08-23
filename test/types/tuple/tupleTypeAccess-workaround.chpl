@@ -11,7 +11,7 @@ class ExcellentStudent: Student {
 }
 
 class AdvancedBasketWeaving {
-  var acceptableStudentTypes = ((new owned GoodStudent(), new borrowed ExcellentStudent())).borrow();
+  var acceptableStudentTypes = ((new owned GoodStudent()).borrow(), (new owned ExcellentStudent()).borrow());
 
   proc accept(student: borrowed Student) {
     for param i in 0..acceptableStudentTypes.size-1 {

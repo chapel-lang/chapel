@@ -7,4 +7,4 @@ proc foo(y: borrowed C, x: borrowed C ...y.k) {
   writeln(x);
 }
 
-foo((new owned C(2), new borrowed C(1), new borrowed C(3))).borrow();
+foo((new owned C(2)).borrow(), (new owned C(1)).borrow(), (new owned C(3)).borrow());

@@ -14,11 +14,12 @@ proc main() {
   compilerWarning("new owned MyClass() : " + b.type:string, errorDepth=0);
 
   var c = (new owned MyClass()).borrow();
-  compilerWarning("(new owned MyClass() : " + c.type:string, errorDepth=0)).borrow();
+  compilerWarning("(new owned MyClass()).borrow() : " + c.type:string, errorDepth=0);
 
   factory("MyClass", MyClass);
 
   factory("owned MyClass", owned MyClass);
 
-  factory("borrowed MyClass", borrowed MyClass); // lifetime error in this call
+  // illegal to make a 'new borrowed MyClass'
+  //factory("borrowed MyClass", borrowed MyClass); // lifetime error in this call
 }

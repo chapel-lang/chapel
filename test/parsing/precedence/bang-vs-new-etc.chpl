@@ -149,8 +149,8 @@ proc main {
   var z19d = new C(): unmanaged class?;
   check("z19d = new C(): unmanaged class?", z19d, "unmanaged C?");
 
-  var z19e = (new owned C() : unmanaged class?).borrow();
-  check("z19e = (new owned C() :unmanaged class?", z19e, "unmanaged C?")).borrow();
+  var z19e = (new owned C()).borrow() : unmanaged class?;
+  check("z19e = (new owned C()).borrow() :unmanaged class?", z19e, "unmanaged C?");
 
   // '.' binds more tightly than 'new'
   // param z = new C().meth;  -- error: C.meth is not a type method

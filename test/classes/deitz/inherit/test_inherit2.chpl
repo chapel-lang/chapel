@@ -10,7 +10,7 @@ proc foo(c : borrowed C) {
   writeln(c.x);
 }
 
-var c : borrowed C = (new owned C(), d : borrowed D = new borrowed D()).borrow();
+var c : borrowed C = (new owned C()).borrow(), d : borrowed D = (new owned D()).borrow();
 
 writeln(c);
 writeln(d);

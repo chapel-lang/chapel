@@ -23,7 +23,7 @@ class C: B {
 }
 
 proc main() {
-  var obj = (new owned A(new borrowed C() )).borrow();
+  var obj = (new owned A((new owned C()).borrow())).borrow();
   obj.print();
   obj.printv(1);
 }

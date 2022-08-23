@@ -29,7 +29,7 @@ class GenericCollection {
 
 {
   var c:borrowed GenericCollection(borrowed MyClass)
-        = (new owned GenericCollection(new borrowed MyClass())).borrow();
+        = (new owned GenericCollection((new owned MyClass()).borrow())).borrow();
   writeln("(borrowed) c ", c.type:string, " has field ", c.field.type:string);
 }
 

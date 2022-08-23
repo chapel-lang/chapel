@@ -11,7 +11,7 @@ class D: P {
 }
 
 // OK: var ps: [1..2] P = (C():P, D():P);
-var ps: [1..2] borrowed P = ((new owned C(), new borrowed D())).borrow();
+var ps: [1..2] borrowed P = ((new owned C()).borrow(), (new owned D()).borrow());
 
 for i in ps do
     writeln(i.f());

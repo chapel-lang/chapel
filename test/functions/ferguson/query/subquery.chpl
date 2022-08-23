@@ -17,6 +17,6 @@ proc sub(arg: borrowed MyClass(borrowed SubClass(?t))) {
   writeln(t:string);
 }
 
-qrr((new owned MyClass(new borrowed SubClass(1)))).borrow();
-grr((new owned SubClass(1))).borrow();
-sub((new owned MyClass(new borrowed SubClass(2)))).borrow();
+qrr((new owned MyClass((new owned SubClass(1)).borrow())).borrow());
+grr((new owned SubClass(1)).borrow());
+sub((new owned MyClass((new owned SubClass(2)).borrow())).borrow());

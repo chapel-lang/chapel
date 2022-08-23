@@ -20,10 +20,10 @@ proc g(x: Wrapper(borrowed GenericClass(?))) {
 }
 
 
-var a = new Wrapper((new owned GenericClass(int, 3))).borrow();
-var b = new Wrapper((new owned GenericClass(real, 4))).borrow();
-var c = new Wrapper((new owned OtherGenericClass(int, 3))).borrow();
-var d = new Wrapper((new owned OtherGenericClass(real, 4))).borrow();
+var a = new Wrapper((new owned GenericClass(int, 3)).borrow());
+var b = new Wrapper((new owned GenericClass(real, 4)).borrow());
+var c = new Wrapper((new owned OtherGenericClass(int, 3)).borrow());
+var d = new Wrapper((new owned OtherGenericClass(real, 4)).borrow());
 
 
 // these should work

@@ -31,6 +31,6 @@ proc testit(type t) {
 }
 
 testit(unmanaged C);
-testit(borrowed C);
+//testit(borrowed C);
 testit(owned C);
 testit(shared C);

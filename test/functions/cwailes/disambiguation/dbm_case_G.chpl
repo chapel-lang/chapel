@@ -10,4 +10,4 @@ proc foo(a:?T) {
   writeln("foo2");
 }
 
-foo((new owned Bar(real))).borrow();
+foo((new owned Bar(real)).borrow());

@@ -17,9 +17,9 @@ class E : D {
   }
 }
 
-((new owned C()).goo()).borrow();
-((new owned D()).goo()).borrow();
-((new owned E()).goo()).borrow();
+(new owned C()).borrow().goo();
+(new owned D()).borrow().goo();
+(new owned E()).borrow().goo();
 
-((new owned D()).foo()).borrow();
-((new owned E()).foo()).borrow();
+(new owned D()).borrow().foo();
+(new owned E()).borrow().foo();

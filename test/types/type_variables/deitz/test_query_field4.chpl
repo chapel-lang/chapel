@@ -21,5 +21,5 @@ proc foo(c: borrowed C(real, ?tt)) {
 
 }
 
-foo((new owned C(int, real))).borrow();
-foo((new owned C(real, int))).borrow();
+foo((new owned C(int, real)).borrow());
+foo((new owned C(real, int)).borrow());

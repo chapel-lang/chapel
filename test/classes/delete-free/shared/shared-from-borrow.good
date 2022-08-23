@@ -1,2 +1,3 @@
 shared-from-borrow.chpl:3: In function 'testShared':
+shared-from-borrow.chpl:5: warning: 'shared.create' is deprecated. Please use the assignment operator '=' instead
 shared-from-borrow.chpl:5: error: cannot create a 'shared' from borrowed MyClass
