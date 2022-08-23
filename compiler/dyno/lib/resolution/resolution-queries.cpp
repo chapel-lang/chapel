@@ -1730,17 +1730,15 @@ struct ReturnTypeInferrer {
     if (returnedTypes.size() == 0) {
       return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
     } else {
-      auto retType = QualifiedType();
-      bool foundCommon = commonType(context, returnedTypes,
-                                    /* useRequiredKind */ true,
-                                    (QualifiedType::Kind) returnIntent,
-                                    retType);
-      if (!foundCommon) {
+      auto retType = commonType(context, returnedTypes,
+                                   /* useRequiredKind */ true,
+                                   (QualifiedType::Kind) returnIntent);
+      if (!retType) {
         // Couldn't find common type, so return type is incorrect.
         context->error(astForErr, "could not determine return type for function");
-        retType = QualifiedType(retType.kind(), ErroneousType::get(context));
+        retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
       }
-      return retType;
+      return retType.getValue();
     }
   }
 

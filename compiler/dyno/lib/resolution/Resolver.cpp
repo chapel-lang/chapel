@@ -1426,16 +1426,14 @@ bool Resolver::enter(const uast::Conditional* cond) {
     }
     // with useRequiredKind = false, the QualifiedType::Kind argument
     // is ignored. Just pick a dummy value.
-    auto ifType = QualifiedType();
-    bool foundCommon = commonType(context, returnTypes,
+    auto ifType = commonType(context, returnTypes,
                                   /* useRequiredKind */ false,
-                                  QualifiedType::UNKNOWN,
-                                  ifType);
-    if (!foundCommon && !condType.isGenericOrUnknown()) {
+                                  QualifiedType::UNKNOWN);
+    if (!ifType && !condType.isGenericOrUnknown()) {
       // do not error if the condition type is unknown
       r.setType(typeErr(cond, "unable to reconcile branches of if-expression"));
-    } else {
-      r.setType(ifType);
+    } else if (ifType) {
+      r.setType(ifType.getValue());
     }
   }
   return false;

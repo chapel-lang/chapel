@@ -23,6 +23,8 @@
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/types/ClassTypeDecorator.h"
 
+#include "llvm/Support/Error.h"
+
 namespace chpl {
 namespace uast {
   class AstNode;
@@ -176,8 +178,8 @@ CanPassResult canPass(Context* context,
 /**
   Given a (non-empty) list of types (e.g., the types of various return statements
   in a function), determine the type, if any, that can be used to represent
-  all of them. Returns a boolean representing whether or not a common
-  type was found; if it was, the outType reference is set to said type.
+  all of them. Returns an llvm::Optional that contains the qualified type
+  if one is found, or is empty otherwise.
 
   If useRequiredKind=true is specified, the requiredKind argument is treated
   as a strict constraint on the kinds of the given types. For instance,
@@ -185,11 +187,11 @@ CanPassResult canPass(Context* context,
   result in failure to find a common type, even if the types can otherwise
   by unified.
  */
-bool commonType(Context* context,
-                const std::vector<chpl::types::QualifiedType>& types,
-                bool useRequiredKind,
-                chpl::types::QualifiedType::Kind requiredKind,
-                chpl::types::QualifiedType& outType);
+llvm::Optional<chpl::types::QualifiedType>
+commonType(Context* context,
+           const std::vector<chpl::types::QualifiedType>& types,
+           bool useRequiredKind,
+           chpl::types::QualifiedType::Kind requiredKind);
 // QualifiedType fully qualified here to prevent "reference target not found"
 // in Doxygen.
 

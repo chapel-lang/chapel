@@ -1095,8 +1095,9 @@ class KindProperties {
   bool valid() const { return isValid; }
 };
 
-static QualifiedType findByPassing(Context* context,
-                                   const std::vector<QualifiedType>& types) {
+static llvm::Optional<QualifiedType>
+findByPassing(Context* context,
+              const std::vector<QualifiedType>& types) {
   for (auto& type : types) {
     bool fitsOthers = true;
     for (auto& otherType : types) {
@@ -1109,14 +1110,14 @@ static QualifiedType findByPassing(Context* context,
     }
     if (fitsOthers) return type;
   }
-  return QualifiedType();
+  return llvm::Optional<QualifiedType>();
 }
 
-bool commonType(Context* context,
-                const std::vector<QualifiedType>& types,
-                bool useRequiredKind,
-                QualifiedType::Kind requiredKind,
-                QualifiedType& outCommonType) {
+llvm::Optional<QualifiedType>
+commonType(Context* context,
+           const std::vector<QualifiedType>& types,
+           bool useRequiredKind,
+           QualifiedType::Kind requiredKind) {
   assert(types.size() > 0);
 
   // figure out the kind
@@ -1125,8 +1126,7 @@ bool commonType(Context* context,
     if (type.isUnknown()) {
       // if any type is unknown, we can't figure out the common type,
       // but it's not an error.
-      outCommonType = QualifiedType();
-      return true;
+      return QualifiedType();
     }
     auto kind = type.kind();
     auto typeProperties = KindProperties::fromKind(kind);
@@ -1142,7 +1142,7 @@ bool commonType(Context* context,
   }
 
   // We can't reconcile the intents. Return with error.
-  if (!properties.valid()) return false;
+  if (!properties.valid()) return llvm::Optional<QualifiedType>();
   auto bestKind = properties.toKind();
 
   // Create a new list of types with their kinds adjusted.
@@ -1162,9 +1162,8 @@ bool commonType(Context* context,
   // Performance: if the types vector ever becomes very long,
   // it might be worth using a unique'd vector here.
   auto commonType = findByPassing(context, adjustedTypes);
-  if (!commonType.isUnknown()) {
-    outCommonType = std::move(commonType);
-    return true;
+  if (commonType) {
+    return commonType;
   }
 
   bool paramRequired = useRequiredKind && requiredKind == QualifiedType::PARAM;
@@ -1179,12 +1178,11 @@ bool commonType(Context* context,
     }
 
     commonType = findByPassing(context, adjustedTypes);
-    if (!commonType.isUnknown()) {
-      outCommonType = std::move(commonType);
-      return true;
+    if (commonType) {
+      return commonType;
     }
   }
-  return false;
+  return llvm::Optional<QualifiedType>();
 }
 
 } // end namespace resolution
