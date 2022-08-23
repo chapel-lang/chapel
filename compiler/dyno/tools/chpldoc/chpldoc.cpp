@@ -70,7 +70,7 @@ std::string commentStyle_;
 bool writeStdOut_ = false;
 std::string outputDir_;
 bool textOnly_ = false;
-std::string CHPL_HOME = getenv("CHPL_HOME");
+std::string CHPL_HOME;
 bool processUsedModules_ = false;
 const std::string templateUsage = R"RAW(**Usage**
 
@@ -1895,9 +1895,12 @@ int main(int argc, char** argv) {
   }
 
 
-  // update CHPL_HOME if we got one from the command-line args
+  // update CHPL_HOME if we got one from the command-line args, or use the
+  // environment variable.
   if (!args.chplHome.empty()) {
     CHPL_HOME = args.chplHome;
+  } else {
+    CHPL_HOME = getenv("CHPL_HOME");
   }
 
   // This is the final location for the output format (e.g. the html files.).
@@ -2015,9 +2018,11 @@ int main(int argc, char** argv) {
         UniqueString filePath;
         UniqueString parentSymbol;
         ctx->filePathForId(id, filePath, parentSymbol);
+        std::string moduleName = id.symbolName(ctx).str();
         std::string parentPath;
         auto pathVec = id.expandSymbolPath(ctx, id.symbolPath());
-        pathVec.pop_back(); // strip last entry - name of this module
+        // remove last entry
+        pathVec.pop_back();
         for (auto path : pathVec) {
           for (int i = 0; i <= path.second; i++) {
             if (path.first != id.symbolName(ctx)) {
@@ -2032,7 +2037,6 @@ int main(int argc, char** argv) {
           outdir += "/" + parentPath;
         }
 
-        std::string moduleName = id.symbolName(ctx).str();
         // need to check for a parent module in the path and add it to the directory structure if it exists
         r->outputModule(outdir, moduleName, indentPerDepth);
       } else {
