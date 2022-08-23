@@ -2324,7 +2324,7 @@ module ChapelBase {
       try {
       ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
       }
-      catch e: DecodeError { // let IOError propagate
+      catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
       }
     }

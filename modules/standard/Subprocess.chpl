@@ -770,7 +770,7 @@ module Subprocess {
 
     :arg buffer: if `true`, buffer input and output pipes (see above).
 
-    :throws BlockingIOError: when there weren't sufficient resources to perform
+    :throws BlockingIoError: when there weren't sufficient resources to perform
                              one of the required actions
     :throws InterruptedError: when the call was interrupted in some way.
     :throws BrokenPipeError: when a pipe for the subprocess closed early.
@@ -891,7 +891,7 @@ module Subprocess {
     of the child process as necessary while waiting for
     it to terminate.
 
-    :throws BlockingIOError: when there weren't sufficient resources to perform
+    :throws BlockingIoError: when there weren't sufficient resources to perform
                              one of the required actions
     :throws InterruptedError: when the call was interrupted in some way.
     :throws BrokenPipeError: when a pipe for the subprocess closed early.
