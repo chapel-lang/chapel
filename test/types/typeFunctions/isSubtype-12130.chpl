@@ -2,7 +2,7 @@ class Generic {
   var x;
 }
 
-var inst = new borrowed Generic(10);
+var inst = (new owned Generic(10)).borrow();
 writeln(inst.type < Generic);
 writeln(inst.type > Generic);
 

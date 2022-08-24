@@ -22,7 +22,7 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = new borrowed Child(10, 11);
+  var child = (new owned Child(10, 11)).borrow();
   writeln(child.type:string);
   writeln(child);
 }

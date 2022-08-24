@@ -1,0 +1,3 @@
+./TupleTest.chpl:6: In function 'test':
+./TupleTest.chpl:7: error: creating a 'new borrowed' type is a not allowed
+  testNilableBorrowed.chpl:8: called as test(type t = borrowed T?)

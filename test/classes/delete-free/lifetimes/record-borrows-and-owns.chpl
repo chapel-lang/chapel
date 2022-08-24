@@ -77,7 +77,7 @@ proc badF8() {
 
 
 proc test() {
-  var myborrow = new borrowed MyClass(1);
+  var myborrow = (new owned MyClass(1)).borrow();
   
   var a = makeR(myborrow);
   var b:R;

@@ -29,7 +29,7 @@ class Base {
 
 
 proc main() {
-  var c = new borrowed Derived(10, 20, 30);
+  var c = (new owned Derived(10, 20, 30)).borrow();
 
   writeln(c);
 }

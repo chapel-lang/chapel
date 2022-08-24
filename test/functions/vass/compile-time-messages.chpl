@@ -28,7 +28,7 @@ proc TEST_CLASS(param ARG_PARAM) {
   compilerWarning(LOC_TYPE:string);
 
   var LOC_VAR1: borrowed CLASS_PARAM(ARG_PARAM) =
-    new borrowed CLASS_PARAM(ARG_PARAM);
+    (new owned CLASS_PARAM(ARG_PARAM)).borrow();
   compilerWarning(LOC_VAR1.type:string);
   compilerWarning(LOC_VAR1.FIELD_PARAM: string);
   compilerWarning(LOC_VAR1.METHOD_TYPE:string);
@@ -105,7 +105,7 @@ proc TEST_CLASS(type ARG_TYPE) {
   compilerWarning(LOC_TYPE:string);
 
   var LOC_VAR1: borrowed CLASS_TYPE(ARG_TYPE) =
-    new borrowed CLASS_TYPE(ARG_TYPE);
+    (new owned CLASS_TYPE(ARG_TYPE)).borrow();
   compilerWarning(LOC_VAR1.type:string);
   compilerWarning(LOC_VAR1.FIELD_TYPE:string);
   compilerWarning(LOC_VAR1.METHOD_PARAM: string);
@@ -114,7 +114,7 @@ proc TEST_CLASS(type ARG_TYPE) {
   param LOC_ALIAS_PARAM1 = LOC_VAR1.METHOD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM1: string);
 
-  var LOC_VAR2: borrowed LOC_TYPE = new borrowed LOC_TYPE();
+  var LOC_VAR2: borrowed LOC_TYPE = (new owned LOC_TYPE()).borrow();
   compilerWarning(LOC_VAR2.type:string);
   compilerWarning(LOC_VAR2.FIELD_TYPE:string);
   compilerWarning(LOC_VAR2.METHOD_PARAM: string);
@@ -142,7 +142,7 @@ proc TEST_RECORD(type ARG_TYPE) {
   compilerWarning(LOC_TYPE:string);
 
   var LOC_VAR1: borrowed RECORD_TYPE(ARG_TYPE) =
-    new borrowed RECORD_TYPE(ARG_TYPE);
+    (new owned RECORD_TYPE(ARG_TYPE)).borrow();
   compilerWarning(LOC_VAR1.type:string);
   compilerWarning(LOC_VAR1.FIELD_TYPE:string);
   compilerWarning(LOC_VAR1.METHOD_PARAM: string);
@@ -151,7 +151,7 @@ proc TEST_RECORD(type ARG_TYPE) {
   param LOC_ALIAS_PARAM1 = LOC_VAR1.METHOD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM1: string);
 
-  var LOC_VAR2: borrowed LOC_TYPE = new borrowed LOC_TYPE();
+  var LOC_VAR2: borrowed LOC_TYPE = (new owned LOC_TYPE()).borrow();
   compilerWarning(LOC_VAR2.type:string);
   compilerWarning(LOC_VAR2.FIELD_TYPE:string);
   compilerWarning(LOC_VAR2.METHOD_PARAM: string);

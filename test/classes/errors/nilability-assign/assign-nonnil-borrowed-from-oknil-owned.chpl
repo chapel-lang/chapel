@@ -2,7 +2,7 @@
 
 class MyClass {  var x: int;  }
 
-var lhs = new borrowed MyClass();
+var lhs = (new owned MyClass()).borrow();
 var rhs: owned MyClass?;
 
 lhs = rhs;

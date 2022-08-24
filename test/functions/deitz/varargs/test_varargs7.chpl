@@ -7,6 +7,6 @@ class C {
   }
 }
 
-var c = new borrowed C(3);
+var c = (new owned C(3)).borrow();
 
 writeln(c(1,2,3));

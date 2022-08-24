@@ -8,8 +8,8 @@ class D2 : C {
   var x : real;
 }
 
-var c1 : borrowed C = new borrowed D1();
-var c2 : borrowed C = new borrowed D2();
+var c1 : borrowed C = (new owned D1()).borrow();
+var c2 : borrowed C = (new owned D2()).borrow();
 
 writeln(c1);
 writeln(c2);

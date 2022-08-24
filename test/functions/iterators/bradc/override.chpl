@@ -14,9 +14,9 @@ class D : C {
   }
 }
 
-var c1: borrowed C = new borrowed C();
-var c2: borrowed C = new borrowed D();
-var d : borrowed D = new borrowed D();
+var c1: borrowed C = (new owned C()).borrow();
+var c2: borrowed C = (new owned D()).borrow();
+var d : borrowed D = (new owned D()).borrow();
 
 for i in c1 {
   writeln(i);

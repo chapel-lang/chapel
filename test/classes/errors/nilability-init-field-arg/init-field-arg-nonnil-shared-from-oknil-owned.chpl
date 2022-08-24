@@ -7,7 +7,7 @@ var rhs: owned MyClass?;
 record MyRecord {
   var lhs: shared MyClass;
   proc init(in rhs) where ! isSubtype(rhs.type, MyRecord) {
-    lhs = rhs;
+    lhs = rhs: shared MyClass;
   }
 }
 

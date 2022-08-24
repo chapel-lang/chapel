@@ -5,8 +5,8 @@ class myClass {
   var y: real;
 }
 
-var a: borrowed myClass = new borrowed myClass(x = 1, y = 2.3);
-var b: borrowed myClass = new borrowed myClass(x = 9, y = 9.9);
+var a: borrowed myClass = (new owned myClass(x = 1, y = 2.3)).borrow();
+var b: borrowed myClass = (new owned myClass(x = 9, y = 9.9)).borrow();
 
 writeln("a is initialized to: ", a);
 writeln("b is initialized to: ", b);
