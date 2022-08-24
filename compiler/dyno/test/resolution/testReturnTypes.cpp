@@ -110,9 +110,11 @@ void testProgram(const std::vector<ReturnVariant>& variants, F func,
   // declarations we want to include in the commonType test, so ignore them.
   size_t offset = hasReference(variants) ? 2 : 0;
   auto types = extractDefinedTypes(context, program.c_str(), offset);
-  auto commonTypeResult = chpl::resolution::commonType(context, types,
-                                                       kind != QualifiedType::UNKNOWN,
-                                                       kind);
+  KindRequirement requiredKind;
+  if (kind != QualifiedType::UNKNOWN) {
+    requiredKind = kind;
+  }
+  auto commonTypeResult = chpl::resolution::commonType(context, types, requiredKind);
   auto qt = commonTypeResult.getValueOr(QualifiedType());
   std::cout << "return type:" << std::endl;
   qt.dump();

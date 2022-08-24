@@ -1116,8 +1116,7 @@ findByPassing(Context* context,
 llvm::Optional<QualifiedType>
 commonType(Context* context,
            const std::vector<QualifiedType>& types,
-           bool useRequiredKind,
-           QualifiedType::Kind requiredKind) {
+           KindRequirement requiredKind) {
   assert(types.size() > 0);
 
   // figure out the kind
@@ -1133,10 +1132,10 @@ commonType(Context* context,
     properties.combineWith(typeProperties);
   }
 
-  if (useRequiredKind) {
+  if (requiredKind) {
     // The caller enforces a particular kind on us. Make sure that the
     // computed properties line up with the kind.
-    auto requiredProperties = KindProperties::fromKind(requiredKind);
+    auto requiredProperties = KindProperties::fromKind(requiredKind.getValue());
     requiredProperties.strictCombineWith(properties);
     properties = requiredProperties;
   }
@@ -1166,7 +1165,8 @@ commonType(Context* context,
     return commonType;
   }
 
-  bool paramRequired = useRequiredKind && requiredKind == QualifiedType::PARAM;
+  bool paramRequired = requiredKind &&
+    requiredKind.getValue() == QualifiedType::PARAM;
   if (bestKind == QualifiedType::PARAM && !paramRequired) {
     // We couldn't unify the types as params, but maybe if we downgrade
     // them to values, it'll work.

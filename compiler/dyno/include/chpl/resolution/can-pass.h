@@ -176,6 +176,13 @@ CanPassResult canPass(Context* context,
 }
 
 /**
+  An optional additional constraint on the kind of a type. Used in
+  commonType to serve the case of functions that enforce param, type,
+  or const returs.
+ */
+using KindRequirement = llvm::Optional<chpl::types::QualifiedType::Kind>;
+
+/**
   Given a (non-empty) list of types (e.g., the types of various return statements
   in a function), determine the type, if any, that can be used to represent
   all of them. Returns an llvm::Optional that contains the qualified type
@@ -190,8 +197,7 @@ CanPassResult canPass(Context* context,
 llvm::Optional<chpl::types::QualifiedType>
 commonType(Context* context,
            const std::vector<chpl::types::QualifiedType>& types,
-           bool useRequiredKind,
-           chpl::types::QualifiedType::Kind requiredKind);
+           KindRequirement requiredKind = KindRequirement());
 // QualifiedType fully qualified here to prevent "reference target not found"
 // in Doxygen.
 
