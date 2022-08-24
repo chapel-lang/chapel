@@ -5683,6 +5683,13 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
   for (int k = 0; k < DC.actuals->n; k++) {
     Symbol*    actual  = DC.actuals->v[k];
     ArgSymbol* formal = candidate->actualIdxToFormal[k];
+
+    if (formal == nullptr) {
+      // this can happen with some operators
+      normalizedActualTypes.push_back(dtUnknown);
+      continue;
+    }
+
     Type* actualVt = actual->type->getValType();
     Type* formalVt = formal->type->getValType();
     if (formal->originalIntent == INTENT_OUT) {
@@ -5719,6 +5726,10 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
 
   for (int k = 0; k < DC.actuals->n; k++) {
     ArgSymbol* formal = candidate->actualIdxToFormal[k];
+
+    if (formal == nullptr) {
+      continue; // can happen with some operators
+    }
 
     if (formal->originalIntent == INTENT_OUT) {
       continue; // type comes from call site so ignore it here
