@@ -1829,6 +1829,27 @@ void handleChplPropagateErrorCall(CallExpr* call, bool inForall) {
   }
 }
 
+static GotoStmt* findGotoToReplace(SymExpr* se) {
+  for(Expr* cur = se->getStmtExpr(); cur != NULL; cur = cur->next)
+    if (GotoStmt* result = toGotoStmt(cur))
+      return result;
+
+  // If there is no goto, the throw was probably the last stmt in the iterator.
+  // Create such a goto instead.
+  DefExpr* labelDef = NULL;
+  for(Expr* cur = se->getStmtExpr()->next; cur != NULL; cur = cur->next)
+    if (DefExpr* def = toDefExpr(cur))
+      if (def->sym->hasFlag(FLAG_EPILOGUE_LABEL))
+        labelDef = def;
+
+  INT_ASSERT(labelDef);
+  SET_LINENO(labelDef);
+  GotoStmt* result = new GotoStmt(GOTO_RETURN, labelDef->sym);
+  labelDef->insertBefore(result);
+
+  return result;
+}
+
 /* When inlining an iterator, the iterator might throw
    an error. If it does, instead of updating the iterator's
    out error argument, the error should propagate to
@@ -1856,13 +1877,7 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
     FnSymbol* inFn = toFnSymbol(se->parentSymbol);
 
     // find the Goto we need to replace
-    GotoStmt* fixGoto = NULL;
-    for(Expr* cur = se->getStmtExpr(); cur != NULL; cur = cur->next) {
-      fixGoto = toGotoStmt(cur);
-      if (fixGoto != NULL)
-        break;
-    }
-    INT_ASSERT(fixGoto);
+    GotoStmt* fixGoto = findGotoToReplace(se);
 
     CallExpr *dummy = NULL;
     if (findFollowingCheckErrorBlock(se, newLabel, newError, dummy)) {
