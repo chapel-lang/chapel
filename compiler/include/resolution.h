@@ -229,6 +229,8 @@ public:
   Vec<Symbol*>*  actuals;
   Expr*          scope;
   bool           explain;
+  bool           isMethodCall;
+  bool           useOldVisibility;
 
 private:
                  DisambiguationContext();

@@ -2171,6 +2171,10 @@ static int classifyNumericWidth(Type* t)
       t == dtBools[BOOL_SIZE_DEFAULT])
     return 0;
 
+  // Bool size 64 should be considered the same as int 64
+  if (t == dtBools[BOOL_SIZE_64])
+    return 0;
+
   if (is_enum_type(t))
     return 0;
 
@@ -6118,6 +6122,13 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
   // If index i is set we have ruled out that function
   std::vector<bool> discarded(candidates.n, false);
 
+  if (!DC.useOldVisibility && !DC.isMethodCall) {
+    // If some candidates are less visible than other candidates,
+    // discard those with less visibility.
+    // This filter should not be applied to method calls.
+    discardWorseVisibility(candidates, DC, discarded);
+  }
+
   // If any candidate does not require promotion,
   // eliminate candidates that do require promotion.
   discardWorsePromoting(candidates, DC, discarded);
@@ -6143,10 +6154,13 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
     // discard those without 'where' clauses
     discardWorseWhereClauses(candidates, DC, discarded);
   }
+  if (DC.useOldVisibility && !DC.isMethodCall) {
+    // If some candidates are less visible than other candidates,
+    // discard those with less visibility.
+    // This filter should not be applied to method calls.
+    discardWorseVisibility(candidates, DC, discarded);
+  }
 
-  // If some candidates are less visible than other candidates,
-  // discard those with less visibility.
-  discardWorseVisibility(candidates, DC, discarded);
 
   // If there is just 1 candidate at this point, return it
   {
@@ -12775,6 +12789,20 @@ DisambiguationContext::DisambiguationContext(CallInfo& info,
   scope   = searchScope;
 
   explain = false;
+  useOldVisibility = false;
+  isMethodCall = false;
+  if (info.call->numActuals() >= 2) {
+    if (SymExpr* se = toSymExpr(info.call->get(1))) {
+      if (se->symbol() == gMethodToken) {
+        isMethodCall = true;
+      }
+    }
+  }
+
+  // this is a workaround -- a better solution would be preferred
+  if (info.call->getModule()->modTag == MOD_INTERNAL) {
+    useOldVisibility = true;
+  }
 
   if (fExplainVerbose == true) {
     if (explainCallLine != 0 && explainCallMatch(info.call) == true) {
