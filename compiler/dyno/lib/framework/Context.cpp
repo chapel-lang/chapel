@@ -49,7 +49,10 @@ namespace chpl {
     }
   } // namespace detail
 
-  Context::Context(std::string chplHome) : chplHome(std::move(chplHome)) {
+  Context::Context(std::string chplHome,
+                   std::unordered_map<std::string, std::string> chplEnvOverrides)
+    : chplHome(std::move(chplHome)),
+      chplEnvOverrides(std::move(chplEnvOverrides)) {
     if (this == &detail::rootContext) {
       detail::initGlobalStrings();
       for (auto& v : uniqueStringsTable) {
@@ -67,7 +70,7 @@ using namespace chpl::querydetail;
 
 llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
   if (chplHome.empty() || computedChplEnv) return chplEnv;
-  auto chplEnvResult = ::chpl::getChplEnv({}, chplHome.c_str());
+  auto chplEnvResult = ::chpl::getChplEnv(chplEnvOverrides, chplHome.c_str());
   if (auto err = chplEnvResult.getError()) {
     // forward error to caller
     return err;

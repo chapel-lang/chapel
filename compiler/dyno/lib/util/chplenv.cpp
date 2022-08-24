@@ -54,8 +54,9 @@ static void parseChplEnv(std::string& output, ChplEnvMap& into) {
   }
 }
 
+template <typename InputMap>
 llvm::ErrorOr<ChplEnvMap>
-getChplEnv(const std::map<std::string, const char*>& varMap,
+getChplEnvImpl(const InputMap& varMap,
            const char* chplHome) {
   // Run printchplenv script, passing currently known CHPL_vars as well
   std::string command;
@@ -76,6 +77,18 @@ getChplEnv(const std::map<std::string, const char*>& varMap,
   ChplEnvMap result;
   parseChplEnv(commandOutput.get(), result);
   return result;
+}
+
+llvm::ErrorOr<ChplEnvMap>
+getChplEnv(const std::map<std::string, const char*>& varMap,
+           const char* chplHome) {
+  return getChplEnvImpl(varMap, chplHome);
+}
+
+llvm::ErrorOr<ChplEnvMap>
+getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
+           const char* chplHome) {
+  return getChplEnvImpl(varMap, chplHome);
 }
 
 } // namespace chpl

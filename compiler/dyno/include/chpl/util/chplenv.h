@@ -25,6 +25,7 @@
 #include <unordered_map>
 
 #include "llvm/Support/ErrorOr.h"
+#include "subprocess.h"
 
 namespace chpl {
 
@@ -46,6 +47,9 @@ using ChplEnvMap = std::unordered_map<std::string, std::string>;
  */
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::map<std::string, const char*>& varMap,
+           const char* chplHome);
+llvm::ErrorOr<ChplEnvMap>
+getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
            const char* chplHome);
 
 } // namespace chpl

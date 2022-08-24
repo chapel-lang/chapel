@@ -70,7 +70,9 @@ class Context {
 
  private:
   // The CHPL_HOME variable
-  std::string chplHome;
+  const std::string chplHome;
+  // Variables to explicitly set before getting chplenv
+  const std::unordered_map<std::string, std::string> chplEnvOverrides;
 
   // State for printchplenv data
   bool computedChplEnv = false;
@@ -254,7 +256,8 @@ class Context {
     CHPL_HOME environment variable, which is used for determining
     chapel environment varaibles.
    */
-  Context(std::string chplHome = "");
+  Context(std::string chplHome = "",
+          std::unordered_map<std::string, std::string> chplEnvOverrides = {});
   ~Context();
 
   /**
