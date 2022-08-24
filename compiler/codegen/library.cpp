@@ -378,15 +378,17 @@ void codegen_library_cmakelists() {
   printCMakeListsIncludes(cmakelists, name);
   printCMakeListsLibraries(cmakelists, name);
 
-  std::string compiler = getCompilelineOption("compiler");
+  // get the various options and convert any $(FOO) to ${FOO} at the same time.
+  // needed because cmake doesn't understand $(FOO)
+  std::string compiler = makeToCMake(getCompilelineOption("compiler"));
   removeTrailingNewlines(compiler);
   fprintf(cmakelists.fptr, "set(CHPL_COMPILER %s)\n", compiler.c_str());
 
-  std::string linker = getCompilelineOption("linker");
+  std::string linker = makeToCMake(getCompilelineOption("linker"));
   removeTrailingNewlines(linker);
   fprintf(cmakelists.fptr, "set(CHPL_LINKER %s)\n", linker.c_str());
 
-  std::string linkerShared = getCompilelineOption("linkershared");
+  std::string linkerShared = makeToCMake(getCompilelineOption("linkershared"));
   removeTrailingNewlines(linkerShared);
   fprintf(cmakelists.fptr, "set(CHPL_LINKERSHARED %s)\n", linkerShared.c_str());
 
