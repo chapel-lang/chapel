@@ -1635,7 +1635,7 @@ operator :(r: range(?), type t: range(?)) {
     //
     var emptyIntersection: bool;
 
-    proc min(x: int, y: uint) {
+    proc myMin(x: int, y: uint) {
       if (y > max(int)) {
         return x;
       }
@@ -1647,7 +1647,7 @@ operator :(r: range(?), type t: range(?)) {
       return min(x, y: int);
     }
 
-    proc min(x: uint, y: int) {
+    proc myMin(x: uint, y: int) {
       //
       // if the high uint bound is bigger than int can represent,
       // this slice is guaranteed to be empty.
@@ -1668,10 +1668,18 @@ operator :(r: range(?), type t: range(?)) {
       return min(x, y: uint);
     }
 
+    proc myMin(x: int, y: int) {
+      return min(x, y);
+    }
+    proc myMin(x: uint, y: uint) {
+      return min(x, y);
+    }
+
+
     //
     // These two cases are the dual of the above
     //
-    proc max(x: int, y: uint) {
+    proc myMax(x: int, y: uint) {
       if (y > max(int)) {
         emptyIntersection = true;
         return x;
@@ -1680,7 +1688,7 @@ operator :(r: range(?), type t: range(?)) {
       return max(x, y: int);
     }
 
-    proc max(x: uint, y: int) {
+    proc myMax(x: uint, y: int) {
       if (y < 0) {
         return x;
       }
@@ -1688,9 +1696,17 @@ operator :(r: range(?), type t: range(?)) {
       return max(x, y: uint);
     }
 
+    proc myMax(x: int, y: int) {
+      return max(x, y);
+    }
+    proc myMax(x: uint, y: uint) {
+      return max(x, y);
+    }
+
+
     emptyIntersection = false;
-    var newlo = max(lo1, lo2):intIdxType;
-    var newhi = min(hi1, hi2):intIdxType;
+    var newlo = myMax(lo1, lo2):intIdxType;
+    var newhi = myMin(hi1, hi2):intIdxType;
     if (emptyIntersection) {
       newlo = 1;
       newhi = 0;
