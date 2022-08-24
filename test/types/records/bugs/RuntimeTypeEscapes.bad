@@ -1,3 +1,0 @@
-RuntimeTypeEscapes.chpl:7: In function 'test':
-RuntimeTypeEscapes.chpl:10: warning: failed to locate the runtime type for field 'T' when default initializing 'obj' - this may cause runtime errors
-RuntimeTypeEscapes.chpl:4: error: attempt to dereference nil
