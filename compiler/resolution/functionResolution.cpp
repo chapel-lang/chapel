@@ -106,9 +106,9 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //# Global Variables
 //#
 
+bool                               fCheckDisambiguationPartialOrder = true;
 bool                               resolved                  = false;
 int                                explainCallLine           = 0;
-
 SymbolMap                          paramMap;
 
 Vec<CallExpr*>                     callStack;
@@ -6115,11 +6115,144 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
+struct PartialOrderChecker {
+  int n;
+  std::vector<bool> results;
+  const Vec<ResolutionCandidate*>& candidates;
+  DisambiguationContext DC;
+
+  PartialOrderChecker(const Vec<ResolutionCandidate*>& candidates,
+                      const DisambiguationContext& DC)
+    : n(candidates.n), candidates(candidates), DC(DC) {
+    results.resize(n*n);
+    this->DC.explain = true;
+  }
+
+  int idx(int i, int j) {
+    assert(0 <= i && i < n);
+    assert(0 <= j && j < n);
+    return n*i + j;
+  }
+
+  void addResult(int i, int j, int cmp) {
+    if (cmp == 1) { // aka i < j
+      results[idx(i, j)] = true;
+    } else if (cmp == 2) { // aka j < i
+      results[idx(j, i)] = true;
+    }
+  }
+
+  void printActuals() {
+    printf("actuals: (");
+    bool first = true;
+    forv_Vec(Symbol, actual, *DC.actuals) {
+      if (first) {
+        first = false;
+      } else {
+        printf(", ");
+      }
+      Type* t = actual->getValType();
+      printf("%s : %s", toString(actual, false), toString(t));
+    }
+    printf(")\n");
+  }
+
+  void explainComparison(int i, int j) {
+    ResolutionCandidate* candidate1         = candidates.v[i];
+    bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
+
+    EXPLAIN("##########################\n");
+    EXPLAIN("# Considering function %d #\n", i);
+    EXPLAIN("##########################\n\n");
+    EXPLAIN("%s\n\n", toString(candidate1->fn));
+
+    ResolutionCandidate* candidate2 = candidates.v[j];
+
+    EXPLAIN("Comparing to function %d\n", j);
+    EXPLAIN("-----------------------\n");
+    EXPLAIN("%s\n", toString(candidate2->fn));
+
+    int cmp = compareSpecificity(candidate1,
+                                 candidate2,
+                                 DC,
+                                 i,
+                                 j,
+                                 forGenericInit);
+
+    if (cmp == 1) {
+      EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
+    } else if (cmp == 2) {
+      EXPLAIN("X: Fn %d is a worse match than Fn %d\n\n\n", i, j);
+    } else {
+      EXPLAIN("X: Fn %d is not better or worse than Fn %d\n\n\n", i, j);
+    }
+  }
+
+  void checkResults() {
+    // check irreflexivity
+    for (int i = 0; i < n; i++) {
+      if (results[idx(i, i)]) {
+        ResolutionCandidate* candidatei = candidates.v[i];
+
+        printf("irreflexivity fail : i < i\n");
+        printActuals();
+        printf("i: %s\n", toString(candidatei->fn));
+        printf("\n");
+      }
+    }
+
+    // check asymmetry
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        if (results[idx(i, j)] && results[idx(j, i)]) {
+          ResolutionCandidate* candidatei = candidates.v[i];
+          ResolutionCandidate* candidatej = candidates.v[j];
+
+          printf("asymmetry fail : i < j and j < i\n");
+          printActuals();
+          printf("i: %s\n", toString(candidatei->fn));
+          printf("j: %s\n", toString(candidatej->fn));
+          printf("\n");
+          explainComparison(i, j);
+          explainComparison(j, i);
+          printf("\n\n");
+        }
+      }
+    }
+
+    // check transitivity
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        if (i != j && results[idx(i, j)]) {
+          for (int k = 0; k < n; k++) {
+            if (j != k && results[idx(j, k)] && !results[idx(i, k)]) {
+              ResolutionCandidate* candidatei = candidates.v[i];
+              ResolutionCandidate* candidatej = candidates.v[j];
+              ResolutionCandidate* candidatek = candidates.v[k];
+
+              printf("transitivity fail : i < j and j < k but not i < k\n");
+              printActuals();
+              printf("i: %s\n", toString(candidatei->fn));
+              printf("j: %s\n", toString(candidatej->fn));
+              printf("k: %s\n", toString(candidatek->fn));
+              printf("\n");
+              explainComparison(i, j);
+              explainComparison(j, k);
+              explainComparison(i, k);
+              printf("\n\n");
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
 static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous) {
+disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
+                         const DisambiguationContext& DC,
+                         bool                         ignoreWhere,
+                         Vec<ResolutionCandidate*>&   ambiguous) {
 
   // Disable implicit conversion to remove nilability
   // for disambiguation
@@ -6210,6 +6343,41 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
     generousResolutionForErrors = saveGenerousResolutionForErrors;
 
   return nullptr;
+}
+
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    Vec<ResolutionCandidate*>&   ambiguous) {
+  auto ret = disambiguateByMatchInner(candidates, DC, ignoreWhere, ambiguous);
+
+  if (fCheckDisambiguationPartialOrder) {
+    // do checking
+    PartialOrderChecker checker(candidates, DC);
+
+    for (int i = 0; i < candidates.n; ++i) {
+      ResolutionCandidate* candidate1         = candidates.v[i];
+      bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
+
+      for (int j = i; j < candidates.n; ++j) {
+        ResolutionCandidate* candidate2 = candidates.v[j];
+
+        int cmp = compareSpecificity(candidate1,
+                                     candidate2,
+                                     DC,
+                                     i,
+                                     j,
+                                     forGenericInit);
+
+        checker.addResult(i, j, cmp);
+      }
+    }
+
+    checker.checkResults();
+  }
+
+  return ret;
 }
 
 /** Determines if fn1 is a better match than fn2.
