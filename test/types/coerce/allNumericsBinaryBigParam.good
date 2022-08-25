@@ -27,28 +27,28 @@ First actual int(8)
 
  Second actual 0 : uint(8)                      ->   f(int(8),int(8))
       Reversed                                  ->   f(int(8),int(8))
-               +                                ->   skipped
- Second actual 255 : uint(8)                    ->   f(int(16),int(16))
-      Reversed                                  ->   f(int(16),int(16))
-               +                                ->   skipped
+               +                                ->   int(8)
+ Second actual 255 : uint(8)                    ->   f(uint(8),uint(8))
+      Reversed                                  ->   f(uint(8),uint(8))
+               +                                ->   uint(8)
  Second actual 0 : uint(16)                     ->   f(int(8),int(8))
       Reversed                                  ->   f(int(8),int(8))
-               +                                ->   skipped
- Second actual 65535 : uint(16)                 ->   f(int(32),int(32))
-      Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(8)
+ Second actual 65535 : uint(16)                 ->   f(uint(16),uint(16))
+      Reversed                                  ->   f(uint(16),uint(16))
+               +                                ->   uint(16)
  Second actual 0 : uint(32)                     ->   f(int(8),int(8))
       Reversed                                  ->   f(int(8),int(8))
-               +                                ->   skipped
- Second actual 4294967295 : uint(32)            ->   f(int(64),int(64))
-      Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(8)
+ Second actual 4294967295 : uint(32)            ->   f(uint(32),uint(32))
+      Reversed                                  ->   f(uint(32),uint(32))
+               +                                ->   uint(32)
  Second actual 0 : uint(64)                     ->   f(int(8),int(8))
       Reversed                                  ->   f(int(8),int(8))
-               +                                ->   skipped
- Second actual 18446744073709551615 : uint(64)  ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   skipped
+               +                                ->   int(8)
+ Second actual 18446744073709551615 : uint(64)  ->   f(uint(64),uint(64))
+      Reversed                                  ->   f(uint(64),uint(64))
+               +                                ->   uint(64)
 
 
 
@@ -81,28 +81,28 @@ First actual int(16)
 
  Second actual 0 : uint(8)                      ->   f(int(16),int(16))
       Reversed                                  ->   f(int(16),int(16))
-               +                                ->   skipped
+               +                                ->   int(16)
  Second actual 255 : uint(8)                    ->   f(int(16),int(16))
       Reversed                                  ->   f(int(16),int(16))
-               +                                ->   skipped
+               +                                ->   int(16)
  Second actual 0 : uint(16)                     ->   f(int(16),int(16))
       Reversed                                  ->   f(int(16),int(16))
-               +                                ->   skipped
- Second actual 65535 : uint(16)                 ->   f(int(32),int(32))
-      Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(16)
+ Second actual 65535 : uint(16)                 ->   f(uint(16),uint(16))
+      Reversed                                  ->   f(uint(16),uint(16))
+               +                                ->   uint(16)
  Second actual 0 : uint(32)                     ->   f(int(16),int(16))
       Reversed                                  ->   f(int(16),int(16))
-               +                                ->   skipped
- Second actual 4294967295 : uint(32)            ->   f(int(64),int(64))
-      Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(16)
+ Second actual 4294967295 : uint(32)            ->   f(uint(32),uint(32))
+      Reversed                                  ->   f(uint(32),uint(32))
+               +                                ->   uint(32)
  Second actual 0 : uint(64)                     ->   f(int(16),int(16))
       Reversed                                  ->   f(int(16),int(16))
-               +                                ->   skipped
- Second actual 18446744073709551615 : uint(64)  ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   skipped
+               +                                ->   int(16)
+ Second actual 18446744073709551615 : uint(64)  ->   f(uint(64),uint(64))
+      Reversed                                  ->   f(uint(64),uint(64))
+               +                                ->   uint(64)
 
 
 
@@ -128,35 +128,35 @@ First actual int(32)
                +                                ->   int(32)
  Second actual -9223372036854775808 : int(64)   ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   int(64)
+               +                                ->   real(32)
  Second actual 9223372036854775807 : int(64)    ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   int(64)
+               +                                ->   real(32)
 
  Second actual 0 : uint(8)                      ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual 255 : uint(8)                    ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual 0 : uint(16)                     ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual 65535 : uint(16)                 ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual 0 : uint(32)                     ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
- Second actual 4294967295 : uint(32)            ->   f(int(64),int(64))
-      Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(32)
+ Second actual 4294967295 : uint(32)            ->   f(uint(32),uint(32))
+      Reversed                                  ->   f(uint(32),uint(32))
+               +                                ->   uint(32)
  Second actual 0 : uint(64)                     ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
- Second actual 18446744073709551615 : uint(64)  ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   skipped
+               +                                ->   int(32)
+ Second actual 18446744073709551615 : uint(64)  ->   f(int(64),int(64))
+      Reversed                                  ->   f(int(64),int(64))
+               +                                ->   int(64)
 
 
 
@@ -189,28 +189,28 @@ First actual int(64)
 
  Second actual 0 : uint(8)                      ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
  Second actual 255 : uint(8)                    ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
  Second actual 0 : uint(16)                     ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
  Second actual 65535 : uint(16)                 ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
  Second actual 0 : uint(32)                     ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
  Second actual 4294967295 : uint(32)            ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
- Second actual 0 : uint(64)                     ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   skipped
- Second actual 18446744073709551615 : uint(64)  ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   skipped
+               +                                ->   int(64)
+ Second actual 0 : uint(64)                     ->   f(int(64),int(64))
+      Reversed                                  ->   f(int(64),int(64))
+               +                                ->   int(64)
+ Second actual 18446744073709551615 : uint(64)  ->   f(uint(64),uint(64))
+      Reversed                                  ->   f(uint(64),uint(64))
+               +                                ->   uint(64)
 
 
 
@@ -218,28 +218,28 @@ First actual uint(8)
 
  Second actual -128 : int(8)                    ->   f(int(16),int(16))
       Reversed                                  ->   f(int(16),int(16))
-               +                                ->   skipped
+               +                                ->   int(16)
  Second actual 127 : int(8)                     ->   f(uint(8),uint(8))
       Reversed                                  ->   f(uint(8),uint(8))
-               +                                ->   skipped
+               +                                ->   uint(8)
  Second actual -32768 : int(16)                 ->   f(int(16),int(16))
       Reversed                                  ->   f(int(16),int(16))
-               +                                ->   skipped
+               +                                ->   int(16)
  Second actual 32767 : int(16)                  ->   f(int(16),int(16))
       Reversed                                  ->   f(int(16),int(16))
-               +                                ->   skipped
+               +                                ->   int(16)
  Second actual -2147483648 : int(32)            ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual 2147483647 : int(32)             ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual -9223372036854775808 : int(64)   ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
  Second actual 9223372036854775807 : int(64)    ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
 
  Second actual 0 : uint(8)                      ->   f(uint(8),uint(8))
       Reversed                                  ->   f(uint(8),uint(8))
@@ -261,10 +261,10 @@ First actual uint(8)
                +                                ->   uint(32)
  Second actual 0 : uint(64)                     ->   f(uint(8),uint(8))
       Reversed                                  ->   f(uint(8),uint(8))
-               +                                ->   skipped
+               +                                ->   uint(8)
  Second actual 18446744073709551615 : uint(64)  ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
 
 
 
@@ -272,28 +272,28 @@ First actual uint(16)
 
  Second actual -128 : int(8)                    ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual 127 : int(8)                     ->   f(uint(16),uint(16))
       Reversed                                  ->   f(uint(16),uint(16))
-               +                                ->   skipped
+               +                                ->   uint(16)
  Second actual -32768 : int(16)                 ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual 32767 : int(16)                  ->   f(uint(16),uint(16))
       Reversed                                  ->   f(uint(16),uint(16))
-               +                                ->   skipped
+               +                                ->   uint(16)
  Second actual -2147483648 : int(32)            ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual 2147483647 : int(32)             ->   f(int(32),int(32))
       Reversed                                  ->   f(int(32),int(32))
-               +                                ->   skipped
+               +                                ->   int(32)
  Second actual -9223372036854775808 : int(64)   ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
  Second actual 9223372036854775807 : int(64)    ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
 
  Second actual 0 : uint(8)                      ->   f(uint(16),uint(16))
       Reversed                                  ->   f(uint(16),uint(16))
@@ -315,39 +315,39 @@ First actual uint(16)
                +                                ->   uint(32)
  Second actual 0 : uint(64)                     ->   f(uint(16),uint(16))
       Reversed                                  ->   f(uint(16),uint(16))
-               +                                ->   skipped
+               +                                ->   uint(16)
  Second actual 18446744073709551615 : uint(64)  ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
 
 
 
 First actual uint(32)
 
- Second actual -128 : int(8)                    ->   f(int(64),int(64))
-      Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+ Second actual -128 : int(8)                    ->   f(uint(32),uint(32))
+      Reversed                                  ->   f(uint(32),uint(32))
+               +                                ->   uint(32)
  Second actual 127 : int(8)                     ->   f(uint(32),uint(32))
       Reversed                                  ->   f(uint(32),uint(32))
-               +                                ->   skipped
- Second actual -32768 : int(16)                 ->   f(int(64),int(64))
-      Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   uint(32)
+ Second actual -32768 : int(16)                 ->   f(uint(32),uint(32))
+      Reversed                                  ->   f(uint(32),uint(32))
+               +                                ->   uint(32)
  Second actual 32767 : int(16)                  ->   f(uint(32),uint(32))
       Reversed                                  ->   f(uint(32),uint(32))
-               +                                ->   skipped
- Second actual -2147483648 : int(32)            ->   f(int(64),int(64))
-      Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   uint(32)
+ Second actual -2147483648 : int(32)            ->   f(uint(32),uint(32))
+      Reversed                                  ->   f(uint(32),uint(32))
+               +                                ->   uint(32)
  Second actual 2147483647 : int(32)             ->   f(uint(32),uint(32))
       Reversed                                  ->   f(uint(32),uint(32))
-               +                                ->   skipped
+               +                                ->   uint(32)
  Second actual -9223372036854775808 : int(64)   ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
  Second actual 9223372036854775807 : int(64)    ->   f(int(64),int(64))
       Reversed                                  ->   f(int(64),int(64))
-               +                                ->   skipped
+               +                                ->   int(64)
 
  Second actual 0 : uint(8)                      ->   f(uint(32),uint(32))
       Reversed                                  ->   f(uint(32),uint(32))
@@ -369,58 +369,58 @@ First actual uint(32)
                +                                ->   uint(32)
  Second actual 0 : uint(64)                     ->   f(uint(32),uint(32))
       Reversed                                  ->   f(uint(32),uint(32))
-               +                                ->   skipped
- Second actual 18446744073709551615 : uint(64)  ->   f(uint(64),uint(64))
-      Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(32)
+ Second actual 18446744073709551615 : uint(64)  ->   f(int(64),int(64))
+      Reversed                                  ->   f(int(64),int(64))
+               +                                ->   int(64)
 
 
 
 First actual uint(64)
 
- Second actual -128 : int(8)                    ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   skipped
+ Second actual -128 : int(8)                    ->   f(uint(64),uint(64))
+      Reversed                                  ->   f(uint(64),uint(64))
+               +                                ->   uint(64)
  Second actual 127 : int(8)                     ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
- Second actual -32768 : int(16)                 ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
+ Second actual -32768 : int(16)                 ->   f(uint(64),uint(64))
+      Reversed                                  ->   f(uint(64),uint(64))
+               +                                ->   uint(64)
  Second actual 32767 : int(16)                  ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
- Second actual -2147483648 : int(32)            ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
+ Second actual -2147483648 : int(32)            ->   f(uint(64),uint(64))
+      Reversed                                  ->   f(uint(64),uint(64))
+               +                                ->   uint(64)
  Second actual 2147483647 : int(32)             ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
- Second actual -9223372036854775808 : int(64)   ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
+ Second actual -9223372036854775808 : int(64)   ->   f(uint(64),uint(64))
+      Reversed                                  ->   f(uint(64),uint(64))
+               +                                ->   uint(64)
  Second actual 9223372036854775807 : int(64)    ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
 
  Second actual 0 : uint(8)                      ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
  Second actual 255 : uint(8)                    ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
  Second actual 0 : uint(16)                     ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
  Second actual 65535 : uint(16)                 ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
  Second actual 0 : uint(32)                     ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
  Second actual 4294967295 : uint(32)            ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
-               +                                ->   skipped
+               +                                ->   uint(64)
  Second actual 0 : uint(64)                     ->   f(uint(64),uint(64))
       Reversed                                  ->   f(uint(64),uint(64))
                +                                ->   uint(64)
@@ -450,12 +450,12 @@ First actual real(32)
  Second actual 2147483647 : int(32)             ->   f(real(32),real(32))
       Reversed                                  ->   f(real(32),real(32))
                +                                ->   real(32)
- Second actual -9223372036854775808 : int(64)   ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   real(64)
- Second actual 9223372036854775807 : int(64)    ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   real(64)
+ Second actual -9223372036854775808 : int(64)   ->   f(real(32),real(32))
+      Reversed                                  ->   f(real(32),real(32))
+               +                                ->   real(32)
+ Second actual 9223372036854775807 : int(64)    ->   f(real(32),real(32))
+      Reversed                                  ->   f(real(32),real(32))
+               +                                ->   real(32)
 
  Second actual 0 : uint(8)                      ->   f(real(32),real(32))
       Reversed                                  ->   f(real(32),real(32))
@@ -478,9 +478,9 @@ First actual real(32)
  Second actual 0 : uint(64)                     ->   f(real(32),real(32))
       Reversed                                  ->   f(real(32),real(32))
                +                                ->   real(32)
- Second actual 18446744073709551615 : uint(64)  ->   f(real(64),real(64))
-      Reversed                                  ->   f(real(64),real(64))
-               +                                ->   real(64)
+ Second actual 18446744073709551615 : uint(64)  ->   f(real(32),real(32))
+      Reversed                                  ->   f(real(32),real(32))
+               +                                ->   real(32)
 
 
 
@@ -558,12 +558,12 @@ First actual imag(32)
  Second actual 2147483647 : int(32)             ->   f(complex(64),complex(64))
       Reversed                                  ->   f(complex(64),complex(64))
                +                                ->   complex(64)
- Second actual -9223372036854775808 : int(64)   ->   f(complex(128),complex(128))
-      Reversed                                  ->   f(complex(128),complex(128))
-               +                                ->   complex(128)
- Second actual 9223372036854775807 : int(64)    ->   f(complex(128),complex(128))
-      Reversed                                  ->   f(complex(128),complex(128))
-               +                                ->   complex(128)
+ Second actual -9223372036854775808 : int(64)   ->   f(complex(64),complex(64))
+      Reversed                                  ->   f(complex(64),complex(64))
+               +                                ->   complex(64)
+ Second actual 9223372036854775807 : int(64)    ->   f(complex(64),complex(64))
+      Reversed                                  ->   f(complex(64),complex(64))
+               +                                ->   complex(64)
 
  Second actual 0 : uint(8)                      ->   f(complex(64),complex(64))
       Reversed                                  ->   f(complex(64),complex(64))
@@ -583,12 +583,12 @@ First actual imag(32)
  Second actual 4294967295 : uint(32)            ->   f(complex(64),complex(64))
       Reversed                                  ->   f(complex(64),complex(64))
                +                                ->   complex(64)
- Second actual 0 : uint(64)                     ->   f(complex(128),complex(128))
-      Reversed                                  ->   f(complex(128),complex(128))
+ Second actual 0 : uint(64)                     ->   f(complex(64),complex(64))
+      Reversed                                  ->   f(complex(64),complex(64))
                +                                ->   complex(64)
- Second actual 18446744073709551615 : uint(64)  ->   f(complex(128),complex(128))
-      Reversed                                  ->   f(complex(128),complex(128))
-               +                                ->   complex(128)
+ Second actual 18446744073709551615 : uint(64)  ->   f(complex(64),complex(64))
+      Reversed                                  ->   f(complex(64),complex(64))
+               +                                ->   complex(64)
 
 
 
@@ -666,12 +666,12 @@ First actual complex(64)
  Second actual 2147483647 : int(32)             ->   f(complex(64),complex(64))
       Reversed                                  ->   f(complex(64),complex(64))
                +                                ->   complex(64)
- Second actual -9223372036854775808 : int(64)   ->   f(complex(128),complex(128))
-      Reversed                                  ->   f(complex(128),complex(128))
-               +                                ->   complex(128)
- Second actual 9223372036854775807 : int(64)    ->   f(complex(128),complex(128))
-      Reversed                                  ->   f(complex(128),complex(128))
-               +                                ->   complex(128)
+ Second actual -9223372036854775808 : int(64)   ->   f(complex(64),complex(64))
+      Reversed                                  ->   f(complex(64),complex(64))
+               +                                ->   complex(64)
+ Second actual 9223372036854775807 : int(64)    ->   f(complex(64),complex(64))
+      Reversed                                  ->   f(complex(64),complex(64))
+               +                                ->   complex(64)
 
  Second actual 0 : uint(8)                      ->   f(complex(64),complex(64))
       Reversed                                  ->   f(complex(64),complex(64))
@@ -694,9 +694,9 @@ First actual complex(64)
  Second actual 0 : uint(64)                     ->   f(complex(64),complex(64))
       Reversed                                  ->   f(complex(64),complex(64))
                +                                ->   complex(64)
- Second actual 18446744073709551615 : uint(64)  ->   f(complex(128),complex(128))
-      Reversed                                  ->   f(complex(128),complex(128))
-               +                                ->   complex(128)
+ Second actual 18446744073709551615 : uint(64)  ->   f(complex(64),complex(64))
+      Reversed                                  ->   f(complex(64),complex(64))
+               +                                ->   complex(64)
 
 
 

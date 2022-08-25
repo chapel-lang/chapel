@@ -53,12 +53,6 @@ proc f(x, y) {
   writeln("  f(generic)");
 }
 
-proc isProhibitedAdd(type t1, type t2) param {
-  return (t1 == uint && isIntType(t2)) ||
-         (isUintType(t1) && isIntType(t2) && numBits(t1) >= numBits(t1)) ||
-         (t1 == uint && isUintType(t2) && t2 != uint); // bug workaround
-}
-
 // next, call 'f' with all combinations of numeric types
 proc callF(type t1, param p2) {
   var s: string = p2:string + " : " + p2.type:string;
@@ -70,11 +64,7 @@ proc callF(type t1, param p2) {
   f(p2, x);
 
   writef("               %-32s ->   ", "+");
-  if (!isProhibitedAdd(t1, p2.type) && !isProhibitedAdd(p2.type, t1)) {
-    writeln((x+p2).type:string);
-  } else {
-    writeln("skipped");
-  }
+  writeln((x+p2).type:string);
 }
 
 proc callFVaryP(type t1) {
