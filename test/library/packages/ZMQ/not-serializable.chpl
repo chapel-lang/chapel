@@ -12,7 +12,7 @@ class Foo {
   var d: borrowed Bar;
 }
 
-var foo = (new owned Foo(42, 13.0, "hello", new borrowed Bar(29, "goodbye"))).borrow();
+var foo = (new owned Foo(42, 13.0, "hello", (new owned Bar(29, "goodbye")).borrow())).borrow();
 
 var context = new ZMQ.Context();
 var socket = context.socket(ZMQ.PUSH);

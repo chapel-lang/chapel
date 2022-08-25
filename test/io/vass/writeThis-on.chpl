@@ -5,7 +5,7 @@ class C {
   override proc writeThis(f) throws { f.write("here=", here.id, " home=", home); }
 }
 
-for l in Locales do on l do { const c = (new owned C(); writeln(c)).borrow(); }
+for l in Locales do on l do { const c = (new owned C()).borrow(); writeln(c); }
 writeln();
 
 
