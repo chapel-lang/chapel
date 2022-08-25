@@ -32,10 +32,7 @@ using namespace chpl::parsing;
 using namespace chpl::resolution;
 using namespace chpl::types;
 
-void setupContext(Context* ctx, const ChplEnvMap& chplEnv) {
-}
-
-QualifiedType getRangeIndexType(Context* context, const RecordType* r, const std::string& ensureBoundedType) {
+static QualifiedType getRangeIndexType(Context* context, const RecordType* r, const std::string& ensureBoundedType) {
   assert(r->name() == "range");
   auto fields = fieldsForTypeDecl(context, r, DefaultsPolicy::IGNORE_DEFAULTS);
 
