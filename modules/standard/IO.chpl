@@ -2080,6 +2080,107 @@ proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws
   return ret;
 }
 
+pragma "ignore noinit"
+pragma "no doc"
+record _channel {
+  /*
+     writing is a boolean indicating whether the channels of this type
+     support writing (when `true`) or reading (when `false`).
+   */
+  param writing:bool;
+  /*
+     kind is an enum :type:`iokind` that allows narrowing
+     this channel's I/O style for more efficient binary I/O.
+   */
+  param kind:iokind;
+  /*
+     locking is a boolean indicating whether it is safe to use this
+     channel concurrently (when `true`).
+   */
+  param locking:bool;
+
+  pragma "no doc"
+  var _home:locale = here;
+  pragma "no doc"
+  var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
+
+  // The member variable _readWriteThisFromLocale is used to support
+  // writeThis needing to know where the I/O started. It is a member
+  // variable on channel so that calls to writeln etc within writeThis
+  // can preserve this information. Not used outside of
+  // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
+  // we are working on a channel created for running writeThis/readThis.
+  // Therefore further locking by the same task is not necessary.
+  pragma "no doc"
+  var _readWriteThisFromLocale = nilLocale;
+}
+
+/*
+
+A ``fileReader`` supports sequential reading from an underlying :record:`file`
+object. It can buffer data. Read operations on it might return old data. Use
+:proc:`_channel.flush` to control this buffering.
+
+The :record:`fileReader` type is implementation-defined.
+A value of the :record:`fileReader` type refers to the state that is used
+to implement the reading operations operations.
+
+When a :record:`fileReader` formal argument has default intent, the actual is
+passed by ``const ref`` to the formal upon a function call, and the formal
+cannot be assigned within the function.
+
+The default value of the :record:`fileReader` type is not associated
+with any file, and so cannot be used to perform I/O.
+
+The :record:`fileReader` type is generic.
+
+The :record:`fileReader` type supports 3 fields:
+
+ * ``param writing: bool = false``:
+
+ *  ``param kind:iokind``:
+     kind is an enum :type:`iokind` that allows narrowing
+     this channel's I/O style for more efficient binary I/O.
+
+  * ``param locking:bool``:
+     locking is a boolean indicating whether it is safe to use this
+     channel concurrently (when `true`).
+*/
+type fileReader = _channel(writing=false, ?);
+
+/*
+
+A ``fileWriter`` supports sequential writing to an underlying :record:`file`
+object. A ``fileWriter`` can buffer data. Write operations might not have an
+immediate effect. Use :proc:`_channel.flush` to control this buffering.
+
+The :record:`fileWriter` type is implementation-defined.
+A value of the :record:`fileWriter` type refers to the state that is used
+to implement the writing operations.
+
+When a :record:`fileWriter` formal argument has default intent, the actual is
+passed by ``const ref`` to the formal upon a function call, and the formal
+cannot be assigned within the function.
+
+The default value of the :record:`fileWriter` type is not associated with any
+file, and so cannot be used to perform I/O.
+
+The :record:`fileWriter` type is generic.
+
+The :record:`fileWriter` type supports 3 fields:
+
+ * ``param writing: bool = true``:
+
+ *  ``param kind:iokind``:
+     kind is an enum :type:`iokind` that allows narrowing
+     this channel's I/O style for more efficient binary I/O.
+
+  * ``param locking:bool``:
+     locking is a boolean indicating whether it is safe to use this
+     channel concurrently (when `true`).
+ */
+type fileWriter = _channel(writing=true, ?);
+
 /*
 
 A channel supports either sequential reading or sequential writing to an
@@ -2100,51 +2201,26 @@ with any file, and so cannot be used to perform I/O.
 
 The :record:`channel` type is generic.
 
- */
-pragma "ignore noinit"
-record _channel {
-  /*
+The :record:`_channel` type supports 3 fields:
+
+ * ``param writing: bool``:
      writing is a boolean indicating whether the channels of this type
      support writing (when `true`) or reading (when `false`).
-   */
-  param _writing:bool;
-  /*
+
+ *  ``param kind:iokind``:
      kind is an enum :type:`iokind` that allows narrowing
      this channel's I/O style for more efficient binary I/O.
-   */
-  param _kind:iokind;
-  /*
+
+  * ``param locking:bool``:
      locking is a boolean indicating whether it is safe to use this
      channel concurrently (when `true`).
-   */
-  param _locking:bool;
-  pragma "no doc"
-  var _home:locale = here;
-  pragma "no doc"
-  var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
-  // The member variable _readWriteThisFromLocale is used to support
-  // writeThis needing to know where the I/O started. It is a member
-  // variable on channel so that calls to writeln etc within writeThis
-  // can preserve this information. Not used outside of
-  // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
-  // we are working on a channel created for running writeThis/readThis.
-  // Therefore further locking by the same task is not necessary.
-  pragma "no doc"
-  var _readWriteThisFromLocale = nilLocale;
-}
+.. note::
 
-proc _channel.writing param :bool { return this._writing; }
-proc type _channel.writing param :bool { return this._writing; }
-proc _channel.kind param :iokind { return this._kind; }
-proc type _channel.kind param :iokind { return this._kind; }
-proc _channel.locking param :bool { return this._locking; }
-proc type _channel.locking param :bool { return this._locking; }
-
-type fileReader = _channel(_writing=false, ?);
-type fileWriter = _channel(_writing=true, ?);
-
-deprecated "channel type is deprecated - use reader or writer instead"
+  The ``channel`` type is deprecated. Please use ``fileReader`` or
+  ``fileWriter`` instead.
+ */
+deprecated "channel type is deprecated - use fileReader or fileWriter instead"
 type channel = _channel;
 
 pragma "no doc"
@@ -2169,18 +2245,18 @@ operator _channel.=(ref lhs:_channel, rhs:_channel) {
 }
 
 pragma "no doc"
-proc _channel.init(param _writing:bool, param _kind:iokind, param _locking:bool) {
-  this._writing = _writing;
-  this._kind = _kind;
-  this._locking = _locking;
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool) {
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
 }
 
 pragma "no doc"
 proc _channel.init(x: _channel) {
   compilerWarning("new channel(otherChannel) is deprecated");
-  this._writing = x._writing;
-  this._kind = x._kind;
-  this._locking = x._locking;
+  this.writing = x.writing;
+  this.kind = x.kind;
+  this.locking = x.locking;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
@@ -2191,20 +2267,20 @@ proc _channel.init(x: _channel) {
 }
 
 proc _channel.init=(x: _channel) {
-  if this.type._writing != ? {
-    if this.type._writing==true && x._writing==false {
+  if this.type.writing != ? {
+    if this.type.writing==true && x.writing==false {
       compilerError("cannot init writing channel from reading channel");
     } else if this.type.writing==false && x.writing==true {
       compilerError("cannot init reading channel from writing channel");
     }
   }
-  this._writing = x._writing;
+  this.writing = x.writing;
 
   // allow the kind and locking fields to be modified in initialization
-  this._kind = if this.type._kind != ? then this.type._kind else x._kind;
-  this._locking = if this.type._locking != ?
-                  then this.type._locking
-                  else x._locking;
+  this.kind = if this.type.kind != ? then this.type.kind else x.kind;
+  this.locking = if this.type.locking != ?
+                 then this.type.locking
+                 else x.locking;
 
   this._home = x._home;
   this._channel_internal = x._channel_internal;
@@ -2231,9 +2307,9 @@ pragma "no doc"
 proc _channel.init(param writing:bool, param kind:iokind, param locking:bool,
                   home: locale, _channel_internal:qio_channel_ptr_t,
                   _readWriteThisFromLocale: locale) {
-  this._writing = writing;
-  this._kind = kind;
-  this._locking = locking;
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
   this._home = home;
   this._channel_internal = _channel_internal;
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
