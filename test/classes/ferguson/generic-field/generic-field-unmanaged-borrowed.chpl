@@ -84,8 +84,10 @@ proc test2b() {
   var c = (new owned ClassB(3)).borrow();
 
   var x = (new owned GenericClassBorrowed(a)).borrow();
-  var y:borrowed GenericClassBorrowed = new owned GenericClassBorrowed(b);
-  var z:borrowed GenericClassBorrowed(borrowed ClassB) = new owned GenericClassBorrowed(c);
+  var myOwnedY = new owned GenericClassBorrowed(b);
+  var y:borrowed GenericClassBorrowed = myOwnedY;
+  var myOwnedZ = new owned GenericClassBorrowed(c);
+  var z:borrowed GenericClassBorrowed(borrowed ClassB) = myOwnedZ;
 
   writeln(x.type:string, " ", x);
   writeln(y.type:string, " ", y);
