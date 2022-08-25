@@ -224,19 +224,25 @@ static void usage(int argc, char** argv) {
 }
 
 static void setupSearchPaths(Context* ctx, bool enableStdLib,
-                             const char* chpl_home,
+                             const std::string& chpl_home,
                              const std::vector<std::string>& cmdLinePaths,
                              const std::vector<std::string>& files) {
   if (enableStdLib) {
+    auto chplEnv = ctx->getChplEnv();
+    assert(!chplEnv.getError() && "not handling chplenv errors yet");
+
+    // CHPL_MODULE_PATH isn't always in the output; check if it's there.
+    auto it = chplEnv->find("CHPL_MODULE_PATH");
+    auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
     setupModuleSearchPaths(ctx,
                            chpl_home,
                            false,
-                           "flat",
+                           chplEnv->at("CHPL_LOCALE_MODEL"),
                            false,
-                           "qthreads",
-                           "none",
-                           "linux64-x86_64-gnu",
-                           "",
+                           chplEnv->at("CHPL_TASKS"),
+                           chplEnv->at("CHPL_COMM"),
+                           chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
+                           chplModulePath,
                            cmdLinePaths,
                            files);
   } else {
@@ -249,13 +255,10 @@ static void setupSearchPaths(Context* ctx, bool enableStdLib,
 }
 
 int main(int argc, char** argv) {
-
   bool gc = false;
-  Context context;
-  Context* ctx = &context;
   bool trace = false;
   bool scopeResolveOnly = false;
-  const char* chpl_home = nullptr;
+  std::string chpl_home;
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
   bool enableStdLib = false;
@@ -287,6 +290,9 @@ int main(int argc, char** argv) {
       exit(1);
     }
   }
+
+  Context context(chpl_home);
+  Context* ctx = &context;
 
   if (files.size() == 0) {
     usage(argc, argv);

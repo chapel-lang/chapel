@@ -1,0 +1,262 @@
+First actual sbyte
+
+ Second actual sbyte       f(sbyte,sbyte)
+                            + results in System.Int32
+ Second actual short       f(short,short)
+                            + results in System.Int32
+ Second actual int         f(int,int)
+                            + results in System.Int32
+ Second actual long        f(long,long)
+                            + results in System.Int64
+
+ Second actual byte        f(short,short)
+                            + results in System.Int32
+ Second actual ushort      f(int,int)
+                            + results in System.Int32
+ Second actual uint        f(long,long)
+                            + results in System.Int64
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+                            + results in System.Single
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+
+First actual short
+
+ Second actual sbyte       f(short,short)
+                            + results in System.Int32
+ Second actual short       f(short,short)
+                            + results in System.Int32
+ Second actual int         f(int,int)
+                            + results in System.Int32
+ Second actual long        f(long,long)
+                            + results in System.Int64
+
+ Second actual byte        f(short,short)
+                            + results in System.Int32
+ Second actual ushort      f(int,int)
+                            + results in System.Int32
+ Second actual uint        f(long,long)
+                            + results in System.Int64
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+                            + results in System.Single
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+
+First actual int
+
+ Second actual sbyte       f(int,int)
+                            + results in System.Int32
+ Second actual short       f(int,int)
+                            + results in System.Int32
+ Second actual int         f(int,int)
+                            + results in System.Int32
+ Second actual long        f(long,long)
+                            + results in System.Int64
+
+ Second actual byte        f(int,int)
+                            + results in System.Int32
+ Second actual ushort      f(int,int)
+                            + results in System.Int32
+ Second actual uint        f(long,long)
+                            + results in System.Int64
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+                            + results in System.Single
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+
+First actual long
+
+ Second actual sbyte       f(long,long)
+                            + results in System.Int64
+ Second actual short       f(long,long)
+                            + results in System.Int64
+ Second actual int         f(long,long)
+                            + results in System.Int64
+ Second actual long        f(long,long)
+                            + results in System.Int64
+
+ Second actual byte        f(long,long)
+                            + results in System.Int64
+ Second actual ushort      f(long,long)
+                            + results in System.Int64
+ Second actual uint        f(long,long)
+                            + results in System.Int64
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+                            + results in System.Single
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+
+First actual byte
+
+ Second actual sbyte       f(short,short)
+                            + results in System.Int32
+ Second actual short       f(short,short)
+                            + results in System.Int32
+ Second actual int         f(int,int)
+                            + results in System.Int32
+ Second actual long        f(long,long)
+                            + results in System.Int64
+
+ Second actual byte        f(byte,byte)
+                            + results in System.Int32
+ Second actual ushort      f(ushort,ushort)
+                            + results in System.Int32
+ Second actual uint        f(uint,uint)
+                            + results in System.UInt32
+ Second actual ulong       f(ulong,ulong)
+                            + results in System.UInt64
+
+ Second actual float       f(float,float)
+                            + results in System.Single
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+
+First actual ushort
+
+ Second actual sbyte       f(int,int)
+                            + results in System.Int32
+ Second actual short       f(int,int)
+                            + results in System.Int32
+ Second actual int         f(int,int)
+                            + results in System.Int32
+ Second actual long        f(long,long)
+                            + results in System.Int64
+
+ Second actual byte        f(ushort,ushort)
+                            + results in System.Int32
+ Second actual ushort      f(ushort,ushort)
+                            + results in System.Int32
+ Second actual uint        f(uint,uint)
+                            + results in System.UInt32
+ Second actual ulong       f(ulong,ulong)
+                            + results in System.UInt64
+
+ Second actual float       f(float,float)
+                            + results in System.Single
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+
+First actual uint
+
+ Second actual sbyte       f(long,long)
+                            + results in System.Int64
+ Second actual short       f(long,long)
+                            + results in System.Int64
+ Second actual int         f(long,long)
+                            + results in System.Int64
+ Second actual long        f(long,long)
+                            + results in System.Int64
+
+ Second actual byte        f(uint,uint)
+                            + results in System.UInt32
+ Second actual ushort      f(uint,uint)
+                            + results in System.UInt32
+ Second actual uint        f(uint,uint)
+                            + results in System.UInt32
+ Second actual ulong       f(ulong,ulong)
+                            + results in System.UInt64
+
+ Second actual float       f(float,float)
+                            + results in System.Single
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+
+First actual ulong
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(ulong,ulong)
+                            + results in System.UInt64
+ Second actual ushort      f(ulong,ulong)
+                            + results in System.UInt64
+ Second actual uint        f(ulong,ulong)
+                            + results in System.UInt64
+ Second actual ulong       f(ulong,ulong)
+                            + results in System.UInt64
+
+ Second actual float       f(float,float)
+                            + results in System.Single
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+
+First actual float
+
+ Second actual sbyte       f(float,float)
+                            + results in System.Single
+ Second actual short       f(float,float)
+                            + results in System.Single
+ Second actual int         f(float,float)
+                            + results in System.Single
+ Second actual long        f(float,float)
+                            + results in System.Single
+
+ Second actual byte        f(float,float)
+                            + results in System.Single
+ Second actual ushort      f(float,float)
+                            + results in System.Single
+ Second actual uint        f(float,float)
+                            + results in System.Single
+ Second actual ulong       f(float,float)
+                            + results in System.Single
+
+ Second actual float       f(float,float)
+                            + results in System.Single
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+
+First actual double
+
+ Second actual sbyte       f(double,double)
+                            + results in System.Double
+ Second actual short       f(double,double)
+                            + results in System.Double
+ Second actual int         f(double,double)
+                            + results in System.Double
+ Second actual long        f(double,double)
+                            + results in System.Double
+
+ Second actual byte        f(double,double)
+                            + results in System.Double
+ Second actual ushort      f(double,double)
+                            + results in System.Double
+ Second actual uint        f(double,double)
+                            + results in System.Double
+ Second actual ulong       f(double,double)
+                            + results in System.Double
+
+ Second actual float       f(double,double)
+                            + results in System.Double
+ Second actual double      f(double,double)
+                            + results in System.Double
+
+
+

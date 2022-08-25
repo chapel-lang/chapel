@@ -24,6 +24,7 @@ ALL_SRCS += dyno/lib/util/*.h dyno/lib/util/*.cpp
 DYNO_UTIL_SRCS =      \
   bitmap.cpp \
   break.cpp \
+  chplenv.cpp \
   filesystem.cpp \
   string-escapes.cpp \
   subprocess.cpp \

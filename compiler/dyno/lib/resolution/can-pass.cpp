@@ -1095,8 +1095,9 @@ class KindProperties {
   bool valid() const { return isValid; }
 };
 
-static QualifiedType findByPassing(Context* context,
-                                   const std::vector<QualifiedType>& types) {
+static llvm::Optional<QualifiedType>
+findByPassing(Context* context,
+              const std::vector<QualifiedType>& types) {
   for (auto& type : types) {
     bool fitsOthers = true;
     for (auto& otherType : types) {
@@ -1109,32 +1110,38 @@ static QualifiedType findByPassing(Context* context,
     }
     if (fitsOthers) return type;
   }
-  return QualifiedType();
+  return llvm::Optional<QualifiedType>();
 }
 
-QualifiedType commonType(Context* context,
-                         const std::vector<QualifiedType>& types,
-                         bool useRequiredKind,
-                         QualifiedType::Kind requiredKind) {
+llvm::Optional<QualifiedType>
+commonType(Context* context,
+           const std::vector<QualifiedType>& types,
+           KindRequirement requiredKind) {
   assert(types.size() > 0);
 
   // figure out the kind
   auto properties = KindProperties::fromKind(types.front().kind());
   for (auto& type : types) {
+    if (type.isUnknown()) {
+      // if any type is unknown, we can't figure out the common type,
+      // but it's not an error.
+      return QualifiedType();
+    }
     auto kind = type.kind();
     auto typeProperties = KindProperties::fromKind(kind);
     properties.combineWith(typeProperties);
   }
 
-  if (useRequiredKind) {
+  if (requiredKind) {
     // The caller enforces a particular kind on us. Make sure that the
     // computed properties line up with the kind.
-    auto requiredProperties = KindProperties::fromKind(requiredKind);
+    auto requiredProperties = KindProperties::fromKind(requiredKind.getValue());
     requiredProperties.strictCombineWith(properties);
     properties = requiredProperties;
   }
 
-  if (!properties.valid()) return QualifiedType();
+  // We can't reconcile the intents. Return with error.
+  if (!properties.valid()) return llvm::Optional<QualifiedType>();
   auto bestKind = properties.toKind();
 
   // Create a new list of types with their kinds adjusted.
@@ -1154,9 +1161,12 @@ QualifiedType commonType(Context* context,
   // Performance: if the types vector ever becomes very long,
   // it might be worth using a unique'd vector here.
   auto commonType = findByPassing(context, adjustedTypes);
-  if (!commonType.isUnknown()) return commonType;
+  if (commonType) {
+    return commonType;
+  }
 
-  bool paramRequired = useRequiredKind && requiredKind == QualifiedType::PARAM;
+  bool paramRequired = requiredKind &&
+    requiredKind.getValue() == QualifiedType::PARAM;
   if (bestKind == QualifiedType::PARAM && !paramRequired) {
     // We couldn't unify the types as params, but maybe if we downgrade
     // them to values, it'll work.
@@ -1166,9 +1176,13 @@ QualifiedType commonType(Context* context,
       // adjust kind and strip param
       adjustedType = QualifiedType(bestKind, adjustedType.type());
     }
-    return findByPassing(context, adjustedTypes);
+
+    commonType = findByPassing(context, adjustedTypes);
+    if (commonType) {
+      return commonType;
+    }
   }
-  return QualifiedType();
+  return llvm::Optional<QualifiedType>();
 }
 
 } // end namespace resolution
