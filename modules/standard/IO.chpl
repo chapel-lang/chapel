@@ -4872,26 +4872,6 @@ proc channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws wh
   return true;
 }
 
-pragma "no doc"
-proc channel.writeHelper(const args ...?k, style:iostyleInternal) throws where WritersReturnBool == false {
-  if !writing then compilerError("write on read-only channel");
-  const origLocale = this.getLocaleOfIoRequest();
-
-  on this.home {
-    try this.lock(); defer { this.unlock(); }
-
-    var saveStyle: iostyleInternal = this._styleInternal();
-    this._set_styleInternal(style);
-    defer {
-      this._set_styleInternal(saveStyle);
-    }
-
-    for param i in 0..k-1 {
-      try _writeOne(iokind.dynamic, args(i), origLocale);
-    }
-  }
-}
-
 // documented in varargs version
 pragma "no doc"
 proc channel.writeln():bool throws where WritersReturnBool == true {
@@ -4920,7 +4900,7 @@ proc channel.writeln(const args ...?k):bool throws where WritersReturnBool == tr
 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
-proc channel.writeln(const args ...?k) throws where WritersReturnBool == false {
+proc channel.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());
 }
 
@@ -4935,14 +4915,9 @@ proc channel.writeln(const args ...?k, style:iostyle) throws where WritersReturn
 }
 
 pragma "no doc"
-proc channel.writelnHelper(const args ...?k, style:iostyleInternal):bool throws where WritersReturnBool == true {
+proc channel.writelnHelper(const args ...?k, style:iostyleInternal):bool throws {
   return try this.writeHelper((...args), new ioNewline(), style=style);
 }
-pragma "no doc"
-proc channel.writelnHelper(const args ...?k, style:iostyleInternal) throws where WritersReturnBool == false {
-  try this.writeHelper((...args), new ioNewline(), style=style);
-}
-
 /*
 
   Makes all writes to the channel, if any, available to concurrent viewers
