@@ -576,7 +576,7 @@ module Map {
 
       :arg ch: A channel to read from.
     */
-    proc readThis(ch: channel) throws {
+    proc readThis(ch: _channel) throws {
       _readWriteHelper(ch);
     }
 

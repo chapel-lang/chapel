@@ -1507,7 +1507,7 @@ It is illegal to perform any I/O operations on the default value.
 pragma "ignore noinit"
 record file {
   pragma "no doc"
-  var home: locale = here;
+  var _home: locale = here;
   pragma "no doc"
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
 
@@ -1521,10 +1521,10 @@ record file {
 // TODO -- shouldn't have to write this this way!
 pragma "no doc"
 proc file.init(x: file) {
-  this.home = x.home;
+  this._home = x._home;
   this._file_internal = x._file_internal;
   this.complete();
-  on home {
+  on this._home {
     qio_file_retain(_file_internal);
   }
 }
@@ -1537,16 +1537,16 @@ proc file.init=(x: file) {
 pragma "no doc"
 operator file.=(ref ret:file, x:file) {
   // retain -- release
-  on x.home {
+  on x._home {
     qio_file_retain(x._file_internal);
   }
 
-  on ret.home {
+  on ret._home {
     qio_file_release(ret._file_internal);
   }
 
   // compiler will do this copy.
-  ret.home = x.home;
+  ret._home = x._home;
   ret._file_internal = x._file_internal;
 }
 
@@ -1563,14 +1563,14 @@ proc file.checkAssumingLocal() throws {
    :throws SystemError: Indicates that `this` does not represent an OS file.
 */
 proc file.check() throws {
-  on this.home {
+  on this._home {
     this.checkAssumingLocal();
   }
 }
 
 pragma "no doc"
 proc ref file.deinit() {
-  on this.home {
+  on this._home {
     qio_file_release(_file_internal);
     this._file_internal = QIO_FILE_PTR_NULL;
   }
@@ -1581,12 +1581,12 @@ proc ref file.deinit() {
    at the moment I don't see any use case in which
    it would make sense.
 proc file.lock() {
-  on this.home {
+  on this._home {
     seterr(nil, qio_file_lock(_file_internal));
   }
 }
 proc file.unlock() {
-  on this.home {
+  on this._home {
     qio_file_unlock(_file_internal);
   }
 }
@@ -1603,7 +1603,7 @@ proc file.filePlugin() : QioPluginFile? {
 pragma "no doc"
 proc file._style:iostyleInternal throws {
   var ret:iostyleInternal;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     var local_style:iostyleInternal;
     qio_file_get_style(_file_internal, local_style);
@@ -1639,7 +1639,7 @@ proc file.close() throws {
     throw createSystemError(EBADF, "Operation attempted on an invalid file");
 
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     err = qio_file_close(_file_internal);
   }
   if err then try ioerror(err, "in file.close", this._tryGetPath());
@@ -1659,7 +1659,7 @@ This function will typically call the ``fsync`` system call.
  */
 proc file.fsync() throws {
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     err = qio_file_sync(_file_internal);
   }
@@ -1682,7 +1682,7 @@ to get the path to a file.
 proc file.path : string throws {
   var ret: string;
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     var tmp:c_string;
     var tmp2:c_string;
@@ -1722,7 +1722,7 @@ change if other channels, tasks or programs are writing to the file.
 proc file.size: int throws {
   var err:errorCode = ENOERR;
   var len:int(64) = 0;
-  on this.home {
+  on this._home {
     err = qio_file_length(this._file_internal, len);
   }
   if err then try ioerror(err, "in file.size");
@@ -1793,7 +1793,7 @@ private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
   var local_style = style;
   var error: errorCode = ENOERR;
   var ret: file;
-  ret.home = here;
+  ret._home = here;
 
   if (path == "") then
     try ioerror(ENOENT:errorCode, "in open: path is the empty string");
@@ -1818,7 +1818,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
 
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
 
   var flags:c_int = 0;
   select mode {
@@ -1914,7 +1914,7 @@ private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
   extern proc chpl_cnullfile():_file;
   var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
 
@@ -1975,7 +1975,7 @@ private proc openfpHelper(fp: _file, hints=ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
   var err = qio_file_init(ret._file_internal, fp, -1, hints._internal, local_style, 1);
 
   // On return either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
@@ -2039,7 +2039,7 @@ private proc opentmpHelper(hints=ioHintSet.empty,
                            style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
 
   // On return ret._file_internal.ref_cnt == 1.
   var err = qio_file_open_tmp(ret._file_internal, hints._internal, local_style);
@@ -2072,7 +2072,7 @@ private
 proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
 
   // On return ret._file_internal.ref_cnt == 1.
   var err = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
@@ -2318,8 +2318,8 @@ proc _channel.init(param writing:bool, param kind:iokind, param locking:bool,
 pragma "no doc"
 proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:errorCode, hints: ioHintSet, start:int(64), end:int(64), in local_style:iostyleInternal) {
   this.init(writing, kind, locking);
-  on f.home {
-    this._home = f.home;
+  on f._home {
+    this._home = f._home;
     if kind != iokind.dynamic {
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
@@ -3129,7 +3129,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   // The return error code should be checked to avoid double-deletion errors.
   var ret:_channel(false, kind, locking);
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
       ret = new _channel(false, kind, locking, this, err, hints, region.low,
@@ -3203,7 +3203,7 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
 
   var ret:itemReaderInternal(string, kind, locking);
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     var ch: _channel;
     if (region.hasLowBound() && region.hasHighBound()) {
@@ -3328,7 +3328,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   // The error code should be checked to avoid double-deletion errors.
   var ret:_channel(true, kind, locking);
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
       ret = new _channel(true, kind, locking, this, err, hints, region.low,
@@ -3678,7 +3678,7 @@ proc _channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
 }
 
 //
-// The channel must be locked and running on this.home.
+// The channel must be locked and running on this._home.
 // The intent of x is ref (vs out) because it might contain a string literal.
 //
 pragma "no doc"
@@ -3700,7 +3700,7 @@ private proc escapedNonUTF8ErrorMessage() : string {
 }
 
 //
-// The channel must be locked and running on this.home.
+// The channel must be locked and running on this._home.
 //
 pragma "no doc"
 proc _channel._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
@@ -5561,7 +5561,7 @@ pragma "no doc"
 proc file.fstype():int throws {
   var t:c_int;
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     err = qio_get_fs_type(this._file_internal, t);
   }
   if err then try ioerror(err, "in file.fstype()");
@@ -5569,7 +5569,6 @@ proc file.fstype():int throws {
 }
 
 /*
-
    Returns the 'best' locale to run something working with the region
    of the file in start..end-1.
 
@@ -5594,7 +5593,7 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
   }
 
   var ret: domain(locale);
-  on this.home {
+  on this._home {
     var err:errorCode;
     var locs: c_ptr(c_string);
     var num_hosts:c_int;
