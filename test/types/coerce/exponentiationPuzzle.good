@@ -1,1 +1,1 @@
-f(a: int(64), param b: int(64))
+f(param a: uint(32), param b: uint(32))
