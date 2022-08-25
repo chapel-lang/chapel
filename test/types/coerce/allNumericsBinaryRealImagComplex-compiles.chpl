@@ -34,14 +34,21 @@ proc callF(type t1, type t2) {
   writef(" Second actual %-12s -> ", t2:string);
 
   if skip(t1, t2) {
-    writeln("  f skipped");
   } else {
     var x: t1;
     var y: t2;
-    f(x, y);
+    if (!skip(t1, t2)) {
+      f(x, y);
+    } else {
+      writeln("  f skipped");
+    }
 
     writef("      Reversed %-12s -> ", "");
-    f(y, x);
+    if (!skip(t1, t2)) {
+      f(y, x);
+    } else {
+      writeln("  f skipped");
+    }
 
     writef("               %-12s ->   ", "+");
     writeln((x+y).type:string);
