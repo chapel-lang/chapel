@@ -2086,9 +2086,9 @@ proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws
 
   .. warning::
     In a future release, this parameter will effectively be ``false``, as only the
-    non-returning variants of these methods will be availible. 
+    non-returning variants of these methods will be availible.
 */
-config param WritersReturnBool=true;
+config param WritersReturnBool=false;
 
 
 /*
