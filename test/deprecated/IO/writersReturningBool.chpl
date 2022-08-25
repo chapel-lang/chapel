@@ -12,3 +12,5 @@ w.writef("%s", "yep");
 
 w.close();
 remove("./wrb.txt");
+
+writef("%s\n", "hi");

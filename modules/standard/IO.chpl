@@ -3819,7 +3819,7 @@ proc channel.writeIt(const x) throws {
     return ret;
   }
 
-  deprecated "The returning variant of ``writeBytes`` is deprecated; to use it, compile with :param:`WritersReturnBool` = true"
+  deprecated "The returning variant of ``writeBytes`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
   proc channel.writeBytes(x, len:c_ssize_t):bool throws where WritersReturnBool == true {
     var err:syserr = ENOERR;
     on this.home {
@@ -4544,7 +4544,7 @@ proc channel.readbits(ref v:integral, nbits:integral):bool throws {
   return ret;
 }
 
-deprecated "The returning variant of ``writebits`` is deprecated; to use it, compile with :param:`WritersReturnBool` = true"
+deprecated "The returning variant of ``writebits`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
 proc channel.writebits(v:integral, nbits:integral):bool throws where WritersReturnBool == true {
   if castChecking {
     // Error if writing more bits than fit into v
@@ -4802,7 +4802,7 @@ proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
   return tupleVal;
 }
 
-deprecated "The returning variant of ``channel.write`` is deprecated; to use it, compile with :param:`WritersReturnBool` = true"
+deprecated "The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
 inline proc channel.write(const args ...?k):bool throws where WritersReturnBool == true {
   if !writing then compilerError("write on read-only channel");
 
@@ -4843,6 +4843,11 @@ inline proc channel.write(const args ...?k) throws where WritersReturnBool == fa
 deprecated "write with a style argument is deprecated"
 proc channel.write(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
   return this.writeHelper((...args), style: iostyleInternal);
+}
+
+deprecated "write with a style argument is deprecated"
+proc channel.write(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
+  this.writeHelper((...args), style: iostyleInternal);
 }
 
 pragma "no doc"
@@ -4897,7 +4902,7 @@ proc channel.writeln() throws where WritersReturnBool == false {
   try this.write(new ioNewline());
 }
 
-deprecated "The returning variant of ``channel.writeln`` is deprecated; to use it, compile with :param:`WritersReturnBool` = true"
+deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
 proc channel.writeln(const args ...?k):bool throws where WritersReturnBool == true {
   return try this.write((...args), new ioNewline());
 }
@@ -4922,6 +4927,11 @@ proc channel.writeln(const args ...?k) throws where WritersReturnBool == false {
 deprecated "writeln with a style argument is deprecated"
 proc channel.writeln(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
   return this.writelnHelper((...args), style: iostyleInternal);
+}
+
+deprecated "writeln with a style argument is deprecated"
+proc channel.writeln(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
+  this.writelnHelper((...args), style: iostyleInternal);
 }
 
 pragma "no doc"
@@ -7099,7 +7109,7 @@ proc channel._writefOne(fmtStr, ref arg, i: int,
   }
 }
 
-deprecated "The returning variant of ``channel.writef`` is deprecated; to use it, compile with :param:`IO.WritersReturnBool` = true"
+deprecated "The returning variant of ``channel.writef`` is deprecated;  use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
 proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     where (isStringType(t) || isBytesType(t)) && WritersReturnBool == true {
 
@@ -7230,7 +7240,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k) throws
 }
 
 // documented in varargs version
-deprecated "The returning variant of ``channel.writef`` is deprecated; to use it, compile with :param:`IO.WritersReturnBool` = true"
+deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
 proc channel.writef(fmtStr:?t): bool throws
     where (isStringType(t) || isBytesType(t)) && WritersReturnBool == true {
 
