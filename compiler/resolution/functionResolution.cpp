@@ -2155,7 +2155,6 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
 }
 */
 
-#if 0
 // Returns:
 //   -1 if 't' is not a numeric type
 //   0 if 't' is a default numeric type ('int' 'bool' etc)
@@ -2214,12 +2213,6 @@ static int prefersCoercionToOtherNumericType(Type* actualType,
     return 2;
 
   return 0;
-}
-#endif
-static int prefersCoercionToOtherNumericType(Type* actualType,
-                                             Type* f1Type,
-                                             Type* f2Type) {
-  return 0; // no preference;
 }
 
 static bool fits_in_bits_no_sign(int width, int64_t i) {
