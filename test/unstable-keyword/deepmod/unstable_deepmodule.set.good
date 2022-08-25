@@ -1,0 +1,5 @@
+unstable_deepmodule.chpl:23: In function 'main':
+unstable_deepmodule.chpl:24: warning: TestUnstableModule2 is unstable
+unstable_deepmodule.chpl:25: warning: TestUnstableModule2 is unstable
+0
+0

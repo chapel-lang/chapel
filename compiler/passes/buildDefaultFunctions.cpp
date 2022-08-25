@@ -458,6 +458,11 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     fn->deprecationMsg = field->deprecationMsg;
   }
 
+  if (field->hasFlag(FLAG_UNSTABLE)) {
+    fn->addFlag(FLAG_UNSTABLE);
+    fn->unstableMsg = field->unstableMsg;
+  }
+
   if (!typeMethod) {
     if (fieldIsConst)
       fn->addFlag(FLAG_REF_TO_CONST);

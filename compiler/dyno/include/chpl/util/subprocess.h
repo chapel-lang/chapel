@@ -23,7 +23,9 @@
 
 #include <string>
 #include <vector>
+#include <system_error>
 
+#include "llvm/Support/ErrorOr.h"
 
 namespace chpl {
 
@@ -48,7 +50,18 @@ int executeAndWait(const std::vector<std::string>& commandVec,
                    const std::string& description,
                    bool printSystemCommands = false);
 
-#endif
+/**
+  Run a command and collect its output into a string.
 
+  command
+    the command to run
+
+  returns
+    an error code if something went wrong, or a string
+    containing the command's output.
+ */
+llvm::ErrorOr<std::string> getCommandOutput(const std::string& command);
 
 } // namespace chpl
+
+#endif

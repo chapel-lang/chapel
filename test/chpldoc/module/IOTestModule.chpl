@@ -1,0 +1,4 @@
+module IOTestModule {
+  use IO;
+
+}

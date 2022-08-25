@@ -27,6 +27,7 @@ target_sources(libdyno-obj
                # C++ sources
                bitmap.cpp
                break.cpp
+               chplenv.cpp
                filesystem.cpp
                filesystem_help.h
                string-escapes.cpp

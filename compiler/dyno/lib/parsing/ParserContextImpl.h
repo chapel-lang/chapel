@@ -152,7 +152,9 @@ owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
   auto node = Attributes::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
                                 attributeParts.isDeprecated,
-                                attributeParts.deprecationMessage);
+                                attributeParts.isUnstable,
+                                attributeParts.deprecationMessage,
+                                attributeParts.unstableMessage);
   return node;
 }
 
@@ -207,17 +209,38 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
   }
 }
 
+void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
+  if (!hasAttributeParts) {
+    hasAttributeParts = true;
+  }
+  else {
+    assert(!attributeParts.isUnstable);
+    assert(attributeParts.unstableMessage.isEmpty());
+  }
+
+  attributeParts.isUnstable = true;
+
+  if (messageStr) {
+    if (auto strLit = messageStr->toStringLiteral()) {
+      attributeParts.unstableMessage = strLit->str();
+    }
+
+    delete messageStr;
+  }
+}
 void ParserContext::resetAttributePartsState() {
   if (hasAttributeParts) {
     auto& pragmas = attributeParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeParts = { nullptr, false, UniqueString() };
+    attributeParts = { nullptr, false, false, UniqueString(), UniqueString() };
     hasAttributeParts = false;
   }
 
   assert(attributeParts.pragmas == nullptr);
   assert(!attributeParts.isDeprecated);
+  assert(!attributeParts.isUnstable);
   assert(attributeParts.deprecationMessage.isEmpty());
+  assert(attributeParts.unstableMessage.isEmpty());
   assert(!hasAttributeParts);
 
   numAttributesBuilt = 0;
@@ -244,6 +267,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     if (hasAttributeParts) {
       assert(attributeParts.pragmas == nullptr);
       assert(attributeParts.isDeprecated);
+      assert(attributeParts.isUnstable);
       auto msg = "pragma list must come before deprecation statement";
       noteError(loc, msg);
     }
@@ -2090,6 +2114,31 @@ AstNode* ParserContext::buildReduce(YYLTYPE location,
   auto node = Reduce::build(builder, convertLocation(location),
                             toOwned(op),
                             toOwned(iterand));
+  return node.release();
+}
+
+AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
+                                          YYLTYPE locOp,
+                                          PODUniqueString op,
+                                          AstNode* iterand) {
+  auto ident = buildIdent(locOp, op);
+  return buildReduceIntent(location, locOp, ident, iterand);
+}
+
+AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
+                                          YYLTYPE locOp,
+                                          AstNode* op,
+                                          AstNode* iterand) {
+  (void) locOp;
+  const Identifier* ident = iterand->toIdentifier();
+  if (ident == nullptr) {
+    noteError(location, "Expected identifier for reduce intent name");
+    auto loc = convertLocation(location);
+    return ErroneousExpression::build(builder, loc).release();
+  }
+  auto node = ReduceIntent::build(builder, convertLocation(location),
+                                  toOwned(op),
+                                  ident->name());
   return node.release();
 }
 

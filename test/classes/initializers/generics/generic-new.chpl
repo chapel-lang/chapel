@@ -9,8 +9,8 @@ const Space                       = {1..8, 1..8};
 const OneLoc: [0..0, 0..0] locale = Locales[0];
 
 proc main() {
-  const B1 = new borrowed MyBlock(Space, OneLoc);
-  const B2 = new borrowed MyBlock(Space);
+  const B1 = (new owned MyBlock(Space, OneLoc)).borrow();
+  const B2 = (new owned MyBlock(Space)).borrow();
 
   writeln('B1 ', B1);
   writeln('B2 ', B2);

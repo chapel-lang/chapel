@@ -1910,15 +1910,9 @@ module String {
                         first line.
 
       :returns: A new `string` with indentation removed.
-
-      .. warning::
-
-        ``string.dedent`` is not considered stable and is subject to change in
-        future Chapel releases.
   */
+  @unstable "string.dedent is subject to change in the future."
   proc string.dedent(columns=0, ignoreFirst=true) : string {
-    if chpl_warnUnstable then
-      compilerWarning("string.dedent is subject to change in the future.");
     return doDedent(this, columns, ignoreFirst);
   }
 

@@ -4,8 +4,8 @@ module ParamType {
   }
 
   proc main() {
-    var g1 = new borrowed G1(1);
-    var g2 = new borrowed G1(1:uint);
+    var g1 = (new owned G1(1)).borrow();
+    var g2 = (new owned G1(1:uint)).borrow();
 
     g1 = g2;
   }

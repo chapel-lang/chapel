@@ -287,6 +287,8 @@ if there was an error. See:
 In addition, there is a convenient synonym for :proc:`channel.write` and
 :proc:`channel.read`: the `<~> operator`
 
+.. note:: the <~> operator is deprecated
+
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 :proc:`channel.flush()` method. Flushing the buffer will make all writes available
 to other applications or other views of the file (e.g., it will call the OS call
@@ -343,8 +345,8 @@ appropriately with ``try`` and ``catch``.
 
 Some of these subclasses commonly used within the I/O implementation include:
 
- * :class:`OS.EOFError` - the end of file was reached
- * :class:`OS.UnexpectedEOFError` - a read or write only returned part of the requested data
+ * :class:`OS.EofError` - the end of file was reached
+ * :class:`OS.UnexpectedEofError` - a read or write only returned part of the requested data
  * :class:`OS.BadFormatError` - data read did not adhere to the requested format
 
 An error code can be converted to a string using the function
@@ -698,9 +700,9 @@ proc stringStyleWithLengthInternal(lengthBytes:int) throws {
     when 4 do x = iostringstyle.len4b_data;
     when 8 do x = iostringstyle.len8b_data;
     otherwise
-      throw SystemError.fromSyserr(EINVAL,
-                                   "Invalid string length prefix " +
-                                   lengthBytes:string);
+      throw createSystemError(EINVAL,
+                              "Invalid string length prefix " +
+                              lengthBytes:string);
   }
   return x;
 }
@@ -1555,9 +1557,9 @@ operator file.=(ref ret:file, x:file) {
 pragma "no doc"
 proc file.checkAssumingLocal() throws {
   if is_c_nil(_file_internal) then
-    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
+    throw createSystemError(EBADF, "Operation attempted on an invalid file");
   if !qio_file_isopen(_file_internal) then
-    throw SystemError.fromSyserr(EBADF, "Operation attempted on closed file");
+    throw createSystemError(EBADF, "Operation attempted on closed file");
 }
 
 /* Throw an error if `this` is not a valid representation of an OS file.
@@ -1638,7 +1640,7 @@ proc file._style:iostyleInternal throws {
  */
 proc file.close() throws {
   if is_c_nil(_file_internal) then
-    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
+    throw createSystemError(EBADF, "Operation attempted on an invalid file");
 
   var err:syserr = ENOERR;
   on this.home {
@@ -2408,7 +2410,7 @@ inline proc channel.lock() throws {
   var err:syserr = ENOERR;
 
   if is_c_nil(_channel_internal) then
-    throw SystemError.fromSyserr(EINVAL, "Operation attempted on an invalid channel");
+    throw createSystemError(EINVAL, "Operation attempted on an invalid channel");
 
   if locking {
     on this.home {
@@ -2478,7 +2480,7 @@ proc channel.advance(amount:int(64)) throws {
    Reads until ``byte`` is found and then leave the channel offset
    just after it.
 
-   :throws EOFError: if the requested `byte` could not be found.
+   :throws EofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
 proc channel.advancePastByte(byte:uint(8)) throws {
@@ -2525,7 +2527,7 @@ proc channel.mark() throws where this.locking == false {
   const err = qio_channel_mark(false, _channel_internal);
 
   if err then
-    throw SystemError.fromSyserr(err);
+    throw createSystemError(err);
 
   return offset;
 }
@@ -2588,13 +2590,13 @@ proc channel.seek(region: range(?)) throws {
       const err = qio_channel_seek(_channel_internal, region.low, region.high);
 
       if err then
-        throw SystemError.fromSyserr(err);
+        throw createSystemError(err);
 
     } else {
       const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
 
       if err then
-        throw SystemError.fromSyserr(err);
+        throw createSystemError(err);
     }
   }
 }
@@ -2635,7 +2637,7 @@ proc channel._mark() throws {
   const err = qio_channel_mark(false, _channel_internal);
 
   if err then
-    throw SystemError.fromSyserr(err);
+    throw createSystemError(err);
 
   return offset;
 }
@@ -3747,6 +3749,7 @@ proc channel.writeIt(const x) throws {
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref ch: channel, const x) const ref throws
   where ch.writing {
     try ch.writeIt(x);
@@ -3755,6 +3758,7 @@ proc channel.writeIt(const x) throws {
 
   // documented in the writing version.
   pragma "no doc"
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
     try ch.readIt(x);
@@ -3776,6 +3780,7 @@ proc channel.writeIt(const x) throws {
      works without requiring an explicit temporary value to store
      the ioLiteral.
    */
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
                               lit:ioLiteral) const ref throws
   where !r.writing {
@@ -3794,6 +3799,7 @@ proc channel.writeIt(const x) throws {
      works without requiring an explicit temporary value to store
      the ioNewline.
    */
+  deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
                               nl:ioNewline) const ref throws
   where !r.writing {
@@ -4124,7 +4130,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
  */
 proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
@@ -4274,7 +4280,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   :returns: `true` if a line was read without error, `false` upon EOF
 
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc channel.readLine(ref s: string,
                       maxSize=-1,
@@ -4359,7 +4365,7 @@ proc channel.readLine(ref s: string,
   :returns: `true` if a line was read without error, `false` upon EOF
 
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc channel.readLine(ref b: bytes,
                       maxSize=-1,
@@ -4446,7 +4452,7 @@ proc channel.readLine(ref b: bytes,
   :returns: The data that was read.
 
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IOError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;
@@ -4638,7 +4644,7 @@ proc channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) t
     }
   }
   if (e != ENOERR) {
-    throw SystemError.fromSyserr(e);
+    throw createSystemError(e);
   }
 }
 
@@ -4693,7 +4699,7 @@ proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native
   if (e == EEOF) {
     return false;
   } else if (e != ENOERR) {
-    throw SystemError.fromSyserr(e);
+    throw createSystemError(e);
   }
   return true;
 }
@@ -4987,7 +4993,7 @@ proc channel.close() throws {
   var err:syserr = ENOERR;
 
   if is_c_nil(_channel_internal) then
-    throw SystemError.fromSyserr(EINVAL, "cannot close invalid channel");
+    throw createSystemError(EINVAL, "cannot close invalid channel");
 
   on this.home {
     err = qio_channel_close(locking, _channel_internal);

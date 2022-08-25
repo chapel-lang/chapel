@@ -15,7 +15,7 @@ class HasGenericFields : Parent {
   }
 }
 
-var h = new borrowed HasGenericFields(int, false);
+var h = (new owned HasGenericFields(int, false)).borrow();
 writeln(h + 1);
 
 
@@ -28,5 +28,5 @@ class NoGenericFields : Parent {
   }
 }
 
-var n = new borrowed NoGenericFields(int);
+var n = (new owned NoGenericFields(int)).borrow();
 writeln(n + 1);

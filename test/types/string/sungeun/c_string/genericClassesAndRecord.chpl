@@ -5,19 +5,19 @@ use checkType;
     var x;
   }
 
-  var c0 = new borrowed C("blah");
+  var c0 = (new owned C("blah")).borrow();
   checkType(c0.x.type);
 
   param blah1 = "blah";
-  var c1 = new borrowed C(blah1);
+  var c1 = (new owned C(blah1)).borrow();
   checkType(c1.x.type);
 
   const blah2: c_string = "blah";
-  var c2 = new borrowed C(blah2);
+  var c2 = (new owned C(blah2)).borrow();
   checkType(c_string, c2.x.type);
 
   const blah3 = "blah";
-  var c3 = new borrowed C(blah3);
+  var c3 = (new owned C(blah3)).borrow();
   checkType(c3.x.type);
 }
 
@@ -26,11 +26,11 @@ use checkType;
     param x;
   }
 
-  var c0 = new borrowed C("blah");
+  var c0 = (new owned C("blah")).borrow();
   checkType(string, c0.x.type);
 
   param blah1 = "blah";
-  var c1 = new borrowed C(blah1);
+  var c1 = (new owned C(blah1)).borrow();
   checkType(string, c1.x.type);
 }
 

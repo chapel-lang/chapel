@@ -6,5 +6,5 @@ class MyClass {
 
 {
   var rhs = new owned MyClass();
-  var lhs: shared MyClass = rhs;
+  var lhs: shared MyClass = rhs: shared MyClass;
 }

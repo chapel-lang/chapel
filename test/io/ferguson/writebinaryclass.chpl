@@ -13,7 +13,7 @@ class R {
 
 var f = open("binary-output.bin", iomode.cwr);
 
-var A = new borrowed R(1,2,3,4,5);
+var A = (new owned R(1,2,3,4,5)).borrow();
 
 {
   var w = f.writer(kind=iobig);
@@ -24,7 +24,7 @@ var A = new borrowed R(1,2,3,4,5);
 
 {
   var r = f.reader(kind=iobig);
-  var B = new borrowed R(0,0,0,0,0);
+  var B = (new owned R(0,0,0,0,0)).borrow();
 
   r.read(B);
   writeln("Read ", B);
@@ -35,7 +35,7 @@ var A = new borrowed R(1,2,3,4,5);
 
 {
   var r = f.reader(kind=iobig);
-  var B = new borrowed R(0,0,0,0,0);
+  var B = (new owned R(0,0,0,0,0)).borrow();
 
   assert(r.read(B.a));
   assert(r.read(B.b));

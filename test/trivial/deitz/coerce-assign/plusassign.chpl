@@ -17,9 +17,9 @@ class C : D {
   }
 }
 
-var d = new borrowed D();
+var d = (new owned D()).borrow();
 writeln(d);
 
-var c = new borrowed C();
+var c = (new owned C()).borrow();
 c.foo();
 writeln(c);

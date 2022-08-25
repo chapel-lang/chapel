@@ -3352,7 +3352,7 @@ if test "$enabled_mpi" = yes || test "$enabled_mpi_compat" = yes; then
     mpi_reason="was disabled"
   else
     GASNET_GETFULLPATH(MPI_CC)
-    if expr "x$MPI_CC" : 'x/' >/dev/null; then
+    if command -v $MPI_CC > /dev/null 2>&1; then
       # figure out a reasonable fallback MPI_CFLAGS for this arch/OS and C99 support
       # this is complicated by the fact that $MPI_CC may be a different compiler than $CC
       GASNET_PUSHVAR(CC,"$MPI_CC")

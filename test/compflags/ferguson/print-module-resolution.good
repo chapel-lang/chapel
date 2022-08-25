@@ -6,8 +6,6 @@ Reflection
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Reflection
 CTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes
-ChapelTaskData
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelTaskData
 Communication
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers.Communication
 ByteBufferHelpers
@@ -30,6 +28,8 @@ String
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String
 ChplConfig
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig
+ChapelTaskData
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelTaskData
 ChapelBase
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase
 CommDiagnostics

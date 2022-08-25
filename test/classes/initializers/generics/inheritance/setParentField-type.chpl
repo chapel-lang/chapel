@@ -17,6 +17,6 @@ class Bar : Foo {
   }
 }
 
-var bar = new borrowed Bar(4);
+var bar = (new owned Bar(4)).borrow();
 writeln(bar.type: string);
 writeln(bar);

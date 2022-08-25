@@ -15,8 +15,8 @@ proc populateList() {
 
   lst.append(new C(here)); 
 
-  for i in 0..#here.getChildCount() {
-    var subloc = here.getChild(i);
+  for i in 0..#here._getChildCount() {
+    var subloc = here._getChild(i);
     on subloc {
       populateList();
     }

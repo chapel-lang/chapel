@@ -13,8 +13,8 @@ override proc trio.writeThis(f) throws {
   f.write("(", x1, " & ", x2, " & ", x3, ")");
 }
 
-var t1 : borrowed trio(int)  = new borrowed trio(int, 1, 2, 3);
-var t2 : borrowed trio(real) = new borrowed trio(real, x1=1.0);
+var t1 : borrowed trio(int)  = (new owned trio(int, 1, 2, 3)).borrow();
+var t2 : borrowed trio(real) = (new owned trio(real, x1=1.0)).borrow();
 
 writeln(t1);
 writeln(t1.sum());

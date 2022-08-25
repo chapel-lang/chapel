@@ -8,6 +8,6 @@ class C {
   var x: [d] real = f();
 }
 
-var c = new borrowed C();
+var c = (new owned C()).borrow();
 
 writeln(c.x);

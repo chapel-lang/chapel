@@ -21,7 +21,7 @@ proc ok0() {
 }
 ok0();
 
-var globalValue = new borrowed C(1);
+var globalValue = (new owned C(1)).borrow();
 proc getGlobalHashtableElement (key: C) lifetime return globalValue {
   return globalValue;
 }

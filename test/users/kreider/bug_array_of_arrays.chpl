@@ -27,7 +27,7 @@ class tst {
   }
 }
 
-var t = new borrowed tst(5, int, 3);
+var t = (new owned tst(5, int, 3)).borrow();
 t.run_test();
 
 

@@ -9,7 +9,7 @@ if c != nil then
 else
   writeln("c is nil");
 
-c = new borrowed C();
+c = (new owned C()).borrow();
 
 if c != nil then
   writeln(c!.x);

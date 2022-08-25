@@ -17,13 +17,13 @@ class foo {
   }
 }
 
-var f1 : borrowed foo(t=int)    = new borrowed foo(t = int);
+var f1 : borrowed foo(t=int)    = (new owned foo(t = int)).borrow();
 
 f1.x.y = 12;
 
 f1.print();
 
-var f2 : borrowed foo(t=string) = new borrowed foo(t = string);
+var f2 : borrowed foo(t=string) = (new owned foo(t = string)).borrow();
 
 f2.x.y = "hello world";
 

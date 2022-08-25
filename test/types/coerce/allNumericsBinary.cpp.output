@@ -1,0 +1,170 @@
+First actual int8_t
+
+ Second actual int8_t       + -> int32_t
+ Second actual int16_t      + -> int32_t
+ Second actual int32_t      + -> int32_t
+ Second actual int64_t      + -> int64_t
+
+ Second actual uint8_t      + -> int32_t
+ Second actual uint16_t     + -> int32_t
+ Second actual uint32_t     + -> uint32_t
+ Second actual uint64_t     + -> uint64_t
+
+ Second actual float        + -> float
+ Second actual double       + -> double
+
+
+
+First actual int16_t
+
+ Second actual int8_t       + -> int32_t
+ Second actual int16_t      + -> int32_t
+ Second actual int32_t      + -> int32_t
+ Second actual int64_t      + -> int64_t
+
+ Second actual uint8_t      + -> int32_t
+ Second actual uint16_t     + -> int32_t
+ Second actual uint32_t     + -> uint32_t
+ Second actual uint64_t     + -> uint64_t
+
+ Second actual float        + -> float
+ Second actual double       + -> double
+
+
+
+First actual int32_t
+
+ Second actual int8_t       + -> int32_t
+ Second actual int16_t      + -> int32_t
+ Second actual int32_t      + -> int32_t
+ Second actual int64_t      + -> int64_t
+
+ Second actual uint8_t      + -> int32_t
+ Second actual uint16_t     + -> int32_t
+ Second actual uint32_t     + -> uint32_t
+ Second actual uint64_t     + -> uint64_t
+
+ Second actual float        + -> float
+ Second actual double       + -> double
+
+
+
+First actual int64_t
+
+ Second actual int8_t       + -> int64_t
+ Second actual int16_t      + -> int64_t
+ Second actual int32_t      + -> int64_t
+ Second actual int64_t      + -> int64_t
+
+ Second actual uint8_t      + -> int64_t
+ Second actual uint16_t     + -> int64_t
+ Second actual uint32_t     + -> int64_t
+ Second actual uint64_t     + -> uint64_t
+
+ Second actual float        + -> float
+ Second actual double       + -> double
+
+
+
+First actual uint8_t
+
+ Second actual int8_t       + -> int32_t
+ Second actual int16_t      + -> int32_t
+ Second actual int32_t      + -> int32_t
+ Second actual int64_t      + -> int64_t
+
+ Second actual uint8_t      + -> int32_t
+ Second actual uint16_t     + -> int32_t
+ Second actual uint32_t     + -> uint32_t
+ Second actual uint64_t     + -> uint64_t
+
+ Second actual float        + -> float
+ Second actual double       + -> double
+
+
+
+First actual uint16_t
+
+ Second actual int8_t       + -> int32_t
+ Second actual int16_t      + -> int32_t
+ Second actual int32_t      + -> int32_t
+ Second actual int64_t      + -> int64_t
+
+ Second actual uint8_t      + -> int32_t
+ Second actual uint16_t     + -> int32_t
+ Second actual uint32_t     + -> uint32_t
+ Second actual uint64_t     + -> uint64_t
+
+ Second actual float        + -> float
+ Second actual double       + -> double
+
+
+
+First actual uint32_t
+
+ Second actual int8_t       + -> uint32_t
+ Second actual int16_t      + -> uint32_t
+ Second actual int32_t      + -> uint32_t
+ Second actual int64_t      + -> int64_t
+
+ Second actual uint8_t      + -> uint32_t
+ Second actual uint16_t     + -> uint32_t
+ Second actual uint32_t     + -> uint32_t
+ Second actual uint64_t     + -> uint64_t
+
+ Second actual float        + -> float
+ Second actual double       + -> double
+
+
+
+First actual uint64_t
+
+ Second actual int8_t       + -> uint64_t
+ Second actual int16_t      + -> uint64_t
+ Second actual int32_t      + -> uint64_t
+ Second actual int64_t      + -> uint64_t
+
+ Second actual uint8_t      + -> uint64_t
+ Second actual uint16_t     + -> uint64_t
+ Second actual uint32_t     + -> uint64_t
+ Second actual uint64_t     + -> uint64_t
+
+ Second actual float        + -> float
+ Second actual double       + -> double
+
+
+
+First actual float
+
+ Second actual int8_t       + -> float
+ Second actual int16_t      + -> float
+ Second actual int32_t      + -> float
+ Second actual int64_t      + -> float
+
+ Second actual uint8_t      + -> float
+ Second actual uint16_t     + -> float
+ Second actual uint32_t     + -> float
+ Second actual uint64_t     + -> float
+
+ Second actual float        + -> float
+ Second actual double       + -> double
+
+
+
+First actual double
+
+ Second actual int8_t       + -> double
+ Second actual int16_t      + -> double
+ Second actual int32_t      + -> double
+ Second actual int64_t      + -> double
+
+ Second actual uint8_t      + -> double
+ Second actual uint16_t     + -> double
+ Second actual uint32_t     + -> double
+ Second actual uint64_t     + -> double
+
+ Second actual float        + -> double
+ Second actual double       + -> double
+
+
+

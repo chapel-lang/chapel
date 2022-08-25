@@ -473,6 +473,13 @@ static void checkOperator(FnSymbol* fn) {
   } else {
     if (!isAstrOpName(fn->name)) {
       USR_FATAL_CONT(fn, "'%s' is not a legal operator name", fn->name);
+    } else if (astr("<~>") == astr(fn->name)) {
+      if (fn->hasFlag(FLAG_DEPRECATED) == false) {
+        const char* msg = astr("the <~> operator is deprecated");
+        USR_WARN(fn, "%s", msg);
+        fn->addFlag(FLAG_DEPRECATED);
+        fn->deprecationMsg = msg;
+      }
     }
   }
 }

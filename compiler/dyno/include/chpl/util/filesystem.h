@@ -72,16 +72,19 @@ std::error_code deleteDir(std::string dirname);
 std::error_code currentWorkingDir(std::string& path_out);
 
 /**
- * makes the directory in dirpath. Will fail if a directory in the path doesn't
- * already exist.
+ * makes the directory in dirpath. If makeParents is false, this will fail
+ * if a directory in the path doesn't already exist.
  * Directory permissions are set to llvm::all-all.
  * which should be equivalent to  S_IRWXU | S_IRWXG | S_IRWXO
  *
  * dirpath - the path of the directory to create
+ * makeParents - if true, creates parent directories if they don't exist
  * returns - std::error_code
  */
-std::error_code makeDir(std::string dirpath);
+std::error_code makeDir(std::string dirpath, bool makeParents=false);
+
 
 } // end namespace chpl
+
 
 #endif

@@ -25,7 +25,7 @@ const hetInstance = (101, 102.5, "hetInstance");
 class ClassType {
   var zzz: int;
 }
-const cInstance = new borrowed ClassType(44444444);
+const cInstance = (new owned ClassType(44444444)).borrow();
 
 record RecordSmall {
   var xxx: int;
@@ -87,7 +87,7 @@ var enm:    EnumType;
 var homtup: HomTupType;
 var hettup: HetTupType;
 
-var cls:  borrowed ClassType = new borrowed ClassType();
+var cls:  borrowed ClassType = (new owned ClassType()).borrow();
 var rec1: RecordSmall;
 var unn:  UnionType;
 

@@ -14,7 +14,8 @@ class MyClass {
   var x:int;
 }
 
-var b = new borrowed MyClass(1);
+var o = new owned MyClass(1);
+var b = o.borrow();
 var u = new unmanaged MyClass(1);
 var i = 1;
 

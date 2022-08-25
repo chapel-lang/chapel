@@ -1,7 +1,7 @@
 //
 // Create a record with a `writeThis` that always throws a user error and
 // use that to verify correct behavior for `writeln` (it should fail with
-// a general IOError).
+// a general IoError).
 //
 use IO;
 
