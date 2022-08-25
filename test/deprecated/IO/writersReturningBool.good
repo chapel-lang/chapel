@@ -1,0 +1,5 @@
+writersReturningBool.chpl:7: warning: The returning variant of ``channel.write`` is deprecated; to use it, compile with WritersReturnBool = true
+writersReturningBool.chpl:8: warning: The returning variant of ``channel.writeln`` is deprecated; to use it, compile with WritersReturnBool = true
+writersReturningBool.chpl:9: warning: The returning variant of ``writebits`` is deprecated; to use it, compile with WritersReturnBool = true
+writersReturningBool.chpl:10: warning: The returning variant of ``writeBytes`` is deprecated; to use it, compile with WritersReturnBool = true
+writersReturningBool.chpl:11: warning: The returning variant of ``channel.writef`` is deprecated; to use it, compile with IO.WritersReturnBool = true
