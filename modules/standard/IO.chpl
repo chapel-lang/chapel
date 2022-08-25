@@ -2808,6 +2808,8 @@ This function is equivalent to calling :proc:`open` and then
 :returns: an open reading channel to the requested resource.
 
 :throws SystemError: Thrown if a reading channel could not be returned.
+:throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
+                              0.
  */
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
@@ -2955,6 +2957,8 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                file was opened.
 
    :throws SystemError: Thrown if a file reader channel could not be returned.
+   :throws IllegalArgumentError: Thrown if trying to read explicitly prior to
+                                 byte 0.
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty): channel(false, kind, locking) throws {
@@ -2972,6 +2976,10 @@ pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style): channel(false, kind, locking) throws {
+  if (region.hasLowBound() && region.low < 0) {
+    throw new IllegalArgumentError("region", "cannot index into a file before byte 0");
+  }
+
   // It is the responsibility of the caller to release the returned channel
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
@@ -3122,6 +3130,8 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                file was opened.
 
    :throws SystemError: Thrown if a file writer channel could not be returned.
+   :throws IllegalArgumentError: Thrown if trying to write explicitly prior to
+                                 byte 0.
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty):
@@ -3143,6 +3153,10 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style):
   channel(true,kind,locking) throws {
+  if (region.hasLowBound() && region.low < 0) {
+    throw new IllegalArgumentError("region", "cannot index into a file before byte 0");
+  }
+
   // It is the responsibility of the caller to retain and release the returned
   // channel.
   // If the return error code is nonzero, the ref count will be 0 not 1.
