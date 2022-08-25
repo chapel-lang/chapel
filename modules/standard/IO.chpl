@@ -2141,8 +2141,8 @@ proc type _channel.kind param :iokind { return this._kind; }
 proc _channel.locking param :bool { return this._locking; }
 proc type _channel.locking param :bool { return this._locking; }
 
-type reader = _channel(_writing=false, ?);
-type writer = _channel(_writing=true, ?);
+type fileReader = _channel(_writing=false, ?);
+type fileWriter = _channel(_writing=true, ?);
 
 deprecated "channel type is deprecated - use reader or writer instead"
 type channel = _channel;
@@ -3918,7 +3918,7 @@ proc _channel.writeIt(const x) throws {
   // non-unstable version we can use internally
   pragma "no doc"
   inline
-  proc channel._readLiteral(literal:string,
+  proc _channel._readLiteral(literal:string,
                             ignoreWhitespace=true) : void throws {
     var iolit = new ioLiteral(literal, ignoreWhitespace);
     this.readIt(iolit);
@@ -3943,7 +3943,7 @@ proc _channel.writeIt(const x) throws {
   */
   @unstable "channel.readLiteral is unstable and subject to change."
   inline
-  proc channel.readLiteral(literal:string,
+  proc _channel.readLiteral(literal:string,
                            ignoreWhitespace=true) : void throws {
     _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
   }
@@ -3979,7 +3979,7 @@ proc _channel.writeIt(const x) throws {
   // to 'true' without changing behavior in existing programs.
   pragma "no doc"
   inline
-  proc channel._readNewlineCommon(param isMatch:bool) throws {
+  proc _channel._readNewlineCommon(param isMatch:bool) throws {
     if writing {
       param name = if isMatch then "matchNewline" else "readNewline";
       compilerError(name + " on write-only channel", 2);
@@ -4024,7 +4024,7 @@ proc _channel.writeIt(const x) throws {
 
   pragma "no doc"
   inline
-  proc channel._matchLiteralCommon(literal, ignore : bool) : bool throws {
+  proc _channel._matchLiteralCommon(literal, ignore : bool) : bool throws {
     try {
       _readLiteralCommon(literal, ignore, isMatch=true);
     } catch e : BadFormatError {
@@ -4056,7 +4056,7 @@ proc _channel.writeIt(const x) throws {
   */
   @unstable "channel.matchLiteral is unstable and subject to change."
   inline
-  proc channel.matchLiteral(literal:string,
+  proc _channel.matchLiteral(literal:string,
                             ignoreWhitespace=true) : bool throws {
     return _matchLiteralCommon(literal, ignoreWhitespace);
   }
@@ -4081,7 +4081,7 @@ proc _channel.writeIt(const x) throws {
   */
   @unstable "channel.matchLiteral is unstable and subject to change."
   inline
-  proc channel.matchLiteral(literal:bytes,
+  proc _channel.matchLiteral(literal:bytes,
                             ignoreWhitespace=true) : bool throws {
     return _matchLiteralCommon(literal, ignoreWhitespace);
   }
@@ -4102,7 +4102,7 @@ proc _channel.writeIt(const x) throws {
   */
   @unstable "channel.matchNewline is unstable and subject to change."
   inline
-  proc channel.matchNewline() : bool throws {
+  proc _channel.matchNewline() : bool throws {
     try {
       _readNewlineCommon(isMatch=true);
     } catch e : BadFormatError {
@@ -4116,7 +4116,7 @@ proc _channel.writeIt(const x) throws {
 
   pragma "no doc"
   inline
-  proc channel._writeLiteralCommon(x:?t) : void throws {
+  proc _channel._writeLiteralCommon(x:?t) : void throws {
     if t != string && t != bytes then
       compilerError("expecting string or bytes");
 
@@ -4133,7 +4133,7 @@ proc _channel.writeIt(const x) throws {
 
   pragma "no doc"
   inline
-  proc channel._writeLiteral(literal:string) : void throws {
+  proc _channel._writeLiteral(literal:string) : void throws {
     var iolit = new ioLiteral(literal);
     this.writeIt(iolit);
   }
@@ -4154,7 +4154,7 @@ proc _channel.writeIt(const x) throws {
   */
   @unstable "channel.writeLiteral is unstable and subject to change."
   inline
-  proc channel.writeLiteral(literal:bytes) : void throws {
+  proc _channel.writeLiteral(literal:bytes) : void throws {
     _writeLiteralCommon(literal);
   }
 
@@ -4165,7 +4165,7 @@ proc _channel.writeIt(const x) throws {
   */
   @unstable "channel.writeNewline is unstable and subject to change."
   inline
-  proc channel.writeNewline() : void throws {
+  proc _channel.writeNewline() : void throws {
     if !writing then compilerError("writeNewline on read-only channel");
 
     on this._home {
@@ -4323,7 +4323,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
 }
 
 pragma "no doc"
-inline proc channel._readInner(ref args ...?k):void throws {
+inline proc _channel._readInner(ref args ...?k):void throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -4457,7 +4457,7 @@ proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lo
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
  */
-proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
+proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
   if a.size == 0 || maxSize == 0 ||
   ( a.domain.lowBound + maxSize - 1 > a.domain.highBound) then return 0;
@@ -4518,7 +4518,7 @@ proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int thr
 
 pragma "no doc"
 pragma "last resort"
-inline proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws {
+inline proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
 }
 
@@ -4607,7 +4607,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
-proc channel.readLine(ref s: string,
+proc _channel.readLine(ref s: string,
                       maxSize=-1,
                       stripNewline=false): bool throws {
   if writing then compilerError("read on write-only channel");
@@ -4692,7 +4692,7 @@ proc channel.readLine(ref s: string,
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
-proc channel.readLine(ref b: bytes,
+proc _channel.readLine(ref b: bytes,
                       maxSize=-1,
                       stripNewline=false): bool throws {
   if writing then compilerError("read on write-only channel");
@@ -4779,7 +4779,7 @@ proc channel.readLine(ref b: bytes,
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
-proc channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
+proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;
   this.readLine(retval, maxSize, stripNewline);
   return retval;
