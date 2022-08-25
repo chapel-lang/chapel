@@ -11,6 +11,8 @@ namespace. The entries may not be exhaustive.
 .. comment:
    See entries in '$CHPL_HOME/compiler/dyno/include/chpl/queries'
 
+.. doxygentypedef:: chpl::ChplEnvMap
+
 .. doxygenclass:: chpl::CommentID
    :members:
    :undoc-members:
