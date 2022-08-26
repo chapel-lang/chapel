@@ -5980,7 +5980,10 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
       continue;
     }*/
 
-    // TODO: remove this exception
+    // Not counting real/imag/complex avoids an ambiguity with
+    //  proc f(x: complex(64), y: complex(64))
+    //  proc f(x: complex(128), y: complex(128))
+    //  f(myInt64, myImag32)
     if (isMatchingImagComplex(actualVt, formalVt)) {
       // don't worry about imag vs complex
       continue;
@@ -6204,7 +6207,17 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
 }
 
 // Discard any candidate that has more implicit conversions
-// than another candidate.
+// than another candidate. Do not count consider conversions between
+// real(w), imag(w), and complex(2*w) when computing this.
+//
+// Not counting real/imag/complex avoids an ambiguity with
+//  proc f(x: complex(64), y: complex(64))
+//  proc f(x: complex(128), y: complex(128))
+//  f(myInt64, myImag32)
+//
+// After that, discard any candidate that has a negative param
+// converting to unsigned, if there are candidates that do not do that.
+//
 // After that, discard any candidate that has more param narrowing
 // conversions than another candidate.
 //
