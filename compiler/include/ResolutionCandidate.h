@@ -125,7 +125,7 @@ public:
   // Bit-set for which numeric types are used at the call site
   // TODO: this could be in DisambiguationState since it is
   // independent of the candidate functions
-  int                     numericTypesInUseSet;
+  //int                     numericTypesInUseSet;
   // What is the visibility distance?
   int                     visibilityDistance;
 

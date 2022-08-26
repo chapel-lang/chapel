@@ -224,7 +224,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateTyp
 
 static void computeConversionInfo(ResolutionCandidate* candidate,
                                   const DisambiguationContext& DC);
-static bool hasBitForType(int numericBitSet, Type* t);
+//static bool hasBitForType(int numericBitSet, Type* t);
 
 static bool useLegacyNilability(Expr* at) {
   if (at != NULL) {
@@ -2286,7 +2286,7 @@ static int prefersNumericCoercion(ResolutionCandidate* candidate1,
 
   // check to see if one of f1Type or f2Type is used at the
   // call site but the other is not
-  if (0) {
+  /*if (0) {
     // this rule wasn't helping the cases I intended it to
     computeConversionInfo(candidate1, DC);
     int numericTypesInUseSet = candidate1->numericTypesInUseSet;
@@ -2302,7 +2302,7 @@ static int prefersNumericCoercion(ResolutionCandidate* candidate1,
       reason = "type used at call site";
       return 2;
     }
-  }
+  }*/
 
   // otherwise, prefer something with the same numeric kind
   numeric_type_t acKind = classifyNumericType(actualScalarType);
@@ -5814,6 +5814,8 @@ static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
   return false;
 }
 
+/*
+
 // returns a value that can be set in a mask with | or
 // checked with &
 static int numericTypeToIdx(Type* t) {
@@ -5862,6 +5864,7 @@ static int withBitForType(int numericBitSet, Type* t) {
 static bool hasBitForType(int numericBitSet, Type* t) {
   return ((numericBitSet & numericTypeToBit(t)) > 0);
 }
+*/
 
 static void computeConversionInfo(ResolutionCandidate* candidate,
                                   const DisambiguationContext& DC) {
@@ -5872,15 +5875,14 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
   }
 
   // this represents a set of which numeric types are used in the call site
-  int numericTypesInUseSet = 0;
+  //int numericTypesInUseSet = 0;
 
   bool anyNegParamToUnsigned = false;
-
   int numParamNarrowing = 0;
+  int nImplicitConversions = 0;
+
   bool forGenericInit = candidate->fn->isInitializer() ||
                         candidate->fn->isCopyInit();
-
-  Vec<Type*> normalizedActualTypes;
 
   for (int k = 0; k < DC.actuals->n; k++) {
     Symbol*    actual  = DC.actuals->v[k];
@@ -5888,97 +5890,47 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
 
     if (formal == nullptr) {
       // this can happen with some operators
-      normalizedActualTypes.push_back(dtUnknown);
       continue;
+    }
+    if (forGenericInit && k < 2) {
+      // Initializer work-around: Skip _mt/_this for generic initializers
+      continue;
+    }
+    if (formal->originalIntent == INTENT_OUT) {
+      continue; // type comes from call site so ignore it here
     }
 
     Type* actualVt = actual->type->getValType();
     Type* formalVt = formal->type->getValType();
-    if (formal->originalIntent == INTENT_OUT) {
-      actualVt = dtUnknown;
-    } else {
-      bool promotes = false;
-      bool paramNarrows = false;
-      canDispatch(actualVt, actual, formalVt, formal, candidate->fn,
-                  &promotes, &paramNarrows);
 
-      if (paramNarrows) {
-        numParamNarrowing++;
-      }
+    bool promotes = false;
+    bool paramNarrows = false;
+    canDispatch(actualVt, actual, formalVt, formal, candidate->fn,
+                &promotes, &paramNarrows);
 
-      if (candidate->anyPromotes) {
-        while (actualVt->scalarPromotionType != nullptr) {
-          // run canDispatch to check for promotion
-          canDispatch(actualVt, actual, formalVt, formal,
-                      candidate->fn, &promotes, &paramNarrows,
-                      /* param coercions only? */ false);
-          if (promotes) {
-            actualVt = actualVt->scalarPromotionType->getValType();
-          } else {
-            break;
-          }
-        }
-      }
+    if (paramNarrows) {
+      numParamNarrowing++;
     }
 
-    numericTypesInUseSet = withBitForType(numericTypesInUseSet, actualVt);
+    if (promotes) {
+      actualVt = actualVt->scalarPromotionType->getValType();
+    }
+
+    //numericTypesInUseSet = withBitForType(numericTypesInUseSet, actualVt);
 
     if (isNegativeParamToUnsigned(actual, actualVt, formalVt)) {
       anyNegParamToUnsigned = true;
     }
 
-    normalizedActualTypes.push_back(actualVt);
-  }
-
-  // TODO: simplify the count of implicit conversions
-  int nImplicitConversions = 0;
-
-  // number of implicit conversions to a type not used in the call
-  //int nImpConvNotMentioned = 0;
-
-  for (int k = 0; k < DC.actuals->n; k++) {
-    ArgSymbol* formal = candidate->actualIdxToFormal[k];
-
-    if (formal == nullptr) {
-      continue; // can happen with some operators
-    }
-
-    if (formal->originalIntent == INTENT_OUT) {
-      continue; // type comes from call site so ignore it here
-    }
-
-    // Initializer work-around: Skip _mt/_this for generic initializers
-    if (forGenericInit && k < 2) {
-      continue;
-    }
-
-    Type* actualVt = normalizedActualTypes.v[k];
-    Type* formalVt = formal->type->getValType();
     if (actualVt == formalVt) {
       // same type, nothing else to worry about here
       continue;
     }
 
-    // if we get here, an implicit conversion is required
-    /*if (isClassLikeOrManaged(actualVt) || isClassLikeOrManaged(formalVt) ||
-        isClassLikeOrPtr(actualVt) || isClassLikeOrPtr(formalVt)) {
-      // OK, don't worry about implicit conversion for class types here
-      continue;
-    }*/
-
     if (actualVt == dtNil) {
       // don't worry about converting 'nil' to something else
       continue;
     }
-
-    /*
-    if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
-        formalVt->symbol->hasFlag(FLAG_TUPLE)) {
-      // don't worry about tuple types for now
-      // TODO: do worry about tuples containing numeric types that are
-      // converted
-      continue;
-    }*/
 
     // Not counting real/imag/complex avoids an ambiguity with
     //  proc f(x: complex(64), y: complex(64))
@@ -5989,36 +5941,7 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
       continue;
     }
 
-    /*
-    if (is_bool_type(actualVt) &&
-        (formalVt == dtInt[INT_SIZE_DEFAULT] || is_bool_type(formalVt))) {
-      // don't worry about bool types converting to default 'int'
-      // or to other bool sizes
-      continue;
-    }*/
-
-    // is it an implicit conversion to a formal type
-    // that is used in an actual of the call?
-    /*bool formalVtUsedInOtherActual = false;
-    for (int other = 0; other < DC.actuals->n; other++) {
-      ArgSymbol* otherFormal = candidate->actualIdxToFormal[other];
-      if (other == k || otherFormal->originalIntent == INTENT_OUT)
-        continue;
-
-      Type* otherFormalVt = otherFormal->type->getValType();
-      Type* otherActualVt = normalizedActualTypes.v[other];
-      if (otherFormalVt == formalVt &&
-          (otherActualVt == formalVt ||
-           isMatchingImagComplex(otherActualVt, formalVt))) {
-        formalVtUsedInOtherActual = true;
-        break;
-      }
-    }*/
-
     nImplicitConversions++;
-    /*if (!formalVtUsedInOtherActual) {
-      nImpConvNotMentioned++;
-    }*/
   }
 
   // save the computed details in the ResolutionCandidate
@@ -6029,7 +5952,7 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
   candidate->nImplicitConversions = nImplicitConversions;
   candidate->nParamNarrowingImplicitConversions = numParamNarrowing;
 
-  candidate->numericTypesInUseSet = numericTypesInUseSet;
+  //candidate->numericTypesInUseSet = numericTypesInUseSet;
 }
 
 // If any candidate does not require promotion,
