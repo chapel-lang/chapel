@@ -68,7 +68,6 @@ using namespace parsing;
 
 using CommentMap = std::unordered_map<ID, const Comment*>;
 
-bool fDocs = true;
 char fDocsAuthor[256] = "";
 bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
@@ -800,6 +799,16 @@ struct RstSignatureVisitor {
             (op->op() == USTR("postfix!") || op->op() == USTR("?")));
   }
 
+  // stolen from convert-uast.cpp to prevent printing { } inside arrays
+  // probably a better way to do this here
+  bool isBracketLoopMaybeArrayType(const uast::BracketLoop* node) {
+    if (!node->isExpressionLevel()) return false;
+    if (node->iterand()->isZip()) return false;
+    if (node->numStmts() != 1) return false;
+    if (node->index() && node->stmt(0)->isConditional()) return false;
+    return true;
+  }
+
   /*
     helper for printing binary op calls, special handling for keyword operators
     to conditionally add spaces around the operator
@@ -923,7 +932,33 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const BracketLoop* bl) {
-    printChapelSyntax(os_, bl);
+    os_ << "[";
+    if (bl->index()) {
+      bl->index()->traverse(*this);
+      os_ << " in ";
+    }
+    if (isBracketLoopMaybeArrayType(bl) &&
+        bl->iterand()->isDomain() &&
+        bl->iterand()->toDomain()->numExprs() == 1) {
+      bl->iterand()->toDomain()->expr(0)->traverse(*this);
+    } else {
+      bl->iterand()->traverse(*this);
+    }
+
+    if (bl->withClause()) {
+      os_<< " ";
+      bl->withClause()->traverse(*this);
+    }
+    os_ << "]";
+    if (bl->numStmts() > 0) {
+      os_ << " ";
+        if (bl->stmt(0)->isOpCall()) {
+          interpose(bl->stmts(), "", "(", ")");
+          if (!bl->isExpressionLevel())
+            os_ << ";";
+        } else
+          interpose(bl->stmts(), "");
+      }
     return false;
   }
 
@@ -947,7 +982,11 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const Domain* dom) {
-    interpose(dom->children(), ", ", "{", "}");
+    if (dom->usedCurlyBraces()) {
+      interpose(dom->exprs(), ", ", "{", "}");
+    } else {
+      interpose(dom->exprs(), ", ");
+    }
     return false;
   }
 
@@ -1153,6 +1192,9 @@ struct RstSignatureVisitor {
     }
     os_ << "..";
     if (auto ub = range->upperBound()) {
+      if (range->opKind() == Range::OPEN_HIGH) {
+        os_ << "<";
+      }
       ub->traverse(*this);
     }
     return false;
