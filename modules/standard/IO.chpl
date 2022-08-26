@@ -2572,6 +2572,11 @@ proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
    When writing, the data will be saved to the file before discarding.
 
    :arg region: the new region, measured in bytes and counting from 0
+
+   .. warning::
+
+      The region argument will ignore any specified stride other than 1.
+
    :throws SystemError: if seeking failed. Possible reasons include
                          that the file is not seekable, or that the
                          channel is marked.
@@ -2807,6 +2812,10 @@ This function is equivalent to calling :proc:`open` and then
             this file. See :record:`ioHintSet`.
 :returns: an open reading channel to the requested resource.
 
+.. warning::
+
+   The region argument will ignore any specified stride other than 1.
+
 :throws SystemError: Thrown if a reading channel could not be returned.
 :throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
                               0.
@@ -2955,6 +2964,10 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the channel to use the hints provided when the
                file was opened.
+
+   .. warning::
+
+      The region argument will ignore any specified stride other than 1.
 
    :throws SystemError: Thrown if a file reader channel could not be returned.
    :throws IllegalArgumentError: Thrown if trying to read explicitly prior to
@@ -3128,6 +3141,10 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the channel to use the hints provided when the
                file was opened.
+
+   .. warning::
+
+      The region argument will ignore any specified stride other than 1.
 
    :throws SystemError: Thrown if a file writer channel could not be returned.
    :throws IllegalArgumentError: Thrown if trying to write explicitly prior to
