@@ -2196,16 +2196,15 @@ static int classifyNumericWidth(Type* t)
 typedef enum {
   NUMERIC_TYPE_NON_NUMERIC,
   NUMERIC_TYPE_BOOL,
-  NUMERIC_TYPE_INT_UINT_ENUM,
-  NUMERIC_TYPE_REAL_IMAG_COMPLEX,
+  NUMERIC_TYPE_INT_UINT,
+  NUMERIC_TYPE_REAL_IMAG_COMPLEX, // Could these be separate categories?
 } numeric_type_t;
 
 static numeric_type_t classifyNumericType(Type* t)
 {
   if (is_bool_type(t)) return NUMERIC_TYPE_BOOL;
-  if (is_enum_type(t)) return NUMERIC_TYPE_INT_UINT_ENUM;
-  if (is_int_type(t)) return NUMERIC_TYPE_INT_UINT_ENUM;
-  if (is_uint_type(t)) return NUMERIC_TYPE_INT_UINT_ENUM;
+  if (is_int_type(t)) return NUMERIC_TYPE_INT_UINT;
+  if (is_uint_type(t)) return NUMERIC_TYPE_INT_UINT;
   if (is_real_type(t)) return NUMERIC_TYPE_REAL_IMAG_COMPLEX;
   if (is_imag_type(t)) return NUMERIC_TYPE_REAL_IMAG_COMPLEX;
   if (is_complex_type(t)) return NUMERIC_TYPE_REAL_IMAG_COMPLEX;
@@ -2316,6 +2315,21 @@ static int prefersNumericCoercion(ResolutionCandidate* candidate1,
   if (acKind != f1Kind && acKind == f2Kind) {
     reason = "same numeric kind";
     return 2;
+  }
+
+  if (0) {
+    // this shouldn't matter b/c int is more specific than uint
+    if (acKind == NUMERIC_TYPE_BOOL) {
+      // Prefer bool/enum pass to int over uint
+      if (is_int_type(f1Type) && is_uint_type(f2Type)) {
+        reason = "bool/enum prefer int over uint";
+        return 1;
+      }
+      if (is_uint_type(f1Type) && is_int_type(f2Type)) {
+        reason = "bool/enum prefer int over uint";
+        return 2;
+      }
+    }
   }
 
   // Otherwise, prefer the function with the same numeric width
@@ -5971,12 +5985,13 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
       continue;
     }
 
+    /*
     if (is_bool_type(actualVt) &&
         (formalVt == dtInt[INT_SIZE_DEFAULT] || is_bool_type(formalVt))) {
       // don't worry about bool types converting to default 'int'
       // or to other bool sizes
       continue;
-    }
+    }*/
 
     // is it an implicit conversion to a formal type
     // that is used in an actual of the call?
