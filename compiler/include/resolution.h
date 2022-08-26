@@ -231,6 +231,7 @@ public:
   bool           explain;
   bool           isMethodCall;
   bool           useOldVisibility;
+  int id; // TODO: remove me -- for debugging only
 
 private:
                  DisambiguationContext();

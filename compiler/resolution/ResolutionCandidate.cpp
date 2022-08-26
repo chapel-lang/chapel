@@ -53,8 +53,11 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
   isInterimInstantiation = false;
   anyPromotes = false;
   nImplicitConversionsComputed = false;
+  anyNegParamToUnsigned = false;
   nImplicitConversions = 0;
   nParamNarrowingImplicitConversions = 0;
+  numericTypesInUseSet = 0;
+  visibilityDistance = -1;
   failingArgument = NULL;
   reason = RESOLUTION_CANDIDATE_MATCH;
 }

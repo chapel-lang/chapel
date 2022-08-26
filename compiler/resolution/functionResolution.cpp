@@ -106,7 +106,9 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //# Global Variables
 //#
 
+// enable this one to check transitivity for the partial order
 bool                               fCheckDisambiguationPartialOrder = true;
+
 bool                               resolved                  = false;
 int                                explainCallLine           = 0;
 SymbolMap                          paramMap;
@@ -219,6 +221,10 @@ static  Expr* chaseTypeConstructorForActual(CallExpr* init,
                                             int subIdx,
                                             AggregateType* at);
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
+
+static void computeConversionInfo(ResolutionCandidate* candidate,
+                                  const DisambiguationContext& DC);
+static bool hasBitForType(int numericBitSet, Type* t);
 
 static bool useLegacyNilability(Expr* at) {
   if (at != NULL) {
@@ -1027,11 +1033,6 @@ static bool canParamCoerce(Type*   actualType,
     Immediate* imm = nullptr;
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       imm = var->immediate;
-    }
-
-    // Don't allow coercion from a negative param to a uint
-    if (imm && is_negative(imm)) {
-      return false;
     }
 
     if (is_int_type(actualType) &&
@@ -2162,17 +2163,17 @@ static bool prefersCoercionToOtherNumericType(Type* actualType,
 static int classifyNumericWidth(Type* t)
 {
   // The default size counts as 0
-  // (so we consider 'bool' the same as 'int')
   if (t == dtInt[INT_SIZE_DEFAULT] ||
       t == dtUInt[INT_SIZE_DEFAULT] ||
       t == dtReal[FLOAT_SIZE_DEFAULT] ||
       t == dtImag[FLOAT_SIZE_DEFAULT] ||
-      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
-      t == dtBools[BOOL_SIZE_DEFAULT])
+      t == dtComplex[COMPLEX_SIZE_DEFAULT])
     return 0;
 
   // Bool size 64 should be considered the same as int 64
-  if (t == dtBools[BOOL_SIZE_64])
+  // and just treat all bools the same
+  // to prefer the default size (i.e. int)
+  if (is_bool_type(t))
     return 0;
 
   if (is_enum_type(t))
@@ -2192,6 +2193,41 @@ static int classifyNumericWidth(Type* t)
   return -1;
 }
 
+typedef enum {
+  NUMERIC_TYPE_NON_NUMERIC,
+  NUMERIC_TYPE_BOOL,
+  NUMERIC_TYPE_INT_UINT_ENUM,
+  NUMERIC_TYPE_REAL_IMAG_COMPLEX,
+} numeric_type_t;
+
+static numeric_type_t classifyNumericType(Type* t)
+{
+  if (is_bool_type(t)) return NUMERIC_TYPE_BOOL;
+  if (is_enum_type(t)) return NUMERIC_TYPE_INT_UINT_ENUM;
+  if (is_int_type(t)) return NUMERIC_TYPE_INT_UINT_ENUM;
+  if (is_uint_type(t)) return NUMERIC_TYPE_INT_UINT_ENUM;
+  if (is_real_type(t)) return NUMERIC_TYPE_REAL_IMAG_COMPLEX;
+  if (is_imag_type(t)) return NUMERIC_TYPE_REAL_IMAG_COMPLEX;
+  if (is_complex_type(t)) return NUMERIC_TYPE_REAL_IMAG_COMPLEX;
+
+  return NUMERIC_TYPE_NON_NUMERIC;
+}
+
+static bool isNegativeParamToUnsigned(Symbol* actualSym,
+                                      Type* actualScalarType,
+                                      Type* formalType) {
+  if (is_int_type(actualScalarType) && is_uint_type(formalType)) {
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (Immediate* imm = var->immediate) {
+        if (is_negative(imm)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
 
 // This method implements rules such as that a bool would prefer to
 // coerce to 'int' over 'int(8)'.
@@ -2199,18 +2235,94 @@ static int classifyNumericWidth(Type* t)
 //  0 if there is no preference
 //  1 if f1Type is better
 //  2 if f2Type is better
-static int prefersCoercionToOtherNumericType(Type* actualType,
+static int prefersCoercionToOtherNumericType(ResolutionCandidate* candidate1,
+                                             ResolutionCandidate* candidate2,
+                                             const DisambiguationContext& DC,
+                                             Symbol* actualSym,
+                                             Type* actualScalarType,
                                              Type* f1Type,
-                                             Type* f2Type) {
-  int acWidth = classifyNumericWidth(actualType);
+                                             Type* f2Type,
+                                             const char*& reason) {
+
+
+  int acWidth = classifyNumericWidth(actualScalarType);
   int f1Width = classifyNumericWidth(f1Type);
   int f2Width = classifyNumericWidth(f2Type);
 
-  if (acWidth == f1Width && acWidth != f2Width)
-    return 1;
+  if (acWidth < 0 || f1Width < 0 || f2Width < 0) {
+    // something is not a numeric type
+    return 0;
+  }
 
-  if (acWidth != f1Width && acWidth == f2Width)
+  // if the actual is negative, prefer a formal with a signed type
+  bool f1NegToUnsigned = isNegativeParamToUnsigned(actualSym,
+                                                   actualScalarType,
+                                                   f1Type);
+  bool f2NegToUnsigned = isNegativeParamToUnsigned(actualSym,
+                                                   actualScalarType,
+                                                   f2Type);
+  if (!f1NegToUnsigned && f2NegToUnsigned) {
+    reason = "negative param to unsigned";
+    return 1;
+  }
+  if (f1NegToUnsigned && !f2NegToUnsigned) {
+    reason = "negative param to unsigned";
     return 2;
+  }
+
+  if (actualScalarType == f1Type && actualScalarType != f2Type) {
+    reason = "same numeric type vs not";
+    return 1;
+  }
+  if (actualScalarType != f1Type && actualScalarType == f2Type) {
+    reason = "same numeric type vs not";
+    return 2;
+  }
+
+
+  // check to see if one of f1Type or f2Type is used at the
+  // call site but the other is not
+  if (0) {
+    computeConversionInfo(candidate1, DC);
+    int numericTypesInUseSet = candidate1->numericTypesInUseSet;
+    bool f1TypeAtCall = hasBitForType(numericTypesInUseSet, f1Type);
+    bool f2TypeAtCall = hasBitForType(numericTypesInUseSet, f2Type);
+
+    // prefer the function where the numeric type is used in the call
+    if (f1TypeAtCall && !f2TypeAtCall) {
+      reason = "type used at call site";
+      return 1;
+    }
+    if (!f1TypeAtCall && f2TypeAtCall) {
+      reason = "type used at call site";
+      return 2;
+    }
+  }
+
+  // otherwise, prefer something with the same numeric kind
+  numeric_type_t acKind = classifyNumericType(actualScalarType);
+  numeric_type_t f1Kind = classifyNumericType(f1Type);
+  numeric_type_t f2Kind = classifyNumericType(f2Type);
+  if (acKind == f1Kind && acKind != f2Kind) {
+    reason = "same numeric kind";
+    return 1;
+  }
+  if (acKind != f1Kind && acKind == f2Kind) {
+    reason = "same numeric kind";
+    return 2;
+  }
+
+  // otherwise, prefer the function with the same numeric width
+  // as the actual
+  if (acWidth == f1Width && acWidth != f2Width) {
+    reason = "same numeric width";
+    return 1;
+  }
+
+  if (acWidth != f1Width && acWidth == f2Width) {
+    reason = "same numeric width";
+    return 2;
+  }
 
   return 0;
 }
@@ -5469,9 +5581,9 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                               int                          j,
                               bool                         forGenericInit);
 
-static int testArgMapping(FnSymbol*                    fn1,
+static int testArgMapping(ResolutionCandidate*         candidate1,
                           ArgSymbol*                   formal1,
-                          FnSymbol*                    fn2,
+                          ResolutionCandidate*         candidate2,
                           ArgSymbol*                   formal2,
                           Symbol*                      actual,
                           const DisambiguationContext& DC,
@@ -5661,17 +5773,67 @@ static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
   return false;
 }
 
-static void countImplicitConversions(ResolutionCandidate* candidate,
-                                     const DisambiguationContext& DC,
-                                     int& implicitConversionCountOut,
-                                     int& paramNarrowingCountOut) {
+// returns a value that can be set in a mask with | or
+// checked with &
+static int numericTypeToIdx(Type* t) {
+  int i = 0;
 
-  // use saved counts from the ResolutionCandidate
+  // consider all bool types to be the same
+  i++;
+  if (t == dtBools[BOOL_SIZE_SYS]) return i;
+  if (t == dtBools[BOOL_SIZE_8])   return i;
+  if (t == dtBools[BOOL_SIZE_16])  return i;
+  if (t == dtBools[BOOL_SIZE_32])  return i;
+  if (t == dtBools[BOOL_SIZE_64])  return i;
+
+  i++; if (t == dtInt[INT_SIZE_32]) return i;
+  i++; if (t == dtInt[INT_SIZE_8])  return i;
+  i++; if (t == dtInt[INT_SIZE_16]) return i;
+  i++; if (t == dtInt[INT_SIZE_64]) return i;
+
+  i++; if (t == dtUInt[INT_SIZE_32]) return i;
+  i++; if (t == dtUInt[INT_SIZE_8])  return i;
+  i++; if (t == dtUInt[INT_SIZE_16]) return i;
+  i++; if (t == dtUInt[INT_SIZE_64]) return i;
+
+  i++; if (t == dtReal[FLOAT_SIZE_64]) return i;
+  i++; if (t == dtReal[FLOAT_SIZE_32]) return i;
+  i++; if (t == dtImag[FLOAT_SIZE_64]) return i;
+  i++; if (t == dtImag[FLOAT_SIZE_32]) return i;
+
+  i++; if (t == dtComplex[COMPLEX_SIZE_128]) return i;
+  i++; if (t == dtComplex[COMPLEX_SIZE_64])  return i;
+
+  return 0;
+}
+
+// returns a value that can be set in a mask with | or
+// checked with &
+static int numericTypeToBit(Type* t) {
+  int idx = numericTypeToIdx(t);
+  if (idx > 0) return 1 << idx;
+  else return 0;
+}
+
+static int withBitForType(int numericBitSet, Type* t) {
+  return numericBitSet | numericTypeToBit(t);
+}
+static bool hasBitForType(int numericBitSet, Type* t) {
+  return ((numericBitSet & numericTypeToBit(t)) > 0);
+}
+
+static void computeConversionInfo(ResolutionCandidate* candidate,
+                                  const DisambiguationContext& DC) {
+
+  // no need to recompute it if it is already computed
   if (candidate->nImplicitConversionsComputed) {
-    implicitConversionCountOut = candidate->nImplicitConversions;
-    paramNarrowingCountOut = candidate->nParamNarrowingImplicitConversions;
     return;
   }
+
+  // this represents a set of which numeric types are used in the call site
+  int numericTypesInUseSet = 0;
+
+  bool anyNegParamToUnsigned = false;
 
   int numParamNarrowing = 0;
   bool forGenericInit = candidate->fn->isInitializer() ||
@@ -5717,11 +5879,21 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
         }
       }
     }
+
+    numericTypesInUseSet = withBitForType(numericTypesInUseSet, actualVt);
+
+    if (isNegativeParamToUnsigned(actual, actualVt, formalVt)) {
+      anyNegParamToUnsigned = true;
+    }
+
     normalizedActualTypes.push_back(actualVt);
   }
 
   // TODO: simplify the count of implicit conversions
   int nImplicitConversions = 0;
+
+  // number of implicit conversions to a type not used in the call
+  int nImpConvNotMentioned = 0;
 
   for (int k = 0; k < DC.actuals->n; k++) {
     ArgSymbol* formal = candidate->actualIdxToFormal[k];
@@ -5781,7 +5953,6 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
 
     // is it an implicit conversion to a formal type
     // that is used in an actual of the call?
-    /*
     bool formalVtUsedInOtherActual = false;
     for (int other = 0; other < DC.actuals->n; other++) {
       ArgSymbol* otherFormal = candidate->actualIdxToFormal[other];
@@ -5796,24 +5967,23 @@ static void countImplicitConversions(ResolutionCandidate* candidate,
         formalVtUsedInOtherActual = true;
         break;
       }
-    }*/
+    }
 
     nImplicitConversions++;
-    //if (!formal->hasFlag(FLAG_ARG_THIS)) {
-    //  nNonThisImplicitConversions++;
-    //}
-    //if (!formalVtUsedInOtherActual) {
-    //  nImplicitConversionsToTypeNotMentioned++;
-    //}
+    if (!formalVtUsedInOtherActual) {
+      nImpConvNotMentioned++;
+    }
   }
 
-  implicitConversionCountOut = nImplicitConversions;
-  paramNarrowingCountOut = numParamNarrowing;
-
-  // save counts in the ResolutionCandidate
+  // save the computed details in the ResolutionCandidate
   candidate->nImplicitConversionsComputed = true;
+  candidate->anyNegParamToUnsigned = anyNegParamToUnsigned;
+  candidate->nImpConvToTypeNotMentioned = nImpConvNotMentioned;
+
   candidate->nImplicitConversions = nImplicitConversions;
   candidate->nParamNarrowingImplicitConversions = numParamNarrowing;
+
+  candidate->numericTypesInUseSet = numericTypesInUseSet;
 }
 
 // If any candidate does not require promotion,
@@ -5852,6 +6022,57 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
+// Discard any candidate that has more implicit conversions
+// to a type not used at the call site than another candidate.
+//
+// The type-not-used rule resolves a problem with
+//   proc f(real(32), real(32))
+//   proc f(real(64), real(64))
+//   proc f(uint(32), uint(32))
+//   proc f(int(64), int(64))
+//   f(myUint32, max(int));
+//  .... but it causes problems with prefering generic to non-generic.
+/*static void discardWorseConversionsToNotMentioned(
+    Vec<ResolutionCandidate*>&   candidates,
+    const DisambiguationContext& DC,
+    std::vector<bool>&           discarded) {
+
+  int minImpConvNotMentioned = INT_MAX;
+  int maxImpConvNotMentioned = INT_MIN;
+
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    computeConversionInfo(candidate, DC);
+
+    int impConvNotMentioned = candidate->nImpConvToTypeNotMentioned;
+    if (impConvNotMentioned < minImpConvNotMentioned) {
+      minImpConvNotMentioned = impConvNotMentioned;
+    }
+    if (impConvNotMentioned > maxImpConvNotMentioned) {
+      maxImpConvNotMentioned = impConvNotMentioned;
+    }
+  }
+
+  if (minImpConvNotMentioned < maxImpConvNotMentioned) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      int impConvNotMentioned = candidate->nImpConvToTypeNotMentioned;
+      if (impConvNotMentioned > minImpConvNotMentioned) {
+        EXPLAIN("X: Fn %d has more implicit conversions to type not used\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+*/
 
 // Discard any candidate that has a worse argument mapping than another
 // candidate.
@@ -5945,11 +6166,18 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
 // conversions than another candidate.
 //
 // The number of conversions rule resolves an ambiguity with:
+//   // TODO: can this be removed with the type-not-mentioned filter?
 //   proc f(x: int, y: int)
 //   proc f(x: real(32), y: real(32))
 //   proc f(x: real, y: real)
 //   f(myInt64, 1.0:real(32))
-// The number of param conversions resolves an ambiguity with:
+//
+// The check for negative param to unsigned helps with
+//   proc f(param a: int(8),   param b: int(8))
+//   proc f(param a: uint(64), param b: uint(64))
+//   f(-5: int(8), 16: uint)
+//
+// The number of param narrowing conversions resolves an ambiguity with:
 //   proc f(x: int,    y: int)
 //   proc f(x: int(8), y: int(8))
 //   f(1, 1:int(8))
@@ -5965,10 +6193,8 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
     }
 
     ResolutionCandidate* candidate = candidates.v[i];
-    int impConv = 0;
-    int narrowing = 0;
-
-    countImplicitConversions(candidate, DC, impConv, narrowing);
+    computeConversionInfo(candidate, DC);
+    int impConv = candidate->nImplicitConversions;
     if (impConv < minImpConv) {
       minImpConv = impConv;
     }
@@ -5984,16 +6210,44 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
       }
 
       ResolutionCandidate* candidate = candidates.v[i];
-      int impConv = 0;
-      int narrowing = 0;
-
-      countImplicitConversions(candidate, DC, impConv, narrowing);
+      int impConv = candidate->nImplicitConversions;
       if (impConv > minImpConv) {
         EXPLAIN("X: Fn %d has more implicit conversions\n", i);
         discarded[i] = true;
       }
     }
   }
+
+  int numWithNegParamToSigned = 0;
+  int numNoNegParamToSigned = 0;
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    computeConversionInfo(candidate, DC);
+    if (candidate->anyNegParamToUnsigned) {
+      numWithNegParamToSigned++;
+    } else {
+      numNoNegParamToSigned++;
+    }
+  }
+
+  if (numWithNegParamToSigned > 0 && numNoNegParamToSigned > 0) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      if (candidate->anyNegParamToUnsigned) {
+        EXPLAIN("X: Fn %d has negative param to signed and others do not\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+
 
   int minNarrowing = INT_MAX;
   int maxNarrowing = INT_MIN;
@@ -6003,10 +6257,8 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
     }
 
     ResolutionCandidate* candidate = candidates.v[i];
-    int impConv = 0;
-    int narrowing = 0;
-
-    countImplicitConversions(candidate, DC, impConv, narrowing);
+    computeConversionInfo(candidate, DC);
+    int narrowing = candidate->nParamNarrowingImplicitConversions;
     if (narrowing < minNarrowing) {
       minNarrowing = narrowing;
     }
@@ -6022,10 +6274,7 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
       }
 
       ResolutionCandidate* candidate = candidates.v[i];
-      int impConv = 0;
-      int narrowing = 0;
-
-      countImplicitConversions(candidate, DC, impConv, narrowing);
+      int narrowing = candidate->nParamNarrowingImplicitConversions;
       if (narrowing > minNarrowing) {
         EXPLAIN("X: Fn %d has more param narrowing conversions\n", i);
         discarded[i] = true;
@@ -6089,6 +6338,7 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
 
     ResolutionCandidate* candidate = candidates.v[i];
     int distance = computeVisibilityDistance(DC.scope, candidate->fn);
+    candidate->visibilityDistance = distance;
 
     if (distance < minDistance) {
       minDistance = distance;
@@ -6105,8 +6355,7 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
       }
 
       ResolutionCandidate* candidate = candidates.v[i];
-      int distance = computeVisibilityDistance(DC.scope, candidate->fn);
-
+      int distance = candidate->visibilityDistance;
       if (distance > minDistance) {
         EXPLAIN("X: Fn %d has further visibility distance\n", i);
         discarded[i] = true;
@@ -6254,6 +6503,14 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
                          bool                         ignoreWhere,
                          Vec<ResolutionCandidate*>&   ambiguous) {
 
+  // quick exit if there is nothing to do
+  if (candidates.n == 0) {
+    return nullptr;
+  }
+  if (candidates.n == 1) {
+    return candidates.v[0];
+  }
+
   // Disable implicit conversion to remove nilability
   // for disambiguation
   int saveGenerousResolutionForErrors = 0;
@@ -6313,7 +6570,7 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
       if (discarded[i]) {
         continue;
       }
-      only = i; 
+      only = i;
       currentCandidates++;
     }
 
@@ -6447,8 +6704,8 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     bool actualParam = (getImmediate(actual) != NULL);
 
     const char* reason = "";
-    int p = testArgMapping(candidate1->fn, formal1,
-                           candidate2->fn, formal2,
+    int p = testArgMapping(candidate1, formal1,
+                           candidate2, formal2,
                            actual, DC, i, j, DS, reason);
 
     if (p == -1) {
@@ -6556,10 +6813,10 @@ static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
  * disambiguation procedure as detailed in section 13.14.3 of the Chapel
  * language specification (page 107).
  *
- * \param fn1     The first function to be compared.
+ * \param candidate1 The first function to be compared.
  * \param formal1 The formal argument that correspond to the actual argument
  *                for the first function.
- * \param fn2     The second function to be compared.
+ * \param candidate2 The second function to be compared.
  * \param formal2 The formal argument that correspond to the actual argument
  *                for the second function.
  * \param actual  The actual argument from the call site.
@@ -6573,9 +6830,9 @@ static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
  *   1 if fn1 is preferred
  *   2 if fn2 is preferred
  */
-static int testArgMapping(FnSymbol*                    fn1,
+static int testArgMapping(ResolutionCandidate*         candidate1,
                           ArgSymbol*                   formal1,
-                          FnSymbol*                    fn2,
+                          ResolutionCandidate*         candidate2,
                           ArgSymbol*                   formal2,
                           Symbol*                      actual,
                           const DisambiguationContext& DC,
@@ -6591,6 +6848,8 @@ static int testArgMapping(FnSymbol*                    fn1,
     return -1;
   }
 
+  FnSymbol* fn1 = candidate1->fn;
+  FnSymbol* fn2 = candidate2->fn;
 
   // We only want to deal with the value types here, avoiding odd overloads
   // working (or not) due to _ref.
@@ -6652,6 +6911,12 @@ static int testArgMapping(FnSymbol*                    fn1,
   }
 
   // consider concrete vs generic functions
+  // note: the f1Type == f2Type part here is important
+  // and it prevents moving this logic out of the pairwise comparison.
+  // It is important e.g. for:
+  //   class Parent { }
+  //   class GenericChild : Parent { type t; }
+  // Here a GenericChild argument should be preferred to a Parent one
   if (f1Type == f2Type           &&
       !formal1->instantiatedFrom && formal2->instantiatedFrom) {
     reason = "concrete vs generic";
@@ -6700,26 +6965,6 @@ static int testArgMapping(FnSymbol*                    fn1,
     return 2;
   }
 
-  if (actualType == f1Type && actualType != f2Type) {
-    reason = "actual type vs not";
-    return 1;
-  }
-
-  if (actualType == f2Type && actualType != f1Type) {
-    reason = "actual type vs not";
-    return 2;
-  }
-
-  if (actualScalarType == f1Type && actualScalarType != f2Type) {
-    reason = "scalar type vs not";
-    return 1;
-  }
-
-  if (actualScalarType == f2Type && actualScalarType != f1Type) {
-    reason = "scalar type vs not";
-    return 2;
-  }
-
   if (f1Type != f2Type) {
     // e.g. to help with
     //   sin(1) calling the real(64) version (vs real(32) version)
@@ -6727,16 +6972,36 @@ static int testArgMapping(FnSymbol*                    fn1,
     //   proc f(complex(64), complex(64))
     //   proc f(complex(128), complex(128))
     //   f(1.0, 1.0i) calling the complex(128) version
-    int p = prefersCoercionToOtherNumericType(actualScalarType,
-                                              f1Type, f2Type);
+    int p = prefersCoercionToOtherNumericType(candidate1, candidate2, DC,
+                                              actual, actualScalarType,
+                                              f1Type, f2Type, reason);
     if (p == 1) {
-      reason = "preferred coercion to other";
       return 1;
     }
     if (p == 2) {
-      reason = "preferred coercion to other";
       return 2;
     }
+
+    if (actualType == f1Type && actualType != f2Type) {
+      reason = "actual type vs not";
+      return 1;
+    }
+
+    if (actualType == f2Type && actualType != f1Type) {
+      reason = "actual type vs not";
+      return 2;
+    }
+
+    if (actualScalarType == f1Type && actualScalarType != f2Type) {
+      reason = "scalar type vs not";
+      return 1;
+    }
+
+    if (actualScalarType == f2Type && actualScalarType != f1Type) {
+      reason = "scalar type vs not";
+      return 2;
+    }
+
 
     bool fn1Dispatches = moreSpecificCanDispatch(fn1, f1Type, f2Type);
     bool fn2Dispatches = moreSpecificCanDispatch(fn2, f2Type, f1Type);
@@ -12969,6 +13234,8 @@ DisambiguationContext::DisambiguationContext(CallInfo& info,
   explain = false;
   useOldVisibility = false;
   isMethodCall = false;
+  id = info.call->id;
+
   if (info.call->numActuals() >= 2) {
     if (SymExpr* se = toSymExpr(info.call->get(1))) {
       if (se->symbol() == gMethodToken) {
