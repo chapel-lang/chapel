@@ -1,6 +1,5 @@
 use CommUtil;
 use CyclicDist;
-use ChplConfig;
 
 config const numElements = 1024;
 
@@ -18,8 +17,7 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxGets=0,
-       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
+report(maxGets=0, maxOns=1);
 
 writeln("Querying via array reference...");
 start();
@@ -31,8 +29,7 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxGets=14,
-       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
+report(maxGets=14, maxOns=1);
 
 writeln("Querying via wide pointer...");
 start();
@@ -46,8 +43,7 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxGets=0,
-       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
+report(maxGets=0, maxOns=1);
 
 inline proc getLocale(dom, idx) {
   var loc = dom.dist.idxToLocale(idx);
@@ -68,8 +64,7 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxGets=0,
-       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
+report(maxGets=0, maxOns=1);
 
 writeln("Querying remote object...");
 var obj = new object();
@@ -82,6 +77,5 @@ coforall loc in Locales do on loc {
   }
 }
 stop();
-report(maxGets=0,
-       maxOns = if CHPL_NETWORK_ATOMICS == 'none' then 2 else 1);
+report(maxGets=0, maxOns=1);
 
