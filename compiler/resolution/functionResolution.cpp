@@ -5934,7 +5934,7 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
   int nImplicitConversions = 0;
 
   // number of implicit conversions to a type not used in the call
-  int nImpConvNotMentioned = 0;
+  //int nImpConvNotMentioned = 0;
 
   for (int k = 0; k < DC.actuals->n; k++) {
     ArgSymbol* formal = candidate->actualIdxToFormal[k];
@@ -5960,24 +5960,25 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
     }
 
     // if we get here, an implicit conversion is required
-    if (isClassLikeOrManaged(actualVt) || isClassLikeOrManaged(formalVt) ||
+    /*if (isClassLikeOrManaged(actualVt) || isClassLikeOrManaged(formalVt) ||
         isClassLikeOrPtr(actualVt) || isClassLikeOrPtr(formalVt)) {
       // OK, don't worry about implicit conversion for class types here
       continue;
-    }
+    }*/
 
     if (actualVt == dtNil) {
       // don't worry about converting 'nil' to something else
       continue;
     }
 
+    /*
     if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
         formalVt->symbol->hasFlag(FLAG_TUPLE)) {
       // don't worry about tuple types for now
       // TODO: do worry about tuples containing numeric types that are
       // converted
       continue;
-    }
+    }*/
 
     // TODO: remove this exception
     if (isMatchingImagComplex(actualVt, formalVt)) {
@@ -5995,7 +5996,7 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
 
     // is it an implicit conversion to a formal type
     // that is used in an actual of the call?
-    bool formalVtUsedInOtherActual = false;
+    /*bool formalVtUsedInOtherActual = false;
     for (int other = 0; other < DC.actuals->n; other++) {
       ArgSymbol* otherFormal = candidate->actualIdxToFormal[other];
       if (other == k || otherFormal->originalIntent == INTENT_OUT)
@@ -6009,18 +6010,18 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
         formalVtUsedInOtherActual = true;
         break;
       }
-    }
+    }*/
 
     nImplicitConversions++;
-    if (!formalVtUsedInOtherActual) {
+    /*if (!formalVtUsedInOtherActual) {
       nImpConvNotMentioned++;
-    }
+    }*/
   }
 
   // save the computed details in the ResolutionCandidate
   candidate->nImplicitConversionsComputed = true;
   candidate->anyNegParamToUnsigned = anyNegParamToUnsigned;
-  candidate->nImpConvToTypeNotMentioned = nImpConvNotMentioned;
+  //candidate->nImpConvToTypeNotMentioned = nImpConvNotMentioned;
 
   candidate->nImplicitConversions = nImplicitConversions;
   candidate->nParamNarrowingImplicitConversions = numParamNarrowing;

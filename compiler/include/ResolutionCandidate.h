@@ -117,7 +117,7 @@ public:
   // Does it convert any negative params to unsigned?
   bool                    anyNegParamToUnsigned;
   // How many implicit conversions to a type not mentioned?
-  int                     nImpConvToTypeNotMentioned;
+  //int                     nImpConvToTypeNotMentioned;
   // How many implicit conversions?
   int                     nImplicitConversions;
   // How many param-narrowing implicit conversions?
