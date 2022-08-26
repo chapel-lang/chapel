@@ -147,4 +147,8 @@ module ChplConfig {
   /* See :ref:`readme-chplenv.CHPL_LLVM` for more information. */
   param CHPL_LLVM:string;
   CHPL_LLVM = __primitive("get compiler variable", "CHPL_LLVM");
+
+  pragma "no doc"
+  param CHPL_GPU_MEM_STRATEGY:string;
+  CHPL_GPU_MEM_STRATEGY = __primitive("get compiler variable", "CHPL_GPU_MEM_STRATEGY");
 }
