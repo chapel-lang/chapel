@@ -7097,63 +7097,11 @@ proc channel._writefOne(fmtStr, ref arg, i: int,
   }
 }
 
-deprecated "The returning variant of ``channel.writef`` is deprecated;  use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
+deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
 proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
-    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == true {
-
-  if !writing then compilerError("writef on read-only channel");
-  const origLocale = this.getLocaleOfIoRequest();
-  var err: syserr = ENOERR;
-  on this.home {
-    try this.lock(); defer { this.unlock(); }
-
-    var save_style: iostyleInternal = this._styleInternal();
-    defer {
-      this._set_styleInternal(save_style);
-    }
-    var cur:c_size_t = 0;
-    var len:c_size_t = fmtStr.size:c_size_t;
-    var conv:qio_conv_t;
-    var gotConv:bool;
-    var style:iostyleInternal;
-
-    param argTypeLen = k+5;
-    // we don't use a tuple here so that we can pass this to writefOne as a
-    // c_ptr. This should reduce number of instantiations of writefOne
-    var argType: c_array(c_int, argTypeLen);
-
-    var r:unmanaged _channel_regex_info?;
-    defer {
-      if r then delete r;
-    }
-
-    for i in 0..argType.size-1 {
-      argType(i) = QIO_CONV_UNK;
-    }
-
-    var j = 0;
-
-    for param i in 0..k-1 {
-      _writefOne(fmtStr, args(i), i, cur, j, r, c_ptrTo(argType[0]), argTypeLen,
-                 conv, gotConv, style, err, origLocale, len);
-    }
-
-    if ! err {
-      if cur < len {
-        var dummy:c_int;
-        _format_reader(fmtStr, cur, len, err,
-                       conv, gotConv, style, r,
-                       false);
-      }
-
-      if cur < len {
-        // Mismatched number of arguments!
-        err = qio_format_error_too_few_args();
-      }
-    }
-  }
-
-  if err then try this._ch_ioerror(err, "in channel.writef(fmt:string)");
+    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == true
+{
+  try this._writef(fmtStr, args);
   return true;
 }
 
@@ -7170,7 +7118,15 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
    :throws SystemError: if the arguments could not be written.
  */
 proc channel.writef(fmtStr: ?t, const args ...?k) throws
-    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == false {
+    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == false
+{
+  try this._writef(fmtStr, args);
+}
+
+// helper function for bool-returning deprecation
+pragma "no doc"
+proc channel._writef(fmtStr: ?t, const args ...?k) throws
+    where isStringType(t) || isBytesType(t) {
 
   if !writing then compilerError("writef on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
@@ -7230,7 +7186,23 @@ proc channel.writef(fmtStr: ?t, const args ...?k) throws
 // documented in varargs version
 deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
 proc channel.writef(fmtStr:?t): bool throws
-    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == true {
+    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == true
+{
+  try this._writef(fmtStr);
+  return true;
+}
+
+// documented in varargs version
+proc channel.writef(fmtStr:?t) throws
+    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == false
+{
+  try this._writef(fmtStr);
+}
+
+// helper function for bool-returning deprecation
+pragma "no doc"
+proc channel._writef(fmtStr:?t): bool throws
+    where isStringType(t) || isBytesType(t) {
 
   if !writing then compilerError("writef on read-only channel");
   var err:syserr = ENOERR;
@@ -7275,54 +7247,6 @@ proc channel.writef(fmtStr:?t): bool throws
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string, ...)");
   return true;
-}
-
-// documented in varargs version
-proc channel.writef(fmtStr:?t) throws
-    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == false {
-
-  if !writing then compilerError("writef on read-only channel");
-  var err:syserr = ENOERR;
-  on this.home {
-    try this.lock(); defer { this.unlock(); }
-    var save_style: iostyleInternal = this._styleInternal();
-    defer {
-      this._set_styleInternal(save_style);
-    }
-    var cur:c_size_t = 0;
-    var len:c_size_t = fmtStr.size:c_size_t;
-    var conv:qio_conv_t;
-    var gotConv:bool;
-    var style:iostyleInternal;
-    var end:c_size_t;
-    var dummy:c_int;
-
-    var r:unmanaged _channel_regex_info?;
-    defer {
-      if r then delete r;
-    }
-
-    _format_reader(fmtStr, cur, len, err,
-                   conv, gotConv, style, r,
-                   false);
-
-    if ! err {
-      if gotConv {
-        err = qio_format_error_too_few_args();
-      }
-    }
-
-    if ! err {
-      if cur < len {
-        // Mismatched number of arguments!
-        err = qio_format_error_too_few_args();
-      }
-    }
-
-    this._set_styleInternal(save_style);
-  }
-
-  if err then try this._ch_ioerror(err, "in channel.writef(fmt:string, ...)");
 }
 
 /*

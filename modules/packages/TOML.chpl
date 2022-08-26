@@ -879,11 +879,11 @@ used to recursively hold tables and respective values
           flat.remove('root');
         }
         for k in sorted(flat.keysToArray()) {
-          f.writef('%s"%s": {\n', ' '*indent, k);
+          f._writef('%s"%s": {\n', ' '*indent, k);
           indent += tabSpace;
           printValuesJSON(f, flat[k]!, indent=indent);
           indent -= tabSpace;
-          f.writef('%s}\n', ' '*indent);
+          f._writef('%s}\n', ' '*indent);
         }
         indent -= tabSpace;
         f.writeln('}');
@@ -989,57 +989,57 @@ used to recursively hold tables and respective values
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldInt {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldArr {
-            f.writef('%s"%s": {\n', ' '*indent, key);
+            f._writef('%s"%s": {\n', ' '*indent, key);
             indent += tabSpace;
-            f.writef('%s"%s": "type",\n', ' '*indent, this.tomlType);
-            f.writef('%s"value": [\n', ' '*indent);
+            f._writef('%s"%s": "type",\n', ' '*indent, this.tomlType);
+            f._writef('%s"value": [\n', ' '*indent);
             indent += tabSpace;
             var arrayElements: string;
             for i in value.arr.domain {
               ref k = value.arr[i];
-              f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, k!.tomlType, toString(k!));
+              f._writef('%s{"type": "%s", "value": "%s"}', ' '*indent, k!.tomlType, toString(k!));
               if i != value.arr.domain.last {
-                f.writef(',');
+                f._writef(',');
               }
-              f.writef('\n');
+              f._writef('\n');
             }
             indent -= tabSpace;
-            f.writef('%s]\n', ' '*indent);
+            f._writef('%s]\n', ' '*indent);
             indent -= tabSpace;
-            f.writef('%s}\n', ' '*indent);
+            f._writef('%s}\n', ' '*indent);
           }
           when fieldReal {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldString {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldEmpty {
             throw new owned TomlError("Keys must have a value");
           }
           when fieldDate {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldTime {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldDateTime {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           otherwise {
             throw new owned TomlError("Not yet supported");
           }
         }
         if i != v.A.size {
-          f.writef(',');
+          f._writef(',');
         }
-        f.writef('\n');
+        f._writef('\n');
       }
     }
 

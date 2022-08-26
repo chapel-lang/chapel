@@ -272,7 +272,7 @@ module CTypes {
 
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) throws {
-    ch.writef("0x%xu", this:c_uintptr);
+    ch._writef("0x%xu", this:c_uintptr);
   }
 
   pragma "no doc"

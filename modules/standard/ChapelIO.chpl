@@ -730,18 +730,14 @@ module ChapelIO {
   proc writef(fmt:?t, const args ...?k)
       where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
   {
-    try! {
-      stdout.writef(fmt, (...args));
-    }
+    try! { stdout._writef(fmt, (...args)); }
   }
   // documented in string version
   pragma "no doc"
   proc writef(fmt:?t)
       where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
   {
-    try! {
-      stdout.writef(fmt);
-    }
+    try! { stdout._writef(fmt); }
   }
 
   deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
@@ -749,7 +745,8 @@ module ChapelIO {
       where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
   {
     try! {
-      return stdout.writef(fmt, (...args));
+      stdout._writef(fmt, (...args));
+      return true;
     }
   }
   // documented in string version
@@ -758,7 +755,8 @@ module ChapelIO {
       where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
   {
     try! {
-      return stdout.writef(fmt);
+      stdout._writef(fmt);
+      return true;
     }
   }
 
