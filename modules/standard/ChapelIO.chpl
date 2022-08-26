@@ -712,17 +712,17 @@ module ChapelIO {
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */
   proc write(const args ...?n) {
-    try! stdout.write((...args));
+    try! stdout._write((...args));
   }
   /* Equivalent to ``try! stdout.writeln``. See :proc:`IO.channel.writeln` */
   proc writeln(const args ...?n) {
-    try! stdout.writeln((...args));
+    try! stdout._writeln((...args));
   }
 
   // documented in the arguments version.
   pragma "no doc"
   proc writeln() {
-    try! stdout.writeln();
+    try! stdout._writeln();
   }
 
  /* Equivalent to ``try! stdout.writef``. See

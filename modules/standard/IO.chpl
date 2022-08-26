@@ -2081,15 +2081,15 @@ proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws
   These include: :proc:`channel.write`, :proc:`channel.writeln`, :proc:`channel.writebits`,
   :proc:`channel.writeBytes`, and :proc:`FormattedIO.channel.writef`
 
-  - When `WritersReturnBool=false` the new variants of the writer methods are called
   - When `WritersReturnBool=true` the deprecated variants of the writer methods are called
+  - When `WritersReturnBool=false` the new variants of the writer methods are called
 
   .. note::
     The deprecated variants of the writer methods always return ``true``, so their
     deprecation does not remove any valuable information. This parameter is availible
     to avoid breaking code that currently relies on the (``true``) return value.
 */
-config param WritersReturnBool=false;
+config param WritersReturnBool=true;
 
 
 /*
@@ -4802,19 +4802,9 @@ proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
   return tupleVal;
 }
 
-pragma "fn exempt instantiation limit"
 deprecated "The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
 inline proc channel.write(const args ...?k):bool throws where WritersReturnBool == true {
-  if !writing then compilerError("write on read-only channel");
-
-  const origLocale = this.getLocaleOfIoRequest();
-  on this.home {
-    try this.lock(); defer { this.unlock(); }
-    for param i in 0..k-1 {
-      try _writeOne(kind, args(i), origLocale);
-    }
-  }
-
+  try this._write(args);
   return true;
 }
 
@@ -4829,8 +4819,14 @@ inline proc channel.write(const args ...?k):bool throws where WritersReturnBool 
 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
-pragma "fn exempt instantiation limit"
 inline proc channel.write(const args ...?k) throws where WritersReturnBool == false {
+  try this._write(args);
+}
+
+// helper function for bool-returning deprecation
+pragma "fn exempt instantiation limit"
+pragma "no doc"
+inline proc channel._write(const args ...?k) throws {
   if !writing then compilerError("write on read-only channel");
 
   const origLocale = this.getLocaleOfIoRequest();
@@ -4842,18 +4838,16 @@ inline proc channel.write(const args ...?k) throws where WritersReturnBool == fa
   }
 }
 
-pragma "fn exempt instantiation limit"
 deprecated "write with a style argument is deprecated"
 proc channel.write(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
   return this.writeHelper((...args), style: iostyleInternal);
 }
-
-pragma "fn exempt instantiation limit"
 deprecated "write with a style argument is deprecated"
 proc channel.write(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
   this.writeHelper((...args), style: iostyleInternal);
 }
 
+// helper function for iostyle deprecation
 pragma "no doc"
 proc channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
   if !writing then compilerError("write on read-only channel");
@@ -4878,20 +4872,25 @@ proc channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
 
 // documented in varargs version
 pragma "no doc"
-pragma "fn exempt instantiation limit"
+deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
 proc channel.writeln():bool throws where WritersReturnBool == true {
-  return try this.write(new ioNewline());
+  try this._writeln();
+  return true;
 }
 pragma "no doc"
-pragma "fn exempt instantiation limit"
 proc channel.writeln() throws where WritersReturnBool == false {
-  try this.write(new ioNewline());
+  try this._writeln();
+}
+// helper for bool-returning deprecation (yes, this is a lot of annoying misdirection, but I'm aiming for a consistent pattern among write(...), writeln() and writeln(...))
+pragma "no doc"
+proc channel._writeln() throws {
+  try this._write(new ioNewline());
 }
 
-pragma "fn exempt instantiation limit"
 deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
 proc channel.writeln(const args ...?k):bool throws where WritersReturnBool == true {
-  return try this.write((...args), new ioNewline());
+  try this._writeln(args);
+  return true;
 }
 
 /*
@@ -4907,23 +4906,27 @@ proc channel.writeln(const args ...?k):bool throws where WritersReturnBool == tr
 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
-pragma "fn exempt instantiation limit"
-proc channel.writeln(const args ...?k) throws {
-  try this.write((...args), new ioNewline());
+proc channel.writeln(const args ...?k) throws where WritersReturnBool == false {
+  try this._writeln(args);
 }
 
+// helper function for bool-returning deprecation
 pragma "fn exempt instantiation limit"
+pragma "no doc"
+proc channel._writeln(const args ...?k) throws {
+  try this._write((...args), new ioNewline());
+}
+
 deprecated "writeln with a style argument is deprecated"
 proc channel.writeln(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
   return this.writelnHelper((...args), style: iostyleInternal);
 }
-
-pragma "fn exempt instantiation limit"
 deprecated "writeln with a style argument is deprecated"
 proc channel.writeln(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
   this.writelnHelper((...args), style: iostyleInternal);
 }
 
+// helper function for iostyle deprecation
 pragma "no doc"
 proc channel.writelnHelper(const args ...?k, style:iostyleInternal):bool throws {
   return try this.writeHelper((...args), new ioNewline(), style=style);
