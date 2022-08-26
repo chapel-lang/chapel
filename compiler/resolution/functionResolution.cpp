@@ -2197,7 +2197,9 @@ typedef enum {
   NUMERIC_TYPE_NON_NUMERIC,
   NUMERIC_TYPE_BOOL,
   NUMERIC_TYPE_INT_UINT,
-  NUMERIC_TYPE_REAL_IMAG_COMPLEX, // Could these be separate categories?
+  NUMERIC_TYPE_REAL,
+  NUMERIC_TYPE_IMAG,
+  NUMERIC_TYPE_COMPLEX,
 } numeric_type_t;
 
 static numeric_type_t classifyNumericType(Type* t)
@@ -2205,9 +2207,9 @@ static numeric_type_t classifyNumericType(Type* t)
   if (is_bool_type(t)) return NUMERIC_TYPE_BOOL;
   if (is_int_type(t)) return NUMERIC_TYPE_INT_UINT;
   if (is_uint_type(t)) return NUMERIC_TYPE_INT_UINT;
-  if (is_real_type(t)) return NUMERIC_TYPE_REAL_IMAG_COMPLEX;
-  if (is_imag_type(t)) return NUMERIC_TYPE_REAL_IMAG_COMPLEX;
-  if (is_complex_type(t)) return NUMERIC_TYPE_REAL_IMAG_COMPLEX;
+  if (is_real_type(t)) return NUMERIC_TYPE_REAL;
+  if (is_imag_type(t)) return NUMERIC_TYPE_IMAG;
+  if (is_complex_type(t)) return NUMERIC_TYPE_COMPLEX;
 
   return NUMERIC_TYPE_NON_NUMERIC;
 }
