@@ -12023,26 +12023,24 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
                              !at->symbol->hasFlag(FLAG_SYNC) &&
                              !at->symbol->hasFlag(FLAG_SINGLE);
           if (doEmitError) {
-            USR_WARN(call, "failed to locate the runtime type for field "
-                           "'%s' when default initializing '%s' - this "
-                           "may cause runtime errors",
-                           keyName,
-                           val->name);
+            USR_FATAL_CONT(call, "cannot default initialize '%s' because "
+                                 "field '%s' has a runtime type that "
+                                 "could not be recovered",
+                                 val->name,
+                                 keyName);
           }
 
+          // Keep the old lowering even though we'll terminate the pass.
           VarSymbol* tmp = newTemp("default_runtime_temp");
           tmp->addFlag(FLAG_TYPE_VARIABLE);
           CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD,
                                          at->symbol,
                                          new_CStringSymbol(keyName));
           CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
-
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(move);
-
           resolveExpr(query);
           resolveExpr(move);
-
           appendExpr = new SymExpr(tmp);
         }
       }
