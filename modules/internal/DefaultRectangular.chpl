@@ -1755,7 +1755,7 @@ module DefaultRectangular {
 
       if dim == rank-1 {
         var first = true;
-        if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
+        if debugDefaultDist && f.writing then f._writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then rwLiteral(" ");

@@ -80,7 +80,7 @@ class Private: BaseDist {
   }
 
   proc writeThis(x) throws {
-    x.writeln("Private Distribution");
+    x._writeln("Private Distribution");
   }
 
   // acts like a singleton

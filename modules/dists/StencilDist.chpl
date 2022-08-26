@@ -579,14 +579,14 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
 // output distribution
 //
 proc Stencil.writeThis(x) throws {
-  x.writeln("Stencil");
-  x.writeln("-------");
-  x.writeln("distributes: ", boundingBox);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
+  x._writeln("Stencil");
+  x._writeln("-------");
+  x._writeln("distributes: ", boundingBox);
+  x._writeln("across locales: ", targetLocales);
+  x._writeln("indexed via: ", targetLocDom);
+  x._writeln("resulting in: ");
   for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+    x._writeln("  [", locid, "] locale ", locDist(locid).locale.id,
       " owns chunk: ", locDist(locid).myChunk);
 }
 
@@ -1374,7 +1374,7 @@ proc StencilArr.dsiSerialWrite(f) {
         if i(dim) <= (dom.dsiDim(dim).highBound - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank-1 {
-            f.writeln();
+            f._writeln();
             i(dim2) = dom.dsiDim(dim2).lowBound;
           }
           continue next;

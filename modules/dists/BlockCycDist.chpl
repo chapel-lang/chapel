@@ -317,15 +317,15 @@ override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 // output distribution
 //
 proc BlockCyclic.writeThis(x) throws {
-  x.writeln("BlockCyclic");
-  x.writeln("-------");
-  x.writeln("distributes: ", lowIdx, "...");
-  x.writeln("in chunks of: ", blocksize);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
+  x._writeln("BlockCyclic");
+  x._writeln("-------");
+  x._writeln("distributes: ", lowIdx, "...");
+  x._writeln("in chunks of: ", blocksize);
+  x._writeln("across locales: ", targetLocales);
+  x._writeln("indexed via: ", targetLocDom);
+  x._writeln("resulting in: ");
   for locid in targetLocDom do
-    x.writeln("  [", locid, "] ", locDist(locid));
+    x._writeln("  [", locid, "] ", locDist(locid));
 }
 
 //

@@ -236,14 +236,14 @@ class Hashed : BaseDist {
   // print out the distribution
   //
   proc writeThis(x) throws {
-    x.writeln("Hashed");
-    x.writeln("-------");
-    x.writeln("distributed using: ", mapper);
-    x.writeln("across locales: ", targetLocales);
-    x.writeln("indexed via: ", targetLocDom);
-    x.writeln("resulting in: ");
+    x._writeln("Hashed");
+    x._writeln("-------");
+    x._writeln("distributed using: ", mapper);
+    x._writeln("across locales: ", targetLocales);
+    x._writeln("indexed via: ", targetLocDom);
+    x._writeln("resulting in: ");
     //for locid in targetLocDom do
-    //  x.writeln("  [", locid, "] ", locDist(locid));
+    //  x._writeln("  [", locid, "] ", locDist(locid));
   }
 
   //

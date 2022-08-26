@@ -868,7 +868,7 @@ used to recursively hold tables and respective values
 
         var indent=0;
 
-        f.writeln('{');
+        f._writeln('{');
         indent += tabSpace;
 
         // Prints key values in containing Toml
@@ -886,7 +886,7 @@ used to recursively hold tables and respective values
           f._writef('%s}\n', ' '*indent);
         }
         indent -= tabSpace;
-        f.writeln('}');
+        f._writeln('}');
       }
       catch e: TomlError {
         writeln(e.message());
@@ -912,12 +912,12 @@ used to recursively hold tables and respective values
     pragma "no doc"
     proc printTables(ref flat: map(string, shared Toml?, false), f:channel) {
       if flat.contains('root') {
-        f.writeln('[root]');
+        f._writeln('[root]');
         printValues(f, flat['root']!);
         flat.remove('root');
       }
       for k in sorted(flat.keysToArray()) {
-        f.writeln('[', k, ']');
+        f._writeln('[', k, ']');
         printValues(f, flat[k]!);
       }
     }
@@ -974,9 +974,9 @@ used to recursively hold tables and respective values
             throw new owned TomlError("Not yet supported");
           }
         }
-        f.writeln();
+        f._writeln();
       }
-      f.writeln();
+      f._writeln();
     }
 
     pragma "no doc"

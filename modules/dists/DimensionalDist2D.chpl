@@ -895,7 +895,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   // domains is empty; could change it to halt("unimplemented")
   if dom1.dsiSetIndicesUnimplementedCase||dom2.dsiSetIndicesUnimplementedCase
     then if _arrs_containing_dom > 0 then
-      stderr.writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
+      stderr._writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
 
   coforall (locId, locDD) in zip(targetIds, localDdescs) do
     on locDD do
@@ -1080,7 +1080,7 @@ proc DimensionalArr.dsiSerialWrite(f): void {
 
   var nextD1 = false;
   for (l1,i1) in iHelp(0) {
-      if nextD1 then f.writeln();
+      if nextD1 then f._writeln();
       nextD1 = true;
 
       var nextD2 = false;
