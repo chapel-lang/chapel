@@ -2060,49 +2060,6 @@ static Args parseArgs(int argc, char **argv) {
   ret.printSystemCommands = printSystemCommands;
   ret.projectVersion = checkProjectVersion(fDocsProjectVersion);
   ret.noHTML = !fDocsHTML;
-  // for (int i = 1; i < argc; i++) {
-  //   if  (std::strcmp("--no-html", argv[i]) == 0){
-  //     // ret.noHTML = true;
-  //   } else if (std::strcmp("--save-sphinx", argv[i]) == 0) {
-  //     assert(i < (argc - 1));
-  //     // ret.saveSphinx = argv[i + 1];
-  //     i += 1;
-  //   } else if (std::strcmp("--self-test", argv[i]) == 0) {
-  //     // ret.selfTest = true;
-  //   } else if (std::strcmp("--stdout", argv[i]) == 0) {
-  //     // ret.stdout = true;
-  //   } else if (std::strcmp("--dump", argv[i]) == 0) {
-  //     // ret.dump = true;
-  //   } else if (std::strcmp("--text-only", argv[i]) ==  0) {
-  //     // ret.textOnly = true;
-  //   } else if (std::strcmp("--output-dir", argv[i]) == 0) {
-  //     assert(i < (argc - 1));
-  //     // ret.outputDir = argv[i + 1];
-  //     i += 1;
-  //   } else if (std::strcmp("--author", argv[i]) == 0) {
-  //     assert(i < (argc - 1));
-  //     // ret.author = argv[i + 1];
-  //     i += 1;
-  //   } else if (std::strcmp("--process-used-modules", argv[i]) ==  0) {
-  //     // ret.processUsedModules = true;
-  //   } else if (std::strcmp("--comment-style", argv[i]) == 0) {
-  //     assert(i < (argc - 1));
-  //     // ret.commentStyle = argv[i + 1];
-  //     i += 1;
-  //   } else if (std::strcmp("--project-version", argv[i]) == 0) {
-  //     assert(i < (argc - 1));
-  //     // ret.projectVersion = checkProjectVersion(argv[i + 1]);
-  //     i += 1;
-  //   } else if (std::strcmp("--print-commands", argv[i]) == 0) {
-  //     // ret.printSystemCommands = true;
-  //   } else if (std::strcmp("--home", argv[i]) == 0) {
-  //     assert(i < (argc - 1));
-  //     // ret.chplHome = argv[i + 1];
-  //     i += 1;
-  //   } else {
-  //     // ret.files.push_back(argv[i]);
-  //   }
-  // }
   return ret;
 }
 
@@ -2237,7 +2194,7 @@ int main(int argc, char** argv) {
   std::string modRoot = CHPL_HOME + "/modules";
   std::string internal = modRoot + "/internal";
   std::string bundled = modRoot + "/";
-
+  // auto chplEnv = ctx->getChplEnv();
   // TODO: Get these values dynamically
   chpl::parsing::setupModuleSearchPaths(ctx,
                                       CHPL_HOME,
