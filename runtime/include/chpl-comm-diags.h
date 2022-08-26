@@ -138,6 +138,8 @@ int chpl_comm_diags_is_enabled(void) {
   return (atomic_load_int_least16_t(&chpl_comm_diags_disable_flag) <= 0);
 }
 
+extern chpl_bool chpl_task_getSkipCommDiags(void);
+
 #define chpl_comm_diags_verbose_printf(is_unstable, format, ...)   \
   do {                                                             \
     if (chpl_verbose_comm                                          \
@@ -186,7 +188,8 @@ int chpl_comm_diags_is_enabled(void) {
 
 #define chpl_comm_diags_incr(_ctr)                                           \
   do {                                                                       \
-    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled()) {             \
+    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled() &&             \
+        !chpl_task_getSkipCommDiags()) {                                     \
       atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;       \
       (void) atomic_fetch_add_explicit_uint_least64_t(ctrAddr, 1,            \
                                                       memory_order_relaxed); \

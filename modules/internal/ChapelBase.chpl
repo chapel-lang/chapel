@@ -1302,7 +1302,9 @@ module ChapelBase {
   pragma "no remote memory fence"
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+    chpl_task_setSkipCommDiags(true);
     e.i.add(numTasks:int, memoryOrder.release);
+    chpl_task_setSkipCommDiags(false);
 
     if countRunningTasks {
       if numTasks > 1 {
@@ -1338,7 +1340,9 @@ module ChapelBase {
     chpl_save_task_error(e, err);
     chpl_comm_task_end();
     // inform anybody waiting that we're done
+    chpl_task_setSkipCommDiags(true);
     e.i.sub(1, memoryOrder.release);
+    chpl_task_setSkipCommDiags(false);
   }
 
   // This function is called once by the initiating task.  As above, no
@@ -1354,7 +1358,9 @@ module ChapelBase {
     here.runningTaskCntSub(1);
 
     // Wait for all tasks to finish
+    chpl_task_setSkipCommDiags(true);
     e.i.waitFor(0, memoryOrder.acquire);
+    chpl_task_setSkipCommDiags(false);
 
     if countRunningTasks {
       const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
@@ -1376,7 +1382,9 @@ module ChapelBase {
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
     // Wait for all tasks to finish
+    chpl_task_setSkipCommDiags(true);
     e.i.waitFor(0, memoryOrder.acquire);
+    chpl_task_setSkipCommDiags(false);
 
     if countRunningTasks {
       if numTasks > 1 {

@@ -28,10 +28,12 @@ module ChapelTaskData {
   // up to 16 bytes of wide pointer for _remoteEndCountType
   // 1 byte for serial_state
   // 1 byte for nextCoStmtSerial
+  // 1 byte for skipCommDiags
   private const chpl_offset_endCount = 0:c_size_t;
   private const chpl_offset_serial = sizeof_endcount_ptr();
   private const chpl_offset_nextCoStmtSerial = chpl_offset_serial+1;
-  private const chpl_offset_end = chpl_offset_nextCoStmtSerial+1;
+  private const chpl_offset_skipCommDiags = chpl_offset_nextCoStmtSerial+1;
+  private const chpl_offset_end = chpl_offset_skipCommDiags+1;
 
   // What is the size of a wide _EndCount pointer?
   private
@@ -123,6 +125,26 @@ module ChapelTaskData {
     return v == 1;
   }
 
+  proc chpl_task_data_setSkipCommDiags(tls:c_ptr(chpl_task_infoChapel_t), skipDiags: bool) : void {
+    var prv = tls:c_ptr(c_uchar);
+    var i = chpl_offset_skipCommDiags;
+    var v:uint(8) = 0;
+    if skipDiags then
+      v = 1;
+    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
+  }
+
+  proc chpl_task_data_getSkipCommDiags(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
+    var ret:bool = false;
+    var prv = tls:c_ptr(c_uchar);
+    var i = chpl_offset_skipCommDiags;
+    var v:uint(8) = 0;
+    c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
+    if boundsChecking then
+      assert(v == 0 || v == 1);
+    return v == 1;
+  }
+
 
   // These functions are like the above but first get the pointer
   // to the task local storage region for the currently executing task.
@@ -141,6 +163,15 @@ module ChapelTaskData {
   export proc chpl_task_getSerial() : bool {
     return chpl_task_data_getSerial(chpl_task_getInfoChapel());
   }
+
+  export proc chpl_task_setSkipCommDiags(skipDiags: bool) : void {
+    chpl_task_data_setSkipCommDiags(chpl_task_getInfoChapel(), skipDiags);
+  }
+
+  export proc chpl_task_getSkipCommDiags() : bool {
+    return chpl_task_data_getSkipCommDiags(chpl_task_getInfoChapel());
+  }
+
 
 
   // module init function - check sizes
