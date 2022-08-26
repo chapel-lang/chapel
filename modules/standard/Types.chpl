@@ -843,7 +843,8 @@ pragma "no doc"
 proc min(type t) param  where isUint(t)      return 0: t;
 
 pragma "no doc"
-proc min(type t) where isFloatType(t)        return __primitive( "_min", t);
+proc min(type t) where isRealType(t) || isImagType(t)
+  return __primitive( "_min", t);
 
 pragma "no doc"
 proc min(type t) where isComplexType(t) {
@@ -886,7 +887,7 @@ pragma "no doc"
 proc max(type t) param  where t == uint(64)  return 0xffffffffffffffff: t;
 
 pragma "no doc"
-proc max(type t) where isFloatType(t)        return __primitive( "_max", t);
+proc max(type t) where isRealType(t) || isImagType(t)        return __primitive( "_max", t);
 
 pragma "no doc"
 proc max(type t) where isComplexType(t) {
