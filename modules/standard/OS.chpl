@@ -1062,7 +1062,7 @@ module OS {
     pragma "insert line file info"
     pragma "always propagate line file info"
     deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
-    proc type fromSyserr(err: syserr, details: string = "") {
+    proc type fromSyserr(err: errorCode, details: string = "") {
       return createSystemError(err, details);
     }
 
@@ -1077,20 +1077,20 @@ module OS {
     pragma "always propagate line file info"
     deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
     proc type fromSyserr(err: int, details: string = "") {
-      return createSystemError(err:syserr, details);
+      return createSystemError(err:errorCode, details);
     }
   }
 
   /*
-    Return the matching :class:`SystemError` subtype for a given ``syserr``,
+    Return the matching :class:`SystemError` subtype for a given ``errorCode``,
     with an optional string containing extra details.
 
-    :arg err: the syserr to generate from
+    :arg err: the errorCode to generate from
     :arg details: extra information to include with the error
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc createSystemError(err: syserr, details: string = "") {
+  proc createSystemError(err: errorCode, details: string = "") {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
       return new owned BlockingIoError(details, err);
     } else if err == ECHILD {
@@ -1142,7 +1142,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc createSystemError(err: int, details: string = "") {
-    return createSystemError(err:syserr, details);
+    return createSystemError(err:errorCode, details);
   }
 
 
