@@ -2977,7 +2977,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style): channel(false, kind, locking) throws {
   if (region.hasLowBound() && region.low < 0) {
-    throw new IllegalArgumentError("region", "cannot index into a file before byte 0");
+    throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
 
   // It is the responsibility of the caller to release the returned channel
@@ -3154,7 +3154,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        style:iostyleInternal = this._style):
   channel(true,kind,locking) throws {
   if (region.hasLowBound() && region.low < 0) {
-    throw new IllegalArgumentError("region", "cannot index into a file before byte 0");
+    throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
 
   // It is the responsibility of the caller to retain and release the returned
