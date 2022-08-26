@@ -13227,6 +13227,13 @@ DisambiguationContext::DisambiguationContext(CallInfo& info,
     useOldVisibility = true;
   }
 
+  // this is a workaround -- a better solution would be preferred.
+  // this function seems to be created in a way that has problems with
+  // the visibility logic in disambiguation.
+  if (info.call->isNamed("_getIterator")) {
+    useOldVisibility = true;
+  }
+
   if (fExplainVerbose == true) {
     if (explainCallLine != 0 && explainCallMatch(info.call) == true) {
       explain = true;
