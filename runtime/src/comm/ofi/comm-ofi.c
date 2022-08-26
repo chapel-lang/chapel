@@ -2710,14 +2710,15 @@ void init_ofiForMem(void) {
     OFI_CHK(fi_mr_reg(ofi_domain,
                       memTab[i].addr, memTab[i].size,
                       bufAcc, 0, (prov_key ? 0 : i), 0, &ofiMrTab[i], NULL));
-    memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
-    memTab[i].key  = fi_mr_key(ofiMrTab[i]);
-    CHK_TRUE(prov_key || memTab[i].key == i);
-    DBG_PRINTF(DBG_MR, "[%d]     key %#" PRIx64, i, memTab[i].key);
     if ((ofi_info->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0) {
       OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEp->fid, 0));
       OFI_CHK(fi_mr_enable(ofiMrTab[i]));
     }
+    memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
+    memTab[i].key  = fi_mr_key(ofiMrTab[i]);
+    DBG_PRINTF(DBG_MR, "[%d]     key %#" PRIx64 " %s", i, memTab[i].key,
+               prov_key ? "(prov)" : "");
+    CHK_TRUE(prov_key || memTab[i].key == i);
   }
 
   //
