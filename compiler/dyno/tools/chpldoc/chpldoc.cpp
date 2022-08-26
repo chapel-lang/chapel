@@ -41,6 +41,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "arg.h"
+
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/Context.h"
@@ -57,6 +59,7 @@
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/resolution/scope-queries.h"
+#include "helpers.h"
 
 
 using namespace chpl;
@@ -65,13 +68,245 @@ using namespace parsing;
 
 using CommentMap = std::unordered_map<ID, const Comment*>;
 
+bool fDocs = true;
+char fDocsAuthor[256] = "";
+bool fDocsAlphabetize = false;
+char fDocsCommentLabel[256] = "";
+char fDocsFolder[256] = "";
+bool fDocsTextOnly = false;
+char fDocsSphinxDir[256] = "";
+bool fDocsHTML = true;
+char fDocsProjectVersion[256] = "0.0.1";
+bool printSystemCommands = false;
+bool fPrintCopyright = false;
+bool fPrintHelp = false;
+bool fPrintEnvHelp = false;
+bool fPrintSettingsHelp = false;
+bool fPrintLicense = false;
+bool fPrintChplHome = false;
+bool fPrintVersion = false;
+
+
+
 static const int indentPerDepth = 3;
 std::string commentStyle_;
-bool writeStdOut_ = false;
 std::string outputDir_;
 bool textOnly_ = false;
 std::string CHPL_HOME;
 bool processUsedModules_ = false;
+
+// TODO: Whether or not to support this flag is an open discussion. Currently,
+//       it is not supported, so the flag is always true.
+//       (thomasvandoren, 2015-03-08)
+bool fDocsIncludeExterns = true;
+bool fDocsProcessUsedModules = false;
+
+static
+void docsArgSetCommentLabel(const ArgumentDescription* desc, const char* label) {
+  assert(label != NULL);
+  size_t len = strlen(label);
+  if (len != 0) {
+    if (len > sizeof(fDocsCommentLabel)) {
+      USR_FATAL("the label is too large!");
+    } else {
+      strcpy(fDocsCommentLabel, label);
+    }
+  }
+}
+
+
+static
+void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused) {
+  fPrintHelp = true;
+}
+
+static
+void setHome(const ArgumentDescription* desc, const char* arg) {
+  CHPL_HOME = std::string(arg);
+}
+
+#define DRIVER_ARG_COPYRIGHT \
+  {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
+
+// #define DRIVER_ARG_BREAKFLAGS_COMMON \
+//   {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL}, \
+//   {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL}
+
+// #define DRIVER_ARG_DEBUGGERS                                            \
+//   {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL}, \
+//   {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL}
+
+// #define DRIVER_ARG_DEVELOPER \
+//   {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", driverSetDevelSettings}
+
+#define DRIVER_ARG_HELP \
+  {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL}
+
+#define DRIVER_ARG_HELP_ENV \
+  {"help-env", ' ', NULL, "Environment variable help", "F", &fPrintEnvHelp, "", driverSetHelpTrue}
+
+#define DRIVER_ARG_HELP_SETTINGS \
+  {"help-settings", ' ', NULL, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue}
+
+#define DRIVER_ARG_LICENSE \
+  {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL}
+
+#define DRIVER_ARG_HOME \
+  {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome}
+
+#define DRIVER_ARG_PRINT_CHPL_HOME \
+  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, NULL,NULL}
+
+#define DRIVER_ARG_VERSION \
+  {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL}
+
+#define DRIVER_ARG_LAST \
+  {0}
+
+static ArgumentState sArgState = {
+  0,
+  0,
+  "program",
+  "path",
+  NULL
+};
+
+ArgumentDescription docs_arg_desc[] = {
+ {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
+
+ // TODO: This option is disabled for now (since source based ordering was
+ //       introduced). The code to support it is still around, and the plan is
+ //       to bring it back someday soon. (thomasvandoren, 2015-03-11)
+ //
+ // {"alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
+
+ {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
+ {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
+ {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
+ {"process-used-modules", ' ', NULL, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, NULL, NULL},
+ {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
+ {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
+ {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
+ {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
+
+
+ // TODO: Whether or not to support this flag is an open discussion. Currently,
+ //       it is not supported, so the flag is always true.
+ //       (thomasvandoren, 2015-03-08)
+ //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
+ {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
+
+ {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
+ DRIVER_ARG_HELP,
+ DRIVER_ARG_HELP_ENV,
+ DRIVER_ARG_HELP_SETTINGS,
+ DRIVER_ARG_VERSION,
+ DRIVER_ARG_COPYRIGHT,
+ DRIVER_ARG_LICENSE,
+
+ {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
+//  DRIVER_ARG_DEVELOPER,
+//  DRIVER_ARG_BREAKFLAGS_COMMON,
+//  DRIVER_ARG_DEBUGGERS,
+ DRIVER_ARG_HOME,
+ DRIVER_ARG_PRINT_CHPL_HOME,
+
+ DRIVER_ARG_LAST
+};
+
+static void printStuff(const char* argv0) {
+  bool shouldExit       = false;
+  bool printedSomething = false;
+
+  if (fPrintVersion) {
+//     fprintf(stdout, "%s version %s\n", sArgState.program_name, compileVersion);
+
+// #ifdef HAVE_LLVM
+//     fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
+// #endif
+
+    fPrintCopyright  = true;
+    printedSomething = true;
+    shouldExit       = true;
+  }
+
+  if (fPrintLicense) {
+    fprintf(stdout,
+#include "LICENSE"
+            );
+
+    fPrintCopyright  = false;
+    shouldExit       = true;
+    printedSomething = true;
+  }
+
+  if (fPrintCopyright) {
+    fprintf(stdout,
+#include "COPYRIGHT"
+            );
+
+    printedSomething = true;
+  }
+  if( fPrintChplHome ) {
+    char* guess = findProgramPath(argv0);
+
+    printf("%s\t%s\n", CHPL_HOME.c_str(), guess);
+    // const char* prefix = get_configured_prefix();
+    // if (prefix != NULL && prefix[0] != '\0' )
+    //   printf("# configured prefix  %s\n", prefix);
+
+    // free(guess);
+
+    printedSomething = true;
+  }
+
+  // if( fPrintChplSettings ) {
+  //   char buf[1025] = "";
+  //   printf("CHPL_HOME: %s\n", CHPL_HOME.c_str());
+  //   printf("CHPL_RUNTIME_LIB: %s\n", CHPL_RUNTIME_LIB);
+  //   printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
+  //   printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
+  //   printf("\n");
+  //   const char* internalFlag = "";
+  //   if (developer)
+  //     internalFlag = "--internal";
+  //   int wanted_to_write = snprintf(buf, sizeof(buf),
+  //                                  "%s/util/printchplenv --all %s",
+  //                                  CHPL_HOME.c_str(), internalFlag);
+  //   if (wanted_to_write < 0) {
+  //     USR_FATAL("character encoding error in CHPL_HOME path name");
+  //   } else if ((size_t)wanted_to_write >= sizeof(buf)) {
+  //     USR_FATAL("CHPL_HOME path name is too long");
+  //   }
+  //   int status = mysystem(buf, "running printchplenv", false);
+  //   if (compilerSetChplLLVM) {
+  //     printf("---\n");
+  //     printf("* Note: CHPL_LLVM was set by 'chpl' since it was built without LLVM support.\n");
+  //   }
+  //   clean_exit(status);
+  // }
+
+  if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+    if (printedSomething) printf("\n");
+
+    usage(&sArgState, !fPrintHelp, fPrintEnvHelp, fPrintSettingsHelp);
+
+    shouldExit       = true;
+    printedSomething = true;
+  }
+
+  if (printedSomething && sArgState.nfile_arguments < 1) {
+    shouldExit       = true;
+  }
+
+  if (shouldExit) {
+    clean_exit(0);
+  }
+}
+
+
+
+
 const std::string templateUsage = R"RAW(**Usage**
 
 .. code-block:: chapel
@@ -1048,8 +1283,9 @@ struct RstResult {
     std::string ext = textOnly_ ? ".txt" : ".rst";
     auto outpath = outDir + "/" + name + ext;
 
-    std::error_code err;
-    if (!std::filesystem::create_directories(outDir, err)) {
+    std::error_code err = makeDir(outDir, true);
+
+    if (err != std::error_code()) {
       // TODO the above seems to return false when already exists,
       // but I don't think that should be the case
       // So check we really got an error
@@ -1757,9 +1993,6 @@ module N { }
 // Command line options and some defaults for dyno-chpldoc
 struct Args {
   std::string saveSphinx = "";
-  bool selfTest = false;
-  bool stdout = false;
-  bool dump = false;
   bool textOnly = false;
   std::string outputDir;
   bool processUsedModules = false;
@@ -1774,49 +2007,60 @@ struct Args {
 
 static Args parseArgs(int argc, char **argv) {
   Args ret;
-  for (int i = 1; i < argc; i++) {
-    if  (std::strcmp("--no-html", argv[i]) == 0){
-      ret.noHTML = true;
-    } else if (std::strcmp("--save-sphinx", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.saveSphinx = argv[i + 1];
-      i += 1;
-    } else if (std::strcmp("--self-test", argv[i]) == 0) {
-      ret.selfTest = true;
-    } else if (std::strcmp("--stdout", argv[i]) == 0) {
-      ret.stdout = true;
-    } else if (std::strcmp("--dump", argv[i]) == 0) {
-      ret.dump = true;
-    } else if (std::strcmp("--text-only", argv[i]) ==  0) {
-      ret.textOnly = true;
-    } else if (std::strcmp("--output-dir", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.outputDir = argv[i + 1];
-      i += 1;
-    } else if (std::strcmp("--author", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.author = argv[i + 1];
-      i += 1;
-    } else if (std::strcmp("--process-used-modules", argv[i]) ==  0) {
-      ret.processUsedModules = true;
-    } else if (std::strcmp("--comment-style", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.commentStyle = argv[i + 1];
-      i += 1;
-    } else if (std::strcmp("--project-version", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.projectVersion = checkProjectVersion(argv[i + 1]);
-      i += 1;
-    } else if (std::strcmp("--print-commands", argv[i]) == 0) {
-      ret.printSystemCommands = true;
-    } else if (std::strcmp("--home", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.chplHome = argv[i + 1];
-      i += 1;
-    } else {
-      ret.files.push_back(argv[i]);
-    }
+  ret.author = std::string(fDocsAuthor);
+  if (fDocsCommentLabel[0] != '\0') {
+    ret.commentStyle = std::string(fDocsCommentLabel);
   }
+  ret.outputDir = std::string(fDocsFolder);
+  ret.processUsedModules = fDocsProcessUsedModules;
+  ret.textOnly = fDocsTextOnly;
+  ret.saveSphinx = std::string(fDocsSphinxDir);
+  ret.printSystemCommands = printSystemCommands;
+  ret.projectVersion = checkProjectVersion(fDocsProjectVersion);
+  ret.noHTML = !fDocsHTML;
+  // for (int i = 1; i < argc; i++) {
+  //   if  (std::strcmp("--no-html", argv[i]) == 0){
+  //     // ret.noHTML = true;
+  //   } else if (std::strcmp("--save-sphinx", argv[i]) == 0) {
+  //     assert(i < (argc - 1));
+  //     // ret.saveSphinx = argv[i + 1];
+  //     i += 1;
+  //   } else if (std::strcmp("--self-test", argv[i]) == 0) {
+  //     // ret.selfTest = true;
+  //   } else if (std::strcmp("--stdout", argv[i]) == 0) {
+  //     // ret.stdout = true;
+  //   } else if (std::strcmp("--dump", argv[i]) == 0) {
+  //     // ret.dump = true;
+  //   } else if (std::strcmp("--text-only", argv[i]) ==  0) {
+  //     // ret.textOnly = true;
+  //   } else if (std::strcmp("--output-dir", argv[i]) == 0) {
+  //     assert(i < (argc - 1));
+  //     // ret.outputDir = argv[i + 1];
+  //     i += 1;
+  //   } else if (std::strcmp("--author", argv[i]) == 0) {
+  //     assert(i < (argc - 1));
+  //     // ret.author = argv[i + 1];
+  //     i += 1;
+  //   } else if (std::strcmp("--process-used-modules", argv[i]) ==  0) {
+  //     // ret.processUsedModules = true;
+  //   } else if (std::strcmp("--comment-style", argv[i]) == 0) {
+  //     assert(i < (argc - 1));
+  //     // ret.commentStyle = argv[i + 1];
+  //     i += 1;
+  //   } else if (std::strcmp("--project-version", argv[i]) == 0) {
+  //     assert(i < (argc - 1));
+  //     // ret.projectVersion = checkProjectVersion(argv[i + 1]);
+  //     i += 1;
+  //   } else if (std::strcmp("--print-commands", argv[i]) == 0) {
+  //     // ret.printSystemCommands = true;
+  //   } else if (std::strcmp("--home", argv[i]) == 0) {
+  //     assert(i < (argc - 1));
+  //     // ret.chplHome = argv[i + 1];
+  //     i += 1;
+  //   } else {
+  //     // ret.files.push_back(argv[i]);
+  //   }
+  // }
   return ret;
 }
 
@@ -1878,9 +2122,15 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 int main(int argc, char** argv) {
   Context context;
   Context *ctx = &context;
-
+  init_args(&sArgState, argv[0]);
+  init_arg_desc(&sArgState, docs_arg_desc);
+  process_args(&sArgState, argc, argv);
   Args args = parseArgs(argc, argv);
-  writeStdOut_ = args.stdout;
+  // add source files
+  // TODO: Check for proper file type, duplicate file names, was file found, etc.
+  for (int i = 0; i < sArgState.nfile_arguments; i++) {
+    args.files.push_back(std::string(sArgState.file_argument[i]));
+  }
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {
     std::cerr << "error: comment label should start with /*" << std::endl;
@@ -1888,12 +2138,6 @@ int main(int argc, char** argv) {
   }
   commentStyle_ = args.commentStyle;
   processUsedModules_ = args.processUsedModules;
-  if (args.selfTest) {
-    args.files.push_back("selftest.chpl");
-    UniqueString path = UniqueString::get(ctx, "selftest.chpl");
-    setFileText(ctx, path, testString);
-  }
-
 
   // update CHPL_HOME if we got one from the command-line args, or use the
   // environment variable.
@@ -1965,7 +2209,7 @@ int main(int argc, char** argv) {
                                       {},
                                       args.files);
   GatherModulesVisitor gather(ctx);
-
+  printStuff(argv[0]);
   // evaluate all the files and gather the modules
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
@@ -2013,7 +2257,6 @@ int main(int argc, char** argv) {
 
   for (auto id : gather.modules) {
     if (auto& r = rstDoc(ctx, id)) {
-      if (!args.stdout) {
         // given a module ID we can get the path to the file that we parsed
         UniqueString filePath;
         UniqueString parentSymbol;
@@ -2039,9 +2282,6 @@ int main(int argc, char** argv) {
 
         // need to check for a parent module in the path and add it to the directory structure if it exists
         r->outputModule(outdir, moduleName, indentPerDepth);
-      } else {
-        r->output(std::cout, indentPerDepth);
-      }
      }
    }
 
@@ -2052,3 +2292,5 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+
+

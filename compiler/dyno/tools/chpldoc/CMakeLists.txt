@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 add_executable(chpldoc "chpldoc.cpp")
-# TODO: this is temporary so I could use std::filesystem
-set_property(TARGET chpldoc PROPERTY CXX_STANDARD 17)
+set_property(TARGET chpldoc PROPERTY CXX_STANDARD 14)
+target_sources(chpldoc PRIVATE arg.h arg.cpp helpers.h helpers.cpp)
 target_link_libraries(chpldoc libdyno)
 target_include_directories(chpldoc PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
+
 add_dependencies(chpldoc libdyno)
