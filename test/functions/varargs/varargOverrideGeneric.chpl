@@ -17,7 +17,9 @@ class DefaultLogger2: Logger {
 }
 
 var Log: borrowed Logger?;
-Log = (new owned DefaultLogger()).borrow();
+var oLog = new owned DefaultLogger();
+Log = oLog.borrow();
 Log!.Println("I want to print from my DefaultLogger");
-Log = (new owned DefaultLogger2()).borrow();
-Log!.Println("I want to print from my DefaultLogger2");
+var oLog2 = new owned DefaultLogger2();
+var Log2 = oLog2.borrow();
+Log2!.Println("I want to print from my DefaultLogger2");
