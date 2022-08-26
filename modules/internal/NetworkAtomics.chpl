@@ -129,7 +129,7 @@ module NetworkAtomics {
     }
 
     proc const writeThis(x) throws {
-      x.write(read());
+      x._write(read());
     }
 
   }
@@ -329,7 +329,7 @@ module NetworkAtomics {
     }
 
     proc const writeThis(x) throws {
-      x.write(read());
+      x._write(read());
     }
 
   }
@@ -341,13 +341,13 @@ module NetworkAtomics {
   }
 
   inline operator RAtomicBool.=(ref a:RAtomicBool, const b:RAtomicBool) {
-    a.write(b.read());
+    a._write(b.read());
   }
   inline operator RAtomicBool.=(ref a:RAtomicBool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
   inline operator RAtomicT.=(ref a:RAtomicT, const b:RAtomicT) {
-    a.write(b.read());
+    a._write(b.read());
   }
   inline operator RAtomicT.=(ref a:RAtomicT, b) {
     compilerError("Cannot directly assign atomic variables");

@@ -503,7 +503,7 @@ module DateTime {
 
   /* Writes this `date` in ISO 8601 format: YYYY-MM-DD */
   proc date.writeThis(f) throws {
-    f.write(isoFormat());
+    f._write(isoFormat());
   }
 
   // Exists to support some common functionality for `datetime.readThis`
@@ -810,7 +810,7 @@ module DateTime {
 
   /* Writes this `time` in ISO format: hh:mm:ss.sss */
   proc time.writeThis(f) throws {
-    f.write(isoFormat());
+    f._write(isoFormat());
   }
 
   // Exists to support some common functionality for `datetime.readThis`
@@ -1472,7 +1472,7 @@ module DateTime {
 
   /* Writes this `datetime` in ISO format: YYYY-MM-DDThh:mm:ss.sss */
   proc datetime.writeThis(f) throws {
-    f.write(isoFormat());
+    f._write(isoFormat());
   }
 
   /* Reads this `datetime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */

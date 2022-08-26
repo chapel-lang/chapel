@@ -932,14 +932,14 @@ used to recursively hold tables and respective values
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldInt {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldArr {
             var final: string;
-            f.write(key, ' = ');
+            f._write(key, ' = ');
             final += '[';
             for k in value.arr {
               if value.arr.domain.size == 1 || k == value.arr[value.arr.domain.last] {
@@ -950,25 +950,25 @@ used to recursively hold tables and respective values
               }
             }
             final += ']';
-            f.write(final);
+            f._write(final);
           }
           when fieldReal {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldString {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldEmpty {
             throw new owned TomlError("Keys must have a value");
           }
           when fieldDate {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldTime {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldDateTime {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           otherwise {
             throw new owned TomlError("Not yet supported");
@@ -1358,7 +1358,7 @@ module TomlReader {
     }
 
     proc writeThis(f) throws {
-      f.write(this.A.toArray());
+      f._write(this.A.toArray());
     }
   }
 }

@@ -1036,7 +1036,7 @@ export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
 pragma "no doc"
 export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
-  return c.write(amt);
+  return c._write(amt);
 }
 pragma "no doc"
 export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
@@ -2312,7 +2312,7 @@ record ioNewline {
   pragma "no doc"
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f.write("\n");
+    f._write("\n");
   }
 }
 
@@ -2341,7 +2341,7 @@ record ioLiteral {
   var ignoreWhiteSpace: bool = true;
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f.write(val);
+    f._write(val);
   }
 }
 
@@ -2364,7 +2364,7 @@ record ioBits {
   pragma "no doc"
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f.write(v);
+    f._write(v);
   }
 }
 
@@ -3907,7 +3907,7 @@ proc stringify(const args ...?k):string {
       var w = f.writer(locking=false);
       defer try! w.close();
 
-      w.write((...args));
+      w._write((...args));
 
       var offset = w.offset();
 
@@ -4556,7 +4556,8 @@ proc channel.writebits(v:integral, nbits:integral):bool throws where WritersRetu
       throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
   }
 
-  return try this.write(new ioBits(v:uint(64), nbits:int(8)));
+  try this._write(new ioBits(v:uint(64), nbits:int(8)));
+  return true;
 }
 
 /*
@@ -4579,7 +4580,7 @@ proc channel.writebits(v:integral, nbits:integral) throws where WritersReturnBoo
       throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
   }
 
-  try this.write(new ioBits(v:uint(64), nbits:int(8)));
+  try this._write(new ioBits(v:uint(64), nbits:int(8)));
 }
 
 /*
@@ -6472,11 +6473,11 @@ class _channel_regex_info {
     clear();
   }
   override proc writeThis(f) throws {
-    f.write("{hasRegex = " + hasRegex: string);
-    f.write(", matchedRegex = " + matchedRegex: string);
-    f.write(", releaseRegex = " + releaseRegex: string);
-    f.write(", ... capturei = " + capturei: string);
-    f.write(", ncaptures = " + ncaptures: string + "}");
+    f._write("{hasRegex = " + hasRegex: string);
+    f._write(", matchedRegex = " + matchedRegex: string);
+    f._write(", releaseRegex = " + releaseRegex: string);
+    f._write(", ... capturei = " + capturei: string);
+    f._write(", ncaptures = " + ncaptures: string + "}");
   }
 }
 

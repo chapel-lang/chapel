@@ -212,7 +212,7 @@ module ChapelIO {
               writer._writeLiteral(eq);
             }
 
-            writer.write(__primitive("field by num", x, i));
+            writer._write(__primitive("field by num", x, i));
 
             first = false;
           }
@@ -230,7 +230,7 @@ module ChapelIO {
               const eq = ioFieldNameEqLiteral(writer, t, i);
               writer._writeLiteral(eq);
             }
-            writer.write(__primitive("field by num", x, i));
+            writer._write(__primitive("field by num", x, i));
           }
         }
       }
@@ -547,18 +547,18 @@ module ChapelIO {
   pragma "no doc"
   proc locale.writeThis(f) throws {
     // FIXME this doesn't resolve without `this`
-    f.write(this._instance);
+    f._write(this._instance);
   }
 
   pragma "no doc"
   proc _ddata.writeThis(f) throws {
     compilerWarning("printing _ddata class");
-    f.write("<_ddata class cannot be printed>");
+    f._write("<_ddata class cannot be printed>");
   }
 
   pragma "no doc"
   proc chpl_taskID_t.writeThis(f) throws {
-    f.write(this : uint(64));
+    f._write(this : uint(64));
   }
 
   pragma "no doc"
@@ -602,7 +602,7 @@ module ChapelIO {
 
     const (start, comma, comma1tup, end) = getLiterals();
 
-    proc helper(const ref arg) throws where f.writing { f.write(arg); }
+    proc helper(const ref arg) throws where f.writing { f._write(arg); }
     proc helper(ref arg) throws where !f.writing { arg = f.read(arg.type); }
 
     proc rwLiteral(lit:string) throws {
@@ -645,26 +645,26 @@ module ChapelIO {
     }
 
     if hasLowBound() then
-      f.write(lowBound);
+      f._write(lowBound);
     f._writeLiteral("..");
     if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f._writeLiteral("<");
-        f.write(lowBound);
+        f._write(lowBound);
       } else {
-        f.write(highBound);
+        f._write(highBound);
       }
     }
     if stride != 1 {
       f._writeLiteral(" by ");
-      f.write(stride);
+      f._write(stride);
     }
 
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if ! alignCheckRange.isNaturallyAligned() && aligned {
       f._writeLiteral(" align ");
-      f.write(chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride)));
+      f._write(chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride)));
     }
   }
 
@@ -698,7 +698,7 @@ module ChapelIO {
   pragma "no doc"
   override proc LocaleModel.writeThis(f) throws {
     f._writeLiteral("LOCALE");
-    f.write(chpl_id());
+    f._write(chpl_id());
   }
 
   /* Errors can be printed out. In that event, they will
@@ -707,7 +707,7 @@ module ChapelIO {
   */
   pragma "no doc"
   override proc Error.writeThis(f) throws {
-    f.write(chpl_describe_error(this));
+    f.-write(chpl_describe_error(this));
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */

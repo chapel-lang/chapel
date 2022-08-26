@@ -380,7 +380,7 @@ module Heap {
     */
     proc writeThis(ch: channel) throws {
       _enter();
-      ch.write(this._data);
+      ch._write(this._data);
       _leave();
     }
   }

@@ -865,7 +865,7 @@ proc StencilDom.dsiDims()        return whole.dims();
 proc StencilDom.dsiGetIndices()  return whole.getIndices();
 //proc StencilDom.dsiMember(i)     return whole.contains(i);
 proc StencilDom.doiToString()    return whole:string;
-proc StencilDom.dsiSerialWrite(x) { x.write(whole); }
+proc StencilDom.dsiSerialWrite(x) { x._write(whole); }
 proc StencilDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc StencilDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc StencilDom.dsiMyDist()                   return dist;
@@ -1365,9 +1365,9 @@ proc StencilArr.dsiSerialWrite(f) {
   for dim in 0..rank-1 do
     i(dim) = dom.dsiDim(dim).lowBound;
   label next while true {
-    f.write(do_dsiAccess(true, i));
+    f._write(do_dsiAccess(true, i));
     if i(rank-1) <= (dom.dsiDim(rank-1).highBound - dom.dsiDim(rank-1).stride:strType) {
-      if ! binary then f.write(" ");
+      if ! binary then f._write(" ");
       i(rank-1) += dom.dsiDim(rank-1).stride:strType;
     } else {
       for dim in 0..rank-2 by -1 {
@@ -2087,4 +2087,3 @@ where !disableStencilDistBulkTransfer {
 }
 
 override proc StencilArr.doiCanBulkTransferRankChange() param return true;
-

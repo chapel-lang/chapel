@@ -488,7 +488,7 @@ proc LocBlockCyclic.writeThis(x) throws {
   on this {
     localeid = here.id;
   }
-  x.write("locale ", localeid, " owns blocks: ", myStarts);
+  x._write("locale ", localeid, " owns blocks: ", myStarts);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -636,7 +636,7 @@ proc BlockCyclicDom.dsiDims()        return whole.dims();
 proc BlockCyclicDom.dsiGetIndices()  return whole.getIndices();
 proc BlockCyclicDom.dsiMember(i)     return whole.contains(i);
 proc BlockCyclicDom.doiToString()    return whole:string;
-proc BlockCyclicDom.dsiSerialWrite(x) { x.write(whole); }
+proc BlockCyclicDom.dsiSerialWrite(x) { x._write(whole); }
 proc BlockCyclicDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc BlockCyclicDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc BlockCyclicDom.dsiMyDist()                   return dist;
@@ -775,7 +775,7 @@ proc LocBlockCyclicDom.computeFlatInds() {
 // output local domain piece
 //
 proc LocBlockCyclicDom.writeThis(x) throws {
-  x.write(myStarts);
+  x._write(myStarts);
 }
 
 proc LocBlockCyclicDom.enumerateBlocks() {
@@ -1279,7 +1279,7 @@ proc LocBlockCyclicArr.this(i) ref {
 //
 proc LocBlockCyclicArr.writeThis(x) throws {
   // note on this fails; see writeThisUsingOn.chpl
-  x.write(myElems);
+  x._write(myElems);
 }
 
 // sungeun: This doesn't appear to be used yet, so I left it, but it

@@ -108,12 +108,12 @@ module MatrixMarket {
            HEADER_LINE = HEADER_LINE.replace("real", "complex");
          }
 
-         fout.write(HEADER_LINE);
-         fout.write("%\n");
+         fout._write(HEADER_LINE);
+         fout._write("%\n");
 
          if nnz < 0 {
             var blank = "                                                  \n";
-            fout.write(blank);
+            fout._write(blank);
          }
          else {
             fout._writef("%i %i %i\n", nrows, ncols, nnz);

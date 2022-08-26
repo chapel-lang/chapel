@@ -1669,7 +1669,7 @@ module DefaultRectangular {
       if !first then rwLiteral(", ");
       else first = false;
 
-      if f.writing then f.write(ranges(i));
+      if f.writing then f._write(ranges(i));
       else ranges(i) = f.read(ranges(i).type);
     }
     rwLiteral("}");
@@ -1761,7 +1761,7 @@ module DefaultRectangular {
           else if isspace then rwLiteral(" ");
           else if isjson || ischpl then rwLiteral(", ");
           idx(dim) = j;
-          if f.writing then f.write(arr.dsiAccess(idx));
+          if f.writing then f._write(arr.dsiAccess(idx));
           else arr.dsiAccess(idx) = f.read(eltType);
         }
       } else {
