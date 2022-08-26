@@ -4805,7 +4805,7 @@ proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
 
 deprecated "The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
 inline proc channel.write(const args ...?k):bool throws where WritersReturnBool == true {
-  try this._write(args);
+  try this._write((...args));
   return true;
 }
 
@@ -4821,7 +4821,7 @@ inline proc channel.write(const args ...?k):bool throws where WritersReturnBool 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
 inline proc channel.write(const args ...?k) throws where WritersReturnBool == false {
-  try this._write(args);
+  try this._write((...args));
 }
 
 // helper function for bool-returning deprecation
@@ -4890,7 +4890,7 @@ proc channel._writeln() throws {
 
 deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
 proc channel.writeln(const args ...?k):bool throws where WritersReturnBool == true {
-  try this._writeln(args);
+  try this._writeln((...args));
   return true;
 }
 
@@ -4908,7 +4908,7 @@ proc channel.writeln(const args ...?k):bool throws where WritersReturnBool == tr
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
 proc channel.writeln(const args ...?k) throws where WritersReturnBool == false {
-  try this._writeln(args);
+  try this._writeln((...args));
 }
 
 // helper function for bool-returning deprecation
