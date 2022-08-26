@@ -34,6 +34,18 @@ typeQueryFuncs.chpl:11: warning: isIrregularArr is deprecated - please use isIrr
 typeQueryFuncs.chpl:12: warning: isAssociativeArr is deprecated - please use isAssociative method on array
 typeQueryFuncs.chpl:13: warning: isSparseArr is deprecated - please use isSparse method on array
   typeQueryFuncs.chpl:33: called as runQueries(description: string, A: [DefaultSparseDom(2,int(64),domain(2,int(64),false))] int(64))
+typeQueryFuncs.chpl:39: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:40: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:41: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:42: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:48: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:49: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:50: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:51: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:54: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:55: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:56: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:57: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
 Given a rectangular domain: 
   isRectangularDom() = true
   isIrregularDom()   = false
