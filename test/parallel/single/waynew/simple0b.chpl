@@ -7,7 +7,7 @@ class C {
 var s: single borrowed C?;
 var t: borrowed C?;
 
-s = new borrowed C();
+s = (new owned C()).borrow();
 s.writeEF(t);
 
 

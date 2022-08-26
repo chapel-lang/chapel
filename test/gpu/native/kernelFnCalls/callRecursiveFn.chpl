@@ -7,7 +7,7 @@ proc foo(i): int {
   return 0;
 }
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A: [0..#n] int;
   forall i in 0..#n {
     A[i] = foo(i);

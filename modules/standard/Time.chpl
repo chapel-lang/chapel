@@ -100,7 +100,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* The maximum year allowed in `date` objects */
   param MAXYEAR = 9999;
 
-  private const DAYS_IN_MONTH: [1..12] int = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  private const DAYS_IN_MONTH: [1..12] int = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
   private const DAYS_BEFORE_MONTH = init_days_before_month();
 
   /* The Unix Epoch date and time */
@@ -498,20 +498,31 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     f.write(isoFormat());
   }
 
+  // Exists to support some common functionality for `datetime.readThis`
+  pragma "no doc"
+  proc date._readCore(f) throws {
+    const dash = "-";
+
+    chpl_year = f.read(int);
+    f._readLiteral(dash);
+    chpl_month = f.read(int);
+    f._readLiteral(dash);
+    chpl_day = f.read(int);
+  }
+
   /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
   proc date.readThis(f) throws {
-    const dash = new ioLiteral("-");
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
 
-    f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
+    this._readCore(f);
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
   }
 
 
@@ -610,11 +621,9 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`, and `timezone`.  All arguments are optional
    */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
                  in tzinfo: shared TZInfo?) {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -674,11 +683,9 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Replace the `hour`, `minute`, `second`, `microsecond` and `tzinfo` in a
      `time` to create a new `time`. All arguments are optional.
    */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
                     in tzinfo) {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -786,21 +793,33 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     f.write(isoFormat());
   }
 
+  // Exists to support some common functionality for `datetime.readThis`
+  pragma "no doc"
+  proc time._readCore(f) throws {
+    const colon = ":";
+
+    chpl_hour = f.read(int);
+    f._readLiteral(colon);
+    chpl_minute = f.read(int);
+    f._readLiteral(colon);
+    chpl_second = f.read(int);
+    f._readLiteral(".");
+    chpl_microsecond = f.read(int);
+  }
+
   /* Reads this `time` from ISO format: hh:mm:ss.sss */
   proc time.readThis(f) throws {
-    const colon = new ioLiteral(":");
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
 
-    f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
-      <~> new ioLiteral(".") <~> chpl_microsecond;
+    this._readCore(f);
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
   }
 
 
@@ -998,12 +1017,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
      `month`, and `day` arguments are required, the rest are optional.
    */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc datetime.init(year, month, day,
                      hour=0, minute=0, second=0, microsecond=0,
                      in tzinfo) {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
   }
@@ -1044,9 +1061,6 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=timeSinceEpoch(1));
     } else {
-      if chpl_warnUnstable {
-        compilerWarning("tzinfo is unstable; its type may change in the future");
-      }
       const timeSinceEpoch = getTimeOfDay();
       const td = new timedelta(seconds=timeSinceEpoch(0),
                                microseconds=timeSinceEpoch(1));
@@ -1070,6 +1084,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* The `datetime` that is `timestamp` seconds from the epoch */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc type datetime.fromTimestamp(timestamp: real,
                                    in tz: shared TZInfo?) {
     if tz.borrow() == nil {
@@ -1080,9 +1095,6 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=t(1));
     } else {
-      if chpl_warnUnstable {
-        compilerWarning("tzinfo is unstable; its type may change in the future");
-      }
       var dt = datetime.utcFromTimestamp(timestamp);
       return (dt + tz!.utcOffset(dt)).replace(tzinfo=tz);
     }
@@ -1146,10 +1158,8 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return the date and time converted into the timezone in the argument */
+  @unstable "tzinfo is unstable; its type may change in the future"
   proc datetime.astimezone(in tz: shared TZInfo) {
-    if chpl_warnUnstable {
-      compilerWarning("tzinfo is unstable; its type may change in the future");
-    }
     if tzinfo == tz {
       return this;
     }
@@ -1379,22 +1389,19 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Reads this `datetime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
   proc datetime.readThis(f) throws {
-    const dash  = new ioLiteral("-"),
-          colon = new ioLiteral(":");
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
 
-    f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
-      <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
-      <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
-      <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
+    chpl_date._readCore(f);
+    f._readLiteral("T");
+    chpl_time._readCore(f);
 
     if isjson then
-      f <~> new ioLiteral('"');
+      f._readLiteral('"');
   }
 
 

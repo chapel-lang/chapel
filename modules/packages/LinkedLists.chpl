@@ -283,25 +283,25 @@ record LinkedList {
 
     if binary {
       // Write the number of elements.
-      f <~> size;
+      f.write(size);
     }
     if isjson || ischpl {
-      f <~> new ioLiteral("[");
+      f._writeLiteral("[");
     }
 
     var first = true;
     for e in this {
       if first then first = false;
       else {
-        if isspace then f <~> new ioLiteral(" ");
-        else if isjson || ischpl then f <~> new ioLiteral(", ");
+        if isspace then f._writeLiteral(" ");
+        else if isjson || ischpl then f._writeLiteral(", ");
       }
 
-      f <~> e;
+      f.write(e);
     }
 
     if isjson || ischpl {
-      f <~> new ioLiteral("]");
+      f._writeLiteral("]");
     }
 
   }
@@ -321,11 +321,9 @@ record LinkedList {
     const isChpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !isBinary;
 
     // How many elements should we read (for binary mode)?
-    var num = 0;
+    const num : int = if isBinary then f.read(int) else 0;
 
-    if isBinary then f <~> num;
-
-    if isJson || isChpl then f <~> new ioLiteral("[");
+    if isJson || isChpl then f._readLiteral("[");
 
     // Clear out existing elements in the list.
     destroy();
@@ -346,9 +344,9 @@ record LinkedList {
         // Try reading an end bracket. If we don't, then continue on.
         try {
           if isJson || isChpl {
-            f <~> new ioLiteral("]");
+            f._readLiteral("]");
           } else if isSpace {
-            f <~> new ioNewline(skipWhitespaceOnly=true);
+            f._readNewline();
           }
 
           hasReadEnd = true;
@@ -361,23 +359,21 @@ record LinkedList {
         // Try to read a space or a comma. Break if we don't.
         try {
           if isSpace {
-            f <~> new ioLiteral(" ");
+            f._readLiteral(" ");
           } else if isJson || isChpl {
-            f <~> new ioLiteral(",");
+            f._readLiteral(",");
           }
         } catch err: BadFormatError {
           break;
         }
       }
 
-      var elt: eltType;
-      f <~> elt;
-      append(elt);
+      append(f.read(eltType));
       i += 1;
     }
 
     if !hasReadEnd then
-      if isJson || isChpl then f <~> new ioLiteral("]");
+      if isJson || isChpl then f._readLiteral("]");
   }
 }
 

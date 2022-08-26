@@ -35,13 +35,13 @@ module OuterModule {
       var d = new C;
       var o = new owned C;
       var s = new shared C;
-      var b = new borrowed C;
+      var b = (new owned C).borrow();
     }
     {
       var d = new GI;
       var o = new owned GI;
       var s = new shared GI;
-      var b = new borrowed GI;
+      var b = (new owned GI).borrow();
     }
     {
       var q = new M.Q;

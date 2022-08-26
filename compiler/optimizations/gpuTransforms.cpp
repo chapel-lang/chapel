@@ -542,6 +542,13 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
         blockSize_ = toSymExpr(call->get(1));
         call->remove();
         copyNode = false;
+    } else if(call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+      // The outlined kernel can only be executed on the GPU so there's no need
+      // to copy it over. Note: not all device functions are kernels so this does
+      // not ensure that this assertion won't work its way into functions
+      // called from the kernel, but we remove it here anyway cause why not, it's
+      // a slight optimization.
+      copyNode = false;
     }
     else if (DefExpr* def = toDefExpr(node)) {
       copyNode = false; // we'll do it here to adjust our symbol map

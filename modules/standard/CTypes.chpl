@@ -230,7 +230,7 @@ module CTypes {
       var first = true;
       for i in 0..#size {
 
-        ch <~> this(i);
+        ch.write(this(i));
 
         if i != size-1 then
           ch.readWriteLiteral(", ");

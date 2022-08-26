@@ -48,7 +48,7 @@ proc main() {
 var output: real(64);
 
 
-on here.getChild(1) {
+on here.gpus[0] {
 
   var dummy = [1,2,3]; // to ensure that the CUDA context is attached to the
                        // thread

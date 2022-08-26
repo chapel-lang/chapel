@@ -5,22 +5,20 @@ class mything {
   var y:int;
 
   proc readThis(r) throws {
-    readWriteHelper(r);
+    x = r.read(int);
+    r._readLiteral(" ");
+    y = r.read(int);
   }
 
   proc writeThis(w) throws {
-    readWriteHelper(w);
-  }
-
-  proc readWriteHelper(rw) throws {
-    rw <~> x;
-    rw <~> new ioLiteral(" ");
-    rw <~> y;
+    w.write(x);
+    w._writeLiteral(" ");
+    w.write(y);
   }
 }
 
 {
-  var a = new borrowed mything(1);
+  var a = (new owned mything(1)).borrow();
 
   writeln("Writing ", a);
 
@@ -32,7 +30,7 @@ class mything {
 
   var r = f.reader();
 
-  var b = new borrowed mything(2);
+  var b = (new owned mything(2)).borrow();
   r.read(b);
 
   r.close();

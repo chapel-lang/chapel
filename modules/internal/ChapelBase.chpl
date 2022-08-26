@@ -29,6 +29,7 @@ module ChapelBase {
 
   public use ChapelStandard;
   use CTypes;
+  use ChplConfig;
 
   config param enablePostfixBangChecks = false;
 
@@ -817,8 +818,9 @@ module ChapelBase {
   //
   // More primitive funs
   //
-  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
+  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit, gpuInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
+  config param chpl_defaultGpuArrayInitMethod = chpl_defaultArrayInitMethod;
 
   config param chpl_arrayInitMethodRuntimeSelectable = false;
   private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
@@ -841,6 +843,14 @@ module ChapelBase {
     }
   }
 
+  proc chpl_shouldDoGpuInit(): bool {
+    extern proc chpl_task_getRequestedSubloc(): int(32);
+    return
+      CHPL_LOCALE_MODEL=="gpu" &&
+      chpl_defaultGpuArrayInitMethod == ArrayInit.gpuInit &&
+      chpl_task_getRequestedSubloc() >= 0;
+  }
+
   // s is the number of elements, t is the element type
   proc init_elts_method(s, type t) {
     var initMethod = chpl_getArrayInitMethod();
@@ -849,6 +859,8 @@ module ChapelBase {
       // Skip init for empty arrays. Needed for uints so that `s-1` in init_elts
       // code doesn't overflow.
       initMethod = ArrayInit.noInit;
+    } else if chpl_shouldDoGpuInit() {
+        initMethod = ArrayInit.gpuInit;
     } else if  !rootLocaleInitialized {
       // The parallel range iter uses 'here`/rootLocale, so fallback to serial
       // initialization if the root locale hasn't been setup. Only used early
@@ -894,6 +906,17 @@ module ChapelBase {
       }
       when ArrayInit.serialInit {
         for i in lo..s-1 {
+          pragma "no auto destroy" pragma "unsafe" var y: t;
+          __primitive("array_set_first", x, i, y);
+        }
+      }
+      when ArrayInit.gpuInit {
+        // This branch should only occur when we're on a GPU sublocale and the
+        // following `foreach` loop will become a kernel
+        foreach i in lo..s-1 {
+          //assertOnGpu(); TODO: this assertion fails for a hello world style
+          // program investigate why (I don't think it's erroring out in user
+          // code but rather something from one of our standard modules).
           pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
@@ -1456,19 +1479,17 @@ module ChapelBase {
   inline operator :(x:chpl_anyreal, type t:chpl_anyreal)
     return __primitive("cast", t, x);
 
+  @unstable "enum-to-bool casts are likely to be deprecated in the future"
   inline operator :(x:enum, type t:chpl_anybool) throws {
-    if chpl_warnUnstable {
-      compilerWarning("enum-to-bool casts are likely to be deprecated in the future");
-    }    return x: int: bool;
+    return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
   // is generated for each enum in buildDefaultFunctions
   inline operator :(x: enum, type t:enum) where x.type == t
     return x;
+
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anyreal) throws {
-    if chpl_warnUnstable {
-      compilerWarning("enum-to-float casts are likely to be deprecated in the future");
-    }
     return x: int: real;
   }
 
@@ -1615,6 +1636,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anycomplex)
     return (x.re, x.im):t;
 
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anycomplex) throws
     return (x:real, 0):t;
 
@@ -1636,6 +1658,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anyimag)
     return __primitive("cast", t, x.im);
 
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anyimag)  throws
     return x:real:imag;
 
@@ -2301,7 +2324,7 @@ module ChapelBase {
       try {
       ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
       }
-      catch e: DecodeError { // let IOError propagate
+      catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
       }
     }

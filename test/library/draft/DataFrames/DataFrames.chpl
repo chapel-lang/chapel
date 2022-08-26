@@ -236,15 +236,15 @@ module DataFrames {
       for (idx, (v, d)) in zip(this, s!._these()) {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
-        f <~> idx;
+        f.write(idx);
         for space in 1..idxWidth-idxStr.size do
-          f <~> " ";
+          f.write(" ");
 
         if v then
-          f <~> d;
+          f.write(d);
         else
-          f <~> "None";
-        f <~> "\n";
+          f.write("None");
+        f.write("\n");
       }
     }
 
@@ -252,24 +252,24 @@ module DataFrames {
     proc writeThis(f, d: borrowed DataFrame) throws {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
-        f <~> " ";
+        f.write(" ");
       const labelsSorted = d.labels.sorted();
       for lab in labelsSorted {
-        f <~> lab + "   ";
+        f.write(lab + "   ");
       }
 
       for idx in this {
-        f <~> "\n";
+        f.write("\n");
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
-        f <~> idxStr;
+        f.write(idxStr);
         for space in 1..idxWidth-idxStr.size do
-          f <~> " ";
+          f.write(" ");
 
         for lab in labelsSorted {
           const ser = d[lab];
           ser!.writeElem(f, idx, lab.size);
-          f <~> "   ";
+          f.write("   ");
         }
       }
     }
@@ -278,15 +278,15 @@ module DataFrames {
     proc writeThis(f) throws {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
-        f <~> " ";
+        f.write(" ");
 
       for idx in this {
-        f <~> "\n";
+        f.write("\n");
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
-        f <~> idxStr;
+        f.write(idxStr);
         for space in 1..idxWidth-idxStr.size do
-          f <~> " ";
+          f.write(" ");
       }
     }
 
@@ -627,7 +627,7 @@ module DataFrames {
 
     override
     proc add(rhs : borrowed Series): owned Series {
-      return rhs.uni(this, new borrowed SeriesAdd(eltType));
+      return rhs.uni(this, (new owned SeriesAdd(eltType)).borrow());
     }
 
     override
@@ -638,7 +638,7 @@ module DataFrames {
 
     override
     proc subtr(rhs): owned Series {
-      return rhs.uni(this, new borrowed SeriesSubtr(eltType));
+      return rhs.uni(this, (new owned SeriesSubtr(eltType)).borrow());
     }
 
     override
@@ -649,7 +649,7 @@ module DataFrames {
 
     override
     proc mult(rhs): owned Series {
-      return rhs.uni(this, new borrowed SeriesMult(eltType));
+      return rhs.uni(this, (new owned SeriesMult(eltType)).borrow());
     }
 
     override
@@ -660,27 +660,27 @@ module DataFrames {
 
     override
     proc lt_scalar(n): owned Series {
-      return this.map(new borrowed SeriesLessThan(n));
+      return this.map((new owned SeriesLessThan(n)).borrow());
     }
 
     override
     proc gt_scalar(n): owned Series {
-      return this.map(new borrowed SeriesGreaterThan(n));
+      return this.map((new owned SeriesGreaterThan(n)).borrow());
     }
 
     override
     proc eq_scalar(n): owned Series {
-      return this.map(new borrowed SeriesEqualTo(n));
+      return this.map((new owned SeriesEqualTo(n)).borrow());
     }
 
     override
     proc lteq_scalar(n): owned Series {
-      return this.map(new borrowed SeriesLessThanEqualTo(n));
+      return this.map((new owned SeriesLessThanEqualTo(n)).borrow());
     }
 
     override
     proc gteq_scalar(n): owned Series {
-      return this.map(new borrowed SeriesGreaterThanEqualTo(n));
+      return this.map((new owned SeriesGreaterThanEqualTo(n)).borrow());
     }
 
     /*
@@ -721,15 +721,15 @@ module DataFrames {
         idx!.writeThis(f, _to_unmanaged(this));
       } else {
         for (v, (i, d)) in this._items() {
-          f <~> i:string + "    ";
+          f.write(i:string + "    ");
           if v then
-            f <~> d;
+            f.write(d);
           else
-            f <~> "None";
-          f <~> "\n";
+            f.write("None");
+          f.write("\n");
         }
       }
-      f <~> "dtype: " + eltType:string;
+      f.write("dtype: " + eltType:string);
     }
 
     pragma "no doc"
@@ -741,8 +741,8 @@ module DataFrames {
                    else "None";
 
       for space in 1..len-output.size do
-        f <~> " ";
-      f <~> output;
+        f.write(" ");
+      f.write(output);
     }
 
     pragma "no doc"
@@ -754,8 +754,8 @@ module DataFrames {
                    else "None";
 
       for space in 1..len-output.size do
-        f <~> " ";
-      f <~> output;
+        f.write(" ");
+      f.write(output);
     }
   }
 
@@ -848,22 +848,22 @@ module DataFrames {
         const labelsSorted = labels.sorted();
 
         for space in 1..idxWidth do
-          f <~> " ";
+          f.write(" ");
         for lab in labelsSorted {
-          f <~> lab + "   ";
+          f.write(lab + "   ");
         }
 
         for i in 0..#n {
-          f <~> "\n";
+          f.write("\n");
           var iStr = createStringWithNewBuffer(i: string);
-          f <~> iStr;
+          f.write(iStr);
           for space in 1..idxWidth-iStr.size do
-            f <~> " ";
+            f.write(" ");
 
           for lab in labelsSorted {
             const ser = columns[lab];
             ser!.writeElemNoIndex(f, i, lab.size);
-            f <~> "   ";
+            f.write("   ");
           }
         }
       }

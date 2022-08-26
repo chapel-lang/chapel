@@ -1,7 +1,7 @@
 config param tupSize = 5;
 config const n = 10;
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A: [1..n] int;
 
   foreach a in A {
@@ -22,7 +22,7 @@ on here.getChild(1) {
   writeln(A);
 }
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A: [1..n] int;
 
   foreach a in A {

@@ -1,0 +1,36 @@
+warn-misleading-new-unmanaged.chpl:34: In function 'test2':
+warn-misleading-new-unmanaged.chpl:36: warning: here, 'x' is set to the result of borrowing from a 'new'
+warn-misleading-new-unmanaged.chpl:36: note: if you meant to save the result of new, change the type of 'x' to not be 'borrowed'
+warn-misleading-new-unmanaged.chpl:36: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+warn-misleading-new-unmanaged.chpl:41: In function 'test2n':
+warn-misleading-new-unmanaged.chpl:43: warning: here, 'x' is set to the result of borrowing from a 'new'
+warn-misleading-new-unmanaged.chpl:43: note: if you meant to save the result of new, change the type of 'x' to not be 'borrowed'
+warn-misleading-new-unmanaged.chpl:43: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+warn-misleading-new-unmanaged.chpl:48: In function 'test2nn':
+warn-misleading-new-unmanaged.chpl:50: warning: here, 'x' is set to the result of borrowing from a 'new'
+warn-misleading-new-unmanaged.chpl:50: note: if you meant to save the result of new, change the type of 'x' to not be 'borrowed'
+warn-misleading-new-unmanaged.chpl:50: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+warn-misleading-new-unmanaged.chpl:56: In function 'test3':
+warn-misleading-new-unmanaged.chpl:59: warning: here, 'x' is set to the result of borrowing from a 'new'
+warn-misleading-new-unmanaged.chpl:59: note: if you meant to save the result of new, change the type of 'x' to not be 'borrowed'
+warn-misleading-new-unmanaged.chpl:59: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+warn-misleading-new-unmanaged.chpl:64: In function 'test3n':
+warn-misleading-new-unmanaged.chpl:67: warning: here, 'x' is set to the result of borrowing from a 'new'
+warn-misleading-new-unmanaged.chpl:67: note: if you meant to save the result of new, change the type of 'x' to not be 'borrowed'
+warn-misleading-new-unmanaged.chpl:67: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+warn-misleading-new-unmanaged.chpl:72: In function 'test3nn':
+warn-misleading-new-unmanaged.chpl:75: warning: here, 'x' is set to the result of borrowing from a 'new'
+warn-misleading-new-unmanaged.chpl:75: note: if you meant to save the result of new, change the type of 'x' to not be 'borrowed'
+warn-misleading-new-unmanaged.chpl:75: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+warn-misleading-new-unmanaged.chpl:81: In function 'test4':
+warn-misleading-new-unmanaged.chpl:87: warning: here, 'x' is set to the result of borrowing from a 'new'
+warn-misleading-new-unmanaged.chpl:87: note: if you meant to save the result of new, change the type of 'x' to not be 'borrowed'
+warn-misleading-new-unmanaged.chpl:87: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+warn-misleading-new-unmanaged.chpl:93: In function 'test4n':
+warn-misleading-new-unmanaged.chpl:99: warning: here, 'x' is set to the result of borrowing from a 'new'
+warn-misleading-new-unmanaged.chpl:99: note: if you meant to save the result of new, change the type of 'x' to not be 'borrowed'
+warn-misleading-new-unmanaged.chpl:99: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+warn-misleading-new-unmanaged.chpl:105: In function 'test4nn':
+warn-misleading-new-unmanaged.chpl:111: warning: here, 'x' is set to the result of borrowing from a 'new'
+warn-misleading-new-unmanaged.chpl:111: note: if you meant to save the result of new, change the type of 'x' to not be 'borrowed'
+warn-misleading-new-unmanaged.chpl:111: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'

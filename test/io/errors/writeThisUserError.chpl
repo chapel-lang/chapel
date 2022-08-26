@@ -1,7 +1,7 @@
 //
 // Create a record with a `writeThis` that always throws a user error and
 // use that to verify correct behavior for `writeln` (it should fail with
-// a general IOError).
+// a general IoError).
 //
 use IO;
 
@@ -11,7 +11,7 @@ record foo {
   proc writeThis(ch: channel) throws {
     throw new
       IllegalArgumentError('User error thrown from writeThis!');
-    ch <~> x;
+    ch.write(x);
   }
 }
 

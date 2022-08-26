@@ -271,7 +271,7 @@ module Subprocess {
     proc stdin throws {
       try _throw_on_launch_error();
       if stdin_pipe == false {
-        throw SystemError.fromSyserr(
+        throw createSystemError(
             EINVAL, "subprocess was not configured with a stdin pipe");
       }
       return stdin_channel;
@@ -287,7 +287,7 @@ module Subprocess {
     proc stdout throws {
       try _throw_on_launch_error();
       if stdout_pipe == false {
-        throw SystemError.fromSyserr(
+        throw createSystemError(
             EINVAL, "subprocess was not configured with a stdout pipe");
       }
       return stdout_channel;
@@ -303,7 +303,7 @@ module Subprocess {
     proc stderr throws {
       try _throw_on_launch_error();
       if stderr_pipe == false {
-        throw SystemError.fromSyserr(
+        throw createSystemError(
             EINVAL, "subprocess was not configured with a stderr pipe");
       }
       return stderr_channel;
@@ -509,7 +509,7 @@ module Subprocess {
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
             env_str = createStringWithNewBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
-              throw SystemError.fromSyserr(
+              throw createSystemError(
                   EINVAL,
                   "spawn with more than 1 locale for CHPL_COMM=ugni with hugepages currently requires stdin, stdout, stderr=pipeStyle.forward");
           }
@@ -582,7 +582,7 @@ module Subprocess {
       // goes out of scope, but the channel will still keep
       // the file alive by referring to it.
       try {
-        var stdin_file = openfd(stdin_fd, hints=ioHintSet.direct(QIO_HINT_OWNED));
+        var stdin_file = openfd(stdin_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
         ret.stdin_channel = stdin_file.writer();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -607,7 +607,7 @@ module Subprocess {
     if stdout_pipe {
       ret.stdout_pipe = true;
       try {
-        var stdout_file = openfd(stdout_fd, hints=ioHintSet.direct(QIO_HINT_OWNED));
+        var stdout_file = openfd(stdout_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
         ret.stdout_channel = stdout_file.reader();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -621,7 +621,7 @@ module Subprocess {
     if stderr_pipe {
       ret.stderr_pipe = true;
       try {
-        ret.stderr_file = openfd(stderr_fd, hints=ioHintSet.direct(QIO_HINT_OWNED));
+        ret.stderr_file = openfd(stderr_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
         ret.stderr_channel = ret.stderr_file.reader();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -770,7 +770,7 @@ module Subprocess {
 
     :arg buffer: if `true`, buffer input and output pipes (see above).
 
-    :throws BlockingIOError: when there weren't sufficient resources to perform
+    :throws BlockingIoError: when there weren't sufficient resources to perform
                              one of the required actions
     :throws InterruptedError: when the call was interrupted in some way.
     :throws BrokenPipeError: when a pipe for the subprocess closed early.
@@ -891,7 +891,7 @@ module Subprocess {
     of the child process as necessary while waiting for
     it to terminate.
 
-    :throws BlockingIOError: when there weren't sufficient resources to perform
+    :throws BlockingIoError: when there weren't sufficient resources to perform
                              one of the required actions
     :throws InterruptedError: when the call was interrupted in some way.
     :throws BrokenPipeError: when a pipe for the subprocess closed early.

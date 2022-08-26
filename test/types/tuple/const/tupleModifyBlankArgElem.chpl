@@ -33,7 +33,7 @@ proc modifyBlankArgElement(tup: (shared C?,)) {
 }
 
 proc modifyBlankArgElement(tup: (borrowed C?,)) {
-  tup[0] = new borrowed C?(64);
+  tup[0] = (new owned C?(64)).borrow();
 }
 
 proc modifyBlankArgElement(tup: (unmanaged C?,)) {
@@ -147,7 +147,7 @@ proc test() {
   run(new shared C?());
 
   // borrowed, OK
-  run(new borrowed C?());
+  run((new owned C?()).borrow());
 
   // unmanaged, OK
   run(new unmanaged C?());

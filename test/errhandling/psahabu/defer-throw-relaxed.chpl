@@ -12,7 +12,7 @@ prototype module OuterModule {
       defer {
         try {
           throw new owned Error();
-        } catch e: UnexpectedEOFError {
+        } catch e: UnexpectedEofError {
           writeln("this shouldn't happen");
         }
       }
@@ -21,7 +21,7 @@ prototype module OuterModule {
     proc deferTryComplete() {
       defer {
         try {
-          throw new owned UnexpectedEOFError();
+          throw new owned UnexpectedEofError();
         } catch {
           writeln("this is ok");
         }

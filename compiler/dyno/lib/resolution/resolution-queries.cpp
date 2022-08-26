@@ -1653,6 +1653,7 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
 struct ReturnTypeInferrer {
   // input
   Context* context;
+  const AstNode* astForErr;
   Function::ReturnIntent returnIntent;
   const ResolutionResultByPostorderID& resolutionById;
 
@@ -1660,8 +1661,10 @@ struct ReturnTypeInferrer {
   std::vector<QualifiedType> returnedTypes;
 
   ReturnTypeInferrer(Context* context,
+                     const AstNode* astForErr,
                      const ResolvedFunction& resolvedFn)
     : context(context),
+      astForErr(astForErr),
       returnIntent(resolvedFn.returnIntent()),
       resolutionById(resolvedFn.resolutionById()) {
   }
@@ -1709,7 +1712,6 @@ struct ReturnTypeInferrer {
 
     QualifiedType::Kind kind = qt.kind();
     const Type* type = qt.type();
-    const Param* param = qt.param();
 
     // Functions that return tuples need to return
     // a value tuple (for value returns and type returns)
@@ -1721,25 +1723,21 @@ struct ReturnTypeInferrer {
     }
 
     checkReturn(inExpr, qt);
-
-    kind = (QualifiedType::Kind) returnIntent;
-    if (kind != QualifiedType::PARAM) {
-        // reset param value if we're not returning a param
-        param = nullptr;
-    }
-
-    returnedTypes.push_back(QualifiedType(kind, type, param));
+    returnedTypes.push_back(std::move(qt));
   }
 
   QualifiedType returnedType() {
     if (returnedTypes.size() == 0) {
       return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-    } else if (returnedTypes.size() == 1) {
-      return returnedTypes[0];
     } else {
-      assert(false && "TODO");
-      QualifiedType ret;
-      return ret;
+      auto retType = commonType(context, returnedTypes,
+                                (QualifiedType::Kind) returnIntent);
+      if (!retType) {
+        // Couldn't find common type, so return type is incorrect.
+        context->error(astForErr, "could not determine return type for function");
+        retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+      }
+      return retType.getValue();
     }
   }
 
@@ -1920,7 +1918,7 @@ const QualifiedType& returnType(Context* context,
       // resolve the function body
       const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
       // infer the return type
-      ReturnTypeInferrer visitor(context, *rFn);
+      ReturnTypeInferrer visitor(context, fn, *rFn);
       fn->body()->traverse(visitor);
       result = visitor.returnedType();
     }

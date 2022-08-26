@@ -60,8 +60,8 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
 #ifdef HAS_GPU_LOCALE
   if (chpl_gpu_running_on_gpu_locale()) {
     *callPostAlloc = false;
-    p = chpl_gpu_mem_alloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
-                           lineno, filename);
+    p = chpl_gpu_mem_array_alloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
+                                 lineno, filename);
   }
   else {
 #endif

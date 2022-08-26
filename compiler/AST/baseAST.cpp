@@ -591,6 +591,25 @@ void BaseAST::printDocsDeprecation(const char *doc, std::ostream *file,
   }
 }
 
+void BaseAST::printDocsUnstable(const char *doc, std::ostream *file,
+                                   unsigned int tabs,
+                                   const char* unstableMsg, bool extraLine) {
+  if (doc != NULL) {
+    if (strstr(doc, "unstable")) {
+      return;
+    }
+  }
+  this->printTabs(file, tabs);
+  *file << ".. warning::" << std::endl;
+  *file << std::endl;
+  this->printTabs(file, tabs+1);
+  *file << unstableMsg << std::endl;
+
+  if (extraLine) {
+    *file << std::endl;
+  }
+}
+
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {
   case MOD_USER:

@@ -12,7 +12,7 @@ class C {
 
 
 var myR = new R({1..10});
-var myC = new borrowed C({1..10});
+var myC = (new owned C({1..10})).borrow();
 
 baz(myR, 19);
 writeln("myR is: ", myR);

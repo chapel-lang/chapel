@@ -23,6 +23,8 @@
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/types/ClassTypeDecorator.h"
 
+#include "llvm/Support/Error.h"
+
 namespace chpl {
 namespace uast {
   class AstNode;
@@ -172,6 +174,32 @@ CanPassResult canPass(Context* context,
                       const types::QualifiedType& formalType) {
   return CanPassResult::canPass(context, actualType, formalType);
 }
+
+/**
+  An optional additional constraint on the kind of a type. Used in
+  commonType to serve the case of functions that enforce param, type,
+  or const returs.
+ */
+using KindRequirement = llvm::Optional<chpl::types::QualifiedType::Kind>;
+
+/**
+  Given a (non-empty) list of types (e.g., the types of various return statements
+  in a function), determine the type, if any, that can be used to represent
+  all of them. Returns an llvm::Optional that contains the qualified type
+  if one is found, or is empty otherwise.
+
+  If useRequiredKind=true is specified, the requiredKind argument is treated
+  as a strict constraint on the kinds of the given types. For instance,
+  specifying requiredKind=PARAM and giving non-param types will
+  result in failure to find a common type, even if the types can otherwise
+  by unified.
+ */
+llvm::Optional<chpl::types::QualifiedType>
+commonType(Context* context,
+           const std::vector<chpl::types::QualifiedType>& types,
+           KindRequirement requiredKind = KindRequirement());
+// QualifiedType fully qualified here to prevent "reference target not found"
+// in Doxygen.
 
 
 } // end namespace resolution

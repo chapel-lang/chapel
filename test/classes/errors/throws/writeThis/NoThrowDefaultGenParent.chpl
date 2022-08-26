@@ -6,7 +6,7 @@ class A1: A {
   var y: int = 0;
 
   proc writeThis(ch) throws {
-    ch <~> "Hello from class A1!";
+    ch.write("Hello from class A1!");
   }
 }
 

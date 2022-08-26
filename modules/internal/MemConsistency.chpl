@@ -50,19 +50,19 @@ module MemConsistency {
 
   proc memory_order.writeThis(ch) throws {
     if this == memory_order_relaxed then
-      ch <~> "memory_order_relaxed";
+      ch.write("memory_order_relaxed");
     else if this == memory_order_consume then
-      ch <~> "memory_order_consume";
+      ch.write("memory_order_consume");
     else if this == memory_order_acquire then
-      ch <~> "memory_order_acquire";
+      ch.write("memory_order_acquire");
     else if this == memory_order_release then
-      ch <~> "memory_order_release";
+      ch.write("memory_order_release");
     else if this == memory_order_acq_rel then
-      ch <~> "memory_order_acq_rel";
+      ch.write("memory_order_acq_rel");
     else if this == memory_order_seq_cst then
-      ch <~> "memory_order_seq_cst";
+      ch.write("memory_order_seq_cst");
     else
-      ch <~> "memory_order_unknown";
+      ch.write("memory_order_unknown");
   }
 
   extern const memory_order_relaxed:memory_order;

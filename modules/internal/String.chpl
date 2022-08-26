@@ -252,7 +252,7 @@ module String {
     proc init=(i: int) { _bindex = i; }
 
     proc writeThis(f) throws {
-      f <~> _bindex;
+      f.write(_bindex);
     }
 
     operator :(val: byteIndex, type t:string) {
@@ -275,7 +275,7 @@ module String {
     proc init=(cpi: codepointIndex) { _cpindex = cpi._cpindex; }
 
     proc writeThis(f) throws {
-      f <~> _cpindex;
+      f.write(_cpindex);
     }
 
     operator :(val: codepointIndex, type t:string) {
@@ -1910,15 +1910,9 @@ module String {
                         first line.
 
       :returns: A new `string` with indentation removed.
-
-      .. warning::
-
-        ``string.dedent`` is not considered stable and is subject to change in
-        future Chapel releases.
   */
+  @unstable "string.dedent is subject to change in the future."
   proc string.dedent(columns=0, ignoreFirst=true) : string {
-    if chpl_warnUnstable then
-      compilerWarning("string.dedent is subject to change in the future.");
     return doDedent(this, columns, ignoreFirst);
   }
 

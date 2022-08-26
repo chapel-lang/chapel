@@ -18,8 +18,8 @@ def llvm_versions():
     return ('14','13','12','11',)
 
 @memoize
-def get_uniq_cfg_path_for(llvm_val):
-    if llvm_val == "bundled" or llvm_val == "none":
+def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
+    if llvm_val == "bundled" or llvm_support_val == "bundled":
         # put platform-arch-compiler for included llvm
         llvm_target_dir = chpl_bin_subdir.get('host')
     else:
@@ -31,18 +31,19 @@ def get_uniq_cfg_path_for(llvm_val):
 @memoize
 def get_uniq_cfg_path():
     llvm_val = get()
-    return get_uniq_cfg_path_for(llvm_val)
+    llvm_support_val = get_llvm_support()
+    return get_uniq_cfg_path_for(llvm_val, llvm_support_val)
 
 def get_bundled_llvm_dir():
     chpl_third_party = get_chpl_third_party()
-    llvm_target_dir = get_uniq_cfg_path_for('bundled')
+    llvm_target_dir = get_uniq_cfg_path_for('bundled', 'bundled')
     llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
                                llvm_target_dir)
     return llvm_subdir
 
 def get_bundled_llvm_support_only_dir():
     chpl_third_party = get_chpl_third_party()
-    llvm_target_dir = get_uniq_cfg_path_for('none')
+    llvm_target_dir = get_uniq_cfg_path_for('none', 'bundled')
     llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
                                'support-only-' + llvm_target_dir)
     return llvm_subdir
@@ -51,7 +52,7 @@ def is_included_llvm_built(llvm_val):
     llvm_subdir = None
     if llvm_val == 'bundled':
         llvm_subdir = get_bundled_llvm_dir()
-    elif llvm_val == 'none':
+    else:
         llvm_subdir = get_bundled_llvm_support_only_dir()
 
     llvm_header = os.path.join(llvm_subdir, 'include', 'llvm',
@@ -103,6 +104,8 @@ def check_llvm_config(llvm_config):
 # Ensure that relevant LLVM-related header files and libraries have been
 # installed. If these are missing it usually indicates the user failed to
 # install some necessary package.
+#
+# Returns a tuple like (isOk, errorMessage)
 def check_llvm_packages(llvm_config):
     llvm_header = ''
     llvm_include_ok = False
@@ -216,9 +219,35 @@ def find_system_llvm_config():
     return ''
 
 
+# Returns whether to use the bundled or system LLVM for the
+# LLVM support module.
+# This corresponds to the CHPL_LLVM_SUPPORT variable.
+# Since the LLVM support module is now required to build Chapel,
+# this returns "bundled" or "system" even if CHPL_LLVM=none.
+@memoize
+def get_llvm_support():
+    llvm_val = get()
+
+    # If using CHPL_LLVM=bundled or CHPL_LLVM=system
+    # then CHPL_LLVM_SUPPORT needs to match
+    if llvm_val == 'bundled':
+        return 'bundled'
+    if llvm_val == 'system':
+        return 'system'
+
+    llvm_support_val = overrides.get('CHPL_LLVM_SUPPORT')
+    if not llvm_support_val:
+        if has_compatible_installed_llvm():
+            llvm_support_val = 'system'
+        else:
+            llvm_support_val = 'bundled'
+
+    return llvm_support_val
+
 @memoize
 def get_llvm_config():
     llvm_val = get()
+    llvm_support_val = get_llvm_support()
     llvm_config = overrides.get('CHPL_LLVM_CONFIG', 'none')
 
     if llvm_val == 'bundled':
@@ -228,17 +257,19 @@ def get_llvm_config():
             warning("CHPL_LLVM_CONFIG is ignored for CHPL_LLVM=bundled")
         llvm_config = bundled_config
 
-    elif llvm_val == 'none':
+    elif llvm_support_val == 'bundled':
         llvm_subdir = get_bundled_llvm_support_only_dir()
         bundled_config = os.path.join(llvm_subdir, 'bin', 'llvm-config')
         if llvm_config != 'none' and llvm_config != bundled_config:
-            warning("CHPL_LLVM_CONFIG is ignored for CHPL_LLVM=none")
+            warning("CHPL_LLVM_CONFIG is ignored for CHPL_LLVM_SUPPORT=bundled")
         llvm_config = bundled_config
 
-    elif llvm_config == 'none' and llvm_val == 'system':
-        llvm_config = find_system_llvm_config()
+    elif llvm_config == 'none':
+        if llvm_val == 'system' or llvm_support_val == 'system':
+            llvm_config = find_system_llvm_config()
 
     return llvm_config
+
 
 @memoize
 def get_llvm_version():
@@ -248,12 +279,19 @@ def get_llvm_version():
 @memoize
 def validate_llvm_config():
     llvm_val = get()
+    llvm_support_val = get_llvm_support()
     llvm_config = get_llvm_config()
 
     if llvm_val == 'system':
         if llvm_config == '' or llvm_config == 'none':
             error("CHPL_LLVM=system but could not find an installed LLVM"
                   " with one of the supported versions: {0}".format(
+                  llvm_versions_string()))
+
+    if llvm_support_val == 'system':
+        if llvm_config == '' or llvm_config == 'none':
+            error("CHPL_LLVM_SUPPORT=system but could not find an installed "
+                  "LLVM with one of the supported versions: {0}".format(
                   llvm_versions_string()))
 
     if (llvm_val == 'system' or
@@ -352,17 +390,26 @@ def get_llvm_clang(lang):
 def has_compatible_installed_llvm():
     llvm_config = find_system_llvm_config()
 
-    if llvm_config:
-        clang_c_command = get_system_llvm_clang('c')
-        clang_cxx_command = get_system_llvm_clang('c++')
 
-        if (os.path.exists(clang_c_command) and
-            os.path.exists(clang_cxx_command)):
-            return True
+    if llvm_config:
+        (ok, errMsg) = check_llvm_packages(llvm_config)
+
+        if ok:
+            clang_c_command = get_system_llvm_clang('c')
+            clang_cxx_command = get_system_llvm_clang('c++')
+
+            if (os.path.exists(clang_c_command) and
+                os.path.exists(clang_cxx_command)):
+                return True
 
     # otherwise, something went wrong, so return False
     return False
 
+# Returns the setting to use for CHPL_LLVM
+#  CHPL_LLVM=none means build the compiler without enabling LLVM and clang
+#                 integration (but note the LLVM support library is still used)
+#  CHPL_LLVM=system means to use a system install of LLVM and clang
+#  CHPL_LLVM=bundled means to use the bundled version of LLVM and clang
 @memoize
 def get():
     llvm_val = overrides.get('CHPL_LLVM')
@@ -374,6 +421,7 @@ def get():
                 llvm_val = 'bundled'
             elif has_compatible_installed_llvm():
                 llvm_val = 'system'
+            # otherwise, the default remains 'unset' -- ask user
 
         else:
             # This platform doesn't work with the LLVM backend
@@ -726,9 +774,14 @@ def get_host_compile_args():
     system = [ ]
 
     llvm_val = get()
+    llvm_support_val = get_llvm_support()
     llvm_config = get_llvm_config()
 
-    if llvm_val == 'system':
+    # quit early if the llvm value is unset
+    if llvm_val == 'unset':
+        return (bundled, system)
+
+    if llvm_support_val == 'system':
         # On Mac OS X with Homebrew, apply a workaround for issue #19217.
         # This avoids finding headers in the libc++ installed by llvm@12 e.g.
         if use_system_libcxx_workaround():
@@ -748,9 +801,7 @@ def get_host_compile_args():
         cxxflags = run_command([llvm_config, '--cxxflags'])
         system.extend(filter_llvm_config_flags(cxxflags.split()))
 
-    elif llvm_val == 'bundled' or llvm_val == 'none':
-        # none is handled here to get the LLVMSupport library
-
+    elif llvm_support_val == 'bundled':
         # don't try to run llvm-config if it's not built yet
         if is_included_llvm_built(llvm_val):
             # Note, the cxxflags should include the -I for the include dir
@@ -774,6 +825,7 @@ def get_host_link_args():
 
     llvm_dynamic = True
     llvm_val = get()
+    llvm_support_val = get_llvm_support()
     llvm_config = get_llvm_config()
     clang_static_libs = ['-lclangFrontend',
                          '-lclangSerialization',
@@ -799,12 +851,16 @@ def get_host_link_args():
                        'coroutines',
                        'lto']
 
+    # quit early if the llvm value is unset
+    if llvm_val == 'unset':
+        return (bundled, system)
+
     # only use LLVMSupport for CHPL_LLVM=none
     if llvm_val == 'none':
         clang_static_libs = [ ]
         llvm_components = ['support']
 
-    if llvm_val == 'system':
+    if llvm_support_val == 'system':
         # On Mac OS X with Homebrew, apply a workaround for issue #19217.
         # This avoids linking with the libc++ installed by llvm@12 e.g.
         if use_system_libcxx_workaround():
@@ -846,9 +902,7 @@ def get_host_link_args():
             system.extend(filter_llvm_link_flags(ldflags.split()))
 
 
-    elif llvm_val == 'bundled' or llvm_val == 'none':
-        # none is handled here to use the LLVM Support library
-
+    elif llvm_support_val == 'bundled':
         # Link statically for now for the bundled configuration
         # If this changes in the future:
         # * check for problems finding libstdc++ with different PrgEnv compilers
@@ -927,6 +981,10 @@ def _main():
     parser.add_option('--sdkroot', dest='action',
                       action='store_const',
                       const='sdkroot', default='')
+    parser.add_option('--quickstart', dest='action',
+                      action='store_const',
+                      const='quickstart', default='')
+
 
 
     (options, args) = parser.parse_args()
@@ -946,6 +1004,11 @@ def _main():
         sys.stdout.write("{0}\n".format(llvm_versions))
     elif options.action == 'sdkroot':
         sys.stdout.write("{0}\n".format(get_clang_args_sdkroot()))
+    elif options.action == 'quickstart':
+        if has_compatible_installed_llvm():
+            sys.stdout.write("system\n")
+        else:
+            sys.stdout.write("none\n")
     else:
         sys.stdout.write("{0}\n".format(llvm_val))
 

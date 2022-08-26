@@ -5,7 +5,7 @@ use RecordParser, IO;
 config const no_mmap=false;
 var hints=ioHintSet.empty;
 if no_mmap {
-  hints = ioHintSet.direct(QIO_METHOD_PREADPWRITE);
+  hints = ioHintSet.noMmap;
 }
 
 var f = open("input1.txt", iomode.rw);

@@ -673,13 +673,13 @@ module MyRandom {
 
     pragma "no doc"
     proc writeThis(f) throws {
-      f <~> "RandomStreamInterface(eltType=";
-      f <~> eltType:string;
-      f <~> ", parSafe=";
-      f <~> parSafe;
-      f <~> ", seed=";
-      f <~> seed;
-      f <~> ")";
+      f.write("RandomStreamInterface(eltType=");
+      f.write(eltType:string);
+      f.write(", parSafe=");
+      f.write(parSafe);
+      f.write(", seed=");
+      f.write(seed);
+      f.write(")");
     }
   }
 
@@ -1280,13 +1280,13 @@ module MyRandom {
 
       pragma "no doc"
       override proc writeThis(f) throws {
-        f <~> "PCGRandomStream(eltType=";
-        f <~> eltType:string;
-        f <~> ", parSafe=";
-        f <~> parSafe;
-        f <~> ", seed=";
-        f <~> seed;
-        f <~> ")";
+        f.write("PCGRandomStream(eltType=");
+        f.write(eltType:string);
+        f.write(", parSafe=");
+        f.write(parSafe);
+        f.write(", seed=");
+        f.write(seed);
+        f.write(")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //
@@ -2711,13 +2711,13 @@ module MyRandom {
 
       pragma "no doc"
       override proc writeThis(f) throws {
-        f <~> "NPBRandomStream(eltType=";
-        f <~> eltType:string;
-        f <~> ", parSafe=";
-        f <~> parSafe;
-        f <~> ", seed=";
-        f <~> seed;
-        f <~> ")";
+        f.write("NPBRandomStream(eltType=");
+        f.write(eltType:string);
+        f.write(", parSafe=");
+        f.write(parSafe);
+        f.write(", seed=");
+        f.write(seed);
+        f.write(")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //

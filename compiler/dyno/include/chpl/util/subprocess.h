@@ -23,30 +23,45 @@
 
 #include <string>
 #include <vector>
+#include <system_error>
 
+#include "llvm/Support/ErrorOr.h"
 
 namespace chpl {
 
 
 /**
- * Launch a subprocess
- *
- * commandVec first element is the command to run, the rest are the arguments.
- * description a string representation of the command to run
- * childPidOut output parameter for the child's pid
- * ignoreStatus if true, don't abort if the child exits with a non-zero
- * quiet  if true, won't print systemCommands
- * printSystemCommands if true, print the command to be run
- * returns int as program exit status if fork successful, -1 otherwise
+ Launch a subprocess
+
+ commandVec
+   first element is the command to run, the rest are the arguments.
+
+ description
+   a string representation of the command to run
+
+ printSystemCommands if true, print the command to be run
+
+ returns
+   -1 if there was an error in fork, waitpid, or the child process was killed
+   255 if the exec call failed
+   the exit code from the subprocess (0-255) otherwise
  */
-int executeAndWait(const std::vector<std::string> commandVec,
-             std::string description,
-             pid_t&      childPidOut,
-             bool        ignoreStatus = false,
-             bool        quiet = false,
-             bool        printSystemCommands = false);
+int executeAndWait(const std::vector<std::string>& commandVec,
+                   const std::string& description,
+                   bool printSystemCommands = false);
 
-#endif
+/**
+  Run a command and collect its output into a string.
 
+  command
+    the command to run
+
+  returns
+    an error code if something went wrong, or a string
+    containing the command's output.
+ */
+llvm::ErrorOr<std::string> getCommandOutput(const std::string& command);
 
 } // namespace chpl
+
+#endif

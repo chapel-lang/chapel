@@ -1380,6 +1380,65 @@ void Resolver::exitScope(const AstNode* ast) {
   }
 }
 
+bool Resolver::enter(const uast::Conditional* cond) {
+  auto& r = byPostorder.byAst(cond);
+
+  // Try short-circuiting. Visit the condition to see if it is a param
+  cond->condition()->traverse(*this);
+  auto& condType = byPostorder.byAst(cond->condition()).type();
+  if (condType.isParamTrue()) {
+    // condition is param true, might as well only resolve `then` branch
+    cond->thenBlock()->traverse(*this);
+    if (cond->isExpressionLevel()) {
+      auto& thenType = byPostorder.byAst(cond->thenStmt(0)).type();
+      r.setType(thenType);
+    }
+    // No need to visit children again, or visit `else` branch.
+    return false;
+  } else if (condType.isParamFalse()) {
+    auto elseBlock = cond->elseBlock();
+    if (elseBlock == nullptr) {
+      // no else branch. leave the type unknown.
+      return false;
+    }
+    elseBlock->traverse(*this);
+    if (cond->isExpressionLevel()) {
+      auto& elseType = byPostorder.byAst(elseBlock->stmt(0)).type();
+      r.setType(elseType);
+    }
+    // No need to visit children again, especially `then` branch.
+    return false;
+  }
+
+  // We might as well visit the rest of the children here,
+  // since returning `true` at this point would cause a second visit
+  // to `cond->condition()`.
+  auto thenBlock = cond->thenBlock();
+  auto elseBlock = cond->elseBlock();
+  thenBlock->traverse(*this);
+  if (elseBlock) elseBlock->traverse(*this);
+
+  if (cond->isExpressionLevel() && !scopeResolveOnly) {
+    std::vector<QualifiedType> returnTypes;
+    returnTypes.push_back(byPostorder.byAst(thenBlock->stmt(0)).type());
+    if (elseBlock != nullptr) {
+      returnTypes.push_back(byPostorder.byAst(elseBlock->stmt(0)).type());
+    }
+    // with useRequiredKind = false, the QualifiedType::Kind argument
+    // is ignored. Just pick a dummy value.
+    auto ifType = commonType(context, returnTypes);
+    if (!ifType && !condType.isGenericOrUnknown()) {
+      // do not error if the condition type is unknown
+      r.setType(typeErr(cond, "unable to reconcile branches of if-expression"));
+    } else if (ifType) {
+      r.setType(ifType.getValue());
+    }
+  }
+  return false;
+}
+void Resolver::exit(const uast::Conditional* cond) {
+}
+
 bool Resolver::enter(const Literal* literal) {
   ResolvedExpression& result = byPostorder.byAst(literal);
   result.setType(typeForLiteral(context, literal));
@@ -2163,10 +2222,9 @@ void Resolver::resolveNewForRecord(const uast::New* node,
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
     auto managementStr = New::managementToString(node->management());
-    auto recordNameStr = recordType->name().c_str();
     context->error(node, "Cannot use new %s with record %s",
                          managementStr,
-                         recordNameStr);
+                         recordType->name().c_str());
   } else {
     auto qt = QualifiedType(QualifiedType::VAR, recordType);
     re.setType(qt);
@@ -2352,6 +2410,91 @@ void Resolver::exit(const IndexableLoop* loop) {
 
   if (isParamLoop == false || scopeResolveOnly) {
     exitScope(loop);
+  }
+}
+
+// Returns 'true' if a single Id was scope-resolved, in which case the function
+// will also return via the ID and QualifiedType formals.
+static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
+                                  ID& resolvedId, QualifiedType& type) {
+  auto& scopeStack = resolver.scopeStack;
+
+  // Look at the scope before the loop-statement
+  const Scope* scope = scopeStack[scopeStack.size()-2];
+  LookupConfig config = LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_PARENTS |
+                        LOOKUP_INNERMOST;
+
+  const Scope* receiverScope = resolver.methodReceiverScope();
+
+  auto vec = lookupNameInScope(resolver.context, scope, receiverScope,
+                               intent->name(), config);
+  if (vec.size() == 1) {
+    resolvedId = vec[0].id(0);
+    if (resolver.scopeResolveOnly == false) {
+      if (resolvedId.isEmpty()) {
+        type = typeForBuiltin(resolver.context, intent->name());
+      } else {
+        type = resolver.typeForId(resolvedId, /*localGenericToUnknown*/ true);
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool Resolver::enter(const ReduceIntent* reduce) {
+
+  ID id;
+  QualifiedType type;
+  ResolvedExpression& result = byPostorder.byAst(reduce);
+
+  if (computeTaskIntentInfo(*this, reduce, id, type)) {
+    result.setToId(id);
+  } else if (!scopeResolveOnly) {
+    context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
+  }
+
+  // TODO: Resolve reduce-op with shadowed type
+  // E.g. "+ reduce x" --> "SumReduceOp(x.type)"
+  reduce->op()->traverse(*this);
+
+  return false;
+}
+
+void Resolver::exit(const ReduceIntent* reduce) {
+}
+
+bool Resolver::enter(const TaskVar* taskVar) {
+  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
+                            taskVar->initExpression() == nullptr;
+  if (isTaskIntent) {
+    ID id;
+    QualifiedType type;
+    ResolvedExpression& result = byPostorder.byAst(taskVar);
+    if (computeTaskIntentInfo(*this, taskVar, id, type)) {
+      QualifiedType taskVarType = QualifiedType(taskVar->storageKind(),
+                                                type.type());
+      result.setToId(id);
+
+      // TODO: Handle in-intents where type can change (e.g. array slices)
+      result.setType(taskVarType);
+    } else if (!scopeResolveOnly) {
+      context->error(taskVar, "Unable to find declaration of \"%s\" for task intent", taskVar->name().c_str());
+    }
+    return false;
+  } else {
+    enterScope(taskVar);
+    return true;
+  }
+}
+void Resolver::exit(const TaskVar* taskVar) {
+  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
+                            taskVar->initExpression() == nullptr;
+  if (isTaskIntent == false) {
+    exitScope(taskVar);
   }
 }
 

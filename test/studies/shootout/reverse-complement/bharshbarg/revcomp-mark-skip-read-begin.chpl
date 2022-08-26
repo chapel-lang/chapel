@@ -13,7 +13,7 @@ config const readSize = 16 * 1024;
 proc main(args: [] string) {
   const stdin = openfd(0);
   var input = stdin.reader(iokind.native, locking=false,
-                           hints=ioHintSet.direct(QIO_HINT_PARALLEL));
+                           hints=ioHintSet.mmap);
   var len = stdin.size;
   var data : [0..#len] uint(8);
   
@@ -36,7 +36,7 @@ proc main(args: [] string) {
         // Scan forward until we get to the > (end of sequence)
         input.advancePastByte(">".toByte());
         nextDescOffset = input.offset();
-      } catch e:EOFError {
+      } catch e:EofError {
         eof = true;
         nextDescOffset = len;
       }
@@ -61,7 +61,7 @@ proc main(args: [] string) {
   }
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
-                                     hints=ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
+                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
   stdoutBin.write(data);
 }
 

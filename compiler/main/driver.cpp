@@ -48,6 +48,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/util/chplenv.h"
 
 #include <inttypes.h>
 #include <string>
@@ -109,6 +110,7 @@ const char* CHPL_LLVM_CLANG_CXX = NULL;
 
 const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS = NULL;
+const char* CHPL_TARGET_LD = NULL;
 const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
@@ -269,7 +271,7 @@ bool printCppLineno = false;
 bool userSetCppLineno = false;
 int num_constants_per_variable = 1;
 char defaultDist[256] = "DefaultDist";
-int instantiation_limit = 256;
+int instantiation_limit = 512;
 bool printSearchDirs = false;
 bool printModuleFiles = false;
 bool fLlvmCodegen = false;
@@ -1367,47 +1369,23 @@ bool useDefaultEnv(std::string key) {
 }
 
 static void populateEnvMap() {
-  // Destructively parses output of 'printchplenv --simple' for "key=value"
-  // pairs and populates global envMap if the key has not been already set from
+  // populates global envMap if the key has not been already set from
   // argument processing
 
-  // Call printchplenv and pipe output into string
-  std::string output = runPrintChplEnv(envMap);
+  // Call printchplenv and collect output into a map
+  auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME);
+  if (auto err = chplEnvResult.getError()) {
+    USR_FATAL("failed to get output from printchplenv, error: %s",
+              err.message().c_str());
+  }
 
-  // Lines
-  std::string line= "";
-  std::string lineDelimiter = "\n";
-  size_t linePos = 0;        // Line break position
-
-  // Tokens
-  std::string tokenDelimiter = "=";
-  size_t delimiterPos = 0;    // Position of delimiter
-  size_t valuePos = 0;        // Position of value
-
-  std::string key = "";
-  std::string value = "";
-
-  while ((linePos = output.find(lineDelimiter)) != std::string::npos)
-  {
-    line = output.substr(0, linePos);
-
-    // Key is substring up until "=" on a given line
-    delimiterPos = line.find(tokenDelimiter);
-    key = line.substr(0, delimiterPos);
-
-    // Value is substring after "=" on a given line
-    valuePos = delimiterPos + tokenDelimiter.length();
-    value = line.substr(valuePos);
-
-    // If key does not have a value in envMap, map it to the parsed value
-    if (envMap.find(key) == envMap.end()) {
-      envMap[key] = strdup(value.c_str());
-    } else if (useDefaultEnv(key)) {
-      envMap.erase(key);
-      envMap[key] = strdup(value.c_str());
+  for (auto kvPair : chplEnvResult.get()){
+    if (envMap.find(kvPair.first) == envMap.end()) {
+      envMap[kvPair.first] = strdup(kvPair.second.c_str());
+    } else if (useDefaultEnv(kvPair.first)) {
+      envMap.erase(kvPair.first);
+      envMap[kvPair.first] = strdup(kvPair.second.c_str());
     }
-
-    output.erase(0, linePos + lineDelimiter.length());
   }
 }
 
@@ -1455,6 +1433,7 @@ static void setChapelEnvs() {
 
   CHPL_TARGET_BUNDLED_COMPILE_ARGS = envMap["CHPL_TARGET_BUNDLED_COMPILE_ARGS"];
   CHPL_TARGET_SYSTEM_COMPILE_ARGS = envMap["CHPL_TARGET_SYSTEM_COMPILE_ARGS"];
+  CHPL_TARGET_LD = envMap["CHPL_TARGET_LD"];
   CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
   CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
 

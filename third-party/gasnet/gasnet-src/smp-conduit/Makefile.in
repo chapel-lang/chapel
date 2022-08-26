@@ -831,8 +831,8 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@USE_SMP_CONDUIT_FALSE@uninstall-local:
 @USE_SMP_CONDUIT_FALSE@install-data-local:
+@USE_SMP_CONDUIT_FALSE@uninstall-local:
 @USE_SMP_CONDUIT_FALSE@clean-local:
 clean: clean-recursive
 

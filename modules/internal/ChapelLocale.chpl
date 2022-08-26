@@ -145,6 +145,11 @@ module ChapelLocale {
       return this._value.chpl_name();
     }
 
+    inline proc _getChildCount() {
+      return this._value._getChildCount();
+    }
+
+    deprecated "'locale.getChildCount' is deprecated"
     inline proc getChildCount() {
       return this._value.getChildCount();
     }
@@ -171,46 +176,66 @@ module ChapelLocale {
     :returns: the hostname of the compute node associated with the locale
     :rtype: string
   */
-  inline proc locale.hostname {
+  inline proc locale.hostname: string {
     return this._value.hostname;
   }
 
   /*
-    Get the name of this locale.  In practice, this is often the
-    same as the hostname, though in some cases (like when using
-    local launchers), it may be modified.
+    Get the name of this locale.
 
-    :returns: locale name
-    :rtype: string
+    In general, this method returns the same string as :proc:`locale.hostname`;
+    however, it can differ when the program is executed in an oversubscribed manner.
+
+  .. note::
+
+    The locale's `id` (from :proc:`locale.id`) will be appended to the `hostname`
+    when launching in an oversubscribed manner with `CHPL_COMM=gasnet` and one of
+    the following configurations:
+
+    - `CHPL_COMM_SUBSTRATE=udp` & `GASNET_SPAWNFN=L`
+    - `CHPL_COMM_SUBSTRATE=smp`
+
+    More information about these environment variables can be found here: :ref:`readme-multilocale`
+
+  :returns: the name of this locale
+  :rtype: string
   */
-  inline proc locale.name {
+  inline proc locale.name: string {
     return this._value.name;
   }
 
   /*
     Get the unique integer identifier for this locale.
 
-    :returns: locale number, in the range ``0..numLocales-1``
+    :returns: index of this locale in the range ``0..numLocales-1``
     :rtype: int
+
   */
-  inline proc locale.id {
+  inline proc locale.id: int {
     return this._value.id;
   }
 
   /*
-    This is the maximum task concurrency that one can expect to
-    achieve on this locale.  The value is an estimate by the
-    runtime tasking layer.  Typically it is the number of physical
-    processor cores available to the program.  Creating more tasks
-    than this will probably increase walltime rather than decrease
-    it.
+    Get the maximum task concurrency that one can expect to
+    achieve on this locale.
+
+    :returns: the maximum number of tasks that can run in parallel
+      on this locale
+    :rtype: int
+
+    Note that the value is an estimate by the runtime tasking layer.
+    Typically it is the number of physical processor cores available
+    to the program.  Executing a data-parallel construct with more
+    tasks this that is unlikely to improve performance.
   */
-  inline proc locale.maxTaskPar { return this._value.maxTaskPar; }
+  inline proc locale.maxTaskPar: int { return this._value.maxTaskPar; }
 
   // the following are normally taken care of by `forwarding`. However, they
   // don't work if they are called in a promoted expression. See 15148
 
   /*
+    Get the number of processing units available on this locale.
+
     A *processing unit* or *PU* is an instance of the processor
     architecture, basically the thing that executes instructions.
     :proc:`locale.numPUs` tells how many of these are present on this
@@ -230,8 +255,8 @@ module ChapelLocale {
     :returns: number of PUs
     :rtype: `int`
 
-    There are several things that can cause the OS to limit the
-    processor resources available to a Chapel program.  On plain
+    Note that there are several things that can cause the OS to limit
+    the processor resources available to a Chapel program.  On plain
     Linux systems using the ``taskset(1)`` command will do it.  On
     Cray systems the ``CHPL_LAUNCHER_CORES_PER_LOCALE`` environment
     variable may do it, indirectly via the system job launcher.
@@ -240,7 +265,7 @@ module ChapelLocale {
     running programs within Cray batch jobs that have been set up
     with limited processor resources.
   */
-  inline proc locale.numPUs(logical: bool = false, accessible: bool = true) {
+  inline proc locale.numPUs(logical: bool = false, accessible: bool = true): int {
     return this._value.numPUs(logical, accessible);
   }
 
@@ -254,6 +279,8 @@ module ChapelLocale {
   inline proc locale.callStackSize { return this._value.callStackSize; }
 
   /*
+    Get the number of tasks running on this locale.
+
     :returns: the number of tasks that have begun executing, but have not yet finished
     :rtype: `int`
 
@@ -274,7 +301,7 @@ module ChapelLocale {
     them.
   */
   pragma "fn synchronization free"
-  proc locale.runningTasks() {
+  proc locale.runningTasks(): int {
     return this.runningTaskCnt();
   }
 
@@ -413,6 +440,13 @@ module ChapelLocale {
     }
 
     pragma "no doc"
+    proc _getChildCount() : int {
+      HaltWrappers.pureVirtualMethodHalt();
+      return 0;
+    }
+
+    pragma "no doc"
+    deprecated "'locale.getChildCount' is deprecated"
     proc getChildCount() : int {
       HaltWrappers.pureVirtualMethodHalt();
       return 0;
@@ -432,12 +466,18 @@ module ChapelLocale {
     }
 
     pragma "no doc"
+    proc _getChild(idx:int) : locale {
+      HaltWrappers.pureVirtualMethodHalt();
+    }
+
+    pragma "no doc"
+    deprecated "'locale.getChild' is deprecated"
     proc getChild(idx:int) : locale {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
     // Return array of gpu sublocale
-    proc gpus {
+    proc gpus const ref {
       return gpusImpl();
     }
 
@@ -480,8 +520,14 @@ module ChapelLocale {
     override proc chpl_name() : string {
       return "dummy-locale";
     }
+    override proc _getChildCount() : int {
+      return 0;
+    }
     override proc getChildCount() : int {
       return 0;
+    }
+    override proc _getChild(idx:int) : locale {
+      return new locale(this);
     }
     override proc getChild(idx:int) : locale {
       return new locale(this);
@@ -703,8 +749,8 @@ module ChapelLocale {
 
   pragma "no doc"
   proc chpl_singletonCurrentLocaleInitPrivateSublocs(arg: locale) {
-    for i in 0..#arg.getChildCount() {
-      var subloc = arg.getChild(i);
+    for i in 0..#arg._getChildCount() {
+      var subloc = arg._getChild(i);
 
       var val = subloc._instance:unmanaged AbstractLocaleModel?;
       if val == nil then
