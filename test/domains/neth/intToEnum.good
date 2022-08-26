@@ -1,0 +1,1 @@
+intToEnum.chpl:2: error: Ranges defined using bounds of type '2*int(64)..2*e' are not currently supported
