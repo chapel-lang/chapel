@@ -21,8 +21,6 @@ Initializing Modules:
           Initialization
            Memory
           IO
-           POSIX
-            OS
            FormattedIO
             Regex
          Sort
