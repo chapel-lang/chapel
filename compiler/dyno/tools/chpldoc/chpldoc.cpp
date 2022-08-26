@@ -2119,8 +2119,7 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 
 
 int main(int argc, char** argv) {
-  Context context;
-  Context *ctx = &context;
+
   init_args(&sArgState, argv[0]);
   init_arg_desc(&sArgState, docs_arg_desc);
   process_args(&sArgState, argc, argv);
@@ -2145,6 +2144,8 @@ int main(int argc, char** argv) {
   } else {
     CHPL_HOME = getenv("CHPL_HOME");
   }
+  Context context(CHPL_HOME);
+  Context *ctx = &context;
 
   // This is the final location for the output format (e.g. the html files.).
   std::string docsOutputDir;
@@ -2194,18 +2195,23 @@ int main(int argc, char** argv) {
   std::string modRoot = CHPL_HOME + "/modules";
   std::string internal = modRoot + "/internal";
   std::string bundled = modRoot + "/";
-  // auto chplEnv = ctx->getChplEnv();
+  auto chplEnv = ctx->getChplEnv();
+  assert(!chplEnv.getError() && "not handling chplenv errors yet");
+
+  // CHPL_MODULE_PATH isn't always in the output; check if it's there.
+  auto it = chplEnv->find("CHPL_MODULE_PATH");
+  auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
   // TODO: Get these values dynamically
   chpl::parsing::setupModuleSearchPaths(ctx,
                                       CHPL_HOME,
                                       false, //minimal modules
-                                      "flat", //locale model
+                                      chplEnv->at("CHPL_LOCALE_MODEL"),
                                       false, //task tracking
-                                      "qthreads", //CHPL_TASKS,
-                                      "none", //CHPL_COMM,
-                                      "linux64-x86_64-llvm", // CHPL_SYS_MODULES_SUBDIR,
-                                      "", //chpl_module_path,
-                                      {},
+                                      chplEnv->at("CHPL_TASKS"),
+                                      chplEnv->at("CHPL_COMM"),
+                                      chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
+                                      chplModulePath,
+                                      {}, //cmdLinePaths
                                       args.files);
   GatherModulesVisitor gather(ctx);
   printStuff(argv[0]);
