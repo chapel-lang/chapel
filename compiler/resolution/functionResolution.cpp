@@ -2819,7 +2819,7 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             call->replace(se);
             // Put the call back in to aid traversal
             se->getStmtExpr()->insertBefore(call);
-          } else {          
+          } else {
             USR_WARN(call, "type comparsion operators are deprecated use isSubtype/isProperSubtype instead");
 
             rhs->remove();
