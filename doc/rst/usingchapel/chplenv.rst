@@ -388,9 +388,6 @@ CHPL_LOCALE_MODEL
    .. warning:: The NUMA locale model is deprecated and will be removed
       in a future release.
 
-   See :ref:`readme-localeModels` for more information about
-   locale models.
-
 
 .. _readme-chplenv.CHPL_TASKS:
 
