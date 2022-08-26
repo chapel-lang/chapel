@@ -2255,33 +2255,40 @@ static int prefersNumericCoercion(ResolutionCandidate* candidate1,
   }
 
   // if the actual is negative, prefer a formal with a signed type
-  bool f1NegToUnsigned = isNegativeParamToUnsigned(actualSym,
-                                                   actualScalarType,
-                                                   f1Type);
-  bool f2NegToUnsigned = isNegativeParamToUnsigned(actualSym,
-                                                   actualScalarType,
-                                                   f2Type);
-  if (!f1NegToUnsigned && f2NegToUnsigned) {
-    reason = "negative param to unsigned";
-    return 1;
-  }
-  if (f1NegToUnsigned && !f2NegToUnsigned) {
-    reason = "negative param to unsigned";
-    return 2;
+  if (0) {
+    // Looks like this rule is not needed right now.
+    bool f1NegToUnsigned = isNegativeParamToUnsigned(actualSym,
+                                                     actualScalarType,
+                                                     f1Type);
+    bool f2NegToUnsigned = isNegativeParamToUnsigned(actualSym,
+                                                     actualScalarType,
+                                                     f2Type);
+    if (!f1NegToUnsigned && f2NegToUnsigned) {
+      reason = "negative param to unsigned";
+      return 1;
+    }
+    if (f1NegToUnsigned && !f2NegToUnsigned) {
+      reason = "negative param to unsigned";
+      return 2;
+    }
   }
 
-  if (actualScalarType == f1Type && actualScalarType != f2Type) {
-    reason = "same numeric type vs not";
-    return 1;
-  }
-  if (actualScalarType != f1Type && actualScalarType == f2Type) {
-    reason = "same numeric type vs not";
-    return 2;
+  if (0) {
+    // Looks like this rule is not needed right now
+    if (actualScalarType == f1Type && actualScalarType != f2Type) {
+      reason = "same numeric type vs not";
+      return 1;
+    }
+    if (actualScalarType != f1Type && actualScalarType == f2Type) {
+      reason = "same numeric type vs not";
+      return 2;
+    }
   }
 
   // check to see if one of f1Type or f2Type is used at the
   // call site but the other is not
   if (0) {
+    // this rule wasn't helping the cases I intended it to
     computeConversionInfo(candidate1, DC);
     int numericTypesInUseSet = candidate1->numericTypesInUseSet;
     bool f1TypeAtCall = hasBitForType(numericTypesInUseSet, f1Type);
