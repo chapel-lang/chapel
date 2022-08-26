@@ -8,9 +8,8 @@ w.write("a");
 w.writeln("b");
 w.writebits(2, 2);
 w.writeBytes(0xF, 1);
-w.writef("%s", "yep");
+w.writef("%i", 5);
 
-w.close();
-remove("./wrb.txt");
+w.close(); remove("./wrb.txt");
 
-writef("%s\n", "hi");
+writef("%i\n", 5);

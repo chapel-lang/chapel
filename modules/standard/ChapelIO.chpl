@@ -707,7 +707,7 @@ module ChapelIO {
   */
   pragma "no doc"
   override proc Error.writeThis(f) throws {
-    f.-write(chpl_describe_error(this));
+    f._write(chpl_describe_error(this));
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */
@@ -751,6 +751,7 @@ module ChapelIO {
   }
   // documented in string version
   pragma "no doc"
+  deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
   proc writef(fmt:?t):bool
       where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
   {

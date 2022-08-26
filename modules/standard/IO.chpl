@@ -1036,7 +1036,7 @@ export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
 pragma "no doc"
 export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
-  return c._write(amt);
+  return c.write(amt);
 }
 pragma "no doc"
 export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
@@ -7100,9 +7100,9 @@ proc channel._writefOne(fmtStr, ref arg, i: int,
 
 deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
 proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
-    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == true
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
 {
-  try this._writef(fmtStr, args);
+  try this._writef(fmtStr, (...args));
   return true;
 }
 
@@ -7119,9 +7119,9 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
    :throws SystemError: if the arguments could not be written.
  */
 proc channel.writef(fmtStr: ?t, const args ...?k) throws
-    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == false
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
 {
-  try this._writef(fmtStr, args);
+  try this._writef(fmtStr, (...args));
 }
 
 // helper function for bool-returning deprecation
@@ -7187,7 +7187,7 @@ proc channel._writef(fmtStr: ?t, const args ...?k) throws
 // documented in varargs version
 deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
 proc channel.writef(fmtStr:?t): bool throws
-    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == true
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
 {
   try this._writef(fmtStr);
   return true;
@@ -7195,14 +7195,14 @@ proc channel.writef(fmtStr:?t): bool throws
 
 // documented in varargs version
 proc channel.writef(fmtStr:?t) throws
-    where (isStringType(t) || isBytesType(t)) && WritersReturnBool == false
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
 {
   try this._writef(fmtStr);
 }
 
 // helper function for bool-returning deprecation
 pragma "no doc"
-proc channel._writef(fmtStr:?t): bool throws
+proc channel._writef(fmtStr:?t) throws
     where isStringType(t) || isBytesType(t) {
 
   if !writing then compilerError("writef on read-only channel");
