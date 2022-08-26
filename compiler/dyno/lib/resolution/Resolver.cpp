@@ -1778,11 +1778,17 @@ bool Resolver::enter(const Range* range) {
   return true;
 }
 void Resolver::exit(const Range* range) {
+  // For the time being, we're resolving ranges by manually finding the record
+  // and instantiating it appropriately. However, long-term, range literals
+  // should be equivalent to a call to chpl_build_bounded_range. The resolver
+  // cannot handle this right now, but in the future, the below implementation
+  // should be replaced with one that resolves the call.
+
   const RecordType* rangeType = RecordType::getRangeType(context);
   auto rangeAst = parsing::idToAst(context, rangeType->id());
   if (!rangeAst) {
     // The range record is part of the standard library, but
-    // it's possile to invoke the resolver without the stdlib.
+    // it's possible to invoke the resolver without the stdlib.
     // In this case, mark ranges as UnknownType, but do not error.
     return;
   }
