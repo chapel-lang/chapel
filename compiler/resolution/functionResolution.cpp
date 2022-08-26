@@ -2235,14 +2235,14 @@ static bool isNegativeParamToUnsigned(Symbol* actualSym,
 //  0 if there is no preference
 //  1 if f1Type is better
 //  2 if f2Type is better
-static int prefersCoercionToOtherNumericType(ResolutionCandidate* candidate1,
-                                             ResolutionCandidate* candidate2,
-                                             const DisambiguationContext& DC,
-                                             Symbol* actualSym,
-                                             Type* actualScalarType,
-                                             Type* f1Type,
-                                             Type* f2Type,
-                                             const char*& reason) {
+static int prefersNumericCoercion(ResolutionCandidate* candidate1,
+                                  ResolutionCandidate* candidate2,
+                                  const DisambiguationContext& DC,
+                                  Symbol* actualSym,
+                                  Type* actualScalarType,
+                                  Type* f1Type,
+                                  Type* f2Type,
+                                  const char*& reason) {
 
 
   int acWidth = classifyNumericWidth(actualScalarType);
@@ -2279,7 +2279,6 @@ static int prefersCoercionToOtherNumericType(ResolutionCandidate* candidate1,
     return 2;
   }
 
-
   // check to see if one of f1Type or f2Type is used at the
   // call site but the other is not
   if (0) {
@@ -2312,8 +2311,20 @@ static int prefersCoercionToOtherNumericType(ResolutionCandidate* candidate1,
     return 2;
   }
 
-  // otherwise, prefer the function with the same numeric width
-  // as the actual
+  // Otherwise, prefer the function with the same numeric width
+  // as the actual. This rule helps this case:
+  //
+  //  proc f(arg: real(32))
+  //  proc f(arg: real(64))
+  //  f(myInt64)
+  //
+  // here we desire to call f(real(64)) e.g. for sin(1)
+  //
+  // Additionally, it impacts this case:
+  //  proc f(a: real(32), b: real(32))
+  //  proc f(a: real(64), b: real(64))
+  //  f(myInt64, 1.0)
+  // (it arranges for it to call the real(64) version vs the real(32) one)
   if (acWidth == f1Width && acWidth != f2Width) {
     reason = "same numeric width";
     return 1;
@@ -2323,6 +2334,15 @@ static int prefersCoercionToOtherNumericType(ResolutionCandidate* candidate1,
     reason = "same numeric width";
     return 2;
   }
+
+  // note that if in the future we allow more numeric coercions,
+  // we might need to make this function complete
+  // (where currently it falls back on the "can dispatch" check
+  //  in some cases). E.g. it could finish up by comparing
+  // the two formal types in terms of their index in this list:
+  //
+  //  int(8) uint(8) int(16) uint(16) int(32) uint(32) int(64) uint(64)
+  //  real(32) real(64) imag(32) real(64) complex(64) complex(128)
 
   return 0;
 }
@@ -6165,12 +6185,10 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
 // After that, discard any candidate that has more param narrowing
 // conversions than another candidate.
 //
-// The number of conversions rule resolves an ambiguity with:
-//   // TODO: can this be removed with the type-not-mentioned filter?
-//   proc f(x: int, y: int)
+// The number of conversions rule resolves an ambiguity with many cases, e.g.:
 //   proc f(x: real(32), y: real(32))
-//   proc f(x: real, y: real)
-//   f(myInt64, 1.0:real(32))
+//   proc f(x: real(64), y: real(64))
+//   f(1, 1.0: real(32))
 //
 // The check for negative param to unsigned helps with
 //   proc f(param a: int(8),   param b: int(8))
@@ -6247,7 +6265,6 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
       }
     }
   }
-
 
   int minNarrowing = INT_MAX;
   int maxNarrowing = INT_MIN;
@@ -6972,9 +6989,9 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
     //   proc f(complex(64), complex(64))
     //   proc f(complex(128), complex(128))
     //   f(1.0, 1.0i) calling the complex(128) version
-    int p = prefersCoercionToOtherNumericType(candidate1, candidate2, DC,
-                                              actual, actualScalarType,
-                                              f1Type, f2Type, reason);
+    int p = prefersNumericCoercion(candidate1, candidate2, DC,
+                                   actual, actualScalarType,
+                                   f1Type, f2Type, reason);
     if (p == 1) {
       return 1;
     }
