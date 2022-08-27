@@ -3546,6 +3546,12 @@ proc channel._readOne(param kind: iokind, ref x:?t,
   }
 }
 
+private proc escapedNonUTF8ErrorMessage() : string {
+  const ret = "Strings with escaped non-UTF8 bytes cannot be used with I/O. " +
+        "Try using string.encode(encodePolicy.unescape) first.\n";
+  return ret;
+}
+
 //
 // The channel must be locked and running on this.home.
 //
@@ -3557,8 +3563,8 @@ proc channel._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
   if err != ENOERR {
     var msg = _constructIoErrorMsg(kind, x);
     if err == EILSEQ {
-      msg = "Strings with escaped non-UTF8 bytes cannot be used with I/O. " +
-            "Try using string.encode(encodePolicy.unescape) first." + msg;
+      // TODO: Is this error tested?
+      msg = escapedNonUTF8ErrorMessage() + msg;
     }
     try _ch_ioerror(err, msg);
   }
@@ -3854,31 +3860,209 @@ proc channel.writeIt(const x) throws {
   }
 
   pragma "no doc"
+  inline proc channel._checkLiteralError(x:?t, err:errorCode,
+                                         action:string,
+                                         isLiteral:bool) : void throws {
+    // Error message construction is handled here so that messages are
+    // consistent across the cross product of:
+    //   {read,write,match} x {literal,newline} x {string, bytes}
+    //
+    // Note that newlines do not involve strings or bytes
+
+    if err != ENOERR {
+      var msg: string = "while " + action + " ";
+
+      if isLiteral {
+        if t == string then
+          msg += "string literal \"" + x + "\"";
+        else
+          msg += "bytes literal";
+      } else {
+        msg += "newline";
+      }
+
+      if err == EILSEQ {
+        // TODO: Is this error tested?
+        msg = escapedNonUTF8ErrorMessage() + "Error: " + msg;
+      }
+
+      try _ch_ioerror(err, msg);
+    }
+  }
+
+  pragma "no doc"
+  inline proc channel._readLiteralCommon(x:?t, ignore:bool,
+                                         param isMatch:bool) throws {
+    if t != string && t != bytes then
+      compilerError("expecting string or bytes");
+
+    if writing {
+      param name = if isMatch then "matchLiteral" else "readLiteral";
+      param depth = if isMatch then 3 else 2;
+      compilerError(name + " on write-only channel", depth);
+    }
+
+    on this.home {
+      try! this.lock(); defer { this.unlock(); }
+      const cstr = x.localize().c_str();
+      const err = qio_channel_scan_literal(false, _channel_internal,
+                                           cstr, x.numBytes:c_ssize_t,
+                                           ignore);
+
+      const action = if isMatch then "matching" else "reading";
+      try _checkLiteralError(x, err, action, isLiteral=true);
+    }
+  }
+
+  // non-unstable version we can use internally
+  pragma "no doc"
   inline
-  proc channel._readLiteral(lit:string, ignoreWhitespace=true) throws {
-    var iolit = new ioLiteral(lit, ignoreWhitespace);
+  proc channel._readLiteral(literal:string,
+                            ignoreWhitespace=true) : void throws {
+    var iolit = new ioLiteral(literal, ignoreWhitespace);
     this.readIt(iolit);
   }
 
-  pragma "no doc"
+  @unstable "channel.readLiteral is unstable and subject to change."
   inline
-  proc channel._writeLiteral(lit:string) throws {
-    var iolit = new ioLiteral(lit);
-    this.writeIt(iolit);
+  proc channel.readLiteral(literal:string,
+                           ignoreWhitespace=true) : void throws {
+    _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
   }
 
+  @unstable "channel.readLiteral is unstable and subject to change."
+  inline
+  proc channel.readLiteral(literal:bytes,
+                           ignoreWhitespace=true) : void throws {
+    _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
+  }
+
+  // TODO: Don't we need an option to ignore whitespace or not?
+  // Note: We don't want to allow skipping over non-whitespace.
+  //
+  // Note: We can add an 'ignoreWhitespace' optional argument that defaults
+  // to 'true' without changing behavior in existing programs.
   pragma "no doc"
   inline
-  proc channel._readNewline() throws {
+  proc channel._readNewlineCommon(param isMatch:bool) throws {
+    if writing {
+      param name = if isMatch then "matchNewline" else "readNewline";
+      compilerError(name + " on write-only channel", 2);
+    }
+
+    on this.home {
+      try! this.lock(); defer { this.unlock(); }
+      const err = qio_channel_skip_past_newline(false, _channel_internal,
+                                                /*skipWhitespaceOnly=*/ true);
+
+      const action = if isMatch then "matching" else "reading";
+      try _checkLiteralError("", err, action, isLiteral=false);
+    }
+  }
+
+  // non-unstable version we can use internally
+  pragma "no doc"
+  inline proc channel._readNewline() : void throws {
     var ionl = new ioNewline(true);
     this.readIt(ionl);
   }
 
+  // TODO: How does this differ from readln() ?
+  @unstable "channel.readNewline is unstable and subject to change."
+  inline
+  proc channel.readNewline() : void throws {
+    _readNewlineCommon(isMatch=false);
+  }
+
   pragma "no doc"
   inline
-  proc channel._writeNewline() throws {
-    var ionl = new ioNewline(true);
-    this.writeIt(ionl);
+  proc channel._matchLiteralCommon(literal, ignore : bool) : bool throws {
+    try {
+      _readLiteralCommon(literal, ignore, isMatch=true);
+    } catch e : BadFormatError {
+      return false;
+    } catch e : EofError {
+      return false;
+    }
+
+    return true;
+  }
+
+  @unstable "channel.matchLiteral is unstable and subject to change."
+  inline
+  proc channel.matchLiteral(literal:string,
+                            ignoreWhitespace=true) : bool throws {
+    return _matchLiteralCommon(literal, ignoreWhitespace);
+  }
+
+  @unstable "channel.matchLiteral is unstable and subject to change."
+  inline
+  proc channel.matchLiteral(literal:bytes,
+                            ignoreWhitespace=true) : bool throws {
+    return _matchLiteralCommon(literal, ignoreWhitespace);
+  }
+
+  @unstable "channel.matchNewline is unstable and subject to change."
+  inline
+  proc channel.matchNewline() : bool throws {
+    try {
+      _readNewlineCommon(isMatch=true);
+    } catch e : BadFormatError {
+      return false;
+    } catch e : EofError {
+      return false;
+    }
+
+    return true;
+  }
+
+  pragma "no doc"
+  inline
+  proc channel._writeLiteralCommon(x:?t) : void throws {
+    if t != string && t != bytes then
+      compilerError("expecting string or bytes");
+
+    if !writing then compilerError("writeLiteral on read-only channel", 2);
+
+    on this.home {
+      try! this.lock(); defer { this.unlock(); }
+      const cstr = x.localize().c_str();
+      const err = qio_channel_print_literal(false, _channel_internal, cstr,
+                                            x.numBytes:c_ssize_t);
+      try _checkLiteralError(x, err, "writing", isLiteral=true);
+    }
+  }
+
+  pragma "no doc"
+  inline
+  proc channel._writeLiteral(literal:string) : void throws {
+    var iolit = new ioLiteral(literal);
+    this.writeIt(iolit);
+  }
+
+  @unstable "channel.writeLiteral is unstable and subject to change."
+  inline
+  proc channel.writeLiteral(literal:string) : void throws {
+    _writeLiteralCommon(literal);
+  }
+
+  @unstable "channel.writeLiteral is unstable and subject to change."
+  inline
+  proc channel.writeLiteral(literal:bytes) : void throws {
+    _writeLiteralCommon(literal);
+  }
+
+  // TODO: How does this differ from writeln() ?
+  @unstable "channel.writeNewline is unstable and subject to change."
+  inline
+  proc channel.writeNewline() : void throws {
+    if !writing then compilerError("writeNewline on read-only channel");
+
+    on this.home {
+      try! this.lock(); defer { this.unlock(); }
+      const err = qio_channel_write_newline(false, _channel_internal);
+      try _checkLiteralError("", err, "writing", isLiteral=false);
+    }
   }
 
   /* Explicit call for reading or writing a newline as an
