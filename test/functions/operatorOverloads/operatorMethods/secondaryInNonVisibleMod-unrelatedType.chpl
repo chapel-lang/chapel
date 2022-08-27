@@ -14,7 +14,7 @@ module MyType {
     // I don't actually expect to see this message.  It is to distinguish from
     // the default operator and ensure we don't see it.
     writeln("In C.==(int, int)");
-    return a == b;
+    return false;
   }
 }
 
