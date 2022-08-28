@@ -11,10 +11,9 @@ import sys, os, shutil, string;
 testname=sys.argv[1]
 compopts=sys.argv[4]
 
-
-if (not os.path.isfile(testname+'.default.good')):
+if (not os.path.isfile(testname+'.default.good') or
+    os.path.isfile(testname+'.prediff')):
     # leave it alone
-    sys.stdout.write('exiting')
     sys.exit(0)
 
 chpl_comm = os.getenv('CHPL_COMM')
@@ -31,12 +30,13 @@ else:
         dist = opt.split()[0]
 
 # If there is a networkAtomics-specific .good, prefer that.
-targetfn=testname+'.good'
-goodfn=testname+'.'+dist+'.good'
+chpl_network_atomics = os.getenv('CHPL_NETWORK_ATOMICS')
+goodfn=testname+'.'+dist+'.na-'+chpl_network_atomics+'.good'
 if not os.path.isfile(goodfn):
-    goodfn=testname+'.default.na-'+chpl_network_atomics+'.good'
+    goodfn=testname+'.'+dist+'.good'
     if not os.path.isfile(goodfn):
-        goodfn=testname+'.default.good'
+        goodfn=testname+'.default.na-'+chpl_network_atomics+'.good'
+        if not os.path.isfile(goodfn):
+            goodfn=testname+'.default.good'
 
-#sys.stdout.write('rename %s\n'%(goodfn))
-shutil.copy(goodfn, targetfn)
+print(goodfn)
