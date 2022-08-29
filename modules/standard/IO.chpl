@@ -7724,7 +7724,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
         w.close();
       } catch { /* ignore deferred close error */ }
     }
-    try w.writef(fmt, (...args));
+    try w._writef(fmt, (...args));
     offset = w.offset();
 
     // close error is thrown instead of ignored
