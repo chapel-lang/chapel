@@ -2,16 +2,16 @@
 //
 // Tests the representation limits of the count operator.
 
-param maxU2 = 2:uint(32)**31;
-param maxU1 = maxU2 - 1 + maxU2;
-param maxS1 = (maxU2-1):int(32);
-param minS1 = -maxS1 - 1;
-param maxS2 = maxS1 / 2 + 2;
-param minS2 = minS1 / 2;
-param p64I2 = 2:uint(64)**63;
-param p64I1 = (p64I2 - 1):int(64);
-param n64I1 = -p64I1 - 1;
-param u64I1 = p64I1:uint(64) + p64I2;
+param maxU2:uint(32) = 2**31;
+param maxU1:uint(32) = maxU2 - 1 + maxU2;
+param maxS1:int(32)  = (maxU2-1):int(32);
+param minS1:int(32)  = -maxS1 - 1;
+param maxS2:int(32)  = maxS1 / 2 + 2;
+param minS2:int(32)  = minS1 / 2;
+param p64I2:uint(64) = (2**63):uint(64);
+param p64I1:int(64)  = (p64I2 - 1):int(64);
+param n64I1:int(64)  = -p64I1 - 1;
+param u64I1:uint(64) = p64I1:uint(64) + p64I2;
 
 writeln("maxU2 = ", maxU2, " : ", maxU2.type:string);
 writeln("maxU1 = ", maxU1, " : ", maxU1.type:string);
