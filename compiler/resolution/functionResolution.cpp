@@ -6968,6 +6968,21 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
   }
 
   if (f1Type != f2Type) {
+    // to help with
+    // proc f(x: int(8))
+    // proc f(x: int(64))
+    // f(myInt32) vs. f(1: int(32)) should behave the same
+    if (actualParam) {
+      if (!formal1Narrows && formal2Narrows) {
+        reason = "param narrows vs not";
+        return 1;
+      }
+      if (formal1Narrows && !formal2Narrows) {
+        reason = "param narrows vs not";
+        return 2;
+      }
+    }
+
     // e.g. to help with
     //   sin(1) calling the real(64) version (vs real(32) version)
     //
