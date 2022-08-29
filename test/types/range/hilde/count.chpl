@@ -13,6 +13,16 @@ param p64I1 = (p64I2 - 1):int(64);
 param n64I1 = -p64I1 - 1;
 param u64I1 = p64I1:uint(64) + p64I2;
 
+writeln("maxU2 = ", maxU2, " : ", maxU2.type:string);
+writeln("maxU1 = ", maxU1, " : ", maxU1.type:string);
+writeln("maxS1 = ", maxS1, " : ", maxS1.type:string);
+writeln("maxS2 = ", maxS2, " : ", maxS2.type:string);
+writeln("minS2 = ", minS2, " : ", minS2.type:string);
+writeln("p64I2 = ", p64I2, " : ", p64I2.type:string);
+writeln("p64I1 = ", p64I1, " : ", p64I1.type:string);
+writeln("n64I1 = ", n64I1, " : ", n64I1.type:string);
+writeln("u64I1 = ", u64I1, " : ", u64I1.type:string);
+
 writeln("A");
 writeln(1..10 # 0);
 writeln(1..10 # 1);
