@@ -24,6 +24,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
+#include "common.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -32,50 +33,12 @@
 
 #include <cassert>
 
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace types;
-using namespace uast;
-
-static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
-
-// assumes the last statement is a variable declaration for x
-// with an initialization expression.
-// Returns the type of the initializer expression.
-static QualifiedType
-parseTypeOfXInit(Context* context, const char* program) {
-  auto m = parseModule(context, program);
-  assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
-  assert(x);
-  assert(x->name() == "x");
-  auto initExpr = x->initExpression();
-  assert(initExpr);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(initExpr).type();
-  // assert(qt.type());
-
-  return qt;
-}
-
 static void test1() {
   // make sure that function return type computation does not throw
   // away the param.
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  parseTypeOfXInit(context,
+  QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          proc p(param x: int(64), param y: int(64)) param return __primitive("+", x, y);
 
@@ -92,16 +55,76 @@ static void test2() {
   // make sure unknown types don't slip into candidate search
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  parseTypeOfXInit(context,
+  QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          proc test(z) {}
                          var x = test(y);
-                         )"""");
+                         )"""", false);
   assert(qt.isUnknown());
+}
+
+static void test3() {
+  // Make sure that types depending on earlier actual types are properly
+  // enforced
+  const std::string theFunction =
+    R""""(
+    proc f(param a: bool,
+           b: if a then string else int,
+           c: b.type) {
+      return c;
+    })"""";
+  {
+    Context ctx;
+    auto context = &ctx;
+    auto qt = resolveTypeOfXInit(context, theFunction +
+                                 R""""(
+                                 var x = f(true, "hello", "world");
+                                 )"""");
+    assert(qt.type() != nullptr);
+    assert(qt.type()->isStringType());
+  }
+  {
+    Context ctx;
+    auto context = &ctx;
+    auto qt = resolveTypeOfXInit(context, theFunction +
+                                 R""""(
+                                 var x = f(false, 0, 1);
+                                 )"""");
+    assert(qt.type() != nullptr);
+    assert(qt.type()->isIntType());
+  }
+  {
+    Context ctx;
+    auto context = &ctx;
+    auto qt = resolveTypeOfXInit(context, theFunction +
+                                 R""""(
+                                 var x = f(true, 0, 1);
+                                 )"""");
+    assert(qt.isUnknown());
+  }
+  {
+    Context ctx;
+    auto context = &ctx;
+    auto qt = resolveTypeOfXInit(context, theFunction +
+                                 R""""(
+                                 var x = f(false, "hello", "world");
+                                 )"""");
+    assert(qt.isUnknown());
+  }
+  {
+    Context ctx;
+    auto context = &ctx;
+    auto qt = resolveTypeOfXInit(context, theFunction +
+                                 R""""(
+                                 var x = f(true, "hello", 0);
+                                 )"""");
+    assert(qt.isUnknown());
+  }
 }
 
 int main() {
   test1();
   test2();
+  test3();
   return 0;
 }
