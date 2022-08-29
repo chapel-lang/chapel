@@ -106,9 +106,6 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //# Global Variables
 //#
 
-// enable this one to check transitivity for the partial order
-bool                               fCheckDisambiguationPartialOrder = true;
-
 bool                               resolved                  = false;
 int                                explainCallLine           = 0;
 SymbolMap                          paramMap;
@@ -6608,8 +6605,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     Vec<ResolutionCandidate*>&   ambiguous) {
   auto ret = disambiguateByMatchInner(candidates, DC, ignoreWhere, ambiguous);
 
-  if (fCheckDisambiguationPartialOrder) {
-    // do checking
+  if (fVerify) {
+    // check that 'compareSpecificity' creates a partial order
     PartialOrderChecker checker(candidates, DC);
 
     for (int i = 0; i < candidates.n; ++i) {
