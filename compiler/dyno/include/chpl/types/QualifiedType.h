@@ -166,7 +166,7 @@ class QualifiedType final {
    */
   bool isParamFalse() const;
 
-  /** Returns 'true' if storing a tuple record type whose
+  /** Returns 'true' if storing a tuple type whose
       constituent types are all known params.
   */
   bool isParamKnownTuple() const;
