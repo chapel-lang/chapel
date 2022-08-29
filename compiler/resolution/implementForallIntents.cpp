@@ -779,6 +779,16 @@ static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
 // handle implicit vs. explicit shadow variables and fields of 'this'
 //
 
+// If 'sym' is the receiver and 'fs' has a shadow var for the receiver,
+// return that shadow var.
+static ShadowVarSymbol* svarForReceiver(ForallStmt* fs, Symbol* sym) {
+  if (sym->name == astrThis)
+    for_shadow_vars(SV, TEMP, fs)
+      if (SV->name == astrThis)
+        return SV;
+  return NULL;
+}
+
 // Helper: if this is a 'this' that needs our attention, return its type.
 static AggregateType* isRecordReceiver(Symbol* sym) {
   if (sym->hasFlag(FLAG_ARG_THIS))
@@ -826,6 +836,12 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
     if (!needsShadowVar(fs, block, sym)) { // do not convert to shadow var
       assertNotRecordReceiver(sym, se);
       outer2shadow.put(sym, markPruned);
+      continue;
+    }
+
+    if (ShadowVarSymbol* thisSVar = svarForReceiver(fs, sym)) {
+      outer2shadow.put(sym, thisSVar);
+      se->setSymbol(thisSVar);
       continue;
     }
 
@@ -902,6 +918,11 @@ static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
     Type* type  = ovarOrSvarType(svar);
     bool  prune = false;
     resolveShadowVarTypeIntent(type, svar->intent, prune); // updates the args
+
+    // Ensure the svar is retained for a `this` with an explicit intent,
+    // see convertFieldsOfRecordThis().
+    if (prune && svar->svExplicit && isRecordReceiver(svar->outerVarSym()))
+      prune = false;
 
     if (prune) {
       assertNotRecordReceiver(svar->outerVarSym(), svar->outerVarSE);
@@ -1003,6 +1024,7 @@ static void doConvertFieldsOfThis(ForallStmt* fs, AggregateType* recType,
     svar->defPoint->remove();
 }
 
+// This handles forall loops.
 // See also convertFieldsOfRecordThis().
 static void convertFieldsOfRecordReceiver(ForallStmt* fs) {
   // Each access to the receiver's field will reference the ArgSymbol
@@ -1012,12 +1034,15 @@ static void convertFieldsOfRecordReceiver(ForallStmt* fs) {
   // So, the simplest way to find whether we need to do the conversion
   // is to look for the shadow variable whose outer var is 'this'.
   //
+  // Forego the conversion if there was an explicit intent on 'this'.
+  //
   // As a bonus, this will automatically handle the case where there are
   // multiple 'this', ex. if the enclosing method is lexically nested
   // within another method. This is perhaps useless, however, because
   // scopeResolve/insertFieldAccess() prevents that from happening.
 
   for_shadow_vars(svar, temp, fs)
+   if (! svar->svExplicit)
     if (Symbol* ovar = svar->outerVarSym())
       if (AggregateType* recType = isRecordReceiver(ovar))
         doConvertFieldsOfThis(fs, recType, svar, ovar);
@@ -1073,6 +1098,7 @@ static ArgSymbol* createArgForFieldAccess(ArgSymbol* thisArg, FnSymbol* fn,
   return fieldArg;
 }
 
+// This handles task-parallel constructs.
 // Caller to ensure that 'fn' needs task intents.
 // See also convertFieldsOfRecordReceiver().
 void convertFieldsOfRecordThis(FnSymbol* fn) {
@@ -1087,6 +1113,10 @@ void convertFieldsOfRecordThis(FnSymbol* fn) {
   AggregateType* thisType = toAggregateType(thisArg->type->getValType());
   std::map<Symbol*, ArgSymbol*> fieldArgs;
 
+  // If the source code contains an explicit intent on `this`,
+  // all references to `thisArg` within the task construct have been replaced
+  // with references to a shadow variable. Therefore `symExpr` will be empty,
+  // so fields of `this` will not be converted.
   std::vector<SymExpr*> symExprs;
   collectSymExprsFor(fn, thisArg, symExprs);
   for_vector(SymExpr, se, symExprs)
