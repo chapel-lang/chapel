@@ -4846,6 +4846,12 @@ inline proc channel._write(const args ...?k) throws {
     }
   }
 }
+// helper function for bool-returning deprecation (with deprecated style argument)
+pragma "no doc"
+deprecated "write with a style argument is deprecated"
+proc channel._write(const args ...?k, style:iostyle) throws {
+  return this.writeHelper((...args), style: iostyleInternal);
+}
 
 deprecated "write with a style argument is deprecated"
 proc channel.write(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
@@ -4924,6 +4930,12 @@ pragma "fn exempt instantiation limit"
 pragma "no doc"
 proc channel._writeln(const args ...?k) throws {
   try this._write((...args), new ioNewline());
+}
+// helper function for bool-returning deprecation (with deprecated style argument)
+pragma "no doc"
+deprecated "writeln with a style argument is deprecated"
+proc channel._writeln(const args ...?k, style:iostyle) throws {
+  this.writelnHelper((...args), style: iostyleInternal);
 }
 
 deprecated "writeln with a style argument is deprecated"
