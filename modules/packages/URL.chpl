@@ -93,7 +93,7 @@ module URL {
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.r, style);
     return f.reader(kind=kind, locking=locking,
-                    start=start, end=end);
+                    region=start..end);
   }
 
   deprecated "openUrlWriter with a style argument is deprecated"
@@ -146,7 +146,7 @@ module URL {
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.cw, style);
     return f.writer(kind=kind, locking=locking,
-                    start=start, end=end);
+                    region=start..end);
   }
 
 }
