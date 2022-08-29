@@ -3923,6 +3923,23 @@ proc channel.writeIt(const x) throws {
     this.readIt(iolit);
   }
 
+  /*
+    Advances the position of a channel by reading the exact text of the given
+    string ``literal`` from the channel.
+
+    If the string is not matched exactly, then the channel's position is
+    unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless the end of
+    the channel is encountered in which case an :class:`OS.EofError` will be thrown. By
+    default this method will ignore leading whitespace when attempting to read
+    a literal.
+
+    :arg literal: the string to be matched.
+    :arg ignoreWhitespace: determines whether leading whitespace is ignored.
+
+    :throws BadFormatError: Thrown if literal could not be matched.
+    :throws EofError: Thrown if end of channel is encountered.
+
+  */
   @unstable "channel.readLiteral is unstable and subject to change."
   inline
   proc channel.readLiteral(literal:string,
@@ -3930,6 +3947,23 @@ proc channel.writeIt(const x) throws {
     _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
   }
 
+  /*
+    Advances the position of a channel by reading the exact bytes of the given
+    ``literal`` from the channel.
+
+    If the bytes are not matched exactly, then the channel's position is
+    unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless the end of
+    the channel is encountered in which case an :class:`OS.EofError` will be thrown. By
+    default this method will ignore leading whitespace when attempting to read
+    a literal.
+
+    :arg literal: the bytes to be matched.
+    :arg ignoreWhitespace: determines whether leading whitespace is ignored.
+
+    :throws BadFormatError: Thrown if literal could not be matched.
+    :throws EofError: Thrown if end of channel is encountered.
+
+  */
   @unstable "channel.readLiteral is unstable and subject to change."
   inline
   proc channel.readLiteral(literal:bytes,
@@ -3968,6 +4002,19 @@ proc channel.writeIt(const x) throws {
   }
 
   // TODO: How does this differ from readln() ?
+  /*
+    Advances the position of the channel by reading a newline.
+
+    If a newline is not matched exactly, then the channel's position is
+    unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless the end of
+    the channel is encountered in which case an :class:`OS.EofError` will be thrown. By
+    default this method will ignore leading whitespace when attempting to read
+    a newline.
+
+    :throws BadFormatError: Thrown if a newline could not be matched.
+    :throws EofError: Thrown if end of channel is encountered.
+
+  */
   @unstable "channel.readNewline is unstable and subject to change."
   inline
   proc channel.readNewline() : void throws {
@@ -3988,6 +4035,24 @@ proc channel.writeIt(const x) throws {
     return true;
   }
 
+  /*
+    Advances the position of a channel by reading the exact text of the given
+    string ``literal`` from the channel.
+
+    If the string is not matched exactly, then the channel's position is
+    unchanged and this method will return ``false``. In other words, this
+    channel will return ``false`` in the cases where :proc:`channel.readLiteral`
+    would throw a :class:`OS.BadFormatError` or an :class:`OS.EofError`.
+
+    By default this method will ignore leading whitespace when attempting to
+    read a literal.
+
+    :arg literal: the string to be matched.
+    :arg ignoreWhitespace: determines whether leading whitespace is ignored.
+
+    :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
+      the literal could not be matched.
+  */
   @unstable "channel.matchLiteral is unstable and subject to change."
   inline
   proc channel.matchLiteral(literal:string,
@@ -3995,6 +4060,24 @@ proc channel.writeIt(const x) throws {
     return _matchLiteralCommon(literal, ignoreWhitespace);
   }
 
+  /*
+    Advances the position of a channel by reading the exact bytes of the given
+    ``literal`` from the channel.
+
+    If the bytes are not matched exactly, then the channel's position is
+    unchanged and this method will return ``false``. In other words, this
+    channel will return ``false`` in the cases where :proc:`channel.readLiteral`
+    would throw a :class:`OS.BadFormatError` or an :class:`OS.EofError`.
+
+    By default this method will ignore leading whitespace when attempting to
+    read a literal.
+
+    :arg literal: the bytes to be matched.
+    :arg ignoreWhitespace: determines whether leading whitespace is ignored.
+
+    :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
+      the literal could not be matched.
+  */
   @unstable "channel.matchLiteral is unstable and subject to change."
   inline
   proc channel.matchLiteral(literal:bytes,
@@ -4002,6 +4085,20 @@ proc channel.writeIt(const x) throws {
     return _matchLiteralCommon(literal, ignoreWhitespace);
   }
 
+  /*
+    Advances the position of the channel by reading a newline.
+
+    If a newline is not matched exactly, then the channel's position is
+    unchanged and this method will return ``false``. In other words, this
+    channel will return ``false`` in the cases where :proc:`channel.readNewline`
+    would throw a :class:`OS.BadFormatError` or an :class:`OS.EofError`.
+
+    By default this method will ignore leading whitespace when attempting to
+    read a newline.
+
+    :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
+      the newline could not be matched.
+  */
   @unstable "channel.matchNewline is unstable and subject to change."
   inline
   proc channel.matchNewline() : bool throws {
@@ -4040,12 +4137,20 @@ proc channel.writeIt(const x) throws {
     this.writeIt(iolit);
   }
 
+  /*
+    Writes a string to the channel, ignoring any formatting configured for
+    this channel.
+  */
   @unstable "channel.writeLiteral is unstable and subject to change."
   inline
   proc channel.writeLiteral(literal:string) : void throws {
     _writeLiteralCommon(literal);
   }
 
+  /*
+    Writes bytes to the channel, ignoring any formatting configured for this
+    channel.
+  */
   @unstable "channel.writeLiteral is unstable and subject to change."
   inline
   proc channel.writeLiteral(literal:bytes) : void throws {
@@ -4053,6 +4158,10 @@ proc channel.writeIt(const x) throws {
   }
 
   // TODO: How does this differ from writeln() ?
+  /*
+    Writes a newline to the channel, ignoring any formatting configured for
+    this channel.
+  */
   @unstable "channel.writeNewline is unstable and subject to change."
   inline
   proc channel.writeNewline() : void throws {
