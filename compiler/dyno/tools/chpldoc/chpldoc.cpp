@@ -42,6 +42,7 @@
 #include <unistd.h>
 
 #include "arg.h"
+#include "arg-helpers.h"
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -59,7 +60,7 @@
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/resolution/scope-queries.h"
-#include "helpers.h"
+
 
 
 using namespace chpl;
@@ -127,6 +128,7 @@ void setHome(const ArgumentDescription* desc, const char* arg) {
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
 
+// TODO: Does dyno-chpldoc need to support these flags too?
 // #define DRIVER_ARG_BREAKFLAGS_COMMON \
 //   {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL}, \
 //   {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL}
@@ -204,6 +206,7 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_LICENSE,
 
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
+ // TODO: do we need these flags for dyno-chpldoc?
 //  DRIVER_ARG_DEVELOPER,
 //  DRIVER_ARG_BREAKFLAGS_COMMON,
 //  DRIVER_ARG_DEBUGGERS,
@@ -218,7 +221,8 @@ static void printStuff(const char* argv0) {
   bool printedSomething = false;
 
   if (fPrintVersion) {
-//     fprintf(stdout, "%s version %s\n", sArgState.program_name, compileVersion);
+    // TODO: find equivalents for compileVersion, LLVM_VERSION_STRING
+    // fprintf(stdout, "%s version %s\n", sArgState.program_name, compileVersion);
 
 // #ifdef HAVE_LLVM
 //     fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
@@ -250,15 +254,17 @@ static void printStuff(const char* argv0) {
     char* guess = findProgramPath(argv0);
 
     printf("%s\t%s\n", CHPL_HOME.c_str(), guess);
+    // TODO: Do we care about this for dyno-chpldoc?
     // const char* prefix = get_configured_prefix();
     // if (prefix != NULL && prefix[0] != '\0' )
     //   printf("# configured prefix  %s\n", prefix);
 
-    // free(guess);
+    free(guess);
 
     printedSomething = true;
   }
 
+  // TODO: Do we care about this for dyno-chpldoc?
   // if( fPrintChplSettings ) {
   //   char buf[1025] = "";
   //   printf("CHPL_HOME: %s\n", CHPL_HOME.c_str());
@@ -605,10 +611,7 @@ static std::string prettifyComment(const std::string& comment,
   if (ret.substr(0, styleLen) == commentStyle) {
     size_t l = ret.length();
     if (ret.substr(l - styleLen, styleLen) != commentEnd) {
-      // TODO: this is a broken comment at this point, no?
-      //  we have to recognize this and handle it when we have the
-      //  filename and line information to report the comment's location
-      //  fixing this will satisfy chpldoc/compflags/comment/badClose.doc.chpl
+      // this is a broken comment at this point
       auto msg = "chpldoc comment not closed, ignoring comment: "
                  "This comment is not closed properly\n";
       return msg;
@@ -1328,9 +1331,6 @@ struct RstResult {
     std::error_code err = makeDir(outDir, true);
 
     if (err != std::error_code()) {
-      // TODO the above seems to return false when already exists,
-      // but I don't think that should be the case
-      // So check we really got an error
       if (err) {
         std::cerr << "Could not create " << outDir << " because "
                   << err.message() << "\n";
@@ -2201,7 +2201,6 @@ int main(int argc, char** argv) {
   // CHPL_MODULE_PATH isn't always in the output; check if it's there.
   auto it = chplEnv->find("CHPL_MODULE_PATH");
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
-  // TODO: Get these values dynamically
   chpl::parsing::setupModuleSearchPaths(ctx,
                                       CHPL_HOME,
                                       false, //minimal modules
@@ -2248,10 +2247,9 @@ int main(int argc, char** argv) {
                         << builderResult.error(0).message() << "\n";
               context.report(e);
               return 1;
-            }
-        else if (e.kind() == ErrorMessage::Kind::WARNING) {
+        } else if (e.kind() == ErrorMessage::Kind::WARNING) {
               context.report(e);
-            }
+        }
       }
     }
     // gather all the top level and used/imported/included module IDs
