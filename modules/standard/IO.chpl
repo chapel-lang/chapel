@@ -2081,13 +2081,20 @@ proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws
   These include: :proc:`channel.write`, :proc:`channel.writeln`, :proc:`channel.writebits`,
   :proc:`channel.writeBytes`, and :proc:`FormattedIO.channel.writef`
 
+  This parameter also toggles the new and deprecated variants of the top-level
+  :proc:`ChapelIO.writef` method.
+
   - When `WritersReturnBool=true` the deprecated variants of the writer methods are called
   - When `WritersReturnBool=false` the new variants of the writer methods are called
 
   .. note::
-    The deprecated variants of the writer methods always return ``true``, so their
-    deprecation does not remove any valuable information. This parameter is availible
-    to avoid breaking code that currently relies on the (``true``) return value.
+    The only difference between the new and deprecated versions of these methods is the
+    return type. The deprecated overloads return a `bool` which is always ``true``, while
+    the new overloads do not return anything.
+
+    Leaving this param with its default value of ``true``, will allow you to rely on the
+    return value for the time being; however, the returning methods will be removed in
+    a future release.
 */
 config param WritersReturnBool=true;
 
