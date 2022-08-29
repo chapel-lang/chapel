@@ -3857,6 +3857,14 @@ proc channel.writeIt(const x) throws {
      on the type of channel. This operator returns a const reference to the
      same channel so that multiple operator calls can be chained together.
 
+     .. warning:: The <~> operator on channels is deprecated. The intended
+       alternative is to use methods like :proc:`channel.read` and
+       :proc:`channel.write` instead.
+
+       Methods that provide both reading and writing functionality will soon be
+       deprecated. The chaining functionality supported by this operator is not
+       provided by other methods.
+
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
@@ -3890,6 +3898,14 @@ proc channel.writeIt(const x) throws {
 
      works without requiring an explicit temporary value to store
      the ioLiteral.
+
+     .. warning:: The <~> operator on channels is deprecated. The intended
+       alternative is to use methods like :proc:`channel.readLiteral` and
+       :proc:`channel.writeLiteral` instead.
+
+       Methods that provide both reading and writing functionality will soon be
+       deprecated. The chaining functionality supported by this operator is not
+       provided by other methods.
    */
   deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
@@ -3909,6 +3925,14 @@ proc channel.writeIt(const x) throws {
 
      works without requiring an explicit temporary value to store
      the ioNewline.
+
+     .. warning:: The <~> operator on channels is deprecated. The intended
+       alternative is to use methods like :proc:`channel.readNewline` and
+       :proc:`channel.writeNewline` instead.
+
+       Methods that provide both reading and writing functionality will soon be
+       deprecated. The chaining functionality supported by this operator is not
+       provided by other methods.
    */
   deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
