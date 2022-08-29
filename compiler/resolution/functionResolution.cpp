@@ -1244,6 +1244,15 @@ bool canCoerceTuples(Type*     actualType,
   return false;
 }
 
+static Type* normalizeTupleTypeToValueTuple(Type* t) {
+  if (AggregateType* at = toAggregateType(t->getValType())) {
+    if (at->symbol->hasFlag(FLAG_TUPLE)) {
+      return computeTupleWithIntent(INTENT_IN, at);
+    }
+  }
+
+  return t;
+}
 
 static
 ClassTypeDecoratorEnum removeGenericNilability(ClassTypeDecoratorEnum actual) {
@@ -5943,6 +5952,17 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
       continue;
     }
 
+    // Not counting tuple value vs referential tuple changes
+    if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
+        formalVt->symbol->hasFlag(FLAG_TUPLE)) {
+      Type* actualNormTup = normalizeTupleTypeToValueTuple(actualVt);
+      Type* formalNormTup = normalizeTupleTypeToValueTuple(formalVt);
+      if (actualNormTup == formalNormTup) {
+        // it is only a change in the tuple ref-ness
+        continue;
+      }
+    }
+
     nImplicitConversions++;
   }
 
@@ -6834,6 +6854,12 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
   Type* f1Type          = formal1->type->getValType();
   Type* f2Type          = formal2->type->getValType();
   Type* actualType      = actual->type->getValType();
+
+  // Additionally, ignore the difference between referential tuples
+  // and value tuples.
+  f1Type = normalizeTupleTypeToValueTuple(f1Type);
+  f2Type = normalizeTupleTypeToValueTuple(f2Type);
+  actualType = normalizeTupleTypeToValueTuple(actualType);
 
   bool  formal1Promotes = false;
   bool  formal2Promotes = false;
