@@ -55,3 +55,10 @@ writeln("op <= returns ", BaseClass <= DerivedClass);
 writeln("op <  returns ", BaseClass <  DerivedClass);
 writeln("op >= returns ", BaseClass >= DerivedClass);
 writeln("op >  returns ", BaseClass >  DerivedClass);
+
+// isFloat* functions are being deprecatd
+// (in favor of doing isReal(x) || isImag(x) instead)
+
+writeln("isFloat(1.2) returns ", isFloat(1.2));
+writeln("isFloatType(real) returns ", isFloatType(real));
+writeln("isFloatValue(1.2) returns ", isFloatValue(1.2));
