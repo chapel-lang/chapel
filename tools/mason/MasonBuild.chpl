@@ -172,7 +172,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
     }
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
     exit(1);
   }
 }
