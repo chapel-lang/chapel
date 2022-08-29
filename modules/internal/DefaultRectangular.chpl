@@ -1816,7 +1816,7 @@ module DefaultRectangular {
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
         if f.writing {
-          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
           f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
         }

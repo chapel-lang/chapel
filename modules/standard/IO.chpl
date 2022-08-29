@@ -3821,12 +3821,7 @@ proc channel.writeIt(const x) throws {
 
   deprecated "The returning variant of ``writeBytes`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
   proc channel.writeBytes(x, len:c_ssize_t):bool throws where WritersReturnBool == true {
-    var err:syserr = ENOERR;
-    on this.home {
-      try this.lock(); defer { this.unlock(); }
-      err = qio_channel_write_amt(false, _channel_internal, x, len);
-    }
-    if err then try this._ch_ioerror(err, "in channel.writeBytes()");
+    try this._writeBytes(x, len);
     return true;
   }
 
@@ -3836,6 +3831,12 @@ proc channel.writeIt(const x) throws {
      :throws SystemError: Thrown if the byte sequence could not be written.
   */
   proc channel.writeBytes(x, len:c_ssize_t) throws where WritersReturnBool == false {
+    try this._writeBytes(x, len);
+  }
+
+  // helper for bool-returning deprecation
+  pragma "no doc"
+  proc channel._writeBytes(x, len:c_ssize_t) throws {
     var err:syserr = ENOERR;
     on this.home {
       try this.lock(); defer { this.unlock(); }
