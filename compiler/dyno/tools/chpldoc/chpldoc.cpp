@@ -406,6 +406,7 @@ static UniqueString getNodeName(AstNode* node) {
     return node->toIdentifier()->name();
   } else {
     assert(false && "no name defined for node");
+    return UniqueString();
   }
 }
 
