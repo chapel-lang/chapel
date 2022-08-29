@@ -87,8 +87,8 @@ bool usingGpuLocaleModel() {
 
 bool forceWidePtrsForLocal() {
   // For the gpu (for now) we don't want wide pointers inside kernel
-  // functions (which we consider a locale block) but we still want
-  // to force wide pointers outside of the so we have `forceWidePtrs`
+  // functions (which we consider a local block) but we still want
+  // to force wide pointers outside of there so we have `forceWidePtrs`
   // return true but don't want it to kick in for local blocks
   if(usingGpuLocaleModel()) {
     return false;
