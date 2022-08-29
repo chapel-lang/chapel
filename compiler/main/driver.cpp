@@ -1782,7 +1782,7 @@ int main(int argc, char* argv[]) {
 
     init_args(&sArgState, argv[0]);
 
-    fDocs   = (strcmp(sArgState.program_name, "chpldoc")  == 0) ? true : false;
+    fDocs   = (strncmp(sArgState.program_name, "chpldoc", 7)  == 0) ? true : false;
 
     // Initialize the arguments for argument state. If chpldoc, use the docs
     // specific arguments. Otherwise, use the regular arguments.

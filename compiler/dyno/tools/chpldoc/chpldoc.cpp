@@ -84,6 +84,7 @@ bool fPrintSettingsHelp = false;
 bool fPrintLicense = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
+bool fLegacyChpldoc = false;
 
 
 
@@ -190,7 +191,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
 
-
+ {"legacy", ' ', NULL, "Use the legacy version of chpldoc", "F", &fLegacyChpldoc, NULL, NULL},
  // TODO: Whether or not to support this flag is an open discussion. Currently,
  //       it is not supported, so the flag is always true.
  //       (thomasvandoren, 2015-03-08)
@@ -2124,6 +2125,19 @@ int main(int argc, char** argv) {
   init_arg_desc(&sArgState, docs_arg_desc);
   process_args(&sArgState, argc, argv);
   Args args = parseArgs(argc, argv);
+
+  // check if user asked for legacy chpldoc
+  if (fLegacyChpldoc) {
+    std::string cmd = "chpldoc-legacy ";
+    for (int i = 1; i < argc; i++) {
+      if (std::string(argv[i]) != "--legacy") {
+        cmd += std::string(argv[i]);
+        cmd += " ";
+      }
+    }
+    return myshell(cmd, "running legacy chpldoc");
+  }
+
   // add source files
   // TODO: Check for proper file type, duplicate file names, was file found, etc.
   for (int i = 0; i < sArgState.nfile_arguments; i++) {
@@ -2201,17 +2215,18 @@ int main(int argc, char** argv) {
   // CHPL_MODULE_PATH isn't always in the output; check if it's there.
   auto it = chplEnv->find("CHPL_MODULE_PATH");
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
-  chpl::parsing::setupModuleSearchPaths(ctx,
-                                      CHPL_HOME,
-                                      false, //minimal modules
-                                      chplEnv->at("CHPL_LOCALE_MODEL"),
-                                      false, //task tracking
-                                      chplEnv->at("CHPL_TASKS"),
-                                      chplEnv->at("CHPL_COMM"),
-                                      chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
-                                      chplModulePath,
-                                      {}, //cmdLinePaths
-                                      args.files);
+  // TODO: Get these values dynamically
+  setupModuleSearchPaths(ctx,
+                         CHPL_HOME,
+                         false, //minimal modules
+                         chplEnv->at("CHPL_LOCALE_MODEL"),
+                         false, //task tracking
+                         chplEnv->at("CHPL_TASKS"),
+                         chplEnv->at("CHPL_COMM"),
+                         chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
+                         chplModulePath,
+                         {}, //cmdLinePaths
+                         args.files);
   GatherModulesVisitor gather(ctx);
   printStuff(argv[0]);
   // evaluate all the files and gather the modules

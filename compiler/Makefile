@@ -166,7 +166,11 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 
 $(CHPLDOC): $(CHPL)
 	rm -f $(CHPLDOC)
-	ln -s $(notdir $(CHPL)) $(CHPLDOC)
+	rm -f $(CHPLDOC)-legacy
+	ln -s $(notdir $(CHPL)) $(CHPLDOC)-legacy
+	@cd ../compiler/dyno && $(MAKE) -f Makefile.help dyno-chpldoc
+
+
 
 chpldoc: $(CHPLDOC)
 

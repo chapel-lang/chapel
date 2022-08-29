@@ -78,6 +78,7 @@ dyno-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
 
 dyno-chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
 	+cd $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc && $(CMAKE) --build . --target chpldoc
+	mv $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc/chpldoc $(CHPL_BIN_DIR)/chpldoc
 
 dyno-linters: $(LIBCOMPILER_BUILD_DIR) FORCE
 	+cd $(LIBCOMPILER_BUILD_DIR)/util && $(CMAKE) --build .
