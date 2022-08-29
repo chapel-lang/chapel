@@ -2185,8 +2185,9 @@ static int classifyNumericWidth(Type* t)
   if (is_bool_type(t))
     return 0;
 
+  /* should not be needed - no enum to int coercions
   if (is_enum_type(t))
-    return 0;
+    return 0;*/
 
   if (is_int_type(t) ||
       is_uint_type(t) ||
