@@ -820,7 +820,9 @@ module ChapelBase {
   //
   enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit, gpuInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
-  config param chpl_defaultGpuArrayInitMethod = chpl_defaultArrayInitMethod;
+  config param chpl_defaultGpuArrayInitMethod =
+    if CHPL_GPU_MEM_STRATEGY == "array_on_device" then
+      ArrayInit.gpuInit else chpl_defaultArrayInitMethod;
 
   config param chpl_arrayInitMethodRuntimeSelectable = false;
   private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
