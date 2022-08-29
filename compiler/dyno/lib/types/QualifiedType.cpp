@@ -54,14 +54,7 @@ bool QualifiedType::isParamFalse() const {
 bool QualifiedType::isParamKnownTuple() const {
   if (kind_ == Kind::PARAM && type_ != nullptr) {
     if (auto tt = type_->toTupleType()) {
-      // Check if all type actuals are known params
-      for (int i = 0; i < tt->numElements(); i++) {
-        const auto& elemType = tt->elementType(i);
-        if (!elemType.isParam() || elemType.isUnknown()) {
-          return false;
-        }
-      }
-      return true;
+      return tt->isParamKnown();
     }
   }
   return false;

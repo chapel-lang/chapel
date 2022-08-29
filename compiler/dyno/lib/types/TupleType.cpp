@@ -54,6 +54,22 @@ void TupleType::computeIsStarTuple() {
   }
 }
 
+void TupleType::computeIsParamKnown() {
+  if (isKnownSize_ == false) {
+    isParamKnown_ = false;
+  } else {
+    isParamKnown_ = true;
+    int n = numElements();
+    for (int i = 0; i < n; i++) {
+      const auto& eltT = elementType(i);
+      if (!eltT.isParam() || eltT.isUnknown()) {
+        isParamKnown_ = false;
+        break;
+      }
+    }
+  }
+}
+
 const owned<TupleType>&
 TupleType::getTupleType(Context* context, ID id, UniqueString name,
                         const TupleType* instantiatedFrom,
