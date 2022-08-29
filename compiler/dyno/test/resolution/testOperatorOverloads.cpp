@@ -37,7 +37,7 @@ static void test1() {
   Context ctx;
   auto context = &ctx;
 
-  // no declaration (should fail)
+  // no declaration (cast should fail)
   QualifiedType qt1 = resolveTypeOfXInit(context, "\
   record R {\
     var field: int;\
@@ -49,30 +49,28 @@ static void test1() {
   ctx.advanceToNextRevision(false);
 
   // primary operator method
-  // currently fails
-  /* QualifiedType qt2 = resolveTypeOfXInit(context, "\ */
-  /* record R {\ */
-  /*   var field: int;\ */
-  /*   operator :(x: R, type t: int) { return x.field; }\ */
-  /* }\ */
-  /* var myR: R;\ */
-  /* var x = myR : int;"); */
-  /* assert(qt2.type() && qt2.type()->isIntType()); */
-  /* assert(qt2.kind() == QualifiedType::VAR); */
-  /* ctx.advanceToNextRevision(false); */
+  QualifiedType qt2 = resolveTypeOfXInit(context, "\
+  record R {\
+    var field: int;\
+    operator :(x: R, type t: int) { return x.field; }\
+  }\
+  var myR: R;\
+  var x = myR : int;");
+  assert(qt2.type() && qt2.type()->isIntType());
+  assert(qt2.kind() == QualifiedType::VAR);
+  ctx.advanceToNextRevision(false);
 
   // secondary operator method
-  // currently fails
-  /* QualifiedType qt3 = resolveTypeOfXInit(context, "\ */
-  /* record R {\ */
-  /*   var field: int;\ */
-  /* }\ */
-  /* operator R.:(x: R, type t: int) { return x.field; }\ */
-  /* var myR: R;\ */
-  /* var x = myR : int;"); */
-  /* assert(qt3.type() && qt3.type()->isIntType()); */
-  /* assert(qt3.kind() == QualifiedType::VAR); */
-  /* ctx.advanceToNextRevision(false); */
+  QualifiedType qt3 = resolveTypeOfXInit(context, "\
+  record R {\
+    var field: int;\
+  }\
+  operator R.:(x: R, type t: int) { return x.field; }\
+  var myR: R;\
+  var x = myR : int;");
+  assert(qt3.type() && qt3.type()->isIntType());
+  assert(qt3.kind() == QualifiedType::VAR);
+  ctx.advanceToNextRevision(false);
 
   // non-method operator
   QualifiedType qt4 = resolveTypeOfXInit(context, "\
