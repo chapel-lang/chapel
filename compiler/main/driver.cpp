@@ -1437,7 +1437,7 @@ static void setChapelEnvs() {
   CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
   CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
 
-  if (localeUsesGPU()) {
+  if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
   }
 
@@ -1540,7 +1540,7 @@ static void setPrintCppLineno() {
 }
 
 static void setGPUFlags() {
-  bool isGpuCodegen = localeUsesGPU();
+  bool isGpuCodegen = usingGpuLocaleModel();
 
   if(isGpuCodegen) {
     if (!fNoChecks) {

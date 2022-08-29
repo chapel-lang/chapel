@@ -2586,7 +2586,7 @@ static void codegenPartTwo() {
     // processes. In one process gCodegenGPU is true and we generate a .fatbin file,
     // in the other gCodegenGpu is false and we'll consume the fatbin file
     // and embed its contents into the generated code.
-    if (localeUsesGPU() && !gCodegenGPU) {
+    if (usingGpuLocaleModel() && !gCodegenGPU) {
       embedGpuCode();
     }
 
@@ -2714,7 +2714,7 @@ void codegen() {
 
   codegenPartOne();
 
-  if (localeUsesGPU()) {
+  if (usingGpuLocaleModel()) {
     // We use the temp dir to output a fatbin file and read it between the forked and main process.
     // We need to generate the name for the temp directory before we do the fork (since this
     // name uses the PID).

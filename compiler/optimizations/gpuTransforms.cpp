@@ -814,7 +814,7 @@ void gpuTransforms() {
 
   // For now, we are doing GPU outlining here. In the future, it should
   // probably be its own pass.
-  if (localeUsesGPU()) {
+  if (usingGpuLocaleModel()) {
     if (fReportGpuTransformTime) gpuTransformTimer.start();
 
     outlineGPUKernels();
