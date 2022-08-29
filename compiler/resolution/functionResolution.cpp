@@ -7562,6 +7562,10 @@ FnSymbol* findZeroArgInitFn(AggregateType* at) {
 
   VarSymbol* tmpAt = newTemp(at);
 
+  // Do this to avoid a call to 'createGenericRecordVarDefaultInitCall'
+  // emitting errors about missing runtime types.
+  tmpAt->addFlag(FLAG_UNSAFE);
+
   CallExpr* call = NULL;
 
   // non-generic records with initializers
