@@ -19,6 +19,7 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(dyno VERSION 0.1)
 
+option(DYNO_CHPL_HOME "The CHPL_HOME environment variable for tests to use")
 # Options to integrate LLVM support library into dyno
 # TODO: enable easier cmake builds of dyno (outside of Chapel's Makefiles)
 # by falling back on find_package(LLVM) if

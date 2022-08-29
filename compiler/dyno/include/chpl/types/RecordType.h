@@ -58,6 +58,8 @@ class RecordType final : public CompositeType {
   static const RecordType* get(Context* context, ID id, UniqueString name,
                                const RecordType* instantiatedFrom,
                                CompositeType::SubstitutionsMap subs);
+  /** Get the range type */
+  static const RecordType* getRangeType(Context* context);
 
   /** Get the string type */
   static const RecordType* getStringType(Context* context);

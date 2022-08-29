@@ -45,6 +45,15 @@ RecordType::get(Context* context, ID id, UniqueString name,
                        instantiatedFrom, std::move(subs)).get();
 }
 
+const RecordType* RecordType::getRangeType(Context* context) {
+  auto symbolPath = UniqueString::get(context, "ChapelRange.range");
+  auto name = UniqueString::get(context, "range");
+  auto id = ID(symbolPath, -1, 0);
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
 const RecordType* RecordType::getStringType(Context* context) {
   auto symbolPath = UniqueString::get(context, "String._string");
   auto name = UniqueString::get(context, "string");
