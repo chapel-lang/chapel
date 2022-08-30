@@ -3380,7 +3380,7 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
     } else {
       compilerError("Unknown int type in _read_binary_internal ", t:string);
     }
-  } else if isFloatType(t) {
+  } else if isRealType(t) || isImagType(t) {
     // handles real, imag
     if t == real(32) || t == imag(32) {
       return qio_channel_read_float32(false, byteorder:c_int, _channel_internal, x);
@@ -3468,7 +3468,7 @@ private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param b
     } else {
       compilerError("Unknown int type in _write_binary_internal ", t:string);
     }
-  } else if isFloatType(t) {
+  } else if isRealType(t) || isImagType(t) {
     if t == real(32) || t == imag(32) {
       return qio_channel_write_float32(false, byteorder:c_int, _channel_internal, x);
     } else if t == real(64) || t == imag(64) {
@@ -6582,12 +6582,13 @@ proc _toRealOrComplex(x:?t) where isComplexType(t)
   return (x, true);
 }
 private inline
-proc _toRealOrComplex(x:?t) where isFloatType(t)
+proc _toRealOrComplex(x:?t) where isRealType(t) || isImagType(t)
 {
   return (x, true);
 }
 private inline
-proc _toRealOrComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t) && !isFloatType(t)
+proc _toRealOrComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t) && !
+isRealType(t) && !isImagType(t)
 {
   return (x:real, true);
 }

@@ -75,7 +75,6 @@ predList = [
   "isAtomic",
 
   "isIntegral",
-  "isFloat",
   "isNumeric",
   "isPrimitive",
 ]

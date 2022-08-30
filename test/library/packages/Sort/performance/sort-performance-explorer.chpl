@@ -82,7 +82,7 @@ proc makeInput(array, inputStrings) {
       return inputStrings;
     }
   } else {
-    if isFloatType(eltType) {
+    if isRealType(eltType) {
       var result = forall a in array do (a/1000.0 + a - 500.0):eltType;
       return result;
     } else {

@@ -46,6 +46,10 @@ typeQueryFuncs.chpl:54: warning: type comparsion operators are deprecated use is
 typeQueryFuncs.chpl:55: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
 typeQueryFuncs.chpl:56: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
 typeQueryFuncs.chpl:57: warning: type comparsion operators are deprecated use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:62: warning: isFloat is deprecated use `isReal(e) || isImag(e)` instead
+typeQueryFuncs.chpl:63: warning: isFloat is deprecated use `isReal(t) || isImag(t)` instead
+typeQueryFuncs.chpl:64: warning: isFloatType is deprecated use `isRealType(t) || isImagType(t)` instead
+typeQueryFuncs.chpl:65: warning: isFloatValue is deprecated use `isRealValue(e) || isImagValue(e)` instead
 Given a rectangular domain: 
   isRectangularDom() = true
   isIrregularDom()   = false
@@ -91,3 +95,7 @@ op <= returns false
 op <  returns false
 op >= returns true
 op >  returns true
+isFloat(1.2) returns true
+isFloat(real) returns true
+isFloatType(real) returns true
+isFloatValue(1.2) returns true
