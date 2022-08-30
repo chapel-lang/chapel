@@ -17,13 +17,13 @@ class subthing : mything {
 
   override proc readThis(r) throws {
     x = r.read(int);
-    r._readLiteral(",");
+    r.readLiteral(",");
     y = r.read(int);
   }
 
   override proc writeThis(w) throws {
     w.write(x);
-    w._writeLiteral(",");
+    w.writeLiteral(",");
     w.write(y);
   }
 }
