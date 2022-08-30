@@ -45,9 +45,6 @@ module ChapelBase {
 
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
-  proc _throwOpError(param op: string) {
-      compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
-  }
 
   pragma "object class"
   pragma "global type symbol"
@@ -2023,16 +2020,8 @@ module ChapelBase {
   // file and re-run it).
 
   //
-  // non-param/non-param -- these are designed to throw an error
-  // stating that these combinations are not supported; it's an
-  // open topic of discussion whether we should support them and
-  // have the return type default to int or uint; and/or whether
-  // this error case should be made a lower-priority fallback,
-  // permitting the user to define their own overloads (or 'use'
-  // a module which does).
+  // non-param/non-param
   //
-  //inline operator +(a: uint(64), b: int(64)) { _throwOpError("+"); }
-  //inline operator +(a: int(64), b: uint(64)) { _throwOpError("+"); }
 
   //
   // non-param/param and param/non-param cases -- these cases
@@ -2058,8 +2047,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  //inline operator -(a: uint(64), b: int(64)) { _throwOpError("-"); }
-  //inline operator -(a: int(64), b: uint(64)) { _throwOpError("-"); }
 
   // non-param/param and param/non-param
   inline operator -(a: uint(64), param b: uint(64)) {
@@ -2077,8 +2064,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  //inline operator *(a: uint(64), b: int(64)) { _throwOpError("*"); }
-  //inline operator *(a: int(64), b: uint(64)) { _throwOpError("*"); }
 
   // non-param/param and param/non-param
   inline operator *(a: uint(64), param b: uint(64)) {
@@ -2096,8 +2081,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  //inline operator /(a: uint(64), b: int(64)) { _throwOpError("/"); }
-  //inline operator /(a: int(64), b: uint(64)) { _throwOpError("/"); }
 
   // non-param/param and param/non-param
   // The int version is only defined so we can catch the divide by zero error
@@ -2125,8 +2108,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  //inline operator **(a: uint(64), b: int(64)) { _throwOpError("**"); }
-  //inline operator **(a: int(64), b: uint(64)) { _throwOpError("**"); }
 
   // non-param/param and param/non-param
   inline operator **(a: uint(64), param b: uint(64)) {
@@ -2144,8 +2125,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  //inline operator %(a: uint(64), b: int(64)) { _throwOpError("%"); }
-  //inline operator %(a: int(64), b: uint(64)) { _throwOpError("%"); }
 
   // non-param/param and param/non-param
   inline operator %(a: uint(64), param b: uint(64)) {
