@@ -171,15 +171,13 @@ Context::getMap(const ResultType& (*queryFunc)(Context* context, ArgTs...),
 
   // Otherwise, create the QueryMap entry for this query
   // and add it to the map
-  auto iter =
-    this->queryDB.emplace_hint(
-      search,
-      std::make_pair(queryFuncV,
+  auto res =
+    this->queryDB.try_emplace(queryFuncV,
                      toOwned(new QueryMap<ResultType, ArgTs...>(traceQueryName,
                                                                 isInputQuery,
-                                                                queryFunc))));
+                                                                queryFunc)));
   // and return a pointer to the newly inserted map
-  QueryMapBase* newBase = iter->second.get();
+  QueryMapBase* newBase = res.first->second.get();
   return (QueryMap<ResultType, ArgTs...>*)newBase;
 }
 
