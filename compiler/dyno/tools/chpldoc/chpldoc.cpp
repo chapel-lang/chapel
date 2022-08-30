@@ -2051,6 +2051,9 @@ struct Args {
 
 static Args parseArgs(int argc, char **argv) {
   Args ret;
+  init_args(&sArgState, argv[0]);
+  init_arg_desc(&sArgState, docs_arg_desc);
+  process_args(&sArgState, argc, argv);
   ret.author = std::string(fDocsAuthor);
   if (fDocsCommentLabel[0] != '\0') {
     ret.commentStyle = std::string(fDocsCommentLabel);
@@ -2062,6 +2065,11 @@ static Args parseArgs(int argc, char **argv) {
   ret.printSystemCommands = printSystemCommands;
   ret.projectVersion = checkProjectVersion(fDocsProjectVersion);
   ret.noHTML = !fDocsHTML;
+  // add source files
+  // TODO: Check for proper file type, duplicate file names, was file found, etc.
+  for (int i = 0; i < sArgState.nfile_arguments; i++) {
+    ret.files.push_back(std::string(sArgState.file_argument[i]));
+  }
   return ret;
 }
 
@@ -2121,29 +2129,32 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 
 
 int main(int argc, char** argv) {
-
-  init_args(&sArgState, argv[0]);
-  init_arg_desc(&sArgState, docs_arg_desc);
-  process_args(&sArgState, argc, argv);
   Args args = parseArgs(argc, argv);
 
   // check if user asked for legacy chpldoc
   if (fLegacyChpldoc) {
-    std::string cmd = "chpldoc-legacy ";
+    std::string pathToExe = getExecutablePath(argv[0], nullptr);
+    std::string cmd = pathToExe + "-legacy ";
     for (int i = 1; i < argc; i++) {
-      if (std::string(argv[i]) != "--legacy") {
-        cmd += std::string(argv[i]);
+      std::string arg = std::string(argv[i]);
+      if (arg != "--legacy") {
+        // these flags had their args unwrapped, add quotes back to avoid
+        // situation where shell evaluates or splits the args
+        // TODO: Should we just wrap all the possible values in quotes?
+        if (arg == "--comment-style" || arg == "--author") {
+          assert(i + 1 < argc);
+          cmd += arg;
+          cmd += " \""+std::string(argv[i+1])+"\"";
+          i++;
+        } else {
+          cmd += arg;
+        }
         cmd += " ";
       }
     }
-    return myshell(cmd, "running legacy chpldoc");
+    return myshell(cmd, "running legacy chpldoc", true);
   }
 
-  // add source files
-  // TODO: Check for proper file type, duplicate file names, was file found, etc.
-  for (int i = 0; i < sArgState.nfile_arguments; i++) {
-    args.files.push_back(std::string(sArgState.file_argument[i]));
-  }
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {
     std::cerr << "error: comment label should start with /*" << std::endl;
@@ -2159,8 +2170,11 @@ int main(int argc, char** argv) {
   } else {
     CHPL_HOME = getenv("CHPL_HOME");
   }
+
   Context context(CHPL_HOME);
   Context *ctx = &context;
+  auto chplEnv = ctx->getChplEnv();
+  assert(!chplEnv.getError() && "not handling chplenv errors yet");
 
   // This is the final location for the output format (e.g. the html files.).
   std::string docsOutputDir;
@@ -2210,13 +2224,10 @@ int main(int argc, char** argv) {
   std::string modRoot = CHPL_HOME + "/modules";
   std::string internal = modRoot + "/internal";
   std::string bundled = modRoot + "/";
-  auto chplEnv = ctx->getChplEnv();
-  assert(!chplEnv.getError() && "not handling chplenv errors yet");
 
   // CHPL_MODULE_PATH isn't always in the output; check if it's there.
   auto it = chplEnv->find("CHPL_MODULE_PATH");
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
-  // TODO: Get these values dynamically
   setupModuleSearchPaths(ctx,
                          CHPL_HOME,
                          false, //minimal modules
