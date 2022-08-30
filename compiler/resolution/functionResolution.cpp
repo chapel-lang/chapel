@@ -7692,6 +7692,12 @@ static void resolveInitField(CallExpr* call) {
         Type* exprType = fs->defPoint->exprType->typeInfo();
         if (exprType == dtUnknown) {
           fs->type = srcType;
+        } else if (exprType->symbol->hasFlag(FLAG_GENERIC)) {
+          // e.g. the type so far is a partial instantiation
+          // but the field declaration is concrete
+          // TODO: does this need to check srcType is compatible
+          // with any partial instantiation?
+          fs->type = srcType;
         } else {
           // Try calling resolveGenericActuals in case the field is e.g. range
           CallExpr* dummyCall = new CallExpr(PRIM_NOOP,
