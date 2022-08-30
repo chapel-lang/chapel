@@ -68,130 +68,15 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
   return val;
 }
 
-// // would just use realpath, but it is not supported on all platforms.
-static
-char* chplRealPath(const char* path)
-{
-  // We would really rather use
-  // char* got = realpath(path, NULL);
-  // but that doesn't work on some Mac OS X versions.
-  char* buf = (char*) malloc(1024);
-  char* got = realpath(path, buf);
-  char* ret = NULL;
-  if( got ) ret = strdup(got);
-  free(buf);
-  return ret;
-}
 
-
-// Returns a "real path" to the file in the directory,
-// or NULL if the file did not exist.
-// The return value must be freed by the caller.
-// We try to use realpath but might give up.
-static
-char* dirHasFile(const char *dir, const char *file)
-{
-  struct stat stats;
-  int len = strlen(dir) + strlen(file) + 2;
-  char* tmp = (char*) malloc(len);
-  char* real;
-
-  if( ! tmp ) {
-    std::cerr << "error: no memory" << std::endl;
-    clean_exit(1);
-  }
-
-  snprintf(tmp, len, "%s/%s", dir, file);
-  real = chplRealPath(tmp);
-  if( real == NULL ) {
-    // realpath not working on this system,
-    // just use tmp.
-    real = tmp;
-  } else {
-    free(tmp);
-  }
-
-  if( stat(real, &stats) != 0) {
-    free(real);
-    real = NULL;
-  }
-
-  return real;
-}
 
 
 // Find the path to the running program
 // (or return NULL if we couldn't figure it out).
 // The return value must be freed by the caller.
-char* findProgramPath(const char *argv0)
+std::string findProgramPath(const char* argv0)
 {
-  char* real = NULL;
-  char* path;
-
-  /* Note - there are lots of friendly
-   * but platform-specific ways to do this:
-    #ifdef __linux__
-      int ret;
-      ret = readlink("/proc/self/exe", dst, max_dst - 1);
-      // return an error if there was an error.
-      if( ret < 0 ) return -1;
-      // append the NULL byte
-      if( ret < max_dst ) dst[ret] = '\0';
-      return 0;
-    #else
-    #ifdef __APPLE__
-      uint32_t sz = max_dst - 1;
-      return _NSGetExecutablePath(dst, &sz);
-    #else
-      // getexe path not available.
-      return -1;
-    #endif
-  */
-
-
-  // Is argv0 an absolute path?
-  if( argv0[0] == '/' ) {
-    real = dirHasFile("/", argv0);
-    return real;
-  }
-
-  // Is argv0 a relative path?
-  if( strchr(argv0, '/') != NULL ) {
-    std::string cwd;
-    if(auto err = chpl::currentWorkingDir(cwd)) {
-      real = NULL;
-    } else {
-      real = dirHasFile(cwd.c_str(), argv0);
-    }
-    return real;
-  }
-
-  // Is argv0 just in $PATH?
-  path = getenv("PATH");
-  if( path == NULL ) return NULL;
-
-  path = strdup(path);
-  if( path == NULL ) return NULL;
-
-  // Go through PATH changing ':' into '\0'
-  char* start;
-  char* end;
-  char* path_end = path + strlen(path);
-
-  start = path;
-  while( start != NULL && start < path_end ) {
-    end = strchr(start, ':');
-    if( end == NULL ) end = path_end;
-    else end[0] = '\0'; // replace ':' with '\0'
-
-    real = dirHasFile(start, argv0);
-    if( real ) break;
-
-    start = end + 1;
-  }
-
-  free(path);
-  return real;
+  return chpl::getExecutablePath(argv0, nullptr);
 }
 
 

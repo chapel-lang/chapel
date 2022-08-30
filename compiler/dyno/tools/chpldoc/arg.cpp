@@ -319,7 +319,7 @@ void init_args(ArgumentState* state, const char* argv0) {
   }
 
   state->program_name = name;
-  state->program_loc  = findProgramPath(argv0);
+  state->program_loc  = findProgramPath(argv0).c_str();
 }
 
 

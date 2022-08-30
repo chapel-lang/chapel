@@ -84,6 +84,15 @@ std::error_code currentWorkingDir(std::string& path_out);
 std::error_code makeDir(std::string dirpath, bool makeParents=false);
 
 
+/*
+  Try to get the path of the executable. We rely on llvm implementation,
+  which states it _may_ return an empty path if it fails.
+  https://llvm.org/doxygen/namespacellvm_1_1sys_1_1fs.html#a057a733b2dfa2f0531ceb335cf3b1d03
+*/
+std::string getExecutablePath(const char* 	argv0, void* 	MainExecAddr);
+
+
+
 } // end namespace chpl
 
 

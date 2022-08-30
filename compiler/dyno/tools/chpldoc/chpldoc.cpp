@@ -252,15 +252,15 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
   if( fPrintChplHome ) {
-    char* guess = findProgramPath(argv0);
+    std::string guess = findProgramPath(argv0);
 
-    printf("%s\t%s\n", CHPL_HOME.c_str(), guess);
+    printf("%s\t%s\n", CHPL_HOME.c_str(), guess.c_str());
     // TODO: Do we care about this for dyno-chpldoc?
     // const char* prefix = get_configured_prefix();
     // if (prefix != NULL && prefix[0] != '\0' )
     //   printf("# configured prefix  %s\n", prefix);
 
-    free(guess);
+//    free(guess);
 
     printedSomething = true;
   }
