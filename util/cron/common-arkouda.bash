@@ -48,6 +48,11 @@ if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
 
+echo "Location of Python3"
+which python3
+echo "Python3 version"
+python3 --version
+
 # test against Chapel release (checking our current test/cron directories)
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
