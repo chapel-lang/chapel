@@ -265,6 +265,7 @@ module ChapelLocale {
     running programs within Cray batch jobs that have been set up
     with limited processor resources.
   */
+  @unstable "'locale.numPUs' is unstable"
   inline proc locale.numPUs(logical: bool = false, accessible: bool = true): int {
     return this._value.numPUs(logical, accessible);
   }
