@@ -1402,7 +1402,12 @@ struct RstResultBuilder {
       auto err = ErrorMessage(ErrorMessage::Kind::WARNING, loc, errMsg);
       context_->report(err);
     }
-    if (commentShown && ((textOnly_ && !node->isModule()) || !textOnly_)) os_ << "\n";
+    // TODO: The presence of these node exceptions means we're probably missing
+    //  something from the old implementation
+    if (commentShown &&
+       ((textOnly_ && !node->isModule() && !node->isVariable()) || !textOnly_)) {
+      os_ << "\n";
+    }
     return commentShown;
   }
 
@@ -1491,6 +1496,7 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Class* c) {
     if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
+    if (textOnly_) os_ << "Class: ";
     show("class", c);
     visitChildren(c);
     return getResult(true);
