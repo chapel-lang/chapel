@@ -85,7 +85,7 @@ proc masonNew(args: [] string) throws {
       packageType = "library";
     else if isLightweight then
       packageType = "light";
-    
+
     if !isLightweight && validatePackageName(dirName=packageName) {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");

@@ -96,7 +96,7 @@ proc masonInit(args: [] string) throws {
         throw new owned MasonError("Directory does not exist: " + path +
                                    " Did you mean 'mason new' to create a " +
                                    "new project from scratch?");
-      
+
     // If TOML file exists, send message that package is already
     // initialized and give some info on what they might want to
     // do instead.
