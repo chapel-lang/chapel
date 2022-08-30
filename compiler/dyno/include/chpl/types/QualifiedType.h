@@ -134,6 +134,11 @@ class QualifiedType final {
   }
 
   bool isUnknown() const {
+    return isUnknownKindOrType() ||
+      (kind_ == PARAM && !hasParamPtr() && !isParamKnownTuple());
+  }
+
+  bool isUnknownKindOrType() const {
     return kind_ == UNKNOWN || !hasTypePtr() || type_->isUnknownType();
   }
 
@@ -160,6 +165,11 @@ class QualifiedType final {
       'false' otherwise
    */
   bool isParamFalse() const;
+
+  /** Returns 'true' if storing a tuple type whose
+      constituent types are all known params.
+  */
+  bool isParamKnownTuple() const;
 
   /**
     Returns true if the value cannot be modified directly (but might

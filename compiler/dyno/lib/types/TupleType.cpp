@@ -54,6 +54,22 @@ void TupleType::computeIsStarTuple() {
   }
 }
 
+void TupleType::computeIsParamKnown() {
+  if (isKnownSize_ == false) {
+    isParamKnown_ = false;
+  } else {
+    isParamKnown_ = true;
+    int n = numElements();
+    for (int i = 0; i < n; i++) {
+      const auto& eltT = elementType(i);
+      if (!eltT.isParam() || eltT.isUnknown()) {
+        isParamKnown_ = false;
+        break;
+      }
+    }
+  }
+}
+
 const owned<TupleType>&
 TupleType::getTupleType(Context* context, ID id, UniqueString name,
                         const TupleType* instantiatedFrom,
@@ -144,10 +160,9 @@ const TupleType*
 TupleType::getVarArgTuple(Context* context,
                           QualifiedType paramSize,
                           QualifiedType varArgEltType) {
-  assert(!varArgEltType.isUnknown());
+  assert(!varArgEltType.isUnknownKindOrType());
 
-  if (!paramSize.isUnknown() &&
-      paramSize.param() != nullptr) {
+  if (!paramSize.isUnknown()) {
     // Fixed size, we can at least create a star tuple of AnyType
     int64_t numElements = paramSize.param()->toIntParam()->value();
     std::vector<QualifiedType> eltTypes(numElements, varArgEltType);

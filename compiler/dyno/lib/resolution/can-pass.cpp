@@ -899,7 +899,7 @@ CanPassResult CanPassResult::canPass(Context* context,
     return fail(); // actual type not established
   }
 
-  if (formalQT.isUnknown()) {
+  if (formalQT.isUnknownKindOrType()) {
     return fail(); // unknown formal type, can't resolve
   }
 
