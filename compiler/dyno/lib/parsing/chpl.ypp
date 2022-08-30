@@ -3655,6 +3655,7 @@ call_base_expr:
                                                              STR("postfix!"),
                                                              $1); }
 | sub_type_level_expr TQUESTION { $$ = context->buildUnaryOp(@$, $2, $1); }
+| lambda_decl_expr
 | str_bytes_literal
 ;
 

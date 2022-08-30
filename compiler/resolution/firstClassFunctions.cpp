@@ -85,7 +85,7 @@ static int uniqueFcfId = 0;
 
 static bool isConcreteIntentBlank(IntentTag tag, Type* t);
 
-static VarSymbol* getDummyFcfErrorInsertedAtProgram(CallExpr* call);
+static VarSymbol* getDummyFcfErrorInsertedAtProgram(void);
 
 static Type* buildSharedWrapperType(AggregateType* super);
 
@@ -126,7 +126,8 @@ buildSuperName(const std::vector<FcfFormalInfo>& formals,
                bool throws);
 
 static AggregateType*
-insertFcfWrapperSuperTypeAtProgram(const char* name);
+insertFcfWrapperSuperTypeAtProgram(const char* name,
+                                   AggregateType* superSuper=dtObject);
 
 static FnSymbol*
 attachSuperRetTypeGetter(AggregateType* super, Type* retType);
@@ -177,7 +178,7 @@ static bool isConcreteIntentBlank(IntentTag tag, Type* t) {
   return ret;
 }
 
-static VarSymbol* getDummyFcfErrorInsertedAtProgram(CallExpr* call) {
+static VarSymbol* getDummyFcfErrorInsertedAtProgram(void) {
   if (dummyFcfError != nullptr) return dummyFcfError;
   auto super = insertFcfWrapperSuperTypeAtProgram("_fcf_error");
   dummyFcfError = newTemp(super);
@@ -200,16 +201,6 @@ static Type* buildSharedWrapperType(AggregateType* super) {
 static bool checkAndResolveFunctionSignature(FnSymbol* fn, Expr* use) {
   resolveSignature(fn);
 
-  if (fn->retType == dtUnknown) {
-    if (fn->retExprType) {
-      resolveSpecifiedReturnType(fn);
-    } else {
-      INT_ASSERT(!fn->hasFlag(FLAG_NO_FN_BODY));
-      resolveFunction(fn);
-      INT_ASSERT(fn->isResolved());
-    }
-  }
-
   bool hasGenericFormal = false;
   for_formals(formal, fn) {
     hasGenericFormal |= formal->type->symbol->hasFlag(FLAG_GENERIC);
@@ -223,11 +214,22 @@ static bool checkAndResolveFunctionSignature(FnSymbol* fn, Expr* use) {
     return false;
   }
 
+  // Now resolve the return type (and possibly the body).
+  if (fn->retType == dtUnknown) {
+    if (fn->retExprType) {
+      resolveSpecifiedReturnType(fn);
+    } else {
+      INT_ASSERT(!fn->hasFlag(FLAG_NO_FN_BODY));
+      resolveFunction(fn);
+      INT_ASSERT(fn->isResolved());
+    }
+  }
+
   std::vector<CallExpr*> calls;
-  collectCallExprs(fn, calls);
+  bool containsYield = false;
 
   // TODO: This check doesn't make any sense?
-  bool containsYield = false;
+  collectCallExprs(fn, calls);
   for_vector(CallExpr, cl, calls) {
     if (cl->isPrimitive(PRIM_YIELD)) {
       USR_FATAL_CONT(cl, "Iterators not allowed in first class functions");
@@ -245,17 +247,17 @@ static bool checkAndResolveFunction(FnSymbol* fn, Expr* use) {
     return payloadToResolved[fn];
   }
 
-  bool status = false;
+  bool ret = false;
   if (checkAndResolveFunctionSignature(fn, use)) {
     if (!fn->isResolved())
       if (!fn->hasFlag(FLAG_NO_FN_BODY))
         resolveFunction(fn);
-    status = true;
+    ret = true;
   }
 
-  payloadToResolved.insert(std::make_pair(fn, status));
+  payloadToResolved.insert(std::make_pair(fn, ret));
 
-  return true;
+  return ret;
 }
 
 static FnSymbol* findFunctionFromNameMaybeError(UnresolvedSymExpr* usym,
@@ -290,7 +292,7 @@ Expr* fcfWrapperInstanceFromPrimCall(CallExpr *call) {
   auto payload = findFunctionFromNameMaybeError(use, call);
 
   if (!payload || !checkAndResolveFunction(payload, use)) {
-    auto dummy = getDummyFcfErrorInsertedAtProgram(call);
+    auto dummy = getDummyFcfErrorInsertedAtProgram();
     return new SymExpr(dummy);
   }
 
@@ -328,7 +330,7 @@ Expr* fcfRawFunctionPointerFromPrimCall(CallExpr* call) {
   FnSymbol* payload = findFunctionFromNameMaybeError(use, call);
 
   if (!payload || !checkAndResolveFunction(payload, use)) {
-    auto dummy = getDummyFcfErrorInsertedAtProgram(call);
+    auto dummy = getDummyFcfErrorInsertedAtProgram();
     return new SymExpr(dummy);
   }
 
@@ -439,6 +441,29 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
     if (isAnyFormalNamed) break;
   }
 
+  // Fetch the wrapper class type for an FCF with no named formals.
+  // It will be the parent class of this type.
+  AggregateType* at = nullptr;
+  if (isAnyFormalNamed) {
+    std::vector<FcfFormalInfo> unnamedFormals;
+
+    for (auto& f : formals) {
+      FcfFormalInfo copy = { f.type, f.concreteIntent, nullptr };
+      unnamedFormals.push_back(std::move(copy));
+    }
+
+    auto info = buildWrapperSuperTypeAtProgram(unnamedFormals, retTag,
+                                               retType,
+                                               throws);
+
+    at = insertFcfWrapperSuperTypeAtProgram(superName, info->type);
+    info->type->dispatchChildren.add(at);
+
+  // Or no formals are named, so use 'object' as the parent class.
+  } else {
+    at = insertFcfWrapperSuperTypeAtProgram(superName);
+  }
+
   // Build up the info.
   auto& v = superNameToInfo[superName];
   v = std::shared_ptr<FcfSuperInfo>(new FcfSuperInfo());
@@ -448,12 +473,14 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   v->retType = retType;
   v->isAnyFormalNamed = isAnyFormalNamed;
 
-  v->type = insertFcfWrapperSuperTypeAtProgram(superName);
+  v->type = at;
   typeToInfo[v->type] = v;
-
   v->thisMethod = attachSuperThis(v->type, formals, retTag,
                                   retType,
                                   throws);
+  if (isAnyFormalNamed) {
+    v->thisMethod->addFlag(FLAG_OVERRIDE);
+  }
 
   v->sharedType = buildSharedWrapperType(v->type);
   typeToInfo[v->sharedType] = v;
@@ -488,6 +515,8 @@ Type* fcfWrapperSuperTypeFromFuncFnCall(CallExpr* call) {
 
   // Build up the formal types and intents.
   for_alist(expr, argList) {
+    if (expr == argList.tail) break;
+
     auto se = toSymExpr(expr);
     INT_ASSERT(se);
     FcfFormalInfo info;
@@ -567,7 +596,8 @@ buildSuperName(const std::vector<FcfFormalInfo>& formals,
 }
 
 static AggregateType*
-insertFcfWrapperSuperTypeAtProgram(const char* name) {
+insertFcfWrapperSuperTypeAtProgram(const char* name,
+                                   AggregateType* superSuper) {
   auto ret = new AggregateType(AGGREGATE_CLASS);
   auto tsym = new TypeSymbol(name, ret);
 
@@ -575,12 +605,13 @@ insertFcfWrapperSuperTypeAtProgram(const char* name) {
 
   // TODO: Should we be using the base module or "TheProgram" here?
   baseModule->block->insertAtHead(new DefExpr(tsym));
-  ret->dispatchParents.add(dtObject);
-  dtObject->dispatchChildren.add(ret);
 
-  VarSymbol* superSuper = new VarSymbol("super", dtObject);
-  superSuper->addFlag(FLAG_SUPER_CLASS);
-  ret->fields.insertAtHead(new DefExpr(superSuper));
+  ret->dispatchParents.add(superSuper);
+  superSuper->dispatchChildren.add(ret);
+
+  VarSymbol* superField = new VarSymbol("super", superSuper);
+  superField->addFlag(FLAG_SUPER_CLASS);
+  ret->fields.insertAtHead(new DefExpr(superField));
 
   ret->processGenericFields();
   ret->buildDefaultInitializer();
@@ -735,7 +766,11 @@ attachSuperThis(AggregateType* super,
 
 const char* fcfWrapperTypeToString(Type* t) {
   INT_ASSERT(t && t->symbol->hasFlag(FLAG_FUNCTION_CLASS));
+
+  auto fcfError = getDummyFcfErrorInsertedAtProgram();
   auto at = toAggregateType(t);
+
+  if (at == fcfError->type) return "<error>";
 
   if (typeToInfo.find(at) == typeToInfo.end()) {
     INT_ASSERT(at->dispatchParents.n > 0);

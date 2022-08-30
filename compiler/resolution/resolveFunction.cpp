@@ -535,10 +535,19 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       }
     }
 
-    if (fn->hasFlag(FLAG_EXTERN) == true) {
+    if (fn->hasFlag(FLAG_NO_FN_BODY) || fn->hasFlag(FLAG_EXTERN)) {
+      // TODO: Should be empty, can we just remove this?
       resolveBlockStmt(fn->body);
 
-      resolveSpecifiedReturnType(fn);
+
+      if (fn->retExprType) {
+        resolveSpecifiedReturnType(fn);
+
+      // If there is no body and no return type, the function returns void.
+      } else {
+        INT_ASSERT(fn->retType == dtVoid || fn->retType == dtUnknown);
+        fn->retType = dtVoid;
+      }
 
     } else {
       if (fn->isIterator() == true) {

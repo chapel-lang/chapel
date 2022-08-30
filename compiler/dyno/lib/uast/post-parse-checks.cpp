@@ -752,6 +752,12 @@ static bool isNameReservedType(UniqueString name) {
 // TODO: May have to restrict errors to fire only for functions/formals.
 void Visitor::checkReservedSymbolName(const NamedDecl* node) {
   auto name = node->name();
+
+  // TODO: Do we really want this sort of exception?
+  if (auto mod = node->toModule())
+    if (mod->kind() == Module::IMPLICIT)
+      return;
+
   if (isNameReservedWord(node)) {
     error(node, "attempt to redefine reserved word '%s'", name.c_str());
   } else if (isNameReservedType(name)) {
