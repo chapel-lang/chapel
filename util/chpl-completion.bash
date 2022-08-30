@@ -251,6 +251,7 @@ _chpl ()
 --no-verify \
 --no-warn-const-loops \
 --no-warn-domain-literal \
+--no-warn-int-uint \
 --no-warn-special \
 --no-warn-tuple-iteration \
 --no-warn-unstable \
@@ -338,6 +339,7 @@ _chpl ()
 --version \
 --warn-const-loops \
 --warn-domain-literal \
+--warn-int-uint \
 --warn-special \
 --warn-tuple-iteration \
 --warn-unstable \
