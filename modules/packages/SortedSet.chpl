@@ -134,11 +134,11 @@ module SortedSet {
     }
 
     /*
-      Write the contents of this sortedSet to a channel.
+      Write the contents of this sortedSet to a fileWriter.
 
-      :arg ch: A channel to write to.
+      :arg ch: A fileWriter to write to.
     */
-    inline proc const writeThis(ch: channel) throws {
+    inline proc const writeThis(ch: fileWriter) throws {
       instance.writeThis(ch);
     }
 
