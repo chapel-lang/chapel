@@ -32,6 +32,9 @@ fi
 log_info "gcc version: $(which gcc)"
 gcc --version
 
+log_info "python3 version: $(which python3)"
+python3 --version
+
 SCRIPT_NAME=$0
 start_time=$(date '+%s')
 log_info "Starting ${SCRIPT_NAME} on $(hostname -s)"
