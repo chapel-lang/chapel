@@ -7,6 +7,7 @@ proc main(){
   const newArgs = ['new','testSrc'];
   masonNew(newArgs);
   rmTree('testSrc/src');
+  remove('testSrc/Mason.toml');
   const initArgs = ['init','testSrc'];
   masonInit(initArgs);
   //check if src and src/testSrc.chpl was created
