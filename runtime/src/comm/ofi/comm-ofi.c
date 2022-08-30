@@ -1045,7 +1045,9 @@ void chpl_comm_post_mem_init(void) {
     causes fi_domain to be called before the worker threads are
     created, avoiding the issue.
   */
-  init_ofiFabricDomain();
+  if (chpl_numNodes > 1) {
+    init_ofiFabricDomain();
+  }
 }
 
 
