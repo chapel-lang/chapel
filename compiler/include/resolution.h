@@ -295,6 +295,9 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn)
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
+void warnForIntUintConversion(BaseAST* context, Type* formalType,
+                              Type* actualType, Symbol* actual);
+
 void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);

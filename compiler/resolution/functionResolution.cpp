@@ -8079,6 +8079,43 @@ void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
   warnIfMisleadingNew(call, lhs, rhs);
 }
 
+
+void warnForIntUintConversion(BaseAST* context,
+                              Type* formalType,
+                              Type* actualType,
+                              Symbol* actual) {
+  if (fWarnIntUint || fWarnUnstable) {
+    Type* formalVt = formalType->getValType();
+    Type* actualVt = actualType->getValType();
+    if (is_uint_type(formalVt) && is_int_type(actualVt)) {
+      if (get_width(formalVt) <= get_width(actualVt)) {
+        bool isParam = false;
+        bool isNegParam = false;
+
+        if (VarSymbol* var = toVarSymbol(actual)) {
+          if (Immediate* imm = var->immediate) {
+            isParam = true;
+            isNegParam = is_negative(imm);
+          }
+        }
+
+        // If it's a param, warn only if it is negative.
+        // Otherwise, warn.
+        if (isNegParam || !isParam) {
+          if (fWarnIntUint) {
+            USR_WARN(context, "potentially surprising int->uint implicit conversion");
+          } else {
+            USR_WARN(context, "int->uint implicit conversion is unstable");
+          }
+          USR_PRINT(context, "add a cast :%s to avoid this warning",
+                    toString(formalVt));
+        }
+      }
+    }
+  }
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 * This handles expressions of the form                                        *
