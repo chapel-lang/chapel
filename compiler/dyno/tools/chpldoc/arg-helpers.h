@@ -39,16 +39,8 @@ typedef __uint64_t uint64_t;
 bool startsWith(const char* str, const char* prefix);
 void clean_exit(int status);
 char* findProgramPath(const char *argv0);
-void setupError(std::string msg);
 
 extern bool developer;
-
-#define INT_FATAL(MSG)     setupError(MSG)
-
-#define USR_FATAL(MSG)     setupError(MSG)
-
-#define USR_FATAL_CONT(MSG) setupError(MSG)
-
 
 uint64_t    hexStr2uint64(const char* str, bool userSupplied = false,
                           const char* filename = NULL, int line = -1);

@@ -35,7 +35,6 @@
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
-#include <filesystem>
 #include <queue>
 
 #include <sys/stat.h>
@@ -107,7 +106,8 @@ void docsArgSetCommentLabel(const ArgumentDescription* desc, const char* label) 
   size_t len = strlen(label);
   if (len != 0) {
     if (len > sizeof(fDocsCommentLabel)) {
-      USR_FATAL("the label is too large!");
+      std::cerr << "error: the label is too large!" << std::endl;
+      clean_exit(1);
     } else {
       strcpy(fDocsCommentLabel, label);
     }

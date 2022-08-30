@@ -49,6 +49,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "arg.h"
 #include "arg-helpers.h"
+#include <iostream>
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -231,7 +232,8 @@ void usage(const ArgumentState* state,
             break;
 
           default:
-            INT_FATAL("Unexpected case in usage()");
+            std::cerr <<"error: Unexpected case in usage()" << std::endl;
+            clean_exit(1);
             break;
           }
 
@@ -378,7 +380,7 @@ static void ApplyValue(const ArgumentState*       state,
 static void ProcessEnvironment(const ArgumentState* state)
 {
   ArgumentDescription* desc = state->desc;
-
+  bool exitAtEnd = false;
   // The name field is defined by every row except the final guard
   for (int i = 0; desc[i].name != 0; i++)
   {
@@ -411,10 +413,11 @@ static void ProcessEnvironment(const ArgumentState* state)
           break;
 
           default:
-            USR_FATAL_CONT("When the environment variable " + std::string(desc[i].env) +
-                           " is set and not empty, it must start with one of Y y T t 1"
-                           " (indicates 'yes') or N n F f 0 (indicates '--no')."
-                           " Currently it is set to \"" + std::string(env) + "\".");
+            std::cerr << "error: When the environment variable " + std::string(desc[i].env) +
+                         " is set and not empty, it must start with one of Y y T t 1"
+                         " (indicates 'yes') or N n F f 0 (indicates '--no')."
+                         " Currently it is set to \"" + std::string(env) + "\"." << std::endl;
+            exitAtEnd = true;
             break;
           }
         }
@@ -422,6 +425,9 @@ static void ProcessEnvironment(const ArgumentState* state)
         ApplyValue(state, &desc[i], env);
       }
     }
+  }
+  if (exitAtEnd) {
+    clean_exit(1);
   }
 }
 
@@ -700,7 +706,8 @@ static void process_arg(const ArgumentState*       state,
             int len = strlen(arg);
             int maxlen = atoi(desc->type + 1);
             if( len > maxlen ) {
-              USR_FATAL("argument for -- " + std::string(desc->name) +" is too long");
+              std::cerr << "error: argument for -- " + std::string(desc->name) +" is too long" << std::endl;
+              clean_exit(1);
             }
             strncpy((char*) desc->location, arg, maxlen);
           }

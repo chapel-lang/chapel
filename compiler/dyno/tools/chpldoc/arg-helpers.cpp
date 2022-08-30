@@ -31,19 +31,18 @@ void clean_exit(int status) {
   exit(status);
 }
 
-void setupError(std::string msg) {
-  printf("setupError %s", msg.c_str());
-}
 
 
 uint64_t hexStr2uint64(const char* str, bool userSupplied,
                        const char* filename, int line) {
   if (!str) {
-    INT_FATAL("NULL string passed to hexStrToUint64()");
+    std::cerr << "error: NULL string passed to hexStrToUint64()" << std::endl;
+    clean_exit(1);
   }
   int len = strlen(str);
   if (len < 3 || str[0] != '0' || (str[1] != 'x' && str[1] != 'X')) {
-    INT_FATAL("Illegal string passed to hexStrToUint64()");
+    std::cerr << "error: Illegal string passed to hexStrToUint64()" << std::endl;
+    clean_exit(1);
   }
   /* Remove leading 0s */
   int startPos = 2;
@@ -52,20 +51,19 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
   }
 
   if (strlen(str+startPos) > 16) {
-    if (userSupplied) {
+
       //astlocT astloc(line, filename);
-      USR_FATAL("Integer literal overflow: '" + std::string(str) + "' is too big "
-                "for type 'uint64'");
-    } else {
-      INT_FATAL("Integer literal overflow: '" + std::string(str) + "' is too big "
-                "for type 'uint64'");
-    }
+    std::cerr << "error: Integer literal overflow: '" + std::string(str) +
+                  "' is too big for type 'uint64'" << std::endl;
+
+    clean_exit(1);
   }
 
   uint64_t val;
   int numitems = sscanf(str+2, "%" SCNx64, &val);
   if (numitems != 1) {
-    INT_FATAL("Illegal string passed to hexStrToUint64");
+    std::cerr << "error: Illegal string passed to hexStrToUint64" << std::endl;
+    clean_exit(1);
   }
   return val;
 }
@@ -98,7 +96,10 @@ char* dirHasFile(const char *dir, const char *file)
   char* tmp = (char*) malloc(len);
   char* real;
 
-  if( ! tmp ) INT_FATAL("no memory");
+  if( ! tmp ) {
+    std::cerr << "error: no memory" << std::endl;
+    clean_exit(1);
+  }
 
   snprintf(tmp, len, "%s/%s", dir, file);
   real = chplRealPath(tmp);
@@ -201,18 +202,21 @@ char* findProgramPath(const char *argv0)
                       const char* filename,                       \
                       int line) {                                 \
     if (!str) {                                                   \
-      INT_FATAL("NULL string passed to strTo_" #type "()");       \
+      std::cerr << "error: NULL string passed to strTo_" #type "()" << std::endl;       \
+      clean_exit(1);                                              \
     }                                                             \
     int len = strlen(str);                                        \
     if (len < 1) {                                                \
-      INT_FATAL("empty string passed to strTo_" #type "()");      \
+      std::cerr << "error: empty string passed to strTo_" #type "()" << std::endl;      \
+      clean_exit(1);                                              \
     }                                                             \
     type##_t val;                                                 \
     int numitems = sscanf(str, format, &val);                     \
     char checkStr[len+1];                                         \
     snprintf(checkStr, len+1, format, val);                       \
     if (numitems != 1) {                                          \
-      INT_FATAL("Illegal string passed to strTo_" #type "()");    \
+      std::cerr<<"error: Illegal string passed to strTo_" #type "()" << std::endl;    \
+      clean_exit(1);                                              \
     }                                                             \
     /* Remove leading 0s */                                       \
     int startPos = 0;                                             \
@@ -220,14 +224,11 @@ char* findProgramPath(const char *argv0)
       startPos++;                                                 \
     }                                                             \
     if (strcmp(str+startPos, checkStr) != 0) {                    \
-      if (userSupplied) {                                         \
                                   \
-        USR_FATAL("Integer literal overflow: '" + std::string(str) + "' is too" \
-                  " big for type '" #type "'");              \
-      } else {                                                    \
-        INT_FATAL("Integer literal overflow: '" + std::string(str) + "' is too "        \
-                  "big for type '" #type "'");               \
-      }                                                           \
+        std::cerr<< "error: Integer literal overflow: '" + std::string(str) + "' is too" \
+                  " big for type '" #type "'" << std::endl;              \
+        clean_exit(1);                                            \
+          \
     }                                                             \
     return val;                                                   \
   }
