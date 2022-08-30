@@ -12028,10 +12028,12 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
                              !at->symbol->hasFlag(FLAG_SINGLE);
           if (doEmitError) {
             USR_FATAL_CONT(call, "cannot default initialize '%s' because "
-                                 "field '%s' has a runtime type that "
-                                 "could not be recovered",
+                                 "field '%s' of type '%s' does not have "
+                                 "enough information to be default "
+                                 "initialized",
                                  val->name,
-                                 keyName);
+                                 keyName,
+                                 toString(value->getValType()));
           }
 
           // Keep the old lowering even though we'll terminate the pass.
