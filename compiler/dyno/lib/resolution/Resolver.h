@@ -294,6 +294,11 @@ struct Resolver {
                                            const types::QualifiedType& left,
                                            const types::QualifiedType& right);
 
+  types::QualifiedType typeForEnumElement(const types::EnumType* type,
+                                          UniqueString elemName,
+                                          const uast::AstNode* astForErr,
+                                          ID& outElemId);
+
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
   // if it is a regular call.
@@ -350,6 +355,9 @@ struct Resolver {
 
   bool enter(const uast::TupleDecl* decl);
   void exit(const uast::TupleDecl* decl);
+
+  bool enter(const uast::Range* decl);
+  void exit(const uast::Range* decl);
 
   // Note: Call cases here include Tuple
   bool enter(const uast::Call* call);

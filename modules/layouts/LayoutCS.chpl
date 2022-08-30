@@ -172,7 +172,7 @@ class CSDom: BaseSparseDomImpl {
 
       this.startIdx = rhs.startIdx;
       this.idx = rhs.idx;
-    } else if _to_borrowed(rhs._instance.type) < DefaultSparseDom {
+    } else if isProperSubtype(_to_borrowed(rhs._instance.type), DefaultSparseDom) {
       // Optimized COO -> CSR/CSC
 
       // Note: only COO->CSR can take advantage of COO having sorted indices

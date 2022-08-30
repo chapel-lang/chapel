@@ -2820,6 +2820,8 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             // Put the call back in to aid traversal
             se->getStmtExpr()->insertBefore(call);
           } else {
+            USR_WARN(call, "type comparsion operators are deprecated use isSubtype/isProperSubtype instead");
+
             rhs->remove();
             lhs->remove();
             call->baseExpr->remove();
@@ -7562,6 +7564,10 @@ FnSymbol* findZeroArgInitFn(AggregateType* at) {
 
   VarSymbol* tmpAt = newTemp(at);
 
+  // Do this to avoid a call to 'createGenericRecordVarDefaultInitCall'
+  // emitting errors about missing runtime types.
+  tmpAt->addFlag(FLAG_UNSAFE);
+
   CallExpr* call = NULL;
 
   // non-generic records with initializers
@@ -8924,7 +8930,111 @@ static Expr* handleNonNormalizableExpr(Expr* expr) {
   return nullptr;
 }
 
+static bool terminatesControlFlow(Expr* expr);
+
+// Is it guaranteed that 'block' terminates control flow?
+static bool terminatesControlFlowBlock(BlockStmt* block) {
+  Expr* last = block->body.tail;
+  if (last == nullptr)
+    return false;
+
+  if (CallExpr* call = toCallExpr(last)) {
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      if (Expr* prev = last->prev)
+        return terminatesControlFlow(prev);
+      else
+        return false;
+    }
+  }
+
+  return terminatesControlFlow(last);
+}
+
+static bool terminatesControlFlow(Expr* expr) {
+  if (! isBlockStmt(expr->parentExpr))
+    return false; // allow only stmt-level terminations
+
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_THROW))
+      return true;
+    // We do not check PRIM_RETURN because there is only one in the epilogue
+    // and we should not to mess with the epilogue.
+
+    if (FnSymbol* target = call->resolvedFunction())
+        if(target->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM))
+          return true;
+
+  } else if (isGotoStmt(expr)) {
+    return true;
+
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    if (block->isRealBlockStmt())
+      return terminatesControlFlowBlock(block);
+
+  } else if (CondStmt* cond = toCondStmt(expr)) {
+    // if-stmt terminates CF if both branches do
+    if (cond->elseStmt != nullptr)
+      return terminatesControlFlowBlock(cond->thenStmt) &&
+             terminatesControlFlowBlock(cond->elseStmt);
+  }
+
+  return false;
+}
+
+// If 'expr' terminates CF, make an exception if 'expr' halts or throws.
+// Reason: existing code uses unreachable code to infer the return type, ex.
+//   proc bulkAdd_help(...) { halt(...); return -1; } --> returns int
+// Ex. test/sparse/CS/multiplication/correctness.chpl
+static bool needLaterReturn(Expr* expr) {
+  return isCallExpr(expr);
+}
+
+// If 'expr' aborts control flow, ex. goto (incl. return), throw, or call
+// to a "terminate program" function, remove subsequent unreachable stmts.
+static void handleEarlyFinish(Expr* expr) {
+  if (! terminatesControlFlow(expr)) return; // nothing to do
+
+  if (needLaterReturn(expr))
+    if (isFnSymbol(expr->parentSymbol)) // returns are only in functions
+      for (Expr* cur = expr->next; cur; cur = cur->next)
+        if (CallExpr* call = toCallExpr(cur))
+          if (call->isPrimitive(PRIM_MOVE))
+            if (SymExpr* destSE = toSymExpr(call->get(1)))
+              if (destSE->symbol()->hasFlag(FLAG_RVV))
+                return; // keep the unreachable code
+
+  if (CallExpr* nextCall = toCallExpr(expr->next))
+    if (nextCall->isPrimitive(PRIM_END_OF_STATEMENT))
+      expr = expr->next; // "end of statement" might be important
+
+  // clean up the unreachable statements to avoid resolving them
+  while (expr->next != nullptr) {
+    if (DefExpr* def = toDefExpr(expr->next))
+      if (isLabelSymbol(def->sym))
+        break; // this can be reachable via a goto
+    if (CallExpr* call = toCallExpr(expr->next))
+      if (call->isPrimitive(PRIM_RETURN))
+        break; // need this to keep the function well-formed
+
+    if (isDefExpr(expr->next) &&
+        !isVarSymbol(toDefExpr(expr->next)->sym))
+      // do not remove defs of useful things
+      expr = expr->next;
+    else
+      expr->next->remove();
+  }
+}
+
+static bool shouldHandleEarlyFinish(BlockStmt* block) {
+  if (FnSymbol* enclosingFn = toFnSymbol(block->parentSymbol))
+    if (isTaskFun(enclosingFn))
+      return false; // ensure the special handling of endCounts stays
+  return true;
+}
+
 void resolveBlockStmt(BlockStmt* blockStmt) {
+  bool ef = shouldHandleEarlyFinish(blockStmt);
+
   for_exprs_postorder(expr, blockStmt) {
     if (Expr* changed = handleNonNormalizableExpr(expr)) {
       expr = changed;
@@ -8933,6 +9043,7 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
     }
 
     INT_ASSERT(expr);
+    if (ef) handleEarlyFinish(expr);
   }
 }
 
@@ -12023,26 +12134,26 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
                              !at->symbol->hasFlag(FLAG_SYNC) &&
                              !at->symbol->hasFlag(FLAG_SINGLE);
           if (doEmitError) {
-            USR_WARN(call, "failed to locate the runtime type for field "
-                           "'%s' when default initializing '%s' - this "
-                           "may cause runtime errors",
-                           keyName,
-                           val->name);
+            USR_FATAL_CONT(call, "cannot default initialize '%s' because "
+                                 "field '%s' of type '%s' does not have "
+                                 "enough information to be default "
+                                 "initialized",
+                                 val->name,
+                                 keyName,
+                                 toString(value->getValType()));
           }
 
+          // Keep the old lowering even though we'll terminate the pass.
           VarSymbol* tmp = newTemp("default_runtime_temp");
           tmp->addFlag(FLAG_TYPE_VARIABLE);
           CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD,
                                          at->symbol,
                                          new_CStringSymbol(keyName));
           CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
-
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(move);
-
           resolveExpr(query);
           resolveExpr(move);
-
           appendExpr = new SymExpr(tmp);
         }
       }

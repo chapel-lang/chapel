@@ -80,7 +80,20 @@ void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   exit_eventually  |= tag == 3;
 }
 
+// Return true if the current locale model needs GPU code generation
+bool usingGpuLocaleModel() {
+  return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
+}
+
 bool forceWidePtrsForLocal() {
+  // For the gpu (for now) we don't want wide pointers inside kernel
+  // functions (which we consider a local block) but we still want
+  // to force wide pointers outside of there so we have `forceWidePtrs`
+  // return true but don't want it to kick in for local blocks
+  if(usingGpuLocaleModel()) {
+    return false;
+  }
+
   return fLocal && forceWidePtrs();
 }
 
@@ -96,11 +109,6 @@ bool requireWideReferences() {
 //
 bool requireOutlinedOn() {
   return requireWideReferences();
-}
-
-// Return true if the current locale model needs GPU code generation
-bool localeUsesGPU() {
-  return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
 }
 
 const char* cleanFilename(const char* name) {

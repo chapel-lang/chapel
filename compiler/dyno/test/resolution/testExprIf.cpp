@@ -89,11 +89,24 @@ static void test5() {
   assert(qt.type() && qt.type()->isRecordType());
 }
 
+static void test6() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         param b : bool;
+                         var x = if b then 1 else "hello";
+                         )"""", false);
+  qt.dump();
+  assert(qt.kind() == QualifiedType::UNKNOWN);
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
   return 0;
 }

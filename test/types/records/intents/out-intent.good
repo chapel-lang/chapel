@@ -171,6 +171,8 @@ init 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 test24
+init (default)
+deinit 0 0
 Error: 
 test25
 Error: 

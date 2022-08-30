@@ -1649,7 +1649,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   DiagnosticsEngine* Diags = NULL;
   Diags = new DiagnosticsEngine(
       clangInfo->DiagID, &*clangInfo->diagOptions, clangInfo->DiagClient);
-  if (localeUsesGPU()) {
+  if (usingGpuLocaleModel()) {
     Diags->setSeverityForGroup(diag::Flavor::WarningOrError,
                                "unknown-cuda-version",
                                diag::Severity::Ignored);
@@ -1670,7 +1670,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   clang::driver::Command* job = NULL;
 
-  if (localeUsesGPU() == false) {
+  if (usingGpuLocaleModel() == false) {
     // Not a CPU+GPU compilation, so just use first job.
     job = &*C->getJobs().begin();
   } else {
@@ -2541,7 +2541,7 @@ void runClang(const char* just_parse_filename) {
   }
 
   // tell clang to use CUDA support
-  if (localeUsesGPU()) {
+  if (usingGpuLocaleModel()) {
     // Need to pass this flag so atomics header will compile
     clangOtherArgs.push_back("--std=c++11");
     // Need to select CUDA mode in embedded clang to
@@ -2559,7 +2559,7 @@ void runClang(const char* just_parse_filename) {
   clangOtherArgs.push_back("sys_basic.h");
 
   if (!parseOnly) {
-    if (localeUsesGPU()) {
+    if (usingGpuLocaleModel()) {
       //create a header file to include header files from the command line
       std::string genHeaderFilename;
       genHeaderFilename = genIntermediateFilename("command-line-includes.h");

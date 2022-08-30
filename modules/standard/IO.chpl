@@ -2578,36 +2578,57 @@ inline proc channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
+deprecated "channel.seek with a start and/or end argument is deprecated.  Please use the new region argument instead"
+proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
+  this.seek(start..end);
+}
 /*
    Reset a channel to point to a new part of a file.
    This function allows one to jump to a different part of a
    file without creating a new channel. It can only be called
    on a channel with ``locking==false``.
 
-   Besides setting a new start position, this function allows
-   one to specify a new end position. Specifying the end position
-   is usually not necessary for correct behavior but it might be
+   The region specified must have a lower bound, but does not need to have
+   a high bound for correctness.  Specifying the high bound might be
    an important performance optimization since the channel will not
-   try to read data outside of the start..end region.
+   try to read data outside of the region.
 
    This function will, in most cases, discard the channel's buffer.
    When writing, the data will be saved to the file before discarding.
 
-   :arg start: the new start offset, measured in bytes and counting from 0
-   :arg end: optionally, a new end offset, measured in bytes and counting from 0
-   :throws: SystemError: if seeking failed. Possible reasons include
+   :arg region: the new region, measured in bytes and counting from 0
+
+   .. warning::
+
+      The region argument will ignore any specified stride other than 1.
+
+   :throws SystemError: if seeking failed. Possible reasons include
                          that the file is not seekable, or that the
                          channel is marked.
+   :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
+proc channel.seek(region: range(?)) throws {
 
   if this.locking then
     compilerError("Cannot seek on a locking channel");
 
-  const err = qio_channel_seek(_channel_internal, start, end);
+  if (!region.hasLowBound()) {
+    throw new IllegalArgumentError("region", "must have a lower bound");
 
-  if err then
-    throw createSystemError(err);
+  } else {
+    if (region.hasHighBound()) {
+      const err = qio_channel_seek(_channel_internal, region.low, region.high);
+
+      if err then
+        throw createSystemError(err);
+
+    } else {
+      const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
+
+      if err then
+        throw createSystemError(err);
+    }
+  }
 }
 
 
@@ -2775,8 +2796,17 @@ proc openreader(path:string,
                 hints:iohints=IOHINT_NONE,
                 style:iostyle)
     : channel(false, kind, locking) throws {
-  return openreaderHelper(path, kind, locking, start, end, new ioHintSet(hints),
+  return openreaderHelper(path, kind, locking, start..end, new ioHintSet(hints),
                           style: iostyleInternal);
+}
+
+pragma "last resort"
+deprecated "openreader with a start and/or end argument is deprecated.  Please use the new region argument instead"
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints=ioHintSet.empty): channel(false, kind, locking) throws {
+  return openreader(path, kind, locking, start..end, hints);
 }
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
@@ -2799,23 +2829,27 @@ This function is equivalent to calling :proc:`open` and then
               corresponding parameter of the :record:`channel` type.
               Defaults to true, but when safe, setting it to false
               can improve performance.
-:arg start: zero-based byte offset indicating where in the file the
-            channel should start reading. Defaults to 0.
-:arg end: zero-based byte offset indicating where in the file the
-          channel should no longer be allowed to read. Defaults
-          to a ``max(int(64))`` - meaning no end point.
+:arg region: zero-based byte offset indicating where in the file the
+            channel should start and stop reading. Defaults to
+            ``0..``, meaning from the start of the file to no specified end
+            point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :returns: an open reading channel to the requested resource.
 
+.. warning::
+
+   The region argument will ignore any specified stride other than 1.
+
 :throws SystemError: Thrown if a reading channel could not be returned.
+:throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
+                              0.
  */
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty)
+                region: range(?) = 0.., hints=ioHintSet.empty)
     : channel(false, kind, locking) throws {
-  return openreaderHelper(path, kind, locking, start, end, hints);
+  return openreaderHelper(path, kind, locking, region, hints);
 }
 
 pragma "last resort"
@@ -2823,20 +2857,20 @@ deprecated "The 'iohints' type is deprecated; please use a variant of 'openreade
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints=IOHINT_NONE)
+                hints:iohints)
     : channel(false, kind, locking) throws {
-  return openreader(path, kind, locking, start, end, new ioHintSet(hints));
+  return openreader(path, kind, locking, start..end, new ioHintSet(hints));
 }
 
 private proc openreaderHelper(path:string,
                               param kind=iokind.dynamic, param locking=true,
-                              start:int(64) = 0, end:int(64) = max(int(64)),
+                              region: range(?) = 0..,
                               hints=ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal())
   : channel(false, kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
-  return try fl.readerHelper(kind, locking, start, end, hints, style);
+  return try fl.readerHelper(kind, locking, region, hints, style);
 }
 
 deprecated "openwriter with a style argument is deprecated"
@@ -2903,7 +2937,7 @@ private proc openwriterHelper(path:string,
   : channel(true, kind, locking) throws {
 
   var fl:file = try open(path, iomode.cw);
-  return try fl.writerHelper(kind, locking, start, end, hints, style);
+  return try fl.writerHelper(kind, locking, start..end, hints, style);
 }
 
 deprecated "reader with a style argument is deprecated"
@@ -2912,7 +2946,16 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                  hints:iohints=IOHINT_NONE,
                  style:iostyle): channel(false, kind, locking)
                  throws {
-  return this.readerHelper(kind, locking, start, end, new ioHintSet(hints), style: iostyleInternal);
+  return this.readerHelper(kind, locking, start..end, new ioHintSet(hints), style: iostyleInternal);
+}
+
+pragma "last resort"
+deprecated "file.reader with a start and/or end argument is deprecated.  Please use the new region argument instead"
+proc file.reader(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints = ioHintSet.empty)
+  : channel(false, kind, locking) throws {
+  return this.reader(kind, locking, start..end, hints);
 }
 
 /*
@@ -2939,35 +2982,42 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                  corresponding parameter of the :record:`channel` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
-   :arg start: zero-based byte offset indicating where in the file the
-               channel should start reading. Defaults to 0.
-   :arg end: zero-based byte offset indicating where in the file the
-             channel should no longer be allowed to read. Defaults
-             to a ``max(int(64))`` - meaning no end point.
+   :arg region: zero-based byte offset indicating where in the file the
+               channel should start and stop reading. Defaults to
+               ``0..`` - meaning from the start of the file to no end point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the channel to use the hints provided when the
                file was opened.
 
+   .. warning::
+
+      The region argument will ignore any specified stride other than 1.
+
    :throws SystemError: Thrown if a file reader channel could not be returned.
+   :throws IllegalArgumentError: Thrown if trying to read explicitly prior to
+                                 byte 0.
  */
-proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
-                 end:int(64) = max(int(64)), hints = ioHintSet.empty): channel(false, kind, locking) throws {
-  return this.readerHelper(kind, locking, start, end, hints);
+proc file.reader(param kind=iokind.dynamic, param locking=true,
+                 region: range(?) = 0.., hints = ioHintSet.empty): channel(false, kind, locking) throws {
+  return this.readerHelper(kind, locking, region, hints);
 }
 
 pragma "last resort"
 deprecated "The 'iohints' type is deprecated; please use a variant of 'file.reader' that takes an 'ioHintSet' instead."
 proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
-                 end:int(64) = max(int(64)), hints:iohints=IOHINT_NONE): channel(false, kind, locking) throws {
-  return this.reader(kind, locking, start, end, new ioHintSet(hints));
+                 end:int(64) = max(int(64)), hints:iohints): channel(false, kind, locking) throws {
+  return this.reader(kind, locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
-                       start:int(64) = 0, end:int(64) = max(int(64)),
-                       hints = ioHintSet.empty,
+                       region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style): channel(false, kind, locking) throws {
+  if (region.hasLowBound() && region.low < 0) {
+    throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
+  }
+
   // It is the responsibility of the caller to release the returned channel
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
@@ -2975,7 +3025,19 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   var err:syserr = ENOERR;
   on this.home {
     try this.checkAssumingLocal();
-    ret = new channel(false, kind, locking, this, err, hints, start, end, style);
+    if (region.hasLowBound() && region.hasHighBound()) {
+      ret = new channel(false, kind, locking, this, err, hints, region.low,
+                        region.high, style);
+    } else if (region.hasLowBound()) {
+      ret = new channel(false, kind, locking, this, err, hints, region.low,
+                        max(int(64)), style);
+    } else if (region.hasHighBound()) {
+      ret = new channel(false, kind, locking, this, err, hints, 0, region.high,
+                        style);
+    } else {
+      ret = new channel(false, kind, locking, this, err, hints, 0, max(int(64)),
+                        style);
+    }
   }
   if err then try ioerror(err, "in file.reader", this._tryGetPath());
 
@@ -2986,8 +3048,16 @@ deprecated "lines with a local_style argument is deprecated"
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints:iohints=IOHINT_NONE,
                 in local_style:iostyle) throws {
-  return this.linesHelper(locking, start, end, new ioHintSet(hints),
+  return this.linesHelper(locking, start..end, new ioHintSet(hints),
                           local_style: iostyleInternal);
+}
+
+pragma "last resort"
+deprecated "file.lines with a start and/or end argument is deprecated.  Please use the new region argument instead"
+proc file.lines(param locking:bool = true, start:int(64) = 0,
+                end:int(64) = max(int(64)),
+                hints = ioHintSet.empty) throws {
+  return this.lines(locking, start..end, hints);
 }
 
 /* Iterate over all of the lines in a file.
@@ -2996,23 +3066,22 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
 
    :throws SystemError: Thrown if an object could not be returned.
  */
-proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)),
+proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws {
-  return this.linesHelper(locking, start, end, hints);
+  return this.linesHelper(locking, region, hints);
 }
 
 pragma "last resort"
 deprecated "The 'iohints' type is deprecated; please use a variant of 'file.lines' that takes an 'ioHintSet' instead."
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)),
-                hints:iohints=IOHINT_NONE) throws {
-  return this.lines(locking, start, end, new ioHintSet(hints));
+                hints:iohints) throws {
+  return this.lines(locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
-proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
-                      end:int(64) = max(int(64)), hints = ioHintSet.empty,
+proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
+                      hints = ioHintSet.empty,
                       in local_style:iostyleInternal = this._style) throws {
   local_style.string_format = QIO_STRING_FORMAT_TOEND;
   local_style.string_end = 0x0a; // '\n'
@@ -3022,7 +3091,20 @@ proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
   var err:syserr = ENOERR;
   on this.home {
     try this.checkAssumingLocal();
-    var ch = new channel(false, kind, locking, this, err, hints, start, end, local_style);
+    var ch: channel;
+    if (region.hasLowBound() && region.hasHighBound()) {
+      ch = new channel(false, kind, locking, this, err, hints, region.low,
+                       region.high, local_style);
+    } else if (region.hasLowBound()) {
+      ch = new channel(false, kind, locking, this, err, hints, region.low,
+                       max(int(64)), local_style);
+    } else if (region.hasHighBound()) {
+      ch = new channel(false, kind, locking, this, err, hints, 0, region.high,
+                       local_style);
+    } else {
+      ch = new channel(false, kind, locking, this, err, hints, 0, max(int(64)),
+                       local_style);
+    }
     ret = new itemReaderInternal(string, kind, locking, ch);
   }
   if err then try ioerror(err, "in file.lines", this._tryGetPath());
@@ -3035,7 +3117,16 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints:iohints=IOHINT_NONE, style:iostyle):
                  channel(true,kind,locking) throws {
-  return this.writerHelper(kind, locking, start, end, new ioHintSet(hints), style: iostyleInternal);
+  return this.writerHelper(kind, locking, start..end, new ioHintSet(hints), style: iostyleInternal);
+}
+
+pragma "last resort"
+deprecated "file.writer with a start and/or end argument is deprecated.  Please use the new region argument instead"
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints = ioHintSet.empty):
+                 channel(true,kind,locking) throws {
+  return this.writer(kind, locking, start..end, hints);
 }
 
 /*
@@ -3067,39 +3158,47 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  corresponding parameter of the :record:`channel` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
-   :arg start: zero-based byte offset indicating where in the file the
-               channel should start writing. Defaults to 0.
-   :arg end: zero-based byte offset indicating where in the file the
-             channel should no longer be allowed to write. Defaults
-             to a ``max(int(64))`` - meaning no end point.
+   :arg region: zero-based byte offset indicating where in the file the
+               channel should start and stop writing. Defaults to
+               ``0..`` - meaning from the start of the file to no specified end
+               point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the channel to use the hints provided when the
                file was opened.
 
+   .. warning::
+
+      The region argument will ignore any specified stride other than 1.
+
    :throws SystemError: Thrown if a file writer channel could not be returned.
+   :throws IllegalArgumentError: Thrown if trying to write explicitly prior to
+                                 byte 0.
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints = ioHintSet.empty):
+                 region: range(?) = 0.., hints = ioHintSet.empty):
                  channel(true,kind,locking) throws {
-  return this.writerHelper(kind, locking, start, end, hints);
+  return this.writerHelper(kind, locking, region, hints);
 }
 
 pragma "last resort"
 deprecated "The 'iohints' type is deprecated; please use a variant of 'file.writer' that takes an 'ioHintSet' instead."
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:iohints=IOHINT_NONE):
+                 hints:iohints):
                  channel(true,kind,locking) throws {
-  return this.writer(kind, locking, start, end, new ioHintSet(hints));
+  return this.writer(kind, locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
-                       start:int(64) = 0, end:int(64) = max(int(64)),
-                       hints = ioHintSet.empty, style:iostyleInternal = this._style):
+                       region: range(?) = 0.., hints = ioHintSet.empty,
+                       style:iostyleInternal = this._style):
   channel(true,kind,locking) throws {
+  if (region.hasLowBound() && region.low < 0) {
+    throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
+  }
+
   // It is the responsibility of the caller to retain and release the returned
   // channel.
   // If the return error code is nonzero, the ref count will be 0 not 1.
@@ -3108,7 +3207,19 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   var err:syserr = ENOERR;
   on this.home {
     try this.checkAssumingLocal();
-    ret = new channel(true, kind, locking, this, err, hints, start, end, style);
+    if (region.hasLowBound() && region.hasHighBound()) {
+      ret = new channel(true, kind, locking, this, err, hints, region.low,
+                        region.high, style);
+    } else if (region.hasLowBound()) {
+      ret = new channel(true, kind, locking, this, err, hints, region.low,
+                        max(int(64)), style);
+    } else if (region.hasHighBound()) {
+      ret = new channel(true, kind, locking, this, err, hints, 0, region.high,
+                        style);
+    } else {
+      ret = new channel(true, kind, locking, this, err, hints, 0, max(int(64)),
+                        style);
+    }
   }
   if err then try ioerror(err, "in file.writer", this._tryGetPath());
 

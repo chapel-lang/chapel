@@ -51,7 +51,7 @@ namespace chpl {
 
   Context::Context(std::string chplHome,
                    std::unordered_map<std::string, std::string> chplEnvOverrides)
-    : chplHome(std::move(chplHome)),
+    : chplHome_(std::move(chplHome)),
       chplEnvOverrides(std::move(chplEnvOverrides)) {
     if (this == &detail::rootContext) {
       detail::initGlobalStrings();
@@ -67,10 +67,13 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
+const std::string& Context::chplHome() const {
+  return chplHome_;
+}
 
 llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
-  if (chplHome.empty() || computedChplEnv) return chplEnv;
-  auto chplEnvResult = ::chpl::getChplEnv(chplEnvOverrides, chplHome.c_str());
+  if (chplHome_.empty() || computedChplEnv) return chplEnv;
+  auto chplEnvResult = ::chpl::getChplEnv(chplEnvOverrides, chplHome_.c_str());
   if (auto err = chplEnvResult.getError()) {
     // forward error to caller
     return err;

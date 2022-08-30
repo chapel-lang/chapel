@@ -1178,8 +1178,7 @@ module Random {
         var dom: domain(1,stridable=true);
 
         if !isBoundedRange(x) {
-          throw new owned IllegalArgumentError('input range must be bounded');
-          dom = {1..2}; // this is a workaround for issue #15691
+          compilerError('input range must be bounded');
         } else {
           dom = {x};
         }

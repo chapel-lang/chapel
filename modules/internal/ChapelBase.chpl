@@ -73,13 +73,13 @@ module ChapelBase {
   // a.type in a formal's type is computed before instantiation vs.
   // a.type in the where clause is computed after instantiation.
   pragma "last resort"
-  inline operator =(ref a: borrowed class,   b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: borrowed class,   b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
   pragma "last resort"
-  inline operator =(ref a: borrowed class?,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: borrowed class?,  b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
   pragma "last resort"
-  inline operator =(ref a: unmanaged class,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: unmanaged class,  b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
   pragma "last resort"
-  inline operator =(ref a: unmanaged class?, b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: unmanaged class?, b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
 
   inline operator =(ref a: nothing, b: ?t) where t != nothing {
     compilerError("a nothing variable cannot be assigned");
@@ -751,7 +751,7 @@ module ChapelBase {
   inline proc _cond_test(x: c_ptr) return x != c_nil;
 
   inline proc _cond_test(x) {
-    if !( x.type <= _iteratorRecord ) {
+    if !( isSubtype(x.type, _iteratorRecord) ) {
       use Reflection;
       if canResolveMethod(x, "chpl_cond_test_method") {
         return x.chpl_cond_test_method();
@@ -820,7 +820,9 @@ module ChapelBase {
   //
   enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit, gpuInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
-  config param chpl_defaultGpuArrayInitMethod = chpl_defaultArrayInitMethod;
+  config param chpl_defaultGpuArrayInitMethod =
+    if CHPL_GPU_MEM_STRATEGY == "array_on_device" then
+      ArrayInit.gpuInit else chpl_defaultArrayInitMethod;
 
   config param chpl_arrayInitMethodRuntimeSelectable = false;
   private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
