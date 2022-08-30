@@ -1,0 +1,2 @@
+feature request: fold `(non-param) && false`
+#20496
