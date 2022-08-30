@@ -2183,17 +2183,6 @@ operator :(r: range(?), type t: range(?)) {
   // becomes `low..(low + (count - 1))`. Needs to check for negative counts,
   // and for zero counts iterates over a degenerate `1..0`.
   iter chpl_direct_counted_range_iter_helper(low, count) {
-    // From the spec:
-    // The type of the count expression must be a signed or unsigned integer
-    // of the same bit size as the base range’s idxType, or an implicit
-    // conversion must be allowed to that type from the count’s type.
-    // check that now
-    if (isIntegralType(low.type) && isIntegralType(count.type) &&
-        numBits(low.type) < numBits(count.type)) {
-      compilerError("can't apply '#' to a range with idxType ",
-                    low.type:string, " using a count of type ",
-                    count.type:string);
-    }
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
 
