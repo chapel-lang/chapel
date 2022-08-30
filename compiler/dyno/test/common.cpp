@@ -22,10 +22,9 @@
 
 using namespace parsing;
 
-const Module* parseModule(Context* context, const char* src) {
+const Module* parseModule(Context* context, std::string src) {
   auto path = UniqueString::get(context, "input.chpl");
-  std::string contents = src;
-  setFileText(context, path, contents);
+  setFileText(context, path, std::move(src));
 
   const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
@@ -33,13 +32,9 @@ const Module* parseModule(Context* context, const char* src) {
   return vec[0];
 }
 
-const Module* parseModule(Context* context, std::string& str) {
-  return parseModule(context, str.c_str());
-}
-
 QualifiedType
-resolveTypeOfXInit(Context* context, const char* program, bool requireTypeKnown) {
-  auto m = parseModule(context, program);
+resolveTypeOfXInit(Context* context, std::string program, bool requireTypeKnown) {
+  auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
   const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
   assert(x);
@@ -56,8 +51,8 @@ resolveTypeOfXInit(Context* context, const char* program, bool requireTypeKnown)
 }
 
 QualifiedType
-resolveQualifiedTypeOfX(Context* context, const char* program) {
-  auto m = parseModule(context, program);
+resolveQualifiedTypeOfX(Context* context, std::string program) {
+  auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
   const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
   assert(x);
@@ -72,8 +67,8 @@ resolveQualifiedTypeOfX(Context* context, const char* program) {
 }
 
 const Type*
-resolveTypeOfX(Context* context, const char* program) {
-  auto m = parseModule(context, program);
+resolveTypeOfX(Context* context, std::string program) {
+  auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
   const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
   assert(x);
