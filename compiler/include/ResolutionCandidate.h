@@ -111,22 +111,17 @@ public:
   bool                    isInterimInstantiation;
   // Does any argument use promotion?
   bool                    anyPromotes;
-  // Have nImplicitConversions and nImplicitConversionsToTypeNotMentioned
-  // been computed?
+
+  // Have the below counts about implicit conversions been computed?
   bool                    nImplicitConversionsComputed;
   // Does it convert any negative params to unsigned?
   bool                    anyNegParamToUnsigned;
-  // How many implicit conversions to a type not mentioned?
-  //int                     nImpConvToTypeNotMentioned;
   // How many implicit conversions?
   int                     nImplicitConversions;
   // How many param-narrowing implicit conversions?
   int                     nParamNarrowingImplicitConversions;
-  // Bit-set for which numeric types are used at the call site
-  // TODO: this could be in DisambiguationState since it is
-  // independent of the candidate functions
-  //int                     numericTypesInUseSet;
-  // What is the visibility distance?
+
+  // What is the visibility distance? This is -1 if it has not been computed.
   int                     visibilityDistance;
 
   Symbol*                 failingArgument; // actual or formal

@@ -91,12 +91,6 @@ public:
 
   bool  fn1ParamArgsPreferred;
   bool  fn2ParamArgsPreferred;
-
-  bool  fn1Promotes;
-  bool  fn2Promotes;
-
-  int   fn1NumParamNarrowing;
-  int   fn2NumParamNarrowing;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -108,6 +102,7 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 
 bool                               resolved                  = false;
 int                                explainCallLine           = 0;
+
 SymbolMap                          paramMap;
 
 Vec<CallExpr*>                     callStack;
@@ -221,7 +216,6 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateTyp
 
 static void computeConversionInfo(ResolutionCandidate* candidate,
                                   const DisambiguationContext& DC);
-//static bool hasBitForType(int numericBitSet, Type* t);
 
 static bool useLegacyNilability(Expr* at) {
   if (at != NULL) {
@@ -1034,7 +1028,7 @@ static bool canParamCoerce(Type*   actualType,
 
     if (is_int_type(actualType) &&
         get_width(actualType) <= get_width(formalType)) {
-      // int can coerce to uint, with the above exception for negative params
+      // int can coerce to uint
       return true;
     }
 
@@ -2063,105 +2057,6 @@ static Immediate* getImmediate(Symbol* actual) {
   return imm;
 }
 
-/*
-typedef enum {
-  NUMERIC_TYPE_NON_NUMERIC,
-  NUMERIC_TYPE_BOOL,
-  NUMERIC_TYPE_ENUM,
-  NUMERIC_TYPE_INT_UINT,
-  NUMERIC_TYPE_REAL,
-  NUMERIC_TYPE_IMAG,
-  NUMERIC_TYPE_COMPLEX
-} numeric_type_t;
-
-static numeric_type_t classifyNumericType(Type* t)
-{
-  if (is_bool_type(t)) return NUMERIC_TYPE_BOOL;
-  if (is_enum_type(t)) return NUMERIC_TYPE_ENUM;
-  if (is_int_type(t)) return NUMERIC_TYPE_INT_UINT;
-  if (is_uint_type(t)) return NUMERIC_TYPE_INT_UINT;
-  if (is_real_type(t)) return NUMERIC_TYPE_REAL;
-  if (is_imag_type(t)) return NUMERIC_TYPE_IMAG;
-  if (is_complex_type(t)) return NUMERIC_TYPE_COMPLEX;
-
-  return NUMERIC_TYPE_NON_NUMERIC;
-}
-
-// Returns 'true' if we should prefer passing actual to f1Type
-// over f2Type.
-// This method implements rules such as that a bool would prefer to
-// coerce to 'int' over 'int(8)'.
-
-static bool prefersCoercionToOtherNumericType(Type* actualType,
-                                              Type* f1Type,
-                                              Type* f2Type,
-                                              bool paramWithDefaultSize) {
-
-  INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
-
-  if (actualType != f1Type && actualType != f2Type) {
-    // Is there any preference among coercions of the built-in type?
-    // E.g., would we rather convert 'false' to :int or to :uint(8) ?
-
-    numeric_type_t aT = classifyNumericType(actualType);
-    numeric_type_t f1T = classifyNumericType(f1Type);
-    numeric_type_t f2T = classifyNumericType(f2Type);
-
-    bool aBoolEnum = (aT == NUMERIC_TYPE_BOOL || aT == NUMERIC_TYPE_ENUM);
-
-    // Prefer e.g. bool(w1) passed to bool(w2) over passing to int (say)
-    // Prefer uint(8) passed to uint(16) over passing to a real
-    if (aT == f1T && aT != f2T)
-      return true;
-    // Prefer bool/enum cast to int over uint
-    if (aBoolEnum && is_int_type(f1Type) && is_uint_type(f2Type))
-      return true;
-    // Prefer bool/enum cast to default-sized int/uint over another
-    // size of int/uint
-    if (aBoolEnum &&
-        (f1Type == dtInt[INT_SIZE_DEFAULT] ||
-         f1Type == dtUInt[INT_SIZE_DEFAULT]) &&
-        f2T == NUMERIC_TYPE_INT_UINT &&
-        !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
-          f2Type == dtUInt[INT_SIZE_DEFAULT]))
-      return true;
-    // Prefer int/uint convert to same-width real/complex vs another size
-    if (aT == NUMERIC_TYPE_INT_UINT) {
-      // ...prefer converting to a real over a complex
-      if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_COMPLEX)
-        return true;
-
-      int actualWidth = get_width(actualType);
-      // int/uint types with width less than the smallest size
-      // real should prefer the smallest size real.
-      // Today that is real(32) since there no real(16), yet
-      if (actualWidth < 32) actualWidth = 32;
-      // ...prefer same-width reals over other ones
-      if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
-          actualWidth == get_width(f1Type) &&
-          actualWidth != get_width(f2Type))
-        return true;
-      // ...prefer same-element-width complexes over other ones
-      if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
-          actualWidth*2 == get_width(f1Type) &&
-          actualWidth*2 != get_width(f2Type))
-        return true;
-    }
-    // Prefer real/imag convert to a same-sized complex over another size of
-    // complex.
-    if (aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) {
-      int actualWidth = get_width(actualType);
-      if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
-          actualWidth*2 == get_width(f1Type) &&
-          actualWidth*2 != get_width(f2Type))
-        return true;
-    }
-  }
-
-  return false;
-}
-*/
-
 // Returns:
 //   -1 if 't' is not a numeric type
 //   0 if 't' is a default numeric type ('int' 'bool' etc)
@@ -2182,16 +2077,11 @@ static int classifyNumericWidth(Type* t)
   if (is_bool_type(t))
     return 0;
 
-  /* should not be needed - no enum to int coercions
-  if (is_enum_type(t))
-    return 0;*/
-
   if (is_int_type(t) ||
       is_uint_type(t) ||
       is_real_type(t) ||
       is_imag_type(t) ||
-      is_bool_type(t) ||
-      is_enum_type(t))
+      is_bool_type(t))
     return get_width(t);
 
   if (is_complex_type(t))
@@ -2262,58 +2152,7 @@ static int prefersNumericCoercion(ResolutionCandidate* candidate1,
     return 0;
   }
 
-  // if the actual is negative, prefer a formal with a signed type
-  if (0) {
-    // Looks like this rule is not needed right now.
-    bool f1NegToUnsigned = isNegativeParamToUnsigned(actualSym,
-                                                     actualScalarType,
-                                                     f1Type);
-    bool f2NegToUnsigned = isNegativeParamToUnsigned(actualSym,
-                                                     actualScalarType,
-                                                     f2Type);
-    if (!f1NegToUnsigned && f2NegToUnsigned) {
-      reason = "negative param to unsigned";
-      return 1;
-    }
-    if (f1NegToUnsigned && !f2NegToUnsigned) {
-      reason = "negative param to unsigned";
-      return 2;
-    }
-  }
-
-  if (0) {
-    // Looks like this rule is not needed right now
-    if (actualScalarType == f1Type && actualScalarType != f2Type) {
-      reason = "same numeric type vs not";
-      return 1;
-    }
-    if (actualScalarType != f1Type && actualScalarType == f2Type) {
-      reason = "same numeric type vs not";
-      return 2;
-    }
-  }
-
-  // check to see if one of f1Type or f2Type is used at the
-  // call site but the other is not
-  /*if (0) {
-    // this rule wasn't helping the cases I intended it to
-    computeConversionInfo(candidate1, DC);
-    int numericTypesInUseSet = candidate1->numericTypesInUseSet;
-    bool f1TypeAtCall = hasBitForType(numericTypesInUseSet, f1Type);
-    bool f2TypeAtCall = hasBitForType(numericTypesInUseSet, f2Type);
-
-    // prefer the function where the numeric type is used in the call
-    if (f1TypeAtCall && !f2TypeAtCall) {
-      reason = "type used at call site";
-      return 1;
-    }
-    if (!f1TypeAtCall && f2TypeAtCall) {
-      reason = "type used at call site";
-      return 2;
-    }
-  }*/
-
-  // otherwise, prefer something with the same numeric kind
+  // prefer something with the same numeric kind
   numeric_type_t acKind = classifyNumericType(actualScalarType);
   numeric_type_t f1Kind = classifyNumericType(f1Type);
   numeric_type_t f2Kind = classifyNumericType(f2Type);
@@ -2324,21 +2163,6 @@ static int prefersNumericCoercion(ResolutionCandidate* candidate1,
   if (acKind != f1Kind && acKind == f2Kind) {
     reason = "same numeric kind";
     return 2;
-  }
-
-  if (0) {
-    // this shouldn't matter b/c int is more specific than uint
-    if (acKind == NUMERIC_TYPE_BOOL) {
-      // Prefer bool/enum pass to int over uint
-      if (is_int_type(f1Type) && is_uint_type(f2Type)) {
-        reason = "bool/enum prefer int over uint";
-        return 1;
-      }
-      if (is_uint_type(f1Type) && is_int_type(f2Type)) {
-        reason = "bool/enum prefer int over uint";
-        return 2;
-      }
-    }
   }
 
   // Otherwise, prefer the function with the same numeric width
@@ -5618,6 +5442,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
 
 #endif
 
+
 static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     const DisambiguationContext& DC,
@@ -5657,10 +5482,10 @@ disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
 
 
 // searchScope is the scope used to evaluate is-more-visible
-
 static int disambiguateByMatch(CallInfo&                  info,
                                BlockStmt*                 searchScope,
                                Vec<ResolutionCandidate*>& candidates,
+
                                ResolutionCandidate*&      bestRef,
                                ResolutionCandidate*&      bestConstRef,
                                ResolutionCandidate*&      bestValue) {
@@ -5823,58 +5648,6 @@ static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
   return false;
 }
 
-/*
-
-// returns a value that can be set in a mask with | or
-// checked with &
-static int numericTypeToIdx(Type* t) {
-  int i = 0;
-
-  // consider all bool types to be the same
-  i++;
-  if (t == dtBools[BOOL_SIZE_SYS]) return i;
-  if (t == dtBools[BOOL_SIZE_8])   return i;
-  if (t == dtBools[BOOL_SIZE_16])  return i;
-  if (t == dtBools[BOOL_SIZE_32])  return i;
-  if (t == dtBools[BOOL_SIZE_64])  return i;
-
-  i++; if (t == dtInt[INT_SIZE_32]) return i;
-  i++; if (t == dtInt[INT_SIZE_8])  return i;
-  i++; if (t == dtInt[INT_SIZE_16]) return i;
-  i++; if (t == dtInt[INT_SIZE_64]) return i;
-
-  i++; if (t == dtUInt[INT_SIZE_32]) return i;
-  i++; if (t == dtUInt[INT_SIZE_8])  return i;
-  i++; if (t == dtUInt[INT_SIZE_16]) return i;
-  i++; if (t == dtUInt[INT_SIZE_64]) return i;
-
-  i++; if (t == dtReal[FLOAT_SIZE_64]) return i;
-  i++; if (t == dtReal[FLOAT_SIZE_32]) return i;
-  i++; if (t == dtImag[FLOAT_SIZE_64]) return i;
-  i++; if (t == dtImag[FLOAT_SIZE_32]) return i;
-
-  i++; if (t == dtComplex[COMPLEX_SIZE_128]) return i;
-  i++; if (t == dtComplex[COMPLEX_SIZE_64])  return i;
-
-  return 0;
-}
-
-// returns a value that can be set in a mask with | or
-// checked with &
-static int numericTypeToBit(Type* t) {
-  int idx = numericTypeToIdx(t);
-  if (idx > 0) return 1 << idx;
-  else return 0;
-}
-
-static int withBitForType(int numericBitSet, Type* t) {
-  return numericBitSet | numericTypeToBit(t);
-}
-static bool hasBitForType(int numericBitSet, Type* t) {
-  return ((numericBitSet & numericTypeToBit(t)) > 0);
-}
-*/
-
 static void computeConversionInfo(ResolutionCandidate* candidate,
                                   const DisambiguationContext& DC) {
 
@@ -5882,9 +5655,6 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
   if (candidate->nImplicitConversionsComputed) {
     return;
   }
-
-  // this represents a set of which numeric types are used in the call site
-  //int numericTypesInUseSet = 0;
 
   bool anyNegParamToUnsigned = false;
   int numParamNarrowing = 0;
@@ -5924,8 +5694,6 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
     if (promotes) {
       actualVt = actualVt->scalarPromotionType->getValType();
     }
-
-    //numericTypesInUseSet = withBitForType(numericTypesInUseSet, actualVt);
 
     if (isNegativeParamToUnsigned(actual, actualVt, formalVt)) {
       anyNegParamToUnsigned = true;
@@ -5967,12 +5735,8 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
   // save the computed details in the ResolutionCandidate
   candidate->nImplicitConversionsComputed = true;
   candidate->anyNegParamToUnsigned = anyNegParamToUnsigned;
-  //candidate->nImpConvToTypeNotMentioned = nImpConvNotMentioned;
-
   candidate->nImplicitConversions = nImplicitConversions;
   candidate->nParamNarrowingImplicitConversions = numParamNarrowing;
-
-  //candidate->numericTypesInUseSet = numericTypesInUseSet;
 }
 
 // If any candidate does not require promotion,
@@ -6766,7 +6530,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
 // Calls canDispatch and does the initial EXPLAIN calls, which were otherwise
 // duplicated
-// Sets DS.fn1Promotes / DS.fn2Promotes
 static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
                              Type* fType, Type* actualType, bool actualParam,
                              bool* formalPromotes, bool* formalNarrows,
@@ -6775,14 +6538,6 @@ static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
                              int fnNum) {
   canDispatch(actualType, actual, fType, formal, fn, formalPromotes,
               formalNarrows);
-
-  if (fnNum == 1) {
-    DS.fn1Promotes |= *formalPromotes;
-  } else if (fnNum == 2) {
-    DS.fn2Promotes |= *formalPromotes;
-  } else {
-    INT_FATAL("fnNum should be either 1 or 2");
-  }
 
   EXPLAIN("Formal %d's type: %s", fnNum, toString(fType));
   if (*formalPromotes)
@@ -6870,14 +6625,13 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
   bool f2Param = formal2->hasFlag(FLAG_INSTANTIATED_PARAM);
 
   bool actualParam = (getImmediate(actual) != NULL);
-  //bool paramWithDefaultSize = false;
 
   EXPLAIN("Actual's type: %s", toString(actualType));
   if (actualParam)
     EXPLAIN(" (param)");
   EXPLAIN("\n");
 
-  // Set fn1Promotes / fn2Promotes and do some EXPLAIN calls
+  // do some EXPLAIN calls
   testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
                    &formal1Promotes, &formal1Narrows, DC, DS, 1);
 
@@ -6892,13 +6646,6 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
 
   if (isSyncType(actualScalarType) || isSingleType(actualScalarType)) {
     actualScalarType = actualScalarType->getField("valType")->getValType();
-  }
-
-  if (actualParam && formal1Narrows) {
-    DS.fn1NumParamNarrowing++;
-  }
-  if (actualParam && formal2Narrows) {
-    DS.fn2NumParamNarrowing++;
   }
 
   // consider promotion
@@ -13288,7 +13035,6 @@ DisambiguationContext::DisambiguationContext(CallInfo& info,
   explain = false;
   useOldVisibility = false;
   isMethodCall = false;
-  id = info.call->id;
 
   if (info.call->numActuals() >= 2) {
     if (SymExpr* se = toSymExpr(info.call->get(1))) {
@@ -13333,10 +13079,4 @@ DisambiguationState::DisambiguationState() {
 
   fn1ParamArgsPreferred     = false;
   fn2ParamArgsPreferred     = false;
-
-  fn1Promotes = false;
-  fn2Promotes = false;
-
-  fn1NumParamNarrowing = 0;
-  fn2NumParamNarrowing = 0;
 }
