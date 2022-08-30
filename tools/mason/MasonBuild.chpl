@@ -273,7 +273,7 @@ proc genSourceList(lockFile: borrowed Toml) {
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
-proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) {
+proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
 
   //
   // TODO: Temporarily use `toArray` here because `list` does not yet

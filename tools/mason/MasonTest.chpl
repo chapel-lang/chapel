@@ -178,7 +178,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
 
     updateLock(skipUpdate);
     compopts.append("".join("--comm=",comm));
-    runTests(show, run, parallel, compopts);
+    runTests(show, run, parallel, skipUpdate, compopts);
   }
   catch e: MasonError {
     try! {
@@ -207,7 +207,8 @@ proc masonTest(args: [] string, checkProj=true) throws {
   }
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts: list(string)) throws {
+private proc runTests(show: bool, run: bool, parallel: bool,
+                      skipUpdate: bool, ref cmdLineCompopts: list(string)) throws {
 
   try! {
 
@@ -221,7 +222,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     // Get project source code and dependencies
     const (sourceList, gitList) = genSourceList(lockFile);
 
-    getSrcCode(sourceList, show);
+    getSrcCode(sourceList, skipUpdate, show);
     getGitCode(gitList, show);
 
     const project = lockFile["root"]!["name"]!.s;
