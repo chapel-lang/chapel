@@ -194,19 +194,6 @@ proc locale.chdir(name: string) throws {
   if err then try ioerror(err, "in chdir", name);
 }
 
-pragma "no doc"
-proc locale.chdir(out error: errorCode, name: string) {
-  compilerWarning("This version of locale.chdir() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    chdir(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 // CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
 
 /* Set the permissions of the file or directory specified by the argument
@@ -232,19 +219,6 @@ proc chmod(name: string, mode: int) throws {
   if err then try ioerror(err, "in chmod", name);
 }
 
-pragma "no doc"
-proc chmod(out error: errorCode, name: string, mode: int) {
-  compilerWarning("This version of chmod() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    chmod(name, mode);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /* Change one or both of the owner and group id of the named file or directory
    to the specified values.  If `uid` or `gid` are -1, the value in question
    will remain unchanged.
@@ -265,19 +239,6 @@ proc chown(name: string, uid: int, gid: int) throws {
 
   var err = chpl_fs_chown(unescape(name).c_str(), uid:c_int, gid:c_int);
   if err then try ioerror(err, "in chown", name);
-}
-
-pragma "no doc"
-proc chown(out error: errorCode, name: string, uid: int, gid: int) {
-  compilerWarning("This version of chown() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    chown(name, uid, gid);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 // FUTURE WORK:
@@ -341,19 +302,6 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
 
     // Change uid and gid to that of the src
     try chown(destFile, uid, gid);
-  }
-}
-
-pragma "no doc"
-proc copy(out error: errorCode, src: string, dest: string, metadata: bool = false) {
-  compilerWarning("This version of copy() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    copy(src, dest, metadata);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
   }
 }
 
@@ -455,19 +403,6 @@ proc copyFile(src: string, dest: string) throws {
   try srcChnl.close();
   try destFile.close();
   try srcFile.close();
-}
-
-pragma "no doc"
-proc copyFile(out error: errorCode, src: string, dest: string) {
-  compilerWarning("This version of copyFile() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    copyFile(src, dest);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /* Copies the permissions of the file indicated by `src` to the file indicated
@@ -579,19 +514,6 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
   }
 }
 
-pragma "no doc"
-proc copyTree(out error: errorCode, src: string, dest: string, copySymbolically: bool=false) {
-  compilerWarning("This version of copyTree() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    copyTree(src, dest, copySymbolically);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /* Obtains and returns the current working directory for this locale.
 
    .. warning::
@@ -624,20 +546,6 @@ proc locale.cwd(): string throws {
   return ret;
 }
 
-pragma "no doc"
-proc locale.cwd(out error: errorCode): string {
-  compilerWarning("This version of locale.cwd() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return cwd();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "";
-}
-
 /* Determines if the file or directory indicated by `name` exists and returns
    the result of this check.
 
@@ -666,21 +574,6 @@ proc exists(name: string): bool throws {
   if err then try ioerror(err, "in exists");
   return ret != 0;
 }
-
-pragma "no doc"
-proc exists(out error: errorCode, name: string): bool {
-  compilerWarning("This version of exists() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return exists(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 
 /* Finds files from a given start directory and yields their names,
    similar to simple invocations of the command-line `find` utility.
@@ -747,20 +640,6 @@ proc getGID(name: string): int throws {
   return result;
 }
 
-pragma "no doc"
-proc getGID(out error: errorCode, name: string): int {
-  compilerWarning("This version of getGID() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return getGID(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return 0;
-}
-
 /* Obtains and returns the current permissions of the file or directory
    specified by `name`.
 
@@ -783,20 +662,6 @@ proc getMode(name: string): int throws {
   return ret;
 }
 
-pragma "no doc"
-proc getMode(out error: errorCode, name: string): int {
-  compilerWarning("This version of getMode() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return getMode(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return 0;
-}
-
 /* Obtains and returns the size (in bytes) of the file specified by `name`.
 
    :arg name: The file whose size is desired
@@ -814,20 +679,6 @@ proc getFileSize(name: string): int throws {
   var err = chpl_fs_get_size(result, unescape(name).c_str());
   if err then try ioerror(err, "in getFileSize", name);
   return result;
-}
-
-pragma "no doc"
-proc getFileSize(out error: errorCode, name: string): int {
-  compilerWarning("This version of getFileSize() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return getFileSize(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return 0;
 }
 
 /* Obtains and returns the user id associated with the file or directory
@@ -848,20 +699,6 @@ proc getUID(name: string): int throws {
   var err = chpl_fs_get_uid(result, unescape(name).c_str());
   if err then try ioerror(err, "in getUID");
   return result;
-}
-
-pragma "no doc"
-proc getUID(out error: errorCode, name: string): int {
-  compilerWarning("This version of getUID() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return getUID(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
 }
 
 //
@@ -1027,20 +864,6 @@ proc isDir(name:string):bool throws {
   return ret != 0;
 }
 
-pragma "no doc"
-proc isDir(out error:errorCode, name:string):bool {
-  compilerWarning("This version of isDir() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return isDir(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /* Determine if the provided path `name` corresponds to a file and return
    the result
 
@@ -1064,20 +887,6 @@ proc isFile(name:string):bool throws {
   var err = chpl_fs_is_file(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isFile", name);
   return ret != 0;
-}
-
-pragma "no doc"
-proc isFile(out error:errorCode, name:string):bool {
-  compilerWarning("This version of isFile() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return isFile(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
 }
 
 /* Determine if the provided path `name` corresponds to a link and return the
@@ -1110,20 +919,6 @@ proc isLink(name: string): bool throws {
   return ret != 0;
 }
 
-pragma "no doc"
-proc isLink(out error:errorCode, name: string): bool {
-  compilerWarning("This version of isLink() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return isLink(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /* Determine if the provided path `name` corresponds to a mount point and
    return the result.
 
@@ -1152,20 +947,6 @@ proc isMount(name: string): bool throws {
   var err = chpl_fs_is_mount(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isMount", name);
   return ret != 0;
-}
-
-pragma "no doc"
-proc isMount(out error:errorCode, name: string): bool {
-  compilerWarning("This version of isMount() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return isMount(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
 }
 
 /* Lists the contents of a directory.  May be invoked in serial
@@ -1286,20 +1067,6 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
   if err then try ioerror(err, "in mkdir", name);
 }
 
-pragma "no doc"
-proc mkdir(out error: errorCode, name: string, mode: int = 0o777,
-           parents: bool=false) {
-  compilerWarning("This version of isDir() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    mkdir(name, mode, parents);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /* Recursively moves the directory indicated by `src` and its contents to the
    destination denoted by `dest`.  If `dest` is a directory, `src` is moved
    inside of it.
@@ -1353,21 +1120,6 @@ proc moveDir(src: string, dest: string) throws {
   }
 }
 
-pragma "no doc"
-proc moveDir(out error: errorCode, src: string, dest: string) {
-  compilerWarning("This version of moveDir() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    moveDir(src, dest);
-  } catch e: SystemError {
-    error = e.err;
-  } catch e: IllegalArgumentError {
-    error = EEXIST;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /* Renames the file specified by `oldname` to `newname`.  The file is not
    opened during this operation.
 
@@ -1384,20 +1136,6 @@ proc rename(oldname: string, newname: string) throws {
   var err = chpl_fs_rename(unescape(oldname).c_str(),
                            unescape(newname).c_str());
   if err then try ioerror(err, "in rename", oldname);
-}
-
-pragma "no doc"
-proc rename(out error: errorCode, oldname, newname: string) {
-  compilerWarning("This version of rename() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    rename(oldname, newname);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
 }
 
 /* Removes the file or directory specified by `name`
@@ -1469,19 +1207,6 @@ private proc rmTreeHelper(root: string) throws {
   try remove(root);
 }
 
-pragma "no doc"
-proc rmTree(out error: errorCode, root: string) {
-  compilerWarning("This version of rmTree() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    rmTree(root);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /* Determines if both pathnames refer to the same file or directory (utilizing
    operating system operations rather than string ones, due to the possibility
    of symbolic links, :data:`~Path.curDir`, or :data:`~Path.parentDir` appearing
@@ -1507,20 +1232,6 @@ proc sameFile(file1: string, file2: string): bool throws {
                                          unescape(file2).c_str());
   if err then try ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
   return ret != 0;
-}
-
-pragma "no doc"
-proc sameFile(out error: errorCode, file1: string, file2: string): bool {
-  compilerWarning("This version of sameFile() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return sameFile(file1, file2);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
 }
 
 /* Determines if both :type:`~IO.file` records refer to the same file
@@ -1557,20 +1268,6 @@ proc sameFile(file1: file, file2: file): bool throws {
   return ret != 0;
 }
 
-pragma "no doc"
-proc sameFile(out error: errorCode, file1: file, file2: file): bool {
-  compilerWarning("This version of someFile() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return sameFile(file1, file2);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return false;
-}
-
 /* Create a symbolic link pointing to `oldName` with the path `newName`.
 
    :arg oldName: The source file to be linked
@@ -1586,20 +1283,6 @@ proc symlink(oldName: string, newName: string) throws {
   var err = chpl_fs_symlink(unescape(oldName).c_str(),
                             unescape(newName).c_str());
   if err then try ioerror(err, "in symlink " + oldName, newName);
-}
-
-pragma "no doc"
-proc symlink(out error: errorCode, oldName: string, newName: string) {
-  var err:errorCode = ENOERR;
-  compilerWarning("This version of symlink() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    symlink(err, oldName, newName);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /* Sets the file creation mask of the current locale to `mask`, and returns

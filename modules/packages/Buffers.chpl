@@ -178,20 +178,6 @@ module Buffers {
   }
 
   pragma "no doc"
-  private proc create_iobuf(out error:errorCode):byteBuffer {
-    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
-    var ret: bytes;
-    try {
-      ret = create_iobuf();
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-    return ret;
-  }
-
-  pragma "no doc"
   operator byteBuffer.=(ref ret:byteBuffer, x:byteBuffer) {
     // retain -- release
     if( x.home == here ) {
@@ -402,20 +388,6 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.flatten(range:buffer_range, out error:errorCode) {
-    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
-    var ret: bytes;
-    try {
-      ret = this.flatten(range);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-    return ret;
-  }
-
-  pragma "no doc"
   operator buffer.=(ref ret:buffer, x:buffer) throws {
     ret.home = here;
     // retain -- release
@@ -502,18 +474,6 @@ module Buffers {
     if err then try ioerror(err, "in buffer.append");
   }
 
-  pragma "no doc"
-  proc buffer.append(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:errorCode) {
-    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.append(b, skip_bytes, len_bytes);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-  }
-
   /* Append a :record:`buffer` object to a :record:`buffer`.
      This function might store a pointers to the bytes objects contained in
      `buf` instead of copying them. If that happens, the current implementation
@@ -530,18 +490,6 @@ module Buffers {
       err = qbuffer_append_buffer(this._buf_internal, buf._buf_internal, part.start._bufit_internal, part.end._bufit_internal);
     }
     if err then try ioerror(err, "in buffer.append");
-  }
-
-  pragma "no doc"
-  proc buffer.append(buf:buffer, part:buffer_range = buf.all(), out error:errorCode) {
-    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.append(buf, part);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
   }
 
   /* Prepend a :record:`byteBuffer` object to a :record:`buffer`.
@@ -561,18 +509,6 @@ module Buffers {
       err = qbuffer_prepend(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
     if err then try ioerror(err, "in buffer.prepend");
-  }
-
-  pragma "no doc"
-  proc buffer.prepend(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:errorCode) {
-    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.prepend(b, skip_bytes, len_bytes);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
   }
 
   /* :return: a :record:`buffer_iterator` to the start of a buffer */
@@ -707,20 +643,6 @@ module Buffers {
     return ret;
   }
 
-  pragma "no doc"
-  proc buffer.copyout(it:buffer_iterator, ref value, out error:errorCode):buffer_iterator {
-    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
-    var ret: buffer_iterator;
-    try {
-      ret = this.copyout(it, value);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-    return ret;
-  }
-
   /* Write a basic type (integral or floating point value) or `string`
      to a buffer.
      For basic types, this method writes the value by copying to memory -
@@ -782,20 +704,6 @@ module Buffers {
                              tmp.c_str():c_void_ptr, len);
         ret = end;
       }
-    }
-    return ret;
-  }
-
-  pragma "no doc"
-  proc buffer.copyin(it:buffer_iterator, value, out error:errorCode):buffer_iterator {
-    compilerWarning("'out error: errorCode' pattern has been deprecated, use 'throws' function instead");
-    var ret:buffer_iterator;
-    try {
-      ret = this.copyin(it, value);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
     }
     return ret;
   }
