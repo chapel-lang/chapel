@@ -51,11 +51,8 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
   }
 
   if (strlen(str+startPos) > 16) {
-
-      //astlocT astloc(line, filename);
     std::cerr << "error: Integer literal overflow: '" + std::string(str) +
                   "' is too big for type 'uint64'" << std::endl;
-
     clean_exit(1);
   }
 
