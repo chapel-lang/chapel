@@ -1,0 +1,2 @@
+-sinferArrayLiteralTypeFromFirstElt=true    # hetLiteralsNotUnifiable.good
+-sinferArrayLiteralTypeFromFirstElt=false   # hetLiteralsNotUnifiable-worse.good

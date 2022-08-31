@@ -1,0 +1,1 @@
+hetLiteralsNotUnifiable.chpl:1: error: Array literal element 1 expected to be of type real(64) but is of type bool
