@@ -876,7 +876,7 @@ def get_host_link_args():
         # that by using static linking.
         llvm_version = get_llvm_version()
         host_platform = chpl_platform.get('host')
-        if host_platform == 'darwin' and int(llvm_version) <= 11:
+        if host_platform == 'darwin' and llvm_version == '11':
             llvm_dynamic = False
 
         # Also, change to static, if llvm-config indicates static linking
