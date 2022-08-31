@@ -34,7 +34,7 @@ namespace uast {
   This class represents an anonymous formal. Anonymous formals can
   appear in function types. Their presence indicates that the
   name of a particular formal does not matter for the purposes of
-  call resolution.
+  resolution.
 
   \rst
   .. code-block:: chapel
@@ -68,7 +68,7 @@ class AnonFormal final : public AstNode {
 
  private:
   Intent intent_;
-  int typeExpressionChildNum_ = NO_CHILD;
+  int8_t typeExpressionChildNum_ = NO_CHILD;
 
   AnonFormal(AstList children, Intent intent,
              int8_t typeExpressionChildNum)

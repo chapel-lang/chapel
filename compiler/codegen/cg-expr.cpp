@@ -3743,7 +3743,7 @@ GenRet CallExpr::codegen() {
       GenRet   arg        = actual;
 
       if (se && isFnSymbol(se->symbol())) {
-        if (this->theFnSymbol()->hasFlag(FLAG_EXTERN) ||
+        if(this->theFnSymbol()->hasFlag(FLAG_EXTERN) ||
            formal->type == dtCFnPtr) {
           arg = codegenCast("c_fn_ptr", arg);
         }

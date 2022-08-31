@@ -345,29 +345,29 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
    * finalizeCopy method will replace their corresponding nodes from the body
    * appropriately.
    */
-  auto rvv = this->getReturnSymbol();
+  auto sym = this->getReturnSymbol();
 
-  if (rvv == nullptr) {
+  if (sym == nullptr) {
     // Case 0: Function has no body, and thus no RVV.
     newFn->retSymbol = nullptr;
 
-  } else if (rvv == gVoid) {
+  } else if (sym == gVoid) {
     // Case 1: Function returns void.
     newFn->retSymbol = gVoid;
 
-  } else if (this->getReturnSymbol() == this->_this) {
+  } else if (sym == this->_this) {
     // Case 2: Function returns _this.
     newFn->retSymbol = newFn->_this;
 
-  } else if (Symbol* replacementRet = map->get(this->getReturnSymbol())) {
+  } else if (Symbol* replacementRet = map->get(sym)) {
     // Case 3: Function returns a formal argument.
     newFn->retSymbol = replacementRet;
 
   } else {
     // Case 4: Function returns a symbol defined in the body.
-    DefExpr* defPoint = this->getReturnSymbol()->defPoint;
+    DefExpr* defPoint = sym->defPoint;
 
-    newFn->retSymbol = COPY_INT(this->getReturnSymbol());
+    newFn->retSymbol = COPY_INT(sym);
 
     newFn->retSymbol->defPoint = new DefExpr(newFn->retSymbol,
                                              COPY_INT(defPoint->init),
