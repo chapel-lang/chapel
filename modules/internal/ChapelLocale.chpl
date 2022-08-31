@@ -283,14 +283,11 @@ module ChapelLocale {
 
     This method is intended to guide task creation during a parallel
     section. If the number of running tasks is greater than or equal
-    to the locale's maximum task parallelism (queried via maxTaskPar),
+    to the locale's maximum task parallelism (queried via :proc:`locale.maxTaskPar`),
     then creating more tasks is unlikely to decrease walltime.
 
     :returns: the number of tasks that have begun executing, but have not yet finished
     :rtype: `int`
-
-    Note that this number can exceed the number of non-idle threads
-    because there are cases in which a thread is working on more than one task.
   */
   pragma "fn synchronization free"
   proc locale.runningTasks(): int {
