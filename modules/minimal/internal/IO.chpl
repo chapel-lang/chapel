@@ -20,7 +20,7 @@
 
 module IO {
 
-  extern type errorCode;
+  extern "syserr" type errorCode;
   extern type qio_channel_ptr_t;
   private extern proc qio_int_to_err(a:int(32)):errorCode;
   extern type c_void_ptr = chpl__c_void_ptr;
