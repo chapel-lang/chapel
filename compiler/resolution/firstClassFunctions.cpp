@@ -225,19 +225,11 @@ static bool checkAndResolveFunctionSignature(FnSymbol* fn, Expr* use) {
     }
   }
 
-  std::vector<CallExpr*> calls;
-  bool containsYield = false;
-
-  // TODO: This check doesn't make any sense?
-  collectCallExprs(fn, calls);
-  for_vector(CallExpr, cl, calls) {
-    if (cl->isPrimitive(PRIM_YIELD)) {
-      USR_FATAL_CONT(cl, "Iterators not allowed in first class functions");
-      containsYield = true;
-    }
+  // TODO: How to make this a call to 'USR_FATAL_CONT'?
+  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    USR_FATAL(use, "passing iterators by name is not yet supported");
+    return false;
   }
-
-  if (containsYield) return false;
 
   return true;
 }
@@ -478,20 +470,23 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   v->thisMethod = attachSuperThis(v->type, formals, retTag,
                                   retType,
                                   throws);
-  if (isAnyFormalNamed) {
-    v->thisMethod->addFlag(FLAG_OVERRIDE);
-  }
+  if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
 
+  // This ordering matters to prevent a circular dependency in 'toString'.
   v->sharedType = buildSharedWrapperType(v->type);
   typeToInfo[v->sharedType] = v;
 
+  // Ordering matters relative to above.
   v->userTypeString = buildUserFacingTypeString(formals, retTag,
                                                 retType,
                                                 throws);
 
-  std::ignore = attachSuperRetTypeGetter(v->type, retType);
-  std::ignore = attachSuperArgTypeGetter(v->type, formals);
-  std::ignore = attachSuperPayloadPtrGetter(v->type);
+  // Only generate method skeletons for the root class.
+  if (!isAnyFormalNamed) {
+    std::ignore = attachSuperRetTypeGetter(v->type, retType);
+    std::ignore = attachSuperArgTypeGetter(v->type, formals);
+    std::ignore = attachSuperPayloadPtrGetter(v->type);
+  }
 
   return v;
 }
@@ -657,34 +652,36 @@ static FnSymbol*
 attachSuperArgTypeGetter(AggregateType* super,
                             const std::vector<FcfFormalInfo>& formals) {
   FnSymbol* ret = new FnSymbol("argTypes");
+
   ret->addFlag(FLAG_NO_IMPLICIT_COPY);
   ret->addFlag(FLAG_INLINE);
   ret->addFlag(FLAG_COMPILER_GENERATED);
   ret->retTag = RET_TYPE;
-  ret->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
-                                        "_mt",
-                                        dtMethodToken));
+  ret->setMethod(true);
+  ret->addFlag(FLAG_METHOD_PRIMARY);
+  ret->addFlag(FLAG_NO_PARENS);
+  ret->cname = astr("chpl_get_",
+                    super->symbol->cname, "_",
+                    ret->cname);
+
+  auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+  ret->insertFormalAtTail(mt);
 
   CallExpr* expr = new CallExpr(PRIM_ACTUALS_LIST);
   for (auto& info : formals) expr->insertAtTail(info.type->symbol);
 
   auto receiver = new ArgSymbol(INTENT_BLANK, "this", super);
   receiver->addFlag(FLAG_ARG_THIS);
-
+  ret->_this = receiver;
   ret->insertFormalAtTail(receiver);
+
   ret->insertAtTail(new CallExpr(PRIM_RETURN,
                                  new CallExpr("_build_tuple", expr)));
+
   DefExpr* def = new DefExpr(ret);
   super->symbol->defPoint->insertBefore(def);
   normalize(ret);
   super->methods.add(ret);
-  ret->setMethod(true);
-  ret->addFlag(FLAG_METHOD_PRIMARY);
-  ret->name = astr("chpl_get_",
-                   super->symbol->name, "_",
-                   ret->name);
-  ret->addFlag(FLAG_NO_PARENS);
-  ret->_this = receiver;
 
   return ret;
 }

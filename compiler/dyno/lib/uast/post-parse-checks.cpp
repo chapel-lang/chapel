@@ -758,6 +758,10 @@ void Visitor::checkReservedSymbolName(const NamedDecl* node) {
     if (mod->kind() == Module::IMPLICIT)
       return;
 
+  // TODO: Specialize warnings for reduce intents, see...
+  // test/parallel/forall/checks/with-this.chpl
+  if (node->isTaskVar()) return;
+
   if (isNameReservedWord(node)) {
     error(node, "attempt to redefine reserved word '%s'", name.c_str());
   } else if (isNameReservedType(name)) {

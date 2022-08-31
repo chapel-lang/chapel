@@ -154,6 +154,11 @@ static Expr* postFoldCallToExternFnWithProcFormals(CallExpr* call) {
   for_actuals(actual, call) {
     if (auto se = toSymExpr(actual)) {
       auto sym = se->symbol();
+
+      // Only transform actuals that are non-param values.
+      if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+          sym->hasFlag(FLAG_PARAM)) continue;
+
       if (sym->typeInfo()->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
         auto tmp = newTemp("underlying_ptr", dtCFnPtr);
         auto accessPtr = new CallExpr("chpl_fcfPtr", gMethodToken,
