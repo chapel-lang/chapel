@@ -1,0 +1,1 @@
+const npu = here.numPUs();

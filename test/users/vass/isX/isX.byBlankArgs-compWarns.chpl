@@ -171,9 +171,6 @@ proc test(arg) {
   report(isIntegral(arg), "isIntegral");
   report(isIntegralValue(arg), "isIntegralValue");
   report(isIntegralType(arg.type), "isIntegralType");
-  report(isFloat(arg), "isFloat");
-  report(isFloatValue(arg), "isFloatValue");
-  report(isFloatType(arg.type), "isFloatType");
   report(isNumeric(arg), "isNumeric");
   report(isNumericValue(arg), "isNumericValue");
   report(isNumericType(arg.type), "isNumericType");

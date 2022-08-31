@@ -1,6 +1,6 @@
-import SysBasic.syserr;
+import OS.errorCode;
 
-var s: syserr;
+var s: errorCode;
 
 if (s) then
   writeln("s is apparently true");

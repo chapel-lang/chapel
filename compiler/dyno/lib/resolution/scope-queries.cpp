@@ -27,6 +27,8 @@
 
 #include "scope-help.h"
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 #include <cstdio>
 #include <set>
 #include <string>
@@ -300,7 +302,7 @@ static bool doLookupInScope(Context* context,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
-                            std::unordered_set<const Scope*>& checkedScopes,
+                            ScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result);
 
 static const ResolvedVisibilityScope*
@@ -325,7 +327,7 @@ static bool doLookupInImports(Context* context,
                               const ResolvedVisibilityScope* resolving,
                               UniqueString name,
                               bool onlyInnermost,
-                              std::unordered_set<const Scope*>& checkedScopes,
+                              ScopeSet& checkedScopes,
                               std::vector<BorrowedIdsWithName>& result) {
   // Get the resolved visibility statements, if available
   const ResolvedVisibilityScope* r = nullptr;
@@ -404,7 +406,7 @@ static bool doLookupInScope(Context* context,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
-                            std::unordered_set<const Scope*>& checkedScopes,
+                            ScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result) {
 
   bool checkDecls = (config & LOOKUP_DECLS) != 0;
@@ -500,7 +502,7 @@ static bool lookupInScopeViz(Context* context,
                              VisibilityStmtKind useOrImport,
                              bool isFirstPart,
                              std::vector<BorrowedIdsWithName>& result) {
-  std::unordered_set<const Scope*> checkedScopes;
+  ScopeSet checkedScopes;
 
   LookupConfig config = LOOKUP_INNERMOST;
 
@@ -545,7 +547,7 @@ std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
                                                    const Scope* receiverScope,
                                                    UniqueString name,
                                                    LookupConfig config) {
-  std::unordered_set<const Scope*> checkedScopes;
+  ScopeSet checkedScopes;
 
   return lookupNameInScopeWithSet(context, scope, receiverScope, name,
                                   config, checkedScopes);
@@ -557,7 +559,7 @@ lookupNameInScopeWithSet(Context* context,
                          const Scope* receiverScope,
                          UniqueString name,
                          LookupConfig config,
-                         std::unordered_set<const Scope*>& visited) {
+                         ScopeSet& visited) {
   std::vector<BorrowedIdsWithName> vec;
 
   if (receiverScope) {
@@ -579,7 +581,7 @@ static
 bool doIsWholeScopeVisibleFromScope(Context* context,
                                    const Scope* checkScope,
                                    const Scope* fromScope,
-                                   std::unordered_set<const Scope*>& checked) {
+                                   ScopeSet& checked) {
 
   auto pair = checked.insert(fromScope);
   if (pair.second == false) {
@@ -624,7 +626,7 @@ bool isWholeScopeVisibleFromScope(Context* context,
                                   const Scope* checkScope,
                                   const Scope* fromScope) {
 
-  std::unordered_set<const Scope*> checked;
+  ScopeSet checked;
 
   return doIsWholeScopeVisibleFromScope(context,
                                         checkScope,
@@ -638,7 +640,7 @@ static void errorIfNameNotInScope(Context* context,
                                   UniqueString name,
                                   ID idForErr,
                                   VisibilityStmtKind useOrImport) {
-  std::unordered_set<const Scope*> checkedScopes;
+  ScopeSet checkedScopes;
   std::vector<BorrowedIdsWithName> result;
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |

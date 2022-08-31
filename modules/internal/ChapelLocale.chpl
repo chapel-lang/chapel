@@ -265,6 +265,7 @@ module ChapelLocale {
     running programs within Cray batch jobs that have been set up
     with limited processor resources.
   */
+  @unstable "'locale.numPUs' is unstable"
   inline proc locale.numPUs(logical: bool = false, accessible: bool = true): int {
     return this._value.numPUs(logical, accessible);
   }
@@ -281,24 +282,13 @@ module ChapelLocale {
   /*
     Get the number of tasks running on this locale.
 
+    This method is intended to guide task creation during a parallel
+    section. If the number of running tasks is greater than or equal
+    to the locale's maximum task parallelism (queried via :proc:`locale.maxTaskPar`),
+    then creating more tasks is unlikely to decrease walltime.
+
     :returns: the number of tasks that have begun executing, but have not yet finished
     :rtype: `int`
-
-    Note that this number can exceed the number of non-idle threads
-    because there are cases in which a thread is working on more than
-    one task. As one example, in fifo tasking, when a parent task
-    creates child tasks to execute the iterations of a coforall
-    construct, the thread the parent is running on may temporarily
-    suspend executing the parent task in order to help with the child
-    tasks, until the construct completes. When this occurs the count
-    of running tasks can include both the parent task and a child,
-    although strictly speaking only the child is executing
-    instructions.
-
-    As another example, any tasking implementation in which threads
-    can switch from running one task to running another, such as
-    qthreads, can have more tasks running than threads on which to run
-    them.
   */
   pragma "fn synchronization free"
   proc locale.runningTasks(): int {

@@ -72,7 +72,7 @@ public use CTypes;
 use Time;
 use OS, OS.POSIX;
 use IO;
-import SysBasic.{syserr, ENOERR, fd_t};
+import SysBasic.{ENOERR, fd_t};
 
 /*
   Available values for different Internet
@@ -251,7 +251,7 @@ const indefiniteTimeout : struct_timeval;
 indefiniteTimeout = new struct_timeval(tv_sec=(-1):c_long:time_t, tv_usec=0:c_long:suseconds_t);
 
 pragma "no doc"
-private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):syserr;
+private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):errorCode;
 
 /* The type returned from :proc:`connect` */
 type tcpConn = file;
@@ -263,7 +263,7 @@ type tcpConn = file;
 */
 proc tcpConn.socketFd throws {
   var tempfd:c_int;
-  var err:syserr = ENOERR;
+  var err:errorCode = ENOERR;
   on this.home {
     var localtempfd = tempfd;
     err = qio_get_fd(this._file_internal, localtempfd);

@@ -40,13 +40,13 @@ proc isTupleOfString(type t) param {
   return false;
 }
 
-proc isFloatOrTupleOfFloat(type t) param {
+proc isRealOrTupleOfReal(type t) param {
   if isHomogeneousTupleType(t) {
     var tmp:t;
-    return isFloatOrTupleOfFloat(tmp(0).type);
+    return isRealOrTupleOfReal(tmp(0).type);
   }
   
-  return isFloatType(t);
+  return isRealType(t);
 }
 
 proc checkSorts(arr, comparator) {
@@ -83,7 +83,7 @@ proc checkSorts(arr) {
   checkSorts(arr, new ReverseComparator());
   checkSorts(arr, new UselessKeyComparator());
   checkSorts(arr, new ReverseComparator(new UselessKeyComparator()));
-  if !isFloatOrTupleOfFloat(arr[1].type) && !isTupleOfString(arr[1].type) {
+  if !isRealOrTupleOfReal(arr[1].type) && !isTupleOfString(arr[1].type) {
     checkSorts(arr, new UselessKeyPartComparator());
     checkSorts(arr, new ReverseComparator(new UselessKeyPartComparator()));
   }

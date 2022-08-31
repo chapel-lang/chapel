@@ -37,6 +37,8 @@
 #include <utility>
 #include <vector>
 
+#include "llvm/ADT/DenseMap.h"
+
 namespace chpl {
 
 namespace uast {
@@ -86,7 +88,7 @@ class Context {
   // Maps to an 'owned' heap-allocated thing to manage having subclasses
   // without slicing.
   // It assumes that the query name is already unique.
-  std::unordered_map<const void*, owned<querydetail::QueryMapBase>> queryDB;
+  llvm::DenseMap<const void*, owned<querydetail::QueryMapBase>> queryDB;
 
   // Since IDs include module names but not file paths, use this
   // map to go from module name to file path.

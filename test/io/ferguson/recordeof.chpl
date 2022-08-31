@@ -21,7 +21,7 @@ proc MyRecord.writeThis(f) throws {
 
 proc MyRecord.readWriteHelper(f) throws {
   if f.writing then f.write(i); else i = f.read(int);
-  if f.writing then f._writeLiteral("\n"); else f._readLiteral("\n");
+  if f.writing then f.writeNewline(); else f.readNewline();
 }
 
 {
