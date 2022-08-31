@@ -963,6 +963,9 @@ static void
 pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   if (fns.set_in(fn)) return;
   fns.set_add(fn);
+
+  if (fn->retType) types.set_add(fn->retType->symbol);
+
   llvm::SmallVector<SymExpr*, 16> symExprs;
   collectSymExprs(fn, symExprs);
   for(SymExpr* se : symExprs) {
