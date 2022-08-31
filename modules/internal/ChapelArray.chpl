@@ -277,10 +277,6 @@ module ChapelArray {
   }
 
 
-  proc _getLiteralType(type t) type {
-    if t != c_string then return t;
-    else return string;
-  }
   /*
    * Support for array literal expressions.
    *
@@ -313,14 +309,14 @@ module ChapelArray {
 
     // elements of string literals are assumed to be of type string
     type eltType = if inferArrayLiteralTypeFromFirstElt
-                   then _getLiteralType(elems(0).type)
+                   then elems(0).type
                    else chpl_unifiedType(elems).type;
 
     var dom = {arrayLiteralLowBound..#k};
     var arr = dom.buildArray(eltType, initElts=false);
 
     for param i in 0..k-1 {
-      type currType = _getLiteralType(elems(i).type);
+      type currType = elems(i).type;
 
       ref src = elems(i);
       ref dst = arr(i+arrayLiteralLowBound);
@@ -349,8 +345,8 @@ module ChapelArray {
   }
 
   proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
-    type keyType = _getLiteralType(elems(0).type);
-    type valType = _getLiteralType(elems(1).type);
+    type keyType = elems(0).type;
+    type valType = elems(1).type;
     var D : domain(keyType);
 
     //Size the domain appropriately for the number of keys
@@ -364,8 +360,8 @@ module ChapelArray {
     for param i in 0..k-1 by 2 {
       var elemKey = elems(i);
       var elemVal = elems(i+1);
-      type elemKeyType = _getLiteralType(elemKey.type);
-      type elemValType = _getLiteralType(elemVal.type);
+      type elemKeyType = elemKey.type;
+      type elemValType = elemVal.type;
 
       if elemKeyType != keyType {
         compilerError("Associative array key element " + (i/2):string +
