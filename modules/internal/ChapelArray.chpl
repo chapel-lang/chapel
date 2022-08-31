@@ -307,27 +307,37 @@ module ChapelArray {
                       " If so, use {...} instead of [...].");
     }
 
+    param homog = isHomogeneousTuple(elems);
+
     // elements of string literals are assumed to be of type string
-    type eltType = if inferArrayLiteralTypeFromFirstElt
+    type eltType = if homog || inferArrayLiteralTypeFromFirstElt
                    then elems(0).type
-                   else chpl_unifiedType(elems).type;
+                   else chpl_computeUnifiedType(elems);
 
     var dom = {arrayLiteralLowBound..#k};
     var arr = dom.buildArray(eltType, initElts=false);
 
-    for param i in 0..k-1 {
-      type currType = elems(i).type;
-
-      ref src = elems(i);
-      ref dst = arr(i+arrayLiteralLowBound);
-      if (!inferArrayLiteralTypeFromFirstElt ||
-          currType == eltType ||
-          Reflection.canResolve("=", dst, src)) {
+    if homog {
+      for i in 0..<k {
+        ref dst = arr(i+arrayLiteralLowBound);
+        ref src = elems(i);
         __primitive("=", dst, src);
-      } else {
-        compilerError( "Array literal element " + i:string +
-                       " expected to be of type " + eltType:string +
-                       " but is of type " + currType:string );
+      }
+    } else {
+      for param i in 0..k-1 {
+        type currType = elems(i).type;
+
+        ref src = elems(i);
+        ref dst = arr(i+arrayLiteralLowBound);
+        if (!inferArrayLiteralTypeFromFirstElt ||
+            currType == eltType ||
+            Reflection.canResolve("=", dst, src)) {
+          __primitive("=", dst, src);
+        } else {
+          compilerError( "Array literal element " + i:string +
+                         " expected to be of type " + eltType:string +
+                         " but is of type " + currType:string );
+        }
       }
     }
 
@@ -336,7 +346,19 @@ module ChapelArray {
     return arr;
   }
 
-  proc chpl_unifiedType(x: _tuple, j: int=0) {
+  proc chpl_computeUnifiedType(x: _tuple) type {
+    if isHomogeneousTuple(x) {
+      return x(0).type;
+    } else {
+      if (Reflection.canResolve("chpl_computeUnifiedTypeHelp", x)) {
+        return chpl_computeUnifiedTypeHelp(x).type;
+      } else {
+        compilerError("Can't compute a unified element type for this array");
+      }
+    }
+  }
+
+  proc chpl_computeUnifiedTypeHelp(x: _tuple, j: int=0) {
     for param i in 0..<x.size {
       if i == j then
         return x(i);
