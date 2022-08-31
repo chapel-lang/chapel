@@ -1,6 +1,6 @@
 use BlockDist;
 
-var myLocalesDom = {0..3};
+var myLocalesDom = {0..2};
 var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
 
 writeln("myLocales = ", myLocales);
@@ -14,7 +14,7 @@ const ProblemDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={1..
 writeln("ProblemDist =\n", ProblemDist);
 writeln();
 
-myLocalesDom = {0..2};
+myLocalesDom = {0..1};
 
 writeln("myLocales = ", myLocales);
 
