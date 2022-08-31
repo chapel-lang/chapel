@@ -1,0 +1,1 @@
+bug: foreach loops over multidimensional domains cause runtime error
