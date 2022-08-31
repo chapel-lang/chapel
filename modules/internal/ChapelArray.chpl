@@ -297,7 +297,7 @@ module ChapelArray {
   config param capturedIteratorLowBound = defaultLowBound;
   pragma "no doc"
   config param inferArrayLiteralTypeFromFirstElt = true;
-  
+
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
