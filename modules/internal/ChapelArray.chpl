@@ -299,7 +299,9 @@ module ChapelArray {
   config param arrayLiteralLowBound = defaultLowBound;
   pragma "no doc"
   config param capturedIteratorLowBound = defaultLowBound;
-
+  pragma "no doc"
+  config param inferArrayLiteralTypeFromFirstElt = true;
+  
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
@@ -310,8 +312,10 @@ module ChapelArray {
     }
 
     // elements of string literals are assumed to be of type string
-    type eltType = _getLiteralType(elems(0).type);
-//    type eltType = chpl_unifiedType(elems).type;
+    type eltType = if inferArrayLiteralTypeFromFirstElt
+                   then _getLiteralType(elems(0).type)
+                   else chpl_unifiedType(elems).type;
+
     var dom = {arrayLiteralLowBound..#k};
     var arr = dom.buildArray(eltType, initElts=false);
 
@@ -320,8 +324,9 @@ module ChapelArray {
 
       ref src = elems(i);
       ref dst = arr(i+arrayLiteralLowBound);
-//      __primitive("=", dst, src);
-      if currType == eltType || canResolve("=", dst, src) {
+      if (!inferArrayLiteralTypeFromFirstElt ||
+          currType == eltType ||
+          Reflection.canResolve("=", dst, src)) {
         __primitive("=", dst, src);
       } else {
         compilerError( "Array literal element " + i:string +
@@ -335,7 +340,6 @@ module ChapelArray {
     return arr;
   }
 
-  /*
   proc chpl_unifiedType(x: _tuple, j: int=0) {
     for param i in 0..<x.size {
       if i == j then
@@ -343,7 +347,6 @@ module ChapelArray {
     }
     halt("Should never get here");
   }
-*/
 
   proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
     type keyType = _getLiteralType(elems(0).type);
