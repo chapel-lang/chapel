@@ -870,15 +870,17 @@ def get_host_link_args():
                 # and -Wl,-syslibroot seems to have no effect
                 system.append("-L" + os.path.join(sdkroot, "usr", "lib"))
 
-        # Decide whether to try to link statically or dynamically.
-        # Future work: consider using 'llvm-config --shared-mode'
-        # to make this choice.
+
+        # For LLVM version 11 and older, there was a problem where
+        # 'llvm-config' did not work properly on Mac OS X, so work around
+        # that by using static linking.
+        llvm_version = get_llvm_version()
         host_platform = chpl_platform.get('host')
-        if host_platform == 'darwin':
+        if host_platform == 'darwin' and int(llvm_version) <= 11:
             llvm_dynamic = False
 
+        # Also, change to static, if llvm-config indicates static linking
         shared_mode = run_command([llvm_config, '--shared-mode'])
-
         if shared_mode.strip() == 'static':
             llvm_dynamic = False
 
