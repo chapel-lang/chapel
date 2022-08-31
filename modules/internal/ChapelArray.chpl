@@ -311,27 +311,39 @@ module ChapelArray {
 
     // elements of string literals are assumed to be of type string
     type eltType = _getLiteralType(elems(0).type);
+//    type eltType = chpl_unifiedType(elems).type;
     var dom = {arrayLiteralLowBound..#k};
     var arr = dom.buildArray(eltType, initElts=false);
 
     for param i in 0..k-1 {
       type currType = _getLiteralType(elems(i).type);
 
-      if currType != eltType {
+      ref src = elems(i);
+      ref dst = arr(i+arrayLiteralLowBound);
+//      __primitive("=", dst, src);
+      if currType == eltType || canResolve("=", dst, src) {
+        __primitive("=", dst, src);
+      } else {
         compilerError( "Array literal element " + i:string +
                        " expected to be of type " + eltType:string +
                        " but is of type " + currType:string );
       }
-
-      ref src = elems(i);
-      ref dst = arr(i+arrayLiteralLowBound);
-      __primitive("=", dst, src);
     }
 
     arr.dsiElementInitializationComplete();
 
     return arr;
   }
+
+  /*
+  proc chpl_unifiedType(x: _tuple, j: int=0) {
+    for param i in 0..<x.size {
+      if i == j then
+        return x(i);
+    }
+    halt("Should never get here");
+  }
+*/
 
   proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
     type keyType = _getLiteralType(elems(0).type);
