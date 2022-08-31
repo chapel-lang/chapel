@@ -42,6 +42,7 @@
 
 #include "arg.h"
 #include "arg-helpers.h"
+#include "version_num.h"
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -94,11 +95,6 @@ std::string outputDir_;
 bool textOnly_ = false;
 std::string CHPL_HOME;
 bool processUsedModules_ = false;
-
-// TODO: Whether or not to support this flag is an open discussion. Currently,
-//       it is not supported, so the flag is always true.
-//       (thomasvandoren, 2015-03-08)
-bool fDocsIncludeExterns = true;
 bool fDocsProcessUsedModules = false;
 
 static
@@ -128,18 +124,6 @@ void setHome(const ArgumentDescription* desc, const char* arg) {
 
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
-
-// TODO: Does dyno-chpldoc need to support these flags too?
-// #define DRIVER_ARG_BREAKFLAGS_COMMON \
-//   {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL}, \
-//   {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL}
-
-// #define DRIVER_ARG_DEBUGGERS                                            \
-//   {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL}, \
-//   {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL}
-
-// #define DRIVER_ARG_DEVELOPER \
-//   {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", driverSetDevelSettings}
 
 #define DRIVER_ARG_HELP \
   {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL}
@@ -175,13 +159,6 @@ static ArgumentState sArgState = {
 
 ArgumentDescription docs_arg_desc[] = {
  {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
-
- // TODO: This option is disabled for now (since source based ordering was
- //       introduced). The code to support it is still around, and the plan is
- //       to bring it back someday soon. (thomasvandoren, 2015-03-11)
- //
- // {"alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
-
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
  {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
@@ -192,12 +169,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
 
  {"legacy", ' ', NULL, "Use the legacy version of chpldoc", "F", &fLegacyChpldoc, NULL, NULL},
- // TODO: Whether or not to support this flag is an open discussion. Currently,
- //       it is not supported, so the flag is always true.
- //       (thomasvandoren, 2015-03-08)
- //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
-
  {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
  DRIVER_ARG_HELP,
  DRIVER_ARG_HELP_ENV,
@@ -205,29 +177,46 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_VERSION,
  DRIVER_ARG_COPYRIGHT,
  DRIVER_ARG_LICENSE,
-
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
- // TODO: do we need these flags for dyno-chpldoc?
-//  DRIVER_ARG_DEVELOPER,
-//  DRIVER_ARG_BREAKFLAGS_COMMON,
-//  DRIVER_ARG_DEBUGGERS,
  DRIVER_ARG_HOME,
  DRIVER_ARG_PRINT_CHPL_HOME,
-
  DRIVER_ARG_LAST
 };
+
+static std::string get_version() {
+  std::string ret;
+  ret = std::to_string(MAJOR_VERSION) + "." +
+        std::to_string(MINOR_VERSION) + "." +
+        std::to_string(UPDATE_VERSION);
+  if (!officialRelease) {
+    ret += " pre-release (" + std::string(BUILD_VERSION) + ")";
+  } else {
+    // It's is an official release.
+    // Try to decide whether or not to include the BUILD_VERSION
+    // based on its string length. A short git sha is 10 characters.
+    if (strlen(BUILD_VERSION) > 2 && !developer) {
+      // assume it is a sha, so don't include it
+    } else if (strcmp(BUILD_VERSION, "0") == 0) {
+      // no need to append a .0
+    } else {
+      // include the BUILD_VERSION contents to add e.g. a .1
+      ret += "." + std::string(BUILD_VERSION);
+    }
+  }
+  return ret;
+}
 
 static void printStuff(const char* argv0) {
   bool shouldExit       = false;
   bool printedSomething = false;
 
   if (fPrintVersion) {
-    // TODO: find equivalents for compileVersion, LLVM_VERSION_STRING
-    // fprintf(stdout, "%s version %s\n", sArgState.program_name, compileVersion);
+    std::string version = get_version();
+    fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
 
-// #ifdef HAVE_LLVM
-//     fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
-// #endif
+    #ifdef HAVE_LLVM
+        fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
+    #endif
 
     fPrintCopyright  = true;
     printedSomething = true;
@@ -251,46 +240,12 @@ static void printStuff(const char* argv0) {
 
     printedSomething = true;
   }
+
   if( fPrintChplHome ) {
     std::string guess = findProgramPath(argv0);
-
     printf("%s\t%s\n", CHPL_HOME.c_str(), guess.c_str());
-    // TODO: Do we care about this for dyno-chpldoc?
-    // const char* prefix = get_configured_prefix();
-    // if (prefix != NULL && prefix[0] != '\0' )
-    //   printf("# configured prefix  %s\n", prefix);
-
-//    free(guess);
-
     printedSomething = true;
   }
-
-  // TODO: Do we care about this for dyno-chpldoc?
-  // if( fPrintChplSettings ) {
-  //   char buf[1025] = "";
-  //   printf("CHPL_HOME: %s\n", CHPL_HOME.c_str());
-  //   printf("CHPL_RUNTIME_LIB: %s\n", CHPL_RUNTIME_LIB);
-  //   printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
-  //   printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
-  //   printf("\n");
-  //   const char* internalFlag = "";
-  //   if (developer)
-  //     internalFlag = "--internal";
-  //   int wanted_to_write = snprintf(buf, sizeof(buf),
-  //                                  "%s/util/printchplenv --all %s",
-  //                                  CHPL_HOME.c_str(), internalFlag);
-  //   if (wanted_to_write < 0) {
-  //     USR_FATAL("character encoding error in CHPL_HOME path name");
-  //   } else if ((size_t)wanted_to_write >= sizeof(buf)) {
-  //     USR_FATAL("CHPL_HOME path name is too long");
-  //   }
-  //   int status = mysystem(buf, "running printchplenv", false);
-  //   if (compilerSetChplLLVM) {
-  //     printf("---\n");
-  //     printf("* Note: CHPL_LLVM was set by 'chpl' since it was built without LLVM support.\n");
-  //   }
-  //   clean_exit(status);
-  // }
 
   if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
@@ -309,7 +264,6 @@ static void printStuff(const char* argv0) {
     clean_exit(0);
   }
 }
-
 
 
 
@@ -2135,6 +2089,8 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 
 
 int main(int argc, char** argv) {
+  // initial value of CHPL_HOME may be overridden by cmdline arg
+  CHPL_HOME = getenv("CHPL_HOME");
   Args args = parseArgs(argc, argv);
 
   // check if user asked for legacy chpldoc
@@ -2169,13 +2125,6 @@ int main(int argc, char** argv) {
   commentStyle_ = args.commentStyle;
   processUsedModules_ = args.processUsedModules;
 
-  // update CHPL_HOME if we got one from the command-line args, or use the
-  // environment variable.
-  if (!args.chplHome.empty()) {
-    CHPL_HOME = args.chplHome;
-  } else {
-    CHPL_HOME = getenv("CHPL_HOME");
-  }
 
   Context context(CHPL_HOME);
   Context *ctx = &context;
