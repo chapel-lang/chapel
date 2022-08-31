@@ -201,13 +201,12 @@ module ChapelDomain {
   proc chpl__buildDomainExpr(keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
-    type keyType = _getLiteralType(keys(0).type);
+    type keyType = keys(0).type;
     for param i in 1..count-1 do
-      if keyType != _getLiteralType(keys(i).type) {
+      if keyType != keys(i).type {
         compilerError("Associative domain element " + i:string +
                       " expected to be of type " + keyType:string +
-                      " but is of type " +
-                      _getLiteralType(keys(i).type):string);
+                      " but is of type " + keys(i).type:string);
       }
 
     //Initialize the domain with a size appropriate for the number of keys.
