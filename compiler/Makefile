@@ -164,7 +164,9 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 
-$(CHPLDOC): $(CHPL) dyno-chpldoc
+$(CHPLDOC): $(CHPL) dyno-chpldoc $(CHPLDOC)-legacy
+
+$(CHPLDOC)-legacy:
 	rm -f $(CHPLDOC)-legacy
 	ln -s $(notdir $(CHPL)) $(CHPLDOC)-legacy
 
