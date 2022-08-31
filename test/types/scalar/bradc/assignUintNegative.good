@@ -1,1 +1,1 @@
-assignUintNegative.chpl:3: error: cannot initialize 'x' of type 'uint(64)' from '-2'
+18446744073709551614

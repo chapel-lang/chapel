@@ -721,7 +721,7 @@ module ChapelDistribution {
     }
 
     proc dsiClear() {
-      halt("clear not implemented for this distribution");
+      halt("clear not implemented for this domain");
     }
 
     proc dsiAdd(in idx) {

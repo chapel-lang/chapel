@@ -23,15 +23,9 @@ proc f(x, y) {
   writeln("  f(generic)");
 }
 
-proc skip(type t1, type t2) param {
-  //return isIntegralType(t1) && isIntegralType(t2) && numBits(t1) != numBits(t2);
-  return false;
-}
 
-proc isProhibitedAdd(type t1, type t2) param {
-  return (t1 == uint && isIntType(t2)) ||
-         (isUintType(t1) && isIntType(t2) && numBits(t1) >= numBits(t1)) ||
-         (t1 == uint && isUintType(t2) && t2 != uint); // bug workaround
+proc skip(type t1, type t2) param {
+  return isIntegralType(t1) && isIntegralType(t2) && numBits(t1) != numBits(t2);
 }
 
 
@@ -40,28 +34,17 @@ proc callF(type t1, type t2) {
   writef(" Second actual %-12s -> ", t2:string);
 
   if skip(t1, t2) {
+    writeln("  f skipped");
   } else {
     var x: t1;
     var y: t2;
-    if (!skip(t1, t2)) {
-      f(x, y);
-    } else {
-      writeln("  f skipped");
-    }
+    f(x, y);
 
     writef("      Reversed %-12s -> ", "");
-    if (!skip(t1, t2)) {
-      f(y, x);
-    } else {
-      writeln("  f skipped");
-    }
+    f(y, x);
 
     writef("               %-12s ->   ", "+");
-    if (!isProhibitedAdd(t1, t2) && !isProhibitedAdd(t2, t1)) {
-      writeln((x+y).type:string);
-    } else {
-      writeln("skipped");
-    }
+    writeln((x+y).type:string);
   }
 }
 

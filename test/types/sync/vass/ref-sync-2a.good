@@ -1,0 +1,4 @@
+ref-sync-2a.chpl:7: error: unresolved call 'fun(sync int(64), int(64))'
+ref-sync-2a.chpl:3: note: this candidate did not match: fun(ref x: int, y: int)
+ref-sync-2a.chpl:7: note: because actual argument #1 with type 'sync int(64)'
+ref-sync-2a.chpl:3: note: is passed to formal 'ref x: int'

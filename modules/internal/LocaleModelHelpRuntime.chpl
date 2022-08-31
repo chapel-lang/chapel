@@ -176,7 +176,7 @@ module LocaleModelHelpRuntime {
     // a correct one for a record type whose members are not known to it.
     pragma "init copy fn"
     pragma "fn synchronization free"
-    extern proc chpl__initCopy_chpl_rt_localeID_t(initial: chpl_localeID_t): chpl_localeID_t;
+    extern proc chpl__initCopy_chpl_rt_localeID_t(in initial: chpl_localeID_t): chpl_localeID_t;
 
     return chpl__initCopy_chpl_rt_localeID_t(initial);
   }
