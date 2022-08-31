@@ -38,7 +38,7 @@ typedef __uint64_t uint64_t;
 
 bool startsWith(const char* str, const char* prefix);
 void clean_exit(int status);
-std::string findProgramPath(const char* argv0);
+std::string findProgramPath(const char* argv0, void* mainAddr);
 
 extern bool developer;
 

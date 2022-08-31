@@ -70,10 +70,9 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
 
 // Find the path to the running program
 // (or return NULL if we couldn't figure it out).
-// The return value must be freed by the caller.
-std::string findProgramPath(const char* argv0)
+std::string findProgramPath(const char* argv0, void* mainAddr)
 {
-  return chpl::getExecutablePath(argv0, nullptr);
+  return chpl::getExecutablePath(argv0, mainAddr);
 }
 
 

@@ -311,7 +311,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
 *                                                                             *
 ************************************** | *************************************/
 
-void init_args(ArgumentState* state, const char* argv0) {
+void init_args(ArgumentState* state, const char* argv0, void* mainAddr) {
   char* name = strdup(argv0);
 
   if (char* firstSlash = strrchr(name, '/')) {
@@ -319,7 +319,7 @@ void init_args(ArgumentState* state, const char* argv0) {
   }
 
   state->program_name = name;
-  state->program_loc  = findProgramPath(argv0).c_str();
+  state->program_loc  = strdup(findProgramPath(argv0, mainAddr).c_str());
 }
 
 

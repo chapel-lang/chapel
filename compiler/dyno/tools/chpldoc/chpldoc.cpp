@@ -206,7 +206,7 @@ static std::string get_version() {
   return ret;
 }
 
-static void printStuff(const char* argv0) {
+static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
   bool printedSomething = false;
 
@@ -242,7 +242,7 @@ static void printStuff(const char* argv0) {
   }
 
   if( fPrintChplHome ) {
-    std::string guess = findProgramPath(argv0);
+    std::string guess = findProgramPath(argv0, mainAddr);
     printf("%s\t%s\n", CHPL_HOME.c_str(), guess.c_str());
     printedSomething = true;
   }
@@ -2004,9 +2004,9 @@ struct Args {
   std::string chplHome;
 };
 
-static Args parseArgs(int argc, char **argv) {
+static Args parseArgs(int argc, char **argv, void* mainAddr) {
   Args ret;
-  init_args(&sArgState, argv[0]);
+  init_args(&sArgState, argv[0], mainAddr);
   init_arg_desc(&sArgState, docs_arg_desc);
   process_args(&sArgState, argc, argv);
   ret.author = std::string(fDocsAuthor);
@@ -2086,11 +2086,11 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 int main(int argc, char** argv) {
   // initial value of CHPL_HOME may be overridden by cmdline arg
   CHPL_HOME = getenv("CHPL_HOME");
-  Args args = parseArgs(argc, argv);
+  Args args = parseArgs(argc, argv, (void*)main);
 
   // check if user asked for legacy chpldoc
   if (fLegacyChpldoc) {
-    std::string pathToExe = getExecutablePath(argv[0], nullptr);
+    std::string pathToExe = getExecutablePath(argv[0], (void*)main);
     std::string cmd = pathToExe + "-legacy ";
     for (int i = 1; i < argc; i++) {
       std::string arg = std::string(argv[i]);
@@ -2190,7 +2190,7 @@ int main(int argc, char** argv) {
                          {}, //cmdLinePaths
                          args.files);
   GatherModulesVisitor gather(ctx);
-  printStuff(argv[0]);
+  printStuff(argv[0], (void*)main);
   // evaluate all the files and gather the modules
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);

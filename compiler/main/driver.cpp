@@ -1780,7 +1780,7 @@ int main(int argc, char* argv[]) {
 
     tracker.StartPhase("init");
 
-    init_args(&sArgState, argv[0]);
+    init_args(&sArgState, argv[0], (void*)main);
 
     fDocs   = (strncmp(sArgState.program_name, "chpldoc", 7)  == 0) ? true : false;
 
