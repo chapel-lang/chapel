@@ -1,5 +1,5 @@
-// Type subtype relations (operators now deprecated in favor of named
-// functions)
+// Type subtype relations (operators now marked unstable, will likely be
+// deprecated in favor of named functions)
 
 writeln("Compare 1.type op int");
 writeln("op <= returns ", 1.type <= int);
