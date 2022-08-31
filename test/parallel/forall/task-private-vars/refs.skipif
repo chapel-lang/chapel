@@ -1,3 +1,0 @@
-# As of this writing, this test generates fewer tasks under NUMA,
-# which makes the output different and causes mismatch against .good.
-CHPL_LOCALE_MODEL == numa
