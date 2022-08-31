@@ -1,3 +1,0 @@
-./SetTest.chpl:19: In function 'testSet':
-./SetTest.chpl:22: error: creating a 'new borrowed' type is a not allowed
-  testBorrowed.chpl:9: called as testSet(type t = borrowed T)
