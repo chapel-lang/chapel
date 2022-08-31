@@ -28,7 +28,13 @@ singularity build --fakeroot singularity.sif singularity.def
 #To create an image for experimenting with where you can install
 # more packages etc, use this:
 #   sudo singularity build --sandbox singularity.sif singularity.def
+#
+#   # to explore as root
 #   sudo singularity shell --writable singularity.sif
+#
+#   # to explore not as root
+#   singularity shell --writable singularity.sif
+
 
 ## to run the runscript
 singularity run singularity.sif
