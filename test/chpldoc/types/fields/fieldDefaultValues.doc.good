@@ -17,6 +17,12 @@ or
 
    import fieldDefaultValues;
 
+.. data:: var x: int
+
+.. data:: var y: x.type
+
+.. data:: var z: y.type
+
 .. class:: C
 
    .. attribute:: var aField: int
