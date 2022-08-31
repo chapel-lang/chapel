@@ -27,7 +27,7 @@ or
 
    .. attribute:: var aField: int
 
-.. data:: var c: unmanaged nilable C
+.. data:: var c: unmanaged C?
 
 .. data:: var literalDefault = 42
 
@@ -43,7 +43,7 @@ or
 
 .. data:: var notNilDefault = c!
 
-.. data:: var isNilDefault: nilable C = nil
+.. data:: var isNilDefault: C? = nil
 
 .. data:: var plusDefault = x + y
 

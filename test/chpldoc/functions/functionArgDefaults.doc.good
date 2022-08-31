@@ -27,7 +27,7 @@ or
 
    .. attribute:: var aField: int
 
-.. data:: var c: unmanaged nilable C
+.. data:: var c: unmanaged C?
 
 .. function:: proc noArgs()
 

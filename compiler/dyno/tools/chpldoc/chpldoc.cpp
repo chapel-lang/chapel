@@ -791,9 +791,7 @@ struct RstSignatureVisitor {
   }
 
   /*
-    helper for printing unary op calls, special handling for nilable operator
-    to conditionally prepend nilable in replacement of the ? operator when the
-    actual is not a function call
+    helper for printing unary op calls
   */
   void printUnaryOp(const OpCall* node) {
     assert(node->numActuals() == 1);
@@ -805,11 +803,7 @@ struct RstSignatureVisitor {
       isPostFixBang = true;
       unaryOp = USTR("!");
     } else if (node->op() == USTR("?")) {
-      if (node->actual(0)->isFnCall()) {
-        isNilable = true;
-      } else {
-        os_ << "nilable ";
-      }
+      isNilable = true;
     } else {
       os_ << unaryOp;
     }
@@ -818,6 +812,7 @@ struct RstSignatureVisitor {
       os_ << unaryOp;
     }
   }
+
 
   /*
     Helper for printing operands of binary and unary op calls

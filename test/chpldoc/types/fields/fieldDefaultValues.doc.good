@@ -27,7 +27,7 @@ or
 
    .. attribute:: var aField: int
 
-.. data:: var c: nilable C
+.. data:: var c: C?
 
 .. record:: R0
 
@@ -65,7 +65,7 @@ or
 
    .. attribute:: var notNilDefault = c!
 
-   .. attribute:: var isNilDefault: nilable C = nil
+   .. attribute:: var isNilDefault: C? = nil
 
    .. attribute:: var plusDefault = x + y
 
