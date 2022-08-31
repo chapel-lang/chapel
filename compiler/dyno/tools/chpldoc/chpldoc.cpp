@@ -1379,7 +1379,25 @@ struct RstResultBuilder {
     }
 
     showDeprecationMessage(node, indentComment);
+    // TODO: how do deprecation and unstable messages interplay?
+    showUnstableWarning(node, indentComment);
     return commentShown;
+  }
+
+  void showUnstableWarning(const Decl* node, bool indentComment=true) {
+    if (auto attrs = node->attributes()) {
+      if (attrs->isUnstable()) {
+        int commentShift = 0;
+          if (indentComment) {
+            indentStream(os_, indentDepth_ * indentPerDepth);
+            commentShift = 1;
+          }
+          os_ << ".. warning::\n\n";
+          indentStream(os_, (indentDepth_ + commentShift) * indentPerDepth);
+        os_ << strip(attrs->unstableMessage().c_str());
+        os_ << "\n\n";
+      }
+    }
   }
 
   void showDeprecationMessage(const Decl* node, bool indentComment=true) {
@@ -1585,6 +1603,8 @@ struct RstResultBuilder {
     if (textOnly_) indentDepth_ --;
     showComment(m, textOnly_);
     showDeprecationMessage(m, false);
+    // TODO: Are we not printing these for modules?
+    // showUnstableWarning(m, false);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
