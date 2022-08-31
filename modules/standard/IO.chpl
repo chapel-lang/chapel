@@ -2860,6 +2860,16 @@ proc openwriter(path:string,
                     style: iostyleInternal);
 }
 
+pragma "last resort"
+deprecated "openwriter with a start and/or end argument is deprecated."
+proc openwriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints = ioHintSet.empty)
+    : channel(true, kind, locking) throws {
+  return openwriterHelper(path, kind, locking, start, end, hints);
+}
+
 /*
 
 Open a file at a particular path and return a writing channel for it.
@@ -2876,11 +2886,6 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
               corresponding parameter of the :record:`channel` type.
               Defaults to true, but when safe, setting it to false
               can improve performance.
-:arg start: zero-based byte offset indicating where in the file the
-            channel should start writing. Defaults to 0.
-:arg end: zero-based byte offset indicating where in the file the
-          channel should no longer be allowed to write. Defaults
-          to a ``max(int(64))`` - meaning no end point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :returns: an open writing channel to the requested resource.
@@ -2889,10 +2894,9 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 */
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
                 hints = ioHintSet.empty)
     : channel(true, kind, locking) throws {
-  return openwriterHelper(path, kind, locking, start, end, hints);
+  return openwriterHelper(path, kind, locking, hints=hints);
 }
 
 pragma "last resort"
@@ -2900,9 +2904,10 @@ deprecated "The 'iohints' type is deprecated; please use a variant of 'openwrite
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints=IOHINT_NONE)
+                hints:iohints)
     : channel(true, kind, locking) throws {
-  return openwriter(path, kind, locking, start, end, new ioHintSet(hints));
+  return openwriterHelper(path, kind, locking, start, end,
+                          new ioHintSet(hints));
 }
 
 private proc openwriterHelper(path:string,
