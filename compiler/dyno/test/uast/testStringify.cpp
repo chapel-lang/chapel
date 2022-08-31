@@ -517,6 +517,8 @@ static void testDecl(Parser* parser) {
                    "var domain7: domain(rank = 3, idxType = int, stridable = false);")
   TEST_CHPL_SYNTAX("var domain1: domain(keyType, parSafe=true);",
                    "var domain1: domain(keyType, parSafe = true);")
+  TEST_CHPL_SYNTAX("var lSrcVals: [myLocaleSpace] [0..#bufferSize] elemType;",
+                   "var lSrcVals: [myLocaleSpace] [0..#bufferSize] elemType;")
 }
 
 //TODO: Write many more specific tests for the format of different node types
