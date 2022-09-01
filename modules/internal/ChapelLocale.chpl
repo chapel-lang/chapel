@@ -219,7 +219,7 @@ module ChapelLocale {
     Get a unique identifier for this locale.
 
     :returns: a unique integer ID
-    :rtype: :record:`int`
+    :rtype: int
 
     One can always expect unique IDs to match for the same locale,
     and to be different for different locales. In other words,

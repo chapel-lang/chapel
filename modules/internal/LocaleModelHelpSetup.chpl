@@ -158,7 +158,7 @@ module LocaleModelHelpSetup {
   proc helpSetupLocaleFlat(dst:borrowed LocaleModel, out local_name:string) {
     local_name = getNodeName();
 
-    dst.uid = dst.id;
+    dst.uid = dst.id
 
     extern proc chpl_task_getCallStackSize(): c_size_t;
     dst.callStackSize = chpl_task_getCallStackSize();

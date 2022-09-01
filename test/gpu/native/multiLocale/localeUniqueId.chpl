@@ -1,6 +1,6 @@
 use Set;
 
-var idset = new set(localeUID);
+var idset = new set(int);
 var gpu_counter = 0;
 
 for loc in Locales {

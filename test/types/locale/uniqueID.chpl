@@ -1,7 +1,7 @@
 use Set;
 writeln(here.uid);
 
-var idset = new set(localeUID);
+var idset = new set(int);
 for loc in Locales do idset.add(loc.uid);
 
 writeln(idset.size == numLocales);
