@@ -1007,7 +1007,7 @@ def _main():
     elif options.action == 'sdkroot':
         sys.stdout.write("{0}\n".format(get_clang_args_sdkroot()))
     elif options.action == 'quickstart':
-        if has_compatible_installed_llvm():
+        if has_compatible_installed_llvm() and compatible_platform_for_llvm():
             sys.stdout.write("system\n")
         else:
             sys.stdout.write("none\n")
