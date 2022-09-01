@@ -1867,7 +1867,7 @@ commentMap(Context* context, ID id) {
                                                        id);
 
   CommentVisitor cv{result};
-  for (const auto& ast : builderResult->topLevelExpressions()) {
+  for (const chpl::uast::AstNode* ast : builderResult->topLevelExpressions()) {
     ast->traverse(cv);
   }
 
@@ -2253,7 +2253,7 @@ int main(int argc, char** argv) {
       }
     }
     // gather all the top level and used/imported/included module IDs
-    for (const auto& ast : builderResult.topLevelExpressions()) {
+    for (const chpl::uast::AstNode* ast : builderResult.topLevelExpressions()) {
       ast->traverse(gather);
     }
   }
