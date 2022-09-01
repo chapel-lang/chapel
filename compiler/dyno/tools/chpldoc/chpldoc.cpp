@@ -1867,7 +1867,12 @@ commentMap(Context* context, ID id) {
                                                        id);
 
   CommentVisitor cv{result};
-  for (const auto& ast : builderResult->topLevelExpressions()) {
+  for (const chpl::uast::AstNode* ast : builderResult->topLevelExpressions()) {
+    /* note the use of the above pattern rather than `const auto& ast:`
+    was motivated by a compiler error from chapelmac during smoketests
+    that complained about the pattern and suggested this replacement,
+    which it seems satisfied with.
+    */
     ast->traverse(cv);
   }
 
@@ -2253,7 +2258,12 @@ int main(int argc, char** argv) {
       }
     }
     // gather all the top level and used/imported/included module IDs
-    for (const auto& ast : builderResult.topLevelExpressions()) {
+    for (const chpl::uast::AstNode* ast : builderResult.topLevelExpressions()) {
+      /* note the use of the above pattern rather than `const auto& ast:`
+          was motivated by a compiler error from chapelmac during smoketests
+          that complained about the pattern and suggested this replacement,
+          which it seems satisfied with.
+      */
       ast->traverse(gather);
     }
   }
