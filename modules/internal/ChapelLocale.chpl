@@ -30,6 +30,24 @@ module ChapelLocale {
   import HaltWrappers;
   use CTypes;
 
+  /* A unique ID representing a `locale`
+  */
+  record localeUID {
+    pragma "no doc"
+    var topLevelIdx: int = -1;
+    pragma "no doc"
+    var gpuIdx: int = -1;
+  }
+
+  pragma "no doc"
+  proc localeUID.init() {}
+
+  pragma "no doc"
+  proc localeUID.init(id: int, gpuIdx: int = -1) {
+    this.topLevelIdx = id;
+    this.gpuIdx = gpuIdx;
+  }
+
   compilerAssert(!(!localeModelHasSublocales &&
    localeModelPartitionsIterationOnSublocales),
    "Locale model without sublocales can not have " +
@@ -205,7 +223,7 @@ module ChapelLocale {
   }
 
   /*
-    Get the unique integer identifier for this locale.
+    Get the index of this locale in the top level ``Locales`` array.
 
     :returns: index of this locale in the range ``0..numLocales-1``
     :rtype: int
@@ -213,6 +231,16 @@ module ChapelLocale {
   */
   inline proc locale.id: int {
     return this._value.id;
+  }
+
+  /*
+    Get a unique identifier for this locale.
+
+    :returns: a unique ID
+    :rtype: :record:`localeUID`
+  */
+  inline proc locale.uid: localeUID {
+    return this._value.uid;
   }
 
   /*
@@ -340,6 +368,8 @@ module ChapelLocale {
     var maxTaskPar: int;
 
     var callStackSize: c_size_t;
+
+    var uid: localeUID;
 
     proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 

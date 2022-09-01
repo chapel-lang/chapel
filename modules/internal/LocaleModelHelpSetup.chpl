@@ -158,6 +158,8 @@ module LocaleModelHelpSetup {
   proc helpSetupLocaleFlat(dst:borrowed LocaleModel, out local_name:string) {
     local_name = getNodeName();
 
+    dst.uid = new localeUID(dst.id);
+
     extern proc chpl_task_getCallStackSize(): c_size_t;
     dst.callStackSize = chpl_task_getCallStackSize();
 
@@ -235,6 +237,8 @@ module LocaleModelHelpSetup {
 
     local_name = getNodeName();
 
+    dst.uid = new localeUID(dst.id);
+
     extern proc chpl_topo_getNumCPUsPhysical(accessible_only: bool): c_int;
     dst.nPUsPhysAcc = chpl_topo_getNumCPUsPhysical(true);
     dst.nPUsPhysAll = chpl_topo_getNumCPUsPhysical(false);
@@ -257,6 +261,7 @@ module LocaleModelHelpSetup {
       chpl_task_setSubloc(i:chpl_sublocID_t);
       dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
       dst.childLocales[i].maxTaskPar = 1;
+      dst.childLocales[i].uid = new localeUID(dst.id, gpuIdx = i);
 
       dst.gpuSublocales[i] = new locale(dst.childLocales[i]);
     }
