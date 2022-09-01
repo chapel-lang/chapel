@@ -17,11 +17,17 @@ or
 
    import functionArgDefaults.doc;
 
+.. data:: var x: int
+
+.. data:: var y: x.type
+
+.. data:: var z: y.type
+
 .. class:: C
 
    .. attribute:: var aField: int
 
-.. data:: var c: unmanaged nilable C
+.. data:: var c: unmanaged C?
 
 .. function:: proc noArgs()
 

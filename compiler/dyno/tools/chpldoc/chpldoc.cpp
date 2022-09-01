@@ -42,6 +42,7 @@
 
 #include "arg.h"
 #include "arg-helpers.h"
+#include "version_num.h"
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -84,6 +85,7 @@ bool fPrintSettingsHelp = false;
 bool fPrintLicense = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
+bool fLegacyChpldoc = false;
 
 
 
@@ -93,11 +95,6 @@ std::string outputDir_;
 bool textOnly_ = false;
 std::string CHPL_HOME;
 bool processUsedModules_ = false;
-
-// TODO: Whether or not to support this flag is an open discussion. Currently,
-//       it is not supported, so the flag is always true.
-//       (thomasvandoren, 2015-03-08)
-bool fDocsIncludeExterns = true;
 bool fDocsProcessUsedModules = false;
 
 static
@@ -127,18 +124,6 @@ void setHome(const ArgumentDescription* desc, const char* arg) {
 
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
-
-// TODO: Does dyno-chpldoc need to support these flags too?
-// #define DRIVER_ARG_BREAKFLAGS_COMMON \
-//   {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL}, \
-//   {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL}
-
-// #define DRIVER_ARG_DEBUGGERS                                            \
-//   {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL}, \
-//   {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL}
-
-// #define DRIVER_ARG_DEVELOPER \
-//   {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", driverSetDevelSettings}
 
 #define DRIVER_ARG_HELP \
   {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL}
@@ -174,13 +159,6 @@ static ArgumentState sArgState = {
 
 ArgumentDescription docs_arg_desc[] = {
  {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
-
- // TODO: This option is disabled for now (since source based ordering was
- //       introduced). The code to support it is still around, and the plan is
- //       to bring it back someday soon. (thomasvandoren, 2015-03-11)
- //
- // {"alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
-
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
  {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
@@ -190,13 +168,8 @@ ArgumentDescription docs_arg_desc[] = {
  {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
 
-
- // TODO: Whether or not to support this flag is an open discussion. Currently,
- //       it is not supported, so the flag is always true.
- //       (thomasvandoren, 2015-03-08)
- //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
+ {"legacy", ' ', NULL, "Use the legacy version of chpldoc", "F", &fLegacyChpldoc, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
-
  {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
  DRIVER_ARG_HELP,
  DRIVER_ARG_HELP_ENV,
@@ -204,29 +177,46 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_VERSION,
  DRIVER_ARG_COPYRIGHT,
  DRIVER_ARG_LICENSE,
-
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
- // TODO: do we need these flags for dyno-chpldoc?
-//  DRIVER_ARG_DEVELOPER,
-//  DRIVER_ARG_BREAKFLAGS_COMMON,
-//  DRIVER_ARG_DEBUGGERS,
  DRIVER_ARG_HOME,
  DRIVER_ARG_PRINT_CHPL_HOME,
-
  DRIVER_ARG_LAST
 };
 
-static void printStuff(const char* argv0) {
+static std::string get_version() {
+  std::string ret;
+  ret = std::to_string(MAJOR_VERSION) + "." +
+        std::to_string(MINOR_VERSION) + "." +
+        std::to_string(UPDATE_VERSION);
+  if (!officialRelease) {
+    ret += " pre-release (" + std::string(BUILD_VERSION) + ")";
+  } else {
+    // It's is an official release.
+    // Try to decide whether or not to include the BUILD_VERSION
+    // based on its string length. A short git sha is 10 characters.
+    if (strlen(BUILD_VERSION) > 2 && !developer) {
+      // assume it is a sha, so don't include it
+    } else if (strcmp(BUILD_VERSION, "0") == 0) {
+      // no need to append a .0
+    } else {
+      // include the BUILD_VERSION contents to add e.g. a .1
+      ret += "." + std::string(BUILD_VERSION);
+    }
+  }
+  return ret;
+}
+
+static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
   bool printedSomething = false;
 
   if (fPrintVersion) {
-    // TODO: find equivalents for compileVersion, LLVM_VERSION_STRING
-    // fprintf(stdout, "%s version %s\n", sArgState.program_name, compileVersion);
+    std::string version = get_version();
+    fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
 
-// #ifdef HAVE_LLVM
-//     fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
-// #endif
+    #ifdef HAVE_LLVM
+        fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
+    #endif
 
     fPrintCopyright  = true;
     printedSomething = true;
@@ -250,46 +240,12 @@ static void printStuff(const char* argv0) {
 
     printedSomething = true;
   }
+
   if( fPrintChplHome ) {
-    char* guess = findProgramPath(argv0);
-
-    printf("%s\t%s\n", CHPL_HOME.c_str(), guess);
-    // TODO: Do we care about this for dyno-chpldoc?
-    // const char* prefix = get_configured_prefix();
-    // if (prefix != NULL && prefix[0] != '\0' )
-    //   printf("# configured prefix  %s\n", prefix);
-
-    free(guess);
-
+    std::string guess = findProgramPath(argv0, mainAddr);
+    printf("%s\t%s\n", CHPL_HOME.c_str(), guess.c_str());
     printedSomething = true;
   }
-
-  // TODO: Do we care about this for dyno-chpldoc?
-  // if( fPrintChplSettings ) {
-  //   char buf[1025] = "";
-  //   printf("CHPL_HOME: %s\n", CHPL_HOME.c_str());
-  //   printf("CHPL_RUNTIME_LIB: %s\n", CHPL_RUNTIME_LIB);
-  //   printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
-  //   printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
-  //   printf("\n");
-  //   const char* internalFlag = "";
-  //   if (developer)
-  //     internalFlag = "--internal";
-  //   int wanted_to_write = snprintf(buf, sizeof(buf),
-  //                                  "%s/util/printchplenv --all %s",
-  //                                  CHPL_HOME.c_str(), internalFlag);
-  //   if (wanted_to_write < 0) {
-  //     USR_FATAL("character encoding error in CHPL_HOME path name");
-  //   } else if ((size_t)wanted_to_write >= sizeof(buf)) {
-  //     USR_FATAL("CHPL_HOME path name is too long");
-  //   }
-  //   int status = mysystem(buf, "running printchplenv", false);
-  //   if (compilerSetChplLLVM) {
-  //     printf("---\n");
-  //     printf("* Note: CHPL_LLVM was set by 'chpl' since it was built without LLVM support.\n");
-  //   }
-  //   clean_exit(status);
-  // }
 
   if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
@@ -308,7 +264,6 @@ static void printStuff(const char* argv0) {
     clean_exit(0);
   }
 }
-
 
 
 
@@ -405,6 +360,7 @@ static UniqueString getNodeName(AstNode* node) {
     return node->toIdentifier()->name();
   } else {
     assert(false && "no name defined for node");
+    return UniqueString();
   }
 }
 
@@ -835,9 +791,7 @@ struct RstSignatureVisitor {
   }
 
   /*
-    helper for printing unary op calls, special handling for nilable operator
-    to conditionally prepend nilable in replacement of the ? operator when the
-    actual is not a function call
+    helper for printing unary op calls
   */
   void printUnaryOp(const OpCall* node) {
     assert(node->numActuals() == 1);
@@ -849,11 +803,7 @@ struct RstSignatureVisitor {
       isPostFixBang = true;
       unaryOp = USTR("!");
     } else if (node->op() == USTR("?")) {
-      if (node->actual(0)->isFnCall()) {
-        isNilable = true;
-      } else {
-        os_ << "nilable ";
-      }
+      isNilable = true;
     } else {
       os_ << unaryOp;
     }
@@ -862,6 +812,7 @@ struct RstSignatureVisitor {
       os_ << unaryOp;
     }
   }
+
 
   /*
     Helper for printing operands of binary and unary op calls
@@ -1400,7 +1351,12 @@ struct RstResultBuilder {
       auto err = ErrorMessage(ErrorMessage::Kind::WARNING, loc, errMsg);
       context_->report(err);
     }
-    if (commentShown && ((textOnly_ && !node->isModule()) || !textOnly_)) os_ << "\n";
+    // TODO: The presence of these node exceptions means we're probably missing
+    //  something from the old implementation
+    if (commentShown &&
+       ((textOnly_ && !node->isModule() && !node->isVariable()) || !textOnly_)) {
+      os_ << "\n";
+    }
     return commentShown;
   }
 
@@ -1423,7 +1379,25 @@ struct RstResultBuilder {
     }
 
     showDeprecationMessage(node, indentComment);
+    // TODO: how do deprecation and unstable messages interplay?
+    showUnstableWarning(node, indentComment);
     return commentShown;
+  }
+
+  void showUnstableWarning(const Decl* node, bool indentComment=true) {
+    if (auto attrs = node->attributes()) {
+      if (attrs->isUnstable()) {
+        int commentShift = 0;
+          if (indentComment) {
+            indentStream(os_, indentDepth_ * indentPerDepth);
+            commentShift = 1;
+          }
+          os_ << ".. warning::\n\n";
+          indentStream(os_, (indentDepth_ + commentShift) * indentPerDepth);
+        os_ << strip(attrs->unstableMessage().c_str());
+        os_ << "\n\n";
+      }
+    }
   }
 
   void showDeprecationMessage(const Decl* node, bool indentComment=true) {
@@ -1489,6 +1463,7 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Class* c) {
     if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
+    if (textOnly_) os_ << "Class: ";
     show("class", c);
     visitChildren(c);
     return getResult(true);
@@ -1628,6 +1603,8 @@ struct RstResultBuilder {
     if (textOnly_) indentDepth_ --;
     showComment(m, textOnly_);
     showDeprecationMessage(m, false);
+    // TODO: Are we not printing these for modules?
+    // showUnstableWarning(m, false);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
@@ -2047,8 +2024,11 @@ struct Args {
   std::string chplHome;
 };
 
-static Args parseArgs(int argc, char **argv) {
+static Args parseArgs(int argc, char **argv, void* mainAddr) {
   Args ret;
+  init_args(&sArgState, argv[0], mainAddr);
+  init_arg_desc(&sArgState, docs_arg_desc);
+  process_args(&sArgState, argc, argv);
   ret.author = std::string(fDocsAuthor);
   if (fDocsCommentLabel[0] != '\0') {
     ret.commentStyle = std::string(fDocsCommentLabel);
@@ -2060,6 +2040,11 @@ static Args parseArgs(int argc, char **argv) {
   ret.printSystemCommands = printSystemCommands;
   ret.projectVersion = checkProjectVersion(fDocsProjectVersion);
   ret.noHTML = !fDocsHTML;
+  // add source files
+  // TODO: Check for proper file type, duplicate file names, was file found, etc.
+  for (int i = 0; i < sArgState.nfile_arguments; i++) {
+    ret.files.push_back(std::string(sArgState.file_argument[i]));
+  }
   return ret;
 }
 
@@ -2119,16 +2104,34 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 
 
 int main(int argc, char** argv) {
+  // initial value of CHPL_HOME may be overridden by cmdline arg
+  CHPL_HOME = getenv("CHPL_HOME");
+  Args args = parseArgs(argc, argv, (void*)main);
 
-  init_args(&sArgState, argv[0]);
-  init_arg_desc(&sArgState, docs_arg_desc);
-  process_args(&sArgState, argc, argv);
-  Args args = parseArgs(argc, argv);
-  // add source files
-  // TODO: Check for proper file type, duplicate file names, was file found, etc.
-  for (int i = 0; i < sArgState.nfile_arguments; i++) {
-    args.files.push_back(std::string(sArgState.file_argument[i]));
+  // check if user asked for legacy chpldoc
+  if (fLegacyChpldoc) {
+    std::string pathToExe = getExecutablePath(argv[0], (void*)main);
+    std::string cmd = pathToExe + "-legacy ";
+    for (int i = 1; i < argc; i++) {
+      std::string arg = std::string(argv[i]);
+      if (arg != "--legacy") {
+        // these flags had their args unwrapped, add quotes back to avoid
+        // situation where shell evaluates or splits the args
+        // TODO: Should we just wrap all the possible values in quotes?
+        if (arg == "--comment-style" || arg == "--author") {
+          assert(i + 1 < argc);
+          cmd += arg;
+          cmd += " \""+std::string(argv[i+1])+"\"";
+          i++;
+        } else {
+          cmd += arg;
+        }
+        cmd += " ";
+      }
+    }
+    return myshell(cmd, "running legacy chpldoc", true);
   }
+
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {
     std::cerr << "error: comment label should start with /*" << std::endl;
@@ -2137,15 +2140,11 @@ int main(int argc, char** argv) {
   commentStyle_ = args.commentStyle;
   processUsedModules_ = args.processUsedModules;
 
-  // update CHPL_HOME if we got one from the command-line args, or use the
-  // environment variable.
-  if (!args.chplHome.empty()) {
-    CHPL_HOME = args.chplHome;
-  } else {
-    CHPL_HOME = getenv("CHPL_HOME");
-  }
+
   Context context(CHPL_HOME);
   Context *ctx = &context;
+  auto chplEnv = ctx->getChplEnv();
+  assert(!chplEnv.getError() && "not handling chplenv errors yet");
 
   // This is the final location for the output format (e.g. the html files.).
   std::string docsOutputDir;
@@ -2195,25 +2194,23 @@ int main(int argc, char** argv) {
   std::string modRoot = CHPL_HOME + "/modules";
   std::string internal = modRoot + "/internal";
   std::string bundled = modRoot + "/";
-  auto chplEnv = ctx->getChplEnv();
-  assert(!chplEnv.getError() && "not handling chplenv errors yet");
 
   // CHPL_MODULE_PATH isn't always in the output; check if it's there.
   auto it = chplEnv->find("CHPL_MODULE_PATH");
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
-  chpl::parsing::setupModuleSearchPaths(ctx,
-                                      CHPL_HOME,
-                                      false, //minimal modules
-                                      chplEnv->at("CHPL_LOCALE_MODEL"),
-                                      false, //task tracking
-                                      chplEnv->at("CHPL_TASKS"),
-                                      chplEnv->at("CHPL_COMM"),
-                                      chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
-                                      chplModulePath,
-                                      {}, //cmdLinePaths
-                                      args.files);
+  setupModuleSearchPaths(ctx,
+                         CHPL_HOME,
+                         false, //minimal modules
+                         chplEnv->at("CHPL_LOCALE_MODEL"),
+                         false, //task tracking
+                         chplEnv->at("CHPL_TASKS"),
+                         chplEnv->at("CHPL_COMM"),
+                         chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
+                         chplModulePath,
+                         {}, //cmdLinePaths
+                         args.files);
   GatherModulesVisitor gather(ctx);
-  printStuff(argv[0]);
+  printStuff(argv[0], (void*)main);
   // evaluate all the files and gather the modules
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
