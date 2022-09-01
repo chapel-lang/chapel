@@ -137,6 +137,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "compiler/dyno/tools/chpldoc/LICENSE",
        "compiler/dyno/tools/chpldoc/BUILD_VERSION",
        "compiler/dyno/tools/chpldoc/COPYRIGHT",
+       "compiler/dyno/include/chpl/config/config.h.cmake",
 );
 
 
@@ -254,7 +255,7 @@ foreach $dir (@code_dirs) {
         chomp $fullpath;
         $file = $fullpath;
         $file =~ s/(\S+\/)+//g;
-        if ($file =~ /(\.(h|cpp|c|ypp|lex|cmake)$)|Makefile|README|BUILD_VERSION|CMakeLists\.txt/) {
+        if ($file =~ /(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION|CMakeLists\.txt/) {
             # print "$fullpath\n";
             push @tarfiles, "$reldir/$fullpath";
         }
