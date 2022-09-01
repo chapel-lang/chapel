@@ -35,10 +35,6 @@ module ChapelRange {
   pragma "no doc"
   config param useOptimizedRangeIterators = true;
 
-  pragma "no doc"
-  deprecated "'sizeReturnsInt' is deprecated and no longer has an effect"
-  config param sizeReturnsInt = false;
-
   /*
     The ``BoundedRangeType`` enum is used to specify the types of bounds a
     range is required to have.
@@ -502,11 +498,11 @@ module ChapelRange {
   proc range.isBounded() param
     return boundedType == BoundedRangeType.bounded;
 
-  /* This controls whether the :proc:`range.low`/:proc:`range.high`
-     queries should return aligned values by default.  In future
-     Chapel releases, they will be aligned by default and this config
-     will be deprecated.  As such, this gives users the ability to opt
-     into the new behavior without breaking existing programs. */
+  /* This used to control whether or not the
+     :proc:`range.low`/:proc:`range.high` queries returned aligned
+     values by default.  Now, such bounds are aligned by default and
+     this config is deprecated. */
+  deprecated "alignedBoundsByDefault is deprecated and no longer has any effect"
   config param alignedBoundsByDefault = false;
 
   /* Returns true if this range's low bound is *not* -:math:`\infty`,
@@ -518,37 +514,41 @@ module ChapelRange {
   /* Return the range's low bound. If the range does not have a low
      bound (e.g., ``..10``), the behavior is undefined.  See also
      :proc:`range.hasLowBound`. */
-  inline proc range.lowBound {
+  inline proc range.lowBound: idxType {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
     }
     return chpl_intToIdx(_low);
   }
 
-  /* Return the range's low bound. If the range does not have a low
-     bound (e.g., ``..10``), the behavior is undefined.  See also
-     :proc:`range.hasLowBound`.
+  /* Returns the range's aligned low bound. If this bound is
+     undefined (e.g., ``..10 by -2``), the behavior is undefined.
 
-     Note that in future releases, this query will return the lowest
-     value represented by the range, which may differ from its low
-     bound in cases like ``1..10 by -2``.  To opt into this behavior
-     now, compile with :param:`alignedBoundsByDefault` set to true.
-     To query the pure low bound, see :proc:`range.lowBound`. */
-  inline proc range.low {
+     Example:
+
+     .. code-block:: chapel
+
+       var r = 1..10 by -2;
+       writeln(r.alignedLow);
+
+     produces the output
+
+     .. code-block: printoutput
+
+       2
+  */
+  inline proc range.low: idxType {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
     }
-    if !alignedBoundsByDefault && stridable {
-      compilerWarning("The '.low' query on ranges is in the process of changing from returning the pure low bound to the aligned low bound (e.g., from '1' to '2' for '1..10 by -2').  Update to the '.lowBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior.");
-    }
-    return if alignedBoundsByDefault then this.alignedLow else chpl_intToIdx(_low);
+    return this.alignedLow;
   }
 
 
-  /* Returns the range's aligned low bound. If the aligned low bound is
-     undefined (e.g., ``..10 by -2``), the behavior is undefined.
-   */
-  inline proc range.alignedLow : idxType {
+  /* Return the range's aligned low bound.  Note that this is a more
+     descriptive synonym for :proc:`range.low`.
+  */
+  inline proc range.alignedLow: idxType {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
     }
@@ -578,7 +578,7 @@ module ChapelRange {
      bound (e.g., ``1..``), the behavior is undefined.  See also
      :proc:`range.hasHighBound`.
   */
-  inline proc range.highBound {
+  inline proc range.highBound: idxType {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
     }
@@ -592,34 +592,6 @@ module ChapelRange {
   }
 
 
-  /* Return the range's high bound. If the range does not have a high
-     bound (e.g., ``1..``), the behavior is undefined.  See also
-     :proc:`range.hasHighBound`.
-
-
-     Note that in future releases, this query will return the highest
-     value represented by the range, which may differ from its high
-     bound in cases like ``1..10 by 2``.  To opt into this behavior
-     now, compile with :param:`alignedBoundsByDefault` set to true.
-     To query the pure high bound, see :proc:`range.highBound`.
-  */
-  inline proc range.high {
-    if !hasHighBound() {
-      compilerError("can't query the high bound of a range without one");
-    }
-    if !alignedBoundsByDefault && stridable {
-      compilerWarning("The '.high' query on ranges is in the process of changing from returning the pure high bound to the aligned high bound (e.g., from '10' to '9' for '1..10 by 2').  Update to the '.highBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior now and avoid this warning.");
-    }
-    if chpl__singleValIdxType(idxType) {
-      if _low > _high { // avoid circularity of calling .size which calls .high
-        warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
-        return if alignedBoundsByDefault then this.alignedLow else chpl_intToIdx(_low);
-      }
-    }
-    return if alignedBoundsByDefault then this.alignedHigh else chpl_intToIdx(_high);
-  }
-
-
   /* Returns the range's aligned high bound. If the aligned high bound is
      undefined (e.g., ``1.. by 2``), the behavior is undefined.
 
@@ -627,17 +599,33 @@ module ChapelRange {
 
      .. code-block:: chapel
 
-       var r = 0..20 by 3;
+       var r = 1..10 by 2;
        writeln(r.alignedHigh);
 
      produces the output
 
      .. code-block: printoutput
 
-       18
-
+       9
   */
-  inline proc range.alignedHigh : idxType {
+  inline proc range.high: idxType {
+    if !hasHighBound() {
+      compilerError("can't query the high bound of a range without one");
+    }
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high { // avoid circularity of calling .size which calls .high
+        warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
+        return this.alignedLow;
+      }
+    }
+    return this.alignedHigh;
+  }
+
+
+  /* Return the range's aligned high bound.  Note that this is a more
+     descriptive synonym for :proc:`range.high`.
+  */
+  inline proc range.alignedHigh: idxType {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
     }
