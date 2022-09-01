@@ -91,7 +91,7 @@ or
 
 .. method:: operator Foo.-(lhs: Foo, rhs: Foo)
 
-.. method:: operator Foo.<=>(ref lhs: owned Foo?, ref rhs: owned Foo?)
+.. method:: operator Foo.<=>(ref lhs: owned nilable Foo, ref rhs: owned nilable Foo)
 
 .. method:: operator Foo.*=(ref lhs: Foo, rhs: Foo)
 

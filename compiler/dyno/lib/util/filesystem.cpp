@@ -217,10 +217,5 @@ std::error_code makeDir(std::string dirpath, bool makeParents) {
   }
 }
 
-std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
-  using namespace llvm::sys::fs;
-  return getMainExecutable(argv0, MainExecAddr);
-}
-
 
 } // namespace chpl
