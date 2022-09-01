@@ -81,7 +81,7 @@ module GPU
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc assertOnGpu() {
+  inline proc assertOnGpu() {
     __primitive("chpl_assert_on_gpu");
   }
 }
