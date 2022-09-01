@@ -5,6 +5,6 @@ class MyClass {  var x: int;  }
 var lhs: shared MyClass? = nil;
 var rhs: owned MyClass?;
 
-lhs = rhs;
+lhs = rhs: shared MyClass;
 
 

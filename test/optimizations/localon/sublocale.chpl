@@ -3,7 +3,7 @@ class Foo {
 }
 
 proc main() {
-  var f    = new borrowed Foo();
+  var f    = (new owned Foo()).borrow();
   var LM   = here._instance:LocaleModel;
   var wide = false;
 

@@ -241,6 +241,7 @@
 
  */
 
+@unstable "ArgumentParser is unstable."
 module ArgumentParser {
   use List;
   use Map;
@@ -255,9 +256,6 @@ module ArgumentParser {
   // TODO: Implement Help message and formatting
   // TODO: Move logic splitting '=' into '_match'
   // TODO: Add public github issue when available
-
-  if chpl_warnUnstable then
-    compilerWarning("ArgumentParser is unstable.");
 
   pragma "no doc"
   enum argKind { positional, subcommand, option, flag, passthrough };
@@ -980,7 +978,7 @@ module ArgumentParser {
 
       var _helpHandler = new shared HelpHandler();
       if !isNothingType(h) then
-        _helpHandler = helpHandler;
+        _helpHandler = helpHandler: shared h.chpl_t;
 
       _help = new helpWrapper(_helpHandler);
       if isStringType(t) then

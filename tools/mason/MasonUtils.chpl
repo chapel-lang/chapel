@@ -724,6 +724,44 @@ proc showToml(tomlFile : string) {
   openFile.close();
 }
 
+/*
+  Takes projectName, vcs (version control), show as inputs and
+  initializes a library project at a directory of given projectName
+  A library project consists of .gitignore file, Mason.toml file, and
+  directories such as .git, src, example, test
+*/
+proc InitProject(dirName, packageName, vcs, show,
+                 version: string, chplVersion: string, license: string,
+                 packageType: string) throws {
+  if packageType == "light" {
+    const path = if dirName == "" then here.cwd() else dirName;
+    const lightName = if packageName == "" then basename(here.cwd()) else packageName;
+    mkdir(dirName);
+    makeBasicToml(dirName=lightName, path=path, version, chplVersion, license, packageType);
+  } else {
+    if vcs {
+      gitInit(dirName, show);
+      addGitIgnore(dirName);
+    }
+    else {
+      mkdir(dirName);
+    }
+    // Confirm git init before creating files
+    if isDir(dirName) {
+      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license, packageType);
+      makeSrcDir(dirName);
+      makeModule(dirName, fileName=packageName, packageType);
+    }
+    else {
+      throw new owned MasonError("Failed to create project");
+    }
+  }
+  if packageName != "" then
+    writeln("Created new " + packageType + " project: " + packageName);
+  else
+    writeln("Created new " + packageType + " project: " + basename(here.cwd()));
+}
+
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: Toml) {

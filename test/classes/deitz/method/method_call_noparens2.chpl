@@ -4,6 +4,6 @@ class C {
   proc bar return foo;
 }
 
-var c = new borrowed C(4);
+var c = (new owned C(4)).borrow();
 
 writeln(c.bar);

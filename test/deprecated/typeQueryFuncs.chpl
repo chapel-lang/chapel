@@ -32,3 +32,10 @@ runQueries("associative array", assocArr);
 runQueries("sparse domain", sparseDom);
 runQueries("sparse array", sparseArr);
 
+// isFloat* functions are being deprecatd
+// (in favor of doing isReal(x) || isImag(x) instead)
+
+writeln("isFloat(1.2) returns ", isFloat(1.2));
+writeln("isFloat(real) returns ", isFloat(real));
+writeln("isFloatType(real) returns ", isFloatType(real));
+writeln("isFloatValue(1.2) returns ", isFloatValue(1.2));

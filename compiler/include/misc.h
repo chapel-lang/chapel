@@ -89,7 +89,7 @@ class BaseAST;
 bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();
-bool        localeUsesGPU();
+bool        usingGpuLocaleModel();
 
 const char* cleanFilename(const BaseAST* ast);
 const char* cleanFilename(const char*    name);

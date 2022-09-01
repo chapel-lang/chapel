@@ -210,7 +210,7 @@ module String {
   use CTypes;
   use ByteBufferHelpers;
   use BytesStringCommon;
-  import SysBasic.{syserr};
+  import OS.{errorCode};
 
   use CString;
   public use StringCasts;
@@ -222,14 +222,14 @@ module String {
   private extern proc qio_decode_char_buf(ref chr:int(32),
                                           ref nbytes:c_int,
                                           buf:c_string,
-                                          buflen:c_ssize_t): syserr;
+                                          buflen:c_ssize_t): errorCode;
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf_esc(ref chr:int(32),
                                               ref nbytes:c_int,
                                               buf:c_string,
-                                              buflen:c_ssize_t): syserr;
+                                              buflen:c_ssize_t): errorCode;
   pragma "fn synchronization free"
-  private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
+  private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):errorCode;
   pragma "fn synchronization free"
   private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
@@ -1910,15 +1910,9 @@ module String {
                         first line.
 
       :returns: A new `string` with indentation removed.
-
-      .. warning::
-
-        ``string.dedent`` is not considered stable and is subject to change in
-        future Chapel releases.
   */
+  @unstable "string.dedent is subject to change in the future."
   proc string.dedent(columns=0, ignoreFirst=true) : string {
-    if chpl_warnUnstable then
-      compilerWarning("string.dedent is subject to change in the future.");
     return doDedent(this, columns, ignoreFirst);
   }
 

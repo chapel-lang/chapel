@@ -22,7 +22,7 @@ class OneToTen {
   }
 }
 
-var sharedOneToTen = new borrowed OneToTen();
+var sharedOneToTen = (new owned OneToTen()).borrow();
 
 cobegin {
   for x in sharedOneToTen.count() do register(1, x);

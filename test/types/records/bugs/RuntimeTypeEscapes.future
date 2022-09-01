@@ -1,0 +1,7 @@
+bug: (#15929) Runtime types used in type constructors are discarded
+
+If a type alias 'A' contains a runtime type, and then is used as a
+component in another type alias 'B', the runtime type information
+in 'A' becomes unreachable, resulting in a default-initialized
+runtime type being used instead. This leads to execution errors.
+No .bad file because the failure mode is variable (usually segfaults).

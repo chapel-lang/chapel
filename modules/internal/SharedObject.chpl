@@ -252,6 +252,7 @@ module SharedObject {
     // Initialize generic 'shared' var-decl from owned:
     //   var s : shared = ownedThing;
     pragma "no doc"
+    deprecated "assigning owned class to shared class is deprecated."
     proc init=(pragma "nil from arg" in take: owned) {
       var p = take.release();
 
@@ -343,6 +344,7 @@ module SharedObject {
 
     // Issue a compiler error for illegal uses.
     pragma "no doc"
+    //deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
     proc type create(source) {
       compilerError("cannot create a 'shared' from ", source.type:string);
     }
@@ -352,6 +354,7 @@ module SharedObject {
        The result type preserves nilability of the argument type.
        If the argument is non-nilable, it must be recognized by the compiler
        as an expiring value. */
+    //deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
     inline proc type create(pragma "nil from arg" in take: owned) {
       var result : shared = take;
       return result;
@@ -359,6 +362,7 @@ module SharedObject {
 
     /* Creates a new `shared` class reference to the argument.
        The result has the same type as the argument. */
+    //deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
     inline proc type create(pragma "nil from arg" in src: shared) {
       return src;
     }
@@ -370,6 +374,7 @@ module SharedObject {
        It is an error to directly delete the class instance
        after passing it to `shared.create()`. */
     pragma "unsafe"
+    //deprecated "'shared.create' is deprecated. Please use the assignment operator '=' instead"
     inline proc type create(pragma "nil from arg" p : unmanaged) {
       // 'result' may have a non-nilable type
       var result: (p.type : shared);
@@ -468,6 +473,7 @@ module SharedObject {
      On return, ``lhs`` will refer to the object previously
      managed by ``rhs``, and ``rhs`` will refer to `nil`.
    */
+  deprecated "assignment from an owned class to a shared class is deprecated"
   operator =(ref lhs:_shared, in rhs:owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
@@ -628,8 +634,16 @@ module SharedObject {
       compilerError("Cannot change class type in conversion from '",
                     x.type:string, "' to '", t:string, "'");
 
-    var tmp:t = x;
-    return tmp;
+    var p = x.release();
+    var rc: unmanaged ReferenceCount? = nil;
+    if p != nil then
+      rc = new unmanaged ReferenceCount();
+
+    var tmp: shared t.chpl_t?;
+    tmp.chpl_p = p;
+    tmp.chpl_pn = rc;
+
+    return try! tmp:shared t.chpl_t;
   }
 
   pragma "no doc"

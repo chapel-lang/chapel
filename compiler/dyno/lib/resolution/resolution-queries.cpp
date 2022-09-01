@@ -1252,6 +1252,39 @@ static bool varArgCountMatch(const VarArgFormal* formal,
   return true;
 }
 
+static QualifiedType getVarArgTupleElemType(const QualifiedType& varArgType) {
+  // If the type is a VarArgTuple then we should use its 'star' type
+  // with 'canPass'.
+  //
+  // Note: Unless there was an error resolving the type, this tuple
+  // should be a VarArgTuple
+  //
+  // TODO: Should we update 'canPass' to reason about VarArgTuples?
+  const TupleType* tup = varArgType.type()->toTupleType();
+  if (tup != nullptr && tup->isVarArgTuple()) {
+    return tup->starType();
+  } else {
+    return varArgType;
+  }
+}
+
+static Resolver createResolverForFnOrAd(Context* context,
+                                        const Function* fn,
+                                        const AggregateDecl* ad,
+                                        const SubstitutionsMap& substitutions,
+                                        const PoiScope* poiScope,
+                                        ResolutionResultByPostorderID& r) {
+  if (fn != nullptr) {
+    return Resolver::createForInstantiatedSignature(context, fn, substitutions,
+                                                    poiScope, r);
+  } else {
+    assert(ad != nullptr);
+    return Resolver::createForInstantiatedSignatureFields(context, ad,
+                                                          substitutions,
+                                                          poiScope, r);
+  }
+}
+
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -1299,11 +1332,39 @@ const TypedFnSignature* instantiateSignature(Context* context,
   std::vector<QualifiedType> varargsTypes;
   int varArgIdx = -1;
 
+  ResolutionResultByPostorderID r;
+  auto visitor = createResolverForFnOrAd(context, fn, ad, substitutions,
+                                         poiScope, r);
+
+  QualifiedType varArgType;
   for (const FormalActual& entry : faMap.byFormals()) {
     bool addSub = false;
     QualifiedType useType;
+    const auto formal = untypedSignature->formalDecl(entry.formalIdx());
     const auto& actualType = entry.actualType();
-    const auto& formalType = entry.formalType();
+
+    // Re-compute the formal type using substitutions if needed.
+    // Performance: we can start doing this only after the first substitution
+    //              is created
+    QualifiedType formalType;
+    if (entry.isVarArgEntry()) {
+      if (varArgType.isUnknown()) {
+        // We haven't yet re-computed the vararg tuple type.
+        formal->traverse(visitor);
+        varArgType = r.byAst(formal).type();
+      }
+      formalType = getVarArgTupleElemType(varArgType);
+    } else {
+      formal->traverse(visitor);
+      formalType = r.byAst(formal).type();
+      if (ad != nullptr) {
+        // generic var fields from a type are type fields in its type constructor.
+        // so, make sure the kind is correct.
+        formalType = QualifiedType(entry.formalType().kind(),
+                                   formalType.type(),
+                                   formalType.param());
+      }
+    }
 
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
@@ -1319,7 +1380,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
       }
     } else {
       auto got = canPass(context, actualType, formalType);
-      assert(got.passes()); // should not get here otherwise
+      if (!got.passes()) {
+        // Including past type information made this instantiation fail.
+        return nullptr;
+      }
       if (got.instantiates()) {
         // add a substitution for a valid value
         if (!got.converts() && !got.promotes()) {
@@ -1364,6 +1428,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
       if (addSub) {
         // add it to the substitutions map
         substitutions.insert({entry.formal()->id(), useType});
+        // Explicitly override the type in the resolver to make it available
+        // to later fields without re-visiting and re-constructing the resolver.
+        // TODO: is this too hacky?
+        r.byAst(entry.formal()).setType(useType);
         // note that a substitution was used here
         if ((size_t) formalIdx >= formalsInstantiated.size()) {
           formalsInstantiated.resize(sig->numFormals());
@@ -1731,14 +1799,13 @@ struct ReturnTypeInferrer {
       return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
     } else {
       auto retType = commonType(context, returnedTypes,
-                                /* useRequiredKind */ true,
                                 (QualifiedType::Kind) returnIntent);
-      if (retType.isUnknown()) {
+      if (!retType) {
         // Couldn't find common type, so return type is incorrect.
         context->error(astForErr, "could not determine return type for function");
-        retType = QualifiedType(retType.kind(), ErroneousType::get(context));
+        retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
       }
-      return retType;
+      return retType.getValue();
     }
   }
 
@@ -2051,19 +2118,7 @@ isInitialTypedSignatureApplicable(Context* context,
         }
         numVarArgActuals += 1;
 
-        // If the type is a VarArgTuple then we should use its 'star' type
-        // with 'canPass'.
-        //
-        // Note: Unless there was an error resolving the type, this tuple
-        // should be a VarArgTuple
-        //
-        // TODO: Should we update 'canPass' to reason about VarArgTuples?
-        const TupleType* tup = formalType.type()->toTupleType();
-        if (tup != nullptr && tup->isVarArgTuple()) {
-          got = canPass(context, actualType, tup->starType());
-        } else {
-          got = canPass(context, actualType, formalType);
-        }
+        got = canPass(context, actualType, getVarArgTupleElemType(formalType));
       } else {
         got = canPass(context, actualType, formalType);
       }
@@ -2233,7 +2288,7 @@ static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const CallInfo& ci,
-                 std::unordered_set<const Scope*>& visited) {
+                 ScopeSet& visited) {
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
@@ -2645,7 +2700,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   // search for candidates at each POI until we have found a candidate
   CandidatesVec candidates;
   size_t firstPoiCandidate = 0;
-  std::unordered_set<const Scope*> visited;
+  ScopeSet visited;
 
   // inject compiler-generated candidates in a manner similar to below
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,

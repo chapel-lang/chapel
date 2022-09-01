@@ -1,8 +1,9 @@
 use SysBasic;
 use CTypes;
+import OS.{errorCode};
 
 proc doDebugWrite(x, y):c_int {
-  extern proc qio_int_to_err(a:int(32)):syserr;
+  extern proc qio_int_to_err(a:int(32)):errorCode;
 
   writeln("Debug Write: ", x, y);
   return qio_int_to_err(1);

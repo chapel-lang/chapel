@@ -9,8 +9,8 @@ proc helper(const ref c : borrowed Foo) {
 }
 
 proc main() {
-  var loc = new borrowed Foo(42);
-  var rem = new borrowed Foo(100);
+  var loc = (new owned Foo(42)).borrow();
+  var rem = (new owned Foo(100)).borrow();
   helper(loc);
 
   on Locales[numLocales-1] {

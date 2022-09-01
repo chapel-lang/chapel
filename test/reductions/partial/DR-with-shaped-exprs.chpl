@@ -26,7 +26,7 @@ writeln();
 //---------------------------------
 
 var ARR1 = PR(
-  perElemOp = new borrowed SumReduceScanOp(eltType=int),
+  perElemOp = (new owned SumReduceScanOp(eltType=int)).borrow(),
   resultDom = { 1..1, 1..3 },
   sourceArr = A
 );
@@ -37,7 +37,7 @@ writeln(ARR1);
 writeln();
 
 var ARR2 = PR(
-  perElemOp = new borrowed SumReduceScanOp(eltType=int),
+  perElemOp = (new owned SumReduceScanOp(eltType=int)).borrow(),
   resultDom = { 1..2, 1..1 },
   sourceArr = A
 );
@@ -50,7 +50,7 @@ writeln();
 //---------------------------------
 
 var FE1 = PR(
-  perElemOp = new borrowed SumReduceScanOp(eltType=int),
+  perElemOp = (new owned SumReduceScanOp(eltType=int)).borrow(),
   resultDom = { 1..1, 1..3 },
   sourceExp = [d in D] 100**d(0)
 );
@@ -61,7 +61,7 @@ writeln(FE1);
 writeln();
 
 var FE2 = PR(
-  perElemOp = new borrowed SumReduceScanOp(eltType=int),
+  perElemOp = (new owned SumReduceScanOp(eltType=int)).borrow(),
   resultDom = { 1..2, 1..1 },
   sourceExp = [d in D] 100**d(0)
 );
@@ -82,7 +82,7 @@ writeln(C);
 writeln();
 
 var PE1 = PR(
-  perElemOp = new borrowed SumReduceScanOp(eltType=int),
+  perElemOp = (new owned SumReduceScanOp(eltType=int)).borrow(),
   resultDom = { 1..1, 1..3 },
   sourceExp = A + B
 );
@@ -93,7 +93,7 @@ writeln(PE1);
 writeln();
 
 var PE2 = PR(
-  perElemOp = new borrowed SumReduceScanOp(eltType=int),
+  perElemOp = (new owned SumReduceScanOp(eltType=int)).borrow(),
   resultDom = { 1..2, 1..1 },
   sourceExp = A + B
 );

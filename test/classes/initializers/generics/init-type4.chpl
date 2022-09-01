@@ -16,6 +16,6 @@ class A {
   }
 }
 
-var a = new borrowed A(2);
+var a = (new owned A(2)).borrow();
 
 writeln(a);

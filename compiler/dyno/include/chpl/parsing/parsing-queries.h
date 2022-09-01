@@ -209,6 +209,17 @@ void setupModuleSearchPaths(Context* context,
                             const std::vector<std::string>& inputFilenames);
 
 /**
+  Overload of the more general setupModuleSearchPaths that uses the
+  context's stored chplHome and chplEnv to determine the values of most
+  arguments.
+*/
+void setupModuleSearchPaths(Context* context,
+                            bool minimalModules,
+                            bool enableTaskTracking,
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames);
+
+/**
  Returns true if the ID corresponds to something in an internal module.
  */
 bool idIsInInternalModule(Context* context, ID id);

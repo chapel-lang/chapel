@@ -47,8 +47,8 @@ static
 void computeIdMaps(
     const AstNode* ast,
     const AstNode* parentAst,
-    std::unordered_map<ID, const AstNode*>& idToAst,
-    std::unordered_map<ID, ID>& idToParentId) {
+    llvm::DenseMap<ID, const AstNode*>& idToAst,
+    llvm::DenseMap<ID, ID>& idToParentId) {
 
   for (const AstNode* child : ast->children()) {
     computeIdMaps(child, ast, idToAst, idToParentId);
@@ -91,8 +91,8 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   changed |= updateAstList(keep.topLevelExpressions_,
                            addin.topLevelExpressions_);
 
-  std::unordered_map<ID, const AstNode*> newIdToAst;
-  std::unordered_map<ID, ID> newIdToParent;
+  llvm::DenseMap<ID, const AstNode*> newIdToAst;
+  llvm::DenseMap<ID, ID> newIdToParent;
 
   // recompute locationsVec by traversing the AST and using the maps
   for (const auto& ast : keep.topLevelExpressions_) {

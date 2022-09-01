@@ -64,7 +64,7 @@ Returns ``true`` if the type ``t`` is one the following types, of any width:
 ``int``, ``uint``, ``real``, ``imag``, ``complex``.
 */
 proc isNumericType(type t) param return
-  isIntegralType(t) || isFloatType(t) || isComplexType(t);
+  isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t);
 
 /*
 Returns ``true`` if the type ``t`` is one the following types, of any width:
@@ -77,6 +77,7 @@ proc isIntegralType(type t) param return
 Returns ``true`` if the type ``t`` is one the following types, of any width:
 ``real``, ``imag``.
 */
+deprecated "isFloatType is deprecated use `isRealType(t) || isImagType(t)` instead"
 proc isFloatType(type t) param return
   isRealType(t) || isImagType(t);
 
@@ -326,6 +327,7 @@ proc isIntegralValue(e)  param  return isIntegralType(e.type);
 
 /* Returns ``true`` if the argument is a value of one the following types:
 ``real``, ``imag``. */
+deprecated "isFloatValue is deprecated use `isRealValue(e) || isImagValue(e)` instead"
 proc isFloatValue(e)     param  return isFloatType(e.type);
 
 /* Returns ``true`` if the argument is a ``nothing`` value (i.e., ``none``) */
@@ -454,6 +456,7 @@ proc isNumeric(type t)   param  return isNumericType(t);
 pragma "no doc"
 proc isIntegral(type t)  param  return isIntegralType(t);
 pragma "no doc"
+deprecated "isFloat is deprecated use `isReal(t) || isImag(t)` instead"
 proc isFloat(type t)     param  return isFloatType(t);
 
 pragma "no doc"
@@ -552,6 +555,7 @@ proc isIntegral(e)  param  return isIntegralValue(e);
 Returns ``true`` if the argument is one the following types, of any width:
 ``real``, ``imag``, or a value of such a type.
 */
+deprecated "isFloat is deprecated use `isReal(e) || isImag(e)` instead"
 proc isFloat(e)     param  return isFloatValue(e);
 
 /* Returns ``true`` if the argument is ``none`` or the ``nothing`` type.
@@ -839,7 +843,8 @@ pragma "no doc"
 proc min(type t) param  where isUint(t)      return 0: t;
 
 pragma "no doc"
-proc min(type t) where isFloatType(t)        return __primitive( "_min", t);
+proc min(type t) where isRealType(t) || isImagType(t)
+  return __primitive( "_min", t);
 
 pragma "no doc"
 proc min(type t) where isComplexType(t) {
@@ -882,7 +887,7 @@ pragma "no doc"
 proc max(type t) param  where t == uint(64)  return 0xffffffffffffffff: t;
 
 pragma "no doc"
-proc max(type t) where isFloatType(t)        return __primitive( "_max", t);
+proc max(type t) where isRealType(t) || isImagType(t)        return __primitive( "_max", t);
 
 pragma "no doc"
 proc max(type t) where isComplexType(t) {
@@ -1079,21 +1084,25 @@ proc isProperSubtype(type sub, type super) param {
 
 /* :returns: isProperSubtype(a,b) */
 pragma "docs only"
+deprecated "< operator is deprecated to compare types, use isPropersubtype instead"
 operator <(type a, type b) param {
   return isProperSubtype(a,b);
 }
 /* :returns: isSubtype(a,b) */
 pragma "docs only"
+deprecated "<= operator is deprecated to compare types, use isSubtype instead"
 operator <=(type a, type b) param {
   return isSubtype(a,b);
 }
 /* :returns: isProperSubtype(b,a) */
 pragma "docs only"
+deprecated "> operator is deprecated to compare types, use isProperSubtype instead"
 operator >(type a, type b) param {
   return isProperSubtype(b,a);
 }
 /* :returns: isSubtype(b,a) */
 pragma "docs only"
+deprecated "< operator is deprecated to compare types, use isSubtype instead"
 operator >=(type a, type b) param {
   return isSubtype(b,a);
 }

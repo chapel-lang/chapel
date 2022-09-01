@@ -90,6 +90,7 @@ target_sources(libdyno-obj
                RealLiteral.cpp
                Record.cpp
                Reduce.cpp
+               ReduceIntent.cpp
                Require.cpp
                Return.cpp
                Scan.cpp

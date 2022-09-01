@@ -7,6 +7,9 @@ import sys
 import multiprocessing
 import itertools
 from typing import Set, List
+import re
+import json
+import tempfile
 
 
 log = partial(print, file=sys.stderr)
@@ -21,6 +24,12 @@ lib_dirs = [
     'resolution',
     'types',
     'uast',
+]
+
+skip_flags = [
+    r'-Walloc-size-larger-than=(\d+)',
+    r'-Wno-stringop-truncation',
+    r'-Wno-format-truncation',
 ]
 
 def files_changed(to='main') -> Set[Path]:
@@ -105,6 +114,23 @@ if __name__ == '__main__':
         print('No files to work on')
         sys.exit(0)
 
-    compile_commands = args.compile_commands
+    tempdir = None
+    if args.compile_commands is not None:
+        commands = []
+        with open(args.compile_commands / 'compile_commands.json') as f:
+            commands = json.load(f)
+
+        # strip flags incompatible with Clang
+        skip_flag_regex = '|'.join(skip_flags)
+        for command in commands:
+            command['command'] = re.sub(skip_flag_regex, '', command['command'])
+
+        # Clang needs a whole directory for compile_commands, for some
+        # reason. Create the directory and the file within it.
+        tempdir = tempfile.TemporaryDirectory()
+        commands_file = tempdir.name + '/compile_commands.json'
+        with open(commands_file, mode='w') as f:
+            f.write(json.dumps(commands))
+        compile_commands = tempdir.name
 
     main(args)

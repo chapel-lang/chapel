@@ -19,7 +19,7 @@ printvisibleOptFalse.chpl:3: Printing symbols visible from here:
   modules/minimal/internal/ChapelUtil.chpl:43: chpl_libraryModuleLevelCleanup
   modules/minimal/internal/ChapelUtil.chpl:46: chpl_addModule
   modules/minimal/internal/ChapelUtil.chpl:48: chpl_deinitModules
-  modules/minimal/internal/IO.chpl:23: syserr
+  modules/minimal/internal/IO.chpl:23: errorCode
   modules/minimal/internal/IO.chpl:24: qio_channel_ptr_t
   modules/minimal/internal/IO.chpl:26: c_void_ptr
   modules/minimal/internal/IO.chpl:28: chpl_qio_setup_plugin_channel

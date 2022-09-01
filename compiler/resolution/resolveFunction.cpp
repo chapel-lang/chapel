@@ -2579,6 +2579,9 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     }
     // Remainder of this code assumes that to and toType match.
     INT_ASSERT(toValType == toType->type);
+
+    // generate a warning in some cases for int->uint implicit conversion
+    warnForIntUintConversion(insertBefore, toValType, fromValType, from);
   }
 
   // seemingly redundant toType->type->symbol is for lowered runtime type vars

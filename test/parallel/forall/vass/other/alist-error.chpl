@@ -5,9 +5,9 @@ class A {
   var X: domain(int);
 
   proc init(N: int) {
-    var R = new borrowed RandomStream(real, 13);
+    var R = (new owned RandomStream(real, 13)).borrow();
     this.X = [x in 1..N] x;
     var Y = [x in this.X] R.getNext();
   }
 }
-var a = new borrowed A(100);
+var a = (new owned A(100)).borrow();

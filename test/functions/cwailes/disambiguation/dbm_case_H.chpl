@@ -11,4 +11,4 @@ proc foo(a: borrowed Bar(?t)) {
 }
 
 
-foo(new borrowed Bar(real));
+foo((new owned Bar(real)).borrow());

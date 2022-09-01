@@ -21,7 +21,7 @@ class D {
 }
 
 proc main() {
-  var myD = new borrowed D();
+  var myD = (new owned D()).borrow();
   D.start;  // BUG if I call this on D!!
   D.testit;
 }

@@ -71,28 +71,21 @@ proc masonNew(args: [] string) throws {
   var packageType = 'application';
 
   try! {
-    if args.size == 1 {
-      // TODO: should we move interactive mason creation?
-      var metadata = beginInteractiveSession('','','','');
-      packageName = metadata[0];
-      dirName = packageName;
-      version = metadata[1];
-      chplVersion = metadata[2];
-      license = metadata[3];
+    if dirArg.hasValue() then dirName = dirArg.value();
+    else if !isLightweight then
+      throw new owned MasonError("A package name must be specified");
+    if nameOpt.hasValue() {
+      packageName = nameOpt.value();
     } else {
-      if dirArg.hasValue() then dirName = dirArg.value();
-      if nameOpt.hasValue() {
-        packageName = nameOpt.value();
-      } else {
-        packageName = dirName;
-      }
-      if isApplication then
-        packageType = "application";
-      else if isLibrary then
-        packageType = "library";
-      else if isLightweight then
-        packageType = "light";
+      packageName = dirName;
     }
+    if isApplication then
+      packageType = "application";
+    else if isLibrary then
+      packageType = "library";
+    else if isLightweight then
+      packageType = "light";
+
     if !isLightweight && validatePackageName(dirName=packageName) {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");
@@ -266,43 +259,6 @@ proc validatePackageName(dirName) throws {
   }
   else {
     return true;
-  }
-}
-
-/*
-  Takes projectName, vcs (version control), show as inputs and
-  initializes a library project at a directory of given projectName
-  A library project consists of .gitignore file, Mason.toml file, and
-  directories such as .git, src, example, test
-*/
-proc InitProject(dirName, packageName, vcs, show,
-                 version: string, chplVersion: string, license: string,
-                 packageType: string) throws {
-  if packageType == "light" {
-    // TODO: add ability to get path and toml name from user
-    var lightDir = here.cwd();
-    makeBasicToml(dirName=packageName, path=lightDir, version, chplVersion, license, packageType);
-    writeln("Created new " + packageType + " project in current directory");
-  } else {
-    if vcs {
-      gitInit(dirName, show);
-      addGitIgnore(dirName);
-    }
-    else {
-      mkdir(dirName);
-    }
-    // Confirm git init before creating files
-    if isDir(dirName) {
-      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license, packageType);
-      makeSrcDir(dirName);
-      makeModule(dirName, fileName=packageName, packageType);
-      makeTestDir(dirName);
-      makeExampleDir(dirName);
-      writeln("Created new " + packageType + " project: " + dirName);
-    }
-    else {
-      throw new owned MasonError("Failed to create project");
-    }
   }
 }
 

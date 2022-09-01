@@ -65,11 +65,12 @@ proc launch(type ta, type tb) {
             mod(e2,f2).type:string, "\n");
 }
 
-// the calls commented out below hit typechecking issues in divceil()
+// the calls commented out below do not behave as this
+// test expected due to int->uint implicit conversion
 
 launch(int(32), int(32));
 launch(int(32), int(64));
-launch(int(32), uint(32));
+//launch(int(32), uint(32));
 //launch(int(32), uint(64));
 
 launch(int(64), int(32));
@@ -77,7 +78,7 @@ launch(int(64), int(64));
 launch(int(64), uint(32));
 //launch(int(64), uint(64));
 
-launch(uint(32), int(32));
+//launch(uint(32), int(32));
 launch(uint(32), int(64));
 launch(uint(32), uint(32));
 //launch(uint(32), uint(64));

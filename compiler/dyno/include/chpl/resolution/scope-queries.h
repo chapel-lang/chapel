@@ -21,10 +21,12 @@
 #define CHPL_RESOLUTION_SCOPE_QUERIES_H
 
 #include "chpl/resolution/scope-types.h"
+#include "llvm/ADT/SmallPtrSet.h"
 
 namespace chpl {
 namespace resolution {
 
+  using ScopeSet = llvm::SmallPtrSet<const Scope*, 5>;
 
   /**
     Returns true if this AST type can create a scope.
@@ -42,11 +44,6 @@ namespace resolution {
    */
   const Scope* scopeForModule(Context* context, ID moduleId);
 
-  /**
-    Gather the IDs of Use/Import statements within a scope.
-   */
-  const std::vector<ID>& findUseImportStmts(Context* context,
-                                            const Scope* scope);
  /**
     Find what a name might refer to.
 
@@ -88,7 +85,7 @@ namespace resolution {
                            const Scope* receiverScope,
                            UniqueString name,
                            LookupConfig config,
-                           std::unordered_set<const Scope*>& visited);
+                           ScopeSet& visited);
 
   /**
     Returns true if all of checkScope is visible from fromScope
@@ -115,6 +112,17 @@ namespace resolution {
   const InnermostMatch& findInnermostDecl(Context* context,
                                           const Scope* scope,
                                           UniqueString name);
+
+
+  /**
+   * Given a scope, returns a list of IDs for all the modules that were either
+   * used or imported in that scope. May return an empty vector if no modules
+   * were used or imported in the scope.
+   */
+  const
+  std::vector<ID> findUsedImportedModules(Context* context,
+                                           const Scope* scope);
+
 
 
 } // end namespace resolution

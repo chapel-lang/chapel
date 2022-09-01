@@ -86,20 +86,11 @@ class DisambiguationState {
 public:
         DisambiguationState();
 
-  bool  fn1MoreSpecific;
-  bool  fn2MoreSpecific;
+  bool  fn1NonParamArgsPreferred;
+  bool  fn2NonParamArgsPreferred;
 
-  bool  fn1Promotes;
-  bool  fn2Promotes;
-
-  bool fn1WeakPreferred;
-  bool fn2WeakPreferred;
-
-  bool fn1WeakerPreferred;
-  bool fn2WeakerPreferred;
-
-  bool fn1WeakestPreferred;
-  bool fn2WeakestPreferred;
+  bool  fn1ParamArgsPreferred;
+  bool  fn2ParamArgsPreferred;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -168,11 +159,12 @@ static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
 static bool hasUserAssign(Type* type);
 static void resolveOther();
 static bool fits_in_int(int width, Immediate* imm);
+static bool is_negative(Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
 static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm, bool realPart=true);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType, bool* paramNarrows);
 static bool
-moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
+moreSpecificCanDispatch(FnSymbol* fn, Type* actualType, Type* formalType);
 static BlockStmt* getParentBlock(Expr* expr);
 
 static void resolveTupleExpand(CallExpr* call);
@@ -216,7 +208,14 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
 static bool  obviousMismatch(CallExpr* call, FnSymbol* fn);
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
+static  Expr* chaseTypeConstructorForActual(CallExpr* init,
+                                            const char* subName,
+                                            int subIdx,
+                                            AggregateType* at);
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
+
+static void computeConversionInfo(ResolutionCandidate* candidate,
+                                  const DisambiguationContext& DC);
 
 static bool useLegacyNilability(Expr* at) {
   if (at != NULL) {
@@ -580,6 +579,7 @@ static bool fits_in_int_helper(int width, int64_t val) {
 }
 
 static bool fits_in_int(int width, Immediate* imm) {
+  // TODO: should this consider real or complex?
   if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     return fits_in_int_helper(width, i);
@@ -588,6 +588,15 @@ static bool fits_in_int(int width, Immediate* imm) {
     if (u > INT64_MAX)
       return false;
     return fits_in_int_helper(width, (int64_t)u);
+  }
+
+  return false;
+}
+
+static bool is_negative(Immediate* imm) {
+  if (imm->const_kind == NUM_KIND_INT) {
+    int64_t i = imm->int_value();
+    return (i < 0);
   }
 
   return false;
@@ -609,6 +618,7 @@ static bool fits_in_uint_helper(int width, uint64_t val) {
 }
 
 static bool fits_in_uint(int width, Immediate* imm) {
+  // TODO: should this consider real or complex?
   if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     if (i < 0)
@@ -987,17 +997,15 @@ static bool canParamCoerce(Type*   actualType,
     }
 
     //
-    // For smaller integer types, if the argument is a param, does it
+    // If the argument is a param, does it
     // store a value that's small enough that it could dispatch to
     // this argument?
     //
-    if (get_width(formalType) < 64) {
-      if (VarSymbol* var = toVarSymbol(actualSym)) {
-        if (var->immediate) {
-          if (fits_in_int(get_width(formalType), var->immediate)) {
-            *paramNarrows = true;
-            return true;
-          }
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (var->immediate) {
+        if (fits_in_int(get_width(formalType), var->immediate)) {
+          *paramNarrows = true;
+          return true;
         }
       }
     }
@@ -1013,12 +1021,21 @@ static bool canParamCoerce(Type*   actualType,
       return true;
     }
 
+    Immediate* imm = nullptr;
     if (VarSymbol* var = toVarSymbol(actualSym)) {
-      if (var->immediate) {
-        if (fits_in_uint(get_width(formalType), var->immediate)) {
-          *paramNarrows = true;
-          return true;
-        }
+      imm = var->immediate;
+    }
+
+    if (is_int_type(actualType) &&
+        get_width(actualType) <= get_width(formalType)) {
+      // int can coerce to uint
+      return true;
+    }
+
+    if (imm) {
+      if (fits_in_uint(get_width(formalType), imm)) {
+        *paramNarrows = true;
+        return true;
       }
     }
   }
@@ -1039,13 +1056,8 @@ static bool canParamCoerce(Type*   actualType,
     // don't coerce bools to reals (per spec: "unintended by programmer")
 
     if (is_int_type(actualType) || is_uint_type(actualType)) {
-      // coerce any integer type to maximum width real
-      if (get_width(formalType) >= 64)
-        return true;
-
-      // coerce small integer types to similar-sized reals
-      if (get_width(actualType) <= get_width(formalType))
-        return true;
+      // coerce any integer type to any width real
+      return true;
     }
 
     // coerce real from smaller size
@@ -1056,15 +1068,7 @@ static bool canParamCoerce(Type*   actualType,
     // coerce literal/param ints that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
-        if (is_int_type(actualType) || is_uint_type(actualType)) {
-          // if this param fits in an 'int(n)' or 'uint(n)', permit it
-          // to param coerce to a 'real(n)'
-          if (fits_in_int(get_width(formalType), var->immediate) ||
-              fits_in_uint(get_width(formalType), var->immediate)) {
-            *paramNarrows = true;
-            return true;
-          }
-        }
+        // int/uint params would be handled by any-int-to-real rule above
         if (is_real_type(actualType)) {
           if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
@@ -1106,14 +1110,9 @@ static bool canParamCoerce(Type*   actualType,
 
     // don't coerce bools to complexes (per spec: "unintended by programmer")
 
+    // coerce any integer type to any width complex
     if (is_int_type(actualType) || is_uint_type(actualType)) {
-      // coerce any integer type to maximum width complex
-      if (get_width(formalType) >= 128)
-        return true;
-
-      // coerce small integer types to real part of similar-sized complexes
-      if (get_width(actualType) <= get_width(formalType)/2)
-        return true;
+      return true;
     }
 
     // coerce real/imag from smaller size
@@ -1132,15 +1131,7 @@ static bool canParamCoerce(Type*   actualType,
     // coerce literal/param complexes that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
-        if (is_int_type(actualType) || is_uint_type(actualType)) {
-          // if this param fits in an 'int(n)' or 'uint(n)', permit it
-          // to param coerce to a 'complex(2*n)'
-          if (fits_in_int(get_width(formalType)/2, var->immediate) ||
-              fits_in_uint(get_width(formalType)/2, var->immediate)) {
-            *paramNarrows = true;
-            return true;
-          }
-        }
+        // int/uint params would be handled by any-int-to-complex rule above
         if (is_real_type(actualType)) {
           if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
@@ -1174,7 +1165,6 @@ static bool canParamCoerce(Type*   actualType,
       }
     }
   }
-
 
   return false;
 }
@@ -1245,6 +1235,15 @@ bool canCoerceTuples(Type*     actualType,
   return false;
 }
 
+static Type* normalizeTupleTypeToValueTuple(Type* t) {
+  if (AggregateType* at = toAggregateType(t->getValType())) {
+    if (at->symbol->hasFlag(FLAG_TUPLE)) {
+      return computeTupleWithIntent(INTENT_IN, at);
+    }
+  }
+
+  return t;
+}
 
 static
 ClassTypeDecoratorEnum removeGenericNilability(ClassTypeDecoratorEnum actual) {
@@ -1795,7 +1794,7 @@ static bool isGenericInstantiation(Type*     concrete,
 ************************************** | *************************************/
 
 static bool
-moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
+moreSpecificCanDispatch(FnSymbol* fn, Type* actualType, Type* formalType) {
   if (canDispatch(actualType, NULL, formalType, NULL, fn))
     return true;
   if (canInstantiate(actualType, formalType)) {
@@ -1894,6 +1893,73 @@ isDefinedInUseImport(BlockStmt* block, FnSymbol* fn,
   return false;
 }
 
+// Returns a distance measure used to compare the visibility
+// of two functions.
+//
+// Enclosing scope adds 2 distance
+// Shadow scope adds 1 distance
+//
+// Returns -1 if the function is not found here
+// or if the block was already visited.
+static int
+computeVisibilityDistanceInternal(BlockStmt* block, FnSymbol* fn,
+                                  int distance, Vec<BlockStmt*>& visited) {
+  // if the block was already visited, we should have
+  // already gathered the distance if it was there at all
+  if (visited.set_in(block))
+    return -1;
+
+  // first, check things in the current block or
+  // from use/import that don't use a shadow scope
+  bool foundHere = isDefinedInBlock(block, fn) ||
+                   isDefinedInUseImport(block, fn,
+                                        /* allowPrivateUseImp */ true,
+                                        /* forShadowScope */ false,
+                                        visited);
+
+
+  if (foundHere) {
+    return distance;
+  }
+
+  // next, check anything from a use/import in the
+  // current block that uses a shadow scope
+  bool foundShadowHere = isDefinedInUseImport(block, fn,
+                                              /* allowPrivateUseImp */ true,
+                                              /* forShadowScope */ true,
+                                              visited);
+
+  if (foundShadowHere) {
+    return distance+1;
+  }
+
+  // next, check parent scope, recursively
+  if (BlockStmt* parentBlock = getParentBlock(block)) {
+    return computeVisibilityDistanceInternal(parentBlock, fn,
+                                             distance+2, visited);
+  }
+
+  return -1;
+}
+
+// Returns a distance measure used to compare the visibility
+// of two functions.
+//
+// Returns -1 if the function is not found here
+static int computeVisibilityDistance(Expr* expr, FnSymbol* fn) {
+  //
+  // call helper function with visited set to avoid infinite recursion
+  //
+  Vec<BlockStmt*> visited;
+  BlockStmt* block = toBlockStmt(expr);
+  if (!block)
+    block = getParentBlock(expr);
+
+  return computeVisibilityDistanceInternal(block, fn, 0, visited);
+}
+
+
+
 static MoreVisibleResult
 isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
                       Vec<BlockStmt*>& visited1, Vec<BlockStmt*>& visited2) {
@@ -1991,20 +2057,51 @@ static Immediate* getImmediate(Symbol* actual) {
   return imm;
 }
 
+// Returns:
+//   -1 if 't' is not a numeric type
+//   0 if 't' is a default numeric type ('int' 'bool' etc)
+//   n a positive integer width if 't' is a non-default numeric type
+static int classifyNumericWidth(Type* t)
+{
+  // The default size counts as 0
+  if (t == dtInt[INT_SIZE_DEFAULT] ||
+      t == dtUInt[INT_SIZE_DEFAULT] ||
+      t == dtReal[FLOAT_SIZE_DEFAULT] ||
+      t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtComplex[COMPLEX_SIZE_DEFAULT])
+    return 0;
+
+  // Bool size 64 should be considered the same as int 64
+  // and just treat all bools the same
+  // to prefer the default size (i.e. int)
+  if (is_bool_type(t))
+    return 0;
+
+  if (is_int_type(t) ||
+      is_uint_type(t) ||
+      is_real_type(t) ||
+      is_imag_type(t) ||
+      is_bool_type(t))
+    return get_width(t);
+
+  if (is_complex_type(t))
+    return get_width(t) / 2;
+
+  return -1;
+}
+
 typedef enum {
   NUMERIC_TYPE_NON_NUMERIC,
   NUMERIC_TYPE_BOOL,
-  NUMERIC_TYPE_ENUM,
   NUMERIC_TYPE_INT_UINT,
   NUMERIC_TYPE_REAL,
   NUMERIC_TYPE_IMAG,
-  NUMERIC_TYPE_COMPLEX
+  NUMERIC_TYPE_COMPLEX,
 } numeric_type_t;
 
 static numeric_type_t classifyNumericType(Type* t)
 {
   if (is_bool_type(t)) return NUMERIC_TYPE_BOOL;
-  if (is_enum_type(t)) return NUMERIC_TYPE_ENUM;
   if (is_int_type(t)) return NUMERIC_TYPE_INT_UINT;
   if (is_uint_type(t)) return NUMERIC_TYPE_INT_UINT;
   if (is_real_type(t)) return NUMERIC_TYPE_REAL;
@@ -2014,82 +2111,94 @@ static numeric_type_t classifyNumericType(Type* t)
   return NUMERIC_TYPE_NON_NUMERIC;
 }
 
-
-// Returns 'true' if we should prefer passing actual to f1Type
-// over f2Type.
-// This method implements rules such as that a bool would prefer to
-// coerce to 'int' over 'int(8)'.
-static bool prefersCoercionToOtherNumericType(Type* actualType,
-                                              Type* f1Type,
-                                              Type* f2Type) {
-
-  INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
-
-  if (actualType != f1Type && actualType != f2Type) {
-    // Is there any preference among coercions of the built-in type?
-    // E.g., would we rather convert 'false' to :int or to :uint(8) ?
-
-    numeric_type_t aT = classifyNumericType(actualType);
-    numeric_type_t f1T = classifyNumericType(f1Type);
-    numeric_type_t f2T = classifyNumericType(f2Type);
-
-    bool aBoolEnum = (aT == NUMERIC_TYPE_BOOL || aT == NUMERIC_TYPE_ENUM);
-
-    // Prefer e.g. bool(w1) passed to bool(w2) over passing to int (say)
-    // Prefer uint(8) passed to uint(16) over passing to a real
-    if (aT == f1T && aT != f2T)
-      return true;
-    // Prefer bool/enum cast to int over uint
-    if (aBoolEnum && is_int_type(f1Type) && is_uint_type(f2Type))
-      return true;
-    // Prefer bool/enum cast to default-sized int/uint over another
-    // size of int/uint
-    if (aBoolEnum &&
-        (f1Type == dtInt[INT_SIZE_DEFAULT] ||
-         f1Type == dtUInt[INT_SIZE_DEFAULT]) &&
-        f2T == NUMERIC_TYPE_INT_UINT &&
-        !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
-          f2Type == dtUInt[INT_SIZE_DEFAULT]))
-      return true;
-    // For non-default-sized ints/uints...
-    if (aT == NUMERIC_TYPE_INT_UINT &&
-        get_width(actualType) < get_width(dtInt[INT_SIZE_DEFAULT])) {
-      // ...prefer smaller reals over larger ones
-      if (f1T == NUMERIC_TYPE_REAL && f2T == NUMERIC_TYPE_REAL &&
-          get_width(f1Type) < get_width(f2Type) &&
-          get_width(actualType) <= get_width(f1Type))
-        return true;
-      // ...prefer smaller complexes over larger ones
-      if (f1T == NUMERIC_TYPE_COMPLEX && f2T == NUMERIC_TYPE_COMPLEX &&
-          get_width(f1Type) < get_width(f2Type) &&
-          get_width(actualType) <= get_width(f1Type)/2)
-        return true;
+static bool isNegativeParamToUnsigned(Symbol* actualSym,
+                                      Type* actualScalarType,
+                                      Type* formalType) {
+  if (is_int_type(actualScalarType) && is_uint_type(formalType)) {
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (Immediate* imm = var->immediate) {
+        if (is_negative(imm)) {
+          return true;
+        }
+      }
     }
-    // Prefer int(64)/uint(64) cast to a default-sized real
-    // over another size of real or complex.
-    if (actualType == dtInt[INT_SIZE_DEFAULT] || actualType == dtUInt[INT_SIZE_DEFAULT]) {
-      if (f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
-          (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
-          f2Type != dtReal[FLOAT_SIZE_DEFAULT])
-        return true;
-      // Prefer int/uint cast to a default-sized complex
-      // over another size of complex.
-      if (f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
-          f2T == NUMERIC_TYPE_COMPLEX &&
-          f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
-        return true;
-    }
-    // Prefer real/imag cast to a same-sized complex over another size of
-    // complex.
-    if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
-        f1T == NUMERIC_TYPE_COMPLEX &&
-        f2T == NUMERIC_TYPE_COMPLEX &&
-        get_width(actualType)*2 == get_width(f1Type) &&
-        get_width(actualType)*2 != get_width(f2Type))
-      return true;
   }
 
   return false;
+}
+
+// This method implements rules such as that a bool would prefer to
+// coerce to 'int' over 'int(8)'.
+// Returns
+//  0 if there is no preference
+//  1 if f1Type is better
+//  2 if f2Type is better
+static int prefersNumericCoercion(ResolutionCandidate* candidate1,
+                                  ResolutionCandidate* candidate2,
+                                  const DisambiguationContext& DC,
+                                  Symbol* actualSym,
+                                  Type* actualScalarType,
+                                  Type* f1Type,
+                                  Type* f2Type,
+                                  const char*& reason) {
+
+
+  int acWidth = classifyNumericWidth(actualScalarType);
+  int f1Width = classifyNumericWidth(f1Type);
+  int f2Width = classifyNumericWidth(f2Type);
+
+  if (acWidth < 0 || f1Width < 0 || f2Width < 0) {
+    // something is not a numeric type
+    return 0;
+  }
+
+  // prefer something with the same numeric kind
+  numeric_type_t acKind = classifyNumericType(actualScalarType);
+  numeric_type_t f1Kind = classifyNumericType(f1Type);
+  numeric_type_t f2Kind = classifyNumericType(f2Type);
+  if (acKind == f1Kind && acKind != f2Kind) {
+    reason = "same numeric kind";
+    return 1;
+  }
+  if (acKind != f1Kind && acKind == f2Kind) {
+    reason = "same numeric kind";
+    return 2;
+  }
+
+  // Otherwise, prefer the function with the same numeric width
+  // as the actual. This rule helps this case:
+  //
+  //  proc f(arg: real(32))
+  //  proc f(arg: real(64))
+  //  f(myInt64)
+  //
+  // here we desire to call f(real(64)) e.g. for sin(1)
+  //
+  // Additionally, it impacts this case:
+  //  proc f(a: real(32), b: real(32))
+  //  proc f(a: real(64), b: real(64))
+  //  f(myInt64, 1.0)
+  // (it arranges for it to call the real(64) version vs the real(32) one)
+  if (acWidth == f1Width && acWidth != f2Width) {
+    reason = "same numeric width";
+    return 1;
+  }
+
+  if (acWidth != f1Width && acWidth == f2Width) {
+    reason = "same numeric width";
+    return 2;
+  }
+
+  // note that if in the future we allow more numeric coercions,
+  // we might need to make this function complete
+  // (where currently it falls back on the "can dispatch" check
+  //  in some cases). E.g. it could finish up by comparing
+  // the two formal types in terms of their index in this list:
+  //
+  //  int(8) uint(8) int(16) uint(16) int(32) uint(32) int(64) uint(64)
+  //  real(32) real(64) imag(32) real(64) complex(64) complex(128)
+
+  return 0;
 }
 
 static bool fits_in_bits_no_sign(int width, int64_t i) {
@@ -2816,6 +2925,11 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             // Put the call back in to aid traversal
             se->getStmtExpr()->insertBefore(call);
           } else {
+            if (fWarnUnstable) {
+              USR_WARN(call, "type comparsion operators are unstable; "
+                "consider using isSubtype/isProperSubtype as a stable alternative");
+            }
+
             rhs->remove();
             lhs->remove();
             call->baseExpr->remove();
@@ -3336,6 +3450,67 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   return ret;
 }
 
+static void warnIfMisleadingNew(CallExpr* call, Type* lhs, Type* rhs) {
+  // return 'true' for:
+  //  * lhs type is borrowed
+  //  * rhs type is owned/shared/unmanaged
+  //  * rhs represents a 'new' expression
+  if (isBorrowedClass(lhs) &&
+      (isUnmanagedClass(rhs) || isManagedPtrType(rhs))) {
+
+    // check for rhs being a 'new' expression using pattern matching
+    Symbol* dst = nullptr;
+    Symbol* src = nullptr;
+    bool foundNew = false;
+    if (call->numActuals() >= 2) {
+      if (call->isPrimitive(PRIM_INIT_VAR) ||
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          dst = se->symbol();
+        }
+        if (SymExpr* se = toSymExpr(call->get(2))) {
+          src = se->symbol();
+        }
+      } else if (call->isNamedAstr(astrSassign)) {
+        int i = 1;
+        if (call->get(1)->typeInfo() == dtMethodToken) {
+          i += 2; // pass method token and (type) this arg
+        }
+        if (i+1 <= call->numActuals()) {
+          if (SymExpr* se = toSymExpr(call->get(i))) {
+            dst = se->symbol();
+          }
+          if (SymExpr* se = toSymExpr(call->get(i+1))) {
+            src = se->symbol();
+          }
+        }
+      }
+    }
+
+    // rely on FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW which
+    // is introduced for temporaries storing the result of a 'new' expression
+    if (src &&
+        src->hasFlag(FLAG_TEMP) &&
+        src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) {
+      foundNew = true;
+    }
+
+    if (foundNew && dst && !dst->hasFlag(FLAG_TEMP)) {
+      USR_WARN(userCall(call),
+               "here, '%s' is set to the result of borrowing from a 'new'",
+               dst->name);
+      USR_PRINT(userCall(call),
+                "if you meant to save the result of new, change "
+                "the type of '%s' to not be 'borrowed'",
+                dst->name);
+      USR_PRINT(userCall(call),
+                "if you meant to refer to another variable storing the 'new', "
+                "use an explicit variable, e.g. "
+                "'var myOwned = new C(); var myBorrowed = myOwned.borrow();'");
+    }
+  }
+}
+
 static
 void resolveNormalCallAdjustAssign(CallExpr* call) {
   if (call->isNamedAstr(astrSassign)) {
@@ -3385,6 +3560,9 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
           new UnresolvedSymExpr("chpl__compilerGeneratedAssignSyncSingle");
         call->baseExpr->replace(newBase);
       }
+
+      // warn for misleading new in assign statement
+      warnIfMisleadingNew(call, targetType->getValType(), srcType);
     }
   }
 }
@@ -5276,28 +5454,28 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     bool                         ignoreWhere,
                     Vec<ResolutionCandidate*>&   ambiguous);
 
-static int  compareSpecificity(ResolutionCandidate*         candidate1,
-                               ResolutionCandidate*         candidate2,
-                               const DisambiguationContext& DC,
-                               int                          i,
-                               int                          j,
-                               bool                         ignoreWhere,
-                               bool                         forGenericInit);
+static int compareSpecificity(ResolutionCandidate*         candidate1,
+                              ResolutionCandidate*         candidate2,
+                              const DisambiguationContext& DC,
+                              int                          i,
+                              int                          j,
+                              bool                         forGenericInit);
 
-static void testArgMapping(FnSymbol*                    fn1,
-                           ArgSymbol*                   formal1,
-                           FnSymbol*                    fn2,
-                           ArgSymbol*                   formal2,
-                           Symbol*                      actual,
-                           const DisambiguationContext& DC,
-                           int                          i,
-                           int                          j,
-                           DisambiguationState&         DS);
+static int testArgMapping(ResolutionCandidate*         candidate1,
+                          ArgSymbol*                   formal1,
+                          ResolutionCandidate*         candidate2,
+                          ArgSymbol*                   formal2,
+                          Symbol*                      actual,
+                          const DisambiguationContext& DC,
+                          int                          i,
+                          int                          j,
+                          DisambiguationState&         DS,
+                          const char*&                 reason);
 
-static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
-                             ArgSymbol* formal2, Symbol* actual,
-                             const DisambiguationContext& DC, int i, int j,
-                             DisambiguationState& DS);
+static int testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
+                            ArgSymbol* formal2, Symbol* actual,
+                            const DisambiguationContext& DC, int i, int j,
+                            DisambiguationState& DS);
 
 ResolutionCandidate*
 disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
@@ -5463,28 +5641,221 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
+static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
+  if (is_imag_type(actualVt) && is_complex_type(formalVt) &&
+      2*get_width(actualVt) == get_width(formalVt))
+    return true;
 
-static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous) {
-  // MPF note: A more straightforwardly O(n) version of this
-  // function did not appear to be faster. See history of this comment.
+  if (is_real_type(actualVt) && is_complex_type(formalVt) &&
+      2*get_width(actualVt) == get_width(formalVt))
+    return true;
+
+  return false;
+}
+
+static void computeConversionInfo(ResolutionCandidate* candidate,
+                                  const DisambiguationContext& DC) {
+
+  // no need to recompute it if it is already computed
+  if (candidate->nImplicitConversionsComputed) {
+    return;
+  }
+
+  bool anyNegParamToUnsigned = false;
+  int numParamNarrowing = 0;
+  int nImplicitConversions = 0;
+
+  bool forGenericInit = candidate->fn->isInitializer() ||
+                        candidate->fn->isCopyInit();
+
+  for (int k = 0; k < DC.actuals->n; k++) {
+    Symbol*    actual  = DC.actuals->v[k];
+    ArgSymbol* formal = candidate->actualIdxToFormal[k];
+
+    if (formal == nullptr) {
+      // this can happen with some operators
+      continue;
+    }
+    if (forGenericInit && k < 2) {
+      // Initializer work-around: Skip _mt/_this for generic initializers
+      continue;
+    }
+    if (formal->originalIntent == INTENT_OUT) {
+      continue; // type comes from call site so ignore it here
+    }
+
+    Type* actualVt = actual->type->getValType();
+    Type* formalVt = formal->type->getValType();
+
+    bool promotes = false;
+    bool paramNarrows = false;
+    canDispatch(actualVt, actual, formalVt, formal, candidate->fn,
+                &promotes, &paramNarrows);
+
+    if (paramNarrows) {
+      numParamNarrowing++;
+    }
+
+    if (promotes) {
+      actualVt = actualVt->scalarPromotionType->getValType();
+    }
+
+    if (isNegativeParamToUnsigned(actual, actualVt, formalVt)) {
+      anyNegParamToUnsigned = true;
+    }
+
+    if (actualVt == formalVt) {
+      // same type, nothing else to worry about here
+      continue;
+    }
+
+    if (actualVt == dtNil) {
+      // don't worry about converting 'nil' to something else
+      continue;
+    }
+
+    // Not counting real/imag/complex avoids an ambiguity with
+    //  proc f(x: complex(64), y: complex(64))
+    //  proc f(x: complex(128), y: complex(128))
+    //  f(myInt64, myImag32)
+    if (isMatchingImagComplex(actualVt, formalVt)) {
+      // don't worry about imag vs complex
+      continue;
+    }
+
+    // Not counting tuple value vs referential tuple changes
+    if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
+        formalVt->symbol->hasFlag(FLAG_TUPLE)) {
+      Type* actualNormTup = normalizeTupleTypeToValueTuple(actualVt);
+      Type* formalNormTup = normalizeTupleTypeToValueTuple(formalVt);
+      if (actualNormTup == formalNormTup) {
+        // it is only a change in the tuple ref-ness
+        continue;
+      }
+    }
+
+    nImplicitConversions++;
+  }
+
+  // save the computed details in the ResolutionCandidate
+  candidate->nImplicitConversionsComputed = true;
+  candidate->anyNegParamToUnsigned = anyNegParamToUnsigned;
+  candidate->nImplicitConversions = nImplicitConversions;
+  candidate->nParamNarrowingImplicitConversions = numParamNarrowing;
+}
+
+// If any candidate does not require promotion,
+// eliminate candidates that do require promotion.
+static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
+                                  const DisambiguationContext& DC,
+                                  std::vector<bool>&           discarded) {
+  int nPromoting = 0;
+  int nNotPromoting = 0;
+  for (int i = 0; i < candidates.n; ++i) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    if (candidate->anyPromotes) {
+      nPromoting++;
+    } else {
+      nNotPromoting++;
+    }
+  }
+
+  if (nPromoting > 0 && nNotPromoting > 0) {
+    for (int i = 0; i < candidates.n; ++i) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      if (candidate->anyPromotes) {
+        EXPLAIN("%s\n\n", toString(candidate->fn));
+        EXPLAIN("X: Fn %d promotes but others do not\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
+// Discard any candidate that has more implicit conversions
+// to a type not used at the call site than another candidate.
+//
+// The type-not-used rule resolves a problem with
+//   proc f(real(32), real(32))
+//   proc f(real(64), real(64))
+//   proc f(uint(32), uint(32))
+//   proc f(int(64), int(64))
+//   f(myUint32, max(int));
+//  .... but it causes problems with prefering generic to non-generic.
+/*static void discardWorseConversionsToNotMentioned(
+    Vec<ResolutionCandidate*>&   candidates,
+    const DisambiguationContext& DC,
+    std::vector<bool>&           discarded) {
+
+  int minImpConvNotMentioned = INT_MAX;
+  int maxImpConvNotMentioned = INT_MIN;
+
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    computeConversionInfo(candidate, DC);
+
+    int impConvNotMentioned = candidate->nImpConvToTypeNotMentioned;
+    if (impConvNotMentioned < minImpConvNotMentioned) {
+      minImpConvNotMentioned = impConvNotMentioned;
+    }
+    if (impConvNotMentioned > maxImpConvNotMentioned) {
+      maxImpConvNotMentioned = impConvNotMentioned;
+    }
+  }
+
+  if (minImpConvNotMentioned < maxImpConvNotMentioned) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      int impConvNotMentioned = candidate->nImpConvToTypeNotMentioned;
+      if (impConvNotMentioned > minImpConvNotMentioned) {
+        EXPLAIN("X: Fn %d has more implicit conversions to type not used\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+*/
+
+// Discard any candidate that has a worse argument mapping than another
+// candidate.
+static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
+                             const DisambiguationContext& DC,
+                             std::vector<bool>&           discarded) {
 
   // If index i is set then we can skip testing function F_i because
-  // we already know it can not be the best match.
+  // we already know it can not be the best match
+  // because it is a less good match than another candidate.
   std::vector<bool> notBest(candidates.n, false);
 
   for (int i = 0; i < candidates.n; ++i) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate1 = candidates.v[i];
+
+    bool forGenericInit = candidate1->fn->isInitializer() ||
+                          candidate1->fn->isCopyInit();
+
     EXPLAIN("##########################\n");
     EXPLAIN("# Considering function %d #\n", i);
     EXPLAIN("##########################\n\n");
-
-    ResolutionCandidate* candidate1         = candidates.v[i];
-    bool                 singleMostSpecific = true;
-
-    bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
 
     EXPLAIN("%s\n\n", toString(candidate1->fn));
 
@@ -5497,6 +5868,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       if (i == j) {
         continue;
       }
+      if (discarded[j]) {
+        continue;
+      }
 
       EXPLAIN("Comparing to function %d\n", j);
       EXPLAIN("-----------------------\n");
@@ -5505,56 +5879,527 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
 
       EXPLAIN("%s\n", toString(candidate2->fn));
 
-      int cmp = compareSpecificity(candidate1,
-                                   candidate2,
-                                   DC,
-                                   i,
-                                   j,
-                                   ignoreWhere,
-                                   forGenericInit);
+      // Consider the relationship among the arguments
+      // Note that this part is a partial order;
+      // in other words, "incomparable" is an option when comparing
+      // two candidates.
+      int p = compareSpecificity(candidate1, candidate2,
+                                 DC,
+                                 i, j,
+                                 forGenericInit);
 
-      if (cmp < 0) {
+      if (p == 1) {
         EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
         notBest[j] = true;
 
-      } else if (cmp > 0) {
+      } else if (p == 2) {
         EXPLAIN("X: Fn %d is a worse match than Fn %d\n\n\n", i, j);
         notBest[i] = true;
-        singleMostSpecific = false;
         break;
       } else {
-        EXPLAIN("X: Fn %d is a as good a match as Fn %d\n\n\n", i, j);
-        singleMostSpecific = false;
-        if (notBest[j]) {
-          // Inherit the notBest status of what we are comparing against
-          //
-          // If this candidate is equally as good as something that wasn't
-          // the best, then it is also not the best (or else there is something
-          // terribly wrong with our compareSpecificity function).
-          notBest[i] = true;
+        if (p == -1) {
+          EXPLAIN("X: Fn %d is incomparable with Fn %d\n\n\n", i, j);
+        } else if (p == 0) {
+          EXPLAIN("X: Fn %d is as good a match as Fn %d\n\n\n", i, j);
+          if (notBest[j]) {
+            notBest[i] = true;
+            break;
+          }
         }
-        break;
+      }
+    }
+  }
+
+  // Now, discard any candidates that were worse than another candidate
+  for (int i = 0; i < candidates.n; ++i) {
+    if (notBest[i]) {
+      discarded[i] = true;
+    }
+  }
+}
+
+// Discard any candidate that has more implicit conversions
+// than another candidate. Do not count consider conversions between
+// real(w), imag(w), and complex(2*w) when computing this.
+//
+// Not counting real/imag/complex avoids an ambiguity with
+//  proc f(x: complex(64), y: complex(64))
+//  proc f(x: complex(128), y: complex(128))
+//  f(myInt64, myImag32)
+//
+// After that, discard any candidate that has a negative param
+// converting to unsigned, if there are candidates that do not do that.
+//
+// After that, discard any candidate that has more param narrowing
+// conversions than another candidate.
+//
+// The number of conversions rule resolves an ambiguity with many cases, e.g.:
+//   proc f(x: real(32), y: real(32))
+//   proc f(x: real(64), y: real(64))
+//   f(1, 1.0: real(32))
+//
+// The check for negative param to unsigned helps with
+//   proc f(param a: int(8),   param b: int(8))
+//   proc f(param a: uint(64), param b: uint(64))
+//   f(-5: int(8), 16: uint)
+//
+// The number of param narrowing conversions resolves an ambiguity with:
+//   proc f(x: int,    y: int)
+//   proc f(x: int(8), y: int(8))
+//   f(1, 1:int(8))
+static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
+                                    const DisambiguationContext& DC,
+                                    std::vector<bool>&           discarded) {
+  int minImpConv = INT_MAX;
+  int maxImpConv = INT_MIN;
+
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    computeConversionInfo(candidate, DC);
+    int impConv = candidate->nImplicitConversions;
+    if (impConv < minImpConv) {
+      minImpConv = impConv;
+    }
+    if (impConv > maxImpConv) {
+      maxImpConv = impConv;
+    }
+  }
+
+  if (minImpConv < maxImpConv) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      int impConv = candidate->nImplicitConversions;
+      if (impConv > minImpConv) {
+        EXPLAIN("X: Fn %d has more implicit conversions\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+
+  int numWithNegParamToSigned = 0;
+  int numNoNegParamToSigned = 0;
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    computeConversionInfo(candidate, DC);
+    if (candidate->anyNegParamToUnsigned) {
+      numWithNegParamToSigned++;
+    } else {
+      numNoNegParamToSigned++;
+    }
+  }
+
+  if (numWithNegParamToSigned > 0 && numNoNegParamToSigned > 0) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      if (candidate->anyNegParamToUnsigned) {
+        EXPLAIN("X: Fn %d has negative param to signed and others do not\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+
+  int minNarrowing = INT_MAX;
+  int maxNarrowing = INT_MIN;
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    computeConversionInfo(candidate, DC);
+    int narrowing = candidate->nParamNarrowingImplicitConversions;
+    if (narrowing < minNarrowing) {
+      minNarrowing = narrowing;
+    }
+    if (narrowing > maxNarrowing) {
+      maxNarrowing = narrowing;
+    }
+  }
+
+  if (minNarrowing < maxNarrowing) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      int narrowing = candidate->nParamNarrowingImplicitConversions;
+      if (narrowing > minNarrowing) {
+        EXPLAIN("X: Fn %d has more param narrowing conversions\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
+// If some candidates have 'where' clauses and others do not,
+// discard those without 'where' clauses
+static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
+                                     const DisambiguationContext& DC,
+                                     std::vector<bool>&           discarded) {
+  int nWhere = 0;
+  int nNoWhere = 0;
+  for (int i = 0; i < candidates.n; ++i) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    bool where = candidate->fn->where != NULL &&
+                 !candidate->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+
+    if (where) {
+      nWhere++;
+    } else {
+      nNoWhere++;
+    }
+  }
+
+  if (nWhere > 0 && nNoWhere > 0) {
+    for (int i = 0; i < candidates.n; ++i) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      bool where = candidate->fn->where != NULL &&
+                   !candidate->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+      if (!where) {
+        EXPLAIN("X: Fn %d does not have 'where' but others do\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
+// Discard candidates with further visibility distance
+// than other candidates.
+static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
+                                   const DisambiguationContext& DC,
+                                   std::vector<bool>&           discarded) {
+  int minDistance = INT_MAX;
+  int maxDistance = INT_MIN;
+
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    int distance = computeVisibilityDistance(DC.scope, candidate->fn);
+    candidate->visibilityDistance = distance;
+
+    if (distance < minDistance) {
+      minDistance = distance;
+    }
+    if (distance > maxDistance) {
+      maxDistance = distance;
+    }
+  }
+
+  if (minDistance < maxDistance) {
+    for (int i = 0; i < candidates.n; i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      ResolutionCandidate* candidate = candidates.v[i];
+      int distance = candidate->visibilityDistance;
+      if (distance > minDistance) {
+        EXPLAIN("X: Fn %d has further visibility distance\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
+struct PartialOrderChecker {
+  int n;
+  std::vector<bool> results;
+  const Vec<ResolutionCandidate*>& candidates;
+  DisambiguationContext DC;
+
+  PartialOrderChecker(const Vec<ResolutionCandidate*>& candidates,
+                      const DisambiguationContext& DC)
+    : n(candidates.n), candidates(candidates), DC(DC) {
+    results.resize(n*n);
+    this->DC.explain = true;
+  }
+
+  int idx(int i, int j) {
+    assert(0 <= i && i < n);
+    assert(0 <= j && j < n);
+    return n*i + j;
+  }
+
+  void addResult(int i, int j, int cmp) {
+    if (cmp == 1) { // aka i < j
+      results[idx(i, j)] = true;
+    } else if (cmp == 2) { // aka j < i
+      results[idx(j, i)] = true;
+    }
+  }
+
+  void printActuals() {
+    printf("actuals: (");
+    bool first = true;
+    forv_Vec(Symbol, actual, *DC.actuals) {
+      if (first) {
+        first = false;
+      } else {
+        printf(", ");
+      }
+      Type* t = actual->getValType();
+      printf("%s : %s", toString(actual, false), toString(t));
+    }
+    printf(")\n");
+  }
+
+  void explainComparison(int i, int j) {
+    ResolutionCandidate* candidate1         = candidates.v[i];
+    bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
+
+    EXPLAIN("##########################\n");
+    EXPLAIN("# Considering function %d #\n", i);
+    EXPLAIN("##########################\n\n");
+    EXPLAIN("%s\n\n", toString(candidate1->fn));
+
+    ResolutionCandidate* candidate2 = candidates.v[j];
+
+    EXPLAIN("Comparing to function %d\n", j);
+    EXPLAIN("-----------------------\n");
+    EXPLAIN("%s\n", toString(candidate2->fn));
+
+    int cmp = compareSpecificity(candidate1,
+                                 candidate2,
+                                 DC,
+                                 i,
+                                 j,
+                                 forGenericInit);
+
+    if (cmp == 1) {
+      EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
+    } else if (cmp == 2) {
+      EXPLAIN("X: Fn %d is a worse match than Fn %d\n\n\n", i, j);
+    } else {
+      EXPLAIN("X: Fn %d is not better or worse than Fn %d\n\n\n", i, j);
+    }
+  }
+
+  void checkResults() {
+    // check irreflexivity
+    for (int i = 0; i < n; i++) {
+      if (results[idx(i, i)]) {
+        ResolutionCandidate* candidatei = candidates.v[i];
+
+        printf("irreflexivity fail : i < i\n");
+        printActuals();
+        printf("i: %s\n", toString(candidatei->fn));
+        printf("\n");
       }
     }
 
-    if (singleMostSpecific) {
-      EXPLAIN("Y: Fn %d is the best match.\n\n\n", i);
-      return candidate1;
+    // check asymmetry
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        if (results[idx(i, j)] && results[idx(j, i)]) {
+          ResolutionCandidate* candidatei = candidates.v[i];
+          ResolutionCandidate* candidatej = candidates.v[j];
 
-    } else {
-      EXPLAIN("Y: Fn %d is NOT the best match.\n\n\n", i);
+          printf("asymmetry fail : i < j and j < i\n");
+          printActuals();
+          printf("i: %s\n", toString(candidatei->fn));
+          printf("j: %s\n", toString(candidatej->fn));
+          printf("\n");
+          explainComparison(i, j);
+          explainComparison(j, i);
+          printf("\n\n");
+        }
+      }
+    }
+
+    // check transitivity
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        if (i != j && results[idx(i, j)]) {
+          for (int k = 0; k < n; k++) {
+            if (j != k && results[idx(j, k)] && !results[idx(i, k)]) {
+              ResolutionCandidate* candidatei = candidates.v[i];
+              ResolutionCandidate* candidatej = candidates.v[j];
+              ResolutionCandidate* candidatek = candidates.v[k];
+
+              printf("transitivity fail : i < j and j < k but not i < k\n");
+              printActuals();
+              printf("i: %s\n", toString(candidatei->fn));
+              printf("j: %s\n", toString(candidatej->fn));
+              printf("k: %s\n", toString(candidatek->fn));
+              printf("\n");
+              explainComparison(i, j);
+              explainComparison(j, k);
+              explainComparison(i, k);
+              printf("\n\n");
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+static ResolutionCandidate*
+disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
+                         const DisambiguationContext& DC,
+                         bool                         ignoreWhere,
+                         Vec<ResolutionCandidate*>&   ambiguous) {
+
+  // quick exit if there is nothing to do
+  if (candidates.n == 0) {
+    return nullptr;
+  }
+  if (candidates.n == 1) {
+    return candidates.v[0];
+  }
+
+  // Disable implicit conversion to remove nilability
+  // for disambiguation
+  int saveGenerousResolutionForErrors = 0;
+  if (generousResolutionForErrors > 0) {
+    saveGenerousResolutionForErrors = generousResolutionForErrors;
+    generousResolutionForErrors = 0;
+  }
+
+  // If index i is set we have ruled out that function
+  std::vector<bool> discarded(candidates.n, false);
+
+  if (!DC.useOldVisibility && !DC.isMethodCall) {
+    // If some candidates are less visible than other candidates,
+    // discard those with less visibility.
+    // This filter should not be applied to method calls.
+    discardWorseVisibility(candidates, DC, discarded);
+  }
+
+  // If any candidate does not require promotion,
+  // eliminate candidates that do require promotion.
+  discardWorsePromoting(candidates, DC, discarded);
+
+  // Consider the relationship among the arguments
+  // Note that this part is a partial order;
+  // in other words, "incomparable" is an option when comparing
+  // two candidates. However, it should be transitive.
+  // Discard any candidate that has a worse argument mapping than another
+  // candidate.
+  discardWorseArgs(candidates, DC, discarded);
+
+  // Apply further filtering to the set of candidates
+
+  // Discard any candidate that has more implicit conversions
+  // than another candidate.
+  // After that, discard any candidate that has more param narrowing
+  // conversions than another candidate.
+  discardWorseConversions(candidates, DC, discarded);
+
+  if (!ignoreWhere) {
+    // If some candidates have 'where' clauses and others do not,
+    // discard those without 'where' clauses
+    discardWorseWhereClauses(candidates, DC, discarded);
+  }
+  if (DC.useOldVisibility && !DC.isMethodCall) {
+    // If some candidates are less visible than other candidates,
+    // discard those with less visibility.
+    // This filter should not be applied to method calls.
+    discardWorseVisibility(candidates, DC, discarded);
+  }
+
+
+  // If there is just 1 candidate at this point, return it
+  {
+    int only = -1;
+    int currentCandidates = 0;
+    for (int i = 0; i < candidates.n; ++i) {
+      if (discarded[i]) {
+        continue;
+      }
+      only = i;
+      currentCandidates++;
+    }
+
+    if (currentCandidates == 1) {
+      EXPLAIN("Y: Fn %d is the best match.\n\n\n", only);
+
+      if (saveGenerousResolutionForErrors > 0)
+        generousResolutionForErrors = saveGenerousResolutionForErrors;
+
+      return candidates.v[only];
     }
   }
 
-  EXPLAIN("Z: No non-ambiguous best match.\n\n");
-
-  for (int i = 0; i < candidates.n; ++i) {
-    if (notBest[i] == false) {
-      ambiguous.add(candidates.v[i]);
+  // There was more than one best candidate.
+  // So, add whatever is left to 'ambiguous'
+  // and return NULL.
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
     }
+
+    EXPLAIN("Z: Fn %d is one of the best matches\n", i);
+    ambiguous.add(candidates.v[i]);
   }
 
-  return NULL;
+  if (saveGenerousResolutionForErrors > 0)
+    generousResolutionForErrors = saveGenerousResolutionForErrors;
+
+  return nullptr;
+}
+
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    Vec<ResolutionCandidate*>&   ambiguous) {
+  auto ret = disambiguateByMatchInner(candidates, DC, ignoreWhere, ambiguous);
+
+  if (fVerify) {
+    // check that 'compareSpecificity' creates a partial order
+    PartialOrderChecker checker(candidates, DC);
+
+    for (int i = 0; i < candidates.n; ++i) {
+      ResolutionCandidate* candidate1         = candidates.v[i];
+      bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
+
+      for (int j = i; j < candidates.n; ++j) {
+        ResolutionCandidate* candidate2 = candidates.v[j];
+
+        int cmp = compareSpecificity(candidate1,
+                                     candidate2,
+                                     DC,
+                                     i,
+                                     j,
+                                     forGenericInit);
+
+        checker.addResult(i, j, cmp);
+      }
+    }
+
+    checker.checkResults();
+  }
+
+  return ret;
 }
 
 /** Determines if fn1 is a better match than fn2.
@@ -5566,21 +6411,17 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
  * \param candidate1 The function on the left-hand side of the comparison.
  * \param candidate2 The function on the right-hand side of the comparison.
  * \param DC         The disambiguation context.
- * \param ignoreWhere Set to `true` to ignore `where` clauses when
- *                    deciding if one match is better than another.
- *                    This is important for resolving return intent
- *                    overloads.
  *
- * \return -1 if fn1 is a more specific function than f2
- * \return 0 if fn1 and fn2 are equally specific
- * \return 1 if fn2 is a more specific function than f1
+ * \return -1 if the two functions are incomparable
+ * \return 0 if the two functions are equally specific
+ * \return 1 if fn1 is a more specific function than f2
+ * \return 2 if fn2 is a more specific function than f1
  */
 static int compareSpecificity(ResolutionCandidate*         candidate1,
                               ResolutionCandidate*         candidate2,
                               const DisambiguationContext& DC,
                               int                          i,
                               int                          j,
-                              bool                         ignoreWhere,
                               bool                         forGenericInit) {
 
   DisambiguationState DS;
@@ -5590,6 +6431,9 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
   bool                prefer1 = false;
   bool                prefer2 = false;
+
+  int                 nArgsSame = 0;
+  int                 nArgsIncomparable = 0;
 
   for (int k = start; k < DC.actuals->n; ++k) {
     Symbol*    actual  = DC.actuals->v[k];
@@ -5607,110 +6451,84 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
       } else {
         // One of the two candidate functions was not an operator, but one
         // was so we need to do something special here.
-        testOpArgMapping(candidate1->fn, formal1, candidate2->fn, formal2,
-                         actual, DC, i, j, DS);
+        int p = testOpArgMapping(candidate1->fn, formal1,
+                                 candidate2->fn, formal2,
+                                 actual, DC, i, j, DS);
+        const char* reason = "operator method vs function";
+        if (p == 1) {
+          DS.fn1NonParamArgsPreferred = true;
+          EXPLAIN("%s: Fn %d is non-param preferred\n", reason, i);
+        } else if (p == 2) {
+          DS.fn2NonParamArgsPreferred = true;
+          EXPLAIN("%s: Fn %d is non-param preferred\n", reason, j);
+        }
         continue;
       }
     }
 
-    testArgMapping(candidate1->fn,
-                   formal1,
-                   candidate2->fn,
-                   formal2,
-                   actual,
-                   DC,
-                   i,
-                   j,
-                   DS);
-  }
+    bool actualParam = (getImmediate(actual) != NULL);
 
-  if (DS.fn1Promotes != DS.fn2Promotes) {
-    EXPLAIN("\nP: only one of the functions requires argument promotion\n");
+    const char* reason = "";
+    int p = testArgMapping(candidate1, formal1,
+                           candidate2, formal2,
+                           actual, DC, i, j, DS, reason);
 
-    // Prefer the version that did not promote
-    prefer1 = !DS.fn1Promotes;
-    prefer2 = !DS.fn2Promotes;
-
-  } else if (DS.fn1MoreSpecific != DS.fn2MoreSpecific) {
-    EXPLAIN("\nP1: only one more specific argument mapping\n");
-
-    prefer1 = DS.fn1MoreSpecific;
-    prefer2 = DS.fn2MoreSpecific;
-
-  } else {
-    MoreVisibleResult v = FOUND_NEITHER;
-    // If the decision hasn't been made based on the argument mappings,
-    // consider visibility...
-    // But, do not consider visibility for methods in disambiguation.
-    if (!(candidate1->fn->isMethod() || candidate2->fn->isMethod())) {
-      v = isMoreVisible(DC.scope, candidate1->fn, candidate2->fn);
+    if (p == -1) {
+      nArgsIncomparable++;
+    } else if (p == 0) {
+      nArgsSame++;
     }
 
-    if (v == FOUND_F1_FIRST) {
-      EXPLAIN("\nQ: preferring more visible function\n");
-      prefer1 = true;
-
-    } else if (v == FOUND_F2_FIRST) {
-      EXPLAIN("\nR: preferring more visible function\n");
-      prefer2 = true;
-
-    } else if (DS.fn1WeakPreferred != DS.fn2WeakPreferred) {
-      EXPLAIN("\nS: preferring based on weak preference\n");
-      prefer1 = DS.fn1WeakPreferred;
-      prefer2 = DS.fn2WeakPreferred;
-
-    } else if (DS.fn1WeakerPreferred != DS.fn2WeakerPreferred) {
-      EXPLAIN("\nS: preferring based on weaker preference\n");
-      prefer1 = DS.fn1WeakerPreferred;
-      prefer2 = DS.fn2WeakerPreferred;
-
-    } else if (DS.fn1WeakestPreferred != DS.fn2WeakestPreferred) {
-      EXPLAIN("\nS: preferring based on weakest preference\n");
-      prefer1 = DS.fn1WeakestPreferred;
-      prefer2 = DS.fn2WeakestPreferred;
-
-      /* A note about weak-prefers. Why are there 3 levels?
-
-         Something like 'param x:int(16) = 5' should be able to coerce to any
-         integral type. Meanwhile, 'param y = 5' should also be able to coerce
-         to any integral type. Now imagine we are resolving 'x+y'.  We
-         want it to resolve to the 'int(16)' version because 'x' has a type
-         specified, but 'y' is a default type. Before the 3 weak levels, this
-         version was chosen simply because non-default-sized ints didn't allow
-         param conversion.
-
-       */
-    } else if (!ignoreWhere) {
-      bool fn1where = candidate1->fn->where != NULL &&
-                      !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-      bool fn2where = candidate2->fn->where != NULL &&
-                      !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-
-      if (fn1where != fn2where) {
-        EXPLAIN("\nU: preferring function with where clause\n");
-
-        prefer1 = fn1where;
-        prefer2 = fn2where;
+    if (actualParam) {
+      if (p == 1) {
+        DS.fn1ParamArgsPreferred = true;
+        EXPLAIN("%s: Fn %d is param preferred\n", reason, i);
+      } else if (p == 2) {
+        DS.fn2ParamArgsPreferred = true;
+        EXPLAIN("%s: Fn %d is param preferred\n", reason, j);
+      }
+    } else {
+      if (p == 1) {
+        DS.fn1NonParamArgsPreferred = true;
+        EXPLAIN("%s: Fn %d is non-param preferred\n", reason, i);
+      } else if (p == 2) {
+        DS.fn2NonParamArgsPreferred = true;
+        EXPLAIN("%s: Fn %d is non-param preferred\n", reason, j);
       }
     }
   }
 
-  INT_ASSERT(!(prefer1 && prefer2));
+  if (DS.fn1NonParamArgsPreferred != DS.fn2NonParamArgsPreferred) {
+    EXPLAIN("\nP: only one function has preferred non-param args\n");
+
+    prefer1 = DS.fn1NonParamArgsPreferred;
+    prefer2 = DS.fn2NonParamArgsPreferred;
+
+  } else if (DS.fn1ParamArgsPreferred != DS.fn2ParamArgsPreferred) {
+    EXPLAIN("\nP1: only one function has preferred param args\n");
+
+    prefer1 = DS.fn1ParamArgsPreferred;
+    prefer2 = DS.fn2ParamArgsPreferred;
+
+  }
 
   if (prefer1) {
-    EXPLAIN("\nW: Fn %d is more specific than Fn %d\n",
-                                i, j);
-    return -1;
-
-  } else if (prefer2) {
-    EXPLAIN("\nW: Fn %d is less specific than Fn %d\n",
-                                i, j);
+    EXPLAIN("\nW: Fn %d is more specific than Fn %d\n", i, j);
     return 1;
 
+  } else if (prefer2) {
+    EXPLAIN("\nW: Fn %d is less specific than Fn %d\n", i, j);
+    return 2;
+
   } else {
-    // Neither is more specific
-    EXPLAIN("\nW: Fn %d and Fn %d are equally specific\n",
-                                i, j);
+    if (nArgsIncomparable > 0 ||
+        (DS.fn1NonParamArgsPreferred && DS.fn2NonParamArgsPreferred) ||
+        (DS.fn1ParamArgsPreferred && DS.fn2ParamArgsPreferred)) {
+      EXPLAIN("\nW: Fn %d and Fn %d are incomparable\n", i, j);
+      return -1;
+    }
+
+    EXPLAIN("\nW: Fn %d and Fn %d are equally specific\n", i, j);
     return 0;
   }
 }
@@ -5725,14 +6543,6 @@ static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
                              int fnNum) {
   canDispatch(actualType, actual, fType, formal, fn, formalPromotes,
               formalNarrows);
-
-  if (fnNum == 1) {
-    DS.fn1Promotes |= *formalPromotes;
-  } else if (fnNum == 2) {
-    DS.fn2Promotes |= *formalPromotes;
-  } else {
-    INT_FATAL("fnNum should be either 1 or 2");
-  }
 
   EXPLAIN("Formal %d's type: %s", fnNum, toString(fType));
   if (*formalPromotes)
@@ -5759,38 +6569,55 @@ static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
  * disambiguation procedure as detailed in section 13.14.3 of the Chapel
  * language specification (page 107).
  *
- * \param fn1     The first function to be compared.
+ * \param candidate1 The first function to be compared.
  * \param formal1 The formal argument that correspond to the actual argument
  *                for the first function.
- * \param fn2     The second function to be compared.
+ * \param candidate2 The second function to be compared.
  * \param formal2 The formal argument that correspond to the actual argument
  *                for the second function.
  * \param actual  The actual argument from the call site.
  * \param DC      The disambiguation context.
- * \param DS      The disambiguation state.
+ * \param DS      The disambiguation state. This function
+ *                sets DS.fnXPromotes and DS.fnXNumParamNarrowing.
+ *
+ * Returns:
+ *  -1 if the two formals are incomparable
+ *   0 if the two formals have the same level of preference
+ *   1 if fn1 is preferred
+ *   2 if fn2 is preferred
  */
-static void testArgMapping(FnSymbol*                    fn1,
-                           ArgSymbol*                   formal1,
-                           FnSymbol*                    fn2,
-                           ArgSymbol*                   formal2,
-                           Symbol*                      actual,
-                           const DisambiguationContext& DC,
-                           int                          i,
-                           int                          j,
-                           DisambiguationState&         DS) {
+static int testArgMapping(ResolutionCandidate*         candidate1,
+                          ArgSymbol*                   formal1,
+                          ResolutionCandidate*         candidate2,
+                          ArgSymbol*                   formal2,
+                          Symbol*                      actual,
+                          const DisambiguationContext& DC,
+                          int                          i,
+                          int                          j,
+                          DisambiguationState&         DS,
+                          const char*&                 reason) {
 
   // Give up early for out intent arguments
   // (these don't impact candidate selection)
   if (formal1->originalIntent == INTENT_OUT ||
       formal2->originalIntent == INTENT_OUT) {
-    return;
+    return -1;
   }
+
+  FnSymbol* fn1 = candidate1->fn;
+  FnSymbol* fn2 = candidate2->fn;
 
   // We only want to deal with the value types here, avoiding odd overloads
   // working (or not) due to _ref.
   Type* f1Type          = formal1->type->getValType();
   Type* f2Type          = formal2->type->getValType();
   Type* actualType      = actual->type->getValType();
+
+  // Additionally, ignore the difference between referential tuples
+  // and value tuples.
+  f1Type = normalizeTupleTypeToValueTuple(f1Type);
+  f2Type = normalizeTupleTypeToValueTuple(f2Type);
+  actualType = normalizeTupleTypeToValueTuple(actualType);
 
   bool  formal1Promotes = false;
   bool  formal2Promotes = false;
@@ -5802,28 +6629,14 @@ static void testArgMapping(FnSymbol*                    fn1,
   bool f1Param = formal1->hasFlag(FLAG_INSTANTIATED_PARAM);
   bool f2Param = formal2->hasFlag(FLAG_INSTANTIATED_PARAM);
 
-  bool actualParam = false;
-  bool paramWithDefaultSize = false;
-
-  // Don't enable param/ weak preferences for non-default sized param values.
-  // If somebody bothered to type the param, they probably want it to stay that
-  // way. This is a strategy to resolve ambiguity with e.g.
-  //  +(param x:int(32), param y:int(32)
-  //  +(param x:int(64), param y:int(64)
-  // called with
-  //  param x:int(32), param y:int(64)
-  if (getImmediate(actual) != NULL) {
-    actualParam = true;
-    paramWithDefaultSize = isNumericParamDefaultType(actualType);
-  }
+  bool actualParam = (getImmediate(actual) != NULL);
 
   EXPLAIN("Actual's type: %s", toString(actualType));
   if (actualParam)
     EXPLAIN(" (param)");
-  if (paramWithDefaultSize)
-    EXPLAIN(" (default)");
   EXPLAIN("\n");
 
+  // do some EXPLAIN calls
   testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
                    &formal1Promotes, &formal1Narrows, DC, DS, 1);
 
@@ -5840,155 +6653,156 @@ static void testArgMapping(FnSymbol*                    fn1,
     actualScalarType = actualScalarType->getField("valType")->getValType();
   }
 
-  const char* reason = "";
-  typedef enum {
-    NONE,
-    WEAKEST,
-    WEAKER,
-    WEAK,
-    STRONG
-  } arg_preference_t;
-
-  arg_preference_t prefer1 = NONE;
-  arg_preference_t prefer2 = NONE;
-
-  if (f1Type == f2Type && f1Param && !f2Param) {
-    prefer1 = STRONG; reason = "same type, param vs not";
-
-  } else if (f1Type == f2Type && !f1Param && f2Param) {
-    prefer2 = STRONG; reason = "same type, param vs not";
-
-  } else if (!formal1Promotes && formal2Promotes) {
-    prefer1 = STRONG; reason = "no promotion vs promotes";
-
-  } else if (formal1Promotes && !formal2Promotes) {
-    prefer2 = STRONG; reason = "no promotion vs promotes";
-
-  } else if (f1Type == f2Type           &&
-             !formal1->instantiatedFrom &&
-             formal2->instantiatedFrom) {
-    prefer1 = STRONG; reason = "concrete vs generic";
-
-  } else if (f1Type == f2Type &&
-             formal1->instantiatedFrom &&
-             !formal2->instantiatedFrom) {
-    prefer2 = STRONG; reason = "concrete vs generic";
-
-  } else if (formal1->instantiatedFrom != dtAny &&
-             formal2->instantiatedFrom == dtAny) {
-    prefer1 = STRONG; reason = "generic any vs partially generic/concrete";
-
-  } else if (formal1->instantiatedFrom == dtAny &&
-             formal2->instantiatedFrom != dtAny) {
-    prefer2 = STRONG; reason = "generic any vs partially generic/concrete";
-
-  } else if (formal1->instantiatedFrom &&
-             formal2->instantiatedFrom &&
-             formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-             !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    prefer1 = STRONG; reason = "partially generic vs generic";
-
-  } else if (formal1->instantiatedFrom &&
-             formal2->instantiatedFrom &&
-             !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-             formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    prefer2 = STRONG; reason = "partially generic vs generic";
-
-  } else if (f1Param != f2Param && f1Param) {
-    prefer1 = WEAK; reason = "param vs not";
-
-  } else if (f1Param != f2Param && f2Param) {
-    prefer2 = WEAK; reason = "param vs not";
-
-  } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
-    prefer1 = WEAK; reason = "no narrows vs narrows";
-
-  } else if (!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
-    prefer2 = WEAK; reason = "no narrows vs narrows";
-
-  } else if (!actualParam && actualType == f1Type && actualType != f2Type) {
-    prefer1 = STRONG; reason = "actual type vs not";
-
-  } else if (!actualParam && actualType == f2Type && actualType != f1Type) {
-    prefer2 = STRONG; reason = "actual type vs not";
-
-  } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
-    if (paramWithDefaultSize)
-      prefer1 = WEAKEST;
-    else if (actualParam)
-      prefer1 = WEAKER;
-    else
-      prefer1 = STRONG;
-
-    reason = "scalar type vs not";
-
-  } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
-    if (paramWithDefaultSize)
-      prefer2 = WEAKEST;
-    else if (actualParam)
-      prefer2 = WEAKER;
-    else
-      prefer2 = STRONG;
-
-    reason = "scalar type vs not";
-
-  } else if (prefersCoercionToOtherNumericType(actualScalarType, f1Type, f2Type)) {
-    if (paramWithDefaultSize)
-      prefer1 = WEAKEST;
-    else
-      prefer1 = WEAKER;
-
-    reason = "preferred coercion to other";
-
-  } else if (prefersCoercionToOtherNumericType(actualScalarType, f2Type, f1Type)) {
-    if (paramWithDefaultSize)
-      prefer2 = WEAKEST;
-    else
-      prefer2 = WEAKER;
-
-    reason = "preferred coercion to other";
-
-  } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
-    prefer1 = actualParam ? WEAKEST : STRONG;
-    reason = "can dispatch";
-
-  } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
-    prefer2 = actualParam ? WEAKEST : STRONG;
-    reason = "can dispatch";
-
-  } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
-    // This int/uint rule supports choosing between an 'int' and 'uint'
-    // overload when passed say a uint(32).
-    prefer1 = actualParam ? WEAKEST : STRONG;
-    reason = "int vs uint";
-
-  } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
-    prefer2 = actualParam ? WEAKEST : STRONG;
-    reason = "int vs uint";
-
+  // consider promotion
+  if (!formal1Promotes && formal2Promotes) {
+    reason = "no promotion vs promotes";
+    return 1;
   }
 
-  if (prefer1 != NONE) {
-    const char* level = "";
-    if (prefer1 == STRONG)  { DS.fn1MoreSpecific = true;     level = "strong"; }
-    if (prefer1 == WEAK)    { DS.fn1WeakPreferred = true;    level = "weak"; }
-    if (prefer1 == WEAKER)  { DS.fn1WeakerPreferred = true;  level = "weaker"; }
-    if (prefer1 == WEAKEST) { DS.fn1WeakestPreferred = true; level = "weakest"; }
-    EXPLAIN("%s: Fn %d is %s preferred\n", reason, i, level);
-  } else if (prefer2 != NONE) {
-    const char* level = "";
-    if (prefer2 == STRONG)  { DS.fn2MoreSpecific = true;     level = "strong"; }
-    if (prefer2 == WEAK)    { DS.fn2WeakPreferred = true;    level = "weak"; }
-    if (prefer2 == WEAKER)  { DS.fn2WeakerPreferred = true;  level = "weaker"; }
-    if (prefer2 == WEAKEST) { DS.fn2WeakestPreferred = true; level = "weakest"; }
-    EXPLAIN("%s: Fn %d is %s preferred\n", reason, j, level);
+  if (formal1Promotes && !formal2Promotes) {
+    reason = "no promotion vs promotes";
+    return 2;
   }
+
+  // consider concrete vs generic functions
+  // note: the f1Type == f2Type part here is important
+  // and it prevents moving this logic out of the pairwise comparison.
+  // It is important e.g. for:
+  //   class Parent { }
+  //   class GenericChild : Parent { type t; }
+  // Here a GenericChild argument should be preferred to a Parent one
+  if (f1Type == f2Type           &&
+      !formal1->instantiatedFrom && formal2->instantiatedFrom) {
+    reason = "concrete vs generic";
+    return 1;
+  }
+
+  if (f1Type == f2Type &&
+      formal1->instantiatedFrom && !formal2->instantiatedFrom) {
+    reason = "concrete vs generic";
+    return 2;
+  }
+
+  if (formal1->instantiatedFrom != dtAny &&
+      formal2->instantiatedFrom == dtAny) {
+    reason = "generic any vs partially generic/concrete";
+    return 1;
+  }
+
+  if (formal1->instantiatedFrom == dtAny &&
+      formal2->instantiatedFrom != dtAny) {
+    reason = "generic any vs partially generic/concrete";
+    return 2;
+  }
+
+  if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+      formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+      !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+    reason = "partially generic vs generic";
+    return 1;
+  }
+
+  if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+      !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+      formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+    reason = "partially generic vs generic";
+    return 2;
+  }
+
+  if (f1Param && !f2Param) {
+    reason = "param vs not";
+    return 1;
+  }
+
+  if (!f1Param && f2Param) {
+    reason = "param vs not";
+    return 2;
+  }
+
+  if (f1Type != f2Type) {
+    // to help with
+    // proc f(x: int(8))
+    // proc f(x: int(64))
+    // f(myInt32) vs. f(1: int(32)) should behave the same
+    if (actualParam) {
+      if (!formal1Narrows && formal2Narrows) {
+        reason = "param narrows vs not";
+        return 1;
+      }
+      if (formal1Narrows && !formal2Narrows) {
+        reason = "param narrows vs not";
+        return 2;
+      }
+    }
+
+    // e.g. to help with
+    //   sin(1) calling the real(64) version (vs real(32) version)
+    //
+    //   proc f(complex(64), complex(64))
+    //   proc f(complex(128), complex(128))
+    //   f(1.0, 1.0i) calling the complex(128) version
+    int p = prefersNumericCoercion(candidate1, candidate2, DC,
+                                   actual, actualScalarType,
+                                   f1Type, f2Type, reason);
+    if (p == 1) {
+      return 1;
+    }
+    if (p == 2) {
+      return 2;
+    }
+
+    if (actualType == f1Type && actualType != f2Type) {
+      reason = "actual type vs not";
+      return 1;
+    }
+
+    if (actualType == f2Type && actualType != f1Type) {
+      reason = "actual type vs not";
+      return 2;
+    }
+
+    if (actualScalarType == f1Type && actualScalarType != f2Type) {
+      reason = "scalar type vs not";
+      return 1;
+    }
+
+    if (actualScalarType == f2Type && actualScalarType != f1Type) {
+      reason = "scalar type vs not";
+      return 2;
+    }
+
+
+    bool fn1Dispatches = moreSpecificCanDispatch(fn1, f1Type, f2Type);
+    bool fn2Dispatches = moreSpecificCanDispatch(fn2, f2Type, f1Type);
+    if (fn1Dispatches && !fn2Dispatches) {
+      reason = "can dispatch";
+      return 1;
+    }
+    if (!fn1Dispatches && fn2Dispatches) {
+      reason = "can dispatch";
+      return 2;
+    }
+  }
+
+  if (f1Type == f2Type) {
+    // the formals are the same in terms of preference
+    return 0;
+  }
+
+  // the formals are incomparable
+  return -1;
 }
 
-static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
-                             ArgSymbol* formal2, Symbol* actual,
-                             const DisambiguationContext& DC, int i, int j,
-                             DisambiguationState& DS) {
+/*
+ * Returns:
+ *   0 if there is no preference between them
+ *   1 if fn1 is preferred
+ *   2 if fn2 is preferred
+*/
+static int testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
+                            ArgSymbol* formal2, Symbol* actual,
+                            const DisambiguationContext& DC, int i, int j,
+                            DisambiguationState& DS) {
   // Validate our assumptions in this function - only operator functions should
   // return a NULL for the formal and they should only do so for method token
   // and "this" actuals.
@@ -5997,12 +6811,7 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
 
   Type* actualType = actual->type->getValType();
   bool actualParam = getImmediate(actual) != NULL;
-  const char* reason = "potentially optional argument present vs not";
-  const char* level = "weak";
-
   if (formal1 == NULL) {
-    EXPLAIN("Function 1 did not have a corresponding formal");
-    EXPLAIN("Function 1 is an operator standalone function");
     INT_ASSERT(formal2 != NULL);
 
     Type* f2Type = formal2->type->getValType();
@@ -6012,13 +6821,10 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
     testArgMapHelper(fn2, formal2, actual, f2Type, actualType, actualParam,
                      &formal2Promotes, &formal2Narrows, DC, DS, 2);
 
-    DS.fn2WeakPreferred = true;
-    EXPLAIN("%s: Fn % is %s preferred\n", reason, j, level);
+    return 2;
 
   } else {
     INT_ASSERT(formal2 == NULL);
-    EXPLAIN("Function 2 did not have a corresponding formal");
-    EXPLAIN("Function 2 is an operator standalone function");
 
     Type* f1Type = formal1->type->getValType();
     bool formal1Promotes = false;
@@ -6027,9 +6833,10 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
     testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
                      &formal1Promotes, &formal1Narrows, DC, DS, 1);
 
-    DS.fn1WeakPreferred = true;
-    EXPLAIN("%s: Fn % is %s preferred\n", reason, i, level);
+    return 1;
   }
+
+  return 0;
 }
 
 /************************************* | **************************************
@@ -7019,7 +7826,47 @@ void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
   if (managementMismatch(lhs, rhs))
     USR_FATAL(userCall(call), "cannot %s '%s' from a '%s'",
               describeLHS(call, ""), toString(lhs), toString(rhs));
+
+  // warn for misleading new in init or split-init
+  warnIfMisleadingNew(call, lhs, rhs);
 }
+
+
+void warnForIntUintConversion(BaseAST* context,
+                              Type* formalType,
+                              Type* actualType,
+                              Symbol* actual) {
+  if (fWarnIntUint || fWarnUnstable) {
+    Type* formalVt = formalType->getValType();
+    Type* actualVt = actualType->getValType();
+    if (is_uint_type(formalVt) && is_int_type(actualVt)) {
+      if (get_width(formalVt) <= get_width(actualVt)) {
+        bool isParam = false;
+        bool isNegParam = false;
+
+        if (VarSymbol* var = toVarSymbol(actual)) {
+          if (Immediate* imm = var->immediate) {
+            isParam = true;
+            isNegParam = is_negative(imm);
+          }
+        }
+
+        // If it's a param, warn only if it is negative.
+        // Otherwise, warn.
+        if (isNegParam || !isParam) {
+          if (fWarnIntUint) {
+            USR_WARN(context, "potentially surprising int->uint implicit conversion");
+          } else {
+            USR_WARN(context, "int->uint implicit conversion is unstable");
+          }
+          USR_PRINT(context, "add a cast :%s to avoid this warning",
+                    toString(formalVt));
+        }
+      }
+    }
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -7490,6 +8337,10 @@ FnSymbol* findZeroArgInitFn(AggregateType* at) {
   SET_LINENO(at->symbol->defPoint);
 
   VarSymbol* tmpAt = newTemp(at);
+
+  // Do this to avoid a call to 'createGenericRecordVarDefaultInitCall'
+  // emitting errors about missing runtime types.
+  tmpAt->addFlag(FLAG_UNSAFE);
 
   CallExpr* call = NULL;
 
@@ -8853,7 +9704,111 @@ static Expr* handleNonNormalizableExpr(Expr* expr) {
   return nullptr;
 }
 
+static bool terminatesControlFlow(Expr* expr);
+
+// Is it guaranteed that 'block' terminates control flow?
+static bool terminatesControlFlowBlock(BlockStmt* block) {
+  Expr* last = block->body.tail;
+  if (last == nullptr)
+    return false;
+
+  if (CallExpr* call = toCallExpr(last)) {
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      if (Expr* prev = last->prev)
+        return terminatesControlFlow(prev);
+      else
+        return false;
+    }
+  }
+
+  return terminatesControlFlow(last);
+}
+
+static bool terminatesControlFlow(Expr* expr) {
+  if (! isBlockStmt(expr->parentExpr))
+    return false; // allow only stmt-level terminations
+
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_THROW))
+      return true;
+    // We do not check PRIM_RETURN because there is only one in the epilogue
+    // and we should not to mess with the epilogue.
+
+    if (FnSymbol* target = call->resolvedFunction())
+        if(target->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM))
+          return true;
+
+  } else if (isGotoStmt(expr)) {
+    return true;
+
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    if (block->isRealBlockStmt())
+      return terminatesControlFlowBlock(block);
+
+  } else if (CondStmt* cond = toCondStmt(expr)) {
+    // if-stmt terminates CF if both branches do
+    if (cond->elseStmt != nullptr)
+      return terminatesControlFlowBlock(cond->thenStmt) &&
+             terminatesControlFlowBlock(cond->elseStmt);
+  }
+
+  return false;
+}
+
+// If 'expr' terminates CF, make an exception if 'expr' halts or throws.
+// Reason: existing code uses unreachable code to infer the return type, ex.
+//   proc bulkAdd_help(...) { halt(...); return -1; } --> returns int
+// Ex. test/sparse/CS/multiplication/correctness.chpl
+static bool needLaterReturn(Expr* expr) {
+  return isCallExpr(expr);
+}
+
+// If 'expr' aborts control flow, ex. goto (incl. return), throw, or call
+// to a "terminate program" function, remove subsequent unreachable stmts.
+static void handleEarlyFinish(Expr* expr) {
+  if (! terminatesControlFlow(expr)) return; // nothing to do
+
+  if (needLaterReturn(expr))
+    if (isFnSymbol(expr->parentSymbol)) // returns are only in functions
+      for (Expr* cur = expr->next; cur; cur = cur->next)
+        if (CallExpr* call = toCallExpr(cur))
+          if (call->isPrimitive(PRIM_MOVE))
+            if (SymExpr* destSE = toSymExpr(call->get(1)))
+              if (destSE->symbol()->hasFlag(FLAG_RVV))
+                return; // keep the unreachable code
+
+  if (CallExpr* nextCall = toCallExpr(expr->next))
+    if (nextCall->isPrimitive(PRIM_END_OF_STATEMENT))
+      expr = expr->next; // "end of statement" might be important
+
+  // clean up the unreachable statements to avoid resolving them
+  while (expr->next != nullptr) {
+    if (DefExpr* def = toDefExpr(expr->next))
+      if (isLabelSymbol(def->sym))
+        break; // this can be reachable via a goto
+    if (CallExpr* call = toCallExpr(expr->next))
+      if (call->isPrimitive(PRIM_RETURN))
+        break; // need this to keep the function well-formed
+
+    if (isDefExpr(expr->next) &&
+        !isVarSymbol(toDefExpr(expr->next)->sym))
+      // do not remove defs of useful things
+      expr = expr->next;
+    else
+      expr->next->remove();
+  }
+}
+
+static bool shouldHandleEarlyFinish(BlockStmt* block) {
+  if (FnSymbol* enclosingFn = toFnSymbol(block->parentSymbol))
+    if (isTaskFun(enclosingFn))
+      return false; // ensure the special handling of endCounts stays
+  return true;
+}
+
 void resolveBlockStmt(BlockStmt* blockStmt) {
+  bool ef = shouldHandleEarlyFinish(blockStmt);
+
   for_exprs_postorder(expr, blockStmt) {
     if (Expr* changed = handleNonNormalizableExpr(expr)) {
       expr = changed;
@@ -8862,6 +9817,7 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
     }
 
     INT_ASSERT(expr);
+    if (ef) handleEarlyFinish(expr);
   }
 }
 
@@ -11378,9 +12334,6 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
       } else {
         call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
       }
-    } else {
-      if (call->numActuals() >= 2)
-        call->get(2)->replace(new SymExpr(type->symbol));
     }
   }
 }
@@ -11797,18 +12750,105 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
   }
 }
 
+// Given the type expression of the PRIM_INIT_VAR call, search for a type
+// construction call and try to grab the actual corresponding to a
+// substitution. This is needed if the actual in the type construction call
+// is a runtime type. This will not work in all cases, in particular if
+// we have to chase a type more than once to find its constructor.
+// See: test/types/records/bugs/RuntimeTypeEscapes.chpl
+static Expr*
+chaseTypeConstructorForActual(CallExpr* init, const char* subName,
+                              int subIdx,
+                              AggregateType* at) {
+  if (!init || !init->isPrimitive(PRIM_DEFAULT_INIT_VAR)) return nullptr;
+
+  auto seTypeVar = toSymExpr(init->get(2));
+  auto sym = seTypeVar->symbol();
+
+  INT_ASSERT(sym->hasFlag(FLAG_TYPE_VARIABLE));
+
+  // This function is not currently capable of chasing interprocedurally,
+  // so if the init type is a formal, just bail out now.
+  if (!isVarSymbol(sym)) return nullptr;
+
+  // Given (PRIM_INIT_VAR obj temp) where 'temp' is a type variable, look
+  // for (PRIM_MOVE temp call), where 'call' is a type construction call,
+  // e.g. for the type 'foo(domain(3))'. Normally type construction calls
+  // are replaced with a SymExpr referring to the TypeSymbol, however they
+  // will not be if the call contains one or more runtime types.
+  CallExpr* move = nullptr;
+
+  // Check if the other use of 'temp' is a move.
+  int numUses = 0;
+  for_SymbolSymExprs(se, sym) {
+
+    // Be conservative and limit to two uses.
+    if (++numUses > 2) break;
+    if (!se->inTree()) continue;
+
+    if (auto innerCall = toCallExpr(se->parentExpr)) {
+      if (innerCall->isPrimitive(PRIM_MOVE)) {
+        move = innerCall;
+        break;
+      }
+    }
+  }
+
+  // Didn't find a move, so return early.
+  if (!move) return nullptr;
+
+  // The type variable from the PRIM_INIT_VAR should be on the LHS.
+  auto seLhs = toSymExpr(move->get(1));
+  INT_ASSERT(seLhs);
+  INT_ASSERT(seLhs->symbol() == sym);
+
+  CallExpr* typeConstructorCall = nullptr;
+
+  // Check if the RHS of 'move' is a type construction call. If so, see
+  // if the base expression of that call refers to 'at'.
+  if (auto innerCall = toCallExpr(move->get(2)))
+    if (auto seBase = toSymExpr(innerCall->baseExpr))
+      if (seBase->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        if (auto ts = toTypeSymbol(seBase->symbol()))
+          if (ts->type == at) typeConstructorCall = innerCall;
+
+  // No luck, so return early.
+  if (!typeConstructorCall) return nullptr;
+
+  bool isAnyActualNamed = false;
+  Expr* ret = nullptr;
+  int idx = 1;
+
+  // Look for a matching actual using the substitution position.
+  for_actuals(actual, typeConstructorCall) {
+    if (isNamedExpr(actual)) {
+      isAnyActualNamed = true;
+      break;
+    } else if (subIdx == idx++) {
+      ret = actual;
+    }
+  }
+
+  // TODO: Handle named actuals in type construction calls.
+  if (isAnyActualNamed) return nullptr;
+
+  return ret;
+}
+
 // call is the context or PRIM_DEFAULT_INIT_VAR - in some cases
 // code will be added before this.
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
                                                        AggregateType* at,
                                                        Expr* call) {
-
   AggregateType* root = at->getRootInstantiation();
 
   val->type = root;
 
-  CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(val)));
+  CallExpr* initCall = new CallExpr("init", gMethodToken,
+                                    new NamedExpr("this",
+                                                  new SymExpr(val)));
 
+  int idx = 1;
   for (auto elem: sortedSymbolMapElts(at->substitutions)) {
     const char* keyName = elem.key->name;
     Symbol*     value   = elem.value;
@@ -11821,26 +12861,75 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
     if (field->isParameter()) {
       appendExpr = new SymExpr(value);
     } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        // BHARSH 2018-11-02: This technically generates code that would
-        // crash at runtime because aggregate types don't contain the runtime
-        // type information for their fields, so this temporary will go
-        // uninitialized. At the moment we fortunately do not access such
-        // fields for default-initialized records, and avoid crashing.
-        VarSymbol* tmp = newTemp("default_runtime_temp");
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
-        CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(keyName));
-        CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
 
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(move);
-
-        resolveExpr(query);
-        resolveExpr(move);
-
-        appendExpr = new SymExpr(tmp);
-      } else {
+      // For non-runtime-types, just use the type.
+      if (!value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         appendExpr = new SymExpr(value);
+
+      // Else, try to search for the type constructor used to create the
+      // type. If we find it, try to grab the runtime type used in the
+      // type constructor and pass that to the initializer.
+      } else {
+
+        auto init = toCallExpr(call);
+        auto chase = chaseTypeConstructorForActual(init, keyName, idx, at);
+        bool recoveredRuntimeType = false;
+
+        // If we found a type constructor with an actual matching this
+        // substitution, then reuse the actual if it is a runtime type.
+        if (chase) {
+          if (auto chaseSymExpr = toSymExpr(chase)) {
+            if (auto ts = chaseSymExpr->symbol()->type->symbol) {
+              if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+                  ts->type == value->type) {
+                auto tmp = newTemp("runtime_temp");
+                tmp->addFlag(FLAG_MAYBE_TYPE);
+                auto copy = chase->copy();
+                auto move = new CallExpr(PRIM_MOVE, tmp, copy);
+                call->insertBefore(new DefExpr(tmp));
+                call->insertBefore(move);
+                resolveExpr(move);
+                appendExpr = new SymExpr(tmp);
+                recoveredRuntimeType = true;
+              }
+            }
+          }
+        }
+
+        // No luck above, so create a temporary runtime type instead...
+        // BHARSH 2018-11-02: This technically generates code that would
+        // crash at runtime because aggregate types don't contain the
+        // runtime type information for their fields, so this temporary
+        // will go uninitialized.
+        if (!recoveredRuntimeType) {
+          auto fn = toFnSymbol(val->defPoint->parentSymbol);
+          bool doEmitError = fn && isUserRoutine(fn) &&
+                             !val->hasFlag(FLAG_UNSAFE) &&
+                             !at->symbol->hasFlag(FLAG_SYNC) &&
+                             !at->symbol->hasFlag(FLAG_SINGLE);
+          if (doEmitError) {
+            USR_FATAL_CONT(call, "cannot default initialize '%s' because "
+                                 "field '%s' of type '%s' does not have "
+                                 "enough information to be default "
+                                 "initialized",
+                                 val->name,
+                                 keyName,
+                                 toString(value->getValType()));
+          }
+
+          // Keep the old lowering even though we'll terminate the pass.
+          VarSymbol* tmp = newTemp("default_runtime_temp");
+          tmp->addFlag(FLAG_TYPE_VARIABLE);
+          CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD,
+                                         at->symbol,
+                                         new_CStringSymbol(keyName));
+          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(move);
+          resolveExpr(query);
+          resolveExpr(move);
+          appendExpr = new SymExpr(tmp);
+        }
       }
     } else if (isGenericField) {
 
@@ -11880,6 +12969,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
     appendExpr = new NamedExpr(keyName, appendExpr);
 
     initCall->insertAtTail(appendExpr);
+    idx++;
   }
 
   return initCall;
@@ -12057,6 +13147,28 @@ DisambiguationContext::DisambiguationContext(CallInfo& info,
   scope   = searchScope;
 
   explain = false;
+  useOldVisibility = false;
+  isMethodCall = false;
+
+  if (info.call->numActuals() >= 2) {
+    if (SymExpr* se = toSymExpr(info.call->get(1))) {
+      if (se->symbol() == gMethodToken) {
+        isMethodCall = true;
+      }
+    }
+  }
+
+  // this is a workaround -- a better solution would be preferred
+  if (info.call->getModule()->modTag == MOD_INTERNAL) {
+    useOldVisibility = true;
+  }
+
+  // this is a workaround -- a better solution would be preferred.
+  // this function seems to be created in a way that has problems with
+  // the visibility logic in disambiguation.
+  if (info.call->isNamed("_getIterator")) {
+    useOldVisibility = true;
+  }
 
   if (fExplainVerbose == true) {
     if (explainCallLine != 0 && explainCallMatch(info.call) == true) {
@@ -12076,16 +13188,9 @@ DisambiguationContext::DisambiguationContext(CallInfo& info,
 ************************************** | *************************************/
 
 DisambiguationState::DisambiguationState() {
-  fn1MoreSpecific = false;
-  fn2MoreSpecific = false;
+  fn1NonParamArgsPreferred = false;
+  fn2NonParamArgsPreferred = false;
 
-  fn1Promotes     = false;
-  fn2Promotes     = false;
-
-  fn1WeakPreferred= false;
-  fn2WeakPreferred= false;
-  fn1WeakerPreferred= false;
-  fn2WeakerPreferred= false;
-  fn1WeakestPreferred= false;
-  fn2WeakestPreferred= false;
+  fn1ParamArgsPreferred     = false;
+  fn2ParamArgsPreferred     = false;
 }

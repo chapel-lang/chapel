@@ -12,7 +12,7 @@ class Foo {
   }
 }
 
-var f1 = new borrowed Foo(13);
-var f2 = new borrowed Foo(3.4);
+var f1 = (new owned Foo(13)).borrow();
+var f2 = (new owned Foo(3.4)).borrow();
 writeln(f1);
 writeln(f2);

@@ -1418,7 +1418,7 @@ bool Resolver::enter(const uast::Conditional* cond) {
   thenBlock->traverse(*this);
   if (elseBlock) elseBlock->traverse(*this);
 
-  if (cond->isExpressionLevel()) {
+  if (cond->isExpressionLevel() && !scopeResolveOnly) {
     std::vector<QualifiedType> returnTypes;
     returnTypes.push_back(byPostorder.byAst(thenBlock->stmt(0)).type());
     if (elseBlock != nullptr) {
@@ -1426,13 +1426,12 @@ bool Resolver::enter(const uast::Conditional* cond) {
     }
     // with useRequiredKind = false, the QualifiedType::Kind argument
     // is ignored. Just pick a dummy value.
-    auto ifType = commonType(context, returnTypes,
-                             /* useRequiredKind */ false,
-                             QualifiedType::UNKNOWN);
-    if (ifType.isUnknown()) {
+    auto ifType = commonType(context, returnTypes);
+    if (!ifType && !condType.isUnknown()) {
+      // do not error if the condition type is unknown
       r.setType(typeErr(cond, "unable to reconcile branches of if-expression"));
-    } else {
-      r.setType(ifType);
+    } else if (ifType) {
+      r.setType(ifType.getValue());
     }
   }
   return false;
@@ -1775,6 +1774,85 @@ void Resolver::exit(const TupleDecl* decl) {
   exitScope(decl);
 }
 
+bool Resolver::enter(const Range* range) {
+  return true;
+}
+void Resolver::exit(const Range* range) {
+  // For the time being, we're resolving ranges by manually finding the record
+  // and instantiating it appropriately. However, long-term, range literals
+  // should be equivalent to a call to chpl_build_bounded_range. The resolver
+  // cannot handle this right now, but in the future, the below implementation
+  // should be replaced with one that resolves the call.
+
+  const RecordType* rangeType = RecordType::getRangeType(context);
+  auto rangeAst = parsing::idToAst(context, rangeType->id());
+  if (!rangeAst) {
+    // The range record is part of the standard library, but
+    // it's possible to invoke the resolver without the stdlib.
+    // In this case, mark ranges as UnknownType, but do not error.
+    return;
+  }
+
+  ResolvedExpression& re = byPostorder.byAst(range);
+
+  // fetch default fields for `stridable` and `idxType`
+  const ResolvedFields& resolvedFields = fieldsForTypeDecl(context, rangeType,
+      DefaultsPolicy::USE_DEFAULTS);
+  assert(resolvedFields.fieldName(0) == "idxType");
+  assert(resolvedFields.fieldName(1) == "boundedType");
+  assert(resolvedFields.fieldName(2) == "stridable");
+
+  // Determine index type, either via inference or by using the default.
+  QualifiedType idxType;
+  if (range->lowerBound() || range->upperBound()) {
+    // We have bounds. Try to infer type from them
+    std::vector<QualifiedType> suppliedTypes;
+    if (auto lower = range->lowerBound()) {
+      suppliedTypes.push_back(byPostorder.byAst(lower).type());
+    }
+    if (auto upper = range->upperBound()) {
+      suppliedTypes.push_back(byPostorder.byAst(upper).type());
+    }
+    auto idxTypeResult = commonType(context, suppliedTypes);
+    if (!idxTypeResult) {
+      re.setType(typeErr(range, "incompatible bound types for range"));
+      return;
+    } else {
+      idxType = idxTypeResult.getValue();
+    }
+  } else {
+    // No bounds. Use default.
+    idxType = resolvedFields.fieldType(0);
+  }
+
+  // Determine the value for boundedType.
+  ID refersToId; // Needed for out parameter of typeForEnumElement
+  const char* rangeTypeName;
+  if (range->lowerBound() && range->upperBound()) {
+    rangeTypeName = "bounded";
+  } else if (range->lowerBound()) {
+    rangeTypeName = "boundedLow";
+  } else if (range->upperBound()) {
+    rangeTypeName = "boundedHigh";
+  } else {
+    rangeTypeName = "boundedNone";
+  }
+  auto boundedRangeTypeType = EnumType::getBoundedRangeTypeType(context);
+  auto boundedType = typeForEnumElement(boundedRangeTypeType,
+                                        UniqueString::get(context, rangeTypeName),
+                                        range,
+                                        refersToId);
+
+  auto subMap = SubstitutionsMap();
+  subMap.insert({resolvedFields.fieldDeclId(0), std::move(idxType)});
+  subMap.insert({resolvedFields.fieldDeclId(1), std::move(boundedType)});
+  subMap.insert({resolvedFields.fieldDeclId(2), resolvedFields.fieldType(2)});
+
+  const RecordType* rangeTypeInst =
+      RecordType::get(context, rangeType->id(), rangeType->name(),
+                      rangeType, std::move(subMap));
+  re.setType(QualifiedType(QualifiedType::CONST_VAR, rangeTypeInst));
+}
 
 types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
   if (op->numActuals() != 2) {
@@ -2089,6 +2167,31 @@ void Resolver::exit(const Call* call) {
 bool Resolver::enter(const Dot* dot) {
   return true;
 }
+
+QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
+                                           UniqueString elementName,
+                                           const AstNode* nodeForErr,
+                                           ID& outElemId) {
+    LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
+    auto enumScope = scopeForId(context, enumType->id());
+    auto vec = lookupNameInScope(context, enumScope,
+                                 /* receiverScope */ nullptr,
+                                 elementName, config);
+    if (vec.size() == 0) {
+      return typeErr(nodeForErr, "no enum element with given name");
+    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+      // multiple candidates. report a type error, but the
+      // expression most likely has a type given by the enum.
+      typeErr(nodeForErr, "duplicate enum elements with given name");
+      return QualifiedType(QualifiedType::CONST_VAR, enumType);
+    } else {
+      auto id = vec[0].id(0);
+      auto newParam = EnumParam::get(context, id);
+      outElemId = id;
+      return QualifiedType(QualifiedType::PARAM, enumType, newParam);
+    }
+}
+
 void Resolver::exit(const Dot* dot) {
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
 
@@ -2154,25 +2257,12 @@ void Resolver::exit(const Dot* dot) {
     assert(enumType != nullptr);
     assert(receiver.toId().isEmpty() == false);
 
-    LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
-    auto enumScope = scopeForId(context, receiver.toId());
-    auto vec = lookupNameInScope(context, enumScope,
-                                 /* receiverScope */ nullptr,
-                                 dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
-    if (vec.size() == 0) {
-      r.setType(typeErr(dot, "no enum element with given name"));
-    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-      // multiple candidates. report a type error, but the
-      // expression most likely has a type given by the enum.
-      r.setType(QualifiedType(QualifiedType::CONST_VAR, enumType));
-      typeErr(dot, "duplicate enum elements with given name");
-    } else {
-      auto id = vec[0].id(0);
-      auto newParam = EnumParam::get(context, id);
-      r.setToId(id);
-      r.setType(QualifiedType(QualifiedType::PARAM, enumType, newParam));
-    }
+    ID elemId = r.toId(); // store the original in case we don't get a new one
+    auto qt = typeForEnumElement(enumType, dot->field(), dot, elemId);
+    r.setType(std::move(qt));
+    r.setToId(std::move(elemId));
+
     return;
   }
 
@@ -2411,6 +2501,91 @@ void Resolver::exit(const IndexableLoop* loop) {
 
   if (isParamLoop == false || scopeResolveOnly) {
     exitScope(loop);
+  }
+}
+
+// Returns 'true' if a single Id was scope-resolved, in which case the function
+// will also return via the ID and QualifiedType formals.
+static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
+                                  ID& resolvedId, QualifiedType& type) {
+  auto& scopeStack = resolver.scopeStack;
+
+  // Look at the scope before the loop-statement
+  const Scope* scope = scopeStack[scopeStack.size()-2];
+  LookupConfig config = LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_PARENTS |
+                        LOOKUP_INNERMOST;
+
+  const Scope* receiverScope = resolver.methodReceiverScope();
+
+  auto vec = lookupNameInScope(resolver.context, scope, receiverScope,
+                               intent->name(), config);
+  if (vec.size() == 1) {
+    resolvedId = vec[0].id(0);
+    if (resolver.scopeResolveOnly == false) {
+      if (resolvedId.isEmpty()) {
+        type = typeForBuiltin(resolver.context, intent->name());
+      } else {
+        type = resolver.typeForId(resolvedId, /*localGenericToUnknown*/ true);
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool Resolver::enter(const ReduceIntent* reduce) {
+
+  ID id;
+  QualifiedType type;
+  ResolvedExpression& result = byPostorder.byAst(reduce);
+
+  if (computeTaskIntentInfo(*this, reduce, id, type)) {
+    result.setToId(id);
+  } else if (!scopeResolveOnly) {
+    context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
+  }
+
+  // TODO: Resolve reduce-op with shadowed type
+  // E.g. "+ reduce x" --> "SumReduceOp(x.type)"
+  reduce->op()->traverse(*this);
+
+  return false;
+}
+
+void Resolver::exit(const ReduceIntent* reduce) {
+}
+
+bool Resolver::enter(const TaskVar* taskVar) {
+  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
+                            taskVar->initExpression() == nullptr;
+  if (isTaskIntent) {
+    ID id;
+    QualifiedType type;
+    ResolvedExpression& result = byPostorder.byAst(taskVar);
+    if (computeTaskIntentInfo(*this, taskVar, id, type)) {
+      QualifiedType taskVarType = QualifiedType(taskVar->storageKind(),
+                                                type.type());
+      result.setToId(id);
+
+      // TODO: Handle in-intents where type can change (e.g. array slices)
+      result.setType(taskVarType);
+    } else if (!scopeResolveOnly) {
+      context->error(taskVar, "Unable to find declaration of \"%s\" for task intent", taskVar->name().c_str());
+    }
+    return false;
+  } else {
+    enterScope(taskVar);
+    return true;
+  }
+}
+void Resolver::exit(const TaskVar* taskVar) {
+  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
+                            taskVar->initExpression() == nullptr;
+  if (isTaskIntent == false) {
+    exitScope(taskVar);
   }
 }
 

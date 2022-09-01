@@ -28,6 +28,7 @@
 #include "chpl/util/hash.h"
 #include "chpl/util/break.h"
 #include "chpl/util/terminal.h"
+#include "chpl/util/chplenv.h"
 
 #include <memory>
 #include <tuple>
@@ -35,6 +36,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include "llvm/ADT/DenseMap.h"
 
 namespace chpl {
 
@@ -68,6 +71,15 @@ class Context {
   using ReportErrorFnType = void(*)(Context*, const ErrorMessage&);
 
  private:
+  // The CHPL_HOME variable
+  const std::string chplHome_;
+  // Variables to explicitly set before getting chplenv
+  const std::unordered_map<std::string, std::string> chplEnvOverrides;
+
+  // State for printchplenv data
+  bool computedChplEnv = false;
+  ChplEnvMap chplEnv;
+
   // map that supports uniqueCString / UniqueString
   using UniqueStringsTableType = std::unordered_set<chpl::detail::StringAndLength, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
   UniqueStringsTableType uniqueStringsTable;
@@ -76,7 +88,7 @@ class Context {
   // Maps to an 'owned' heap-allocated thing to manage having subclasses
   // without slicing.
   // It assumes that the query name is already unique.
-  std::unordered_map<const void*, owned<querydetail::QueryMapBase>> queryDB;
+  llvm::DenseMap<const void*, owned<querydetail::QueryMapBase>> queryDB;
 
   // Since IDs include module names but not file paths, use this
   // map to go from module name to file path.
@@ -242,10 +254,22 @@ class Context {
 
  public:
   /**
-    Create a new AST Context.
+    Create a new AST Context. Optionally, specify the value of the
+    CHPL_HOME environment variable, which is used for determining
+    chapel environment varaibles.
    */
-  Context();
+  Context(std::string chplHome = "",
+          std::unordered_map<std::string, std::string> chplEnvOverrides = {});
   ~Context();
+
+  const std::string& chplHome() const;
+
+  /**
+    Run printchplenv, or return a cached result of doing so. To get output,
+    CHPL_HOME must have been provided via the constructor; otherwise, the
+    resulting map will be empty.
+  */
+  llvm::ErrorOr<const ChplEnvMap&> getChplEnv();
 
   /**
    Set the error handling function

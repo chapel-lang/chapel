@@ -44,7 +44,7 @@ proc testClasses() {
     var A = new unmanaged CC(X);
     writeln(A.type:string);
     writeln(A);
-    var B = new borrowed  CC(X);
+    var B = (new owned  CC(X)).borrow();
     writeln(B.type:string);
     writeln(B);
     var C = new owned     CC(X);
@@ -67,7 +67,7 @@ proc testClasses() {
     var A = new unmanaged GC(X);
     writeln(A.type:string);
     writeln(A);
-    var B = new borrowed  GC(X);
+    var B = (new owned  GC(X)).borrow();
     writeln(B.type:string);
     writeln(B);
     var C = new owned     GC(X);

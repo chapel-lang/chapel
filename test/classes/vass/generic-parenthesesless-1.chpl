@@ -10,6 +10,6 @@ proc C.g2 {
   return f2;
 }
 
-var c = new borrowed C(1);
+var c = (new owned C(1)).borrow();
 
 writeln(c.g2);

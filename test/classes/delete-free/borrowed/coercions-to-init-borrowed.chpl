@@ -3,7 +3,8 @@ class MyClass {
   var y:int;
 }
 
-var x: borrowed = new owned MyClass(1,2);
+var myOwned = new owned MyClass(1,2);
+var x: borrowed = myOwned;
 writeln(x.type:string);
 writeln(x);
 

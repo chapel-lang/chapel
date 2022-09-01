@@ -860,7 +860,7 @@ inline proc _remoteAccessData.getDataIndex(
   // modified from DefaultRectangularArr
   var sum = origin;
   if stridable {
-    halt("RADOpt not supported for strided cyclic arrays.");
+    compilerError("RADOpt not supported for strided cyclic arrays.");
   } else {
     for param i in 0..rank-1 do {
       sum += (((ind(i) - off(i)):int * blk(i))-startIdx(i):int)/dimLen(i);
@@ -879,7 +879,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
       if myLocArrNN.locDom.contains(i) then
         return myLocArrNN.this(i);
   }
-  if doRADOpt && !stridable {
+  if !stridable && doRADOpt {
     if const myLocArr = this.myLocArr {
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {

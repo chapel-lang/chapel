@@ -18,7 +18,7 @@ module M2 {
     return r.x * 2;
 
   proc main() {
-    var c = new borrowed C(R);
+    var c = (new owned C(R)).borrow();
     writeln(c.bar());
   }
 }

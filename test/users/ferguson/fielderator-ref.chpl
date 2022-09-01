@@ -20,7 +20,7 @@ class C {
 
 
 var rec = new R(3, "hi", 17.23);
-var cls = new borrowed C(3, "hi", 17.23);
+var cls = (new owned C(3, "hi", 17.23)).borrow();
 const epsilon = 1e-8; // for comparing reals.
 
 myproc(R, rec);
