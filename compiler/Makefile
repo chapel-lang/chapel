@@ -164,9 +164,17 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 
-$(CHPLDOC): $(CHPL)
+$(CHPLDOC): $(CHPL) dyno-chpldoc $(CHPLDOC)-legacy
+
+$(CHPLDOC)-legacy:
+	rm -f $(CHPLDOC)-legacy
+	ln -s $(notdir $(CHPL)) $(CHPLDOC)-legacy
+
+# setup a phony rule to detect when dyno-chpldoc needs to be rebuilt
+.PHONY: dyno-chpldoc
+dyno-chpldoc:
 	rm -f $(CHPLDOC)
-	ln -s $(notdir $(CHPL)) $(CHPLDOC)
+	@cd ../compiler/dyno && $(MAKE) -f Makefile.help dyno-chpldoc
 
 chpldoc: $(CHPLDOC)
 

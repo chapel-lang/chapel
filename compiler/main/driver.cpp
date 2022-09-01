@@ -1780,9 +1780,9 @@ int main(int argc, char* argv[]) {
 
     tracker.StartPhase("init");
 
-    init_args(&sArgState, argv[0]);
+    init_args(&sArgState, argv[0], (void*)main);
 
-    fDocs   = (strcmp(sArgState.program_name, "chpldoc")  == 0) ? true : false;
+    fDocs   = (strncmp(sArgState.program_name, "chpldoc", 7)  == 0) ? true : false;
 
     // Initialize the arguments for argument state. If chpldoc, use the docs
     // specific arguments. Otherwise, use the regular arguments.

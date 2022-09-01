@@ -91,7 +91,7 @@ or
 
 .. function:: proc -(lhs: Foo, rhs: Foo)
 
-.. function:: proc <=>(ref lhs: owned nilable Foo, ref rhs: owned nilable Foo)
+.. function:: proc <=>(ref lhs: owned Foo?, ref rhs: owned Foo?)
 
 .. function:: proc *=(ref lhs: Foo, rhs: Foo)
 

@@ -91,7 +91,7 @@ or
 
 .. method:: proc type Foo.-(lhs: Foo, rhs: Foo)
 
-.. method:: proc type Foo.<=>(ref lhs: owned nilable Foo, ref rhs: owned nilable Foo)
+.. method:: proc type Foo.<=>(ref lhs: owned Foo?, ref rhs: owned Foo?)
 
 .. method:: proc type Foo.*=(ref lhs: Foo, rhs: Foo)
 
