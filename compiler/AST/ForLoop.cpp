@@ -109,11 +109,18 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     // range has these() iterators
     //
 
-    if (!range || !range->isNamed("chpl_build_bounded_range")) {
+    if (!range) {
       return;
     }
 
-    if (!stride && !count) {
+    bool fullyBounded = range->isNamed("chpl_build_bounded_range");
+    bool lowBounded = range->isNamed("chpl_build_low_bounded_range");
+
+    if (!fullyBounded && !lowBounded) {
+      return;
+    }
+
+    if (!stride && !count && fullyBounded) {
       // replace fully bounded and non-strided range with a direct range
       // iter. e.g. replace:
       //
@@ -125,7 +132,8 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       Expr* low = range->get(1)->copy();
       Expr* high = range->get(2)->copy();
       iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high));
-    } else if (stride && !count) {
+
+    } else if (stride && !count && fullyBounded) {
       // replace fully bounded and strided range with a direct range
       // iter. e.g. replace:
       //
@@ -133,12 +141,13 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       //
       // with:
       //
-      // `chpl_direct_range_iter(low, high, stride)`
+      // `chpl_direct_strided_range_iter(low, high, stride)`
       Expr* low = range->get(1)->copy();
       Expr* high = range->get(2)->copy();
       iteratorExpr->replace(new CallExpr("chpl_direct_strided_range_iter",
                                          low, high, stride));
-    } else if (!stride && count) {
+
+    } else if (!stride && count && lowBounded) {
       // replace counted, low bounded range with unit stride with an equivalent
       // direct range iter. e.g. replace:
       //
@@ -150,6 +159,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       Expr* low = range->get(1)->copy();
       iteratorExpr->replace(new CallExpr("chpl_direct_counted_range_iter",
                             low, count));
+
     }
   }
 }
