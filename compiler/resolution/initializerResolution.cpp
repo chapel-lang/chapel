@@ -334,7 +334,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     manager = dtUnmanaged;
 
   if (manager == dtBorrowed) {
-    USR_FATAL(newExpr, "creating a 'new borrowed' type is a not allowed");
+    USR_WARN(newExpr, "creating a 'new borrowed' type is deprecated");
   }
 
   INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
