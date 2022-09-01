@@ -266,7 +266,7 @@ module HDFS {
       return oldValue - 1;
     }
 
-    deprecated "open with a style argument is deprecated"
+    @unstable "open with a style argument is unstable"
     proc open(path:string, mode:iomode,
               style:iostyle,
               in flags:c_int = 0, // default to based on mode
