@@ -701,12 +701,6 @@ module ChapelIO {
     f.write(chpl_id());
   }
 
-  pragma "no doc"
-  proc localeUID.writeThis(f) throws {
-    f.write("UID: ", this.topLevelIdx);
-    if this.gpuIdx != -1 then f.write("-", this.gpuIdx);
-  }
-
   /* Errors can be printed out. In that event, they will
      show information about the error including the result
      of calling :proc:`Error.message`.

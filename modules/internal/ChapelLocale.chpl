@@ -30,24 +30,6 @@ module ChapelLocale {
   import HaltWrappers;
   use CTypes;
 
-  /* A unique ID representing a `locale`
-  */
-  record localeUID {
-    pragma "no doc"
-    var topLevelIdx: int = -1;
-    pragma "no doc"
-    var gpuIdx: int = -1;
-  }
-
-  pragma "no doc"
-  proc localeUID.init() {}
-
-  pragma "no doc"
-  proc localeUID.init(id: int, gpuIdx: int = -1) {
-    this.topLevelIdx = id;
-    this.gpuIdx = gpuIdx;
-  }
-
   compilerAssert(!(!localeModelHasSublocales &&
    localeModelPartitionsIterationOnSublocales),
    "Locale model without sublocales can not have " +
@@ -236,8 +218,8 @@ module ChapelLocale {
   /*
     Get a unique identifier for this locale.
 
-    :returns: a unique ID
-    :rtype: :record:`localeUID`
+    :returns: a unique integer ID
+    :rtype: :record:`int`
 
     One can always expect unique IDs to match for the same locale,
     and to be different for different locales. In other words,
@@ -245,7 +227,7 @@ module ChapelLocale {
     and ``localeA != localeB`` implies ``localeA.uid != localeB.uid``
 
   */
-  inline proc locale.uid: localeUID {
+  inline proc locale.uid: int {
     return this._value.uid;
   }
 
@@ -375,7 +357,7 @@ module ChapelLocale {
 
     var callStackSize: c_size_t;
 
-    var uid: localeUID;
+    var uid: int;
 
     proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
