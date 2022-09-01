@@ -2067,8 +2067,7 @@ operator :(r: range(?), type t: range(?)) {
   iter chpl_direct_strided_range_iter(param low: integral,
                                       param high: integral,
                                       param stride: integral) {
-    const r = low..high by stride;
-    for i in r do yield i;
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
   iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), param stride : integral) {
