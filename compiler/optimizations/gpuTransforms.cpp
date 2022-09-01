@@ -269,7 +269,7 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   FnSymbol *cur = this->parentFn_;
   while (cur) {
     if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-      reportNotGpuizable(cur, "parent function does not allow gpuization");
+      reportNotGpuizable(cur, "parent function disallows execution on a GPU");
       return false;
     }
 
@@ -331,7 +331,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       FnSymbol *fn = call->resolvedFunction();
 
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-        reportNotGpuizable(fn, "function is marked not gpuizable");
+        reportNotGpuizable(fn, "function is marked as not eligible for GPU execution");
         return false;
       }
 
@@ -384,7 +384,7 @@ bool GpuizableLoop::extractIndicesAndLowerBounds() {
     INT_ASSERT(bs->body.length == (int)this->loopIndices_.size());
     INT_ASSERT(bs->body.length == (int)this->lowerBounds_.size());
   } else {
-    reportNotGpuizable(loop_, "loop indices not eligible for gpuization");
+    reportNotGpuizable(loop_, "loop indices do not match expected pattern for GPU execution");
     return false;
   }
 
@@ -411,16 +411,14 @@ bool GpuizableLoop::extractUpperBound() {
   }
 
   if(upperBound_ == nullptr) {
-    reportNotGpuizable(loop_, "upper bound is not eligible for gpuization");
+    reportNotGpuizable(loop_, "upper bound does not match expected pattern for GPU execution");
   }
   return true;
 }
 
 void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
   if(this->shouldErrorIfNotGpuizable_) {
-    std::string fullMsg = "Loop containing assertOnGpu() is not Gpuizable "
-                          "because " + std::string(msg);
-    USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not Gpuizable");
+    USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not eligible for execution on a GPU");
     USR_PRINT(ast, "%s", msg);
     USR_STOP();
   }
