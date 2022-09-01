@@ -229,6 +229,8 @@ public:
   Vec<Symbol*>*  actuals;
   Expr*          scope;
   bool           explain;
+  bool           isMethodCall;
+  bool           useOldVisibility;
 
 private:
                  DisambiguationContext();
@@ -291,6 +293,9 @@ FnSymbol* resolveNormalCall(CallExpr* call);
 void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn);
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
+
+void warnForIntUintConversion(BaseAST* context, Type* formalType,
+                              Type* actualType, Symbol* actual);
 
 void lvalueCheck(CallExpr* call);
 

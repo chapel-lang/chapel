@@ -230,7 +230,27 @@ module ChapelRange {
   // Range builders:  used by the parser to create literal ranges
   //
 
+  private
+  proc computeParamRangeIndexType(param low, param high) type {
+    // if either type is int, and the int value fits in the other type,
+    // return the other type
+    if low.type == int &&
+       min(high.type) <= low && low <= max(high.type) {
+      return high.type;
+    } else if high.type == int &&
+              min(low.type) <= high && high <= max(low.type) {
+      return low.type;
+    } else {
+      // otherwise, use the type that '+' would produce.
+      return (low+high).type;
+    }
+  }
+
   // Range builders for fully bounded ranges
+  proc chpl_build_bounded_range(param low: integral, param high: integral) {
+    type idxType = computeParamRangeIndexType(low, high);
+    return new range(idxType, low=low, high=high);
+  }
   proc chpl_build_bounded_range(low: int(?w), high: int(w))
     return new range(int(w), low=low, high=high);
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
@@ -294,24 +314,16 @@ module ChapelRange {
   //
   // Necessary for coercion support
   /////////////////////////////////////////////////////////////////////
-  proc chpl_compute_low_param_loop_bound(param low: int(?w),
-                                         param high: int(w)) param {
-    return low;
+  proc chpl_compute_low_param_loop_bound(param low: integral,
+                                         param high: integral) param {
+    type t = computeParamRangeIndexType(low, high);
+    return low:t;
   }
 
-  proc chpl_compute_high_param_loop_bound(param low: int(?w),
-                                          param high: int(w)) param {
-    return high;
-  }
-
-  proc chpl_compute_low_param_loop_bound(param low: uint(?w),
-                                         param high: uint(w)) param {
-    return low;
-  }
-
-  proc chpl_compute_high_param_loop_bound(param low: uint(?w),
-                                          param high: uint(w)) param {
-    return high;
+  proc chpl_compute_high_param_loop_bound(param low: integral,
+                                          param high: integral) param {
+    type t = computeParamRangeIndexType(low, high);
+    return high:t;
   }
 
   proc chpl_compute_low_param_loop_bound(param low: enum,
@@ -1277,7 +1289,7 @@ operator :(r: range(?), type t: range(?)) {
   proc range.interior(offset: integral)
   {
     if boundsChecking then
-      if offset > this.sizeAs(uint) then
+      if abs(offset) > this.sizeAs(uint) then
         HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.sizeAs(uint):string);
 
     const i = offset.safeCast(intIdxType);
@@ -1623,7 +1635,7 @@ operator :(r: range(?), type t: range(?)) {
     //
     var emptyIntersection: bool;
 
-    proc min(x: int, y: uint) {
+    proc myMin(x: int, y: uint) {
       if (y > max(int)) {
         return x;
       }
@@ -1635,7 +1647,7 @@ operator :(r: range(?), type t: range(?)) {
       return min(x, y: int);
     }
 
-    proc min(x: uint, y: int) {
+    proc myMin(x: uint, y: int) {
       //
       // if the high uint bound is bigger than int can represent,
       // this slice is guaranteed to be empty.
@@ -1656,10 +1668,18 @@ operator :(r: range(?), type t: range(?)) {
       return min(x, y: uint);
     }
 
+    proc myMin(x: int, y: int) {
+      return min(x, y);
+    }
+    proc myMin(x: uint, y: uint) {
+      return min(x, y);
+    }
+
+
     //
     // These two cases are the dual of the above
     //
-    proc max(x: int, y: uint) {
+    proc myMax(x: int, y: uint) {
       if (y > max(int)) {
         emptyIntersection = true;
         return x;
@@ -1668,7 +1688,7 @@ operator :(r: range(?), type t: range(?)) {
       return max(x, y: int);
     }
 
-    proc max(x: uint, y: int) {
+    proc myMax(x: uint, y: int) {
       if (y < 0) {
         return x;
       }
@@ -1676,9 +1696,17 @@ operator :(r: range(?), type t: range(?)) {
       return max(x, y: uint);
     }
 
+    proc myMax(x: int, y: int) {
+      return max(x, y);
+    }
+    proc myMax(x: uint, y: uint) {
+      return max(x, y);
+    }
+
+
     emptyIntersection = false;
-    var newlo = max(lo1, lo2):intIdxType;
-    var newhi = min(hi1, hi2):intIdxType;
+    var newlo = myMax(lo1, lo2):intIdxType;
+    var newhi = myMin(hi1, hi2):intIdxType;
     if (emptyIntersection) {
       newlo = 1;
       newhi = 0;
@@ -1798,14 +1826,29 @@ operator :(r: range(?), type t: range(?)) {
     // # operator no longer returns a range of idxType corresponding
     // to the sum of the idxType and count type.
     //
+    // MPPF: Updated it for the fact that mixed int/uint no
+    // longer produce the next integer size up (but rather coerce to uint).
+    //
     proc chpl__computeTypeForCountMath(type t1, type t2) type {
-      if (t1 == t2) then {
-        return chpl__idxTypeToIntIdxType(t1);
-      } else if (numBits(t1) == 64 || numBits(t2) == 64) then {
+      type t1i = chpl__idxTypeToIntIdxType(t1);
+      type t2i = chpl__idxTypeToIntIdxType(t2);
+      if (t1i == t2i) then {
+        return t1i;
+      } else if isInt(t1i) && isInt(t2i) {
+        // both int but different sizes
+        return int(max(numBits(t1i), numBits(t2i)));
+      } else if isUint(t1i) && isUint(t2i) {
+        // both uint but different sizes
+        return uint(max(numBits(t1i), numBits(t2i)));
+      } else if (numBits(t1i) == 64 || numBits(t2i) == 64) then {
+        // otherwise, for a mix of int/uint, use int(64) if either is 64-bit
         return int(64);
+      } else if isInt(t1i) {
+        // t1 is int and t2 is uint and both are smaller than 64 bit
+        return int(max(numBits(t1i), 2*numBits(t2i)));
       } else {
-        var x1: t1; var x2: t2;
-        return (x1+x2).type;
+        // t1 is int and t2 is uint and both are smaller than 64 bit
+        return int(max(2*numBits(t1i), numBits(t2i)));
       }
     }
 
@@ -1932,45 +1975,112 @@ operator :(r: range(?), type t: range(?)) {
   // can be the same sized signed or unsigned version of low/high
   //
 
+  //
+  // Direct range iterators for non-strided ranges (low..high)
+  // which always have stride 1.
+  //
+
+  iter chpl_direct_range_iter(param low: integral, param high: integral) {
+    type idxType = computeParamRangeIndexType(low, high);
+    for i in chpl_direct_param_stride_range_iter(low: idxType,
+                                                 high: idxType,
+                                                 1:idxType) do
+      yield i;
+  }
+
+  iter chpl_direct_range_iter(low: int(?w), high: int(w)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(w)) do
+      yield i;
+  }
+
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(w)) do
+      yield i;
+  }
+
+  iter chpl_direct_range_iter(low: enum, high: enum) {
+    // Optimize for the stride == 1 case because I anticipate it'll be
+    // better supported for enum ranges than the strided case (if we
+    // ever support the latter)
+    const r = low..high;
+    for i in r do yield i;
+  }
+
+  iter chpl_direct_range_iter(low: bool, high: bool) {
+    // Optimize for the stride == 1 case because I anticipate it'll be
+    // better supported for enum ranges than the strided case (if we
+    // ever support the latter)
+    const r = low..high;
+    for i in r do yield i;
+  }
+
+  // case for when low and high aren't compatible types and can't be coerced
+  iter chpl_direct_range_iter(low, high) {
+    chpl_build_bounded_range(low, high);  // use general error if possible
+    // otherwise, generate a more specific one (though I don't think it's
+    // possible to get here)
+    compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
+  }
+
+  //
+  // Direct range iterators for strided ranges (low..high by stride)
+  //
 
   // cases for when stride is a non-param int (don't want to deal with finding
   // chpl__diffMod and the likes, just create a non-anonymous range to iterate
   // over.)
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: int(?w2)) {
+  iter chpl_direct_strided_range_iter(param low: integral,
+                                      param high: integral,
+                                      stride: integral) {
+    type idxType = computeParamRangeIndexType(low, high);
+    const r = low:idxType..high:idxType by stride;
+    for i in r do yield i;
+  }
+
+  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w),
+                                      stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: int(?w2)) {
+  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w),
+                                      stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enum, high: enum,
-                              stride: integral) {
+  iter chpl_direct_strided_range_iter(low: enum, high: enum,
+                                      stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: bool, high: bool, stride: integral) {
+  iter chpl_direct_strided_range_iter(low: bool, high: bool,
+                                      stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
-
 
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride : integral) {
+  iter chpl_direct_strided_range_iter(param low: integral,
+                                      param high: integral,
+                                      param stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+
+  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), param stride : integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: integral) {
+  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), param stride: integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enum, high: enum,
-                              param stride: integral) {
+  iter chpl_direct_strided_range_iter(low: enum, high: enum,
+                                      param stride: integral) {
     if (stride == 1) {
         // Optimize for the stride == 1 case because I anticipate it'll be
         // better supported for enum ranges than the strided case (if we
@@ -1986,7 +2096,8 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  iter chpl_direct_range_iter(low: bool, high: bool, param stride: integral) {
+  iter chpl_direct_strided_range_iter(low: bool, high: bool,
+                                      param stride: integral) {
     if (stride == 1) {
         // Optimize for the stride == 1 case because I anticipate it'll be
         // better supported for enum ranges than the strided case (if we
@@ -2004,30 +2115,30 @@ operator :(r: range(?), type t: range(?)) {
 
 
   // cases for when stride is a uint (we know the stride is must be positive)
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(?w2)) {
+  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(?w2)) {
+  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
 
 
   // cases for when stride isn't valid
-  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride) {
+  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   int(w):string, " using a step of type ",
                   stride.type:string);
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride) {
+  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   uint(w):string, " using a step of type ",
                   stride.type:string);
   }
 
   // case for when low and high aren't compatible types and can't be coerced
-  iter chpl_direct_range_iter(low, high, stride) {
-    chpl_build_bounded_range(low, high);  // use general error if possible
+  iter chpl_direct_strided_range_iter(low, high, stride) {
+    chpl_build_bounded_range(low, high, stride);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
     if (low.type == high.type) then
@@ -2041,38 +2152,20 @@ operator :(r: range(?), type t: range(?)) {
   // Direct range iterators for low bounded counted ranges (low..#count)
   //
 
-  iter chpl_direct_counted_range_iter(low: int(?w), count: int(w)) {
+  iter chpl_direct_counted_range_iter(low: int(?w), count: integral) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: int(?w), count: uint(w)) {
+  iter chpl_direct_counted_range_iter(low: uint(?w), count: integral) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: uint(?w), count: int(w)) {
-    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
-  }
-
-  iter chpl_direct_counted_range_iter(low: uint(?w), count: uint(w)) {
-    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
-  }
-
-  iter chpl_direct_counted_range_iter(low: enum, count:int(?w)) {
+  iter chpl_direct_counted_range_iter(low: enum, count:integral) {
     const r = low..;
     for i in r#count do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: enum, count:uint(?w)) {
-    const r = low..;
-    for i in r#count do yield i;
-  }
-
-  iter chpl_direct_counted_range_iter(low: bool, count: int(?w)) {
-    const r = low..;
-    for i in r#count do yield i;
-  }
-
-  iter chpl_direct_counted_range_iter(low: bool, count: uint(?w)) {
+  iter chpl_direct_counted_range_iter(low: bool, count: integral) {
     const r = low..;
     for i in r#count do yield i;
   }
@@ -2093,10 +2186,11 @@ operator :(r: range(?), type t: range(?)) {
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
 
-    // The casts in the 'then' clause are seemingly unnecessary, but
-    // avoid C compile-time warnings when 'low' is min(int)
-    const (start, end) = if count == 0 then (low, (low:uint - 1):low.type)
-                                       else (low, low + (count:low.type - 1));
+    const start = low;
+    // The cast to uint in the 'then' clause avoids avoids a C compile-time
+    // warnings when 'low' is min(int)
+    const end = if count == 0 then (low:uint - 1):low.type
+                              else (low + (count:low.type - 1)):low.type;
 
     for i in chpl_direct_param_stride_range_iter(start, end, 1) do yield i;
   }
@@ -2736,8 +2830,8 @@ operator :(r: range(?), type t: range(?)) {
   // Use explicit conversions, no other additional runtime work.
   proc chpl__addRangeStrides(start, stride, count): start.type {
     proc convert(a,b) param
-      return ( a.type == int(64) && b.type == uint(64) ) ||
-             ( a.type == uint(64) && b.type == int(64) );
+      return ( isIntType(a.type) && isUintType(b.type) ) ||
+             ( isUintType(a.type) && isIntType(b.type) );
 
     proc mul(a,b) return if convert(a,b) then a:int(64) * b:int(64) else a * b;
     proc add(a,b) return if convert(a,b) then a:int(64) + b:int(64) else a + b;

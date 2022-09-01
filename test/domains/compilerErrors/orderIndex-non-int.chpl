@@ -1,3 +1,4 @@
 
 var DR = {1..3};
-writeln(DR.orderToIndex(0:uint));
+var zeroUint: uint = 0;
+writeln(DR.orderToIndex(zeroUint));
