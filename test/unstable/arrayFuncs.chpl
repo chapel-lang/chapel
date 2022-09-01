@@ -1,5 +1,5 @@
-// We were considering deprecating these but have since pulled back the the
-// change and marked them unstable (going forward we might decide to continue
+// We were considering deprecating these but have since pulled back the change
+// and marked them unstable (going forward we might decide to continue
 // deprecating these or moving them to another module or keeping them on the
 // array)
 
