@@ -82,7 +82,7 @@ void usage(const ArgumentState* arg_state,
            bool                 printEnvHelp,
            bool                 printCurrentSettings);
 
-void init_args(ArgumentState* state, const char* argv0, void* mainAddr);
+void init_args(ArgumentState* state, const char* argv0);
 
 void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc);
 

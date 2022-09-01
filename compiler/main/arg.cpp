@@ -312,7 +312,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
 *                                                                             *
 ************************************** | *************************************/
 
-void init_args(ArgumentState* state, const char* argv0, void* mainAddr) {
+void init_args(ArgumentState* state, const char* argv0) {
   char* name = strdup(argv0);
 
   if (char* firstSlash = strrchr(name, '/')) {

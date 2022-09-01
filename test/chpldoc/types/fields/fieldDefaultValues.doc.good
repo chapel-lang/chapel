@@ -17,17 +17,11 @@ or
 
    import fieldDefaultValues;
 
-.. data:: var x: int
-
-.. data:: var y: x.type
-
-.. data:: var z: y.type
-
 .. class:: C
 
    .. attribute:: var aField: int
 
-.. data:: var c: C?
+.. data:: var c: nilable C
 
 .. record:: R0
 
@@ -65,7 +59,7 @@ or
 
    .. attribute:: var notNilDefault = c!
 
-   .. attribute:: var isNilDefault: C? = nil
+   .. attribute:: var isNilDefault: nilable C = nil
 
    .. attribute:: var plusDefault = x + y
 
