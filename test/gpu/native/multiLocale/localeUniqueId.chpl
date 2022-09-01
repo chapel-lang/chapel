@@ -12,4 +12,4 @@ for loc in Locales {
     }
 }
 
-writeln(idset.size = gpu_counter + numLocales);
+writeln(idset.size == gpu_counter + numLocales);
