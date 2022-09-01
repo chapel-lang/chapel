@@ -365,6 +365,7 @@ static void resolveISymRequiredFun(InterfaceSymbol* isym, FnSymbol* fn) {
 static void markCompositeTypesForRemoval(FnSymbol* fn) {
   std::vector<DefExpr*> defExprs;
   collectDefExprs(fn, defExprs);
+  if (fn->retType) markTypeForRemovalIfNeeded(fn->retType);
   for (DefExpr* def: defExprs)
    if (! def->sym->hasFlag(FLAG_PARAM))
     if (Type* type = def->sym->type)
