@@ -1,0 +1,8 @@
+-sfailureMode=1 # assertOnFailToGpuize.1.good
+-sfailureMode=2 # assertOnFailToGpuize.2.good
+-sfailureMode=3 # assertOnFailToGpuize.3.good
+-sfailureMode=4 # assertOnFailToGpuize.4.good
+-sfailureMode=5 # assertOnFailToGpuize.5.good
+-sfailureMode=6 # assertOnFailToGpuize.6.good
+-sfailureMode=7 # assertOnFailToGpuize.7.good
+-sfailureMode=8 # assertOnFailToGpuize.8.good

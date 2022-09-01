@@ -166,6 +166,7 @@ class GpuizableLoop {
   Symbol* upperBound_ = nullptr;
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
+  bool shouldErrorIfNotGpuizable_;
 
 public:
   GpuizableLoop(BlockStmt* blk);
@@ -181,12 +182,15 @@ public:
   }
 
 private:
+  bool determineIfShouldErrorIfNotGpuizable();
   bool evaluateLoop();
+  bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
   bool callsInBodyAreGpuizable();
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
   bool extractUpperBound();
+  void reportNotGpuizable(const BaseAST* ast, const char *msg);
 
   bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                    std::set<FnSymbol*>& okFns,
@@ -198,7 +202,45 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
 
   this->loop_ = toCForLoop(blk);
   this->parentFn_ = toFnSymbol(blk->getFunction());
+  this->shouldErrorIfNotGpuizable_ = determineIfShouldErrorIfNotGpuizable();
   this->isEligible_ = evaluateLoop();
+
+  // Ideally we should error out earlier than this with a more specific
+  // error message but here's a final fallback error.
+  // There's one use case we want to exempt, which is failure to
+  // gpuize a nested loop. In this case if there was a failure to gpuize
+  // the outer loop we already would have errored.
+  if(this->shouldErrorIfNotGpuizable_ &&
+    !this->isEligible_ &&
+    !isAlreadyInGpuKernel())
+  {
+    USR_FATAL(blk, "Loop containing assertOnGpu() is not gpuizable");
+  }
+}
+
+bool GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
+  CForLoop *cfl = this->loop_;
+  INT_ASSERT(cfl);
+
+  // The gpuizable check will kick in if `assertOnGpu()` appears in the
+  // body of the loop absent of any control flow.
+  // It's necessary to do this instead of just checking the first
+  // statement as by the time we get to gpuTransforms code may have
+  // been added to the start of the loop (for example to
+  // assign to the loop iteration variable if we're iterating
+  // over values rather than indices)
+  for_alist(expr, cfl->body) {
+    CallExpr *call = toCallExpr(expr);
+    if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool GpuizableLoop::isAlreadyInGpuKernel() {
+  return this->parentFn_->hasFlag(FLAG_GPU_CODEGEN);
 }
 
 bool GpuizableLoop::evaluateLoop() {
@@ -214,7 +256,7 @@ bool GpuizableLoop::evaluateLoop() {
   // We currently don't support launching kernels from kernels. So if
   // the loop is within a function already marked for use on the GPU,
   // don't GPUize.
-  if(this->parentFn_->hasFlag(FLAG_GPU_CODEGEN)) {
+  if(isAlreadyInGpuKernel()) {
     return false;
   }
 
@@ -227,6 +269,7 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   FnSymbol *cur = this->parentFn_;
   while (cur) {
     if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+      reportNotGpuizable(cur, "parent function disallows execution on a GPU");
       return false;
     }
 
@@ -262,6 +305,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
     if (blk->getFunction()->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
       return true; // allow `halt` to be potentially called recursively
     } else {
+      reportNotGpuizable(fn, "function is recursive");
       return false;
     }
   }
@@ -277,20 +321,24 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       bool inLocal = inLocalBlock(call);
       int is = classifyPrimitive(call, inLocal);
       if ((is != FAST_AND_LOCAL)) {
+        reportNotGpuizable(call, "primitive is not fast and local");
         return false;
       }
     } else if (call->isResolved()) {
       if (!allowFnCallsFromGPU)
         return false;
 
-      FnSymbol* fn = call->resolvedFunction();
+      FnSymbol *fn = call->resolvedFunction();
 
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+        reportNotGpuizable(fn, "function is marked as not eligible for GPU execution");
         return false;
       }
 
-      if (hasOuterVarAccesses(fn))
+      if (hasOuterVarAccesses(fn)) {
+        reportNotGpuizable(call, "call has outer var access");
         return false;
+      }
 
       indentGPUChecksLevel += 2;
       if (okFns.count(fn) != 0 ||
@@ -336,6 +384,7 @@ bool GpuizableLoop::extractIndicesAndLowerBounds() {
     INT_ASSERT(bs->body.length == (int)this->loopIndices_.size());
     INT_ASSERT(bs->body.length == (int)this->lowerBounds_.size());
   } else {
+    reportNotGpuizable(loop_, "loop indices do not match expected pattern for GPU execution");
     return false;
   }
 
@@ -361,7 +410,18 @@ bool GpuizableLoop::extractUpperBound() {
     }
   }
 
-  return upperBound_ != nullptr;
+  if(upperBound_ == nullptr) {
+    reportNotGpuizable(loop_, "upper bound does not match expected pattern for GPU execution");
+  }
+  return true;
+}
+
+void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
+  if(this->shouldErrorIfNotGpuizable_) {
+    USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not eligible for execution on a GPU");
+    USR_PRINT(ast, "%s", msg);
+    USR_STOP();
+  }
 }
 
 // ----------------------------------------------------------------------------
