@@ -1318,9 +1318,6 @@ struct RstResultBuilder {
   static const int commentIndent = 3;
   int indentDepth_ = 1;
 
-  RstResultBuilder(Context* context) : context_(context),
-                                       os_(std::stringstream()) {}
-
   bool showComment(const Comment* comment, std::string& errMsg, bool indent=true) {
     if (!comment || comment->str().substr(0, 2) == "//") {
       os_ << '\n';
