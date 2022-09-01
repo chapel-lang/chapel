@@ -18,6 +18,7 @@ Contributors to the Chapel 1.28.0 release
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * David Iten, [HPE]
+* Bhavani Jayakumaran, [HPE]
 * Engin Kayraklioglu, [HPE]
 * Shreyas Khandekar, [HPE] intern from [University of Arizona]
 * Vassily Litvinov, [HPE]
