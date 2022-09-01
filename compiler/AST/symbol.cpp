@@ -511,8 +511,9 @@ void Symbol::generateUnstableWarning(Expr* context) {
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
 
-  // Traverse until we find an unstable parent symbol, a compiler generated
-  // parent symbol, or until we reach the highest outer scope
+  // Traverse until we find an unstable parent symbol, a deprecated parent
+  // symbol, a compiler generated parent symbol, or until we reach the highest
+  // outer scope.
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
          parentUnstable != true && compilerGenerated != true &&
@@ -524,7 +525,7 @@ void Symbol::generateUnstableWarning(Expr* context) {
   }
 
   // Only generate the warning if the location with the reference is not
-  // created by the compiler or also unstable.
+  // created by the compiler, is not unstable, and is not deprecated.
   if (!compilerGenerated && !parentUnstable && !parentDeprecated) {
     USR_WARN(context, "%s", getSanitizedMsg(getUnstableMsg()));
   }
