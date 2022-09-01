@@ -238,6 +238,12 @@ module ChapelLocale {
 
     :returns: a unique ID
     :rtype: :record:`localeUID`
+
+    One can always expect unique IDs to match for the same locale,
+    and to be different for different locales. In other words,
+    ``localeA == localeB`` implies ``localeA.uid == localeB.uid``
+    and ``localeA != localeB`` implies ``localeA.uid != localeB.uid``
+
   */
   inline proc locale.uid: localeUID {
     return this._value.uid;
