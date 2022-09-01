@@ -91,7 +91,7 @@ or
 
 .. function:: operator -(lhs: Foo, rhs: Foo)
 
-.. function:: operator <=>(ref lhs: owned nilable Foo, ref rhs: owned nilable Foo)
+.. function:: operator <=>(ref lhs: owned Foo?, ref rhs: owned Foo?)
 
 .. function:: operator *=(ref lhs: Foo, rhs: Foo)
 

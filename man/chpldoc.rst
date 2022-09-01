@@ -64,6 +64,10 @@ reStructuredText as an intermediate format.
     Sets the documentation version to *projectversion*
     (documentation version defaults to '0.0.1' if unspecified).
 
+**\--legacy**
+
+    Use the legacy version of chpldoc
+
 **\--[no-]print-commands**
 
     Prints the system commands that **chpldoc** executes in order to create
