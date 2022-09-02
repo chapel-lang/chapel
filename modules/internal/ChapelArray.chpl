@@ -42,12 +42,6 @@ module ChapelArray {
   pragma "no doc"
   param nullPid = -1;
 
-  // This permits a user to opt into upcoming behavior to always have
-  // .indices return local indices for an array
-  pragma "no doc"
-  deprecated "'arrayIndicesAlwaysLocal' is deprecated and no longer has an effect"
-  config param arrayIndicesAlwaysLocal = true;
-
   pragma "no doc"
   config param debugBulkTransfer = false;
   pragma "no doc"
