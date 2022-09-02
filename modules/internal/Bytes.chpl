@@ -20,6 +20,8 @@
 
 /*
 .. type:: bytes
+
+Supports the following methods:
 */
 module Bytes {
   private use ChapelStandard;

@@ -89,4 +89,6 @@ To learn more about handling these errors, see the
 Bytes Methods
 -------------
 
+The *bytes* type:
+
 .. include:: /builtins/Bytes.rst
