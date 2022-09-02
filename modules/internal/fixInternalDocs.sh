@@ -223,9 +223,9 @@ replace "chpl_bytes" "bytes" $file
 ## Bytes ##
 
 file="./Bytes.rst"
-fixTitle "Bytes" $file
-removeUsage $file
 replace "chpl_bytes" "bytes" $file
+removeTitle $file
+removeUsage $file
 
 ## End of Bytes ##
 
