@@ -2106,8 +2106,9 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   if( printSystemCommands ) {
     printf("%s\n", cmd.c_str());
   }
-  myshell(cmd, "building html output from chpldoc sphinx project");
-  printf("HTML files are at: %s\n", outputDir.c_str());
+  if (myshell(cmd, "building html output from chpldoc sphinx project") == 0) {
+    printf("HTML files are at: %s\n", outputDir.c_str());
+  }
 }
 
 
@@ -2139,6 +2140,13 @@ int main(int argc, char** argv) {
     }
     return myshell(cmd, "running legacy chpldoc", true);
   }
+
+  // TODO: there is a future for this, asking for a better error message and I
+  // think we can provide it by checking here.
+  // see test/chpldoc/compflags/folder/save-sphinx/saveSphinxInDocs.doc.future
+  // if (args.saveSphinx == "docs") {
+
+  // }
 
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {
@@ -2243,18 +2251,19 @@ int main(int argc, char** argv) {
       // TODO: handle errors better, don't rely on parse query to emit them
       // per @mppf: if dyno-chpldoc wants to quit on an error, it should
       // configure Context::reportError to have a custom function that does so.
-
+      bool fatal = false;
       for (auto e : builderResult.errors()) {
       // just display the error messages right now, see TODO above
         if (e.kind() == ErrorMessage::Kind::ERROR ||
             e.kind() == ErrorMessage::Kind::SYNTAX) {
-              std::cerr << "Error parsing " << path << ": "
-                        << builderResult.error(0).message() << "\n";
+              fatal = true;
               context.report(e);
-              return 1;
         } else if (e.kind() == ErrorMessage::Kind::WARNING) {
               context.report(e);
         }
+      }
+      if (fatal) {
+        return 1;
       }
     }
     // gather all the top level and used/imported/included module IDs
