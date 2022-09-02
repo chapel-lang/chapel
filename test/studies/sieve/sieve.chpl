@@ -12,10 +12,8 @@ config var limit : uint = 1000; // maximum number to include in the sieve
 proc main() {
   // list of confirmed primes
   var primes : list(uint);
-  // number to start sieving from
-  param lowerBound = 2;
   // range of potential prime numbers
-  var potentialPrimes = lowerBound..limit;
+  var potentialPrimes = 2..limit;
   // flags for known composite (sieved out) numbers
   var knownComposite : [potentialPrimes] bool = false;
 
@@ -31,5 +29,5 @@ proc main() {
   }
 
   writeln(primes);
-  writeln("Count of primes from ", lowerBound, " to ", limit, ": ", primes.size);
+  writeln("Count of primes up to ", limit, ": ", primes.size);
 }
