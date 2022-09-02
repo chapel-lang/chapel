@@ -1,12 +1,11 @@
 BootStrap: library
-From: alpine:latest
+From: debian:buster
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/apk-deps.sh
-    /provision-scripts/apk-llvm.sh
+    /provision-scripts/apt-get-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh

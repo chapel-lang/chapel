@@ -1,12 +1,11 @@
-BootStrap: library
-From: alpine:latest
+BootStrap: docker
+From: fedora:36
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/apk-deps.sh
-    /provision-scripts/apk-llvm.sh
+    /provision-scripts/dnf-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh
