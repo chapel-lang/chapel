@@ -502,8 +502,8 @@ public:
   BlockStmt* svInitBlock;      // always present
   BlockStmt* svDeinitBlock;    //  "
 
-  // Once pruning is no longer needed, this should be removed.
-  bool pruneit;
+  // This svar is for a task intent or TPV that is explicit in user code.
+  bool svExplicit;
 };
 
 /******************************** | *********************************

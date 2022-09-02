@@ -1049,7 +1049,7 @@ ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
   specBlock(NULL),
   svInitBlock(new BlockStmt()),
   svDeinitBlock(new BlockStmt()),
-  pruneit(false)
+  svExplicit(false)
 {
   if (intentsResolved)
     if (intent == TFI_DEFAULT || intent == TFI_CONST)
@@ -1109,6 +1109,7 @@ ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
 
   ss->copyFlags(this);
   ss->cname = cname;
+  ss->svExplicit = svExplicit;
   return ss;
 }
 
