@@ -412,6 +412,7 @@ bool GpuizableLoop::extractUpperBound() {
 
   if(upperBound_ == nullptr) {
     reportNotGpuizable(loop_, "upper bound does not match expected pattern for GPU execution");
+    return false;
   }
   return true;
 }
