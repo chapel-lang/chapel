@@ -74,13 +74,20 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* addressed memory leaks in the 'TOML' module by using `shared` objects
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 
 Tool Improvements
 -----------------
-* updated FLTK version from 1.3.5 to 1.3.8 for improved support on Mac M1
+* extended 'mason' to support three different usage modes  
+  (see https://chapel-lang.org/docs/1.28/mason-packages/start/whymason.html#the-three-modes-of-mason)
+* added support for adding git repositories as 'mason' dependencies
+  (see https://chapel-lang.org/docs/1.28/mason-packages/guide/gitdependencies.html)
+* added a `mason modules` command to generate command-line flags
+* simplified initialization of 'mason' packages
+* added a check to ensure a 'mason' package exists before adding it
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -96,6 +103,8 @@ Memory Improvements
 
 Documentation
 -------------
+* reworked the documentation for 'mason' to simplify navigation and clarify it  
+  (see https://chapel-lang.org/docs/1.28/mason-packages/index.html)
 * refreshed the `range` API documentation in the language specification
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#range-type-queries)
 * refreshed the `locale` documentation to reflect stabilization improvements
@@ -163,6 +172,7 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* updated FLTK version from 1.3.5 to 1.3.8 for improved support on Mac M1
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -195,6 +205,7 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* removed setting of `LANG` variables in launchers via `env` (no longer needed)
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
