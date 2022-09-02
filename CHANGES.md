@@ -33,6 +33,8 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * marked `locale.numPUs` as being unstable for the time being
 * deprecated `locale.callStackSize()` with no intention to replace it
+* deprecated support for the `<~>` operator
+  (see https://chapel-lang.org/docs/1.28/language/spec/statements.html#the-i-o-statement)
 * deprecated the NUMA locale model and related methods on `locale` values
 * deprecated the `alignedBoundsByDefault` config param which has no effect
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault)
@@ -60,17 +62,31 @@ Name Changes in Libraries
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated the `Sys` module, moving some key symbols to `OS.POSIX`
+* marked the `iostyle` type and associated routines as unstable  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.iostyle)
 * deprecated the `iohints` type/constants in favor of a new `ioHintSet` type  
   (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.ioHintSet)
+* deprecated methods using both `iostyle` and `iohints`  
+  (e.g., see see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.open)
+* deprecated the `file.tryGetPath()` and `file.getchunk()` methods  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.file.tryGetPath
+   and https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.file.getchunk)
+* deprecated the `IO.unlink()` routine in favor of `FileSystem.remove()`  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.unlink)
 * deprecated the `bigint.fits_*_p()` methods in favor of `.fitsInto()`  
   (see https://chapel-lang.org/docs/1.28/modules/standard/BigInteger.html#BigInteger.bigint.fitsInto)
 * deprecated `qio_err_t`, replacing its uses with `c_int`
 * removed deprecated POSIX errors and types from 'Sys' and 'SysBasic' modules
+* removed deprecated support for `.readWriteThis()` methods
+* removed deprecated `channel.itemReader()` and `.itemWriter()` methods
+* removed deprecated `channel.readwrite()` method
 
 Standard Library Modules
 ------------------------
 * added a new 'Communication' module for low-level get/put operations
   (see https://chapel-lang.org/docs/1.28/modules/standard/Communication.html)
+* added new 'IO' methods supporting reading/writing literals and newlines  
+  (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.channel.readLiteral)
 
 Package Modules
 ---------------
@@ -169,6 +185,7 @@ Bug Fixes for Tools
 
 Platform-specific Bug Fixes
 ---------------------------
+* fixed a bug with ABI support on Arm systems when using the LLVM back-end
 
 Third-Party Software Changes
 ----------------------------
@@ -202,6 +219,14 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+* made numerous improvements to 'dyno's scope resolution capabilities
+  - added support for task intents and reduce intents
+  - added support for try-catch statements
+* made numerous improvements to 'dyno's type resolution capabilities
+  - added support for loop index variables and param for-loops
+  - added support for varargs argument lists
+* added `uast::ReduceIntent` for cases previously handled by `uast::Reduce`
+* fixed problems compiling with `--dyno` and `-M`/`--module-dir`
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
