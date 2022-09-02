@@ -53,6 +53,13 @@ SUBDIRS = \
 
 
 CHPLDOC_SUBDIRS = \
+	dyno/lib/immediates \
+	dyno/lib/parsing \
+	dyno/lib/framework \
+	dyno/lib/resolution \
+	dyno/lib/types \
+	dyno/lib/uast \
+	dyno/lib/util \
 	dyno/tools/chpldoc \
 
 
@@ -185,7 +192,7 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 
 MAKEALLCHPLDOCSUBDIRS = $(CHPLDOC_SUBDIRS:%=%.makedir)
 
-$(CHPLDOC): $(CHPLDOC_OBJS) | $(MAKEALLCHPLDOCSUBDIRS) $(CHPL_BIN_DIR)
+$(CHPLDOC): $(MAKEALLCHPLDOCSUBDIRS) $(CHPLDOC_OBJS) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPLDOC_OBJS) $(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS) $(LIBS) $(LLVM_EXTRA_LIBS) $(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)
 
 $(CHPLDOC)-legacy: | $(CHPL_BIN_DIR)
