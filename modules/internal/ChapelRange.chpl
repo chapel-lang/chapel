@@ -2151,11 +2151,11 @@ operator :(r: range(?), type t: range(?)) {
   // Direct range iterators for low bounded counted ranges (low..#count)
   //
 
-  iter chpl_direct_counted_range_iter(low: int(?w), count: integral) {
+  iter chpl_direct_counted_range_iter(low: int(?w), count) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: uint(?w), count: integral) {
+  iter chpl_direct_counted_range_iter(low: uint(?w), count) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
