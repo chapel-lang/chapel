@@ -107,5 +107,5 @@ or
 
 .. method:: proc Bar.init=(other: Bar)
 
-.. method:: operator Bar.=(ref lhs: Bar, rhs: Bar)
+.. method:: operator Bar. = (ref lhs: Bar, rhs: Bar)
 
