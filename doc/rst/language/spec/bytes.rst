@@ -7,8 +7,8 @@
 Bytes
 =====
 
-The *bytes* type is similar to a string but allows arbitrary
-data to be stored in it. Methods on bytes that interpret the data as
+The ``bytes`` type is similar to a string but allows arbitrary
+data to be stored in it. Methods on ``bytes`` that interpret the data as
 characters assume that the bytes are ASCII characters.
 
 .. _Bytes_Instantiation:
@@ -16,14 +16,14 @@ characters assume that the bytes are ASCII characters.
 Bytes Instantiation and Casting
 -------------------------------
 
-A *bytes* instance can be created using the literals similar to strings,
+A ``bytes`` instance can be created using the literals similar to strings,
 prepended by a `b` character:
 
 .. code-block:: chapel
 
    var b = b"my bytes";
 
-*bytes* can also be crated using a specific buffer (i.e. data
+``bytes`` can also be crated using a specific buffer (i.e. data
 in another *bytes*, a `c_string` or a C pointer) you can use the
 factory functions shown below, such as *createBytesWithNewBuffer*.
 
@@ -32,10 +32,10 @@ factory functions shown below, such as *createBytesWithNewBuffer*.
 *bytes* and *string*
 ~~~~~~~~~~~~~~~~~~~~
 
-As *bytes* can store arbitrary data, any *string* can be cast to
-*bytes*. In that event, the bytes will store UTF-8 encoded character
-data. However, in general, a *bytes* can contain non-UTF-8
-bytes and needs to be decoded to be converted to string.
+As ``bytes`` can store arbitrary data, any :type:`~String.string` can
+be cast to ``bytes``. In that event, the bytes will store UTF-8 encoded
+character data. However, in general, a *bytes* can contain non-UTF-8 bytes
+and needs to be decoded to be converted to a *string*.
 
 .. code-block:: chapel
 
@@ -50,9 +50,9 @@ bytes and needs to be decoded to be converted to string.
 
   var s2 = b.decode(); // you need to decode a bytes to convert it to a string
 
-See the documentation for the *bytes.decode* method for details.
+See the documentation for the ``bytes.decode`` method for details.
 
-Similarly, a *bytes* can be initialized using a string:
+Similarly, a ``bytes`` can be initialized using a string:
 
 .. code-block:: chapel
 
@@ -62,7 +62,7 @@ Similarly, a *bytes* can be initialized using a string:
 Casts from *bytes* to a Numeric Type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module supports casts from *bytes* to numeric types. Such
+This module supports casts from ``bytes`` to numeric types. Such
 casts will interpret the *bytes* as ASCII characters and convert it
 to the numeric type and throw an error if the *bytes* does not
 match the expected format of a number. For example:

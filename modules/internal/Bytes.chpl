@@ -19,6 +19,7 @@
  */
 
 /*
+.. type:: bytes
 */
 module Bytes {
   private use ChapelStandard;
