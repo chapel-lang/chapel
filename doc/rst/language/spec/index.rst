@@ -45,6 +45,7 @@ Composite Types
    :maxdepth: 1
 
    tuples
+   string
    classes
    records
    unions
