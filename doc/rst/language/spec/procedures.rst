@@ -1386,225 +1386,145 @@ the above rules will be checked with :math:`T_A` == ``int``.
 Determining More Specific Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Given two candidate functions, :math:`X` and :math:`Y`, the more specific
-function is determined by the first of the following steps that applies:
+Given a set of candidate functions, the following steps are applied to
+remove candidates from the set, until the best functions are determined.
 
--  If :math:`X` does not require promotion and :math:`Y` does
-   require promotion, then :math:`X` is more specific.
+1. If any candidate is more visible (or shadows) another candidate,
+   discard all candidates that are less visible than (or shadowed by)
+   another candidate.
 
--  If :math:`Y` does not require promotion and :math:`X` does
-   require promotion, then :math:`Y` is more specific.
+2. If at least one candidate requires promotion and at least one
+   candidate does not use promotion, discard all candidates that use
+   promotion.
 
--  If at least one of the legal argument mappings to :math:`X` is a
-   *more specific argument mapping* than the corresponding legal
-   argument mapping to :math:`Y` and none of the legal argument
-   mappings to :math:`Y` is a more specific argument mapping than the
-   corresponding legal argument mapping to :math:`X`, then :math:`X`
-   is more specific.
+3. Discard any function that has a less specific argument mapping than
+   any other function. See the below section for details on the more
+   specific argument mapping relation.
 
--  If at least one of the legal argument mappings to :math:`Y` is a
-   *more specific argument mapping* than the corresponding legal
-   argument mapping to :math:`X` and none of the legal argument
-   mappings to :math:`X` is a more specific argument mapping than the
-   corresponding legal argument mapping to :math:`Y`, then :math:`Y`
-   is more specific.
+4. Discard any candidates that have more formals that require implicit
+   conversion than other candidates. For this step, implicit conversions
+   between ``real(w)``, ``imag(w)``, and ``complex(2*w)`` are not
+   considered.
 
--  If neither :math:`X` nor :math:`Y` are methods, and :math:`X` shadows
-   :math:`Y`, then :math:`X` is more specific.
+5. Discard any candidates that have more formals that require a negative
+   ``param`` value is converted to an unsigned integral type of any width
+   (i.e. a ``uint(?w)``).
 
--  If neither :math:`X` nor :math:`Y` are methods, and :math:`Y` shadows
-   :math:`X`, then :math:`Y` is more specific.
+5. Discard any candidates that have more formals that require param
+   narrowing conversions than another candidate. A param narrowing
+   conversion is when a param value is implicitly converted to a type
+   that would not normally be allowed. For example, an ``int`` value
+   cannot normally implicitly convert to an ``int(8)`` value. However,
+   the param value ``1``, which is an ``int``, can implicitly convert to
+   ``int(8)`` because the value is known to fit.
 
--  If at least one of the legal argument mappings to :math:`X` is
-   *weak preferred* and none of the legal argument mappings to
-   :math:`Y` are *weak preferred*, then :math:`X` is more specific.
+6. If at least one candidate has a ``where`` clause and at least one
+   candidate does not have a ``where`` clause, discard all candidates
+   that do not have a ``where`` clause.
 
--  If at least one of the legal argument mappings to :math:`Y` is
-   *weak preferred* and none of the legal argument mappings to
-   :math:`X` are *weak preferred*, then :math:`Y` is more specific.
+.. _More_Specific_Argument_Mappings:
 
--  If at least one of the legal argument mappings to :math:`X` is
-   *weaker preferred* and none of the legal argument mappings to
-   :math:`Y` are *weaker preferred*, then :math:`X` is more
-   specific.
+More Specific Argument Mappings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  If at least one of the legal argument mappings to :math:`Y` is
-   *weaker preferred* and none of the legal argument mappings to
-   :math:`X` are *weaker preferred*, then :math:`Y` is more
-   specific.
+Given candidate functions X and Y with formal arguments X1 X2 ... and Y1
+Y2 ... that correspond to actual arguments A1 A2 ..., which candidate
+function is more specific is determined in two steps. First, the
+non-param actual arguments and their corresponding formal arguments are
+considered. Then, any param actual arguments and their corresponding
+formal arguments are considered.
 
--  If at least one of the legal argument mappings to :math:`X` is
-   *weakest preferred* and none of the legal argument mappings to
-   :math:`Y` are *weakest preferred*, then :math:`X` is more
-   specific.
+Within each of those steps, the candidate function X has a more specific
+argument mapping if:
 
--  If at least one of the legal argument mappings to :math:`Y` is
-   *weakest preferred* and none of the legal argument mappings to
-   :math:`X` are *weakest preferred*, then :math:`Y` is more
-   specific.
+* for each argument considered, the argument mapping from Ai to Yi is not
+  better than the argument mapping for the argument Ai to Xi, and
 
--  Otherwise neither function is more specific.
+* for at least one argument considered, the argument mapping from Ai to
+  Xi is better than the argument mapping from Ai to Yi
 
-The next section discusses the level of preference for an argument
-mapping. As discussed above, :math:`M_X` represents the argument mapping
-from :math:`A` to the formal argument :math:`F_X` from function :math:`X`
-with type :math:`T_X`. When :math:`X` is a generic function, :math:`F_X`
-refers to the argument before instantiation and :math:`T_X` represents
-the type of :math:`F_X` after instantiation. :math:`M_Y`, :math:`F_Y`,
-and :math:`T_Y` are defined in a similar manner to represent the argument
-mapping for :math:`Y`.
+.. _Better_Argument_Mapping:
 
-The level of preference for one of these argument mappings is determined
-by the first of the following steps that applies:
+Better Argument Mapping
+^^^^^^^^^^^^^^^^^^^^^^^
 
--  If :math:`F_X` or :math:`F_Y` uses the ``out`` intent, then neither
-   argument mapping is preferred.
+Given an actual argument Ai and the corresponding formals arguments Xi
+and Yi (in the functions X and Y being considered), the following rules
+are applied in order to determine whether Xi or Yi is a better argument
+mapping:
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
-   an instantiated parameter, and :math:`F_Y` is not an instantiated
-   parameter, :math:`M_X` is more specific.
+* If one of the formals requires promotion and the other does not, the
+   formal not requiring promotion is better
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_Y` is
-   an instantiated parameter, and :math:`F_X` is not an instantiated
-   parameter, :math:`M_Y` is more specific.
+* If one of the formals is less generic than the other formal, the
+  less-generic formal is better
 
--  If :math:`M_X` does not require scalar promotion and :math:`M_Y`
-   requires scalar promotion, :math:`M_X` is more specific.
+* If one of the formals is ``param`` and the other is not, the ``param``
+  formal is better
 
--  If :math:`M_X` requires scalar promotion and :math:`M_Y` does not
-   require scalar promotion, :math:`M_Y` is more specific.
+* If one of the formals requires a param narrowing conversion and the
+  other is not, the one not requiring such narrowing is better
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
-   generic, and :math:`F_Y` is not generic, :math:`M_X` is more specific.
+* If the actual and both formals are numeric types and one formals is a
+  preferred numeric conversion target, that formal is better
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_Y` is
-   generic, and :math:`F_X` is not generic, :math:`M_Y` is more specific.
+* If one of the formals matches the actual type exactly and the other
+  does not, the matching formal is better
 
--  If :math:`F_X` is not generic over all types and :math:`F_Y` is generic
-   over all types, :math:`M_X` is more specific.
+* If the actual's scalar type for promotion matches one of the formals
+  but not the other, the matching formal is better
 
--  If :math:`F_X` is generic over all types and :math:`F_Y` is not generic
-   over all types, :math:`M_Y` is more specific.
+* If an implicit conversion is possible from the type of one formal to
+  the other, but not vice versa, then the formal that can be converted
+  from is better. (I.e. if the type of ``Xi`` can implicitly convert to the
+  type of ``Yi``, then ``Xi`` is better). Similarly, if the type of one
+  formal can be instantiated to produce the type of another formal, the
+  type of the more-instantiated formal is better.
 
--  If :math:`F_X` and :math:`F_Y` are both generic, and :math:`F_X` is
-   partially concrete but :math:`F_Y` is not, then :math:`M_X` is more
-   specific.
+.. _Preferred_Numeric_Conversion_Target:
 
--  If :math:`F_X` and :math:`F_Y` are both generic, and :math:`F_Y` is
-   partially concrete but :math:`F_X` is not, then :math:`M_Y` is more
-   specific.
+Preferred Numeric Conversion Target
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  If :math:`F_X` is a ``param`` argument but :math:`F_Y` is not, then
-   :math:`M_X` is weak preferred.
+To compute if a formal is a preferred numeric conversion target, apply
+the following rules in order:
 
--  If :math:`F_Y` is a ``param`` argument but :math:`F_X` is not, then
-   :math:`M_Y` is weak preferred.
+1. Classify the actual and formals by numeric kind. If one formal has the
+   same kind as the actual but the other does not, the formal with the
+   same kind is better. Each of the following bullets represents a
+   different numeric kind for this rule:
 
--  If :math:`A` is not a ``param`` argument with a default size and
-   :math:`F_Y` requires a narrowing conversion but :math:`F_X` does not,
-   then :math:`M_X` is weak preferred.
+   * ``bool(?w)``, that is, a ``bool`` type of any width
 
--  If :math:`A` is not a ``param`` argument with a default size and
-   :math:`F_X` requires a narrowing conversion but :math:`F_Y` does not,
-   then :math:`M_Y` is weak preferred.
+   * ``int(?w)`` or ``uint(?w)``, that is, a signed or unsigned integral
+     type of any width
 
--  If :math:`T_A` and :math:`T_X` are the same type and :math:`T_A`
-   and :math:`T_Y` are not the same type, :math:`M_X` is more
-   specific.
+   * ``real(?w)``
 
--  If :math:`T_A` and :math:`T_X` are not the same type and
-   :math:`T_A` and :math:`T_Y` are the same type, :math:`M_Y` is more
-   specific.
+   * ``imag(?w)``
 
--  If :math:`A` uses a scalar promotion type equal to :math:`T_X` but
-   different from :math:`T_Y`, then :math:`M_X` will be preferred as
-   follows:
+   * ``complex(?w)``
 
-   -  if :math:`A` is a ``param`` argument with a default size, then
-      :math:`M_X` is weakest preferred
+   * all other types
 
-   -  if :math:`A` is a ``param`` argument with non-default size, then
-      :math:`M_X` is weaker preferred
+2. Classify the actual and formals by numeric width. If one formal has
+   the same numeric width as the actual but the other does not, the
+   formal with the same width is better. Each of the following bullets
+   represents a different numeric width for this rule:
 
-   -  otherwise, :math:`M_X` is more specific
+   * All numeric types that match the default width as well as all
+     ``bool`` types. This includes ``bool``, ``bool(?w)``, ``int``
+     ``uint`` ``real`` ``imag`` ``complex`` as well as their more
+     specific names ``int(64)`` ``uint(64)`` ``real(64)`` ``imag(64)``
+     ``complex(128)``
 
--  If :math:`A` uses a scalar promotion type equal to :math:`T_Y` but
-   different from :math:`T_X`, then :math:`M_Y` will be preferred as
-   follows:
+   * All numeric types with 32-bit width: ``int(32)``, ``uint(32)``,
+     ``real(32)``, ``imag(32)``, ``complex(64)``. ``complex(64)`` is in
+     this category because the real element width is 32 bits.
 
-   -  if :math:`A` is a ``param`` argument with a default size, then
-      :math:`M_Y` is weakest preferred
+   * All numeric types with 16-bit width: ``int(16)``, ``uint(16)``
 
-   -  if :math:`A` is a ``param`` argument with non-default size, then
-      :math:`M_Y` is weaker preferred
-
-   -  otherwise, :math:`M_Y` is more specific
-
--  If :math:`T_A` or its scalar promotion type prefers conversion to
-   :math:`T_X` over conversion to :math:`T_Y`, then :math:`M_X` is
-   preferred. If :math:`A` is a ``param`` argument with a default size,
-   then :math:`M_X` is weakest preferred. Otherwise, :math:`M_X` is
-   weaker preferred.
-
-   Type conversion preferences are as follows:
-
-   -  Prefer converting a numeric argument to a numeric argument of a
-      different width but the same category over converting to another
-      type. Categories are
-
-      -  bool
-
-      -  enum
-
-      -  int or uint
-
-      -  real
-
-      -  imag
-
-      -  complex
-
-   -  Prefer an enum or bool cast to int over uint
-
-   -  Prefer an enum or bool cast to a default-sized int or uint over
-      another size of int or uint
-
-   -  Prefer an int or uint cast to a real with the same width
-      (if available) or next-largest width (if not) over a
-      larger real
-
-   -  Prefer an int or uint cast to a complex whose components are the
-      same width (if available) or the next largest width (if not)
-      over a larger complex
-
-   -  Prefer real/imag cast to the complex with that component size (ie
-      total width of twice the real/imag) over another size of complex
-
--  If :math:`T_A` or its scalar promotion type prefers conversion to
-   :math:`T_Y` over conversion to :math:`T_X`, then :math:`M_Y` is
-   preferred. If :math:`A` is a ``param`` argument with a default size,
-   then :math:`M_Y` is weakest preferred. Otherwise, :math:`M_Y` is
-   weaker preferred.
-
--  If :math:`T_X` is derived from :math:`T_Y`, then :math:`M_X` is
-   more specific.
-
--  If :math:`T_Y` is derived from :math:`T_X`, then :math:`M_Y` is
-   more specific.
-
--  If there is an implicit conversion from :math:`T_X` to
-   :math:`T_Y`, then :math:`M_X` is more specific.
-
--  If there is an implicit conversion from :math:`T_Y` to
-   :math:`T_X`, then :math:`M_Y` is more specific.
-
--  If :math:`T_X` is any ``int`` type and :math:`T_Y` is any
-   ``uint`` type, :math:`M_X` is more specific.
-
--  If :math:`T_Y` is any ``int`` type and :math:`T_X` is any
-   ``uint`` type, :math:`M_Y` is more specific.
-
--  Otherwise neither mapping is more specific.
+   * All numeric types with 8-bit width: ``int(8)``, ``uint(8)``
 
 .. _Determining_Best_Functions:
 
