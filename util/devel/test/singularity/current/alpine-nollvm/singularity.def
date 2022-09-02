@@ -6,7 +6,6 @@ From: alpine:latest
 
 %post
     /provision-scripts/apk-deps.sh
-    /provision-scripts/apk-llvm.sh
 
 %runscript
     ../../provision-scripts/run.sh
