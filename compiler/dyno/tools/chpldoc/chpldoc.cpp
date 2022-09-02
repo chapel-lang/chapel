@@ -2257,10 +2257,8 @@ int main(int argc, char** argv) {
         if (e.kind() == ErrorMessage::Kind::ERROR ||
             e.kind() == ErrorMessage::Kind::SYNTAX) {
               fatal = true;
-              context.report(e);
-        } else if (e.kind() == ErrorMessage::Kind::WARNING) {
-              context.report(e);
         }
+        context.report(e);
       }
       if (fatal) {
         return 1;
