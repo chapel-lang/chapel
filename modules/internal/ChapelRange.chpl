@@ -454,19 +454,20 @@ module ChapelRange {
   }
 
 
-  /* Returns the range's stride */
+  /* Returns the range's stride. */
   inline proc range.stride where stridable  return _stride;
   pragma "no doc"
   proc range.stride param where !stridable return 1 : strType;
 
-  /* Returns the range's alignment */
+  /* Returns the range's alignment. */
   inline proc range.alignment where stridable return chpl_intToIdx(_alignment);
   pragma "no doc"
   proc range.alignment where !stridable && hasLowBound() return low;
   pragma "no doc"
   proc range.alignment return chpl_intToIdx(0);
 
-  /* Returns true if the range's alignment is unambiguous, false otherwise */
+  /* Returns ``true`` if the range's alignment is unambiguous,
+     ``false`` otherwise. */
   inline proc range.aligned where stridable return _aligned;
 
   pragma "no doc"
@@ -486,7 +487,8 @@ module ChapelRange {
   pragma "no doc"
   proc isBoundedRange(r)           param
     return false;
-  /* Return true if argument ``r`` is a fully bounded range, false otherwise */
+  /* Returns ``true`` if argument ``r`` is a fully bounded range,
+     ``false`` otherwise. */
   proc isBoundedRange(r: range(?)) param
     return isBoundedRange(r.boundedType);
 
@@ -494,24 +496,23 @@ module ChapelRange {
   proc isBoundedRange(param B: BoundedRangeType) param
     return B == BoundedRangeType.bounded;
 
-  /* Return true if this range is bounded */
+  /* Returns ``true`` if this range is bounded, ``false`` otherwise. */
   proc range.isBounded() param
     return boundedType == BoundedRangeType.bounded;
 
   /* This used to control whether or not the
      :proc:`range.low`/:proc:`range.high` queries returned aligned
-     values by default.  Now, such bounds are aligned by default and
-     this config is deprecated. */
-  deprecated "alignedBoundsByDefault is deprecated and no longer has any effect"
-  config param alignedBoundsByDefault = false;
+     values by default. */
+  deprecated "``alignedBoundsByDefault`` is deprecated and no longer has any effect"
+  config param alignedBoundsByDefault = true;
 
-  /* Returns true if this range's low bound is *not* -:math:`\infty`,
-     and false otherwise */
+  /* Returns ``true`` if this range's low bound is *not* -:math:`\infty`,
+     and ``false`` otherwise. */
   proc range.hasLowBound() param
     return boundedType == BoundedRangeType.bounded ||
            boundedType == BoundedRangeType.boundedLow;
 
-  /* Return the range's low bound. If the range does not have a low
+  /* Returns the range's low bound. If the range does not have a low
      bound (e.g., ``..10``), the behavior is undefined.  See also
      :proc:`range.hasLowBound`. */
   inline proc range.lowBound: idxType {
@@ -533,9 +534,10 @@ module ChapelRange {
 
      produces the output
 
-     .. code-block: printoutput
+     .. code-block:: printoutput
 
        2
+
   */
   inline proc range.low: idxType {
     if !hasLowBound() {
@@ -545,8 +547,8 @@ module ChapelRange {
   }
 
 
-  /* Return the range's aligned low bound.  Note that this is a more
-     descriptive synonym for :proc:`range.low`.
+  /* Return the range's aligned low bound.  Note that this is a
+     synonym for :proc:`range.low`.
   */
   inline proc range.alignedLow: idxType {
     if !hasLowBound() {
@@ -568,8 +570,8 @@ module ChapelRange {
   }
 
 
-  /* Returns true if this range's high bound is *not* :math:`\infty`,
-     and false otherwise */
+  /* Returns ``true`` if this range's high bound is *not* :math:`\infty`,
+     and ``false`` otherwise. */
   proc range.hasHighBound() param
     return boundedType == BoundedRangeType.bounded ||
            boundedType == BoundedRangeType.boundedHigh;
@@ -604,7 +606,7 @@ module ChapelRange {
 
      produces the output
 
-     .. code-block: printoutput
+     .. code-block:: printoutput
 
        9
   */
@@ -622,8 +624,8 @@ module ChapelRange {
   }
 
 
-  /* Return the range's aligned high bound.  Note that this is a more
-     descriptive synonym for :proc:`range.high`.
+  /* Return the range's aligned high bound.  Note that this is a
+     synonym for :proc:`range.high`.
   */
   inline proc range.alignedHigh: idxType {
     if !hasHighBound() {
@@ -650,7 +652,8 @@ module ChapelRange {
       return _high - chpl__diffMod(_high, _alignment, stride);
   }
 
-  /* Returns true if this range is naturally aligned, false otherwise */
+  /* Returns ``true`` if this range is naturally aligned, ``false``
+     otherwise. */
   proc range.isNaturallyAligned()
     where stridable && this.boundedType == BoundedRangeType.bounded
   {
@@ -698,7 +701,8 @@ module ChapelRange {
     return stride < 0 && this.alignedHighAsInt == _high;
   }
 
-  /* Returns true if the range is ambiguously aligned, false otherwise */
+  /* Returns ``true`` if the range is ambiguously aligned, ``false``
+     otherwise. */
   proc range.isAmbiguous() param where !stridable
     return false;
 
@@ -706,8 +710,9 @@ module ChapelRange {
   proc range.isAmbiguous()       where stridable
     return !aligned && (stride > 1 || stride < -1);
 
-  /* If the sequence represented by the range is empty, return true.
-     If the range is ambiguous, the behavior is undefined.
+  /* Returns ``true`` if the sequence represented by the range is
+     empty and ``false`` otherwise.  If the range is ambiguous, the
+     behavior is undefined.
    */
   inline proc range.isEmpty() {
     if boundsChecking && isAmbiguous() then
@@ -719,7 +724,7 @@ module ChapelRange {
   /* Returns the number of values represented by this range as an integer.
 
      If the size exceeds ``max(int)``, this procedure will halt when
-     bounds checks are on.
+     bounds checks are on and have undefined behavior when they are not.
 
      If the represented sequence is infinite or undefined, an error is
      generated.
@@ -732,7 +737,8 @@ module ChapelRange {
      integer type.
 
      If the size exceeds the maximal value of that type, this
-     procedure will halt when bounds checks are on.
+     procedure will halt when bounds checks are on and have undefined
+     behavior when they are not.
 
      If the represented sequence is infinite or undefined, an error is
      generated.
@@ -757,10 +763,10 @@ module ChapelRange {
     return lenAsUint: t;
   }
 
-  /* Return true if the range has a first index, false otherwise.
-     Note that in the event that the range is stridable and at least
-     partially bounded, the return value will not (cannot) be a
-     `param`.
+  /* Returns ``true`` if the range has a first index, ``false``
+     otherwise.  Note that in the event that the range is stridable
+     and at least partially bounded, the return value will not
+     be a ``param``.
   */
   proc range.hasFirst() param where !stridable && !hasHighBound()
     return hasLowBound();
@@ -774,7 +780,7 @@ module ChapelRange {
     return if isAmbiguous() || isEmpty() then false else
       if stride > 0 then hasLowBound() else hasHighBound();
 
-  /* Return the first value in the sequence the range represents.  If
+  /* Returns the first value in the sequence the range represents.  If
      the range has no first index, the behavior is undefined.  See
      also :proc:`range.hasFirst`. */
   inline proc range.first {
@@ -787,10 +793,9 @@ module ChapelRange {
     else return if _stride > 0 then this.alignedLowAsInt else this.alignedHighAsInt;
   }
 
-  /* Return true if the range has a last index, false otherwise.
+  /* Returns ``true`` if the range has a last index, ``false`` otherwise.
      Note that in the event that the range is stridable and at least
-     partially bounded, the return value will not (cannot) be a
-     `param`.
+     partially bounded, the return value will not be a ``param``.
   */
   proc range.hasLast() param where !stridable && !hasLowBound()
     return hasHighBound();
@@ -804,7 +809,7 @@ module ChapelRange {
     return if isAmbiguous() || isEmpty() then false else
       if stride > 0 then hasHighBound() else hasLowBound();
 
-  /* Return the last value in the sequence the range represents.  If
+  /* Returns the last value in the sequence the range represents.  If
      the range has no last index, the behavior is undefined.  See also
      :proc:`range.hasLast`.
   */
@@ -825,8 +830,8 @@ module ChapelRange {
     return (isIntegralType(t) && t != int);
   }
 
-  /* Returns true if the range's represented sequence contains
-     ``ind``, false otherwise.  It is an error to invoke ``contains``
+  /* Returns ``true`` if the range's represented sequence contains
+     ``ind``, ``false`` otherwise.  It is an error to invoke ``contains``
      if the represented sequence is not defined. */
   inline proc range.contains(ind: idxType)
   {
@@ -851,8 +856,8 @@ module ChapelRange {
     return true;
   }
 
-  /* Returns true if the range ``other`` is contained within this one,
-     false otherwise
+  /* Returns ``true`` if the range ``other`` is contained within this one,
+     ``false`` otherwise.
    */
   inline proc range.contains(other: range(?))
   {
@@ -1014,8 +1019,10 @@ operator :(r: range(?), type t: range(?)) {
   //////////////////////////////////////////////////////////////////////////////////
   // Bounds checking
   //
-  /* Returns true if ``other`` lies entirely within this range and false
-     otherwise.  Returns false if either range is ambiguously aligned.
+
+  /* Returns ``true`` if ``other`` lies entirely within this range and
+     ``false`` otherwise.  Returns ``false`` if either range is
+     ambiguously aligned.
    */
   inline proc range.boundsCheck(other: range(?e,?b,?s))
     where b == BoundedRangeType.boundedNone
@@ -1043,7 +1050,8 @@ operator :(r: range(?), type t: range(?)) {
 
     return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
-  /* Return true if ``other`` is contained in this range and false otherwise */
+  /* Returns ``true`` if ``other`` is contained in this range and ``false``
+     otherwise. */
   inline proc range.boundsCheck(other: idxType)
     return contains(other);
 
@@ -1075,12 +1083,11 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   /*
-     If ``ind`` is a member of the range's represented sequence, returns
-     an integer giving the ordinal index of ind within the sequence
-     using zero-based indexing. Otherwise, returns -1.
-     It is an error to invoke
-     ``indexOrder`` if the represented sequence is not defined or the
-     range does not have a first index.
+     Returns an integer representing the zero-based ordinal value of
+     ``ind`` within the range's sequence of values if it is a member
+     of the sequence.  Otherwise, returns -1.  It is an error to
+     invoke ``indexOrder`` if the represented sequence is not defined
+     or the range does not have a first index.
 
      The following calls show the order of index 4 in each of the given ranges:
 
@@ -1155,7 +1162,7 @@ operator :(r: range(?), type t: range(?)) {
   // we need to handle more generally in the future, so for
   // consistency, we are not handling it here at all :-P
   //
-  /* Return a range with elements shifted from this range by ``offset``.
+  /* Returns a range with elements shifted from this range by ``offset``.
      Formally, the range's low bound, high bound, and alignment values
      will be shifted while the stride value will be preserved.  If the
      range's alignment is ambiguous, the behavior is undefined.
@@ -1193,7 +1200,7 @@ operator :(r: range(?), type t: range(?)) {
   {
     compilerError("expand() is not supported on unbounded ranges");
   }
-  /* Return a range expanded by ``offset`` elements from each end.  If
+  /* Returns a range expanded by ``offset`` elements from each end.  If
      ``offset`` is negative, the range will be contracted.  The stride
      and alignment of the original range are preserved.
 
@@ -1247,7 +1254,7 @@ operator :(r: range(?), type t: range(?)) {
 
   // TODO: hilde
   // Set _aligned to true only if stridable.
-  /* Return a range with ``offset`` elements from the interior portion of this
+  /* Returns a range with ``offset`` elements from the interior portion of this
      range. If ``offset`` is positive, take elements from the high end, and if
      ``offset`` is negative, take elements from the low end.
 
@@ -1355,6 +1362,7 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   // Assignment
+  pragma "no doc"
   inline operator =(ref r1: range(stridable=?s1), r2: range(stridable=?s2))
   {
     if r1.boundedType != r2.boundedType then
@@ -1383,6 +1391,7 @@ operator :(r: range(?), type t: range(?)) {
   // Absolute alignment is not preserved
   // (That is, the alignment shifts along with the range.)
   //
+  pragma "no doc"
   inline operator +(r: range(?e, ?b, ?s), offset: integral)
   {
     const i = offset:r.intIdxType;
@@ -1396,9 +1405,11 @@ operator :(r: range(?), type t: range(?)) {
                      r.aligned);
   }
 
+  pragma "no doc"
   inline operator +(i:integral, r: range(?e,?b,?s))
     return r + i;
 
+  pragma "no doc"
   inline operator -(r: range(?e,?b,?s), i: integral)
   {
     type strType = chpl__rangeStrideType(e);
@@ -1490,6 +1501,7 @@ operator :(r: range(?), type t: range(?)) {
     return chpl_by_help(r, step:r.strType);
   }
 
+  pragma "no doc"
   pragma "last resort"
   inline operator by(r, step) {
     compilerError("cannot apply 'by' to '", r.type:string, "'");
@@ -1513,6 +1525,7 @@ operator :(r: range(?), type t: range(?)) {
                   " using a value of type ", algn.type:string);
   }
 
+  pragma "no doc"
   pragma "last resort"
   inline operator align(r, algn) {
     compilerError("cannot apply 'align' to '", r.type:string, "'");
@@ -1874,14 +1887,17 @@ operator :(r: range(?), type t: range(?)) {
   // accept a boolean as a count value.  On the other hand, we permit
   // bools to coerce to ints in most cases, so this gives a similar
   // end-user experience
+  pragma "no doc"
   operator #(r:range(?), count:bool) {
     return chpl_count_help(r, count:int);
   }
 
+  pragma "no doc"
   operator #(r:range(?), count:integral) {
     return chpl_count_help(r, count);
   }
 
+  pragma "no doc"
   pragma "last resort"
   operator #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ",
@@ -1889,6 +1905,7 @@ operator :(r: range(?), type t: range(?)) {
                   count.type:string);
   }
 
+  pragma "no doc"
   pragma "last resort"
   operator #(r, count) {
     compilerError("cannot apply '#' to '", r.type:string, "'");
@@ -2691,6 +2708,7 @@ operator :(r: range(?), type t: range(?)) {
   //# Utilities
   //#
 
+  pragma "no doc"
   operator :(x: range(?), type t: string) {
     var ret: string;
 

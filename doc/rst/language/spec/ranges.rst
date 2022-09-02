@@ -980,21 +980,23 @@ Range Type Queries
 
 
 
-.. function:: proc range.boundedType : BoundedRangeType
+.. function:: proc range.boundedType param : BoundedRangeType
 
-   Returns the ``boundedType`` parameter of the range’s type.
-
-
-
-.. function:: proc range.idxType : type
-
-   Returns the ``idxType`` parameter of the range’s type.
+   Returns which bounds the range explicitly represents (its
+   ``boundedType`` value).
 
 
 
-.. function:: proc range.stridable : bool
+.. function:: proc range.idxType type
 
-   Returns the ``stridable`` parameter of the range’s type.
+   Returns the type of the range's indices (its ``idxType``).
+
+
+
+.. function:: proc range.stridable param : bool
+
+   Returns whether or not the range can have non-unit strides (its
+   ``stridable`` value).
 
 
 .. include:: ../../builtins/ChapelRange.rst
