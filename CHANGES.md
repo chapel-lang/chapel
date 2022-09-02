@@ -31,6 +31,9 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* marked `locale.numPUs` as being unstable for the time being
+* deprecated `locale.callStackSize()` with no intention to replace it
+* deprecated the NUMA locale model and related methods on `locale` values
 * deprecated the `alignedBoundsByDefault` config param which has no effect
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault)
 * removed the previously deprecated `arrayIndicesAlwaysLocal` config param
@@ -56,6 +59,12 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated the `Sys` module, moving some key symbols to `OS.POSIX`
+* deprecated the `iohints` type/constants in favor of a new `ioHintSet` type  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.ioHintSet)
+* deprecated the `bigint.fits_*_p()` methods in favor of `.fitsInto()`  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/BigInteger.html#BigInteger.bigint.fitsInto)
+* deprecated `qio_err_t`, replacing its uses with `c_int`
 * removed deprecated POSIX errors and types from 'Sys' and 'SysBasic' modules
 
 Standard Library Modules
@@ -71,6 +80,7 @@ Standard Domain Maps (Layouts and Distributions)
 
 Tool Improvements
 -----------------
+* updated FLTK version from 1.3.5 to 1.3.8 for improved support on Mac M1
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -86,8 +96,10 @@ Memory Improvements
 
 Documentation
 -------------
-* refreshed the 'Ranges' API documentation in the language specification
+* refreshed the `range` API documentation in the language specification
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#range-type-queries)
+* refreshed the `locale` documentation to reflect stabilization improvements
+  (see https://chapel-lang.org/docs/1.28/language/spec/locales.html#locale-methods)
 
 Syntax Highlighting
 -------------------
@@ -100,6 +112,7 @@ Build System Improvements
 
 Portability
 -----------
+* improved `chplvis` such that it can run on an M1 Mac
 * removed remaining specialized support for SunOS platforms
 
 GPU Computing
@@ -136,6 +149,7 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed bugs for `locale.name`/`.numPUs` returning bad values on parent locales
 * fixed a bug in which non-normalized CUDA paths were breaking certain flags
 
 Bug Fixes for Libraries
