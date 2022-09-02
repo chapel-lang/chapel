@@ -1957,10 +1957,7 @@ module ChapelDomain {
 
     /* Return the lowest index represented by a rectangular domain. */
     proc low {
-      if !alignedBoundsByDefault && stridable {
-        compilerWarning("The '.low' query on ranges is in the process of changing from returning the pure low bound to the aligned low bound (e.g., from '1' to '2' for '1..10 by -2').  Update to the '.lowBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior.");
-      }
-      return if alignedBoundsByDefault then _value.dsiAlignedLow else _value.dsiLow;
+      return _value.dsiAlignedLow;
     }
     pragma "no doc"
     proc low where this.isAssociative() {
@@ -1977,10 +1974,7 @@ module ChapelDomain {
     }
     /* Return the highest index represented by a rectangular domain. */
     proc high {
-    if !alignedBoundsByDefault && stridable {
-      compilerWarning("The '.high' query on ranges is in the process of changing from returning the pure high bound to the aligned high bound (e.g., from '10' to '9' for '1..10 by 2').  Update to the '.highBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior now and avoid this warning.");
-    }
-      return if alignedBoundsByDefault then _value.dsiAlignedHigh else _value.dsiHigh;
+      return _value.dsiAlignedHigh;
     }
     pragma "no doc"
     proc high where this.isAssociative() {
