@@ -17,15 +17,25 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
+* updated `.low`/`.high` on strided ranges/domains to return aligned bounds  
+  (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.range.low  
+   and https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.range.high)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated the `alignedBoundsByDefault` config param which has no effect
+  (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault)
+* removed the previously deprecated `arrayIndicesAlwaysLocal` config param
+* removed the previously deprecated `sizeReturnsInt` config param
 
 New Features
 ------------
 
 Feature Improvements
 --------------------
+* updated the `by`/`#` operators on ranges/domains to accept any integral type  
+  (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#by-operator  
+   and https://chapel-lang.org/docs/1.28/language/spec/ranges.html#count-operator)
 
 Namespace Changes
 -----------------
@@ -38,6 +48,7 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* removed deprecated POSIX errors and types from 'Sys' and 'SysBasic' modules
 
 Standard Library Modules
 ------------------------
@@ -65,6 +76,8 @@ Memory Improvements
 
 Documentation
 -------------
+* refreshed the 'Ranges' API documentation in the language specification
+  (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#range-type-queries)
 
 Syntax Highlighting
 -------------------
@@ -83,6 +96,7 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
+* simplified the code generated in the C back-end for if-then-else-if chains
 
 Compiler Flags
 --------------
@@ -98,6 +112,8 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* added an error when attempting to define methods on values rather than types  
+  (e.g., `var r: R;  proc r.foo() ...` now generates an error as it should've)
 
 Bug Fixes
 ---------
