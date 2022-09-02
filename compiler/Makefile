@@ -50,7 +50,11 @@ SUBDIRS = \
 	passes \
 	resolution \
 	util \
+
+
+CHPLDOC_SUBDIRS = \
 	dyno/tools/chpldoc \
+
 
 #
 # include standard header for compiler
@@ -179,7 +183,9 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 
-$(CHPLDOC): $(CHPLDOC_OBJS) | $(CHPL_BIN_DIR)
+MAKEALLCHPLDOCSUBDIRS = $(CHPLDOC_SUBDIRS:%=%.makedir)
+
+$(CHPLDOC): $(CHPLDOC_OBJS) | $(MAKEALLCHPLDOCSUBDIRS) $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPLDOC_OBJS) $(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS) $(LIBS) $(LLVM_EXTRA_LIBS) $(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)
 
 $(CHPLDOC)-legacy: | $(CHPL_BIN_DIR)
