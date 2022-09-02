@@ -89,20 +89,22 @@ rebuild Chapel from source in a different configuration:
 * Open up a new shell to avoid inheriting the previous environment
   settings.
 
-* The Quickstart configuration described above sets ``CHPL_LLVM=none``
-  for simplicity and to save time.  This causes the Chapel compiler to
-  use its C back-end, which is not the preferred option; as of Chapel
-  1.25, LLVM is the default back-end, which needs to be available for
+* The Quickstart configuration attempts to detect if you have a
+  compatable system installation of LLVM and clang. If you do not, it
+  will ``CHPL_LLVM=none`` for simplicity and to save time.  This causes
+  the Chapel compiler to use its C back-end, which is not the preferred
+  option; LLVM is the default back-end, which needs to be available for
   full functionality.  There are a few options for using LLVM:
 
-  - ensure that you have a compatible version of LLVM installed on
-    your system and set ``CHPL_LLVM=system`` (or leave it unset and
-    Chapel should find it if it's in your path.) Currently compatible
-    versions are LLVM-11, LLVM-12, LLVM-13, and LLVM-14.
+  - Ensure that you have a compatible version of LLVM installed on
+    your system and set ``CHPL_LLVM=system``. Once you have it working,
+    you can leave ``CHPL_LLVM`` unset and Chapel should detect it if it
+    is in your path. See :ref:`readme-prereqs` for details on the
+    currently supported LLVM versions.
 
-  - set ``CHPL_LLVM=bundled`` to have Chapel build and use the bundled
-    version of LLVM (note that building the bundled version of LLVM
-    can take a long time and requires CMake version 3.13.4 or higher)
+  - Or, set ``CHPL_LLVM=bundled`` to have Chapel build and use the bundled
+    version of LLVM. Note that building the bundled version of LLVM
+    can take a long time and requires CMake version 3.13.4 or higher.
 
   - set ``CHPL_LLVM=none`` to continue using the C back-end rather
     than LLVM
