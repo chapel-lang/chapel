@@ -7,7 +7,7 @@
 
 use List;
 
-config var limit : uint = 100; // maximum number to include in the sieve
+config var limit : uint = 1000; // maximum number to include in the sieve
 
 proc main() {
   // list of confirmed primes
@@ -31,4 +31,5 @@ proc main() {
   }
 
   writeln(primes);
+  writeln("Count of primes from ", lowerBound, " to ", limit, ": ", primes.size);
 }
