@@ -135,12 +135,12 @@ Legal implicit conversions with numeric and boolean types may thus be
 summarized as follows:
 
 ==================== ================= ================= ================ ================= ================= ====================
-\                                                                  **Destination Type**                                   
+\                                                                  **Destination Type**
 -------------------- -------------------------------------------------------------------------------------------------------------
 **Source Type**      bool(\ :math:`t`) uint(\ :math:`t`) int(\ :math:`t`) real(\ :math:`t`) imag(\ :math:`t`) complex(\ :math:`t`)
-bool(\ :math:`s`)    all :math:`s,t`   all :math:`s,t`   all :math:`s,t`                                          
-uint(\ :math:`s`)                      :math:`s \le t`   :math:`s < t`    :math:`s \le t`                     :math:`s \le t/2`
-int(\ :math:`s`)                                         :math:`s \le t`  :math:`s \le t`                     :math:`s \le t/2`
+bool(\ :math:`s`)    all :math:`s,t`   all :math:`s,t`   all :math:`s,t`
+uint(\ :math:`s`)                      :math:`s \le t`   :math:`s < t`    all :math:`s,t`                     all :math:`s,t`
+int(\ :math:`s`)                       :math:`s \le t`   :math:`s \le t`  all :math:`s,t`                     all :math:`s,t`
 real(\ :math:`s`)                                                         :math:`s \le t`                     :math:`s \le t/2`
 imag(\ :math:`s`)                                                                           :math:`s \le t`   :math:`s \le t/2`
 complex(\ :math:`s`)                                                                                          :math:`s \le t`
