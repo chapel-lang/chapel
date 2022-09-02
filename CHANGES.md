@@ -2,6 +2,7 @@ Release Changes List
 ====================
 
 TODO
+o any missing cross-references?
 o new compiler flags (and developer compiler flags)
 o examples directory
 o spellecheck
@@ -19,6 +20,7 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* made `CHPL_MEM` default to `cstdlib` on Arm-based Macs
 
 Syntactic / Naming Changes
 --------------------------
@@ -114,6 +116,7 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* improved the performance of scan operations on `Block`-distributed arrays
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -144,6 +147,7 @@ Build System Improvements
 
 Portability
 -----------
+* generally improved Chapel portability to M1/Arm-based Macs
 * improved `chplvis` such that it can run on an M1 Mac
 * removed remaining specialized support for SunOS platforms
 
@@ -197,6 +201,7 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of Qthreads to version 1.17
 * updated FLTK version from 1.3.5 to 1.3.8 for improved support on Mac M1
 * updated the Python package versions used by 'chpldoc' as follows:
   - Babel: version 2.10.3
