@@ -43,6 +43,8 @@ Deprecated / Unstable / Removed Language Features
 
 New Features
 ------------
+* added a new `@unstable` annotation to indicate symbols that may evolve
+  (see TODO)
 
 Feature Improvements
 --------------------
@@ -64,6 +66,10 @@ Deprecated / Unstable / Removed Library Features
 * deprecated the `Sys` module, moving some key symbols to `OS.POSIX`
 * marked the `iostyle` type and associated routines as unstable  
   (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.iostyle)
+* deprecated some 'IO' `start`/`end` arguments in favor of `region` ranges  
+  (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.openreader)
+* deprecated the `start`/`end` arguments of `openwriter()` in the 'IO' module  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.openwriter)
 * deprecated the `iohints` type/constants in favor of a new `ioHintSet` type  
   (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.ioHintSet)
 * deprecated methods using both `iostyle` and `iohints`  
@@ -104,6 +110,7 @@ Tool Improvements
 * added a `mason modules` command to generate command-line flags
 * simplified initialization of 'mason' packages
 * added a check to ensure a 'mason' package exists before adding it
+* 'chpldoc' now requires Python 3.7 or later
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -182,6 +189,7 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* fixed a bug in which 'chpldoc' dropped entries following `use`/`import` stmts
 
 Platform-specific Bug Fixes
 ---------------------------
@@ -190,6 +198,12 @@ Platform-specific Bug Fixes
 Third-Party Software Changes
 ----------------------------
 * updated FLTK version from 1.3.5 to 1.3.8 for improved support on Mac M1
+* updated the Python package versions used by 'chpldoc' as follows:
+  - Babel: version 2.10.3
+  - Jinja2: version 3.1.2
+  - MarkupSafe: version 2.1.1
+  - Pygments: version 2.12.0
+  - Sphinx: version 4.5.0
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -203,6 +217,7 @@ Developer-oriented changes: Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* replaced hand-written instability warnings with new `@unstable` annotation
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -237,9 +252,12 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* refreshed the Python package versions used by `start_test`
+* updated nightly testing jobs to display the Python version used
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* updated and added 'chplspell' dictionary entries for various source files
 
 Developer-oriented changes: Utilities
 -------------------------------------
