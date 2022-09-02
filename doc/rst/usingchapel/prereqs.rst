@@ -37,9 +37,10 @@ for using Chapel:
   * CMake is available and ``cmake`` runs version 3.13.4 or later.
 
   * The LLVM backend is now the default and it is easiest to use it with
-    a system-wide installation of LLVM. LLVM 11,12,13 and 14 are currently
-    supported. If a system-wide installation of LLVM 11/12/13/14 is not
-    available, you can use the bundled LLVM or disable LLVM support (see
+    a system-wide installation of LLVM. LLVM and clang versions 11, 12,
+    13 and 14 are currently supported. If a system-wide installation of
+    LLVM and clang with one of those versions is not available, you can
+    use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`).
 
 In addition, several optional components have additional requirements:
