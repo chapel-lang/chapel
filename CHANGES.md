@@ -1,6 +1,14 @@
 Release Changes List
 ====================
 
+TODO
+o new compiler flags (and developer compiler flags)
+o examples directory
+o spellecheck
+o `` vs. ''
+o docs/1.28/...
+o linefeeds
+
 version 1.28.0
 ==============
 
@@ -52,6 +60,8 @@ Deprecated / Unstable / Removed Library Features
 
 Standard Library Modules
 ------------------------
+* added a new 'Communication' module for low-level get/put operations
+  (see https://chapel-lang.org/docs/1.28/modules/standard/Communication.html)
 
 Package Modules
 ---------------
@@ -90,9 +100,11 @@ Build System Improvements
 
 Portability
 -----------
+* removed remaining specialized support for SunOS platforms
 
 GPU Computing
 -------------
+* most 'Math' and 'BitOps' routines are now supported for GPU computations
 
 Compiler Improvements
 ---------------------
@@ -117,12 +129,14 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* fixed a bug causing compilation errors for arrays of `sortedSet`s
 
 Bug Fixes for Build Issues
 --------------------------
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed a bug in which non-normalized CUDA paths were breaking certain flags
 
 Bug Fixes for Libraries
 -----------------------
@@ -138,6 +152,7 @@ Third-Party Software Changes
 
 Developer-oriented changes: Process
 -----------------------------------
+* started tracking GPU performance as part of our nightly tracking
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -156,6 +171,7 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added `--report-gpu-transform-time` to measure time for GPU transformations
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
