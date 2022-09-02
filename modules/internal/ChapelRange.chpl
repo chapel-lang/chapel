@@ -2152,10 +2152,22 @@ operator :(r: range(?), type t: range(?)) {
   //
 
   iter chpl_direct_counted_range_iter(low: int(?w), count) {
+    if !isIntegral(count) && !isBool(count) {
+      compilerError("can't apply '#' to a range with idxType ",
+                    low.type:string, " using a count of type ",
+                    count.type:string);
+    }
+
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
   iter chpl_direct_counted_range_iter(low: uint(?w), count) {
+    if !isIntegral(count) && !isBool(count) {
+      compilerError("can't apply '#' to a range with idxType ",
+                    low.type:string, " using a count of type ",
+                    count.type:string);
+    }
+
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
