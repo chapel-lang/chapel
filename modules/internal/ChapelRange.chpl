@@ -766,7 +766,7 @@ module ChapelRange {
   /* Returns ``true`` if the range has a first index, ``false``
      otherwise.  Note that in the event that the range is stridable
      and at least partially bounded, the return value will not
-     (cannot) be a `param`.
+     be a ``param``.
   */
   proc range.hasFirst() param where !stridable && !hasHighBound()
     return hasLowBound();
@@ -795,8 +795,7 @@ module ChapelRange {
 
   /* Returns ``true`` if the range has a last index, ``false`` otherwise.
      Note that in the event that the range is stridable and at least
-     partially bounded, the return value will not (cannot) be a
-     `param`.
+     partially bounded, the return value will not be a ``param``.
   */
   proc range.hasLast() param where !stridable && !hasLowBound()
     return hasHighBound();
@@ -1084,12 +1083,11 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   /*
-     If ``ind`` is a member of the range's represented sequence, this returns
-     an integer representing the ordinal index of ``ind`` within the sequence
-     using zero-based indexing. Otherwise, returns -1.
-     It is an error to invoke
-     ``indexOrder`` if the represented sequence is not defined or the
-     range does not have a first index.
+     Returns an integer representing the zero-based ordinal value of
+     ``ind`` within the range's sequence of values if it is a member
+     of the sequence.  Otherwise, returns -1.  It is an error to
+     invoke ``indexOrder`` if the represented sequence is not defined
+     or the range does not have a first index.
 
      The following calls show the order of index 4 in each of the given ranges:
 
