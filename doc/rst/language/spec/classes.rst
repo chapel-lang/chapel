@@ -599,15 +599,8 @@ in :ref:`Overriding_Base_Class_Methods`.
 Shadowing Base Class Fields
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A field in the derived class can be declared with the same name as a
-field in the base class. Such a field shadows the field in the base
-class in that it is always referenced when it is accessed in the context
-of the derived class.
-
-   *Open issue*.
-
-   There is an expectation that there will be a way to reference the
-   field in the base class but this is not defined at this time.
+A field in a derived class declared with the same name as a field in a
+base class will cause a compilation error.
 
 .. _Overriding_Base_Class_Methods:
 

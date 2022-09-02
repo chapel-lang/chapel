@@ -90,8 +90,7 @@ Functions can be called using either parentheses or brackets.
    tradeoff.
 
 Functions that are defined without parentheses must be called without
-parentheses as defined by scope resolution. Functions without
-parentheses are discussed
+parentheses. Functions without parentheses are discussed
 in :ref:`Functions_without_Parentheses`.
 
 A ``named-expression`` is an expression that may be optionally named. It
