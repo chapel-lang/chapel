@@ -33,7 +33,10 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
-* marked `locale.numPUs` as being unstable for the time being
+* marked `locale.numPUs()` as being unstable for the time being
+* deprecated assignments/initializations of `shared` classes with `owned`
+* deprecated support for directly creating new borrowed class instances
+  (i.e., `new borrowed Class()` is now deprecated)
 * deprecated `locale.callStackSize()` with no intention to replace it
 * deprecated support for the `<~>` operator
   (see https://chapel-lang.org/docs/1.28/language/spec/statements.html#the-i-o-statement)
@@ -62,10 +65,21 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
+* renamed `SysError.SystemError.fromSyserr()` to `OS.createSystmError()`  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/OS.html#OS.createSystemError)
+* renamed `SystemError` class names to use CamelCase for acronyms  
+  (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/OS.html#OS.IoError)
+* renamed `SysBasic.syserr` to `OS.errorCode`
+  (see https://chapel-lang.org/docs/1.28/modules/standard/OS.html#OS.errorCode)
+
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
-* deprecated the `Sys` module, moving some key symbols to `OS.POSIX`
+* deprecated the 'DateTime' module, merging its contents into 'Time'  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/Time.html)
+* deprecated the 'SysError' module, moving its contents to 'OS'  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/OS.html)
+* deprecated the 'Sys' module, moving some key symbols to 'OS.POSIX'
 * marked the `iostyle` type and associated routines as unstable  
   (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.iostyle)
 * deprecated some 'IO' `start`/`end` arguments in favor of `region` ranges  
@@ -131,6 +145,8 @@ Documentation
 -------------
 * reworked the documentation for 'mason' to simplify navigation and clarify it  
   (see https://chapel-lang.org/docs/1.28/mason-packages/index.html)
+* updated the 'Chapel Prerequisites' document to show uses of `LLVM_VERSION`
+  (see https://chapel-lang.org/docs/1.28/usingchapel/prereqs.html)
 * refreshed the `range` API documentation in the language specification
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#range-type-queries)
 * refreshed the `locale` documentation to reflect stabilization improvements
@@ -229,6 +245,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* turned off LLVM assertions for `CHPL_DEVELOPER` builds
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
