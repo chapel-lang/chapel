@@ -779,9 +779,10 @@ CHPL_LLVM
    See :ref:`readme-prereqs` for more information about currently
    supported LLVM versions and how to install them. If you are having
    trouble getting the build system to recognize your system install of
-   LLVM, try setting ``CHPL_LLVM=system`` and ``CHPL_LLVM_CONFIG`` as
-   well in order to get an error message that may help you to diagnose
-   the problem.
+   LLVM, try setting ``CHPL_LLVM=system`` and set ``CHPL_LLVM_CONFIG`` to
+   the `llvm-config` command from the LLVM version you have installed.
+   Temporarily setting these can help produce a different error message
+   that may may help you to diagnose the problem.
 
 .. _readme-chplenv.CHPL_LLVM_SUPPORT:
 

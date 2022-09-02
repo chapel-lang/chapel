@@ -89,9 +89,9 @@ rebuild Chapel from source in a different configuration:
 * Open up a new shell to avoid inheriting the previous environment
   settings.
 
-* The Quickstart configuration attempts to detect if you have a
-  compatable system installation of LLVM and clang. If you do not, it
-  will ``CHPL_LLVM=none`` for simplicity and to save time.  This causes
+* The Quickstart configuration attempts to detect if you have a compatable
+  system installation of LLVM and clang. If you do not, it will set
+  ``CHPL_LLVM=none`` for simplicity and to save time.  This causes
   the Chapel compiler to use its C back-end, which is not the preferred
   option; LLVM is the default back-end, which needs to be available for
   full functionality.  There are a few options for using LLVM:
