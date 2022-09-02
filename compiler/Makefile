@@ -50,6 +50,7 @@ SUBDIRS = \
 	passes \
 	resolution \
 	util \
+	dyno/tools/chpldoc \
 
 #
 # include standard header for compiler
@@ -93,6 +94,9 @@ include passes/Makefile.include
 include resolution/Makefile.include
 include util/Makefile.include
 
+# sources here are only used to build chpldoc
+include dyno/tools/chpldoc/Makefile.include
+
 SRCS =
 
 CHPL_OBJS = \
@@ -109,13 +113,24 @@ CHPL_OBJS = \
 	$(RESOLUTION_OBJS) \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
+	$(DYNO_FRAMEWORK_OBJS) \
 	$(DYNO_IMMEDIATES_OBJS) \
 	$(DYNO_PARSING_OBJS) \
-	$(DYNO_FRAMEWORK_OBJS) \
 	$(DYNO_RESOLUTION_OBJS) \
 	$(DYNO_TYPES_OBJS) \
 	$(DYNO_UAST_OBJS) \
 	$(DYNO_UTIL_OBJS) \
+
+
+CHPLDOC_OBJS = \
+	$(DYNO_FRAMEWORK_OBJS) \
+	$(DYNO_IMMEDIATES_OBJS) \
+	$(DYNO_PARSING_OBJS) \
+	$(DYNO_RESOLUTION_OBJS) \
+	$(DYNO_TYPES_OBJS) \
+	$(DYNO_UAST_OBJS) \
+	$(DYNO_UTIL_OBJS) \
+        $(DYNO_CHPLDOC_OBJS) \
 
 
 EXECS = $(CHPL) $(CHPLDOC)
@@ -164,15 +179,14 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 
-$(CHPLDOC): $(CHPL_BIN_DIR)
-	rm -f $(CHPLDOC)
-	@cd ../compiler/dyno && $(MAKE) -f Makefile.help dyno-chpldoc
+$(CHPLDOC): $(CHPLDOC_OBJS) | $(CHPL_BIN_DIR)
+	$(CXX) $(LDFLAGS) -o $@ $(CHPLDOC_OBJS) $(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS) $(LIBS) $(LLVM_EXTRA_LIBS) $(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)
 
-$(CHPLDOC)-legacy: $(CHPL_BIN_DIR)
+$(CHPLDOC)-legacy: | $(CHPL_BIN_DIR)
 	rm -f $(CHPLDOC)-legacy
 	ln -s $(notdir $(CHPL)) $(CHPLDOC)-legacy
 
-chpldoc: $(CHPL_BIN_DIR) $(CHPLDOC) $(CHPLDOC)-legacy
+chpldoc: $(CHPLDOC) $(CHPLDOC)-legacy
 
 dyno-chpldoc: chpldoc
 
