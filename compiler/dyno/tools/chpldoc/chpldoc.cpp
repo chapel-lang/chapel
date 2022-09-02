@@ -541,7 +541,7 @@ static size_t countLeadingSpaces(const std::string& s) {
 
 static std::ostream& indentStream(std::ostream& os, size_t num) {
   const char* spaces = "        ";
-  constexpr size_t N = sizeof(spaces);
+  size_t N = strlen(spaces);
   while (num > N) {
     os << spaces;
     num -= N;
