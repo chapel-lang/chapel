@@ -16,25 +16,66 @@ def gather_provision_script_cmds(path):
                 cmds.append(line)
     return cmds
 
+def title(name):
+    name = name.capitalize()
+    # fix capitalization
+    if name == "Freebsd":
+        name = "FreeBSD"
+    if name == "Centos":
+        name = "CentOS"
+    if name == "Opensuse":
+        name = "OpenSuse"
+    # handle Debian nicknames
+    if name == "Buster":
+        name = '10 "Buster"'
+    if name == "Bullseye":
+        name = '11 "Bullseye"'
+    if name == "Bookworm":
+        name = '12 "Bookworm"'
+    # handle Ubuntu nicknames
+    if name == "Bionic":
+        name = '18.04 "Bionic Beaver"'
+    if name == "Focal":
+        name = '20.04 "Focal Fossa"'
+    if name == "Jammy":
+        name = '22.04 "Jammy Jellyfish"'
+    if name == "Impish":
+        name = '21.10 "Impish Indri"'
+    if name == "Kinetic":
+        name = '22.10 "Kinetic Kudu"'
+    return name
+
 def fixname(subdir):
     name = os.path.basename(subdir)
+    # remove -cloud-base from e.g. fedora-32-cloud-base
+    if name.endswith("-cloud-base"):
+        name = name[:name.find("-cloud-base")]
+    # remove -STABLE from e.g. freebsd-FreeBSD-12.2-STABLE
+    if name.endswith("-STABLE"):
+        name = name[:name.find("-STABLE")]
+    # remove first freebsd in freebsd-FreeBSD-12.2-STABLE
+    if name.startswith("freebsd-FreeBSD-"):
+        name = name[len("freebsd-"):]
+    # remove 64 in ubuntu-impish64
+    if name.endswith("64"):
+        name = name[:name.find("64")]
+
     parts = name.split("-")
     adj = [ ]
     for part in parts:
         if part.endswith("linux"):
             # e.g. rockylinux -> Rocky Linux
             tmp = part[:part.find("linux")]
-            tmp = tmp.capitalize()
-            adj.append(tmp)
+            adj.append(title(tmp))
             adj.append("Linux")
         elif re.search('\d$', part):
-            sections = re.split('(\d+)', part)
+            sections = re.split('([0-9.]+)', part)
             for s in sections:
                 s = s.strip()
                 if s:
-                    adj.append(s.capitalize())  
+                    adj.append(title(s))
         else:
-            adj.append(part.capitalize())
+            adj.append(title(part))
 
     return " ".join(adj)
 
@@ -88,6 +129,8 @@ for subpath in subdirs:
         continue # skip these configurations
     if "homebrew" in subpath:
         continue # skip these configurations (this script would need to be improved)
+    if "generic-x32-debian11" in subpath:
+        continue # skip this one, redudant with other debian ones
 
     cmds = [ ]
     if os.path.isdir(subpath):
@@ -109,7 +152,7 @@ for subpath in subdirs:
             words = cmd.split()
             adj = [ ]
             for word in words:
-                if word == "-y" or word == "--noconfirm":
+                if word == "-y" or word == "--yes" or word == "--noconfirm":
                     pass # filter these out
                 else:
                     adj.append(word)
