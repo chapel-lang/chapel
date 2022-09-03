@@ -2,6 +2,7 @@ Release Changes List
 ====================
 
 TODO
+o missing contributions from interns (or others?)
 o any missing cross-references?
 o new compiler flags (and developer compiler flags)
 o examples directory
@@ -33,6 +34,9 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* marked comparison operations between types as unstable for the time being
+  (e.g., `type1 <= type2` is currently considered unstable)
+* made array methods `.count()`, `.find()`, `.reverse()`, `.sorted()` unstable
 * marked `locale.numPUs()` as being unstable for the time being
 * deprecated assignments/initializations of `shared` classes with `owned`
 * deprecated support for directly creating new borrowed class instances
@@ -80,6 +84,7 @@ Deprecated / Unstable / Removed Library Features
 * deprecated the 'SysError' module, moving its contents to 'OS'  
   (see https://chapel-lang.org/docs/1.28/modules/standard/OS.html)
 * deprecated the 'Sys' module, moving some key symbols to 'OS.POSIX'
+* deprecated the `isFloat*()` family of queries from the 'Type' module
 * marked the `iostyle` type and associated routines as unstable  
   (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.iostyle)
 * deprecated some 'IO' `start`/`end` arguments in favor of `region` ranges  
@@ -107,6 +112,8 @@ Standard Library Modules
 ------------------------
 * added a new 'Communication' module for low-level get/put operations
   (see https://chapel-lang.org/docs/1.28/modules/standard/Communication.html)
+* added a new 'GPU' module for GPU-related utility and debugging features
+  (see https://chapel-lang.org/docs/1.28/modules/standard/GPU.html)
 * added new 'IO' methods supporting reading/writing literals and newlines  
   (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.channel.readLiteral)
 
@@ -171,12 +178,25 @@ Portability
 
 GPU Computing
 -------------
-* made loops over multidimensional arrays and domains able to run on GPUs
-* most 'Math' and 'BitOps' routines are now supported for GPU computations
+* added a new 'GPU' module for GPU-related utility and debugging features
+  (see TODO)
+* added a `gpuWrite()` routine for console output from a GPU kernel
+  (see TODO)
+* added an `assertOnGpu()` routine to ensure code is running on GPU as expected
+  (see TODO)
+* enabled new code patterns to be eligible for execution on GPUs:
+  - loops over multidimensional arrays and domains
+  - 'BitOps' routines and most 'Math' routines
+  - certain conditional statements
+  - field accesses
+* added pragmas to mark functions that should not generate/be called by kernels
+* added a primitive to set the block size for a GPU kernel
+* added GPU memory strategy options for `unified_memory` and `array_on_device`
 
 Compiler Improvements
 ---------------------
 * simplified the code generated in the C back-end for if-then-else-if chains
+* raised the default generic instantiation limit from 256 to 512
 
 Compiler Flags
 --------------
