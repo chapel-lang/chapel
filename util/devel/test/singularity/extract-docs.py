@@ -154,6 +154,8 @@ for subpath in subdirs:
             for word in words:
                 if word == "-y" or word == "--yes" or word == "--noconfirm":
                     pass # filter these out
+                elif word == "/home/vagrant/.bashrc":
+                    adj.append("~/.bashrc")
                 else:
                     adj.append(word)
             print("      sudo " + " ".join(adj))
