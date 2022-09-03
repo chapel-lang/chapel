@@ -1,5 +1,5 @@
 BootStrap: library
-From: alpine:latest
+From: alpine:3.15
 
 %files
     ../../provision-scripts/* /provision-scripts/
