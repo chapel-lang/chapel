@@ -451,9 +451,10 @@ precedence than those listed later.
    division, and modulus as in Fortran. We have found very few cases
    that distinguish between these cases. An interesting one is:
 
-   ::
-     const minint = min(int(32));``
-     ...-minint/2...``
+   .. code-block:: chapel
+
+     const minint = min(int(32));
+     ...-minint/2...
 
    Intuitively, this should result in a positive value, yet C’s
    precedence rules results in a negative value due to asymmetry in
