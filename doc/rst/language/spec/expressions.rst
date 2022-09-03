@@ -666,8 +666,9 @@ The addition operators are predefined as follows:
 For each of these definitions that return a value, the result is the sum
 of the two operands.
 
-It is a compile-time error to add a value of type ``uint(64)`` and a
-value of type ``int(64)``.
+When adding signed and unsigned types of the same width (e.g. ``myInt32 +
+myUint32``), the addition will be done with the unsigned type (e.g.
+``uint(32)``).
 
 Addition over a value of real type and a value of imaginary type
 produces a value of complex type. Addition of values of complex type and
@@ -719,9 +720,6 @@ The subtraction operators are predefined as follows:
 For each of these definitions that return a value, the result is the
 value obtained by subtracting the second operand from the first operand.
 
-It is a compile-time error to subtract a value of type ``uint(64)`` from
-a value of type ``int(64)``, and vice versa.
-
 Subtraction of a value of real type from a value of imaginary type, and
 vice versa, produces a value of complex type. Subtraction of values of
 complex type from either real or imaginary types, and vice versa, also
@@ -772,9 +770,6 @@ The multiplication operators are predefined as follows:
 
 For each of these definitions that return a value, the result is the
 product of the two operands.
-
-It is a compile-time error to multiply a value of type ``uint(64)`` and
-a value of type ``int(64)``.
 
 Multiplication of values of imaginary type produces a value of real
 type. Multiplication over a value of real type and a value of imaginary
@@ -828,9 +823,6 @@ The division operators are predefined as follows:
 For each of these definitions that return a value, the result is the
 quotient of the two operands.
 
-It is a compile-time error to divide a value of type ``uint(64)`` by a
-value of type ``int(64)``, and vice versa.
-
 Division of values of imaginary type produces a value of real type.
 Division over a value of real type and a value of imaginary type
 produces a value of imaginary type. Division of values of complex type
@@ -876,9 +868,6 @@ related by the following identity:
    var r = a % b;
    writeln(q * b + r == a);    // true
 
-It is a compile-time error to take the remainder of a value of type
-``uint(64)`` and a value of type ``int(64)``, and vice versa.
-
 There is an expectation that the predefined modulus operators will be
 extended to handle real, imaginary, and complex types in the future.
 
@@ -906,9 +895,6 @@ The exponentiation operators are predefined as follows:
 
 For each of these definitions that return a value, the result is the
 value of the first operand raised to the power of the second operand.
-
-It is a compile-time error to take the exponent of a value of type
-``uint(64)`` by a value of type ``int(64)``, and vice versa.
 
 There is an expectation that the predefined exponentiation operators
 will be extended to handle imaginary and complex types in the future.
