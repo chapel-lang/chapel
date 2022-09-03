@@ -121,21 +121,24 @@ subdirs = [ ]
 for d in directories:
     for subdir in os.listdir(d):
         subpath = os.path.join(d, subdir)
+        if "nollvm" in subpath:
+            continue # skip these configurations
+        if "homebrew" in subpath:
+            continue # skip these configurations
+                     # (this script would need to be improved
+                     #  for sudo vs not sudo commands)
+        if "generic-x32-debian11" in subpath:
+            continue # skip this one, redudant with other debian ones
+
         subdirs.append(subpath)
+
 subdirs.sort(key=os.path.basename)
 
-for subpath in subdirs:
-    if "nollvm" in subpath:
-        continue # skip these configurations
-    if "homebrew" in subpath:
-        continue # skip these configurations (this script would need to be improved)
-    if "generic-x32-debian11" in subpath:
-        continue # skip this one, redudant with other debian ones
+tocmds = { }
 
+for subpath in subdirs:
     cmds = [ ]
     if os.path.isdir(subpath):
-        name = fixname(subpath)
-        print("  * " + name + '::')
         sdef = os.path.join(subpath, "singularity.def")
         vfile = os.path.join(subpath, "Vagrantfile")
         if os.path.exists(sdef):
@@ -143,8 +146,9 @@ for subpath in subdirs:
         elif os.path.exists(vfile):
             cmds = extract_vfile_commands(vfile)
         else:
-            print("NO CMDS FILE FOUND!")
+            print("NO CMDS FILE FOUND for", subpath)
 
+    result = [ ]
     for cmd in cmds:
         if cmd.startswith("#"):
             pass # ignore comments
@@ -158,5 +162,15 @@ for subpath in subdirs:
                     adj.append("~/.bashrc")
                 else:
                     adj.append(word)
-            print("      sudo " + " ".join(adj))
-    print()
+            result.append("sudo " + " ".join(adj))
+
+    tocmds[subpath] = result
+
+for subpath in subdirs:
+  name = fixname(subpath)
+  print("  * " + name + '::')
+  cmds = tocmds[subpath]
+  for cmd in cmds:
+     print("      " + cmd)
+
+  print()
