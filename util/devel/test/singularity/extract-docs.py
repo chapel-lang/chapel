@@ -166,11 +166,49 @@ for subpath in subdirs:
 
     tocmds[subpath] = result
 
-for subpath in subdirs:
-  name = fixname(subpath)
-  print("  * " + name + '::')
+tab = { }
+
+i = 0;
+while i < len(subdirs):
+  subpath = subdirs[i]
+  names = [ ]
+
+  # find how many configs have the same commands
   cmds = tocmds[subpath]
+  while i < len(subdirs) and tocmds[subdirs[i]] == cmds:
+      names.append(fixname(subdirs[i]))
+      i += 1
+
+  # summarize names string
+  # remove words that occur repeatedly
+  shortnames = [ ]
+  firstwords = names[0].split()
+  first = True
+  for name in names:
+      if first:
+          # always give full name for first element
+          shortnames.append(name)
+          first = False
+      elif not first:
+          # remove words that occured already
+          words = name.split()
+          j = 0
+          mayskip = True
+          shortname = ""
+          while j < len(words):
+              if mayskip and j < len(firstwords) and firstwords[j] == words[j]:
+                  pass # skip redundant word
+              else:
+                  mayskip = False
+                  shortname += " " + words[j]
+              j += 1
+          shortnames.append(shortname)
+
+  tab[",".join(shortnames)] = cmds
+
+# finally, output the table
+for names, cmds in sorted(tab.items(), key=lambda x: x[0]):
+  print("  * " + names + '::')
   for cmd in cmds:
      print("      " + cmd)
-
   print()
