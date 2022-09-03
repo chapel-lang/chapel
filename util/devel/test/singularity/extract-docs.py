@@ -209,6 +209,8 @@ while i < len(subdirs):
 # finally, output the table
 for names, cmds in sorted(tab.items(), key=lambda x: x[0]):
   print("  * " + names + '::')
+  print()
   for cmd in cmds:
      print("      " + cmd)
+  print()
   print()
