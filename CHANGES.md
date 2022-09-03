@@ -279,12 +279,11 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
-TODO: sort these into categories below
-* added support for resolving enums, if-expressions, and ranges
 * made numerous improvements to 'dyno's scope resolution capabilities
   - added support for task intents and reduce intents
   - added support for try-catch statements
 * made numerous improvements to 'dyno's type resolution capabilities
+  - added support for resolving enums, conditional expressions, and ranges
   - added support for loop index variables and param for-loops
   - added support for varargs argument lists
   - added support for evaluating `==` and `!=` on types
