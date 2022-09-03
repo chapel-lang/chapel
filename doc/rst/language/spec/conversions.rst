@@ -98,9 +98,11 @@ where ``s <= t``.
 
    .. code-block:: chapel
 
-     proc plus(a: int(?t), b: int(t)) : int(t) { ... }
-     proc plus(a: uint(?t), b: uint(t)) : uint(t) { ... }
-     proc plus(a: real(?t), b: real(t)) : real(t) { ... }
+     proc plus(a: int(32), b: int(32)) : int(32) { ... }
+     proc plus(a: int(64), b: int(64)) : int(64) { ... }
+     proc plus(a: uint(32), b: uint(32)) : uint(32) { ... }
+     proc plus(a: uint(32), b: uint(32)) : uint(32) { ... }
+     proc plus(a: real(64), b: real(64)) : real(64) { ... }
 
      var myInt32: int(32);
      var myUint32: uint(32);
