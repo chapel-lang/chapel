@@ -166,10 +166,12 @@ Portability
 -----------
 * generally improved Chapel portability to M1/Arm-based Macs
 * improved `chplvis` such that it can run on an M1 Mac
+* worked around an ICC bug resulting in "unknown attribute" warnings
 * removed remaining specialized support for SunOS platforms
 
 GPU Computing
 -------------
+* made loops over multidimensional arrays and domains able to run on GPUs
 * most 'Math' and 'BitOps' routines are now supported for GPU computations
 
 Compiler Improvements
@@ -257,14 +259,25 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+TODO: sort these into categories below
+* added support for resolving enums, if-expressions, and ranges
 * made numerous improvements to 'dyno's scope resolution capabilities
   - added support for task intents and reduce intents
   - added support for try-catch statements
 * made numerous improvements to 'dyno's type resolution capabilities
   - added support for loop index variables and param for-loops
   - added support for varargs argument lists
+  - added support for evaluating `==` and `!=` on types
+  - added support for type unification on routines with multiple `return`s
+  - enabled reasoning about return types in the context of `param` conditionals
+  - added support for resolving declarations with both a type and initializer
+  - added ability to reject less valid calls
+  - added support for resolving expressions like `1+1`
+* improved detection of fully-defaulted generic records 
 * added `uast::ReduceIntent` for cases previously handled by `uast::Reduce`
 * fixed problems compiling with `--dyno` and `-M`/`--module-dir`
+* fixed a segmentation fault when resolving `extern` routines
+* improved performance of the `--dyno` compilation stages using LLVM datatypes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
