@@ -1238,13 +1238,11 @@ Function resolution is defined as follows.
    found, this is determined to be the target function.
 
 -  From the set of candidate functions, determine the set of most
-   specific functions. In most cases, there is one most specific
-   function, but there can be several if they differ only in return
-   intent. The set of most specific functions is the set of functions
-   that are not *more specific* than each other but that are *more
-   specific* than every other candidate function. The *more specific*
-   relationship is defined in
-    :ref:`Determining_More_Specific_Functions`.
+   specific functions as described in
+    :ref:`Determining_Most_Specific_Functions`. In most cases, if the set
+   of most specific functions contains more than one element, it will
+   result in an ambiguity error. However, there can be several if they
+   differ only in return intent.
 
 -  From the set of most specific functions, the compiler determines a
    best function for each return intent as described in
@@ -1259,17 +1257,19 @@ Notation
 
 This section uses the following notation:
 
- * :math:`X` is a function under consideration
- * The actual argument under consideration is :math:`A` of type
-   :math:`T_A`
- * :math:`M_X` represents the argument mapping from :math:`A` to the
-   formal argument :math:`F_X` from function :math:`X`. :math:`F_X` has
-   type :math:`T_X`. When :math:`X` is a generic function, :math:`F_X`
-   refers to the possibly generic argument and :math:`T_X` refers to
-   the instantiated type.
- * When needed in the exposition, :math:`Y` is another function under
-   consideration, with mapping :math:`M_Y` from :math:`A` to a formal
-   argument :math:`F_Y` of type :math:`T_Y`.
+* :math:`X` is a function under consideration
+
+* An actual argument under consideration is :math:`A_i` of type
+  :math:`T(A_i)`
+
+* The formal argument in function :math:`X` that will receive :math:`A_i`
+  is :math:`X_i` and it has type :math:`T(X_i)`. When :math:`X` is a
+  generic function, :math:`X_i` refers to the possibly generic argument
+  and :math:`T(X_i)` refers to the instantiated type.
+
+* When needed in the exposition, :math:`Y` is another function under
+  consideration, where :math:`A_i` is passed to the formal :math:`Y_i` of
+  type :math:`T(Y_i)`.
 
 .. _Determining_Visible_Functions:
 
@@ -1292,12 +1292,8 @@ function call and one of the following conditions is met:
   and the call qualifies the function name with the module name,
   see also :ref:`Importing_Modules`.
 
-   *Open issue*.
-
-   What should be the visibility of methods? Applying the above rules
-   excludes, for example, the methods defined in the same module as the
-   receiver type when that module is neither visible nor reachable
-   through module uses or imports from the scope of the function call.
+- :math:`X` is a method and it is defined in the same module that defines
+  the receiver type.
 
 .. _Determining_Candidate_Functions:
 
@@ -1336,58 +1332,61 @@ to a function if one exists:
 Legal Argument Mapping
 ^^^^^^^^^^^^^^^^^^^^^^
 
-An actual argument :math:`A` of type :math:`T_A` can be legally mapped to
-a formal argument :math:`F_X` according to the following rules.
+An actual argument :math:`A_i` of type :math:`T(A_i)` can be legally mapped to
+a formal argument :math:`X_i` according to the following rules.
 
-First, if :math:`A` is a ``type`` but :math:`F_X` does not use the
+First, if :math:`A_i` is a ``type`` but :math:`X_i` does not use the
 ``type`` intent, then it is not a legal argument mapping.
 
-Then, if :math:`F_X` is a generic argument:
+Then, if :math:`X_i` is a generic argument:
 
- * if :math:`F_X` uses ``param`` intent, then :math:`A` must also be a
+ * if :math:`X_i` uses ``param`` intent, then :math:`A_i` must also be a
    ``param``
- * if :math:`F_X` uses ``type`` intent, then :math:`A` must also be a
+ * if :math:`X_i` uses ``type`` intent, then :math:`A_i` must also be a
    ``type``
- * there must exist an instantiation :math:`T_X` of the generic declared
-   type of :math:`F_X`, if any, that is compatible with the type
-   :math:`T_A` according to the rules below.
+ * there must exist an instantiation :math:`T(X_i)` of the generic declared
+   type of :math:`X_i`, if any, that is compatible with the type
+   :math:`T(A_i)` according to the rules below.
 
-Next, the type :math:`T_X` - which is either the declared type of the
-formal argument :math:`F_X` if it is concrete or the instantiated type if
-:math:`F_X` is generic - must be compatible with the type :math:`T_A`
-according to the concrete intent of :math:`F_X`:
+Next, the type :math:`T(X_i)` - which is either the declared type of the
+formal argument :math:`X_i` if it is concrete or the instantiated type if
+:math:`X_i` is generic - must be compatible with the type :math:`T(A_i)`
+according to the concrete intent of :math:`X_i`:
 
- * if :math:`F_X` uses ``ref`` intent, then :math:`T_A`
-   must be the same type as :math:`T_X`
- * if :math:`F_X` uses ``const ref`` intent, then :math:`T_A` and
-   :math:`T_X` must be the same type or a subtype of :math:`T_X` (see
+ * if :math:`X_i` uses ``ref`` intent, then :math:`T(A_i)`
+   must be the same type as :math:`T(X_i)`
+ * if :math:`X_i` uses ``const ref`` intent, then :math:`T(A_i)` and
+   :math:`T(X_i)` must be the same type or a subtype of :math:`T(X_i)` (see
    :ref:`Subtype_Arg_Conversions`)
- * if :math:`F_X` uses ``in`` or ``inout`` intent, then :math:`T_A`
+ * if :math:`X_i` uses ``in`` or ``inout`` intent, then :math:`T(A_i)`
    must be the same type, a subtype of, or implicitly convertible to
-   :math:`T_X`.
- * if :math:`F_X` uses  the ``out`` intent, it is always a legal
+   :math:`T(X_i)`.
+ * if :math:`X_i` uses  the ``out`` intent, it is always a legal
    argument mapping regardless of the type of the actual and formal.
-   In the event that setting :math:`T_A` from :math:`F_X` is not
+   In the event that setting :math:`T(A_i)` from :math:`X_i` is not
    possible then a compilation error will be emitted if this function
    is chosen as the best candidate.
- * if :math:`F_X` uses the ``type`` intent, then :math:`T_A`
-   must be the same type or a subtype of :math:`T_X` (see
+ * if :math:`X_i` uses the ``type`` intent, then :math:`T(A_i)`
+   must be the same type or a subtype of :math:`T(X_i)` (see
    :ref:`Subtype_Arg_Conversions`).
 
 Finally, if the above compatibility cannot be established, the mapping is
-checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`
+checked for promotion. If :math:`T(A_i)` is scalar promotable to :math:`T(X_i)`
 (see :ref:`Promotion`), then the above rules are checked with the element
-type, index type, or yielded type.  For example, if :math:`T_A` is an
-array of ``int`` and :math:`T_X` is ``int``, then promotion occurs and
-the above rules will be checked with :math:`T_A` == ``int``.
+type, index type, or yielded type.  For example, if :math:`T(A_i)` is an
+array of ``int`` and :math:`T(X_i)` is ``int``, then promotion occurs and
+the above rules will be checked with :math:`T(A_i)` == ``int``.
 
 .. _Determining_More_Specific_Functions:
 
-Determining More Specific Functions
+.. _Determining_Most_Specific_Functions:
+
+Determining Most Specific Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Given a set of candidate functions, the following steps are applied to
-remove candidates from the set, until the best functions are determined.
+remove candidates from the set. After the process completes, the
+remaining candidates in the set are the most specific functions.
 
 1. If any candidate is more visible (or shadows) another candidate,
    discard all candidates that are less visible than (or shadowed by)
@@ -1398,8 +1397,8 @@ remove candidates from the set, until the best functions are determined.
    promotion.
 
 3. Discard any function that has a less specific argument mapping than
-   any other function. See the below section for details on the more
-   specific argument mapping relation.
+   any other function. See :ref:`More_Specific_Argument_Mappings` below
+   for details on the more specific argument mapping relation.
 
 4. Discard any candidates that have more formals that require implicit
    conversion than other candidates. For this step, implicit conversions
@@ -1410,76 +1409,82 @@ remove candidates from the set, until the best functions are determined.
    ``param`` value is converted to an unsigned integral type of any width
    (i.e. a ``uint(?w)``).
 
-5. Discard any candidates that have more formals that require param
+6. Discard any candidates that have more formals that require param
    narrowing conversions than another candidate. A param narrowing
    conversion is when a param value is implicitly converted to a type
    that would not normally be allowed. For example, an ``int`` value
    cannot normally implicitly convert to an ``int(8)`` value. However,
    the param value ``1``, which is an ``int``, can implicitly convert to
-   ``int(8)`` because the value is known to fit.
+   ``int(8)`` because the value is known to fit. See also
+   :ref:`Implicit_Compile_Time_Constant_Conversions`.
 
-6. If at least one candidate has a ``where`` clause and at least one
-   candidate does not have a ``where`` clause, discard all candidates
-   that do not have a ``where`` clause.
+
+Note that ``where`` clauses are also considered but that happens in a
+later step. See :ref:`Determining_Best_Functions`.
 
 .. _More_Specific_Argument_Mappings:
 
 More Specific Argument Mappings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Given candidate functions X and Y with formal arguments X1 X2 ... and Y1
-Y2 ... that correspond to actual arguments A1 A2 ..., which candidate
-function is more specific is determined in two steps. First, the
-non-param actual arguments and their corresponding formal arguments are
-considered. Then, any param actual arguments and their corresponding
+Given candidate functions :math:`X` and :math:`Y` with formal arguments
+:math:`X_1` :math:`X_2` ... and :math:`Y_1` :math:`Y_2` ... that
+correspond to actual arguments :math:`A_1` :math:`A_2` ..., which
+candidate function is more specific is determined in two steps. First,
+the non-param actual arguments and their corresponding formal arguments
+are considered. Then, any param actual arguments and their corresponding
 formal arguments are considered.
 
-Within each of those steps, the candidate function X has a more specific
-argument mapping if:
+Within each of those steps, the candidate function :math:`X` has a more
+specific argument mapping if:
 
-* for each argument considered, the argument mapping from Ai to Yi is not
-  better than the argument mapping for the argument Ai to Xi, and
+* for each argument :math:`i` considered, the argument mapping from
+  :math:`A_i` to :math:`Y_i` is not better than the argument mapping for
+  the argument :math:`A_i` to :math:`X_i`, and
 
-* for at least one argument considered, the argument mapping from Ai to
-  Xi is better than the argument mapping from Ai to Yi
+* for at least one argument :math:`j` considered, the argument mapping
+  from :math:`A_j` to :math:`X_j` is better than the argument mapping
+  from :math:`A_j` to :math:`Y_j`.
 
 .. _Better_Argument_Mapping:
 
 Better Argument Mapping
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Given an actual argument Ai and the corresponding formals arguments Xi
-and Yi (in the functions X and Y being considered), the following rules
-are applied in order to determine whether Xi or Yi is a better argument
+Given an actual argument :math:`A_i` and the corresponding formal
+arguments :math:`X_i` and :math:`Y_i` (in the functions :math:`X` and
+:math:`Y` being considered), the following rules are applied in order to
+determine whether :math:`X_i` or :math:`Y_i` is a better argument
 mapping:
 
-* If one of the formals requires promotion and the other does not, the
+1. If one of the formals requires promotion and the other does not, the
    formal not requiring promotion is better
 
-* If one of the formals is less generic than the other formal, the
-  less-generic formal is better
+2. If one of the formals is less generic than the other formal, the
+   less-generic formal is better
 
-* If one of the formals is ``param`` and the other is not, the ``param``
-  formal is better
+3. If one of the formals is ``param`` and the other is not, the ``param``
+   formal is better
 
-* If one of the formals requires a param narrowing conversion and the
-  other is not, the one not requiring such narrowing is better
+4. If one of the formals requires a param narrowing conversion and the
+   other is not, the one not requiring such narrowing is better
 
-* If the actual and both formals are numeric types and one formals is a
-  preferred numeric conversion target, that formal is better
+5. If the actual and both formals are numeric types and one formals is a
+   preferred numeric conversion target, that formal is better
 
-* If one of the formals matches the actual type exactly and the other
-  does not, the matching formal is better
+6. If one of the formals matches the actual type exactly and the other
+   does not, the matching formal is better
 
-* If the actual's scalar type for promotion matches one of the formals
-  but not the other, the matching formal is better
+7. If the actual's scalar type for promotion matches one of the formals
+   but not the other, the matching formal is better
 
-* If an implicit conversion is possible from the type of one formal to
-  the other, but not vice versa, then the formal that can be converted
-  from is better. (I.e. if the type of ``Xi`` can implicitly convert to the
-  type of ``Yi``, then ``Xi`` is better). Similarly, if the type of one
-  formal can be instantiated to produce the type of another formal, the
-  type of the more-instantiated formal is better.
+8. If an implicit conversion is possible from the type of one formal to
+   the other, but not vice versa, then the formal that can be converted
+   from is better. (I.e. if the type of :math:`X_i` can implicitly
+   convert to the type of :math:`Y_i`, then :math:`X_i` is better).
+   Similarly, if the type of one formal can be instantiated to produce
+   the type of another formal, the type of the more-instantiated formal
+   is better.
 
 .. _Preferred_Numeric_Conversion_Target:
 
