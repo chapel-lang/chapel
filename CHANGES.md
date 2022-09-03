@@ -62,6 +62,7 @@ Namespace Changes
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* improved memory utilization by 'IO' channel buffers for large
 
 Name Changes in Libraries
 -------------------------
@@ -71,7 +72,6 @@ Name Changes in Libraries
   (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/OS.html#OS.IoError)
 * renamed `SysBasic.syserr` to `OS.errorCode`
   (see https://chapel-lang.org/docs/1.28/modules/standard/OS.html#OS.errorCode)
-
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -140,6 +140,7 @@ Compilation-Time / Generated Code Improvements
 
 Memory Improvements
 -------------------
+* reduced memory used by `channel` buffers for large I/Os of unstructured data
 
 Documentation
 -------------
