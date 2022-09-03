@@ -439,21 +439,21 @@ Field access is described in :ref:`Class_Field_Accesses`.
 Class Methods
 ~~~~~~~~~~~~~
 
-Methods on classes are referred to as *class methods*.
-See :ref:`Chapter-Methods` for more information about methods.
+Methods on classes are referred to as *class methods*. They can be
+instance methods or type methods.  See :ref:`Chapter-Methods` for more
+information about methods.
 
 Within a class method, the type of ``this`` is generally the non-nilable
 ``borrowed`` variant of the class type. It is different for type methods
-(see below) and it might be a different type if the class method is
-declared as a secondary method with a type expression.
+and for methods without parentheses that return a ``type`` or ``param``
+(see below). Additionally, it might be a different type if the class
+method is declared as a secondary method with a type expression.
 
 For example:
 
    *Example (class-method-this-type.chpl)*.
 
-   
-
-   ::
+   .. code-block:: chapel
 
       class C {
         proc primaryMethod() {
@@ -494,7 +494,8 @@ For example:
 
 For type methods on a class, ``this`` will accept any management or
 nilability variant of the class type and it will refer to that type in
-the body of the method. For example:
+the body of the method. In other words, ``this`` will be instantiated to
+match the type of the receiver at the call site. For example:
 
    *Example (class-type-method-this.chpl)*.
 
@@ -504,7 +505,7 @@ the body of the method. For example:
 
       class C {
         proc type typeMethod() {
-          writeln(this:string); // print out the type of 'this'
+          writeln(this:string); // print out 'this', which is a type
         }
       }
       (C).typeMethod(); // prints 'C'
@@ -519,30 +520,54 @@ the body of the method. For example:
       owned C
       borrowed C?
 
-When a type method is defined only in a parent class, the type will be
-the corresponding variant of the parent class. For example:
+When a type method is defined only in a parent class, ``this`` will be a
+type that is the corresponding variant of the parent class. For example:
 
    *Example (class-type-method-inherit.chpl)*.
-
-   
 
    .. code-block:: chapel
 
       class Parent { }
       class Child : Parent { }
       proc type Parent.typeMethod() {
-        writeln(this:string); // print out the type 'this'
+        writeln(this:string); // print out 'this', which is a type
       }
 
       Child.typeMethod(); // prints 'Parent'
       (borrowed Child?).typeMethod(); // prints 'borrowed Parent?'
 
-   
-
    .. BLOCK-test-chapeloutput
 
       Parent
       borrowed Parent?
+
+Similarly, a class method without parentheses that returns with ``param``
+or ``type`` intent will have a ``this`` that accepts any nilability or
+management. See also :ref:`Methods_without_Parentheses`.
+
+  *Example (class-parenless-method-nilability.chpl)*.
+
+   .. code-block:: chapel
+
+      class C {
+        proc parenlessParam param {
+          return 0;
+        }
+        proc parenlessType type {
+          return this.type;
+        }
+
+      }
+
+      var x: owned C? = new owned C?();
+      writeln(x.parenlessParam); // prints '0'
+      writeln(x.parenlessType:string); // prints 'owned C?'
+
+   .. BLOCK-test-chapeloutput
+
+      0
+      owned C?
+
 
 .. _Nested_Classes:
 

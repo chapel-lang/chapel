@@ -183,14 +183,9 @@ Methods whose receivers are objects are called *instance methods*.
 Methods may also be defined to have ``type`` receivers—these are known
 as *type methods*.
 
-Note that within a method for a class ``C``, the type of ``this`` is
-generally ``borrowed C``. However, within a type method on a class ``C``,
-``this`` refers to the class type ``C`` with generic management and any
-nilability; in other words, ``this`` will be instantiated to match the
-type of the receiver at the call site. Similarly, parenless methods that
-return with ``param`` or ``type`` intent have a ``this`` that will be
-instantiated to match the nilability and management of the call site.
-Please see :ref:`Class_Methods` for more details.
+Methods on a class ``C`` generally use a ``this`` type of ``borrowed C``
+but ``this`` will be more generic in some cases. See
+:ref:`Class_Methods`.
 
 The optional ``this-intent`` is used to specify type methods, to
 constrain a receiver argument to be a ``param``, or to specify how the
@@ -463,15 +458,7 @@ Similarly to :ref:`Functions_without_Parentheses`, it is possible to
 create methods that do not have parentheses. Such methods look similar to
 field access when they are called. As a result, methods without
 parentheses can be used when a field is removed or renamed to provide the
-same interface as the field accessor did.
-
-Additionally, one can create a method without parentheses to replace a
-field or parenless method in a parent class. Such methods require the
-``override`` keyword (see :ref:`Overriding_Base_Class_Methods`).
-
-Methods without parentheses that return with ``type`` or ``param`` intent
-use a generic type for the ``this`` argument. See
-:ref:`Method_receiver_and_this` for more details.
+same interface that the field accessor did.
 
    *Example (parenlessMethod.chpl)*.
 
@@ -514,3 +501,11 @@ use a generic type for the ``this`` argument. See
    .. BLOCK-test-chapeloutput
 
       0
+
+One can create a method without parentheses to replace a field or
+parenless method in a parent class. Such methods require the ``override``
+keyword (see :ref:`Overriding_Base_Class_Methods`).
+
+Note that class methods without parentheses that return with ``type`` or
+``param`` intent use a generic type for the ``this`` argument. See
+:ref:`Class_Methods` for more details.
