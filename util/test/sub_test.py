@@ -65,7 +65,13 @@
 #                     not under $CHPL_HOME. Should not be set when test/ is
 #                     under $CHPL_HOME. When it is set and the path prefixes a
 #                     test in the logs, it will be removed (from the logs).
-#
+# CHPL_TEST_IS_A_TTY: Was start_tests run with stdout directed to a TTY (as
+#                     opposed to a file). Useful to determine if we should
+#                     avoid printing colorcodes to terminal.
+# CHPL_TEST_DIFFTOOL: Difftool suggested to user on "To diff execute"
+#                     messages. Note this is not what sub_test actually uses
+#                     to conduct the diff (rather it's meant to be the users
+#                     preferred editor to view the diff).
 #
 # DIRECTORY-WIDE FILES:  These settings are for the entire directory and
 #  in many cases can be overridden or augmented with test-specific settings.
@@ -721,6 +727,22 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
 
     return extra_msg
 
+COLOR_LIGHT_BLUE = '\033[94m'
+COLOR_GREEN = '\033[32m'
+COLOR_BOLD = '\033[1m'
+COLOR_RESET = '\033[0m'
+
+def writeCmdMessage(msg):
+  writeMessageInColor(msg, COLOR_LIGHT_BLUE)
+
+def writeNewTestMessage(msg):
+  writeMessageInColor(msg, COLOR_GREEN + COLOR_BOLD)
+
+def writeMessageInColor(msg, color):
+  if os.getenv('CHPL_TEST_IS_A_TTY'):
+    sys.stdout.write("%s%s%s" % (color, msg, COLOR_RESET))
+  else:
+    sys.stdout.write(msg);
 
 # Start of sub_test proper
 #
@@ -1224,7 +1246,7 @@ for testname in testsrc:
     compiler = original_compiler
 
     # print testname
-    sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
+    writeNewTestMessage('[test: %s/%s]\n'%(localdir,testname))
     test_filename = re.match(r'^(.*)\.(?:chpl|test\.c|test\.cpp|ml-test\.c|ml-test\.cpp)$', testname).group(1)
     execname = test_filename
     if uniquifyTests:
@@ -1834,6 +1856,7 @@ for testname in testsrc:
                     sys.stdout.write('[Error compilation failed for %s]\n'%(test_name))
                 else:
                     sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
+                writeCmdMessage('[To re-good execute: mv %s %s]\n' % (complog, goodfile));
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
                 cleanup(execname)
@@ -1853,6 +1876,11 @@ for testname in testsrc:
                                  (localdir, test_filename))
             printTestVariation(compoptsnum, compoptslist);
             sys.stdout.write(']\n')
+
+            if result != 0:
+              writeCmdMessage('[To re-good execute: mv %s %s]\n' % (complog, goodfile));
+              writeCmdMessage('[To view diff execute: %s %s %s]\n' %
+                (os.getenv('CHPL_TEST_DIFFTOOL'), complog, goodfile));
 
             # If there was a prediff it may have hidden the compilation
             # failure, so print out the full log. Note that we don't check
@@ -2378,6 +2406,7 @@ for testname in testsrc:
 
                         if not os.path.isfile(execgoodfile) or not os.access(execgoodfile, os.R_OK):
                             sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execgoodfile))
+                            writeCmdMessage('[To re-good execute: mv %s %s]\n' % (execlog, execgoodfile));
                             sys.stdout.write('[Execution output was as follows:]\n')
                             p = py3_compat.Popen(['cat', execlog], stdout=subprocess.PIPE)
                             exec_output = p.communicate()[0]
@@ -2399,6 +2428,10 @@ for testname in testsrc:
                             printTestVariation(compoptsnum, compoptslist,
                                                execoptsnum, execoptslist);
                         sys.stdout.write(']\n')
+                        if result!=0:
+                          writeCmdMessage('[To re-good execute: mv %s %s]\n' % (execlog, execgoodfile))
+                          writeCmdMessage('[To view diff execute: %s %s %s]\n' %
+                            (os.getenv('CHPL_TEST_DIFFTOOL'), execlog, execgoodfile));
 
                         if (result != 0 and futuretest != ''):
                             badfile=test_filename+'.bad'

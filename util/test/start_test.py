@@ -376,6 +376,8 @@ def summarize():
     passing_futures_marker = "{0}.*{1}".format(future_marker, success_marker)
     success_marker = "^" + success_marker
     skip_stdin_redirect_marker = r"^\[Skipping test with .stdin input"
+    re_good_cmd_marker = r"\[To re-good execute:"
+    re_good_cmd_matcher = re.compile(r"\[To re-good execute: (.*)]")
 
     # setup counts and blank strings to hold summaries
     global failures # for exit codes later
@@ -386,6 +388,7 @@ def summarize():
     passing_suppressions = 0
     passing_futures = 0
     skip_stdin_redirects = 0
+    regood_command_summary = ""
     failure_summary = ""
     suppression_summary = ""
     future_summary = ""
@@ -414,8 +417,14 @@ def summarize():
                 passing_futures += 1
             elif re.search(skip_stdin_redirect_marker, line, flags=re.M):
                 skip_stdin_redirects += 1
+            elif re.search(re_good_cmd_marker, line, flags=re.M):
+              result = re_good_cmd_matcher.search(line)
+              regood_command_summary += "%s\n" % result.group(1) if result else line
 
     # compile summary
+    if regood_command_summary != "":
+      summary += "[To regood failing tests execute the following commands]\n"
+      summary += regood_command_summary
     summary += failure_summary
     summary += suppression_summary
     summary += future_summary
@@ -619,6 +628,13 @@ def check_environment():
         if not os.path.isdir(util_dir):
             print("Error: Cannot find {0}.".format(util_dir))
             sys.exit(1)
+
+    if sys.stdout.isatty():
+      os.environ["CHPL_TEST_IS_A_TTY"]  = "true"
+
+    difftool = run_git_command(["config", "diff.tool"])
+    difftool = difftool or "diff"
+    os.environ["CHPL_TEST_DIFFTOOL"] = difftool
 
 def check_environment_with_args():
     # find test dir and check for access
