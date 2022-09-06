@@ -281,7 +281,7 @@ The Bytes Type
 
 Bytes is a primitive type designated by the symbol ``bytes`` comprised
 of arbitrary bytes. Bytes are immutable in-place and their length is
-unbounded.
+unbounded. Bytes are defined in :ref:`Chapter-Bytes`.
 
 .. _Enumerated_Types:
 
