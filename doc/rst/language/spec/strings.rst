@@ -1,10 +1,10 @@
 .. default-domain:: chpl
 
-.. _Chapter-String:
+.. _Chapter-Strings:
 
-======
-String
-======
+=======
+Strings
+=======
 
 The following documentation shows functions and methods used to
 manipulate and process Chapel strings.
@@ -12,8 +12,8 @@ manipulate and process Chapel strings.
 The ``string`` type in Chapel represents a sequence of UTF-8
 characters and is most often used to represent textual data.
 
-Methods Available in Other Modules
-----------------------------------
+Methods Available in Standard Modules
+-------------------------------------
 
 Besides the functions below, some other modules provide routines that are
 useful for working with strings. The :mod:`IO` module provides
@@ -41,8 +41,8 @@ throws an error when it is executed, but
 
 stores the value ``1`` in ``number``.
 
-To learn more about handling these errors, see the
-:ref:`Error Handling technical note <readme-errorHandling>`.
+To learn more about handling these errors, see the Language-Specification page
+on :ref:`Error Handling <Chapter-Error_Handling>`.
 
 
 Unicode Support

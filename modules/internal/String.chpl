@@ -33,8 +33,7 @@
  */
 
 // Note - the I/O module has
-// :proc:`string.format` and :proc:`stringify`.
-// It might be worth moving them here for documentation - KB Feb 2016
+// :proc:`string.format` and :proc:`stringify`.s
 
 /*
 .. type:: string
@@ -1756,9 +1755,7 @@ module String {
     Checks if all the characters in the string are either uppercase (A-Z) or
     uncased (not a letter).
 
-    :returns: * `true`  -- if the string contains at least one uppercase
-                            character and no lowercase characters, ignoring
-                            uncased characters.
+    :returns: * `true`  -- if the string contains at least one uppercase character and no lowercase characters, ignoring uncased characters.
               * `false` -- otherwise
     */
   proc string.isUpper() : bool {
@@ -1809,7 +1806,7 @@ module String {
   }
 
   /*
-    Checks if all the characters in the string are whitespace (' ', '\t',
+    Checks if all the characters in the string are whitespace ('  ', '\t',
     '\n', '\v', '\f', '\r').
 
     :returns: * `true`  -- when all the characters are whitespace.
