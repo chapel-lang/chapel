@@ -23,9 +23,9 @@ prepended by a `b` character:
 
    var b = b"my bytes";
 
-``bytes`` can also be crated using a specific buffer (i.e. data
-in another *bytes*, a `c_string` or a C pointer) you can use the
-factory functions shown below, such as *createBytesWithNewBuffer*.
+``bytes`` can also be crated using a specific buffer (i.e. data in another
+*bytes*, a `c_string` or a C pointer) you can use the factory functions shown
+below, such as :proc:`~Bytes.createBytesWithNewBuffer`.
 
 .. _Bytes_and_String:
 
@@ -50,7 +50,7 @@ and needs to be decoded to be converted to a *string*.
 
   var s2 = b.decode(); // you need to decode a bytes to convert it to a string
 
-See the documentation for the ``bytes.decode`` method for details.
+See the documentation for the :proc:`~Bytes.bytes.decode` method for details.
 
 Similarly, a ``bytes`` can be initialized using a string:
 
@@ -62,10 +62,10 @@ Similarly, a ``bytes`` can be initialized using a string:
 Casts from *bytes* to a Numeric Type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module supports casts from ``bytes`` to numeric types. Such
-casts will interpret the *bytes* as ASCII characters and convert it
-to the numeric type and throw an error if the *bytes* does not
-match the expected format of a number. For example:
+Chapel supports casts from ``bytes`` to numeric types. Such casts will
+interpret the *bytes* as ASCII characters, convert it to the numeric type
+and then throw an error if the *bytes* does not match the expected format
+of a number. For example:
 
 .. code-block:: chapel
 
@@ -81,8 +81,8 @@ throws an error when it is executed, but
 
 stores the value ``1`` in ``number``.
 
-To learn more about handling these errors, see the
-:ref:`Error Handling technical note <readme-errorHandling>`.
+To learn more about handling these errors, see the Language-Specification page
+on :ref:`Error Handling <Chapter-Error_Handling>`.
 
 .. _Bytes_Methods:
 
