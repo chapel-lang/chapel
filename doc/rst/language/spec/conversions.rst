@@ -154,7 +154,7 @@ complex(\ :math:`s`)                                                            
 Implicit Compile-Time Constant Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A ``param`` of numeric type can be implicitly converted another numeric
+A ``param`` of numeric type can be implicitly converted to another numeric
 type in some cases if the ``param`` value can be represented exactly by
 the target type. In particular:
 

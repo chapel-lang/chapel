@@ -1409,12 +1409,12 @@ remaining candidates in the set are the most specific functions.
    ``param`` value is converted to an unsigned integral type of any width
    (i.e. a ``uint(?w)``).
 
-6. Discard any candidates that have more formals that require param
-   narrowing conversions than another candidate. A param narrowing
-   conversion is when a param value is implicitly converted to a type
+6. Discard any candidates that have more formals that require ``param``
+   narrowing conversions than another candidate. A ``param`` narrowing
+   conversion is when a ``param`` value is implicitly converted to a type
    that would not normally be allowed. For example, an ``int`` value
    cannot normally implicitly convert to an ``int(8)`` value. However,
-   the param value ``1``, which is an ``int``, can implicitly convert to
+   the ``param`` value ``1``, which is an ``int``, can implicitly convert to
    ``int(8)`` because the value is known to fit. See also
    :ref:`Implicit_Compile_Time_Constant_Conversions`.
 
