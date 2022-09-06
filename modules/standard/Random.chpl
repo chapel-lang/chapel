@@ -2893,6 +2893,7 @@ module Random {
     //
     // NPB-defined constants for linear congruential generator
     //
+    pragma "no doc"
     private const r23   = 0.5**23,
                   t23   = 2.0**23,
                   r46   = 0.5**46,
