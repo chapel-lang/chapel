@@ -916,7 +916,7 @@ module ChapelTuple {
     return result;
   }
 
-  pragma "no doc" 
+  pragma "no doc"
   inline operator ^(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
