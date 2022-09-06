@@ -1123,8 +1123,8 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
 }
 
 AstNode* ParserContext::buildNewExpr(YYLTYPE location,
-                         New::Management management,
-                         AstNode* expr) {
+                                     New::Management management,
+                                     AstNode* expr) {
   if (FnCall* fnCall = expr->toFnCall()) {
     return this->wrapCalledExpressionInNew(location, management, fnCall);
   } else if (OpCall* opCall = expr->toOpCall()) {
@@ -1166,7 +1166,8 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
       this->raiseError(location, "Invalid form for 'new' expression");
     }
   }
-  return nullptr;
+  auto loc = convertLocation(location);
+  return ErroneousExpression::build(builder, loc).release();
 }
 
 FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
