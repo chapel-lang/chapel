@@ -33,7 +33,7 @@
  */
 
 // Note - the I/O module has
-// :proc:`string.format` and :proc:`stringify`.s
+// :proc:`string.format` and :proc:`stringify`.
 
 /*
 .. type:: string
@@ -1806,8 +1806,8 @@ module String {
   }
 
   /*
-    Checks if all the characters in the string are whitespace ('  ', '\t',
-    '\n', '\v', '\f', '\r').
+    Checks if all the characters in the string are whitespace ('  ', '\\t',
+    '\\n', '\\v', '\\f', '\\r').
 
     :returns: * `true`  -- when all the characters are whitespace.
               * `false` -- otherwise
