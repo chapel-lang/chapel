@@ -415,6 +415,8 @@ module Atomics {
 
   }
 
+  // TODO: should this be an operator method AtomicBool.: ?
+  pragma "no doc"
   operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=
     return lhs;
@@ -752,6 +754,8 @@ module Atomics {
 
   }
 
+  // TODO: should this be an operator method AtomicT.: ?
+  pragma "no doc"
   operator :(rhs, type t:AtomicT)
   where rhs.type == t.T {
     var lhs: t = rhs; // use init=
@@ -770,6 +774,7 @@ module Atomics {
   // to the normal record version of the function.  Sigh.
 
   /* Equivalent to ``a.write(b.read())`` */
+  pragma "no doc"
   inline operator AtomicBool.=(ref a:AtomicBool, const ref b:AtomicBool) {
     a.write(b.read());
   }
@@ -778,6 +783,7 @@ module Atomics {
     compilerError("Cannot directly assign atomic variables");
   }
   /* Equivalent to ``a.write(b.read())`` */
+  pragma "no doc"
   inline operator AtomicT.=(ref a:AtomicT, const ref b:AtomicT) {
     a.write(b.read());
   }
