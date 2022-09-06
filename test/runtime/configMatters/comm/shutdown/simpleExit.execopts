@@ -1,0 +1,3 @@
+--coordinatedExit=true
+--coordinatedExit=false --exitCode=0
+--coordinatedExit=false --exitCode=1
