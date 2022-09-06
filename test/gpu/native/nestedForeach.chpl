@@ -17,12 +17,12 @@ on here.gpus[0] {
     B(i,j) = i + j;
   }
   writeln(B);
-  foreach (i,j) in {1..-1, 1..-1} {
-    assertOnGpu();
-  }
-  foreach (i,j) in {low..high, low..high} {
-    assertOnGpu();
-  }
+  // foreach (i,j) in {1..-1, 1..-1} {
+  //   assertOnGpu();
+  // }
+  // foreach (i,j) in {low..high, low..high} {
+  //   assertOnGpu();
+  // }
 }
 stopGPUDiagnostics();
 writeln(getGPUDiagnostics());

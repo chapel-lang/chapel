@@ -3,8 +3,9 @@ x means reached end of life
   (last updated: 2019-01-11)
 
 Alpine Linux
-  3.14  2023-05-01
-  3.15  2023-11-01
+  3.14  EOL 2023-05-01
+  3.15  EOL 2023-11-01
+  3.16  EOL 2024-05-23
 
 Alma Linux
   8   - EOL May 2029

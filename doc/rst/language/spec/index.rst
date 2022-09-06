@@ -45,6 +45,7 @@ Composite Types
    :maxdepth: 1
 
    tuples
+   bytes
    strings
    classes
    records

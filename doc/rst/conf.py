@@ -81,8 +81,8 @@ shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '1.28.0 (pre-release)'
-#release = '1.28.0'
+#release = '1.28.0 (pre-release)'
+release = '1.28.0'
 
 # General information about the project.
 project = u'Chapel Documentation'
@@ -114,6 +114,7 @@ exclude_patterns = ['Makefile',
                     # These don't need to be processed separately
                     # since they are included in the spec with .. include::
                     'builtins/Atomics.rst',
+                    'builtins/Bytes.rst',
                     'builtins/ChapelArray.rst',
                     'builtins/ChapelDomain.rst',
                     'builtins/ChapelLocale.rst',
