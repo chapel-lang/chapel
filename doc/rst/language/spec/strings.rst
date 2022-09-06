@@ -81,9 +81,9 @@ strategy is similar to Python's "surrogate escapes" and is as follows.
 
 This strategy typically results in storing 3 bytes for each byte in the illegal
 sequence. Similarly escaped strings can also be created with
-``createStringWithNewBuffer`` using a C buffer.
+:proc:`~String.createStringWithNewBuffer` using a C buffer.
 
-An escaped data sequence can be reconstructed with ``~string.encode``:
+An escaped data sequence can be reconstructed with :proc:`~String.string.encode`:
 
 .. code-block:: chapel
 
@@ -122,16 +122,16 @@ units for offsets or lengths:
  * graphemes
 
 Most methods on the Chapel string type currently work with codepoint units by
-default. For example, ``string.size`` returns the length in codepoints
-and `int` values passed into ``string.this`` are offsets in codepoint
-units.
+default. For example, :proc:`~String.string.size` returns the length in
+codepoints and `int` values passed into :proc:`~String.string.this` are
+offsets in codepoint units.
 
 It is possible to indicate byte or codepoint units for indexing in the
 string methods by using arguments of type ``byteIndex`` or
 ``codepointIndex`` respectively.
 
-For speed of indexing with their result values, ``string.find()``
-and ``string.rfind()``` return a ``byteIndex``.
+For speed of indexing with their result values, :proc:`~String.string.find()`
+and :proc:`~String.string.rfind()` return a ``byteIndex``.
 
 .. note::
 
@@ -143,7 +143,7 @@ Using the ``byteIndex`` and ``codepointIndex`` types
 A value of type ``byteIndex`` or ``codepointIndex`` can be passed to certain
 *string* functions to indicate that the function should operate with units of
 bytes or codepoints. Passing a ``codepointIndex`` has the same behavior as
-passing an integral type. See ``string.this`` for an example.
+passing an integral type. See :proc:`~String.string.this` for an example.
 
 Both of these types can be created from an ``int`` via assignment or cast. They
 also support addition and subtraction with ``int``. Finally, values of same
