@@ -32,6 +32,6 @@ static const char* BUILD_VERSION =
 // Flip this to 'true' when we're ready to roll out a release; then
 // back after branching
 //
-static bool officialRelease = false;
+static bool officialRelease = true;
 
 #endif
