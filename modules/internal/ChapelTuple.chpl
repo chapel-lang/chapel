@@ -25,9 +25,9 @@ This page lists the predefined functions on tuples.
 They are always available to all Chapel programs.
 
 The tuple type supports a wide variety of operators, some of which can only
-be invoked on a single tuple (unary operators), while others that can be
-invoked on pairs of compatible tuples or on a tuple and a non-tuple variable
-of compatible type (binary operators).
+be invoked on a single tuple (unary operators), while others can be invoked
+on pairs of compatible tuples or on a tuple and a non-tuple variable of
+compatible type (binary operators).
 
 The unary operators include the logical not: ``!``, the bitwise logical not:
 ``~`` as well as the numerical operators: ``+`` and ``-``. In these cases,
@@ -49,8 +49,9 @@ and the mathematical operators: ``+``, ``-``, ``*``, ``/``, ``**``, and ``%``.
 
 .. note:
   The logical comparison operators can be applied to tuples of different
-  types. In these cases, the tuples are not equal; however ordering-comparisons
-  between tuples of different types are not allowed.
+  types. In these cases, the tuples are simply considered to be non-equal;
+  however ordering-comparisons between tuples of different types are not
+  allowed.
 
 The bitwise and mathematical operators can be applied to tuples of the same
 length and compatible types. In these cases, the operator is applied to
@@ -64,7 +65,7 @@ For example:
 
   writeln(t1 + t2); // prints: (4.0, 6.0)
 
-Bitwise or mathematical operations between a tuple and a variable of compatible
+Bitwise and mathematical operations between a tuple and a variable of compatible
 type are also allowed. For example:
 
 .. code-block:: chapel
