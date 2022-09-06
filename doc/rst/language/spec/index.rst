@@ -46,6 +46,7 @@ Composite Types
 
    tuples
    bytes
+   strings
    classes
    records
    unions

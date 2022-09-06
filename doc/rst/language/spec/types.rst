@@ -272,7 +272,7 @@ The String Type
 
 Strings are a primitive type designated by the symbol ``string``
 comprised of Unicode characters in UTF-8 encoding. Their length is
-unbounded.
+unbounded. Strings are defined in :ref:`Chapter-Strings`.
 
 .. _The_Bytes_Type:
 
