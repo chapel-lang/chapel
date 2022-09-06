@@ -24,62 +24,6 @@ in the Tuples chapter of the Chapel Language Specification.
 This page lists the predefined functions on tuples.
 They are always available to all Chapel programs.
 
-The tuple type supports a wide variety of operators, some of which can only
-be invoked on a single tuple (unary operators), while others can be invoked
-on pairs of compatible tuples or on a tuple and a non-tuple variable of
-compatible type (binary operators).
-
-The unary operators include the logical not: ``!``, the bitwise logical not:
-``~`` as well as the numerical operators: ``+`` and ``-``. In these cases,
-the operator is applied to each individual element of the tuple, producing a
-new tuple of the same type. For example:
-
-.. code-block:: chapel
-
-  var t = (-1, 5, -3.14, 99.9);
-  var tNegative = -t;
-
-  writeln(tNegative); // prints: (1, -5, 3.14, -99.9)
-  writeln(t.type == tNegative.type); // prints: true
-
-The binary operators include the logical comparison operators: ``==`` and
-``!=``, the ordering comparison operators: ``<``, ``>``, ``<=``, and ``>=``,
-the bitwise logical operators: ``&``, ``|``, ``~``, ``^``, ``<<``, ``>>``,
-and the mathematical operators: ``+``, ``-``, ``*``, ``/``, ``**``, and ``%``.
-
-.. note:
-  The logical comparison operators can be applied to tuples of different
-  types. In these cases, the tuples are simply considered to be non-equal;
-  however ordering-comparisons between tuples of different types are not
-  allowed.
-
-The bitwise and mathematical operators can be applied to tuples of the same
-length and compatible types. In these cases, the operator is applied to
-individual pairs of elements using the languages definition of that operator.
-For example:
-
-.. code-block:: chapel
-
-  var t1 = (1, 2.0);
-  var t2 = (3.0, 4);
-
-  writeln(t1 + t2); // prints: (4.0, 6.0)
-
-Bitwise and mathematical operations between a tuple and a variable of compatible
-type are also allowed. For example:
-
-.. code-block:: chapel
-
-  var t = (1, 2.0, 3.0i);
-
-  writeln(t + 1); // prints: (2, 3.0, 4.0i)
-
-
-In addition to the functions and operators, tuples also support a wide variety
-of special functionality such as: :ref:`Iteration <Iteration_over_Tuples>`,
-:ref:`Destructuring <Tuple_Destructuring>`, and
-:ref:`Expansion <Tuple_Expansion>`.
-
 The following methods are defined on the Tuple type:
 
 .. function:: proc tuple.size param
