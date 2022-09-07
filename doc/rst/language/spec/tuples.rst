@@ -1212,4 +1212,5 @@ Predefined Functions and Methods on Tuples
    Returns true if ``t`` is a tuple of types; otherwise false.
 
 
+
 .. include:: /builtins/ChapelTuple.rst

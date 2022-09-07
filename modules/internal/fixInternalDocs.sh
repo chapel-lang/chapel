@@ -130,7 +130,7 @@ function removeUsage() {
 
 ## ChapelTuple ##
 
-file=ChapelTuple.rst
+file="./ChapelTuple.rst"
 removePrefixFunctions $file
 removePattern "param size" $file
 removePattern "record:: _tuple" $file
