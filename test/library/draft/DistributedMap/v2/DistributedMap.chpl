@@ -22,6 +22,7 @@
 module DistributedMap {
   private use Map;
   private use ChapelHashtable;
+  private use HaltWrappers;
   private use CyclicDist;
   private use IO;
 
@@ -252,7 +253,7 @@ module DistributedMap {
 
     // TODO: proc this overloads?
 
-    // TODO: getBorrowed? getAndRemove?
+    // TODO: getBorrowed?
 
     /* Get a copy of the element stored at position `k`.
 
@@ -297,6 +298,58 @@ module DistributedMap {
           result = tables[loc].table[slot].val: valType;
         }
       }
+      return result;
+    }
+
+    /* Remove the element at position `k` from the map and return its value
+     */
+    proc getAndRemove(k: keyType): valType {
+      var loc: int = this.getLocaleForKey(k);
+
+      var result: valType;
+
+      on loc {
+        locks[loc].lock();
+
+        var (found, slot) = tables[loc].findFullSlot(k);
+
+        if !found then
+          boundsCheckHalt("map index " + k:string + " out of bounds");
+
+        try! {
+          var key: keyType;
+          tables[loc].clearSlot(slot, key, result);
+          tables[loc].maybeShrinkAfterRemove();
+        }
+
+        locks[loc].unlock();
+      }
+
+      return result;
+    }
+
+    // WARNING: This method is unlocked and for performance purposes.  It should
+    // only be used when you know you control the accesses to the map and will
+    // be managing race conditions yourself
+    pragma "no doc"
+    proc getAndRemoveUnlocked(k: keyType): valType {
+      var loc: int = this.getLocaleForKey(k);
+
+      var result: valType;
+
+      on loc {
+        var (found, slot) = tables[loc].findFullSlot(k);
+
+        if !found then
+          boundsCheckHalt("map index " + k:string + " out of bounds");
+
+        try! {
+          var key: keyType;
+          tables[loc].clearSlot(slot, key, result);
+          tables[loc].maybeShrinkAfterRemove();
+        }
+      }
+
       return result;
     }
 
