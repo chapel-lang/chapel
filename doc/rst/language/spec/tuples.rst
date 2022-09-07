@@ -1201,7 +1201,7 @@ Predefined Functions and Methods on Tuples
 
 
 
-.. function:: proc isTuple(type: t) param
+.. function:: proc isTuple(type t) param
 
    Returns true if ``t`` is a tuple; otherwise false.
 
