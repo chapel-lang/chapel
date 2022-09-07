@@ -91,12 +91,10 @@ int and the other is uint:
 
 Previous to 1.28, this program would call the ``int(8)`` version of the
 function. It can do that because the compiler knows that the ``param``
-value ``42`` will fit into an ``int(8)``. However, in 1.28, this function
-now calls the ``uint(64)`` version of the function. The reason for this
-is that the 1.28 rules for conversion to another numeric type are simpler
--- they now only consider the numeric kind and then the numeric width;
-where before they had many individual rules for different situations.
-
+value ``42`` will fit into an ``int(8)``. Such a conversion is called a
+``param`` narrowing conversion. However, in 1.28, this function now calls
+the ``uint(64)`` version of the function. The main reason for this is
+that the 1.28 rules prefer to not do ``param`` narrowing conversion.
 
 Change for function visibility / shadowing
 ******************************************
