@@ -26,7 +26,7 @@ record R3 {
   var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
     fo = owned.create(a);
-    fs = b: shared.create(b);
+    fs = shared.create(b);
   }
 }
 
