@@ -214,10 +214,14 @@ Error Messages / Semantic Checks
 --------------------------------
 * added an error when attempting to define methods on values rather than types  
   (e.g., `var r: R;  proc r.foo() ...` now generates an error as it should've)
+* added an error when fields with runtime types cannot be default-initialized
 
 Bug Fixes
 ---------
 * fixed a bug causing compilation errors for arrays of `sortedSet`s
+* fixed a bug with generic aggregate default initialization and runtime types
+* fixed a bug when incorrectly applying parentheses to a paren-less routine
+* fixed a bug when defining a lambda within a generic function
 
 Bug Fixes for Build Issues
 --------------------------
@@ -276,9 +280,11 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* removed support for the old, pre-dyno parser
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+* migrated many semantic checks from the production parser to 'dyno'
 * made numerous improvements to 'dyno's scope resolution capabilities
   - added support for task intents and reduce intents
   - added support for try-catch statements
@@ -9987,7 +9993,7 @@ Environment Changes
 Syntactic/Naming Changes
 ------------------------
 - renamed the range's index type from 'eltType' to 'idxType'
-- made string length a parenthesis-less method rather than a standalone function
+- made string length a parentheses-less method rather than a standalone function
   (i.e., 'length(mystring)' should now be written 'mystring.length')
 
 Semantic Changes/Changes to Chapel Language
@@ -11097,7 +11103,7 @@ Syntactic/Naming Changes
 - added support for a single-statement serial statement
   e.g., "serial test { foo(); }"  =>  "serial test do foo();"
 - removed "opaque" from the list of reserved words--it is now a type like "int"
-- 'distributed' clauses no longer require parenthesis
+- 'distributed' clauses no longer require parentheses
 
 Compiler Changes
 ----------------
@@ -11521,7 +11527,7 @@ Semantic Changes
 ----------------
 - removed implicit coercions from integer types to real(32)
 - made queries of an array's domain via A.domain or A:[?D] constant
-- removed dynamic dispatch on method calls with no parenthesis
+- removed dynamic dispatch on method calls with no parentheses
 - user-defined constructors now squelch the creation of a default constructor
 - redefined range and domain slicing to use intersection semantics
 - changed location of instantiated generics to be their definition point
@@ -11759,7 +11765,7 @@ Syntactic/Naming Changes
 - removed support for "--" as a single-line comment style;  use "//"
 - an array's domain should now be accessed via A.domain rather than A.dom
 - array element type identifier changed from elt_type to eltType
-- made file open/close methods take parenthesis
+- made file open/close methods take parentheses
 - renamed "indefinite domains/arrays" to "associative domains/arrays"
 
 Semantic Changes
