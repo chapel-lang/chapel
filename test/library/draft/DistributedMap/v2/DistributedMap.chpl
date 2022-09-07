@@ -251,7 +251,57 @@ module DistributedMap {
     }
 
     // TODO: proc this overloads?
-    // TODO: getBorrowed? getValue (throws Map.KeyNotFoundError)? getAndRemove?
+
+    // TODO: getBorrowed? getAndRemove?
+
+    /* Get a copy of the element stored at position `k`.
+
+      :arg k: The key to lookup in the map
+
+      :throws: `KeyNotFoundError` if `k` not in map
+
+      :returns: A copy of the value at position `k`
+     */
+    proc getValue(k: keyType) const throws {
+      var loc: int = this.getLocaleForKey(k);
+
+      var result: valType;
+
+      on loc {
+        locks[loc].lock();
+
+        var (found, slot) = tables[loc].findFullSlot(k);
+        if !found then
+          throw new KeyNotFoundError(k: string);
+        try! {
+          result = tables[loc].table[slot].val: valType;
+        }
+
+        locks[loc].unlock();
+      }
+      return result;
+    }
+
+    // WARNING: This method is unlocked and for performance purposes.  It should
+    // only be used when you know you control the accesses to the map and will
+    // be managing race conditions yourself
+    pragma "no doc"
+    proc getValueUnlocked(k: keyType) const throws {
+      var loc: int = this.getLocaleForKey(k);
+
+      var result: valType;
+
+      on loc {
+        var (found, slot) = tables[loc].findFullSlot(k);
+        if !found then
+          throw new KeyNotFoundError(k: string);
+        try! {
+          result = tables[loc].table[slot].val: valType;
+        }
+      }
+      return result;
+    }
+
     // TODO: these?
 
     // NOTE: doesn't return a `const ref` like its counterpart on serial maps,
