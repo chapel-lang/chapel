@@ -20,6 +20,13 @@
 
 /* Functions for producing program help and usage.
 
+   .. note::
+
+    You must declare your main method to take an array of string arguments in
+    order to use the Help module. See the examples below or the technote about
+    :ref:`getting arguments from main()<technote-mainWithArgs>` for more
+    information on this feature.
+
    Chapel programs can declare main to take arguments like this:
 
    .. code-block:: chapel
@@ -30,9 +37,6 @@
          writeln("Got argument ", a);
        }
      }
-
-   See :ref:`doc/rst/technotes/main.rst <readme-main>` in a Chapel release for
-   more information on this feature.
 
    Programs that use this feature might need to expand upon the usage message
    that explains which config variables are available. To do so, this module
