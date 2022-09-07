@@ -287,7 +287,7 @@ if there was an error. See:
 In addition, there is a convenient synonym for :proc:`channel.write` and
 :proc:`channel.read`: the `<~> operator`
 
-.. note:: the <~> operator is deprecated
+.. warning:: the <~> operator is deprecated
 
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 :proc:`channel.flush()` method. Flushing the buffer will make all writes available
@@ -3857,6 +3857,13 @@ proc channel.writeIt(const x) throws {
      on the type of channel. This operator returns a const reference to the
      same channel so that multiple operator calls can be chained together.
 
+     .. warning:: The <~> operator on channels is deprecated. The intended
+       alternative is to use methods like :proc:`channel.read` and
+       :proc:`channel.write` instead.
+
+       The chaining functionality supported by this operator is not provided by
+       other methods.
+
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
@@ -3890,6 +3897,13 @@ proc channel.writeIt(const x) throws {
 
      works without requiring an explicit temporary value to store
      the ioLiteral.
+
+     .. warning:: The <~> operator on channels is deprecated. The intended
+       alternative is to use methods like :proc:`channel.readLiteral` and
+       :proc:`channel.writeLiteral` instead.
+
+       The chaining functionality supported by this operator is not provided by
+       other methods.
    */
   deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
@@ -3909,6 +3923,13 @@ proc channel.writeIt(const x) throws {
 
      works without requiring an explicit temporary value to store
      the ioNewline.
+
+     .. warning:: The <~> operator on channels is deprecated. The intended
+       alternative is to use methods like :proc:`channel.readNewline` and
+       :proc:`channel.writeNewline` instead.
+
+       The chaining functionality supported by this operator is not provided by
+       other methods.
    */
   deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
