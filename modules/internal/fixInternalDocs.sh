@@ -134,7 +134,7 @@ file=ChapelTuple.rst
 removePrefixFunctions $file
 removePattern "param size" $file
 removePattern "record:: _tuple" $file
-fixTitle "Tuples" $file
+removeTitle $file
 removeUsage $file
 
 ## End ChapelTuple ##

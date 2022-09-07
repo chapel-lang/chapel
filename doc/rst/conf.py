@@ -119,7 +119,8 @@ exclude_patterns = ['Makefile',
                     'builtins/ChapelDomain.rst',
                     'builtins/ChapelLocale.rst',
                     'builtins/ChapelRange.rst',
-                    'builtins/String.rst'
+                    'builtins/ChapelTuple',
+                    'builtins/String.rst',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all
