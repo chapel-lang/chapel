@@ -803,12 +803,14 @@ module ChapelArray {
     }
   }  // record _distribution
 
+  pragma "no doc"
   inline operator ==(d1: _distribution(?), d2: _distribution(?)) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
+  pragma "no doc"
   inline operator !=(d1: _distribution(?), d2: _distribution(?)) {
     return !(d1 == d2);
   }
@@ -1932,16 +1934,19 @@ module ChapelArray {
     return stringify(x);
   }
 
+  pragma "no doc"
   pragma "fn returns aliasing array"
   operator #(arr: [], counts: integral) {
     return arr[arr.domain#counts];
   }
 
+  pragma "no doc"
   pragma "fn returns aliasing array"
   operator #(arr: [], counts: _tuple) {
     return arr[arr.domain#counts];
   }
 
+  pragma "no doc"
   pragma "last resort"
   operator #(arr: [], counts) {
     compilerError("cannot apply '#' to '", arr.type:string,
@@ -2032,6 +2037,7 @@ module ChapelArray {
   //
   // Assignment of distributions and arrays
   //
+  pragma "no doc"
   operator =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
       __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
@@ -2139,6 +2145,7 @@ module ChapelArray {
     }
   }
 
+  pragma "no doc"
   pragma "find user line"
   inline operator =(ref a: [], b:[]) {
     if a.rank != b.rank then
@@ -2516,6 +2523,7 @@ module ChapelArray {
       aa = b;
   }
 
+  pragma "no doc"
   inline operator =(ref a: [], b:domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
@@ -2524,6 +2532,7 @@ module ChapelArray {
     chpl__transferArray(a, b);
   }
 
+  pragma "no doc"
   inline operator =(a: [], b: range(?)) {
     if a.rank == 1 then
       chpl__transferArray(a, b);
@@ -2531,6 +2540,7 @@ module ChapelArray {
       compilerError("cannot assign from ranges to multidimensional arrays");
   }
 
+  pragma "no doc"
   inline operator =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
     chpl__transferArray(a, b);
   }
@@ -2587,6 +2597,7 @@ module ChapelArray {
     helpInitArrFromTuple(j, a.rank, a, b, kind);
   }
 
+  pragma "no doc"
   operator =(ref a: [], b: _tuple) where a.isRectangular() {
     initArrFromTuple(a, b, _tElt.assign);
   }
@@ -2627,6 +2638,7 @@ module ChapelArray {
     return _desync(eltType);
   }
 
+  pragma "no doc"
   operator =(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e = b;
@@ -2635,56 +2647,67 @@ module ChapelArray {
   //
   // op= overloads for array/scalar pairs
   //
+  pragma "no doc"
   operator +=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e += b;
   }
 
+  pragma "no doc"
   operator -=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e -= b;
   }
 
+  pragma "no doc"
   operator *=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e *= b;
   }
 
+  pragma "no doc"
   operator /=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e /= b;
   }
 
+  pragma "no doc"
   operator %=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e %= b;
   }
 
+  pragma "no doc"
   operator **=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e **= b;
   }
 
+  pragma "no doc"
   operator &=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e &= b;
   }
 
+  pragma "no doc"
   operator |=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e |= b;
   }
 
+  pragma "no doc"
   operator ^=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e ^= b;
   }
 
+  pragma "no doc"
   operator >>=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e >>= b;
   }
 
+  pragma "no doc"
   operator <<=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e <<= b;
@@ -2693,6 +2716,7 @@ module ChapelArray {
   //
   // Swap operator for arrays
   //
+  pragma "no doc"
   inline operator <=>(x: [?xD], y: [?yD]) {
     if x.rank != y.rank then
       compilerError("rank mismatch in array swap");
