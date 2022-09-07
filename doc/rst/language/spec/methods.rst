@@ -456,9 +456,9 @@ Methods without parentheses
 
 Similarly to :ref:`Functions_without_Parentheses`, it is possible to
 create methods that do not have parentheses. Such methods look similar to
-field access when they are called. As a result, methods without
-parentheses can be used when a field is removed or renamed to provide the
-same interface that the field accessor did.
+field access when they are called. As a result, a method without
+parentheses can be used to replace a field that was removed or renamed
+while providing the same interface as the field accessor.
 
    *Example (parenlessMethod.chpl)*.
 

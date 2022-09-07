@@ -475,7 +475,7 @@ For example:
 For type methods on a class, ``this`` will accept any management or
 nilability variant of the class type and it will refer to that type in
 the body of the method. In other words, ``this`` will be instantiated to
-match the type of the receiver at the call site. For example:
+match the receiver at the call site. For example:
 
    *Example (class-type-method-this.chpl)*.
 
