@@ -287,7 +287,7 @@ if there was an error. See:
 In addition, there is a convenient synonym for :proc:`channel.write` and
 :proc:`channel.read`: the `<~> operator`
 
-.. note:: the <~> operator is deprecated
+.. warning:: the <~> operator is deprecated
 
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 :proc:`channel.flush()` method. Flushing the buffer will make all writes available
