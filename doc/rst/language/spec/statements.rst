@@ -267,6 +267,10 @@ the right-hand-side; or reading from the left-hand-side and storing the
 result in the variable on the right-hand-side. This operator can be
 chained with other I/O operator calls.
 
+.. warning::
+
+   The I/O operator is deprecated.
+
 The I/O operator can be overloaded for different types using operator
 overloading (:ref:`Function_Overloading`). 
 
