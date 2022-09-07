@@ -13,13 +13,13 @@ proc main() {
   // list of confirmed primes
   var primes : list(uint);
   // range of potential prime numbers
-  var potentialPrimes = 2..limit;
+  const sieveRange = 2..limit;
   // flags for known composite (sieved out) numbers
-  var knownComposite : [potentialPrimes] bool = false;
+  var knownComposite : [sieveRange] bool = false;
 
   // repeatedly add the first potential prime to our primes list, then exclude
   // all following multiples
-  for potentialPrime in potentialPrimes {
+  for potentialPrime in sieveRange {
     if (!knownComposite[potentialPrime]) {
       primes.append(potentialPrime);
       for i in potentialPrime*2..limit by potentialPrime {
