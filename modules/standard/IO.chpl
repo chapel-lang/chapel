@@ -3861,9 +3861,8 @@ proc channel.writeIt(const x) throws {
        alternative is to use methods like :proc:`channel.read` and
        :proc:`channel.write` instead.
 
-       Methods that provide both reading and writing functionality will soon be
-       deprecated. The chaining functionality supported by this operator is not
-       provided by other methods.
+       The chaining functionality supported by this operator is not provided by
+       other methods.
 
      :returns: ch
      :throws SystemError: When an IO error has occurred.
@@ -3903,9 +3902,8 @@ proc channel.writeIt(const x) throws {
        alternative is to use methods like :proc:`channel.readLiteral` and
        :proc:`channel.writeLiteral` instead.
 
-       Methods that provide both reading and writing functionality will soon be
-       deprecated. The chaining functionality supported by this operator is not
-       provided by other methods.
+       The chaining functionality supported by this operator is not provided by
+       other methods.
    */
   deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
@@ -3930,9 +3928,8 @@ proc channel.writeIt(const x) throws {
        alternative is to use methods like :proc:`channel.readNewline` and
        :proc:`channel.writeNewline` instead.
 
-       Methods that provide both reading and writing functionality will soon be
-       deprecated. The chaining functionality supported by this operator is not
-       provided by other methods.
+       The chaining functionality supported by this operator is not provided by
+       other methods.
    */
   deprecated "the <~> operator is deprecated"
   inline operator channel.<~>(const ref r: channel,
