@@ -36,6 +36,8 @@ struct Resolver {
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const TypedFnSignature* typedSignature = nullptr;
   const PoiScope* poiScope = nullptr;
+  const uast::Decl* ignoreSubstitutionFor = nullptr;
+  bool skipTypeQueries = false;
 
   // internal variables
   std::vector<const uast::Decl*> declStack;

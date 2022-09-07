@@ -788,7 +788,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       }
     }
 
-    if (typeExpr && !foundSubstitution) {
+    if (typeExpr && (!foundSubstitution || ignoreSubstitutionFor == decl)) {
       // get the type we should have already computed postorder
       ResolvedExpression& r = byPostorder.byAst(typeExpr);
       typeExprT = r.type();
@@ -818,7 +818,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // use type from argument to resolveNamedDecl
       typeExprT = QualifiedType(QualifiedType::TYPE, useType);
       typePtr = typeExprT.type();
-    } else if (foundSubstitution) {
+    } else if (foundSubstitution && ignoreSubstitutionFor != decl) {
       // if we are working with a substitution, just use that
       // without doing lots of kinds checking
       typePtr = typeExprT.type();
@@ -1546,6 +1546,10 @@ void Resolver::exit(const Identifier* ident) {
 }
 
 bool Resolver::enter(const TypeQuery* tq) {
+  if (skipTypeQueries) {
+    return false;
+  }
+
   // Consider 'proc f(arg:?t)'
   //   * if there is no substitution for 'arg', 't' should be AnyType
   //   * if there is a substitution for 'arg', 't' should be computed from it
@@ -1587,16 +1591,10 @@ bool Resolver::enter(const TypeQuery* tq) {
                                    AnyType::get(context)));
     }
   } else {
-
-    if (result.type().kind() != QualifiedType::UNKNOWN &&
-        result.type().type() != nullptr) {
-      // Looks like we already computed it, so do nothing else
-    } else {
-      // Found a substitution after instantiating, so gather the components
-      // of the type. We do this in a way that handles all TypeQuery
-      // nodes within the Formal uAST node.
-      resolveTypeQueriesFromFormalType(formal, foundFormalType);
-    }
+    // Found a substitution after instantiating, so gather the components
+    // of the type. We do this in a way that handles all TypeQuery
+    // nodes within the Formal uAST node.
+    resolveTypeQueriesFromFormalType(formal, foundFormalType);
   }
 
   return false;
