@@ -268,7 +268,7 @@ module DistributedMap {
       var result: valType;
 
       on loc {
-        locks[loc].lock();
+        locks[loc].lock(); defer locks[loc].unlock();
 
         var (found, slot) = tables[loc].findFullSlot(k);
         if !found then
@@ -276,8 +276,6 @@ module DistributedMap {
         try! {
           result = tables[loc].table[slot].val: valType;
         }
-
-        locks[loc].unlock();
       }
       return result;
     }
