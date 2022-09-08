@@ -231,7 +231,7 @@ removeUsage $file
 
 ## OwnedObject ##
 file=OwnedObject.rst
-fixTitle "owned" $file
+removeTitle $file
 replace "_owned" "owned" $file
 replace "chpl_t" "t" $file
 removeUsage $file

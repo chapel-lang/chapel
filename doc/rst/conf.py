@@ -120,6 +120,7 @@ exclude_patterns = ['Makefile',
                     'builtins/ChapelLocale.rst',
                     'builtins/ChapelRange.rst',
                     'builtins/ChapelTuple.rst',
+                    'builtins/OwnedObject.rst',
                     'builtins/String.rst'
                    ]
 
