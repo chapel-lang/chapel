@@ -204,7 +204,7 @@ Compilation-Time / Generated Code Improvements
 Memory Improvements
 -------------------
 * improved memory requirements of 'IO' channel buffers for large reads/writes
-* addressed memory leaks in the 'TOML' module by switching to `shared` objects
+* addressed a memory leak in the 'TOML' module by switching to `shared` objects
 
 Documentation
 -------------
@@ -366,35 +366,34 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
-* migrated many semantic checks from the production parser to 'dyno'
-* migrated implicit module warnings to 'dyno'
+* improved 'dyno's uAST representation
+  - added `uast::ReduceIntent` for some cases that were `uast::Reduce`
+  - added escaping for IDs that come from filenames
 * made numerous improvements to 'dyno's scope resolution capabilities
   - added support for `this.` and `super.` in `use`/`import` statements
   - added support for `include` statements
   - added support for task intents and reduce intents
-  - added support for try-catch statements
-* added conversions from uAST to resolved `SymExpr`s in the production compiler
+  - added support for `try`-`catch` statements
+  - fixed problems when using `-M`/`--module-dir`
 * made numerous improvements to 'dyno's type/call resolution capabilities
   - added support for resolving enums, conditional expressions, and ranges
-  - added support for loop index variables and param for-loops
-  - added support for varargs argument lists
+  - added support for resolving loop index variables and param for-loops
+  - added support for resolving varargs argument lists
   - added support for evaluating `==` and `!=` on types
-  - added support for type unification on routines with multiple `return`s
-  - added support for resolving declarations with both a type and initializer
-  - added ability to reject less valid calls
-  - improved resolution's ability to reject more invalid calls
-  - enabled reasoning about return types in the context of `param` conditionals
-  - improved support for evaluating `param` expressions  
+  - improved support for evaluating `param` conditionals and expressions
     (e.g., `1+1` is now resolved to be a `param` whose value is `2`)
-* improved detection of fully-defaulted generic records 
-* added `uast::ReduceIntent` for cases previously handled by `uast::Reduce`
-* added escaping for IDs that come from filenames
-* fixed problems compiling with `--dyno` and `-M`/`--module-dir`
-* fixed a segmentation fault when resolving `extern` routines
-* improved performance of the `--dyno` compilation stages using LLVM datatypes
-* began relying on LLVM capabilities for some file system utilities
-* added colorization and query depth labels to query trace output
-* limited `dyno` query trace output by query type
+  - significantly improved return type inference
+  - improved support for rejecting invalid overload candidates
+  - fixed problems when resolving declarations with both a type and initializer
+  - fixed several problems with generic records with defaults
+  - fixed a segmentation fault when resolving `extern` routines
+* improved integration with the production compiler
+  - can now convert from resolved uAST to production compiler `SymExpr`s
+  - migrated many semantic checks from the production parser to 'dyno'
+  - migrated file system capabilities to 'dyno' functions using LLVM libraries
+  - migrated implicit module warnings to 'dyno'
+* used LLVM data types to improve performance of parsing and scope resolution
+* improved the query trace output format and filtering capabilities
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
