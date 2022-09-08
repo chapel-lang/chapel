@@ -210,8 +210,8 @@ module ChapelSyncvar {
   }
 
   /*
-    1) Block until the sync variable is full.
-    2) Read the value of the sync variable and set the variable to empty.
+    1) Block until the ``sync`` variable is full.
+    2) Read the value of the ``sync`` variable and set the variable to empty.
 
     :returns: The value of the sync variable.
   */
@@ -220,8 +220,8 @@ module ChapelSyncvar {
   }
 
   /*
-    1) Block until the sync variable is full.
-    2) Read the value of the sync variable and leave the variable full
+    1) Block until the ``sync`` variable is full.
+    2) Read the value of the ``sync`` variable and leave it full.
 
     :returns: The value of the sync variable.
   */
@@ -230,11 +230,11 @@ module ChapelSyncvar {
   }
 
   /*
-    1) Read the value of the ``sync`` variable. For a full ``sync``, returns a
-       copy of the value stored. For an empty ``sync``, the implementation will
-       return either a new default-initialized value of the value type or the
-       last value stored.
-    2) Does not change the full/empty state
+    1) Read the value of the ``sync`` variable without blocking. For a full
+       ``sync``, returns a copy of the value stored. For an empty ``sync``,
+       the implementation will return either a new default-initialized value
+       of the value type or the last value stored.
+    2) Leave the full/empty state unchanged.
 
     :returns: The value of the sync variable.
   */
@@ -245,37 +245,38 @@ module ChapelSyncvar {
   }
 
   /*
-    1) Block until the sync variable is empty.
-    2) Write the value of the sync variable and leave the variable full
+    1) Block until the ``sync`` variable is empty.
+    2) Write the value of the ``sync`` variable and leave it full.
 
-    :arg val: New value of the sync variable.
+    :arg x: New value of the sync variable.
   */
   proc _syncvar.writeEF(in x : valType) {
     wrapped.writeEF(x);
   }
 
   /*
-    1) Block until the sync variable is full.
-    2) Write the value of the sync variable and leave the variable full
+    1) Block until the ``sync`` variable is full.
+    2) Write the value of the ``sync`` variable and leave it full.
 
-    :arg val: New value of the sync variable.
+    :arg x: New value of the sync variable.
   */
   proc _syncvar.writeFF(in x : valType) {
     wrapped.writeFF(x);
   }
 
   /*
-    1) Write the value of the sync variable and leave the variable full
+    1) Write the value of the ``sync`` variable without blocking.
+    2) Set the state to full.
 
-    :arg val: New value of the sync variable.
+    :arg x: New value of the sync variable.
   */
   proc _syncvar.writeXF(in x : valType) {
     wrapped.writeXF(x);
   }
 
   /*
-    Resets the value of this sync variable to the default value of
-    its type. This method is non-blocking and the state of the sync
+    Resets the value of this ``sync`` variable to the default value of
+    its type. This method is non-blocking and the state of the ``sync``
     variable is set to empty when this method completes.
   */
   proc _syncvar.reset() {
@@ -283,10 +284,11 @@ module ChapelSyncvar {
   }
 
   /*
-     Determine if the sync variable is full without blocking.
-     Does not alter the state of the sync variable
+     Determine if the ``sync`` variable is full without blocking.
+     Does not alter the state of the sync variable.
 
      :returns: true if the state of the sync variable is full.
+     :return type: bool
   */
   proc _syncvar.isFull {
     return wrapped.isFull;
@@ -868,8 +870,8 @@ module ChapelSyncvar {
   }
 
   /*
-    1) Block until the single variable is full.
-    2) Read the value of the single variable and leave the variable full
+    1) Block until the ``single`` variable is full.
+    2) Read the value of the ``single`` variable and leave it full.
 
     :returns: The value of the single variable.
   */
@@ -879,14 +881,13 @@ module ChapelSyncvar {
 
   /*
 
-    1) Read the value of the ``single`` variable. For a full ``single``, returns
-       a copy of the value stored. For an empty ``single``, the implementation
-       will return either a new default-initialized value of the value type or
-       the last value stored.
+    1) Read the value of the ``single`` variable without blocking. For a full
+       ``single``, returns a copy of the value stored. For an empty ``single``,
+       the implementation will return either a new default-initialized value of
+       the value type or the last value stored.
+    2) Does not change the full/empty state.
 
-    2) Does not change the full/empty state
-
-    :returns: The value of the ``single`` variable.
+    :returns: The value of the single variable.
   */
   proc _singlevar.readXX() {
     // Yield to allow readXX in a loop to make progress
@@ -895,20 +896,21 @@ module ChapelSyncvar {
   }
 
   /*
-    1) Block until the single variable is empty.
-    2) Write the value of the single variable and leave the variable full
+    1) Block until the ``single`` variable is empty.
+    2) Write the value of the ``single`` variable and leave it full.
 
-    :arg val: New value of the single variable.
+    :arg x: New value of the single variable.
   */
   proc _singlevar.writeEF(in x : valType) {
     wrapped.writeEF(x);
   }
 
   /*
-     Determine if the single variable is full without blocking.
-     Does not alter the state of the single variable
+     Determine if the ``single`` variable is full without blocking.
+     Does not alter the state of the ``single`` variable.
 
      :returns: true if the state of the single variable is full.
+     :return-type: bool
   */
   proc _singlevar.isFull {
     return wrapped.isFull;

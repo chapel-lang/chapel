@@ -22,12 +22,14 @@ Chapel Documentation
    Hello World Variants <examples/index>
    Primers <primers/index>
    Language Specification <language/spec/index>
-   builtins/index
    modules/standard
    modules/packages
    modules/layoutdist
    mason-packages/index
    users-guide/index
+
+   builtins/OwnedObject.rst
+   builtins/SharedObject.rst
 
 .. toctree::
    :caption: Language History
