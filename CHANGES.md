@@ -31,6 +31,10 @@ Semantic Changes / Changes to the Chapel Language
 * updated `.low`/`.high` on strided ranges/domains to return aligned bounds  
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.range.low  
    and https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.range.high)
+* code following `return`, `throw`, or `halt()` is now ignored  
+  (see https://chapel-lang.org/docs/1.28/language/spec/procedures.html#the-return-statement,  
+   https://chapel-lang.org/docs/1.28/language/spec/error-handling.html#throwing-errors,  
+   and https://chapel-lang.org/docs/1.28/modules/standard/Errors.html#Errors.halt)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -60,6 +64,9 @@ Feature Improvements
 * updated the `by`/`#` operators on ranges/domains to accept any integral type  
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#by-operator  
    and https://chapel-lang.org/docs/1.28/language/spec/ranges.html#count-operator)
+* added support for task intents on `this`  
+  (see https://chapel-lang.org/docs/1.28/language/spec/data-parallelism.html#forall-intents  
+   and https://chapel-lang.org/docs/1.28/language/spec/task-parallelism-and-synchronization.html#task-intents)
 
 Namespace Changes
 -----------------
@@ -214,6 +221,8 @@ Error Messages / Semantic Checks
 --------------------------------
 * added an error when attempting to define methods on values rather than types  
   (e.g., `var r: R;  proc r.foo() ...` now generates an error as it should've)
+* added an error when using non-type expressions as formal argument types  
+  (e.g., `var x: int; proc foo(y: x) ...` now generates an error as intended)
 * added an error when fields with runtime types cannot be default-initialized
 
 Bug Fixes
