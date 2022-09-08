@@ -1051,6 +1051,9 @@ statement in a procedure of a ``void`` return type or in an iterator
 must not include an expression. A return statement of a variable
 procedure must contain an lvalue expression.
 
+The statements following a return statement in the same block
+are ignored by the compiler because they cannot be executed.
+
 The syntax of the return statement is given by 
 
 .. code-block:: syntax
