@@ -13,7 +13,6 @@ amenable to being documented using **chpldoc**:
    :maxdepth: 1
 
    OwnedObject
-   SharedObject
    ChapelSyncvar
 
 

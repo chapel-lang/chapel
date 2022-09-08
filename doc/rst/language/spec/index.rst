@@ -83,6 +83,7 @@ Additional Topics
    :maxdepth: 1
 
    memory-consistency-model
+   shared-objects
    interoperability
    user-defined-reductions-and-scans
 
