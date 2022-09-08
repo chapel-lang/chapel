@@ -18,9 +18,9 @@ version 1.28, September 2022
 ----------------------------
 
 Version 1.28 included some significant changes to the overload resolution
-rules. In addition, version 1.28 enables implicit conversion from
-``int(t)`` to ``uint(t)``. This section discusses some example programs
-that behave differently due to these changes.
+rules. In addition, it enabled implicit conversion from ``int(t)`` to
+``uint(t)``.  This section discusses some example programs that behave
+differently due to these changes.
 
 See also:
 
