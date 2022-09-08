@@ -19,11 +19,11 @@ For more information about what loops are eligible for GPU execution see the
 `Overview`_ section.  For more information about what is supported see the
 requirements and `Requirements and Limitations`_ section.  To see an example
 program written in Chapel that will execute on a GPU see the code listing in
-the `Example`_ section.  For more information about sepcific features related
+the `Example`_ section.  For more information about specific features related
 to GPU support see the subsections under `GPU Support Features`_.  Additional
 information about GPU Support can be found in the "Ongoing Efforts" slide decks
 of our `release notes <https://chapel-lang.org/releaseNotes.html>`_; however,
-be aware that information presented in releease notes for prior releases may be
+be aware that information presented in release notes for prior releases may be
 out-of-date.
 
 .. contents::
@@ -34,10 +34,10 @@ Overview
 To deploy code to a GPU, put the relevant code in an ``on`` statement targeting
 a GPU sublocale (i.e. ``here.gpus[0]``).
 
-Any arrays that are declared by tasks executing on a GPU sublocale will, when
-using the default memory strategy, be allocated into unified memory and will be
-accessible on the GPU (see the `Memory Strategies`_ subsection for more
-information about alternate memory strategies).
+Any arrays that are declared by tasks executing on a GPU sublocale will, by
+default, be allocated into unified memory and be accessible on the GPU (see the
+`Memory Strategies`_ subsection for more information about alternate memory
+strategies).
 
 Chapel will launch CUDA kernels for all eligible loops that are encountered by
 tasks executing on a GPU sublocale.  Loops are eligible when:
@@ -45,8 +45,7 @@ tasks executing on a GPU sublocale.  Loops are eligible when:
 * They are order-independent (e.g., ``forall`` or ``foreach``).
 * They only make use of known compiler primitives that are fast and local. Here
   "fast" means "safe to run in a signal handler" and "local" means "doesn't
-  cause any network communication". In practice, this means loops not containing
-  any non-inlined function calls.
+  cause any network communication".
 * They are free of any call to a function that fails to meet the above
   criteria, accesses outer variables, or are recursive.
 
@@ -115,9 +114,8 @@ Requirements and Limitations
 ----------------------------
 
 Because of the early nature of the GPU support project there are a number of
-limitations.  We intend to lift many of these limitations in future releases
-but the following list (while not exhaustive) identifies what we do not
-currently support:
+limitations. We provide a (non exhaustive) list of these limitations in this
+section; many of them will be addressed in upcoming editions.
 
 * We currently only target NVIDIA GPUs (although we intend to support AMD
   GPUs in a future release).
@@ -146,8 +144,11 @@ currently support:
 * The use of most ``extern`` functions within a GPU eligible loop is not supported
   (a limited set of functions used by Chapel's runtime library are supported). 
 
-   * Note that various functions with Chapel's standard module call out to such
-     functions and thus is, in turn, is not supported in such loops.
+   * Various functions within Chapel's standard modules call unsupported
+     ``extern`` functions and thus are not supported in GPU eligible loops.
+
+* Runtime checks such as bounds checks and nil-dereference checks are
+  automatically disabled for CHPL_LOCALE_MODEL=gpu.
 
 * For loops to be considered eligible for execution on a GPU they
   must fulfill the requirements discussed in the `Overview`_ section.
@@ -155,8 +156,8 @@ currently support:
 GPU Support Features
 --------------------
 
-In the following subsections we discuss particular features or aspects of
-GPU supports that may be of interest.
+In the following subsections we discuss various features or aspects of
+GPU supports that are relatively new or otherwise noteworthy.
 
 Diagnostics and Utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -176,12 +177,14 @@ the code with calls to :proc:`~GPUDiagnostics.startVerboseGPU` and
 :proc:`~GPUDiagnostics.stopVerboseGPU`. This output will directed to
 ``stdout``.
 
-The ``GPU`` module contains additional utility functions. One particularly
-useful function is ``GPU.assertOnGpu()``.  This function will conduct a runtime
-assertion that will halt execution when not being performed on a GPU.  If
-:proc:``GPU.assertOnGpu()`` appears as the first line of ``forall`` or
+The :mod:`GPU` module contains additional utility functions. One particularly
+useful function is :proc:`~GPU.assertOnGpu()`.  This function will conduct a
+runtime assertion that will halt execution when not being performed on a GPU.
+If :proc:`~GPU.assertOnGpu()` appears as the first line of ``forall`` or
 ``foreach`` loop the Chapel compiler will do a compile-time check and produce
-an error if one of the aforementioned requirements is not met.
+an error if one of the aforementioned requirements is not met.  This check
+might also occur if :proc:`~GPU.assertOnGpu()` is placed elsewhere in the loop
+depending on the presence of control flow.
 
 Multi-Locale Support
 ~~~~~~~~~~~~~~~~~~~~
@@ -220,7 +223,7 @@ GPU as necessary.
 We provide an alternate memory allocation strategy that stores array data
 directly on the device and store other data on the host.  There are multiple
 benefits to using this strategy including that it enables users to have more
-explicit control over memory management, may be required for Chapel's to
+explicit control over memory management, may be required for Chapel to
 interoperate with various third-party communication libraries, and may be
 necessary to achieve good performance. As such it may become the default memory
 strategy we use in the future. Be aware though that because this strategy is
