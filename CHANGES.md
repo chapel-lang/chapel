@@ -215,6 +215,12 @@ Documentation
   (see https://chapel-lang.org/docs/1.28/usingchapel/prereqs.html#installation)
 * updated the 'Chapel Prerequisites' document to show uses of `LLVM_VERSION`  
   (see https://chapel-lang.org/docs/1.28/usingchapel/prereqs.html)
+* migrated bytes/string/tuple 'built-in types and functions' content into spec  
+  (see https://chapel-lang.org/docs/1.28/language/spec/bytes.html#bytes-methods,  
+   https://chapel-lang.org/docs/1.28/language/spec/strings.html#string-methods,  
+   and https://chapel-lang.org/docs/1.28/language/spec/tuples.html#predefined-functions-and-methods-on-tuples)
+   https://chapel-lang.org/docs/1.28/language/spec/strings.html,
+   and https://chapel-lang.org/docs/1.28/language/spec/tuples.html)
 * refreshed the `range` API documentation in the language specification  
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#range-type-queries)
 * refreshed the `locale` documentation to reflect stabilization improvements  
@@ -575,6 +581,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.27/tools/mason/mason.html#using-a-mason-package)
 * updated the installation instructions for `mason`  
   (see https://chapel-lang.org/docs/1.27/tools/mason/mason.html#installation-instructions)
+* merged 'built-in types and functions' docs for ranges into the language spec  
+  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#predefined-routines-on-ranges)
 * clarified integer overflow in the language specification  
   (see https://chapel-lang.org/docs/1.27/language/spec/types.html#signed-and-unsigned-integral-types  
    and https://chapel-lang.org/docs/1.27/language/spec/ranges.html#iterating-over-ranges)
