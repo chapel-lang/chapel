@@ -40,10 +40,10 @@ module GPU
      This function is intended to be called from within a GPU kernel and is
      useful for debugging purposes.
 
-     Currently using :proc:`ChapelIO.write` to send output to ``stdout`` will
+     Currently using :proc:`~ChapelIO.write` to send output to ``stdout`` will
      make a loop ineligible for GPU execution; use :proc:`gpuWrite` instead.
 
-     Currently this function will only work if values of type c_string are
+     Currently this function will only work if values of type ``c_string`` are
      passed.
 
      On NVIDIA GPUs the written values will be flushed to the terminal after
