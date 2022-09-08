@@ -1,11 +1,13 @@
 Release Changes List
 ====================
 
-TODO
+TODO:
+o remove TODOs
 o missing contributions from interns (or others?)
 o any missing cross-references?
 o new compiler flags (and developer compiler flags)
 o examples directory
+o man page / compiler flags
 o spellecheck
 o `` vs. ''
 o docs/1.28/...
@@ -350,6 +352,7 @@ Developer-oriented changes: Compiler Flags
 * updated `--dyno` to activate the 'dyno' scope resolver
 * added `--warn-int-uint` to warn about implicit `int` to `uint` conversions
 * added `--report-gpu-transform-time` to measure time for GPU transformations
+* added `--library-cmakelists` to generate `cmake` files for a Chapel library
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
