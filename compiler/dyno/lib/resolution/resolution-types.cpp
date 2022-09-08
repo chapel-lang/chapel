@@ -506,6 +506,7 @@ void CallInfo::stringify(std::ostream& ss,
   }
   if (stringKind != StringifyKind::CHPL_SYNTAX) {
     ss << " isMethodCall=" << isMethodCall_;
+    ss << " isOpCall=" << isOpCall_;
     ss << " hasQuestionArg=" << hasQuestionArg_;
     ss << " ";
   }

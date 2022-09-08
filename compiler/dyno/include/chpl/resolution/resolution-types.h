@@ -345,6 +345,7 @@ class CallInfo {
   UniqueString name_;                   // the name of the called thing
   types::QualifiedType calledType_;     // the type of the called thing
   bool isMethodCall_ = false;           // then actuals[0] is receiver
+  bool isOpCall_ = false;               // is an operator call
   bool hasQuestionArg_ = false;         // includes ? arg for type constructor
   bool isParenless_ = false;            // is a parenless call
   std::vector<CallInfoActual> actuals_; // types/params/names of actuals
@@ -355,11 +356,13 @@ class CallInfo {
   /** Construct a CallInfo that contains QualifiedTypes for actuals */
   CallInfo(UniqueString name, types::QualifiedType calledType,
            bool isMethodCall,
+           bool isOpCall,
            bool hasQuestionArg,
            bool isParenless,
            std::vector<CallInfoActual> actuals)
       : name_(name), calledType_(calledType),
         isMethodCall_(isMethodCall),
+        isOpCall_(isOpCall),
         hasQuestionArg_(hasQuestionArg),
         isParenless_(isParenless),
         actuals_(std::move(actuals)) {
@@ -391,6 +394,9 @@ class CallInfo {
   /** check if the call is a method call */
   bool isMethodCall() const { return isMethodCall_; }
 
+  /** check if the call is an operator call */
+  bool isOpCall() const { return isOpCall_; }
+
   /** check if the call includes ? arg for type constructor */
   bool hasQuestionArg() const { return hasQuestionArg_; }
 
@@ -415,6 +421,7 @@ class CallInfo {
     return name_ == other.name_ &&
            calledType_ == other.calledType_ &&
            isMethodCall_ == other.isMethodCall_ &&
+           isOpCall_ == other.isOpCall_ &&
            hasQuestionArg_ == other.hasQuestionArg_ &&
            isParenless_ == other.isParenless_ &&
            actuals_ == other.actuals_;
@@ -423,7 +430,7 @@ class CallInfo {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(name_, calledType_, isMethodCall_,
+    return chpl::hash(name_, calledType_, isMethodCall_, isOpCall_,
                       hasQuestionArg_, isParenless_,
                       actuals_);
   }
