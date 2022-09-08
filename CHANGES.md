@@ -56,8 +56,8 @@ Deprecated / Unstable / Removed Language Features
 
 New Features
 ------------
-* added a new `@unstable` annotation to indicate symbols that may evolve
-  (see TODO)
+* added a new `@unstable` annotation to indicate symbols that may evolve  
+  (see https://chapel-lang.org/docs/1.28/developer/bestPractices/Unstable.html#best-practices-unstable)
 
 Feature Improvements
 --------------------
