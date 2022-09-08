@@ -18,7 +18,7 @@ version 1.28, September 2022
 ----------------------------
 
 Version 1.28 included some significant changes to the overload resolution
-rules. In addition, that version enables implicit conversion from
+rules. In addition, version 1.28 enables implicit conversion from
 ``int(t)`` to ``uint(t)``. This section discusses some example programs
 that behave differently due to these changes.
 
@@ -26,6 +26,69 @@ See also:
 
  * The `1.27 overload resolution rules <https://chapel-lang.org/docs/1.27/language/spec/procedures.html#function-resolution>`_
  * The `1.28 overload resolution rules <https://chapel-lang.org/docs/1.28/language/spec/procedures.html#function-resolution>`_
+
+Behavior Differences for Mixes of Signed and Unsigned
+*****************************************************
+
+Prior to 1.28, numeric operations applied to a mix of signed and unsigned types
+could have surprising results by moving the computation from a particular bit
+width to another—or by moving it from an integral computation to a floating
+point one.
+
+For example:
+
+.. code-block:: chapel
+
+    var myInt:int = 1;
+    var myUint:uint = 2;
+    var myIntPlusUint = myInt + myUint; // what is the type of `myIntPlusUint`?
+
+Before 1.28, this program would result in compilation error, due to an
+error overload of ``operator +`` in the standard library.
+
+Version 1.28 adds the ability for an ``int`` to implicitly convert to
+``uint`` and removes the error overload. As a result, the ``uint``
+version of ``operator +`` is chosen, which results in ``myIntPlusUint``
+having type ``uint``.
+
+This behavior can also extend to user-defined functions. Consider a function
+``plus`` defined for ``int``, ``uint``, and ``real``:
+
+.. code-block:: chapel
+
+    proc plus(a: int, b: int)   { return a + b; }
+    proc plus(a: uint, b: uint) { return a + b; }
+    proc plus(a: real, b: real) { return a + b; }
+
+    var myInt:int = 1;
+    var myUint:uint = 2;
+    var myIntPlusUint = plus(myInt, myUint);
+
+In 1.27 the call to ``plus`` would resolve to the ``real`` version because
+``int`` could not implicitly convert to ``uint``, but both ``int`` and ``uint``
+could implicitly convert to ``real(64)``. As a result, ``myIntPlusUint`` had
+the type ``real``. This change from integral types to floating point types
+could be very surprising.
+
+In 1.28 the call to ``plus`` resolves to the ``uint`` version, and
+``myIntPlusUint`` has type ``uint``.
+
+This behavior also applies to ``int`` and ``uint`` types with smaller widths:
+
+.. code-block:: chapel
+
+    var myInt32:int(32) = 1;
+    var myUint32:uint(32) = 2;
+    var myInt32PlusUint32 = myInt32 + myUint32;
+
+In 1.27, the ``int(64)`` ``+`` operator is chosen (because both ``int(32)`` and
+``uint(32)`` can implicitly convert to ``int(64)``), which results in
+``myInt32PlusUint32`` having type ``int(64)``. This could be surprising when
+explicitly working with 32-bit numbers.
+
+In contrast, in 1.28, due to the ability for ``int(32)`` to implicitly
+convert to ``uint(32)``, the ``uint(32)`` version of the ``+`` operator
+is chosen and ``myInt32PlusUint32`` has type ``uint(32)``.
 
 Param Expression Behavior
 *************************
