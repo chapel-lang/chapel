@@ -10,6 +10,12 @@ o spellecheck
 o `` vs. ''
 o docs/1.28/...
 o linefeeds
+o TODOs for next time:
+  - initial lowercase
+  - 79 columns
+  - describe changes in terms of user-facing behavior (or devel-facing for
+    those sections)
+  - sort entries by topic / importance
 
 version 1.28.0
 ==============
@@ -21,6 +27,13 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* `cmake` 3.13.4 or later is now required to build Chapel
+  (see https://chapel-lang.org/docs/1.28/usingchapel/prereqs.html#readme-prereqs)
+* `chpl` now always incorporates the LLVM support library in its builds
+* added a `CHPL_LLVM_SUPPORT` setting to specify which LLVM to use
+  (see https://chapel-lang.org/docs/1.28/usingchapel/chplenv.html#chpl-llvm-support)
+* made quickstart scripts set `CHPL_LLVM=system` when a good system LLVM exists
+  (see https://chapel-lang.org/docs/1.28/usingchapel/QUICKSTART.html)
 * made `CHPL_MEM` default to `cstdlib` on Arm-based Macs
 
 Syntactic / Naming Changes
@@ -28,9 +41,25 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
+* added support for `[u]int(64)` values to implicitly convert to `real(32)`  
+  (see https://chapel-lang.org/docs/1.28/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
+* `int(w)` values can now implicitly convert to `uint(w)`
+  (see https://chapel-lang.org/docs/1.28/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
 * updated `.low`/`.high` on strided ranges/domains to return aligned bounds  
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.range.low  
    and https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.range.high)
+* improved and simplified the rules for choosing the most specific overload
+  (see https://chapel-lang.org/docs/1.28/language/spec/procedures.html#determining-most-specific-functions)
+* improved the behavior and result types of mixed-type/-size numerical ops
+  (see TODO)
+* made `param` numerical ops better match their `var`/`const` equivalents
+  (e.g., `1:int(8) + 2` now produces `int(64)` rather than `int(8)`)
+* fields with the same name as a parent class field are now disallowed  
+  (see https://chapel-lang.org/docs/1.28/language/spec/classes.html#shadowing-base-class-fields)
+* paren-less methods overriding ancestor fields/methods now require `override`  
+  (see https://chapel-lang.org/docs/1.28/language/spec/methods.html#methods-without-parentheses)
+* type- or `param`-returning paren-less methods now accept any class management  
+  (see https://chapel-lang.org/docs/1.28/language/spec/classes.html#class-methods)
 * code following `return`, `throw`, or `halt()` is now ignored  
   (see https://chapel-lang.org/docs/1.28/language/spec/procedures.html#the-return-statement,  
    https://chapel-lang.org/docs/1.28/language/spec/error-handling.html#throwing-errors,  
@@ -67,6 +96,7 @@ Feature Improvements
 * added support for task intents on `this`  
   (see https://chapel-lang.org/docs/1.28/language/spec/data-parallelism.html#forall-intents  
    and https://chapel-lang.org/docs/1.28/language/spec/task-parallelism-and-synchronization.html#task-intents)
+* updated `real` to `string` casts to use `nan` and `inf` for those values
 
 Namespace Changes
 -----------------
@@ -123,6 +153,11 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.28/modules/standard/GPU.html)
 * added new 'IO' methods supporting reading/writing literals and newlines  
   (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.channel.readLiteral)
+* 'CommDiagnostics' now includes more detailed `--cache-remote` counters
+  (see https://chapel-lang.org/docs/1.28/modules/standard/CommDiagnostics.html#CommDiagnostics.chpl_commDiagnostics.cache_num_prefetches)
+* made `min()`/`max()` for `int(w)`/`uint(w)` pairs preserve width and values  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/AutoMath.html#AutoMath.max)
+
 
 Package Modules
 ---------------
@@ -156,6 +191,7 @@ Platform-specific Performance Optimizations / Improvements
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
+* improved compilation time by using LLVM data structures
 
 Memory Improvements
 -------------------
@@ -171,6 +207,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#range-type-queries)
 * refreshed the `locale` documentation to reflect stabilization improvements
   (see https://chapel-lang.org/docs/1.28/language/spec/locales.html#locale-methods)
+* clarified the behavior of generic formals with `out` intent in the spec
+  (see https://chapel-lang.org/docs/1.28/language/spec/procedures.html#the-out-intent)
 * fixed a bug in the 'ArgumentParser' documentation in which a flag was missing  
   (see https://chapel-lang.org/docs/1.28/modules/packages/ArgumentParser.html#quickstart-example)
 
@@ -182,12 +220,15 @@ Example Codes
 
 Build System Improvements
 -------------------------
+* `chpl` now links dynamically with system LLVM and Clang libraries on Mac OS X
 
-Portability
------------
+Portability / Platform-specific Improvements
+--------------------------------------------
 * generally improved Chapel portability to M1/Arm-based Macs
 * improved `chplvis` such that it can run on an M1 Mac
+* improved portability to configurations using GCC 12
 * worked around an ICC bug resulting in "unknown attribute" warnings
+* improved detection of system-installed Clang for Amazon Linux 2022
 * removed remaining specialized support for SunOS platforms
 
 GPU Computing
@@ -226,22 +267,29 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* added a new unstable warning for implicit `int`->`uint` conversions
 * added an error when attempting to define methods on values rather than types  
   (e.g., `var r: R;  proc r.foo() ...` now generates an error as it should've)
 * added an error when using non-type expressions as formal argument types  
   (e.g., `var x: int; proc foo(y: x) ...` now generates an error as intended)
 * added an error when fields with runtime types cannot be default-initialized
+* added a warning for misleading uses of `new`
+  (e.g., `var x: borrowed MyClass = new owned MyClass();`)
 
 Bug Fixes
 ---------
+* fixed a bug in which iterating over a range yielded the wrong index type
 * fixed a bug causing compilation errors for arrays of `sortedSet`s
 * fixed a bug with generic aggregate default initialization and runtime types
 * fixed a bug when incorrectly applying parentheses to a paren-less routine
 * fixed a bug when defining a lambda within a generic function
-* fixed an issue with arbitrary shell commands in a `require` statement
+* fixed an inaccurate line number for errors involving method receivers
+* fixed a misleading compilation error for problems running a subprocess
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed a bug in which `make CMAKE=...` did not impact the `cmake` command
+* addressed a fragility in which the compiler build saved a path to a linker
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -295,9 +343,12 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * turned off LLVM assertions for `CHPL_DEVELOPER` builds
+* adjusted generation of `chpl-env-gen.h` to better handle special characters
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* updated `--dyno` to activate the 'dyno' scope resolver
+* added `--warn-int-uint` to warn about implicit `int` to `uint` conversions
 * added `--report-gpu-transform-time` to measure time for GPU transformations
 
 Developer-oriented changes: Compiler improvements/changes
@@ -307,9 +358,13 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
 * migrated many semantic checks from the production parser to 'dyno'
+* migrated implicit module warnings to 'dyno'
 * made numerous improvements to 'dyno's scope resolution capabilities
+  - added support for `this.` and `super.` in `use`/`import` statements
+  - added support for `include` statements
   - added support for task intents and reduce intents
   - added support for try-catch statements
+* added conversions from uAST to resolved `SymExpr`s in the production compiler
 * made numerous improvements to 'dyno's type/call resolution capabilities
   - added support for resolving enums, conditional expressions, and ranges
   - added support for loop index variables and param for-loops
@@ -324,6 +379,7 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
     (e.g., `1+1` is now resolved to be a `param` whose value is `2`)
 * improved detection of fully-defaulted generic records 
 * added `uast::ReduceIntent` for cases previously handled by `uast::Reduce`
+* added escaping for IDs that come from filenames
 * fixed problems compiling with `--dyno` and `-M`/`--module-dir`
 * fixed a segmentation fault when resolving `extern` routines
 * improved performance of the `--dyno` compilation stages using LLVM datatypes
