@@ -349,6 +349,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* updated grep shortcuts documentation to reflect `greptests` expansion  
+  (see https://chapel-lang.org/docs/1.28/developer/bestPractices/Potpourri.html#best-practices-potpourri)
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
