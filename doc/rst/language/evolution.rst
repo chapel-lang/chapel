@@ -80,7 +80,7 @@ Change for some mixed int/uint overloads
 ****************************************
 
 This example shows a change in behavior for two overloads where one is
-int and the other is uint:
+``int`` and the other is ``uint``:
 
 .. code-block:: chapel
 
@@ -94,7 +94,9 @@ function. It can do that because the compiler knows that the ``param``
 value ``42`` will fit into an ``int(8)``. Such a conversion is called a
 ``param`` narrowing conversion. However, in 1.28, this function now calls
 the ``uint(64)`` version of the function. The main reason for this is
-that the 1.28 rules prefer to not do ``param`` narrowing conversion.
+that the 1.28 rules prefer to not do ``param`` narrowing conversion when
+another candidate does not need it. In this case, ``int`` to ``uint`` is
+not a ``param`` narrowing conversion so that is preferred.
 
 Change for function visibility / shadowing
 ******************************************
