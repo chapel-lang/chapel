@@ -212,6 +212,8 @@ static void gatherType(Symbol* sym, Type* t, const char* name) {
     WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
 
     if (name == wkt.name) {
+      if (isDecoratedClassType(t)) continue;
+
       if (*wkt.type_ != NULL)
         multipleDefinedTypeError(sym, name);
       INT_ASSERT(t != NULL);
