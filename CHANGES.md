@@ -60,9 +60,10 @@ Semantic Changes / Changes to the Chapel Language
 * added support for `int(w)` values to implicitly convert to `uint(w)`  
   (see https://chapel-lang.org/docs/1.28/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
 * improved the behavior and result types for mixed-type/-size numerical ops  
-  (see TODO)
+  (TODO)
 * made `param` numerical ops better match their `var`/`const` equivalents  
   (e.g., `1:int(8) + 2` now produces `int(64)` rather than `int(8)`)
+  (see https://chapel-lang.org/docs/1.28/language/evolution.html#version-1-28-september-2022)
 * improved and simplified the rules for selecting the most specific overload  
   (see https://chapel-lang.org/docs/1.28/language/spec/procedures.html#determining-most-specific-functions)
 * fields with the same name as a parent class field are now disallowed  
@@ -210,6 +211,8 @@ Documentation
 -------------
 * reworked the documentation for 'mason' to simplify navigation and clarify it  
   (see https://chapel-lang.org/docs/1.28/mason-packages/index.html)
+* added platform-specific commands for dependencies to the prerequisites doc  
+  (see https://chapel-lang.org/docs/1.28/usingchapel/prereqs.html#installation)
 * updated the 'Chapel Prerequisites' document to show uses of `LLVM_VERSION`  
   (see https://chapel-lang.org/docs/1.28/usingchapel/prereqs.html)
 * refreshed the `range` API documentation in the language specification  
@@ -289,6 +292,7 @@ Bug Fixes
 ---------
 * fixed a bug in which iterating over a range yielded the wrong index type
 * fixed a bug when incorrectly applying parentheses to a paren-less routine
+* fixed an internal error for certain invalid `new` expressions
 * fixed a bug when defining a lambda within a generic function
 * fixed a bug with generic aggregate default initialization and runtime types
 * fixed a bug causing compilation errors for arrays of `sortedSet`s
