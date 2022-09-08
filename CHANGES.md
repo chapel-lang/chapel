@@ -133,6 +133,10 @@ Standard Domain Maps (Layouts and Distributions)
 
 Tool Improvements
 -----------------
+* wrote a new version of 'chpldoc' that leverages the 'dyno' compiler library
+* made 'chpldoc' generate documentation for `operator` declarations
+* improved 'chpldoc' rendering of parent modules when documenting sub-modules
+* added a `--legacy` flag to 'chpldoc' to revert to the old version if needed
 * extended 'mason' to support three different usage modes  
   (see https://chapel-lang.org/docs/1.28/mason-packages/start/whymason.html#the-three-modes-of-mason)
 * added support for adding git repositories as 'mason' dependencies
@@ -141,6 +145,7 @@ Tool Improvements
 * simplified initialization of 'mason' packages
 * added a check to ensure a 'mason' package exists before adding it
 * 'chpldoc' now requires Python 3.7 or later
+* improved `mason test` errors to display relative, rather than absolute, paths
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -166,6 +171,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#range-type-queries)
 * refreshed the `locale` documentation to reflect stabilization improvements
   (see https://chapel-lang.org/docs/1.28/language/spec/locales.html#locale-methods)
+* fixed a bug in the 'ArgumentParser' documentation in which a flag was missing  
+  (see https://chapel-lang.org/docs/1.28/modules/packages/ArgumentParser.html#quickstart-example)
 
 Syntax Highlighting
 -------------------
@@ -231,6 +238,7 @@ Bug Fixes
 * fixed a bug with generic aggregate default initialization and runtime types
 * fixed a bug when incorrectly applying parentheses to a paren-less routine
 * fixed a bug when defining a lambda within a generic function
+* fixed an issue with arbitrary shell commands in a `require` statement
 
 Bug Fixes for Build Issues
 --------------------------
@@ -246,6 +254,11 @@ Bug Fixes for Libraries
 Bug Fixes for Tools
 -------------------
 * fixed a bug where 'chpldoc' messed up entries following `use`/`import` stmts
+* fixed a bug in which 'chpldoc' was not rendering multi-symbol declarations
+* fixed 'chpldoc' bugs where string and numerical literals lost information
+* fixed a 'chpldoc' bug in which nilable classes were mis-rendered
+* fixed some 'chpldoc' bugs in which internal symbols were leaking into docs
+* suppressed `mason test` hint about using `--show` if was already in use
 
 Platform-specific Bug Fixes
 ---------------------------
@@ -314,6 +327,9 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 * fixed problems compiling with `--dyno` and `-M`/`--module-dir`
 * fixed a segmentation fault when resolving `extern` routines
 * improved performance of the `--dyno` compilation stages using LLVM datatypes
+* began relying on LLVM capabilities for some file system utilities
+* added colorization and query depth labels to query trace output
+* limited `dyno` query trace output by query type
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
