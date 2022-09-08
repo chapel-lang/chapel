@@ -15,7 +15,6 @@ amenable to being documented using **chpldoc**:
    OwnedObject
    SharedObject
    ChapelSyncvar
-   ChapelTuple
 
 
 Index

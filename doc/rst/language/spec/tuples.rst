@@ -1213,14 +1213,4 @@ Predefined Functions and Methods on Tuples
 
 
 
-.. function:: proc max(type t) where isTupleType(t)
-
-   Returns a tuple of type ``t`` with each component set to the maximum
-   value that can be stored in its position.
-
-
-
-.. function:: proc min(type t) where isTupleType(t)
-
-   Returns a tuple of type ``t`` with each component set to the minimum
-   value that can be stored in its position.
+.. include:: /builtins/ChapelTuple.rst

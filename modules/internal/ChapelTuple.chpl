@@ -19,23 +19,6 @@
  */
 
 /*
-Tuples are a predefined structured type in Chapel. They are specified
-in the Tuples chapter of the Chapel Language Specification.
-This page lists the predefined functions on tuples.
-They are always available to all Chapel programs.
-
-The following methods are defined on the Tuple type:
-
-.. function:: proc tuple.size param
-
-   Returns the number of components of the tuple.
-
-.. function:: proc tuple.indices
-
-   Returns the range of indices that are legal for indexing into the
-   tuple: ``0..<this.size``.
-
-
 */
 module ChapelTuple {
   use ChapelStandard, DSIUtil;
