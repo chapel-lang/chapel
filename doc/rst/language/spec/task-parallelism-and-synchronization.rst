@@ -569,8 +569,9 @@ task creation time. All references to the variable within the task
 function implicitly refer to a *shadow variable*, i.e. the task
 function’s corresponding formal argument.
 
-When the task construct is inside a method on a record and accesses a
-field of ``this``, the field itself is treated as an outer variable. That is,
+When the task construct is inside a method on a record, accesses a
+field of ``this``, and does not contain an explicit task intent on ``this``
+(see below), the field itself is treated as an outer variable. That is,
 it is passed as an actual argument to the task function and all
 references to the field within the task function implicitly refer to the
 corresponding shadow variable.
