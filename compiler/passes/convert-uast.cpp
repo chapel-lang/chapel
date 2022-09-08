@@ -63,8 +63,6 @@ using namespace chpl;
 
 namespace {
 
-const bool tryToScopeResolveEverything = false;
-
 struct ConvertedSymbolsMap {
   ID inSymbolId;
   ConvertedSymbolsMap* parentMap = nullptr;
@@ -200,9 +198,12 @@ struct Converter {
   }
 
   bool shouldScopeResolve(ID symbolId) {
-    if (tryToScopeResolveEverything) return true;
-    return canScopeResolve &&
-           !chpl::parsing::idIsInBundledModule(context, symbolId);
+    if (canScopeResolve) {
+      return fDynoScopeBundled ||
+             !chpl::parsing::idIsInBundledModule(context, symbolId);
+    }
+
+    return false;
   }
   bool shouldScopeResolve(const uast::AstNode* node) {
     return shouldScopeResolve(node->id());
