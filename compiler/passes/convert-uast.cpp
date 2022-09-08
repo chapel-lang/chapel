@@ -4064,7 +4064,7 @@ Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
       // e.g. 'C' in 'typeFn(C)' refers to anymanaged C rather than borrowed C
       if (TypeSymbol* ts = toTypeSymbol(ret)) {
         if (AggregateType* at = toAggregateType(ts->type)) {
-          if (at->isClass()) {
+          if (at->isClass() && isClassLikeOrManaged(at)) {
             Type* useType =
               at->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
             ret = useType->symbol;
