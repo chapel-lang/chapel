@@ -334,6 +334,7 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * removed setting of `LANG` variables in launchers via `env` (no longer needed)
+* fixed support for `ofi`'s `FI_MR_PROV_KEY` registration mode to improve perf
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
