@@ -11,8 +11,8 @@ chpldoc
 ``chpldoc`` is a tool for generating HTML based documentation from Chapel
 source code and embedded comments. It is similar in spirit to Godoc, Javadoc,
 and Pydoc. ``chpldoc`` is used to produce Chapel's web documentation for the
-:ref:`Standard Library <modules>` and
-:ref:`Built-in-Types and Functions <built-in-types>`.
+:ref:`Standard Library <modules>` and some of the built-in types and functions
+described in the :ref:`Language Specification <chapel-spec>`.
 
 See the online :doc:`man page <man>` for all available flags.
 
