@@ -22,8 +22,8 @@
 
    .. note::
 
-    You must declare your main method to take an array of string arguments in
-    order to use the Help module. See the examples below or the technote about
+    You must declare your ``main`` function to take an array of string arguments
+    to use the ``Help`` module. See the examples below or the technical note about
     :ref:`getting arguments from main()<technote-mainWithArgs>` for more
     information on this feature.
 
