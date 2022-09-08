@@ -245,7 +245,7 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
-* fixed a bug in which 'chpldoc' dropped entries following `use`/`import` stmts
+* fixed a bug where 'chpldoc' messed up entries following `use`/`import` stmts
 
 Platform-specific Bug Fixes
 ---------------------------
@@ -1333,7 +1333,7 @@ Packaging / Configuration Changes
   (see https://chapel-lang.org/docs/1.25/platforms/infiniband.html)
 * a C++14 compiler is now required to build the Chapel compiler  
   (see https://chapel-lang.org/docs/1.25/usingchapel/prereqs.html)
-* Python 3.7 is now required by tools like `c2chapel`, `chapeldoc`, etc.  
+* Python 3.7 is now required by tools like `c2chapel`, `chpldoc`, etc.  
   (see https://chapel-lang.org/docs/1.25/usingchapel/prereqs.html)
 * default to `fifo` tasking on arm-based (M1) Macs
 * replaced `CHPL_REGEXP=re2|none` with `CHPL_RE2=bundled|none`  
