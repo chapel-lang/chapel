@@ -324,6 +324,8 @@ Bug Fixes for Tools
 Platform-specific Bug Fixes
 ---------------------------
 * fixed a bug with ABI support on Arm systems when using the LLVM back-end
+* fixed `exit(0)` for `CHPL_COMM=ugni`
+* fixed the memory registration address checks for `CHPL_COMM=ugni`
 
 Third-Party Software Changes
 ----------------------------
