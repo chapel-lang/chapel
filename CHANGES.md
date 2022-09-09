@@ -49,9 +49,9 @@ Semantic Changes / Changes to the Chapel Language
   (see https://chapel-lang.org/docs/1.28/language/spec/classes.html#shadowing-base-class-fields)
 * paren-less methods overriding ancestor fields/methods now require `override`  
   (see https://chapel-lang.org/docs/1.28/language/spec/methods.html#methods-without-parentheses)
-* `type`-/`param`-returning paren-less methods now accept any class management  
+* paren-less methods returning `type`/`param` now accept any class management  
   (see https://chapel-lang.org/docs/1.28/language/spec/classes.html#class-methods)
-* code following `return`, `throw`, or `halt()` statements are now ignored  
+* code following `return`, `throw`, or `halt()` statements is now ignored  
   (see https://chapel-lang.org/docs/1.28/language/spec/procedures.html#the-return-statement,  
    https://chapel-lang.org/docs/1.28/language/spec/error-handling.html#throwing-errors,  
    and https://chapel-lang.org/docs/1.28/modules/standard/Errors.html#Errors.halt)
@@ -198,14 +198,14 @@ Documentation
 
 Example Codes
 -------------
-* updated `benchmarks/hpcc/ptrans.chpl` to support small element types
+* updated `benchmarks/hpcc/ptrans.chpl` to work with small element types
 * updated several example codes to use `ioHintSet`s rather than `iohints`
 * updated `primers/fileIO.chpl` to replace `unlink()` with `remove()`
 * updated `primers/fileIO.chpl` to use the new `region` argument for readers
 * updated `EofError` capitalization in `benchmarks/shootout/revcomp-fast.chpl`
 * updated `primers/classes.chpl` to avoid the use of `new borrowed C(...)`
 * updated `benchmarks/shootout/knucleotide.chpl` to avoid `array.sorted()`
-* improved operator signatures in `benchmarks/shootout/mandelbrot-fast.chpl`
+* specialized operator signatures in `benchmarks/shootout/mandelbrot-fast.chpl`
 
 Portability / Platform-specific Improvements
 --------------------------------------------
