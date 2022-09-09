@@ -506,6 +506,9 @@
   "d2eb1668-9f71-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/prim-ops-list.h"
   ],
+  "f78bc170-300d-11ed-b71b-d7492178b4dc": [
+    "compiler/dyno/include/chpl/util/filesystem.h"
+  ],
   "6e8fb3ba-9f6f-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/util/iteration.h"
   ],
@@ -595,6 +598,9 @@
   ],
   "eda6a798-12c0-11ed-a8be-cd81bce0efc4": [
     "compiler/dyno/lib/util/terminal.cpp"
+  ],
+  "3eb6fb72-300f-11ed-b71b-d7492178b4dc": [
+    "compiler/dyno/tools/chpldoc/arg.cpp"
   ],
   "c2297db6-9f75-11ec-866d-111c8d7a1817": [
     "compiler/dyno/tools/chpldoc/chpldoc.cpp"
@@ -1296,6 +1302,9 @@
   "1ad5560e-5b7a-11e8-af7e-10ddb1d4c3d5": [
     "modules/standard/GMPHelper/chplgmp.h"
   ],
+  "4f8eb54c-3010-11ed-b71b-d7492178b4dc": [
+    "modules/standard/GPU.chpl"
+  ],
   "55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/IO.chpl"
   ],
@@ -1355,6 +1364,9 @@
   ],
   "ca5cd802-68b8-11ea-b972-843835579daa": [
     "runtime/include/chpl-comm.h"
+  ],
+  "57e7dbc4-3010-11ed-b71b-d7492178b4dc": [
+    "runtime/include/chpl-gpu-impl.h"
   ],
   "ceec8a70-68b8-11ea-b972-843835579daa": [
     "runtime/include/chpl-mem-array.h"
@@ -1425,6 +1437,12 @@
   ],
   "31db04f6-fecb-11ea-b2e8-10ddb1d4c3d5": [
     "runtime/src/error.c"
+  ],
+  "9ede5918-3010-11ed-b71b-d7492178b4dc": [
+    "runtime/src/gpu/common/cuda-shared.h"
+  ],
+  "607e4bce-3010-11ed-b71b-d7492178b4dc": [
+    "runtime/src/gpu/cuda/gpu-cuda.c"
   ],
   "e4e38696-e581-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/launch/amudprun/launch-amudprun.c"
