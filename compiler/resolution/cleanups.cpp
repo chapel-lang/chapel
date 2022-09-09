@@ -230,7 +230,7 @@ static void removeRandomPrimitive(CallExpr* call) {
               if (auto se = toSymExpr(actual)) {
                 auto ts = se->symbol()->type->symbol;
 
-                // Runtime types sould have been transformed into values.
+                // Runtime types should have been transformed into values.
                 if (ts && ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
                   INT_ASSERT(se->symbol()->defPoint->inTree());
                   containsRuntimeType = true;
