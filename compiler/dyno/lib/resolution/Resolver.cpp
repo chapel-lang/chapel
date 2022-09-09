@@ -239,6 +239,19 @@ Resolver::createForScopeResolvingFunction(Context* context,
   return ret;
 }
 
+Resolver
+Resolver::createForScopeResolvingField(Context* context,
+                                 const uast::AggregateDecl* ad,
+                                 const AstNode* fieldStmt,
+                                 ResolutionResultByPostorderID& byPostorder) {
+  auto ret = Resolver(context, ad, byPostorder, nullptr);
+  ret.scopeResolveOnly = true;
+  ret.curStmt = fieldStmt;
+  ret.byPostorder.setupForSymbol(ad);
+
+  return ret;
+}
+
 
 // set up Resolver to initially resolve field declaration types
 Resolver

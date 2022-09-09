@@ -3385,7 +3385,9 @@ struct Converter {
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
-    // TODO: set resolved
+    if (shouldScopeResolve(node)) {
+      resolved = &resolution::scopeResolveAggregate(context, node->id());
+    }
     pushToSymStack(node, resolved);
 
     auto comment = consumeLatestComment();

@@ -1706,6 +1706,28 @@ const ResolvedFunction* scopeResolveFunction(Context* context,
   return result.get();
 }
 
+const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
+                                                           ID id) {
+  QUERY_BEGIN(scopeResolveAggregate, context, id);
+
+  const AggregateDecl* ad = parsing::idToAst(context, id)->toAggregateDecl();
+  ResolutionResultByPostorderID result;
+
+  if (ad) {
+    // TODO: Use some kind of "ad->fields()" iterator
+    for (auto child : ad->children()) {
+      if (child->isVarLikeDecl() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        auto res = Resolver::createForScopeResolvingField(context, ad, child, result);
+        child->traverse(res);
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r) {

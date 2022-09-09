@@ -121,6 +121,11 @@ struct Resolver {
   createForScopeResolvingFunction(Context* context, const uast::Function* fn,
                                   ResolutionResultByPostorderID& byPostorder);
 
+  static Resolver createForScopeResolvingField(Context* context,
+                                         const uast::AggregateDecl* ad,
+                                         const uast::AstNode* fieldStmt,
+                                         ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to initially resolve field declaration types
   static Resolver
   createForInitialFieldStmt(Context* context,
