@@ -1,18 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-o any missing cross-references?
-o spellcheck
-o proofread
-o TODOs for next time:
-  - initial lowercase
-  - 79 columns
-  - describe changes in terms of user-facing behavior (or devel-facing for
-    those sections)
-  - sort entries by topic / importance
-  - did I change any example codes?  if so, add entries
-
 version 1.28.0
 ==============
 
@@ -81,14 +69,14 @@ Deprecated / Unstable / Removed Language Features
   (see https://chapel-lang.org/docs/1.28/language/spec/statements.html#the-i-o-statement)
 * deprecated `locale.callStackSize()` with no intention to replace it
 * deprecated the NUMA locale model and related methods on `locale` values
-* deprecated the `alignedBoundsByDefault` config param which has no effect  
+* deprecated the `alignedBoundsByDefault` `config param` which has no effect  
   (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault)
-* removed the previously deprecated `arrayIndicesAlwaysLocal` config param
-* removed the previously deprecated `sizeReturnsInt` config param
+* removed the previously deprecated `arrayIndicesAlwaysLocal` `config param`
+* removed the previously deprecated `sizeReturnsInt` `config param`
 
 New Features
 ------------
-* added a new `@unstable` annotation to flag symbols whose meaning may evolve  
+* added a new `@unstable` annotation to flag symbols whose behavior may evolve  
   (see https://chapel-lang.org/docs/1.28/developer/bestPractices/Unstable.html#best-practices-unstable)
 
 Feature Improvements
@@ -120,12 +108,14 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.28/modules/standard/Time.html)
 * deprecated the 'SysError' module, moving its contents to 'OS'  
   (see https://chapel-lang.org/docs/1.28/modules/standard/OS.html)
-* deprecated the 'Sys' module, moving some of its key symbols to 'OS.POSIX'
-* deprecated the `isFloat*()` family of queries from the 'Type' module
+* deprecated the 'Sys' module, moving some of its key symbols to 'OS.POSIX'  
+  (see https://chapel-lang.org/docs/1.28/modules/standard/OS/POSIX.html)
+* deprecated the `isFloat*()` family of queries from the 'Types' module  
+  (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/Types.html#Types.isFloatType)
 * marked the `iostyle` type and associated routines as unstable  
   (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.iostyle)
 * deprecated some 'IO' `start`/`end` arguments in favor of `region` ranges  
-  (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.openreader)
+  (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.channel.seek)
 * deprecated the `start`/`end` arguments of `openwriter()` in the 'IO' module  
   (see https://chapel-lang.org/docs/1.28/modules/standard/IO.html#IO.openwriter)
 * deprecated the `iohints` type/constants in favor of a new `ioHintSet` type  
@@ -188,7 +178,7 @@ Memory Improvements
 Documentation
 -------------
 * reworked the documentation for 'mason' to simplify navigation and clarify it  
-  (see https://chapel-lang.org/docs/1.28/mason-packages/index.html)
+  (see https://chapel-lang.org/docs/1.28/mason-packages/)
 * added platform-specific commands for dependencies to the prerequisites doc  
   (see https://chapel-lang.org/docs/1.28/usingchapel/prereqs.html#installation)
 * updated the 'Chapel Prerequisites' document to show uses of `LLVM_VERSION`  
@@ -198,7 +188,7 @@ Documentation
    https://chapel-lang.org/docs/1.28/language/spec/strings.html#string-methods,  
    and https://chapel-lang.org/docs/1.28/language/spec/tuples.html#predefined-functions-and-methods-on-tuples)
 * refreshed the `range` API documentation in the language specification  
-  (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#range-type-queries)
+  (see https://chapel-lang.org/docs/1.28/language/spec/ranges.html#predefined-routines-on-ranges)
 * refreshed the `locale` documentation to reflect stabilization improvements  
   (see https://chapel-lang.org/docs/1.28/language/spec/locales.html#locale-methods)
 * clarified the behavior of generic formals with `out` intent in the spec  
@@ -223,7 +213,7 @@ Portability / Platform-specific Improvements
 * improved `chplvis` such that it can run on an M1 Mac
 * `chpl` now links dynamically with system LLVM and Clang libraries on Mac OS X
 * improved portability to configurations using GCC 12
-* worked around an ICC bug resulting in "unknown attribute" warnings
+* worked around a known ICC bug resulting in "unknown attribute" warnings
 * improved detection of system-installed Clang for Amazon Linux 2022
 * removed remaining specialized support for SunOS platforms
 
@@ -300,7 +290,7 @@ Platform-specific Bug Fixes
 Third-Party Software Changes
 ----------------------------
 * updated the bundled version of Qthreads to version 1.17
-* updated FLTK version from 1.3.5 to 1.3.8 for improved support on Mac M1
+* updated the FLTK version from 1.3.5 to 1.3.8 for improved support on Mac M1
 * updated the Python package versions used by 'chpldoc' as follows:
   - Babel: version 2.10.3
   - Jinja2: version 3.1.2
@@ -311,7 +301,7 @@ Third-Party Software Changes
 Developer-oriented changes: Documentation
 -----------------------------------------
 * updated grep shortcuts documentation to reflect `greptests` expansion  
-  (see https://chapel-lang.org/docs/1.28/developer/bestPractices/Potpourri.html#best-practices-potpourri)
+  (see https://chapel-lang.org/docs/1.28/developer/bestPractices/Potpourri.html#grep-shortcuts)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -342,7 +332,7 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
   - added support for `this.` and `super.` in `use`/`import` statements
   - added support for `include` statements
   - added support for task intents and reduce intents
-  - added support for `try`-`catch` statements
+  - added support for try-catch statements
   - fixed problems when using `-M`/`--module-dir`
 * made numerous improvements to 'dyno's type/call resolution capabilities
   - added support for resolving enums, conditional expressions, and ranges
