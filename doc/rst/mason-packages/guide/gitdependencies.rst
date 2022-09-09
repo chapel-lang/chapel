@@ -2,8 +2,8 @@
 
 .. _mason-git-dependencies:
 
-Specifying Dependencies from `git` Repositories
-===============================================
+Specifying Dependencies from ``git`` Repositories
+=================================================
 To depend on a library located in a git repository, a git key pointing to the repository URL is all that is required:
 
 .. code-block:: text
