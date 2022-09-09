@@ -2926,7 +2926,7 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             se->getStmtExpr()->insertBefore(call);
           } else {
             if (fWarnUnstable) {
-              USR_WARN(call, "type comparsion operators are unstable; "
+              USR_WARN(call, "type comparison operators are unstable; "
                 "consider using isSubtype/isProperSubtype as a stable alternative");
             }
 
@@ -5789,7 +5789,7 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
 //   proc f(uint(32), uint(32))
 //   proc f(int(64), int(64))
 //   f(myUint32, max(int));
-//  .... but it causes problems with prefering generic to non-generic.
+//  .... but it causes problems with preferring generic to non-generic.
 /*static void discardWorseConversionsToNotMentioned(
     Vec<ResolutionCandidate*>&   candidates,
     const DisambiguationContext& DC,
