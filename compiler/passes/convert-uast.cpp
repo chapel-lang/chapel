@@ -3965,11 +3965,19 @@ void Converter::pushToSymStack(
      const resolution::ResolutionResultByPostorderID* resolved) {
   ConvertedSymbolsMap* parentMap = nullptr;
   if (symStack.size() > 0) {
-    // Find the current top-level module from symStack and consider it the
-    // parent.
-    // We could track things in a more granular way but we might need to
-    // access something like A.B.C.D (where A, B, C are modules) later.
-    parentMap = symStack.front().convertedSyms.get();
+    auto backMap = symStack.back().convertedSyms.get();
+    auto backAst = parsing::idToAst(context, backMap->inSymbolId);
+    if (backAst->toFunction()) {
+      // If we're inside a nested function, then we should use the parent
+      // function's ConvertedSymbolsMap as the parentMap.
+      parentMap = backMap;
+    } else {
+      // Find the current top-level module from symStack and consider it the
+      // parent.
+      // We could track things in a more granular way but we might need to
+      // access something like A.B.C.D (where A, B, C are modules) later.
+      parentMap = symStack.front().convertedSyms.get();
+    }
   } else {
     parentMap = &gConvertedSyms;
   }
