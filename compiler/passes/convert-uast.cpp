@@ -29,6 +29,7 @@
 
 #include "CForLoop.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "DoWhileStmt.h"
 #include "ForLoop.h"
@@ -4064,6 +4065,17 @@ Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
       }
       // convert references to classes as anymanaged
       // e.g. 'C' in 'typeFn(C)' refers to anymanaged C rather than borrowed C
+      //
+      // The call to `getDecoratedClass` used to try and insert a defPoint for
+      // the DecoratedClass's TypeSymbol when first creating it. This doesn't
+      // work if the AggregateType that represents the class isn't already in
+      // the tree.
+      //
+      // We can run into this situation when scope-resolving an AggregateType
+      // that contains a reference to itself. Now, getDecoratedClass will not
+      // try to insert a defPoint when the original AggregateType is not in the
+      // tree. We will insert these defPoints manually later in
+      // `postConvertApplyFixups`.
       if (TypeSymbol* ts = toTypeSymbol(ret)) {
         if (AggregateType* at = toAggregateType(ts->type)) {
           if (at->isClass() && isClassLikeOrManaged(at)) {
@@ -4212,6 +4224,18 @@ convertToplevelModule(chpl::Context* context,
 
 void postConvertApplyFixups(chpl::Context* context) {
   gConvertedSyms.applyFixups(context, nullptr, /* trace */ false);
+
+  // Add defPoints that 'getDecoratedClass' was prevented from inserting when
+  // the original AggregateType was no longer in the tree.
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (auto dct = toDecoratedClassType(ts->type)) {
+      if (isAlive(ts) == false) {
+        auto at = dct->getCanonicalClass();
+        DefExpr* defDec = new DefExpr(ts);
+        at->symbol->defPoint->insertAfter(defDec);
+      }
+    }
+  }
 
   // Ensure no SymExpr referring to TemporaryConversionSymbol is still in tree
   if (fVerify) {
