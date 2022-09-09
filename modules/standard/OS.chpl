@@ -1328,7 +1328,7 @@ module OS {
   }
 
   pragma "no doc"
-  deprecated "'EOFError is deprecated, please use 'EofError instedad"
+  deprecated "'EOFError is deprecated, please use 'EofError instead"
   class EOFError : IoError {}
 
   /*
