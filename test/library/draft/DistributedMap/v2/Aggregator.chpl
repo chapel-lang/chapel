@@ -28,9 +28,12 @@ module Aggregator {
     const client;
     const updater;
 
-    // how to store updates?  Need locales * updates stored structure, but we
-    // don't have skyline arrays.  Sets?  Seems weird to rely on a set at a
-    // time like this but idk
+    var bufferSize: int;
+    // TODO: make this use a type that's passed in instead of keyType so that
+    // we can maybe use this aggregator with lists and sets as well
+    var buffers: [client.locDom][0..<bufferSize] sync client.keyType;
+
+    // How to avoid race in adding updates to buffer?
 
     // TODO: impl
     proc update(key: client.keyType) {
