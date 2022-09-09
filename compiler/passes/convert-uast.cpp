@@ -1125,12 +1125,14 @@ struct Converter {
     INT_ASSERT(node->numVisibilityClauses() > 0);
 
     inImportOrUse = true;
+    BlockStmt* ret = nullptr;
     if (node->numVisibilityClauses() == 1) {
-      return convertUsePossibleLimitations(node);
+      ret = convertUsePossibleLimitations(node);
     } else {
-      return convertUseNoLimitations(node);
+      ret = convertUseNoLimitations(node);
     }
     inImportOrUse = false;
+    return ret;
   }
 
   Expr* visit(const uast::VisibilityClause* node) {
