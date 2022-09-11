@@ -1377,6 +1377,9 @@ struct Converter {
         auto initExpr = toExpr(convertAST(ifVar->initExpression()));
         bool isConst = ifVar->kind() == uast::Variable::CONST;
         cond = buildIfVar(varNameStr, initExpr, isConst);
+
+        DefExpr* def = toDefExpr(toCallExpr(cond)->get(1));
+        noteConvertedSym(node->condition(), def->sym);
       } else {
         cond = toExpr(convertAST(node->condition()));
       }
