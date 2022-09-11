@@ -342,10 +342,7 @@ static bool doLookupInImports(Context* context,
     for (const VisibilitySymbols& is: r->visibilityClauses()) {
       UniqueString from = name;
       bool named = is.lookupName(name, from);
-      if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
-        result.push_back(BorrowedIdsWithName(is.scope()->id()));
-        return true;
-      } else if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
+      if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // mentioned in an except clause, so don't return it
       } else if (named || is.kind() == VisibilitySymbols::ALL_CONTENTS) {
         // find it in the contents
@@ -362,6 +359,11 @@ static bool doLookupInImports(Context* context,
                                      checkedScopes, result);
         if (found && onlyInnermost)
           return true;
+      }
+
+      if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
+        result.push_back(BorrowedIdsWithName(is.scope()->id()));
+        return true;
       }
     }
   }
