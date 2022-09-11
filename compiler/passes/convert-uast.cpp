@@ -4250,6 +4250,19 @@ void postConvertApplyFixups(chpl::Context* context) {
     }
   }
 
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->_this == nullptr) continue; // not a method
+
+    if (fn->_this->type == dtUnknown) {
+      Expr* expr = toArgSymbol(fn->_this)->typeExpr->body.only();
+      if (SymExpr* receiver = toSymExpr(expr)) {
+        if (auto dct = toDecoratedClassType(receiver->symbol()->type)) {
+          receiver->replace(new SymExpr(dct->getCanonicalClass()->symbol));
+        }
+      }
+    }
+  }
+
   // Ensure no SymExpr referring to TemporaryConversionSymbol is still in tree
   if (fVerify) {
     forv_Vec(SymExpr, se, gSymExprs) {
