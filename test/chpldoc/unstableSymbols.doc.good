@@ -1,0 +1,71 @@
+.. default-domain:: chpl
+
+.. module:: unstableSymbols.doc
+
+unstableSymbols.doc
+===================
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableSymbols.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableSymbols.doc;
+
+.. data:: var a: int
+
+   .. warning::
+
+      a is unstable
+
+.. data:: var b: int
+
+   .. warning::
+
+      b is unstable, don't use it
+
+.. data:: var c: string
+
+   There was documentation of this symbol 
+
+   .. warning::
+
+      c is unstable
+
+.. data:: var d: string
+
+   This symbol was also documented 
+
+   .. warning::
+
+      d is unstable, don't use it
+
+.. data:: var e: real
+
+   This symbol is unstable 
+
+.. data:: var f: real
+
+   This symbol is also unstable 
+
+.. data:: var g: bool
+
+   This symbol is not considered stable 
+
+   .. warning::
+
+      g is unstable
+
+.. data:: var h: bool
+
+   This symbol is also not considered stable 
+
+   .. warning::
+
+      h is unstable, don't use it
+
