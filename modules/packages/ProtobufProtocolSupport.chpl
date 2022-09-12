@@ -47,8 +47,8 @@ module ProtobufProtocolSupport {
     use IO;
     use CTypes;
 
-    type writingChannel = channel(true,iokind.little,false);
-    type readingChannel = channel(false,iokind.little,false);
+    type writingChannel = fileWriter(iokind.little,false);
+    type readingChannel = fileReader(iokind.little,false);
 
     // wireTypes
     const varint = 0;
@@ -299,14 +299,14 @@ module ProtobufProtocolSupport {
     proc serializeHelper(ref message, ch) throws {
       ch.lock();
       defer { ch.unlock(); }
-      var binCh: channel(writing=true, kind=iokind.little, locking=false) = ch;
+      var binCh: fileWriter(kind=iokind.little, locking=false) = ch;
       message._serialize(binCh);
     }
 
     proc deserializeHelper(ref message, ch) throws {
       ch.lock();
       defer { ch.unlock(); }
-      var binCh: channel(writing=false, kind=iokind.little, locking=false) = ch;
+      var binCh: fileReader(kind=iokind.little, locking=false) = ch;
       message._deserialize(binCh);
     }
 

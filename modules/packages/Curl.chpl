@@ -168,7 +168,7 @@ module Curl {
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
    */
-  proc getCurlHandle(ch:channel):c_ptr(CURL) throws {
+  proc getCurlHandle(ch:_channel):c_ptr(CURL) throws {
     use CurlQioIntegration;
 
     if ch.home != here {
@@ -193,7 +193,7 @@ module Curl {
      :arg arg: the value to set the curl option specified by opt.
      :type arg: `int`, `string`, `bool`, or `slist`
   */
-  proc setopt(ch:channel, opt:c_int, arg):bool throws {
+  proc setopt(ch:_channel, opt:c_int, arg):bool throws {
     use CurlQioIntegration;
 
     var err:CURLcode = CURLE_OK;
@@ -286,7 +286,7 @@ module Curl {
      :arg args: any number of tuples of the form (curl_option, value).
                 This function will call ``setopt`` on each pair in turn.
    */
-  proc setopt(ch:channel, args ...?k) throws {
+  proc setopt(ch:_channel, args ...?k) throws {
     for param i in 0..k-1 {
       setopt(ch, args(i)(0), args(i)(1));
     }
