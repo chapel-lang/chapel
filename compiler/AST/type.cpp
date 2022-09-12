@@ -192,6 +192,8 @@ const char* toString(Type* type, bool decorateAllClasses) {
     if (AggregateType* at = toAggregateType(vt)) {
       const char* drDomName = "DefaultRectangularDom";
       const int   drDomNameLen = strlen(drDomName);
+      const char* channelName = "_channel";
+      const int   channelNameLen = strlen(channelName);
 
       if (isArrayClass(at) && !at->symbol->hasFlag(FLAG_BASE_ARRAY)) {
         Symbol* domField = at->getField("dom", false);
@@ -223,6 +225,43 @@ const char* toString(Type* type, bool decorateAllClasses) {
       } else if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         if (developer == false)
           retval = "iterator";
+      } else if (at->symbol->getModule()->modTag == MOD_STANDARD &&
+                 strncmp(at->symbol->name, channelName, channelNameLen) == 0) {
+        gdbShouldBreakHere();
+        // remove leading _ in _channel for error messages
+        // (for channel deprecation)
+        const char* name = at->symbol->name;
+        const char* readerCh = "_channel(false";
+        const int   readerChLen = strlen(readerCh);
+        const char* writerCh = "_channel(true";
+        const int   writerChLen = strlen(writerCh);
+        if (0 == strncmp(name, readerCh, readerChLen)) {
+          // change _channel(false) -> fileReader
+          // change _channel(false, ... -> fileReader(...
+          int skip = readerChLen;
+          if (name[skip] == ')') {
+            retval = "fileReader";
+          } else {
+            // skip the comma after false
+            skip++;
+            retval = astr("fileReader(", name + skip);
+          }
+        } else if (0 == strncmp(name, writerCh, writerChLen)) {
+          // change _channel(true) -> fileWriter
+          // change _channel(true, ... -> fileWriter(...
+          int skip = writerChLen;
+          if (name[skip] == ')') {
+            retval = "fileWriter";
+          } else {
+            // skip the comma after true
+            skip++;
+            retval = astr("fileWriter(", name + skip);
+          }
+        } else {
+          // just change _channel into channel
+          retval = astr(vt->symbol->name + 1);
+        }
+
       // TODO: add a case to handle sync, single, atomic
       } else if (isManagedPtrType(vt)) {
         Type* borrowType = getManagedPtrBorrowType(vt);
@@ -233,14 +272,14 @@ const char* toString(Type* type, bool decorateAllClasses) {
         }
         if (startsWith(vt->symbol->name, "_owned")) {
           if (borrowType == dtUnknown) {
-            retval = astr("owned");
+            retval = "owned";
           } else {
             retval = astr("owned ", borrowName);
           }
         }
         else if (startsWith(vt->symbol->name, "_shared")) {
           if (borrowType == dtUnknown) {
-            retval = astr("shared");
+            retval = "shared";
           } else {
             retval = astr("shared ", borrowName);
           }
@@ -269,7 +308,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
 
   }
 
-  return retval;
+  return astr(retval);
 }
 
 /************************************* | **************************************
