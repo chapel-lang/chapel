@@ -2876,7 +2876,7 @@ proc openreader(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : channel(false, kind, locking) throws {
+    : _channel(false, kind, locking) throws {
   return openreaderHelper(path, kind, locking, start..end, hints,
                           style: iostyleInternal);
 }
@@ -2981,7 +2981,7 @@ proc openwriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : channel(true, kind, locking) throws {
+    : _channel(true, kind, locking) throws {
   return openwriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
 }
@@ -3050,7 +3050,7 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty,
-                 style:iostyle): channel(false, kind, locking)
+                 style:iostyle): _channel(false, kind, locking)
                  throws {
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
@@ -3060,7 +3060,7 @@ deprecated "file.reader with a start and/or end argument is deprecated.  Please 
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints = ioHintSet.empty)
-  : channel(false, kind, locking) throws {
+  : _channel(false, kind, locking) throws {
   return this.reader(kind, locking, start..end, hints);
 }
 
@@ -3937,9 +3937,9 @@ proc _channel.writeIt(const x) throws {
   }
 
   pragma "no doc"
-  inline proc channel._checkLiteralError(x:?t, err:errorCode,
-                                         action:string,
-                                         isLiteral:bool) : void throws {
+  inline proc _channel._checkLiteralError(x:?t, err:errorCode,
+                                          action:string,
+                                          isLiteral:bool) : void throws {
     // Error message construction is handled here so that messages are
     // consistent across the cross product of:
     //   {read,write,match} x {literal,newline} x {string, bytes}
@@ -3968,8 +3968,8 @@ proc _channel.writeIt(const x) throws {
   }
 
   pragma "no doc"
-  inline proc channel._readLiteralCommon(x:?t, ignore:bool,
-                                         param isMatch:bool) throws {
+  inline proc _channel._readLiteralCommon(x:?t, ignore:bool,
+                                          param isMatch:bool) throws {
     if t != string && t != bytes then
       compilerError("expecting string or bytes");
 
@@ -4043,8 +4043,8 @@ proc _channel.writeIt(const x) throws {
   */
   @unstable "channel.readLiteral is unstable and subject to change."
   inline
-  proc channel.readLiteral(literal:bytes,
-                           ignoreWhitespace=true) : void throws {
+  proc _channel.readLiteral(literal:bytes,
+                            ignoreWhitespace=true) : void throws {
     _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
   }
 
@@ -4073,7 +4073,7 @@ proc _channel.writeIt(const x) throws {
 
   // non-unstable version we can use internally
   pragma "no doc"
-  inline proc channel._readNewline() : void throws {
+  inline proc _channel._readNewline() : void throws {
     var ionl = new ioNewline(true);
     this.readIt(ionl);
   }
@@ -4094,7 +4094,7 @@ proc _channel.writeIt(const x) throws {
   */
   @unstable "channel.readNewline is unstable and subject to change."
   inline
-  proc channel.readNewline() : void throws {
+  proc _channel.readNewline() : void throws {
     _readNewlineCommon(isMatch=false);
   }
 
@@ -4220,7 +4220,7 @@ proc _channel.writeIt(const x) throws {
   */
   @unstable "channel.writeLiteral is unstable and subject to change."
   inline
-  proc channel.writeLiteral(literal:string) : void throws {
+  proc _channel.writeLiteral(literal:string) : void throws {
     _writeLiteralCommon(literal);
   }
 
