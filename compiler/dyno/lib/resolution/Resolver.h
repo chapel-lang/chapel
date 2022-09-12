@@ -198,8 +198,9 @@ struct Resolver {
 
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
-                          const types::Type* actualType,
-                          bool isNonStarVarArg = false);
+                          const types::QualifiedType& actualType,
+                          bool isNonStarVarArg = false,
+                          bool isTopLevel = true);
 
   /* When resolving a function with a TypeQuery, we need to
      resolve the type that is queried, since it can be used

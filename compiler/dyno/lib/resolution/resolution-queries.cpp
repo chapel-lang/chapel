@@ -1463,7 +1463,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       // manually update type queries.
       if (auto vld = formal->toVarLikeDecl()) {
         if (auto te = vld->typeExpression()) {
-            visitor.resolveTypeQueries(te, useType.type());
+            visitor.resolveTypeQueries(te, useType);
         }
       }
     } else {
