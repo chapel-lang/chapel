@@ -179,7 +179,7 @@ struct Resolver {
   /* Compute the receiver scope (when resolving a method)
      and return nullptr if it is not applicable.
    */
-  const Scope* methodReceiverScope();
+  const Scope* methodReceiverScope(bool recompute = false);
   /* Compute the receiver scope (when resolving a method)
      and return nullptr if it is not applicable.
    */

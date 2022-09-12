@@ -355,13 +355,27 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
-const Scope* Resolver::methodReceiverScope() {
+const Scope* Resolver::methodReceiverScope(bool recompute) {
+  if (recompute) {
+    receiverScopeComputed = false;
+  }
+
   if (receiverScopeComputed) {
     return savedReceiverScope;
   }
 
   if (typedSignature && typedSignature->untyped()->isMethod()) {
-    if (auto receiverType = typedSignature->formalType(0).type()) {
+    if (scopeResolveOnly) {
+      auto* untyped = typedSignature->untyped();
+      auto thisFormal = untyped->formalDecl(0)->toFormal();
+      auto type = thisFormal->typeExpression();
+      if (auto ident = type->toIdentifier()) {
+        auto re = byPostorder.byAst(ident);
+        if (re.toId().isEmpty() == false) {
+          savedReceiverScope = scopeForId(context, re.toId());
+        }
+      }
+    } else if (auto receiverType = typedSignature->formalType(0).type()) {
       if (auto compType = receiverType->getCompositeType()) {
         savedReceiverScope = scopeForId(context, compType->id());
         savedReceiverType = compType;

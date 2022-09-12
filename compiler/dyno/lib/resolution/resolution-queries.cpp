@@ -1683,6 +1683,13 @@ scopeResolveFunctionQuery(Context* context, ID id) {
     //  cause it to be scope resolved).
     for (auto child: fn->children()) {
       child->traverse(visitor);
+
+      // Recompute the method receiver after the 'this' formal is
+      // scope-resolved, when we might be able to gather some information
+      // about the type on which the method is declared.
+      if (fn->isMethod() && child == fn->thisFormal()) {
+        visitor.methodReceiverScope(/*recompute=*/true);
+      }
     }
 
     sig = visitor.typedSignature;
@@ -2314,7 +2321,7 @@ lookupCalledExpr(Context* context,
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
-  const Scope* scopeForReceiverType = nullptr;
+  const Scope* scopeToUse = scope;
 
   // For method calls, perform an initial lookup starting at the scope for
   // the definition of the receiver type, if it can be found.
@@ -2326,7 +2333,7 @@ lookupCalledExpr(Context* context,
     // Try to fetch the scope of the receiver type's definition.
     if (auto receiverType = receiverQualType.type()) {
       if (auto compType = receiverType->getCompositeType()) {
-        scopeForReceiverType = scopeForId(context, compType->id());
+        scopeToUse = scopeForId(context, compType->id());
       }
     }
   }
@@ -2334,7 +2341,7 @@ lookupCalledExpr(Context* context,
   UniqueString name = ci.name();
 
   std::vector<BorrowedIdsWithName> ret =
-    lookupNameInScopeWithSet(context, scope, scopeForReceiverType,
+    lookupNameInScopeWithSet(context, scopeToUse, nullptr,
                              name, config, visited);
 
   return ret;
