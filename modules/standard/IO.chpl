@@ -4913,7 +4913,7 @@ private proc readBytesOrString(ch: _channel, ref out_var: ?t,  len: int(64))
     throws {
 
   var err:errorCode = ENOERR;
-  on ch.home {
+  on ch._home {
     var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
