@@ -27,6 +27,7 @@
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
+#include "chpl/uast/OpCall.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
@@ -152,9 +153,13 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
 CallInfo::CallInfo(const uast::FnCall* call) {
   // set the name (simple cases only)
   if (auto called = call->calledExpression()) {
-    if (auto id = called->toIdentifier())
+    if (auto id = called->toIdentifier()) {
       name_ = id->name();
+      // determine if this is an operator call based on its name
+      isOpCall_ = uast::isUstrOpName(name_);
+    }
   }
+
 
   int i = 0;
   for (auto actual : call->actuals()) {

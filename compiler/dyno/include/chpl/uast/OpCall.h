@@ -21,7 +21,7 @@
 #define CHPL_UAST_OPCALL_H
 
 #include "chpl/framework/Location.h"
-#include "chpl/framework/UniqueString.h"
+#include "chpl/framework/global-strings.h"
 #include "chpl/uast/Call.h"
 
 namespace chpl {
@@ -82,6 +82,9 @@ class OpCall final : public Call {
   /** Returns true if this is a unary operator */
   bool isUnaryOp() const { return children_.size() == 1; }
 };
+
+// Returns true if the given string is an operator name
+bool isUstrOpName(UniqueString name);
 
 
 } // end namespace uast

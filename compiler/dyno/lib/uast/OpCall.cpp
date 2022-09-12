@@ -20,6 +20,7 @@
 #include "chpl/uast/OpCall.h"
 
 #include "chpl/uast/Builder.h"
+#include "chpl/framework/UniqueString.h"
 
 namespace chpl {
 namespace uast {
@@ -50,6 +51,23 @@ owned<OpCall> OpCall::build(Builder* builder,
   OpCall* ret = new OpCall(std::move(list), op);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
+}
+
+bool isUstrOpName(UniqueString name) {
+  return name == USTR("=") || name == USTR("==") || name == USTR("!=") ||
+         name == USTR(">") || name == USTR(">=") || name == USTR("<") ||
+         name == USTR("<=") || name == USTR("<=>") || name == USTR("&") ||
+         name == USTR("|") || name == USTR("^") || name == USTR("~") ||
+         name == USTR("+") || name == USTR("-") || name == USTR("*") ||
+         name == USTR("/") || name == USTR("<<") || name == USTR(">>") ||
+         name == USTR("%") || name == USTR("**") || name == USTR("!") ||
+         name == USTR("<~>") || name == USTR("+=") || name == USTR("-=") ||
+         name == USTR("*=") || name == USTR("/=") || name == USTR("%=") ||
+         name == USTR("**=") || name == USTR("&=") || name == USTR("|=") ||
+         name == USTR("^=") || name == USTR(">>=") || name == USTR("<<=") ||
+         name == USTR("#") || name == USTR("chpl_by") || name == USTR("by") ||
+         name == USTR("align") || name == USTR("chpl_align") ||
+         name == USTR(":");
 }
 
 
