@@ -13044,7 +13044,7 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
 static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Symbol* val) {
   USR_FATAL_CONT(call,
                  "Cannot default-initialize a variable with generic type");
-  USR_PRINT(call, "'%s' has generic type '%s'", val->name, type->symbol->name);
+  USR_PRINT(call, "'%s' has generic type '%s'", val->name, toString(type));
   printUndecoratedClassTypeNote(call, type);
   USR_STOP();
 }
