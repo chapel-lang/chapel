@@ -171,7 +171,7 @@ module Curl {
   proc getCurlHandle(ch:_channel):c_ptr(CURL) throws {
     use CurlQioIntegration;
 
-    if ch.home != here {
+    if ch._home != here {
       throw createSystemError(EINVAL, "getCurlHandle only functions with local channels");
     }
 
@@ -198,11 +198,11 @@ module Curl {
 
     var err:CURLcode = CURLE_OK;
 
-    if (arg.type == slist) && (arg.home != ch.home) {
+    if (arg.type == slist) && (arg._home != ch._home) {
       throw createSystemError(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
     }
 
-    on ch.home {
+    on ch._home {
       var plugin = ch.channelPlugin():CurlChannel?;
       if plugin == nil then
         throw createSystemError(EINVAL, "in channel.setopt(): not a curl channel");
