@@ -94,7 +94,51 @@ static void test1() {
   ctx.advanceToNextRevision(false);
 }
 
+static void test2() {
+  Context ctx;
+  auto context = &ctx;
+
+  // method and function operator definitions should conflict (ambiguous call)
+  QualifiedType qt1 = resolveTypeOfXInit(context,
+    R""""(
+      record R {
+      var field: int;
+        operator :(x: R, type t: int) { return x.field; }
+      }
+      operator R.:(x: R, type t: int) { return x.field; }
+      var myR: R;
+      var x = myR : int;
+    )""""
+  );
+  assert(qt1.kind() == QualifiedType::UNKNOWN);
+  assert(qt1.type() && qt1.type()->isErroneousType());
+  ctx.advanceToNextRevision(false);
+
+  // access to R should implicitly grant access to its method operators
+  /*
+  QualifiedType qt2 = resolveTypeOfXInit(context,
+    R""""(
+      module M {
+        record R {
+        var field: int;
+          operator :(x: R, type t: int) { return x.field; }
+        }
+      }
+
+      import M.R;
+      var myR: R;
+      var x = myR : int;
+    )""""
+  );
+  assert(qt2.type() && qt2.type()->isIntType());
+  assert(qt2.kind() == QualifiedType::VAR);
+  ctx.advanceToNextRevision(false);
+  */
+}
+
+
 int main() {
   test1();
+  test2();
   return 0;
 }
