@@ -4243,6 +4243,7 @@ void postConvertApplyFixups(chpl::Context* context) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (auto dct = toDecoratedClassType(ts->type)) {
       if (isAlive(ts) == false) {
+        SET_LINENO(ts);
         auto at = dct->getCanonicalClass();
         DefExpr* defDec = new DefExpr(ts);
         at->symbol->defPoint->insertAfter(defDec);
@@ -4257,6 +4258,7 @@ void postConvertApplyFixups(chpl::Context* context) {
       Expr* expr = toArgSymbol(fn->_this)->typeExpr->body.only();
       if (SymExpr* receiver = toSymExpr(expr)) {
         if (auto dct = toDecoratedClassType(receiver->symbol()->type)) {
+          SET_LINENO(receiver);
           receiver->replace(new SymExpr(dct->getCanonicalClass()->symbol));
         }
       }
