@@ -644,6 +644,15 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_REAL64_AS_UINT64)) {
+    Expr* realArg = call->get(1);
+    Immediate* realVal = getSymbolImmediate(toSymExpr(realArg)->symbol());
+    Immediate uintVal;
+    uintVal.const_kind = NUM_KIND_UINT;
+    uintVal.num_index = INT_SIZE_64;
+    memcpy(&(uintVal.v_uint64), &(realVal->v_float64), 8);
+    retval = new SymExpr(new_ImmediateSymbol(&uintVal));
+    call->replace(retval);
   }
 
   return retval;
