@@ -1138,7 +1138,14 @@ static const char* searchThePath(const char*      modName,
   const char* retval   = NULL;
 
   forv_Vec(const char*, dirName, searchPath) {
-    const char* path = astr(dirName, "/", fileName);
+    std::string dirStr = dirName;
+
+    // Remove slashes at the end of the directory path
+    while (dirStr.size() > 1 && dirStr.back() == '/') {
+      dirStr.pop_back();
+    }
+
+    const char* path = astr(dirStr.c_str(), "/", fileName);
 
     if (FILE* file = openfile(path, "r", false)) {
       closefile(file);
