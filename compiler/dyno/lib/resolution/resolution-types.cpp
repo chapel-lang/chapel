@@ -373,7 +373,10 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       }
       assert(entryIdx < numEntries);
 
-      // TODO: special handling for operators
+      // if this is a call to an operator method, skip the 'this' formal
+      if (call.isOpCall() && untyped->formalName(entryIdx) == USTR("this")) {
+        entryIdx++;
+      }
 
       FormalActual& entry = byFormalIdx_[entryIdx];
       entry.hasActual_ = true;
