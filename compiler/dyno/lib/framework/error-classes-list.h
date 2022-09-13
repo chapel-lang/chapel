@@ -17,20 +17,5 @@
  * limitations under the License.
  */
 
-#include "chpl/framework/Location.h"
-
-#include "chpl/framework/update-functions.h"
-
-namespace chpl {
-
-
-bool Location::update(Location& keep, Location& addin) {
-  return defaultUpdate(keep, addin);
-}
-
-void Location::stringify(std::ostream& os, StringifyKind kind) const {
-  os << "Location(" << path_ << ", " << firstLine_ << ", " << firstColumn_
-    << ", " << lastLine_ << ", " << lastColumn_ << ")";
-}
-
-} // end namespace chpl
+ERROR_CLASS(TupleExpansionNamedArgs, ERROR, const uast::OpCall*, const uast::FnCall*)
+ERROR_CLASS(MemManagementRecords, ERROR, const uast::Record*, const uast::FnCall*)

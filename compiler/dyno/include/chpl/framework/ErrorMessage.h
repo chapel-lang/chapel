@@ -181,7 +181,7 @@ class ErrorMessage final {
   /**
     Return the location in the source code where this error occurred.
   */
-  Location location(Context* context) const;
+  Location computeLocation(Context* context) const;
 
   const std::string& message() const { return message_; }
 
@@ -190,6 +190,8 @@ class ErrorMessage final {
   Kind kind() const { return kind_; }
 
   inline ID id() const { return id_; }
+
+  inline Location location() const { return location_; }
 
   inline bool operator==(const ErrorMessage& other) const {
     return isDefaultConstructed_ == other.isDefaultConstructed_ &&

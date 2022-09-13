@@ -48,7 +48,7 @@ buildErrorStr(const char* file, int line, const char* msg) {
 
 static void displayErrors(Context* ctx, const BuilderResult& br) {
   for (const auto& err : br.errors()) {
-    auto loc = err.location(ctx);
+    auto loc = err.computeLocation(ctx);
     auto out = buildErrorStr(loc.path().c_str(), loc.firstLine(),
                              err.message().c_str());
     printf("%s\n", out.c_str());
@@ -61,7 +61,7 @@ static void assertErrorMatches(Context* ctx, const BuilderResult& br,
                                int line,
                                const char* msg) {
   const auto& err = br.error(idx);
-  auto loc = err.location(ctx);
+  auto loc = err.computeLocation(ctx);
   auto output = buildErrorStr(loc.path().c_str(), loc.firstLine(),
                               err.message().c_str());
   auto expect = buildErrorStr(file, line, msg);

@@ -87,7 +87,7 @@ static void defaultReportErrorPrintDetail(Context* context,
                                           const ErrorMessage& err,
                                           const char* prefix,
                                           const char* kind) {
-  Location loc = err.location(context);
+  Location loc = err.computeLocation(context);
   const char* path = loc.path().c_str();
   int lineno = loc.line();
   bool validPath = (path != nullptr && path[0] != '\0');

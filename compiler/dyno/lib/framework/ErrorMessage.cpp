@@ -203,7 +203,7 @@ void ErrorMessage::addDetail(ErrorMessage err) {
   details_.push_back(std::move(err));
 }
 
-Location ErrorMessage::location(Context* context) const {
+Location ErrorMessage::computeLocation(Context* context) const {
   // if the ID is set, determine the location from that
   if (!id_.isEmpty()) {
     Location loc = parsing::locateId(context, id_);

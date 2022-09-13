@@ -117,7 +117,7 @@ static void test2() {
 
     printErrors();
     assert(errors.size() == 1);
-    assert(errors[0].location(context).firstLine() == 1);
+    assert(errors[0].computeLocation(context).firstLine() == 1);
   }
 
   {
@@ -141,8 +141,8 @@ static void test2() {
 
     printErrors();
     assert(errors.size() == 1);
-    printf("%d\n", errors[0].location(context).firstLine());
-    assert(errors[0].location(context).firstLine() == 3);
+    printf("%d\n", errors[0].computeLocation(context).firstLine());
+    assert(errors[0].computeLocation(context).firstLine() == 3);
   }
 }
 
