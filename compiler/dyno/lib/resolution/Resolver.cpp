@@ -1045,7 +1045,6 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
       auto ci = CallInfo (/* name */ USTR("="),
                           /* calledType */ QualifiedType(),
                           /* isMethodCall */ false,
-                          /* isOpCall */ true,
                           /* hasQuestionArg */ false,
                           /* isParenless */ false,
                           actuals);
@@ -1160,7 +1159,6 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   UniqueString name = USTR("init");
   auto calledType = QualifiedType(QualifiedType::REF, re.type().type());
   bool isMethodCall = true;
-  bool isOpCall = false;
   bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
 
@@ -1174,7 +1172,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     assert(!hasQuestionArg);
   }
 
-  auto ci = CallInfo(name, calledType, isMethodCall, isOpCall, hasQuestionArg,
+  auto ci = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
                      /* isParenless */ false,
                      std::move(actuals));
   auto inScope = scopeStack.back();
@@ -1521,7 +1519,6 @@ bool Resolver::enter(const Identifier* ident) {
           auto ci = CallInfo (/* name */ ident->name(),
                               /* calledType */ QualifiedType(),
                               /* isMethodCall */ false,
-                              /* isOpCall */ false,
                               /* hasQuestionArg */ false,
                               /* isParenless */ true,
                               actuals);
@@ -2006,13 +2003,11 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   UniqueString name;
   QualifiedType calledType;
   bool isMethodCall = false;
-  bool isOpCall = false;
   bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
 
   // Get the name of the called expression.
   if (auto op = call->toOpCall()) {
-    isOpCall = true;
     name = op->op();
   } else if (auto called = call->calledExpression()) {
     if (auto calledIdent = called->toIdentifier()) {
@@ -2070,10 +2065,8 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   // Prepare the remaining actuals.
   prepareCallInfoActuals(call, actuals, hasQuestionArg);
 
-  auto ret = CallInfo(name, calledType, isMethodCall, isOpCall,
-                      hasQuestionArg,
-                      /* isParenless */ false,
-                      actuals);
+  auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+                      /* isParenless */ false, actuals);
 
   return ret;
 }
@@ -2293,7 +2286,6 @@ void Resolver::exit(const Dot* dot) {
   auto ci = CallInfo (/* name */ dot->field(),
                       /* calledType */ QualifiedType(),
                       /* isMethodCall */ true,
-                      /* isOpCall */ false,
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
                       actuals);
@@ -2405,7 +2397,6 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
     auto ci = CallInfo (/* name */ USTR("these"),
                         /* calledType */ iterandRE.type(),
                         /* isMethodCall */ true,
-                        /* isOpCall */ false,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
                         actuals);

@@ -26,6 +26,7 @@
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
 #include "chpl/uast/AstNode.h"
+#include "chpl/uast/OpCall.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/Function.h"
 #include "chpl/util/bitmap.h"
@@ -356,13 +357,11 @@ class CallInfo {
   /** Construct a CallInfo that contains QualifiedTypes for actuals */
   CallInfo(UniqueString name, types::QualifiedType calledType,
            bool isMethodCall,
-           bool isOpCall,
            bool hasQuestionArg,
            bool isParenless,
            std::vector<CallInfoActual> actuals)
       : name_(name), calledType_(calledType),
         isMethodCall_(isMethodCall),
-        isOpCall_(isOpCall),
         hasQuestionArg_(hasQuestionArg),
         isParenless_(isParenless),
         actuals_(std::move(actuals)) {
@@ -379,6 +378,7 @@ class CallInfo {
       }
     }
     #endif
+    isOpCall_ = uast::isOpName(name);
   }
 
   /** Construct a CallInfo with unknown types for the actuals
