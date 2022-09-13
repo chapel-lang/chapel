@@ -1,1 +1,0 @@
-hetLiteralsUnifiable.chpl:1: error: Array literal element 1 expected to be of type bool but is of type int(64)

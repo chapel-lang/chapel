@@ -295,8 +295,6 @@ module ChapelArray {
   config param arrayLiteralLowBound = defaultLowBound;
   pragma "no doc"
   config param capturedIteratorLowBound = defaultLowBound;
-  pragma "no doc"
-  config param inferArrayLiteralTypeFromFirstElt = true;
 
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
@@ -310,9 +308,8 @@ module ChapelArray {
     param homog = isHomogeneousTuple(elems);
 
     // elements of string literals are assumed to be of type string
-    type eltType = if homog || inferArrayLiteralTypeFromFirstElt
-                   then elems(0).type
-                   else chpl_computeUnifiedType(elems);
+    type eltType = if homog then elems(0).type
+                            else chpl_computeUnifiedType(elems);
 
     var dom = {arrayLiteralLowBound..#k};
     var arr = dom.buildArray(eltType, initElts=false);
@@ -329,8 +326,7 @@ module ChapelArray {
 
         ref src = elems(i);
         ref dst = arr(i+arrayLiteralLowBound);
-        if (!inferArrayLiteralTypeFromFirstElt ||
-            currType == eltType ||
+        if (currType == eltType ||
             Reflection.canResolve("=", dst, src)) {
           __primitive("=", dst, src);
         } else {
