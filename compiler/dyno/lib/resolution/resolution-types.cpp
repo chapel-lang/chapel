@@ -156,7 +156,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
     if (auto id = called->toIdentifier()) {
       name_ = id->name();
       // determine if this is an operator call based on its name
-      isOpCall_ = uast::isUstrOpName(name_);
+      isOpCall_ = uast::isOpName(name_);
     }
   }
 

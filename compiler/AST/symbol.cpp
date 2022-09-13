@@ -2182,8 +2182,7 @@ void initAstrConsts() {
 }
 
 bool isAstrOpName(const char* name) {
-  return chpl::uast::isUstrOpName(
-      UniqueString::get(gContext, name, strlen(name)));
+  return chpl::uast::isOpName(UniqueString::get(gContext, name, strlen(name)));
 }
 
 /************************************* | **************************************

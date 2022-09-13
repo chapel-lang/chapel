@@ -53,7 +53,7 @@ owned<OpCall> OpCall::build(Builder* builder,
   return toOwned(ret);
 }
 
-bool isUstrOpName(UniqueString name) {
+bool isOpName(UniqueString name) {
   return name == USTR("=") || name == USTR("==") || name == USTR("!=") ||
          name == USTR(">") || name == USTR(">=") || name == USTR("<") ||
          name == USTR("<=") || name == USTR("<=>") || name == USTR("&") ||
