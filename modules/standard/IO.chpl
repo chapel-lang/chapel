@@ -2119,7 +2119,7 @@ record _channel {
 
 A ``fileReader`` supports sequential reading from an underlying :record:`file`
 object. It can buffer data. Read operations on it might return old data. Use
-:proc:`_channel.flush` to control this buffering.
+:proc:`channel.flush` to control this buffering.
 
 The :record:`fileReader` type is implementation-defined.
 A value of the :record:`fileReader` type refers to the state that is used
@@ -2152,7 +2152,7 @@ type fileReader = _channel(writing=false, ?);
 
 A ``fileWriter`` supports sequential writing to an underlying :record:`file`
 object. A ``fileWriter`` can buffer data. Write operations might not have an
-immediate effect. Use :proc:`_channel.flush` to control this buffering.
+immediate effect. Use :proc:`channel.flush` to control this buffering.
 
 The :record:`fileWriter` type is implementation-defined.
 A value of the :record:`fileWriter` type refers to the state that is used
@@ -2201,7 +2201,7 @@ with any file, and so cannot be used to perform I/O.
 
 The :record:`channel` type is generic.
 
-The :record:`_channel` type supports 3 fields:
+The :record:`channel` type supports 3 fields:
 
  * ``param writing: bool``:
      writing is a boolean indicating whether the channels of this type
