@@ -111,8 +111,6 @@ static void test2() {
   ctx.advanceToNextRevision(false);
 
   // access to R should implicitly grant access to its method operators
-  // commented because this currently fails
-  /*
   QualifiedType qt2 = resolveTypeOfXInit(context,
     R""""(
       module M {
@@ -122,7 +120,7 @@ static void test2() {
         }
       }
 
-      import M.R;
+      import this.M.R;
       var myR: R;
       var x = myR : int;
     )""""
@@ -130,7 +128,6 @@ static void test2() {
   assert(qt2.type() && qt2.type()->isIntType());
   assert(qt2.kind() == QualifiedType::VAR);
   ctx.advanceToNextRevision(false);
-  */
 }
 
 
