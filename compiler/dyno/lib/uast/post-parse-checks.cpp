@@ -107,6 +107,7 @@ struct Visitor {
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
+  void checkOperatorNameValidity(const Function* node);
   void checkEmptyProcedureBody(const Function* node);
   void checkExternProcedure(const Function* node);
   void checkExportProcedure(const Function* node);
@@ -500,6 +501,21 @@ void Visitor::checkExportVar(const Variable* node) {
   }
 }
 
+void Visitor::checkOperatorNameValidity(const Function* node) {
+  if (node->kind() == Function::Kind::OPERATOR) {
+    // operators must have valid operator names
+    if (!isOpName(node->name())) {
+      error(node, "'%s' is not a legal operator name", node->name().c_str());
+    }
+  } else {
+    // functions with operator names must be declared as operators
+    if (isOpName(node->name())) {
+      error(node, "Operator '%s' must be declared with operator keyword",
+            node->name().c_str());
+    }
+  }
+}
+
 void Visitor::checkEmptyProcedureBody(const Function* node) {
   if (!node->body() && node->linkage() != Decl::EXTERN) {
     auto decl = searchParentsForDecl(nullptr);
@@ -698,6 +714,7 @@ void Visitor::visit(const TypeQuery* node) {
 }
 
 void Visitor::visit(const Function* node) {
+  checkOperatorNameValidity(node);
   checkEmptyProcedureBody(node);
   checkExternProcedure(node);
   checkExportProcedure(node);
