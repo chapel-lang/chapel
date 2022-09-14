@@ -227,9 +227,10 @@ const char* toString(Type* type, bool decorateAllClasses) {
           retval = "iterator";
       } else if (at->symbol->getModule()->modTag == MOD_STANDARD &&
                  strncmp(at->symbol->name, channelName, channelNameLen) == 0) {
-        gdbShouldBreakHere();
         // remove leading _ in _channel for error messages
         // (for channel deprecation)
+        // TODO: remove this once the channel rename to fileReader/fileWriter
+        // is complete and channel is removed
         const char* name = at->symbol->name;
         const char* readerCh = "_channel(false";
         const int   readerChLen = strlen(readerCh);
