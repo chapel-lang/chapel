@@ -91,19 +91,17 @@ static void test1() {
 }
 
 static void test2() {
-  /* Context ctx; */
-  /* auto context = &ctx; */
+  Context ctx;
+  auto context = &ctx;
 
-  // method and function operator definitions should conflict (ambiguous call)
-  // commented because this currently fails
-  /*
+  // method and function operator definitions in the same scope should conflict (ambiguous call)
   QualifiedType qt1 = resolveTypeOfXInit(context,
     R""""(
       record R {
       var field: int;
-        operator :(z: R, type t: int) { return z.field; }
       }
       operator R.:(z: R, type t: int) { return z.field; }
+      operator :(z: R, type t: int) { return z.field; }
       var myR: R;
       var x = myR : int;
     )""""
@@ -111,7 +109,6 @@ static void test2() {
   assert(qt1.kind() == QualifiedType::UNKNOWN);
   assert(qt1.type() && qt1.type()->isErroneousType());
   ctx.advanceToNextRevision(false);
-  */
 
   // access to R should implicitly grant access to its method operators
   // commented because this currently fails
