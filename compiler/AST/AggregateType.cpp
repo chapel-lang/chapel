@@ -1615,6 +1615,8 @@ void AggregateType::renameInstantiation() {
   symbol->cname = astr(cname);
 
   // adjust _channel naming
+  // TODO: remove this once the channel rename to fileReader/fileWriter
+  // is complete and channel is removed
   if (0 == strncmp(symbol->name, "_channel", strlen("_channel"))) {
     symbol->name = toString(this, false);
   }
