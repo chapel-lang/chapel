@@ -18,8 +18,6 @@
 
 DYNO_CHPLDOC_OBJDIR = $(COMPILER_BUILD)/dyno/tools/chpldoc
 
-ALL_SRCS += dyno/tools/chpldoc/*.h dyno/tools/chpldoc/*.cpp
-
 DYNO_CHPLDOC_SRCS =                              \
            arg-helpers.cpp \
            arg.cpp \
