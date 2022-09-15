@@ -40,7 +40,7 @@ ENV CHPL_LLVM    system
 
 
 RUN mkdir -p /opt/chapel \
-    && wget -q -O - https://chapel-lang.org/tmp/chapel-1.28.0.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
+    && wget -q -O - https://github.com/chapel-lang/chapel/releases/download/$CHPL_VERSION/chapel-$CHPL_VERSION.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
     && make -C $CHPL_HOME \
     && make -C $CHPL_HOME chpldoc test-venv mason \
     && make -C $CHPL_HOME cleanall
