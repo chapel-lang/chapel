@@ -22,6 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/framework/ID.h"
+#include "chpl/util/printf.h"
 
 #include <cstdarg>
 #include <string>
@@ -29,15 +30,6 @@
 #include <vector>
 
 namespace chpl {
-
-// docs generator has trouble with the attribute applied to 'build'
-// so the above ifndef works around the issue.
-#ifndef DOXYGEN
-#define DYNO_ATTR_PRINTF_FORMAT(fmt__, rest__)\
-    __attribute__ ((format (printf, fmt__, rest__)))
-#else
-#define DYNO_ATTR_PRINTF_FORMAT(fmt__, rest__)
-#endif
 
 // forward declare AstNode
 namespace uast {

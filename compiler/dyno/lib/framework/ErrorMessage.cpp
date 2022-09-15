@@ -28,45 +28,6 @@
 
 namespace chpl {
 
-
-static std::string vprint_to_string(const char* format, va_list vl) {
-  // using an argument list after va_end is undefined
-  // so in other words, can't use 'vl' more than once,
-  // so make a copy for the 1st call.
-  va_list vlCopy;
-  va_copy(vlCopy, vl);
-
-  int size = 128;
-  char* buf = (char*) malloc(size);
-  // this call destructively consumes 'vlCopy'
-  int got = vsnprintf(buf, size, format, vlCopy);
-  // each va_copy should be matched to a va_end
-  va_end(vlCopy);
-
-  // 'got' is number of characters to write not including terminating null byte
-  if (got >= size) {
-    // output was truncated, so try again
-    size = got+1; // include '\0' terminator
-    char* newbuf = (char*) realloc(buf, size);
-    assert(newbuf != nullptr);
-    if (newbuf == nullptr) {
-      free(buf);
-      return "<internal error in saving error>";
-    }
-    buf = newbuf;
-    // this call destructively consumes 'vl'
-    got = vsnprintf(buf, size, format, vl);
-    assert(got < size);
-    if (got >= size) {
-      free(buf);
-      return "<internal error in saving error>";
-    }
-  }
-  std::string ret(buf);
-  free(buf);
-  return ret;
-}
-
 ErrorMessage::ErrorMessage()
   : isDefaultConstructed_(true), kind_(ERROR), id_(), location_(), message_() {
 }
@@ -99,7 +60,7 @@ ErrorMessage ErrorMessage::vbuild(Kind kind, ID id,
                                   const char* fmt,
                                   va_list vl) {
   std::string str;
-  str = vprint_to_string(fmt, vl);
+  str = vprintToString(fmt, vl);
   return ErrorMessage(kind, id, str);
 }
 
@@ -107,7 +68,7 @@ ErrorMessage ErrorMessage::vbuild(Kind kind, Location location,
                                   const char* fmt,
                                   va_list vl) {
   std::string str;
-  str = vprint_to_string(fmt, vl);
+  str = vprintToString(fmt, vl);
   return ErrorMessage(kind, location, str);
 }
 
