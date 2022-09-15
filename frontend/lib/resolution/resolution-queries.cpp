@@ -1631,16 +1631,16 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                       std::move(formalsInstantiated));
 
   // May need to resolve the body at this point to compute final TFS.
-  if (ensureBodyIsResolved(context, call, sig)) {
-    if (!sig->untyped()->isCompilerGenerated()) {
-      if (isTfsForInitializer(sig)) {
-        auto resolvedFn = resolveInitializer(context, sig, poiScope);
+  if (ensureBodyIsResolved(context, call, result)) {
+    if (!result->untyped()->isCompilerGenerated()) {
+      if (isTfsForInitializer(result)) {
+        auto resolvedFn = resolveInitializer(context, result, poiScope);
         auto newTfs = resolvedFn->signature();
         assert(!newTfs->needsInstantiation());
         result = newTfs;
       } else {
         assert(false && "Not handled yet!");
-        std::ignore = resolveFunction(context, sig, poiScope);
+        std::ignore = resolveFunction(context, result, poiScope);
       }
     }
   }
@@ -1688,28 +1688,56 @@ resolveFunctionByInfoQuery(Context* context,
     auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
                                                resolutionById);
 
-    const TypedFnSignature* finalTfs = nullptr;
-    bool handled = false;
+    const TypedFnSignature* newTfsForInitializer = nullptr;
+    bool didResolveInitializer = false;
 
     // TODO: What other info does the init visitor need to communicate?
-    handled |= handleResolvingInitFn(context, visitor, fn, finalTfs);
+    didResolveInitializer |= handleResolvingInitFn(context, visitor, fn,
+                                                   newTfsForInitializer);
 
-    if (!handled) {
-      fn->body()->traverse(visitor);
-      handled = true;
-    }
-
-    assert(handled);
+    if (!didResolveInitializer) fn->body()->traverse(visitor);
 
     // TODO can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
     resolvedPoiInfo.setResolved(true);
     resolvedPoiInfo.setPoiScope(nullptr);
 
-    owned<ResolvedFunction> resolved =
-      toOwned(new ResolvedFunction(sig, fn->returnIntent(),
-                                   std::move(resolutionById),
-                                   resolvedPoiInfo));
+    // If we resolved an initializer, then we started with a function
+    // signature that needed instantiation (for the receiver at the very
+    // least)  and ended with a new signature via resolving the body. We
+    // need to communicate to the query framework that the new TFS does
+    // not need to have its corresponding function resolved.
+    if (didResolveInitializer && newTfsForInitializer != sig) {
+      auto resolutionByIdCopy = resolutionById;
+      auto resolvedInit = toOwned(new ResolvedFunction(newTfsForInitializer,
+                                  fn->returnIntent(),
+                                  std::move(resolutionByIdCopy),
+                                  resolvedPoiInfo));
+      auto idsUsed = resolvedPoiInfo.poiFnIdsUsed();
+      QUERY_STORE_RESULT(resolveFunctionByPoisQuery,
+                         context,
+                         resolvedInit,
+                         newTfsForInitializer,
+                         idsUsed);
+      auto& saved = resolveFunctionByPoisQuery(context, newTfsForInitializer,
+                                               idsUsed);
+      const ResolvedFunction* resultInit = saved.get();
+      QUERY_STORE_RESULT(resolveFunctionByInfoQuery,
+                         context,
+                         resultInit,
+                         newTfsForInitializer,
+                         poiInfo);
+    }
+
+    // If we resolved an initializer, the result should point to the
+    // final, fully instantiated TFS that was created (if there is
+    // one). In other cases, we just use the input signature.
+    auto finalTfs = newTfsForInitializer ? newTfsForInitializer : sig;
+
+    owned<ResolvedFunction> resolved
+        = toOwned(new ResolvedFunction(finalTfs, fn->returnIntent(),
+                  std::move(resolutionById),
+                  resolvedPoiInfo));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -1720,6 +1748,7 @@ resolveFunctionByInfoQuery(Context* context,
                        resolved,
                        sig,
                        resolvedPoiInfo.poiFnIdsUsed());
+
   } else {
     assert(false && "this query should be called on Functions");
   }
@@ -2973,7 +3002,6 @@ CallResolutionResult resolveFnCall(Context* context,
 
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
-
   if (ci.calledType().kind() == QualifiedType::TYPE) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)

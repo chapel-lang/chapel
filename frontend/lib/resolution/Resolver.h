@@ -347,6 +347,13 @@ struct Resolver {
   void resolveNewForClass(const uast::New* node,
                           const types::ClassType* classType);
 
+  std::vector<BorrowedIdsWithName>
+  lookupIdentifier(const uast::Identifier* ident,
+                   const Scope* receiverScope);
+
+  bool resolveIdentifier(const uast::Identifier* ident,
+                         const Scope* receiverScope);
+
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
   void enterScope(const uast::AstNode* ast);

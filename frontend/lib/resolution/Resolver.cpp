@@ -360,9 +360,7 @@ const Scope* Resolver::methodReceiverScope(bool recompute) {
     receiverScopeComputed = false;
   }
 
-  if (receiverScopeComputed) {
-    return savedReceiverScope;
-  }
+  if (receiverScopeComputed) return savedReceiverScope;
 
   if (typedSignature && typedSignature->untyped()->isMethod()) {
     if (scopeResolveOnly) {
@@ -378,7 +376,6 @@ const Scope* Resolver::methodReceiverScope(bool recompute) {
     } else if (auto receiverType = typedSignature->formalType(0).type()) {
       if (auto compType = receiverType->getCompositeType()) {
         savedReceiverScope = scopeForId(context, compType->id());
-        savedReceiverType = compType;
       }
     }
   }
@@ -388,14 +385,14 @@ const Scope* Resolver::methodReceiverScope(bool recompute) {
 }
 
 const CompositeType* Resolver::methodReceiverType() {
-  if (receiverScopeComputed) {
-    return savedReceiverType;
+  if (typedSignature && typedSignature->untyped()->isMethod()) {
+    if (auto receiverType = typedSignature->formalType(0).type()) {
+      if (auto ret = receiverType->getCompositeType()) {
+        return ret;
+      }
+    }
   }
-
-  // otherwise, run methodReceiverScope to compute it
-  methodReceiverScope();
-
-  return savedReceiverType;
+  return nullptr;
 }
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
@@ -1235,16 +1232,26 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   assert(crr.mostSpecific().numBest() <= 1);
 
   // there should be one or zero applicable candidates
-  if (auto tfs = crr.mostSpecific().only()) {
+  if (auto initTfs = crr.mostSpecific().only()) {
     handleResolvedAssociatedCall(re, call, ci, crr);
 
-    //
-    // TODO: Could inspect the formal type and use it + above management
-    // + combine to produce the final class type.
-    // TODO: Compute the concrete type by resolving generics + initializer
-    //
-    (void) tfs;
-    re.setType(qtNewExpr);
+    // Set the final output type based on the result of the 'new' call.
+    auto qtInitReceiver = initTfs->formalType(0);
+    auto type = qtInitReceiver.type();
+
+    // Preserve original management if receiver is a class.
+    if (auto cls = type->toClassType()) {
+      auto newCls = qtNewExpr.type()->toClassType();
+      assert(newCls);
+      assert(!cls->manager() && cls->decorator().isNonNilable());
+      assert(cls->decorator().isBorrowed());
+      type = ClassType::get(context, cls->basicClassType(),
+                            newCls->manager(),
+                            newCls->decorator());
+    }
+
+    auto qt = QualifiedType(QualifiedType::VAR, type);
+    re.setType(qt);
 
   } else {
     issueErrorForFailedCallResolution(call, ci, crr);
@@ -1508,9 +1515,28 @@ bool Resolver::enter(const Literal* literal) {
 void Resolver::exit(const Literal* literal) {
 }
 
-bool Resolver::enter(const Identifier* ident) {
+std::vector<BorrowedIdsWithName>
+Resolver::lookupIdentifier(const Identifier* ident,
+                           const Scope* receiverScope) {
   assert(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
+
+  bool resolvingCalledIdent = (inLeafCall &&
+                               ident == inLeafCall->calledExpression());
+
+  LookupConfig config = LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_PARENTS;
+
+  if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+
+  auto vec = lookupNameInScope(context, scope, receiverScope,
+                               ident->name(), config);
+  return vec;
+}
+
+bool Resolver::resolveIdentifier(const Identifier* ident,
+                                 const Scope* receiverScope) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
@@ -1521,20 +1547,8 @@ bool Resolver::enter(const Identifier* ident) {
     return false;
   }
 
-  bool resolvingCalledIdent = (inLeafCall &&
-                               ident == inLeafCall->calledExpression());
+  auto vec = lookupIdentifier(ident, receiverScope);
 
-  LookupConfig config = LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS;
-
-  if (!resolvingCalledIdent)
-    config |= LOOKUP_INNERMOST;
-
-  const Scope* receiverScope = methodReceiverScope();
-
-  auto vec = lookupNameInScope(context, scope, receiverScope,
-                               ident->name(), config);
   if (vec.size() == 0) {
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
@@ -1557,6 +1571,8 @@ bool Resolver::enter(const Identifier* ident) {
         //   record R { type t = int; }
         //   var x: R; // should refer to R(int)
         bool computeDefaults = true;
+        bool resolvingCalledIdent = (inLeafCall &&
+                                     ident == inLeafCall->calledExpression());
         if (resolvingCalledIdent) {
           computeDefaults = false;
         }
@@ -1603,6 +1619,12 @@ bool Resolver::enter(const Identifier* ident) {
   }
   return false;
 }
+
+bool Resolver::enter(const Identifier* ident) {
+  auto ret = resolveIdentifier(ident, methodReceiverScope());
+  return ret;
+}
+
 void Resolver::exit(const Identifier* ident) {
 }
 
@@ -2218,18 +2240,6 @@ void Resolver::exit(const Call* call) {
   inLeafCall = nullptr;
 }
 
-/*
-  // TODO: Prevent nested 'this.this.foo' cases.
-  if (auto ident = dot->receiver()->toIdentifier()) {
-    gdbShouldBreakHere();
-    if (ident->name() == USTR("this")) {
-      auto& re = byPostorder.byAst(dot);
-      re.setType(receiver.type());
-      re.setToId(receiver.toId());
-      return false;
-    }
-  }
-*/
 bool Resolver::enter(const Dot* dot) {
   return true;
 }

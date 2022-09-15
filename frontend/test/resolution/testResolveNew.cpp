@@ -233,6 +233,7 @@ static void test3() {
       x.foo();
     }
     )"""";
+
   setFileText(context, path, contents);
 
   // Get the modules.
@@ -472,7 +473,7 @@ static void test4() {
 static void test5() {
 }
 
-// Ditto but for classes.
+// TODO: Ditto but for classes.
 static void test6() {
 }
 
@@ -486,13 +487,12 @@ static void test7() {
   auto path = UniqueString::get(ctx, "test7.chpl");
   std::string contents = R""""(
     record r {
-      type T;
-      param P: int;
-      var v1 = 0;
-      var v2: real;
-      proc init(type T, param P: int) {
-        this.T = T;
-        this.P = P;
+      type f1;
+      param f2: int;
+      var f3: f1;
+      proc init(type f1, param P: int) {
+        this.f1 = f1;
+        this.f2 = P;
       }
     }
     var obj = new r(int, 8);
@@ -513,27 +513,70 @@ static void test7() {
   auto obj = mod->stmt(1)->toVariable();
   assert(obj);
 
-  // TODO: Confirm the final initializer type.
+  // TODO: Confirm the final type of the instance.
   auto& rr = resolveModule(ctx, mod->id());
-  (void) rr;
+  auto& reObj = rr.byAst(obj);
+  auto typeObj = reObj.type().type();
+  auto rt = typeObj->toRecordType();
+  assert(rt);
+  assert(rt->id() == rec->id());
+  assert(rt->instantiatedFrom() != nullptr);
+
+  // Check the first field via substitutions.
+  auto idf1 = parsing::fieldIdWithName(ctx, rt->id(),
+                                       UniqueString::get(ctx, "f1"));
+  assert(!idf1.isEmpty());
+  auto qtf1 = rt->substitution(idf1);
+  assert(qtf1.kind() == QualifiedType::TYPE);
+  assert(qtf1.type() == IntType::get(ctx, 0));
+  assert(qtf1.param() == nullptr);
+
+  // Check the second field via substitutions.
+  auto idf2 = parsing::fieldIdWithName(ctx, rt->id(),
+                                       UniqueString::get(ctx, "f2"));
+  assert(!idf2.isEmpty());
+  auto qtf2 = rt->substitution(idf2);
+  assert(qtf2.kind() == QualifiedType::PARAM);
+  assert(qtf2.type() == IntType::get(ctx, 0));
+  assert(qtf2.param()->isIntParam());
+  assert(qtf2.param()->toIntParam()->value() == 8);
+
+  // Check all fields via resolved fields.
+  auto& rf = fieldsForTypeDecl(ctx, rt, USE_DEFAULTS);
+  assert(rf.numFields() == 3);
+
+  auto ft1 = QualifiedType(QualifiedType::TYPE, IntType::get(ctx, 0));
+  assert(rf.fieldType(0) == ft1);
+  auto ft2 = QualifiedType(QualifiedType::PARAM, IntType::get(ctx, 0),
+                           IntParam::get(ctx, 8));
+  assert(rf.fieldType(1) == ft2);
+  auto ft3 = QualifiedType(QualifiedType::VAR, IntType::get(ctx, 0));
+  assert(rf.fieldType(2) == ft3);
+
+  // Confirm that the TFS for the initializer is correct.
+  auto newCall = obj->initExpression();
+  auto reNewCall = rr.byAst(newCall);
+  assert(reNewCall.type() == reObj.type());
+  assert(reNewCall.associatedFns().size() == 1);
+  auto initTfs = reNewCall.associatedFns()[0];
+  assert(initTfs);
+  assert(initTfs->untyped()->name() == "init");
+  assert(initTfs->untyped()->numFormals() == 3);
+  assert(initTfs->untyped()->id() == rec->declOrComment(3)->id());
+
+  // Initializer type should be the same as the 'new' call type.
+  auto qtRecv = initTfs->formalType(0);
+  assert(qtRecv.kind() == QualifiedType::REF);
+  assert(qtRecv.type() == typeObj);
 }
 
 int main() {
-  /*
   test1();
   test2();
   test3();
   test4();
   test5();
   test6();
-  */
-  (void) test1;
-  (void) test2;
-  (void) test3;
-  (void) test4;
-  (void) test5;
-  (void) test6;
-
   test7();
 
   return 0;

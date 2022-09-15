@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/types/all-types.h"
@@ -38,7 +39,9 @@ namespace {
     struct FieldInitState {
       int ordinalPos = -1;
       ID initPointId = ID();
-      QualifiedType initPointQt;
+      QualifiedType qt;
+      UniqueString name;
+      bool isInitialized;
       FieldInitState() = default;
     };
 
@@ -49,51 +52,55 @@ namespace {
     };
   
     Context* ctx_;
-    Resolver& resolverVisitor_;
+    Resolver& initResolver_;
     const Function* fn_;
-    const Type* recvType_;
-    const ResolvedFields& rf_;
+    const Type* initialRecvType_;
 
     std::map<ID, FieldInitState> fieldToInitState_;
+    std::vector<ID> fieldIdsByOrdinal_;
     Phase phase_ = PHASE_NEED_SUPER_INIT;
-    int currentFieldIdx_ = 0;
+    int currentFieldIndex_ = 0;
     ID idForCompleteCall_ = ID();
     bool isDescendingIntoAssignment_ = false;
+    const Type* currentRecvType_ = initialRecvType_;
 
-    Visitor(Context* context, Resolver& visitor,
+    Visitor(Context* ctx, Resolver& visitor,
             const Function* fn,
-            const Type* recvType,
-            const ResolvedFields& rf)
-      : ctx_(context),
-        resolverVisitor_(visitor),
+            const Type* recvType)
+      : ctx_(ctx),
+        initResolver_(visitor),
         fn_(fn),
-        recvType_(recvType),
-        rf_(rf) {
+        initialRecvType_(recvType) {
     }
 
-    static Visitor build(Context* context, Resolver& visitor,
-                         const Function* fn);
+    static Visitor create(Context* context, Resolver& visitor,
+                          const Function* fn);
 
-    void doSetupInitialFieldState(void);
-    bool isCallToSuperInitRequired(void) const;
-    void doDetermineInitialPhase(void);
-    const Type* computeFinalReceiverTypeConsideringFields(void);
+    bool isCallToSuperInitRequired(void);
+    void doSetupInitialState(void);
+
+    bool isFinalReceiverStateValid(void);
+    const Type* computeReceiverTypeConsideringState(void);
+
+    QualifiedType::Kind determineReceiverIntent(void);
+    const TypedFnSignature* computeTypedSignature(const Type* newRecvType);
     const TypedFnSignature* run(void);
     void traverse(const AstNode* root);
+    void updateResolverVisibleReceiverType(void);
+    bool implicitlyResolveFieldType(ID id);
 
-    const AstNode* parentOf(const AstNode* node) const;
-    bool isNameOfAnyField(UniqueString name) const;
-    bool isValidFieldId(ID fieldId) const;
-    FieldInitState* fieldStateFromId(ID fieldId);
-    const FieldInitState* fieldStateFromId(ID fieldId) const;
-    bool isMentionOfNodeInLhsOfAssign(const AstNode* node) const;
-    ID idFromPossibleMentionOfField(const AstNode* node) const;
-    bool isFieldInitialized(ID fieldId) const;
+    const AstNode* parentOf(const AstNode* node);
+    FieldInitState* fieldStateFromId(ID id);
+    FieldInitState* fieldStateFromIndex(int idx);
+    bool isMentionOfNodeInLhsOfAssign(const AstNode* node);
+    ID fieldIdFromName(UniqueString name);
+    ID fieldIdFromPossibleMentionOfField(const AstNode* node);
+    bool isFieldInitialized(ID fieldId);
 
     bool handleCallToThisComplete(const FnCall* node);
     bool handleCallToSuperInit(const FnCall* node);
     bool handleCallToInit(const FnCall* node);
-    bool handleInitializationOfField(const OpCall* node);
+    bool handleAssignmentToField(const OpCall* node);
     bool handleUseOfField(const AstNode* node);
 
     // Visitors.
@@ -103,7 +110,9 @@ namespace {
     void exit(const OpCall* node);
     bool enter(const FnCall* node);
     void exit(const FnCall* node);
+    bool enter(const Identifier* node);
     void exit(const Identifier* node);
+    bool enter(const Dot* node);
     void exit(const Dot* node);
   };
 
@@ -113,7 +122,7 @@ namespace {
     return ret;
   }
 
-  static const CompositeType* unwrapCompType(const Type* type) {
+  static const CompositeType* typeToCompType(const Type* type) {
     if (auto cls = type->toClassType()) {
       return cls->basicClassType();
     } else {
@@ -125,108 +134,117 @@ namespace {
   static const CompositeType*
   receiverCompTypeFromTfs(const TypedFnSignature* tfs) {
     auto type = receiverTypeFromTfs(tfs);
-    auto ret = unwrapCompType(type);
+    auto ret = typeToCompType(type);
     assert(ret);
     return ret;
   }
 
-  Visitor Visitor::build(Context* ctx, Resolver& visitor,
-                         const Function* fn) {
+  Visitor Visitor::create(Context* ctx, Resolver& visitor,
+                          const Function* fn) {
     auto tfs = visitor.typedSignature;
     assert(tfs);
     auto recvType = receiverTypeFromTfs(tfs);
-    const CompositeType* ct = receiverCompTypeFromTfs(tfs);
-    auto& rf = fieldsForTypeDecl(ctx, ct, USE_DEFAULTS);
-    auto ret = Visitor(ctx, visitor, fn, recvType, rf);
+    auto ret = Visitor(ctx, visitor, fn, recvType);
     return ret;
   }
 
-  void Visitor::doSetupInitialFieldState(void) {
-    fieldToInitState_.clear();
-
-    for (int i = 0; i < rf_.numFields(); i++) {
-      auto declPoint = rf_.fieldDeclId(i);
-      FieldInitState state = { i, ID(), QualifiedType() };
-      fieldToInitState_.insert({declPoint, std::move(state)});
-    }
-  }
-
   // TODO: More general function to fetch the parent type/fields later.
-  bool Visitor::isCallToSuperInitRequired(void) const {
-    if (auto cls = recvType_->toClassType())
+  bool Visitor::isCallToSuperInitRequired(void) {
+    if (auto cls = initialRecvType_->toClassType())
       if (auto bct = cls->basicClassType())
         if (bct->parentClassType())
           return true;
     return false;
   }
 
-  void Visitor::doDetermineInitialPhase(void) {
+  void Visitor::doSetupInitialState(void) {
+    fieldToInitState_.clear();
+
+    // Determine the initial phase.
     phase_ = isCallToSuperInitRequired() ? PHASE_NEED_SUPER_INIT
                                          : PHASE_NEED_COMPLETE;
+
+    auto ct = typeToCompType(initialRecvType_);
+    auto& rf = fieldsForTypeDecl(ctx_, ct, USE_DEFAULTS);
+
+    // Populate the fields with initial values.
+    for (int i = 0; i < rf.numFields(); i++) {
+      auto id = rf.fieldDeclId(i);
+      FieldInitState state;
+      state = { i, ID(), rf.fieldType(i), rf.fieldName(i), false };
+      fieldToInitState_.insert({id, std::move(state)});
+      fieldIdsByOrdinal_.push_back(id);
+    }
   }
 
-  static bool isFastToComputeConcrete(QualifiedType qt) {
-    auto ret = qt.genericity() != Type::CONCRETE;
+  bool Visitor::isFinalReceiverStateValid(void) {
+    auto ctInitial = typeToCompType(initialRecvType_);
+    auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial, USE_DEFAULTS);
+    bool ret = true;
+
+    for (int i = 0; i < rfInitial.numFields(); i++) {
+      auto id = rfInitial.fieldDeclId(i);
+      auto state = fieldStateFromId(id);
+      bool isDefaultValuePresent = rfInitial.fieldHasDefaultValue(i);
+      auto qtInitial = rfInitial.fieldType(i);
+      bool isInitiallyConcrete = qtInitial.genericity() == Type::CONCRETE;
+      auto name = rfInitial.fieldName(i);
+
+      if (isInitiallyConcrete) continue;
+
+      if (!state->isInitialized && !isDefaultValuePresent) {
+        ctx_->error(fn_, "can't omit initialization of field \"%s\", "
+                         "no type or default value provided",
+                         name.c_str());
+        ret = false;
+      }
+
+      if (state->qt.genericity() == Type::GENERIC) {
+        assert(false && "Not handled yet!");
+        ret = false;
+      }
+    }
+
     return ret;
   }
 
-  //
-  // TODO:
-  // - Get the parent class type (the current basic class type if generic)
-  // - Build up all the substitutions
-  // - Construct either a BasicClassType or RecordType using subs/parent
-  // - Additionally, for classes, wrap in BORROWED_NONNIL
-  // - Return the final type (fully non-generic)
-  // - TODO TODO: Super class stuff?
-  //
-  const Type* Visitor::computeFinalReceiverTypeConsideringFields(void) {
-    if (!rf_.isGeneric()) return recvType_;
-
-    auto ct = unwrapCompType(recvType_);
-    auto& rfNoDefaults = fieldsForTypeDecl(ctx_, ct, IGNORE_DEFAULTS);
+  const Type* Visitor::computeReceiverTypeConsideringState(void) {
+    auto ctInitial = typeToCompType(initialRecvType_);
+    auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial, USE_DEFAULTS);
     CompositeType::SubstitutionsMap subs;
 
-    for (int i = 0; i < rf_.numFields(); i++) {
-      auto fieldName = rf_.fieldName(i);
-      auto fieldQt = rf_.fieldType(i);
-      auto fieldId = rf_.fieldDeclId(i);
-      auto fieldDefaultQt = rfNoDefaults.fieldType(i);
+    if (!rfInitial.isGeneric()) return currentRecvType_;
 
-      auto state = fieldStateFromId(fieldId);
-      auto initPointQt = state->initPointQt;
-      auto initPointId = state->initPointId;
+    for (int i = 0; i < rfInitial.numFields(); i++) {
+      auto id = rfInitial.fieldDeclId(i);
+      auto state = fieldStateFromId(id);
+      auto qtInitial = rfInitial.fieldType(i);
+      bool isInitiallyConcrete = qtInitial.genericity() == Type::CONCRETE;
 
-      bool isGenericByDefault = isFastToComputeConcrete(fieldDefaultQt);
-      bool isDefaultValuePresent = rf_.fieldHasDefaultValue(i);
-      bool isInitPointPresent = !initPointId.isEmpty();
+      if (isInitiallyConcrete) continue;
 
-      if (!isGenericByDefault) continue;
-
-      if (!isInitPointPresent && !isDefaultValuePresent) {
-        ctx_->error(fn_, "can't omit initialization of field \"%s\", "
-                         "no type or default value provided",
-                         fieldName.c_str());
-      }
-
-      auto consideredQt = isInitPointPresent ? initPointQt : fieldQt;
-
-      if (consideredQt.genericity() == Type::GENERIC) {
-        assert(false && "Not handled yet!");
-      }
-
-      subs.insert({fieldId, consideredQt});
+      // TODO: Will need to relax this as we go.
+      if (state->qt.isType() || state->qt.isParam())
+        if (!state->qt.isGenericOrUnknown())
+          subs.insert({id, state->qt});
     }
 
     const Type* ret = nullptr;
+    auto initCompType = typeToCompType(initialRecvType_);
+    auto root = initCompType->instantiatedFromCompositeType() ?
+                initCompType->instantiatedFromCompositeType() :
+                initCompType;
 
-    if (auto rec = recvType_->toRecordType()) {
-      ret = RecordType::get(ctx_, rec->id(), rec->name(), rec, subs);
-    } else if (auto cls = recvType_->toClassType()) {
+    if (auto rec = initialRecvType_->toRecordType()) {
+      ret = RecordType::get(ctx_, rec->id(), rec->name(),
+                            root->toRecordType(),
+                            subs);
+    } else if (auto cls = initialRecvType_->toClassType()) {
       auto oldBasic = cls->basicClassType();
       auto basic = BasicClassType::get(ctx_, oldBasic->id(),
                                        oldBasic->name(),
                                        oldBasic->parentClassType(),
-                                       oldBasic,
+                                       root->toBasicClassType(),
                                        subs);
       auto manager = AnyOwnedType::get(ctx_);
       auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
@@ -240,20 +258,70 @@ namespace {
     return ret;
   }
 
+  QualifiedType::Kind Visitor::determineReceiverIntent(void) {
+    if (initialRecvType_->isClassType()) {
+      return QualifiedType::CONST_IN;
+    } else {
+      assert(initialRecvType_->isRecordType());
+      return QualifiedType::REF;
+    }
+  }
+
+  const TypedFnSignature*
+  Visitor::computeTypedSignature(const Type* newRecvType) {
+    const TypedFnSignature* ret = initResolver_.typedSignature;
+
+    if (newRecvType == currentRecvType_) return ret;
+
+    auto tfs = initResolver_.typedSignature;
+    auto ufs = tfs->untyped();
+    std::vector<QualifiedType> formalTypes;
+    Bitmap formalsInstantiated;
+
+    formalsInstantiated.resize(ufs->numFormals());
+
+    for (int i = 0; i < tfs->numFormals(); i++) {
+      if (i == 0) {
+        auto qt = QualifiedType(determineReceiverIntent(), newRecvType);
+        formalTypes.push_back(std::move(qt));
+        formalsInstantiated.setBit(i, true);
+      } else {
+        formalTypes.push_back(tfs->formalType(i));
+        formalsInstantiated.setBit(i, tfs->formalIsInstantiated(i));
+      }
+    }
+
+    ret = TypedFnSignature::get(ctx_, ufs, formalTypes,
+                                tfs->whereClauseResult(),
+                                false,
+                                tfs->instantiatedFrom(),
+                                tfs->parentFn(),
+                                formalsInstantiated);
+    return ret;
+  }
+
+  // TODO: Identifiy if we need to do anything at all.
+  // TODO: Move the final checks into this function.
   const TypedFnSignature* Visitor::run(void) {
-    doSetupInitialFieldState();
-    doDetermineInitialPhase();
+    doSetupInitialState();
+
+    auto ret = initResolver_.typedSignature;
 
     this->traverse(fn_->body());
 
-    auto newRecvType = computeFinalReceiverTypeConsideringFields();
-    assert(newRecvType);
+    if (phase_ < PHASE_COMPLETE) {
+      int start = currentFieldIndex_;
+      int stop = fieldIdsByOrdinal_.size();
+      for (int i = start; i < stop; i++) {
+        auto id = fieldIdsByOrdinal_[i];
+        bool handled = implicitlyResolveFieldType(id);
+        assert(handled);
+      }
+    }
 
-    auto ret = resolverVisitor_.typedSignature; 
-
-    // TODO: Compute the new TFS.
-    if (newRecvType != recvType_) {
-      assert(false && "Not handled yet!");
+    if (isFinalReceiverStateValid()) {
+      auto newRecvType = computeReceiverTypeConsideringState();
+      ret = computeTypedSignature(newRecvType);
     }
 
     return ret;
@@ -267,13 +335,13 @@ namespace {
         { \
           const NAME* casted = (const NAME*) node; \
           bool go = this->enter(casted); \
-          if (go) go &= resolverVisitor_.enter(casted); \
+          if (go) go &= initResolver_.enter(casted); \
           if (go && !node->isLeaf()) { \
             for (const AstNode* child : node->children()) { \
               this->traverse(child); \
             } \
           } \
-          resolverVisitor_.exit(casted); \
+          initResolver_.exit(casted); \
           this->exit(casted); \
           break; \
         }
@@ -304,34 +372,59 @@ namespace {
     return;
   }
 
-  const AstNode* Visitor::parentOf(const AstNode* node) const {
-    assert(false && "Not handled!");
+  void Visitor::updateResolverVisibleReceiverType(void) {
+    auto updated = computeReceiverTypeConsideringState();
+    if (updated != currentRecvType_) {
+      auto tfs = computeTypedSignature(updated);
+      initResolver_.typedSignature = tfs;
+      currentRecvType_ = updated;
+    }
+  }
+
+  bool Visitor::implicitlyResolveFieldType(ID id) {
+    auto state = fieldStateFromId(id);
+    if (!state || !state->initPointId.isEmpty()) return false;
+
+    if (state->qt.isParam()) {
+      assert(0 == "Not handled yet!");
+    } else if (state->qt.isType()) {
+      assert(0 == "Not handled yet!");
+    } else {
+      auto ct = typeToCompType(currentRecvType_);
+      auto& rf = resolveFieldDecl(ctx_, ct, id, USE_DEFAULTS);
+      for (int i = 0; i < rf.numFields(); i++) {
+        auto id = rf.fieldDeclId(i);
+        auto state = fieldStateFromId(id);
+        assert(state);
+        assert(state->qt.kind() == rf.fieldType(i).kind());
+        state->qt = rf.fieldType(i);
+        state->isInitialized = true;
+      }
+    }
+
+    return true;
+  }
+
+  const AstNode* Visitor::parentOf(const AstNode* node) {
+    auto parentId = parsing::idToParentId(ctx_, node->id());
+    auto ret = parsing::idToAst(ctx_, parentId);
+    return ret;
+  }
+
+  Visitor::FieldInitState* Visitor::fieldStateFromId(ID id) {
+    auto search = fieldToInitState_.find(id);
+    if (search != fieldToInitState_.end()) return &search->second;
     return nullptr;
   }
 
-  bool Visitor::isNameOfAnyField(UniqueString name) const {
-    auto ret = isNameOfField(ctx_, name, recvType_);
+  Visitor::FieldInitState* Visitor::fieldStateFromIndex(int idx) {
+    if (idx < 0 || idx >= fieldIdsByOrdinal_.size()) return nullptr;
+    auto id = fieldIdsByOrdinal_[idx];
+    auto ret = fieldStateFromId(id);
     return ret;
   }
 
-  bool Visitor::isValidFieldId(ID fieldId) const {
-    if (fieldId.isEmpty()) return false;
-    auto ret = fieldToInitState_.find(fieldId) != fieldToInitState_.end();
-    return ret;
-  }
-
-  Visitor::FieldInitState* Visitor::fieldStateFromId(ID fieldId) {
-    if (!isValidFieldId(fieldId)) return nullptr;
-    return &(fieldToInitState_[fieldId]);
-  }
-
-  const Visitor::FieldInitState*
-  Visitor::fieldStateFromId(ID fieldId) const {
-    if (!isValidFieldId(fieldId)) return nullptr;
-    return &(fieldToInitState_.find(fieldId)->second);
-  }
-
-  bool Visitor::isMentionOfNodeInLhsOfAssign(const AstNode* node) const {
+  bool Visitor::isMentionOfNodeInLhsOfAssign(const AstNode* node) {
     const AstNode* parent = parentOf(node);
     const AstNode* prior = node;
     
@@ -346,34 +439,55 @@ namespace {
     return false;
   }
 
-  ID Visitor::idFromPossibleMentionOfField(const AstNode* node) const {
+  ID Visitor::fieldIdFromName(UniqueString name) {
+    if (!isNameOfField(ctx_, name, initialRecvType_)) return ID();
+    // TODO: Need to replace this as we continue to build it up?
+    auto ct = typeToCompType(initialRecvType_);
+    auto ret = parsing::fieldIdWithName(ctx_, ct->id(), name);
+    return ret;
+  }
+
+  ID Visitor::fieldIdFromPossibleMentionOfField(const AstNode* node) {
     UniqueString name;
 
     if (auto ident = node->toIdentifier()) {
       name = ident->name();
     } else if (auto dot = node->toDot()) {
       if (auto lhs = dot->receiver()->toIdentifier()) {
-        if (lhs->name() == USTR("this")) {
-          name = dot->field();
+        if (lhs->name() == USTR("this")) name = dot->field();
+      }
+    }
+
+    if (name.isEmpty()) return ID();
+
+    auto ret = ID();
+    auto fieldId = fieldIdFromName(name);
+    auto& re = initResolver_.byPostorder.byAst(node);
+
+    if (fieldId.isEmpty()) return ret;
+
+    if (phase_ < PHASE_COMPLETE) {
+      auto id = re.toId();
+      if (!id.isEmpty() && parsing::idIsField(ctx_, id)) return id;
+
+    } else {
+      assert(false && "Do we care about this path at all?");
+      if (auto tfs = re.mostSpecific().only()) {
+        auto ufs = tfs->untyped();
+        if (!ufs->isCompilerGenerated() || !ufs->isMethod()) return ret;
+        if (auto ct = receiverCompTypeFromTfs(tfs)) {
+          auto id = parsing::fieldIdWithName(ctx_, ct->id(), name);
+          if (fieldStateFromId(id)) ret = fieldId;
         }
       }
     }
 
-    if (name.isEmpty() || !isNameOfAnyField(name)) return ID();
-
-    auto& re = resolverVisitor_.byPostorder.byAst(node);
-    auto ret = ID();
-
-    if (!re.toId().isEmpty())
-      if (isValidFieldId(re.toId()))
-        ret = re.toId();
-
     return ret;
   }
 
-  bool Visitor::isFieldInitialized(ID fieldId) const {
-    assert(isValidFieldId(fieldId));
-    auto ret = !fieldStateFromId(fieldId)->initPointId.isEmpty();
+  bool Visitor::isFieldInitialized(ID fieldId) {
+    auto state = fieldStateFromId(fieldId);
+    auto ret = state && state->isInitialized;
     return ret;
   }
 
@@ -413,42 +527,60 @@ namespace {
     return false;
   }
 
-  bool Visitor::handleInitializationOfField(const OpCall* node) {
+  bool Visitor::handleAssignmentToField(const OpCall* node) {
     if (node->op() != USTR("=")) return false;
     assert(node->numActuals() == 2);
     auto lhs = node->actual(0);
     auto rhs = node->actual(1);
 
     // TODO: Is 'field' or 'this.field' too strict of a pattern?
-    auto fieldId = idFromPossibleMentionOfField(lhs);
+    auto fieldId = fieldIdFromPossibleMentionOfField(lhs);
     if (fieldId.isEmpty()) return false;
 
     auto state = fieldStateFromId(fieldId);
     assert(state);
 
     bool isAlreadyInitialized = !state->initPointId.isEmpty();
-    bool isOutOfOrder = state->ordinalPos < currentFieldIdx_;
+    bool isOutOfOrder = state->ordinalPos < currentFieldIndex_;
+
+    // Implicitly initialize any fields between the current index and this.
+    int old = currentFieldIndex_;
+    currentFieldIndex_ = state->ordinalPos + 1;
+    for (int i = old + 1; i < state->ordinalPos; i++) {
+        auto id = fieldIdsByOrdinal_[i];
+        bool handled = implicitlyResolveFieldType(id);
+        assert(handled);
+    }
 
     // TODO: Anything to do if the opposite is true?
     if (!isAlreadyInitialized) {
-      auto& reRhs = resolverVisitor_.byPostorder.byAst(rhs);
-      state->initPointQt = reRhs.type();
+      auto& reRhs = initResolver_.byPostorder.byAst(rhs);
+      state->qt = reRhs.type();
       state->initPointId = node->id();
+      state->isInitialized = true;
+
+      // How often do we need to recompute this? More often?
+      if (state->qt.isType() || state->qt.isParam()) {
+        updateResolverVisibleReceiverType();
+      }
+
+    } else {
+      assert(0 == "Not handled yet!");
     }
 
     if (isOutOfOrder) {
-      auto name = rf_.fieldName(state->ordinalPos);
+      auto name = state->name;
       ctx_->error(node, "Field \"%s\" initialized out of order",
                         name.c_str());
-    } else {
-      currentFieldIdx_ = state->ordinalPos;
     }
+
+
 
     return true;
   }
 
   bool Visitor::handleUseOfField(const AstNode* node) {
-    auto fieldId = idFromPossibleMentionOfField(node);
+    auto fieldId = fieldIdFromPossibleMentionOfField(node);
     if (fieldId.isEmpty()) return false;
 
     if (isFieldInitialized(fieldId)) return true;
@@ -471,7 +603,7 @@ namespace {
   }
 
   void Visitor::exit(const OpCall* node) {
-    std::ignore = handleInitializationOfField(node);
+    std::ignore = handleAssignmentToField(node);
     isDescendingIntoAssignment_ = false;
   }
 
@@ -487,8 +619,51 @@ namespace {
     std::ignore = handleCallToInit(node);
   }
 
+  bool Visitor::enter(const Dot* node) {
+    if (auto ident = node->receiver()->toIdentifier()) {
+      if (ident->name() == USTR("this")) {
+        auto name = node->field();
+        auto id = fieldIdFromName(name);
+        if (!id.isEmpty()) {
+          auto state = fieldStateFromId(id);
+          assert(state);
+          auto qt = state->qt;
+          auto& re = initResolver_.byPostorder.byAst(node);
+          re.setToId(id);
+          re.setType(qt);
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   void Visitor::exit(const Dot* node) {
     std::ignore = handleUseOfField(node);
+  }
+
+  bool Visitor::enter(const Identifier* node) {
+    if (phase_ < PHASE_COMPLETE) {
+      auto vec = initResolver_.lookupIdentifier(node, nullptr);
+      if (vec.size() == 1 && vec[0].numIds() == 1) {
+        auto& id = vec[0].id(0);
+        if (!parsing::idIsField(ctx_, id)) {
+          std::ignore = initResolver_.resolveIdentifier(node, nullptr);
+        } else {
+          auto state = fieldStateFromId(id);
+          auto qt = state->qt;
+          auto& re = initResolver_.byPostorder.byAst(node);
+          re.setToId(id);
+          re.setType(qt);
+        }
+      }
+    } else {
+      auto receiverScope = initResolver_.methodReceiverScope();
+      std::ignore = initResolver_.resolveIdentifier(node, receiverScope);
+    }
+
+    return false;
   }
 
   void Visitor::exit(const Identifier* node) {
@@ -516,7 +691,7 @@ handleResolvingInitFn(Context* context, Resolver& visitor,
                       const Function* fn,
                       const TypedFnSignature*& outFinalTfs) {
   if (!isFunctionToConsider(context, visitor, fn)) return false;
-  auto v = Visitor::build(context, visitor, fn);
+  auto v = Visitor::create(context, visitor, fn);
   outFinalTfs = v.run();
   return true;
 }
