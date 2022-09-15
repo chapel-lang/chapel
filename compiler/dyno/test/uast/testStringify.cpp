@@ -25,6 +25,7 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/chpl-syntax-printer.h"
+#include "../../lib/framework/ErrorBase.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -347,11 +348,11 @@ static void test1(Parser* parser) {
   auto parseResult = parser->parseString("Test1.chpl",
                                          testCode.c_str());
   for (int i = 0; i < parseResult.numErrors(); i++) {
-    const ErrorMessage& err = parseResult.error(i);
+    const ParseError* err = parseResult.error(i);
     // ignore implicit module warning
-    assert(err.kind() != ErrorMessage::SYNTAX);
-    std::cout << err.message().c_str() << std::endl;
-    assert(err.kind() != ErrorMessage::ERROR);
+    assert(err->kind() != ErrorBase::SYNTAX);
+    std::cout << err->message().c_str() << std::endl;
+    assert(err->kind() != ErrorBase::ERROR);
   }
   auto mod = parseResult.singleModule();
   assert(mod);

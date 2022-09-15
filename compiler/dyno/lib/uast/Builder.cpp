@@ -102,8 +102,13 @@ void Builder::addToplevelExpression(owned<AstNode> e) {
   this->topLevelExpressions_.push_back(std::move(e));
 }
 
-void Builder::addError(ErrorMessage e) {
-  this->errors_.push_back(std::move(e));
+void Builder::addError(const ParseError* e) {
+  this->errors_.push_back(e);
+}
+
+void Builder::addError(const ErrorMessage& e) {
+  if (!e.isDefaultConstructed())
+    this->errors_.push_back(ParseError::get(context_, e));
 }
 
 void Builder::noteLocation(AstNode* ast, Location loc) {
@@ -519,7 +524,7 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
   auto parseResult = parser.parseString(path.c_str(), inputText.c_str());
   // Propagate any parse errors from the dummy node to builder errors
   if (parseResult.numErrors() > 0) {
-   for (ErrorMessage error : parseResult.errors()) {
+   for (const ParseError* error : parseResult.errors()) {
      addError(error);
    }
   }

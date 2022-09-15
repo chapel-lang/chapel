@@ -25,6 +25,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Select.h"
 #include "chpl/uast/When.h"
+#include "../../lib/framework/ErrorBase.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -128,7 +129,7 @@ static void test1(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   auto error = parseResult.error(0);
   const char* expected = "Select has multiple otherwise clauses";
-  auto actual = error.message();
+  auto actual = error->message();
   assert(actual == expected);
 }
 

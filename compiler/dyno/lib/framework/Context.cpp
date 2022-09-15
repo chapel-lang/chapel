@@ -572,6 +572,10 @@ void Context::report(ErrorMessage error) {
   }
 }
 
+void Context::report(const ErrorBase* error) {
+  // TODO: implement this
+}
+
 static void logErrorInContext(Context* context,
                               ErrorMessage::Kind kind,
                               Location loc,

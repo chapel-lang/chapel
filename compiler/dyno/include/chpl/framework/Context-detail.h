@@ -39,6 +39,8 @@ namespace chpl {
 class Context;
 class ID;
 
+class ErrorBase;
+
 namespace detail {
 
 /**

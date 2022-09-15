@@ -41,6 +41,8 @@
 
 namespace chpl {
 
+class ErrorBase;
+
 namespace uast {
   class AstNode;
 }
@@ -48,7 +50,6 @@ namespace uast {
 namespace resolution {
   class TypedFnSignature;
 }
-
 
 /**
 
@@ -466,6 +467,11 @@ class Context {
     If no query is currently running, it just reports the error.
    */
   void report(ErrorMessage error);
+
+  /**
+    TODO. New error reporting mechanism, replace above overload.
+   */
+  void report(const ErrorBase* error);
 
   /**
     Note an error for the currently running query.
