@@ -33,16 +33,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-ARG TARGETARCH
-
-RUN echo "I'm building for" $TARGETARCH
-
 ENV CHPL_VERSION 1.28.0
 ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
 ENV CHPL_GMP     system
 ENV CHPL_LLVM    system
-# ENV ARCH linux64-x86
-ENV ARCH "linux64-"$TARGETARCH
+
 
 RUN mkdir -p /opt/chapel \
     && wget -q -O - https://chapel-lang.org/tmp/chapel-1.28.0.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
