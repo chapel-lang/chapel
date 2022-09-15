@@ -132,46 +132,8 @@ static void test2() {
   ctx.advanceToNextRevision(false);
 }
 
-// ensure that operators must have proper names, and only operators can have reserved operator names
-static void test3() {
-  Context ctx;
-  auto context = &ctx;
-
-  // operator with improper name (should fail)
-  QualifiedType qt1 = resolveTypeOfXInit(context,
-    R""""(
-      record R {
-        var field: int;
-      }
-      operator notAnOpName(z: R, type t: int) { return z.field; }
-
-      var myR: R;
-      var x = notAnOpName(myR, int);
-    )""""
-  );
-  assert(qt1.kind() == QualifiedType::UNKNOWN);
-  assert(qt1.type() && qt1.type()->isErroneousType());
-  ctx.advanceToNextRevision(false);
-
-  // non-operator procedure with operator name (should fail)
-  QualifiedType qt2 = resolveTypeOfXInit(context,
-    R""""(
-      record R {
-        var field: int;
-      }
-      procedure :(z: R, type t: int) { return z.field; }
-
-      var myR: R;
-      var x = myR : int;
-    )""""
-  );
-  assert(qt2.kind() == QualifiedType::UNKNOWN);
-  assert(qt2.type() && qt2.type()->isErroneousType());
-  ctx.advanceToNextRevision(false);
-}
-
 // various additional tests with other operators
-static void test4() {
+static void test3() {
   Context ctx;
   auto context = &ctx;
 
@@ -268,7 +230,6 @@ int main() {
   test1();
   test2();
   test3();
-  test4();
 
   return 0;
 }
