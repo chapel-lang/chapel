@@ -155,11 +155,12 @@ CallInfo::CallInfo(const uast::FnCall* call) {
   if (auto called = call->calledExpression()) {
     if (auto id = called->toIdentifier()) {
       name_ = id->name();
-      // determine if this is an operator call based on its name
-      isOpCall_ = uast::isOpName(name_);
+      // should not be a valid operator name
+      assert(!uast::isOpName(name_));
     }
   }
 
+  isOpCall_ = false;
 
   int i = 0;
   for (auto actual : call->actuals()) {
