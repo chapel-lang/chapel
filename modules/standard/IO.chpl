@@ -5674,6 +5674,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
    :returns: a set of locales that are best for working with this region
    :rtype: domain(locale)
  */
+ deprecated "file.localesForRegion is deprecated"
 proc file.localesForRegion(start:int(64), end:int(64)) {
 
   proc findloc(loc:string, locs:c_ptr(c_string), end:int) {
