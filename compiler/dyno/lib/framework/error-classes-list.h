@@ -18,4 +18,8 @@
  */
 
 ERROR_CLASS(TupleExpansionNamedArgs, ERROR, const uast::OpCall*, const uast::FnCall*)
-ERROR_CLASS(MemManagementRecords, ERROR, const uast::Record*, const uast::FnCall*)
+ERROR_CLASS(MemManagementRecords, ERROR, const uast::FnCall*, const uast::Record*)
+ERROR_CLASS(PrivateToPublicInclude, ERROR, const uast::Include*, const uast::Module*)
+ERROR_CLASS(PrototypeInclude, ERROR, const uast::Include*, const uast::Module*)
+ERROR_CLASS(MissingInclude, ERROR, const uast::Include*, std::string)
+ERROR_CLASS(Redefinition, ERROR, const uast::NamedDecl*, std::vector<ID>)

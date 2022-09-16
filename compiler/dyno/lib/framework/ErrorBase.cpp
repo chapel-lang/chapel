@@ -52,6 +52,42 @@ void ParseError::mark(Context* context) const {
   loc_.mark(context);
 }
 
+const owned<GeneralError>&
+GeneralError::getGeneralErrorID(Context* context, Kind kind, ID id, std::string message) {
+  QUERY_BEGIN(getGeneralErrorID, context, kind, id, message);
+  auto result = owned<GeneralError>(new GeneralError(kind, id, std::move(message)));
+  return QUERY_END(result);
+}
+
+const owned<GeneralError>&
+GeneralError::getGeneralErrorLocation(Context* context, Kind kind, Location loc, std::string message) {
+  QUERY_BEGIN(getGeneralErrorLocation, context, kind, loc, message);
+  auto result = owned<GeneralError>(new GeneralError(kind, loc, std::move(message)));
+  return QUERY_END(result);
+}
+
+const GeneralError* GeneralError::vbuild(Context* context, Kind kind, ID id, const char* fmt, va_list vl) {
+  auto message = vprintToString(fmt, vl);
+  return getGeneralErrorID(context, kind, id, message).get();
+}
+
+const GeneralError* GeneralError::vbuild(Context* context, Kind kind, Location loc, const char* fmt, va_list vl) {
+  auto message = vprintToString(fmt, vl);
+  return getGeneralErrorLocation(context, kind, loc, message).get();
+}
+
+void GeneralError::write(ErrorWriter& wr) const {
+  if (!id_.isEmpty()) {
+    wr.printBrief(kind_, id_, message_);
+  } else {
+    wr.printBrief(kind_, loc_, message_);
+  }
+}
+
+void GeneralError::mark(Context* context) const {
+  id_.mark(context);
+}
+
 #define ERROR_CLASS(name__, kind__, info__...)\
   const owned<Error##name__>& Error##name__::getError##name__(Context* context, std::tuple<info__> tuple) {\
     QUERY_BEGIN(getError##name__, context, tuple);\
@@ -91,4 +127,44 @@ void ErrorMemManagementRecords::write(ErrorWriter& wr) const {
   wr.printAst(newCall, { record });
 }
 
+void ErrorPrivateToPublicInclude::write(ErrorWriter& wr) const {
+  auto moduleInclude = std::get<const uast::Include*>(info);
+  auto moduleDef = std::get<const uast::Module*>(info);
+  wr.printBrief(kind_, moduleInclude,
+                "cannot make a private module public through "
+                "an include statement");
+  wr.printAst(moduleInclude);
+  wr.printMessage("module declared private here:");
+  wr.printAst(moduleDef);
+}
+
+void ErrorPrototypeInclude::write(ErrorWriter& wr) const {
+  auto moduleInclude = std::get<const uast::Include*>(info);
+  auto moduleDef = std::get<const uast::Module*>(info);
+  wr.printBrief(kind_, moduleInclude,
+                "cannot apply prototype to module in include statement");
+  wr.printAst(moduleInclude);
+  wr.printMessage("put prototype keyword at module declaration here:");
+  wr.printAst(moduleDef);
+}
+
+void ErrorMissingInclude::write(ErrorWriter& wr) const {
+  auto moduleInclude = std::get<const uast::Include*>(info);
+  auto& filePath = std::get<std::string>(info);
+  wr.printBrief(kind_, moduleInclude, "cannot find included submodule");
+  wr.printMessage("expected file at path '", filePath, "'");
+}
+
+void ErrorRedefinition::write(ErrorWriter& wr) const {
+  auto decl = std::get<const uast::NamedDecl*>(info);
+  auto& ids = std::get<std::vector<ID>>(info);
+  wr.printBrief(kind_, decl, "'", decl->name().c_str(), "' has multiple definitions");
+  wr.printAst(decl);
+  wr.printMessage("redefined in these places:");
+  for (const ID& id : ids) {
+    if (id != decl->id()) {
+      wr.printAst<ID, ID>(id);
+    }
+  }
+}
 }

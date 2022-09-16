@@ -34,6 +34,8 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
 
+#include "../../lib/framework/ErrorWriter.h"
+
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -59,8 +61,8 @@ static Context* getNewContext() {
   return ret;
 }
 
-std::vector<ErrorMessage> errors;
-static void collectErrors(Context* context, const ErrorMessage& err) {
+std::vector<const ErrorBase*> errors;
+static void collectErrors(Context* context, const ErrorBase* err) {
   errors.push_back(err);
 }
 
@@ -213,14 +215,16 @@ static const char* kindToString(IntentList kind) {
   return "";
 }
 
-static void printErrors() {
+static void printErrors(Context* context) {
   if (!verbose) {
     printf("Found %lu errors.\n\n", errors.size());
   } else {
     printf("======== Errors ========\n");
+    ErrorWriter ew(context, true);
     for (auto err : errors) {
-      printf("%s\n", err.message().c_str());
+      err->write(ew);
     }
+    printf("%s", ew.message().c_str());
     printf("========================\n\n");
   }
 }
@@ -247,7 +251,7 @@ static Collector customHelper(std::string program, Context* context, bool fail =
     printf("========================\n");
 
     if (errors.size() > 0) {
-      printErrors();
+      printErrors(context);
     }
 
     if (verbose) pc.dump();

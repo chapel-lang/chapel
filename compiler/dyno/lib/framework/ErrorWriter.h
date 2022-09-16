@@ -53,12 +53,10 @@ class ErrorWriter {
     str(oss, CHPL_SYNTAX, t);
   }
 
-  template <>
   void write(const char* str) {
     oss << str;
   }
 
-  template <>
   void write(const std::string& str) {
     oss << str;
   }

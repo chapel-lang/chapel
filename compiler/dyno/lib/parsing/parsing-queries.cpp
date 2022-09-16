@@ -32,6 +32,7 @@
 #include "chpl/uast/TupleDecl.h"
 
 #include "../util/filesystem_help.h"
+#include "../framework/ErrorBase.h"
 
 #include <cstdio>
 #include <set>
@@ -544,10 +545,7 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
         }
       }
     } else {
-      auto err = ErrorMessage::error(include, "cannot find included submodule");
-      err.addDetail(ErrorMessage::note(include, "expected file at path '%s'",
-                                       check.c_str()));
-      context->report(err);
+      REPORT(context, MissingInclude, include, check);
     }
   }
 
@@ -558,22 +556,11 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
     bool isModPrivate = (result->visibility() == uast::Decl::PRIVATE);
 
     if (isModPrivate && !isIncPrivate) {
-      auto error = ErrorMessage::error(include,
-                            "cannot make a private module public through "
-                            "an include statement");
-      error.addDetail(ErrorMessage::note(result,
-                            "module declared private here"));
-      context->report(std::move(error));
+      REPORT(context, PrivateToPublicInclude, include, result);
     }
 
     if (isIncPrototype) {
-      auto error = ErrorMessage::error(include,
-                            "cannot apply prototype to module in "
-                            "include statement");
-      error.addDetail(ErrorMessage::note(result,
-                            "put prototype keyword at "
-                            "module declaration here"));
-      context->report(std::move(error));
+      REPORT(context, PrototypeInclude, include, result);
     }
   }
 

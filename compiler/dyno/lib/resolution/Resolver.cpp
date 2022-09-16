@@ -1625,15 +1625,9 @@ bool Resolver::enter(const NamedDecl* decl) {
     if (vec.size() > 0) {
       const BorrowedIdsWithName& m = vec[0];
       if (m.id(0) == decl->id() && m.numIds() > 1) {
-        auto error =
-          ErrorMessage::error(decl, "'%s' has multiple definitions",
-                              decl->name().c_str());
-        for (const ID& id : m) {
-          if (id != decl->id()) {
-            error.addDetail(ErrorMessage::note(id, "redefined here"));
-          }
-        }
-        context->report(error);
+        std::vector<ID> redefinedIds(m.numIds());
+        std::copy(m.begin(), m.end(), redefinedIds.begin());
+        REPORT(context, Redefinition, decl, redefinedIds);
       }
     }
   }

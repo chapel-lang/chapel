@@ -29,6 +29,7 @@ class ErrorWriter;
 
 enum ErrorType {
   PARSE,
+  GENERAL,
 #define ERROR_CLASS(name__, kind__, info__...) name__,
 #include "error-classes-list.h"
 #undef ERROR_CLASS
@@ -91,6 +92,39 @@ class ParseError : public ErrorBase {
   void mark(Context* context) const override;
 };
 
+class GeneralError : public ErrorBase {
+ private:
+  ID id_;
+  Location loc_;
+  std::string message_;
+
+ protected:
+  GeneralError(Kind kind, ID id, std::string message)
+    : ErrorBase(kind, PARSE), id_(std::move(id)), message_(std::move(message)) {}
+
+  GeneralError(Kind kind, Location loc, std::string message)
+    : ErrorBase(kind, PARSE), loc_(std::move(loc)), message_(std::move(message)) {}
+
+  static const owned<GeneralError>&
+  getGeneralErrorID(Context* context, Kind kind, ID id, std::string message);
+
+  static const owned<GeneralError>&
+  getGeneralErrorLocation(Context* context, Kind kind, Location loc, std::string message);
+ public:
+
+  static const GeneralError* vbuild(Context* context,
+                                    Kind kind, ID id,
+                                    const char* fmt,
+                                    va_list vl);
+  static const GeneralError* vbuild(Context* context,
+                                    Kind kind, Location loc,
+                                    const char* fmt,
+                                    va_list vl);
+
+  void write(ErrorWriter& eq) const override;
+  void mark(Context* context) const override;
+};
+
 #define ERROR_CLASS(name__, kind__, info__...)\
   class Error##name__ : public ErrorBase {\
    private:\
@@ -114,6 +148,8 @@ class ParseError : public ErrorBase {
   };
 #include "error-classes-list.h"
 #undef ERROR_CLASS
+
+#define REPORT(context__, name__, info__...) context->report(Error##name__::get(context__, std::make_tuple(info__)))
 
 template <>
 struct stringify<chpl::ErrorBase::Kind> {
