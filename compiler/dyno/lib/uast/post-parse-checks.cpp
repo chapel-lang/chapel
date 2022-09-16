@@ -510,7 +510,7 @@ void Visitor::checkOperatorNameValidity(const Function* node) {
   } else {
     // functions with operator names must be declared as operators
     if (isOpName(node->name())) {
-      error(node, "Operator '%s' must be declared with operator keyword",
+      error(node, "Operators cannot be declared without the operator keyword",
             node->name().c_str());
     }
   }

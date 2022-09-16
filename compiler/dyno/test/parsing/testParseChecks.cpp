@@ -498,7 +498,7 @@ static void test16(void) {
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test16.chpl", 5,
-                     "Operator ':' must be declared with operator keyword");
+                     "Operators cannot be declared without the operator keyword");
 }
 
 int main() {
