@@ -28,15 +28,16 @@ ifneq ($(CHPL_MAKE_HWLOC),none)
   # Have Qthreads get its hwloc topology from the Chapel runtime,
   # unless directed not to.
   ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
-    TOPOLOGY = hwloc_via_chapel
+    TOPOLOGY = binders
     CFLAGS_NEEDS_RT_INCLUDES = y
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-get-topology-function="chpl_topo_getHwlocTopology()"
   else
-    TOPOLOGY = hwloc
+    TOPOLOGY = binders
   endif
   ifeq ($(CHPL_MAKE_HWLOC),bundled)
     CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
     ifdef CHPL_HWLOC_PREFIX
-      CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix="$(CHPL_HWLOC_PREFIX)hwloc_"
+      CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)hwloc_
     endif
   endif
 endif
@@ -48,7 +49,6 @@ endif
 ifneq (, $(TOPOLOGY))
 CHPL_QTHREAD_CFG_OPTIONS += --with-topology=$(TOPOLOGY)
 endif
-
 
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
@@ -156,6 +156,10 @@ endif
 
 ifeq ($(CHPL_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
+endif
+
+ifneq (, $(CHPL_QTHREAD_DEBUG))
+    CHPL_QTHREAD_CFG_OPTIONS += --enable-debugging --enable-debug=$(CHPL_QTHREAD_DEBUG)
 endif
 
 CHPL_QTHREAD_CFG_OPTIONS += $(CHPL_QTHREAD_MORE_CFG_OPTIONS)

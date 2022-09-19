@@ -344,6 +344,9 @@
 /* Define if `valloc'ed memory can be `free'd. */
 #undef HAVE_WORKING_VALLOC
 
+/* Define to specify function that returns hwloc topology */
+#undef HWLOC_GET_TOPOLOGY_FUNCTION
+
 /* make the ss_sp member of uc_stack be the high-address of the stack, rather
    than the low-address of the stack */
 #undef INVERSE_STACK_POINTER
