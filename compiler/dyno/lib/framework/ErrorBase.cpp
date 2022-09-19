@@ -105,6 +105,18 @@ void GeneralError::mark(Context* context) const {
 #include "error-classes-list.h"
 #undef ERROR_CLASS
 
+void ErrorIncompatibleIfBranches::write(ErrorWriter& wr) const {
+  auto ifExpr = std::get<const uast::Conditional*>(info);
+  auto qt1 = std::get<1>(info);
+  auto qt2 = std::get<2>(info);
+
+  wr.printBrief(kind_, ifExpr, "Branches of if-expression have incompatible types.");
+  wr.printMessage("In the following if-expression:");
+  wr.printAst(ifExpr, { ifExpr->thenBlock(), ifExpr->elseBlock() });
+  wr.printMessage("The first branch has type ", qt1,
+                   ", while the second has type ", qt2);
+}
+
 void ErrorTupleExpansionNamedArgs::write(ErrorWriter& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info);
   auto tupleOp = std::get<const uast::OpCall*>(info);

@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+ERROR_CLASS(IncompatibleIfBranches, ERROR,
+    const uast::Conditional*,
+    types::QualifiedType,
+    types::QualifiedType)
 ERROR_CLASS(TupleExpansionNamedArgs, ERROR, const uast::OpCall*, const uast::FnCall*)
 ERROR_CLASS(MemManagementRecords, ERROR, const uast::FnCall*, const uast::Record*)
 ERROR_CLASS(PrivateToPublicInclude, ERROR, const uast::Include*, const uast::Module*)

@@ -1429,7 +1429,8 @@ bool Resolver::enter(const uast::Conditional* cond) {
     auto ifType = commonType(context, returnTypes);
     if (!ifType && !condType.isUnknown()) {
       // do not error if the condition type is unknown
-      r.setType(typeErr(cond, "unable to reconcile branches of if-expression"));
+      REPORT(context, IncompatibleIfBranches, cond, returnTypes[0], returnTypes[1]);
+      r.setType(QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context)));
     } else if (ifType) {
       r.setType(ifType.getValue());
     }

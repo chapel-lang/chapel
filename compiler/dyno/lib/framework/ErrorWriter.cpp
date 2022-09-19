@@ -20,7 +20,7 @@
 
 namespace chpl {
 
-static size_t posToFileIndex(const char* buf, int row, int col) {
+static ssize_t posToFileIndex(const char* buf, int row, int col) {
   int curRow = 1, curCol = 1;
   size_t idx = 0;
   while (buf[idx] != '\0') {
@@ -33,6 +33,9 @@ static size_t posToFileIndex(const char* buf, int row, int col) {
     }
     curCol++;
     idx++;
+  }
+  if (curRow == row && curCol == col) {
+    return idx;
   }
   return -1;
 }
