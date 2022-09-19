@@ -570,7 +570,7 @@ proc CyclicDom.dsiDims()        return whole.dims();
 proc CyclicDom.dsiGetIndices()  return whole.getIndices();
 proc CyclicDom.dsiMember(i)     return whole.contains(i);
 proc CyclicDom.doiToString()    return whole:string;
-//proc CyclicDom.dsiSerialWrite(x) { x._write(whole); }
+//proc CyclicDom.dsiSerialWrite(x) { x.write(whole); }
 proc CyclicDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc CyclicDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc CyclicDom.dsiMyDist()                   return dist;
