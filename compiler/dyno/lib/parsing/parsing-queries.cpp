@@ -190,7 +190,6 @@ const ModuleVec& parse(Context* context, UniqueString path,
 
   // Report any errors encountered to the context.
   for (auto& e : p.errors())
-    // TODO how do we handle default-constructed errors?
     if (e != nullptr)
       context->report(e);
 
