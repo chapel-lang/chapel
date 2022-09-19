@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _best-practices-standard-module-style:
 
 Standard Module Style
@@ -29,9 +31,10 @@ Here are a few examples:
 
 
 Exceptions:
-The following are exceptions to the capitalization rules:
+ The following are exceptions to the above capitalization guidelines that occur
+ in the standard modules or packages:
 
-* :proc:`~locales.locale.numPUs`
+  * :proc:`~ChapelLocale.locale.numPUs` (num Processor-Units)
 
 Modules
 -------
