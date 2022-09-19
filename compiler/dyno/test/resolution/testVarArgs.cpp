@@ -401,11 +401,10 @@ static void printErrors(Context* context) {
     printf("Found %lu errors.\n\n", errors.size());
   } else {
     printf("======== Errors ========\n");
-    ErrorWriter ew(context, true);
+    ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED);
     for (auto err : errors) {
       err->write(ew);
     }
-    printf("%s", ew.message().c_str());
     printf("========================\n\n");
   }
 }
@@ -691,7 +690,7 @@ proc fn(param n : int, args...n) {
 }
 )""");
 
-  // auto errMsg = "Cannot resolve call: no matching candidates";
+  auto errMsg = "Cannot resolve call: no matching candidates";
 
   auto good = std::string(R"""(var x = fn(3, 1, 2.0, "hello");)""");
   auto gc = customHelper(paramFn + good);
@@ -699,11 +698,11 @@ proc fn(param n : int, args...n) {
 
   auto less = std::string(R"""(var x = fn(3, 1, 2.0);)""");
   customHelper(paramFn + less, true);
-  // assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   auto more = std::string(R"""(var x = fn(3, 1, 2.0, "hello", "oops");)""");
   customHelper(paramFn + more, true);
-  // assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   // non-integrals should not be valid in count-expressions
   auto paramBoolFn = std::string(
@@ -715,7 +714,7 @@ proc fn(param n : bool, args...n) {
 fn(true, true);
 )""");
   customHelper(paramBoolFn, true);
-  // assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   // TODO: Make sure uints resolve (cannot cast to param uints yet)
 }
@@ -783,18 +782,18 @@ proc fn(param n : int, args...n, y : int, z : real) {
 }
 )""");
 
-  // auto errMsg = "Cannot resolve call: no matching candidates";
+  auto errMsg = "Cannot resolve call: no matching candidates";
 
   auto good = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5.0);)""");
   customHelper(paramFn + good);
 
   auto less = std::string(R"""(var x = fn(3, 1, 2, 2.0);)""");
   customHelper(paramFn + less, true);
-  // assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   auto more = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5, 6, 7.0);)""");
   customHelper(paramFn + more, true);
-  // assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   auto named = std::string(R"""(var x = fn(z=5.0, 3, 1, 2, 3, 4);)""");
   customHelper(paramFn + named);

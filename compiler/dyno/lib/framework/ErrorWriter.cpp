@@ -58,21 +58,33 @@ void ErrorWriter::printErrorHeading(ErrorBase::Kind kind, Location loc) {
   int lineno = loc.line();
   bool validPath = (path != nullptr && path[0] != '\0');
 
-  if (detailed) oss << "=== ";
-  oss << kindText(kind) << "\033[0m in ";
-  if (validPath && lineno > 0) oss << path << ":" << lineno;
-  else if (validPath) oss << path;
-  else oss << "(unknown location)";
+  lastLocation_ = loc;
 
-  if (detailed) {
-    oss << " ===" << std::endl;
-  } else {
-    oss << ": ";
+  if (outputFormat_ == DETAILED) {
+    // In detailed mode, print some error decoration
+    oss_ << "=== ";
+  }
+  if (outputFormat_ != MESSAGE_ONLY) {
+    // As long as we're not only printing the message, print the error location.
+    oss_ << kindText(kind) << "\033[0m in ";
+    if (validPath && lineno > 0) oss_ << path << ":" << lineno;
+    else if (validPath) oss_ << path;
+    else oss_ << "(unknown location)";
+  }
+
+  if (outputFormat_ == DETAILED) {
+    // Second part of the error decoration
+    oss_ << " ===" << std::endl;
+  } else if (outputFormat_ != MESSAGE_ONLY) {
+    // We printed location, so add a separating colon.
+    oss_ << ": ";
   }
 }
 
 void ErrorWriter::printAst(const Location& location,
                            const std::vector<Location>& toHighlight) {
+  if (outputFormat_ != DETAILED || context == nullptr) return;
+
   auto str = fileText(location);
   if (str.empty()) return;
 
@@ -89,7 +101,7 @@ void ErrorWriter::printAst(const Location& location,
   bool needsLine = true;
   bool needsHighlight = false;
   bool neededHighlight = false;
-  oss << std::endl;
+  oss_ << std::endl;
   for (size_t i = startIndex; i < endIndex; i++) {
     needsHighlight = false;
     for (auto& range : highlightRanges) {
@@ -100,20 +112,20 @@ void ErrorWriter::printAst(const Location& location,
     }
 
     if (needsHighlight && !neededHighlight) {
-      oss << "\033[4m";
+      oss_ << "\033[4m";
     } else if (!needsHighlight && neededHighlight) {
-      oss << "\033[24m";
+      oss_ << "\033[24m";
     }
     neededHighlight = needsHighlight;
 
     if (needsLine) {
       needsLine = false;
-      oss << "    ";
+      oss_ << "    ";
     }
-    oss << str[i];
+    oss_ << str[i];
     needsLine = str[i] == '\n';
   }
-  oss << "\0x33[24m" << std::endl;
+  oss_ << "\0x33[24m" << std::endl;
 }
 
 void ErrorWriter::printAst(const uast::AstNode* place,
@@ -122,11 +134,7 @@ void ErrorWriter::printAst(const uast::AstNode* place,
 }
 
 void ErrorWriter::printNewline() {
-  oss << std::endl;
-}
-
-std::string ErrorWriter::message() const {
-  return oss.str();
+  oss_ << std::endl;
 }
 
 } // end namespace chpl

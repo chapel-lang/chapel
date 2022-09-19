@@ -220,11 +220,10 @@ static void printErrors(Context* context) {
     printf("Found %lu errors.\n\n", errors.size());
   } else {
     printf("======== Errors ========\n");
-    ErrorWriter ew(context, true);
+    ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED);
     for (auto err : errors) {
       err->write(ew);
     }
-    printf("%s", ew.message().c_str());
     printf("========================\n\n");
   }
 }

@@ -19,7 +19,7 @@
 #ifndef CHPL_FRAMEWORK_ERRORWRITER_H
 #define CHPL_FRAMEWORK_ERRORWRITER_H
 
-#include <sstream>
+#include <ostream>
 
 #include "ErrorBase.h"
 #include "chpl/uast/all-uast.h"
@@ -30,10 +30,17 @@ namespace chpl {
 class Context;
 
 class ErrorWriter {
+ public:
+  enum OutputFormat {
+    DETAILED,     // All known details about the error
+    BRIEF,        // Condensed version of the error
+    MESSAGE_ONLY, // Only the error text, without details or location
+  };
  private:
-  std::ostringstream oss;
   Context* context;
-  bool detailed;
+  std::ostream& oss_;
+  OutputFormat outputFormat_;
+  Location lastLocation_;
 
   inline Location locate(const ID& id) {
     if (!context) return Location();
@@ -50,15 +57,15 @@ class ErrorWriter {
   template <typename T>
   void write(T t) {
     stringify<T> str;
-    str(oss, CHPL_SYNTAX, t);
+    str(oss_, CHPL_SYNTAX, t);
   }
 
   void write(const char* str) {
-    oss << str;
+    oss_ << str;
   }
 
   void write(const std::string& str) {
-    oss << str;
+    oss_ << str;
   }
 
   void printErrorHeading(ErrorBase::Kind kind, Location loc);
@@ -78,22 +85,25 @@ class ErrorWriter {
 
   template <>
   void print() {
-    oss << std::endl;
+    if (outputFormat_ != MESSAGE_ONLY) {
+      // Don't print newlines if we're only concerned about
+      oss_ << std::endl;
+    }
   }
 
  public:
-  ErrorWriter(Context* context, bool detailed) :
-    context(context), detailed(detailed) {}
+  ErrorWriter(Context* context, std::ostream& oss, OutputFormat outputFormat) :
+    context(context), oss_(oss), outputFormat_(outputFormat) {}
 
   template <typename LocationType, typename ... Ts>
   void printBrief(ErrorBase::Kind kind, LocationType loc, Ts ... ts) {
     printErrorHeading(kind, loc);
-    printMessage(std::forward<Ts>(ts)...);
+    print(std::forward<Ts>(ts)...);
   }
 
   template <typename ... Ts>
   void printMessage(Ts ... ts) {
-    if (detailed) {
+    if (outputFormat_ == DETAILED) {
       print(std::forward<Ts>(ts)...);
     }
   }
@@ -116,7 +126,7 @@ class ErrorWriter {
 
   void printNewline();
 
-  std::string message() const;
+  inline Location lastLocation() const { return lastLocation_; }
 };
 
 } // end namespace chpl

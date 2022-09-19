@@ -59,6 +59,9 @@ class ErrorBase {
   Kind kind() const { return kind_; }
   ErrorType type() const { return type_; }
 
+  std::string message() const;
+  Location location(Context* context) const;
+
   virtual void write(ErrorWriter& wr) const = 0;
   virtual bool operator ==(const ErrorBase& other) {
     // TODO: how to make this work?
@@ -84,9 +87,6 @@ class ParseError : public ErrorBase {
  public:
 
   static const ParseError* get(Context* context, const ErrorMessage&);
-
-  Location location(Context* context) const;
-  const std::string& message() const { return message_; }
 
   void write(ErrorWriter& eq) const override;
   void mark(Context* context) const override;

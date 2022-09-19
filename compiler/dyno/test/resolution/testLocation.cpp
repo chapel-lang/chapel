@@ -22,7 +22,6 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Module.h"
-
 #include "../../lib/framework/ErrorWriter.h"
 
 // always check assertions in this test
@@ -49,11 +48,10 @@ static void collectErrors(Context* context, const ErrorBase* err) {
 }
 
 static void printErrors(Context* context) {
-  ErrorWriter ew(context, true);
-  for (auto err : errors) {
+  ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED);
+  for (auto err: errors) {
     err->write(ew);
   }
-  printf("%s", ew.message().c_str());
 }
 
 // Reparsing gets updated location information
@@ -121,7 +119,7 @@ static void test2() {
 
     printErrors(context);
     assert(errors.size() == 1);
-    // assert(errors[0].computeLocation(context).firstLine() == 1);
+    assert(errors[0]->location(context).firstLine() == 1);
   }
 
   {
@@ -145,8 +143,8 @@ static void test2() {
 
     printErrors(context);
     assert(errors.size() == 1);
-    // printf("%d\n", errors[0].computeLocation(context).firstLine());
-    // assert(errors[0].computeLocation(context).firstLine() == 3);
+    printf("%d\n", errors[0]->location(context).firstLine());
+    assert(errors[0]->location(context).firstLine() == 3);
   }
 }
 

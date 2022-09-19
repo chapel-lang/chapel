@@ -2,8 +2,23 @@
 #include "ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/query-impl.h"
+#include <sstream>
 
 namespace chpl {
+
+std::string ErrorBase::message() const {
+  std::ostringstream oss;
+  ErrorWriter ew(/* context */ nullptr, oss, ErrorWriter::MESSAGE_ONLY);
+  write(ew);
+  return oss.str();
+}
+
+Location ErrorBase::location(Context* context) const {
+  std::ostringstream oss;
+  ErrorWriter ew(context, oss, ErrorWriter::MESSAGE_ONLY);
+  write(ew);
+  return ew.lastLocation();
+}
 
 const owned<ParseError>&
 ParseError::getParseError(Context* context,
@@ -25,17 +40,6 @@ const ParseError* ParseError::get(Context* context, const ErrorMessage& error) {
     case ErrorMessage::SYNTAX: kind = SYNTAX; break;
   }
   return ParseError::getParseError(context, kind, error.id(), error.location(), error.message()).get();
-}
-
-Location ParseError::location(Context* context) const {
-  // if the ID is set, determine the location from that
-  if (!id_.isEmpty()) {
-    Location loc = parsing::locateId(context, id_);
-    return loc;
-  }
-
-  // otherwise, use the location stored here
-  return loc_;
 }
 
 void ParseError::write(ErrorWriter& wr) const {

@@ -24,8 +24,6 @@
 #include "chpl/uast/all-uast.h"
 #include "common.h"
 
-#include "../../lib/framework/ErrorWriter.h"
-
 // always check assertions in this test
 #ifdef NDEBUG
 #undef NDEBUG
@@ -41,9 +39,7 @@ using namespace uast;
 
 // error handler that causes the test to fail if it runs
 static void reportError(Context* context, const ErrorBase* err) {
-  ErrorWriter ew(context, true);
-  err->write(ew);
-  printf("error encountered.\n%s", ew.message().c_str());
+  printf("error encountered - %s\n", err->message().c_str());
   assert(false && "fatal error");
 }
 

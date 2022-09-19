@@ -86,9 +86,8 @@ llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
 }
 
 void Context::defaultReportError(Context* context, const ErrorBase* err) {
-  ErrorWriter ew(context, true);
+  ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED);
   err->write(ew);
-  std::cout << ew.message();
 }
 
 // unique'd strings are preceded by 4 bytes of length, gcMark and doNotCollectMark

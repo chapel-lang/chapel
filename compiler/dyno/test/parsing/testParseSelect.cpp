@@ -25,6 +25,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Select.h"
 #include "chpl/uast/When.h"
+
 #include "../../lib/framework/ErrorBase.h"
 
 // always check assertions in this test
