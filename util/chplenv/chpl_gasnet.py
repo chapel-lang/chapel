@@ -103,13 +103,9 @@ def get_override_ld():
         gasnet_ld = d['GASNET_LD']
         gasnet_cc = d['GASNET_CC']
         gasnet_cxx = d['GASNET_CXX']
+        gasnet_ld_requires_mpi = d.get('GASNET_LD_REQUIRES_MPI', False)
 
         ld = None # no ld override
-
-        gasnet_ld_requires_mpi = False
-        ld_name = os.path.basename(gasnet_ld).split()[0]
-        if 'mpi' in ld_name:
-            gasnet_ld_requires_mpi = True
 
         mpi_cxx = overrides.get('MPI_CXX')
         if not mpi_cxx:

@@ -22,6 +22,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/Type.h"
+#include "chpl/types/TupleType.h"
 
 namespace chpl {
 namespace types {
@@ -47,6 +48,15 @@ bool QualifiedType::isParamFalse() const {
     }
   }
 
+  return false;
+}
+
+bool QualifiedType::isParamKnownTuple() const {
+  if (kind_ == Kind::PARAM && type_ != nullptr) {
+    if (auto tt = type_->toTupleType()) {
+      return tt->isParamKnown();
+    }
+  }
   return false;
 }
 

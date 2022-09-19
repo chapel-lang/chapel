@@ -18,13 +18,13 @@ proc test1() {
     var w = f.writer(locking=false);
     w.write(1:uint(8));
 
-    w.seek(16);
+    w.seek(16..);
     w.write(2:uint(8));
 
-    w.seek(32);
+    w.seek(32..);
     w.write(3:uint(8));
     
-    w.seek(64);
+    w.seek(64..);
     w.write(4:uint(8));
   }
 
@@ -37,15 +37,15 @@ proc test1() {
     got = r.read(b);
     assert(got && b == 1);
 
-    r.seek(16);
+    r.seek(16..);
     got = r.read(b);
     assert(got && b == 2);
 
-    r.seek(32);
+    r.seek(32..);
     got = r.read(b);
     assert(got && b == 3);
     
-    r.seek(64);
+    r.seek(64..);
     got = r.read(b);
     assert(got && b == 4);
   }
@@ -58,7 +58,7 @@ proc test2() {
     var w = f.writer(locking=false);
 
     for i in 0..maxbyte by -1 {
-      w.seek(i);
+      w.seek(i..);
       w.write(i:uint(8));
     }
   }
@@ -96,7 +96,7 @@ proc test3() {
       var b:uint(8);
       var got:bool;
 
-      r.seek(i);
+      r.seek(i..);
       got = r.read(b);
       assert(got && b == i:uint(8));
     }
@@ -110,7 +110,7 @@ proc test4() {
     var w = f.writer(locking=false);
 
     for i in 0..maxint by -1 {
-      w.seek(i*numBytes(int));
+      w.seek(i*numBytes(int)..);
       w.write(i);
     }
   }
@@ -148,7 +148,7 @@ proc test5() {
       var b:int;
       var got:bool;
 
-      r.seek(i*numBytes(int));
+      r.seek(i*numBytes(int)..);
       got = r.read(b);
       assert(got && b == i);
     }
@@ -166,7 +166,7 @@ proc test6() {
     var w = f.writer(locking=false);
 
     for a in A {
-      w.seek(a*numBytes(int));
+      w.seek(a*numBytes(int)..);
       w.write(a);
     }
   }
@@ -206,7 +206,7 @@ proc test7() {
       var b:int;
       var got:bool;
 
-      r.seek(a*numBytes(int));
+      r.seek(a*numBytes(int)..);
       got = r.read(b);
       assert(got && b == a);
     }

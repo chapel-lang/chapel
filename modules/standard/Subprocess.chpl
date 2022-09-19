@@ -133,7 +133,7 @@ module Subprocess {
   use OS;
   use CTypes;
   use OS.POSIX;
-  import SysBasic.{syserr, ENOERR};
+  import SysBasic.{ENOERR};
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),
@@ -141,13 +141,13 @@ module Subprocess {
                                    ref stdin_fd:c_int,
                                    ref stdout_fd:c_int,
                                    ref stderr_fd:c_int,
-                                   ref pid:int(64)):syserr;
+                                   ref pid:int(64)):errorCode;
   private extern proc qio_waitpid(pid:int(64),
-    blocking:c_int, ref done:c_int, ref exitcode:c_int):syserr;
+    blocking:c_int, ref done:c_int, ref exitcode:c_int):errorCode;
   private extern proc qio_proc_communicate(threadsafe:c_int,
                                            input:qio_channel_ptr_t,
                                            output:qio_channel_ptr_t,
-                                           error:qio_channel_ptr_t):syserr;
+                                           error:qio_channel_ptr_t):errorCode;
 
   // When spawning, we need to allocate the command line
   // and environment to spawn with the C allocator (instead
@@ -243,7 +243,7 @@ module Subprocess {
     // for the file are updated.
 
     pragma "no doc"
-    var spawn_error:syserr;
+    var spawn_error:errorCode;
 
     pragma "no doc"
     proc _stop_stdin_buffering() {
@@ -477,7 +477,7 @@ module Subprocess {
     var stdout_pipe = false;
     var stderr_pipe = false;
     var pid:int;
-    var err:syserr;
+    var err:errorCode;
 
     if stdin.type == pipeStyle || isIntegralType(stdin.type) then
       stdin_fd = pipeStyleToInt(stdin);
@@ -726,7 +726,7 @@ module Subprocess {
   proc subprocess.poll() throws {
     try _throw_on_launch_error();
 
-    var err:syserr = ENOERR;
+    var err:errorCode = ENOERR;
     on home {
       // check if child process has terminated.
       var done:c_int = 0;
@@ -794,10 +794,10 @@ module Subprocess {
       return;
     }
 
-    var stdin_err:syserr  = ENOERR;
-    var wait_err:syserr   = ENOERR;
-    var stdout_err:syserr = ENOERR;
-    var stderr_err:syserr = ENOERR;
+    var stdin_err:errorCode  = ENOERR;
+    var wait_err:errorCode   = ENOERR;
+    var stdout_err:errorCode = ENOERR;
+    var stderr_err:errorCode = ENOERR;
 
     on home {
       // Close stdin.
@@ -909,7 +909,7 @@ module Subprocess {
       return;
     }
 
-    var err:syserr = ENOERR;
+    var err:errorCode = ENOERR;
     on home {
       if this.stdin_pipe {
         // send data to stdin
@@ -943,7 +943,7 @@ module Subprocess {
    */
   proc subprocess.close() throws {
     // TODO: see subprocess.wait() for more on this error handling approach
-    var err: syserr = ENOERR;
+    var err: errorCode = ENOERR;
 
     // Close stdin.
     if this.stdin_pipe {
@@ -1086,7 +1086,7 @@ module Subprocess {
   // SIGSYS is optional as part of X/Open Systems Interface
   // SIGVTALRM is optional as part of X/Open Systems Interface
 
-  private extern proc qio_send_signal(pid: int(64), sig: c_int): syserr;
+  private extern proc qio_send_signal(pid: int(64), sig: c_int): errorCode;
 
   deprecated "'send_signal' is deprecated, please use 'sendPosixSignal' instead"
   proc subprocess.send_signal(signal:int) throws {
@@ -1120,7 +1120,7 @@ module Subprocess {
   proc subprocess.sendPosixSignal(signal:int) throws {
     try _throw_on_launch_error();
 
-    var err: syserr = ENOERR;
+    var err: errorCode = ENOERR;
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }

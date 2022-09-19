@@ -27,9 +27,8 @@
    routines are provided to print a useful error message from a ``syserr``.
 
    The IO module uses these routines in a way that supports error inspection
-   and rapid prototyping. Most routines in the IO module have two forms.
-   In one form, a :class:`OS.SystemError` is thrown when an error occurs.
-   In the second form, a ``syserr`` is returned in an out error argument.
+   and rapid prototyping. A :class:`OS.SystemError` is thrown when an error
+   occurs.
 
  */
 deprecated "The 'SysError' module is deprecated. Please use 'OS' instead"

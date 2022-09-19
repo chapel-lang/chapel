@@ -44,7 +44,6 @@ Parallel Language Features
 
    Domain Map Standard Interface <dsi>
    The ‘local’ keyword <local>
-   Locale Models <localeModels>
    Querying a Local Subdomain <subquery>
    Reduce Intents <reduceIntents>
    Runtime Support for Atomics <atomics>

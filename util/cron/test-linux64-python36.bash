@@ -10,4 +10,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-python36"
 
 set_python_version "3.6"
 
-$CWD/nightly -cron -hellos ${nightly_args}
+$CWD/nightly -cron -pythonDep ${nightly_args}

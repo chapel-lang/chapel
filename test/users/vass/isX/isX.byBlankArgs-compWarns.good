@@ -154,9 +154,6 @@ real(32)
 isReal
 isRealValue
 isRealType
-isFloat
-isFloatValue
-isFloatType
 isNumeric
 isNumericValue
 isNumericType
@@ -168,9 +165,6 @@ real(64)
 isReal
 isRealValue
 isRealType
-isFloat
-isFloatValue
-isFloatType
 isNumeric
 isNumericValue
 isNumericType
@@ -182,9 +176,6 @@ imag(32)
 isImag
 isImagValue
 isImagType
-isFloat
-isFloatValue
-isFloatType
 isNumeric
 isNumericValue
 isNumericType
@@ -196,9 +187,6 @@ imag(64)
 isImag
 isImagValue
 isImagType
-isFloat
-isFloatValue
-isFloatType
 isNumeric
 isNumericValue
 isNumericType

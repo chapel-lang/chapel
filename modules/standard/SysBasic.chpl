@@ -41,6 +41,8 @@ module SysBasic {
 /* BASIC TYPES */
 use CTypes;
 
+import OS.errorCode;
+
 /* A type storing an error code or an error message.
    A syserr can be compared using == or != to an qio_err_t (ie integer error code)
    or to another syserr. A syserr can be cast to or from an qio_err_t. It can be
@@ -60,6 +62,7 @@ use CTypes;
    The default value of the :type:`syserr` type is undefined.
 
  */
+deprecated "'SysBasic.syserr' has been deprecated; please use 'OS.errorCode' instead."
 extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc
 
 /* An integral error code. This is really just a `c_int`, but code is
@@ -75,67 +78,8 @@ extern type qio_err_t = c_int;
  */
 extern type fd_t = c_int;
 
-
-// error numbers
-
-private extern proc qio_err_eq(a:syserr, b:syserr):c_int;
-private extern proc qio_err_to_int(a:syserr):int(32);
-private extern proc qio_int_to_err(a:int(32)):syserr;
-private extern proc qio_err_iserr(a:syserr):c_int;
-
 /* The error code indicating that no error occurred (Chapel specific) */
 inline proc ENOERR return 0:c_int;
-
-// When qio_err_t is no longer just int(32), will need to add cases for qio_err_t too.
-pragma "no doc"
-inline operator syserr.==(a: syserr, b: syserr) {
-  return (qio_err_eq(a,b) != 0:c_int);
-}
-pragma "no doc"
-inline operator syserr.==(a: syserr, b: int(32))
-  return (qio_err_to_int(a) == b:int(32));
-pragma "no doc"
-inline operator syserr.==(a: syserr, b: int(64))
-  return (qio_err_to_int(a) == b:int(32));
-pragma "no doc"
-inline operator syserr.==(a: int(32), b: syserr)
-  return (a:int(32) == qio_err_to_int(b));
-pragma "no doc"
-inline operator syserr.==(a: int(64), b: syserr)
-  return (a:int(32) == qio_err_to_int(b));
-pragma "no doc"
-inline operator syserr.!=(a: syserr, b: syserr) return !(a == b);
-pragma "no doc"
-inline operator syserr.!=(a: syserr, b: int(32)) return !(a == b);
-pragma "no doc"
-inline operator syserr.!=(a: syserr, b: int(64)) return !(a == b);
-pragma "no doc"
-inline operator syserr.!=(a: int(32), b: syserr) return !(a == b);
-pragma "no doc"
-inline operator syserr.!=(a: int(64), b: syserr) return !(a == b);
-pragma "no doc"
-inline operator syserr.!(a: syserr) return (qio_err_iserr(a) == 0:c_int);
-pragma "no doc"
-inline proc syserr.chpl_cond_test_method() return (qio_err_iserr(this) != 0:c_int);
-pragma "no doc"
-inline operator :(x: syserr, type t: int(32)) return qio_err_to_int(x);
-pragma "no doc"
-inline operator :(x: syserr, type t: int(64)) return qio_err_to_int(x):int(64);
-pragma "no doc"
-inline operator :(x: int(32), type t: syserr) return qio_int_to_err(x);
-pragma "no doc"
-inline operator :(x: int(64), type t: syserr) return qio_int_to_err(x:int(32));
-pragma "no doc"
-inline operator syserr.=(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
-pragma "no doc"
-inline operator syserr.=(ref ret:syserr, x:int(32))
-{ __primitive("=", ret, qio_int_to_err(x)); }
-pragma "no doc"
-inline operator syserr.=(ref ret:syserr, x:int(64))
-{ __primitive("=", ret, qio_int_to_err(x:int(32))); }
-pragma "no doc"
-inline operator syserr.=(ref ret:c_int, x:syserr)
-{ __primitive("=", ret, qio_err_to_int(x):c_int); }
 
 // end of file
 private extern proc chpl_macro_int_EEOF():c_int;

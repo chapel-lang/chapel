@@ -36,7 +36,7 @@ config const numrows = computeProblemSize(numMatrices, eltType, rank=2),
              numcols = numrows,
              rowBlkSize = 8, 
              colBlkSize = rowBlkSize,
-             beta = 1.0;
+             beta:eltType = 1.0;
 
 //
 // Configuration constant used for verification thresholds
@@ -132,10 +132,10 @@ proc printConfiguration() {
 //
 proc initArrays(A, C) {
   forall (i,j) in A.domain do
-    A[i,j] = erf(i) * cos(j);
+    A[i,j] = erf(i:eltType) * cos(j:eltType);
 
   forall (i,j) in C.domain do
-    C[i,j] = sin(j) * cbrt(i);
+    C[i,j] = sin(j:eltType) * cbrt(i:eltType);
 
   const norm_A = sqrt( + reduce A**2 ),
         norm_C = sqrt( + reduce C**2 );
@@ -160,7 +160,8 @@ proc initArrays(A, C) {
 // the input array values
 //
 proc CPlusATranspose((i,j)) {
-  return beta * sin(j) * cbrt(i) + erf(j) * cos(i);
+  return beta * sin(j:eltType) * cbrt(i:eltType) +
+         erf(j:eltType) * cos(i:eltType);
 }
 
                             

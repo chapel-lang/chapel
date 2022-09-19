@@ -12,7 +12,7 @@ proc modifyConstArgElement(const tup: (?t,)) where isIntegralType(t) {
   tup[0] = 64;
 }
 
-proc modifyConstArgElement(const tup: (?t,)) where isFloatType(t) {
+proc modifyConstArgElement(const tup: (?t,)) where isRealType(t) || isImagType(t) {
   tup[0] = 64.0:t;
 }
 

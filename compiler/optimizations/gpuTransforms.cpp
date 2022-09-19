@@ -212,12 +212,10 @@ bool GpuizableLoop::evaluateLoop() {
     return false;
 
   // We currently don't support launching kernels from kernels. So if
-  // the loop is within a function already marked for use on the GPU
-  // error out.
+  // the loop is within a function already marked for use on the GPU,
+  // don't GPUize.
   if(this->parentFn_->hasFlag(FLAG_GPU_CODEGEN)) {
-    USR_FATAL(cfl,
-      "GPU support does not currently allow nested kernel launches. Do you have\n"
-      "nested forall/foreach loops or looping over a multidimensional domain?");
+    return false;
   }
 
   return parentFnAllowsGpuization() &&
@@ -814,7 +812,7 @@ void gpuTransforms() {
 
   // For now, we are doing GPU outlining here. In the future, it should
   // probably be its own pass.
-  if (localeUsesGPU()) {
+  if (usingGpuLocaleModel()) {
     if (fReportGpuTransformTime) gpuTransformTimer.start();
 
     outlineGPUKernels();

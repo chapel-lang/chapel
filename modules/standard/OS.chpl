@@ -956,21 +956,80 @@ module OS {
 
   } // end POSIX
 
+  extern "syserr" type errorCode; // opaque so we can manually override ==,!=,etc
+
+  // error numbers
+
+  private extern proc qio_err_eq(a:errorCode, b:errorCode):c_int;
+  private extern proc qio_err_to_int(a:errorCode):int(32);
+  private extern proc qio_int_to_err(a:int(32)):errorCode;
+  private extern proc qio_err_iserr(a:errorCode):c_int;
+
+  pragma "no doc"
+  inline operator errorCode.==(a: errorCode, b: errorCode) {
+    return (qio_err_eq(a,b) != 0:c_int);
+  }
+  pragma "no doc"
+  inline operator errorCode.==(a: errorCode, b: int(32))
+    return (qio_err_to_int(a) == b:int(32));
+  pragma "no doc"
+  inline operator errorCode.==(a: errorCode, b: int(64))
+    return (qio_err_to_int(a) == b:int(32));
+  pragma "no doc"
+  inline operator errorCode.==(a: int(32), b: errorCode)
+    return (a:int(32) == qio_err_to_int(b));
+  pragma "no doc"
+  inline operator errorCode.==(a: int(64), b: errorCode)
+    return (a:int(32) == qio_err_to_int(b));
+  pragma "no doc"
+  inline operator errorCode.!=(a: errorCode, b: errorCode) return !(a == b);
+  pragma "no doc"
+  inline operator errorCode.!=(a: errorCode, b: int(32)) return !(a == b);
+  pragma "no doc"
+  inline operator errorCode.!=(a: errorCode, b: int(64)) return !(a == b);
+  pragma "no doc"
+  inline operator errorCode.!=(a: int(32), b: errorCode) return !(a == b);
+  pragma "no doc"
+  inline operator errorCode.!=(a: int(64), b: errorCode) return !(a == b);
+  pragma "no doc"
+  inline operator errorCode.!(a: errorCode) return (qio_err_iserr(a) == 0:c_int);
+  pragma "no doc"
+  inline proc errorCode.chpl_cond_test_method() return (qio_err_iserr(this) != 0:c_int);
+  pragma "no doc"
+  inline operator :(x: errorCode, type t: int(32)) return qio_err_to_int(x);
+  pragma "no doc"
+  inline operator :(x: errorCode, type t: int(64)) return qio_err_to_int(x):int(64);
+  pragma "no doc"
+  inline operator :(x: int(32), type t: errorCode) return qio_int_to_err(x);
+  pragma "no doc"
+  inline operator :(x: int(64), type t: errorCode) return qio_int_to_err(x:int(32));
+  pragma "no doc"
+  inline operator errorCode.=(ref ret:errorCode, x:errorCode) { __primitive("=", ret, x); }
+  pragma "no doc"
+  inline operator errorCode.=(ref ret:errorCode, x:int(32))
+  { __primitive("=", ret, qio_int_to_err(x)); }
+  pragma "no doc"
+  inline operator errorCode.=(ref ret:errorCode, x:int(64))
+  { __primitive("=", ret, qio_int_to_err(x:int(32))); }
+  pragma "no doc"
+  inline operator errorCode.=(ref ret:c_int, x:errorCode)
+  { __primitive("=", ret, qio_err_to_int(x):c_int); }
+
 
   private use CTypes;
   private use POSIX;
-  import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,ENOERR,syserr};
+  import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,ENOERR};
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s
-     generated from ``syserr``. It provides factory methods to create different
-     subtypes based on the ``syserr`` that is passed.
+     generated from ``errorCode``. It provides factory methods to create
+     different subtypes based on the ``errorCode`` that is passed.
 
   */
   class SystemError : Error {
-    var err:     syserr;
+    var err:     errorCode;
     var details: string;
 
-    proc init(err: syserr, details: string = "") {
+    proc init(err: errorCode, details: string = "") {
       this.err     = err;
       this.details = details;
     }
@@ -994,16 +1053,16 @@ module OS {
     }
 
     /*
-      Return the matching :class:`SystemError` subtype for a given ``syserr``,
-      with an optional string containing extra details.
+      Return the matching :class:`SystemError` subtype for a given
+      ``errorCode``, with an optional string containing extra details.
 
-      :arg err: the syserr to generate from
+      :arg err: the errorCode to generate from
       :arg details: extra information to include with the error
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
     deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
-    proc type fromSyserr(err: syserr, details: string = "") {
+    proc type fromSyserr(err: errorCode, details: string = "") {
       return createSystemError(err, details);
     }
 
@@ -1018,20 +1077,20 @@ module OS {
     pragma "always propagate line file info"
     deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
     proc type fromSyserr(err: int, details: string = "") {
-      return createSystemError(err:syserr, details);
+      return createSystemError(err:errorCode, details);
     }
   }
 
   /*
-    Return the matching :class:`SystemError` subtype for a given ``syserr``,
+    Return the matching :class:`SystemError` subtype for a given ``errorCode``,
     with an optional string containing extra details.
 
-    :arg err: the syserr to generate from
+    :arg err: the errorCode to generate from
     :arg details: extra information to include with the error
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc createSystemError(err: syserr, details: string = "") {
+  proc createSystemError(err: errorCode, details: string = "") {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
       return new owned BlockingIoError(details, err);
     } else if err == ECHILD {
@@ -1083,7 +1142,7 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc createSystemError(err: int, details: string = "") {
-    return createSystemError(err:syserr, details);
+    return createSystemError(err:errorCode, details);
   }
 
 
@@ -1093,7 +1152,7 @@ module OS {
      :const:`SysBasic.EWOULDBLOCK`, and :const:`SysBasic.EINPROGRESS`.
   */
   class BlockingIoError : SystemError {
-    proc init(details: string = "", err: syserr = EWOULDBLOCK:syserr) {
+    proc init(details: string = "", err: errorCode = EWOULDBLOCK:errorCode) {
       super.init(err, details);
     }
   }
@@ -1107,7 +1166,7 @@ module OS {
      corresponding to :const:`SysBasic.ECHILD`.
   */
   class ChildProcessError : SystemError {
-    proc init(details: string = "", err: syserr = ECHILD:syserr) {
+    proc init(details: string = "", err: errorCode = ECHILD:errorCode) {
       super.init(err, details);
     }
   }
@@ -1117,7 +1176,7 @@ module OS {
      serves as the base class for all system errors regarding connections.
   */
   class ConnectionError : SystemError {
-    proc init(err: syserr, details: string = "") {
+    proc init(err: errorCode, details: string = "") {
       super.init(err, details);
     }
   }
@@ -1127,7 +1186,7 @@ module OS {
      corresponding to :const:`SysBasic.EPIPE` and :const:`SysBasic.ESHUTDOWN`.
   */
   class BrokenPipeError : ConnectionError {
-    proc init(details: string = "", err: syserr = EPIPE:syserr) {
+    proc init(details: string = "", err: errorCode = EPIPE:errorCode) {
       super.init(err, details);
     }
   }
@@ -1137,7 +1196,7 @@ module OS {
      corresponding to :const:`SysBasic.ECONNABORTED`.
   */
   class ConnectionAbortedError : ConnectionError {
-    proc init(details: string = "", err: syserr = ECONNABORTED:syserr) {
+    proc init(details: string = "", err: errorCode = ECONNABORTED:errorCode) {
       super.init(err, details);
     }
   }
@@ -1147,7 +1206,7 @@ module OS {
      corresponding to :const:`SysBasic.ECONNREFUSED`.
   */
   class ConnectionRefusedError : ConnectionError {
-    proc init(details: string = "", err: syserr = ECONNREFUSED:syserr) {
+    proc init(details: string = "", err: errorCode = ECONNREFUSED:errorCode) {
       super.init(err, details);
     }
 }
@@ -1157,7 +1216,7 @@ module OS {
      corresponding to :const:`SysBasic.ECONNRESET`.
   */
   class ConnectionResetError : ConnectionError {
-    proc init(details: string = "", err: syserr = ECONNRESET:syserr) {
+    proc init(details: string = "", err: errorCode = ECONNRESET:errorCode) {
       super.init(err, details);
     }
   }
@@ -1167,7 +1226,7 @@ module OS {
      corresponding to :const:`SysBasic.EEXIST`.
   */
   class FileExistsError : SystemError {
-    proc init(details: string = "", err: syserr = EEXIST:syserr) {
+    proc init(details: string = "", err: errorCode = EEXIST:errorCode) {
       super.init(err, details);
     }
   }
@@ -1177,7 +1236,7 @@ module OS {
      corresponding to :const:`SysBasic.ENOENT`.
   */
   class FileNotFoundError : SystemError {
-    proc init(details: string = "", err: syserr = ENOENT:syserr) {
+    proc init(details: string = "", err: errorCode = ENOENT:errorCode) {
       super.init(err, details);
     }
   }
@@ -1187,7 +1246,7 @@ module OS {
      corresponding to :const:`SysBasic.EINTR`.
   */
   class InterruptedError : SystemError {
-    proc init(details: string = "", err: syserr = EINTR:syserr) {
+    proc init(details: string = "", err: errorCode = EINTR:errorCode) {
       super.init(err, details);
     }
   }
@@ -1197,7 +1256,7 @@ module OS {
      corresponding to :const:`SysBasic.EISDIR`.
   */
   class IsADirectoryError : SystemError {
-    proc init(details: string = "", err: syserr = EISDIR:syserr) {
+    proc init(details: string = "", err: errorCode = EISDIR:errorCode) {
       super.init(err, details);
     }
   }
@@ -1207,7 +1266,7 @@ module OS {
      corresponding to :const:`SysBasic.ENOTDIR`.
   */
   class NotADirectoryError : SystemError {
-    proc init(details: string = "", err: syserr = ENOTDIR:syserr) {
+    proc init(details: string = "", err: errorCode = ENOTDIR:errorCode) {
       super.init(err, details);
     }
   }
@@ -1217,7 +1276,7 @@ module OS {
      corresponding to :const:`SysBasic.EACCES` and :const:`SysBasic.EPERM`.
   */
   class PermissionError : SystemError {
-    proc init(details: string = "", err: syserr = EPERM:syserr) {
+    proc init(details: string = "", err: errorCode = EPERM:errorCode) {
       super.init(err, details);
     }
   }
@@ -1227,7 +1286,7 @@ module OS {
      corresponding to :const:`SysBasic.ESRCH`.
   */
   class ProcessLookupError : SystemError {
-    proc init(details: string = "", err: syserr = ESRCH:syserr) {
+    proc init(details: string = "", err: errorCode = ESRCH:errorCode) {
       super.init(err, details);
     }
   }
@@ -1237,7 +1296,7 @@ module OS {
      to :const:`SysBasic.ETIMEDOUT`.
   */
   class TimeoutError : SystemError {
-    proc init(details: string = "", err: syserr = ETIMEDOUT:syserr) {
+    proc init(details: string = "", err: errorCode = ETIMEDOUT:errorCode) {
       super.init(err, details);
     }
   }
@@ -1249,7 +1308,7 @@ module OS {
      used and emitted by the IO module.
   */
   class IoError : SystemError {
-    proc init(err: syserr, details: string = "") {
+    proc init(err: errorCode, details: string = "") {
       super.init(err, details);
     }
   }
@@ -1263,7 +1322,7 @@ module OS {
      :const:`SysBasic.EEOF`.
   */
   class EofError : IoError {
-    proc init(details: string = "", err: syserr = EEOF:syserr) {
+    proc init(details: string = "", err: errorCode = EEOF:errorCode) {
       super.init(err, details);
     }
   }
@@ -1277,7 +1336,7 @@ module OS {
      corresponding to :const:`SysBasic.ESHORT`.
   */
   class UnexpectedEofError : IoError {
-    proc init(details: string = "", err: syserr = ESHORT:syserr) {
+    proc init(details: string = "", err: errorCode = ESHORT:errorCode) {
       super.init(err, details);
     }
   }
@@ -1291,13 +1350,13 @@ module OS {
      to :const:`SysBasic.EFORMAT`.
   */
   class BadFormatError : IoError {
-    proc init(details: string = "", err: syserr = EFORMAT:syserr) {
+    proc init(details: string = "", err: errorCode = EFORMAT:errorCode) {
       super.init(err, details);
     }
   }
 
   // here's what we need from Sys
-  private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:c_int):c_string;
+  private extern proc sys_strerror_syserr_str(error:errorCode, out err_in_strerror:c_int):c_string;
 
   /* This function takes in a string and returns it in double-quotes,
      with internal double-quotes escaped with backslash.
@@ -1306,12 +1365,12 @@ module OS {
     extern const QIO_STRING_FORMAT_CHPL: uint(8);
     extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
                                  ptr: c_string, len:c_ssize_t,
-                                 ref ret:c_string, ti: c_void_ptr): syserr;
+                                 ref ret:c_string, ti: c_void_ptr): errorCode;
     extern proc qio_strdup(s: c_string): c_string;
 
     var ret: c_string;
     // 34 is ASCII double quote
-    var err: syserr = qio_quote_string(34:uint(8), 34:uint(8),
+    var err: errorCode = qio_quote_string(34:uint(8), 34:uint(8),
                                       QIO_STRING_FORMAT_CHPL,
                                       s.localize().c_str(), len, ret, c_nil);
     // This doesn't handle the case where ret==NULL as did the previous
@@ -1337,7 +1396,7 @@ module OS {
  */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
+  proc ioerror(error:errorCode, msg:string, path:string, offset:int(64)) throws
   {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
@@ -1350,7 +1409,7 @@ module OS {
   pragma "no doc" // documented in the offset version
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc ioerror(error:syserr, msg:string, path:string) throws
+  proc ioerror(error:errorCode, msg:string, path:string) throws
   {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
@@ -1362,7 +1421,7 @@ module OS {
   pragma "no doc" // documented in the offset version
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc ioerror(error:syserr, msg:string) throws
+  proc ioerror(error:errorCode, msg:string) throws
   {
     if error then throw createSystemError(error, msg);
   }
@@ -1384,15 +1443,15 @@ module OS {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     const details    = errstr + " " + msg + " with path " + quotedpath +
                        " offset " + offset:string;
-    throw createSystemError(EIO:syserr, details);
+    throw createSystemError(EIO:errorCode, details);
   }
 
-  /* Convert a syserr code to a human-readable string describing the error.
+  /* Convert a errorCode code to a human-readable string describing the error.
 
      :arg error: the error code
      :returns: a string describing the error
    */
-  proc errorToString(error:syserr):string
+  proc errorToString(error:errorCode):string
   {
     var strerror_err:c_int = ENOERR;
     const errstr = sys_strerror_syserr_str(error, strerror_err);

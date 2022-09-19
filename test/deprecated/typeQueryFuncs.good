@@ -34,6 +34,10 @@ typeQueryFuncs.chpl:11: warning: isIrregularArr is deprecated - please use isIrr
 typeQueryFuncs.chpl:12: warning: isAssociativeArr is deprecated - please use isAssociative method on array
 typeQueryFuncs.chpl:13: warning: isSparseArr is deprecated - please use isSparse method on array
   typeQueryFuncs.chpl:33: called as runQueries(description: string, A: [DefaultSparseDom(2,int(64),domain(2,int(64),false))] int(64))
+typeQueryFuncs.chpl:38: warning: isFloat is deprecated use `isReal(e) || isImag(e)` instead
+typeQueryFuncs.chpl:39: warning: isFloat is deprecated use `isReal(t) || isImag(t)` instead
+typeQueryFuncs.chpl:40: warning: isFloatType is deprecated use `isRealType(t) || isImagType(t)` instead
+typeQueryFuncs.chpl:41: warning: isFloatValue is deprecated use `isRealValue(e) || isImagValue(e)` instead
 Given a rectangular domain: 
   isRectangularDom() = true
   isIrregularDom()   = false
@@ -64,3 +68,7 @@ Given a sparse array:
   isIrregularArr()   = true
   isAssociativeArr() = false
   isSparseArr()      = true
+isFloat(1.2) returns true
+isFloat(real) returns true
+isFloatType(real) returns true
+isFloatValue(1.2) returns true

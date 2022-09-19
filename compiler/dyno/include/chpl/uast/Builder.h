@@ -64,10 +64,10 @@ class Builder final {
   std::unordered_map<const AstNode*, Location> notedLocations_;
 
   // the following maps are computed during assignIDs
-  std::unordered_map<ID, Location> idToLocation_;
+  llvm::DenseMap<ID, Location> idToLocation_;
   std::vector<Location> commentToLocation_;
-  std::unordered_map<ID, const AstNode*> idToAst_;
-  std::unordered_map<ID, ID> idToParent_;
+  llvm::DenseMap<ID, const AstNode*> idToAst_;
+  llvm::DenseMap<ID, ID> idToParent_;
 
   Builder(Context* context, UniqueString filepath,
           UniqueString startingSymbolPath)

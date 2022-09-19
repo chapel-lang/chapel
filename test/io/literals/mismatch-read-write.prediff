@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+import sys, os, re;
+
+testname=sys.argv[1]
+compopts=sys.argv[4]
+
+useLiteral = re.search(r"useLiteral\=(\w+)", compopts).group(1)
+useAction = re.search(r"useAction\=action\.(\w+)", compopts).group(1)
+
+suffix = "Literal" if useLiteral == "true" else "Newline"
+methodName = useAction + suffix
+kind = "read" if useAction == "write" else "write"
+
+lineno = -1
+with open(testname + ".chpl") as source:
+    for n, line in enumerate(source, 1):
+        if methodName in line:
+            lineno = n
+            break
+
+template = ""
+with open(testname + ".template.good") as tf:
+    template = tf.read()
+
+template = template.replace("LINENO", str(lineno))
+template = template.replace("METHOD", methodName)
+template = template.replace("READWRITE", kind)
+
+with open(testname + ".good", "w") as f:
+    f.write(template)
