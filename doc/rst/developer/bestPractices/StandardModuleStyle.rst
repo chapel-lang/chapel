@@ -29,10 +29,9 @@ Here are a few examples:
 
 
 Exceptions:
-~~~~~~~~~~~
+The following are exceptions to the capitalization rules:
 
-* proc:`~locale.numPUs`
-
+* :proc:`~locales.locale.numPUs`
 
 Modules
 -------
