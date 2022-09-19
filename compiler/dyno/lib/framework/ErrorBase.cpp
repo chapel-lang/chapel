@@ -41,9 +41,9 @@ Location ParseError::location(Context* context) const {
 void ParseError::write(ErrorWriter& wr) const {
   // if the ID is set, determine the location from that
   if (!id_.isEmpty()) {
-    wr.printBrief(kind_, id_, "parse error:", message_);
+    wr.printBrief(kind_, id_, message_);
   } else {
-    wr.printBrief(kind_, loc_, "parse error:", message_);
+    wr.printBrief(kind_, loc_, message_);
   }
 }
 
