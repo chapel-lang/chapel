@@ -24,72 +24,31 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "./ErrorGuard.h"
 
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
+static const BuilderResult&
+parseAndReportErrors(Context* ctx, UniqueString path) {
+  auto& ret = parseFileToBuilderResult(ctx, path, UniqueString());
+  for (auto& err : ret.errors()) ctx->report(err);
+  return ret;
+}
 
-#include <cassert>
+static void testEmptyRecordUserInit() {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace types;
-using namespace uast;
-
-class CountingErrorHandler {
-  Context::ReportErrorFnType oldHandler_ = nullptr;
-  static std::vector<const ErrorBase*> errors_;
-  Context* ctx_;
-
-  // TODO: Can we just have the error handler be an instance of a class?
-  static void globalReportError(Context* ctx, const ErrorBase* err) {
-    errors_.push_back(err);
-  }
-
- public:
-  CountingErrorHandler(Context* ctx) : ctx_(ctx) {
-    oldHandler_ = ctx_->errorHandler();
-    ctx_->setErrorHandler(&globalReportError);
-  }
-
-  bool realizeErrors() {
-    if (errors_.size() != 0) {
-      for (auto err : errors_) oldHandler_(ctx_, err);
-      errors_.clear();
-      return true;
-    }
-    return false;
-  }
-
-  ~CountingErrorHandler() {
-    assert(!this->realizeErrors());
-    ctx_->setErrorHandler(oldHandler_);
-  }
-};
-
-// C++ is so dumb...
-std::vector<const ErrorBase*> CountingErrorHandler::errors_;
-
-// Empty record with user defined initializer.
-static void test1() {
-  Context ctx;
-  Context* context = &ctx;
-
-  context->advanceToNextRevision(true);
-
-  auto path = UniqueString::get(context, "test1.chpl");
+  auto path = UniqueString::get(ctx, "input.chpl");
   std::string contents =
     " record r {\n"
     "   proc init() {}\n"
     " }\n"
     " var obj = new r();\n";
 
-  setFileText(context, path, contents);
+  setFileText(ctx, path, contents);
 
-  // Get the module.
-  const ModuleVec& vec = parseToplevel(context, path);
+  // Parse and get the module.
+  const ModuleVec& vec = parseToplevel(ctx, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -110,12 +69,10 @@ static void test1() {
   assert(newExpr->management() == New::DEFAULT_MANAGEMENT);
 
   // Resolve the module.
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  (void) rr;
+  const ResolutionResultByPostorderID& rr = resolveModule(ctx, m->id());
 
   // Get the type of 'r'.
-  auto& qtR = typeForModuleLevelSymbol(context, r->id());
-  (void) qtR;
+  auto& qtR = typeForModuleLevelSymbol(ctx, r->id());
 
   // Remember that 'new r' is the base expression of the call.
   auto& reNewExpr = rr.byAst(newExpr);
@@ -141,26 +98,23 @@ static void test1() {
   // TODO: should dyno mark this 'init' as 'REF'? The current behavior
   // seems deceptive since an initializer is always going to mutate state.
   assert(receiverQualType.kind() == QualifiedType::CONST_REF);
-
-  context->collectGarbage();
 }
 
-static void test2() {
-  Context ctx;
-  Context* context = &ctx;
+static void testEmptyRecordCompilerGenInit() {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
-  context->advanceToNextRevision(true);
-
-  auto path = UniqueString::get(context, "input.chpl");
+  auto path = UniqueString::get(ctx, "input.chpl");
   std::string contents =
     " record r {\n"
     " }\n"
     " var obj = new r();\n";
 
-  setFileText(context, path, contents);
+  setFileText(ctx, path, contents);
 
   // Get the module.
-  const ModuleVec& vec = parseToplevel(context, path);
+  const ModuleVec& vec = parseToplevel(ctx, path);
   assert(vec.size() == 1);
   const Module* m = vec[0]->toModule();
   assert(m);
@@ -178,12 +132,10 @@ static void test2() {
   assert(newExpr->management() == New::DEFAULT_MANAGEMENT);
 
   // Resolve the module.
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  (void) rr;
+  const ResolutionResultByPostorderID& rr = resolveModule(ctx, m->id());
 
   // Get the type of 'r'.
-  auto& qtR = typeForModuleLevelSymbol(context, r->id());
-  (void) qtR;
+  auto& qtR = typeForModuleLevelSymbol(ctx, r->id());
 
   // Remember that 'new r' is the base expression of the call.
   auto& reNewExpr = rr.byAst(newExpr);
@@ -204,23 +156,18 @@ static void test2() {
   assert(initTfs->id() == r->id());
   assert(initTfs->numFormals() == 1);
   assert(initTfs->formalName(0) == "this");
+
   auto receiverQualType = initTfs->formalType(0);
   assert(receiverQualType.type() == qtR.type());
-
   assert(receiverQualType.kind() == QualifiedType::REF);
-
-  context->collectGarbage();
 }
 
-// Resolve tertiary method in another module. Initialize object using 'new'.
-static void test3() {
-  Context ctx;
-  Context* context = &ctx;
+static void testTertMethodCallCrossModule() {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
-  context->advanceToNextRevision(true);
-  auto errHandler = CountingErrorHandler(context);
-
-  auto path = UniqueString::get(context, "test3.chpl");
+  auto path = UniqueString::get(ctx, "input.chpl");
   std::string contents =
     R""""(
     module A {
@@ -234,11 +181,11 @@ static void test3() {
     }
     )"""";
 
-  setFileText(context, path, contents);
+  setFileText(ctx, path, contents);
 
   // Get the modules.
-  auto& br = parseFileToBuilderResult(context, path, UniqueString());
-  assert(!br.numErrors());
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(!guard.realizeErrors());
   assert(br.numTopLevelExpressions() == 2);
   auto modA = br.topLevelExpression(0)->toModule();
   assert(modA);
@@ -249,13 +196,6 @@ static void test3() {
   assert(modA->numStmts() == 1);
   auto cls = modA->stmt(0)->toClass();
   assert(cls);
-
-  /*
-      use A;
-      proc C.foo() {}
-      var x = new C();
-      x.foo();
-  */
 
   // Get the tertiary method, variable, and call from module 'B'.
   assert(modB->numStmts() == 4);
@@ -270,8 +210,8 @@ static void test3() {
   auto call = modB->stmt(3)->toFnCall();
   assert(call);
 
-  auto& rr = resolveModule(context, modB->id());
-  assert(!errHandler.realizeErrors());
+  auto& rr = resolveModule(ctx, modB->id());
+  assert(!guard.realizeErrors());
 
   // TODO: Get the TFS for the tertiary method...
 
@@ -279,6 +219,7 @@ static void test3() {
   assert(reX.type().kind() == QualifiedType::VAR);
   assert(!reX.type().isUnknown());
   assert(!reX.type().isErroneousType());
+
   // TODO: Way to forcibly set this to concrete? Note that we would have
   // to store a field in QT, because we cannot know for certain unless
   // we inspect the class fields (feels weird).
@@ -310,7 +251,7 @@ static void test3() {
   assert(tfsInit->numFormals() == 1);
   assert(tfsInit->formalName(0) == "this");
   auto recvDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-  auto recvType = ClassType::get(context, clsX->basicClassType(),
+  auto recvType = ClassType::get(ctx, clsX->basicClassType(),
                                  nullptr,
                                  recvDecor);
   auto qtReceiver = QualifiedType(QualifiedType::CONST_IN, recvType);
@@ -324,8 +265,6 @@ static void test3() {
   auto mscCall = reCall.mostSpecific().only();
   assert(mscCall);
   assert(mscCall->id() == tert->id());
-
-  context->collectGarbage();
 }
 
 static void determineManagerAndDecorator(Context* ctx,
@@ -359,12 +298,15 @@ static void determineManagerAndDecorator(Context* ctx,
   return;
 }
 
-static bool testNewExpression(Context* ctx, const char* expr) {
+static void buildParseTestClassNewExpr(Context* ctx, const char* expr) {
+  ErrorGuard guard(ctx);
+
   static int testNumCounter = 0;
   std::string testName;
-  testName += "testNewExpr";
+  testName += "buildParseTestClassNewExpr";
   testName += std::to_string(testNumCounter++);
   testName += ".chpl";
+
   auto path = UniqueString::get(ctx, testName.c_str());
   std::string contents =
     R""""(
@@ -382,8 +324,8 @@ static bool testNewExpression(Context* ctx, const char* expr) {
   bool isNilable = (isNilableInNewExpr || isPostfixNilable);
 
   // Get the module.
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
-  if (br.numErrors()) return false;
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(!guard.realizeErrors());
 
   assert(br.numTopLevelExpressions() == 1);
   auto modA = br.topLevelExpression(0)->toModule();
@@ -435,56 +377,40 @@ static bool testNewExpression(Context* ctx, const char* expr) {
   const Type* actualCls = reX.type().type();
   assert(actualCls);
 
-  bool ret = (expectedCls == actualCls);
-  return ret;
-}
-
-static void doTestNewExpression(Context* ctx, const char* expr) {
-  auto errHandler = CountingErrorHandler(ctx);
-  bool passed = testNewExpression(ctx, expr);
-  assert(!errHandler.realizeErrors());
-  assert(passed);
+  assert(!guard.realizeErrors());
+  bool ok = (expectedCls == actualCls);
+  assert(ok);
   ctx->advanceToNextRevision(true);
 }
 
 // Test different combinations of management/nilability flavors.
-static void test4() {
+static void testClassManagementNilabilityInNewExpr() {
   Context context;
   Context* ctx = &context;
 
-  doTestNewExpression(ctx, "new C()");
-  doTestNewExpression(ctx, "new owned C()");
-  doTestNewExpression(ctx, "new shared C()");
-  doTestNewExpression(ctx, "new borrowed C()");
-  doTestNewExpression(ctx, "new unmanaged C()");
-  doTestNewExpression(ctx, "new C?()");
-  doTestNewExpression(ctx, "new owned C?()");
-  doTestNewExpression(ctx, "new shared C?()");
-  doTestNewExpression(ctx, "new borrowed C?()");
-  doTestNewExpression(ctx, "new unmanaged C?()");
-  doTestNewExpression(ctx, "new C()?");
-  doTestNewExpression(ctx, "new owned C()?");
-  doTestNewExpression(ctx, "new shared C()?");
-  doTestNewExpression(ctx, "new borrowed C()?");
-  doTestNewExpression(ctx, "new unmanaged C()?");
+  buildParseTestClassNewExpr(ctx, "new C()");
+  buildParseTestClassNewExpr(ctx, "new owned C()");
+  buildParseTestClassNewExpr(ctx, "new shared C()");
+  buildParseTestClassNewExpr(ctx, "new borrowed C()");
+  buildParseTestClassNewExpr(ctx, "new unmanaged C()");
+  buildParseTestClassNewExpr(ctx, "new C?()");
+  buildParseTestClassNewExpr(ctx, "new owned C?()");
+  buildParseTestClassNewExpr(ctx, "new shared C?()");
+  buildParseTestClassNewExpr(ctx, "new borrowed C?()");
+  buildParseTestClassNewExpr(ctx, "new unmanaged C?()");
+  buildParseTestClassNewExpr(ctx, "new C()?");
+  buildParseTestClassNewExpr(ctx, "new owned C()?");
+  buildParseTestClassNewExpr(ctx, "new shared C()?");
+  buildParseTestClassNewExpr(ctx, "new borrowed C()?");
+  buildParseTestClassNewExpr(ctx, "new unmanaged C()?");
 }
 
-// TODO: Begin testing some generic records (without user initializers).
-static void test5() {
-}
-
-// TODO: Ditto but for classes.
-static void test6() {
-}
-
-// Test a simple record with a user defined initializer.
-static void test7() {
+static void testGenericRecordUserInitDependentField() {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
-  ctx->advanceToNextRevision(true);
-
-  auto path = UniqueString::get(ctx, "test7.chpl");
+  auto path = UniqueString::get(ctx, "input.chpl");
   std::string contents = R""""(
     record r {
       type f1;
@@ -500,9 +426,9 @@ static void test7() {
 
   setFileText(ctx, path, contents);
 
-  // Get the module.
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
-  assert(!br.numErrors());
+  // Get the module and the UAST we need.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(!guard.realizeErrors());
 
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.singleModule();
@@ -513,16 +439,22 @@ static void test7() {
   auto obj = mod->stmt(1)->toVariable();
   assert(obj);
 
-  // TODO: Confirm the final type of the instance.
+  // Resolve the module.
   auto& rr = resolveModule(ctx, mod->id());
+
+  // Inspect the type of the variable 'obj'.
   auto& reObj = rr.byAst(obj);
-  auto typeObj = reObj.type().type();
+  auto qtObj = reObj.type();
+  assert(qtObj.kind() == QualifiedType::VAR);
+  assert(qtObj.genericity() == Type::MAYBE_GENERIC); // TODO: CONCRETE
+  auto typeObj = qtObj.type();
   auto rt = typeObj->toRecordType();
   assert(rt);
   assert(rt->id() == rec->id());
   assert(rt->instantiatedFrom() != nullptr);
+  assert(rt->substitutions().size() == 2);
 
-  // Check the first field via substitutions.
+  // Check the first field of the instantiated record via substitutions.
   auto idf1 = parsing::fieldIdWithName(ctx, rt->id(),
                                        UniqueString::get(ctx, "f1"));
   assert(!idf1.isEmpty());
@@ -531,7 +463,7 @@ static void test7() {
   assert(qtf1.type() == IntType::get(ctx, 0));
   assert(qtf1.param() == nullptr);
 
-  // Check the second field via substitutions.
+  // Check the second field of the instantiated record via substitutions.
   auto idf2 = parsing::fieldIdWithName(ctx, rt->id(),
                                        UniqueString::get(ctx, "f2"));
   assert(!idf2.isEmpty());
@@ -541,15 +473,22 @@ static void test7() {
   assert(qtf2.param()->isIntParam());
   assert(qtf2.param()->toIntParam()->value() == 8);
 
-  // Check all fields via resolved fields.
+  // Now check all fields via the resolved fields query.
   auto& rf = fieldsForTypeDecl(ctx, rt, USE_DEFAULTS);
   assert(rf.numFields() == 3);
+  assert(!rf.isGeneric());
+  assert(!rf.isGenericWithDefaults());
 
+  // First field is 'type int(64)'
   auto ft1 = QualifiedType(QualifiedType::TYPE, IntType::get(ctx, 0));
   assert(rf.fieldType(0) == ft1);
+
+  // Second is 'param int = 8'
   auto ft2 = QualifiedType(QualifiedType::PARAM, IntType::get(ctx, 0),
                            IntParam::get(ctx, 8));
   assert(rf.fieldType(1) == ft2);
+
+  // Last is 'var int'
   auto ft3 = QualifiedType(QualifiedType::VAR, IntType::get(ctx, 0));
   assert(rf.fieldType(2) == ft3);
 
@@ -566,18 +505,88 @@ static void test7() {
 
   // Initializer type should be the same as the 'new' call type.
   auto qtRecv = initTfs->formalType(0);
-  assert(qtRecv.kind() == QualifiedType::REF);
   assert(qtRecv.type() == typeObj);
+
+  // But the kind should be 'REF'.
+  assert(qtRecv.kind() == QualifiedType::REF);
+}
+
+static void testMockupRangeBuilderAndRangeClass() {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  ctx->advanceToNextRevision(true);
+
+  auto path = UniqueString::get(ctx, "input.chpl");
+  std::string myRangeCodeStr = R""""(
+    enum Bound { bounded, boundedLow, boundedHigh, boundedNone }
+
+    record myRange {
+      type idxType = int;
+      param boundedType: Bound = Bound.bounded;
+      param stridable: bool = false;
+      var low: idxType;
+      var high: idxType;
+      var stride: intType;
+      var alignment: if stridable then idxType else nothing;
+      var aligned: if stridable then bool else nothing;
+    }
+
+    // The initializer that is invoked by the builder.
+    proc myRange.init(type idxType, low: idxType, high: idxType) {
+      this.idxType = idxType;
+      this.boundedType = Bound.bounded;
+      this.low = low:int;
+      this.high = high:int;
+    }
+
+    // Some of the builders we might encounter in module code.
+    proc buildBoundedRange(param low: integral, param high: integral) {
+      type idxType = (low + high).type; // Hack to skip param method.
+      var ret = new range(idxType, low=low, high=high);
+      return ret;
+    }
+    proc buildBoundedRange(low: int(?w), high: int(w)) {
+      var ret = new range(low.type, low=low, high=high);
+      return ret;
+    }
+    proc buildBoundedRange(low: uint(?w), high: uint(w)) {
+      var ret = new range(low.type, low=low, high=high);
+      return ret;
+    }
+    proc buildBoundedRange(low: bool, high: bool) {
+      var ret = new range(low.type, low=low, high=high);
+      return ret;
+    }
+    )"""";
+
+  std::string contents = myRangeCodeStr +
+    R""""(
+    var r1 = buildBoundedRange(0, 8);
+    var lo = 9;
+    var hi = 13;
+    var r2 = buildBoundedRange(lo, hi);
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module and the UAST we need.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(!guard.realizeErrors());
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 13); // 9 for the base and 4 for test
 }
 
 int main() {
-  test1();
-  test2();
-  test3();
-  test4();
-  test5();
-  test6();
-  test7();
+  testEmptyRecordUserInit();
+  testEmptyRecordCompilerGenInit();
+  testTertMethodCallCrossModule();
+  testClassManagementNilabilityInNewExpr();
+  testGenericRecordUserInitDependentField();
+  testMockupRangeBuilderAndRangeClass();
 
   return 0;
 }

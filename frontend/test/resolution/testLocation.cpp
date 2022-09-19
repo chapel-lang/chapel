@@ -25,21 +25,16 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Module.h"
+#include "./ErrorGuard.h"
 
 static const Module* oneModule(const ModuleVec& vec) {
   assert(vec.size() == 1);
   return vec[0];
 }
 
-// TODO maybe we want to support something like this
-std::vector<const ErrorBase*> errors;
-static void collectErrors(Context* context, const ErrorBase* err) {
-  errors.push_back(err);
-}
-
-static void printErrors(Context* context) {
-  ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED, false);
-  for (auto err: errors) {
+static void printErrors(ErrorGuard& guard) {
+  ErrorWriter ew(guard.context(), std::cout, ErrorWriter::DETAILED, false);
+  for (auto& err: guard.errors()) {
     err->write(ew);
   }
 }
@@ -85,12 +80,10 @@ static void test2() {
   Context ctx;
   Context* context = &ctx;
 
-  ctx.setErrorHandler(collectErrors);
-
   auto path = UniqueString::get(context, "input.chpl");
 
   {
-    errors.clear();
+    ErrorGuard guard(context);
     context->advanceToNextRevision(true);
     std::string contents = "var x:int = 3.14;";
     setFileText(context, path, contents);
@@ -107,13 +100,14 @@ static void test2() {
     printf("e loc is line %d\n", l.firstLine());
     assert(l.firstLine() == 1);
 
-    printErrors(context);
-    assert(errors.size() == 1);
-    assert(errors[0]->location(context).firstLine() == 1);
+    printErrors(guard);
+    assert(guard.errors().size() == 1);
+    assert(guard.errors()[0]->location(context).firstLine() == 1);
+    assert(guard.realizeErrors());
   }
 
   {
-    errors.clear();
+    ErrorGuard guard(context);
     context->advanceToNextRevision(true);
     std::string contents = "\n\nvar x:int = 3.14;";
     setFileText(context, path, contents);
@@ -131,10 +125,11 @@ static void test2() {
     fflush(stdout);
     assert(l.firstLine() == 3);
 
-    printErrors(context);
-    assert(errors.size() == 1);
-    printf("%d\n", errors[0]->location(context).firstLine());
-    assert(errors[0]->location(context).firstLine() == 3);
+    printErrors(guard);
+    assert(guard.errors().size() == 1);
+    printf("%d\n", guard.errors()[0]->location(context).firstLine());
+    assert(guard.errors()[0]->location(context).firstLine() == 3);
+    assert(guard.realizeErrors());
   }
 }
 

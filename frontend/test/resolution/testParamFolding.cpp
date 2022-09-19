@@ -24,12 +24,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-
-// error handler that causes the test to fail if it runs
-static void reportError(Context* context, const ErrorBase* err) {
-  printf("error encountered - %s\n", err->message().c_str());
-  assert(false && "fatal error");
-}
+#include "./ErrorGuard.h"
 
 // assumes the last statement is a variable declaration for x
 // with an initialization expression.
@@ -38,9 +33,7 @@ static void reportError(Context* context, const ErrorBase* err) {
 static void test1() {
   Context ctx;
   Context* context = &ctx;
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
+  ErrorGuard guard(context);
 
   QualifiedType qt = resolveTypeOfXInit(context, "var x = true || f();");
   assert(qt.isParamTrue());
@@ -49,9 +42,7 @@ static void test1() {
 static void test2() {
   Context ctx;
   Context* context = &ctx;
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
+  ErrorGuard guard(context);
 
   QualifiedType qt = resolveTypeOfXInit(context, "var x = false && f();");
   assert(qt.isParamFalse());
@@ -60,12 +51,9 @@ static void test2() {
 static void test3() {
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
   // 2nd argument param should not be folded
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
-
   QualifiedType qt = resolveTypeOfXInit(context,
                                       "var a: bool; var x = a || true;");
   assert(!qt.isParam() && !qt.hasParamPtr());
@@ -75,9 +63,7 @@ static void test3() {
 static void test4() {
   Context ctx;
   Context* context = &ctx;
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
+  ErrorGuard guard(context);
 
   // 2nd argument param should not be folded
   QualifiedType qt = resolveTypeOfXInit(context,
@@ -89,9 +75,7 @@ static void test4() {
 static void test5() {
   Context ctx;
   Context* context = &ctx;
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
+  ErrorGuard guard(context);
 
   // both args are params, should make a param init expr
   QualifiedType qt = resolveTypeOfXInit(context,
@@ -102,9 +86,7 @@ static void test5() {
 static void test6() {
   Context ctx;
   Context* context = &ctx;
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
+  ErrorGuard guard(context);
 
   // both args are params, should make a param init expr
   QualifiedType qt = resolveTypeOfXInit(context,
@@ -115,9 +97,7 @@ static void test6() {
 static void test7() {
   Context ctx;
   Context* context = &ctx;
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
+  ErrorGuard guard(context);
 
   // both args are the (or) identity params, should make param false.
   QualifiedType qt = resolveTypeOfXInit(context,
@@ -128,9 +108,7 @@ static void test7() {
 static void test8() {
   Context ctx;
   Context* context = &ctx;
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
+  ErrorGuard guard(context);
 
   // both args are the (and) identity params, should make param true.
   QualifiedType qt = resolveTypeOfXInit(context,
@@ -141,9 +119,7 @@ static void test8() {
 static void test9() {
   Context ctx;
   Context* context = &ctx;
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
+  ErrorGuard guard(context);
 
   // the type of y is unknown, so the whole type is unknown.
   QualifiedType qt = resolveTypeOfXInit(context,
@@ -154,9 +130,7 @@ static void test9() {
 static void test10() {
   Context ctx;
   Context* context = &ctx;
-
-  // configure context to fail test if there are any errors
-  context->setErrorHandler(reportError);
+  ErrorGuard guard(context);
 
   // the type of y is unknown, so the whole type is unknown.
   QualifiedType qt = resolveTypeOfXInit(context,

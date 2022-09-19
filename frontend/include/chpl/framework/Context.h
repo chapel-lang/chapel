@@ -40,6 +40,7 @@
 #include "llvm/ADT/DenseMap.h"
 
 namespace chpl {
+  class Context;
 
 class ErrorBase;
 
@@ -68,12 +69,54 @@ implement queries and how the query framework functions.
 
  */
 class Context {
+ private:
+  // Hook to implement default error reporting.
+  static void defaultReportError(Context* context, const ErrorBase* err);
+
  public:
-  using ReportErrorFnType = void(*)(Context*, const ErrorBase*);
+
+  /**
+    This ErrorHandler class is used by the context to report errors.
+
+    By default, the error handler will report errors immediately and will
+    not store them for later use. This behavior can be customized by calling
+    the appropriate constructor.
+  */
+  class ErrorHandler {
+   private:
+    std::vector<const ErrorBase*> errors_;
+    bool report_;
+    bool store_;
+
+   public:
+    ErrorHandler() : report_(true), store_(false) {}
+    ErrorHandler(bool report, bool store) : report_(report), store_(store) {}
+    virtual ~ErrorHandler() {}
+
+    const std::vector<const ErrorBase*>& errors() const { return errors_; }
+
+    virtual void report(Context* context, const ErrorBase* err) const {
+      defaultReportError(context, err);
+    }
+
+    virtual void handle(Context* context, const ErrorBase* err) {
+      if (report_) report(context, err);
+      if (store_) errors_.push_back(err);
+    }
+  };
 
  private:
+  // The current error handler.
+  owned<ErrorHandler> handler_ = toOwned(new ErrorHandler());
+
+  // Report an error to the current handler.
+  void reportError(Context* context, const ErrorBase* err) {
+    handler_->handle(context, err);
+  }
+
   // The CHPL_HOME variable
   const std::string chplHome_;
+
   // Variables to explicitly set before getting chplenv
   const std::unordered_map<std::string, std::string> chplEnvOverrides;
 
@@ -133,8 +176,6 @@ class Context {
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
-  static void defaultReportError(Context* context, const ErrorBase* err);
-  ReportErrorFnType reportError = defaultReportError;
   // return an ANSI color code for this query depth, if supported by terminal
   void setQueryDepthColor(int depth, std::ostream& os) {
     auto color = queryDepthColor[depth % queryDepthColor.size()];
@@ -146,6 +187,7 @@ class Context {
       os << getColorFormat(colorName);
     }
   }
+
 
 
   // The following are only used for UniqueString garbage collection
@@ -273,28 +315,25 @@ class Context {
   llvm::ErrorOr<const ChplEnvMap&> getChplEnv();
 
   /**
-    Set the error handling function
+    Consume the currently installed error handler. If 'substitute' is not
+    nullptr, the context will use the substitute error handler. Otherwise,
+    the context will revert to using the default error handler.
   */
-  void setErrorHandler(ReportErrorFnType reportError) {
-    this->reportError = reportError;
+  owned<ErrorHandler> installErrorHandler(owned<ErrorHandler> substitute) {
+    auto ret = substitute.get() ? std::move(substitute)
+                                : toOwned(new ErrorHandler());
+    std::swap(this->handler_, ret);
+    return ret;
   }
 
   /**
-    Get the current error handling function
+    Get a pointer to the currently installed error handler.
   */
-  ReportErrorFnType errorHandler() const {
-    return this->reportError;
+  ErrorHandler* errorHandler() {
+    return this->handler_.get();
   }
 
   /**
-    Get the default error handling function
-  */
-  ReportErrorFnType defaultErrorHandler() const {
-    return &defaultReportError;
-  }
-
-  /**
-
     Get or create a unique string and return it as a C string. If the passed
     string is NULL, this function will return an empty string.
 

@@ -30,6 +30,7 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
+#include "./ErrorGuard.h"
 
 #include <map>
 
@@ -50,9 +51,6 @@ static auto recIter = std::string(R""""(
                       )"""");
 
 std::vector<const ErrorBase*> errors;
-static void collectErrors(Context* context, const ErrorBase* err) {
-  errors.push_back(err);
-}
 
 struct ParamCollector {
   using RV = ResolvedVisitor<ParamCollector>;
@@ -125,9 +123,7 @@ static void testAmbiguous() {
   printf("testAmbiguous\n");
   Context ctx;
   Context* context = &ctx;
-
-  errors.clear();
-  ctx.setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   //
   // Make sure nothing explodes when encountering an ambiguity
@@ -148,13 +144,15 @@ static void testAmbiguous() {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto idx = rr.byAst(loop->index());
   assert(idx.type().isErroneousType());
-  assert(errors.size() == 1);
+  assert(guard.errors().size() == 1);
+  assert(guard.realizeErrors());
 }
 
 static void testThese() {
   printf("testThese\n");
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
   //
   // Test iteration over expression requiring ".these()"
@@ -179,6 +177,7 @@ static void testTheseReturn() {
   printf("testTheseReturn\n");
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
   //
   // Should call .these on the returned value
@@ -205,9 +204,7 @@ static void testNoThese() {
   printf("testNoThese\n");
   Context ctx;
   Context* context = &ctx;
-
-  errors.clear();
-  ctx.setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   //
   // Should issue some kind of error
@@ -220,23 +217,21 @@ static void testNoThese() {
                    }
                    )"""";
 
-  errors.clear();
   const Module* m = parseModule(context, theseText);
   auto loop = m->stmt(2)->toFor();
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto idx = rr.byAst(loop->index());
   assert(idx.type().isErroneousType());
-  assert(errors.size() == 1);
+  assert(guard.errors().size() == 1);
+  assert(guard.realizeErrors());
 }
 
 static void testAmbiguousThese() {
   printf("testAmbiguousThese\n");
   Context ctx;
   Context* context = &ctx;
-
-  errors.clear();
-  ctx.setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   //
   // Should issue some kind of ambiguity error
@@ -261,16 +256,15 @@ static void testAmbiguousThese() {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto idx = rr.byAst(loop->index());
   assert(idx.type().isErroneousType());
-  assert(errors.size() == 1);
+  assert(guard.errors().size() == 1);
+  assert(guard.realizeErrors());
 }
 
 static void testNoIndex() {
   printf("testNoIndex\n");
   Context ctx;
   Context* context = &ctx;
-
-  errors.clear();
-  ctx.setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   auto iterText = myiter +
                   R""""(
@@ -280,17 +274,13 @@ static void testNoIndex() {
   const Module* m = parseModule(context, iterText);
 
   resolveModule(context, m->id());
-
-  assert(errors.size() == 0);
 }
 
 static void testTheseNoIndex() {
   printf("testTheseNoIndex\n");
   Context ctx;
   Context* context = &ctx;
-
-  errors.clear();
-  ctx.setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   auto theseText = recIter +
                    R""""(
@@ -313,17 +303,13 @@ static void testTheseNoIndex() {
   auto recR = m->stmt(0)->toRecord();
   auto recThese = recR->declOrComment(0)->toFunction();
   assert(theseFn->id() == recThese->id());
-
-  assert(errors.size() == 0);
 }
 
 static void testCForLoop() {
   printf("testCForLoop\n");
   Context ctx;
   Context* context = &ctx;
-
-  errors.clear();
-  ctx.setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   auto iterText = R""""(
                    iter myIter() {
@@ -354,14 +340,13 @@ static void testCForLoop() {
   auto whileLoop = m->stmt(0)->toFunction()->stmt(1)->toWhile();
   auto cond = rf.byAst(whileLoop->condition());
   assert(cond.type().type() == BoolType::get(context, 0));
-
-  assert(errors.size() == 0);
 }
 
 static void testParamFor() {
   printf("testParamFor\n");
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
   //
   // Test iteration over an iterator call
@@ -406,6 +391,7 @@ static void testNestedParamFor() {
   printf("testNestedParamFor\n");
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
   auto loopText = R"""(
   var sum = 0;
@@ -459,9 +445,7 @@ static void testIndexScope() {
   printf("testIndexScope\n");
   Context ctx;
   Context* context = &ctx;
-
-  errors.clear();
-  ctx.setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   //
   // Ensure that the loop iterand is scope-resolved 'outside' of the loop,
@@ -485,7 +469,7 @@ static void testIndexScope() {
   auto arg = loop->iterand()->toCall()->actual(0);
   auto argRes = rr.byAst(arg);
   assert(argRes.toId() == m->stmt(1)->id());
-  assert(errors.size() == 0);
+  assert(!guard.realizeErrors());
 }
 
 

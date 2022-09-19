@@ -33,6 +33,7 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
+#include "./ErrorGuard.h"
 
 #include <algorithm>
 #include <sstream>
@@ -49,9 +50,6 @@ static Context* getNewContext() {
 }
 
 std::vector<const ErrorBase*> errors;
-static void collectErrors(Context* context, const ErrorBase* err) {
-  errors.push_back(err);
-}
 
 static const Module* parseModule(Context* context, const char* src) {
   auto path = UniqueString::get(context, "input.chpl");
@@ -383,13 +381,13 @@ static std::string buildProgram(IntentList formalIntent,
   return program;
 }
 
-static void printErrors(Context* context) {
+static void printErrors(const ErrorGuard& guard) {
   if (!verbose) {
-    printf("Found %lu errors.\n\n", errors.size());
+    printf("Found %lu errors.\n\n", guard.errors().size());
   } else {
     printf("======== Errors ========\n");
-    ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED, false);
-    for (auto err : errors) {
+    ErrorWriter ew(guard.context(), std::cout, ErrorWriter::DETAILED, false);
+    for (auto err : guard.errors()) {
       err->write(ew);
     }
     printf("========================\n\n");
@@ -508,9 +506,7 @@ static void testMatcher(IntentList formalIntent,
 
   Context ctx;
   Context* context = &ctx;
-
-  errors.clear();
-  ctx.setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   const Module* m = parseModule(context, program.c_str());
 
@@ -519,24 +515,26 @@ static void testMatcher(IntentList formalIntent,
   ResolvedVisitor<Collector> rv(context, m, col, rr);
   m->traverse(rv);
 
-  if (errors.size() > 0) {
+  if (guard.errors().size()) {
     if (debug) {
-      printErrors(context);
+      printErrors(guard);
     }
     assert(fail);
+    assert(guard.realizeErrors());
     return;
   } else {
     assert(!fail);
+    assert(!guard.realizeErrors());
   }
 
   validate(formalType, count, info, col);
 }
 
-static Collector customHelper(std::string program, bool fail = false) {
+static Collector
+customHelper(std::string program, bool fail = false,
+             std::vector<const ErrorBase*>* errorsOut=nullptr) {
   Context* context = getNewContext();
-
-  errors.clear();
-  context->setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   const Module* m = parseModule(context, program.c_str());
 
@@ -544,6 +542,10 @@ static Collector customHelper(std::string program, bool fail = false) {
   Collector pc;
   ResolvedVisitor<Collector> rv(context, m, pc, rr);
   m->traverse(rv);
+
+  if (guard.errors().size() && errorsOut) {
+    for (auto err : guard.errors()) errorsOut->push_back(err);
+  }
 
   if (debug) {
     printf("\n################################################\n");
@@ -554,17 +556,14 @@ static Collector customHelper(std::string program, bool fail = false) {
     printf("%s\n", program.c_str());
     printf("========================\n");
 
-    if (errors.size() > 0) {
-      printErrors(context);
-    }
+    if (guard.errors().size()) printErrors(guard);
 
     if (verbose) pc.dump();
     printf("\n");
   }
 
-  if (!fail) {
-    assert(errors.size() == 0);
-  }
+  // Consume the errors so the destructor does not abort.
+  assert(fail == guard.realizeErrors());
 
   return pc;
 }
@@ -677,6 +676,7 @@ proc fn(param n : int, args...n) {
 }
 )""");
 
+  std::vector<const ErrorBase*> errors;
   auto errMsg = "Cannot resolve call: no matching candidates";
 
   auto good = std::string(R"""(var x = fn(3, 1, 2.0, "hello");)""");
@@ -684,12 +684,14 @@ proc fn(param n : int, args...n) {
   assert(isParamEq(gc.onlyDecl("n"), 3));
 
   auto less = std::string(R"""(var x = fn(3, 1, 2.0);)""");
-  customHelper(paramFn + less, true);
+  customHelper(paramFn + less, true, &errors);
   assert(errors.size() == 1 && errors[0]->message() == errMsg);
+  errors.clear();
 
   auto more = std::string(R"""(var x = fn(3, 1, 2.0, "hello", "oops");)""");
-  customHelper(paramFn + more, true);
+  customHelper(paramFn + more, true, &errors);
   assert(errors.size() == 1 && errors[0]->message() == errMsg);
+  errors.clear();
 
   // non-integrals should not be valid in count-expressions
   auto paramBoolFn = std::string(
@@ -700,8 +702,9 @@ proc fn(param n : bool, args...n) {
 }
 fn(true, true);
 )""");
-  customHelper(paramBoolFn, true);
+  customHelper(paramBoolFn, true, &errors);
   assert(errors.size() == 1 && errors[0]->message() == errMsg);
+  errors.clear();
 
   // TODO: Make sure uints resolve (cannot cast to param uints yet)
 }
@@ -752,7 +755,6 @@ fn(1, 2, 3);
   auto results = customHelper(countTypeFn);
   assert(isParamEq(results.onlyDecl("cq"), 3));
   assert(results.onlyDecl("tq").type()->isIntType());
-
 }
 
 static void testAlignment() {
@@ -770,17 +772,20 @@ proc fn(param n : int, args...n, y : int, z : real) {
 )""");
 
   auto errMsg = "Cannot resolve call: no matching candidates";
+  std::vector<const ErrorBase*> errors;
 
   auto good = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5.0);)""");
   customHelper(paramFn + good);
 
   auto less = std::string(R"""(var x = fn(3, 1, 2, 2.0);)""");
-  customHelper(paramFn + less, true);
+  customHelper(paramFn + less, true, &errors);
   assert(errors.size() == 1 && errors[0]->message() == errMsg);
+  errors.clear();
 
   auto more = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5, 6, 7.0);)""");
-  customHelper(paramFn + more, true);
+  customHelper(paramFn + more, true, &errors);
   assert(errors.size() == 1 && errors[0]->message() == errMsg);
+  errors.clear();
 
   auto named = std::string(R"""(var x = fn(z=5.0, 3, 1, 2, 3, 4);)""");
   customHelper(paramFn + named);

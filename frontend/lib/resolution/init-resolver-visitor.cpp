@@ -300,8 +300,7 @@ namespace {
     return ret;
   }
 
-  // TODO: Identifiy if we need to do anything at all.
-  // TODO: Move the final checks into this function.
+  // TODO: Identifiy cases where we don't need to do anything.
   const TypedFnSignature* Visitor::run(void) {
     doSetupInitialState();
 
@@ -621,6 +620,7 @@ namespace {
 
   bool Visitor::enter(const Dot* node) {
     if (auto ident = node->receiver()->toIdentifier()) {
+      // TODO: this.this.this
       if (ident->name() == USTR("this")) {
         auto name = node->field();
         auto id = fieldIdFromName(name);

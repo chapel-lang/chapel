@@ -99,8 +99,8 @@ static ModuleSymbol* parseFile(const char* fileName,
 
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
-static void dynoErrorHandler(chpl::Context* context,
-                             const chpl::ErrorBase* err);
+static chpl::owned<chpl::Context::ErrorHandler>
+dynoPrepareErrorHandler(void);
 
 static int dynoRealizeErrors(void);
 
@@ -128,8 +128,8 @@ void parse() {
     INT_FATAL("The '%s' flag currently has no effect", "parser-debug");
   }
 
-  auto oldErrorHandler = gContext->errorHandler();
-  gContext->setErrorHandler(&dynoErrorHandler);
+  // Swap in our configured error handler (don't worry about the old one).
+  std::ignore = gContext->installErrorHandler(dynoPrepareErrorHandler());
 
   if (countTokens || printTokens) countTokensInCmdLineFiles();
 
@@ -143,7 +143,8 @@ void parse() {
 
   if (dynoRealizeErrors()) USR_STOP();
 
-  gContext->setErrorHandler(oldErrorHandler);
+  // Revert to using the default error handler now.
+  gContext->installErrorHandler(nullptr);
 
   parsed = true;
 }
@@ -861,46 +862,25 @@ static void dynoDisplayError(chpl::Context* context,
   }
 }
 
-static void dynoDisplayError(chpl::Context* context,
-                             const chpl::ErrorBase* err) {
-  // Try to maintain compatibility with the old reporting mechanism
-  dynoDisplayError(context, err->toErrorMessage(context));
-}
-//
-// TODO: The error handler would like to do something like fetch AST from
-// IDs, but it cannot due to the possibility of a query cycle:
-//
-// - The 'parseFileToBuilderResult' query is called
-// - Some errors are encountered
-// - Errors are reported to the context by the builder
-// - Which calls the custom error handler, which calls 'idToAst'...
-// - Which calls 'parseFileToBuilderResult' again!
-//
-// I'm sure there's a better way to avoid this cycle, but for right now
-// I am just going to store the errors and display them at a later point
-// after the parsing has completed.
-//
-// One option to fix this is to wield query powers and manually check
-// for and handle the recursion. Another option might be to make our
-// error handler more robust (e.g., make it a class, and separate out the
-// reporting and "realizing" of the errors, as we are doing here).
-//
-static std::vector<const chpl::ErrorBase*> dynoErrorMessages;
-
-// Store a copy of the error, to be realized at a later point.
-static void dynoErrorHandler(chpl::Context* context,
-                             const chpl::ErrorBase* err) {
-  dynoErrorMessages.push_back(err);
+static chpl::owned<chpl::Context::ErrorHandler>
+dynoPrepareErrorHandler(void) {
+  const bool report = false;
+  const bool store = true;
+  auto ret = chpl::toOwned(new chpl::Context::ErrorHandler(report, store));
+  return ret;
 }
 
 static int dynoRealizeErrors(void) {
-  int ret = dynoErrorMessages.size();
+  auto handler = gContext->errorHandler();
+  assert(handler);
 
-  for (auto& err : dynoErrorMessages) {
-    dynoDisplayError(gContext, err);
+  int ret = handler->errors().size();
+  for (auto err : handler->errors()) {
+    dynoDisplayError(gContext, err->toErrorMessage(gContext));
   }
 
-  dynoErrorMessages.clear();
+  // Clear the error handler by swapping in a new one.
+  std::ignore = gContext->installErrorHandler(dynoPrepareErrorHandler());
 
   return ret;
 }

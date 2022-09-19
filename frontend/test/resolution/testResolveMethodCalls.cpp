@@ -24,47 +24,13 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-
-class CountingErrorHandler {
-  Context::ReportErrorFnType oldHandler_ = nullptr;
-  static std::vector<const ErrorBase*> errors_;
-  Context* ctx_;
-
-  // TODO: Can we just have the error handler be an instance of a class?
-  static void globalReportError(Context* ctx, const ErrorBase* err) {
-    errors_.push_back(err);
-  }
-
- public:
-  CountingErrorHandler(Context* ctx) : ctx_(ctx) {
-    oldHandler_ = ctx_->errorHandler();
-    ctx_->setErrorHandler(&globalReportError);
-  }
-
-  bool realizeErrors() {
-    if (errors_.size() != 0) {
-      for (auto err : errors_) oldHandler_(ctx_, err);
-      errors_.clear();
-      return true;
-    }
-    return false;
-  }
-
-  ~CountingErrorHandler() {
-    assert(!this->realizeErrors());
-    ctx_->setErrorHandler(oldHandler_);
-  }
-};
-
-// C++ is so dumb...
-std::vector<const ErrorBase*> CountingErrorHandler::errors_;
+#include "./ErrorGuard.h"
 
 // Test resolving a simple primary and secondary method in defining scope.
 static void test1() {
   Context ctx;
   Context* context = &ctx;
-
-  context->advanceToNextRevision(true);
+  ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "test1.chpl");
   std::string contents =
@@ -131,16 +97,13 @@ static void test1() {
   assert(tfsCallSecondary->numFormals() == 1);
   assert(tfsCallSecondary->formalName(0) == "this");
   assert(tfsCallSecondary->formalType(0).type() == qtR.type());
-
-  context->collectGarbage();
 }
 
 // Similar test but for parenless methods.
 static void test2() {
   Context ctx;
   Context* context = &ctx;
-
-  context->advanceToNextRevision(true);
+  ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "test2.chpl");
   std::string contents =
@@ -208,8 +171,6 @@ static void test2() {
   assert(tfsCallSecondary->numFormals() == 1);
   assert(tfsCallSecondary->formalName(0) == "this");
   assert(tfsCallSecondary->formalType(0).type() == qtR.type());
-
-  context->collectGarbage();
 }
 
 // test case to lock in correct behavior w.r.t. T being both a
@@ -217,6 +178,7 @@ static void test2() {
 static void test3() {
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
   const char* contents = R""""(
                               module M {
@@ -239,9 +201,7 @@ static void test3() {
 static void test4() {
   Context ctx;
   Context* context = &ctx;
-
-  context->advanceToNextRevision(true);
-  auto errHandler = CountingErrorHandler(context);
+  ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "test3.chpl");
   std::string contents =
@@ -284,7 +244,7 @@ static void test4() {
   assert(call);
 
   auto& rr = resolveModule(context, modB->id());
-  assert(!errHandler.realizeErrors());
+  assert(!guard.realizeErrors());
 
   auto& reX = rr.byAst(x);
   assert(reX.type().kind() == QualifiedType::VAR);
