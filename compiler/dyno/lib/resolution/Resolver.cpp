@@ -1429,8 +1429,8 @@ bool Resolver::enter(const uast::Conditional* cond) {
     auto ifType = commonType(context, returnTypes);
     if (!ifType && !condType.isUnknown()) {
       // do not error if the condition type is unknown
-      REPORT(context, IncompatibleIfBranches, cond, returnTypes[0], returnTypes[1]);
-      r.setType(QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context)));
+      r.setType(TYPE_ERROR(context, IncompatibleIfBranches, cond,
+                           returnTypes[0], returnTypes[1]));
     } else if (ifType) {
       r.setType(ifType.getValue());
     }

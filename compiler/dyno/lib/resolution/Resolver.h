@@ -26,6 +26,10 @@
 namespace chpl {
 namespace resolution {
 
+#define TYPE_ERROR(CONTEXT, NAME, EINFO...)\
+  (REPORT(CONTEXT, NAME, EINFO),\
+   QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
+
 struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;

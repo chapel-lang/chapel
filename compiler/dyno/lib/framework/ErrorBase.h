@@ -25,14 +25,19 @@
 
 namespace chpl {
 
+#define ERROR_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, ERROR, EINFO)
+#define WARNING_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, WARNING, EINFO)
+#define SYNTAX_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, SYNTAX, EINFO)
+#define NOTE_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, NOTE, EINFO)
+
 class ErrorWriter;
 
 enum ErrorType {
   PARSE,
   GENERAL,
-#define ERROR_CLASS(name__, kind__, info__...) name__,
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) NAME,
 #include "error-classes-list.h"
-#undef ERROR_CLASS
+#undef DIAGNOSTIC_CLASS
 };
 
 class ErrorBase {
@@ -125,20 +130,20 @@ class GeneralError : public ErrorBase {
   void mark(Context* context) const override;
 };
 
-#define ERROR_CLASS(name__, kind__, info__...)\
-  class Error##name__ : public ErrorBase {\
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...)\
+  class Error##NAME : public ErrorBase {\
    private:\
-    using ErrorInfo = std::tuple<info__>;\
+    using ErrorInfo = std::tuple<EINFO>;\
     ErrorInfo info;\
 \
-    Error##name__(ErrorInfo info) :\
-      ErrorBase(kind__, name__), info(std::move(info)) {}\
+    Error##NAME(ErrorInfo info) :\
+      ErrorBase(KIND, NAME), info(std::move(info)) {}\
 \
-    static const owned<Error##name__>&\
-    getError##name__(Context* context, ErrorInfo info);\
+    static const owned<Error##NAME>&\
+    getError##NAME(Context* context, ErrorInfo info);\
    public:\
-    ~Error##name__() = default;\
-    static const Error##name__* get(Context* context, ErrorInfo info);\
+    ~Error##NAME() = default;\
+    static const Error##NAME* get(Context* context, ErrorInfo info);\
 \
     void write(ErrorWriter& writer) const override;\
     void mark(Context* context) const override {\
@@ -147,9 +152,10 @@ class GeneralError : public ErrorBase {
     }\
   };
 #include "error-classes-list.h"
-#undef ERROR_CLASS
+#undef DIAGNOSTIC_CLASS
 
-#define REPORT(context__, name__, info__...) context->report(Error##name__::get(context__, std::make_tuple(info__)))
+#define REPORT(CONTEXT, NAME, EINFO...)\
+  context->report(Error##NAME::get(CONTEXT, std::make_tuple(EINFO)))
 
 template <>
 struct stringify<chpl::ErrorBase::Kind> {

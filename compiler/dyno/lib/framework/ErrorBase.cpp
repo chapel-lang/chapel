@@ -92,18 +92,18 @@ void GeneralError::mark(Context* context) const {
   id_.mark(context);
 }
 
-#define ERROR_CLASS(name__, kind__, info__...)\
-  const owned<Error##name__>& Error##name__::getError##name__(Context* context, std::tuple<info__> tuple) {\
-    QUERY_BEGIN(getError##name__, context, tuple);\
-    auto result = owned<Error##name__>(new Error##name__(tuple));\
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...)\
+  const owned<Error##NAME>& Error##NAME::getError##NAME(Context* context, std::tuple<EINFO> tuple) {\
+    QUERY_BEGIN(getError##NAME, context, tuple);\
+    auto result = owned<Error##NAME>(new Error##NAME(tuple));\
     return QUERY_END(result);\
   }\
 \
-  const Error##name__* Error##name__::get(Context* context, std::tuple<info__> tuple) {\
-    return Error##name__::getError##name__(context, std::move(tuple)).get();\
+  const Error##NAME* Error##NAME::get(Context* context, std::tuple<EINFO> tuple) {\
+    return Error##NAME::getError##NAME(context, std::move(tuple)).get();\
   }
 #include "error-classes-list.h"
-#undef ERROR_CLASS
+#undef DIAGNOSTIC_CLASS
 
 void ErrorIncompatibleIfBranches::write(ErrorWriter& wr) const {
   auto ifExpr = std::get<const uast::Conditional*>(info);
