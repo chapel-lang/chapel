@@ -1044,7 +1044,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
       actuals.push_back(CallInfoActual(rhsEltType, UniqueString()));
       auto ci = CallInfo (/* name */ USTR("="),
                           /* calledType */ QualifiedType(),
-                          /* isMethod */ false,
+                          /* isMethodCall */ false,
                           /* hasQuestionArg */ false,
                           /* isParenless */ false,
                           actuals);
@@ -1518,7 +1518,7 @@ bool Resolver::enter(const Identifier* ident) {
           std::vector<CallInfoActual> actuals;
           auto ci = CallInfo (/* name */ ident->name(),
                               /* calledType */ QualifiedType(),
-                              /* isMethod */ false,
+                              /* isMethodCall */ false,
                               /* hasQuestionArg */ false,
                               /* isParenless */ true,
                               actuals);
@@ -2065,10 +2065,8 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   // Prepare the remaining actuals.
   prepareCallInfoActuals(call, actuals, hasQuestionArg);
 
-  auto ret = CallInfo(name, calledType, isMethodCall,
-                      hasQuestionArg,
-                      /* isParenless */ false,
-                      actuals);
+  auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+                      /* isParenless */ false, actuals);
 
   return ret;
 }
@@ -2287,7 +2285,7 @@ void Resolver::exit(const Dot* dot) {
   actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
   auto ci = CallInfo (/* name */ dot->field(),
                       /* calledType */ QualifiedType(),
-                      /* isMethod */ true,
+                      /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
                       actuals);
@@ -2398,7 +2396,7 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
     actuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
     auto ci = CallInfo (/* name */ USTR("these"),
                         /* calledType */ iterandRE.type(),
-                        /* isMethod */ true,
+                        /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
                         actuals);

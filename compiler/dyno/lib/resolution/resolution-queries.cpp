@@ -2073,7 +2073,7 @@ isUntypedSignatureApplicable(Context* context,
   }
 
   // TODO: more to check for method-ness?
-  if (ci.isMethodCall() != ufs->isMethod()) {
+  if (!ci.isOpCall() && ci.isMethodCall() != ufs->isMethod()) {
     return false;
   }
 
@@ -2296,7 +2296,7 @@ lookupCalledExpr(Context* context,
 
   // For method calls, perform an initial lookup starting at the scope for
   // the definition of the receiver type, if it can be found.
-  if (ci.isMethodCall()) {
+  if (ci.isMethodCall() || ci.isOpCall()) {
     assert(ci.numActuals() >= 1);
 
     auto& receiverQualType = ci.actual(0).type();
