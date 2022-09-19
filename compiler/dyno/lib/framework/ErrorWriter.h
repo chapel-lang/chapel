@@ -29,6 +29,32 @@ namespace chpl {
 
 class Context;
 
+namespace errordetail {
+
+inline Location locate(Context* context, const ID& id) {
+  if (!context) return Location();
+  return parsing::locateId(context, id);
+}
+inline Location locate(Context* context, const uast::AstNode* node) {
+  return locate(context, node->id());
+}
+
+template <typename T>
+struct AsFileName {
+  T t; /* The thing to locate */
+
+  Location location(Context* context) const {
+    return locate(context, t);
+  }
+};
+
+} // end namespace errordetail
+
+template <typename T>
+errordetail::AsFileName<T> fileNameOf(T t) {
+  return errordetail::AsFileName<T> { std::move(t) };
+}
+
 class ErrorWriter {
  public:
   enum OutputFormat {
@@ -42,51 +68,67 @@ class ErrorWriter {
   OutputFormat outputFormat_;
   Location lastLocation_;
 
-  inline Location locate(const ID& id) {
-    if (!context) return Location();
-    return parsing::locateId(context, id);
-  }
-  inline Location locate(const uast::AstNode* node) {
-    return locate(node->id());
-  }
-
   std::string fileText(const Location& loc);
 
   const char* kindText(ErrorBase::Kind kind);
 
   template <typename T>
+  struct Writer {
+    void operator()(ErrorWriter& ew, const T& t) {
+      stringify<T> str;
+      str(ew.oss_, CHPL_SYNTAX, t);
+    }
+  };
+
+  template <>
+  struct Writer<const char*> {
+    void operator()(ErrorWriter& ew, const char* t) {
+      ew.oss_ << t;
+    }
+  };
+
+  template <>
+  struct Writer<std::string> {
+    void operator()(ErrorWriter& ew, const std::string& t) {
+      ew.oss_ << t;
+    }
+  };
+
+  template <typename T>
+  struct Writer<errordetail::AsFileName<T>> {
+    void operator()(ErrorWriter& ew, const errordetail::AsFileName<T>& e) {
+      auto loc = e.location(ew.context);
+      ew.write(loc.path().c_str());
+      ew.write(":");
+      ew.write(loc.firstLine());
+    }
+  };
+
+  template <typename T>
   void write(T t) {
-    stringify<T> str;
-    str(oss_, CHPL_SYNTAX, t);
+    Writer<T> writer;
+    writer(*this, t);
   }
 
-  void write(const char* str) {
-    oss_ << str;
-  }
-
-  void write(const std::string& str) {
-    oss_ << str;
-  }
-
-  void printErrorHeading(ErrorBase::Kind kind, Location loc);
+  void writeErrorHeading(ErrorBase::Kind kind, Location loc);
   template <typename Locatable>
-  void printErrorHeading(ErrorBase::Kind kind, const Locatable& loc) {
-    printErrorHeading(kind, locate(loc));
+  void writeErrorHeading(ErrorBase::Kind kind, const Locatable& loc) {
+    writeErrorHeading(kind, errordetail::locate(context, loc));
   }
 
   template <typename ... Ts>
-  void print(Ts ... ts);
+  void writeAll(Ts ... ts);
 
   template <typename T, typename ... Rest>
-  void print(T t, Rest ... rest) {
+  void writeAll(T t, Rest ... rest) {
     write(t);
-    print(std::forward<Rest>(rest)...);
+    writeAll(std::forward<Rest>(rest)...);
   }
 
   template <>
-  void print() {
+  void writeAll() {
     if (outputFormat_ != MESSAGE_ONLY) {
-      // Don't print newlines if we're only concerned about
+      // Don't write newlines if we're only concerned about
       oss_ << std::endl;
     }
   }
@@ -96,35 +138,47 @@ class ErrorWriter {
     context(context), oss_(oss), outputFormat_(outputFormat) {}
 
   template <typename LocationType, typename ... Ts>
-  void printBrief(ErrorBase::Kind kind, LocationType loc, Ts ... ts) {
-    printErrorHeading(kind, loc);
-    print(std::forward<Ts>(ts)...);
+  void writeHeading(ErrorBase::Kind kind, LocationType loc, Ts ... ts) {
+    writeErrorHeading(kind, loc);
+    writeAll(std::forward<Ts>(ts)...);
   }
 
   template <typename ... Ts>
-  void printMessage(Ts ... ts) {
+  void writeMessage(Ts ... ts) {
     if (outputFormat_ == DETAILED) {
-      print(std::forward<Ts>(ts)...);
+      writeAll(std::forward<Ts>(ts)...);
     }
   }
 
-  void printAst(const Location& place,
+  template <typename ... Ts>
+  void writeNote(Ts ... ts) {
+    if (outputFormat_ == DETAILED) {
+      writeAll(std::forward<Ts>(ts)...);
+    } else if (outputFormat_ == BRIEF){
+      // Indent notes in brief mode to make things easier to organize
+      writeAll("  note: ", std::forward<Ts>(ts)...);
+    } else {
+      // In message-only mode, don't print notes either.
+    }
+  }
+
+  void writeCode(const Location& place,
                 const std::vector<Location>& toHighlight = {});
   template <typename LocPlace, typename LocHighlight>
-  void printAst(const LocPlace& place,
+  void writeCode(const LocPlace& place,
                 const std::vector<LocHighlight>& toHighlight = {}) {
     std::vector<Location> ids(toHighlight.size());
     std::transform(toHighlight.cbegin(), toHighlight.cend(), ids.begin(), [&](auto node) {
-      return locate(node);
+      return errordetail::locate(context, node);
     });
-    printAst(locate(place), ids);
+    writeCode(errordetail::locate(context, place), ids);
   }
   // Specialize for AstNode* to support brace-only construction of highlight
   // lists (e.g. { binOp, fnCall })
-  void printAst(const uast::AstNode* place,
+  void writeCode(const uast::AstNode* place,
                 const std::vector<const uast::AstNode*>& toHighlight = {});
 
-  void printNewline();
+  void writeNewline();
 
   inline Location lastLocation() const { return lastLocation_; }
 };

@@ -56,7 +56,7 @@ const char* ErrorWriter::kindText(ErrorBase::Kind kind) {
   }
 }
 
-void ErrorWriter::printErrorHeading(ErrorBase::Kind kind, Location loc) {
+void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc) {
   auto path = loc.path().c_str();
   int lineno = loc.line();
   bool validPath = (path != nullptr && path[0] != '\0');
@@ -84,7 +84,7 @@ void ErrorWriter::printErrorHeading(ErrorBase::Kind kind, Location loc) {
   }
 }
 
-void ErrorWriter::printAst(const Location& location,
+void ErrorWriter::writeCode(const Location& location,
                            const std::vector<Location>& toHighlight) {
   if (outputFormat_ != DETAILED || context == nullptr) return;
 
@@ -131,12 +131,12 @@ void ErrorWriter::printAst(const Location& location,
   oss_ << "\0x33[24m" << std::endl;
 }
 
-void ErrorWriter::printAst(const uast::AstNode* place,
+void ErrorWriter::writeCode(const uast::AstNode* place,
                            const std::vector<const uast::AstNode*>& toHighlight) {
-  printAst<>(place, toHighlight);
+  writeCode<>(place, toHighlight);
 }
 
-void ErrorWriter::printNewline() {
+void ErrorWriter::writeNewline() {
   oss_ << std::endl;
 }
 

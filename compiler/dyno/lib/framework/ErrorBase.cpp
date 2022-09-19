@@ -45,9 +45,9 @@ const ParseError* ParseError::get(Context* context, const ErrorMessage& error) {
 void ParseError::write(ErrorWriter& wr) const {
   // if the ID is set, determine the location from that
   if (!id_.isEmpty()) {
-    wr.printBrief(kind_, id_, message_);
+    wr.writeHeading(kind_, id_, message_);
   } else {
-    wr.printBrief(kind_, loc_, message_);
+    wr.writeHeading(kind_, loc_, message_);
   }
 }
 
@@ -82,9 +82,9 @@ const GeneralError* GeneralError::vbuild(Context* context, Kind kind, Location l
 
 void GeneralError::write(ErrorWriter& wr) const {
   if (!id_.isEmpty()) {
-    wr.printBrief(kind_, id_, message_);
+    wr.writeHeading(kind_, id_, message_);
   } else {
-    wr.printBrief(kind_, loc_, message_);
+    wr.writeHeading(kind_, loc_, message_);
   }
 }
 
@@ -110,10 +110,10 @@ void ErrorIncompatibleIfBranches::write(ErrorWriter& wr) const {
   auto qt1 = std::get<1>(info);
   auto qt2 = std::get<2>(info);
 
-  wr.printBrief(kind_, ifExpr, "Branches of if-expression have incompatible types.");
-  wr.printMessage("In the following if-expression:");
-  wr.printAst(ifExpr, { ifExpr->thenBlock(), ifExpr->elseBlock() });
-  wr.printMessage("The first branch has type ", qt1,
+  wr.writeHeading(kind_, ifExpr, "branches of if-expression have incompatible types.");
+  wr.writeMessage("in the following if-expression:");
+  wr.writeCode(ifExpr, { ifExpr->thenBlock(), ifExpr->elseBlock() });
+  wr.writeMessage("the first branch has type ", qt1,
                    ", while the second has type ", qt2);
 }
 
@@ -128,58 +128,58 @@ void ErrorTupleExpansionNamedArgs::write(ErrorWriter& wr) const {
     }
   }
 
-  wr.printBrief(kind_, fnCall, "Tuple expansion cannot be used with named arguments.");
-  wr.printMessage("A tuple is being expanded here:");
-  wr.printAst(fnCall, { tupleOp });
-  wr.printMessage("The first named actual is here:");
-  wr.printAst(fnCall, { namedActual });
+  wr.writeHeading(kind_, fnCall, "tuple expansion cannot be used with named arguments.");
+  wr.writeMessage("a tuple is being expanded here:");
+  wr.writeCode(fnCall, { tupleOp });
+  wr.writeMessage("the first named actual is here:");
+  wr.writeCode(fnCall, { namedActual });
 }
 
 void ErrorMemManagementRecords::write(ErrorWriter& wr) const {
   auto newCall = std::get<const uast::FnCall*>(info);
   auto record = std::get<const uast::Record*>(info);
 
-  wr.printBrief(kind_, newCall, "Cannot use memory management strategies with records");
-  wr.printAst(newCall, { record });
+  wr.writeHeading(kind_, newCall, "cannot use memory management strategies with records");
+  wr.writeCode(newCall, { record });
 }
 
 void ErrorPrivateToPublicInclude::write(ErrorWriter& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
-  wr.printBrief(kind_, moduleInclude,
+  wr.writeHeading(kind_, moduleInclude,
                 "cannot make a private module public through "
                 "an include statement");
-  wr.printAst(moduleInclude);
-  wr.printMessage("module declared private here:");
-  wr.printAst(moduleDef);
+  wr.writeCode(moduleInclude);
+  wr.writeMessage("module declared private here:");
+  wr.writeCode(moduleDef);
 }
 
 void ErrorPrototypeInclude::write(ErrorWriter& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
-  wr.printBrief(kind_, moduleInclude,
+  wr.writeHeading(kind_, moduleInclude,
                 "cannot apply prototype to module in include statement");
-  wr.printAst(moduleInclude);
-  wr.printMessage("put prototype keyword at module declaration here:");
-  wr.printAst(moduleDef);
+  wr.writeCode(moduleInclude);
+  wr.writeMessage("put prototype keyword at module declaration here:");
+  wr.writeCode(moduleDef);
 }
 
 void ErrorMissingInclude::write(ErrorWriter& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto& filePath = std::get<std::string>(info);
-  wr.printBrief(kind_, moduleInclude, "cannot find included submodule");
-  wr.printMessage("expected file at path '", filePath, "'");
+  wr.writeHeading(kind_, moduleInclude, "cannot find included submodule");
+  wr.writeMessage("expected file at path '", filePath, "'");
 }
 
 void ErrorRedefinition::write(ErrorWriter& wr) const {
   auto decl = std::get<const uast::NamedDecl*>(info);
   auto& ids = std::get<std::vector<ID>>(info);
-  wr.printBrief(kind_, decl, "'", decl->name().c_str(), "' has multiple definitions");
-  wr.printAst(decl);
-  wr.printMessage("redefined in these places:");
+  wr.writeHeading(kind_, decl, "'", decl->name().c_str(), "' has multiple definitions");
+  wr.writeCode(decl);
   for (const ID& id : ids) {
     if (id != decl->id()) {
-      wr.printAst<ID, ID>(id);
+      wr.writeNote("redefined at ", fileNameOf(id));
+      wr.writeCode<ID, ID>(id);
     }
   }
 }
