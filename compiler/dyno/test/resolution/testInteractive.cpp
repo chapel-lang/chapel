@@ -219,6 +219,7 @@ static void usage(int argc, char** argv) {
          "  --std enables the standard library\n"
          "  --scope only performs scope resolution\n"
          "  --trace enables query tracing\n"
+         "  --time <outputFile> outputs query timing information to outputFile\n"
          "  --searchPath <path> adds to the module search path\n",
          argv[0]);
 }
@@ -245,6 +246,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
   bool enableStdLib = false;
+  const char* timing = nullptr;
   for (int i = 1; i < argc; i++) {
     if (0 == strcmp(argv[i], "--std")) {
       enableStdLib = true;
@@ -259,6 +261,13 @@ int main(int argc, char** argv) {
       trace = true;
     } else if (0 == strcmp(argv[i], "--scope")) {
       scopeResolveOnly = true;
+    } else if (0 == strcmp(argv[i], "--time")) {
+      if (i+1 >= argc) {
+        usage(argc, argv);
+        return 1;
+      }
+      timing = argv[i+1];
+      i++;
     } else {
       files.push_back(argv[i]);
     }
@@ -289,6 +298,7 @@ int main(int argc, char** argv) {
     ctx->setDebugTraceFlag(false);
     typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
     ctx->setDebugTraceFlag(trace);
+    if (timing) ctx->beginQueryTimingTrace(timing);
 
     setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
 
@@ -348,6 +358,7 @@ int main(int argc, char** argv) {
 
     printf("Ran %i queries to compute the above\n\n",
            ctx->numQueriesRunThisRevision());
+    if (timing) ctx->endQueryTimingTrace();
 
     if (gc) {
       ctx->collectGarbage();
