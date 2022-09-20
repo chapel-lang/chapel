@@ -23,7 +23,7 @@
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/framework/stringify-functions.h"
-#include "../../../lib/framework/ErrorBase.h"
+#include "chpl/framework/ErrorBase.h"
 
 #include <string>
 

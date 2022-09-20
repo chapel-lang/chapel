@@ -1,5 +1,5 @@
-#include "ErrorBase.h"
-#include "ErrorWriter.h"
+#include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/query-impl.h"
 #include <sstream>
@@ -102,7 +102,7 @@ void GeneralError::mark(Context* context) const {
   const Error##NAME* Error##NAME::get(Context* context, std::tuple<EINFO> tuple) {\
     return Error##NAME::getError##NAME(context, std::move(tuple)).get();\
   }
-#include "error-classes-list.h"
+#include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 
 void ErrorIncompatibleIfBranches::write(ErrorWriter& wr) const {

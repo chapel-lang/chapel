@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
@@ -32,7 +33,6 @@
 #include "chpl/uast/TupleDecl.h"
 
 #include "../util/filesystem_help.h"
-#include "../framework/ErrorBase.h"
 
 #include <cstdio>
 #include <set>

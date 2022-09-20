@@ -19,14 +19,13 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Select.h"
 #include "chpl/uast/When.h"
-
-#include "../../lib/framework/ErrorBase.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

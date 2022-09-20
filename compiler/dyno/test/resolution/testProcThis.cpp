@@ -17,14 +17,13 @@
  * limitations under the License.
  */
 
+#include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 #include "common.h"
-
-#include "../../lib/framework/ErrorWriter.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

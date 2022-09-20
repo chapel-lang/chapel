@@ -21,7 +21,7 @@
 
 #include <ostream>
 
-#include "ErrorBase.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/parsing/parsing-queries.h"
 

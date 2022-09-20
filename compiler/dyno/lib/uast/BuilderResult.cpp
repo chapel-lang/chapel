@@ -21,7 +21,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorMessage.h"
-#include "../framework/ErrorBase.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Comment.h"

@@ -23,8 +23,8 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/stringify-functions.h"
-#include "ErrorWriter.h"
-#include "ErrorBase.h"
+#include "chpl/framework/ErrorWriter.h"
+#include "chpl/framework/ErrorBase.h"
 
 #include <chrono>
 #include <fstream>

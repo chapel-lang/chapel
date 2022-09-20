@@ -36,7 +36,7 @@ enum ErrorType {
   PARSE,
   GENERAL,
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) NAME,
-#include "error-classes-list.h"
+#include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 };
 
@@ -175,7 +175,7 @@ class GeneralError : public ErrorBase {
       marker(context, info);\
     }\
   };
-#include "error-classes-list.h"
+#include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 
 #define REPORT(CONTEXT, NAME, EINFO...)\

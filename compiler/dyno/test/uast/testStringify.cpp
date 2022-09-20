@@ -21,12 +21,12 @@
 #include <map>
 #include <vector>
 #include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 
-#include "../../lib/framework/ErrorBase.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

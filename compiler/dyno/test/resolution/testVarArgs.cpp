@@ -22,6 +22,7 @@
 
 #include "ResolvedVisitor.h"
 
+#include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -33,8 +34,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
-
-#include "../../lib/framework/ErrorWriter.h"
 
 
 // always check assertions in this test
