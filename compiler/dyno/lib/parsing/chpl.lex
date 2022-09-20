@@ -297,7 +297,6 @@ zip              return processToken(yyscanner, TZIP);
 <externmode>"{"  return processExternCode(yyscanner);
 <INITIAL>"{"     return processToken(yyscanner, TLCBR);
 "}"              return processToken(yyscanner, TRCBR);
-"<~>"            return processToken(yyscanner, TIO);
 "?"              return processToken(yyscanner, TQUESTION);
 
 {intLiteral}     return processToken(yyscanner, INTLITERAL);
