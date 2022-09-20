@@ -2033,6 +2033,7 @@ module ChapelArray {
   proc _validRankChangeArgs(args, type idxType) param {
     proc _validRankChangeArg(type idxType, r: range(?)) param return true;
     proc _validRankChangeArg(type idxType, i: idxType) param return true;
+    pragma "last resort"
     proc _validRankChangeArg(type idxType, x) param return false;
 
     /*

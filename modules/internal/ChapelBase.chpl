@@ -753,6 +753,7 @@ module ChapelBase {
   inline proc _cond_test(param x: integral) param return x != 0:x.type;
   inline proc _cond_test(x: c_ptr) return x != c_nil;
 
+  pragma "last resort"
   inline proc _cond_test(x) {
     if !( isSubtype(x.type, _iteratorRecord) ) {
       use Reflection;
@@ -1782,7 +1783,7 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
-  pragma "last resort"
+  //pragma "last resort" not last resort to avoid change in behavior
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: object) { }
 
@@ -1794,7 +1795,7 @@ module ChapelBase {
   pragma "compiler generated"
   pragma "last resort"
   pragma "auto destroy fn"
-  inline proc chpl__autoDestroy(x: ?t) {
+  inline proc chpl__autoDestroy(x) {
     __primitive("call destructor", x);
   }
   pragma "auto destroy fn"
@@ -1907,6 +1908,7 @@ module ChapelBase {
   inline operator +=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("+=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator +=(ref lhs, rhs) {
     lhs = lhs + rhs;
   }
