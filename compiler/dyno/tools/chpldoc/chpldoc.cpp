@@ -753,20 +753,11 @@ struct RstSignatureVisitor {
     return false;
   }
 
-    bool isPostfix(const OpCall* op) {
+  bool isPostfix(const OpCall* op) {
     return (op->isUnaryOp() &&
             (op->op() == USTR("postfix!") || op->op() == USTR("?")));
   }
 
-  // stolen from convert-uast.cpp to prevent printing { } inside arrays
-  // probably a better way to do this here
-  bool isBracketLoopMaybeArrayType(const uast::BracketLoop* node) {
-    if (!node->isExpressionLevel()) return false;
-    if (node->iterand()->isZip()) return false;
-    if (node->numStmts() != 1) return false;
-    if (node->index() && node->stmt(0)->isConditional()) return false;
-    return true;
-  }
 
   /*
     helper for printing binary op calls, special handling for keyword operators
@@ -891,7 +882,7 @@ struct RstSignatureVisitor {
       bl->index()->traverse(*this);
       os_ << " in ";
     }
-    if (isBracketLoopMaybeArrayType(bl) &&
+    if (bl->isMaybeArrayType() &&
         bl->iterand()->isDomain() &&
         bl->iterand()->toDomain()->numExprs() == 1) {
       bl->iterand()->toDomain()->expr(0)->traverse(*this);

@@ -123,15 +123,6 @@ static std::string pragmaFlagsToString(const Decl* node) {
   return ret;
 }
 
-// stolen from convert-uast.cpp to prevent printing { } inside arrays
-// probably a better way to do this here
-static bool isBracketLoopMaybeArrayType(const uast::BracketLoop* node) {
-  if (!node->isExpressionLevel()) return false;
-  if (node->iterand()->isZip()) return false;
-  if (node->numStmts() != 1) return false;
-  if (node->index() && node->stmt(0)->isConditional()) return false;
-  return true;
-}
 
 // TODO: Attributes
 
@@ -472,7 +463,7 @@ struct ChplSyntaxVisitor {
       printAst(node->index());
       ss_ << " in ";
     }
-    if (isBracketLoopMaybeArrayType(node) &&
+    if (node->isMaybeArrayType() &&
         node->iterand()->isDomain() &&
         node->iterand()->toDomain()->numExprs() == 1) {
       printAst(node->iterand()->toDomain()->expr(0));

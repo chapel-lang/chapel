@@ -1540,11 +1540,7 @@ struct Converter {
   // whether or not the bracket loop is a type.
   //
   bool isBracketLoopMaybeArrayType(const uast::BracketLoop* node) {
-    if (!node->isExpressionLevel()) return false;
-    if (node->iterand()->isZip()) return false;
-    if (node->numStmts() != 1) return false;
-    if (node->index() && node->stmt(0)->isConditional()) return false;
-    return true;
+    return node->isMaybeArrayType();
   }
 
   Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {
