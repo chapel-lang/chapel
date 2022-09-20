@@ -80,30 +80,6 @@ class ErrorWriter {
     }
   };
 
-  template <>
-  struct Writer<const char*> {
-    void operator()(ErrorWriter& ew, const char* t) {
-      ew.oss_ << t;
-    }
-  };
-
-  template <>
-  struct Writer<std::string> {
-    void operator()(ErrorWriter& ew, const std::string& t) {
-      ew.oss_ << t;
-    }
-  };
-
-  template <typename T>
-  struct Writer<errordetail::AsFileName<T>> {
-    void operator()(ErrorWriter& ew, const errordetail::AsFileName<T>& e) {
-      auto loc = e.location(ew.context);
-      ew.write(loc.path().c_str());
-      ew.write(":");
-      ew.write(loc.firstLine());
-    }
-  };
-
   template <typename T>
   void write(T t) {
     Writer<T> writer;
@@ -181,6 +157,30 @@ class ErrorWriter {
   void writeNewline();
 
   inline Location lastLocation() const { return lastLocation_; }
+};
+
+template <>
+struct ErrorWriter::Writer<const char*> {
+  void operator()(ErrorWriter& ew, const char* t) {
+    ew.oss_ << t;
+  }
+};
+
+template <>
+struct ErrorWriter::Writer<std::string> {
+  void operator()(ErrorWriter& ew, const std::string& t) {
+    ew.oss_ << t;
+  }
+};
+
+template <typename T>
+struct ErrorWriter::Writer<errordetail::AsFileName<T>> {
+  void operator()(ErrorWriter& ew, const errordetail::AsFileName<T>& e) {
+    auto loc = e.location(ew.context);
+    ew.write(loc.path().c_str());
+    ew.write(":");
+    ew.write(loc.firstLine());
+  }
 };
 
 } // end namespace chpl
