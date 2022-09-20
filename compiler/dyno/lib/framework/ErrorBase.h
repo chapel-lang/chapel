@@ -53,6 +53,8 @@ class ErrorBase {
   const ErrorType type_;
 
   ErrorBase(Kind kind, ErrorType type) : kind_(kind), type_(type) {}
+
+  virtual bool contentsMatchInner(const ErrorBase* other) const = 0;
  public:
   virtual ~ErrorBase() = default;
 
@@ -67,11 +69,15 @@ class ErrorBase {
   std::string message() const;
   Location location(Context* context) const;
 
-  virtual void write(ErrorWriter& wr) const = 0;
-  virtual bool operator ==(const ErrorBase& other) {
-    // TODO: how to make this work?
-    return false;
+  bool operator==(const ErrorBase& other) const {
+    if (kind_ != other.kind_ || type_ != other.type_) return false;
+    return contentsMatchInner(&other);
   }
+  bool operator!=(const ErrorBase& other) const {
+    return !(*this == other);
+  }
+
+  virtual void write(ErrorWriter& wr) const = 0;
   virtual void mark(Context* context) const = 0;
 };
 
@@ -82,13 +88,19 @@ class ParseError : public ErrorBase {
   std::string message_;
 
  protected:
-  ParseError(Kind kind, ErrorType type, ID id, Location loc, std::string message)
-    : ErrorBase(kind, type), id_(id), loc_(std::move(loc)), message_(std::move(message)) {}
   ParseError(Kind kind, ID id, Location loc, std::string message)
-    : ParseError(kind, PARSE, std::move(id), std::move(loc), std::move(message)) {}
+    : ErrorBase(kind, PARSE), id_(std::move(id)),
+      loc_(std::move(loc)), message_(std::move(message)) {}
 
   static const owned<ParseError>&
   getParseError(Context* context, Kind kind, ID id, Location loc, std::string message);
+
+  bool contentsMatchInner(const ErrorBase* other) const override {
+    auto otherParse = static_cast<const ParseError*>(other);
+    return id_ == otherParse->id_ &&
+      loc_ == otherParse->loc_ &&
+      message_ == otherParse->message_;
+  }
  public:
 
   static const ParseError* get(Context* context, const ErrorMessage&);
@@ -105,16 +117,23 @@ class GeneralError : public ErrorBase {
 
  protected:
   GeneralError(Kind kind, ID id, std::string message)
-    : ErrorBase(kind, PARSE), id_(std::move(id)), message_(std::move(message)) {}
+    : ErrorBase(kind, GENERAL), id_(std::move(id)), message_(std::move(message)) {}
 
   GeneralError(Kind kind, Location loc, std::string message)
-    : ErrorBase(kind, PARSE), loc_(std::move(loc)), message_(std::move(message)) {}
+    : ErrorBase(kind, GENERAL), loc_(std::move(loc)), message_(std::move(message)) {}
 
   static const owned<GeneralError>&
   getGeneralErrorID(Context* context, Kind kind, ID id, std::string message);
 
   static const owned<GeneralError>&
   getGeneralErrorLocation(Context* context, Kind kind, Location loc, std::string message);
+
+  bool contentsMatchInner(const ErrorBase* other) const override {
+    auto otherGeneral = static_cast<const GeneralError*>(other);
+    return id_ == otherGeneral->id_ &&
+      loc_ == otherGeneral->loc_ &&
+      message_ == otherGeneral->message_;
+  }
  public:
 
   static const GeneralError* vbuild(Context* context,
@@ -141,6 +160,11 @@ class GeneralError : public ErrorBase {
 \
     static const owned<Error##NAME>&\
     getError##NAME(Context* context, ErrorInfo info);\
+   protected:\
+    bool contentsMatchInner(const ErrorBase* other) const override {\
+      auto otherCast = static_cast<const Error##NAME*>(other);\
+      return info == otherCast->info;\
+    }\
    public:\
     ~Error##NAME() = default;\
     static const Error##NAME* get(Context* context, ErrorInfo info);\
