@@ -346,14 +346,11 @@ module ChapelArray {
     if isHomogeneousTuple(x) {
       return x(0).type;
     } else {
-      if (Reflection.canResolve("chpl_computeUnifiedTypeHelp", x)) {
-        return chpl_computeUnifiedTypeHelp(x).type;
-      } else {
-        compilerError("Can't compute a unified element type for this array");
-      }
+      return chpl_computeUnifiedTypeHelp(x).type;
     }
   }
 
+  pragma "compute unified type helper"
   proc chpl_computeUnifiedTypeHelp(x: _tuple, j: int=0) {
     for param i in 0..<x.size {
       if i == j then
