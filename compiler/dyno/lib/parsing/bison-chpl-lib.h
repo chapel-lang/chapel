@@ -425,31 +425,30 @@ extern int yychpl_debug;
     TGREATER = 409,                /* TGREATER  */
     TGREATEREQUAL = 410,           /* TGREATEREQUAL  */
     THASH = 411,                   /* THASH  */
-    TIO = 412,                     /* TIO  */
-    TLESS = 413,                   /* TLESS  */
-    TLESSEQUAL = 414,              /* TLESSEQUAL  */
-    TMINUS = 415,                  /* TMINUS  */
-    TMOD = 416,                    /* TMOD  */
-    TNOTEQUAL = 417,               /* TNOTEQUAL  */
-    TOR = 418,                     /* TOR  */
-    TPLUS = 419,                   /* TPLUS  */
-    TQUESTION = 420,               /* TQUESTION  */
-    TSEMI = 421,                   /* TSEMI  */
-    TSHIFTLEFT = 422,              /* TSHIFTLEFT  */
-    TSHIFTRIGHT = 423,             /* TSHIFTRIGHT  */
-    TSTAR = 424,                   /* TSTAR  */
-    TSWAP = 425,                   /* TSWAP  */
-    TLCBR = 426,                   /* TLCBR  */
-    TRCBR = 427,                   /* TRCBR  */
-    TLP = 428,                     /* TLP  */
-    TRP = 429,                     /* TRP  */
-    TLSBR = 430,                   /* TLSBR  */
-    TRSBR = 431,                   /* TRSBR  */
-    TNOELSE = 432,                 /* TNOELSE  */
-    TDOTDOTOPENHIGH = 433,         /* TDOTDOTOPENHIGH  */
-    TUPLUS = 434,                  /* TUPLUS  */
-    TUMINUS = 435,                 /* TUMINUS  */
-    TLNOT = 436                    /* TLNOT  */
+    TLESS = 412,                   /* TLESS  */
+    TLESSEQUAL = 413,              /* TLESSEQUAL  */
+    TMINUS = 414,                  /* TMINUS  */
+    TMOD = 415,                    /* TMOD  */
+    TNOTEQUAL = 416,               /* TNOTEQUAL  */
+    TOR = 417,                     /* TOR  */
+    TPLUS = 418,                   /* TPLUS  */
+    TQUESTION = 419,               /* TQUESTION  */
+    TSEMI = 420,                   /* TSEMI  */
+    TSHIFTLEFT = 421,              /* TSHIFTLEFT  */
+    TSHIFTRIGHT = 422,             /* TSHIFTRIGHT  */
+    TSTAR = 423,                   /* TSTAR  */
+    TSWAP = 424,                   /* TSWAP  */
+    TLCBR = 425,                   /* TLCBR  */
+    TRCBR = 426,                   /* TRCBR  */
+    TLP = 427,                     /* TLP  */
+    TRP = 428,                     /* TRP  */
+    TLSBR = 429,                   /* TLSBR  */
+    TRSBR = 430,                   /* TRSBR  */
+    TNOELSE = 431,                 /* TNOELSE  */
+    TDOTDOTOPENHIGH = 432,         /* TDOTDOTOPENHIGH  */
+    TUPLUS = 433,                  /* TUPLUS  */
+    TUMINUS = 434,                 /* TUMINUS  */
+    TLNOT = 435                    /* TLNOT  */
   };
   typedef enum yychpl_tokentype yychpl_token_kind_t;
 #endif
@@ -504,6 +503,6 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   // include override of macro used to compute locations
   #include "parser-yylloc-default.h"
 
-#line 508 "bison-chpl-lib.h"
+#line 507 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */
