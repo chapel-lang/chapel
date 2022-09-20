@@ -2,6 +2,7 @@
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/types/all-types.h"
 #include <sstream>
 
 namespace chpl {
@@ -120,27 +121,23 @@ void ErrorIncompatibleIfBranches::write(ErrorWriter& wr) const {
 void ErrorTupleExpansionNamedArgs::write(ErrorWriter& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info);
   auto tupleOp = std::get<const uast::OpCall*>(info);
-  const uast::AstNode* namedActual = nullptr;
-  for (int i = 0; i < fnCall->numActuals(); i++) {
-    if(fnCall->isNamedActual(i)) {
-      namedActual = fnCall->actual(i);
-      break;
-    }
-  }
 
   wr.writeHeading(kind_, fnCall, "tuple expansion cannot be used with named arguments.");
   wr.writeMessage("a tuple is being expanded here:");
   wr.writeCode(fnCall, { tupleOp });
-  wr.writeMessage("the first named actual is here:");
-  wr.writeCode(fnCall, { namedActual });
 }
 
 void ErrorMemManagementRecords::write(ErrorWriter& wr) const {
-  auto newCall = std::get<const uast::FnCall*>(info);
-  auto record = std::get<const uast::Record*>(info);
+  auto newCall = std::get<const uast::New*>(info);
+  auto record = std::get<const types::RecordType*>(info);
 
-  wr.writeHeading(kind_, newCall, "cannot use memory management strategies with records");
-  wr.writeCode(newCall, { record });
+  wr.writeHeading(kind_, newCall,
+      "cannot use memory management strategy ",
+      uast::New::managementToString(newCall->management()),
+      " with record ",
+      record->name());
+  wr.writeCode(newCall, { newCall->typeExpression() });
+  wr.writeNote("declared as record at ", fileNameOf(record->id()));
 }
 
 void ErrorPrivateToPublicInclude::write(ErrorWriter& wr) const {

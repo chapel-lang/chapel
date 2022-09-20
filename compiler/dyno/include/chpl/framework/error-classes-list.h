@@ -22,7 +22,7 @@ ERROR_CLASS(IncompatibleIfBranches,
     types::QualifiedType,
     types::QualifiedType)
 ERROR_CLASS(TupleExpansionNamedArgs, const uast::OpCall*, const uast::FnCall*)
-ERROR_CLASS(MemManagementRecords, const uast::FnCall*, const uast::Record*)
+ERROR_CLASS(MemManagementRecords, const uast::New*, const types::RecordType*)
 ERROR_CLASS(PrivateToPublicInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(PrototypeInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(MissingInclude, const uast::Include*, std::string)

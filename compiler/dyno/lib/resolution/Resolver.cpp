@@ -1965,8 +1965,7 @@ void Resolver::prepareCallInfoActuals(const Call* call,
                                        ErroneousType::get(context));
           } else {
             if (!byName.isEmpty()) {
-              context->error(op, "named argument passing cannot be used "
-                                 "with tuple expansion");
+              REPORT(context, TupleExpansionNamedArgs, op, fnCall);
             }
 
             auto tupleType = actualType.type()->toTupleType();
@@ -2307,10 +2306,7 @@ void Resolver::resolveNewForRecord(const uast::New* node,
   ResolvedExpression& re = byPostorder.byAst(node);
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
-    auto managementStr = New::managementToString(node->management());
-    context->error(node, "Cannot use new %s with record %s",
-                         managementStr,
-                         recordType->name().c_str());
+    REPORT(context, MemManagementRecords, node, recordType);
   } else {
     auto qt = QualifiedType(QualifiedType::VAR, recordType);
     re.setType(qt);

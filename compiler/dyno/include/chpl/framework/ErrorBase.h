@@ -21,6 +21,7 @@
 
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/types/all-types.h"
 #include "llvm/ADT/Optional.h"
 
 namespace chpl {
