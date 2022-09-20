@@ -92,6 +92,8 @@ public:
 
   bool  fn1ParamArgsPreferred;
   bool  fn2ParamArgsPreferred;
+
+  bool  useExperimentalNewWay;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -5466,7 +5468,8 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                               const DisambiguationContext& DC,
                               int                          i,
                               int                          j,
-                              bool                         forGenericInit);
+                              bool                         forGenericInit,
+                              bool                         newWay);
 
 static int testArgMapping(ResolutionCandidate*         candidate1,
                           ArgSymbol*                   formal1,
@@ -5787,62 +5790,11 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
-// Discard any candidate that has more implicit conversions
-// to a type not used at the call site than another candidate.
-//
-// The type-not-used rule resolves a problem with
-//   proc f(real(32), real(32))
-//   proc f(real(64), real(64))
-//   proc f(uint(32), uint(32))
-//   proc f(int(64), int(64))
-//   f(myUint32, max(int));
-//  .... but it causes problems with preferring generic to non-generic.
-/*static void discardWorseConversionsToNotMentioned(
-    Vec<ResolutionCandidate*>&   candidates,
-    const DisambiguationContext& DC,
-    std::vector<bool>&           discarded) {
-
-  int minImpConvNotMentioned = INT_MAX;
-  int maxImpConvNotMentioned = INT_MIN;
-
-  for (int i = 0; i < candidates.n; i++) {
-    if (discarded[i]) {
-      continue;
-    }
-
-    ResolutionCandidate* candidate = candidates.v[i];
-    computeConversionInfo(candidate, DC);
-
-    int impConvNotMentioned = candidate->nImpConvToTypeNotMentioned;
-    if (impConvNotMentioned < minImpConvNotMentioned) {
-      minImpConvNotMentioned = impConvNotMentioned;
-    }
-    if (impConvNotMentioned > maxImpConvNotMentioned) {
-      maxImpConvNotMentioned = impConvNotMentioned;
-    }
-  }
-
-  if (minImpConvNotMentioned < maxImpConvNotMentioned) {
-    for (int i = 0; i < candidates.n; i++) {
-      if (discarded[i]) {
-        continue;
-      }
-
-      ResolutionCandidate* candidate = candidates.v[i];
-      int impConvNotMentioned = candidate->nImpConvToTypeNotMentioned;
-      if (impConvNotMentioned > minImpConvNotMentioned) {
-        EXPLAIN("X: Fn %d has more implicit conversions to type not used\n", i);
-        discarded[i] = true;
-      }
-    }
-  }
-}
-*/
-
 // Discard any candidate that has a worse argument mapping than another
 // candidate.
 static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
                              const DisambiguationContext& DC,
+                             bool                         newWay,
                              std::vector<bool>&           discarded) {
 
   // If index i is set then we can skip testing function F_i because
@@ -5893,7 +5845,8 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
       int p = compareSpecificity(candidate1, candidate2,
                                  DC,
                                  i, j,
-                                 forGenericInit);
+                                 forGenericInit,
+                                 newWay);
 
       if (p == 1) {
         EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
@@ -6198,7 +6151,8 @@ struct PartialOrderChecker {
                                  DC,
                                  i,
                                  j,
-                                 forGenericInit);
+                                 forGenericInit,
+                                 false);
 
     if (cmp == 1) {
       EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
@@ -6269,6 +6223,52 @@ struct PartialOrderChecker {
   }
 };
 
+static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
+                                   const DisambiguationContext& DC,
+                                   bool                         ignoreWhere,
+                                   bool                         newWay,
+                                   std::vector<bool>&           discarded) {
+
+  if (!DC.useOldVisibility && !DC.isMethodCall) {
+    // If some candidates are less visible than other candidates,
+    // discard those with less visibility.
+    // This filter should not be applied to method calls.
+    discardWorseVisibility(candidates, DC, discarded);
+  }
+
+  // If any candidate does not require promotion,
+  // eliminate candidates that do require promotion.
+  discardWorsePromoting(candidates, DC, discarded);
+
+  // Consider the relationship among the arguments
+  // Note that this part is a partial order;
+  // in other words, "incomparable" is an option when comparing
+  // two candidates. However, it should be transitive.
+  // Discard any candidate that has a worse argument mapping than another
+  // candidate.
+  discardWorseArgs(candidates, DC, newWay, discarded);
+
+  // Apply further filtering to the set of candidates
+
+  // Discard any candidate that has more implicit conversions
+  // than another candidate.
+  // After that, discard any candidate that has more param narrowing
+  // conversions than another candidate.
+  discardWorseConversions(candidates, DC, discarded);
+
+  if (!ignoreWhere) {
+    // If some candidates have 'where' clauses and others do not,
+    // discard those without 'where' clauses
+    discardWorseWhereClauses(candidates, DC, discarded);
+  }
+  if (DC.useOldVisibility && !DC.isMethodCall) {
+    // If some candidates are less visible than other candidates,
+    // discard those with less visibility.
+    // This filter should not be applied to method calls.
+    discardWorseVisibility(candidates, DC, discarded);
+  }
+}
+
 static ResolutionCandidate*
 disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
                          const DisambiguationContext& DC,
@@ -6293,46 +6293,13 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
 
   // If index i is set we have ruled out that function
   std::vector<bool> discarded(candidates.n, false);
+  std::vector<bool> discardedNew(candidates.n, false);
 
-  if (!DC.useOldVisibility && !DC.isMethodCall) {
-    // If some candidates are less visible than other candidates,
-    // discard those with less visibility.
-    // This filter should not be applied to method calls.
-    discardWorseVisibility(candidates, DC, discarded);
-  }
+  // use new rules
+  disambiguateDiscarding(candidates, DC, ignoreWhere, true, discarded);
 
-  // If any candidate does not require promotion,
-  // eliminate candidates that do require promotion.
-  discardWorsePromoting(candidates, DC, discarded);
-
-  // Consider the relationship among the arguments
-  // Note that this part is a partial order;
-  // in other words, "incomparable" is an option when comparing
-  // two candidates. However, it should be transitive.
-  // Discard any candidate that has a worse argument mapping than another
-  // candidate.
-  discardWorseArgs(candidates, DC, discarded);
-
-  // Apply further filtering to the set of candidates
-
-  // Discard any candidate that has more implicit conversions
-  // than another candidate.
-  // After that, discard any candidate that has more param narrowing
-  // conversions than another candidate.
-  discardWorseConversions(candidates, DC, discarded);
-
-  if (!ignoreWhere) {
-    // If some candidates have 'where' clauses and others do not,
-    // discard those without 'where' clauses
-    discardWorseWhereClauses(candidates, DC, discarded);
-  }
-  if (DC.useOldVisibility && !DC.isMethodCall) {
-    // If some candidates are less visible than other candidates,
-    // discard those with less visibility.
-    // This filter should not be applied to method calls.
-    discardWorseVisibility(candidates, DC, discarded);
-  }
-
+//  disambiguateDiscarding(candidates, DC, ignoreWhere, false, discarded);
+//  disambiguateDiscarding(candidates, DC, ignoreWhere, true, discardedNew);
 
   // If there is just 1 candidate at this point, return it
   {
@@ -6352,6 +6319,10 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
       if (saveGenerousResolutionForErrors > 0)
         generousResolutionForErrors = saveGenerousResolutionForErrors;
 
+      if (discardedNew[only]) {
+        USR_FATAL("old and new resolution disagree for 1-match call %i", DC.id);
+      }
+
       return candidates.v[only];
     }
   }
@@ -6362,6 +6333,10 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
   for (int i = 0; i < candidates.n; i++) {
     if (discarded[i]) {
       continue;
+    }
+
+    if (discardedNew[i]) {
+      USR_FATAL("old and new resolution disagree for many-match call %i", DC.id);
     }
 
     EXPLAIN("Z: Fn %d is one of the best matches\n", i);
@@ -6397,7 +6372,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                                      DC,
                                      i,
                                      j,
-                                     forGenericInit);
+                                     forGenericInit,
+                                     false);
 
         checker.addResult(i, j, cmp);
       }
@@ -6429,9 +6405,12 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                               const DisambiguationContext& DC,
                               int                          i,
                               int                          j,
-                              bool                         forGenericInit) {
+                              bool                         forGenericInit,
+                              bool                         newWay) {
 
   DisambiguationState DS;
+
+  DS.useExperimentalNewWay = newWay;
 
   // Initializer work-around: Skip _mt/_this for generic initializers
   int                 start   = (forGenericInit == false) ? 0 : 2;
@@ -6678,42 +6657,44 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
   //   class Parent { }
   //   class GenericChild : Parent { type t; }
   // Here a GenericChild argument should be preferred to a Parent one
-  if (f1Type == f2Type           &&
-      !formal1->instantiatedFrom && formal2->instantiatedFrom) {
-    reason = "concrete vs generic";
-    return 1;
+  if (f1Type == f2Type) {
+    if (!formal1->instantiatedFrom && formal2->instantiatedFrom) {
+      reason = "concrete vs generic";
+      return 1;
+    }
+
+    if (formal1->instantiatedFrom && !formal2->instantiatedFrom) {
+      reason = "concrete vs generic";
+      return 2;
+    }
   }
 
-  if (f1Type == f2Type &&
-      formal1->instantiatedFrom && !formal2->instantiatedFrom) {
-    reason = "concrete vs generic";
-    return 2;
-  }
+  if (DS.useExperimentalNewWay == false || f1Type == f2Type) {
+    if (formal1->instantiatedFrom != dtAny &&
+        formal2->instantiatedFrom == dtAny) {
+      reason = "generic any vs partially generic/concrete";
+      return 1;
+    }
 
-  if (formal1->instantiatedFrom != dtAny &&
-      formal2->instantiatedFrom == dtAny) {
-    reason = "generic any vs partially generic/concrete";
-    return 1;
-  }
+    if (formal1->instantiatedFrom == dtAny &&
+        formal2->instantiatedFrom != dtAny) {
+      reason = "generic any vs partially generic/concrete";
+      return 2;
+    }
 
-  if (formal1->instantiatedFrom == dtAny &&
-      formal2->instantiatedFrom != dtAny) {
-    reason = "generic any vs partially generic/concrete";
-    return 2;
-  }
+    if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+        formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+        !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+      reason = "partially generic vs generic";
+      return 1;
+    }
 
-  if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
-      formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-      !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    reason = "partially generic vs generic";
-    return 1;
-  }
-
-  if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
-      !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-      formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    reason = "partially generic vs generic";
-    return 2;
+    if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+        !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+        formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+      reason = "partially generic vs generic";
+      return 2;
+    }
   }
 
   if (f1Param && !f2Param) {
@@ -13218,6 +13199,7 @@ void expandInitFieldPrims()
 
 DisambiguationContext::DisambiguationContext(CallInfo& info,
                                              BlockStmt* searchScope) {
+  id = info.call->id;
   actuals = &info.actuals;
   scope   = searchScope;
 
@@ -13268,4 +13250,6 @@ DisambiguationState::DisambiguationState() {
 
   fn1ParamArgsPreferred     = false;
   fn2ParamArgsPreferred     = false;
+
+  useExperimentalNewWay = false;
 }
