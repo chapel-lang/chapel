@@ -284,11 +284,6 @@ if there was an error. See:
  * :proc:`channel.readbits`
  * :proc:`FormattedIO.channel.readf` (see also :ref:`about-io-formatted-io`)
 
-In addition, there is a convenient synonym for :proc:`channel.write` and
-:proc:`channel.read`: the `<~> operator`
-
-.. warning:: the <~> operator is deprecated
-
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 :proc:`channel.flush()` method. Flushing the buffer will make all writes available
 to other applications or other views of the file (e.g., it will call the OS call
@@ -3837,97 +3832,6 @@ proc channel.writeIt(const x) throws {
     try _writeOne(kind, x, origLocale);
   }
 }
-
-  /*
-
-     The _`<~> operator`
-
-     This `<~>` operator invokes `readThis` or `writeThis` with `x`, depending
-     on the type of channel. This operator returns a const reference to the
-     same channel so that multiple operator calls can be chained together.
-
-     .. warning:: The <~> operator on channels is deprecated. The intended
-       alternative is to use methods like :proc:`channel.read` and
-       :proc:`channel.write` instead.
-
-       The chaining functionality supported by this operator is not provided by
-       other methods.
-
-     :returns: ch
-     :throws SystemError: When an IO error has occurred.
-   */
-  deprecated "the <~> operator is deprecated"
-  inline operator channel.<~>(const ref ch: channel, const x) const ref throws
-  where ch.writing {
-    try ch.writeIt(x);
-    return ch;
-  }
-
-  // documented in the writing version.
-  pragma "no doc"
-  deprecated "the <~> operator is deprecated"
-  inline operator channel.<~>(const ref ch: channel, ref x) const ref throws
-  where !ch.writing {
-    try ch.readIt(x);
-    return ch;
-  }
-
-  // these are overridden to not be inout
-  // since they don't change when read anyway
-  // and it's much more convenient to be able to do e.g.
-  //   reader <~> new ioLiteral("=")
-
-  /* Overload to support reading an :type:`IO.ioLiteral` without
-     passing ioLiterals by reference, so that
-
-     .. code-block:: chapel
-
-       reader <~> new ioLiteral("=")
-
-     works without requiring an explicit temporary value to store
-     the ioLiteral.
-
-     .. warning:: The <~> operator on channels is deprecated. The intended
-       alternative is to use methods like :proc:`channel.readLiteral` and
-       :proc:`channel.writeLiteral` instead.
-
-       The chaining functionality supported by this operator is not provided by
-       other methods.
-   */
-  deprecated "the <~> operator is deprecated"
-  inline operator channel.<~>(const ref r: channel,
-                              lit:ioLiteral) const ref throws
-  where !r.writing {
-    var litCopy = lit;
-    try r.readIt(litCopy);
-    return r;
-  }
-
-  /* Overload to support reading an :type:`IO.ioNewline` without
-     passing ioNewline by reference, so that
-
-     .. code-block:: chapel
-
-       reader <~> new ioNewline()
-
-     works without requiring an explicit temporary value to store
-     the ioNewline.
-
-     .. warning:: The <~> operator on channels is deprecated. The intended
-       alternative is to use methods like :proc:`channel.readNewline` and
-       :proc:`channel.writeNewline` instead.
-
-       The chaining functionality supported by this operator is not provided by
-       other methods.
-   */
-  deprecated "the <~> operator is deprecated"
-  inline operator channel.<~>(const ref r: channel,
-                              nl:ioNewline) const ref throws
-  where !r.writing {
-    var nlCopy = nl;
-    try r.readIt(nlCopy);
-    return r;
-  }
 
   /* Explicit call for reading or writing a literal as an
      alternative to using :type:`IO.ioLiteral`.
