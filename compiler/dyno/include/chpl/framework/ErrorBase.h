@@ -200,7 +200,7 @@ struct stringify<chpl::ErrorBase::Kind> {
 
 namespace std {
   template <>
-  struct std::hash<chpl::ErrorBase::Kind> {
+  struct hash<chpl::ErrorBase::Kind> {
     size_t operator()(const chpl::ErrorBase::Kind& key) {
       return key;
     }
