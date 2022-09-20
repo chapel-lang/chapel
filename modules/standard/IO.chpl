@@ -5411,7 +5411,7 @@ proc channel._writeln(const args ...?k) throws {
 }
 // helper function for bool-returning deprecation (with deprecated style argument)
 pragma "no doc"
-@unstable "write with a style argument is unstable"
+@unstable "writeln with a style argument is unstable"
 proc channel._writeln(const args ...?k, style:iostyle) throws {
   this.writelnHelper((...args), style: iostyleInternal);
 }
@@ -5420,7 +5420,7 @@ proc channel._writeln(const args ...?k, style:iostyle) throws {
 proc channel.writeln(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
   return this.writelnHelper((...args), style: iostyleInternal);
 }
-@unstable "write with a style argument is unstable"
+@unstable "writeln with a style argument is unstable"
 proc channel.writeln(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
   this.writelnHelper((...args), style: iostyleInternal);
 }
