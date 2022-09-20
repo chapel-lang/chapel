@@ -324,8 +324,8 @@ module ChapelArray {
       for param i in 0..k-1 {
         type currType = elems(i).type;
 
-        ref src = elems(i);
         ref dst = arr(i+arrayLiteralLowBound);
+        ref src = elems(i);
         if (currType == eltType ||
             Reflection.canResolve("=", dst, src)) {
           __primitive("=", dst, src);
@@ -342,6 +342,11 @@ module ChapelArray {
     return arr;
   }
 
+  // For a given tuple, compute whether it has a potential unified
+  // type by leaning on return type unification via the following
+  // helper routine.  Ultimately, it should be the compiler doing this
+  // rather than this module code, but this is a nice short-term
+  // workaround until 'dyno' is ready for it.
   proc chpl_computeUnifiedType(x: _tuple) type {
     if isHomogeneousTuple(x) {
       return x(0).type;
@@ -350,6 +355,12 @@ module ChapelArray {
     }
   }
 
+  // For a given tuple, set up a return per element in order to
+  // leverage return type unification to determine whether there is a
+  // common type that can be used.  Note that the purpose of the
+  // seemingly unused 'j' argument is to avoid having the compiler
+  // fold it down to a single return statement if we relied on a param
+  // check against 0.
   pragma "compute unified type helper"
   proc chpl_computeUnifiedTypeHelp(x: _tuple, j: int=0) {
     for param i in 0..<x.size {
