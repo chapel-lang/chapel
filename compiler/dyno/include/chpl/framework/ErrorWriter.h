@@ -92,16 +92,12 @@ class ErrorWriter {
     writeErrorHeading(kind, errordetail::locate(context, loc));
   }
 
-  template <typename ... Ts>
-  void writeAll(Ts ... ts);
-
   template <typename T, typename ... Rest>
   void writeAll(T t, Rest ... rest) {
     write(t);
     writeAll(std::forward<Rest>(rest)...);
   }
 
-  template <>
   void writeAll() {
     if (outputFormat_ != MESSAGE_ONLY) {
       // Don't write newlines if we're only concerned about

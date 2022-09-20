@@ -54,6 +54,7 @@ const char* ErrorWriter::kindText(ErrorBase::Kind kind) {
     case ErrorBase::Kind::SYNTAX: return "\033[31m" "syntax";
     case ErrorBase::Kind::ERROR: return "\033[31m" "error";
   }
+  return "(unknown kind)";
 }
 
 void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc) {

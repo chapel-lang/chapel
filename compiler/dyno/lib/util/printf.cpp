@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 #include "chpl/util/printf.h"
+#include <cassert>
 
 namespace chpl {
 

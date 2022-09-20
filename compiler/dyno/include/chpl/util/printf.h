@@ -21,7 +21,7 @@
 #define CHPL_UTIL_PRINTF_H
 
 #include <string>
-#include <stdarg.h>
+#include <cstdarg>
 
 // docs generator has trouble with the attribute applied to 'build'
 // so the above ifndef works around the issue.
