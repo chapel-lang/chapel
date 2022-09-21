@@ -139,11 +139,16 @@ corresponding to the underlying domain which defines its indices.
 Rectangular Array Literals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Rectangular array literals are specified by enclosing a comma-separated
-list of expressions representing values in square brackets. A 0-based
-domain will automatically be generated for the given array literal. The
-type of the array’s values will be the type of the first element listed.
-A trailing comma is allowed.
+Rectangular array literals are specified by enclosing a
+comma-separated list of expressions, representing the array elements'
+values, in square brackets. An anonymous 0-based, non-strided domain
+will automatically be generated to represent the indices of the given
+array literal. If the value expressions are all of the same type, that
+type will be used as the array's element type.  If they are not, the
+array's element type is computed using the same type unification logic
+as is used when inferring the return type of a procedure with an
+implicit return type (see :ref:`Implicit_Return_Types`).  A trailing
+comma is permitted after the final array element.
 
 
 
@@ -186,13 +191,6 @@ A trailing comma is allowed.
 
 ..
 
-   .. note::
-      
-      *Future:*
-      
-      Determine the type of a rectangular array literal based on the most
-      promoted type, rather than the first element’s type.
-
    *Example (decl-with-anon-domain.chpl)*.
 
    The following example declares a 2-element array ``A`` containing
@@ -219,11 +217,13 @@ A trailing comma is allowed.
 
    *Open issue*.
 
-   We would like to differentiate syntactically between array literals
-   for an array of arrays and a multi-dimensional array.
+   We would like to introduce a syntax for multi-dimensional
+   rectangular array literals, where today we can only express 1D
+   arrays whose elements are themselves 1D arrays.
 
-An rectangular array’s default value is for each array element to be
-initialized to the default value of the element type.
+
+A rectangular array’s default value is an array in which each element
+is initialized to the default value of the element type.
 
 .. _Associative_Array_Literals:
 
