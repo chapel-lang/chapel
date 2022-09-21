@@ -322,10 +322,10 @@ module ChapelArray {
       }
     } else {
       for param i in 0..k-1 {
-        type currType = elems(i).type;
-
         ref dst = arr(i+arrayLiteralLowBound);
         ref src = elems(i);
+        type currType = src.type;
+
         if (currType == eltType ||
             Reflection.canResolve("=", dst, src)) {
           __primitive("=", dst, src);
