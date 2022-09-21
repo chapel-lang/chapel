@@ -106,6 +106,10 @@ const GeneralError* GeneralError::vbuild(Context* context, Kind kind, Location l
   return getGeneralErrorLocation(context, kind, loc, message).get();
 }
 
+const GeneralError* GeneralError::get(Context* context, Kind kind, Location loc, std::string msg) {
+  return getGeneralErrorLocation(context, kind, loc, std::move(msg)).get();
+}
+
 void GeneralError::write(ErrorWriter& wr) const {
   if (!id_.isEmpty()) {
     wr.writeHeading(kind_, id_, message_);

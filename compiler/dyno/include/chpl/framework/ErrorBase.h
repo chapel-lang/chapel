@@ -147,6 +147,11 @@ class GeneralError : public ErrorBase {
                                     const char* fmt,
                                     va_list vl);
 
+  static const GeneralError* get(Context* context,
+                                 Kind kind,
+                                 Location loc,
+                                 std::string msg);
+
   void write(ErrorWriter& eq) const override;
   void mark(Context* context) const override;
 };
