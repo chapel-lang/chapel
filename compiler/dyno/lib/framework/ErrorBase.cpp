@@ -39,6 +39,13 @@ Location ErrorBase::location(Context* context) const {
   return ew.lastLocation();
 }
 
+ID ErrorBase::id() const {
+  std::ostringstream oss;
+  ErrorWriter ew(/* context */ nullptr, oss, ErrorWriter::MESSAGE_ONLY);
+  write(ew);
+  return ew.lastId();
+}
+
 const owned<ParseError>&
 ParseError::getParseError(Context* context,
                           ErrorBase::Kind kind,

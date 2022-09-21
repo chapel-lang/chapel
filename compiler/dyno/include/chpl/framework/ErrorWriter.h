@@ -67,6 +67,7 @@ class ErrorWriter {
   std::ostream& oss_;
   OutputFormat outputFormat_;
   Location lastLocation_;
+  ID lastId_;
 
   std::string fileText(const Location& loc);
 
@@ -87,10 +88,8 @@ class ErrorWriter {
   }
 
   void writeErrorHeading(ErrorBase::Kind kind, Location loc);
-  template <typename Locatable>
-  void writeErrorHeading(ErrorBase::Kind kind, const Locatable& loc) {
-    writeErrorHeading(kind, errordetail::locate(context, loc));
-  }
+  void writeErrorHeading(ErrorBase::Kind kind, const ID& id);
+  void writeErrorHeading(ErrorBase::Kind kind, const uast::AstNode* ast);
 
   template <typename T, typename ... Rest>
   void writeAll(T t, Rest ... rest) {
@@ -153,6 +152,7 @@ class ErrorWriter {
   void writeNewline();
 
   inline Location lastLocation() const { return lastLocation_; }
+  inline ID lastId() const { return lastId_; }
 };
 
 template <>

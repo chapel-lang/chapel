@@ -85,6 +85,15 @@ void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc) {
   }
 }
 
+void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, const ID& id) {
+  lastId_ = id;
+  writeHeading(kind, errordetail::locate(context, id));
+}
+void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind,
+                                    const uast::AstNode* node) {
+  writeHeading(kind, node->id());
+}
+
 void ErrorWriter::writeCode(const Location& location,
                            const std::vector<Location>& toHighlight) {
   if (outputFormat_ != DETAILED || context == nullptr) return;

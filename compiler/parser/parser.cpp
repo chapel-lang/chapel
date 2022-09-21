@@ -102,7 +102,7 @@ static ModuleSymbol* parseFile(const char* fileName,
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
 static void dynoErrorHandler(chpl::Context* context,
-                             const chpl::ErrorMessage& err);
+                             const chpl::ErrorBase* err);
 
 static int dynoRealizeErrors(void);
 
@@ -816,13 +816,14 @@ static void maybePrintErrorHeader(chpl::ID id) {
 }
 
 static void dynoDisplayError(chpl::Context* context,
-                             const chpl::ErrorMessage& err) {
-  const char* msg = err.message().c_str();
-  auto loc = err.location(context);
-  auto id = err.id();
+                             const chpl::ErrorBase* err) {
+  auto msgStr = err->message();
+  const char* msg = msgStr.c_str();
+  auto loc = err->location(context);
+  auto id = err->id();
 
   // For now have syntax errors just do their own thing (mimic old parser).
-  if (err.kind() == chpl::ErrorMessage::SYNTAX) {
+  if (err->kind() == chpl::ErrorBase::SYNTAX) {
     UniqueString path = loc.path();
     const int line = loc.line();
     const int tagUsrFatalCont = 3;
@@ -838,24 +839,19 @@ static void dynoDisplayError(chpl::Context* context,
 
   maybePrintErrorHeader(id);
 
-  switch (err.kind()) {
-    case chpl::ErrorMessage::NOTE:
+  switch (err->kind()) {
+    case chpl::ErrorBase::NOTE:
       USR_PRINT(loc, "%s", msg);
       break;
-    case chpl::ErrorMessage::WARNING:
+    case chpl::ErrorBase::WARNING:
       USR_WARN(loc, "%s", msg);
       break;
-    case chpl::ErrorMessage::ERROR:
+    case chpl::ErrorBase::ERROR:
       USR_FATAL_CONT(loc,"%s", msg);
       break;
     default:
       INT_FATAL("Should not reach here!");
       break;
-  }
-
-  // Also show the details if there is additional information.
-  for (const chpl::ErrorMessage& e : err.details()) {
-    dynoDisplayError(context, e);
   }
 }
 
@@ -878,11 +874,11 @@ static void dynoDisplayError(chpl::Context* context,
 // error handler more robust (e.g., make it a class, and separate out the
 // reporting and "realizing" of the errors, as we are doing here).
 //
-static std::vector<chpl::ErrorMessage> dynoErrorMessages;
+static std::vector<const chpl::ErrorBase*> dynoErrorMessages;
 
 // Store a copy of the error, to be realized at a later point.
 static void dynoErrorHandler(chpl::Context* context,
-                             const chpl::ErrorMessage& err) {
+                             const chpl::ErrorBase* err) {
   dynoErrorMessages.push_back(err);
 }
 
@@ -924,8 +920,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   // Manually report any errors collected by the builder.
   for (auto& e : builderResult.errors())
-    if (!e.isDefaultConstructed())
-      gContext->report(e);
+    gContext->report(e);
 
   if (dynoRealizeErrors()) USR_STOP();
 
