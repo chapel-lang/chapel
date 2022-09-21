@@ -602,7 +602,7 @@ this is ``const`` for most types (as defined by
 :ref:`The_Const_Intent`) to avoid surprises for programmers coming
 from languages where everything is passed by ``in`` or ``ref`` intent
 by default.  Exceptions are made for types where modification is
-considered part of its nature, such as types used for synchronization
+considered part of their nature, such as types used for synchronization
 (like ``atomic``) and arrays.
 
 Default argument passing for tuples generally matches the default
@@ -644,7 +644,7 @@ type:
     +-------------------------+----------------------+-------------------------+------------------------------------------------------+
     | arrays                  | ``const ref``        | ``ref`` / ``const ref`` | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
     +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | classes                 | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
+    | records                 | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
     +-------------------------+----------------------+-------------------------+------------------------------------------------------+
     | auto-managed classes    | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_owned_and_shared`       |
     | (``owned``, ``shared``) |                      |                         |                                                      |
