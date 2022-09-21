@@ -118,6 +118,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "LICENSE",
        "LICENSE.chapel",
        "Makefile",
+       "Dockerfile",
        "README.rst",
        "README.files",
        "compiler/codegen/reservedSymbolNames",

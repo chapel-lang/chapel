@@ -33,15 +33,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHPL_VERSION 1.28.0
-ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
+ENV CHPL_HOME    /opt/chapel
 ENV CHPL_GMP     system
 ENV CHPL_LLVM    system
 
+COPY . $CHPL_HOME
 
-RUN mkdir -p /opt/chapel \
-    && wget -q -O - https://github.com/chapel-lang/chapel/releases/download/$CHPL_VERSION/chapel-$CHPL_VERSION.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
-    && make -C $CHPL_HOME \
+RUN make -C $CHPL_HOME \
     && make -C $CHPL_HOME chpldoc test-venv mason \
     && make -C $CHPL_HOME cleanall
 
