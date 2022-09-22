@@ -1717,17 +1717,6 @@ proc file._tryGetPath() : string {
 
 /*
 
-Get the path to an open file, or return "unknown" if there was
-a problem getting the path to the open file.
-
-*/
-deprecated "file.tryGetPath is deprecated"
-proc file.tryGetPath() : string {
-  return this._tryGetPath();
-}
-
-/*
-
 Get the current size of an open file. Note that the size can always
 change if other channels, tasks or programs are writing to the file.
 
@@ -5562,22 +5551,6 @@ proc readln(type t ...?numTypes) throws {
   return stdin.readln((...t));
 }
 
-
-// TODO -- change to FileSystem.remove
-/* Delete a file. This function is likely to be replaced
-   by :proc:`FileSystem.remove`.
-
-   :arg path: the path to the file to remove
-
-   :throws SystemError: Thrown if the file is not successfully deleted.
- */
-deprecated "unlink is deprecated. Please use FileSystem.remove instead"
-proc unlink(path:string) throws {
-  extern proc sys_unlink(path:c_string): c_int;
-  var err = sys_unlink(path.localize().c_str());
-  if err then try ioerror(err:errorCode, "in unlink", path);
-}
-
 /*
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
@@ -5600,64 +5573,6 @@ proc file.fstype():int throws {
   }
   if err then try ioerror(err, "in file.fstype()");
   return t:int;
-}
-
-/*
-   Returns (chunk start, chunk end) for the first chunk in the file
-   containing data in the region start..end-1. Note that the returned
-   chunk might not cover all of the region in question.
-
-   Returns (0,0) if no such value exists.
-
-   :arg start: the file offset (starting from 0) where the region begins
-   :arg end: the file offset just after the region
-   :returns: a tuple of (chunkStart, chunkEnd) so that the bytes
-             in chunkStart..chunkEnd-1 are stored in a manner that makes
-             reading that chunk at a time most efficient
-
-   :throws SystemError: Thrown if the chunk is not attained.
- */
-deprecated "file.getchunk is deprecated"
-proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) throws {
-  var err:errorCode = ENOERR;
-  var s = 0;
-  var e = 0;
-
-  on this.home {
-    var real_end = min(end, this.size);
-    var len:int(64);
-
-    err = qio_get_chunk(this._file_internal, len);
-    if err then try ioerror(err, "in file.getchunk(start:int(64), end:int(64))");
-
-    if (len != 0 && (real_end > start)) {
-      // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
-      // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
-      for i in start..real_end by len {
-        // Our stripes are too large, so we can't give back a range within the given
-        // bounds
-        if i > end then
-          break;
-
-        if i >= start {
-          var new_start = i;
-          var new_end:int(64);
-          if (i / len + 1) * len >= real_end then
-            new_end = real_end;
-          // rounding
-          else new_end = (i / len + 1) * len;
-          if new_start == new_end {
-            break;
-          } else {
-            s = new_start;
-            e = new_end;
-            break;
-          }
-        }
-      }
-    }
-  }
-  return (s, e);
 }
 
 /*
