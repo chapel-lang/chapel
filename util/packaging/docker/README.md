@@ -19,7 +19,7 @@ Hello, world!
 ```
 
 Compile and run a Chapel program using the Docker container as a
-one-shot, so you can develop outside of the container:
+one-off, so you can develop outside of the container:
 ```
 $ echo 'writeln("Hello, world!");' > hello.chpl
 $ docker run --rm -v "$PWD":/myapp -w /myapp chapel/chapel chpl -o hello hello.chpl
@@ -53,7 +53,11 @@ Other Chapel-based Docker images can be created from this image.
 
 The Chapel core image (above), rebuilt with `CHPL_COMM=gasnet` and
 `GASNET_SPAWNFN=L`. Simulates a multilocale Chapel platform within the Docker
-container.
+container. Multiple locales in Chapel programs are used to take advantage of
+distributed memory parallelism between nodes in a cluster. Since programs
+compiled with Chapel using the above would live within a single Docker
+container, they would not actually experience parallel computation, but the
+simulation of it could help with local debugging.
 
 Multilocale Chapel brings additional requirements, unrelated to Docker. The
 `chpl` compilation produces two binary files (e.g. `hello_real` as well as
@@ -78,7 +82,7 @@ and `-t` allocates a psuedo-TTY, giving you STDOUT and STDERR.
 
 The Chapel compiler, `chpl`, is invoked much like `gcc`, with argument `-o` to
 specify the name of the output binary. Then the binary file, `hello`, is run in
-the usual way.
+the usual way. The following is the hello world example from above.
 
 ```
 $ echo 'writeln("Hello, world!");' > hello.chpl
@@ -91,7 +95,8 @@ Hello, world!
 &nbsp;
 
 Alternatively, you could compile your program in one instance of the container,
-and run it in another, for the same end result.
+and run it in another, for the same end result. This is the one-off example
+above.
 ```
 $ docker run --rm -v "$PWD":/myapp -w /myapp chapel/chapel chpl -o hello hello.chpl
 
@@ -110,7 +115,7 @@ Hello, world!
 ```
 &nbsp;
 
-### Develop chapel with Docker
+### Develop Chapel itself with Docker
 
 It is possible to do development work on Chapel itself with Docker; the below
 workflow example performs editing outside of Docker, followed by compilation and
