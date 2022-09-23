@@ -22,13 +22,19 @@ if(DOXYGEN_FOUND)
   # doxygen config-file settings can be set here by prefixing with DOXYGEN_
   set(DOXYGEN_GENERATE_XML YES)
   set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doxygen")
+  set(DOXYGEN_INCLUDE_PATH ${CHPL_MAIN_INCLUDE_DIR})
+
   # the following exclude avoids errors in the sphinx build
-  set(DOXYGEN_EXCLUDE "${CHPL_MAIN_INCLUDE_DIR}/chpl/AST/uast-classes-list.h")
+  #set(DOXYGEN_EXCLUDE "${CHPL_MAIN_INCLUDE_DIR}/chpl/AST/uast-classes-list.h";
+  #   )
+
   # these aliases allow \rst and \endrst in docs comments
   set(DOXYGEN_ALIASES
      "rst=\\verbatim embed:rst"
      "endrst=\\endverbatim")
   set(DOXYGEN_EXTRACT_PRIVATE NO)
+  set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
+  set(DOXYGEN_QUIET YES)
 
   # Enable the below line to request inherited members appear
   # as if they are not inherited.
