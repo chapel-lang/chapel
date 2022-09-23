@@ -328,6 +328,7 @@ static bool doLookupInImports(Context* context,
                               const ResolvedVisibilityScope* resolving,
                               UniqueString name,
                               bool onlyInnermost,
+                              bool skipPrivateVisibilities,
                               ScopeSet& checkedScopes,
                               std::vector<BorrowedIdsWithName>& result) {
   // Get the resolved visibility statements, if available
@@ -341,6 +342,11 @@ static bool doLookupInImports(Context* context,
   if (r != nullptr) {
     // check to see if it's mentioned in names/renames
     for (const VisibilitySymbols& is: r->visibilityClauses()) {
+      // if we should not continue transitively through private use/includes,
+      // and this is private, skip it
+      if (skipPrivateVisibilities && is.isPrivate()) {
+        continue;
+      }
       UniqueString from = name;
       bool named = is.lookupName(name, from);
       if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
@@ -349,7 +355,8 @@ static bool doLookupInImports(Context* context,
         // find it in the contents
         const Scope* symScope = is.scope();
         LookupConfig newConfig = LOOKUP_DECLS |
-                                 LOOKUP_IMPORT_AND_USE;
+                                 LOOKUP_IMPORT_AND_USE |
+                                 LOOKUP_SKIP_PRIVATE_VIS;
         if (onlyInnermost) {
           newConfig |= LOOKUP_INNERMOST;
         }
@@ -373,7 +380,8 @@ static bool doLookupInImports(Context* context,
     const Scope* autoModScope = scopeForAutoModule(context);
     if (autoModScope) {
       LookupConfig newConfig = LOOKUP_DECLS |
-                               LOOKUP_IMPORT_AND_USE;
+                               LOOKUP_IMPORT_AND_USE |
+                               LOOKUP_SKIP_PRIVATE_VIS;
 
       if (onlyInnermost) {
         newConfig |= LOOKUP_INNERMOST;
@@ -418,6 +426,7 @@ static bool doLookupInScope(Context* context,
   bool checkParents = (config & LOOKUP_PARENTS) != 0;
   bool checkToplevel = (config & LOOKUP_TOPLEVEL) != 0;
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
+  bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
 
   // TODO: to include checking for symbol privacy,
   // add a findPrivate argument to doLookupInScope and set it
@@ -445,7 +454,7 @@ static bool doLookupInScope(Context* context,
   if (checkUseImport) {
     bool got = false;
     got = doLookupInImports(context, scope, resolving,
-                            name, onlyInnermost,
+                            name, onlyInnermost, skipPrivateVisibilities,
                             checkedScopes, result);
     if (onlyInnermost && got) return true;
   }
@@ -454,6 +463,9 @@ static bool doLookupInScope(Context* context,
     LookupConfig newConfig = LOOKUP_DECLS;
     if (checkUseImport) {
       newConfig |= LOOKUP_IMPORT_AND_USE;
+    }
+    if (skipPrivateVisibilities) {
+      newConfig |= LOOKUP_SKIP_PRIVATE_VIS;
     }
     if (onlyInnermost) {
       newConfig |= LOOKUP_INNERMOST;
