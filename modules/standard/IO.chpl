@@ -2575,10 +2575,6 @@ inline proc channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
-deprecated "channel.seek with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
-  this.seek(start..end);
-}
 /*
    Reset a channel to point to a new part of a file.
    This function allows one to jump to a different part of a
@@ -2786,17 +2782,6 @@ proc channel.filePlugin() : borrowed QioPluginFile? {
   return vptr:borrowed QioPluginFile?;
 }
 
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'openreader' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints,
-                style:iostyle)
-    : channel(false, kind, locking) throws {
-  return openreaderHelper(path, kind, locking, start..end, new ioHintSet(hints),
-                          style: iostyleInternal);
-}
-
 @unstable "openreader with a style argument is unstable"
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
@@ -2808,14 +2793,6 @@ proc openreader(path:string,
                           style: iostyleInternal);
 }
 
-pragma "last resort"
-deprecated "openreader with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty): channel(false, kind, locking) throws {
-  return openreader(path, kind, locking, start..end, hints);
-}
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
 // since we only will have one reference, will be right after we close this
@@ -2858,16 +2835,6 @@ proc openreader(path:string,
                 region: range(?) = 0.., hints=ioHintSet.empty)
     : channel(false, kind, locking) throws {
   return openreaderHelper(path, kind, locking, region, hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'openreader' that takes an 'ioHintSet' instead."
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints)
-    : channel(false, kind, locking) throws {
-  return openreader(path, kind, locking, start..end, new ioHintSet(hints));
 }
 
 private proc openreaderHelper(path:string,
@@ -2964,15 +2931,6 @@ private proc openwriterHelper(path:string,
   return try fl.writerHelper(kind, locking, start..end, hints, style);
 }
 
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'file.reader' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:iohints,
-                 style:iostyle): channel(false, kind, locking)
-                 throws {
-  return this.readerHelper(kind, locking, start..end, new ioHintSet(hints), style: iostyleInternal);
-}
-
 @unstable "reader with a style argument is unstable"
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
@@ -2980,15 +2938,6 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                  style:iostyle): channel(false, kind, locking)
                  throws {
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
-}
-
-pragma "last resort"
-deprecated "file.reader with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints = ioHintSet.empty)
-  : channel(false, kind, locking) throws {
-  return this.reader(kind, locking, start..end, hints);
 }
 
 /*
@@ -3036,13 +2985,6 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, region, hints);
 }
 
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'file.reader' that takes an 'ioHintSet' instead."
-proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
-                 end:int(64) = max(int(64)), hints:iohints): channel(false, kind, locking) throws {
-  return this.reader(kind, locking, start..end, new ioHintSet(hints));
-}
-
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
@@ -3077,28 +3019,12 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   return ret;
 }
 
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'file.lines' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)), hints:iohints,
-                in local_style:iostyle) throws {
-  return this.linesHelper(locking, start..end, new ioHintSet(hints),
-                          local_style: iostyleInternal);
-}
-
 @unstable "lines with a local_style argument is unstable"
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints=ioHintSet.empty,
                 in local_style:iostyle) throws {
   return this.linesHelper(locking, start..end, hints,
                           local_style: iostyleInternal);
-}
-
-pragma "last resort"
-deprecated "file.lines with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)),
-                hints = ioHintSet.empty) throws {
-  return this.lines(locking, start..end, hints);
 }
 
 /* Iterate over all of the lines in a file.
@@ -3110,14 +3036,6 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws {
   return this.linesHelper(locking, region, hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'file.lines' that takes an 'ioHintSet' instead."
-proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)),
-                hints:iohints) throws {
-  return this.lines(locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
@@ -3153,29 +3071,12 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   return ret;
 }
 
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'file.writer' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:iohints, style:iostyle):
-                 channel(true,kind,locking) throws {
-  return this.writerHelper(kind, locking, start..end, new ioHintSet(hints), style: iostyleInternal);
-}
-
 @unstable "writer with a style argument is unstable"
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty, style:iostyle):
                  channel(true,kind,locking) throws {
   return this.writerHelper(kind, locking, start..end, hints, style: iostyleInternal);
-}
-
-pragma "last resort"
-deprecated "file.writer with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints = ioHintSet.empty):
-                 channel(true,kind,locking) throws {
-  return this.writer(kind, locking, start..end, hints);
 }
 
 /*
@@ -3228,15 +3129,6 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty):
                  channel(true,kind,locking) throws {
   return this.writerHelper(kind, locking, region, hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'file.writer' that takes an 'ioHintSet' instead."
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:iohints):
-                 channel(true,kind,locking) throws {
-  return this.writer(kind, locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
