@@ -39,6 +39,7 @@ inline Location locate(Context* context, const uast::AstNode* node) {
   return locate(context, node->id());
 }
 
+/// \cond DO_NOT_DOCUMENT
 template <typename T>
 struct AsFileName {
   T t; /* The thing to locate */
@@ -47,6 +48,7 @@ struct AsFileName {
     return locate(context, t);
   }
 };
+/// \endcond
 
 } // end namespace errordetail
 
@@ -155,6 +157,7 @@ class ErrorWriter {
   inline ID lastId() const { return lastId_; }
 };
 
+/// \cond DO_NOT_DOCUMENT
 template <>
 struct ErrorWriter::Writer<const char*> {
   void operator()(ErrorWriter& ew, const char* t) {
@@ -178,6 +181,7 @@ struct ErrorWriter::Writer<errordetail::AsFileName<T>> {
     ew.write(loc.firstLine());
   }
 };
+/// \endcond
 
 } // end namespace chpl
 

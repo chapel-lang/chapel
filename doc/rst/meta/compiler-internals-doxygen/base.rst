@@ -25,6 +25,24 @@ namespace. The entries may not be exhaustive.
    :members:
    :undoc-members:
 
+.. doxygenenum:: chpl::ErrorType
+
+.. doxygenclass:: chpl::ErrorWriter
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::ErrorBase
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::ParseError
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::GeneralError
+   :members:
+   :undoc-members:
+
 .. doxygenclass:: chpl::ID
    :members:
    :undoc-members:

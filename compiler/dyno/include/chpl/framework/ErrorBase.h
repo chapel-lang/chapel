@@ -118,17 +118,17 @@ class GeneralError : public ErrorBase {
   std::string message_;
 
  protected:
-  GeneralError(Kind kind, ID id, std::string message)
+  GeneralError(ErrorBase::Kind kind, ID id, std::string message)
     : ErrorBase(kind, GENERAL), id_(std::move(id)), message_(std::move(message)) {}
 
-  GeneralError(Kind kind, Location loc, std::string message)
+  GeneralError(ErrorBase::Kind kind, Location loc, std::string message)
     : ErrorBase(kind, GENERAL), loc_(std::move(loc)), message_(std::move(message)) {}
 
   static const owned<GeneralError>&
-  getGeneralErrorID(Context* context, Kind kind, ID id, std::string message);
+  getGeneralErrorID(Context* context, ErrorBase::Kind kind, ID id, std::string message);
 
   static const owned<GeneralError>&
-  getGeneralErrorLocation(Context* context, Kind kind, Location loc, std::string message);
+  getGeneralErrorLocation(Context* context, ErrorBase::Kind kind, Location loc, std::string message);
 
   bool contentsMatchInner(const ErrorBase* other) const override {
     auto otherGeneral = static_cast<const GeneralError*>(other);
@@ -139,16 +139,16 @@ class GeneralError : public ErrorBase {
  public:
 
   static const GeneralError* vbuild(Context* context,
-                                    Kind kind, ID id,
+                                    ErrorBase::Kind kind, ID id,
                                     const char* fmt,
                                     va_list vl);
   static const GeneralError* vbuild(Context* context,
-                                    Kind kind, Location loc,
+                                    ErrorBase::Kind kind, Location loc,
                                     const char* fmt,
                                     va_list vl);
 
   static const GeneralError* get(Context* context,
-                                 Kind kind,
+                                 ErrorBase::Kind kind,
                                  Location loc,
                                  std::string msg);
 
