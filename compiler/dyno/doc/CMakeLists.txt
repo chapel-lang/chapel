@@ -43,8 +43,17 @@ if(DOXYGEN_FOUND)
   # when Doxygen runs, define DOXYGEN in the preprocessor
   set(DOXYGEN_PREDEFINED "DOXYGEN")
   # exclude combine functions that the docs system has trouble with
-  set(DOXYGEN_EXCLUDE_SYMBOLS "chpl::combine")
-  doxygen_add_docs(api-docs ${CHPL_MAIN_INCLUDE_DIR})
+  #set(DOXYGEN_EXCLUDE_SYMBOLS "chpl::combine")
+
+
+  file(GLOB_RECURSE headers "${CHPL_MAIN_INCLUDE_DIR}/*.h")
+  if (CMAKE_VERSION VERSION_LESS 3.16)
+    # don't use USE_STAMP_FILE since it wasn't added until 3.16
+    doxygen_add_docs(api-docs ${headers})
+  else()
+    # use USE_STAMP_FILE to prevent rebuild if headers didn't change
+    doxygen_add_docs(api-docs ${headers} USE_STAMP_FILE)
+  endif()
 
 else(DOXYGEN_FOUND)
   add_custom_target(api-docs
