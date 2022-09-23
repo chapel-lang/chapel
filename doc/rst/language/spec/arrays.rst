@@ -140,15 +140,16 @@ Rectangular Array Literals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Rectangular array literals are specified by enclosing a
-comma-separated list of expressions, representing the array elements'
-values, in square brackets. An anonymous 0-based, non-strided domain
-will automatically be generated to represent the indices of the given
-array literal. If the value expressions are all of the same type, that
-type will be used as the array's element type.  If they are not, the
-array's element type is computed using the same type unification logic
-as is used when inferring the return type of a procedure with an
-implicit return type (see :ref:`Implicit_Return_Types`).  A trailing
-comma is permitted after the final array element.
+comma-separated list of expressions in square brackets, where each
+expression represents an array element's value.  A trailing comma is
+permitted after the final array element.  For a literal with `n`
+expressions, an anonymous domain literal ``{0..<n}`` is generated to
+represent the array's indices.  If the value expressions are all of
+the same type, that type will be used as the array's element type.  If
+they are not, the array's element type is computed using the same type
+unification logic that is used when inferring the return type of a
+procedure with an implicit return type (see
+:ref:`Implicit_Return_Types`).
 
 
 
