@@ -86,7 +86,8 @@ llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
 }
 
 void Context::defaultReportError(Context* context, const ErrorBase* err) {
-  ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED);
+  ErrorWriter ew(context, std::cerr, ErrorWriter::BRIEF,
+                 context->currentTerminalSupportsColor_);
   err->write(ew);
 }
 

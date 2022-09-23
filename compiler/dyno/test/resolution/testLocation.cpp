@@ -48,7 +48,7 @@ static void collectErrors(Context* context, const ErrorBase* err) {
 }
 
 static void printErrors(Context* context) {
-  ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED);
+  ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED, false);
   for (auto err: errors) {
     err->write(ew);
   }

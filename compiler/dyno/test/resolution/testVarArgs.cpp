@@ -400,7 +400,7 @@ static void printErrors(Context* context) {
     printf("Found %lu errors.\n\n", errors.size());
   } else {
     printf("======== Errors ========\n");
-    ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED);
+    ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED, false);
     for (auto err : errors) {
       err->write(ew);
     }

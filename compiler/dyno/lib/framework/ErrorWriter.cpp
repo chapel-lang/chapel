@@ -47,14 +47,30 @@ std::string ErrorWriter::fileText(const Location& loc) {
   return fileText.text();
 }
 
-const char* ErrorWriter::kindText(ErrorBase::Kind kind) {
+void ErrorWriter::setColor(TermColorName color) {
+  if (useColor_) {
+    oss_ << getColorFormat(color);
+  }
+}
+
+static const char* kindText(ErrorBase::Kind kind) {
   switch (kind) {
     case ErrorBase::Kind::NOTE: return "note";
-    case ErrorBase::Kind::WARNING: return "\033[33m" "warning";
-    case ErrorBase::Kind::SYNTAX: return "\033[31m" "syntax";
-    case ErrorBase::Kind::ERROR: return "\033[31m" "error";
+    case ErrorBase::Kind::WARNING: return "warning";
+    case ErrorBase::Kind::SYNTAX: return "syntax";
+    case ErrorBase::Kind::ERROR: return "error";
   }
   return "(unknown kind)";
+}
+
+static TermColorName kindColor(ErrorBase::Kind kind) {
+  switch (kind) {
+    case ErrorBase::Kind::NOTE: return CLEAR;
+    case ErrorBase::Kind::WARNING: return YELLOW;
+    case ErrorBase::Kind::SYNTAX: return RED;
+    case ErrorBase::Kind::ERROR: return RED;
+  }
+  return CLEAR;
 }
 
 void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc) {
@@ -70,7 +86,10 @@ void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc) {
   }
   if (outputFormat_ != MESSAGE_ONLY) {
     // As long as we're not only printing the message, print the error location.
-    oss_ << kindText(kind) << "\033[0m in ";
+    setColor(kindColor(kind));
+    oss_ << kindText(kind);
+    setColor(CLEAR);
+    oss_ << " in ";
     if (validPath && lineno > 0) oss_ << path << ":" << lineno;
     else if (validPath) oss_ << path;
     else oss_ << "(unknown location)";
@@ -87,11 +106,11 @@ void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc) {
 
 void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, const ID& id) {
   lastId_ = id;
-  writeHeading(kind, errordetail::locate(context, id));
+  writeErrorHeading(kind, errordetail::locate(context, id));
 }
 void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind,
                                     const uast::AstNode* node) {
-  writeHeading(kind, node->id());
+  writeErrorHeading(kind, node->id());
 }
 
 void ErrorWriter::writeCode(const Location& location,

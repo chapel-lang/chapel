@@ -24,6 +24,7 @@
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/util/terminal.h"
 
 namespace chpl {
 
@@ -68,12 +69,12 @@ class ErrorWriter {
   Context* context;
   std::ostream& oss_;
   OutputFormat outputFormat_;
+  bool useColor_;
+
   Location lastLocation_;
   ID lastId_;
 
   std::string fileText(const Location& loc);
-
-  const char* kindText(ErrorBase::Kind kind);
 
   template <typename T>
   struct Writer {
@@ -88,6 +89,8 @@ class ErrorWriter {
     Writer<T> writer;
     writer(*this, t);
   }
+
+  void setColor(TermColorName color);
 
   void writeErrorHeading(ErrorBase::Kind kind, Location loc);
   void writeErrorHeading(ErrorBase::Kind kind, const ID& id);
@@ -107,8 +110,10 @@ class ErrorWriter {
   }
 
  public:
-  ErrorWriter(Context* context, std::ostream& oss, OutputFormat outputFormat) :
-    context(context), oss_(oss), outputFormat_(outputFormat) {}
+  ErrorWriter(Context* context, std::ostream& oss,
+              OutputFormat outputFormat, bool useColor) :
+    context(context), oss_(oss),
+    outputFormat_(outputFormat), useColor_(useColor) {}
 
   template <typename LocationType, typename ... Ts>
   void writeHeading(ErrorBase::Kind kind, LocationType loc, Ts ... ts) {

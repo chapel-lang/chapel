@@ -27,21 +27,24 @@ namespace chpl {
 
 std::string ErrorBase::message() const {
   std::ostringstream oss;
-  ErrorWriter ew(/* context */ nullptr, oss, ErrorWriter::MESSAGE_ONLY);
+  ErrorWriter ew(/* context */ nullptr, oss, ErrorWriter::MESSAGE_ONLY,
+                 /* useColor */ false);
   write(ew);
   return oss.str();
 }
 
 Location ErrorBase::location(Context* context) const {
   std::ostringstream oss;
-  ErrorWriter ew(context, oss, ErrorWriter::MESSAGE_ONLY);
+  ErrorWriter ew(context, oss, ErrorWriter::MESSAGE_ONLY,
+                 /* useColor */ false);
   write(ew);
   return ew.lastLocation();
 }
 
 ID ErrorBase::id() const {
   std::ostringstream oss;
-  ErrorWriter ew(/* context */ nullptr, oss, ErrorWriter::MESSAGE_ONLY);
+  ErrorWriter ew(/* context */ nullptr, oss, ErrorWriter::MESSAGE_ONLY,
+                 /* useColor */ false);
   write(ew);
   return ew.lastId();
 }
