@@ -13,7 +13,7 @@ on:
 
 jobs:
   make_check:
-    
+    runs-on: ubuntu-latest
     steps:
       - name: Send mail
         if: always()
