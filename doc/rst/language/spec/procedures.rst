@@ -123,7 +123,7 @@ Procedures are defined with the following syntax:
    operator-name: one of
      'align' 'by'
      + - * / % ** : ! == != <= >= < > << >> & | ^ ~
-     = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~> #
+     = += -= *= /= %= **= &= |= ^= <<= >>= <=> #
 
    argument-list:
      ( formals[OPT] )
@@ -1226,7 +1226,7 @@ binary   ``+`` ``-`` ``*`` ``/`` ``%`` ``**`` ``:``
 binary   ``==`` ``<=`` ``>=`` ``<`` ``>``
 binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``#`` ``align`` ``by``
 binary   ``=`` ``+=`` ``-=`` ``*=`` ``/=`` ``%=`` ``**=``
-binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
+binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>``
 ======== ===============================
 
 The arity and precedence of the operator must be maintained when it is
