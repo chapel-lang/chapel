@@ -9,6 +9,8 @@ import sys
 quiet = False
 
 def main():
+    global quiet
+
     parser = optparse.OptionParser(
         usage = 'usage: %prog dst src',
         description = 'Updates dst with src. If they differ, copies dst to src. '
