@@ -331,6 +331,52 @@ static void test7() {
   assert(re.toId() == y->id());
 }
 
+// test transitive visibility through public/non-public uses
+static void test8() {
+  printf("test8\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module A {
+        var x : int;
+      }
+      module B {
+        public use A;
+      }
+      module C {
+        use B;
+        var y = x;
+      }
+      module D {
+        use C;
+        var a = y;
+        var b = x;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+  const Variable* a = findVariable(vec, "a");
+  assert(a);
+  const Variable* b = findVariable(vec, "b");
+  assert(b);
+
+  assert(x->initExpression() == nullptr);
+  const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
+  assert(reY.toId() == x->id());
+  const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
+  assert(reA.toId() == y->id());
+  const ResolvedExpression& reB = scopeResolveIt(context, b->initExpression());
+  assert(reB.toId().isEmpty());
+}
+
 
 int main() {
   test1();
@@ -340,6 +386,7 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 
   return 0;
 }
