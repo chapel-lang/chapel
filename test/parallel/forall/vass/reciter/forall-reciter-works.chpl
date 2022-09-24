@@ -7,7 +7,7 @@ Once those are implemented, extend this test to exercise
 those as well, by incorporating ./forall-reciter-works.chpl
 
 This situation is inspired by this test:
-  modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+  test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
 */
 
 config const nn = 3;
