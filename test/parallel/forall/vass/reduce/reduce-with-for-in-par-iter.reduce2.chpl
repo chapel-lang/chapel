@@ -9,8 +9,8 @@ with the body of 'main' adjusted.
 Once this future is resolved, remove this test altogether
 and uncomment the lines "writeln(+ reduce pariter2());"
 in:
-  test/parallel/forall/vass/reduce-with-for-in-par-iter.chpl
-  test/parallel/forall/vass/reduce-fatter-with-for-in-par-iter.chpl
+  test/parallel/forall/vass/reduce/reduce-with-for-in-par-iter.chpl
+  test/parallel/forall/vass/reduce/reduce-fatter-with-for-in-par-iter.chpl
 */
 
 config const nn = 3;
