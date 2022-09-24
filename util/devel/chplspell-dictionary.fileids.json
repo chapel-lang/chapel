@@ -61,8 +61,7 @@
     "compiler/AST/build.cpp"
   ],
   "7db5465c-ad3f-11e6-91b8-10ddb1d4c3d5": [
-    "compiler/AST/expr.cpp",
-    "compiler/codegen/expr.cpp"
+    "compiler/AST/expr.cpp"
   ],
   "ad56c506-780b-11e7-88ba-10ddb1d4c3d5": [
     "compiler/AST/foralls.cpp"
@@ -80,8 +79,7 @@
     "compiler/AST/stmt.cpp"
   ],
   "80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5": [
-    "compiler/AST/symbol.cpp",
-    "compiler/codegen/symbol.cpp"
+    "compiler/AST/symbol.cpp"
   ],
   "b4bc8e62-253c-11ea-948f-10ddb1d4c3d5": [
     "compiler/AST/type.cpp"
@@ -146,33 +144,6 @@
   "b6b773fa-e3ab-11ec-a8be-cd81bce0efc4": [
     "compiler/dyno/include/chpl/parsing/parser-stats.h"
   ],
-  "8f8948a2-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/queries/Context-detail.h"
-  ],
-  "772f06cb-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/queries/Context.h"
-  ],
-  "885d2288-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/queries/ErrorMessage.h"
-  ],
-  "2fa2d27c-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/queries/UniqueString-detail.h"
-  ],
-  "772f06ca-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/queries/UniqueString.h"
-  ],
-  "b21ab428-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/queries/all-global-strings.h"
-  ],
-  "28bcfa5a-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/queries/global-strings.h"
-  ],
-  "b6d19b44-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/queries/query-impl.h"
-  ],
-  "6804c1bc-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/queries/stringify-functions.h"
-  ],
   "7fabd8d0-9f70-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/types/AnyType.h"
   ],
@@ -181,9 +152,6 @@
   ],
   "8ee06334-9f70-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/types/BuiltinType.h"
-  ],
-  "a9aa4b59-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/BytesType.h"
   ],
   "e045c08a-9f6f-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/types/CStringType.h"
@@ -218,9 +186,6 @@
   "a9aa4b58-9f70-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/types/RealType.h"
   ],
-  "db34a282-9f6f-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/StringType.h"
-  ],
   "16268030-9f71-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/types/UnknownType.h"
   ],
@@ -229,12 +194,6 @@
   ],
   "111b0bc4-9f71-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/types/type-classes-list.h"
-  ],
-  "3be03bb2-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/ASTList.h"
-  ],
-  "1f633326-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/ASTNode.h"
   ],
   "b2d3a318-9f71-11ec-866d-111c8d7a1817": [
     "compiler/dyno/include/chpl/uast/ASTTypes.h"
@@ -545,12 +504,6 @@
   "45947086-9f74-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/parsing/parsing-queries.cpp"
   ],
-  "8c459914-9f75-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/queries/Context.cpp"
-  ],
-  "bc2f95d0-9f75-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/queries/ErrorMessage.cpp"
-  ],
   "0cc92926-9f75-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/resolution/Resolver.h"
   ],
@@ -571,9 +524,6 @@
   ],
   "bd49d274-9f74-11ec-866d-111c8d7a1817": [
     "compiler/dyno/lib/types/Param.cpp"
-  ],
-  "87f2bc0c-9f75-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/uast/ASTNode.cpp"
   ],
   "2c60856a-e3ac-11ec-a8be-cd81bce0efc4": [
     "compiler/dyno/lib/uast/AstNode.cpp"
@@ -608,9 +558,6 @@
   "5e93026e-9f6f-11ec-866d-111c8d7a1817": [
     "compiler/dyno/util/linters/fieldsUsed.cpp"
   ],
-  "d20c5afc-1d7e-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/ifa/num.cpp"
-  ],
   "a4a99de4-f560-11eb-bb15-35b7469d4b43": [
     "compiler/include/ResolutionCandidate.h"
   ],
@@ -624,10 +571,6 @@
   ],
   "57076cb0-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/codegen.h"
-  ],
-  "12c3b64e-0c12-11e7-980e-10ddb1d4c3d5": [
-    "compiler/include/countTokens.h",
-    "compiler/parser/countTokens.cpp"
   ],
   "22756090-12c1-11ed-a8be-cd81bce0efc4": [
     "compiler/include/driver.h"
@@ -664,9 +607,6 @@
   ],
   "26485862-12c1-11ed-a8be-cd81bce0efc4": [
     "compiler/include/pass-manager-passes.h"
-  ],
-  "9431bc08-f560-11eb-bb15-35b7469d4b43": [
-    "compiler/include/primitive_list.h"
   ],
   "a8be55e8-7b38-11eb-91c9-15da80cfac4b": [
     "compiler/include/resolution.h"
@@ -729,9 +669,6 @@
   ],
   "ec0917b4-f560-11eb-bb15-35b7469d4b43": [
     "compiler/optimizations/optimizeOnClauses.cpp"
-  ],
-  "ee09a666-09c3-11eb-b2e8-10ddb1d4c3d5": [
-    "compiler/optimizations/preNormalizeOptimizations.cpp"
   ],
   "26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5": [
     "compiler/optimizations/refPropagation.cpp"
@@ -807,9 +744,6 @@
   ],
   "4f065520-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/implementForallIntents.cpp"
-  ],
-  "5bfd40ae-ca86-11e7-8b8c-10ddb1d4c3d5": [
-    "compiler/resolution/implementForallIntents2.cpp"
   ],
   "d5351900-d1c0-11e8-954d-10ddb1d4c3d5": [
     "compiler/resolution/initializerResolution.cpp"
@@ -931,16 +865,12 @@
   "e13e71b8-2ac6-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/chips/inactive/9.rst"
   ],
-  "6eb99dbc-1e45-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/compilerOverview/compiler.tex"
-  ],
   "396f9ef0-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/contributorAgreements/README.md"
   ],
   "63b96a22-1e46-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/hdfs_and_chapel/API.tex",
-    "doc/rst/developer/hdfs_and_chapel/examples.tex",
-    "modules/packages/HDFSiterator.chpl"
+    "doc/rst/developer/hdfs_and_chapel/examples.tex"
   ],
   "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/hdfs_and_chapel/intro.tex"
@@ -953,9 +883,6 @@
   ],
   "80a8005e-f563-11eb-bb15-35b7469d4b43": [
     "doc/rst/developer/implementation/compilerOverview/compiler.tex"
-  ],
-  "d667ed16-fd34-11e9-98b5-10ddb1d4c3d5": [
-    "doc/rst/language/spec.rst"
   ],
   "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/language/spec/README"
@@ -1007,9 +934,6 @@
   ],
   "b89daf54-62e2-11eb-a43d-6f93f4244f4b": [
     "doc/rst/platforms/cray.rst"
-  ],
-  "a78ba0d8-8220-11e6-b915-843835579daa": [
-    "doc/rst/technotes/auxIO.rst"
   ],
   "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/dsi.rst"
@@ -1067,9 +991,6 @@
   ],
   "cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5": [
     "doc/rst/usingchapel/prereqs.rst"
-  ],
-  "2e841d3c-f561-11eb-bb15-35b7469d4b43": [
-    "doc/templates/compiler-internals-doxygen/index.rst"
   ],
   "d741a952-4110-11e8-af7e-10ddb1d4c3d5": [
     "man/chpl.rst"
@@ -1143,9 +1064,6 @@
   ],
   "5bc3089e-62df-11ec-8674-e995e73200ed": [
     "modules/internal/ChapelDomain.chpl"
-  ],
-  "6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5": [
-    "modules/internal/ChapelError.chpl"
   ],
   "0ad18466-aac5-11ea-8acb-843835579daa": [
     "modules/internal/ChapelHashing.chpl"
@@ -1311,9 +1229,6 @@
   "b6f2f694-cac9-11e9-8464-10ddb1d4c3d5": [
     "modules/standard/List.chpl"
   ],
-  "5c43053e-9317-11e9-a422-10ddb1d4c3d5": [
-    "modules/standard/Lists.chpl"
-  ],
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
   ],
@@ -1349,12 +1264,6 @@
   ],
   "ceac0ff8-f562-11eb-bb15-35b7469d4b43": [
     "runtime/etc/src/mli/chpl-mli-server-runtime.c"
-  ],
-  "7238a240-9317-11e9-a422-10ddb1d4c3d5": [
-    "runtime/etc/src/mli/common_code.c"
-  ],
-  "6df7b2de-9317-11e9-a422-10ddb1d4c3d5": [
-    "runtime/etc/src/mli/server_runtime.c"
   ],
   "011204e0-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-bitops.h"
@@ -1401,9 +1310,6 @@
   "9410539a-9317-11e9-a422-10ddb1d4c3d5": [
     "runtime/src/chpl-launcher-common.c"
   ],
-  "2fe4a316-f563-11eb-bb15-35b7469d4b43": [
-    "runtime/src/chpl-strptime.c"
-  ],
   "8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-timers.c"
   ],
@@ -1420,14 +1326,8 @@
     "runtime/src/comm/ofi/comm-ofi-internal.h",
     "runtime/src/comm/ofi/comm-ofi.c"
   ],
-  "91c58b86-d1c1-11e8-954d-10ddb1d4c3d5": [
-    "runtime/src/comm/ofi/comm-ofi-oob-pmi.c"
-  ],
   "77a59142-f563-11eb-bb15-35b7469d4b43": [
     "runtime/src/comm/ofi/comm-ofi-oob-pmi2.c"
-  ],
-  "38c20924-fd35-11e9-98b5-10ddb1d4c3d5": [
-    "runtime/src/comm/ofi/comm-ofi-oob-slurm-pmi2.c"
   ],
   "c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni-launch.c"
@@ -1477,12 +1377,6 @@
   "88143c78-d6dc-11ea-8acb-843835579daa": [
     "runtime/src/mem/jemalloc/mem-jemalloc.c"
   ],
-  "a2b5a7e0-2404-11e6-a3a6-10ddb1d4c3d5": [
-    "runtime/src/qio/auxFilesys/curl/qio_plugin_curl.c"
-  ],
-  "c04de3c6-2404-11e6-a3a6-10ddb1d4c3d5": [
-    "runtime/src/qio/auxFilesys/hdfs/qio_plugin_hdfs.c"
-  ],
   "3d6b3228-2405-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/qio/qio.c"
   ],
@@ -1492,9 +1386,6 @@
   "74ec0768-2405-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/qio/sys.c"
   ],
-  "e2b2b296-8068-11e6-ab60-00a0cc3ee663": [
-    "runtime/src/tasks/massivethreads/tasks-massivethreads.c"
-  ],
   "75ed892c-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/tasks/qthreads/tasks-qthreads.c"
   ],
@@ -1503,46 +1394,6 @@
   ],
   "203d644e-8648-11e8-ad82-10ddb1d4c3d5": [
     "runtime/src/topo/hwloc/topo-hwloc.c"
-  ],
-  "6d1ff4ac-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Arrays.tex"
-  ],
-  "3277f5dc-4e3e-11e6-907f-843835579daa": [
-    "spec/Classes.tex"
-  ],
-  "b74a5b44-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Domains.tex"
-  ],
-  "cd92e998-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Expressions.tex"
-  ],
-  "e1d71c80-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Interoperation.tex"
-  ],
-  "f72f3d38-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Memory_Consistency.tex"
-  ],
-  "cffdd350-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Methods.tex",
-    "spec/Procedures.tex"
-  ],
-  "185b17ce-2954-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Modules.tex"
-  ],
-  "e78c94ba-2953-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Ranges.tex"
-  ],
-  "ec772e36-2953-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Statements.tex"
-  ],
-  "ef5af4e8-2953-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Task_Parallelism_and_Synchronization.tex"
-  ],
-  "f233cdf2-2953-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Tuples.tex"
-  ],
-  "97a7d6e0-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/chapel_testing.tex"
   ],
   "b4520e6e-5076-11e6-b83e-bc5ff4765d0d": [
     "test/ANNOTATIONS.yaml"
@@ -1636,30 +1487,6 @@
   "560979a4-4401-11e6-907f-843835579daa": [
     "test/release/examples/benchmarks/shootout/revcomp-fast.chpl",
     "test/release/examples/benchmarks/shootout/revcomp.chpl"
-  ],
-  "7fcc0bd0-b85f-11e6-9740-843835579daa": [
-    "test/release/examples/benchmarks/ssca2/README"
-  ],
-  "0bb8ad60-b860-11e6-9740-843835579daa": [
-    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_RMAT_graph_generator.chpl"
-  ],
-  "e79be4f6-b85f-11e6-9740-843835579daa": [
-    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_compilation_config_params.chpl"
-  ],
-  "ebd0997c-b85f-11e6-9740-843835579daa": [
-    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_execution_config_consts.chpl"
-  ],
-  "fe33d4c6-b85f-11e6-9740-843835579daa": [
-    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_kernels.chpl"
-  ],
-  "87dec826-b85f-11e6-9740-843835579daa": [
-    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/analyze_RMAT_graph_associative_array.chpl"
-  ],
-  "baca0444-b85f-11e6-9740-843835579daa": [
-    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/io_RMAT_graph.chpl"
-  ],
-  "83dc1ce2-b85f-11e6-9740-843835579daa": [
-    "test/release/examples/benchmarks/ssca2/SSCA2_main.chpl"
   ],
   "d86303d0-4d88-11e6-907f-843835579daa": [
     "test/release/examples/hello4-datapar-dist.chpl"
