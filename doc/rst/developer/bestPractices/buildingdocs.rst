@@ -181,7 +181,7 @@ heading the file is under.
      - doc/rst/language/reference.rst
    * - WRITING CHAPEL PROGRAMS
      - Mason Packages
-     - doc/rst/mason-packages.rst
+     - doc/rst/mason-packages
    * - WRITING CHAPEL PROGRAMS
      - Chapel Users Guide (WIP)
      - doc/rst/users-guide
