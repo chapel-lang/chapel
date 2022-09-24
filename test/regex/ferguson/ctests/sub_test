@@ -23,8 +23,8 @@ RE2_INSTALL_DIR=$($CHPL_HOME/util/config/compileline --libraries | \
 RE2INCLS=-I$RE2_INSTALL_DIR/include
 RE2LIB="-L$RE2_INSTALL_DIR/lib -Wl,-rpath,$RE2_INSTALL_DIR/lib -lre2"
 
-RE=`$CHPL_HOME/util/chplenv/chpl_regex.py`
-if [ "$RE" = "re2" ]
+RE=`$CHPL_HOME/util/chplenv/chpl_re2.py`
+if [ "$RE" = "bundled" ]
 then
   echo "[Working on $DIR with RE2]"
 else
