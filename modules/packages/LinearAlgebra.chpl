@@ -535,7 +535,7 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
   return V;
 }
 
-
+/*
 /* Return a square matrix (2D array) over domain ``{0..<rows, 0..<rows}``*/
 proc Matrix(rows, type eltType=real) where isIntegral(rows) {
   if rows <= 0 then halt("Matrix dimensions must be > 0");
@@ -605,11 +605,36 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   }
   return M;
 }
-
+*/
+  pragma "no doc"
+  proc chpl_varargsOKForMatrix(Arrays) param {
+    if isHomogeneousTuple(Arrays) {
+      /*
+      compilerWarning("returning from then");
+      compilerWarning(Arrays(0).type:string);
+      compilerWarning(isArray(Arrays(0)):string);
+      compilerWarning(Arrays(0).rank:string);
+*/
+      return isArray(Arrays(0)) && Arrays(0).rank == 1;
+    } else {
+      for param i in 0..<Arrays.size {
+        if !isArrayType(Arrays(i).type) || Arrays(i).rank != 1 {
+          compilerWarning("returning from else");
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  
 pragma "no doc"
-proc Matrix(const Arrays: ?t  ...?n) where isArrayType(t) && t.rank == 1 {
-  type eltType = Arrays(1).eltType;
-  return Matrix((...Arrays), eltType=eltType);
+proc Matrix(const Arrays ...?n) /*where isHomogeneousTuple(Arrays)*/ /* where isArrayType(t) && t.rank == 1 */ {
+//    compilerWarning(isHomogeneousTuple(Arrays):string);
+    //  if !isHomogeneousTuple(Arrays) || !isArray(Arrays(0)) || Arrays(0).rank != 1 {
+  if !isArray(Arrays(0)) {
+    compilerError("Matrix() requires a series of 1D arrays as its arguments");
+  }
+  return Matrix((...Arrays), eltType=Arrays(0).eltType);
 }
 
 
@@ -635,7 +660,10 @@ proc Matrix(const Arrays: ?t  ...?n) where isArrayType(t) && t.rank == 1 {
          */
 
 */
-proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank == 1 {
+proc Matrix(const Arrays ...?n, type eltType) {
+    if !chpl_varargsOKForMatrix(Arrays) {
+    compilerError("Matrix() requires a series of 1D arrays as its arguments");
+  }
 
   if Arrays(0).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
 
@@ -644,9 +672,16 @@ proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank
 
   var M: [{dim1, dim2}] eltType;
 
-  forall i in dim1 do {
-    if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
-    M[i, ..] = Arrays(i): eltType;
+  if (isHomogeneousTuple(Arrays)) {
+    forall i in dim1 do {
+      if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
+      M[i, ..] = Arrays(i): eltType;
+    }
+  } else {
+    for param i in 0..<n do {
+      if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
+      M[i, ..] = Arrays(i): eltType;
+    }
   }
 
   return M;
