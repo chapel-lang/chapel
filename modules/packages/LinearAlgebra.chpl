@@ -606,31 +606,22 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   return M;
 }
 
-  pragma "no doc"
-  proc chpl_varargsOKForMatrix(Arrays) param {
-    if isHomogeneousTuple(Arrays) {
-      /*
-      compilerWarning("returning from then");
-      compilerWarning(Arrays(0).type:string);
-      compilerWarning(isArray(Arrays(0)):string);
-      compilerWarning(Arrays(0).rank:string);
-*/
-      return isArray(Arrays(0)) && Arrays(0).rank == 1;
-    } else {
-      for param i in 0..<Arrays.size {
-        if !isArrayType(Arrays(i).type) || Arrays(i).rank != 1 {
-          compilerWarning("returning from else");
-          return false;
-        }
+pragma "no doc"
+proc chpl_varargsOKForMatrix(Arrays) param {
+  if isHomogeneousTuple(Arrays) {
+    return isArray(Arrays(0)) && Arrays(0).rank == 1;
+  } else {
+    for param i in 0..<Arrays.size {
+      if !isArrayType(Arrays(i).type) || Arrays(i).rank != 1 {
+        return false;
       }
     }
-    return true;
   }
-  
+  return true;
+}
+
 pragma "no doc"
-proc Matrix(const Arrays ...?n) /*where isHomogeneousTuple(Arrays)*/ /* where isArrayType(t) && t.rank == 1 */ {
-//    compilerWarning(isHomogeneousTuple(Arrays):string);
-    //  if !isHomogeneousTuple(Arrays) || !isArray(Arrays(0)) || Arrays(0).rank != 1 {
+proc Matrix(const Arrays ...?n) {
   if !isArray(Arrays(0)) {
     compilerError("Matrix() requires a series of 1D arrays as its arguments");
   }
@@ -661,7 +652,7 @@ proc Matrix(const Arrays ...?n) /*where isHomogeneousTuple(Arrays)*/ /* where is
 
 */
 proc Matrix(const Arrays ...?n, type eltType) {
-    if !chpl_varargsOKForMatrix(Arrays) {
+  if !chpl_varargsOKForMatrix(Arrays) {
     compilerError("Matrix() requires a series of 1D arrays as its arguments");
   }
 
