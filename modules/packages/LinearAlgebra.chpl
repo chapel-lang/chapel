@@ -535,7 +535,7 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
   return V;
 }
 
-/*
+
 /* Return a square matrix (2D array) over domain ``{0..<rows, 0..<rows}``*/
 proc Matrix(rows, type eltType=real) where isIntegral(rows) {
   if rows <= 0 then halt("Matrix dimensions must be > 0");
@@ -605,7 +605,7 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   }
   return M;
 }
-*/
+
   pragma "no doc"
   proc chpl_varargsOKForMatrix(Arrays) param {
     if isHomogeneousTuple(Arrays) {
