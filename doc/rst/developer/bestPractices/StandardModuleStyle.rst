@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _best-practices-standard-module-style:
 
 Standard Module Style
@@ -26,6 +28,13 @@ Here are a few examples:
  * "rendered HTML DOM" in camelCase is renderedHtmlDom
  * "HTML" in PascalCase is HTML
  * "HTML" in camelCase is html
+
+Exceptions:
+ The following are exceptions to the above capitalization guidelines that occur
+ in the standard modules or packages:
+
+  * :proc:`~ChapelLocale.locale.numPUs` (num Processor-Units)
+
 
 Modules
 -------
