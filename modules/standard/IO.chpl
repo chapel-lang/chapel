@@ -1373,9 +1373,6 @@ extern type fdflag_t = c_int;
 //  QIO_HINT_CACHED,
 //  QIO_HINT_NOREUSE
 
-deprecated "the 'iohints' type is deprecated; please use the 'ioHintSet' type instead."
-extern type iohints = c_int;
-
 private const IOHINTS_NONE:        c_int = 0;
 private const IOHINTS_SEQUENTIAL:  c_int = QIO_HINT_SEQUENTIAL;
 private const IOHINTS_RANDOM:      c_int = QIO_HINT_RANDOM;
