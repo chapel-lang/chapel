@@ -95,7 +95,7 @@ dyno: $(LIBCOMPILER_BUILD_DIR) FORCE
 	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target libdyno ; \
 	fi
 
-COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
+COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --quiet --copy
 
 dyno-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library docs..."
