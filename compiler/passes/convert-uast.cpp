@@ -29,6 +29,7 @@
 
 #include "CForLoop.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "DoWhileStmt.h"
 #include "ForLoop.h"
@@ -62,8 +63,6 @@
 using namespace chpl;
 
 namespace {
-
-const bool tryToScopeResolveEverything = false;
 
 struct ConvertedSymbolsMap {
   ID inSymbolId;
@@ -200,9 +199,12 @@ struct Converter {
   }
 
   bool shouldScopeResolve(ID symbolId) {
-    if (tryToScopeResolveEverything) return true;
-    return canScopeResolve &&
-           !chpl::parsing::idIsInBundledModule(context, symbolId);
+    if (canScopeResolve) {
+      return fDynoScopeBundled ||
+             !chpl::parsing::idIsInBundledModule(context, symbolId);
+    }
+
+    return false;
   }
   bool shouldScopeResolve(const uast::AstNode* node) {
     return shouldScopeResolve(node->id());
@@ -1123,12 +1125,14 @@ struct Converter {
     INT_ASSERT(node->numVisibilityClauses() > 0);
 
     inImportOrUse = true;
+    BlockStmt* ret = nullptr;
     if (node->numVisibilityClauses() == 1) {
-      return convertUsePossibleLimitations(node);
+      ret = convertUsePossibleLimitations(node);
     } else {
-      return convertUseNoLimitations(node);
+      ret = convertUseNoLimitations(node);
     }
     inImportOrUse = false;
+    return ret;
   }
 
   Expr* visit(const uast::VisibilityClause* node) {
@@ -1373,6 +1377,9 @@ struct Converter {
         auto initExpr = toExpr(convertAST(ifVar->initExpression()));
         bool isConst = ifVar->kind() == uast::Variable::CONST;
         cond = buildIfVar(varNameStr, initExpr, isConst);
+
+        DefExpr* def = toDefExpr(toCallExpr(cond)->get(1));
+        noteConvertedSym(node->condition(), def->sym);
       } else {
         cond = toExpr(convertAST(node->condition()));
       }
@@ -3384,7 +3391,9 @@ struct Converter {
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
-    // TODO: set resolved
+    if (shouldScopeResolve(node)) {
+      resolved = &resolution::scopeResolveAggregate(context, node->id());
+    }
     pushToSymStack(node, resolved);
 
     auto comment = consumeLatestComment();
@@ -3959,11 +3968,19 @@ void Converter::pushToSymStack(
      const resolution::ResolutionResultByPostorderID* resolved) {
   ConvertedSymbolsMap* parentMap = nullptr;
   if (symStack.size() > 0) {
-    // Find the current top-level module from symStack and consider it the
-    // parent.
-    // We could track things in a more granular way but we might need to
-    // access something like A.B.C.D (where A, B, C are modules) later.
-    parentMap = symStack.front().convertedSyms.get();
+    auto backMap = symStack.back().convertedSyms.get();
+    auto backAst = parsing::idToAst(context, backMap->inSymbolId);
+    if (backAst->toFunction()) {
+      // If we're inside a nested function, then we should use the parent
+      // function's ConvertedSymbolsMap as the parentMap.
+      parentMap = backMap;
+    } else {
+      // Find the current top-level module from symStack and consider it the
+      // parent.
+      // We could track things in a more granular way but we might need to
+      // access something like A.B.C.D (where A, B, C are modules) later.
+      parentMap = symStack.front().convertedSyms.get();
+    }
   } else {
     parentMap = &gConvertedSyms;
   }
@@ -4061,9 +4078,20 @@ Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
       }
       // convert references to classes as anymanaged
       // e.g. 'C' in 'typeFn(C)' refers to anymanaged C rather than borrowed C
+      //
+      // The call to `getDecoratedClass` used to try and insert a defPoint for
+      // the DecoratedClass's TypeSymbol when first creating it. This doesn't
+      // work if the AggregateType that represents the class isn't already in
+      // the tree.
+      //
+      // We can run into this situation when scope-resolving an AggregateType
+      // that contains a reference to itself. Now, getDecoratedClass will not
+      // try to insert a defPoint when the original AggregateType is not in the
+      // tree. We will insert these defPoints manually later in
+      // `postConvertApplyFixups`.
       if (TypeSymbol* ts = toTypeSymbol(ret)) {
         if (AggregateType* at = toAggregateType(ts->type)) {
-          if (at->isClass()) {
+          if (at->isClass() && isClassLikeOrManaged(at)) {
             Type* useType =
               at->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
             ret = useType->symbol;
@@ -4209,6 +4237,33 @@ convertToplevelModule(chpl::Context* context,
 
 void postConvertApplyFixups(chpl::Context* context) {
   gConvertedSyms.applyFixups(context, nullptr, /* trace */ false);
+
+  // Add defPoints that 'getDecoratedClass' was prevented from inserting when
+  // the original AggregateType was no longer in the tree.
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (auto dct = toDecoratedClassType(ts->type)) {
+      if (isAlive(ts) == false) {
+        SET_LINENO(ts);
+        auto at = dct->getCanonicalClass();
+        DefExpr* defDec = new DefExpr(ts);
+        at->symbol->defPoint->insertAfter(defDec);
+      }
+    }
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->_this == nullptr) continue; // not a method
+
+    if (fn->_this->type == dtUnknown) {
+      Expr* expr = toArgSymbol(fn->_this)->typeExpr->body.only();
+      if (SymExpr* receiver = toSymExpr(expr)) {
+        if (auto dct = toDecoratedClassType(receiver->symbol()->type)) {
+          SET_LINENO(receiver);
+          receiver->replace(new SymExpr(dct->getCanonicalClass()->symbol));
+        }
+      }
+    }
+  }
 
   // Ensure no SymExpr referring to TemporaryConversionSymbol is still in tree
   if (fVerify) {

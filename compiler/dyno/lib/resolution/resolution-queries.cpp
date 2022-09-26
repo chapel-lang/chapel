@@ -1683,6 +1683,13 @@ scopeResolveFunctionQuery(Context* context, ID id) {
     //  cause it to be scope resolved).
     for (auto child: fn->children()) {
       child->traverse(visitor);
+
+      // Recompute the method receiver after the 'this' formal is
+      // scope-resolved, when we might be able to gather some information
+      // about the type on which the method is declared.
+      if (fn->isMethod() && child == fn->thisFormal()) {
+        visitor.methodReceiverScope(/*recompute=*/true);
+      }
     }
 
     sig = visitor.typedSignature;
@@ -1704,6 +1711,28 @@ const ResolvedFunction* scopeResolveFunction(Context* context,
     scopeResolveFunctionQuery(context, id);
 
   return result.get();
+}
+
+const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
+                                                           ID id) {
+  QUERY_BEGIN(scopeResolveAggregate, context, id);
+
+  const AggregateDecl* ad = parsing::idToAst(context, id)->toAggregateDecl();
+  ResolutionResultByPostorderID result;
+
+  if (ad) {
+    // TODO: Use some kind of "ad->fields()" iterator
+    for (auto child : ad->children()) {
+      if (child->isVarLikeDecl() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        auto res = Resolver::createForScopeResolvingField(context, ad, child, result);
+        child->traverse(res);
+      }
+    }
+  }
+
+  return QUERY_END(result);
 }
 
 
@@ -2073,7 +2102,7 @@ isUntypedSignatureApplicable(Context* context,
   }
 
   // TODO: more to check for method-ness?
-  if (ci.isMethodCall() != ufs->isMethod()) {
+  if (!ci.isOpCall() && ci.isMethodCall() != ufs->isMethod()) {
     return false;
   }
 
@@ -2292,11 +2321,11 @@ lookupCalledExpr(Context* context,
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
-  const Scope* scopeForReceiverType = nullptr;
+  const Scope* scopeToUse = scope;
 
   // For method calls, perform an initial lookup starting at the scope for
   // the definition of the receiver type, if it can be found.
-  if (ci.isMethodCall()) {
+  if (ci.isMethodCall() || ci.isOpCall()) {
     assert(ci.numActuals() >= 1);
 
     auto& receiverQualType = ci.actual(0).type();
@@ -2304,7 +2333,7 @@ lookupCalledExpr(Context* context,
     // Try to fetch the scope of the receiver type's definition.
     if (auto receiverType = receiverQualType.type()) {
       if (auto compType = receiverType->getCompositeType()) {
-        scopeForReceiverType = scopeForId(context, compType->id());
+        scopeToUse = scopeForId(context, compType->id());
       }
     }
   }
@@ -2312,7 +2341,7 @@ lookupCalledExpr(Context* context,
   UniqueString name = ci.name();
 
   std::vector<BorrowedIdsWithName> ret =
-    lookupNameInScopeWithSet(context, scope, scopeForReceiverType,
+    lookupNameInScopeWithSet(context, scopeToUse, nullptr,
                              name, config, visited);
 
   return ret;

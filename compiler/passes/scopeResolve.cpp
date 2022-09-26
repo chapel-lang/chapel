@@ -3104,7 +3104,9 @@ void scopeResolve() {
 
   resolveGotoLabels();
 
-  resolveUnresolvedSymExprs();
+  if (!fDynoCompilerLibrary || fDynoScopeProduction) {
+    resolveUnresolvedSymExprs();
+  }
 
   resolveEnumeratedTypes();
 

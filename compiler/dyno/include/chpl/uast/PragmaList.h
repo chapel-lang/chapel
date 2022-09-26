@@ -605,6 +605,8 @@ PRAGMA(DESERIALIZATION_BLOCK_MARKER, npr, "marks deserialization options", "then
 
 PRAGMA(EXEMPT_INSTANTIATION_LIMIT, ypr, "fn exempt instantiation limit", "compiler will not limit the number of instantiations of this function")
 
+PRAGMA(COMPUTE_UNIFIED_TYPE_HELP, ypr, "compute unified type helper", "identify the internal chpl_computeUnifiedTypeHelp() routine")
+
 #undef ypr
 #undef npr
 #undef ncm

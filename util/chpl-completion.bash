@@ -60,6 +60,8 @@ _chpl ()
 --dyno \
 --dyno-break-on-hash \
 --dyno-debug-trace \
+--dyno-scope-bundled \
+--dyno-scope-production \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -171,6 +173,8 @@ _chpl ()
 --no-dynamic-auto-local-access \
 --no-dyno \
 --no-dyno-debug-trace \
+--no-dyno-scope-bundled \
+--no-dyno-scope-production \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \

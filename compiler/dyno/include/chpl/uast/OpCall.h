@@ -83,6 +83,9 @@ class OpCall final : public Call {
   bool isUnaryOp() const { return children_.size() == 1; }
 };
 
+// Returns true if the given string is an operator name
+bool isOpName(UniqueString name);
+
 
 } // end namespace uast
 } // end namespace chpl

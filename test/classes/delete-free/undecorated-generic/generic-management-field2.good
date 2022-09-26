@@ -1,0 +1,3 @@
+{x = 3}
+In the explicit initializer
+(f = {x = 3})

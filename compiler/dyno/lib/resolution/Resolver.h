@@ -121,6 +121,11 @@ struct Resolver {
   createForScopeResolvingFunction(Context* context, const uast::Function* fn,
                                   ResolutionResultByPostorderID& byPostorder);
 
+  static Resolver createForScopeResolvingField(Context* context,
+                                         const uast::AggregateDecl* ad,
+                                         const uast::AstNode* fieldStmt,
+                                         ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to initially resolve field declaration types
   static Resolver
   createForInitialFieldStmt(Context* context,
@@ -174,7 +179,7 @@ struct Resolver {
   /* Compute the receiver scope (when resolving a method)
      and return nullptr if it is not applicable.
    */
-  const Scope* methodReceiverScope();
+  const Scope* methodReceiverScope(bool recompute = false);
   /* Compute the receiver scope (when resolving a method)
      and return nullptr if it is not applicable.
    */

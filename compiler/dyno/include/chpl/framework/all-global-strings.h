@@ -121,5 +121,10 @@ X(leftShift      , "<<")
 X(rightShift     , ">>")
 X(rangeCount     , "#")
 
+X(swap           , "<=>")
+X(channelIo      , "<~>")
+X(chplBy         , "chpl_by")
+X(chplAlign      , "chpl_align")
+
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

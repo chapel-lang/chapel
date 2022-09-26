@@ -29,13 +29,11 @@ Here are a few examples:
  * "HTML" in PascalCase is HTML
  * "HTML" in camelCase is html
 
-
 Exceptions:
  The following are exceptions to the above capitalization guidelines that occur
  in the standard modules or packages:
 
   * :proc:`~ChapelLocale.locale.numPUs` (num Processor-Units)
-
 Modules
 -------
 
@@ -83,6 +81,33 @@ Parentheses-less functions that aren't methods should be avoided.
 Many paren-ful methods take some notable action. Try to make these
 methods method names be a verb. In particular, a method that modifies an
 argument in-place should be a verb.
+
+Factory Functions and Methods
++++++++++++++++++++++++++++++
+
+Factory functions or methods are procedures where the main purpose of
+that procedure is to create a new object or value. There are many other
+procedures that return a value but constructing that value is not the main
+purpose of the function. For example, 'open' and 'spawn' are not factory
+functions -- the main action of these methods is to work with the OS to
+open a file or launch a subprocess.
+
+In many cases factory procedures are not needed. Regular initializers
+will work just fine to support the pattern of ``new Something(...)``.
+Type conversion is best supported by creating a cast (``:``) operator
+overload.
+
+One case in which factory procedures are useful is when it is awkward to
+distinguish between several ways of creating something based on the
+initializer arguments alone.
+
+Factory procedures should have a name that begin with 'create'.
+
+Factory procedures can be functions or type methods. For example, we
+could have:
+
+ * ``createStringWithBorrowedBuffer`` or
+ * ``string.createWithBorrowedBuffer``.
 
 Other Identifiers
 -----------------

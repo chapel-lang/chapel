@@ -239,6 +239,19 @@ Resolver::createForScopeResolvingFunction(Context* context,
   return ret;
 }
 
+Resolver
+Resolver::createForScopeResolvingField(Context* context,
+                                 const uast::AggregateDecl* ad,
+                                 const AstNode* fieldStmt,
+                                 ResolutionResultByPostorderID& byPostorder) {
+  auto ret = Resolver(context, ad, byPostorder, nullptr);
+  ret.scopeResolveOnly = true;
+  ret.curStmt = fieldStmt;
+  ret.byPostorder.setupForSymbol(ad);
+
+  return ret;
+}
+
 
 // set up Resolver to initially resolve field declaration types
 Resolver
@@ -342,13 +355,27 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
-const Scope* Resolver::methodReceiverScope() {
+const Scope* Resolver::methodReceiverScope(bool recompute) {
+  if (recompute) {
+    receiverScopeComputed = false;
+  }
+
   if (receiverScopeComputed) {
     return savedReceiverScope;
   }
 
   if (typedSignature && typedSignature->untyped()->isMethod()) {
-    if (auto receiverType = typedSignature->formalType(0).type()) {
+    if (scopeResolveOnly) {
+      auto* untyped = typedSignature->untyped();
+      auto thisFormal = untyped->formalDecl(0)->toFormal();
+      auto type = thisFormal->typeExpression();
+      if (auto ident = type->toIdentifier()) {
+        auto re = byPostorder.byAst(ident);
+        if (re.toId().isEmpty() == false) {
+          savedReceiverScope = scopeForId(context, re.toId());
+        }
+      }
+    } else if (auto receiverType = typedSignature->formalType(0).type()) {
       if (auto compType = receiverType->getCompositeType()) {
         savedReceiverScope = scopeForId(context, compType->id());
         savedReceiverType = compType;
@@ -1044,7 +1071,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
       actuals.push_back(CallInfoActual(rhsEltType, UniqueString()));
       auto ci = CallInfo (/* name */ USTR("="),
                           /* calledType */ QualifiedType(),
-                          /* isMethod */ false,
+                          /* isMethodCall */ false,
                           /* hasQuestionArg */ false,
                           /* isParenless */ false,
                           actuals);
@@ -1518,7 +1545,7 @@ bool Resolver::enter(const Identifier* ident) {
           std::vector<CallInfoActual> actuals;
           auto ci = CallInfo (/* name */ ident->name(),
                               /* calledType */ QualifiedType(),
-                              /* isMethod */ false,
+                              /* isMethodCall */ false,
                               /* hasQuestionArg */ false,
                               /* isParenless */ true,
                               actuals);
@@ -2065,10 +2092,8 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   // Prepare the remaining actuals.
   prepareCallInfoActuals(call, actuals, hasQuestionArg);
 
-  auto ret = CallInfo(name, calledType, isMethodCall,
-                      hasQuestionArg,
-                      /* isParenless */ false,
-                      actuals);
+  auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+                      /* isParenless */ false, actuals);
 
   return ret;
 }
@@ -2287,7 +2312,7 @@ void Resolver::exit(const Dot* dot) {
   actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
   auto ci = CallInfo (/* name */ dot->field(),
                       /* calledType */ QualifiedType(),
-                      /* isMethod */ true,
+                      /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
                       actuals);
@@ -2398,7 +2423,7 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
     actuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
     auto ci = CallInfo (/* name */ USTR("these"),
                         /* calledType */ iterandRE.type(),
-                        /* isMethod */ true,
+                        /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
                         actuals);

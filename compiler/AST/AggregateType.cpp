@@ -3027,8 +3027,15 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
       tsDec->addFlag(FLAG_GENERIC);
     // The generated code should just use the canonical class name
     tsDec->cname = at->symbol->cname;
-    DefExpr* defDec = new DefExpr(tsDec);
-    symbol->defPoint->insertAfter(defDec);
+
+    // 'symbol' might not be in the tree if we're running with --dyno and
+    // scope-resolving an AggregateType that contains a reference to itself
+    // (e.g. a linked-list with a 'next' node). The 'convert-uast' pass is
+    // meant to manually insert these defPoints later.
+    if (!fDynoCompilerLibrary || isAlive(symbol->defPoint)) {
+      DefExpr* defDec = new DefExpr(tsDec);
+      symbol->defPoint->insertAfter(defDec);
+    }
   }
 
   return at->decoratedClasses[packedDecorator];
