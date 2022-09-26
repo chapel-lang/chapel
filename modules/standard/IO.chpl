@@ -755,38 +755,6 @@ extern const QIO_HINT_NOREUSE:c_int;
 pragma "no doc"
 extern const QIO_HINT_OWNED:c_int;
 
-/*  IOHINT_NONE means normal operation, nothing special
-    to hint. Expect to use NONE most of the time.
-    The other hints can be bitwise-ORed in.
- */
-deprecated "'IOHINT_NONE' is deprecated; please use 'ioHintSet.empty' instead"
-const IOHINT_NONE = 0:c_int;
-
-/* IOHINT_RANDOM means we expect random access to a file */
-deprecated "'IOHINT_RANDOM' is deprecated; please use 'ioHintSet.random' instead"
-const IOHINT_RANDOM = QIO_HINT_RANDOM;
-
-/*  IOHINT_SEQUENTIAL means expect sequential access. On
-    Linux, this should double the readahead.
- */
-deprecated "'IOHINT_SEQUENTIAL' is deprecated; please use 'ioHintSet.sequential' instead"
-const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
-
-/*  IOHINT_CACHED means we expect the entire file
-    to be cached and/or we pull it in all at
-    once. May request readahead on the entire file.
- */
-deprecated "'IOHINT_CACHED' is deprecated; please use 'ioHintSet.prefetch' instead"
-const IOHINT_CACHED = QIO_HINT_CACHED;
-
-/*  IOHINT_PARALLEL means that we expect to have many
-    channels working with this file in parallel.
-    It might change the reading/writing implementation
-    to something more efficient in that scenario.
- */
-deprecated "'IOHINT_PARALLEL' is deprecated"
-const IOHINT_PARALLEL = QIO_HINT_PARALLEL;
-
 pragma "no doc"
 extern type qio_file_ptr_t;
 private extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
