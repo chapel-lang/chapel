@@ -556,7 +556,9 @@ class PoiInfo {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     ss << "PoiInfo: ";
-    poiScope()->stringify(ss, stringKind);
+    if (poiScope()) {
+      poiScope()->stringify(ss, stringKind);
+    }
   }
 
   /// \cond DO_NOT_DOCUMENT
