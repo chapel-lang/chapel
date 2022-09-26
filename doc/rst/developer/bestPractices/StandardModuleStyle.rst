@@ -34,6 +34,8 @@ Exceptions:
  in the standard modules or packages:
 
   * :proc:`~ChapelLocale.locale.numPUs` (num Processor-Units)
+
+
 Modules
 -------
 
