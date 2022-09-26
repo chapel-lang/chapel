@@ -31,7 +31,7 @@ namespace chpl {
 #define SYNTAX_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, SYNTAX, EINFO)
 #define NOTE_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, NOTE, EINFO)
 
-class ErrorWriter;
+class ErrorWriterBase;
 
 enum ErrorType {
   PARSE,
@@ -80,7 +80,7 @@ class ErrorBase {
     return !(*this == other);
   }
 
-  virtual void write(ErrorWriter& wr) const = 0;
+  virtual void write(ErrorWriterBase& wr) const = 0;
   virtual void mark(Context* context) const = 0;
 };
 
@@ -108,7 +108,7 @@ class ParseError : public ErrorBase {
 
   static const ParseError* get(Context* context, const ErrorMessage&);
 
-  void write(ErrorWriter& eq) const override;
+  void write(ErrorWriterBase& eq) const override;
   void mark(Context* context) const override;
 };
 
@@ -153,7 +153,7 @@ class GeneralError : public ErrorBase {
                                  Location loc,
                                  std::string msg);
 
-  void write(ErrorWriter& eq) const override;
+  void write(ErrorWriterBase& eq) const override;
   void mark(Context* context) const override;
 };
 
@@ -177,7 +177,7 @@ class GeneralError : public ErrorBase {
     ~Error##NAME() = default;\
     static const Error##NAME* get(Context* context, ErrorInfo info);\
 \
-    void write(ErrorWriter& writer) const override;\
+    void write(ErrorWriterBase& writer) const override;\
     void mark(Context* context) const override {\
       ::chpl::mark<ErrorInfo> marker;\
       marker(context, info);\

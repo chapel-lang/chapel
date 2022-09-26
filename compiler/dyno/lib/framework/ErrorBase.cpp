@@ -25,7 +25,7 @@
 
 namespace chpl {
 
-class CompatibilityWriter : public ErrorWriter {
+class CompatibilityWriter : public ErrorWriterBase {
  public:
   using Note = std::tuple<ID, Location, std::string>;
  private:
@@ -36,25 +36,29 @@ class CompatibilityWriter : public ErrorWriter {
   std::vector<Note> notes_;
 
  public:
-  CompatibilityWriter(Context* context, std::ostream& oss)
-    : ErrorWriter(context, oss, ErrorWriter::BRIEF, /* useColor */ false) {}
+  CompatibilityWriter(Context* context)
+    : ErrorWriterBase(context) {}
 
-  void writeErrorHeading(ErrorBase::Kind kind, Location loc, const std::string& message) override {
+  void writeHeading(ErrorBase::Kind kind, Location loc, const std::string& message) override {
     this->loc_ = loc;
     this->computedLoc_ = std::move(loc);
     this->message_ = message;
   }
-  void writeErrorHeading(ErrorBase::Kind kind, const ID& id, const std::string& message) override {
+  void writeHeading(ErrorBase::Kind kind, const ID& id, const std::string& message) override {
     // Just store the ID, but don't pollute the output stream.
     this->id_ = id;
     this->computedLoc_ = errordetail::locate(context, id);
     this->message_ = message;
   }
 
-  void writeNoteHeading(Location loc, const std::string& message) override {
+  void writeMessage(const std::string& message) override {}
+  void writeCode(const Location& loc,
+                 const std::vector<Location>& hl) override {}
+
+  void writeNote(Location loc, const std::string& message) override {
     this->notes_.push_back(std::make_tuple(ID(), std::move(loc), message));
   }
-  void writeNoteHeading(const ID& id, const std::string& message) override {
+  void writeNote(const ID& id, const std::string& message) override {
     this->notes_.push_back(std::make_tuple(std::move(id), Location(), message));
   }
 
@@ -67,28 +71,28 @@ class CompatibilityWriter : public ErrorWriter {
 
 std::string ErrorBase::message() const {
   std::ostringstream oss;
-  CompatibilityWriter ew(/* context */ nullptr, oss);
+  CompatibilityWriter ew(/* context */ nullptr);
   write(ew);
   return ew.message();
 }
 
 Location ErrorBase::location(Context* context) const {
   std::ostringstream oss;
-  CompatibilityWriter ew(context, oss);
+  CompatibilityWriter ew(context);
   write(ew);
   return ew.computedLocation();
 }
 
 ID ErrorBase::id() const {
   std::ostringstream oss;
-  CompatibilityWriter ew(/* context */ nullptr, oss);
+  CompatibilityWriter ew(/* context */ nullptr);
   write(ew);
   return ew.id();
 }
 
 ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
   std::ostringstream oss;
-  CompatibilityWriter ew(context, oss);
+  CompatibilityWriter ew(context);
   write(ew);
   ErrorMessage::Kind kind = ErrorMessage::NOTE;
   switch (kind_) {
@@ -133,12 +137,12 @@ const ParseError* ParseError::get(Context* context, const ErrorMessage& error) {
   return ParseError::getParseError(context, kind, error.id(), error.location(), error.message()).get();
 }
 
-void ParseError::write(ErrorWriter& wr) const {
+void ParseError::write(ErrorWriterBase& wr) const {
   // if the ID is set, determine the location from that
   if (!id_.isEmpty()) {
-    wr.writeHeading(kind_, id_, message_);
+    wr.heading(kind_, id_, message_);
   } else {
-    wr.writeHeading(kind_, loc_, message_);
+    wr.heading(kind_, loc_, message_);
   }
 }
 
@@ -175,11 +179,11 @@ const GeneralError* GeneralError::get(Context* context, Kind kind, Location loc,
   return getGeneralErrorLocation(context, kind, loc, std::move(msg)).get();
 }
 
-void GeneralError::write(ErrorWriter& wr) const {
+void GeneralError::write(ErrorWriterBase& wr) const {
   if (!id_.isEmpty()) {
-    wr.writeHeading(kind_, id_, message_);
+    wr.heading(kind_, id_, message_);
   } else {
-    wr.writeHeading(kind_, loc_, message_);
+    wr.heading(kind_, loc_, message_);
   }
 }
 
@@ -200,78 +204,78 @@ void GeneralError::mark(Context* context) const {
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 
-void ErrorIncompatibleIfBranches::write(ErrorWriter& wr) const {
+void ErrorIncompatibleIfBranches::write(ErrorWriterBase& wr) const {
   auto ifExpr = std::get<const uast::Conditional*>(info);
   auto qt1 = std::get<1>(info);
   auto qt2 = std::get<2>(info);
 
-  wr.writeHeading(kind_, ifExpr, "branches of if-expression have incompatible types.");
-  wr.writeMessage("in the following if-expression:");
-  wr.writeCode(ifExpr, { ifExpr->thenBlock(), ifExpr->elseBlock() });
-  wr.writeMessage("the first branch has type ", qt1,
-                   ", while the second has type ", qt2);
+  wr.heading(kind_, ifExpr, "branches of if-expression have incompatible types.");
+  wr.message("in the following if-expression:");
+  wr.code(ifExpr, { ifExpr->thenBlock(), ifExpr->elseBlock() });
+  wr.message("the first branch has type ", qt1,
+              ", while the second has type ", qt2);
 }
 
-void ErrorTupleExpansionNamedArgs::write(ErrorWriter& wr) const {
+void ErrorTupleExpansionNamedArgs::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info);
   auto tupleOp = std::get<const uast::OpCall*>(info);
 
-  wr.writeHeading(kind_, fnCall, "tuple expansion cannot be used with named arguments.");
-  wr.writeMessage("a tuple is being expanded here:");
-  wr.writeCode(fnCall, { tupleOp });
+  wr.heading(kind_, fnCall, "tuple expansion cannot be used with named arguments.");
+  wr.message("a tuple is being expanded here:");
+  wr.code(fnCall, { tupleOp });
 }
 
-void ErrorMemManagementRecords::write(ErrorWriter& wr) const {
+void ErrorMemManagementRecords::write(ErrorWriterBase& wr) const {
   auto newCall = std::get<const uast::New*>(info);
   auto record = std::get<const types::RecordType*>(info);
 
-  wr.writeHeading(kind_, newCall,
-      "cannot use memory management strategy ",
-      uast::New::managementToString(newCall->management()),
-      " with record ",
-      record->name());
-  wr.writeCode(newCall, { newCall->typeExpression() });
-  wr.writeNote(record->id(), "declared as record here");
-  wr.writeCode<ID, ID>(record->id(), {});
+  wr.heading(kind_, newCall,
+             "cannot use memory management strategy ",
+             uast::New::managementToString(newCall->management()),
+             " with record ",
+             record->name());
+  wr.code(newCall, { newCall->typeExpression() });
+  wr.note(record->id(), "declared as record here");
+  wr.code<ID, ID>(record->id(), {});
 }
 
-void ErrorPrivateToPublicInclude::write(ErrorWriter& wr) const {
+void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
-  wr.writeHeading(kind_, moduleInclude,
-                "cannot make a private module public through "
-                "an include statement");
-  wr.writeCode(moduleInclude);
-  wr.writeNote(moduleDef, "module declared private here");
-  wr.writeCode(moduleDef);
+  wr.heading(kind_, moduleInclude,
+             "cannot make a private module public through "
+             "an include statement");
+  wr.code(moduleInclude);
+  wr.note(moduleDef, "module declared private here");
+  wr.code(moduleDef);
 }
 
-void ErrorPrototypeInclude::write(ErrorWriter& wr) const {
+void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
-  wr.writeHeading(kind_, moduleInclude,
-                "cannot apply prototype to module in include statement");
-  wr.writeCode(moduleInclude);
-  wr.writeNote(moduleDef, "put prototype keyword at module declaration here");
-  wr.writeCode(moduleDef);
+  wr.heading(kind_, moduleInclude,
+             "cannot apply prototype to module in include statement");
+  wr.code(moduleInclude);
+  wr.note(moduleDef, "put prototype keyword at module declaration here");
+  wr.code(moduleDef);
 }
 
-void ErrorMissingInclude::write(ErrorWriter& wr) const {
+void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto& filePath = std::get<std::string>(info);
-  wr.writeHeading(kind_, moduleInclude, "cannot find included submodule");
-  wr.writeNote(moduleInclude, "expected file at path '", filePath, "'");
+  wr.heading(kind_, moduleInclude, "cannot find included submodule");
+  wr.note(moduleInclude, "expected file at path '", filePath, "'");
 }
 
-void ErrorRedefinition::write(ErrorWriter& wr) const {
+void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::NamedDecl*>(info);
   auto& ids = std::get<std::vector<ID>>(info);
-  wr.writeHeading(kind_, decl, "'", decl->name().c_str(), "' has multiple definitions");
-  wr.writeCode(decl);
+  wr.heading(kind_, decl, "'", decl->name().c_str(), "' has multiple definitions");
+  wr.code(decl);
   for (const ID& id : ids) {
     if (id != decl->id()) {
-      wr.writeNote(id, "redefined here");
-      wr.writeCode<ID, ID>(id);
+      wr.note(id, "redefined here");
+      wr.code<ID, ID>(id);
     }
   }
 }

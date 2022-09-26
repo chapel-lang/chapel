@@ -20,6 +20,24 @@
 
 namespace chpl {
 
+void ErrorWriterBase::writeHeading(ErrorBase::Kind kind, const ID& id, const std::string& str) {
+  writeHeading(kind, errordetail::locate(context, id), str);
+}
+
+void ErrorWriterBase::writeHeading(ErrorBase::Kind kind,
+                                    const uast::AstNode* node,
+                                    const std::string& str) {
+  writeHeading(kind, node->id(), str);
+}
+
+void ErrorWriterBase::writeNote(const ID& id, const std::string& str) {
+  writeNote(errordetail::locate(context, id), str);
+}
+
+void ErrorWriterBase::writeNote(const uast::AstNode* ast, const std::string& str) {
+  writeNote(ast->id(), str);
+}
+
 static ssize_t posToFileIndex(const char* buf, int row, int col) {
   int curRow = 1, curCol = 1;
   size_t idx = 0;
@@ -40,7 +58,7 @@ static ssize_t posToFileIndex(const char* buf, int row, int col) {
   return -1;
 }
 
-std::string ErrorWriter::fileText(const Location& loc) {
+static std::string fileText(Context* context, const Location& loc) {
   auto path = loc.path();
   if (path.isEmpty()) return "";
   auto fileText = parsing::fileText(context, path);
@@ -83,7 +101,7 @@ static void writeFile(std::ostream& oss, const Location& loc) {
   else oss << "(unknown location)";
 }
 
-void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc, const std::string& str) {
+void ErrorWriter::writeHeading(ErrorBase::Kind kind, Location loc, const std::string& str) {
   if (outputFormat_ == DETAILED) {
     // In detailed mode, print some error decoration
     oss_ << "=== ";
@@ -104,17 +122,7 @@ void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc, const st
   oss_ << str << std::endl;
 }
 
-void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, const ID& id, const std::string& str) {
-  writeErrorHeading(kind, errordetail::locate(context, id), str);
-}
-
-void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind,
-                                    const uast::AstNode* node,
-                                    const std::string& str) {
-  writeErrorHeading(kind, node->id(), str);
-}
-
-void ErrorWriter::writeNoteHeading(Location loc, const std::string& str) {
+void ErrorWriter::writeNote(Location loc, const std::string& str) {
   if (outputFormat_ == BRIEF) {
     // Indent notes in brief mode to make things easier to organize
     oss_ << "  note in ";
@@ -124,19 +132,11 @@ void ErrorWriter::writeNoteHeading(Location loc, const std::string& str) {
   oss_ << str << std::endl;
 }
 
-void ErrorWriter::writeNoteHeading(const ID& id, const std::string& str) {
-  writeNoteHeading(errordetail::locate(context, id), str);
-}
-
-void ErrorWriter::writeNoteHeading(const uast::AstNode* ast, const std::string& str) {
-  writeNoteHeading(ast->id(), str);
-}
-
 void ErrorWriter::writeCode(const Location& location,
                            const std::vector<Location>& toHighlight) {
   if (outputFormat_ != DETAILED || context == nullptr) return;
 
-  auto str = fileText(location);
+  auto str = fileText(context, location);
   if (str.empty()) return;
 
   size_t startIndex = posToFileIndex(str.c_str(), location.firstLine(), 1);
@@ -177,11 +177,6 @@ void ErrorWriter::writeCode(const Location& location,
     needsLine = str[i] == '\n';
   }
   oss_ << "\033[24m" << std::endl;
-}
-
-void ErrorWriter::writeCode(const uast::AstNode* place,
-                           const std::vector<const uast::AstNode*>& toHighlight) {
-  writeCode<>(place, toHighlight);
 }
 
 void ErrorWriter::writeNewline() {

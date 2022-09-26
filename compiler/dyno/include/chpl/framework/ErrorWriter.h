@@ -88,29 +88,24 @@ errordetail::AsFileName<T> fileNameOf(T t) {
   return errordetail::AsFileName<T> { std::move(t) };
 }
 
-class ErrorWriter {
- public:
-  enum OutputFormat {
-    DETAILED,     // All known details about the error
-    BRIEF,        // Condensed version of the error
-  };
+class ErrorWriterBase {
  protected:
   Context* context;
-  std::ostream& oss_;
-  OutputFormat outputFormat_;
-  bool useColor_;
 
-  std::string fileText(const Location& loc);
+  ErrorWriterBase(Context* context) : context(context) {}
 
-  void setColor(TermColorName color);
+  virtual void writeHeading(ErrorBase::Kind kind, Location loc, const std::string& message) = 0;
+  virtual void writeHeading(ErrorBase::Kind kind, const ID& id, const std::string& message);
+  virtual void writeHeading(ErrorBase::Kind kind, const uast::AstNode* ast, const std::string& message);
 
-  virtual void writeErrorHeading(ErrorBase::Kind kind, Location loc, const std::string& message);
-  virtual void writeErrorHeading(ErrorBase::Kind kind, const ID& id, const std::string& message);
-  virtual void writeErrorHeading(ErrorBase::Kind kind, const uast::AstNode* ast, const std::string& message);
+  virtual void writeMessage(const std::string& message) = 0;
 
-  virtual void writeNoteHeading(Location loc, const std::string& message);
-  virtual void writeNoteHeading(const ID& id, const std::string& message);
-  virtual void writeNoteHeading(const uast::AstNode* ast, const std::string& message);
+  virtual void writeNote(Location loc, const std::string& message) = 0;
+  virtual void writeNote(const ID& id, const std::string& message);
+  virtual void writeNote(const uast::AstNode* ast, const std::string& message);
+
+  virtual void writeCode(const Location& place,
+                         const std::vector<Location>& toHighlight = {}) = 0;
 
   template <typename ... Ts>
   std::string toString(Ts ... ts) {
@@ -124,34 +119,24 @@ class ErrorWriter {
     (void) dummy;
     return oss.str();
   }
-
  public:
-  ErrorWriter(Context* context, std::ostream& oss,
-              OutputFormat outputFormat, bool useColor) :
-    context(context), oss_(oss),
-    outputFormat_(outputFormat), useColor_(useColor) {}
-
   template <typename LocationType, typename ... Ts>
-  void writeHeading(ErrorBase::Kind kind, LocationType loc, Ts ... ts) {
-    writeErrorHeading(kind, loc, toString(std::forward<Ts>(ts)...));
+  void heading(ErrorBase::Kind kind, LocationType loc, Ts ... ts) {
+    writeHeading(kind, loc, toString(std::forward<Ts>(ts)...));
   }
 
   template <typename ... Ts>
-  void writeMessage(Ts ... ts) {
-    if (outputFormat_ == DETAILED) {
-      oss_ << toString(std::forward<Ts>(ts)...) << std::endl;
-    }
+  void message(Ts ... ts) {
+    writeMessage(toString(std::forward<Ts>(ts)...));
   }
 
   template <typename LocationType, typename ... Ts>
-  void writeNote(LocationType loc, Ts ... ts) {
-    writeNoteHeading(loc, toString(std::forward<Ts>(ts)...));
+  void note(LocationType loc, Ts ... ts) {
+    writeNote(loc, toString(std::forward<Ts>(ts)...));
   }
 
-  void writeCode(const Location& place,
-                const std::vector<Location>& toHighlight = {});
-  template <typename LocPlace, typename LocHighlight>
-  void writeCode(const LocPlace& place,
+  template <typename LocPlace, typename LocHighlight = const uast::AstNode*>
+  void code(const LocPlace& place,
                 const std::vector<LocHighlight>& toHighlight = {}) {
     std::vector<Location> ids(toHighlight.size());
     std::transform(toHighlight.cbegin(), toHighlight.cend(), ids.begin(), [&](auto node) {
@@ -159,10 +144,37 @@ class ErrorWriter {
     });
     writeCode(errordetail::locate(context, place), ids);
   }
-  // Specialize for AstNode* to support brace-only construction of highlight
-  // lists (e.g. { binOp, fnCall })
-  void writeCode(const uast::AstNode* place,
-                const std::vector<const uast::AstNode*>& toHighlight = {});
+
+};
+
+class ErrorWriter : public ErrorWriterBase {
+ public:
+  enum OutputFormat {
+    DETAILED,     // All known details about the error
+    BRIEF,        // Condensed version of the error
+  };
+ protected:
+  std::ostream& oss_;
+  OutputFormat outputFormat_;
+  bool useColor_;
+
+  void setColor(TermColorName color);
+
+  void writeHeading(ErrorBase::Kind kind, Location loc,
+                    const std::string& message) override;
+  void writeMessage(const std::string& message) override {
+    if (outputFormat_ == DETAILED) {
+      oss_ << message << std::endl;
+    }
+  }
+  void writeNote(Location loc, const std::string& message) override;
+  void writeCode(const Location& place,
+                 const std::vector<Location>& toHighlight = {}) override;
+ public:
+  ErrorWriter(Context* context, std::ostream& oss,
+              OutputFormat outputFormat, bool useColor) :
+    ErrorWriterBase(context), oss_(oss),
+    outputFormat_(outputFormat), useColor_(useColor) {}
 
   void writeNewline();
 };
