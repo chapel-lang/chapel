@@ -4,8 +4,9 @@
 #include "qt_alloc.h"
 #include "qt_affinity.h"
 #include "qt_envariables.h"
+#include "qt_output_macros.h"
 
-hwloc_topology_t topology;
+hwloc_topology_t topology = NULL;
 
 // Shepherd affinity 
 struct {
@@ -93,17 +94,22 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
                                size_t                *hw_par)
 {                      
 
+  uint_fast8_t          print_info      = 0;
+
+  print_info = qt_internal_get_env_num("INFO", 0, 1);
+
+  if (print_info) {
+    print_status("Affinity topology: binders\n");
+  }
+
 #ifdef HWLOC_GET_TOPOLOGY_FUNCTION
   extern hwloc_topology_t HWLOC_GET_TOPOLOGY_FUNCTION;
   topology = HWLOC_GET_TOPOLOGY_FUNCTION;
-  if (topology == NULL) {
-    printf("unable to get topology\n");
-    exit(-1);
-  }
-#else
-  hwloc_topology_init(&topology);
-  hwloc_topology_load(topology);
 #endif
+  if (topology == NULL) {
+    hwloc_topology_init(&topology);
+    hwloc_topology_load(topology);
+  }
   const char *bindstr = qt_internal_get_env_str("CPUBIND", "NOT_SET");
   if (!bindstr || strcmp("NOT_SET", bindstr) == 0) {
     size_t num_sheps = qt_internal_get_env_num("NUM_SHEPHERDS", 1, 0);

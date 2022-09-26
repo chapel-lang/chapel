@@ -10,9 +10,10 @@
 #include "qt_affinity.h"
 #include "qt_debug.h"
 #include "qt_envariables.h"
+#include "qt_output_macros.h"
 #include "shufflesheps.h"
 
-static hwloc_topology_t topology;
+static hwloc_topology_t topology = NULL;
 static uint32_t         my_topology = 0;
 static uint32_t         initialized = 0;
 
@@ -106,18 +107,25 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
                                qthread_worker_id_t   *nbworkers,
                                size_t                *hw_par)
 {                                      /*{{{ */
+
+    uint_fast8_t          print_info      = 0;
+
+    print_info = qt_internal_get_env_num("INFO", 0, 1);
+
+    if (print_info) {
+        print_status("Affinity topology: hwloc\n");
+    }
     qthread_debug(AFFINITY_CALLS, "nbshepherds:%p:%u nbworkers:%p:%u\n", nbshepherds, *nbshepherds, nbworkers, *nbworkers);
     if (qthread_cas(&initialized, 0, 1) == 0) {
 #ifdef HWLOC_GET_TOPOLOGY_FUNCTION
         extern hwloc_topology_t HWLOC_GET_TOPOLOGY_FUNCTION;
         topology = HWLOC_GET_TOPOLOGY_FUNCTION;
-        qassertnot(topology, NULL);
-        my_topology = 0;
-#else
-        qassert(hwloc_topology_init(&topology), 0);
-        qassert(hwloc_topology_load(topology), 0);
-        my_topology = 1;
 #endif
+        if (topology == NULL) {
+            qassert(hwloc_topology_init(&topology), 0);
+            qassert(hwloc_topology_load(topology), 0);
+            my_topology = 1;
+        }
         MACHINE_FENCE;
         initialized = 2;
     } else {
