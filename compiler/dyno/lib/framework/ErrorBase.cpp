@@ -25,28 +25,90 @@
 
 namespace chpl {
 
+class CompatibilityWriter : public ErrorWriter {
+ public:
+  using Note = std::tuple<ID, Location, std::string>;
+ private:
+  ID id_;
+  Location loc_;
+  Location computedLoc_;
+  std::string message_;
+  std::vector<Note> notes_;
+
+ public:
+  CompatibilityWriter(Context* context, std::ostream& oss)
+    : ErrorWriter(context, oss, ErrorWriter::BRIEF, /* useColor */ false) {}
+
+  void writeErrorHeading(ErrorBase::Kind kind, Location loc, const std::string& message) override {
+    this->loc_ = loc;
+    this->computedLoc_ = std::move(loc);
+    this->message_ = message;
+  }
+  void writeErrorHeading(ErrorBase::Kind kind, const ID& id, const std::string& message) override {
+    // Just store the ID, but don't pollute the output stream.
+    this->id_ = id;
+    this->computedLoc_ = errordetail::locate(context, id);
+    this->message_ = message;
+  }
+
+  void writeNoteHeading(Location loc, const std::string& message) override {
+    this->notes_.push_back(std::make_tuple(ID(), std::move(loc), message));
+  }
+  void writeNoteHeading(const ID& id, const std::string& message) override {
+    this->notes_.push_back(std::make_tuple(std::move(id), Location(), message));
+  }
+
+  inline ID id() const { return id_; }
+  inline Location location() const { return loc_; }
+  inline Location computedLocation() const { return computedLoc_; }
+  inline const std::string& message() const { return message_; }
+  const std::vector<Note>& notes() const { return notes_; }
+};
+
 std::string ErrorBase::message() const {
   std::ostringstream oss;
-  ErrorWriter ew(/* context */ nullptr, oss, ErrorWriter::MESSAGE_ONLY,
-                 /* useColor */ false);
+  CompatibilityWriter ew(/* context */ nullptr, oss);
   write(ew);
-  return oss.str();
+  return ew.message();
 }
 
 Location ErrorBase::location(Context* context) const {
   std::ostringstream oss;
-  ErrorWriter ew(context, oss, ErrorWriter::MESSAGE_ONLY,
-                 /* useColor */ false);
+  CompatibilityWriter ew(context, oss);
   write(ew);
-  return ew.lastLocation();
+  return ew.computedLocation();
 }
 
 ID ErrorBase::id() const {
   std::ostringstream oss;
-  ErrorWriter ew(/* context */ nullptr, oss, ErrorWriter::MESSAGE_ONLY,
-                 /* useColor */ false);
+  CompatibilityWriter ew(/* context */ nullptr, oss);
   write(ew);
-  return ew.lastId();
+  return ew.id();
+}
+
+ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
+  std::ostringstream oss;
+  CompatibilityWriter ew(context, oss);
+  write(ew);
+  ErrorMessage::Kind kind = ErrorMessage::NOTE;
+  switch (kind_) {
+    case ERROR: kind = ErrorMessage::ERROR; break;
+    case WARNING: kind = ErrorMessage::WARNING; break;
+    case NOTE: kind = ErrorMessage::NOTE; break;
+    case SYNTAX: kind = ErrorMessage::SYNTAX; break;
+  }
+  auto message = ew.id().isEmpty() ?
+    ErrorMessage(kind, ew.location(), ew.message()) :
+    ErrorMessage(kind, ew.id(), ew.message());
+  for (auto note : ew.notes()) {
+    auto detailKind = ErrorMessage::NOTE;
+    auto detailmessage = std::get<std::string>(note);
+    message.addDetail(std::get<ID>(note).isEmpty() ?
+        ErrorMessage(detailKind, std::get<Location>(note), std::move(detailmessage)) :
+        ErrorMessage(detailKind, std::get<ID>(note), std::move(detailmessage))
+    );
+  }
+  return message;
 }
 
 const owned<ParseError>&
@@ -169,7 +231,8 @@ void ErrorMemManagementRecords::write(ErrorWriter& wr) const {
       " with record ",
       record->name());
   wr.writeCode(newCall, { newCall->typeExpression() });
-  wr.writeNote("declared as record at ", fileNameOf(record->id()));
+  wr.writeNote(record->id(), "declared as record here");
+  wr.writeCode<ID, ID>(record->id(), {});
 }
 
 void ErrorPrivateToPublicInclude::write(ErrorWriter& wr) const {
@@ -179,7 +242,7 @@ void ErrorPrivateToPublicInclude::write(ErrorWriter& wr) const {
                 "cannot make a private module public through "
                 "an include statement");
   wr.writeCode(moduleInclude);
-  wr.writeMessage("module declared private here:");
+  wr.writeNote(moduleDef, "module declared private here");
   wr.writeCode(moduleDef);
 }
 
@@ -189,7 +252,7 @@ void ErrorPrototypeInclude::write(ErrorWriter& wr) const {
   wr.writeHeading(kind_, moduleInclude,
                 "cannot apply prototype to module in include statement");
   wr.writeCode(moduleInclude);
-  wr.writeMessage("put prototype keyword at module declaration here:");
+  wr.writeNote(moduleDef, "put prototype keyword at module declaration here");
   wr.writeCode(moduleDef);
 }
 
@@ -197,7 +260,7 @@ void ErrorMissingInclude::write(ErrorWriter& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto& filePath = std::get<std::string>(info);
   wr.writeHeading(kind_, moduleInclude, "cannot find included submodule");
-  wr.writeMessage("expected file at path '", filePath, "'");
+  wr.writeNote(moduleInclude, "expected file at path '", filePath, "'");
 }
 
 void ErrorRedefinition::write(ErrorWriter& wr) const {
@@ -207,7 +270,7 @@ void ErrorRedefinition::write(ErrorWriter& wr) const {
   wr.writeCode(decl);
   for (const ID& id : ids) {
     if (id != decl->id()) {
-      wr.writeNote("redefined at ", fileNameOf(id));
+      wr.writeNote(id, "redefined here");
       wr.writeCode<ID, ID>(id);
     }
   }

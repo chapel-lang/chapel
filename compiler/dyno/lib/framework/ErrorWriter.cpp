@@ -73,44 +73,63 @@ static TermColorName kindColor(ErrorBase::Kind kind) {
   return CLEAR;
 }
 
-void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc) {
+static void writeFile(std::ostream& oss, const Location& loc) {
   auto path = loc.path().c_str();
   int lineno = loc.line();
   bool validPath = (path != nullptr && path[0] != '\0');
 
-  lastLocation_ = loc;
+  if (validPath && lineno > 0) oss << path << ":" << lineno;
+  else if (validPath) oss << path;
+  else oss << "(unknown location)";
+}
 
+void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, Location loc, const std::string& str) {
   if (outputFormat_ == DETAILED) {
     // In detailed mode, print some error decoration
     oss_ << "=== ";
   }
-  if (outputFormat_ != MESSAGE_ONLY) {
-    // As long as we're not only printing the message, print the error location.
-    setColor(kindColor(kind));
-    oss_ << kindText(kind);
-    setColor(CLEAR);
-    oss_ << " in ";
-    if (validPath && lineno > 0) oss_ << path << ":" << lineno;
-    else if (validPath) oss_ << path;
-    else oss_ << "(unknown location)";
-  }
 
+  setColor(kindColor(kind));
+  oss_ << kindText(kind);
+  setColor(CLEAR);
+  oss_ << " in ";
+  writeFile(oss_, loc);
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
     oss_ << " ===" << std::endl;
-  } else if (outputFormat_ != MESSAGE_ONLY) {
+  } else {
     // We printed location, so add a separating colon.
     oss_ << ": ";
   }
+  oss_ << str << std::endl;
 }
 
-void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, const ID& id) {
-  lastId_ = id;
-  writeErrorHeading(kind, errordetail::locate(context, id));
+void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind, const ID& id, const std::string& str) {
+  writeErrorHeading(kind, errordetail::locate(context, id), str);
 }
+
 void ErrorWriter::writeErrorHeading(ErrorBase::Kind kind,
-                                    const uast::AstNode* node) {
-  writeErrorHeading(kind, node->id());
+                                    const uast::AstNode* node,
+                                    const std::string& str) {
+  writeErrorHeading(kind, node->id(), str);
+}
+
+void ErrorWriter::writeNoteHeading(Location loc, const std::string& str) {
+  if (outputFormat_ == BRIEF) {
+    // Indent notes in brief mode to make things easier to organize
+    oss_ << "  note in ";
+    writeFile(oss_, loc);
+    oss_ << ": ";
+  }
+  oss_ << str << std::endl;
+}
+
+void ErrorWriter::writeNoteHeading(const ID& id, const std::string& str) {
+  writeNoteHeading(errordetail::locate(context, id), str);
+}
+
+void ErrorWriter::writeNoteHeading(const uast::AstNode* ast, const std::string& str) {
+  writeNoteHeading(ast->id(), str);
 }
 
 void ErrorWriter::writeCode(const Location& location,
@@ -157,7 +176,7 @@ void ErrorWriter::writeCode(const Location& location,
     oss_ << str[i];
     needsLine = str[i] == '\n';
   }
-  oss_ << "\0x33[24m" << std::endl;
+  oss_ << "\033[24m" << std::endl;
 }
 
 void ErrorWriter::writeCode(const uast::AstNode* place,

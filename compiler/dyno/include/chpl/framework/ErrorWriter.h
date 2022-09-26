@@ -49,6 +49,36 @@ struct AsFileName {
     return locate(context, t);
   }
 };
+
+template <typename T>
+struct Writer {
+  void operator()(Context* context, std::ostream& oss, const T& t) {
+    stringify<T> str;
+    str(oss, CHPL_SYNTAX, t);
+  }
+};
+
+template <>
+struct Writer<const char*> {
+  void operator()(Context* context, std::ostream& oss, const char* t) {
+    oss << t;
+  }
+};
+
+template <>
+struct Writer<std::string> {
+  void operator()(Context* context, std::ostream& oss, const std::string& t) {
+    oss << t;
+  }
+};
+
+template <typename T>
+struct Writer<errordetail::AsFileName<T>> {
+  void operator()(Context* context, std::ostream& oss, const errordetail::AsFileName<T>& e) {
+    auto loc = e.location(context);
+    oss << loc.path().c_str() << ":" << loc.firstLine();
+  }
+};
 /// \endcond
 
 } // end namespace errordetail
@@ -63,50 +93,36 @@ class ErrorWriter {
   enum OutputFormat {
     DETAILED,     // All known details about the error
     BRIEF,        // Condensed version of the error
-    MESSAGE_ONLY, // Only the error text, without details or location
   };
- private:
+ protected:
   Context* context;
   std::ostream& oss_;
   OutputFormat outputFormat_;
   bool useColor_;
 
-  Location lastLocation_;
-  ID lastId_;
-
   std::string fileText(const Location& loc);
-
-  template <typename T>
-  struct Writer {
-    void operator()(ErrorWriter& ew, const T& t) {
-      stringify<T> str;
-      str(ew.oss_, CHPL_SYNTAX, t);
-    }
-  };
-
-  template <typename T>
-  void write(T t) {
-    Writer<T> writer;
-    writer(*this, t);
-  }
 
   void setColor(TermColorName color);
 
-  void writeErrorHeading(ErrorBase::Kind kind, Location loc);
-  void writeErrorHeading(ErrorBase::Kind kind, const ID& id);
-  void writeErrorHeading(ErrorBase::Kind kind, const uast::AstNode* ast);
+  virtual void writeErrorHeading(ErrorBase::Kind kind, Location loc, const std::string& message);
+  virtual void writeErrorHeading(ErrorBase::Kind kind, const ID& id, const std::string& message);
+  virtual void writeErrorHeading(ErrorBase::Kind kind, const uast::AstNode* ast, const std::string& message);
 
-  template <typename T, typename ... Rest>
-  void writeAll(T t, Rest ... rest) {
-    write(t);
-    writeAll(std::forward<Rest>(rest)...);
-  }
+  virtual void writeNoteHeading(Location loc, const std::string& message);
+  virtual void writeNoteHeading(const ID& id, const std::string& message);
+  virtual void writeNoteHeading(const uast::AstNode* ast, const std::string& message);
 
-  void writeAll() {
-    if (outputFormat_ != MESSAGE_ONLY) {
-      // Don't write newlines if we're only concerned about
-      oss_ << std::endl;
-    }
+  template <typename ... Ts>
+  std::string toString(Ts ... ts) {
+    std::ostringstream oss;
+    auto write = [&](auto t) {
+      errordetail::Writer<decltype(t)> writer;
+      writer(context, oss, t);
+    };
+
+    auto dummy = { (write(ts), 0)..., };
+    (void) dummy;
+    return oss.str();
   }
 
  public:
@@ -117,27 +133,19 @@ class ErrorWriter {
 
   template <typename LocationType, typename ... Ts>
   void writeHeading(ErrorBase::Kind kind, LocationType loc, Ts ... ts) {
-    writeErrorHeading(kind, loc);
-    writeAll(std::forward<Ts>(ts)...);
+    writeErrorHeading(kind, loc, toString(std::forward<Ts>(ts)...));
   }
 
   template <typename ... Ts>
   void writeMessage(Ts ... ts) {
     if (outputFormat_ == DETAILED) {
-      writeAll(std::forward<Ts>(ts)...);
+      oss_ << toString(std::forward<Ts>(ts)...) << std::endl;
     }
   }
 
-  template <typename ... Ts>
-  void writeNote(Ts ... ts) {
-    if (outputFormat_ == DETAILED) {
-      writeAll(std::forward<Ts>(ts)...);
-    } else if (outputFormat_ == BRIEF){
-      // Indent notes in brief mode to make things easier to organize
-      writeAll("  note: ", std::forward<Ts>(ts)...);
-    } else {
-      // In message-only mode, don't print notes either.
-    }
+  template <typename LocationType, typename ... Ts>
+  void writeNote(LocationType loc, Ts ... ts) {
+    writeNoteHeading(loc, toString(std::forward<Ts>(ts)...));
   }
 
   void writeCode(const Location& place,
@@ -157,36 +165,7 @@ class ErrorWriter {
                 const std::vector<const uast::AstNode*>& toHighlight = {});
 
   void writeNewline();
-
-  inline Location lastLocation() const { return lastLocation_; }
-  inline ID lastId() const { return lastId_; }
 };
-
-/// \cond DO_NOT_DOCUMENT
-template <>
-struct ErrorWriter::Writer<const char*> {
-  void operator()(ErrorWriter& ew, const char* t) {
-    ew.oss_ << t;
-  }
-};
-
-template <>
-struct ErrorWriter::Writer<std::string> {
-  void operator()(ErrorWriter& ew, const std::string& t) {
-    ew.oss_ << t;
-  }
-};
-
-template <typename T>
-struct ErrorWriter::Writer<errordetail::AsFileName<T>> {
-  void operator()(ErrorWriter& ew, const errordetail::AsFileName<T>& e) {
-    auto loc = e.location(ew.context);
-    ew.write(loc.path().c_str());
-    ew.write(":");
-    ew.write(loc.firstLine());
-  }
-};
-/// \endcond
 
 } // end namespace chpl
 

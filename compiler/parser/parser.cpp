@@ -816,14 +816,13 @@ static void maybePrintErrorHeader(chpl::ID id) {
 }
 
 static void dynoDisplayError(chpl::Context* context,
-                             const chpl::ErrorBase* err) {
-  auto msgStr = err->message();
-  const char* msg = msgStr.c_str();
-  auto loc = err->location(context);
-  auto id = err->id();
+                             const chpl::ErrorMessage& err) {
+  const char* msg = err.message().c_str();
+  auto loc = err.computeLocation(context);
+  auto id = err.id();
 
   // For now have syntax errors just do their own thing (mimic old parser).
-  if (err->kind() == chpl::ErrorBase::SYNTAX) {
+  if (err.kind() == chpl::ErrorMessage::SYNTAX) {
     UniqueString path = loc.path();
     const int line = loc.line();
     const int tagUsrFatalCont = 3;
@@ -839,22 +838,32 @@ static void dynoDisplayError(chpl::Context* context,
 
   maybePrintErrorHeader(id);
 
-  switch (err->kind()) {
-    case chpl::ErrorBase::NOTE:
+  switch (err.kind()) {
+    case chpl::ErrorMessage::NOTE:
       USR_PRINT(loc, "%s", msg);
       break;
-    case chpl::ErrorBase::WARNING:
+    case chpl::ErrorMessage::WARNING:
       USR_WARN(loc, "%s", msg);
       break;
-    case chpl::ErrorBase::ERROR:
+    case chpl::ErrorMessage::ERROR:
       USR_FATAL_CONT(loc,"%s", msg);
       break;
     default:
       INT_FATAL("Should not reach here!");
       break;
   }
+
+  // Also show the details if there is additional information.
+  for (const chpl::ErrorMessage& e : err.details()) {
+    dynoDisplayError(context, e);
+  }
 }
 
+static void dynoDisplayError(chpl::Context* context,
+                             const chpl::ErrorBase* err) {
+  // Try to maintain compatibility with the old reporting mechanism
+  dynoDisplayError(context, err->toErrorMessage(context));
+}
 //
 // TODO: The error handler would like to do something like fetch AST from
 // IDs, but it cannot due to the possibility of a query cycle:

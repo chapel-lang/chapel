@@ -70,6 +70,7 @@ class ErrorBase {
   std::string message() const;
   Location location(Context* context) const;
   ID id() const;
+  ErrorMessage toErrorMessage(Context* context) const;
 
   bool operator==(const ErrorBase& other) const {
     if (kind_ != other.kind_ || type_ != other.type_) return false;
