@@ -24,10 +24,6 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doxygen")
   set(DOXYGEN_INCLUDE_PATH ${CHPL_MAIN_INCLUDE_DIR})
 
-  # the following exclude avoids errors in the sphinx build
-  #set(DOXYGEN_EXCLUDE "${CHPL_MAIN_INCLUDE_DIR}/chpl/AST/uast-classes-list.h";
-  #   )
-
   # these aliases allow \rst and \endrst in docs comments
   set(DOXYGEN_ALIASES
      "rst=\\verbatim embed:rst"
@@ -42,9 +38,6 @@ if(DOXYGEN_FOUND)
 
   # when Doxygen runs, define DOXYGEN in the preprocessor
   set(DOXYGEN_PREDEFINED "DOXYGEN")
-  # exclude combine functions that the docs system has trouble with
-  #set(DOXYGEN_EXCLUDE_SYMBOLS "chpl::combine")
-
 
   file(GLOB_RECURSE headers "${CHPL_MAIN_INCLUDE_DIR}/*.h")
   if (CMAKE_VERSION VERSION_LESS 3.16)
