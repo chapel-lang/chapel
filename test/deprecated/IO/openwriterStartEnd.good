@@ -1,6 +1,0 @@
-openwriterStartEnd.chpl:4: warning: openwriter with a start and/or end argument is deprecated.
-openwriterStartEnd.chpl:14: warning: openwriter with a start and/or end argument is deprecated.
-openwriterStartEnd.chpl:23: warning: openwriter with a start and/or end argument is deprecated.
-Here is a file, I've counted it carefully.  It should be 77 characters long.
-This is a file, I've counted it carefully.  It should be 77 characters long.
-Here is a file, I've counted it carefully.  It should be 77 characters long.
