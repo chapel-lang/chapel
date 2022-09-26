@@ -1733,12 +1733,6 @@ proc _modestring(mode:iomode) {
   }
 }
 
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'open' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc open(path:string, mode:iomode, hints:iohints,
-          style:iostyle): file throws {
-  return openHelper(path, mode, new ioHintSet(hints), style:iostyleInternal);
-}
-
 @unstable "open with a style argument is unstable"
 proc open(path:string, mode:iomode, hints=ioHintSet.empty,
           style:iostyle): file throws {
@@ -1763,12 +1757,6 @@ to create a channel to actually perform I/O operations
 */
 proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'open' that takes an 'ioHintSet' instead."
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE): file throws {
-  return open(path, mode, new ioHintSet(hints));
 }
 
 private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
@@ -1848,11 +1836,6 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
   return ret;
 }
 
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'openfd' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc openfd(fd: fd_t, hints:iohints, style:iostyle):file throws {
-  return openfdHelper(fd, new ioHintSet(hints), style: iostyleInternal);
-}
-
 @unstable "openfd with a style argument is unstable"
 proc openfd(fd: fd_t, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfdHelper(fd, hints, style: iostyleInternal);
@@ -1888,12 +1871,6 @@ proc openfd(fd: fd_t, hints = ioHintSet.empty):file throws {
   return openfdHelper(fd, hints);
 }
 
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'openfd' that takes an 'ioHintSet' instead."
-proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE):file throws {
-  return openfd(fd, new ioHintSet(hints));
-}
-
 private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
@@ -1913,11 +1890,6 @@ private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
     try ioerror(err, "in openfd", path);
   }
   return ret;
-}
-
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'openfp' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc openfp(fp: _file, hints:iohints, style:iostyle):file throws {
-  return openfpHelper(fp, new ioHintSet(hints), style: iostyleInternal);
 }
 
 @unstable "openfp with a style argument is unstable"
@@ -1949,12 +1921,6 @@ proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'openfp' that takes an 'ioHintSet' instead."
-proc openfp(fp: _file, hints:iohints=IOHINT_NONE):file throws {
-  return openfp(fp, new ioHintSet(hints));
-}
-
 private proc openfpHelper(fp: _file, hints=ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
@@ -1974,11 +1940,6 @@ private proc openfpHelper(fp: _file, hints=ioHintSet.empty,
     try ioerror(err, "in openfp", path);
   }
   return ret;
-}
-
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'opentmp' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc opentmp(hints:iohints, style:iostyle):file throws {
-  return opentmpHelper(new ioHintSet(hints), style: iostyleInternal);
 }
 
 @unstable "opentmp with a style argument is unstable"
@@ -2011,12 +1972,6 @@ that is, a new file is created that supports both writing and reading.
 */
 proc opentmp(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'opentmp' that takes an 'ioHintSet' instead."
-proc opentmp(hints:iohints=IOHINT_NONE):file throws {
-  return opentmp(new ioHintSet(hints));
 }
 
 private proc opentmpHelper(hints=ioHintSet.empty,
@@ -2816,27 +2771,6 @@ private proc openreaderHelper(path:string,
   return try fl.readerHelper(kind, locking, region, hints, style);
 }
 
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'openwriter' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints,
-                style:iostyle)
-    : channel(true, kind, locking) throws {
-  return openwriterHelper(path, kind, locking, start, end, new ioHintSet(hints),
-                    style: iostyleInternal);
-}
-
-pragma "last resort"
-deprecated "openwriter with a start and/or end argument is deprecated."
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints = ioHintSet.empty)
-    : channel(true, kind, locking) throws {
-  return openwriterHelper(path, kind, locking, start, end, hints);
-}
-
 @unstable "openwriter with a style argument is unstable"
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
@@ -2875,17 +2809,6 @@ proc openwriter(path:string,
                 hints = ioHintSet.empty)
     : channel(true, kind, locking) throws {
   return openwriterHelper(path, kind, locking, hints=hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'openwriter' that takes an 'ioHintSet' instead."
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints)
-    : channel(true, kind, locking) throws {
-  return openwriterHelper(path, kind, locking, start, end,
-                          new ioHintSet(hints));
 }
 
 private proc openwriterHelper(path:string,
