@@ -34,7 +34,6 @@
 
 namespace chpl {
 
-class ParseError;
 class Context;
 class Location;
 
@@ -57,7 +56,7 @@ class Builder final {
   UniqueString filepath_;
   UniqueString startingSymbolPath_;
   AstList topLevelExpressions_;
-  std::vector<const ParseError*> errors_;
+  std::vector<const ErrorBase*> errors_;
 
   // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
@@ -108,7 +107,7 @@ class Builder final {
   /**
     Save an error.
    */
-  void addError(const ParseError*);
+  void addError(const ErrorBase*);
   /**
     Convert an error message into a Dyno error and save it.
    */

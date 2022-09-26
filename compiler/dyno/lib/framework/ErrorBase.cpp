@@ -287,4 +287,49 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
     }
   }
 }
+
+void ErrorAmbiguousConfigName::write(ErrorWriterBase& wr) const {
+  auto& name = std::get<std::string>(info);
+  auto variable = std::get<const uast::Variable*>(info);
+  auto otherId = std::get<ID>(info);
+  wr.heading(kind_, locationOnly(variable), "ambiguous config name (", name, ")");
+  wr.code(variable);
+  wr.note(locationOnly(otherId), "also defined here");
+  wr.code(otherId);
+  wr.note(locationOnly(otherId), "(disambiguate using -s<modulename>.", name, "...)");
+}
+
+void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
+  auto& name1 = std::get<1>(info);
+  auto& name2 = std::get<2>(info);
+  auto variable = std::get<const uast::Variable*>(info);
+  wr.heading(kind_, locationOnly(variable),
+            "config set ambiguously via '-s", name1, "' and '-s", name2, "'");
+}
+
+void ErrorImplicitSubModule::write(ErrorWriterBase& wr) const {
+  const char* stmtKind = "require', 'use', and/or 'import";
+  auto mod = std::get<const uast::Module*>(info);
+  auto path = std::get<UniqueString>(info);
+  wr.heading(kind_, mod,
+             "as written, '", mod->name().c_str(), "' is a sub-module of the "
+             "module created for file '", path.c_str(), "' due to the "
+             "file-level '", stmtKind, "' statements.  If you meant for '",
+             mod->name().c_str(), "' to be a top-level module, move the '",
+             stmtKind, "' statements into its scope.");
+}
+
+void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
+  auto code = std::get<const uast::AstNode*>(info);
+  auto lastModule = std::get<1>(info);
+  auto implicitModule = std::get<2>(info);
+  wr.heading(kind_, code,
+             "This file-scope code is outside of any "
+             "explicit module declarations (e.g., module ",
+             lastModule->name().c_str(), "), "
+             "so an implicit module named '",
+             implicitModule->name().c_str(), "' is being "
+             "introduced to contain the file's contents.");
+}
+
 }

@@ -349,7 +349,7 @@ static void test1(Parser* parser) {
   auto parseResult = parser->parseString("Test1.chpl",
                                          testCode.c_str());
   for (int i = 0; i < parseResult.numErrors(); i++) {
-    const ParseError* err = parseResult.error(i);
+    const ErrorBase* err = parseResult.error(i);
     // ignore implicit module warning
     assert(err->kind() != ErrorBase::SYNTAX);
     std::cout << err->message().c_str() << std::endl;

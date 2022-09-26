@@ -108,8 +108,6 @@ class BasicError : public ErrorBase {
       notes_ == otherBasic->notes_;
   }
  public:
-  static const ParseError* get(Context* context, const ErrorMessage&);
-
   void write(ErrorWriterBase& eq) const override;
   void mark(Context* context) const override;
 };

@@ -32,6 +32,11 @@ class Context;
 
 namespace errordetail {
 
+template <typename T>
+struct LocationOnly {
+  T t; /* The thing whose location to compute */
+};
+
 inline Location locate(Context* context, const ID& id) {
   if (!context) return Location();
   return parsing::locateId(context, id);
@@ -88,6 +93,11 @@ errordetail::AsFileName<T> fileNameOf(T t) {
   return errordetail::AsFileName<T> { std::move(t) };
 }
 
+template <typename T>
+errordetail::LocationOnly<T> locationOnly(T t) {
+  return errordetail::LocationOnly<T> { std::move(t) };
+}
+
 class ErrorWriterBase {
  protected:
   Context* context;
@@ -97,12 +107,20 @@ class ErrorWriterBase {
   virtual void writeHeading(ErrorBase::Kind kind, Location loc, const std::string& message) = 0;
   virtual void writeHeading(ErrorBase::Kind kind, const ID& id, const std::string& message);
   virtual void writeHeading(ErrorBase::Kind kind, const uast::AstNode* ast, const std::string& message);
+  template <typename T>
+  void writeHeading(ErrorBase::Kind kind, errordetail::LocationOnly<T> t, const std::string& message) {
+    writeHeading(kind, errordetail::locate(context, t.t), message);
+  }
 
   virtual void writeMessage(const std::string& message) = 0;
 
   virtual void writeNote(Location loc, const std::string& message) = 0;
   virtual void writeNote(const ID& id, const std::string& message);
   virtual void writeNote(const uast::AstNode* ast, const std::string& message);
+  template <typename T>
+  void writeNote(errordetail::LocationOnly<T> t, const std::string& message) {
+    writeNote(errordetail::locate(context, t.t), message);
+  }
 
   virtual void writeCode(const Location& place,
                          const std::vector<Location>& toHighlight = {}) = 0;

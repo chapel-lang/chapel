@@ -160,7 +160,7 @@ void BuilderResult::updateFilePaths(Context* context,
 }
 
 void BuilderResult::appendError(BuilderResult& keep,
-                                const ParseError* error) {
+                                const ErrorBase* error) {
   keep.errors_.push_back(error);
 }
 

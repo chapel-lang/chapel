@@ -21,6 +21,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Module.h"
@@ -102,7 +103,7 @@ void Builder::addToplevelExpression(owned<AstNode> e) {
   this->topLevelExpressions_.push_back(std::move(e));
 }
 
-void Builder::addError(const ParseError* e) {
+void Builder::addError(const ErrorBase* e) {
   this->errors_.push_back(e);
 }
 
@@ -196,27 +197,11 @@ void Builder::createImplicitModuleIfNeeded() {
 
     // emit warnings as needed
     if (containsUseImportOrRequire && !containsOther && nModules == 1) {
-      const char* stmtKind = "require', 'use', and/or 'import";
-      Location lastModuleLoc = notedLocations_[lastModule];
-      addError(ErrorMessage::warning(lastModuleLoc,
-               "as written, '%s' is a sub-module of the module created for "
-               "file '%s' due to the file-level '%s' statements.  If you "
-               "meant for '%s' to be a top-level module, move the '%s' "
-               "statements into its scope.",
-               lastModule->name().c_str(),
-               filepath_.c_str(),
-               stmtKind,
-               lastModule->name().c_str(),
-               stmtKind));
+      addError(ErrorImplicitSubModule::get(context(),
+            std::make_tuple(lastModule, filepath_)));
     } else if (nModules >= 1 && !containsOnlyModules) {
-      Location firstNonModuleLoc = notedLocations_[firstNonModule];
-      addError(ErrorMessage::warning(firstNonModuleLoc,
-               "This file-scope code is outside of any "
-               "explicit module declarations (e.g., module %s), "
-               "so an implicit module named '%s' is being "
-               "introduced to contain the file's contents.",
-               lastModule->name().c_str(),
-               implicitModule->name().c_str()));
+      addError(ErrorImplicitFileModule::get(context(),
+            std::make_tuple(firstNonModule, lastModule, implicitModule)));
     }
   }
 }
@@ -423,15 +408,8 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
   auto usedId = nameToConfigSettingId(context(), configNameUsed);
 
   if (usedId != var->id()) {
-    auto errorMessage = ErrorMessage::error(notedLocations_[var],
-        "ambiguous config name (%s)", configNameUsed.c_str());
-    auto noteOtherLoc = ErrorMessage::note(idToLocation_[usedId],
-        "also defined here");
-    auto noteDisambiguate = ErrorMessage::note(idToLocation_[usedId],
-        "(disambiguate using -s<modulename>.%s...)", configNameUsed.c_str());
-    errorMessage.addDetail(noteOtherLoc);
-    errorMessage.addDetail(noteDisambiguate);
-    addError(std::move(errorMessage));
+    addError(ErrorAmbiguousConfigName::get(context(),
+          std::make_tuple(configNameUsed, var, usedId)));
   }
 }
 
@@ -474,10 +452,8 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
       if (!configMatched.first.empty() &&
           configMatched.first != configPair.first) {
 
-        auto errorMessage = ErrorMessage::error(notedLocations_[var],
-            "config set ambiguously via '-s%s' and '-s%s'",
-            configMatched.first.c_str(), configPair.first.c_str());
-        addError(std::move(errorMessage));
+        addError(ErrorAmbiguousConfigSet::get(context(),
+              std::make_tuple(var, configMatched.first, configPair.first)));
       }
       configMatched = configPair;
     }
@@ -524,7 +500,7 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
   auto parseResult = parser.parseString(path.c_str(), inputText.c_str());
   // Propagate any parse errors from the dummy node to builder errors
   if (parseResult.numErrors() > 0) {
-   for (const ParseError* error : parseResult.errors()) {
+   for (const ErrorBase* error : parseResult.errors()) {
      addError(error);
    }
   }

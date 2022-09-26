@@ -58,7 +58,6 @@ namespace llvm {
 
 namespace chpl {
 
-class ParseError;
 class Context;
 class Location;
 
@@ -83,7 +82,7 @@ class BuilderResult final {
  private:
   UniqueString filePath_;
   AstList topLevelExpressions_;
-  std::vector<const ParseError*> errors_;
+  std::vector<const ErrorBase*> errors_;
 
   // Given an ID, what is the AstNode?
   llvm::DenseMap<ID, const AstNode*> idToAst_;
@@ -141,12 +140,12 @@ class BuilderResult final {
   }
 
   /** return the i'th error */
-  const ParseError* error(int i) const {
+  const ErrorBase* error(int i) const {
     return errors_[i];
   }
 
   // An iterable over the errors of this.
-  using ErrorIterable = Iterable<std::vector<const ParseError*>>;
+  using ErrorIterable = Iterable<std::vector<const ErrorBase*>>;
 
   /**
     Iterate over the errors.
@@ -182,7 +181,7 @@ class BuilderResult final {
 
   // these two should only be called by the parser
   static void updateFilePaths(Context* context, const BuilderResult& keep);
-  static void appendError(BuilderResult& keep, const ParseError* error);
+  static void appendError(BuilderResult& keep, const ErrorBase* error);
 };
 
 
