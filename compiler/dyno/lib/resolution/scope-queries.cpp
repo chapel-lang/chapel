@@ -376,12 +376,11 @@ static bool doLookupInImports(Context* context,
     }
   }
 
-  if (scope->autoUsesModules()) {
+  if (scope->autoUsesModules() && !skipPrivateVisibilities) {
     const Scope* autoModScope = scopeForAutoModule(context);
     if (autoModScope) {
       LookupConfig newConfig = LOOKUP_DECLS |
-                               LOOKUP_IMPORT_AND_USE |
-                               LOOKUP_SKIP_PRIVATE_VIS;
+                               LOOKUP_IMPORT_AND_USE;
 
       if (onlyInnermost) {
         newConfig |= LOOKUP_INNERMOST;

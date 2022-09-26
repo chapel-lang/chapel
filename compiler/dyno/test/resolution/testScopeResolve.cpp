@@ -332,6 +332,11 @@ static void test7() {
 }
 
 // test transitive visibility through public/non-public uses
+// TODO: Test that private auto-uses (ChapelStandard) are subject to the
+// correct transitive visibility rules. Currently this is not very well
+// possible because we cannot change which module is auto-used to one that
+// would be conducive to testing -- see private issue #3830 which would
+// change this.
 static void test8() {
   printf("test8\n");
   Context ctx;
