@@ -27,11 +27,19 @@ namespace. The entries may not be exhaustive.
 
 .. doxygenenum:: chpl::ErrorType
 
+.. doxygenclass:: chpl::ErrorWriterBase
+   :members:
+   :undoc-members:
+
 .. doxygenclass:: chpl::ErrorWriter
    :members:
    :undoc-members:
 
 .. doxygenclass:: chpl::ErrorBase
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::BasicError
    :members:
    :undoc-members:
 
