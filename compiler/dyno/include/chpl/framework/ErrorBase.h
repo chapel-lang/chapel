@@ -33,6 +33,8 @@ namespace chpl {
 
 class ErrorWriterBase;
 
+using Note = std::tuple<ID, Location, std::string>;
+
 enum ErrorType {
   PARSE,
   GENERAL,
@@ -84,59 +86,65 @@ class ErrorBase {
   virtual void mark(Context* context) const = 0;
 };
 
-class ParseError : public ErrorBase {
+class BasicError : public ErrorBase {
  private:
   ID id_;
   Location loc_;
   std::string message_;
+  std::vector<Note> notes_;
 
  protected:
-  ParseError(Kind kind, ID id, Location loc, std::string message)
-    : ErrorBase(kind, PARSE), id_(std::move(id)),
-      loc_(std::move(loc)), message_(std::move(message)) {}
-
-  static const owned<ParseError>&
-  getParseError(Context* context, Kind kind, ID id, Location loc, std::string message);
+  BasicError(Kind kind, ErrorType type, ID id, Location loc,
+             std::string message,
+             std::vector<Note> notes) :
+    ErrorBase(kind, type), id_(std::move(id)), loc_(std::move(loc)),
+    message_(std::move(message)), notes_(std::move(notes)) {}
 
   bool contentsMatchInner(const ErrorBase* other) const override {
-    auto otherParse = static_cast<const ParseError*>(other);
-    return id_ == otherParse->id_ &&
-      loc_ == otherParse->loc_ &&
-      message_ == otherParse->message_;
+    auto otherBasic = static_cast<const BasicError*>(other);
+    return id_ == otherBasic->id_ &&
+      loc_ == otherBasic->loc_ &&
+      message_ == otherBasic->message_ &&
+      notes_ == otherBasic->notes_;
   }
  public:
-
   static const ParseError* get(Context* context, const ErrorMessage&);
 
   void write(ErrorWriterBase& eq) const override;
   void mark(Context* context) const override;
 };
 
-class GeneralError : public ErrorBase {
- private:
-  ID id_;
-  Location loc_;
-  std::string message_;
-
+class ParseError : public BasicError {
  protected:
-  GeneralError(ErrorBase::Kind kind, ID id, std::string message)
-    : ErrorBase(kind, GENERAL), id_(std::move(id)), message_(std::move(message)) {}
+  ParseError(Kind kind, ID id, Location loc, std::string message, std::vector<Note> notes)
+    : BasicError(kind, PARSE, std::move(id), std::move(loc), std::move(message),
+        std::move(notes)) {}
 
-  GeneralError(ErrorBase::Kind kind, Location loc, std::string message)
-    : ErrorBase(kind, GENERAL), loc_(std::move(loc)), message_(std::move(message)) {}
+  static const owned<ParseError>&
+  getParseError(Context* context, Kind kind, ID id,
+                Location loc, std::string message,
+                std::vector<Note> notes);
+ public:
+  static const ParseError* get(Context* context, const ErrorMessage&);
+};
+
+class GeneralError : public BasicError {
+ protected:
+  GeneralError(ErrorBase::Kind kind, ID id,
+               std::string message, std::vector<Note> notes)
+    : BasicError(kind, GENERAL, std::move(id), Location(),
+                 std::move(message), std::move(notes)) {}
+
+  GeneralError(ErrorBase::Kind kind, Location loc,
+               std::string message, std::vector<Note> notes)
+    : BasicError(kind, GENERAL, ID(), std::move(loc),
+                 std::move(message), std::move(notes)) {}
 
   static const owned<GeneralError>&
   getGeneralErrorID(Context* context, ErrorBase::Kind kind, ID id, std::string message);
 
   static const owned<GeneralError>&
   getGeneralErrorLocation(Context* context, ErrorBase::Kind kind, Location loc, std::string message);
-
-  bool contentsMatchInner(const ErrorBase* other) const override {
-    auto otherGeneral = static_cast<const GeneralError*>(other);
-    return id_ == otherGeneral->id_ &&
-      loc_ == otherGeneral->loc_ &&
-      message_ == otherGeneral->message_;
-  }
  public:
 
   static const GeneralError* vbuild(Context* context,
@@ -152,9 +160,6 @@ class GeneralError : public ErrorBase {
                                  ErrorBase::Kind kind,
                                  Location loc,
                                  std::string msg);
-
-  void write(ErrorWriterBase& eq) const override;
-  void mark(Context* context) const override;
 };
 
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...)\

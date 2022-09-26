@@ -26,8 +26,6 @@
 namespace chpl {
 
 class CompatibilityWriter : public ErrorWriterBase {
- public:
-  using Note = std::tuple<ID, Location, std::string>;
  private:
   ID id_;
   Location loc_;
@@ -115,14 +113,43 @@ ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
   return message;
 }
 
+void BasicError::write(ErrorWriterBase& wr) const {
+  // if the ID is set, determine the location from that
+  if (!id_.isEmpty()) {
+    wr.heading(kind_, id_, message_);
+  } else {
+    wr.heading(kind_, loc_, message_);
+  }
+  for (auto note : notes_) {
+    auto& id = std::get<ID>(note);
+    auto& location = std::get<Location>(note);
+    auto& message = std::get<std::string>(note);
+    if (!id.isEmpty()) {
+      wr.note(id, message);
+    } else {
+      wr.note(location, message);
+    }
+  }
+}
+
+void BasicError::mark(Context* context) const {
+  chpl::mark<Note> marker;
+  id_.mark(context);
+  loc_.mark(context);
+  for (auto& note : notes_) {
+    marker(context, note);
+  }
+}
+
 const owned<ParseError>&
 ParseError::getParseError(Context* context,
                           ErrorBase::Kind kind,
                           ID id,
                           Location loc,
-                          std::string message) {
-  QUERY_BEGIN(getParseError, context, kind, id, loc, message);
-  auto result = std::unique_ptr<ParseError>(new ParseError(kind, id, loc, message));
+                          std::string message,
+                          std::vector<Note> notes) {
+  QUERY_BEGIN(getParseError, context, kind, id, loc, message, notes);
+  auto result = std::unique_ptr<ParseError>(new ParseError(kind, id, loc, message, notes));
   return QUERY_END(result);
 }
 
@@ -134,34 +161,27 @@ const ParseError* ParseError::get(Context* context, const ErrorMessage& error) {
     case ErrorMessage::NOTE: kind = NOTE; break;
     case ErrorMessage::SYNTAX: kind = SYNTAX; break;
   }
-  return ParseError::getParseError(context, kind, error.id(), error.location(), error.message()).get();
-}
-
-void ParseError::write(ErrorWriterBase& wr) const {
-  // if the ID is set, determine the location from that
-  if (!id_.isEmpty()) {
-    wr.heading(kind_, id_, message_);
-  } else {
-    wr.heading(kind_, loc_, message_);
+  std::vector<Note> notes;
+  for (auto& note : error.details()) {
+    assert(note.kind() == ErrorMessage::NOTE);
+    notes.push_back(std::make_tuple(note.id(), note.location(), note.message()));
   }
-}
-
-void ParseError::mark(Context* context) const {
-  id_.mark(context);
-  loc_.mark(context);
+  return ParseError::getParseError(context, kind, error.id(),
+                                   error.location(), error.message(),
+                                   std::move(notes)).get();
 }
 
 const owned<GeneralError>&
 GeneralError::getGeneralErrorID(Context* context, Kind kind, ID id, std::string message) {
   QUERY_BEGIN(getGeneralErrorID, context, kind, id, message);
-  auto result = owned<GeneralError>(new GeneralError(kind, id, std::move(message)));
+  auto result = owned<GeneralError>(new GeneralError(kind, id, std::move(message), {}));
   return QUERY_END(result);
 }
 
 const owned<GeneralError>&
 GeneralError::getGeneralErrorLocation(Context* context, Kind kind, Location loc, std::string message) {
   QUERY_BEGIN(getGeneralErrorLocation, context, kind, loc, message);
-  auto result = owned<GeneralError>(new GeneralError(kind, loc, std::move(message)));
+  auto result = owned<GeneralError>(new GeneralError(kind, loc, std::move(message), {}));
   return QUERY_END(result);
 }
 
@@ -177,18 +197,6 @@ const GeneralError* GeneralError::vbuild(Context* context, Kind kind, Location l
 
 const GeneralError* GeneralError::get(Context* context, Kind kind, Location loc, std::string msg) {
   return getGeneralErrorLocation(context, kind, loc, std::move(msg)).get();
-}
-
-void GeneralError::write(ErrorWriterBase& wr) const {
-  if (!id_.isEmpty()) {
-    wr.heading(kind_, id_, message_);
-  } else {
-    wr.heading(kind_, loc_, message_);
-  }
-}
-
-void GeneralError::mark(Context* context) const {
-  id_.mark(context);
 }
 
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...)\
