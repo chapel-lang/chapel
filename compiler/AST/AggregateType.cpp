@@ -2914,7 +2914,14 @@ AggregateType::checkSameNameFields() {
   // that no field with the same name is defined in a parent class.
   // But, ignore the compiler-added 'super' field.
   for_fields(field, this) {
-    if (!field->hasFlag(FLAG_SUPER_CLASS)) {
+    // Compiler currently inserts DefExprs for DecoratedClassTypes adjacent to
+    // the DefExpr of the original AggregateType. For nested types, the
+    // DefExprs for DecoratedClassTypes might mistakenly be recognized as
+    // fields.
+    bool isDecoratedTypeDef = isTypeSymbol(field) &&
+                              isDecoratedClassType(field->type);
+    if (!field->hasFlag(FLAG_SUPER_CLASS) &&
+        !isDecoratedTypeDef) {
       auto pair = allFields.emplace(field->name, field);
       bool inserted = pair.second;
       if (!inserted) {
