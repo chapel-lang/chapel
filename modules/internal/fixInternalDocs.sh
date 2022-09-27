@@ -214,7 +214,7 @@ removeUsage $file
 ## String ##
 
 file="./String.rst"
-fixTitle "Strings" $file
+removeTitle $file
 removeUsage $file
 replace "chpl_bytes" "bytes" $file
 

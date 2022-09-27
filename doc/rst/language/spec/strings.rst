@@ -170,10 +170,10 @@ codepoint of the argument:
      }
 
 
-.. String_Methods:
+.. _String_Methods:
 
 String Methods
-~~~~~~~~~~~~~~
+--------------
 
 The *string* type:
 
