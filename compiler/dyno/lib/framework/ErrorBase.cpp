@@ -81,13 +81,6 @@ Location ErrorBase::location(Context* context) const {
   return ew.computedLocation();
 }
 
-ID ErrorBase::id() const {
-  std::ostringstream oss;
-  CompatibilityWriter ew(/* context */ nullptr);
-  write(ew);
-  return ew.id();
-}
-
 ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
   std::ostringstream oss;
   CompatibilityWriter ew(context);
@@ -172,33 +165,36 @@ const ParseError* ParseError::get(Context* context, const ErrorMessage& error) {
 }
 
 const owned<GeneralError>&
-GeneralError::getGeneralErrorID(Context* context, Kind kind, ID id, std::string message) {
-  QUERY_BEGIN(getGeneralErrorID, context, kind, id, message);
+GeneralError::getGeneralErrorForID(Context* context, Kind kind, ID id, std::string message) {
+  QUERY_BEGIN(getGeneralErrorForID, context, kind, id, message);
   auto result = owned<GeneralError>(new GeneralError(kind, id, std::move(message), {}));
   return QUERY_END(result);
 }
 
 const owned<GeneralError>&
-GeneralError::getGeneralErrorLocation(Context* context, Kind kind, Location loc, std::string message) {
-  QUERY_BEGIN(getGeneralErrorLocation, context, kind, loc, message);
+GeneralError::getGeneralErrorForLocation(Context* context, Kind kind, Location loc, std::string message) {
+  QUERY_BEGIN(getGeneralErrorForLocation, context, kind, loc, message);
   auto result = owned<GeneralError>(new GeneralError(kind, loc, std::move(message), {}));
   return QUERY_END(result);
 }
 
 const GeneralError* GeneralError::vbuild(Context* context, Kind kind, ID id, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
-  return getGeneralErrorID(context, kind, id, message).get();
+  return getGeneralErrorForID(context, kind, id, message).get();
 }
 
 const GeneralError* GeneralError::vbuild(Context* context, Kind kind, Location loc, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
-  return getGeneralErrorLocation(context, kind, loc, message).get();
+  return getGeneralErrorForLocation(context, kind, loc, message).get();
 }
 
 const GeneralError* GeneralError::get(Context* context, Kind kind, Location loc, std::string msg) {
-  return getGeneralErrorLocation(context, kind, loc, std::move(msg)).get();
+  return getGeneralErrorForLocation(context, kind, loc, std::move(msg)).get();
 }
 
+// Generate query function implementations, like ErrorMessage::get for every
+// error type. We do this by defining the DIAGNOSTIC_CLASS macro, and including
+// error-classes-list.h which invokes this macro for every error type.
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...)\
   const owned<Error##NAME>& Error##NAME::getError##NAME(Context* context, std::tuple<EINFO> tuple) {\
     QUERY_BEGIN(getError##NAME, context, tuple);\

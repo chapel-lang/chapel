@@ -26,6 +26,7 @@
 
 namespace chpl {
 
+// Convenience shorthands for DIAGNOSTIC_CLASS.
 #define ERROR_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, ERROR, EINFO)
 #define WARNING_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, WARNING, EINFO)
 #define SYNTAX_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, SYNTAX, EINFO)
@@ -35,14 +36,28 @@ class ErrorWriterBase;
 
 using Note = std::tuple<ID, Location, std::string>;
 
+/** Enum representing the different types of errors in Dyno. */
 enum ErrorType {
+  // The ParseError and GeneralError are not defined via macros to
+  // make it easier to provide special behavior for them (e.g. vbuild
+  // for GeneralError). Their tags are thus also not provided via the macro.
   PARSE,
   GENERAL,
+// Include each error specified in error-classes-list.h as an enum element here
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) NAME,
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 };
 
+/**
+  Parent class for all errors in Dyno.
+
+  The most important part of defining a new error is implementing the ::write
+  method; see its documentation for the implementation strategy.
+
+  Most sub-classes of ErrorBase should be defined by adding them to
+  error-classes-list
+ */
 class ErrorBase {
  public:
   enum Kind {
@@ -57,6 +72,13 @@ class ErrorBase {
 
   ErrorBase(Kind kind, ErrorType type) : kind_(kind), type_(type) {}
 
+  /**
+    This function needs to be defined by subclasses.
+    It should check only those fields defined in subclasses
+    (it should not check the ErrorBase fields such as type_).
+
+    It can assume that other has the same type as the receiver.
+   */
   virtual bool contentsMatchInner(const ErrorBase* other) const = 0;
  public:
   virtual ~ErrorBase() = default;
@@ -66,12 +88,21 @@ class ErrorBase {
     return defaultUpdateOwned(old, addin);
   }
 
+  /** Get the error's kind */
   Kind kind() const { return kind_; }
+  /** Get the error's type */
   ErrorType type() const { return type_; }
 
+  /** Extract the error's summary error message. */
   std::string message() const;
+  /** Extract the error's location. */
   Location location(Context* context) const;
-  ID id() const;
+  /**
+    Convert the error to an ErrorMessage. This is mostly needed
+    for compatibility reasons, since the production compiler currently
+    knows how to print ErrorMessage, and does it differently from
+    our ::write methods.
+   */
   ErrorMessage toErrorMessage(Context* context) const;
 
   bool operator==(const ErrorBase& other) const {
@@ -82,15 +113,42 @@ class ErrorBase {
     return !(*this == other);
   }
 
+  /**
+    Write information about this error to the given writer. See
+    the ErrorWriterBase class for the API available to the error messages.
+
+    This method should call methods on the ErrorWriterBase class to
+    provide information about the error.
+    * All ::write implemenations must call ErrorWriterBase::heading to provide
+      a concise description of the error message.
+    * After this, ErrorWriterBase::note can be used to print notes, which are
+      always shown to the user.
+    * ErrorWriterBase::message along with ErrorWriterBase::code can be used to
+      print additional text and code, respectively, which is only shown when
+      the error is printed in detail.
+   */
   virtual void write(ErrorWriterBase& wr) const = 0;
   virtual void mark(Context* context) const = 0;
 };
 
+/**
+  An error without a specific type, and lacking (typed) additional information
+  about what happened.
+ */
 class BasicError : public ErrorBase {
  private:
+  /**
+    The ID where the error occurred. Much like ErrorMessage, if the ID
+    is empty, then ::loc_ should be used instead.
+   */
   ID id_;
+  /**
+    The location of the error message. Should be used only if ::id_ is empty.
+   */
   Location loc_;
+  /** The error's message. */
   std::string message_;
+  /** Additional notes / details attached to the error. */
   std::vector<Note> notes_;
 
  protected:
@@ -112,6 +170,9 @@ class BasicError : public ErrorBase {
   void mark(Context* context) const override;
 };
 
+/**
+  An error originating from the parser.
+ */
 class ParseError : public BasicError {
  protected:
   ParseError(Kind kind, ID id, Location loc, std::string message, std::vector<Note> notes)
@@ -126,6 +187,10 @@ class ParseError : public BasicError {
   static const ParseError* get(Context* context, const ErrorMessage&);
 };
 
+/**
+  An error without specific information. Used when no error class has yet
+  been specified for the specific error condition.
+ */
 class GeneralError : public BasicError {
  protected:
   GeneralError(ErrorBase::Kind kind, ID id,
@@ -139,10 +204,10 @@ class GeneralError : public BasicError {
                  std::move(message), std::move(notes)) {}
 
   static const owned<GeneralError>&
-  getGeneralErrorID(Context* context, ErrorBase::Kind kind, ID id, std::string message);
+  getGeneralErrorForID(Context* context, ErrorBase::Kind kind, ID id, std::string message);
 
   static const owned<GeneralError>&
-  getGeneralErrorLocation(Context* context, ErrorBase::Kind kind, Location loc, std::string message);
+  getGeneralErrorForLocation(Context* context, ErrorBase::Kind kind, Location loc, std::string message);
  public:
 
   static const GeneralError* vbuild(Context* context,
@@ -160,6 +225,11 @@ class GeneralError : public BasicError {
                                  std::string msg);
 };
 
+// The error-classes-list.h header will expand the DIAGNOSTIC_CLASS macro
+// for each error message defined in the list. In this case, we use this
+// macro to generate class declarations for each error. This way, the only
+// steps needed to add a new error are to add a line to error-classes-list.h,
+// and to implement the new error classes' ::write method.
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...)\
   class Error##NAME : public ErrorBase {\
    private:\
@@ -189,6 +259,14 @@ class GeneralError : public BasicError {
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 
+/**
+  Helper macro to report an error message in a Context. Accepts
+  the context, error type, and the additional error information specific
+  to the error type (see error-classes-list).
+
+  This macro takes care of packaging the error information into a tuple;
+  it's sufficient to provide it via varargs.
+ */
 #define REPORT(CONTEXT, NAME, EINFO...)\
   context->report(Error##NAME::get(CONTEXT, std::make_tuple(EINFO)))
 

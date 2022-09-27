@@ -17,6 +17,16 @@
  * limitations under the License.
  */
 
+// We enumerate all the errors in Dyno as macros in this file. By doing so,
+// and by re-defining the DIAGNOSTIC_CLASS macro (which ERROR_CLASS and
+// WARNING_CLASS are shorthands for), we can generate code for every error
+// type, multiple times. With judicious definitions of DIAGNOSTIC_CLASS, we
+// can generate an enum of all error types, class declarations for every
+// error, as well as implementation of query / caching functions.
+//
+// Calls to the ERROR_CLASS/WARNING_CLASS/etc. macros should list the new
+// error's name first, followed a list of types describing error details.
+
 ERROR_CLASS(IncompatibleIfBranches,
     const uast::Conditional*,
     types::QualifiedType,
