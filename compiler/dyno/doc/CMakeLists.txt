@@ -15,8 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Support for documentation of AST header
-find_package(Doxygen)
+# Support for generating API documentation from C++ headers
+
+# Require Doxygen version 1.8.17 or newer
+#  * observed problems with 1.8.13 and 1.8.14
+#  * 1.8.17 is used in Ubuntu 20.04 LTS and seems to work
+find_package(Doxygen 1.8.17)
 
 if(DOXYGEN_FOUND)
   # doxygen config-file settings can be set here by prefixing with DOXYGEN_
