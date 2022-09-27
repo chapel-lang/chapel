@@ -50,6 +50,10 @@ void* chpl_topo_getHwlocTopology(void);
 int chpl_topo_getNumCPUsPhysical(chpl_bool /*accessible_only*/);
 int chpl_topo_getNumCPUsLogical(chpl_bool /*accessible_only*/);
 
+// Which CPUs (cores/PUs) are accessible?
+
+int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int size);
+
 //
 // how many NUMA domains are there?
 //

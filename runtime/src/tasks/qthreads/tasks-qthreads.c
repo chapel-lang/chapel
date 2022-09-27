@@ -682,6 +682,44 @@ void chpl_task_init(void)
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
+    // Explicitly bind shepherd threads to cores/PUs when using the
+    // binders topology.
+    char* topo = getenv("CHPL_QTHREAD_TOPOLOGY");
+    if ((topo != NULL) && !strcmp(topo, "binders")) {
+        int *cpus = NULL;
+        int numCpus;
+        chpl_bool physical;
+        char *unit = getenv("QT_WORKER_UNIT");
+        if ((unit != NULL) && !strcmp(unit, "pu")) {
+            physical = false;
+            numCpus = chpl_topo_getNumCPUsLogical(true);
+        } else {
+            physical = true;
+            numCpus = chpl_topo_getNumCPUsPhysical(true);
+        }
+        int numShepherds = (int) chpl_qt_getenv_num("NUM_SHEPHERDS", numCpus);
+        if (numShepherds < numCpus) {
+            numCpus = numShepherds;
+        }
+        cpus = (int *) chpl_malloc(numCpus * sizeof(*cpus));
+        numCpus = chpl_topo_getCPUs(physical, cpus, numCpus);
+        int bufSize = numCpus * 5;
+        char *buf = chpl_malloc(bufSize);
+        int offset = 0;
+        buf[0] = '\0';
+        for (int i = 0; i < numCpus; i++) {
+            offset += snprintf(buf+offset, bufSize - offset, "%d:", cpus[i]);
+        }
+        if (offset > 0) {
+            // remove trailing ':'
+            buf[offset-1] = '\0';
+        }
+        // tell binders which PUs to use
+        chpl_qt_setenv("CPUBIND", buf, 1);
+        chpl_free(cpus);
+        chpl_free(buf);
+    }
+
     // Initialize qthreads
     pthread_create(&initer, NULL, initializer, NULL);
     while (chpl_qthread_done_initializing == 0)
