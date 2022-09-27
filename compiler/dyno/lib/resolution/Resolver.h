@@ -36,6 +36,8 @@ struct Resolver {
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const TypedFnSignature* typedSignature = nullptr;
   const PoiScope* poiScope = nullptr;
+  const uast::Decl* ignoreSubstitutionFor = nullptr;
+  bool skipTypeQueries = false;
 
   // internal variables
   std::vector<const uast::Decl*> declStack;
@@ -201,8 +203,9 @@ struct Resolver {
 
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
-                          const types::Type* actualType,
-                          bool isNonStarVarArg = false);
+                          const types::QualifiedType& actualType,
+                          bool isNonStarVarArg = false,
+                          bool isTopLevel = true);
 
   /* When resolving a function with a TypeQuery, we need to
      resolve the type that is queried, since it can be used
