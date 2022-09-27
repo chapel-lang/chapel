@@ -12,6 +12,6 @@ class ParaThis {
 }
 
 proc main() {
-  var c: borrowed ParaThis = new borrowed ParaThis();
+  var c: borrowed ParaThis = (new owned ParaThis()).borrow();
   writeln(c);
 }

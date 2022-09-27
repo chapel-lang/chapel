@@ -107,9 +107,9 @@ module BytesStringCommon {
   */
   proc decodeByteBuffer(buff: bufferType, length: int, policy: decodePolicy)
       throws {
-    import SysBasic.{syserr};
+    import OS.{errorCode};
     pragma "fn synchronization free"
-    extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
+    extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): errorCode;
     pragma "fn synchronization free"
     extern proc qio_nbytes_char(chr: int(32)): c_int;
 
@@ -176,7 +176,7 @@ module BytesStringCommon {
                                                      expectedSize);
             for i in 0..#nInvalidBytes {
               qio_encode_char_buf(newBuff+decodedIdx,
-                                  0xdc00+buff[thisIdx-nInvalidBytes+i]);
+                                  0xdc00+(buff[thisIdx-nInvalidBytes+i]:int(32)));
               decodedIdx += 3;
             }
 
@@ -211,7 +211,7 @@ module BytesStringCommon {
   /*
     This function decodeHelp is used to create a wrapper for
     qio_decode_char_buf* and qio_decode_char_buf_esc and return
-    the value of syserr , cp and nBytes.
+    the value of errorCode , cp and nBytes.
 
       :arg buff: Buffer to decode
 
@@ -224,23 +224,23 @@ module BytesStringCommon {
                       escaped sequences in the string
 
     :returns: Tuple of decodeRet, chr and nBytes
-              decodeRet : error code : syserr
+              decodeRet : error code : errorCode
               chr : corresponds to codepoint
               nBytes : number of bytes of corresponding UTF-8 encoding
    */
   proc decodeHelp(buff:c_ptr(uint(8)), buffLen:int,
                   offset:int, allowEsc: bool ) {
-    import SysBasic.{syserr};
+    import OS.{errorCode};
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf(ref chr:int(32),
                                     ref nBytes:c_int,
                                     buf:c_string,
-                                    buflen:c_ssize_t): syserr;
+                                    buflen:c_ssize_t): errorCode;
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf_esc(ref chr:int(32),
                                         ref nBytes:c_int,
                                         buf:c_string,
-                                        buffLen:c_ssize_t): syserr;
+                                        buffLen:c_ssize_t): errorCode;
     // esc chooses between qio_decode_char_buf_esc and
     // qio_decode_char_buf as a single wrapper function
     var chr: int(32);
@@ -248,7 +248,7 @@ module BytesStringCommon {
     var start = offset:c_int;
     var multibytes = (buff + start): c_string;
     var maxbytes = (buffLen - start): c_ssize_t;
-    var decodeRet: syserr;
+    var decodeRet: errorCode;
     if(allowEsc) then
       decodeRet = qio_decode_char_buf_esc(chr, nBytes,
                                           multibytes,

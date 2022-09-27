@@ -24,7 +24,6 @@ A more advanced user may use the ``mason new [ options ] <project name>`` comman
 This creates a git repository by default, unless ``--no-vcs`` is included.
 
 Mason packages can also be initialized using the ``mason init [options] [directory path]``.
-To avoid the interactive session while initializing the project, run ``mason init -d | --default``.
 
 
 For example, for an existing directory named MyPackage,
@@ -36,7 +35,7 @@ For example, for an existing directory named MyPackage,
     # OR
 
     cd MyPackage
-    mason init -d
+    mason init
 
 
 The package will have the following hierarchy::

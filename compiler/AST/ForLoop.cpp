@@ -97,11 +97,11 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       range = toCallExpr(call->get(1)->copy());
       count = toExpr(call->get(2)->copy());
     }
-    // or assume the call is the range (checked below) and set unit stride
+    // or assume the call is the range (checked below) and leave stride null
     else
     {
       range = call;
-      stride = new SymExpr(new_IntSymbol(1));
+      // stride remains NULL
     }
 
     //
@@ -109,34 +109,57 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     // range has these() iterators
     //
 
-    // replace fully bounded (and possibly strided range) with a direct range
-    // iter. e.g. replace:
-    //
-    //   `low..high by stride`
-    //
-    // with:
-    //
-    // `chpl_direct_range_iter(low, high, stride)`
-    if (!count && range && range->isNamed("chpl_build_bounded_range"))
-    {
-      // replace the range construction with a direct range iterator
-      Expr* low = range->get(1)->copy();
-      Expr* high = range->get(2)->copy();
-      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high, stride));
+    if (!range) {
+      return;
     }
 
-    // replace a counted, low bounded range with unit stride with an equivalent
-    // direct range iter. e.g. replace:
-    //
-    //   `low..#count` (which is equivalent to `low..low+count-1`)
-    //
-    // with:
-    //
-    //   `chpl_direct_range_iter(low, low+count-1, 1)`
-    else if (count && range && range->isNamed("chpl_build_low_bounded_range"))
-    {
+    bool fullyBounded = range->isNamed("chpl_build_bounded_range");
+    bool lowBounded = range->isNamed("chpl_build_low_bounded_range");
+
+    if (!fullyBounded && !lowBounded) {
+      return;
+    }
+
+    if (!stride && !count && fullyBounded) {
+      // replace fully bounded and non-strided range with a direct range
+      // iter. e.g. replace:
+      //
+      //   `low..high`
+      //
+      // with:
+      //
+      // `chpl_direct_range_iter(low, high)`
       Expr* low = range->get(1)->copy();
-      iteratorExpr->replace(new CallExpr("chpl_direct_counted_range_iter", low, count));
+      Expr* high = range->get(2)->copy();
+      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high));
+
+    } else if (stride && !count && fullyBounded) {
+      // replace fully bounded and strided range with a direct range
+      // iter. e.g. replace:
+      //
+      //   `low..high by stride`
+      //
+      // with:
+      //
+      // `chpl_direct_strided_range_iter(low, high, stride)`
+      Expr* low = range->get(1)->copy();
+      Expr* high = range->get(2)->copy();
+      iteratorExpr->replace(new CallExpr("chpl_direct_strided_range_iter",
+                                         low, high, stride));
+
+    } else if (!stride && count && lowBounded) {
+      // replace counted, low bounded range with unit stride with an equivalent
+      // direct range iter. e.g. replace:
+      //
+      //   `low..#count`
+      //
+      // with:
+      //
+      //   `chpl_direct_counted_range_iter(low, count)`
+      Expr* low = range->get(1)->copy();
+      iteratorExpr->replace(new CallExpr("chpl_direct_counted_range_iter",
+                            low, count));
+
     }
   }
 }

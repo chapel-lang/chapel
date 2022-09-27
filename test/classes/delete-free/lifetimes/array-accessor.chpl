@@ -14,7 +14,7 @@ proc ref MyClass.get(i ...1) ref {
 }
 
 proc test() {
-  var c = new borrowed MyClass(1);
+  var c = (new owned MyClass(1)).borrow();
 
   ref rx = c.get(1);
   rx += 1;

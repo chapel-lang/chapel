@@ -1,9 +1,0 @@
-0: in R.serialize
-0: in R.deserialize
-(x = 43)
-0: in R.serialize
-0: in R.deserialize
-(x = 34)
-0: in R.serialize
-0: in R.deserialize
-(x = 79)

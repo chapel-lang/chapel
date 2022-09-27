@@ -65,6 +65,7 @@ config param disableBlockDistBulkTransfer = false;
 
 config param sanityCheckDistribution = false;
 
+private config param allowDuplicateTargetLocales = false;
 //
 // If the testFastFollowerOptimization flag is set to true, the
 // follower will write output to indicate whether the fast follower is
@@ -475,6 +476,15 @@ proc Block.init(boundingBox: domain,
     halt("Block() requires a non-empty boundingBox");
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
+
+  if !allowDuplicateTargetLocales {
+    var checkArr: [LocaleSpace] bool;
+    for loc in targetLocales {
+      if checkArr[loc.id] then
+        halt("BlockDist does not allow duplicate targetLocales");
+      checkArr[loc.id] = true;
+    }
+  }
 
   const ranges = setupTargetLocRanges(rank, targetLocales);
   this.targetLocDom = {(...ranges)};
@@ -1072,7 +1082,8 @@ override proc BlockArr.dsiDestroyArr(deinitElts:bool) {
 }
 
 inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
-  return _to_nonnil(myLocArr).this(i);
+  return if allowDuplicateTargetLocales then this.dsiAccess(i)
+                                        else _to_nonnil(myLocArr).this(i);
 }
 
 //
@@ -1480,8 +1491,8 @@ proc Block.chpl__locToLocIdx(loc: locale) {
 
 // Block subdomains are continuous
 
-proc BlockArr.dsiHasSingleLocalSubdomain() param return true;
-proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
+proc BlockArr.dsiHasSingleLocalSubdomain() param return !allowDuplicateTargetLocales;
+proc BlockDom.dsiHasSingleLocalSubdomain() param return !allowDuplicateTargetLocales;
 
 // returns the current locale's subdomain
 
@@ -1788,14 +1799,14 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       // set up some references to our LocBlockArr descriptor, our
       // local array, local domain, and local result elements
       const thisArr = if _privatization then chpl_getPrivatizedCopy(this.type, cachedPID) else this;
-      ref myLocArrDesc = thisArr.locArr[locid];
-      ref myLocArr = myLocArrDesc.myElems;
+      ref myLocArr = if allowDuplicateTargetLocales then thisArr.locArr[locid].myElems
+                                                        else thisArr.myLocArr!.myElems;
       const ref myLocDom = myLocArr.domain;
 
       // Compute the local pre-scan on our local array
       const (numTasks, rngs, state, tot) =
-        if sameStaticDist && sameDynamicDist then
-          myLocArr._value.chpl__preScan(myop, res._value.locArr[locid].myElems, myLocDom[dom])
+        if !allowDuplicateTargetLocales && sameStaticDist && sameDynamicDist then
+          myLocArr._value.chpl__preScan(myop, res._value.myLocArr!.myElems, myLocDom[dom])
         else
           myLocArr._value.chpl__preScan(myop, res, myLocDom[dom]);
 
@@ -1856,8 +1867,8 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // have our local array compute its post scan with the globally
       // accurate state vector
-      if sameStaticDist && sameDynamicDist then
-        myLocArr._value.chpl__postScan(op, res._value.locArr[locid].myElems, numTasks, rngs, state);
+      if !allowDuplicateTargetLocales && sameStaticDist && sameDynamicDist then
+        myLocArr._value.chpl__postScan(op, res._value.myLocArr!.myElems, numTasks, rngs, state);
       else
         myLocArr._value.chpl__postScan(op, res, numTasks, rngs, state);
 

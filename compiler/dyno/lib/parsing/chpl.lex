@@ -210,6 +210,7 @@ type             return processToken(yyscanner, TTYPE);
 uint             return processToken(yyscanner, TUINT);
 union            return processToken(yyscanner, TUNION);
 unmanaged        return processToken(yyscanner, TUNMANAGED);
+"@unstable"      return processToken(yyscanner, TUNSTABLE);
 use              return processToken(yyscanner, TUSE);
 var              return processToken(yyscanner, TVAR);
 void             return processToken(yyscanner, TVOID);
@@ -296,7 +297,6 @@ zip              return processToken(yyscanner, TZIP);
 <externmode>"{"  return processExternCode(yyscanner);
 <INITIAL>"{"     return processToken(yyscanner, TLCBR);
 "}"              return processToken(yyscanner, TRCBR);
-"<~>"            return processToken(yyscanner, TIO);
 "?"              return processToken(yyscanner, TQUESTION);
 
 {intLiteral}     return processToken(yyscanner, INTLITERAL);

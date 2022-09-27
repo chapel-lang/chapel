@@ -92,7 +92,7 @@ proc bad21() {
 }
 
 proc bad22() {
-  var outer:borrowed MyClass = new borrowed MyClass(1);
+  var outer:borrowed MyClass = (new owned MyClass(1)).borrow();
   {
     var r:R;
     r.c.retain(new unmanaged MyClass(1));
@@ -112,7 +112,7 @@ proc bad23() {
     // r.c deleted here
   }
   writeln(outer);
-  outer = new borrowed MyClass(1);
+  outer = (new owned MyClass(1)).borrow();
   writeln(outer);
 }
 

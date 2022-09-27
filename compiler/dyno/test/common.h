@@ -28,20 +28,19 @@ using namespace types;
 using namespace uast;
 
 // Get the top-level module resulting from parsing the given string.
-const Module* parseModule(Context* context, const char* src);
-const Module* parseModule(Context* context, std::string& str);
+const Module* parseModule(Context* context, std::string src);
 
 // assumes the last statement is a variable declaration for x
 // with an initialization expression.
 // Returns the type of the initializer expression.
 QualifiedType
-resolveTypeOfXInit(Context* context, const char* program, bool requireTypeKnown = true);
+resolveTypeOfXInit(Context* context, std::string program, bool requireTypeKnown = true);
 
 QualifiedType
-resolveQualifiedTypeOfX(Context* context, const char* program);
+resolveQualifiedTypeOfX(Context* context, std::string program);
 
 const Type*
-resolveTypeOfX(Context* context, const char* program);
+resolveTypeOfX(Context* context, std::string program);
 
 // always check assertions in this test
 #ifdef NDEBUG

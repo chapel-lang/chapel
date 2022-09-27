@@ -9,7 +9,8 @@ if c != nil then
 else
   writeln("c is nil");
 
-c = new borrowed C();
+var ownedTmp = new owned C();
+c = ownedTmp.borrow();
 
 if c != nil then
   writeln(c!.x);

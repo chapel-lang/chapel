@@ -17,20 +17,20 @@ class subthing : mything {
 
   override proc readThis(r) throws {
     x = r.read(int);
-    r._readLiteral(",");
+    r.readLiteral(",");
     y = r.read(int);
   }
 
   override proc writeThis(w) throws {
     w.write(x);
-    w._writeLiteral(",");
+    w.writeLiteral(",");
     w.write(y);
   }
 }
 
 
 {
-  var a = new borrowed mything(1);
+  var a = (new owned mything(1)).borrow();
 
   writeln("Writing ", a);
 
@@ -42,7 +42,7 @@ class subthing : mything {
 
   var r = f.reader();
 
-  var b = new borrowed mything(2);
+  var b = (new owned mything(2)).borrow();
 
   r.read(b);
   r.close();
@@ -53,7 +53,7 @@ class subthing : mything {
 }
 
 {
-  var a = new borrowed subthing(3,4);
+  var a = (new owned subthing(3,4)).borrow();
 
   writeln("Writing ", a);
 
@@ -65,7 +65,7 @@ class subthing : mything {
 
   var r = f.reader();
 
-  var b = new borrowed subthing(5,6);
+  var b = (new owned subthing(5,6)).borrow();
 
   r.read(b);
   r.close();
@@ -77,7 +77,7 @@ class subthing : mything {
 }
 
 {
-  var a = new borrowed subthing(3,4);
+  var a = (new owned subthing(3,4)).borrow();
 
   writeln("Writing ", a);
 
@@ -89,7 +89,7 @@ class subthing : mything {
 
   var r = f.reader();
 
-  var b = new borrowed subthing(5,6);
+  var b = (new owned subthing(5,6)).borrow();
   var c:borrowed mything = b;
 
   r.read(c);

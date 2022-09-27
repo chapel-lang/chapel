@@ -72,16 +72,28 @@ std::error_code deleteDir(std::string dirname);
 std::error_code currentWorkingDir(std::string& path_out);
 
 /**
- * makes the directory in dirpath. Will fail if a directory in the path doesn't
- * already exist.
+ * makes the directory in dirpath. If makeParents is false, this will fail
+ * if a directory in the path doesn't already exist.
  * Directory permissions are set to llvm::all-all.
  * which should be equivalent to  S_IRWXU | S_IRWXG | S_IRWXO
  *
  * dirpath - the path of the directory to create
+ * makeParents - if true, creates parent directories if they don't exist
  * returns - std::error_code
  */
-std::error_code makeDir(std::string dirpath);
+std::error_code makeDir(std::string dirpath, bool makeParents=false);
+
+
+/*
+  Try to get the path of the executable. We rely on llvm implementation,
+  which states it _may_ return an empty path if it fails.
+  https://llvm.org/doxygen/namespacellvm_1_1sys_1_1fs.html#a057a733b2dfa2f0531ceb335cf3b1d03
+*/
+std::string getExecutablePath(const char* argv0, void* MainExecAddr);
+
+
 
 } // end namespace chpl
+
 
 #endif

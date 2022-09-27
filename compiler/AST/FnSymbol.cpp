@@ -241,6 +241,7 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
    */
   newFn->copyFlags(this);
   newFn->deprecationMsg = this->deprecationMsg;
+  newFn->unstableMsg = this->unstableMsg;
 
   if (this->throwsError() == true) {
     newFn->throwsErrorInit();
@@ -1228,6 +1229,11 @@ void FnSymbol::printDocs(std::ostream* file, unsigned int tabs) {
       this->printDocsDeprecation(this->doc, file, tabs + 1,
                                  this->getDeprecationMsg(), true);
     }
+
+    if (this->hasFlag(FLAG_UNSTABLE)) {
+      this->printDocsUnstable(this->doc, file, tabs + 1,
+                              this->getUnstableMsg(), true);
+    }
   }
 }
 
@@ -1431,6 +1437,8 @@ static std::string argToString(FnSymbol* fn,
         char buf[bufSize];
         snprint_imm(buf, bufSize, *imm);
         value = buf;
+        if (is_imag_type(t))
+          value += 'i';
       }
     }
 

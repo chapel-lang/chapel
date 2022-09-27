@@ -21,13 +21,12 @@ on here.gpus[0] {
   // should have been flushed to the terminal..
 
   writeln("Before next loop");
-
-  foreach i in 0..10 {
-    assertOnGpu();
-    writeln("As of today this will throw us off the GPU");
-  }
-
-  writeln("!!! This message should not be displayed unless there's a bug in");
-  writeln("    assertOnGpu or we fixed things so that writeln can be Gpuized. If that's");
-  writeln("    fixed then cool we can get rid of gpuWriteln and this test!");
 }
+
+// Should produce runtime error
+foreach i in 0..10 {
+  assertOnGpu();
+}
+
+writeln("!!! This message should not be displayed unless there's a bug in");
+writeln("    assertOnGpu.");

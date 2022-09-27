@@ -35,11 +35,14 @@
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
-#include <filesystem>
 #include <queue>
 
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include "arg.h"
+#include "arg-helpers.h"
+#include "version_num.h"
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -56,6 +59,8 @@
 #include "chpl/util/filesystem.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/framework/global-strings.h"
+#include "chpl/resolution/scope-queries.h"
+
 
 
 using namespace chpl;
@@ -64,12 +69,203 @@ using namespace parsing;
 
 using CommentMap = std::unordered_map<ID, const Comment*>;
 
+char fDocsAuthor[256] = "";
+bool fDocsAlphabetize = false;
+char fDocsCommentLabel[256] = "";
+char fDocsFolder[256] = "";
+bool fDocsTextOnly = false;
+char fDocsSphinxDir[256] = "";
+bool fDocsHTML = true;
+char fDocsProjectVersion[256] = "0.0.1";
+bool printSystemCommands = false;
+bool fPrintCopyright = false;
+bool fPrintHelp = false;
+bool fPrintEnvHelp = false;
+bool fPrintSettingsHelp = false;
+bool fPrintLicense = false;
+bool fPrintChplHome = false;
+bool fPrintVersion = false;
+bool fLegacyChpldoc = false;
+
+
+
 static const int indentPerDepth = 3;
 std::string commentStyle_;
-bool writeStdOut_ = false;
 std::string outputDir_;
 bool textOnly_ = false;
-std::string CHPL_HOME = getenv("CHPL_HOME");
+std::string CHPL_HOME;
+bool processUsedModules_ = false;
+bool fDocsProcessUsedModules = false;
+
+static
+void docsArgSetCommentLabel(const ArgumentDescription* desc, const char* label) {
+  assert(label != NULL);
+  size_t len = strlen(label);
+  if (len != 0) {
+    if (len > sizeof(fDocsCommentLabel)) {
+      std::cerr << "error: the label is too large!" << std::endl;
+      clean_exit(1);
+    } else {
+      strcpy(fDocsCommentLabel, label);
+    }
+  }
+}
+
+
+static
+void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused) {
+  fPrintHelp = true;
+}
+
+static
+void setHome(const ArgumentDescription* desc, const char* arg) {
+  CHPL_HOME = std::string(arg);
+}
+
+#define DRIVER_ARG_COPYRIGHT \
+  {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
+
+#define DRIVER_ARG_HELP \
+  {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL}
+
+#define DRIVER_ARG_HELP_ENV \
+  {"help-env", ' ', NULL, "Environment variable help", "F", &fPrintEnvHelp, "", driverSetHelpTrue}
+
+#define DRIVER_ARG_HELP_SETTINGS \
+  {"help-settings", ' ', NULL, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue}
+
+#define DRIVER_ARG_LICENSE \
+  {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL}
+
+#define DRIVER_ARG_HOME \
+  {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome}
+
+#define DRIVER_ARG_PRINT_CHPL_HOME \
+  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, NULL,NULL}
+
+#define DRIVER_ARG_VERSION \
+  {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL}
+
+#define DRIVER_ARG_LAST \
+  {0}
+
+static ArgumentState sArgState = {
+  0,
+  0,
+  "program",
+  "path",
+  NULL
+};
+
+ArgumentDescription docs_arg_desc[] = {
+ {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
+ {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
+ {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
+ {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
+ {"process-used-modules", ' ', NULL, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, NULL, NULL},
+ {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
+ {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
+ {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
+ {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
+
+ {"legacy", ' ', NULL, "Use the legacy version of chpldoc", "F", &fLegacyChpldoc, NULL, NULL},
+ {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
+ {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
+ DRIVER_ARG_HELP,
+ DRIVER_ARG_HELP_ENV,
+ DRIVER_ARG_HELP_SETTINGS,
+ DRIVER_ARG_VERSION,
+ DRIVER_ARG_COPYRIGHT,
+ DRIVER_ARG_LICENSE,
+ {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
+ DRIVER_ARG_HOME,
+ DRIVER_ARG_PRINT_CHPL_HOME,
+ DRIVER_ARG_LAST
+};
+
+static std::string get_version() {
+  std::string ret;
+  ret = std::to_string(MAJOR_VERSION) + "." +
+        std::to_string(MINOR_VERSION) + "." +
+        std::to_string(UPDATE_VERSION);
+  if (!officialRelease) {
+    ret += " pre-release (" + std::string(BUILD_VERSION) + ")";
+  } else {
+    // It's is an official release.
+    // Try to decide whether or not to include the BUILD_VERSION
+    // based on its string length. A short git sha is 10 characters.
+    if (strlen(BUILD_VERSION) > 2 && !developer) {
+      // assume it is a sha, so don't include it
+    } else if (strcmp(BUILD_VERSION, "0") == 0) {
+      // no need to append a .0
+    } else {
+      // include the BUILD_VERSION contents to add e.g. a .1
+      ret += "." + std::string(BUILD_VERSION);
+    }
+  }
+  return ret;
+}
+
+static void printStuff(const char* argv0, void* mainAddr) {
+  bool shouldExit       = false;
+  bool printedSomething = false;
+
+  if (fPrintVersion) {
+    std::string version = get_version();
+    fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
+
+    #ifdef HAVE_LLVM
+        fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
+    #endif
+
+    fPrintCopyright  = true;
+    printedSomething = true;
+    shouldExit       = true;
+  }
+
+  if (fPrintLicense) {
+    fprintf(stdout,
+#include "LICENSE"
+            );
+
+    fPrintCopyright  = false;
+    shouldExit       = true;
+    printedSomething = true;
+  }
+
+  if (fPrintCopyright) {
+    fprintf(stdout,
+#include "COPYRIGHT"
+            );
+
+    printedSomething = true;
+  }
+
+  if( fPrintChplHome ) {
+    std::string guess = findProgramPath(argv0, mainAddr);
+    printf("%s\t%s\n", CHPL_HOME.c_str(), guess.c_str());
+    printedSomething = true;
+  }
+
+  if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+    if (printedSomething) printf("\n");
+
+    usage(&sArgState, !fPrintHelp, fPrintEnvHelp, fPrintSettingsHelp);
+
+    shouldExit       = true;
+    printedSomething = true;
+  }
+
+  if (printedSomething && sArgState.nfile_arguments < 1) {
+    shouldExit       = true;
+  }
+
+  if (shouldExit) {
+    clean_exit(0);
+  }
+}
+
+
 
 const std::string templateUsage = R"RAW(**Usage**
 
@@ -110,6 +306,31 @@ static std::vector<std::string> splitLines(const std::string& s) {
   return ret;
 }
 
+static std::string filenameFromModuleName(std::string name,
+                                          std::string docsWorkDir) {
+  // Borrowed from chpldoc
+  std::string filename = name;
+  size_t location = filename.rfind("/");
+  if (location != std::string::npos) {
+    filename = filename.substr(0, location + 1);
+
+    // Check for files starting with the CHPL_HOME internal modules
+    // path, and if we find one, chop everything but 'internal/' and
+    // whatever follows out of the path in order to create the
+    // appropriate relative path within the sphinx output directory.
+    std::string modPath = CHPL_HOME + "/modules/";
+    std::string intModPath = modPath + "internal/";
+    if (strncmp(intModPath.c_str(), filename.c_str(), intModPath.length()) == 0) {
+      filename = filename.substr(modPath.length());
+    }
+  } else {
+    filename = "";
+  }
+  filename = docsWorkDir + "/" + filename;
+
+  return filename;
+}
+
 static bool hasSubmodule(const Module* mod) {
   for (const AstNode* child : mod->stmts()) {
     if (auto mod = child->toModule())
@@ -139,6 +360,7 @@ static UniqueString getNodeName(AstNode* node) {
     return node->toIdentifier()->name();
   } else {
     assert(false && "no name defined for node");
+    return UniqueString();
   }
 }
 
@@ -165,7 +387,6 @@ std::string runCommand(std::string& command) {
   // Call command
   FILE* pipe = popen(command.c_str(), "r");
   if (!pipe) {
-    // USR_FATAL("running %s", command.c_str());
     std::cerr << "error: running " << command << std::endl;
   }
 
@@ -177,7 +398,6 @@ std::string runCommand(std::string& command) {
   }
 
   if (pclose(pipe)) {
-    // USR_FATAL("'%s' did not run successfully", command.c_str());
     std::cerr << "error: '" << command << "' did not run successfully"
               << std::endl;
   }
@@ -207,11 +427,9 @@ static int myshell(std::string command,
   status = system(command.c_str());
 
   if (status == -1) {
-    // USR_FATAL("system() fork failed: %s", strerror(errno));
     std::cerr << "error: system() fork failed: " << strerror(errno)
               << std::endl;
   } else if (status != 0 && ignoreStatus == false) {
-    // USR_FATAL("%s", description);
     std::cerr << "error: " << description << std::endl;
   }
 
@@ -323,7 +541,7 @@ static size_t countLeadingSpaces(const std::string& s) {
 
 static std::ostream& indentStream(std::ostream& os, size_t num) {
   const char* spaces = "        ";
-  constexpr size_t N = sizeof(spaces);
+  size_t N = strlen(spaces);
   while (num > N) {
     os << spaces;
     num -= N;
@@ -337,30 +555,36 @@ static std::ostream& indentStream(std::ostream& os, size_t num) {
 // Remove the leading+trailing commentStyle (/*+, *+/)
 // Dedent by the least amount of leading whitespace
 // Return is a list of strings which may have newline chars
-static std::vector<std::string> prettifyComment(const std::string& comment,
-                                                const std::string& commentStyle) {
+static std::string prettifyComment(const std::string& comment,
+                                       const std::string& commentStyle,
+                                       std::vector<std::string>& lines) {
   std::string ret = comment;
   std::string commentEnd = commentStyle;
   reverse(commentEnd.begin(), commentEnd.end());
   const int styleLen = commentStyle.size();
+  // try to match the commentStyle to the start and end of this comment
+  // and remove the comment indicators
   if (ret.substr(0, styleLen) == commentStyle) {
     size_t l = ret.length();
-    if (ret.substr(l - styleLen, styleLen) != commentEnd)
-      // TODO: this is a broken comment at this point, no?
-      return {};
+    if (ret.substr(l - styleLen, styleLen) != commentEnd) {
+      // this is a broken comment at this point
+      auto msg = "chpldoc comment not closed, ignoring comment: "
+                 "This comment is not closed properly\n";
+      return msg;
+    }
     ret.erase(l - styleLen, styleLen);
     ret.erase(0, styleLen);
   } else {
-    return {};
+    return "";
   }
 
-  auto lines = splitLines(ret);
-  if (lines.empty()) return lines;
+  lines = splitLines(ret);
+  if (lines.empty()) return "";
 
   size_t toTrim = std::numeric_limits<size_t>::max();
   // exclude the first line from the minimum
   for (auto it = lines.begin(); it < lines.end(); ++it) {
-    if (it->empty()) continue;
+    if (strip(*it).empty()) continue;
     if (it == lines.begin()) {
       *it = strip(*it, "^\\s+");
       continue;
@@ -368,31 +592,49 @@ static std::vector<std::string> prettifyComment(const std::string& comment,
     toTrim = std::min(toTrim, countLeadingSpaces(*it));
   }
 
-  assert((toTrim < std::numeric_limits<size_t>::max() || lines.size()==1) &&
-          "probably an empty comment");
-
+  // probably a comment with one leading text line and some trailing empty lines
+  if (!(toTrim < std::numeric_limits<size_t>::max() || lines.size()==1)) {
+    toTrim = 0;
+  }
 
   for (auto it = lines.begin(); it < lines.end(); ++it) {
     if (it != lines.begin())
       it->erase(0, toTrim);
   }
 
-  return lines;
+  return "";
 }
 
+
+/*
+ *  Gets the first non-blank line of a comment and return it, stripped of any
+ *  leading whitespace. Returns an empty string if there are no non-blank lines.
+ */
 static std::string commentSynopsis(const Comment* c,
-                                   const std::string& commentStyle) {
+                                   const std::string& commentStyle,
+                                   std::string& errMsg) {
   if (!c) return "";
-  auto lines = prettifyComment(c->str(), commentStyle);
+
+  std::vector<std::string> lines;
+  errMsg = prettifyComment(c->str(), commentStyle, lines);
+
   if (lines.empty()) return "";
-  return lines[0];
+  uint i = 0;
+  // skip empty lines for synopsis collection
+  while (i < lines.size()) {
+    if (!lines[i].empty())
+    return strip(lines[i], "^\\s+");
+    i++;
+  }
+  return "";
 }
+
 
 static const char* kindToRstString(bool isMethod, Function::Kind kind) {
   switch (kind) {
   case Function::Kind::PROC: return isMethod ? "method" : "function";
   case Function::Kind::ITER: return isMethod ? "itermethod" : "iterfunction";
-  case Function::Kind::OPERATOR: return "operator";
+  case Function::Kind::OPERATOR: return isMethod ? "method" : "function";
   case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
@@ -505,15 +747,163 @@ struct RstSignatureVisitor {
     interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
   }
 
-  bool enter(const Identifier* r) {
-    os_ << r->name().c_str();
+  template<typename T>
+  bool enterLiteral(const T* l) {
+    os_ << l->text().c_str();
     return false;
   }
 
-  bool enter(const Record* r) {
-    // TODO: Shouldn't this be record, not Record?
-    if (textOnly_) os_ << "Record: ";
-    os_ << r->name().c_str();
+  bool isPostfix(const OpCall* op) {
+    return (op->isUnaryOp() &&
+            (op->op() == USTR("postfix!") || op->op() == USTR("?")));
+  }
+
+
+  /*
+    helper for printing binary op calls, special handling for keyword operators
+    to conditionally add spaces around the operator
+  */
+  void printBinaryOp(const OpCall* node) {
+    assert(node->numActuals() == 2);
+    bool addSpace = wantSpaces(node->op(), printingType_) ||
+                    node->op() == USTR("by") ||
+                    node->op() == USTR("align") ||
+                    node->op() == USTR("reduce=") ||
+                    node->op() == USTR("reduce") ||
+                    node->op() == USTR("scan") ||
+                    node->op() == USTR("dmapped");
+    opHelper(node, 0, false);
+    if (addSpace && node->op() != USTR(":"))
+      os_ << " ";
+    os_ << node->op();
+    if (addSpace)
+      os_ << " ";
+    opHelper(node, 1, false);
+  }
+
+  /*
+    helper for printing unary op calls
+  */
+  void printUnaryOp(const OpCall* node) {
+    assert(node->numActuals() == 1);
+    UniqueString unaryOp;
+    bool isPostFixBang = false;
+    bool isNilable = false;
+    unaryOp = node->op();
+    if (unaryOp == USTR("postfix!")) {
+      isPostFixBang = true;
+      unaryOp = USTR("!");
+    } else if (node->op() == USTR("?")) {
+      isNilable = true;
+    } else {
+      os_ << unaryOp;
+    }
+    opHelper(node, 0, (isPostFixBang || isNilable));
+    if (isPostFixBang || isNilable) {
+      os_ << unaryOp;
+    }
+  }
+
+
+  /*
+    Helper for printing operands of binary and unary op calls
+  */
+  void opHelper(const OpCall* node, int pos, bool postfix) {
+    bool needsParens = false;
+    bool isRHS = pos;
+    UniqueString outerOp, innerOp;
+    outerOp = node->op();
+    if (node->actual(pos)->isOpCall()) {
+      innerOp = node->actual(pos)->toOpCall()->op();
+      needsParens = needParens(outerOp, innerOp, node->isUnaryOp(), postfix,
+                               node->actual(pos)->toOpCall()->isUnaryOp(),
+                               isPostfix(node->actual(pos)->toOpCall()), isRHS);
+    }
+    // handle printing parens around tuples
+    // ex: 3*(4*string) != 3*4*string
+    needsParens = tupleOpNeedsParens(node, needsParens, isRHS, outerOp,
+                                     innerOp);
+    if (needsParens) os_ << "(";
+    node->actual(pos)->traverse(*this);
+    if (needsParens) os_ << ")";
+  }
+
+  // check if this is a star tuple decl, for example:
+  // 3*string or 2*(3*string), etc
+  bool isStarTupleDecl(UniqueString op, const OpCall* node) const {
+    // TODO: need to adjust the rules as to what exactly can construct
+    //  a star tuple, it's not clear how to filter FnCalls
+    //  ex: 3*(real(64)) is a * op with lhs = IntLiteral(3) and
+    //  rhs = FnCall(real->64)
+    bool ret = false;
+    if (node && op == USTR("*") && node->actual(0)->isIntLiteral() &&
+        (node->actual(1)->isIdentifier() ||
+         node->actual(1)->isTuple() ||
+         node->actual(1)->isFnCall())) {
+      ret = true;
+    }
+    return ret;
+  }
+
+  /*
+    Helper to determine if we should print parens around a tuple, typically
+    because it is a star tuple declaration
+  */
+  bool tupleOpNeedsParens(const OpCall* node, bool needsParens, bool isRHS,
+                          UniqueString& outerOp, UniqueString& innerOp) const {
+    if (needsParens || !isRHS) return needsParens;
+    bool ret = needsParens;
+    bool isOuterStarTuple = isStarTupleDecl(outerOp, node);
+    bool isInnerStarTuple = isStarTupleDecl(innerOp,
+                                            node->actual(1)->toOpCall());
+    if ((isOuterStarTuple || isInnerStarTuple)) {
+      ret = true;
+    }
+    return ret;
+  }
+
+  bool enter(const Array* arr) {
+    interpose(arr->children(), ", ", "[", "]");
+    return false;
+  }
+
+  bool enter(const Block* b) {
+    return true;
+  }
+
+  bool enter(const BoolLiteral* b) {
+    os_ << (b->value() ? "true" : "false");
+    return false;
+  }
+
+  bool enter(const BracketLoop* bl) {
+    os_ << "[";
+    if (bl->index()) {
+      bl->index()->traverse(*this);
+      os_ << " in ";
+    }
+    if (bl->isMaybeArrayType() &&
+        bl->iterand()->isDomain() &&
+        bl->iterand()->toDomain()->numExprs() == 1) {
+      bl->iterand()->toDomain()->expr(0)->traverse(*this);
+    } else {
+      bl->iterand()->traverse(*this);
+    }
+
+    if (bl->withClause()) {
+      os_<< " ";
+      bl->withClause()->traverse(*this);
+    }
+    os_ << "]";
+    if (bl->numStmts() > 0) {
+      os_ << " ";
+        if (bl->stmt(0)->isOpCall()) {
+          interpose(bl->stmts(), "", "(", ")");
+          if (!bl->isExpressionLevel())
+            os_ << ";";
+        } else
+          interpose(bl->stmts(), "");
+      }
     return false;
   }
 
@@ -526,24 +916,8 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const BoolLiteral* b) {
-    os_ << (b->value() ? "true" : "false");
-    return false;
-  }
-
-  template<typename T>
-  bool enterLiteral(const T* l) {
-    os_ << l->text().c_str();
-    return false;
-  }
-
-  bool enter(const IntLiteral* l)  { return enterLiteral(l); }
-  bool enter(const UintLiteral* l) { return enterLiteral(l); }
-  bool enter(const RealLiteral* l) { return enterLiteral(l); }
-  bool enter(const ImagLiteral* l) { return enterLiteral(l); }
-
-  bool enter(const StringLiteral* l) {
-    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
+  bool enter(const Conditional* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;
   }
 
@@ -552,18 +926,18 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const Dot* d) {
-    d->receiver()->traverse(*this);
-    os_ << "." << d->field().c_str();
+  bool enter(const Domain* dom) {
+    if (dom->usedCurlyBraces()) {
+      interpose(dom->exprs(), ", ", "{", "}");
+    } else {
+      interpose(dom->exprs(), ", ");
+    }
     return false;
   }
 
-  bool enter(const New* d) {
-    os_ << "new ";
-    if (d->management() != New::Management::DEFAULT_MANAGEMENT) {
-      os_ << kindToString(d->management()) << " ";
-    }
-    d->typeExpression()->traverse(*this);
+  bool enter(const Dot* d) {
+    d->receiver()->traverse(*this);
+    os_ << "." << d->field().c_str();
     return false;
   }
 
@@ -582,27 +956,38 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const Variable* v) {
-    if (v->isConfig()) {
-      os_ << "config ";
-    }
-    if (v->kind() != Variable::Kind::INDEX) {
-      os_ << kindToString((IntentList) v->kind()) << " ";
-    }
-    os_ << v->name().c_str();
-    if (const AstNode* te = v->typeExpression()) {
-      printingType_ = true;
-      os_ << ": ";
-      te->traverse(*this);
-      printingType_ = false;
-    }
-    if (const AstNode* ie = v->initExpression()) {
-      os_ << " = ";
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
-        printingType_ = true;
-      ie->traverse(*this);
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
-        printingType_ = false;
+  bool enter(const FnCall* call) {
+    const AstNode* callee = call->calledExpression();
+    assert(callee);
+    callee->traverse(*this);
+    if (isCalleReservedWord(callee)) {
+      os_ << " ";
+      call->actual(0)->traverse(*this);
+    } else {
+      if (call->callUsedSquareBrackets()) {
+        os_ << "[";
+      } else {
+        os_ << "(";
+      }
+      std::string sep;
+      for (int i = 0; i < call->numActuals(); i++) {
+        os_ << sep;
+        if (call->isNamedActual(i)) {
+          os_ << call->actualName(i);
+          // The spaces around = are just to satisfy old tests
+          // TODO: Remove spaces around `=` when removing old parser
+          os_ << " = ";
+        }
+
+        call->actual(i)->traverse(*this);
+
+        sep = ", ";
+      }
+      if (call->callUsedSquareBrackets()) {
+        os_ << "]";
+      } else {
+        os_ << ")";
+      }
     }
     return false;
   }
@@ -645,7 +1030,9 @@ struct RstSignatureVisitor {
 
     // storage kind
     if (f->thisFormal() != nullptr
-        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT
+        && f->thisFormal()->storageKind() != IntentList::CONST_INTENT
+        && f->thisFormal()->storageKind() != IntentList::CONST_REF) {
       os_ << kindToString(f->thisFormal()->storageKind()) <<" ";
     }
 
@@ -690,6 +1077,12 @@ struct RstSignatureVisitor {
       interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
     }
 
+    // Return Intent
+    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
+        f->returnIntent() != Function::ReturnIntent::CONST) {
+      os_ << " " << kindToString((IntentList) f->returnIntent());
+    }
+
     // Return type
     if (const AstNode* e = f->returnType()) {
       os_ << ": ";
@@ -698,114 +1091,36 @@ struct RstSignatureVisitor {
       printingType_ = false;
     }
 
-    // Return Intent
-    if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
-        f->returnIntent() != Function::ReturnIntent::CONST) {
-      os_ << " " << kindToString((IntentList) f->returnIntent());
-    }
-
     // throws
     if (f->throws()) os_ << " throws";
 
     return false;
   }
 
-  bool isPostfix(const OpCall* op) {
-    return (op->isUnaryOp() &&
-            (op->op() == USTR("postfix!") || op->op() == USTR("?")));
+  bool enter(const Identifier* r) {
+    os_ << r->name().c_str();
+    return false;
   }
 
-  void printUnaryOp(const OpCall* node) {
-    assert(node->numActuals() == 1);
-    UniqueString unaryOp;
-    bool isPostFixBang = false;
-    bool isNilable = false;
-    unaryOp = node->op();
-    if (unaryOp == USTR("postfix!")) {
-      isPostFixBang = true;
-      unaryOp = USTR("!");
-    } else if (node->op() == USTR("?")) {
-      if (node->actual(0)->isFnCall()) {
-        isNilable = true;
-      } else {
-        os_ << "nilable ";
-      }
-    } else {
-      os_ << unaryOp;
-    }
-    opHelper(node, 0, (isPostFixBang || isNilable));
-    if (isPostFixBang || isNilable) {
-      os_ << unaryOp;
-    }
+  bool enter(const Import* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
   }
 
-  void opHelper(const OpCall* node, int pos, bool postfix) {
-    bool needsParens = false;
-    bool isRHS = pos;
-    UniqueString outerOp, innerOp;
-    outerOp = node->op();
-    if (node->actual(pos)->isOpCall()) {
-      innerOp = node->actual(pos)->toOpCall()->op();
-      needsParens = needParens(outerOp, innerOp, node->isUnaryOp(), postfix,
-                               node->actual(pos)->toOpCall()->isUnaryOp(),
-                               isPostfix(node->actual(pos)->toOpCall()), isRHS);
+  bool enter(const New* d) {
+    os_ << "new ";
+    if (d->management() != New::Management::DEFAULT_MANAGEMENT) {
+      os_ << kindToString(d->management()) << " ";
     }
-    // handle printing parens around tuples
-    // ex: 3*(4*string) != 3*4*string
-    needsParens = tupleOpNeedsParens(node, needsParens, isRHS, outerOp,
-                                     innerOp);
-    if (needsParens) os_ << "(";
-    node->actual(pos)->traverse(*this);
-    if (needsParens) os_ << ")";
+    d->typeExpression()->traverse(*this);
+    return false;
   }
 
-  // check if this is a start tuple decl, for example:
-  // 3*string or 2*(3*string), etc
-  bool isStarTupleDecl(UniqueString op, const OpCall* node) const {
-    // TODO: need to adjust the rules as to what exactly can construct
-    //  a star tuple, it's not clear how to filter FnCalls
-    //  ex: 3*(real(64)) is a * op with lhs = IntLiteral(3) and
-    //  rhs = FnCall(real->64)
-    bool ret = false;
-    if (node && op == USTR("*") && node->actual(0)->isIntLiteral() &&
-        (node->actual(1)->isIdentifier() ||
-         node->actual(1)->isTuple() ||
-         node->actual(1)->isFnCall())) {
-      ret = true;
-    }
-    return ret;
-  }
-
-  bool tupleOpNeedsParens(const OpCall* node, bool needsParens, bool isRHS,
-                          UniqueString& outerOp, UniqueString& innerOp) const {
-    if (needsParens || !isRHS) return needsParens;
-    bool ret = needsParens;
-    bool isOuterStarTuple = isStarTupleDecl(outerOp, node);
-    bool isInnerStarTuple = isStarTupleDecl(innerOp,
-                                            node->actual(1)->toOpCall());
-    if ((isOuterStarTuple || isInnerStarTuple)) {
-      ret = true;
-    }
-    return ret;
-  }
-
-  void printBinaryOp(const OpCall* node) {
-    assert(node->numActuals() == 2);
-    bool addSpace = wantSpaces(node->op(), printingType_) ||
-                    node->op() == USTR("by") ||
-                    node->op() == USTR("align") ||
-                    node->op() == USTR("reduce=") ||
-                    node->op() == USTR("reduce") ||
-                    node->op() == USTR("scan") ||
-                    node->op() == USTR("dmapped");
-    opHelper(node, 0, false);
-    if (addSpace && node->op() != USTR(":"))
-      os_ << " ";
-    os_ << node->op();
-    if (addSpace)
-      os_ << " ";
-    opHelper(node, 1, false);
-  }
+  /* Numeric Literals */
+  bool enter(const IntLiteral* l)  { return enterLiteral(l); }
+  bool enter(const UintLiteral* l) { return enterLiteral(l); }
+  bool enter(const RealLiteral* l) { return enterLiteral(l); }
+  bool enter(const ImagLiteral* l) { return enterLiteral(l); }
 
   bool enter(const OpCall* node) {
     if (node->isUnaryOp()) {
@@ -816,44 +1131,29 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const FnCall* call) {
-    const AstNode* callee = call->calledExpression();
-    assert(callee);
-    callee->traverse(*this);
-    if (isCalleReservedWord(callee)) {
-      os_ << " ";
-      call->actual(0)->traverse(*this);
-    } else {
-      if (call->callUsedSquareBrackets()) {
-        os_ << "[";
-      } else {
-        os_ << "(";
+  bool enter(const Range* range) {
+    if (auto lb = range->lowerBound()) {
+      lb->traverse(*this);
+    }
+    os_ << "..";
+    if (auto ub = range->upperBound()) {
+      if (range->opKind() == Range::OPEN_HIGH) {
+        os_ << "<";
       }
-      std::string sep;
-      for (int i = 0; i < call->numActuals(); i++) {
-        os_ << sep;
-        if (call->isNamedActual(i)) {
-          os_ << call->actualName(i);
-          // The spaces around = are just to satisfy old tests
-          // TODO: Remove spaces around `=` when removing old parser
-          os_ << " = ";
-        }
-
-        call->actual(i)->traverse(*this);
-
-        sep = ", ";
-      }
-      if (call->callUsedSquareBrackets()) {
-        os_ << "]";
-      } else {
-        os_ << ")";
-      }
+      ub->traverse(*this);
     }
     return false;
   }
 
-  bool enter(const Domain* dom) {
-    interpose(dom->children(), ", ", "{", "}");
+  bool enter(const Record* r) {
+    // TODO: Shouldn't this be record, not Record?
+    if (textOnly_) os_ << "Record: ";
+    os_ << r->name().c_str();
+    return false;
+  }
+
+  bool enter(const StringLiteral* l) {
+    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
     return false;
   }
 
@@ -872,37 +1172,12 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const Array* arr) {
-    interpose(arr->children(), ", ", "[", "]");
-    return false;
-  }
-
-  bool enter(const Range* range) {
-    if (auto lb = range->lowerBound()) {
-      lb->traverse(*this);
-    }
-    os_ << "..";
-    if (auto ub = range->upperBound()) {
-      ub->traverse(*this);
-    }
-    return false;
-  }
-
-  bool enter(const BracketLoop* bl) {
-    printChapelSyntax(os_, bl);
-    return false;
-  }
-
-  bool enter(const Block* b) {
-    return true;
-  }
-
-  bool enter(const Use* node) {
+  bool enter(const TypeQuery* node) {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;
   }
 
-  bool enter(const Import* node) {
+  bool enter(const Use* node) {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;
   }
@@ -912,16 +1187,32 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const TypeQuery* node) {
-    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+  bool enter(const Variable* v) {
+    if (v->isConfig()) {
+      os_ << "config ";
+    }
+    if (v->kind() != Variable::Kind::INDEX) {
+      os_ << kindToString((IntentList) v->kind()) << " ";
+    }
+    os_ << v->name().c_str();
+    if (const AstNode* te = v->typeExpression()) {
+      printingType_ = true;
+      os_ << ": ";
+      te->traverse(*this);
+      printingType_ = false;
+    }
+    if (const AstNode* ie = v->initExpression()) {
+      os_ << " = ";
+      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+        printingType_ = true;
+      ie->traverse(*this);
+      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+        printingType_ = false;
+    }
     return false;
   }
 
-  bool enter(const Conditional* node) {
-    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
-    return false;
-  }
-
+  // Defaults for all other node types not handled above
   bool enter(const AstNode* a) {
     printChapelSyntax(os_, a);
     return false;
@@ -979,11 +1270,9 @@ struct RstResult {
     std::string ext = textOnly_ ? ".txt" : ".rst";
     auto outpath = outDir + "/" + name + ext;
 
-    std::error_code err;
-    if (!std::filesystem::create_directories(outDir, err)) {
-      // TODO the above seems to return false when already exists,
-      // but I don't think that should be the case
-      // So check we really got an error
+    std::error_code err = makeDir(outDir, true);
+
+    if (err != std::error_code()) {
       if (err) {
         std::cerr << "Could not create " << outDir << " because "
                   << err.message() << "\n";
@@ -1020,14 +1309,18 @@ struct RstResultBuilder {
   static const int commentIndent = 3;
   int indentDepth_ = 1;
 
-  bool showComment(const Comment* comment, bool indent=true) {
+  RstResultBuilder(Context* context) : context_(context),
+                                       os_(std::stringstream()) {}
+
+  bool showComment(const Comment* comment, std::string& errMsg, bool indent=true) {
     if (!comment || comment->str().substr(0, 2) == "//") {
       os_ << '\n';
       return false;
     }
     int addDepth = textOnly_ ? 1 : 0;
     int indentChars = indent ? (addDepth + indentDepth_) * commentIndent : 0;
-    auto lines = prettifyComment(comment->str(), commentStyle);
+    std::vector<std::string> lines;
+    errMsg = prettifyComment(comment->str(), commentStyle, lines);
     if (!lines.empty())
       os_ << '\n';
     for (const auto& line : lines) {
@@ -1042,8 +1335,22 @@ struct RstResultBuilder {
     return true;
   }
   bool showComment(const AstNode* node, bool indent=true) {
-    bool commentShown = showComment(previousComment(context_, node->id()), indent);
-    if (commentShown && ((textOnly_ && !node->isModule()) || !textOnly_)) os_ << "\n";
+    std::string errMsg;
+    auto lastComment = previousComment(context_, node->id());
+    bool commentShown = showComment(lastComment, errMsg, indent);
+    if (!errMsg.empty()) {
+      // process the warning about comments
+      auto br = parseFileContainingIdToBuilderResult(context_, node->id());
+      auto loc = br->commentToLocation(lastComment);
+      auto err = ErrorMessage(ErrorMessage::Kind::WARNING, loc, errMsg);
+      context_->report(err);
+    }
+    // TODO: The presence of these node exceptions means we're probably missing
+    //  something from the old implementation
+    if (commentShown &&
+       ((textOnly_ && !node->isModule() && !node->isVariable()) || !textOnly_)) {
+      os_ << "\n";
+    }
     return commentShown;
   }
 
@@ -1056,8 +1363,8 @@ struct RstResultBuilder {
     node->traverse(ppv);
     if (!textOnly_) os_ << "\n";
     bool commentShown = showComment(node, indentComment);
-
-    // TODO: Fix all this because why are we checking for specific node types?
+    // TODO: Fix all this because why are we checking for specific node types
+    //  just to add a newline?
     if (commentShown && !textOnly_ && (node->isEnum() ||
                                        node->isClass() ||
                                        node->isRecord() ||
@@ -1066,7 +1373,25 @@ struct RstResultBuilder {
     }
 
     showDeprecationMessage(node, indentComment);
+    // TODO: how do deprecation and unstable messages interplay?
+    showUnstableWarning(node, indentComment);
     return commentShown;
+  }
+
+  void showUnstableWarning(const Decl* node, bool indentComment=true) {
+    if (auto attrs = node->attributes()) {
+      if (attrs->isUnstable()) {
+        int commentShift = 0;
+          if (indentComment) {
+            indentStream(os_, indentDepth_ * indentPerDepth);
+            commentShift = 1;
+          }
+          os_ << ".. warning::\n\n";
+          indentStream(os_, (indentDepth_ + commentShift) * indentPerDepth);
+        os_ << strip(attrs->unstableMessage().c_str());
+        os_ << "\n\n";
+      }
+    }
   }
 
   void showDeprecationMessage(const Decl* node, bool indentComment=true) {
@@ -1100,39 +1425,74 @@ struct RstResultBuilder {
   }
 
   void visitChildren(const AstNode* n) {
-    std::vector<RstResult*> subModules;
     for (auto child : n->children()) {
-      if (auto &r = rstDoc(context_, child->id())) {
-        if (child->isModule()) {
-          if (!writeStdOut_) {
-            // lookup the module path
-            std::vector<UniqueString> modulePath = getModulePath(context_,
-                                                                 child->id());
-            modulePath.pop_back();
-            std::string parentPath = modulePath.back().str();
-            std::string outdir = outputDir_ + "/" + parentPath;
-            r->outputModule(outdir, child->toModule()->name().str(),
-                            indentPerDepth);
-
-          } else {
-            subModules.push_back(r.get());
-          }
-        } else {
+      // don't visit child modules as they were gathered earlier
+      if (!child->isModule()) {
+        if (auto &r = rstDoc(context_, child->id())) {
           children_.push_back(r.get());
         }
       }
     }
-    // add the submodules to the end so that all the fields/functions of
-    // an individual module are printed together, and not interrupted by
-    // a submodule's declaration
-    for (auto subModule : subModules) {
-      children_.push_back(subModule);
+  }
+
+  /*
+    Helper for multi decls to make sure type and initializer information is
+    propagated down through each decl and changes as needed.
+  */
+  void multiDeclHelper(const Decl* decl, std::string& prevTypeExpression,
+                       std::string& prevInitExpression) {
+    if (!prevTypeExpression.empty()) {
+      // write prevTypeExpression
+      os_ << prevTypeExpression;
+      // set prevTypeExpression = ": thisVariableName.type"
+      prevTypeExpression = ": " + decl->toVariable()->name().str() + ".type";
+    }
+    if (!prevInitExpression.empty()) {
+      // write prevInitExpression
+      os_ << prevInitExpression;
+      // set prevInitExpression  = "= thisVariableName"
+      prevInitExpression = " = " + decl->toVariable()->name().str();
     }
   }
 
-  owned<RstResult> visit(const Module* m) {
-    if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m))
+  owned<RstResult> visit(const Class* c) {
+    if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
+    if (textOnly_) os_ << "Class: ";
+    show("class", c);
+    visitChildren(c);
+    return getResult(true);
+  }
+
+  owned<RstResult> visit(const Enum* e) {
+    if (isNoDoc(e)) return {};
+    show("enum", e);
+    return getResult();
+  }
+
+  owned<RstResult> visit(const Function* f) {
+    if (f->visibility() == Decl::Visibility::PRIVATE || isNoDoc(f))
       return {};
+    bool doIndent = f->isMethod() && f->isPrimaryMethod();
+    if (doIndent) indentDepth_ ++;
+    show(kindToRstString(f->isMethod(), f->kind()), f);
+    if (doIndent) indentDepth_ --;
+    return getResult();
+  }
+
+  owned<RstResult> visit(const Module* m) {
+    bool includedByDefault = false;
+
+    // see if we have any included modules we should add a submodule toctree for
+    bool hasIncludes = false;
+    for (auto stmt : m->stmts()) {
+      if (auto inc = stmt->toInclude()) {
+        auto incMod = getIncludedSubmodule(context_, inc->id());
+        if (!isNoDoc(incMod)) {
+          hasIncludes = true;
+          break;
+        }
+      }
+    }
     // lookup the module path
     std::vector<UniqueString> modulePath = getModulePath(context_, m->id());
     std::string moduleName;
@@ -1145,34 +1505,76 @@ struct RstResultBuilder {
     }
     assert(!moduleName.empty());
     const Comment* lastComment = nullptr;
+    if (auto attrs = m->attributes()) {
+      if (attrs->hasPragma(pragmatags::PRAGMA_MODULE_INCLUDED_BY_DEFAULT)) {
+        includedByDefault = true;
+      }
+    }
     // header
     if (!textOnly_) {
       os_ << ".. default-domain:: chpl\n\n";
-      os_ << ".. module:: " << m->name().c_str() << '\n';
-      lastComment = previousComment(context_, m->id());
-      if (lastComment) {
-        auto synopsis = commentSynopsis(lastComment, commentStyle);
-        if (!synopsis.empty()) {
-          indentStream(os_, 1 * indentPerDepth);
-          os_ << ":synopsis: " << synopsis
-              << '\n';
+      // This is hard coded in chpldoc to recognize ChapelSysCTypes like this
+      //  the comment indicates it prevents sphinx from complaining about
+      //  duplicate definitions.
+      if (moduleName == "ChapelSysCTypes") {
+        visitChildren(m);
+        return getResult(textOnly_);
+      }
+        os_ << ".. module:: " << m->name().c_str() << '\n';
+      // Don't index internal modules since that will make them show up
+      // in the module index (chpl-modindex.html).  This has the side
+      // effect of making references to the :mod: tag for the module
+      // illegal, which is appropriate since the modules are not
+      // user-facing.
+      if (idIsInInternalModule(context_, m->id())) {
+        os_ << "   :noindex:" << std::endl;
+      } else {
+        lastComment = previousComment(context_, m->id());
+        if (lastComment) {
+          std::string errMsg;
+          auto synopsis = commentSynopsis(lastComment, commentStyle, errMsg);
+          if (!errMsg.empty()) {
+            // process the warning about comments
+            auto br = parseFileContainingIdToBuilderResult(context_, m->id());
+            auto loc = br->commentToLocation(lastComment);
+            auto err = ErrorMessage(ErrorMessage::Kind::WARNING, loc, errMsg);
+            context_->report(err);
+          }
+          if (!synopsis.empty()) {
+            indentStream(os_, 1 * indentPerDepth);
+            os_ << ":synopsis: " << synopsis
+                << '\n';
+          }
         }
       }
-      os_ << '\n';
+        os_ << '\n';
 
-      // module title
-      os_ << m->name().c_str() << "\n";
-      os_ << std::string(m->name().length(), '=') << "\n";
+        // module title
+        os_ << m->name().c_str() << "\n";
+        os_ << std::string(m->name().length(), '=') << "\n";
 
-      // usage
-      // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
-      os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
-    } else {
-      os_ << m->name().c_str();
-      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
-      lastComment = previousComment(context_, m->id());
-    }
-    if (hasSubmodule(m)) {
+        // usage
+        if (includedByDefault) {
+          os_ << ".. note::" << std::endl << std::endl;
+          indentStream(os_, 1 * indentPerDepth);
+          os_ <<
+                "All Chapel programs automatically ``use`` this module by default.";
+          os_ << std::endl;
+          indentStream(os_, 1 * indentPerDepth);
+          os_ << "An explicit ``use`` statement is not necessary.";
+          os_ << std::endl;
+        } else {
+          os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
+        }
+
+      } else {
+        os_ << m->name().c_str();
+        os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+        lastComment = previousComment(context_, m->id());
+      }
+
+    if (hasSubmodule(m) || hasIncludes) {
+      moduleName = m->name().c_str();
       if (!textOnly_) {
         os_ << "\n";
         os_ << "**Submodules**" << std::endl << std::endl;
@@ -1195,50 +1597,13 @@ struct RstResultBuilder {
     if (textOnly_) indentDepth_ --;
     showComment(m, textOnly_);
     showDeprecationMessage(m, false);
+    // TODO: Are we not printing these for modules?
+    // showUnstableWarning(m, false);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
 
     return getResult(textOnly_);
-  }
-
-  owned<RstResult> visit(const Function* f) {
-    if (f->visibility() == Decl::Visibility::PRIVATE || isNoDoc(f))
-      return {};
-    bool doIndent = f->isMethod() && f->isPrimaryMethod();
-    if (doIndent) indentDepth_ ++;
-    show(kindToRstString(f->isMethod(), f->kind()), f);
-    if (doIndent) indentDepth_ --;
-    return getResult();
-  }
-
-  owned<RstResult> visit(const Variable* v) {
-    if (v->visibility() == Decl::Visibility::PRIVATE || isNoDoc(v))
-      return {};
-
-    if (v->isField()) {
-      indentDepth_ ++;
-      show("attribute", v);
-      indentDepth_ --;
-    }
-    else if (v->storageKind() == IntentList::TYPE)
-      show("type", v);
-    else
-      show("data", v);
-
-    return getResult();
-  }
-
-  owned<RstResult> visit(const Record* r) {
-    if (isNoDoc(r)) return {};
-    show("record", r);
-    visitChildren(r);
-    return getResult(true);
-  }
-  owned<RstResult> visit(const Enum* e) {
-    if (isNoDoc(e)) return {};
-    show("enum", e);
-    return getResult();
   }
 
   owned<RstResult> visit(const MultiDecl* md) {
@@ -1322,27 +1687,28 @@ struct RstResultBuilder {
     return getResult();
   }
 
-  void multiDeclHelper(const Decl* decl, std::string& prevTypeExpression,
-                       std::string& prevInitExpression) {
-    if (!prevTypeExpression.empty()) {
-      // write prevTypeExpression
-      os_ << prevTypeExpression;
-      // set prevTypeExpression = ": thisVariableName.type"
-      prevTypeExpression = ": " + decl->toVariable()->name().str() + ".type";
-    }
-    if (!prevInitExpression.empty()) {
-      // write prevInitExpression
-      os_ << prevInitExpression;
-      // set prevInitExpression  = "= thisVariableName"
-      prevInitExpression = " = " + decl->toVariable()->name().str();
-    }
+  owned<RstResult> visit(const Record* r) {
+    if (isNoDoc(r)) return {};
+    show("record", r);
+    visitChildren(r);
+    return getResult(true);
   }
 
-  owned<RstResult> visit(const Class* c) {
-    if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
-    show("class", c);
-    visitChildren(c);
-    return getResult(true);
+  owned<RstResult> visit(const Variable* v) {
+    if (v->visibility() == Decl::Visibility::PRIVATE || isNoDoc(v))
+      return {};
+
+    if (v->isField()) {
+      indentDepth_ ++;
+      show("attribute", v);
+      indentDepth_ --;
+    }
+    else if (v->storageKind() == IntentList::TYPE)
+      show("type", v);
+    else
+      show("data", v);
+
+    return getResult();
   }
 
   // TODO all these nullptr gets stored in the query map... can we avoid that?
@@ -1352,6 +1718,71 @@ struct RstResultBuilder {
     return std::make_unique<RstResult>(os_.str(), children_, indentChildren);
   }
 };
+
+
+struct GatherModulesVisitor {
+  std::set<ID> modules;
+  Context* context_;
+  GatherModulesVisitor(Context* context) {
+      context_ = context;
+  }
+
+  void handleUseOrImport(const AstNode* node) {
+    if (processUsedModules_) {
+      auto scope = resolution::scopeForId(context_, node->id());
+      auto used = resolution::findUsedImportedModules(context_, scope);
+      for (auto id: used) {
+        if (idIsInBundledModule(context_, id)) {
+          continue;
+        }
+        // only add it and visit its children if we haven't seen it already
+        if (modules.find(id) == modules.end()) {
+          modules.insert(id);
+          auto ast = idToAst(context_, id);
+          ast->traverse(*this);
+        }
+      }
+    }
+  }
+
+  bool enter(const Module* m) {
+    if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m)) {
+      return false;
+    }
+    modules.insert(m->id());
+    return true;
+  }
+
+  // will handle a use or import multiple times in the case that a module has
+  // multiple use statements.
+  // every time handleUseOrImport is called, it will try to add the module
+  // to the set
+  void exit(const Use* node) {
+    handleUseOrImport(node);
+  }
+
+  void exit(const Import* node) {
+    handleUseOrImport(node);
+  }
+
+  void exit(const Include* node) {
+    if (auto mod = getIncludedSubmodule(context_, node->id())) {
+      if (!isNoDoc(mod)) {
+        modules.insert(mod->id());
+      }
+    }
+  }
+
+  bool enter(const AstNode* n) {
+    return true;
+  }
+
+  void exit(const AstNode* n) {
+    // do nothing
+  }
+
+};
+
 
 /**
  Visitor that collects a mapping from ID -> comment
@@ -1410,16 +1841,29 @@ struct CommentVisitor {
  because the doc comment for a Module is its previous sibling
  */
 static const CommentMap&
-commentMap(Context* context, UniqueString path) {
-  QUERY_BEGIN(commentMap, context, path);
+commentMap(Context* context, ID id) {
+
+  // TODO:
+  //  redundant work done if we read through a parent module and read its submodule symbols
+  //  then later we read the submodule symbols without the parent as well
+  // Possible solution -> write into helper function that calls a query (commentMapQuery) and (commentMap)
+  // ID has symbol path, so we can compute the parent symbol from there by getting it from ID function to split path
+  // if it is !empty, compute all the parent ids, loop over from rootest to leafest
+  // builderResultForID (is the id we care about is IN the builder result)
+  // if it is in the BR, use the comment map associated with the BR
+  // otherwise call commentMap to generate a new one
+  QUERY_BEGIN(commentMap, context, id);
   CommentMap result;
-  UniqueString emptyParent;
-  const auto& builderResult = parseFileToBuilderResult(context,
-                                                       path,
-                                                       emptyParent);
+  const auto& builderResult = parseFileContainingIdToBuilderResult(context,
+                                                       id);
 
   CommentVisitor cv{result};
-  for (const auto& ast : builderResult.topLevelExpressions()) {
+  for (const chpl::uast::AstNode* ast : builderResult->topLevelExpressions()) {
+    /* note the use of the above pattern rather than `const auto& ast:`
+    was motivated by a compiler error from chapelmac during smoketests
+    that complained about the pattern and suggested this replacement,
+    which it seems satisfied with.
+    */
     ast->traverse(cv);
   }
 
@@ -1435,10 +1879,8 @@ static const Comment* const& previousComment(Context* context, ID id) {
   const Comment* result = nullptr;
   UniqueString modPath;
   UniqueString parentPath;
-
   assert(context->filePathForId(id, modPath, parentPath));
-
-  const auto& map = commentMap(context, modPath);
+  const auto& map = commentMap(context, id);
   auto it = map.find(id);
   if (it != map.end()) {
     result = it->second;
@@ -1459,6 +1901,12 @@ static const owned<RstResult>& rstDoc(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+
+/*
+  Query to get the module path for a given id. Path may be just the name of
+  the module in the case of a top-level module, or it may contain the parent(s)
+  of the module if it is a submodule.
+*/
 static const std::vector<UniqueString>& getModulePath(Context* context, ID id) {
   QUERY_BEGIN(getModulePath, context, id);
   std::vector<UniqueString> result;
@@ -1560,12 +2008,9 @@ module N { }
   //   var nestedX = 22;
   // }
 
-// temporary CLI to get testing
+// Command line options and some defaults for dyno-chpldoc
 struct Args {
   std::string saveSphinx = "";
-  bool selfTest = false;
-  bool stdout = false;
-  bool dump = false;
   bool textOnly = false;
   std::string outputDir;
   bool processUsedModules = false;
@@ -1578,50 +2023,26 @@ struct Args {
   std::string chplHome;
 };
 
-static Args parseArgs(int argc, char **argv) {
+static Args parseArgs(int argc, char **argv, void* mainAddr) {
   Args ret;
-  for (int i = 1; i < argc; i++) {
-    if  (std::strcmp("--no-html", argv[i]) == 0){
-      ret.noHTML = true;
-    } else if (std::strcmp("--save-sphinx", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.saveSphinx = argv[i + 1];
-      i += 1;
-    } else if (std::strcmp("--self-test", argv[i]) == 0) {
-      ret.selfTest = true;
-    } else if (std::strcmp("--stdout", argv[i]) == 0) {
-      ret.stdout = true;
-    } else if (std::strcmp("--dump", argv[i]) == 0) {
-      ret.dump = true;
-    } else if (std::strcmp("--text-only", argv[i]) ==  0) {
-      ret.textOnly = true;
-    } else if (std::strcmp("--output-dir", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.outputDir = argv[i + 1];
-      i += 1;
-    } else if (std::strcmp("--author", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.author = argv[i + 1];
-      i += 1;
-    } else if (std::strcmp("--process-used-modules", argv[i]) ==  0) {
-      ret.processUsedModules = true;
-    } else if (std::strcmp("--comment-style", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.commentStyle = argv[i + 1];
-      i += 1;
-    } else if (std::strcmp("--project-version", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.projectVersion = checkProjectVersion(argv[i + 1]);
-      i += 1;
-    } else if (std::strcmp("--print-commands", argv[i]) == 0) {
-      ret.printSystemCommands = true;
-    } else if (std::strcmp("--home", argv[i]) == 0) {
-      assert(i < (argc - 1));
-      ret.chplHome = argv[i + 1];
-      i += 1;
-    } else {
-      ret.files.push_back(argv[i]);
-    }
+  init_args(&sArgState, argv[0], mainAddr);
+  init_arg_desc(&sArgState, docs_arg_desc);
+  process_args(&sArgState, argc, argv);
+  ret.author = std::string(fDocsAuthor);
+  if (fDocsCommentLabel[0] != '\0') {
+    ret.commentStyle = std::string(fDocsCommentLabel);
+  }
+  ret.outputDir = std::string(fDocsFolder);
+  ret.processUsedModules = fDocsProcessUsedModules;
+  ret.textOnly = fDocsTextOnly;
+  ret.saveSphinx = std::string(fDocsSphinxDir);
+  ret.printSystemCommands = printSystemCommands;
+  ret.projectVersion = checkProjectVersion(fDocsProjectVersion);
+  ret.noHTML = !fDocsHTML;
+  // add source files
+  // TODO: Check for proper file type, duplicate file names, was file found, etc.
+  for (int i = 0; i < sArgState.nfile_arguments; i++) {
+    ret.files.push_back(std::string(sArgState.file_argument[i]));
   }
   return ret;
 }
@@ -1676,37 +2097,61 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   if( printSystemCommands ) {
     printf("%s\n", cmd.c_str());
   }
-  myshell(cmd, "building html output from chpldoc sphinx project");
-  printf("HTML files are at: %s\n", outputDir.c_str());
+  if (myshell(cmd, "building html output from chpldoc sphinx project") == 0) {
+    printf("HTML files are at: %s\n", outputDir.c_str());
+  }
 }
 
 
 int main(int argc, char** argv) {
-  Context context;
-  Context *ctx = &context;
+  // initial value of CHPL_HOME may be overridden by cmdline arg
+  CHPL_HOME = getenv("CHPL_HOME");
+  Args args = parseArgs(argc, argv, (void*)main);
 
-  Args args = parseArgs(argc, argv);
-  writeStdOut_ = args.stdout;
+  // check if user asked for legacy chpldoc
+  if (fLegacyChpldoc) {
+    std::string pathToExe = getExecutablePath(argv[0], (void*)main);
+    std::string cmd = pathToExe + "-legacy ";
+    for (int i = 1; i < argc; i++) {
+      std::string arg = std::string(argv[i]);
+      if (arg != "--legacy") {
+        // these flags had their args unwrapped, add quotes back to avoid
+        // situation where shell evaluates or splits the args
+        // TODO: Should we just wrap all the possible values in quotes?
+        if (arg == "--comment-style" || arg == "--author") {
+          assert(i + 1 < argc);
+          cmd += arg;
+          cmd += " \""+std::string(argv[i+1])+"\"";
+          i++;
+        } else {
+          cmd += arg;
+        }
+        cmd += " ";
+      }
+    }
+    return myshell(cmd, "running legacy chpldoc", true);
+  }
+
+  // TODO: there is a future for this, asking for a better error message and I
+  // think we can provide it by checking here.
+  // see test/chpldoc/compflags/folder/save-sphinx/saveSphinxInDocs.doc.future
+  // if (args.saveSphinx == "docs") {
+
+  // }
+
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {
     std::cerr << "error: comment label should start with /*" << std::endl;
     return 1;
   }
   commentStyle_ = args.commentStyle;
-  if (args.selfTest) {
-    args.files.push_back("selftest.chpl");
-    UniqueString path = UniqueString::get(ctx, "selftest.chpl");
-    setFileText(ctx, path, testString);
-  }
+  processUsedModules_ = args.processUsedModules;
 
-  if (args.files.size() > 1) {
-    std::cerr << "WARNING only handling one file right now\n";
-  }
 
-  // update CHPL_HOME if we got one from the command-line args
-  if (!args.chplHome.empty()) {
-    CHPL_HOME = args.chplHome;
-  }
+  Context context(CHPL_HOME);
+  Context *ctx = &context;
+  auto chplEnv = ctx->getChplEnv();
+  assert(!chplEnv.getError() && "not handling chplenv errors yet");
 
   // This is the final location for the output format (e.g. the html files.).
   std::string docsOutputDir;
@@ -1753,9 +2198,38 @@ int main(int argc, char** argv) {
 
   outputDir_ = docsRstDir;
 
+  std::string modRoot = CHPL_HOME + "/modules";
+  std::string internal = modRoot + "/internal";
+  std::string bundled = modRoot + "/";
+
+  // CHPL_MODULE_PATH isn't always in the output; check if it's there.
+  auto it = chplEnv->find("CHPL_MODULE_PATH");
+  auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
+  setupModuleSearchPaths(ctx,
+                         CHPL_HOME,
+                         false, //minimal modules
+                         chplEnv->at("CHPL_LOCALE_MODEL"),
+                         false, //task tracking
+                         chplEnv->at("CHPL_TASKS"),
+                         chplEnv->at("CHPL_COMM"),
+                         chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
+                         chplModulePath,
+                         {}, //cmdLinePaths
+                         args.files);
+  GatherModulesVisitor gather(ctx);
+  printStuff(argv[0], (void*)main);
+  // evaluate all the files and gather the modules
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
     UniqueString emptyParent;
+
+    std::vector<UniqueString> paths;
+    size_t location = cpath.rfind("/");
+    paths.push_back(UniqueString::get(ctx,"./"));
+    if (location != std::string::npos) {
+      paths.push_back(UniqueString::get(ctx, cpath.substr(0, location + 1)));
+    }
+    setModuleSearchPath(ctx, paths);
 
     // TODO: Change which query we use to parse files as suggested by @mppf
     // parseFileContainingIdToBuilderResult(Context* context, ID id);
@@ -1768,55 +2242,59 @@ int main(int argc, char** argv) {
       // TODO: handle errors better, don't rely on parse query to emit them
       // per @mppf: if dyno-chpldoc wants to quit on an error, it should
       // configure Context::reportError to have a custom function that does so.
-
+      bool fatal = false;
       for (auto e : builderResult.errors()) {
       // just display the error messages right now, see TODO above
         if (e.kind() == ErrorMessage::Kind::ERROR ||
             e.kind() == ErrorMessage::Kind::SYNTAX) {
-              std::cerr << "Error parsing " << path << ": "
-                        << builderResult.error(0).message() << "\n";
-              return 1;
-            }
-        else if (e.kind() == ErrorMessage::Kind::WARNING) {
-              std::cerr << e.location(ctx).path() << ":"
-                        << e.location(ctx).line() << ": warning: "
-                        << builderResult.error(0).message() << "\n";
-            }
+              fatal = true;
+        }
+        context.report(e);
+      }
+      if (fatal) {
+        return 1;
       }
     }
-    if (!args.stdout) {
-      std::string name;
-      for (const auto& ast : builderResult.topLevelExpressions()) {
-        if (ast->isModule())
-          name = ast->toModule()->name().str();
-
-        if (args.dump) {
-          ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-        }
-        if (auto& r = rstDoc(ctx, ast->id())) {
-          r->outputModule(outputDir_, name, indentPerDepth);
-        }
-      }
-    }
-    else {
-      for (const auto& ast : builderResult.topLevelExpressions()) {
-        if (args.dump) {
-          ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-        }
-        if (auto& r = rstDoc(ctx, ast->id())) {
-          r->output(std::cout, indentPerDepth);
-        }
-      }
-    }
-
-    if (args.dump) {
-      const auto& map = commentMap(ctx, path);
-      for (const auto& pair : map) {
-        std::cerr << pair.first.symbolPath().c_str() << " "
-                  << (pair.second ? pair.second->str() : "<nullptr>") << "\n";
-      }
+    // gather all the top level and used/imported/included module IDs
+    for (const chpl::uast::AstNode* ast : builderResult.topLevelExpressions()) {
+      /* note the use of the above pattern rather than `const auto& ast:`
+          was motivated by a compiler error from chapelmac during smoketests
+          that complained about the pattern and suggested this replacement,
+          which it seems satisfied with.
+      */
+      ast->traverse(gather);
     }
   }
+
+  for (auto id : gather.modules) {
+    if (auto& r = rstDoc(ctx, id)) {
+        // given a module ID we can get the path to the file that we parsed
+        UniqueString filePath;
+        UniqueString parentSymbol;
+        ctx->filePathForId(id, filePath, parentSymbol);
+        std::string moduleName = id.symbolName(ctx).str();
+        std::string parentPath;
+        auto pathVec = id.expandSymbolPath(ctx, id.symbolPath());
+        // remove last entry
+        pathVec.pop_back();
+        for (auto path : pathVec) {
+          for (int i = 0; i <= path.second; i++) {
+            if (path.first != id.symbolName(ctx)) {
+              parentPath += unescapeStringId(path.first.str()) + "/";
+            }
+          }
+        }
+        std::string docsWorkingDir_ = filenameFromModuleName(filePath.c_str(), outputDir_);
+        std::string outdir = docsWorkingDir_;
+        // TODO: This is an ugly hack to handle included module paths
+        if (parentSymbol.isEmpty()) {
+          outdir += "/" + parentPath;
+        }
+
+        // need to check for a parent module in the path and add it to the directory structure if it exists
+        r->outputModule(outdir, moduleName, indentPerDepth);
+     }
+   }
 
   if (!textOnly_ && !args.noHTML) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,args.projectVersion,
@@ -1825,3 +2303,5 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+
+

@@ -466,7 +466,7 @@ inline proc divfloorP2(m: integral, n: bcdPosInt) return
 
 /////////////////////////////////
 
-proc BlockCyclicDim.dsiIndexToLocale1d(ind): locIdT {
+proc BlockCyclicDim.doDsiIndexToLocale1d(ind): locIdT {
   // keep in sync with BlockCyclic1dom._dsiLocNo_formula
   const ind0 = ind - lowIdx;
   const locNo =
@@ -481,11 +481,15 @@ proc BlockCyclicDim.dsiIndexToLocale1d(ind): locIdT {
   return locNo;
 }
 
+proc BlockCyclicDim.dsiIndexToLocale1d(ind): locIdT {
+  return doDsiIndexToLocale1d(ind);
+}
+
 // allow uint(64) indices, but assert that they fit in int(64)
 inline proc BlockCyclicDim.dsiIndexToLocale1d(ind: uint(64)): locIdT {
   type convT = int(64);
   assert(ind <= max(convT));
-  return dsiIndexToLocale1d(ind:convT);
+  return doDsiIndexToLocale1d(ind:convT);
 }
 
 proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {

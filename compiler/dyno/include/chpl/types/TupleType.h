@@ -34,8 +34,10 @@ class TupleType final : public CompositeType {
   bool isStarTuple_ = false; // i.e. all elements have the same type
   bool isVarArgTuple_ = false;
   bool isKnownSize_ = true;
+  bool isParamKnown_ = false;
 
   void computeIsStarTuple();
+  void computeIsParamKnown();
 
   TupleType(ID id, UniqueString name,
             const TupleType* instantiatedFrom,
@@ -55,6 +57,7 @@ class TupleType final : public CompositeType {
       }
     }
     computeIsStarTuple();
+    computeIsParamKnown();
   }
 
 
@@ -112,6 +115,10 @@ class TupleType final : public CompositeType {
   /** Return true if this is a *star tuple* - that is, all of the
       element types are the same. */
   bool isStarTuple() const { return isStarTuple_; }
+
+  /** Return true if this tuple's elements are all non-generic
+      params, e.g., (param b: bool = true, param i: int = 0). */
+  bool isParamKnown() const { return isParamKnown_; }
 
   bool isVarArgTuple() const { return isVarArgTuple_; }
 

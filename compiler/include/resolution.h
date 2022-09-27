@@ -229,6 +229,8 @@ public:
   Vec<Symbol*>*  actuals;
   Expr*          scope;
   bool           explain;
+  bool           isMethodCall;
+  bool           useOldVisibility;
 
 private:
                  DisambiguationContext();
@@ -292,6 +294,9 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn)
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
+void warnForIntUintConversion(BaseAST* context, Type* formalType,
+                              Type* actualType, Symbol* actual);
+
 void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
@@ -332,6 +337,14 @@ SymExpr* findSourceOfYield(CallExpr* yield);
 void expandInitFieldPrims();
 
 void removeCopyFns(Type* t);
+
+bool moveIsAcceptable(CallExpr* call);
+
+Type* moveDetermineLhsType(CallExpr* call);
+
+Type* moveDetermineRhsType(CallExpr* call);
+
+bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
 std::set<Type*> getWellKnownTypesSet();
 bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);

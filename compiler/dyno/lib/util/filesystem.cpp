@@ -208,13 +208,18 @@ std::error_code currentWorkingDir(std::string& path_out) {
   }
 }
 
-std::error_code makeDir(std::string dirpath) {
+std::error_code makeDir(std::string dirpath, bool makeParents) {
   using namespace llvm::sys::fs;
-  if (auto err = create_directory(dirpath, true, perms::all_all)) {
-    return err;
+  if (makeParents) {
+    return create_directories(dirpath, true, perms::all_all);
   } else {
-    return std::error_code();
+    return create_directory(dirpath, true, perms::all_all);
   }
+}
+
+std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
+  using namespace llvm::sys::fs;
+  return getMainExecutable(argv0, MainExecAddr);
 }
 
 

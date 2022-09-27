@@ -333,6 +333,10 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   else if (manager == dtUnmanagedNilable)
     manager = dtUnmanaged;
 
+  if (manager == dtBorrowed) {
+    USR_WARN(newExpr, "creating a 'new borrowed' type is deprecated");
+  }
+
   INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
   AggregateType* at = resolveNewFindType(newExpr);
 

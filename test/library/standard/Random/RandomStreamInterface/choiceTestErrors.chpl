@@ -101,13 +101,15 @@ proc main() throws {
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
   }
-  
+
+/* now generates a compile-time error:  
   try {
     var c = stream.choice(1..);
     writeln('Error: unbounded range did not throw error');
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
   }
+*/
 
   try {
     var c = stream.choice({1..2}, size=0);

@@ -64,7 +64,7 @@ proc main() {
 
   {
     type AI = A(int);
-    var a = new borrowed AI(1);
+    var a = (new owned AI(1)).borrow();
     var b = new owned AI(2);
     var c = new shared AI(3);
     var d = new unmanaged AI(4);
@@ -90,7 +90,7 @@ proc main() {
 
   {
     type BIR = B(int, real);
-    var a = new borrowed BIR(1, 10.0);
+    var a = (new owned BIR(1, 10.0)).borrow();
     var b = new owned BIR(2, 20.0);
     var c = new shared BIR(3, 30.0);
     var d = new unmanaged BIR(4, 40.0);

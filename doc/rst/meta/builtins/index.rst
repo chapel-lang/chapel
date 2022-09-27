@@ -13,11 +13,8 @@ amenable to being documented using **chpldoc**:
    :maxdepth: 1
 
    OwnedObject
-   Bytes
    SharedObject
    ChapelSyncvar
-   String
-   ChapelTuple
 
 
 Index

@@ -24,7 +24,7 @@ module mymodule {
     var Aq:[1..n] borrowed MyClass?;
     var Bq:[1..n] borrowed MyClass?;
 
-    var instance = new borrowed MyClass(0);
+    var instance = (new owned MyClass(0)).borrow();
     setupArrays(Aq, Bq, instance);
 
     var A:[1..n] borrowed MyClass = Aq!;

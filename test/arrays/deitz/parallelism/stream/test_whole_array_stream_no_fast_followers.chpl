@@ -39,7 +39,7 @@ proc main() {
 // optionally print them to the console
 //
 proc initVectors(B, C) {
-  var randlist = new borrowed RandomStream(real, seed);
+  var randlist = (new owned RandomStream(real, seed)).borrow();
   randlist.fillRandom(B);
   randlist.fillRandom(C);
 }

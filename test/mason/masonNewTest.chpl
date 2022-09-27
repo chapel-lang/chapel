@@ -49,9 +49,11 @@ proc main() {
   masonNew(args4);
 
   // Confirm structure
-  if isFile(pwd + '/Mason.toml') {
-    writeln('File structure: correct');
-    remove('Mason.toml');
+  if isDir(pwd + '/Test') {
+    if isFile(pwd + '/Test/Mason.toml') {
+      writeln('File structure: correct');
+      rmTree('Test');
+    }
   }
   else {
     writeln('File structure: incorrect');

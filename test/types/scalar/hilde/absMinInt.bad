@@ -1,0 +1,1 @@
+absMinInt.chpl:12: error: halt reached - abs should never return a negative number.

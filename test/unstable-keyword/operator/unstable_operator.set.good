@@ -1,0 +1,5 @@
+unstable_operator.chpl:15: In function 'main':
+unstable_operator.chpl:18: warning: Addition of TestUnstableOperator is unstable
+unstable_operator.chpl:19: warning: Subtraction of TestUnstableOperator is deprecated
+(x = 5)
+(x = 1)

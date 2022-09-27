@@ -13,7 +13,7 @@ class Foo {
 
 var foo: borrowed Foo(int)?; // We can create an instantiation with t = int
 var foo2: borrowed Foo(int)?;
-var foo3 = new borrowed Foo();
+var foo3 = (new owned Foo()).borrow();
 writeln(foo.type == foo2.type);
 writeln((foo.type :class) == foo3.type);
 writeln(foo.type:string);

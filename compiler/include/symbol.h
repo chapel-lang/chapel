@@ -236,11 +236,14 @@ public:
   Expr*              getInitialization()                       const;
 
   std::string deprecationMsg;
-
   const char* getDeprecationMsg() const;
-  const char* getSanitizedDeprecationMsg() const;
-
   void generateDeprecationWarning(Expr* context);
+
+  std::string unstableMsg;
+  const char* getUnstableMsg() const;
+  void generateUnstableWarning(Expr* context);
+
+  const char* getSanitizedMsg(std::string msg) const;
 
 protected:
                      Symbol(AstTag      astTag,
@@ -499,8 +502,8 @@ public:
   BlockStmt* svInitBlock;      // always present
   BlockStmt* svDeinitBlock;    //  "
 
-  // Once pruning is no longer needed, this should be removed.
-  bool pruneit;
+  // This svar is for a task intent or TPV that is explicit in user code.
+  bool svExplicit;
 };
 
 /******************************** | *********************************

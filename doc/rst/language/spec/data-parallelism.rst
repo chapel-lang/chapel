@@ -310,8 +310,9 @@ variable within the forall construct implicitly refer to a *shadow
 variable*, i.e. the corresponding formal argument of the task function
 or the leading iterator.
 
-When the forall construct is inside a method on a record and accesses a
-field of ``this``, the field is treated as an outer variable. That is,
+When the forall construct is inside a method on a record, accesses a
+field of ``this``, and does not contain an explicit forall intent on ``this``
+(see below), the field itself is treated as an outer variable. That is,
 it is subject to forall intents and all references to this field within
 the forall construct implicitly refer to the corresponding shadow
 variable.

@@ -201,13 +201,12 @@ module ChapelDomain {
   proc chpl__buildDomainExpr(keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
-    type keyType = _getLiteralType(keys(0).type);
+    type keyType = keys(0).type;
     for param i in 1..count-1 do
-      if keyType != _getLiteralType(keys(i).type) {
+      if keyType != keys(i).type {
         compilerError("Associative domain element " + i:string +
                       " expected to be of type " + keyType:string +
-                      " but is of type " +
-                      _getLiteralType(keys(i).type):string);
+                      " but is of type " + keys(i).type:string);
       }
 
     //Initialize the domain with a size appropriate for the number of keys.
@@ -338,6 +337,7 @@ module ChapelDomain {
     return dom[(...ranges)];
   }
 
+  pragma "no doc"
   operator #(dom: domain, counts: integral) {
     errorIfNotRectangular(dom, "#", " and arrays");
     if dom.rank != 1 then compilerError(
@@ -346,6 +346,7 @@ module ChapelDomain {
     return chpl_countDomHelp(dom, (counts,));
   }
 
+  pragma "no doc"
   operator #(dom: domain, counts: _tuple) {
     errorIfNotRectangular(dom, "#", " and arrays");
     if (counts.size != dom.rank) then compilerError(
@@ -354,11 +355,13 @@ module ChapelDomain {
   }
 
   pragma "last resort"
+  pragma "no doc"
   operator #(dom: domain, counts) {
     compilerError("cannot apply '#' to '", dom.type:string,
                   "' using count(s) of type ", counts.type:string);
   }
 
+  pragma "no doc"
   operator +(d: domain, i: index(d)) {
     if d.isRectangular() then
       compilerError("Cannot add indices to a rectangular domain");
@@ -366,6 +369,7 @@ module ChapelDomain {
       compilerError("Cannot add indices to this domain type");
   }
 
+  pragma "no doc"
   operator +(i, d: domain) where isSubtype(i.type, index(d)) && !d.isIrregular() {
     if d.isRectangular() then
       compilerError("Cannot add indices to a rectangular domain");
@@ -373,16 +377,19 @@ module ChapelDomain {
       compilerError("Cannot add indices to this domain type");
   }
 
+  pragma "no doc"
   operator +(in d: domain, i: index(d)) where d.isIrregular() {
     d.add(i);
     return d;
   }
 
+  pragma "no doc"
   operator +(i, in d: domain) where isSubtype(i.type,index(d)) && d.isIrregular() {
     d.add(i);
     return d;
   }
 
+  pragma "no doc"
   operator +(in d1: domain, d2: domain) where
                                     d1.type == d2.type &&
                                     d1.isIrregular() &&
@@ -392,6 +399,7 @@ module ChapelDomain {
     return d1;
   }
 
+  pragma "no doc"
   operator +(d1: domain, d2: domain) {
     if (d1.isRectangular() || d2.isRectangular()) then
       compilerError("Cannot add indices to a rectangular domain");
@@ -399,9 +407,12 @@ module ChapelDomain {
       compilerError("Cannot add indices to this domain type");
   }
 
+  pragma "no doc"
   inline operator +=(ref D: domain, idx) { D.add(idx); }
+  pragma "no doc"
   inline operator +=(ref D: domain, param idx) { D.add(idx); }
 
+  pragma "no doc"
   operator -(d: domain, i: index(d)) {
     if d.isRectangular() then
       compilerError("Cannot remove indices from a rectangular domain");
@@ -409,11 +420,13 @@ module ChapelDomain {
       compilerError("Cannot remove indices from this domain type");
   }
 
+  pragma "no doc"
   operator -(in d: domain, i: index(d)) where d.isIrregular() {
     d.remove(i);
     return d;
   }
 
+  pragma "no doc"
   operator -(in d1: domain, d2: domain) where
                                     d1.type == d2.type &&
                                     d1.isSparse() {
@@ -422,6 +435,7 @@ module ChapelDomain {
     return d1;
   }
 
+  pragma "no doc"
   operator -(d1: domain, d2: domain) {
     if (d1.isRectangular() || d2.isRectangular()) then
       compilerError("Cannot remove indices from a rectangular domain");
@@ -429,9 +443,12 @@ module ChapelDomain {
       compilerError("Cannot remove indices from this domain type");
   }
 
+  pragma "no doc"
   inline operator -=(ref D: domain, idx) { D.remove(idx); }
+  pragma "no doc"
   inline operator -=(ref D: domain, param idx) { D.remove(idx); }
 
+  pragma "no doc"
   inline operator ==(d1: domain, d2: domain) where d1.isRectangular() &&
                                                    d2.isRectangular() {
     if d1._value.rank != d2._value.rank {
@@ -445,11 +462,13 @@ module ChapelDomain {
     }
   }
 
+  pragma "no doc"
   inline operator !=(d1: domain, d2: domain) where d1.isRectangular() &&
                                                    d2.isRectangular() {
     return !(d1 == d2);
   }
 
+  pragma "no doc"
   inline operator ==(d1: domain, d2: domain) where d1.isAssociative() &&
                                                    d2.isAssociative() {
     if d1._value == d2._value then return true;
@@ -460,11 +479,13 @@ module ChapelDomain {
     return true;
   }
 
+  pragma "no doc"
   inline operator !=(d1: domain, d2: domain) where d1.isAssociative() &&
                                                    d2.isAssociative() {
     return !(d1 == d2);
   }
 
+  pragma "no doc"
   inline operator ==(d1: domain, d2: domain) where d1.isSparse() &&
                                                    d2.isSparse() {
     if d1._value == d2._value then return true;
@@ -476,6 +497,7 @@ module ChapelDomain {
     return true;
   }
 
+  pragma "no doc"
   inline operator !=(d1: domain, d2: domain) where d1.isSparse() &&
                                                    d2.isSparse() {
     return !(d1 == d2);
@@ -498,10 +520,12 @@ module ChapelDomain {
                   d2.type:string, "' is not currently supported");
   }
 
+  pragma "no doc"
   inline operator ==(d1: domain, d2: domain) {
     cmpError(d1, d2);
   }
 
+  pragma "no doc"
   inline operator !=(d1: domain, d2: domain) {
     cmpError(d1, d2);
   }
@@ -512,6 +536,7 @@ module ChapelDomain {
            (d1.isAssociative() && d2.isAssociative()) ||
            (d1.isSparse()      && d2.isSparse()     );
 
+  pragma "no doc"
   operator -(a :domain, b :domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;
@@ -526,6 +551,7 @@ module ChapelDomain {
      they exist. If an element in the RHS is not present in the LHS, no error
      occurs.
   */
+  pragma "no doc"
   operator -=(ref a :domain, b :domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -533,25 +559,30 @@ module ChapelDomain {
         a.remove(e);
   }
 
+  pragma "no doc"
   operator |(a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     return a + b;
   }
 
+  pragma "no doc"
   deprecated "'|' on rectangular domains is deprecated"
   operator |(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
     return forall (aa, bb) in zip(a, b) do aa|bb;
 
+  pragma "no doc"
   operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
       a.add(e);
   }
 
+  pragma "no doc"
   operator |=(a :domain, b: domain) where a.isRectangular() {
     compilerError("cannot invoke '|=' on a rectangular domain");
   }
 
+  pragma "no doc"
   operator +=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     a |= b;
@@ -562,6 +593,7 @@ module ChapelDomain {
      they exist. If an element in the RHS is not present in the LHS, no error
      occurs.
   */
+  pragma "no doc"
   operator &(a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;
@@ -572,10 +604,12 @@ module ChapelDomain {
     return newDom;
   }
 
+  pragma "no doc"
   deprecated "'&' on rectangular domains is deprecated"
   operator &(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
     return forall (aa, bb) in zip(a, b) do aa&bb;
 
+  pragma "no doc"
   operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var removeSet: domain(a.idxType);
@@ -586,10 +620,12 @@ module ChapelDomain {
       a.remove(e);
   }
 
+  pragma "no doc"
   operator &=(a :domain, b: domain) where a.isRectangular() {
     compilerError("cannot invoke '&=' on a rectangular domain");
   }
 
+  pragma "no doc"
   operator ^(a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;
@@ -604,6 +640,7 @@ module ChapelDomain {
     return newDom;
   }
 
+  pragma "no doc"
   deprecated "'^' on rectangular domains is deprecated"
   operator ^(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
     return forall (aa, bb) in zip(a, b) do aa^bb;
@@ -613,6 +650,7 @@ module ChapelDomain {
      they exist. If an element in the RHS is not present in the LHS, it is
      added to the LHS.
   */
+  pragma "no doc"
   operator ^=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -622,6 +660,7 @@ module ChapelDomain {
         a.add(e);
   }
 
+  pragma "no doc"
   operator ^=(a :domain, b: domain) where a.isRectangular() {
     compilerError("cannot invoke '^=' on a rectangular domain");
   }
@@ -629,6 +668,7 @@ module ChapelDomain {
   //
   // BaseSparseDom operator overloads
   //
+  pragma "no doc"
   operator +=(ref sd: domain, inds: [] index(sd)) where sd.isSparse() {
     if inds.sizeAs(int) == 0 then return;
 
@@ -637,6 +677,7 @@ module ChapelDomain {
 
 
   // TODO: Currently not optimized
+  pragma "no doc"
   operator +=(ref sd: domain, d: domain)
   where sd.isSparse() && d.rank==sd.rank && sd.idxType==d.idxType {
     if d.sizeAs(int) == 0 then return;
@@ -655,11 +696,13 @@ module ChapelDomain {
   }
 
   // TODO: Implement bulkRemove
+  pragma "no doc"
   operator -=(ref sd: domain, inds: [] index(sd)) where sd.isSparse() {
     for ind in inds do
       sd -= ind;
   }
 
+  pragma "no doc"
   operator -=(ref sd: domain, d: domain)
   where sd.isSparse() && d.rank==sd.rank && sd.idxType==d.idxType {
     for ind in d do
@@ -669,6 +712,7 @@ module ChapelDomain {
   //
   // Assignment of domains
   //
+  pragma "no doc"
   operator =(ref a: domain, b: domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in domain assignment");
@@ -713,6 +757,7 @@ module ChapelDomain {
     return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
   }
 
+  pragma "no doc"
   operator =(ref a: domain, b: _tuple) {
     if chpl__isLegalRectTupDomAssign(a, b) {
       a = {(...b)};
@@ -724,10 +769,12 @@ module ChapelDomain {
     }
   }
 
+  pragma "no doc"
   operator =(ref d: domain, r: range(?)) {
     d = {r};
   }
 
+  pragma "no doc"
   operator =(ref a: domain, b) {  // b is iteratable
     if a.isRectangular() then
       compilerError("Illegal assignment to a rectangular domain");
@@ -738,6 +785,7 @@ module ChapelDomain {
   }
 
   // This is the definition of the 'by' operator for domains.
+  pragma "no doc"
   operator by(a: domain, b) {
     errorIfNotRectangular(a, "by");
     var r: a.rank*range(a._value.idxType,
@@ -752,6 +800,7 @@ module ChapelDomain {
   // This is the definition of the 'align' operator for domains.
   // It produces a new domain with the specified alignment.
   // See also: 'align' operator on ranges.
+  pragma "no doc"
   operator align(a: domain, b) {
     errorIfNotRectangular(a, "align");
     var r: a.rank*range(a._value.idxType,
@@ -1793,12 +1842,10 @@ module ChapelDomain {
     }
 
     pragma "no doc"
+    @unstable "bulkAdd() is subject to change in the future."
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
-      if chpl_warnUnstable then compilerWarning(
-        "bulkAdd() is subject to change in the future.");
-
       if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
@@ -1829,18 +1876,11 @@ module ChapelDomain {
      automatically commit indices to the sparse domain as the buffer fills up.
      Indices are also committed when the buffer goes out of scope.
 
-       .. note::
-
-          The interface and implementation are not stable and may change in the
-          future.
-
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
+    @unstable "makeIndexBuffer() is subject to change in the future."
     inline proc makeIndexBuffer(size: int) {
-      if chpl_warnUnstable then compilerWarning(
-        "makeIndexBuffer() is subject to change in the future.");
-
       return _value.dsiMakeIndexBuffer(size);
     }
 
@@ -1866,11 +1906,6 @@ module ChapelDomain {
          addition should occur is unknown. We expect this to change in the
          future.
 
-       .. note::
-
-          The interface and implementation are not stable and may change in the
-          future.
-
        :arg inds: Indices to be added. ``inds`` must be an array of
                   ``rank*idxType``, except for 1-D domains, where it must be
                   an array of ``idxType``.
@@ -1892,12 +1927,10 @@ module ChapelDomain {
        :returns: Number of indices added to the domain
        :rtype: int
     */
+    @unstable "bulkAdd() is subject to change in the future."
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
-      if chpl_warnUnstable then compilerWarning(
-        "bulkAdd() is subject to change in the future.");
-
       if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
@@ -1973,10 +2006,7 @@ module ChapelDomain {
 
     /* Return the lowest index represented by a rectangular domain. */
     proc low {
-      if !alignedBoundsByDefault && stridable {
-        compilerWarning("The '.low' query on ranges is in the process of changing from returning the pure low bound to the aligned low bound (e.g., from '1' to '2' for '1..10 by -2').  Update to the '.lowBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior.");
-      }
-      return if alignedBoundsByDefault then _value.dsiAlignedLow else _value.dsiLow;
+      return _value.dsiAlignedLow;
     }
     pragma "no doc"
     proc low where this.isAssociative() {
@@ -1993,10 +2023,7 @@ module ChapelDomain {
     }
     /* Return the highest index represented by a rectangular domain. */
     proc high {
-    if !alignedBoundsByDefault && stridable {
-      compilerWarning("The '.high' query on ranges is in the process of changing from returning the pure high bound to the aligned high bound (e.g., from '10' to '9' for '1..10 by 2').  Update to the '.highBound' query if you want to retain the old behavior, or recompile with '-salignedBoundsByDefault=true' to opt into the new behavior now and avoid this warning.");
-    }
-      return if alignedBoundsByDefault then _value.dsiAlignedHigh else _value.dsiHigh;
+      return _value.dsiAlignedHigh;
     }
     pragma "no doc"
     proc high where this.isAssociative() {

@@ -27,6 +27,8 @@
 
 #include "scope-help.h"
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 #include <cstdio>
 #include <set>
 #include <string>
@@ -149,6 +151,11 @@ struct GatherDecls {
     return false;
   }
   void exit(const Include* d) { }
+
+  bool enter(const WithClause* with) {
+    return true;
+  }
+  void exit(const WithClause* with) { }
 
   // ignore other AST nodes
   bool enter(const AstNode* ast) {
@@ -292,10 +299,11 @@ const Scope* scopeForId(Context* context, ID id) {
 
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
+                            const Scope* receiverScope,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
-                            std::unordered_set<const Scope*>& checkedScopes,
+                            ScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result);
 
 static const ResolvedVisibilityScope*
@@ -320,7 +328,7 @@ static bool doLookupInImports(Context* context,
                               const ResolvedVisibilityScope* resolving,
                               UniqueString name,
                               bool onlyInnermost,
-                              std::unordered_set<const Scope*>& checkedScopes,
+                              ScopeSet& checkedScopes,
                               std::vector<BorrowedIdsWithName>& result) {
   // Get the resolved visibility statements, if available
   const ResolvedVisibilityScope* r = nullptr;
@@ -335,10 +343,7 @@ static bool doLookupInImports(Context* context,
     for (const VisibilitySymbols& is: r->visibilityClauses()) {
       UniqueString from = name;
       bool named = is.lookupName(name, from);
-      if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
-        result.push_back(BorrowedIdsWithName(is.scope()->id()));
-        return true;
-      } else if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
+      if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // mentioned in an except clause, so don't return it
       } else if (named || is.kind() == VisibilitySymbols::ALL_CONTENTS) {
         // find it in the contents
@@ -350,11 +355,16 @@ static bool doLookupInImports(Context* context,
         }
 
         // find it in that scope
-        bool found = doLookupInScope(context, symScope, resolving,
+        bool found = doLookupInScope(context, symScope, nullptr, resolving,
                                      from, newConfig,
                                      checkedScopes, result);
         if (found && onlyInnermost)
           return true;
+      }
+
+      if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
+        result.push_back(BorrowedIdsWithName(is.scope()->id()));
+        return true;
       }
     }
   }
@@ -370,7 +380,7 @@ static bool doLookupInImports(Context* context,
       }
 
       // find it in that scope
-      bool found = doLookupInScope(context, autoModScope, resolving,
+      bool found = doLookupInScope(context, autoModScope, nullptr, resolving,
                                    name, newConfig,
                                    checkedScopes, result);
       if (found && onlyInnermost)
@@ -396,10 +406,11 @@ static bool doLookupInToplevelModules(Context* context,
 // appends to result
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
+                            const Scope* receiverScope,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
-                            std::unordered_set<const Scope*>& checkedScopes,
+                            ScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result) {
 
   bool checkDecls = (config & LOOKUP_DECLS) != 0;
@@ -430,6 +441,7 @@ static bool doLookupInScope(Context* context,
     if (onlyInnermost && got) return true;
   }
 
+  // Look at use/import statements in the current scope
   if (checkUseImport) {
     bool got = false;
     got = doLookupInImports(context, scope, resolving,
@@ -447,15 +459,41 @@ static bool doLookupInScope(Context* context,
       newConfig |= LOOKUP_INNERMOST;
     }
 
+    // Search parent scopes, if any, until a module is encountered
     const Scope* cur = nullptr;
+    bool reachedModule = false;
     for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
-      bool got = doLookupInScope(context, cur, resolving, name, newConfig,
-                                 checkedScopes, result);
-      if (onlyInnermost && got) return true;
-
-      // stop if we reach a Module scope
-      if (asttags::isModule(cur->tag()))
+      if (asttags::isModule(cur->tag())) {
+        reachedModule = true;
         break;
+      }
+
+      bool got = doLookupInScope(context, cur, receiverScope, resolving, name,
+                                 newConfig, checkedScopes, result);
+      if (onlyInnermost && got) return true;
+    }
+
+    if (reachedModule) {
+      // Assumption: If a module is encountered, and if there is a receiver
+      // scope, then we were scope-resolving inside of a method call.  In this
+      // case we should perform a lookup in the receiver scope before looking
+      // in the module scope. For example:
+      // module M {
+      //   type T = int;
+      //   record R { type T; }
+      //   proc R.foo() : T { } // should resolve 'T' to 'R.T', not 'M.T'
+      // }
+      if (receiverScope != nullptr) {
+        bool got = doLookupInScope(context, receiverScope, nullptr,
+                                   resolving, name, newConfig, checkedScopes,
+                                   result);
+        if (onlyInnermost && got) return true;
+      }
+
+      // ... then check the containing module scope
+      bool got = doLookupInScope(context, cur, receiverScope, resolving, name,
+                                 newConfig, checkedScopes, result);
+      if (onlyInnermost && got) return true;
     }
 
     // check also in the root scope if this isn't already the root scope
@@ -465,8 +503,8 @@ static bool doLookupInScope(Context* context,
         rootScope = cur;
     }
     if (rootScope != nullptr) {
-      bool got = doLookupInScope(context, rootScope, resolving, name, newConfig,
-                                 checkedScopes, result);
+      bool got = doLookupInScope(context, rootScope, nullptr, resolving, name,
+                                 newConfig, checkedScopes, result);
       if (onlyInnermost && got) return true;
     }
   }
@@ -495,7 +533,7 @@ static bool lookupInScopeViz(Context* context,
                              VisibilityStmtKind useOrImport,
                              bool isFirstPart,
                              std::vector<BorrowedIdsWithName>& result) {
-  std::unordered_set<const Scope*> checkedScopes;
+  ScopeSet checkedScopes;
 
   LookupConfig config = LOOKUP_INNERMOST;
 
@@ -528,7 +566,7 @@ static bool lookupInScopeViz(Context* context,
     config |= LOOKUP_DECLS;
   }
 
-  bool got = doLookupInScope(context, scope, resolving,
+  bool got = doLookupInScope(context, scope, nullptr, resolving,
                              name, config,
                              checkedScopes, result);
 
@@ -540,7 +578,7 @@ std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
                                                    const Scope* receiverScope,
                                                    UniqueString name,
                                                    LookupConfig config) {
-  std::unordered_set<const Scope*> checkedScopes;
+  ScopeSet checkedScopes;
 
   return lookupNameInScopeWithSet(context, scope, receiverScope, name,
                                   config, checkedScopes);
@@ -552,17 +590,11 @@ lookupNameInScopeWithSet(Context* context,
                          const Scope* receiverScope,
                          UniqueString name,
                          LookupConfig config,
-                         std::unordered_set<const Scope*>& visited) {
+                         ScopeSet& visited) {
   std::vector<BorrowedIdsWithName> vec;
 
-  if (receiverScope) {
-    doLookupInScope(context, receiverScope,
-                    /* resolving scope */ nullptr,
-                    name, config, visited, vec);
-  }
-
   if (scope) {
-    doLookupInScope(context, scope,
+    doLookupInScope(context, scope, receiverScope,
                     /* resolving scope */ nullptr,
                     name, config, visited, vec);
   }
@@ -574,7 +606,7 @@ static
 bool doIsWholeScopeVisibleFromScope(Context* context,
                                    const Scope* checkScope,
                                    const Scope* fromScope,
-                                   std::unordered_set<const Scope*>& checked) {
+                                   ScopeSet& checked) {
 
   auto pair = checked.insert(fromScope);
   if (pair.second == false) {
@@ -619,7 +651,7 @@ bool isWholeScopeVisibleFromScope(Context* context,
                                   const Scope* checkScope,
                                   const Scope* fromScope) {
 
-  std::unordered_set<const Scope*> checked;
+  ScopeSet checked;
 
   return doIsWholeScopeVisibleFromScope(context,
                                         checkScope,
@@ -633,12 +665,12 @@ static void errorIfNameNotInScope(Context* context,
                                   UniqueString name,
                                   ID idForErr,
                                   VisibilityStmtKind useOrImport) {
-  std::unordered_set<const Scope*> checkedScopes;
+  ScopeSet checkedScopes;
   std::vector<BorrowedIdsWithName> result;
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE;
-  bool got = doLookupInScope(context, scope, resolving,
+  bool got = doLookupInScope(context, scope, nullptr, resolving,
                              name, config,
                              checkedScopes, result);
 
@@ -1135,8 +1167,7 @@ const InnermostMatch& findInnermostDecl(Context* context,
                         LOOKUP_INNERMOST;
 
   std::vector<BorrowedIdsWithName> vec =
-    lookupNameInScope(context, scope,
-                      /* receiver scope */ nullptr,
+    lookupNameInScope(context, scope, nullptr,
                       name, config);
 
   if (vec.size() > 0) {
@@ -1155,6 +1186,19 @@ const InnermostMatch& findInnermostDecl(Context* context,
 
 const Scope* scopeForModule(Context* context, ID id) {
   return scopeForId(context, id);
+}
+
+
+const
+std::vector<ID> findUsedImportedModules(Context* context,
+                                        const Scope* scope) {
+  auto result = resolveVisibilityStmts(context, scope);
+  std::vector<ID> ids;
+
+  for (const auto& r : result->visibilityClauses()) {
+    ids.push_back(r.scope()->id());
+  }
+  return ids;
 }
 
 

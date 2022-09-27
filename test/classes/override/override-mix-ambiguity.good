@@ -1,0 +1,4 @@
+override-mix-ambiguity.chpl:11: In function 'test':
+override-mix-ambiguity.chpl:15: error: ambiguous call 'Child.g(int(32))'
+override-mix-ambiguity.chpl:2: note: candidates are: Parent.g(arg: int(32))
+override-mix-ambiguity.chpl:8: note:                 Child.g(arg: int(64))

@@ -5,5 +5,5 @@ class C {
   proc init() { }
 }
 
-var c = new borrowed C();
+var c = (new owned C()).borrow();
 writeln(c);

@@ -1,5 +1,5 @@
 use OS;
 
-var e = SystemError.fromSyserr(-1);
+var e = createSystemError(-1);
 
 writeln(e);

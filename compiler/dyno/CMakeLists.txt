@@ -19,6 +19,7 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(dyno VERSION 0.1)
 
+option(DYNO_CHPL_HOME "The CHPL_HOME environment variable for tests to use")
 # Options to integrate LLVM support library into dyno
 # TODO: enable easier cmake builds of dyno (outside of Chapel's Makefiles)
 # by falling back on find_package(LLVM) if
@@ -102,8 +103,10 @@ add_subdirectory(tools)
 # Utils like C++ linters for this codebase
 add_subdirectory(util)
 
-# Support for C++ compiler unit tests
-# Needs to happen in this file for ctest to work in this dir
-enable_testing()
-
-add_subdirectory(test)
+# Check if the directory is there, because in release tarballs, it shouldn't be
+if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test")
+  # Support for C++ compiler unit tests
+  # Needs to happen in this file for ctest to work in this dir
+  enable_testing()
+  add_subdirectory(test)
+endif()

@@ -22,7 +22,7 @@
     }
 
     proc main() {
-      var instance = new borrowed Widget();
+      var instance = (new owned Widget()).borrow();
       instance.setup(); // calls Base.setup() and that runs Widget.helpSetup
     }
   }

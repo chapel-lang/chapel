@@ -38,23 +38,23 @@ struct ReturnVariant {
     : intent(std::move(intent)), type(std::move(type)), value(std::move(value)) {}
 };
 
-ReturnVariant type(std::string value) {
+static ReturnVariant type(std::string value) {
   return ReturnVariant("type", "", value);
 }
 
-ReturnVariant lit(std::string value) {
+static ReturnVariant lit(std::string value) {
   return ReturnVariant("param", "", value);
 }
 
-ReturnVariant decl(std::string intent, std::string type) {
+static ReturnVariant decl(std::string intent, std::string type) {
   return ReturnVariant(intent, type, "");
 }
 
-ReturnVariant ref(bool isConst = false) {
+static ReturnVariant ref(bool isConst = false) {
   return ReturnVariant(isConst ? "const ref" : "ref", "r", "temp");
 }
 
-bool hasReference(const std::vector<ReturnVariant>& variants) {
+static bool hasReference(const std::vector<ReturnVariant>& variants) {
   for (auto& variant : variants) {
     if (variant.intent.find("ref") != std::string::npos) {
       return true;
@@ -63,7 +63,7 @@ bool hasReference(const std::vector<ReturnVariant>& variants) {
   return false;
 }
 
-std::string buildProgram(const std::vector<ReturnVariant>& variants) {
+static std::string buildProgram(const std::vector<ReturnVariant>& variants) {
   std::ostringstream oss;
   if (hasReference(variants)) {
     // references need something to refer to, so create a temporary
@@ -82,13 +82,14 @@ std::string buildProgram(const std::vector<ReturnVariant>& variants) {
   return oss.str();
 }
 
-std::vector<QualifiedType>
-extractDefinedTypes(Context* context, const char* program, size_t startAt) {
+static std::vector<QualifiedType> extractDefinedTypes(Context* context,
+                                                      const char* program,
+                                                      size_t startAt) {
   std::vector<QualifiedType> types;
   auto m = parseModule(context, program);
   assert(m->numStmts() > 0);
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  for (size_t i = startAt; i < m->numStmts(); i++) {
+  for (int i = startAt; i < m->numStmts(); i++) {
     auto argName = "arg" + std::to_string(i-startAt);
     auto stmt = m->stmt(i)->toVariable();
     assert(stmt && stmt->name().str() == argName);
@@ -109,19 +110,24 @@ void testProgram(const std::vector<ReturnVariant>& variants, F func,
   // declarations we want to include in the commonType test, so ignore them.
   size_t offset = hasReference(variants) ? 2 : 0;
   auto types = extractDefinedTypes(context, program.c_str(), offset);
-  auto qt = chpl::resolution::commonType(context, types,
-      kind != QualifiedType::UNKNOWN, kind);
+  KindRequirement requiredKind;
+  if (kind != QualifiedType::UNKNOWN) {
+    requiredKind = kind;
+  }
+  auto commonTypeResult = chpl::resolution::commonType(context, types, requiredKind);
+  auto qt = commonTypeResult.getValueOr(QualifiedType());
   std::cout << "return type:" << std::endl;
   qt.dump();
   std::cout << std::endl;
-  func(qt);
+  func(commonTypeResult.hasValue(), qt);
 }
 
 static void test1() {
   // test returning a single value from value-returning function
   testProgram({
       lit("1")
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
   });
@@ -133,7 +139,8 @@ static void test2() {
   testProgram({
       lit("1"),
       lit("2")
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
   });
@@ -143,7 +150,8 @@ static void test3() {
   // test returning a param from a param-returning function
   testProgram({
       lit("1")
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.type() && qt.type()->isIntType());
     assert(qt.kind() == QualifiedType::PARAM && qt.param());
     assert(qt.param()->toIntParam()->value() == 1);
@@ -156,7 +164,8 @@ static void test4() {
   testProgram({
       lit("1"),
       lit("2")
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(!found);
     assert(qt.isUnknown());
   }, QualifiedType::PARAM);
 }
@@ -166,7 +175,8 @@ static void test5() {
   testProgram({
       decl("const", "int(32)"),
       decl("const", "int(16)")
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
     assert(qt.type()->toIntType()->bitwidth() == 32);
@@ -178,7 +188,8 @@ static void test6() {
   testProgram({
       decl("const", "int(32)"),
       decl("const", "string")
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(!found);
     assert(qt.isUnknown());
   });
 }
@@ -188,7 +199,8 @@ static void test7() {
   testProgram({
       decl("const", "int(32)"),
       lit("1")
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
   });
@@ -199,7 +211,8 @@ static void test8() {
   testProgram({
       decl("const", "string"),
       lit("\"hello\"")
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isStringType());
   });
@@ -212,7 +225,8 @@ static void test9() {
       lit("1"),
       decl("const", "int"),
       decl("const", "int(32)"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
     assert(qt.type()->toIntType()->bitwidth() == 64);
@@ -224,7 +238,8 @@ static void test10() {
   testProgram({
       type("int"),
       type("int"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::TYPE);
     assert(qt.type() && qt.type()->isIntType());
     assert(qt.type()->toIntType()->bitwidth() == 64);
@@ -232,7 +247,8 @@ static void test10() {
   testProgram({
       type("int"),
       type("bool"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(!found);
     assert(qt.isUnknown());
   }, QualifiedType::TYPE);
 }
@@ -242,13 +258,15 @@ static void test11() {
   testProgram({
       type("int"),
       lit("1"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(!found);
     assert(qt.isUnknown());
   }, QualifiedType::TYPE);
   testProgram({
       type("int"),
       lit("1"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(!found);
     assert(qt.isUnknown());
   });
 }
@@ -258,7 +276,8 @@ static void test12() {
   testProgram({
       decl("const", "int"),
       lit("1"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(!found);
     assert(qt.isUnknown());
   }, QualifiedType::PARAM);
 }
@@ -273,7 +292,8 @@ static void test13() {
   testProgram({
       ref(/* isConst */ true),
       decl("var", "r"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::CONST_VAR);
     assert(qt.type() && qt.type()->isRecordType());
   }, QualifiedType::UNKNOWN);
@@ -283,7 +303,8 @@ static void test14() {
   testProgram({
       ref(/* isConst */ true),
       ref(/* isConst */ false),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::CONST_REF);
     assert(qt.type() && qt.type()->isRecordType());
   }, QualifiedType::UNKNOWN);
@@ -293,7 +314,8 @@ static void test15() {
   testProgram({
       ref(/* isConst */ false),
       decl("var", "r"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isRecordType());
   }, QualifiedType::UNKNOWN);
@@ -303,7 +325,8 @@ static void test16() {
   testProgram({
       lit("1"),
       decl("var", "int"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::CONST_VAR);
     assert(qt.type() && qt.type()->isIntType());
   }, QualifiedType::UNKNOWN);
@@ -313,7 +336,8 @@ static void test17() {
   testProgram({
       lit("1"),
       lit("1"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::PARAM);
     assert(qt.type() && qt.type()->isIntType());
     assert(qt.param() && qt.param()->toIntParam()->value() == 1);
@@ -324,7 +348,8 @@ static void test18() {
   testProgram({
       lit("1"),
       lit("2"),
-  }, [](auto& qt) {
+  }, [](bool found, auto& qt) {
+    assert(found);
     assert(qt.kind() == QualifiedType::CONST_VAR);
     assert(qt.type() && qt.type()->isIntType());
   }, QualifiedType::UNKNOWN);

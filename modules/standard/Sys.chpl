@@ -65,57 +65,6 @@ module Sys {
   extern const F_GETFD:c_int;
   extern const F_SETFD:c_int;
 
-  // basic file flags
-  pragma "last resort"
-  deprecated "'Sys.O_RDONLY' is deprecated; please use 'OS.POSIX.O_RDONLY' instead"
-  extern const O_RDONLY:c_int;
-
-  pragma "last resort"
-  deprecated "'Sys.O_WRONLY' is deprecated; please use 'OS.POSIX.O_WRONLY' instead"
-  extern const O_WRONLY:c_int;
-
-  pragma "last resort"
-  deprecated "'Sys.O_RDWR' is deprecated; please use 'OS.POSIX.O_RDWR' instead"
-  extern const O_RDWR:c_int;
-
-  // POSIX flags
-  // It is expected that a new module for Posix interface functionality
-  // will likely be introduced. Much of this code would be moved to that
-  // module at that time.
-
-  pragma "last resort"
-  deprecated "'Sys.O_APPEND' is deprecated; please use 'OS.POSIX.O_APPEND' instead"
-  extern const O_APPEND:c_int;
-
-  pragma "last resort"
-  deprecated "'Sys.O_CREAT' is deprecated; please use 'OS.POSIX.O_CREAT' instead"
-  extern const O_CREAT:c_int;
-
-  pragma "last resort"
-  deprecated "'Sys.O_DSYNC' is deprecated; please use 'OS.POSIX.O_DSYNC' instead"
-  extern const O_DSYNC:c_int;
-
-  pragma "last resort"
-  deprecated "'Sys.O_EXCL' is deprecated; please use 'OS.POSIX.O_EXCL' instead"
-  extern const O_EXCL:c_int;
-
-  pragma "last resort"
-  deprecated "'Sys.O_NOCTTY' is deprecated; please use 'OS.POSIX.O_NOCTTY' instead"
-  extern const O_NOCTTY:c_int;
-
-  pragma "last resort"
-  deprecated "'Sys.O_NONBLOCK' is deprecated; please use 'OS.POSIX.O_NONBLOCK' instead"
-  extern const O_NONBLOCK:c_int;
-
-  extern const O_RSYNC:c_int;
-
-  pragma "last resort"
-  deprecated "'Sys.O_SYNC' is deprecated; please use 'OS.POSIX.O_SYNC' instead"
-  extern const O_SYNC:c_int;
-
-  pragma "last resort"
-  deprecated "'Sys.O_TRUNC' is deprecated; please use 'OS.POSIX.O_TRUNC' instead"
-  extern const O_TRUNC:c_int;
 
   // Signals as required by POSIX.1-2008, 2013 edition
   // See note below about signals intentionally not included
@@ -523,7 +472,7 @@ module Sys {
 
       var err_out = sys_host_sys_sockaddr_t(this, buffer, NI_MAXHOST, length);
       if err_out != 0 {
-        throw SystemError.fromSyserr(err_out);
+        throw createSystemError(err_out);
       }
 
       return createStringWithOwnedBuffer(buffer, length, NI_MAXHOST);
@@ -544,7 +493,7 @@ module Sys {
 
       var err_out = sys_port_sys_sockaddr_t(this, port);
       if err_out != 0 {
-        throw SystemError.fromSyserr(err_out);
+        throw createSystemError(err_out);
       }
 
       return port;
@@ -658,13 +607,6 @@ module Sys {
   extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
 
-  pragma "last resort"
-  deprecated "'Sys.fd_set' is deprecated; please use 'OS.POSIX.fd_set' instead"
-  proc fd_set type {
-    import OS.POSIX;
-    return POSIX.fd_set;
-  }
-
   extern type time_t = c_long;
   extern type suseconds_t = c_long;
   // --- has replacement in OS.POSIX ---
@@ -676,18 +618,6 @@ module Sys {
   import OS.POSIX.fd_set;
   // --- has replacement in OS.POSIX ---
   extern proc sys_select(nfds:c_int, readfds:c_ptr(fd_set), writefds:c_ptr(fd_set), exceptfds:c_ptr(fd_set), timeout:c_ptr(timeval), ref nset:c_int):qio_err_t;
-
-  deprecated "'Sys.sys_fd_clr' is deprecated; please use 'OS.POSIX.FD_CLR' instead"
-  extern proc sys_fd_clr(fd:c_int, ref set:fd_set);
-
-  deprecated "'Sys.sys_fd_isset' is deprecated; please use 'OS.POSIX.FD_ISSET' instead"
-  extern proc sys_fd_isset(fd:c_int, ref set:fd_set):c_int;
-
-  deprecated "'Sys.sys_fd_set' is deprecated; please use 'OS.POSIX.FD_SET' instead"
-  extern proc sys_fd_set(fd:c_int, ref set:fd_set);
-
-  deprecated "'Sys.sys_fd_zero' is deprecated; please use 'OS.POSIX.FD_ZERO' instead"
-  extern proc sys_fd_zero(ref set:fd_set);
 
   // recv, recvfrom, recvmsg, send, sendto, sendmsg are in io
 }

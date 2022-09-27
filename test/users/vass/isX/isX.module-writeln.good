@@ -42,9 +42,6 @@ atomic real (aReal)  isAtomic  isAtomicValue  isAtomicType  .
 isIntegral:   i8  i16  i32  i64  u8  u16  u32  u64  .
 isIntegralValue:   i8  i16  i32  i64  u8  u16  u32  u64  .
 isIntegralType:   i8  i16  i32  i64  u8  u16  u32  u64  .
-isFloat:   r32  r64  m32  m64  .
-isFloatValue:   r32  r64  m32  m64  .
-isFloatType:   r32  r64  m32  m64  .
 isNumeric:   i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  .
 isNumericValue:   i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  .
 isNumericType:   i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  .

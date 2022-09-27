@@ -29,6 +29,7 @@ module ChapelBase {
 
   public use ChapelStandard;
   use CTypes;
+  use ChplConfig;
 
   config param enablePostfixBangChecks = false;
 
@@ -44,9 +45,6 @@ module ChapelBase {
 
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
-  proc _throwOpError(param op: string) {
-      compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
-  }
 
   pragma "object class"
   pragma "global type symbol"
@@ -72,13 +70,13 @@ module ChapelBase {
   // a.type in a formal's type is computed before instantiation vs.
   // a.type in the where clause is computed after instantiation.
   pragma "last resort"
-  inline operator =(ref a: borrowed class,   b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: borrowed class,   b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
   pragma "last resort"
-  inline operator =(ref a: borrowed class?,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: borrowed class?,  b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
   pragma "last resort"
-  inline operator =(ref a: unmanaged class,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: unmanaged class,  b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
   pragma "last resort"
-  inline operator =(ref a: unmanaged class?, b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: unmanaged class?, b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
 
   inline operator =(ref a: nothing, b: ?t) where t != nothing {
     compilerError("a nothing variable cannot be assigned");
@@ -297,9 +295,9 @@ module ChapelBase {
   inline operator +(param a: real(?w), param b: real(w)) param return __primitive("+", a, b);
   inline operator +(param a: imag(?w), param b: imag(w)) param return __primitive("+", a, b);
   inline operator +(param a: complex(?w), param b: complex(w)) param return __primitive("+", a, b);
-  /*inline operator +(param a: real(?w), param b: imag(w)) param return __primitive("+", a, b);
+  inline operator +(param a: real(?w), param b: imag(w)) param return __primitive("+", a, b);
   inline operator +(param a: imag(?w), param b: real(w)) param return __primitive("+", a, b);
-  inline operator +(param a: real(?w), param b: complex(w*2)) param return
+  /*inline operator +(param a: real(?w), param b: complex(w*2)) param return
   __primitive("+", a, b);*/
 
   inline operator -(param a: int(?w), param b: int(w)) param return __primitive("-", a, b);
@@ -307,9 +305,9 @@ module ChapelBase {
   inline operator -(param a: real(?w), param b: real(w)) param return __primitive("-", a, b);
   inline operator -(param a: imag(?w), param b: imag(w)) param return __primitive("-", a, b);
   inline operator -(param a: complex(?w), param b: complex(w)) param return __primitive("-", a, b);
-  /*inline operator -(param a: real(?w), param b: imag(w)) param return __primitive("-", a, b);
+  inline operator -(param a: real(?w), param b: imag(w)) param return __primitive("-", a, b);
   inline operator -(param a: imag(?w), param b: real(w)) param return __primitive("-", a, b);
-  inline operator -(param a: real(?w), param b: complex(w*2)) param return
+  /*inline operator -(param a: real(?w), param b: complex(w*2)) param return
   __primitive("-", a, b);*/
 
   //
@@ -738,11 +736,15 @@ module ChapelBase {
 
   inline proc _cond_test(x: borrowed object?) return x != nil;
   inline proc _cond_test(x: bool) return x;
-  inline proc _cond_test(x: int) return x != 0;
-  inline proc _cond_test(x: uint) return x != 0;
-  inline proc _cond_test(x: sync(?t)) where isBoolType(t) || isIntegralType(t) {
+  inline proc _cond_test(x: int(?w)) return x != 0;
+  inline proc _cond_test(x: uint(?w)) return x != 0;
+  inline proc _cond_test(x: sync(?t)) {
     compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
     return _cond_test(x.readFE());
+  }
+  inline proc _cond_test(x: single(?t)) {
+    compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
+    return _cond_test(x.readFF());
   }
 
   inline proc _cond_test(param x: bool) param return x;
@@ -750,7 +752,7 @@ module ChapelBase {
   inline proc _cond_test(x: c_ptr) return x != c_nil;
 
   inline proc _cond_test(x) {
-    if !( x.type <= _iteratorRecord ) {
+    if !( isSubtype(x.type, _iteratorRecord) ) {
       use Reflection;
       if canResolveMethod(x, "chpl_cond_test_method") {
         return x.chpl_cond_test_method();
@@ -817,8 +819,11 @@ module ChapelBase {
   //
   // More primitive funs
   //
-  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
+  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit, gpuInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
+  config param chpl_defaultGpuArrayInitMethod =
+    if CHPL_GPU_MEM_STRATEGY == "array_on_device" then
+      ArrayInit.gpuInit else chpl_defaultArrayInitMethod;
 
   config param chpl_arrayInitMethodRuntimeSelectable = false;
   private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
@@ -841,6 +846,14 @@ module ChapelBase {
     }
   }
 
+  proc chpl_shouldDoGpuInit(): bool {
+    extern proc chpl_task_getRequestedSubloc(): int(32);
+    return
+      CHPL_LOCALE_MODEL=="gpu" &&
+      chpl_defaultGpuArrayInitMethod == ArrayInit.gpuInit &&
+      chpl_task_getRequestedSubloc() >= 0;
+  }
+
   // s is the number of elements, t is the element type
   proc init_elts_method(s, type t) {
     var initMethod = chpl_getArrayInitMethod();
@@ -849,6 +862,8 @@ module ChapelBase {
       // Skip init for empty arrays. Needed for uints so that `s-1` in init_elts
       // code doesn't overflow.
       initMethod = ArrayInit.noInit;
+    } else if chpl_shouldDoGpuInit() {
+        initMethod = ArrayInit.gpuInit;
     } else if  !rootLocaleInitialized {
       // The parallel range iter uses 'here`/rootLocale, so fallback to serial
       // initialization if the root locale hasn't been setup. Only used early
@@ -894,6 +909,17 @@ module ChapelBase {
       }
       when ArrayInit.serialInit {
         for i in lo..s-1 {
+          pragma "no auto destroy" pragma "unsafe" var y: t;
+          __primitive("array_set_first", x, i, y);
+        }
+      }
+      when ArrayInit.gpuInit {
+        // This branch should only occur when we're on a GPU sublocale and the
+        // following `foreach` loop will become a kernel
+        foreach i in lo..s-1 {
+          //assertOnGpu(); TODO: this assertion fails for a hello world style
+          // program investigate why (I don't think it's erroring out in user
+          // code but rather something from one of our standard modules).
           pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
@@ -1456,19 +1482,17 @@ module ChapelBase {
   inline operator :(x:chpl_anyreal, type t:chpl_anyreal)
     return __primitive("cast", t, x);
 
+  @unstable "enum-to-bool casts are likely to be deprecated in the future"
   inline operator :(x:enum, type t:chpl_anybool) throws {
-    if chpl_warnUnstable {
-      compilerWarning("enum-to-bool casts are likely to be deprecated in the future");
-    }    return x: int: bool;
+    return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
   // is generated for each enum in buildDefaultFunctions
   inline operator :(x: enum, type t:enum) where x.type == t
     return x;
+
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anyreal) throws {
-    if chpl_warnUnstable {
-      compilerWarning("enum-to-float casts are likely to be deprecated in the future");
-    }
     return x: int: real;
   }
 
@@ -1615,6 +1639,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anycomplex)
     return (x.re, x.im):t;
 
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anycomplex) throws
     return (x:real, 0):t;
 
@@ -1636,6 +1661,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anyimag)
     return __primitive("cast", t, x.im);
 
+  @unstable "enum-to-float casts are likely to be deprecated in the future"
   inline operator :(x: enum, type t:chpl_anyimag)  throws
     return x:real:imag;
 
@@ -1996,16 +2022,8 @@ module ChapelBase {
   // file and re-run it).
 
   //
-  // non-param/non-param -- these are designed to throw an error
-  // stating that these combinations are not supported; it's an
-  // open topic of discussion whether we should support them and
-  // have the return type default to int or uint; and/or whether
-  // this error case should be made a lower-priority fallback,
-  // permitting the user to define their own overloads (or 'use'
-  // a module which does).
+  // non-param/non-param
   //
-  inline operator +(a: uint(64), b: int(64)) { _throwOpError("+"); }
-  inline operator +(a: int(64), b: uint(64)) { _throwOpError("+"); }
 
   //
   // non-param/param and param/non-param cases -- these cases
@@ -2031,8 +2049,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator -(a: uint(64), b: int(64)) { _throwOpError("-"); }
-  inline operator -(a: int(64), b: uint(64)) { _throwOpError("-"); }
 
   // non-param/param and param/non-param
   inline operator -(a: uint(64), param b: uint(64)) {
@@ -2050,8 +2066,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator *(a: uint(64), b: int(64)) { _throwOpError("*"); }
-  inline operator *(a: int(64), b: uint(64)) { _throwOpError("*"); }
 
   // non-param/param and param/non-param
   inline operator *(a: uint(64), param b: uint(64)) {
@@ -2069,8 +2083,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator /(a: uint(64), b: int(64)) { _throwOpError("/"); }
-  inline operator /(a: int(64), b: uint(64)) { _throwOpError("/"); }
 
   // non-param/param and param/non-param
   // The int version is only defined so we can catch the divide by zero error
@@ -2098,8 +2110,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator **(a: uint(64), b: int(64)) { _throwOpError("**"); }
-  inline operator **(a: int(64), b: uint(64)) { _throwOpError("**"); }
 
   // non-param/param and param/non-param
   inline operator **(a: uint(64), param b: uint(64)) {
@@ -2117,8 +2127,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator %(a: uint(64), b: int(64)) { _throwOpError("%"); }
-  inline operator %(a: int(64), b: uint(64)) { _throwOpError("%"); }
 
   // non-param/param and param/non-param
   inline operator %(a: uint(64), param b: uint(64)) {
@@ -2145,18 +2153,18 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator ==(a: uint(64), b: int(64)) {
+  inline operator ==(a: uint(?w), b: int(w)) {
     //
     // If b's negative, these obviously aren't equal; if it's not
     // negative, it can be cast to an int
     //
-    return !(b < 0) && (a == b:uint(64));
+    return !(b < 0) && (a == b:uint(w));
   }
   //
   // the dual of the above
   //
-  inline operator ==(a: int(64), b: uint(64)) {
-    return !(a < 0) && (a:uint(64) == b);
+  inline operator ==(a: int(?w), b: uint(w)) {
+    return !(a < 0) && (a:uint(w) == b);
   }
 
   // non-param/param and param/non-param
@@ -2166,11 +2174,11 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator !=(a: uint(64), b: int(64)) {
-    return (b < 0) || (a != b:uint(64));
+  inline operator !=(a: uint(?w), b: int(w)) {
+    return (b < 0) || (a != b:uint(w));
   }
-  inline operator !=(a: int(64), b: uint(64)) {
-    return (a < 0) || (a:uint(64) != b);
+  inline operator !=(a: int(?w), b: uint(w)) {
+    return (a < 0) || (a:uint(w) != b);
   }
 
   // non-param/param and param/non-param
@@ -2179,84 +2187,88 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator >(a: uint(64), b: int(64)) {
-    return (b < 0) || (a > b: uint(64));
+  inline operator >(a: uint(?w), b: int(w)) {
+    return (b < 0) || (a > b: uint(w));
   }
-  inline operator >(a: int(64), b: uint(64)) {
-    return !(a < 0) && (a: uint(64) > b);
+  inline operator >(a: int(?w), b: uint(w)) {
+    return !(a < 0) && (a: uint(w) > b);
   }
 
   // non-param/param and param/non-param
   // non-param/param version not necessary since > above works fine for that
-  inline operator >(param a: uint(64), b: uint(64)) param where a == 0 {
-    return false;
+  inline operator >(param a: uint(?w), b: uint(w)) {
+    if __primitive("==", a, 0) {
+      return false;
+    } else {
+      return __primitive(">", a, b);
+    }
   }
-  inline operator >(param a: uint(64), b: uint(64)) {
-    return __primitive(">", a, b);
-  }
-  inline operator >(param a: int(64), b: int(64)) {
+  inline operator >(param a: int(?w), b: int(w)) {
     return __primitive(">", a, b);
   }
 
 
   // non-param/non-param
-  inline operator <(a: uint(64), b: int(64)) {
-    return !(b < 0) && (a < b:uint(64));
+  inline operator <(a: uint(?w), b: int(w)) {
+    return !(b < 0) && (a < b:uint(w));
   }
-  inline operator <(a: int(64), b: uint(64)) {
-    return (a < 0) || (a:uint(64) < b);
+  inline operator <(a: int(?w), b: uint(w)) {
+    return (a < 0) || (a:uint(w) < b);
   }
 
   // non-param/param and param/non-param
   // param/non-param version not necessary since < above works fine for that
-  inline operator <(a: uint(64), param b: uint(64)) param where b == 0 {
-    return false;
+  inline operator <(a: uint(?w), param b: uint(w)) {
+    if __primitive("==", b, 0) {
+      return false;
+    } else {
+      return __primitive("<", a, b);
+    }
   }
-  inline operator <(a: uint(64), param b: uint(64)) {
-    return __primitive("<", a, b);
-  }
-  inline operator <(a: int(64), param b: int(64)) {
+  inline operator <(a: int(?w), param b: int(w)) {
     return __primitive("<", a, b);
   }
 
 
 
   // non-param/non-param
-  inline operator >=(a: uint(64), b: int(64)) {
-    return (b < 0) || (a >= b: uint(64));
+  inline operator >=(a: uint(?w), b: int(w)) {
+    return (b < 0) || (a >= b: uint(w));
   }
-  inline operator >=(a: int(64), b: uint(64)) {
-    return !(a < 0) && (a: uint(64) >= b);
+  inline operator >=(a: int(?w), b: uint(w)) {
+    return !(a < 0) && (a: uint(w) >= b);
   }
 
   // non-param/param and param/non-param
-  inline operator >=(a: uint(64), param b: uint(64)) param where b == 0 {
-    return true;
+  inline operator >=(a: uint(?w), param b: uint(w)) {
+    if __primitive("==", b, 0) {
+      return true;
+    } else {
+      return __primitive(">=", a, b);
+    }
   }
-  inline operator >=(a: uint(64), param b: uint(64)) {
-    return __primitive(">=", a, b);
-  }
-  inline operator >=(a: int(64), param b: int(64)) {
+  inline operator >=(a: int(?w), param b: int(w)) {
     return __primitive(">=", a, b);
   }
 
 
   // non-param/non-param
-  inline operator <=(a: uint(64), b: int(64)) {
-    return !(b < 0) && (a <= b: uint(64));
+  inline operator <=(a: uint(?w), b: int(w)) {
+    return !(b < 0) && (a <= b: uint(w));
   }
-  inline operator <=(a: int(64), b: uint(64)) {
-    return (a < 0) || (a:uint(64) <= b);
+  inline operator <=(a: int(?w), b: uint(w)) {
+    return (a < 0) || (a:uint(w) <= b);
   }
 
   // non-param/param and param/non-param
-  inline operator <=(param a: uint(64), b: uint(64)) param where a == 0 {
-    return true;
+  inline operator <=(param a: uint(?w), b: uint(w)) {
+    if __primitive("==", a, 0) {
+      return true;
+    } else {
+      return __primitive("<=", a, b);
+    }
   }
-  inline operator <=(param a: uint(64), b: uint(64)) {
-    return __primitive("<=", a, b);
-  }
-  inline operator <=(param a: int(64), b: int(64)) {
+  inline operator <=(param a: int(?w), b: int(w)) {
     return __primitive("<=", a, b);
   }
 
@@ -2301,7 +2313,7 @@ module ChapelBase {
       try {
       ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
       }
-      catch e: DecodeError { // let IOError propagate
+      catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
       }
     }

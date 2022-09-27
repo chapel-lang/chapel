@@ -1976,7 +1976,12 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     ret->type = retType;
 
     if (retType == dtUnknown) {
-      USR_FATAL(fn, "unable to resolve return type");
+      if (fn->hasFlag(FLAG_COMPUTE_UNIFIED_TYPE_HELP)) {
+        USR_FATAL(callStack.v[callStack.n-2],
+                  "can't compute a unified element type for this array");
+      } else {
+        USR_FATAL(fn, "unable to resolve return type");
+      }
     }
 
     fn->retType = retType;
@@ -2579,6 +2584,9 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     }
     // Remainder of this code assumes that to and toType match.
     INT_ASSERT(toValType == toType->type);
+
+    // generate a warning in some cases for int->uint implicit conversion
+    warnForIntUintConversion(insertBefore, toValType, fromValType, from);
   }
 
   // seemingly redundant toType->type->symbol is for lowered runtime type vars

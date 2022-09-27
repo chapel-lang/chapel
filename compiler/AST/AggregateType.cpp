@@ -2077,6 +2077,12 @@ void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
                                this->symbol->getDeprecationMsg(),
                                !fDocsTextOnly);
   }
+
+  if (this->symbol->hasFlag(FLAG_UNSTABLE)) {
+    this->printDocsUnstable(this->doc, file, tabs + 1,
+                            this->symbol->getUnstableMsg(),
+                            !fDocsTextOnly);
+  }
 }
 
 
@@ -3009,6 +3015,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
     // The dec type isn't really an object, shouldn't have its own fields
     tsDec->copyFlags(at->symbol);
     tsDec->deprecationMsg = at->symbol->deprecationMsg;
+    tsDec->unstableMsg = at->symbol->unstableMsg;
     tsDec->addFlag(FLAG_NO_OBJECT);
     // this flag avoids scope resolve considering it duplicative
     tsDec->addFlag(FLAG_TEMP);
@@ -3020,8 +3027,15 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
       tsDec->addFlag(FLAG_GENERIC);
     // The generated code should just use the canonical class name
     tsDec->cname = at->symbol->cname;
-    DefExpr* defDec = new DefExpr(tsDec);
-    symbol->defPoint->insertAfter(defDec);
+
+    // 'symbol' might not be in the tree if we're running with --dyno and
+    // scope-resolving an AggregateType that contains a reference to itself
+    // (e.g. a linked-list with a 'next' node). The 'convert-uast' pass is
+    // meant to manually insert these defPoints later.
+    if (!fDynoCompilerLibrary || isAlive(symbol->defPoint)) {
+      DefExpr* defDec = new DefExpr(tsDec);
+      symbol->defPoint->insertAfter(defDec);
+    }
   }
 
   return at->decoratedClasses[packedDecorator];

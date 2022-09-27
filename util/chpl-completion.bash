@@ -60,6 +60,8 @@ _chpl ()
 --dyno \
 --dyno-break-on-hash \
 --dyno-debug-trace \
+--dyno-scope-bundled \
+--dyno-scope-production \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -171,6 +173,8 @@ _chpl ()
 --no-dynamic-auto-local-access \
 --no-dyno \
 --no-dyno-debug-trace \
+--no-dyno-scope-bundled \
+--no-dyno-scope-production \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
@@ -251,6 +255,7 @@ _chpl ()
 --no-verify \
 --no-warn-const-loops \
 --no-warn-domain-literal \
+--no-warn-int-uint \
 --no-warn-special \
 --no-warn-tuple-iteration \
 --no-warn-unstable \
@@ -338,6 +343,7 @@ _chpl ()
 --version \
 --warn-const-loops \
 --warn-domain-literal \
+--warn-int-uint \
 --warn-special \
 --warn-tuple-iteration \
 --warn-unstable \

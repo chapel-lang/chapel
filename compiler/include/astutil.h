@@ -216,6 +216,9 @@ Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 bool isTypeExpr(Expr* expr);
 bool givesType(Symbol* sym);
 
+// Only useful if called before type constructors are folded away.
+bool isTypeConstructorWithRuntimeTypeActual(CallExpr* call);
+
 Symbol* getSvecSymbol(CallExpr* call);
 void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
 

@@ -15,7 +15,7 @@ class Foo {
 }
 
 proc FooX(param p) type {
-  var localvar = new borrowed Foo(p);
+  var localvar = (new owned Foo(p)).borrow();
   return localvar.type;
 }
 

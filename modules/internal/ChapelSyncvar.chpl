@@ -292,72 +292,86 @@ module ChapelSyncvar {
     return wrapped.isFull;
   }
 
+  pragma "no doc"
   operator =(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
+  pragma "no doc"
   inline operator :(from, type t:_syncvar)
   where from.type == t.valType {
     return new _syncvar(from);
   }
 
+  pragma "no doc"
   deprecated "Casting sync variables is deprecated"
   inline operator :(from: _syncvar, type toType:_syncvar) {
     // TODO: this doesn't seem right - it doesn't use toType
     return new _syncvar(from);
   }
 
+  pragma "no doc"
   operator +=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() +  rhs);
   }
 
+  pragma "no doc"
   operator -=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() -  rhs);
   }
 
+  pragma "no doc"
   operator *=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() *  rhs);
   }
 
+  pragma "no doc"
   operator /=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() /  rhs);
   }
 
+  pragma "no doc"
   operator %=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() %  rhs);
   }
 
+  pragma "no doc"
   operator **=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ** rhs);
   }
 
+  pragma "no doc"
   operator &=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() &  rhs);
   }
 
+  pragma "no doc"
   operator |=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() |  rhs);
   }
 
+  pragma "no doc"
   operator ^=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ^  rhs);
   }
 
+  pragma "no doc"
   operator >>=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() >> rhs);
   }
 
+  pragma "no doc"
   operator <<=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
@@ -401,6 +415,7 @@ module ChapelSyncvar {
   pragma "no doc"
   proc chpl__readXX(const ref x : _syncvar(?)) return x.readXX();
 
+  pragma "no doc"
   operator <=>(lhs : _syncvar, ref rhs) {
     const tmp = lhs;
 
@@ -408,6 +423,7 @@ module ChapelSyncvar {
     rhs = tmp;
   }
 
+  pragma "no doc"
   operator <=>(ref lhs, rhs : _syncvar) {
     const tmp = lhs;
 
@@ -415,6 +431,7 @@ module ChapelSyncvar {
     rhs = tmp;
   }
 
+  pragma "no doc"
   operator <=>(lhs : _syncvar, rhs : _syncvar) {
     compilerWarning("Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods");
     const tmp = lhs.readFE();
@@ -897,15 +914,19 @@ module ChapelSyncvar {
     return wrapped.isFull;
   }
 
+  pragma "no doc"
   operator =(ref lhs : _singlevar(?t), rhs : t) {
     compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
+  pragma "no doc"
   inline operator :(from, type t:_singlevar)
   where from.type == t.valType {
     return new _singlevar(from);
   }
+
+  pragma "no doc"
   deprecated "Casting single variables is deprecated"
   inline operator :(from: _singlevar, type toType:_singlevar) {
     // TODO: this doesn't seem right - it doesn't use toType

@@ -823,7 +823,7 @@ where D.rank == 2
   } // while work in queue
   result.timers["toposort"].stop();
 
-  result.permutationMap = new owned PermutationMap( rowMap, columnMap );
+  result.permutationMap = new shared PermutationMap( rowMap, columnMap )?;
   result.timers["whole"].stop();
   return result;
 }
@@ -955,7 +955,7 @@ where D.rank == 2
   } // while work in queue
   result.timers["toposort"].stop();
 
-  result.permutationMap = new owned PermutationMap( rowMap, columnMap );
+  result.permutationMap = new shared PermutationMap( rowMap, columnMap )?;
   result.timers["whole"].stop();
   return result;
 }
@@ -1100,7 +1100,7 @@ where D.rank == 2
   } // while work in queue
   result.timers["toposort"].stop();
 
-  result.permutationMap = new owned PermutationMap( rowMap, columnMap );
+  result.permutationMap = new shared PermutationMap( rowMap, columnMap )?;
   result.timers["whole"].stop();
   return result;
 }

@@ -1,0 +1,1 @@
+init-var-nonnil-shared-from-nonnil-owned.chpl:9: warning: assigning owned class to shared class is deprecated.

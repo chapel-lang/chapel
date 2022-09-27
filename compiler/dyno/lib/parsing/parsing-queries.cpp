@@ -352,6 +352,33 @@ void setupModuleSearchPaths(Context* context,
   setModuleSearchPath(context, uSearchPath);
 }
 
+
+void setupModuleSearchPaths(Context* context,
+                            bool minimalModules,
+                            bool enableTaskTracking,
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames) {
+  auto& chplHomeStr = context->chplHome();
+  assert(chplHomeStr != "");
+  auto chplEnv = context->getChplEnv();
+  assert(!chplEnv.getError() && "printchplenv error handling not implemented");
+
+  // CHPL_MODULE_PATH isn't always in the output; check if it's there.
+  auto it = chplEnv->find("CHPL_MODULE_PATH");
+  auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
+  setupModuleSearchPaths(context,
+                         chplHomeStr,
+                         false,
+                         chplEnv->at("CHPL_LOCALE_MODEL"),
+                         false,
+                         chplEnv->at("CHPL_TASKS"),
+                         chplEnv->at("CHPL_COMM"),
+                         chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
+                         chplModulePath,
+                         cmdLinePaths,
+                         inputFilenames);
+}
+
 bool idIsInInternalModule(Context* context, ID id) {
   UniqueString internal = internalModulePath(context);
   UniqueString filePath;

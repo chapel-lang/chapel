@@ -81,6 +81,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::OpCall:
     case asttags::PrimCall:
     case asttags::Reduce:
+    case asttags::ReduceIntent:
     case asttags::Scan:
     case asttags::Tuple:
     case asttags::Zip:
@@ -300,6 +301,8 @@ static void dumpHelper(std::ostream& ss,
     ss << comment->str() << " ";
   } else if (const Dot* dot = ast->toDot()) {
     ss << "." << dot->field() << " ";
+  } else if (const OpCall* op = ast->toOpCall()) {
+    ss << op->op().str() << " ";
   }
 
   //printf("(containing %i) ", ast->id().numContainedChildren());

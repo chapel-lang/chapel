@@ -219,26 +219,16 @@ static void usage(int argc, char** argv) {
          "  --std enables the standard library\n"
          "  --scope only performs scope resolution\n"
          "  --trace enables query tracing\n"
+         "  --time <outputFile> outputs query timing information to outputFile\n"
          "  --searchPath <path> adds to the module search path\n",
          argv[0]);
 }
 
 static void setupSearchPaths(Context* ctx, bool enableStdLib,
-                             const char* chpl_home,
                              const std::vector<std::string>& cmdLinePaths,
                              const std::vector<std::string>& files) {
   if (enableStdLib) {
-    setupModuleSearchPaths(ctx,
-                           chpl_home,
-                           false,
-                           "flat",
-                           false,
-                           "qthreads",
-                           "none",
-                           "linux64-x86_64-gnu",
-                           "",
-                           cmdLinePaths,
-                           files);
+    setupModuleSearchPaths(ctx, false, false, cmdLinePaths, files);
   } else {
     std::vector<UniqueString> uPaths;
     for (auto p: cmdLinePaths) {
@@ -249,16 +239,14 @@ static void setupSearchPaths(Context* ctx, bool enableStdLib,
 }
 
 int main(int argc, char** argv) {
-
   bool gc = false;
-  Context context;
-  Context* ctx = &context;
   bool trace = false;
   bool scopeResolveOnly = false;
-  const char* chpl_home = nullptr;
+  std::string chpl_home;
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
   bool enableStdLib = false;
+  const char* timing = nullptr;
   for (int i = 1; i < argc; i++) {
     if (0 == strcmp(argv[i], "--std")) {
       enableStdLib = true;
@@ -273,6 +261,13 @@ int main(int argc, char** argv) {
       trace = true;
     } else if (0 == strcmp(argv[i], "--scope")) {
       scopeResolveOnly = true;
+    } else if (0 == strcmp(argv[i], "--time")) {
+      if (i+1 >= argc) {
+        usage(argc, argv);
+        return 1;
+      }
+      timing = argv[i+1];
+      i++;
     } else {
       files.push_back(argv[i]);
     }
@@ -288,6 +283,9 @@ int main(int argc, char** argv) {
     }
   }
 
+  Context context(chpl_home);
+  Context* ctx = &context;
+
   if (files.size() == 0) {
     usage(argc, argv);
     return 0; // need this to return 0 for testing to be happy
@@ -300,8 +298,9 @@ int main(int argc, char** argv) {
     ctx->setDebugTraceFlag(false);
     typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
     ctx->setDebugTraceFlag(trace);
+    if (timing) ctx->beginQueryTimingTrace(timing);
 
-    setupSearchPaths(ctx, enableStdLib, chpl_home, cmdLinePaths, files);
+    setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
 
     std::set<const ResolvedFunction*> calledFns;
 
@@ -359,6 +358,7 @@ int main(int argc, char** argv) {
 
     printf("Ran %i queries to compute the above\n\n",
            ctx->numQueriesRunThisRevision());
+    if (timing) ctx->endQueryTimingTrace();
 
     if (gc) {
       ctx->collectGarbage();

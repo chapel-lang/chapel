@@ -1,0 +1,2 @@
+openwriterEndBug.chpl:8: warning: openwriter with a start and/or end argument is deprecated.
+You

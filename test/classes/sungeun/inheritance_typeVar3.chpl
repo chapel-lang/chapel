@@ -8,5 +8,5 @@ class B: A {
   }
 }
 
-var a = new borrowed A();
+var a = (new owned A()).borrow();
 var b: borrowed B?;

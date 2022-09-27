@@ -44,7 +44,7 @@ For example, the following program downloads a web-page from http://example.com 
 module URL {
   public use IO;
 
-  deprecated "openUrlReader with a style argument is deprecated"
+  @unstable "openUrlReader with a style argument is unstable"
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)),
@@ -93,10 +93,10 @@ module URL {
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.r, style);
     return f.reader(kind=kind, locking=locking,
-                    start=start, end=end);
+                    region=start..end);
   }
 
-  deprecated "openUrlWriter with a style argument is deprecated"
+  @unstable "openUrlWriter with a style argument is unstable"
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
@@ -146,7 +146,7 @@ module URL {
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.cw, style);
     return f.writer(kind=kind, locking=locking,
-                    start=start, end=end);
+                    region=start..end);
   }
 
 }

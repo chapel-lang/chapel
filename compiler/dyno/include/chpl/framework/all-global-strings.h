@@ -26,6 +26,8 @@
 /* X(identifier, chapel string name) */
 /* the identifier must be a legal C++ identifier */
 
+X(tombstone      , "<tombstone>")
+X(empty          , "<empty>")
 X(align          , "align")
 X(atomic         , "atomic")
 X(bool_          , "bool")
@@ -118,6 +120,10 @@ X(modulus        , "%")
 X(leftShift      , "<<")
 X(rightShift     , ">>")
 X(rangeCount     , "#")
+
+X(swap           , "<=>")
+X(chplBy         , "chpl_by")
+X(chplAlign      , "chpl_align")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

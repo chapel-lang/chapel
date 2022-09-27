@@ -55,7 +55,7 @@ proc makeR(borrow:borrowed MyClass) {
 }
 
 proc badF3() {
-  var c = new borrowed MyClass(1);
+  var c = (new owned MyClass(1)).borrow();
   var r = makeR(c);
   {
     var r2 = makeR(r._borrowed);

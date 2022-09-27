@@ -77,7 +77,6 @@ predList = [
 
 groupList = [
   "isIntegral",
-  "isFloat",
   "isNumeric",
   "isPrimitive",
 ]

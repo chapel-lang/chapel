@@ -41,7 +41,7 @@ class GenericClass {
 
 
 proc main() {
-  var cc = new borrowed ConcreteClass(2);
+  var cc = (new owned ConcreteClass(2)).borrow();
 
-  var gc = new borrowed GenericClass(real, 1.0);
+  var gc = (new owned GenericClass(real, 1.0)).borrow();
 }

@@ -144,6 +144,7 @@
       AST_NODE(Function)                   // old AST: FnSymbol
       AST_NODE(Interface)                  // old AST: InterfaceSymbol
       AST_NODE(Module)                     // old AST: ModuleSymbol
+      AST_NODE(ReduceIntent)
 
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
         AST_NODE(Formal)                   // old AST: ArgSymbol

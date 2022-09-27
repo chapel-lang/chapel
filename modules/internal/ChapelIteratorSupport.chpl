@@ -131,7 +131,7 @@ module ChapelIteratorSupport {
     // for the case of a non-array non-domain argument.
 
     for i in x {
-      compilerAssert(i.type <= _iteratorRecord); // prevent unintended use
+      compilerAssert(isSubtype(i.type, _iteratorRecord)); // prevent unintended use
 
       // The case where the shape is a range can be implemented
       // analogously to the two versions of chpl__initCopy(_iteratorRecord)
@@ -270,7 +270,7 @@ module ChapelIteratorSupport {
   // run-time types from it. So we create them from scratch.
   //
   proc chpl_buildStandInRTT(domInst) type
-    where domInst.type <= unmanaged DefaultRectangularDom
+    where isSubtype(domInst.type, unmanaged DefaultRectangularDom)
   {
     // The only _RuntimeTypeInfo component for a domain type is
     // a BaseDist subclass. We use 'defaultDist' for that.
@@ -282,7 +282,7 @@ module ChapelIteratorSupport {
   // Other kinds of arrays/domains are not supported.
   proc chpl_buildStandInRTT(domInst) type
   {
-    if domInst.type <= unmanaged BaseDom then
+    if isSubtype(domInst.type, unmanaged BaseDom) then
       compilerError("for/forall/promoted expressions are not implemented when the elements are or contain non-DefaultRectangular domains or arrays");
     else
       compilerError("unexpected argument of type ", domInst.type:string, " for chpl_buildStandInRTT()");

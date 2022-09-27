@@ -32,6 +32,10 @@ void chpl_gpu_init(void) {
   chpl_gpu_impl_init();
 }
 
+void chpl_gpu_on_std_modules_finished_initializing(void) {
+  chpl_gpu_impl_on_std_modules_finished_initializing();
+}
+
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
@@ -94,7 +98,16 @@ void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  name);
 }
 
-void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n) {
+void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
+  CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.", n, src, dst);
+
+  void* ret = chpl_gpu_impl_memmove(dst, src, n);
+
+  CHPL_GPU_DEBUG("Memmove successful\n");
+  return ret;
+}
+
+void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(src));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
@@ -104,7 +117,7 @@ void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n) {
   CHPL_GPU_DEBUG("Copy successful\n");
 }
 
-void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
+void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
@@ -221,8 +234,12 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
   return NULL;
 }
 
-bool chpl_gpu_is_device_ptr(void* ptr) {
+bool chpl_gpu_is_device_ptr(const void* ptr) {
   return chpl_gpu_impl_is_device_ptr(ptr);
+}
+
+bool chpl_gpu_is_host_ptr(const void* ptr) {
+  return chpl_gpu_impl_is_host_ptr(ptr);
 }
 
 #endif

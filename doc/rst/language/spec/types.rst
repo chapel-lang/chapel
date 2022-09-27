@@ -272,7 +272,7 @@ The String Type
 
 Strings are a primitive type designated by the symbol ``string``
 comprised of Unicode characters in UTF-8 encoding. Their length is
-unbounded.
+unbounded. Strings are defined in :ref:`Chapter-Strings`.
 
 .. _The_Bytes_Type:
 
@@ -281,7 +281,7 @@ The Bytes Type
 
 Bytes is a primitive type designated by the symbol ``bytes`` comprised
 of arbitrary bytes. Bytes are immutable in-place and their length is
-unbounded.
+unbounded. Bytes are defined in :ref:`Chapter-Bytes`.
 
 .. _Enumerated_Types:
 

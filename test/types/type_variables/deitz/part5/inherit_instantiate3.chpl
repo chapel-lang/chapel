@@ -7,7 +7,7 @@ class D : C {
   var y : real;
 }
 
-var d = new borrowed D(p=2);
+var d = (new owned D(p=2)).borrow();
 
 writeln(d);
 

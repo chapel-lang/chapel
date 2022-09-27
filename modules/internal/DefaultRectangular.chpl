@@ -360,7 +360,7 @@ module DefaultRectangular {
                offset=createTuple(rank, intIdxType, 0:intIdxType))
       where tag == iterKind.leader {
 
-      const numSublocs = here.getChildCount();
+      const numSublocs = here._getChildCount();
 
       if localeModelPartitionsIterationOnSublocales && numSublocs != 0 {
         var dptpl = if tasksPerLocale==0 then here.maxTaskPar
@@ -389,7 +389,7 @@ module DefaultRectangular {
         }
 
         coforall chunk in 0..#numChunks { // make sure coforall on can trigger
-          local do on here.getChild(chunk) {
+          local do on here._getChild(chunk) {
             if debugDataParNuma {
               if chunk!=chpl_getSubloc() then
                 chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ", chunk,
@@ -1269,7 +1269,7 @@ module DefaultRectangular {
         } else {
           data = _ddata_allocate_noinit(eltType, size,
                                         callPostAlloc,
-                                        subloc = (if here.getChildCount() > 1
+                                        subloc = (if here._getChildCount() > 1
                                                   then c_sublocid_all
                                                   else c_sublocid_none));
         }

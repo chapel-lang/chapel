@@ -104,5 +104,29 @@ int executeAndWait(const std::vector<std::string>& commandVec,
   return -1;
 }
 
+llvm::ErrorOr<std::string> getCommandOutput(const std::string& command) {
+  // Run arbitrary command and return result
+  char buffer[256];
+  std::string result = "";
+
+  // Call command
+  FILE* pipe = popen(command.c_str(), "r");
+  if (!pipe) {
+    return std::error_code(errno, std::system_category());
+  }
+
+  // Read output of command into result via buffer
+  while (!feof(pipe)) {
+    if (fgets(buffer, 256, pipe) != NULL) {
+      result += buffer;
+    }
+  }
+
+  if (pclose(pipe)) {
+    return std::error_code(errno, std::system_category());
+  }
+
+  return result;
+}
 
 } // namespace chpl

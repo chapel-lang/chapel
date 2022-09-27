@@ -11,9 +11,176 @@ papers that predated the changes.
 Note that the compiler flag ``--warn-unstable`` is available and can be
 useful when migrating programs to the current version of the language.
 The purpose of this flag is to identify portions of a program that use a
-language feature which has changed meaning.  It also flags features that
-are considered unstable and may change in the future.
+language or library feature has recently changed meaning or which is
+expected to change meaning in the future.
 
+version 1.28, September 2022
+----------------------------
+
+Version 1.28 included some significant changes to the overload resolution
+rules. In addition, it enabled implicit conversion from ``int(t)`` to
+``uint(t)``.  This section discusses some example programs that behave
+differently due to these changes.
+
+See also:
+
+ * The `1.27 overload resolution rules <https://chapel-lang.org/docs/1.27/language/spec/procedures.html#function-resolution>`_
+ * The `1.28 overload resolution rules <https://chapel-lang.org/docs/1.28/language/spec/procedures.html#function-resolution>`_
+
+Behavior Differences for Mixes of Signed and Unsigned
+*****************************************************
+
+Prior to 1.28, numeric operations applied to a mix of signed and unsigned types
+could have surprising results by moving the computation from a particular bit
+width to another—or by moving it from an integral computation to a floating
+point one.
+
+For example:
+
+.. code-block:: chapel
+
+    var myInt:int = 1;
+    var myUint:uint = 2;
+    var myIntPlusUint = myInt + myUint; // what is the type of `myIntPlusUint`?
+
+Before 1.28, this program would result in compilation error, due to an
+error overload of ``operator +`` in the standard library.
+
+Version 1.28 adds the ability for an ``int`` to implicitly convert to
+``uint`` and removes the error overload. As a result, the ``uint``
+version of ``operator +`` is chosen, which results in ``myIntPlusUint``
+having type ``uint``.
+
+This behavior can also extend to user-defined functions. Consider a function
+``plus`` defined for ``int``, ``uint``, and ``real``:
+
+.. code-block:: chapel
+
+    proc plus(a: int, b: int)   { return a + b; }
+    proc plus(a: uint, b: uint) { return a + b; }
+    proc plus(a: real, b: real) { return a + b; }
+
+    var myInt:int = 1;
+    var myUint:uint = 2;
+    var myIntPlusUint = plus(myInt, myUint);
+
+In 1.27 the call to ``plus`` would resolve to the ``real`` version because
+``int`` could not implicitly convert to ``uint``, but both ``int`` and ``uint``
+could implicitly convert to ``real(64)``. As a result, ``myIntPlusUint`` had
+the type ``real``. This change from integral types to floating point types
+could be very surprising.
+
+In 1.28 the call to ``plus`` resolves to the ``uint`` version, and
+``myIntPlusUint`` has type ``uint``.
+
+This behavior also applies to ``int`` and ``uint`` types with smaller widths:
+
+.. code-block:: chapel
+
+    var myInt32:int(32) = 1;
+    var myUint32:uint(32) = 2;
+    var myInt32PlusUint32 = myInt32 + myUint32;
+
+In 1.27, the ``int(64)`` ``+`` operator is chosen (because both ``int(32)`` and
+``uint(32)`` can implicitly convert to ``int(64)``), which results in
+``myInt32PlusUint32`` having type ``int(64)``. This could be surprising when
+explicitly working with 32-bit numbers.
+
+In contrast, in 1.28, due to the ability for ``int(32)`` to implicitly
+convert to ``uint(32)``, the ``uint(32)`` version of the ``+`` operator
+is chosen and ``myInt32PlusUint32`` has type ``uint(32)``.
+
+Param Expression Behavior
+*************************
+
+Some expressions consisting of mixed-type literal or ``param`` values now
+have different behavior. For example:
+
+.. code-block:: chapel
+
+    var x = 1:int(8) + 2; // what is the type of `x` ?
+
+Note in this example that the literal ``2`` is a ``param`` with type
+``int(64)`` and that ``1:int(8)`` is a ``param`` with type ``int(8)``.
+
+In 1.27, this program would output ``int(8)``, because the overload
+resolution rules would favor the ``+`` overload using the type of the
+non-default-sized ``param``. The result is that in 1.27, ``x`` had type
+``int(8)``.
+
+In 1.28, the rules are simpler and a closer match to the corresponding
+case with regular variables (``myInt8 + myInt64``). There is no longer
+any special behavior for non-default-sized ``param``. As a result, the
+value ``x`` now has type ``int(64)``.
+
+For similar reasons, the type of ``nI`` in the following code is now
+``int(64)`` where previously it was ``int(32)``:
+
+.. code-block:: chapel
+
+    const nI = ((-2):int(32))**53;
+
+A similar change can also appear with range literals that use mixed type
+``param`` lower and upper bounds. The following range construction also
+makes use of the new implicit conversion from ``int(t)`` to ``uint(t))``:
+
+.. code-block:: chapel
+
+    var r8 = 1:int(8)..100:uint(8);
+    writeln(r8.type:string);
+
+In 1.27, this would generate a range with index type ``int(16)``. In
+1.28, it produces a range with index type ``uint(8)``.
+
+Speaking of range literal construction, a range like ``1:int(8)..10``
+still produces an ``int(8)`` range in 1.28. However, as we have
+discussed, something like ``1:int(8) + 10`` would result in an
+``int(64)``. For now, the range implementation has been adjusted to
+preserve the old behavior specifically for the ``..`` operator. However,
+this may change in a future release.
+
+Change for some mixed int/uint overloads
+****************************************
+
+This example shows a change in behavior for two overloads where one is
+``int`` and the other is ``uint``:
+
+.. code-block:: chapel
+
+    proc dbm(a:int(8))   { writeln("dbm int8"); }
+    proc dbm(a:uint(64)) { writeln("dbm uint64"); }
+
+    dbm(42:int(64));
+
+Previous to 1.28, this program would call the ``int(8)`` version of the
+function. It can do that because the compiler knows that the ``param``
+value ``42`` will fit into an ``int(8)``. Such a conversion is called a
+``param`` narrowing conversion. However, in 1.28, this function now calls
+the ``uint(64)`` version of the function. The main reason for this is
+that the 1.28 rules prefer to not do ``param`` narrowing conversion when
+another candidate does not need it. In this case, ``int`` to ``uint`` is
+not a ``param`` narrowing conversion so that is preferred.
+
+Change for function visibility / shadowing
+******************************************
+
+The new overload resolution rules in 1.28 consider function visibility or
+shadowing before considering how well the arguments match. Consider this
+example:
+
+.. code-block:: chapel
+
+    proc f(arg: int) { writeln("f int"); }
+
+    proc main() {
+      proc f(arg) { writeln("f generic"); }
+
+      f(1); // which `f` does this call?
+    }
+
+Inside of ``proc main``, the call to ``f`` now resolves to the generic
+inner function. In contrast, in version 1.27, the outer
+``proc f(arg: int)`` would be called.
 
 version 1.22, April 2020
 ------------------------

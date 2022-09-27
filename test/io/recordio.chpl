@@ -98,7 +98,7 @@ proc MyRecord.writeThis(f) throws {
 
 proc MyRecord.readWriteHelper(f) throws {
   proc rwLiteral(lit:string) {
-    if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+    if f.writing then f.writeLiteral(lit); else f.readLiteral(lit);
   }
 
   if f.writing then f.write(i); else i = f.read(int);
