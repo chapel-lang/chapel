@@ -2123,7 +2123,7 @@ object. It can buffer data. Read operations on it might return old data. Use
 
 The :record:`fileReader` type is implementation-defined.
 A value of the :record:`fileReader` type refers to the state that is used
-to implement the reading operations operations.
+to implement the reading operations.
 
 When a :record:`fileReader` formal argument has default intent, the actual is
 passed by ``const ref`` to the formal upon a function call, and the formal
@@ -2865,7 +2865,7 @@ proc openreader(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints,
                 style:iostyle)
-    : _channel(false, kind, locking) throws {
+    : fileReader(kind, locking) throws {
   return openreaderHelper(path, kind, locking, start..end, new ioHintSet(hints),
                           style: iostyleInternal);
 }
@@ -2876,7 +2876,7 @@ proc openreader(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : _channel(false, kind, locking) throws {
+    : fileReader(kind, locking) throws {
   return openreaderHelper(path, kind, locking, start..end, hints,
                           style: iostyleInternal);
 }
@@ -3127,7 +3127,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   // It is the responsibility of the caller to release the returned channel
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
-  var ret:_channel(false, kind, locking);
+  var ret:fileReader(kind, locking);
   var err:errorCode = ENOERR;
   on this._home {
     try this.checkAssumingLocal();
@@ -5464,19 +5464,19 @@ record itemReaderInternal {
 // And now, the toplevel items.
 
 /* standard input, otherwise known as file descriptor 0 */
-const stdin:_channel(false, iokind.dynamic, true);
+const stdin:fileReader(iokind.dynamic, true);
 stdin = try! openfd(0).reader();
 
 pragma "no doc"
 extern proc chpl_cstdout():_file;
 /* standard output, otherwise known as file descriptor 1 */
-const stdout:_channel(true, iokind.dynamic, true);
+const stdout:fileWriter(iokind.dynamic, true);
 stdout = try! openfp(chpl_cstdout()).writer();
 
 pragma "no doc"
 extern proc chpl_cstderr():_file;
 /* standard error, otherwise known as file descriptor 2 */
-const stderr:_channel(true, iokind.dynamic, true);
+const stderr:fileWriter(iokind.dynamic, true);
 stderr = try! openfp(chpl_cstderr()).writer();
 /* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {

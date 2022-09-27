@@ -1723,7 +1723,7 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: _channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       var isBinary = ch.binary();
 
       _enter();
