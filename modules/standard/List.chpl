@@ -1757,7 +1757,7 @@ module List {
 
      :arg ch: A channel to read from.
      */
-    proc readThis(ch: _channel) throws {
+    proc readThis(ch: fileReader) throws {
       //
       // Special handling for reading in order to handle reading an arbitrary
       // size.

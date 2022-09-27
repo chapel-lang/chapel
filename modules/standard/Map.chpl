@@ -576,7 +576,7 @@ module Map {
 
       :arg ch: A channel to read from.
     */
-    proc readThis(ch: _channel) throws {
+    proc readThis(ch: fileReader) throws {
       _readWriteHelper(ch);
     }
 
@@ -589,12 +589,12 @@ module Map {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: _channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _readWriteHelper(ch);
     }
 
     pragma "no doc"
-    proc _readWriteHelper(ch: _channel) throws {
+    proc _readWriteHelper(ch) throws {
       _enter(); defer _leave();
       var first = true;
       proc rwLiteral(lit:string) throws {

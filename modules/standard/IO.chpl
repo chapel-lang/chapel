@@ -2253,7 +2253,7 @@ proc _channel.init(param writing:bool, param kind:iokind, param locking:bool) {
 
 pragma "no doc"
 proc _channel.init(x: _channel) {
-  compilerWarning("new channel(otherChannel) is deprecated");
+  compilerWarning("new _channel(otherChannel) is deprecated");
   this.writing = x.writing;
   this.kind = x.kind;
   this.locking = x.locking;
@@ -2886,7 +2886,7 @@ deprecated "openreader with a start and/or end argument is deprecated.  Please u
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty): channel(false, kind, locking) throws {
+                hints=ioHintSet.empty): fileReader(kind, locking) throws {
   return openreader(path, kind, locking, start..end, hints);
 }
 // We can simply call channel.close() on these, since the underlying file will
@@ -2929,7 +2929,7 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : _channel(false, kind, locking) throws {
+    : fileReader(kind, locking) throws {
   return openreaderHelper(path, kind, locking, region, hints);
 }
 
@@ -2939,7 +2939,7 @@ proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints)
-    : channel(false, kind, locking) throws {
+    : fileReader(kind, locking) throws {
   return openreader(path, kind, locking, start..end, new ioHintSet(hints));
 }
 
@@ -2948,7 +2948,7 @@ private proc openreaderHelper(path:string,
                               region: range(?) = 0..,
                               hints=ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal())
-  : _channel(false, kind, locking) throws {
+  : fileReader(kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
   return try fl.readerHelper(kind, locking, region, hints, style);
@@ -2960,7 +2960,7 @@ proc openwriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints,
                 style:iostyle)
-    : _channel(true, kind, locking) throws {
+    : fileWriter(kind, locking) throws {
   return openwriterHelper(path, kind, locking, start, end, new ioHintSet(hints),
                     style: iostyleInternal);
 }
@@ -2971,7 +2971,7 @@ proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints = ioHintSet.empty)
-    : channel(true, kind, locking) throws {
+    : fileWriter(kind, locking) throws {
   return openwriterHelper(path, kind, locking, start, end, hints);
 }
 
@@ -2981,7 +2981,7 @@ proc openwriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : _channel(true, kind, locking) throws {
+    : fileWriter(kind, locking) throws {
   return openwriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
 }
@@ -3011,7 +3011,7 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty)
-    : _channel(true, kind, locking) throws {
+    : fileWriter(kind, locking) throws {
   return openwriterHelper(path, kind, locking, hints=hints);
 }
 
@@ -3021,7 +3021,7 @@ proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints)
-    : channel(true, kind, locking) throws {
+    : fileWriter(kind, locking) throws {
   return openwriterHelper(path, kind, locking, start, end,
                           new ioHintSet(hints));
 }
@@ -3031,7 +3031,7 @@ private proc openwriterHelper(path:string,
                               start:int(64) = 0, end:int(64) = max(int(64)),
                               hints = ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal())
-  : _channel(true, kind, locking) throws {
+  : fileWriter(kind, locking) throws {
 
   var fl:file = try open(path, iomode.cw);
   return try fl.writerHelper(kind, locking, start..end, hints, style);
@@ -3041,7 +3041,7 @@ deprecated "The 'iohints' type is deprecated; please use the unstable variant of
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints:iohints,
-                 style:iostyle): _channel(false, kind, locking)
+                 style:iostyle): fileReader(kind, locking)
                  throws {
   return this.readerHelper(kind, locking, start..end, new ioHintSet(hints), style: iostyleInternal);
 }
@@ -3050,7 +3050,7 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty,
-                 style:iostyle): _channel(false, kind, locking)
+                 style:iostyle): fileReader(kind, locking)
                  throws {
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
@@ -3060,7 +3060,7 @@ deprecated "file.reader with a start and/or end argument is deprecated.  Please 
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints = ioHintSet.empty)
-  : _channel(false, kind, locking) throws {
+  : fileReader(kind, locking) throws {
   return this.reader(kind, locking, start..end, hints);
 }
 
@@ -3105,21 +3105,21 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                                  byte 0.
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty): _channel(false, kind, locking) throws {
+                 region: range(?) = 0.., hints = ioHintSet.empty): fileReader(kind, locking) throws {
   return this.readerHelper(kind, locking, region, hints);
 }
 
 pragma "last resort"
 deprecated "The 'iohints' type is deprecated; please use a variant of 'file.reader' that takes an 'ioHintSet' instead."
 proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
-                 end:int(64) = max(int(64)), hints:iohints): channel(false, kind, locking) throws {
+                 end:int(64) = max(int(64)), hints:iohints): fileReader(kind, locking) throws {
   return this.reader(kind, locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
-                       style:iostyleInternal = this._style): _channel(false, kind, locking) throws {
+                       style:iostyleInternal = this._style): fileReader(kind, locking) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
@@ -3132,17 +3132,17 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new _channel(false, kind, locking, this, err, hints, region.low,
-                         region.high, style);
+      ret = new fileReader(kind, locking, this, err, hints, region.low,
+                           region.high, style);
     } else if (region.hasLowBound()) {
-      ret = new _channel(false, kind, locking, this, err, hints, region.low,
-                         max(int(64)), style);
+      ret = new fileReader(kind, locking, this, err, hints, region.low,
+                           max(int(64)), style);
     } else if (region.hasHighBound()) {
-      ret = new _channel(false, kind, locking, this, err, hints, 0, region.high,
-                         style);
+      ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                           style);
     } else {
-      ret = new _channel(false, kind, locking, this, err, hints, 0, max(int(64)),
-                         style);
+      ret = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
+                           style);
     }
   }
   if err then try ioerror(err, "in file.reader", this._tryGetPath());
@@ -3205,19 +3205,19 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   var err:errorCode = ENOERR;
   on this._home {
     try this.checkAssumingLocal();
-    var ch: _channel;
+    var ch: fileReader;
     if (region.hasLowBound() && region.hasHighBound()) {
-      ch = new _channel(false, kind, locking, this, err, hints, region.low,
-                       region.high, local_style);
+      ch = new fileReader(kind, locking, this, err, hints, region.low,
+                          region.high, local_style);
     } else if (region.hasLowBound()) {
-      ch = new _channel(false, kind, locking, this, err, hints, region.low,
-                       max(int(64)), local_style);
+      ch = new fileReader(kind, locking, this, err, hints, region.low,
+                          max(int(64)), local_style);
     } else if (region.hasHighBound()) {
-      ch = new _channel(false, kind, locking, this, err, hints, 0, region.high,
-                       local_style);
+      ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                          local_style);
     } else {
-      ch = new _channel(false, kind, locking, this, err, hints, 0, max(int(64)),
-                       local_style);
+      ch = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
+                          local_style);
     }
     ret = new itemReaderInternal(string, kind, locking, ch);
   }
@@ -3230,7 +3230,7 @@ deprecated "The 'iohints' type is deprecated; please use the unstable variant of
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints:iohints, style:iostyle):
-                 _channel(true,kind,locking) throws {
+                 fileWriter(kind,locking) throws {
   return this.writerHelper(kind, locking, start..end, new ioHintSet(hints), style: iostyleInternal);
 }
 
@@ -3238,7 +3238,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty, style:iostyle):
-                 _channel(true,kind,locking) throws {
+                 fileWriter(kind,locking) throws {
   return this.writerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
@@ -3247,7 +3247,7 @@ deprecated "file.writer with a start and/or end argument is deprecated.  Please 
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints = ioHintSet.empty):
-                 _channel(true,kind,locking) throws {
+                 fileWriter(kind,locking) throws {
   return this.writer(kind, locking, start..end, hints);
 }
 
@@ -3299,7 +3299,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty):
-                 _channel(true,kind,locking) throws {
+                 fileWriter(kind,locking) throws {
   return this.writerHelper(kind, locking, region, hints);
 }
 
@@ -3308,7 +3308,7 @@ deprecated "The 'iohints' type is deprecated; please use a variant of 'file.writ
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints:iohints):
-                 channel(true,kind,locking) throws {
+                 fileWriter(kind,locking) throws {
   return this.writer(kind, locking, start..end, new ioHintSet(hints));
 }
 
@@ -3316,7 +3316,7 @@ pragma "no doc"
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style):
-  _channel(true,kind,locking) throws {
+  fileWriter(kind,locking) throws {
 
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
@@ -3326,22 +3326,22 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   // channel.
   // If the return error code is nonzero, the ref count will be 0 not 1.
   // The error code should be checked to avoid double-deletion errors.
-  var ret:_channel(true, kind, locking);
+  var ret:fileWriter(kind, locking);
   var err:errorCode = ENOERR;
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new _channel(true, kind, locking, this, err, hints, region.low,
-                         region.high, style);
+      ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                           region.high, style);
     } else if (region.hasLowBound()) {
-      ret = new _channel(true, kind, locking, this, err, hints, region.low,
-                         max(int(64)), style);
+      ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                           max(int(64)), style);
     } else if (region.hasHighBound()) {
-      ret = new _channel(true, kind, locking, this, err, hints, 0, region.high,
-                         style);
+      ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
+                           style);
     } else {
-      ret = new _channel(true, kind, locking, this, err, hints, 0, max(int(64)),
-                         style);
+      ret = new fileWriter(kind, locking, this, err, hints, 0, max(int(64)),
+                           style);
     }
   }
   if err then try ioerror(err, "in file.writer", this._tryGetPath());
@@ -3812,10 +3812,10 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
-  var reader = new _channel(writing=false, iokind.dynamic, locking=false,
-                           home=here,
-                           _channel_internal=_channel_internal,
-                           _readWriteThisFromLocale=loc);
+  var reader = new fileReader(iokind.dynamic, locking=false,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
 
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
@@ -3863,10 +3863,10 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
-  var writer = new _channel(writing=true, iokind.dynamic, locking=false,
-                           home=here,
-                           _channel_internal=_channel_internal,
-                           _readWriteThisFromLocale=loc);
+  var writer = new fileWriter(iokind.dynamic, locking=false,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
 
   // Set the channel pointer to NULL to make the
   // destruction of the local writer record safe
@@ -4909,7 +4909,7 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   return false;
 }
 
-private proc readBytesOrString(ch: _channel, ref out_var: ?t,  len: int(64))
+private proc readBytesOrString(ch: fileReader, ref out_var: ?t,  len: int(64))
     throws {
 
   var err:errorCode = ENOERR;
@@ -5441,7 +5441,7 @@ record itemReaderInternal {
   /* the locking field for our channel */
   param locking:bool;
   /* our channel */
-  var ch:_channel(false,kind,locking);
+  var ch:fileReader(kind,locking);
   /* read a single item, throwing on error */
   proc read(out arg:ItemType):bool throws {
     return ch.read(arg);
