@@ -40,6 +40,8 @@ namespace parsing {
 class FileContents {
  private:
   std::string text_;
+  // TODO: it would be better to use the LLVM error handling strategy here,
+  //       instead of storing errors created via Context.
   const ParseError* error_;
 
  public:
