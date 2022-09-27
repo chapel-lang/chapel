@@ -122,7 +122,6 @@ X(rightShift     , ">>")
 X(rangeCount     , "#")
 
 X(swap           , "<=>")
-X(channelIo      , "<~>")
 X(chplBy         , "chpl_by")
 X(chplAlign      , "chpl_align")
 

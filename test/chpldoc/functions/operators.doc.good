@@ -55,8 +55,6 @@ or
 
 .. function:: operator !=(lhs: Foo, rhs: Foo)
 
-.. function:: operator <~>(const ref ch: channel, const x: Foo) const ref throws
-
 .. function:: operator <(lhs: Foo, rhs: Foo)
 
 .. function:: operator <=(lhs: Foo, rhs: Foo)

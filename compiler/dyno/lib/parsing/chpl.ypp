@@ -419,7 +419,6 @@
 %token <uniqueStr> TEQUAL TEXP TGREATER
 %token <uniqueStr> TGREATEREQUAL
 %token <uniqueStr> THASH
-%token <uniqueStr> TIO
 %token <uniqueStr> TLESS
 %token <uniqueStr> TLESSEQUAL
 %token <uniqueStr> TMINUS TMOD
@@ -580,7 +579,7 @@
 %type <exprList> lifetime_components_expr
 %type <expr> lifetime_expr lifetime_ident
 %type <lifetimeAndWhere> opt_lifetime_where
-%type <expr> ident_expr for_expr cond_expr nil_expr io_expr new_expr
+%type <expr> ident_expr for_expr cond_expr nil_expr new_expr
 %type <expr> let_expr ifvar
 %type <uniqueStr> reduce_scan_op_expr
 %type <expr> reduce_expr scan_expr opt_init_expr
@@ -2428,7 +2427,6 @@ op_ident:
 | THASH
 | TALIGN
 | TSWAP
-| TIO
 | TINITEQUALS
 | TCOLON
 ;
@@ -3306,8 +3304,6 @@ stmt_level_expr:
 | lambda_decl_expr
 | new_expr
 | let_expr
-| io_expr TIO expr
-  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 opt_task_intent_ls:
@@ -3376,12 +3372,6 @@ task_var_prefix:
 | TREF         { $$ = TaskVar::REF;       }
 | TCONST TREF  { $$ = TaskVar::CONST_REF; }
 | TVAR         { $$ = TaskVar::VAR;       }
-;
-
-io_expr:
-  lhs_expr
-| io_expr TIO expr
-  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 new_maybe_decorated:
