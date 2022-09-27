@@ -35,6 +35,9 @@ Exceptions:
 
   * :proc:`~ChapelLocale.locale.numPUs` (num Processor-Units)
 
+ Our hope and intention is to update our rules over time so that they cover
+ cases like this, obviating the need to call it out as an exception. As more
+ exceptions accumulate, rules may be amended to cover multiple cases at once.
 
 Modules
 -------
