@@ -435,6 +435,85 @@ static void test15() {
   assert(qt.isErroneousType());
 }
 
+static void test16() {
+  printf("test16\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  std::string setup =
+                R""""(
+                  record R { type t1; type t2; }
+                  proc f(a: R(?t, if t == bool then string else int)...) type {
+                    return t;
+                  }
+                )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, string);
+                  type x = f(a);
+                )"""");
+  assert(qt.type() && qt.type()->isBoolType());
+
+  context->advanceToNextRevision(false);
+  qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, string);
+                  var b: R(bool, string);
+                  type x = f(a, b);
+                )"""");
+  assert(qt.type() && qt.type()->isBoolType());
+
+  context->advanceToNextRevision(false);
+  qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, string);
+                  var b: R(bool, string);
+                  var c: R(bool, string);
+                  type x = f(a, b, c);
+                )"""");
+  assert(qt.type() && qt.type()->isBoolType());
+}
+
+static void test17() {
+  printf("test17\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  std::string setup =
+                R""""(
+                  record R { type t1; type t2; }
+                  proc f(a: R(?t, if t == bool then string else int)...) type {
+                    return t;
+                  }
+                )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, string);
+                  var b: R(bool, int);
+                  type x = f(a, b);
+                )"""");
+  assert(qt.isErroneousType());
+
+  context->advanceToNextRevision(false);
+  qt = resolveQualifiedTypeOfX(context, setup+
+                R""""(
+                  var a: R(bool, int);
+                  var b: R(bool, string);
+                  type x = f(a, b);
+                )"""");
+  assert(qt.isErroneousType());
+
+  context->advanceToNextRevision(false);
+  qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, int);
+                  type x = f(a);
+                )"""");
+  assert(qt.isErroneousType());
+}
+
 int main() {
   test1();
   test2();
@@ -453,6 +532,8 @@ int main() {
   test13b();
   test14();
   test15();
+  test16();
+  test17();
 
   return 0;
 }
