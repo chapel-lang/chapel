@@ -142,41 +142,35 @@ void ErrorWriter::writeCode(const Location& location,
   size_t startIndex = posToFileIndex(str.c_str(), location.firstLine(), 1);
   size_t endIndex = posToFileIndex(str.c_str(), location.lastLine()+1, 1);
 
-  std::vector<std::pair<size_t, size_t>> highlightRanges;
+  std::vector<std::pair<size_t, size_t>> ranges;
   for (auto hlLoc : toHighlight) {
     size_t hlStart = posToFileIndex(str.c_str(), hlLoc.firstLine(), hlLoc.firstColumn());
     size_t hlEnd = posToFileIndex(str.c_str(), hlLoc.lastLine(), hlLoc.lastColumn());
-    highlightRanges.push_back(std::make_pair(hlStart, hlEnd));
+    ranges.push_back(std::make_pair(hlStart, hlEnd));
   }
 
-  bool needsLine = true;
-  bool needsHighlight = false;
-  bool neededHighlight = false;
   oss_ << std::endl;
+  oss_ << "  ";
+  std::string highlightString = "";
+  bool printHighlight = false;
   for (size_t i = startIndex; i < endIndex; i++) {
-    needsHighlight = false;
-    for (auto& range : highlightRanges) {
-      if (i >= range.first && i < range.second) {
-        needsHighlight = true;
-        break;
-      }
-    }
+    bool highlight = std::any_of(ranges.begin(), ranges.end(), [&](auto range) {
+      return i >= range.first && i < range.second;
+    });
+    highlightString += highlight ? '^' : ' ';
+    printHighlight = printHighlight || highlight;
 
-    if (needsHighlight && !neededHighlight) {
-      oss_ << "\033[4m";
-    } else if (!needsHighlight && neededHighlight) {
-      oss_ << "\033[24m";
-    }
-    neededHighlight = needsHighlight;
-
-    if (needsLine) {
-      needsLine = false;
-      oss_ << "    ";
-    }
     oss_ << str[i];
-    needsLine = str[i] == '\n';
+    if (str[i] == '\n') {
+      if (printHighlight) {
+        oss_ << highlightString << std::endl;
+      }
+      oss_ << "  ";
+      printHighlight = false;
+      highlightString = "";
+    }
   }
-  oss_ << "\033[24m" << std::endl;
+  oss_ << std::endl;
 }
 
 void ErrorWriter::writeNewline() {
