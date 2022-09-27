@@ -50,7 +50,7 @@ In addition, several optional components have additional requirements:
     or the equivalent package; ``python3`` and ``pip3`` commands; and the
     ``venv`` Python package.
 
-  * ``doxygen`` is required to build the complete documentation
+  * ``doxygen`` 1.8.17 or newer is required to build the complete documentation
 
   * ``m4`` is required for building the bundled GMP
 
