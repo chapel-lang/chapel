@@ -112,7 +112,6 @@ Utilities
    :maxdepth: 1
 
    ChplConfig <standard/ChplConfig>
-   DateTime <standard/DateTime>
    Help <standard/Help>
    Regex <standard/Regex>
    Time <standard/Time>
