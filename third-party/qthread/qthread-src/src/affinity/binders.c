@@ -93,8 +93,8 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
                                size_t                *hw_par)
 {                      
 #ifdef HWLOC_GET_TOPOLOGY_FUNCTION
-  extern hwloc_topology_t HWLOC_GET_TOPOLOGY_FUNCTION;
-  topology = HWLOC_GET_TOPOLOGY_FUNCTION;
+  extern void * HWLOC_GET_TOPOLOGY_FUNCTION;
+  topology = (hwloc_topology_t) HWLOC_GET_TOPOLOGY_FUNCTION;
 #endif
   if (topology == NULL) {
     hwloc_topology_init(&topology);
