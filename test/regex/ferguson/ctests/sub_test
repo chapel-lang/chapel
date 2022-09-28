@@ -45,7 +45,7 @@ else
 fi
 
 COMP=`$CHPL_HOME/util/chplenv/chpl_compiler.py --target`
-CXX=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_TARGET_CXX | cut -d = -f 2`
+CXX=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_TARGET_CXX | cut -d = -f 2-`
 if [ "$COMP" = "gnu" ]
 then
   echo C tests will run using gnu compiler $CXX
