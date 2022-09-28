@@ -286,7 +286,7 @@ module Curl {
        setopt(curlfile, (CURLOPT_USERNAME, username),
                         (CURLOPT_PASSWORD, password));
 
-     :arg ch: a :rec:`IO.fileReader` or :rec:`IO.fileWriter`
+     :arg ch: a :record:`IO.fileReader` or :record:`IO.fileWriter`
      :arg args: any number of tuples of the form (curl_option, value).
                 This function will call ``setopt`` on each pair in turn.
    */
