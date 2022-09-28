@@ -2136,7 +2136,7 @@ The :record:`fileReader` type is generic.
 
 The :record:`fileReader` type supports 3 fields:
 
- * ``param writing: bool = false``:
+ * ``param writing: bool`` which is always ``false`` for ``fileReader``
 
  *  ``param kind:iokind``:
      kind is an enum :type:`iokind` that allows narrowing
@@ -2169,7 +2169,7 @@ The :record:`fileWriter` type is generic.
 
 The :record:`fileWriter` type supports 3 fields:
 
- * ``param writing: bool = true``:
+ * ``param writing: bool`` which is always ``true`` for ``fileWriter``
 
  *  ``param kind:iokind``:
      kind is an enum :type:`iokind` that allows narrowing
