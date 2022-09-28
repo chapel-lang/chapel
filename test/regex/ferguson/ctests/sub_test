@@ -24,6 +24,10 @@ RE2INCLS=-I$RE2_INSTALL_DIR/include
 RE2LIB="-L$RE2_INSTALL_DIR/lib -Wl,-rpath,$RE2_INSTALL_DIR/lib -lre2"
 
 RE=`$CHPL_HOME/util/chplenv/chpl_re2.py`
+if [ $? -ne 0 ]
+then
+    exit 1
+fi
 if [ "$RE" = "bundled" ]
 then
   echo "[Working on $DIR with RE2]"
@@ -32,12 +36,12 @@ else
   exit
 fi
 
-echo $DEFS | grep atomics/intrinsics
+echo $DEFS | grep atomics/cstdlib
 if [ $? -eq 0 ]
 then
-  echo "[Working on $DIR with atomics/intrinsics]"
+  echo "[Working on $DIR with atomics/cstdlib]"
 else
-  echo "[Skipping directory $DIR without atomics/intrinsics]"
+  echo "[Skipping directory $DIR without atomics/cstdlib]"
   exit
 fi
 
@@ -59,7 +63,7 @@ else
 fi
 
 DEPS="$OPTS --std=gnu++11 -Wall -DCHPL_RT_UNIT_TEST $DEFS $RE2INCLS"
-LDEPS="$RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/qio_error.c $RSRC/deque.c $RSRC/regex/re2/re2-interface.cc $RE2LIB -lpthread"
+LDEPS="$RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/qio_error.c $RSRC/deque.c $RSRC/regex/bundled/re2-interface.cc $RE2LIB -lpthread"
 
 T1="$CXX $DEPS -g regex_test.cc -o regex_test $LDEPS"
 T2="$CXX $DEPS -g regex_channel_test.cc -o regex_channel_test $LDEPS"
