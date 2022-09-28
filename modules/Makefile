@@ -79,7 +79,6 @@ MODULES_TO_DOCUMENT = \
 	standard/GPUDiagnostics.chpl \
 	standard/GPU.chpl \
 	standard/CTypes.chpl \
-	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/Errors.chpl \
 	standard/FileSystem.chpl \
