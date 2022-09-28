@@ -98,11 +98,37 @@ struct Writer<std::string> {
   }
 };
 
+template <>
+struct Writer<UniqueString> {
+  void operator()(Context* context, std::ostream& oss, UniqueString us) {
+    oss << us.c_str();
+  }
+};
+
 template <typename T>
 struct Writer<errordetail::AsFileName<T>> {
   void operator()(Context* context, std::ostream& oss, const errordetail::AsFileName<T>& e) {
     auto loc = e.location(context);
     oss << loc.path().c_str() << ":" << loc.firstLine();
+  }
+};
+
+template <>
+struct Writer<types::QualifiedType> {
+  void operator()(Context* context, std::ostream& oss, const types::QualifiedType& qt) {
+    if (qt.kind() == types::QualifiedType::TYPE) {
+      oss << "type '";
+      qt.type()->stringify(oss, CHPL_SYNTAX);
+      oss << "'";
+    } else if (qt.kind() == types::QualifiedType::PARAM) {
+      oss << "param of type '";
+      qt.type()->stringify(oss, CHPL_SYNTAX);
+      oss << "'";
+    } else {
+      oss << "value of type '";
+      qt.stringify(oss, CHPL_SYNTAX);
+      oss << "'";
+    }
   }
 };
 /// \endcond

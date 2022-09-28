@@ -42,6 +42,17 @@ ERROR_CLASS(AmbiguousConfigSet,
     const uast::Variable*,
     std::string,
     std::string)
+ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)
+ERROR_CLASS(IncompatibleKinds,
+    types::QualifiedType::Kind,
+    const uast::AstNode*,
+    types::QualifiedType)
+ERROR_CLASS(IncompatibleTypeAndInit,
+    const uast::AstNode*,
+    const uast::AstNode*,
+    const uast::AstNode*,
+    const types::Type*,
+    const types::Type*)
 WARNING_CLASS(ImplicitSubModule, const uast::Module*, UniqueString)
 WARNING_CLASS(ImplicitFileModule,
     const uast::AstNode*,

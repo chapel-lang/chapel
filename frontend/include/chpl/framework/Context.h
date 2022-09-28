@@ -117,6 +117,9 @@ class Context {
   bool computedChplEnv = false;
   ChplEnvMap chplEnv;
 
+  // Whether or no to use detailed error output
+  bool detailedErrors = false;
+
   // map that supports uniqueCString / UniqueString
   using UniqueStringsTableType = std::unordered_set<chpl::detail::StringAndLength, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
   UniqueStringsTableType uniqueStringsTable;
@@ -299,6 +302,8 @@ class Context {
   ~Context();
 
   const std::string& chplHome() const;
+
+  void setDetailedErrorOutput(bool useDetailed);
 
   /**
     Run printchplenv, or return a cached result of doing so. To get output,

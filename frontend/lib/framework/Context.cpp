@@ -75,6 +75,10 @@ const std::string& Context::chplHome() const {
   return chplHome_;
 }
 
+void Context::setDetailedErrorOutput(bool detailedErrors) {
+  this->detailedErrors = detailedErrors;
+}
+
 llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
   if (chplHome_.empty() || computedChplEnv) return chplEnv;
   auto chplEnvResult = ::chpl::getChplEnv(chplEnvOverrides, chplHome_.c_str());
@@ -88,7 +92,10 @@ llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
 }
 
 void Context::defaultReportError(Context* context, const ErrorBase* err) {
-  ErrorWriter ew(context, std::cerr, ErrorWriter::BRIEF,
+  ErrorWriter ew(context, std::cerr,
+                 context->detailedErrors ?
+                   ErrorWriter::DETAILED :
+                   ErrorWriter::BRIEF,
                  context->currentTerminalSupportsColor_);
   err->write(ew);
 }

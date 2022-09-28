@@ -611,7 +611,7 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
       declaredType.kind() != QualifiedType::UNKNOWN &&
       declaredType.kind() != QualifiedType::TYPE_QUERY) {
     if (declaredType.kind() != QualifiedType::TYPE) {
-      context->error(typeForErr, "Value provided where type expected");
+      REPORT(context, ValueUsedAsType, typeForErr, declaredType);
       return true;
     }
   }
@@ -622,15 +622,15 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
       initExprType.kind() != QualifiedType::UNKNOWN) {
     if (declKind == QualifiedType::TYPE &&
         initExprType.kind() != QualifiedType::TYPE) {
-      context->error(initForErr, "Cannot initialize type with value");
+      REPORT(context, IncompatibleKinds, declKind, initForErr, initExprType);
       return true;
     } else if (declKind != QualifiedType::TYPE &&
                initExprType.kind() == QualifiedType::TYPE) {
-      context->error(initForErr, "Cannot initialize value with type");
+      REPORT(context, IncompatibleKinds, declKind, initForErr, initExprType);
       return true;
     } else if (declKind == QualifiedType::PARAM &&
                initExprType.kind() != QualifiedType::PARAM) {
-      context->error(initForErr, "Cannot initialize param with non-param");
+      REPORT(context, IncompatibleKinds, declKind, initForErr, initExprType);
       return true;
     }
   }
@@ -680,7 +680,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     auto got = canPass(context, initExprType,
                        QualifiedType(declKind, declaredType.type()));
     if (!got.passes()) {
-      context->error(declForErr, "Type mismatch in declared type vs init expr");
+      REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr, initForErr,
+          declaredType.type(), initExprType.type());
       typePtr = ErroneousType::get(context);
     } else if (!got.instantiates()) {
       // use the declared type since no conversion/promotion was needed
