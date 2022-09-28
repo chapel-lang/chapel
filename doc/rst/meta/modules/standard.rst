@@ -103,7 +103,6 @@ System/Interoperability
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
    SysBasic <standard/SysBasic>
-   SysError <standard/SysError>
 
 Utilities
 ---------
