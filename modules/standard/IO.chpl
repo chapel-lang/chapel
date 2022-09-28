@@ -2223,7 +2223,8 @@ The :record:`channel` type supports 3 fields:
   ``fileWriter`` instead.
  */
 deprecated "channel type is deprecated - use fileReader or fileWriter instead"
-type channel = _channel;
+type channel;
+channel = _channel;
 
 pragma "no doc"
 operator _channel.=(ref lhs:_channel, rhs:_channel) {
