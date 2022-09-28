@@ -2138,13 +2138,13 @@ The :record:`fileReader` type supports 3 fields:
 
  * ``param writing: bool`` which is always ``false`` for ``fileReader``
 
- *  ``param kind:iokind``:
-     kind is an enum :type:`iokind` that allows narrowing
-     this channel's I/O style for more efficient binary I/O.
+ * ``param kind:iokind``:
+   kind is an enum :type:`iokind` that allows narrowing
+   this channel's I/O style for more efficient binary I/O.
 
-  * ``param locking:bool``:
-     locking is a boolean indicating whether it is safe to use this
-     channel concurrently (when `true`).
+ * ``param locking:bool``:
+   locking is a boolean indicating whether it is safe to use this
+   channel concurrently (when `true`).
 */
 type fileReader;
 fileReader = _channel(writing=false, ?);
@@ -2172,13 +2172,13 @@ The :record:`fileWriter` type supports 3 fields:
 
  * ``param writing: bool`` which is always ``true`` for ``fileWriter``
 
- *  ``param kind:iokind``:
-     kind is an enum :type:`iokind` that allows narrowing
-     this channel's I/O style for more efficient binary I/O.
+ * ``param kind:iokind``:
+   kind is an enum :type:`iokind` that allows narrowing
+   this channel's I/O style for more efficient binary I/O.
 
-  * ``param locking:bool``:
-     locking is a boolean indicating whether it is safe to use this
-     channel concurrently (when `true`).
+ * ``param locking:bool``:
+   locking is a boolean indicating whether it is safe to use this
+   channel concurrently (when `true`).
  */
 type fileWriter;
 fileWriter = _channel(writing=true, ?);
@@ -2206,16 +2206,16 @@ The :record:`channel` type is generic.
 The :record:`channel` type supports 3 fields:
 
  * ``param writing: bool``:
-     writing is a boolean indicating whether the channels of this type
-     support writing (when `true`) or reading (when `false`).
+   writing is a boolean indicating whether the channels of this type
+   support writing (when `true`) or reading (when `false`).
 
- *  ``param kind:iokind``:
-     kind is an enum :type:`iokind` that allows narrowing
-     this channel's I/O style for more efficient binary I/O.
+ * ``param kind:iokind``:
+   kind is an enum :type:`iokind` that allows narrowing
+   this channel's I/O style for more efficient binary I/O.
 
-  * ``param locking:bool``:
-     locking is a boolean indicating whether it is safe to use this
-     channel concurrently (when `true`).
+ * ``param locking:bool``:
+   locking is a boolean indicating whether it is safe to use this
+   channel concurrently (when `true`).
 
 .. note::
 
