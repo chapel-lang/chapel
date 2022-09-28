@@ -46,7 +46,8 @@ Using Curl Support in Chapel
 ----------------------------
 
 Simple uses of Curl work through the generic :mod:`URL` module. This module
-allows a URL to be opened as a :record:`IO.channel`.
+allows a URL to be opened as a :record:`IO.fileReader` or
+`:record:`IO.fileWriter`.
 
 .. code-block:: chapel
 
@@ -285,6 +286,7 @@ module Curl {
        setopt(curlfile, (CURLOPT_USERNAME, username),
                         (CURLOPT_PASSWORD, password));
 
+     :arg ch: a :rec:`IO.fileReader` or :rec:`IO.fileWriter`
      :arg args: any number of tuples of the form (curl_option, value).
                 This function will call ``setopt`` on each pair in turn.
    */
