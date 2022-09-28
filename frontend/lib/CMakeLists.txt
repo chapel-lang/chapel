@@ -50,3 +50,4 @@ target_include_directories(libdyno PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
 target_link_libraries(libdyno PUBLIC ${DYNO_LLVM_LINK_ARGS})
+target_compile_options(libdyno PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${DYNO_LLVM_COMP_ARGS}>)

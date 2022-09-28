@@ -21,8 +21,9 @@
 #ifndef _configured_prefix_H_
 #define _configured_prefix_H_
 
-static const char* CONFIGURED_PREFIX =
-#include "CONFIGURED_PREFIX"
-;
+// TODO: THIS IS A TEMPORARY WORKAROUND for CMake
+static const char* CONFIGURED_PREFIX = "";
+// #include "CONFIGURED_PREFIX"
+//;
 
 #endif

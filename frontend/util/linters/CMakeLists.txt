@@ -34,3 +34,5 @@ endif()
 message("Using libclang from ${Clang_DIR}")
 
 target_link_libraries(fieldsUsed clang-cpp ${DYNO_LLVM_LINK_ARGS})
+# TODO: Why is this needed when it was not needed before?
+target_compile_options(fieldsUsed PRIVATE SHELL:$<$<COMPILE_LANGUAGE:CXX>:${DYNO_LLVM_COMP_ARGS}>)

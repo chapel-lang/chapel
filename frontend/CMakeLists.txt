@@ -19,6 +19,9 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(dyno VERSION 0.1)
 
+# TODO: Options are technically only booleans in CMake, although this still
+# appears to work with strings, but I'm not sure it's correct or best practice
+# to do this way. Check if these option() calls should really be set() instead.
 option(DYNO_CHPL_HOME "The CHPL_HOME environment variable for tests to use")
 # Options to integrate LLVM support library into dyno
 # TODO: enable easier cmake builds of dyno (outside of Chapel's Makefiles)
@@ -26,6 +29,21 @@ option(DYNO_CHPL_HOME "The CHPL_HOME environment variable for tests to use")
 # DYNO_LLVM_COMP_ARGS / DYNO_LLVM_LINK_ARGS are empty.
 option(DYNO_LLVM_COMP_ARGS "Override compile args for LLVM")
 option(DYNO_LLVM_LINK_ARGS "Override linker args for LLVM")
+
+if (NOT DYNO_LLVM_LINK_ARGS)
+  message("setting DYNO_LLVM_LINK_ARGS")
+  set(DYNO_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS})
+else()
+  message("DYNO_LLVM_LINK_ARGS already set to ${DYNO_LLVM_LINK_ARGS}")
+endif()
+
+if (NOT DYNO_LLVM_COMP_ARGS)
+  message("setting DYNO_LLVM_COMP_ARGS")
+  set(DYNO_LLVM_COMP_ARGS ${CHPL_LLVM_COMP_ARGS})
+else()
+  message("DYNO_LLVM_COMP_ARGS already set to ${DYNO_LLVM_COMP_ARGS}")
+endif()
+
 # remove whitespace or you'll get complaints about an error
 # according to policy CMP0004
 string(STRIP ${DYNO_LLVM_COMP_ARGS} DYNO_LLVM_COMP_ARGS)
