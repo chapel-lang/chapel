@@ -2146,7 +2146,8 @@ The :record:`fileReader` type supports 3 fields:
      locking is a boolean indicating whether it is safe to use this
      channel concurrently (when `true`).
 */
-type fileReader = _channel(writing=false, ?);
+type fileReader;
+fileReader = _channel(writing=false, ?);
 
 /*
 
@@ -2179,7 +2180,8 @@ The :record:`fileWriter` type supports 3 fields:
      locking is a boolean indicating whether it is safe to use this
      channel concurrently (when `true`).
  */
-type fileWriter = _channel(writing=true, ?);
+type fileWriter;
+fileWriter = _channel(writing=true, ?);
 
 /*
 
@@ -2266,6 +2268,7 @@ proc _channel.init(x: _channel) {
   }
 }
 
+pragma "no doc"
 proc _channel.init=(x: _channel) {
   if this.type.writing != ? {
     if this.type.writing==true && x.writing==false {
