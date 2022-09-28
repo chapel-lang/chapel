@@ -630,7 +630,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
 }
 
 
-void chpl_reportMemInfo() {
+void chpl_reportMemInfo(void) {
   if (memStats) {
     fprintf(memLogFile, "\n");
     chpl_printMemAllocStats(0, 0);
@@ -771,20 +771,20 @@ void chpl_track_realloc_post(void* moreMemAlloc,
   }
 }
 
-void chpl_startVerboseMem() {
+void chpl_startVerboseMem(void) {
   chpl_verbose_mem = 1;
   chpl_comm_bcast_rt_private(chpl_verbose_mem);
 }
 
-void chpl_stopVerboseMem() {
+void chpl_stopVerboseMem(void) {
   chpl_verbose_mem = 0;
   chpl_comm_bcast_rt_private(chpl_verbose_mem);
 }
 
-void chpl_startVerboseMemHere() {
+void chpl_startVerboseMemHere(void) {
   chpl_verbose_mem = 1;
 }
 
-void chpl_stopVerboseMemHere() {
+void chpl_stopVerboseMemHere(void) {
   chpl_verbose_mem = 0;
 }
