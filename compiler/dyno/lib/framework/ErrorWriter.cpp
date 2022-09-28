@@ -52,7 +52,8 @@ static ssize_t posToFileIndex(const char* buf, int row, int col) {
     curCol++;
     idx++;
   }
-  if (curRow == row && curCol == col) {
+  if ((curRow == row && curCol == col) || (curRow + 1 == row && col == 1)) {
+    // Might not end in a newline. In that case, pretend there is one.
     return idx;
   }
   return -1;
@@ -132,6 +133,18 @@ void ErrorWriter::writeNote(Location loc, const std::string& str) {
   oss_ << str << std::endl;
 }
 
+static void printBlank(std::ostream& os, int n) {
+  for (int i = 0; i < n; i++) {
+    os << ' ';
+  }
+}
+
+static void printLineNo(std::ostream& os, size_t gutterLength, int line) {
+  std::string lineStr = std::to_string(line);
+  printBlank(os, gutterLength - lineStr.size());
+  os << "  " << lineStr << " | ";
+}
+
 void ErrorWriter::writeCode(const Location& location,
                            const std::vector<Location>& toHighlight) {
   if (outputFormat_ != DETAILED || context == nullptr) return;
@@ -139,21 +152,32 @@ void ErrorWriter::writeCode(const Location& location,
   auto str = fileText(context, location);
   if (str.empty()) return;
 
-  size_t startIndex = posToFileIndex(str.c_str(), location.firstLine(), 1);
-  size_t endIndex = posToFileIndex(str.c_str(), location.lastLine()+1, 1);
+  ssize_t startIndex = posToFileIndex(str.c_str(), location.firstLine(), 1);
+  ssize_t endIndex = posToFileIndex(str.c_str(), location.lastLine()+1, 1);
 
-  std::vector<std::pair<size_t, size_t>> ranges;
+  std::vector<std::pair<ssize_t, ssize_t>> ranges;
   for (auto hlLoc : toHighlight) {
-    size_t hlStart = posToFileIndex(str.c_str(), hlLoc.firstLine(), hlLoc.firstColumn());
-    size_t hlEnd = posToFileIndex(str.c_str(), hlLoc.lastLine(), hlLoc.lastColumn());
+    ssize_t hlStart = posToFileIndex(str.c_str(), hlLoc.firstLine(), hlLoc.firstColumn());
+    ssize_t hlEnd = posToFileIndex(str.c_str(), hlLoc.lastLine(), hlLoc.lastColumn());
     ranges.push_back(std::make_pair(hlStart, hlEnd));
   }
 
+  size_t gutterSize = std::to_string(location.lastLine()).size();
+  int lineNumber = location.firstLine();
+
+  // printBlank(lineLength + 2);
+  // oss_ << "(file " << location.path() << ")" << std::endl;
+  printBlank(oss_, gutterSize + 3);
+  oss_ << "|";
   oss_ << std::endl;
-  oss_ << "  ";
   std::string highlightString = "";
   bool printHighlight = false;
-  for (size_t i = startIndex; i < endIndex; i++) {
+  bool needsLine = true;
+  for (ssize_t i = startIndex; i < endIndex; i++) {
+    if (needsLine) {
+      printLineNo(oss_, gutterSize, lineNumber);
+      needsLine = false;
+    }
     bool highlight = std::any_of(ranges.begin(), ranges.end(), [&](auto range) {
       return i >= range.first && i < range.second;
     });
@@ -163,13 +187,21 @@ void ErrorWriter::writeCode(const Location& location,
     oss_ << str[i];
     if (str[i] == '\n') {
       if (printHighlight) {
-        oss_ << highlightString << std::endl;
+        printBlank(oss_, gutterSize + 3);
+        oss_ << "| " << highlightString << std::endl;
       }
-      oss_ << "  ";
+      lineNumber += 1;
+      needsLine = true;
       printHighlight = false;
       highlightString = "";
     }
   }
+  if (!needsLine) {
+    // No newline at the end in the file, insert one ourselves.
+    oss_ << std::endl;
+  }
+  printBlank(oss_, gutterSize + 3);
+  oss_ << "|";
   oss_ << std::endl;
 }
 
