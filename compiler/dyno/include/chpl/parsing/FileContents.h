@@ -76,7 +76,7 @@ class FileContents {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    error_->mark(context);
+    if (error_ != nullptr) error_->mark(context);
   }
 };
 

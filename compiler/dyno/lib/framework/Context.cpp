@@ -662,9 +662,6 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
     resultEntry->markUniqueStringsInResult(this);
     // and also mark unique strings in the errors
-    for (const auto& err: resultEntry->errors) {
-      err->mark(this);
-    }
   }
   resultEntry->lastChecked = this->currentRevisionNumber;
 
