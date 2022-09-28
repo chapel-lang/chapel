@@ -966,12 +966,10 @@ module OS {
    .. code-block:: chapel
 
      var err: errorCode;
-     if err then do writeln("err contains an error, ie err != ENOERR");
-     if !err then do writeln("err does not contain an error; err == ENOERR");
+     if err then writeln("err contains an error, ie err != ENOERR");
+     else writeln("err does not contain an error; err == ENOERR");
 
-   When an :type:`errorCode` formal has default intent, the actual is copied to
-   the formal upon a function call and the formal cannot be assigned within
-   the function.
+   The default intent for a formal of type :type:`errorCode` is `const in`.
 
    The default value of the :type:`errorCode` type is undefined.
 */
