@@ -239,6 +239,45 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
              "initialization expression has type '", initExprType, "'");
 }
 
+void ErrorTupleDeclUnknownType::write(ErrorWriterBase& wr) const {
+  auto decl = std::get<const uast::TupleDecl*>(info);
+  wr.heading(kind_, decl, "Attempt to split unknown type using split tuple assignment.");
+  wr.code(decl);
+}
+
+void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
+  auto decl = std::get<const uast::TupleDecl*>(info);
+  auto type = std::get<const types::Type*>(info);
+  wr.heading(kind_, decl,
+            "Attempt to use tuple declaration to split a value of "
+            "non-tuple type '", type, "'.");
+  wr.message("In the following tuple declaration:");
+  wr.code(decl);
+  wr.message("The value being assigned has type '", type, "', while it is expected "
+             "to be a ", decl->numDecls(), "-element tuple");
+}
+
+void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
+  auto decl = std::get<const uast::TupleDecl*>(info);
+  auto type = std::get<const types::TupleType*>(info);
+  wr.heading(kind_, decl,
+            "Tuple size mismatch in split tuple declaration.");
+  wr.code(decl);
+  wr.message("The left-hand side of the declaration expects a tuple with ",
+             decl->numDecls(), " elements, but the right-hand side, which is a '",
+             type, "' has ", type->numElements(), " elements");
+}
+
+void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
+  auto stmt = std::get<const uast::AstNode*>(info);
+  auto laterId = std::get<ID>(info);
+  wr.heading(kind_, stmt, "Statement uses a later variable, the type of which is not yet established.");
+  wr.message("In the following statement:");
+  wr.code(stmt);
+  wr.message("There is a reference to a variable declared later:");
+  wr.code(laterId);
+}
+
 void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
   auto sig = std::get<const uast::FunctionSignature*>(info);
   auto formal = std::get<const uast::AnonFormal*>(info);

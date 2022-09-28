@@ -1106,20 +1106,20 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
 void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
                                       QualifiedType rhsType) {
   if (!rhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown rhs tuple type in split tuple decl");
+    REPORT(context, TupleDeclUnknownType, lhsTuple);
     return;
   }
 
   const TupleType* rhsT = rhsType.type()->toTupleType();
 
   if (rhsT == nullptr) {
-    context->error(lhsTuple, "rhs type is not tuple in split tuple decl");
+    REPORT(context, TupleDeclNotTuple, lhsTuple, rhsType.type());
     return;
   }
 
   // Then, check that they have the same size
   if (lhsTuple->numDecls() != rhsT->numElements()) {
-    context->error(lhsTuple, "tuple size mismatch in split tuple decl");
+    REPORT(context, TupleDeclMismatchedElems, lhsTuple, rhsT);
     return;
   }
 
@@ -1356,7 +1356,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   }
 
   if (error) {
-    context->error(curStmt, "Uses later variable, type not established");
+    REPORT(context, UseOfLaterVariable, curStmt, id);
     auto unknownType = UnknownType::get(context);
     return QualifiedType(QualifiedType::UNKNOWN, unknownType);
   }

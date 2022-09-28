@@ -53,6 +53,10 @@ ERROR_CLASS(IncompatibleTypeAndInit,
     const uast::AstNode*,
     const types::Type*,
     const types::Type*)
+ERROR_CLASS(TupleDeclUnknownType, const uast::TupleDecl*)
+ERROR_CLASS(TupleDeclNotTuple, const uast::TupleDecl*, const types::Type*)
+ERROR_CLASS(TupleDeclMismatchedElems, const uast::TupleDecl*, const types::TupleType*)
+ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
 WARNING_CLASS(ImplicitSubModule, const uast::Module*, UniqueString)
 WARNING_CLASS(ImplicitFileModule,
     const uast::AstNode*,
