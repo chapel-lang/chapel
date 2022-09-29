@@ -91,7 +91,7 @@ find_package(Python)
 
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/util
-                TIMEOUT 5
+                TIMEOUT 30
                 RESULT_VARIABLE CHPLENV_RETURNCODE
                 OUTPUT_VARIABLE CHPLENV_OUTPUT
                 OUTPUT_STRIP_TRAILING_WHITESPACE

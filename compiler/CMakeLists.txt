@@ -25,6 +25,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
+# Turns on verbose output from Makefile builds. Having it ON displays each
+# command line as it is launched.
+# https://cmake.org/cmake/help/latest/variable/CMAKE_VERBOSE_MAKEFILE.html
 set(CMAKE_VERBOSE_MAKEFILE 1)
 
 set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
