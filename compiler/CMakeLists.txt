@@ -27,24 +27,38 @@ set(CMAKE_C_STANDARD_REQUIRED True)
 
 set(CMAKE_VERBOSE_MAKEFILE 1)
 
-find_package(Python)
+set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 
+string(CONCAT CHPL_LLVM_COMP_ARGS_JOIN ${CHPL_CMAKE_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_CMAKE_HOST_SYSTEM_COMPILE_ARGS})
+string(CONCAT CHPL_LLVM_LINK_ARGS_JOIN ${CHPL_CMAKE_HOST_BUNDLED_LINK_ARGS} " " ${CHPL_CMAKE_HOST_SYSTEM_LINK_ARGS})
 
-option(CHPL_LLVM_COMP_ARGS "Override compile args for LLVM")
-option(CHPL_LLVM_LINK_ARGS "Override linker args for LLVM")
+set(CHPL_LLVM_COMP_ARGS ${CHPL_LLVM_COMP_ARGS_JOIN})
+set(CHPL_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS_JOIN})
+
+# message("CHPL_LLVM_COMP_ARGS: ${CHPL_LLVM_COMP_ARGS}")
+# message("CHPL_LLVM_LINK_ARGS: ${CHPL_LLVM_LINK_ARGS}")
+
 # remove whitespace or you'll get complaints about an error
 # according to policy CMP0004
-string(STRIP ${CHPL_LLVM_COMP_ARGS} CHPL_LLVM_COMP_ARGS)
-string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
+if (CHPL_LLVM_COMP_ARGS)
+  string(STRIP ${CHPL_LLVM_COMP_ARGS} CHPL_LLVM_COMP_ARGS)
+endif()
+# string(STRIP ${CHPL_LLVM_COMP_ARGS} CHPL_LLVM_COMP_ARGS)
+# if (NOT STREQUAL ${CHPL_LLVM_LINK_ARGS} "")
+  string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
+# endif()
+# string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
 
-set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
+
 # need many of the outputs from printchplenv for the following values
 include_directories(
-        ${SRC_DIR}/include/linux64 ${SRC_DIR}/include ${SRC_DIR}/../build/compiler/lin
-        ux64/gnu/x86_64/hostmem-cstdlib/llvm-system/14/san-none
+        ${SRC_DIR}/include/${CHPL_CMAKE_HOST_PLATFORM}
+        ${SRC_DIR}/include
+        ${SRC_DIR}/../build/compiler/${CHPL_CMAKE_COMPILER_SUBDIR}
         ${SRC_DIR}/../runtime/include/encoding
-        /home/arezaii/git/chapel/compiler/../third-party/utf8-decoder
-        ${SRC_DIR}/dyno/include)
+        ${SRC_DIR}/../third-party/utf8-decoder
+        ${SRC_DIR}/dyno/include
+        )
 
 add_executable(chpl)
 add_subdirectory(AST)

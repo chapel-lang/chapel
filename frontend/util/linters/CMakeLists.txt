@@ -27,6 +27,13 @@ if(DYNO_LINTERS_CLANG_CMAKE_PATH)
   # this finds the target clang-cpp and also finds an appropriate LLVM version
   # Not marked as required since this linter is optional
   find_package(Clang PATHS ${DYNO_LINTERS_CLANG_CMAKE_PATH} NO_DEFAULT_PATH)
+elseif(NOT ${CHPL_CMAKE_LLVM_CLANG_C} STREQUAL "")
+  # message("Looking for ClangConfig.cmake in ${CHPL_CMAKE_LLVM_CLANG_C}/../lib/cmake/clang")
+  # TODO: this is a hack to get the path for the ClangConfig.cmake file
+  string(LENGTH "${CHPL_CMAKE_LLVM_CLANG_C}" CLANG_C_LENGTH)
+  math(EXPR CLANG_C_TRIM_LENGTH "${CLANG_C_LENGTH} - 5")
+  string(SUBSTRING "${CHPL_CMAKE_LLVM_CLANG_C}" 0 ${CLANG_C_TRIM_LENGTH} CLANG_C_DIR)
+  find_package(Clang PATHS ${CLANG_C_DIR}/../lib/cmake/clang NO_DEFAULT_PATH)
 else()
   find_package(Clang)
 endif()
