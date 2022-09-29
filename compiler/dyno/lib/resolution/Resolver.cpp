@@ -467,13 +467,15 @@ static void varArgTypeQueryError(Context* context,
 
 // helper for resolveTypeQueriesFromFormalType
 void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
-                                  const Type* actualType,
-                                  bool isNonStarVarArg) {
+                                  const QualifiedType& actualType,
+                                  bool isNonStarVarArg,
+                                  bool isTopLevel) {
 
+  auto actualTypePtr = actualType.type();
   // Give up if the type is nullptr or UnknownType or AnyType
-  if (actualType == nullptr ||
-      actualType->isUnknownType() ||
-      actualType->isAnyType())
+  if (actualTypePtr == nullptr ||
+      actualTypePtr->isUnknownType() ||
+      actualTypePtr->isAnyType())
     return;
 
   assert(formalTypeExpr != nullptr);
@@ -489,7 +491,12 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       varArgTypeQueryError(context, formalTypeExpr, result);
     } else {
       // Set the type that we know (since it was passed in)
-      result.setType(QualifiedType(QualifiedType::TYPE, actualType));
+      if (isTopLevel) {
+        // Queries at the top level only capture type. e.g., param x: ?t
+        result.setType(QualifiedType(QualifiedType::TYPE, actualTypePtr));
+      } else {
+        result.setType(actualType);
+      }
     }
   }
 
@@ -501,7 +508,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       // Set the type that we know (since it was passed in)
       if (call->numActuals() == 1) {
         if (auto tq = call->actual(0)->toTypeQuery()) {
-          if (auto pt = actualType->toPrimitiveType()) {
+          if (auto pt = actualTypePtr->toPrimitiveType()) {
             ResolvedExpression& resolvedWidth = byPostorder.byAst(tq);
             if (isNonStarVarArg) {
               varArgTypeQueryError(context, call->actual(0), resolvedWidth);
@@ -516,7 +523,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       }
     } else {
       // Error if it is not calling a type constructor
-      auto actualCt = actualType->toCompositeType();
+      auto actualCt = actualTypePtr->toCompositeType();
 
       if (actualCt == nullptr) {
         context->error(formalTypeExpr, "Type construction call expected");
@@ -553,7 +560,9 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
         if (search != subs.end()) {
           QualifiedType fieldType = search->second;
           auto actual = call->actual(i);
-          resolveTypeQueries(actual, fieldType.type(), isNonStarVarArg);
+          resolveTypeQueries(actual, fieldType,
+                             isNonStarVarArg,
+                             /* isTopLevel */ false);
         }
       }
     }
@@ -575,10 +584,10 @@ void Resolver::resolveTypeQueriesFromFormalType(const VarLikeDecl* formal,
 
     if (auto typeExpr = formal->typeExpression()) {
       QualifiedType useType = tuple->elementType(0);
-      resolveTypeQueries(typeExpr, useType.type(), !tuple->isStarTuple());
+      resolveTypeQueries(typeExpr, useType, !tuple->isStarTuple());
     }
   } else if (auto typeExpr = formal->typeExpression()) {
-    resolveTypeQueries(typeExpr, formalType.type());
+    resolveTypeQueries(typeExpr, formalType);
   }
 }
 
@@ -815,7 +824,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       }
     }
 
-    if (typeExpr && !foundSubstitution) {
+    if (typeExpr && (!foundSubstitution || ignoreSubstitutionFor == decl)) {
       // get the type we should have already computed postorder
       ResolvedExpression& r = byPostorder.byAst(typeExpr);
       typeExprT = r.type();
@@ -845,7 +854,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // use type from argument to resolveNamedDecl
       typeExprT = QualifiedType(QualifiedType::TYPE, useType);
       typePtr = typeExprT.type();
-    } else if (foundSubstitution) {
+    } else if (foundSubstitution && ignoreSubstitutionFor != decl) {
       // if we are working with a substitution, just use that
       // without doing lots of kinds checking
       typePtr = typeExprT.type();
@@ -1573,6 +1582,10 @@ void Resolver::exit(const Identifier* ident) {
 }
 
 bool Resolver::enter(const TypeQuery* tq) {
+  if (skipTypeQueries) {
+    return false;
+  }
+
   // Consider 'proc f(arg:?t)'
   //   * if there is no substitution for 'arg', 't' should be AnyType
   //   * if there is a substitution for 'arg', 't' should be computed from it
@@ -1614,16 +1627,10 @@ bool Resolver::enter(const TypeQuery* tq) {
                                    AnyType::get(context)));
     }
   } else {
-
-    if (result.type().kind() != QualifiedType::UNKNOWN &&
-        result.type().type() != nullptr) {
-      // Looks like we already computed it, so do nothing else
-    } else {
-      // Found a substitution after instantiating, so gather the components
-      // of the type. We do this in a way that handles all TypeQuery
-      // nodes within the Formal uAST node.
-      resolveTypeQueriesFromFormalType(formal, foundFormalType);
-    }
+    // Found a substitution after instantiating, so gather the components
+    // of the type. We do this in a way that handles all TypeQuery
+    // nodes within the Formal uAST node.
+    resolveTypeQueriesFromFormalType(formal, foundFormalType);
   }
 
   return false;

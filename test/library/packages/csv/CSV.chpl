@@ -29,21 +29,33 @@ module CSV {
      for reading or writing CSV files.
    */
   record CSVIO {
-    var ch: channel;
+    var ch;
     var sep: string;
     var hasHeader: bool;
 
     /* Initialize a CSVIO record.
-       :arg ch: The channel to read from or write to.
+       :arg ch: The fileWriter to write to.
        :arg sep: (optional) The delimiter to separate fields
        :arg hasHeader: (optional) If true, treat the first line of data
                        as a header and skip it
      */
-    proc init(ch: channel, sep: string=",", hasHeader: bool=false) {
+    proc init(ch: fileWriter, sep: string=",", hasHeader: bool=false) {
       this.ch = ch;
       this.sep = sep;
       this.hasHeader = hasHeader;
     }
+    /* Initialize a CSVIO record.
+       :arg ch: The fileReader to read from.
+       :arg sep: (optional) The delimiter to separate fields
+       :arg hasHeader: (optional) If true, treat the first line of data
+                       as a header and skip it
+     */
+    proc init(ch: fileReader, sep: string=",", hasHeader: bool=false) {
+      this.ch = ch;
+      this.sep = sep;
+      this.hasHeader = hasHeader;
+    }
+
     /* Read a CSV file with lines matching the types of the fields in a record
      */
     iter read(type t) throws where isRecord(t) && t != string {

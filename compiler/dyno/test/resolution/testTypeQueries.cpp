@@ -308,6 +308,211 @@ static void test11() {
   assert(it->bitwidth() == 16);
 }
 
+static void test12a() {
+  printf("test12\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = resolveTypeOfX(context,
+                R""""(
+                  record R { type t1; type t2; }
+                  proc f(a: R(?t, t)) {
+                    return a;
+                  }
+                  var a: R(int, int);
+                  var x = f(a);
+                )"""");
+  assert(t && t->isCompositeType());
+  assert(t);
+  auto c = t->toCompositeType();
+  assert(c);
+  auto sorted = c->sortedSubstitutions();
+  assert(sorted.size() == 2);
+  assert(sorted[0].second.type()->isIntType());
+  assert(sorted[1].second.type()->isIntType());
+}
+
+static void test12b() {
+  printf("test12\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = resolveTypeOfX(context,
+                R""""(
+                  record R { param p1: int; param p2: int; }
+                  proc f(a: R(?i, i)) {
+                    return a;
+                  }
+                  var a: R(1, 1);
+                  var x = f(a);
+                )"""");
+  assert(t && t->isCompositeType());
+  assert(t);
+  auto c = t->toCompositeType();
+  assert(c);
+  auto sorted = c->sortedSubstitutions();
+  assert(sorted.size() == 2);
+  assert(sorted[0].second.type()->isIntType());
+  assert(sorted[0].second.param());
+  assert(sorted[0].second.param()->toIntParam()->value() == 1);
+  assert(sorted[1].second.type()->isIntType());
+  assert(sorted[1].second.param());
+  assert(sorted[1].second.param()->toIntParam()->value() == 1);
+}
+
+static void test13a() {
+  printf("test13\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = resolveTypeOfXInit(context,
+                R""""(
+                  record R { type t1; type t2; }
+                  proc f(a: R(?t, t)) {
+                    return a;
+                  }
+                  var a: R(int, string);
+                  var x = f(a);
+                )"""", false);
+  assert(qt.isErroneousType());
+}
+
+static void test13b() {
+  printf("test13\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = resolveTypeOfXInit(context,
+                R""""(
+                  record R { param p1: int; param p2: int; }
+                  proc f(a: R(?t, t)) {
+                    return a;
+                  }
+                  var a: R(1, 2);
+                  var x = f(a);
+                )"""", false);
+  assert(qt.isErroneousType());
+}
+
+static void test14() {
+  printf("test14\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = resolveTypeOfX(context,
+                R""""(
+                  record R { type t1; type t2; }
+                  proc f(a: R(?t, if t == bool then string else int)) {
+                    return a;
+                  }
+                  var a: R(bool, string);
+                  var x = f(a);
+                )"""");
+  assert(t && t->isCompositeType());
+  assert(t);
+  auto c = t->toCompositeType();
+  assert(c);
+  auto sorted = c->sortedSubstitutions();
+  assert(sorted.size() == 2);
+  assert(sorted[0].second.type()->isBoolType());
+  assert(sorted[1].second.type()->isStringType());
+}
+
+static void test15() {
+  printf("test15\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = resolveTypeOfXInit(context,
+                R""""(
+                  record R { type t1; type t2; }
+                  proc f(a: R(?t, if t == bool then string else int)) {
+                    return a;
+                  }
+                  var a: R(bool, int);
+                  var x = f(a);
+                )"""", false);
+  assert(qt.isErroneousType());
+}
+
+static void test16() {
+  printf("test16\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  std::string setup =
+                R""""(
+                  record R { type t1; type t2; }
+                  proc f(a: R(?t, if t == bool then string else int)...) type {
+                    return t;
+                  }
+                )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, string);
+                  type x = f(a);
+                )"""");
+  assert(qt.type() && qt.type()->isBoolType());
+
+  context->advanceToNextRevision(false);
+  qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, string);
+                  var b: R(bool, string);
+                  type x = f(a, b);
+                )"""");
+  assert(qt.type() && qt.type()->isBoolType());
+
+  context->advanceToNextRevision(false);
+  qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, string);
+                  var b: R(bool, string);
+                  var c: R(bool, string);
+                  type x = f(a, b, c);
+                )"""");
+  assert(qt.type() && qt.type()->isBoolType());
+}
+
+static void test17() {
+  printf("test17\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  std::string setup =
+                R""""(
+                  record R { type t1; type t2; }
+                  proc f(a: R(?t, if t == bool then string else int)...) type {
+                    return t;
+                  }
+                )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, string);
+                  var b: R(bool, int);
+                  type x = f(a, b);
+                )"""");
+  assert(qt.isErroneousType());
+
+  context->advanceToNextRevision(false);
+  qt = resolveQualifiedTypeOfX(context, setup+
+                R""""(
+                  var a: R(bool, int);
+                  var b: R(bool, string);
+                  type x = f(a, b);
+                )"""");
+  assert(qt.isErroneousType());
+
+  context->advanceToNextRevision(false);
+  qt = resolveQualifiedTypeOfX(context, setup +
+                R""""(
+                  var a: R(bool, int);
+                  type x = f(a);
+                )"""");
+  assert(qt.isErroneousType());
+}
 
 int main() {
   test1();
@@ -321,6 +526,14 @@ int main() {
   test9();
   test10();
   test11();
+  test12a();
+  test12b();
+  test13a();
+  test13b();
+  test14();
+  test15();
+  test16();
+  test17();
 
   return 0;
 }

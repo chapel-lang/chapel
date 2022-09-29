@@ -1204,7 +1204,7 @@ static void genConfigGlobalsAndAbout() {
 
   if (info->cfile) {
     fprintf(info->cfile, "\nvoid chpl_program_about(void);\n");
-    fprintf(info->cfile, "\nvoid chpl_program_about() {\n");
+    fprintf(info->cfile, "\nvoid chpl_program_about(void) {\n");
   } else {
 #ifdef HAVE_LLVM
     llvm::FunctionType* programAboutType;

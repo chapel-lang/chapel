@@ -69,7 +69,7 @@ void chpl_comm_startVerbose(chpl_bool stacktrace, chpl_bool print_unstable) {
 }
 
 
-void chpl_comm_stopVerbose() {
+void chpl_comm_stopVerbose(void) {
   chpl_verbose_comm = 0;
   chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_verbose_comm);
@@ -84,7 +84,7 @@ void chpl_comm_startVerboseHere(chpl_bool stacktrace, chpl_bool print_unstable) 
 }
 
 
-void chpl_comm_stopVerboseHere() {
+void chpl_comm_stopVerboseHere(void) {
   chpl_verbose_comm = 0;
 }
 
@@ -106,7 +106,7 @@ void chpl_comm_startDiagnostics(chpl_bool print_unstable) {
 }
 
 
-void chpl_comm_stopDiagnostics() {
+void chpl_comm_stopDiagnostics(void) {
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(0, 0);
 
@@ -127,7 +127,7 @@ void chpl_comm_startDiagnosticsHere(chpl_bool print_unstable) {
 }
 
 
-void chpl_comm_stopDiagnosticsHere() {
+void chpl_comm_stopDiagnosticsHere(void) {
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(0, 0);
 
@@ -135,7 +135,7 @@ void chpl_comm_stopDiagnosticsHere() {
 }
 
 
-void chpl_comm_resetDiagnosticsHere() {
+void chpl_comm_resetDiagnosticsHere(void) {
   chpl_comm_diags_reset();
 }
 

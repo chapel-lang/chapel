@@ -1,3 +1,0 @@
-tryGetPath.chpl:4: In function 'main':
-tryGetPath.chpl:6: warning: file.tryGetPath is deprecated
-unknown

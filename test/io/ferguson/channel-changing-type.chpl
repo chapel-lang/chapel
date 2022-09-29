@@ -6,7 +6,7 @@ proc test1() {
   {
     var ch = f.writer(); // defaults to dynamic, text, locking
     // make a binary, unlocked channel using same buffer as ch
-    var cha: channel(writing=true, kind=iokind.big, locking=false);
+    var cha: fileWriter(kind=iokind.big, locking=false);
     cha; // no split init
     cha = ch;
     cha.write(1);
@@ -27,7 +27,7 @@ proc test2() {
   {
     var ch = f.writer(); // defaults to dynamic, text, locking
     // make a binary, unlocked channel using same buffer as ch
-    var cha: channel(writing=true, kind=iokind.big, locking=false) = ch;
+    var cha: fileWriter(kind=iokind.big, locking=false) = ch;
     cha.write(1);
   }
 

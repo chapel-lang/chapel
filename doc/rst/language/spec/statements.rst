@@ -19,7 +19,6 @@ Chapel provides the following statements:
      expression-statement
      assignment-statement
      swap-statement
-     io-statement
      conditional-statement
      select-statement
      while-do-statement
@@ -256,53 +255,6 @@ as necessary.
       const t = b;
       b = a;
       a = t;
-
-.. _The_IO_Statement:
-
-The I/O Statement
------------------
-
-The I/O operator indicates writing to the left-hand-side the value in
-the right-hand-side; or reading from the left-hand-side and storing the
-result in the variable on the right-hand-side. This operator can be
-chained with other I/O operator calls.
-
-.. warning::
-
-   The I/O operator is deprecated.
-
-The I/O operator can be overloaded for different types using operator
-overloading (:ref:`Function_Overloading`). 
-
-.. code-block:: syntax
-
-   io-statement:
-     io-expression io-operator expression
-
-   io-expression:
-     expression
-     io-expression io-operator expression
-
-   io-operator:
-     <~>
-
-See the module documentation on I/O for details on how to use the I/O
-statement.
-
-   *Example*.
-
-   In the example below, 
-
-   .. code-block:: chapel
-
-      var w = opentmp().writer(); // a channel
-      var a: real;
-      var b: int;
-
-      w <~> a <~> b;
-
-   the I/O operator is left-associative and indicates writing ``a`` and
-   then ``b`` to ``w`` in this case.
 
 .. _The_Conditional_Statement:
 

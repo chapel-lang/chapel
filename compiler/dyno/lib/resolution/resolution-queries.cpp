@@ -1285,6 +1285,21 @@ static Resolver createResolverForFnOrAd(Context* context,
   }
 }
 
+static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
+                                         const FormalActual& entry,
+                                         const AggregateDecl* ad,
+                                         const AstNode* typeFor) {
+  auto type = r.byAst(typeFor).type();
+  if (ad != nullptr) {
+    // generic var fields from a type are type fields in its type constructor.
+    // so, make sure the kind is correct.
+    type = QualifiedType(entry.formalType().kind(),
+                         type.type(),
+                         type.param());
+  }
+  return type;
+}
+
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -1338,6 +1353,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   QualifiedType varArgType;
   for (const FormalActual& entry : faMap.byFormals()) {
+    // Do not ignore substitutions initially
+    visitor.ignoreSubstitutionFor = nullptr;
+    visitor.skipTypeQueries = false;
+
     bool addSub = false;
     QualifiedType useType;
     const auto formal = untypedSignature->formalDecl(entry.formalIdx());
@@ -1356,14 +1375,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       formalType = getVarArgTupleElemType(varArgType);
     } else {
       formal->traverse(visitor);
-      formalType = r.byAst(formal).type();
-      if (ad != nullptr) {
-        // generic var fields from a type are type fields in its type constructor.
-        // so, make sure the kind is correct.
-        formalType = QualifiedType(entry.formalType().kind(),
-                                   formalType.type(),
-                                   formalType.param());
-      }
+      formalType = getProperFormalType(r, entry, ad, formal);
     }
 
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
@@ -1441,6 +1453,56 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
       formalIdx++;
     }
+
+    // At this point, we have computed the instantiated type for this
+    // formal. However, what we're still missing some information,
+    // and furthermore, we have not enforced type query constraints.
+
+    if (entry.isVarArgEntry()) {
+      // Vararg entries don't get substitutions at this point, so
+      // manually update type queries.
+      if (auto vld = formal->toVarLikeDecl()) {
+        if (auto te = vld->typeExpression()) {
+            visitor.resolveTypeQueries(te, useType);
+        }
+      }
+    } else {
+      // Substitutions have been updated; re-run resolution to get better
+      // intents, vararg info, and to extract type query info.
+      formal->traverse(visitor);
+      formalType = getProperFormalType(r, entry, ad, formal);
+    }
+
+    // Type queries have now been computed. We need to verify that type
+    // query constraints are matched. To do this, instruct resolver to avoid
+    // using substitutions, and to preserve previously computed type query
+    // info. This way, we'll get as output the type expression's QualifiedType
+    // which incorporates type query info.
+    if (auto vld = formal->toVarLikeDecl()) {
+      if (vld->typeExpression()) {
+        visitor.ignoreSubstitutionFor = formal;
+        visitor.skipTypeQueries = true;
+      }
+    }
+    formal->traverse(visitor);
+    auto qFormalType = getProperFormalType(r, entry, ad, formal);
+
+    if (entry.isVarArgEntry()) {
+      // We only need to canPass the tuple element types.
+      qFormalType = getVarArgTupleElemType(qFormalType);
+    } else {
+      // Explicitly override the type in the resolver to what we have found it
+      // to be before the type-query-aware traversal.
+      r.byAst(entry.formal()).setType(formalType);
+    }
+
+    auto checkType = !useType.isUnknown() ? useType : formalType;
+    // With the type and query-aware type known, make sure that they're compatible
+    auto passResult = canPass(context, checkType, qFormalType);
+    if (!passResult.passes()) {
+      // Type query constraints were not satisfied
+      return nullptr;
+    }
   }
 
   // instantiate the VarArg formal if necessary
@@ -1455,6 +1517,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
+      r.byAst(formal).setType(vat);
 
       // note that a substitution was used here
       if ((size_t) varArgIdx >= formalsInstantiated.size()) {
@@ -1474,21 +1537,14 @@ const TypedFnSignature* instantiateSignature(Context* context,
   TypedFnSignature::WhereClauseResult where = TypedFnSignature::WHERE_NONE;
 
   if (fn != nullptr) {
-    // TODO: Save these results to re-use later.
-    ResolutionResultByPostorderID r;
-    auto visitor = Resolver::createForInstantiatedSignature(context, fn,
-                                                            substitutions,
-                                                            poiScope, r);
-    // visit the formals
     for (auto formal : fn->formals()) {
-      formal->traverse(visitor);
-
       if (auto varArgFormal = formal->toVarArgFormal()) {
         if (!varArgCountMatch(varArgFormal, r)) {
           return nullptr;
         }
       }
     }
+
     // visit the where clause
     if (auto whereClause = fn->whereClause()) {
       whereClause->traverse(visitor);

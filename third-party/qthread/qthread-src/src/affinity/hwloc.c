@@ -12,7 +12,8 @@
 #include "qt_envariables.h"
 #include "shufflesheps.h"
 
-static hwloc_topology_t topology;
+static hwloc_topology_t topology = NULL;
+static uint32_t         my_topology = 0;
 static uint32_t         initialized = 0;
 
 static int            shep_depth = -1;
@@ -94,8 +95,10 @@ static void qt_affinity_internal_hwloc_teardown(void)
     DEBUG_ONLY(hwloc_topology_check(topology));
     hwloc_set_cpubind(topology, mccoy_thread_bindings, HWLOC_CPUBIND_THREAD);
     FREEBMAP(mccoy_thread_bindings);
-    qthread_debug(AFFINITY_DETAILS, "destroy hwloc topology handle\n");
-    hwloc_topology_destroy(topology);
+    if (my_topology) {
+        qthread_debug(AFFINITY_DETAILS, "destroy hwloc topology handle\n");
+        hwloc_topology_destroy(topology);
+    }
     initialized = 0;
 } /*}}}*/
 
@@ -105,8 +108,15 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
 {                                      /*{{{ */
     qthread_debug(AFFINITY_CALLS, "nbshepherds:%p:%u nbworkers:%p:%u\n", nbshepherds, *nbshepherds, nbworkers, *nbworkers);
     if (qthread_cas(&initialized, 0, 1) == 0) {
-        qassert(hwloc_topology_init(&topology), 0);
-        qassert(hwloc_topology_load(topology), 0);
+#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
+        extern void * HWLOC_GET_TOPOLOGY_FUNCTION;
+        topology = (hwloc_topology_t) HWLOC_GET_TOPOLOGY_FUNCTION;
+#endif
+        if (topology == NULL) {
+            qassert(hwloc_topology_init(&topology), 0);
+            qassert(hwloc_topology_load(topology), 0);
+            my_topology = 1;
+        }
         MACHINE_FENCE;
         initialized = 2;
     } else {

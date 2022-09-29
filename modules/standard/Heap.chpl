@@ -378,7 +378,7 @@ module Heap {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter();
       ch.write(this._data);
       _leave();

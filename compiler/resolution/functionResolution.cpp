@@ -7692,6 +7692,12 @@ static void resolveInitField(CallExpr* call) {
         Type* exprType = fs->defPoint->exprType->typeInfo();
         if (exprType == dtUnknown) {
           fs->type = srcType;
+        } else if (exprType->symbol->hasFlag(FLAG_GENERIC)) {
+          // e.g. the type so far is a partial instantiation
+          // but the field declaration is concrete
+          // TODO: does this need to check srcType is compatible
+          // with any partial instantiation?
+          fs->type = srcType;
         } else {
           // Try calling resolveGenericActuals in case the field is e.g. range
           CallExpr* dummyCall = new CallExpr(PRIM_NOOP,
@@ -13038,7 +13044,7 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
 static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Symbol* val) {
   USR_FATAL_CONT(call,
                  "Cannot default-initialize a variable with generic type");
-  USR_PRINT(call, "'%s' has generic type '%s'", val->name, type->symbol->name);
+  USR_PRINT(call, "'%s' has generic type '%s'", val->name, toString(type));
   printUndecoratedClassTypeNote(call, type);
   USR_STOP();
 }
