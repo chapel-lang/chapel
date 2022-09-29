@@ -2579,7 +2579,8 @@ module ChapelArray {
   }
 
   pragma "no doc"
-  inline operator =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
+  inline operator =(ref a: [], b: _iteratorRecord) {
+    /* b is not an array nor a domain nor a tuple */
     chpl__transferArray(a, b);
   }
 
@@ -2750,6 +2751,76 @@ module ChapelArray {
     forall e in a do
       e <<= b;
   }
+
+  //
+  // op= overloads for array/array pairs
+  //
+  pragma "no doc"
+  operator +=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x += y;
+  }
+
+  pragma "no doc"
+  operator -=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x -= y;
+  }
+
+  pragma "no doc"
+  operator *=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x *= y;
+  }
+
+  pragma "no doc"
+  operator /=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x /= y;
+  }
+
+  pragma "no doc"
+  operator %=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x %= y;
+  }
+
+  pragma "no doc"
+  operator **=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x **= y;
+  }
+
+  pragma "no doc"
+  operator &=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x &= y;
+  }
+
+  pragma "no doc"
+  operator |=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x |= y;
+  }
+
+  pragma "no doc"
+  operator ^=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x ^= y;
+  }
+
+  pragma "no doc"
+  operator >>=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x >>= y;
+  }
+
+  pragma "no doc"
+  operator <<=(a: [], b: []) {
+    forall (x,y) in zip(a,b) do
+      x <<= y;
+  }
+
 
   //
   // Swap operator for arrays
@@ -3191,6 +3262,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
+  pragma "last resort"
   proc chpl__coerceCopy(type dstType:_array, rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
 

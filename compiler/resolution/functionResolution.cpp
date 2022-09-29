@@ -6298,8 +6298,9 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
   // use new rules
   disambiguateDiscarding(candidates, DC, ignoreWhere, true, discarded);
 
-//  disambiguateDiscarding(candidates, DC, ignoreWhere, false, discarded);
-//  disambiguateDiscarding(candidates, DC, ignoreWhere, true, discardedNew);
+  // use old rules but fail compilation if there is a difference
+  //disambiguateDiscarding(candidates, DC, ignoreWhere, false, discarded);
+  //disambiguateDiscarding(candidates, DC, ignoreWhere, true, discardedNew);
 
   // If there is just 1 candidate at this point, return it
   {

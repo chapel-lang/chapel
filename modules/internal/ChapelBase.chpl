@@ -1925,6 +1925,7 @@ module ChapelBase {
   inline operator -=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("-=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator -=(ref lhs, rhs) {
     lhs = lhs - rhs;
   }
@@ -1938,6 +1939,7 @@ module ChapelBase {
   inline operator *=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("*=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator *=(ref lhs, rhs) {
     lhs = lhs * rhs;
   }
@@ -1957,6 +1959,7 @@ module ChapelBase {
   inline operator /=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("/=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator /=(ref lhs, rhs) {
     lhs = lhs / rhs;
   }
@@ -1976,6 +1979,7 @@ module ChapelBase {
   inline operator %=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("%=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator %=(ref lhs, rhs) {
     lhs = lhs % rhs;
   }
@@ -1993,6 +1997,7 @@ module ChapelBase {
   inline operator &=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("&=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator &=(ref lhs, rhs) {
     lhs = lhs & rhs;
   }
@@ -2004,6 +2009,7 @@ module ChapelBase {
   inline operator |=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("|=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator |=(ref lhs, rhs) {
     lhs = lhs | rhs;
   }
@@ -2014,6 +2020,7 @@ module ChapelBase {
   inline operator ^=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("^=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator ^=(ref lhs, rhs) {
     lhs = lhs ^ rhs;
   }
@@ -2024,6 +2031,7 @@ module ChapelBase {
   inline operator >>=(ref lhs:uint(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator >>=(ref lhs, rhs) {
     lhs = lhs >> rhs;
   }
@@ -2034,6 +2042,7 @@ module ChapelBase {
   inline operator <<=(ref lhs:uint(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
+  pragma "last resort"
   inline operator <<=(ref lhs, rhs) {
     lhs = lhs << rhs;
   }
