@@ -32,7 +32,7 @@ AnonFormal::build(Builder* builder, Location loc,
   AstList children;
   int8_t typeExpressionChildNum = AstNode::NO_CHILD;
 
-  if (typeExpression.get() != nullptr) {
+  if (typeExpression.get()) {
     typeExpressionChildNum = children.size();
     children.push_back(std::move(typeExpression));
   }

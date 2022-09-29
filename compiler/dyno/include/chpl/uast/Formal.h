@@ -98,7 +98,7 @@ class Formal final : public VarLikeDecl {
    */
   Intent intent() const { return (Intent)((int)storageKind()); }
 
-  static const char* intentToString(Intent intent);
+  static std::string intentToString(Intent intent);
 };
 
 

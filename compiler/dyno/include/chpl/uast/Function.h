@@ -159,6 +159,7 @@ class Function final : public NamedDecl {
       for (auto decl : formals()) {
         bool isAcceptableDecl = decl->isFormal() || decl->isVarArgFormal() ||
                                 decl->isTupleDecl();
+        std::ignore = isAcceptableDecl;
         assert(isAcceptableDecl);
       }
     #endif
@@ -378,9 +379,9 @@ class Function final : public NamedDecl {
     return b->stmt(i);
   }
 
-  static const char* returnIntentToString(ReturnIntent intent);
+  static std::string returnIntentToString(ReturnIntent intent);
 
-  static const char* kindToString(Kind kind);
+  static std::string kindToString(Kind kind);
 };
 
 } // end namespace uast
@@ -405,10 +406,7 @@ template<> struct stringify<uast::Function::ReturnIntent> {
   void operator()(std::ostream& streamOut,
                   StringifyKind stringKind,
                   const uast::Function::ReturnIntent& stringMe) const {
-    std::string out;
-    auto str = uast::Function::returnIntentToString(stringMe);
-    out = str ? str : "uast:Function::ReturnIntent not recognized";
-    streamOut << out;
+    streamOut << uast::Function::returnIntentToString(stringMe);
   }
 };
 
@@ -416,10 +414,7 @@ template<> struct stringify<uast::Function::Kind> {
   void operator()(std::ostream& streamOut,
                   StringifyKind stringKind,
                   const uast::Function::Kind& stringMe) const {
-    std::string out;
-    auto str = uast::Function::kindToString(stringMe);
-    out = str ? str : "uast:Function::Kind not recognized";
-    streamOut << out;
+    streamOut << uast::Function::kindToString(stringMe);
   }
 };
 /// \endcond DO_NOT_DOCUMENT

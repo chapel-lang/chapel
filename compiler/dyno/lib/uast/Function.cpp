@@ -25,7 +25,7 @@
 namespace chpl {
 namespace uast {
 
-const char*
+std::string
 Function::returnIntentToString(Function::ReturnIntent intent) {
   switch ((IntentList) intent) {
     case uast::IntentList::CONST_INTENT: return "const";
@@ -42,10 +42,10 @@ Function::returnIntentToString(Function::ReturnIntent intent) {
     default: break;
   }
 
-  return nullptr;
+  return "<error>";
 }
 
-const char* Function::kindToString(Function::Kind kind) {
+std::string Function::kindToString(Function::Kind kind) {
   switch (kind) {
     case uast::Function::Kind::PROC: return "proc";
     case uast::Function::Kind::ITER: return "iter";
@@ -54,7 +54,7 @@ const char* Function::kindToString(Function::Kind kind) {
     default: break;
   }
 
-  return nullptr;
+  return "<error>";
 }
 
 owned<Function> Function::build(Builder* builder, Location loc,

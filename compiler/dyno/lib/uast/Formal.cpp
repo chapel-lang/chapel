@@ -24,7 +24,7 @@
 namespace chpl {
 namespace uast {
 
-const char* Formal::intentToString(Formal::Intent intent) {
+std::string Formal::intentToString(Formal::Intent intent) {
   switch (intent) {
     case DEFAULT_INTENT: return "";
     case CONST: return "const";
@@ -37,6 +37,7 @@ const char* Formal::intentToString(Formal::Intent intent) {
     case PARAM: return "param";
     case TYPE: return "type";
   }
+  return "<error>";
 }
 
 owned<Formal>

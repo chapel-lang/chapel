@@ -787,8 +787,8 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
 }
 
 static AstNode*
-findErrorInFnBodyOrFormals(ParserContext* context, YYLTYPE location,
-                           FunctionParts& fp) {
+findErrorInFnSignatureParts(ParserContext* context, YYLTYPE location,
+                       FunctionParts& fp) {
   if (fp.errorExpr) return fp.errorExpr;
   if (fp.formals) {
     for (auto ast : *fp.formals) {
@@ -910,7 +910,7 @@ ParserContext::consumeFormalToAnonFormal(AstNode* ast) {
 
 AstNode*
 ParserContext::buildFunctionType(YYLTYPE location, FunctionParts& fp) {
-  auto errorExpr = findErrorInFnBodyOrFormals(this, location, fp);
+  auto errorExpr = findErrorInFnSignatureParts(this, location, fp);
   if (errorExpr != nullptr) {
     this->clearComments();
     return errorExpr;
@@ -966,7 +966,7 @@ ParserContext::buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp) {
 
 CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
-  auto errorExpr = findErrorInFnBodyOrFormals(this, location, fp);
+  auto errorExpr = findErrorInFnSignatureParts(this, location, fp);
   if (errorExpr != nullptr) {
     CommentsAndStmt cs = {fp.comments, errorExpr};
     this->clearComments();

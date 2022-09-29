@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#include "firstClassFunctions.h"
+
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
@@ -391,7 +393,7 @@ buildUserFacingTypeString(const std::vector<FcfFormalInfo>& formals,
   std::ostringstream oss;
   oss << "proc" << "("; // TODO: Is this always a 'proc'?
 
-  for (int i = 0; i < formals.size(); i++) {
+  for (size_t i = 0; i < formals.size(); i++) {
     auto& info = formals[i];
     bool skip = isConcreteIntentBlank(info.concreteIntent, info.type);
     if (!skip) oss << intentToString(info.concreteIntent);
@@ -550,6 +552,7 @@ static const char* intentTagMnemonicMangled(IntentTag tag) {
     case INTENT_TYPE: return "T";
     case INTENT_BLANK: return "";
   }
+  return nullptr;
 }
 
 static const char* retTagMnemonicMangled(RetTag tag) {
@@ -560,6 +563,7 @@ static const char* retTagMnemonicMangled(RetTag tag) {
     case RET_PARAM: return "P";
     case RET_TYPE: return "T";
   }
+  return nullptr;
 }
 
 // Either a list of formals or a list of types in a tuple.

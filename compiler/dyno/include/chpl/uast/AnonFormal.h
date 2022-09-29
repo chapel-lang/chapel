@@ -110,7 +110,7 @@ class AnonFormal final : public AstNode {
     return ret;
   }
 
-  static const char* intentToString(Intent intent) {
+  static std::string intentToString(Intent intent) {
     return Formal::intentToString(intent);
   }
 };
