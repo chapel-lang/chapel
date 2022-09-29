@@ -125,7 +125,7 @@ const cutneighsq = cutneigh * cutneigh;
 
 // io for reading the data file
 var dataFile : file;
-var dataReader : channel(false, iokind.dynamic,false);
+var dataReader : fileReader(kind=iokind.dynamic, locking=false);
 
 // no data file, use input file to generate uniform lattice
 if generating {

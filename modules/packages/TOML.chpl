@@ -95,7 +95,7 @@ proc parseToml(input: file) : shared Toml {
 
 /* Receives a channel to a TOML file as a parameter and outputs a Toml object.
 */
-proc parseToml(input: channel) : shared Toml {
+proc parseToml(input: fileReader) : shared Toml {
   var tomlStr: string;
   input.readstring(tomlStr);
   return parseToml(tomlStr);
@@ -134,7 +134,7 @@ module TomlParser {
   private use Regex;
   use Time;
   use Map, List;
-  import IO.channel;
+  import IO.fileWriter;
   private use TOML.TomlReader;
   import TOML.TomlError;
   use Sort;
@@ -910,7 +910,7 @@ used to recursively hold tables and respective values
     }
 
     pragma "no doc"
-    proc printTables(ref flat: map(string, shared Toml?, false), f:channel) {
+    proc printTables(ref flat: map(string, shared Toml?, false), f:fileWriter) {
       if flat.contains('root') {
         f.writeln('[root]');
         printValues(f, flat['root']!);
@@ -924,7 +924,7 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     /* Send values from table to toString for writing  */
-    proc printValues(f: channel, v: borrowed Toml) throws {
+    proc printValues(f: fileWriter, v: borrowed Toml) throws {
       var keys = v.A.keysToArray();
       sort(keys);
       for key in keys {
@@ -981,7 +981,7 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     /* Send values from table to toString for writing  */
-    proc printValuesJSON(f: channel, v: borrowed Toml, in indent=0) throws {
+    proc printValuesJSON(f: fileWriter, v: borrowed Toml, in indent=0) throws {
       var keys = v.A.keysToArray();
       sort(keys);
       for (key, i) in zip(keys, 1..v.A.size) {

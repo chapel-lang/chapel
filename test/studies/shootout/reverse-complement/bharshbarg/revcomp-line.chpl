@@ -26,7 +26,7 @@ record buf {
   const bufSize : int;
   var buf : [0..#bufSize] uint(8);
   var cur, cap, numLeft : int;
-  var chan : channel(writing=false, kind=iokind.native, locking=false);
+  var chan : fileReader(kind=iokind.native, locking=false);
 
   proc init(fi:file, bs:int) {
     this.bufSize = bs;

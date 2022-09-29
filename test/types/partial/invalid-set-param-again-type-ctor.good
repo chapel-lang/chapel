@@ -1,0 +1,4 @@
+invalid-set-param-again-type-ctor.chpl:7: error: invalid type specifier 'T(1)(paramField=2, otherParamField=5)'
+invalid-set-param-again-type-ctor.chpl:7: note: type specifier did not match: (null)
+invalid-set-param-again-type-ctor.chpl:7: note: type was specified with 2 arguments
+invalid-set-param-again-type-ctor.chpl:1: note: but type 'T(1)' only has 1 generic field

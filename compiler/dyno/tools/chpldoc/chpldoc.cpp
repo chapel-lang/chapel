@@ -1042,7 +1042,13 @@ struct RstSignatureVisitor {
       assert(typeExpr);
 
       if (auto ident = typeExpr->toIdentifier()) {
-        os_ << ident->name().str();
+        if (ident->name() == "_channel") {
+          // TODO: remove this once the channel rename to fileReader
+          // etc is complete and channel is removed
+          os_ << "channel";
+        } else {
+          os_ << ident->name().str();
+        }
       } else {
         os_ << "(";
         typeExpr->traverse(*this);
