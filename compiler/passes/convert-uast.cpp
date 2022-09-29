@@ -1504,6 +1504,8 @@ struct Converter {
       condExpr = buildIfVar(condVar->name().c_str(),
                             toExpr(convertAST(condVar->initExpression())),
                             condVar->kind() == chpl::uast::Variable::CONST);
+      DefExpr* def = toDefExpr(toCallExpr(condExpr)->get(1));
+      noteConvertedSym(node->condition(), def->sym);
     } else {
       condExpr = toExpr(convertAST(node->condition()));
     }
