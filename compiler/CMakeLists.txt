@@ -32,8 +32,8 @@ set(CMAKE_VERBOSE_MAKEFILE 1)
 
 set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 
-string(CONCAT CHPL_LLVM_COMP_ARGS_JOIN ${CHPL_CMAKE_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_CMAKE_HOST_SYSTEM_COMPILE_ARGS})
-string(CONCAT CHPL_LLVM_LINK_ARGS_JOIN ${CHPL_CMAKE_HOST_BUNDLED_LINK_ARGS} " " ${CHPL_CMAKE_HOST_SYSTEM_LINK_ARGS})
+string(CONCAT CHPL_LLVM_COMP_ARGS_JOIN ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
+string(CONCAT CHPL_LLVM_LINK_ARGS_JOIN ${CHPL_HOST_BUNDLED_LINK_ARGS} " " ${CHPL_HOST_SYSTEM_LINK_ARGS})
 
 set(CHPL_LLVM_COMP_ARGS ${CHPL_LLVM_COMP_ARGS_JOIN})
 set(CHPL_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS_JOIN})
@@ -55,9 +55,9 @@ endif()
 
 # need many of the outputs from printchplenv for the following values
 include_directories(
-        ${SRC_DIR}/include/${CHPL_CMAKE_HOST_PLATFORM}
+        ${SRC_DIR}/include/${CHPL_HOST_PLATFORM}
         ${SRC_DIR}/include
-        ${SRC_DIR}/../build/compiler/${CHPL_CMAKE_COMPILER_SUBDIR}
+        ${SRC_DIR}/../build/compiler/${CHPL_COMPILER_SUBDIR}
         ${SRC_DIR}/../runtime/include/encoding
         ${SRC_DIR}/../third-party/utf8-decoder
         ${SRC_DIR}/dyno/include

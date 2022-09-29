@@ -25,8 +25,8 @@ project(dyno VERSION 0.1)
 option(DYNO_CHPL_HOME "The CHPL_HOME environment variable for tests to use")
 
 if (NOT DYNO_CHPL_HOME)
-  message(STATUS "setting DYNO_CHPL_HOME to ${CHPL_CMAKE_HOME}")
-  set(DYNO_CHPL_HOME ${CHPL_CMAKE_HOME})
+  message(STATUS "setting DYNO_CHPL_HOME to ${CHPL_HOME}")
+  set(DYNO_CHPL_HOME ${CHPL_HOME})
 endif()
 
 # Options to integrate LLVM support library into dyno
