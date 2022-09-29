@@ -28,7 +28,7 @@ if(DYNO_LINTERS_CLANG_CMAKE_PATH)
   # Not marked as required since this linter is optional
   find_package(Clang PATHS ${DYNO_LINTERS_CLANG_CMAKE_PATH} NO_DEFAULT_PATH)
 elseif(NOT ${CHPL_CMAKE_LLVM_CLANG_C} STREQUAL "")
-  # message("Looking for ClangConfig.cmake in ${CHPL_CMAKE_LLVM_CLANG_C}/../lib/cmake/clang")
+  # message(DEBUG "Looking for ClangConfig.cmake in ${CHPL_CMAKE_LLVM_CLANG_C}/../lib/cmake/clang")
   # TODO: this is a hack to get the path for the ClangConfig.cmake file
   string(LENGTH "${CHPL_CMAKE_LLVM_CLANG_C}" CLANG_C_LENGTH)
   math(EXPR CLANG_C_TRIM_LENGTH "${CLANG_C_LENGTH} - 5")
@@ -38,7 +38,7 @@ else()
   find_package(Clang)
 endif()
 
-message("Using libclang from ${Clang_DIR}")
+message(STATUS "Using libclang from ${Clang_DIR}")
 
 target_link_libraries(fieldsUsed clang-cpp ${DYNO_LLVM_LINK_ARGS})
 # TODO: Why is this needed when it was not needed before?
