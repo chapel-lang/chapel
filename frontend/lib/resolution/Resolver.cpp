@@ -1913,7 +1913,8 @@ void Resolver::exit(const Range* range) {
     }
     auto idxTypeResult = commonType(context, suppliedTypes);
     if (!idxTypeResult) {
-      re.setType(typeErr(range, "incompatible bound types for range"));
+      re.setType(TYPE_ERROR(context, IncompatibleRangeBounds, range,
+                            suppliedTypes[0], suppliedTypes[1]));
       return;
     } else {
       idxType = idxTypeResult.getValue();
@@ -2281,11 +2282,14 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
                                  /* receiverScope */ nullptr,
                                  elementName, config);
     if (vec.size() == 0) {
-      return typeErr(nodeForErr, "no enum element with given name");
+      return TYPE_ERROR(context, UnknownEnumElem, nodeForErr, elementName, enumType);
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+      auto& ids = vec[0];
       // multiple candidates. report a type error, but the
       // expression most likely has a type given by the enum.
-      typeErr(nodeForErr, "duplicate enum elements with given name");
+      std::vector<ID> redefinedIds(ids.numIds());
+      std::copy(ids.begin(), ids.end(), redefinedIds.begin());
+      REPORT(context, MultipleEnumElems, nodeForErr, elementName, enumType, std::move(redefinedIds));
       return QualifiedType(QualifiedType::CONST_VAR, enumType);
     } else {
       auto id = vec[0].id(0);
@@ -2463,7 +2467,7 @@ void Resolver::resolveNewForRecord(const New* node,
   ResolvedExpression& re = byPostorder.byAst(node);
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
-    REPORT(context, MemManagementRecords, node, recordType);
+    REPORT(context, MemManagementNonClass, node, recordType);
   } else {
     auto qt = QualifiedType(QualifiedType::VAR, recordType);
     re.setType(qt);
@@ -2505,18 +2509,10 @@ void Resolver::exit(const New* node) {
 
     // TODO: Need to also print the type name.
     if (node->management() != New::DEFAULT_MANAGEMENT) {
-      auto managementStr = New::managementToString(node->management());
-      context->error(node, "cannot use management %s on non-class",
-                           managementStr);
+      REPORT(context, MemManagementNonClass, node, qtTypeExpr.type());
     }
 
-    // TODO: Specialize this error to more types (e.g. enum).
-    if (auto primType = qtTypeExpr.type()->toPrimitiveType()) {
-      context->error(node, "invalid use of 'new' on primitive %s",
-                           primType->c_str());
-    } else {
-      context->error(node, "invalid use of 'new'");
-    }
+    REPORT(context, InvalidNew, node, qtTypeExpr);
   }
 }
 

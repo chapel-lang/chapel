@@ -70,22 +70,33 @@ void ErrorTupleExpansionNamedArgs::write(ErrorWriterBase& wr) const {
   wr.code(fnCall, { tupleOp });
 }
 
-void ErrorMemManagementRecords::write(ErrorWriterBase& wr) const {
+void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   auto newCall = std::get<const uast::New*>(info);
-  auto record = std::get<const types::RecordType*>(info);
+  auto type = std::get<const types::Type*>(info);
+  auto record = type ? type->toRecordType() : nullptr;
 
-  wr.heading(kind_, newCall,
-             "Cannot use memory management strategy '",
-             uast::New::managementToString(newCall->management()),
-             "' with record '",
-             record->name(), "'.");
+  if (record) {
+    wr.heading(kind_, newCall,
+               "Cannot use memory management strategy '",
+               uast::New::managementToString(newCall->management()),
+               "' with record '",
+               record->name(), "'.");
+  } else {
+    wr.heading(kind_, newCall,
+               "Cannot use memory management strategy '",
+               uast::New::managementToString(newCall->management()),
+               "' with non-class type '", type, "'.");
+  }
   wr.code(newCall, { newCall->typeExpression() });
-  wr.note(record->id(), "'", record->name(), "' declared as record here.");
-  wr.code<ID, ID>(record->id(), {});
-  wr.message("Memory management strategies can only be used with classes. "
-             "Remove the '", uast::New::managementToString(newCall->management()),
-             "' keyword to fix this error, " "or define '", record->name(),
-             "' as a class");
+  wr.message("Memory management strategies can only be used with classes.");
+  if (record) {
+    wr.note(record->id(), "'", record->name(), "' declared as record here.");
+    wr.code(record->id());
+    wr.message(
+               "Remove the '", uast::New::managementToString(newCall->management()),
+               "' keyword to fix this error, " "or define '", record->name(),
+               "' as a class");
+  }
 }
 
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
@@ -282,6 +293,60 @@ void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   wr.code(stmt);
   wr.message("There is a reference to a variable declared later:");
   wr.code(laterId);
+}
+
+void ErrorIncompatibleRangeBounds::write(ErrorWriterBase& wr) const {
+  auto range = std::get<const uast::Range*>(info);
+  auto qt1 = std::get<1>(info);
+  auto qt2 = std::get<2>(info);
+
+  wr.heading(kind_, range, "Upper and lower bounds of range expression have incompatible types.");
+  wr.message("In the following if-expression:");
+  wr.code(range, { range->lowerBound(), range->upperBound() });
+  wr.message("the lower bound is a ", qt1, ", while the upper bound is a ", qt2);
+}
+
+void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto elemName = std::get<UniqueString>(info);
+  auto enumType = std::get<const types::EnumType*>(info);
+
+  wr.heading(kind_, node, "The enum '", enumType->name(),
+             "' has no element named '", elemName, "'.");
+  wr.code(node, { node });
+  wr.note(enumType->id(), "The enum '", enumType->name(), "' is declared here.");
+  wr.code(enumType->id());
+}
+
+void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto enumType = std::get<const types::EnumType*>(info);
+  auto elemName = std::get<UniqueString>(info);
+  auto& possibleElems = std::get<std::vector<ID>>(info);
+
+  wr.heading(kind_, node, "The enum '", enumType->name(), "' has multiple "
+            "elements named '", elemName, "'.");
+  wr.code(node, { node } );
+  for (auto& id : possibleElems) {
+    wr.note(id, "One instance occurs here");
+    wr.code<ID, ID>(id, { id });
+  }
+  wr.message("In Chapel, an enum should not have repeated elements of the same name.");
+}
+
+void ErrorInvalidNew::write(ErrorWriterBase& wr) const {
+  auto newExpr = std::get<const uast::New*>(info);
+  auto type = std::get<types::QualifiedType>(info);
+
+  // TODO: Specialize this error to more types (e.g. enum).
+  if (auto primType = type.type()->toPrimitiveType()) {
+    wr.heading(kind_, newExpr, "Invalid use of 'new' on primitive '", primType, "'");
+  } else {
+    wr.heading(kind_, newExpr, "Invalid use of 'new' with type '", type.type(),
+               "', which is neither a class nor a record.");
+  }
+  wr.code(newExpr, { newExpr->typeExpression() });
+  wr.message("The 'new' expression can only be used with records or classes.");
 }
 
 void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
