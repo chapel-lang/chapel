@@ -56,5 +56,5 @@ RUN git config --global user.email "noreply@example.com" && \
     git config --global user.name  "Chapel user"
 
 # Hack to get access to Chapel binaries
-RUN cp $CHPL_HOME/bin/*/* $CHPL_HOME/bin/
+RUN cd $CHPL_HOME/bin && ln -s */* .
 ENV PATH="${PATH}:${CHPL_HOME}/bin:${CHPL_HOME}/util"
