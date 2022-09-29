@@ -106,7 +106,7 @@ static void writeFile(std::ostream& oss, const Location& loc) {
 void ErrorWriter::writeHeading(ErrorBase::Kind kind, Location loc, const std::string& str) {
   if (outputFormat_ == DETAILED) {
     // In detailed mode, print some error decoration
-    oss_ << "=== ";
+    oss_ << "--- ";
   }
 
   setColor(kindColor(kind));
@@ -116,7 +116,7 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, Location loc, const std::st
   writeFile(oss_, loc);
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
-    oss_ << " ===" << std::endl;
+    oss_ << " ---" << std::endl;
   } else {
     // We printed location, so add a separating colon.
     oss_ << ": ";

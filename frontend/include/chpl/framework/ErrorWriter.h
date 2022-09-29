@@ -116,7 +116,9 @@ struct Writer<errordetail::AsFileName<T>> {
 template <>
 struct Writer<types::QualifiedType> {
   void operator()(Context* context, std::ostream& oss, const types::QualifiedType& qt) {
-    if (qt.kind() == types::QualifiedType::TYPE) {
+    if (!qt.hasTypePtr()) {
+      oss << "value of unknown type" << std::endl;
+    } else if (qt.kind() == types::QualifiedType::TYPE) {
       oss << "type '";
       qt.type()->stringify(oss, CHPL_SYNTAX);
       oss << "'";
@@ -126,7 +128,7 @@ struct Writer<types::QualifiedType> {
       oss << "'";
     } else {
       oss << "value of type '";
-      qt.stringify(oss, CHPL_SYNTAX);
+      qt.type()->stringify(oss, CHPL_SYNTAX);
       oss << "'";
     }
   }

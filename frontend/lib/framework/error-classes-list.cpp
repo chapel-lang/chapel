@@ -57,8 +57,8 @@ void ErrorIncompatibleIfBranches::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, ifExpr, "Branches of if-expression have incompatible types.");
   wr.message("In the following if-expression:");
   wr.code(ifExpr, { ifExpr->thenBlock(), ifExpr->elseBlock() });
-  wr.message("The first branch has type ", qt1,
-              ", while the second has type ", qt2);
+  wr.message("the first branch is a ", qt1,
+              ", while the second is a ", qt2);
 }
 
 void ErrorTupleExpansionNamedArgs::write(ErrorWriterBase& wr) const {
@@ -80,7 +80,7 @@ void ErrorMemManagementRecords::write(ErrorWriterBase& wr) const {
              "' with record '",
              record->name(), "'.");
   wr.code(newCall, { newCall->typeExpression() });
-  wr.note(record->id(), "'", record->name(), "' declared as record here");
+  wr.note(record->id(), "'", record->name(), "' declared as record here.");
   wr.code<ID, ID>(record->id(), {});
   wr.message("Memory management strategies can only be used with classes. "
              "Remove the '", uast::New::managementToString(newCall->management()),
@@ -123,7 +123,7 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   wr.code(decl);
   for (const ID& id : ids) {
     if (id != decl->id()) {
-      wr.note(id, "redefined here");
+      wr.note(id, "Redefined here.");
       wr.code<ID, ID>(id);
     }
   }
@@ -157,7 +157,7 @@ void ErrorImplicitSubModule::write(ErrorWriterBase& wr) const {
              "module created for file '", path, "' due to the "
              "file-level '", stmtKind, "' statements.  If you meant for '",
              mod->name(), "' to be a top-level module, move the '",
-             stmtKind, "' statements into its scope.");
+             stmtKind, "' statements into '", mod->name(),"'.");
 }
 
 void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
@@ -181,8 +181,7 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, typeExpr, "Type expression produces a value while type was expected.");
   wr.message("In the following type expression:");
   wr.code(typeExpr, { typeExpr });
-  wr.message("The result of evaluating the expression is a value of type '",
-            type, "'");
+  wr.message("The result of evaluating the expression is a ", type);
   // wr.message("Did you mean to use '.type'?");
 }
 
@@ -198,30 +197,37 @@ void ErrorIncompatibleKinds::write(ErrorWriterBase& wr) const {
   bool nonParamToParam = declKind == types::QualifiedType::Kind::PARAM &&
     initType.kind() != types::QualifiedType::Kind::PARAM;
   if (valueToType) {
-    wr.heading(kind_, initExpr, "Attempt to initialize a type variable with a value.");
+    wr.heading(kind_, initExpr, "A type variable cannot be initialized using a regular value.");
   } else if (typeToValue) {
-    wr.heading(kind_, initExpr, "Attempt to initialize a value with a type.");
+    wr.heading(kind_, initExpr, "A regular variable cannot be initialized with a type.");
   } else if (nonParamToParam) {
-    wr.heading(kind_, initExpr, "Attempt to initialize a param with a non-param.");
+    wr.heading(kind_, initExpr, "A 'param' cannot be initialized using a non-'param' value.");
   }
   wr.message("In the following initialization expression:");
   wr.code(initExpr, { initExpr });
-  wr.message("The result of evaluating the expression is a ", initType,
-             ", but it's being assigned to something with kind '", declKind, "'");
-  if (typeToValue && initType.type() && initType.type()->isCompositeType()) {
-    auto compsiteType = initType.type()->toCompositeType();
-    auto initIdent = initExpr->toIdentifier();
-    if (initIdent && initIdent->name() == compsiteType->name()) {
-      // There's no aliasing involved, the user is just using the record name.
-      wr.message("If you're trying to create a new value of type '",
-          initType.type()->toCompositeType()->name(), "', try writing 'new ",
-          compsiteType->name(), "()' instead");
-    } else {
-      // They are referring to a composite type, but through an alias. Not
-      // quite sure how to report this better.
-      wr.message("If you're trying to create a new value of type '",
-          initType.type()->toCompositeType()->name(), "', try using the 'new' keyword");
+  wr.message("the initialization expression is a ", initType);
+  if (valueToType) {
+    wr.message("If you were trying to extract the type of the expression on "
+               "the left of the '=', try using '.type'?");
+  } else if (typeToValue) {
+    if (initType.type() && initType.type()->isCompositeType()) {
+      auto compsiteType = initType.type()->toCompositeType();
+      auto initIdent = initExpr->toIdentifier();
+      if (initIdent && initIdent->name() == compsiteType->name()) {
+        // There's no aliasing involved, the user is just using the record name.
+        wr.message("If you're trying to create a new value of type '",
+                   initType.type()->toCompositeType()->name(),
+                   "', try writing 'new ", compsiteType->name(), "()' instead");
+      } else {
+        // They are referring to a composite type, but through an alias. Not
+        // quite sure how to report this better.
+        wr.message("If you're trying to create a new value of type '",
+                   initType.type()->toCompositeType()->name(),
+                   "', try using the 'new' keyword");
+      }
     }
+  } else if (nonParamToParam) {
+    wr.message("Note that 'param' values must be known at compile-time.");
   }
 }
 
@@ -235,7 +241,7 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, decl, "Type mismatch in declared type and initialization expression");
   wr.message("In the following declaration:");
   wr.code(decl, { type, init });
-  wr.message("The type expression has type '", typeExprType, "', while the "
+  wr.message("the type expression has type '", typeExprType, "', while the "
              "initialization expression has type '", initExprType, "'");
 }
 
