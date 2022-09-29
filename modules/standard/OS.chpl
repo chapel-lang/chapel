@@ -956,6 +956,23 @@ module OS {
 
   } // end POSIX
 
+/* A type storing an error code or an error message.
+   An :type:`errorCode` can be compared using == or != to a
+   :type:`CTypes.c_int` or to another :type:`errorCode`. An :type:`errorCode`
+   can be cast to or from a :type:`CTypes.c_int`. It can be assigned the
+   value of a :type:`CTypes.c_int` or another :type:`errorCode`. In addition,
+   :type:`errorCode` can be checked directly in an if statement like so:
+
+   .. code-block:: chapel
+
+     var err: errorCode;
+     if err then writeln("err contains an error, ie err != ENOERR");
+     else writeln("err does not contain an error; err == ENOERR");
+
+   The default intent for a formal of type :type:`errorCode` is `const in`.
+
+   The default value of the :type:`errorCode` type is undefined.
+*/
   extern "syserr" type errorCode; // opaque so we can manually override ==,!=,etc
 
   // error numbers
