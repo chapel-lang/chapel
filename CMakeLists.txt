@@ -94,25 +94,29 @@ execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
                 TIMEOUT 5
                 RESULT_VARIABLE CHPLENV_RETURNCODE
                 OUTPUT_VARIABLE CHPLENV_OUTPUT
+                OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
 
 # string(REGEX REPLACE "\n$" "; " CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
+# This is a workaround for CMake not having any in-built way to
+# split a string into a list.  It's not perfect, but it works for this purpose
 STRING(REGEX REPLACE ";" "\\\\;" CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
 STRING(REGEX REPLACE "\n" ";" CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
 # message(DEBUG "printchplenv returned ${CHPLENV_RETURNCODE}")
 # message(DEBUG "got the following from printchplenv: ${CHPLENV_OUTPUT}")
 # set all the chplenv values from printchplenv
 foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
+  # Split the line into the parts we want, variable name and value
   string(FIND "${CHPLENV_LINE}" " " SPLIT_POS)
   if (SPLIT_POS LESS 1)
-    message(WARNING "printchplenv output line did not contain a space: ${CHPLENV_LINE}")
+    message(WARNING "printchplenv output line did not contain a value - unsetting: ${CHPLENV_LINE}")
+    unset(${CHPLENV_LINE} CACHE)
+    continue()
   endif()
   string(SUBSTRING "${CHPLENV_LINE}" 0 ${SPLIT_POS} CHPL_ENV_NAME)
   math(EXPR SPLIT_POS "${SPLIT_POS} + 1")
   string(SUBSTRING "${CHPLENV_LINE}" ${SPLIT_POS} -1 CHPL_ENV_VALUE)
-  if ("${CHPL_ENV_VALUE}" STREQUAL "")
-    continue()
-  endif()
+
   # message(DEBUG "${CHPL_ENV_NAME} ${CHPL_ENV_VALUE}")
   # message(DEBUG "Setting ${CHPLENV_LINE} as ${CHPL_ENV_NAME} ${CHPL_ENV_VALUE}")
   set(${CHPL_ENV_NAME} ${CHPL_ENV_VALUE} CACHE STRING "overwritten description" FORCE)
