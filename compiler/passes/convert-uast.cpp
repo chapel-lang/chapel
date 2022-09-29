@@ -1190,11 +1190,15 @@ struct Converter {
 
     for (auto expr : node->exprs()) {
       ShadowVarSymbol* svs = nullptr;
+      bool isTaskVarDecl = false;
 
       // Normal conversion of TaskVar, reduce intents handled below.
       if (const uast::TaskVar* tv = expr->toTaskVar()) {
         svs = convertTaskVar(tv);
         INT_ASSERT(svs);
+
+        isTaskVarDecl = tv->intent() == uast::TaskVar::Intent::VAR ||
+                        tv->intent() == uast::TaskVar::Intent::CONST;
 
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
@@ -1218,7 +1222,11 @@ struct Converter {
         if (r != nullptr) {
           const resolution::ResolvedExpression* rr = r->byAstOrNull(expr);
           if (rr != nullptr) {
-            noteConvertedSym(expr, findConvertedSym(rr->toId()));
+            if (isTaskVarDecl) {
+              noteConvertedSym(expr, svs);
+            } else {
+              noteConvertedSym(expr, findConvertedSym(rr->toId()));
+            }
           }
         }
         addTaskIntent(ret, svs);
