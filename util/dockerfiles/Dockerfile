@@ -55,9 +55,6 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 RUN git config --global user.email "noreply@example.com" && \
     git config --global user.name  "Chapel user"
 
-
-COPY entrypoint.sh .
-RUN chmod a+x /entrypoint.sh
-
-# setting path based on the underlying architecture
-ENTRYPOINT ["/entrypoint.sh"]
+# Hack to get access to Chapel binaries
+RUN cd $CHPL_HOME/bin && ln -s */* .
+ENV PATH="${PATH}:${CHPL_HOME}/bin:${CHPL_HOME}/util"
