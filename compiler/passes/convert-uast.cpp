@@ -1773,6 +1773,9 @@ struct Converter {
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
 
+    // convert these for now, despite the error, so that symbols are converted.
+    convertWithClause(node->withClause(), node);
+
     auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
                                          zippered,
                                          isForExpr);
