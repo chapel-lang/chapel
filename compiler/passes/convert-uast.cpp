@@ -3979,9 +3979,15 @@ void Converter::pushToSymStack(
   if (symStack.size() > 0) {
     auto backMap = symStack.back().convertedSyms.get();
     auto backAst = parsing::idToAst(context, backMap->inSymbolId);
-    if (backAst->toFunction()) {
-      // If we're inside a nested function, then we should use the parent
-      // function's ConvertedSymbolsMap as the parentMap.
+
+    // If we're inside a nested function, then we should use the parent
+    // function's ConvertedSymbolsMap as the parentMap.
+    //
+    // If we're inside an aggregate, then we should use that aggregate's
+    // map as the parent so that we can find the right fields. This can
+    // happen for methods declared inside a class or record.
+    if (backAst->toFunction() ||
+        backAst->isAggregateDecl()) {
       parentMap = backMap;
     } else {
       // Find the current top-level module from symStack and consider it the
