@@ -42,7 +42,7 @@ jobs:
     # Required recipients' addresses:
            to: bhavani@hpe.com
     # Required sender full name (address can be skipped):
-    #       from: chapel@noreply.github.com
+           from: chapelhpc@gmail.com
     # Optional plain body:
            body: Build job of ${{github.repository}} completed successfully!
     # Optional HTML body read from file:
