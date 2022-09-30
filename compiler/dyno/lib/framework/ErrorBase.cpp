@@ -25,12 +25,22 @@
 
 namespace chpl {
 
+/**
+  Implementation of ErrorWriterBase that records calls
+  to the various API functions in order to convert ErrorBase
+  subclasses into backwards-compatible ErrorMessage instances.
+ */
 class CompatibilityWriter : public ErrorWriterBase {
  private:
+  /** The ID of where the error occurred. */
   ID id_;
+  /** The location of where the error occurred. Only used if ::id_ is empty. */
   Location loc_;
+  /** The computed location (derived from the ::id_ or ::loc_) */
   Location computedLoc_;
+  /** The error's brief message */
   std::string message_;
+  /** A list of notes associated with this error (aka details) */
   std::vector<Note> notes_;
 
  public:
@@ -60,10 +70,40 @@ class CompatibilityWriter : public ErrorWriterBase {
     this->notes_.push_back(std::make_tuple(std::move(id), Location(), message));
   }
 
+  /**
+    Get the error's ID (could be empty in favor of the location).
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
   inline ID id() const { return id_; }
+  /**
+    Get the error's location (could be empty in favor of the ID)
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
   inline Location location() const { return loc_; }
+  /**
+    Return the location that should be reported to the user.
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
   inline Location computedLocation() const { return computedLoc_; }
+  /**
+    Return the error's brief message.
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
   inline const std::string& message() const { return message_; }
+  /**
+    Return the error's notes / details.
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
   const std::vector<Note>& notes() const { return notes_; }
 };
 
