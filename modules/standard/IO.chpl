@@ -4864,6 +4864,174 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   return retval;
 }
 
+/*
+  Read the entire contents of the Channel into the specified type
+
+  :arg t: the type of data to read, which must be ``string`` or ``bytes``. Defaults to ``string`` if not specified.
+  :returns: the data read from the channel
+*/
+proc _channel.readAll(type t=string): t throws
+  where t==string || t==bytes
+{
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  var out_var : t;
+
+  if t == string {
+    out_var = "";
+    this.readAll(out_var);
+  } else {
+    out_var = b"";
+    this.readAll(out_var);
+  }
+
+  return out_var;
+}
+
+/*
+  Read the entire contents of the Channel into a ``string``.
+
+  Note that the contents of the current ``string`` are overwritten.
+
+  :arg s: the ``string`` to write into
+  :returns: the number of codepoints that were read into ``s``
+  :rtype: int
+*/
+proc _channel.readAll(ref s: string): int throws {
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  const (err, lenread) = readAllBytesOrString(this, s);
+
+  if err != ENOERR {
+    try this._ch_ioerror(err, "in channel.readAll(ref s: string)");
+  }
+
+  return lenread;
+}
+
+/*
+  Read the entire contents of the Channel into a ``bytes``.
+
+  Note that the contents of the current ``bytes`` are overwritten.
+
+  :arg b: the ``bytes`` to write into
+  :returns: the number of bytes that were read into ``b``
+  :rtype: int
+*/
+proc _channel.readAll(ref b: bytes): int throws {
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  const (err, lenread) = readAllBytesOrString(this, b);
+
+  if err != ENOERR {
+    try this._ch_ioerror(err, "in channel.readAll(ref b: bytes)");
+  }
+
+  return lenread;
+}
+
+/*
+  Read the entire contents of the Channel into a an array of bytes.
+
+  Note that this routine currently requires a 1D rectangular non-strided array.
+
+  :arg a: the array of bytes to write into.
+  :returns: the number of bytes that were read into ``a``
+  :rtype: int
+
+  :throws EofError: Thrown if the channel's contents do not fit in ``a``
+
+  .. note:
+    `a` must be one dimensional and confined to a single `locale`
+*/
+proc _channel.readAll(ref a: [?d] ?t): int throws
+  where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
+{
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  var numRead : int = 0;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    const bytesCapacity = d.size;
+    var got : int;
+
+    while numRead < bytesCapacity {
+      // read a byte
+      got = qio_channel_read_byte(false, this._channel_internal);
+
+      if got == -EEOF {
+        // ran out of room, throw
+        throw new owned EofError(
+          "contents of channel exceeded capacity of provided array in 'channel.readAll'"
+        );
+      } else if got < 0 {
+        // hit an IO error, throw
+        try this._ch_ioerror((-got):errorCode, "in channel.readAll(ref a: [])");
+      } else {
+        // store the byte
+        a[numRead] = got:t;
+        numRead += 1;
+      }
+    }
+  }
+
+  return numRead;
+}
+
+// Helper method for channel.readAll methods
+private proc readAllBytesOrString(ch: fileReader, ref out_var: ?t) : (errorCode, int) throws {
+  var err     : errorCode = ENOERR,
+      lenread : int(64);
+
+  on ch._home {
+    var tx     : c_string,
+        uselen : c_ssize_t = max(c_ssize_t);
+
+    try ch.lock(); defer { ch.unlock(); }
+
+    var binary    : uint(8) = qio_channel_binary(ch._channel_internal),
+        byteorder : uint(8) = qio_channel_byteorder(ch._channel_internal);
+
+    if binary {
+      err = qio_channel_read_string(false, byteorder,
+                                    iostringstyle.data_toeof:int(64),
+                                    ch._channel_internal, tx,
+                                    lenread, uselen);
+    } else {
+      var save_style : iostyleInternal = ch._styleInternal(),
+          style      : iostyleInternal = ch._styleInternal();
+
+      style.string_format = QIO_STRING_FORMAT_TOEOF;
+      ch._set_styleInternal(style);
+
+      if t == string {
+        err = qio_channel_scan_string(false,
+                                      ch._channel_internal, tx,
+                                      lenread, uselen);
+      }
+      else {
+        err = qio_channel_scan_bytes(false,
+                                     ch._channel_internal, tx,
+                                     lenread, uselen);
+      }
+      ch._set_styleInternal(save_style);
+    }
+
+    if t == string {
+      var tmp = createStringWithOwnedBuffer(tx, length=lenread);
+      out_var <=> tmp;
+    }
+    else {
+      var tmp = createBytesWithOwnedBuffer(tx, length=lenread);
+      out_var <=> tmp;
+    }
+  }
+
+  if err == EEOF then err = ENOERR;
+  return (err, lenread);
+}
+
 /* read a given number of bytes from a channel
 
    :arg str_out: The string to be read into
