@@ -6575,29 +6575,14 @@ proc _toIntegral(x:?t) where !_isIoPrimitiveType(t)
 }
 
 private inline
-proc _toSigned(x:?t) where isIntType(t)
+proc _toSigned(x:int(?w))
 {
   return (x, true);
 }
 private inline
-proc _toSigned(x:uint(8))
+proc _toSigned(x:uint(?w))
 {
-  return (x:int(8), true);
-}
-private inline
-proc _toSigned(x:uint(16))
-{
-  return (x:int(16), true);
-}
-private inline
-proc _toSigned(x:uint(32))
-{
-  return (x:int(32), true);
-}
-private inline
-proc _toSigned(x:uint(64))
-{
-  return (x:int(64), true);
+  return (x:int(w), true);
 }
 
 private inline
@@ -6622,26 +6607,10 @@ proc _toUnsigned(x:uint(?w))
   return (x, true);
 }
 private inline
-proc _toUnsigned(x:int(8))
+proc _toUnsigned(x:int(?w))
 {
-  return (x:uint(8), true);
+  return (x:uint(w), true);
 }
-private inline
-proc _toUnsigned(x:int(16))
-{
-  return (x:uint(16), true);
-}
-private inline
-proc _toUnsigned(x:int(32))
-{
-  return (x:uint(32), true);
-}
-private inline
-proc _toUnsigned(x:int(64))
-{
-  return (x:uint(64), true);
-}
-
 
 private inline
 proc _toUnsigned(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
