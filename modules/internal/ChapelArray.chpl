@@ -2580,7 +2580,14 @@ module ChapelArray {
 
   pragma "no doc"
   inline operator =(ref a: [], b: _iteratorRecord) {
-    /* b is not an array nor a domain nor a tuple */
+    // e.g. b might be a list
+    chpl__transferArray(a, b);
+  }
+
+  pragma "no doc"
+  inline operator =(ref a: [], b: ?t)
+  where !(isTupleType(t) || isCoercible(t, _desync(a.eltType))) {
+    // e.g. b might be a list
     chpl__transferArray(a, b);
   }
 
@@ -3262,6 +3269,7 @@ module ChapelArray {
     return lhs;
   }
 
+  // TODO: can we remove this last resort?
   pragma "find user line"
   pragma "coerce fn"
   pragma "last resort"
