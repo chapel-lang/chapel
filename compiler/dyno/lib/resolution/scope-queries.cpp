@@ -857,14 +857,11 @@ findUseImportTarget(Context* context,
   return nullptr;
 }
 
-
 static void
 doResolveUseStmt(Context* context, const Use* use,
                  const Scope* scope,
                  ResolvedVisibilityScope* r) {
-  bool isPrivate = true;
-  if (use->visibility() == Decl::PUBLIC)
-    isPrivate = false;
+  bool isPrivate = (use->visibility() != Decl::PUBLIC);
 
   for (auto clause : use->visibilityClauses()) {
     // Figure out what was use'd
@@ -887,17 +884,18 @@ doResolveUseStmt(Context* context, const Use* use,
     const Scope* foundScope = findUseImportTarget(context, scope, r,
                                                   expr, VIS_USE, oldName);
     if (foundScope != nullptr) {
-      // First, add VisibilitySymbols entry for the symbol itself
-      if (newName.isEmpty()) {
-        r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                               isPrivate, convertOneName(oldName));
-      } else {
+      // First, add VisibilitySymbols entry for the symbol itself,
+      // iff the use is renamed or non-public
+      if (!newName.isEmpty()) {
         r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
                                isPrivate, convertOneRename(oldName, newName));
+      } else if (isPrivate) {
+        r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
+                               isPrivate, convertOneName(oldName));
       }
 
       // Then, add the entries for anything imported
-      VisibilitySymbols::Kind kind = VisibilitySymbols::ALL_CONTENTS;
+      VisibilitySymbols::Kind kind;
       switch (clause->limitationKind()) {
         case VisibilityClause::EXCEPT:
           kind = VisibilitySymbols::CONTENTS_EXCEPT;
@@ -936,9 +934,7 @@ static void
 doResolveImportStmt(Context* context, const Import* imp,
                     const Scope* scope,
                     ResolvedVisibilityScope* r) {
-  bool isPrivate = true;
-  if (imp->visibility() == Decl::PUBLIC)
-    isPrivate = false;
+  bool isPrivate = (imp->visibility() != Decl::PUBLIC);
 
   for (auto clause : imp->visibilityClauses()) {
     // Figure out what was imported
@@ -974,7 +970,7 @@ doResolveImportStmt(Context* context, const Import* imp,
     const Scope* foundScope = findUseImportTarget(context, scope, r,
                                                   expr, VIS_IMPORT, oldName);
     if (foundScope != nullptr) {
-      VisibilitySymbols::Kind kind = VisibilitySymbols::ONLY_CONTENTS;
+      VisibilitySymbols::Kind kind;
 
       if (!dotName.isEmpty()) {
         // e.g. 'import M.f' - dotName is f and foundScope is for M
