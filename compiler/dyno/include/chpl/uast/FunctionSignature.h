@@ -35,7 +35,9 @@ namespace uast {
 
   \rst
   .. code-block:: chapel
+
     type T = proc(int, int): int;
+
   \endrst
 
   The type alias 'T' stores the function signature for a procedure
