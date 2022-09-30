@@ -88,8 +88,8 @@ Parallelism/Distributed Computing
    Barriers <standard/Barriers>
    Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
-   VectorizingIterator <standard/VectorizingIterator>
    GPU <standard/GPU>
+   VectorizingIterator <standard/VectorizingIterator>
 
 System/Interoperability
 -----------------------
