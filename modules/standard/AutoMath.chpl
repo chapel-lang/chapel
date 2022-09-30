@@ -1009,7 +1009,9 @@ module AutoMath {
 
      :rtype: The type of `x`.
    */
-  inline proc max(x, y) where !isArray(x) && !isArray(y) {
+  inline proc max(x, y)
+  where !isArray(x) && !isArray(y) &&
+        !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
     if isAtomic(x) || isAtomic(y) {
       compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
     }
@@ -1044,7 +1046,9 @@ module AutoMath {
 
      :rtype: The type of `x`.
    */
-  inline proc min(x, y) where !isArray(x) && !isArray(y) {
+  inline proc min(x, y)
+  where !isArray(x) && !isArray(y) &&
+        !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
     if isAtomic(x) || isAtomic(y) {
       compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
     }
