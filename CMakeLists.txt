@@ -29,17 +29,6 @@ project(Chapel VERSION 1.29.0)
 # cmake_print_variables(MY_VARIABLE)
 include(CMakePrintHelpers)
 
-# option(CHPL_LLVM_COMP_ARGS "Override compile args for LLVM")
-# option(CHPL_LLVM_LINK_ARGS "Override linker args for LLVM")
-set(CHPL_HOME CACHE STRING "Override home directory for Chapel")
-
-if (NOT DEFINED ${CHPL_HOME})
-  message(NOTICE "CHPL_HOME not set, using $ENV{CHPL_HOME}")
-  set(CHPL_HOME $ENV{CHPL_HOME} CACHE STRING "Override home directory for Chapel" FORCE)
-else()
-  set(ENV{CHPL_HOME} ${CHPL_HOME})
-  message(NOTICE "CHPL_HOME updated to ${CHPL_HOME}")
-endif()
 
 # Options that correspond to printchplenv --internal --compiler
 # Could be set from environment or command-line
@@ -57,9 +46,9 @@ set(CHPL_LLVM_CONFIG CACHE STRING "Description")
 set(CHPL_SANITIZE CACHE STRING "Description")
 
 # Some variables that aren't in printchplenv output, but are/might be useful
+set(CHPL_HOME CACHE STRING "Override home directory for Chapel")
 set(CHPL_DEVELOPER CACHE BOOL "Description")
 set(CHPL_LLVM_GCC_PREFIX CACHE STRING "Description")
-# CHPL_LLVM_GCC_PREFIX - interacts with printchplenv
 
 # Internal CHPL variables
 set(CHPL_HOST_BUNDLED_COMPILE_ARGS CACHE INTERNAL "Description")
@@ -103,6 +92,33 @@ set(CHPL_QTHREAD_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_RE2_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_PE_CHPL_PKGCONFIG_LIBS CACHE INTERNAL "Description")
 
+# Set ENV versions of CHPL_ vars that are not in printchplenv output, in the
+# case when they are set from the cmdline, otherwise get them from the environment
+if (NOT DEFINED ${CHPL_HOME})
+  message(NOTICE "CHPL_HOME not set, using $ENV{CHPL_HOME}")
+  set(CHPL_HOME $ENV{CHPL_HOME} CACHE STRING "Override home directory for Chapel" FORCE)
+else()
+  set(ENV{CHPL_HOME} ${CHPL_HOME})
+  message(NOTICE "CHPL_HOME updated to ${CHPL_HOME}")
+endif()
+
+if (NOT DEFINED ${CHPL_DEVELOPER})
+  message(NOTICE "CHPL_DEVELOPER not set, using $ENV{CHPL_DEVELOPER}")
+  set(CHPL_DEVELOPER $ENV{CHPL_DEVELOPER} CACHE BOOL "Override CHPL_DEVELOPER flag" FORCE)
+else()
+  set(ENV{CHPL_DEVELOPER} ${CHPL_DEVELOPER})
+  message(STATUS "CHPL_DEVELOPER updated to ${CHPL_DEVELOPER}")
+endif()
+
+if (NOT DEFINED ${CHPL_LLVM_GCC_PREFIX})
+  message(NOTICE "CHPL_LLVM_GCC_PREFIX not set, using $ENV{CHPL_LLVM_GCC_PREFIX}")
+  set(CHPL_LLVM_GCC_PREFIX $ENV{CHPL_LLVM_GCC_PREFIX} CACHE STRING "Override CHPL_LLVM_GCC_PREFIX flag" FORCE)
+else()
+  set(ENV{CHPL_LLVM_GCC_PREFIX} ${CHPL_LLVM_GCC_PREFIX})
+  message(STATUS "CHPL_LLVM_GCC_PREFIX updated to ${CHPL_LLVM_GCC_PREFIX}")
+endif()
+
+
 # If any -DCHPL_ variables came to us from the command line, update them in the
 # environment so that they can be used by printchplenv
 if (DEFINED ${CHPL_HOST_PLATFORM})
@@ -144,14 +160,6 @@ endif()
 if (DEFINED ${CHPL_SANITIZE})
   set(ENV{CHPL_SANITIZE} ${CHPL_SANITIZE})
   message(STATUS "CHPL_SANITIZE updated to ${CHPL_SANITIZE}")
-endif()
-if (DEFINED ${CHPL_DEVELOPER})
-  set(ENV{CHPL_DEVELOPER} ${CHPL_DEVELOPER})
-  message(STATUS "CHPL_DEVELOPER updated to ${CHPL_DEVELOPER}")
-endif()
-if (DEFINED ${CHPL_LLVM_GCC_PREFIX})
-  set(ENV{CHPL_LLVM_GCC_PREFIX} ${CHPL_LLVM_GCC_PREFIX})
-  message(STATUS "CHPL_LLVM_GCC_PREFIX updated to ${CHPL_LLVM_GCC_PREFIX}")
 endif()
 
 # Makefile arguments we still want to support
