@@ -20,14 +20,16 @@
 
 namespace chpl {
 
-void ErrorWriterBase::writeHeading(ErrorBase::Kind kind, const ID& id, const std::string& str) {
-  writeHeading(kind, errordetail::locate(context, id), str);
+void ErrorWriterBase::writeHeading(ErrorBase::Kind kind, ErrorType type,
+                                   const ID& id, const std::string& str) {
+  writeHeading(kind, type, errordetail::locate(context, id), str);
 }
 
 void ErrorWriterBase::writeHeading(ErrorBase::Kind kind,
-                                    const uast::AstNode* node,
-                                    const std::string& str) {
-  writeHeading(kind, node->id(), str);
+                                   ErrorType type,
+                                   const uast::AstNode* node,
+                                   const std::string& str) {
+  writeHeading(kind, type, node->id(), str);
 }
 
 void ErrorWriterBase::writeNote(const ID& id, const std::string& str) {
@@ -103,7 +105,8 @@ static void writeFile(std::ostream& oss, const Location& loc) {
   else oss << "(unknown location)";
 }
 
-void ErrorWriter::writeHeading(ErrorBase::Kind kind, Location loc, const std::string& str) {
+void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
+                               Location loc, const std::string& str) {
   if (outputFormat_ == DETAILED) {
     // In detailed mode, print some error decoration
     oss_ << "─── ";
@@ -116,6 +119,10 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, Location loc, const std::st
   writeFile(oss_, loc);
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
+    const char* name =ErrorBase::getTypeName(type);
+    if (name != nullptr) {
+      oss_ << " [" << name << "]";
+    }
     oss_ << " ───" << std::endl;
     // In detailed mode, the body is indented.
     oss_  << "  ";

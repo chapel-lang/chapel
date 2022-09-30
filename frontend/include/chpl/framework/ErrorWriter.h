@@ -177,12 +177,12 @@ class ErrorWriterBase {
     The location given to this function and its overloads is considered
     the error's main location.
    */
-  virtual void writeHeading(ErrorBase::Kind kind, Location loc, const std::string& message) = 0;
-  virtual void writeHeading(ErrorBase::Kind kind, const ID& id, const std::string& message);
-  virtual void writeHeading(ErrorBase::Kind kind, const uast::AstNode* ast, const std::string& message);
+  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, Location loc, const std::string& message) = 0;
+  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, const ID& id, const std::string& message);
+  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, const uast::AstNode* ast, const std::string& message);
   template <typename T>
-  void writeHeading(ErrorBase::Kind kind, errordetail::LocationOnly<T> t, const std::string& message) {
-    writeHeading(kind, errordetail::locate(context, t.t), message);
+  void writeHeading(ErrorBase::Kind kind, ErrorType type, errordetail::LocationOnly<T> t, const std::string& message) {
+    writeHeading(kind, type, errordetail::locate(context, t.t), message);
   }
 
   /**
@@ -236,8 +236,8 @@ class ErrorWriterBase {
     to strings.
    */
   template <typename LocationType, typename ... Ts>
-  void heading(ErrorBase::Kind kind, LocationType loc, Ts ... ts) {
-    writeHeading(kind, loc, toString(std::forward<Ts>(ts)...));
+  void heading(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
+    writeHeading(kind, type, loc, toString(std::forward<Ts>(ts)...));
   }
 
   /**
@@ -309,7 +309,7 @@ class ErrorWriter : public ErrorWriterBase {
 
   void setColor(TermColorName color);
 
-  void writeHeading(ErrorBase::Kind kind, Location loc,
+  void writeHeading(ErrorBase::Kind kind, ErrorType type, Location loc,
                     const std::string& message) override;
   void writeMessage(const std::string& message) override {
     if (outputFormat_ == DETAILED) {

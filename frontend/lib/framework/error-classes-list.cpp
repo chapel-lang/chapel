@@ -54,7 +54,7 @@ void ErrorIncompatibleIfBranches::write(ErrorWriterBase& wr) const {
   auto qt1 = std::get<1>(info);
   auto qt2 = std::get<2>(info);
 
-  wr.heading(kind_, ifExpr, "Branches of if-expression have incompatible types.");
+  wr.heading(kind_, type_, ifExpr, "Branches of if-expression have incompatible types.");
   wr.message("In the following if-expression:");
   wr.code(ifExpr, { ifExpr->thenBlock(), ifExpr->elseBlock() });
   wr.message("the first branch is a ", qt1,
@@ -65,7 +65,7 @@ void ErrorTupleExpansionNamedArgs::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info);
   auto tupleOp = std::get<const uast::OpCall*>(info);
 
-  wr.heading(kind_, fnCall, "Tuple expansion cannot be used with named arguments.");
+  wr.heading(kind_, type_, fnCall, "Tuple expansion cannot be used with named arguments.");
   wr.message("A tuple is being expanded here:");
   wr.code(fnCall, { tupleOp });
 }
@@ -76,13 +76,13 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   auto record = type ? type->toRecordType() : nullptr;
 
   if (record) {
-    wr.heading(kind_, newCall,
+    wr.heading(kind_, type_, newCall,
                "Cannot use memory management strategy '",
                uast::New::managementToString(newCall->management()),
                "' with record '",
                record->name(), "'.");
   } else {
-    wr.heading(kind_, newCall,
+    wr.heading(kind_, type_, newCall,
                "Cannot use memory management strategy '",
                uast::New::managementToString(newCall->management()),
                "' with non-class type '", type, "'.");
@@ -102,7 +102,7 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
-  wr.heading(kind_, moduleInclude,
+  wr.heading(kind_, type_, moduleInclude,
              "Cannot make a private module public through "
              "an include statement.");
   wr.code(moduleInclude);
@@ -113,7 +113,7 @@ void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
 void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
-  wr.heading(kind_, moduleInclude,
+  wr.heading(kind_, type_, moduleInclude,
              "Cannot apply prototype to module in include statement.");
   wr.code(moduleInclude);
   wr.note(moduleDef, "Put prototype keyword at module declaration here");
@@ -123,14 +123,14 @@ void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
 void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto& filePath = std::get<std::string>(info);
-  wr.heading(kind_, moduleInclude, "Cannot find included submodule.");
+  wr.heading(kind_, type_, moduleInclude, "Cannot find included submodule.");
   wr.note(moduleInclude, "Expected file at path '", filePath, "'");
 }
 
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::NamedDecl*>(info);
   auto& ids = std::get<std::vector<ID>>(info);
-  wr.heading(kind_, decl, "'", decl->name(), "' has multiple definitions.");
+  wr.heading(kind_, type_, decl, "'", decl->name(), "' has multiple definitions.");
   wr.code(decl);
   for (const ID& id : ids) {
     if (id != decl->id()) {
@@ -144,7 +144,7 @@ void ErrorAmbiguousConfigName::write(ErrorWriterBase& wr) const {
   auto& name = std::get<std::string>(info);
   auto variable = std::get<const uast::Variable*>(info);
   auto otherId = std::get<ID>(info);
-  wr.heading(kind_, locationOnly(variable), "Ambiguous config name (", name, ").");
+  wr.heading(kind_, type_, locationOnly(variable), "Ambiguous config name (", name, ").");
   wr.code(variable);
   wr.note(locationOnly(otherId), "Also defined here");
   wr.code(otherId);
@@ -155,7 +155,7 @@ void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
   auto& name1 = std::get<1>(info);
   auto& name2 = std::get<2>(info);
   auto variable = std::get<const uast::Variable*>(info);
-  wr.heading(kind_, locationOnly(variable),
+  wr.heading(kind_, type_, locationOnly(variable),
             "Config set ambiguously via '-s", name1, "' and '-s", name2, "'.");
 }
 
@@ -163,7 +163,7 @@ void ErrorImplicitSubModule::write(ErrorWriterBase& wr) const {
   const char* stmtKind = "require', 'use', and/or 'import";
   auto mod = std::get<const uast::Module*>(info);
   auto path = std::get<UniqueString>(info);
-  wr.heading(kind_, mod,
+  wr.heading(kind_, type_, mod,
              "As written, '", mod->name(), "' is a sub-module of the "
              "module created for file '", path, "' due to the "
              "file-level '", stmtKind, "' statements.  If you meant for '",
@@ -175,7 +175,7 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   auto code = std::get<const uast::AstNode*>(info);
   auto lastModule = std::get<1>(info);
   auto implicitModule = std::get<2>(info);
-  wr.heading(kind_, code,
+  wr.heading(kind_, type_, code,
              "This file-scope code is outside of any "
              "explicit module declarations (e.g., module ",
              lastModule->name(), ")");
@@ -189,7 +189,8 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
 void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   auto typeExpr = std::get<const uast::AstNode*>(info);
   auto type = std::get<types::QualifiedType>(info);
-  wr.heading(kind_, typeExpr, "Type expression produces a ", type, " while a type was expected.");
+  wr.heading(kind_, type_, typeExpr,
+             "Type expression produces a ", type, " while a type was expected.");
   wr.message("In the following type expression:");
   wr.code(typeExpr, { typeExpr });
   // wr.message("Did you mean to use '.type'?");
@@ -207,11 +208,14 @@ void ErrorIncompatibleKinds::write(ErrorWriterBase& wr) const {
   bool nonParamToParam = declKind == types::QualifiedType::Kind::PARAM &&
     initType.kind() != types::QualifiedType::Kind::PARAM;
   if (valueToType) {
-    wr.heading(kind_, initExpr, "A type variable cannot be initialized using a regular value.");
+    wr.heading(kind_, type_, initExpr,
+               "A type variable cannot be initialized using a regular value.");
   } else if (typeToValue) {
-    wr.heading(kind_, initExpr, "A regular variable cannot be initialized with a type.");
+    wr.heading(kind_, type_, initExpr,
+               "A regular variable cannot be initialized with a type.");
   } else if (nonParamToParam) {
-    wr.heading(kind_, initExpr, "A 'param' cannot be initialized using a non-'param' value.");
+    wr.heading(kind_, type_, initExpr,
+               "A 'param' cannot be initialized using a non-'param' value.");
   }
   wr.message("In the following initialization expression:");
   wr.code(initExpr, { initExpr });
@@ -248,7 +252,8 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
   auto typeExprType = std::get<3>(info);
   auto initExprType = std::get<4>(info);
 
-  wr.heading(kind_, decl, "Type mismatch in declared type and initialization expression");
+  wr.heading(kind_, type_, decl,
+             "Type mismatch in declared type and initialization expression");
   wr.message("In the following declaration:");
   wr.code(decl, { type, init });
   wr.message("the type expression has type '", typeExprType, "', while the "
@@ -257,14 +262,15 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
 
 void ErrorTupleDeclUnknownType::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
-  wr.heading(kind_, decl, "Attempt to split unknown type using split tuple assignment.");
+  wr.heading(kind_, type_, decl,
+             "Attempt to split unknown type using split tuple assignment.");
   wr.code(decl);
 }
 
 void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   auto type = std::get<const types::Type*>(info);
-  wr.heading(kind_, decl,
+  wr.heading(kind_, type_, decl,
             "Attempt to use tuple declaration to split a value of "
             "non-tuple type '", type, "'.");
   wr.message("In the following tuple declaration:");
@@ -276,7 +282,7 @@ void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   auto type = std::get<const types::TupleType*>(info);
-  wr.heading(kind_, decl,
+  wr.heading(kind_, type_, decl,
             "Tuple size mismatch in split tuple declaration.");
   wr.code(decl);
   wr.message("The left-hand side of the declaration expects a tuple with ",
@@ -287,7 +293,8 @@ void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   auto stmt = std::get<const uast::AstNode*>(info);
   auto laterId = std::get<ID>(info);
-  wr.heading(kind_, stmt, "Statement references a variable before it is defined.");
+  wr.heading(kind_, type_, stmt,
+             "Statement references a variable before it is defined.");
   wr.message("In the following statement:");
   wr.code(stmt);
   wr.message("There is a reference to a variable defined later:");
@@ -300,7 +307,8 @@ void ErrorIncompatibleRangeBounds::write(ErrorWriterBase& wr) const {
   auto qt1 = std::get<1>(info);
   auto qt2 = std::get<2>(info);
 
-  wr.heading(kind_, range, "Upper and lower bounds of range expression have incompatible types.");
+  wr.heading(kind_, type_, range,
+            "Upper and lower bounds of range expression have incompatible types.");
   wr.message("In the following if-expression:");
   wr.code(range, { range->lowerBound(), range->upperBound() });
   wr.message("the lower bound is a ", qt1, ", while the upper bound is a ", qt2);
@@ -311,7 +319,7 @@ void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
   auto elemName = std::get<UniqueString>(info);
   auto enumType = std::get<const types::EnumType*>(info);
 
-  wr.heading(kind_, node, "The enum '", enumType->name(),
+  wr.heading(kind_, type_, node, "The enum '", enumType->name(),
              "' has no element named '", elemName, "'.");
   wr.code(node, { node });
   wr.note(enumType->id(), "The enum '", enumType->name(), "' is declared here.");
@@ -324,8 +332,8 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
   auto elemName = std::get<UniqueString>(info);
   auto& possibleElems = std::get<std::vector<ID>>(info);
 
-  wr.heading(kind_, node, "The enum '", enumType->name(), "' has multiple "
-            "elements named '", elemName, "'.");
+  wr.heading(kind_, type_, node, "The enum '", enumType->name(),
+             "' has multiple elements named '", elemName, "'.");
   wr.code(node, { node } );
   for (auto& id : possibleElems) {
     wr.note(id, "One instance occurs here");
@@ -340,10 +348,11 @@ void ErrorInvalidNew::write(ErrorWriterBase& wr) const {
 
   // TODO: Specialize this error to more types (e.g. enum).
   if (auto primType = type.type()->toPrimitiveType()) {
-    wr.heading(kind_, newExpr, "Invalid use of 'new' on primitive '", primType, "'");
+    wr.heading(kind_, type_, newExpr,
+               "Invalid use of 'new' on primitive '", primType, "'");
   } else {
-    wr.heading(kind_, newExpr, "Invalid use of 'new' with type '", type.type(),
-               "', which is neither a class nor a record.");
+    wr.heading(kind_, type_, newExpr, "Invalid use of 'new' with type '",
+               type.type(), "', which is neither a class nor a record.");
   }
   wr.code(newExpr, { newExpr->typeExpression() });
   wr.message("The 'new' expression can only be used with records or classes.");
@@ -352,7 +361,7 @@ void ErrorInvalidNew::write(ErrorWriterBase& wr) const {
 void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
   auto sig = std::get<const uast::FunctionSignature*>(info);
   auto formal = std::get<const uast::AnonFormal*>(info);
-  wr.heading(kind_, formal, "unannotated formal is ambiguous in this "
+  wr.heading(kind_, type_, formal, "unannotated formal is ambiguous in this "
                             "context");
   wr.code(sig, {formal});
   wr.message("The meaning of an unannotated formal (a formal not of the "
@@ -364,7 +373,7 @@ void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
 void ErrorProcDefExplicitAnonFormal::write(ErrorWriterBase& wr) const {
   auto fn = std::get<const uast::Function*>(info);
   auto formal = std::get<const uast::Formal*>(info);
-  wr.heading(kind_, formal, "formals in a procedure definition must "
+  wr.heading(kind_, type_, formal, "formals in a procedure definition must "
                             "be named");
   wr.code(fn, {formal});
 }

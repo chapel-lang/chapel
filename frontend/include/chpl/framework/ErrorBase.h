@@ -83,6 +83,8 @@ class ErrorBase {
  public:
   virtual ~ErrorBase() = default;
 
+  static const char* getTypeName(ErrorType type);
+
   template <typename T>
   static bool update(owned<T>& old, owned<T>& addin) {
     return defaultUpdateOwned(old, addin);
