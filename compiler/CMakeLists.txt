@@ -16,7 +16,8 @@
 # limitations under the License.
 
 
-
+# TODO: Determine when CMake looks for CC and CXX and set them to our
+# CHPL_HOST_CC and CHPL_HOST_CXX
 # request C++14
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -32,6 +33,7 @@ set(CMAKE_VERBOSE_MAKEFILE 1)
 
 set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 
+# TODO: just use these directly, don't alias them
 string(CONCAT CHPL_LLVM_COMP_ARGS_JOIN ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
 string(CONCAT CHPL_LLVM_LINK_ARGS_JOIN ${CHPL_HOST_BUNDLED_LINK_ARGS} " " ${CHPL_HOST_SYSTEM_LINK_ARGS})
 
@@ -55,12 +57,12 @@ endif()
 
 # need many of the outputs from printchplenv for the following values
 include_directories(
-        ${SRC_DIR}/include/${CHPL_HOST_PLATFORM}
-        ${SRC_DIR}/include
-        ${SRC_DIR}/../build/compiler/${CHPL_COMPILER_SUBDIR}
-        ${SRC_DIR}/../runtime/include/encoding
-        ${SRC_DIR}/../third-party/utf8-decoder
-        ${SRC_DIR}/dyno/include
+        ${SRC_DIR}/include/${CHPL_HOST_PLATFORM} # for free-bsd support (work-around)
+        ${SRC_DIR}/include # needed all the time
+        ${SRC_DIR}/../build/compiler/${CHPL_COMPILER_SUBDIR} # for enabling CONFIGURED_PREFIX in configured_prefix.h
+        ${SRC_DIR}/../runtime/include/encoding # support for sharing unicode support between compiler and runtime
+        ${SRC_DIR}/../third-party/utf8-decoder # support for sharing unicode support between compiler and runtime
+        ${SRC_DIR}/dyno/include # headers for dyno, needed all the time
         )
 
 add_executable(chpl)
