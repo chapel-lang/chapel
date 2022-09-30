@@ -178,7 +178,7 @@ CanPassResult canPass(Context* context,
 /**
   An optional additional constraint on the kind of a type. Used in
   commonType to serve the case of functions that enforce param, type,
-  or const returs.
+  or const returns.
  */
 using KindRequirement = llvm::Optional<chpl::types::QualifiedType::Kind>;
 

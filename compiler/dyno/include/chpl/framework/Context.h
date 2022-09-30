@@ -256,7 +256,7 @@ class Context {
   /**
     Create a new AST Context. Optionally, specify the value of the
     CHPL_HOME environment variable, which is used for determining
-    chapel environment varaibles.
+    chapel environment variables.
    */
   Context(std::string chplHome = "",
           std::unordered_map<std::string, std::string> chplEnvOverrides = {});
