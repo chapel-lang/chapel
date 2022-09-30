@@ -258,6 +258,8 @@ module ChapelRange {
   }
   proc chpl_build_bounded_range(low: bool, high: bool)
     return new range(bool, low=low, high=high);
+
+  pragma "last resort"
   proc chpl_build_bounded_range(low, high) {
     if (low.type == high.type) then
       compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
@@ -285,6 +287,7 @@ module ChapelRange {
     return new range(low=low);
   proc chpl_build_low_bounded_range(low: bool)
     return new range(low=low);
+  pragma "last resort"
   proc chpl_build_low_bounded_range(low) {
     compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
   }
@@ -296,6 +299,7 @@ module ChapelRange {
     return new range(high=high);
   proc chpl_build_high_bounded_range(high: bool)
     return new range(high=high);
+  pragma "last resort"
   proc chpl_build_high_bounded_range(high) {
     compilerError("Ranges defined using bounds of type '" + high.type:string + "' are not currently supported");
   }
@@ -1210,12 +1214,14 @@ operator :(r: range(?), type t: range(?)) {
     return this + offset;
 
   pragma "no doc"
+  pragma "last resort"
   inline proc range.translate(i)
   {
     compilerError("offsets must be of integral type");
   }
 
   pragma "no doc"
+  pragma "last resort"
   inline proc range.translate(offset: integral) where chpl__singleValIdxType(idxType) {
     compilerError("can't apply '.translate()' to a range whose 'idxType' only has one value");
 
@@ -1258,6 +1264,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   pragma "no doc"
+  pragma "last resort"
   proc range.expand(offset: integral) where chpl__singleValIdxType(idxType)
   {
     compilerError("can't apply '.expand()' to a range whose 'idxType' only has one value");
@@ -1276,6 +1283,7 @@ operator :(r: range(?), type t: range(?)) {
 
   // Return an interior portion of this range.
   pragma "no doc"
+  pragma "last resort"
   proc range.interior(offset: integral)
     where boundedType != BoundedRangeType.bounded
   {
@@ -1332,6 +1340,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   pragma "no doc"
+  pragma "last resort"
   proc range.exterior(offset: integral)
     where boundedType != BoundedRangeType.bounded
   {
@@ -1381,6 +1390,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   pragma "no doc"
+  pragma "last resort"
   proc range.exterior(offset: integral) where chpl__singleValIdxType(idxType)
   {
     compilerError("can't apply '.exterior()' to a range whose 'idxType' only has one value");
@@ -1435,6 +1445,13 @@ operator :(r: range(?), type t: range(?)) {
                      r.aligned);
   }
 
+  // TODO can this be removed?
+  pragma "no doc"
+  inline operator +=(ref r: range(?e, ?b, ?s), offset: integral)
+  {
+    r = r + offset;
+  }
+
   pragma "no doc"
   inline operator +(i:integral, r: range(?e,?b,?s))
     return r + i;
@@ -1450,6 +1467,13 @@ operator :(r: range(?), type t: range(?)) {
                      r.stride : strType,
                      chpl__idxToInt(r.alignment)-i,
                      r.aligned);
+  }
+
+  // TODO can this be removed?
+  pragma "no doc"
+  inline operator -=(ref r: range(?e, ?b, ?s), offset: integral)
+  {
+    r = r - offset;
   }
 
   inline proc chpl_check_step_integral(step) {
@@ -1795,6 +1819,7 @@ operator :(r: range(?), type t: range(?)) {
   // If the argument n is negative, the new range contains
   // the last abs(n) elements in the existing range.
 
+  pragma "last resort"
   proc chpl_count_help(r:range(?), i)
     where r.boundedType == BoundedRangeType.boundedNone
   {
@@ -2050,6 +2075,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // case for when low and high aren't compatible types and can't be coerced
+  pragma "last resort"
   iter chpl_direct_range_iter(low, high) {
     chpl_build_bounded_range(low, high);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
@@ -2158,12 +2184,14 @@ operator :(r: range(?), type t: range(?)) {
 
 
   // cases for when stride isn't valid
+  pragma "last resort"
   iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   int(w):string, " using a step of type ",
                   stride.type:string);
   }
 
+  pragma "last resort"
   iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   uint(w):string, " using a step of type ",
@@ -2171,6 +2199,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // case for when low and high aren't compatible types and can't be coerced
+  pragma "last resort"
   iter chpl_direct_strided_range_iter(low, high, stride) {
     chpl_build_bounded_range(low, high, stride);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
@@ -2216,6 +2245,7 @@ operator :(r: range(?), type t: range(?)) {
     for i in r#count do yield i;
   }
 
+  pragma "last resort"
   iter chpl_direct_counted_range_iter(low, count) {
     chpl_build_low_bounded_range(low);  // generate normal error, if possible
     // otherwise, fall back to this one:
