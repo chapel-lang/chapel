@@ -39,7 +39,7 @@ namespace uast {
   \endrst
 
   The type alias 'T' stores the function signature for a procedure
-  that takes two ints and returns an int. 
+  that takes two ints and returns an int.
 */
 class FunctionSignature final : public AstNode {
  public:

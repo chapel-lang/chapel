@@ -49,7 +49,7 @@ namespace uast {
 
     x = foo; // OK, the names of T's formals are not specified.
     x = bar; // OK, the names of T's formals are not specified.
-    
+
   \endrst
 
   Because the formals of 'T' are anonymous, the corresponding formal
