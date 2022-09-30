@@ -293,8 +293,9 @@ static Expr* convertToChplType(ModuleSymbol* module,
       INT_ASSERT(type && "Could not get enum integer type pointer");
     }
 
-    if (type->isVoidType())
-      return NULL;
+    if (type->isVoidType()) {
+      return new SymExpr(dtVoid->symbol);
+    }
 
     // handle numeric types
 

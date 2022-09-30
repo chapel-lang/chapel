@@ -38,6 +38,7 @@ AstNode::~AstNode() {
 bool AstNode::mayContainStatements(AstTag tag) {
   switch (tag) {
     // cannot contain Chapel statements
+    case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
     case asttags::Attributes:
@@ -50,6 +51,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::EmptyStmt:
     case asttags::ErroneousExpression:
     case asttags::ExternBlock:
+    case asttags::FunctionSignature:
     case asttags::Identifier:
     case asttags::Import:
     case asttags::Include:

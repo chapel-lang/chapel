@@ -231,9 +231,10 @@ struct Converter {
 
   const char* convertLinkageNameAstr(const uast::Decl* node) {
     if (auto linkageName = node->linkageName()) {
-      if (auto linkageStr = linkageName->toStringLiteral()) {
-        return astr(linkageStr->str());
-      }
+      auto linkageStr = linkageName->toStringLiteral();
+      INT_ASSERT(linkageStr);
+      auto ret = astr(linkageStr->str());
+      return ret;
     }
 
     return nullptr;
@@ -2480,22 +2481,24 @@ struct Converter {
             name == USTR("<<="));
   }
 
+  const char* createLambdaName(void) {
+    static const int maxDigits = 100;
+    static unsigned int nextId = 0;
+    char buf[maxDigits];
+
+    if ((nextId + 1) == 0) INT_FATAL("Overflow for lambda ID number");
+
+    // Use sprintf to prevent buffer overflow if there are too many lambdas.
+    int n = snprintf(buf, maxDigits, "chpl_lambda_%i", nextId++);
+    if (n > (int) maxDigits) INT_FATAL("Too many lambdas.");
+
+    auto ret = astr(buf);
+    return ret;
+  }
+
   const char* convertFunctionNameAndAstr(UniqueString name,
                                          uast::Function::Kind kind) {
-
-    if (kind == uast::Function::LAMBDA) {
-      static unsigned int nextId = 0;
-      char buffer[100];
-
-      /*
-       Use sprintf to prevent buffer overflow if there are too many lambdas
-       */
-      if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
-        INT_FATAL("Too many lambdas.");
-      }
-
-      return astr(buffer);
-    }
+    if (kind == uast::Function::LAMBDA) return createLambdaName();
 
     const char* ret = nullptr;
     if (name == USTR("by")) {
@@ -2557,6 +2560,25 @@ struct Converter {
     return callExpr;
   }
 
+  // build up the userString as in old parser
+  // needed to match up some error outputs
+  // NOTE: parentheses may have been discarded from the original user
+  // declaration, and if so, we are not able to reconstruct them at
+  // this time
+  const char* constructUserString(const uast::Function* node) {
+    std::stringstream ss;
+    printFunctionSignature(ss, node);
+    auto ret = astr(ss.str());
+    return ret;
+  }
+
+  const char* constructUserString(const uast::FunctionSignature* node) {
+    std::stringstream ss;
+    printFunctionSignature(ss, node);
+    auto ret = astr(ss.str());
+    return ret;
+  }
+
   FnSymbol* convertFunction(const uast::Function* node, const char* comment) {
     // Decide if we want to resolve this function
     bool shouldResolveFunction = shouldResolve(node);
@@ -2591,14 +2613,7 @@ struct Converter {
     if (resolvedFn)
       noteConvertedFn(resolvedFn->signature(), fn);
 
-    // build up the userString as in old parser
-    // needed to match up some error outputs
-    // NOTE:
-    // parentheses may have been discarded from the original user declaration,
-    // and if so, we are not able to reconstruct them at this time
-    std::stringstream ss;
-    printFunctionSignature(ss, node);
-    fn->userString = astr(ss.str());
+    fn->userString = constructUserString(node);
 
     attachSymbolAttributes(node, fn);
     attachSymbolVisibility(node, fn);
@@ -2711,9 +2726,6 @@ struct Converter {
     RetTag retTag = convertRetTag(node->returnIntent());
 
     if (node->kind() == uast::Function::ITER) {
-      // TODO (dlongnecke): Move me to new frontend!
-      if (fn->hasFlag(FLAG_EXTERN))
-        USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
       fn->addFlag(FLAG_ITERATOR_FN);
 
     } else if (node->kind() == uast::Function::OPERATOR) {
@@ -2725,15 +2737,6 @@ struct Converter {
 
     } else if (node->kind() == uast::Function::LAMBDA) {
       fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
-
-      // TODO: move these to new frontend if they continue
-      // to be relevant as FCFs are improved.
-      if (retTag == RET_REF || retTag == RET_CONST_REF)
-        USR_FATAL(fn, "'ref' return types are not allowed in lambdas");
-      if (retTag == RET_PARAM)
-        USR_FATAL(fn, "'param' return types are not allowed in lambdas");
-      if (retTag == RET_TYPE)
-        USR_FATAL(fn, "'type' return types are not allowed in lambdas");
     }
 
     Expr* retType = nullptr;
@@ -2765,15 +2768,12 @@ struct Converter {
 
     BlockStmt* body = nullptr;
 
-    if (node->body() && node->linkage() != uast::Decl::EXTERN) {
+    if (node->body()) {
+      INT_ASSERT(node->linkage() != uast::Decl::EXTERN);
 
       // TODO: What about 'proc foo() return 0;'?
       auto style = uast::BlockStyle::EXPLICIT;
       body = createBlockWithStmts(node->stmts(), style);
-    } else {
-      if (node->numStmts()) {
-        USR_FATAL_CONT("Extern functions cannot have a body");
-      }
     }
 
     setupFunctionDecl(fn, retTag, retType, node->throws(),
@@ -2785,6 +2785,10 @@ struct Converter {
     if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
       Expr* linkageExpr = convertExprOrNull(node->linkageName());
+
+      // This thing sets the 'cname' if it's a string literal, attaches
+      // some flags, sets the return type to 'void' if no type is
+      // specified, and attaches a dummy formal for the C name (?).
       setupExternExportFunctionDecl(linkageFlag, linkageExpr, fn);
     }
 
@@ -2800,21 +2804,161 @@ struct Converter {
     return fn;
   }
 
-  Expr* visit(const uast::Function* node) {
-    auto comment = consumeLatestComment();
-    FnSymbol* fn = convertFunction(node, comment);
+  // TODO: Wire up the resolution/scope-resolve stuff as for functions.
+  FnSymbol* convertFunctionSignature(const uast::FunctionSignature* node) {
+    FnSymbol* fn = new FnSymbol(nullptr);
 
-    // For lambdas, return a DefExpr instead of a BlockStmt
-    // containing a DefExpr because this is the pattern expected
-    // by the production compiler.
-    if (node->kind() == uast::Function::LAMBDA) {
-      // leaves the BlockStmt ret and other DefExpr to be GC'd
-      DefExpr* def = new DefExpr(fn);
-      return def;
+    fn->userString = constructUserString(node);
+
+    if (node->isParenless()) fn->addFlag(FLAG_NO_PARENS);
+    if (node->thisFormal() != nullptr) {
+      fn->addFlag(FLAG_METHOD);
     }
 
-    // Otherwise, return a block containing a DefExpr
-    BlockStmt* ret = buildChapelStmt(new DefExpr(fn));
+    IntentTag thisTag = INTENT_BLANK;
+    ArgSymbol* convertedReceiver = nullptr;
+
+    // Add the formals
+    if (node->numFormals() > 0) {
+      for (auto decl : node->formals()) {
+        DefExpr* conv = nullptr;
+
+        // A "normal" formal.
+        if (auto formal = decl->toFormal()) {
+          conv = toDefExpr(convertAST(formal));
+          INT_ASSERT(conv);
+
+          // Special handling for implicit receiver formal.
+          if (formal->name() == USTR("this")) {
+            INT_ASSERT(convertedReceiver == nullptr);
+
+            thisTag = convertFormalIntent(formal->intent());
+
+            convertedReceiver = toArgSymbol(conv->sym);
+            INT_ASSERT(convertedReceiver);
+
+            conv->sym->addFlag(FLAG_ARG_THIS);
+
+            if (thisTag == INTENT_TYPE) {
+              setupTypeIntentArg(convertedReceiver);
+            }
+          }
+
+        // A varargs formal.
+        } else if (auto formal = decl->toVarArgFormal()) {
+          INT_ASSERT(formal->name() != USTR("this"));
+          conv = toDefExpr(convertAST(formal));
+          INT_ASSERT(conv);
+
+        // A tuple decl, where components are formals or tuple decls.
+        } else if (auto formal = decl->toTupleDecl()) {
+          auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
+          IntentTag tag = convertFormalIntent(castIntent);
+          BlockStmt* tuple = convertTupleDeclComponents(formal);
+          INT_ASSERT(tuple);
+
+          Expr* type = convertExprOrNull(formal->typeExpression());
+          Expr* init = convertExprOrNull(formal->initExpression());
+
+          // TODO: Move this specialization into visitor? We can just
+          // detect if components are formals.
+          conv = buildTupleArgDefExpr(tag, tuple, type, init);
+          INT_ASSERT(conv);
+        } else if (auto anon = decl->toAnonFormal()) {
+          conv = toDefExpr(convertAST(anon));
+          INT_ASSERT(conv);
+        } else {
+          INT_FATAL("Not handled yet!");
+        }
+
+        // Attaches def to function's formal list.
+        if (conv) {
+          buildFunctionFormal(fn, conv);
+          // Note the formal is converted so we can wire up SymExprs later
+          noteConvertedSym(decl, conv->sym);
+        }
+      }
+    }
+
+    // Should not be possible - other cases should be using the
+    // 'convertFunction' routine for now, even if they store
+    // the info using a signature under the covers.
+    INT_ASSERT(node->kind() == uast::Function::PROC);
+
+    // The name is not relevant as this will not participate in
+    // function resolution in the typical way - this symbol is only
+    // a vehicle for its formals and return type.
+    // auto convName = astr(uast::Function::kindToString(node->kind()));
+    fn->cname = nullptr;
+
+    if (convertedReceiver) {
+      fn->thisTag = thisTag;
+      fn->_this = convertedReceiver;
+      fn->setMethod(true);
+      auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+      fn->insertFormalAtHead(new DefExpr(mt));
+    }
+
+    RetTag retTag = convertRetTag(node->returnIntent());
+    auto nodeRetType = node->returnType();
+    Expr* retType = (nodeRetType && nodeRetType->isBracketLoop())
+            ? convertArrayType(nodeRetType->toBracketLoop())
+            : convertExprOrNull(nodeRetType);
+
+    // TODO: I'd like to get rid of these build calls (if Michael
+    // has not already gotten rid of them on main), as there's not
+    // too much in them.
+    setupFunctionDecl(fn, retTag, retType, node->throws(),
+                      /*whereClause*/ nullptr,
+                      /*lifetimeConstraints*/ nullptr,
+                      /*body*/ nullptr,
+                      /*docs*/ nullptr);
+
+    return fn;
+  }
+
+  Expr* visit(const uast::AnonFormal* node) {
+    auto intent = convertFormalIntent(node->intent());
+    Expr* typeExpr = nullptr;
+
+    if (auto te = node->typeExpression()) {
+      typeExpr = convertAST(te);
+      INT_ASSERT(typeExpr);
+    }
+
+    auto convFormal = new ArgSymbol(intent, nullptr, dtUnknown, typeExpr);
+    convFormal->addFlag(FLAG_ANONYMOUS_FORMAL);
+
+    auto ret = new DefExpr(convFormal);
+    return ret;
+  }
+
+  Expr* visit(const uast::FunctionSignature* node) {
+    FnSymbol* fn = convertFunctionSignature(node);
+    fn->addFlag(FLAG_ANONYMOUS_FN);
+    auto ret = new DefExpr(fn);
+    return ret;
+  }
+
+  Expr* visit(const uast::Function* node) {
+    auto comment = consumeLatestComment();
+    FnSymbol* fn = nullptr;
+    Expr* ret = nullptr;
+
+    fn = convertFunction(node, comment);
+
+    // For anonymous functions, return a DefExpr instead of a BlockStmt
+    // containing a DefExpr because this is the pattern expected
+    // by the production compiler. Otherwise, return a block containing
+    // a DefExpr.
+    if (node->isAnonymous()) {
+      DefExpr* def = new DefExpr(fn);
+      ret = def;
+    } else {
+      BlockStmt* stmt = buildChapelStmt(new DefExpr(fn));
+      ret = stmt;
+    }
+
     return ret;
   }
 
@@ -3232,7 +3376,6 @@ struct Converter {
       USR_FATAL(varSym, "external params are not supported");
     }
 
-    // TODO (dlongnecke): Should be sanitized by the new parser.
     if (useLinkageName && node->linkageName()) {
       INT_ASSERT(linkageFlag != FLAG_UNKNOWN);
       varSym->cname = convertLinkageNameAstr(node);

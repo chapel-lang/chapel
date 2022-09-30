@@ -385,6 +385,38 @@ struct ChplSyntaxVisitor {
     }
   }
 
+  void printFunctionHelper(const FunctionSignature* node) {
+
+    // Print the receiver.
+    if (auto thisFormal = node->thisFormal()) {
+      if (thisFormal->intent () != Formal::DEFAULT_INTENT) {
+        ss_ << kindToString(node->thisFormal()->storageKind()) << " ";
+      }
+
+      if (auto te = thisFormal->typeExpression()) {
+        if (auto ident = te->toIdentifier()) {
+          ss_ << ident->name().str();
+        } else {
+          ss_ << "(";
+          te->dispatch<void>(*this);
+          ss_ << ")";
+        }
+
+        ss_ << ".";
+      }
+    }
+
+    // Print the formals (not including the receiver).
+    int numThisFormal = node->thisFormal() ? 1 : 0;
+    int nFormals = node->numFormals() - numThisFormal;
+    if (nFormals == 0) {
+      if (!node->isParenless()) ss_ << "()";
+    } else {
+      auto it = node->formals();
+      interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
+    }
+  }
+
   /*
    * Customized method to print just the function signature as required by
    * the old parser's `userSignature` field.
@@ -770,6 +802,16 @@ struct ChplSyntaxVisitor {
     printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
   }
 
+  void visit(const AnonFormal* node) {
+    if (node->intent() != Formal::DEFAULT_INTENT) {
+      ss_ << kindToString((IntentList) node->intent()) << " ";
+    }
+
+    if (auto te = node->typeExpression()) {
+      typeExpressionHelper(te);
+    }
+  }
+
   void visit(const Formal* node) {
     if (node->attributes()) ss_ << pragmaFlagsToString(node);
 
@@ -835,6 +877,29 @@ struct ChplSyntaxVisitor {
     }
     else
       ss_ << ";";
+  }
+
+  void visit(const chpl::uast::FunctionSignature* node) {
+    // Function Kind (proc, iter, ...)
+    ss_ << kindToString(node->kind());
+    ss_ << " ";
+
+    printFunctionHelper(node);
+
+    // Return Intent
+    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+      ss_ << " " << kindToString((IntentList) node->returnIntent());
+    }
+
+    // Return type
+    if (const AstNode* e = node->returnType()) {
+      typeExpressionHelper(e);
+    }
+    ss_ << " ";
+
+    // where clause
+    // throws
+    if (node->throws()) ss_ << "throws ";
   }
 
   void visit(const chpl::uast::Identifier* node) {
@@ -1307,6 +1372,19 @@ namespace chpl {
     if (os.fail()) {
       os.clear();
     }
+    os.flush();
+  }
+
+  void printFunctionSignature(std::ostream& os,
+                              const FunctionSignature* node) {
+    auto v = ChplSyntaxVisitor();
+    v.visit(node);
+    // when using << with ss_.rdbuf(), if nothing gets added to os, then
+    // os goes into fail state
+    // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
+    // check for failbit and reset
+    os << v.ss_.rdbuf();
+    if (os.fail()) os.clear();
     os.flush();
   }
 

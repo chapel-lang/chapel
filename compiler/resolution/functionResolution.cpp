@@ -37,6 +37,7 @@
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "firstClassFunctions.h"
 #include "fixupExports.h"
 #include "forallOptimizations.h"
 #include "ForallStmt.h"
@@ -9827,6 +9828,37 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
   }
 }
 
+// TODO: For now, let's just produce the wrapper class type for this.
+static Expr* resolveAnonFunctionType(DefExpr* def) {
+  auto fn = toFnSymbol(def->sym);
+  auto t = fcfWrapperSuperTypeFromFnType(fn);
+  auto ret = new SymExpr(t->symbol);
+  return ret;
+}
+
+// TODO: Will probably need to reseat the original function as well.
+static Expr* resolveAnonFunctionExpr(DefExpr* def) {
+  auto fn = toFnSymbol(def->sym);
+  auto ret = fcfWrapperInstanceFromFnExpr(fn);
+  return ret;
+}
+
+static Expr* resolveAnonFunction(DefExpr* def) {
+  if (def->id == breakOnResolveID) gdbShouldBreakHere();
+
+  auto fn = toFnSymbol(def->sym);
+  INT_ASSERT(fn);
+  INT_ASSERT(fn->hasFlag(FLAG_ANONYMOUS_FN));
+  Expr* ret = nullptr;
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) {
+    ret = resolveAnonFunctionType(def);
+  } else {
+    ret = resolveAnonFunctionExpr(def);
+  }
+  def->replace(ret);
+  return ret;
+}
+
 /************************************* | **************************************
 *                                                                             *
 * resolveExpr(expr) resolves 'expr' and manages the callStack.                *
@@ -9883,10 +9915,14 @@ Expr* resolveExpr(Expr* expr) {
     }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
-    resolveConstrainedGenericSymbol(def->sym, false);
-
-    retval = foldTryCond(postFold(def));
-
+    Expr* fold = def;
+    if (isConstrainedGenericSymbol(def->sym)) {
+      resolveConstrainedGenericSymbol(def->sym, false);
+    } else if (auto fn = toFnSymbol(def->sym)) {
+      if (fn->hasFlag(FLAG_ANONYMOUS_FN)) fold = resolveAnonFunction(def);
+      INT_ASSERT(!def->init);
+    }
+    retval = foldTryCond(postFold(fold));
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 

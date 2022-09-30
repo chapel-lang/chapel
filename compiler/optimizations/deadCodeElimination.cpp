@@ -471,11 +471,9 @@ void deadBlockElimination()
 {
   deadBlockCount = 0;
 
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    if (!isAlive(fn))
-      continue;
-    deadBlockElimination(fn);
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!isAlive(fn)) continue;
+    if (!fn->hasFlag(FLAG_NO_FN_BODY)) deadBlockElimination(fn);
   }
 
   if (fReportDeadBlocks)

@@ -53,7 +53,7 @@ class Function final : public NamedDecl {
     PROC,
     ITER,
     OPERATOR,
-    LAMBDA,
+    LAMBDA
   };
 
   enum ReturnIntent {
@@ -159,6 +159,7 @@ class Function final : public NamedDecl {
       for (auto decl : formals()) {
         bool isAcceptableDecl = decl->isFormal() || decl->isVarArgFormal() ||
                                 decl->isTupleDecl();
+        std::ignore = isAcceptableDecl;
         assert(isAcceptableDecl);
       }
     #endif
@@ -219,6 +220,11 @@ class Function final : public NamedDecl {
   bool throws() const { return this->throws_; }
   bool isPrimaryMethod() const { return primaryMethod_; }
   bool isParenless() const { return parenless_; }
+
+  bool isAnonymous() const {
+    auto ret = (kind() == LAMBDA || name() == "proc");
+    return ret;
+  }
 
   /**
    Return a way to iterate over the formals, including the method
@@ -372,8 +378,11 @@ class Function final : public NamedDecl {
     assert(b != nullptr);
     return b->stmt(i);
   }
-};
 
+  static std::string returnIntentToString(ReturnIntent intent);
+
+  static std::string kindToString(Kind kind);
+};
 
 } // end namespace uast
 
@@ -397,22 +406,7 @@ template<> struct stringify<uast::Function::ReturnIntent> {
   void operator()(std::ostream& streamOut,
                   StringifyKind stringKind,
                   const uast::Function::ReturnIntent& stringMe) const {
-    std::string intent;
-    switch ((uast::IntentList) stringMe)  {
-    case uast::IntentList::CONST_INTENT: intent = "const"; break;
-    case uast::IntentList::VAR: intent = "var"; break;
-    case uast::IntentList::CONST_VAR: intent = "const var"; break;
-    case uast::IntentList::CONST_REF: intent = "const ref"; break;
-    case uast::IntentList::REF: intent = "ref"; break;
-    case uast::IntentList::IN: intent = "in"; break;
-    case uast::IntentList::CONST_IN: intent = "const in"; break;
-    case uast::IntentList::OUT: intent = "out"; break;
-    case uast::IntentList::INOUT: intent = "inout"; break;
-    case uast::IntentList::PARAM: intent = "param"; break;
-    case uast::IntentList::TYPE: intent = "type"; break;
-    default: intent = "uast:Function::ReturnIntent not recognized";
-    }
-    streamOut << intent;
+    streamOut << uast::Function::returnIntentToString(stringMe);
   }
 };
 
@@ -420,15 +414,7 @@ template<> struct stringify<uast::Function::Kind> {
   void operator()(std::ostream& streamOut,
                   StringifyKind stringKind,
                   const uast::Function::Kind& stringMe) const {
-  std::string kind;
-  switch (stringMe) {
-    case uast::Function::Kind::PROC: kind = "proc"; break;
-    case uast::Function::Kind::ITER:  kind = "iter"; break;
-    case uast::Function::Kind::OPERATOR:  kind = "operator"; break;
-    case uast::Function::Kind::LAMBDA:  kind = "lambda"; break;
-    default: kind = "uast::Function::Kind not recognized";
-  }
-    streamOut << kind;
+    streamOut << uast::Function::kindToString(stringMe);
   }
 };
 /// \endcond DO_NOT_DOCUMENT
