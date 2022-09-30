@@ -735,35 +735,46 @@ module ChapelBase {
   //   incorrectness; it is used to give better error messages for
   //   promotion of && and ||
   //
+  // These are written with two generic functions
+  // to avoid problems with preference between implicitly
+  // converting and using a generic fall-back.
 
-  inline proc _cond_test(x: borrowed object?) return x != nil;
-  inline proc _cond_test(x: bool) return x;
-  inline proc _cond_test(x: int(?w)) return x != 0;
-  inline proc _cond_test(x: uint(?w)) return x != 0;
-  inline proc _cond_test(x: sync(?t)) {
-    compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
-    return _cond_test(x.readFE());
+  inline proc _cond_test(param x: ?t) param : bool {
+    if isCoercible(t, bool) {
+      return x;
+    } else if (isCoercible(t, int) || isCoercible(t, uint)) {
+      return x != 0:x.type;
+    } else {
+      compilerError("invalid type ", t:string, " used in if or while condition");
+    }
   }
-  inline proc _cond_test(x: single(?t)) {
-    compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
-    return _cond_test(x.readFF());
-  }
 
-  inline proc _cond_test(param x: bool) param return x;
-  inline proc _cond_test(param x: integral) param return x != 0:x.type;
-  inline proc _cond_test(x: c_ptr) return x != c_nil;
-
-  pragma "last resort"
-  inline proc _cond_test(x) {
-    if !( isSubtype(x.type, _iteratorRecord) ) {
+  inline proc _cond_test(x: ?t): bool {
+    if isCoercible(t, borrowed object?) {
+      return x != nil;
+    } else if isCoercible(t, bool) {
+      return x;
+    } else if isCoercible(t, int) || isCoercible(t, uint) {
+      return x != 0;
+    } else if isSubtype(t, sync(?)) {
+      compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
+      return _cond_test(x.readFE());
+    } else if isSubtype(t, single(?)) {
+      compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
+      return _cond_test(x.readFF());
+    } else if isSubtype(t, c_ptr) || isSubtype(t, c_void_ptr) {
+      return x != nil;
+    } else {
       use Reflection;
       if canResolveMethod(x, "chpl_cond_test_method") {
         return x.chpl_cond_test_method();
       } else {
-        compilerError("type '", x.type:string, "' used in if or while condition");
+        if isSubtype(t, _iteratorRecord) {
+          compilerError("iterator or promoted expression iterator used in if or while condition");
+        } else {
+          compilerError("type '", x.type:string, "' used in if or while condition");
+        }
       }
-    } else {
-      compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
     }
   }
 
@@ -771,6 +782,7 @@ module ChapelBase {
   proc _cond_invalid(x: bool) param return false;
   proc _cond_invalid(x: int) param return false;
   proc _cond_invalid(x: uint) param return false;
+  pragma "last resort"
   proc _cond_invalid(x) param return true;
 
   //
@@ -1785,7 +1797,7 @@ module ChapelBase {
   pragma "compiler generated"
   //pragma "last resort" not last resort to avoid change in behavior
   pragma "auto destroy fn"
-  inline proc chpl__autoDestroy(x: object) { }
+  inline proc chpl__autoDestroy(x: borrowed object) { }
 
   pragma "compiler generated"
   pragma "last resort"
@@ -1908,8 +1920,18 @@ module ChapelBase {
   inline operator +=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("+=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator +=(ref lhs, rhs) {
+  // this one is just here so we can use isNumericType below
+  inline operator +=(ref lhs:complex(?w), rhs:complex(w)) {
+    lhs = lhs + rhs;
+  }
+  // This function shouldn't be 'last resort'
+  // because if it is, that would interfere with things like
+  //  A += A or A += [i in A.domain] A[i]
+  // due to the existing array += eltType overloads & those being promoted.
+  // So, use a where clause so that the overloads above are used if
+  // they are available.
+  inline operator +=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs + rhs;
   }
 
@@ -1925,8 +1947,12 @@ module ChapelBase {
   inline operator -=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("-=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator -=(ref lhs, rhs) {
+  // this one is just here so we can use isNumericType below
+  inline operator -=(ref lhs:complex(?w), rhs:complex(w)) {
+    lhs = lhs - rhs;
+  }
+  inline operator -=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs - rhs;
   }
 
@@ -1939,8 +1965,11 @@ module ChapelBase {
   inline operator *=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("*=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator *=(ref lhs, rhs) {
+  private proc isIntegralOrRealType(type t) param {
+    return isIntegralType(t) || isRealType(t);
+  }
+  inline operator *=(ref lhs, rhs)
+  where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs * rhs;
   }
 
@@ -1959,8 +1988,8 @@ module ChapelBase {
   inline operator /=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("/=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator /=(ref lhs, rhs) {
+  inline operator /=(ref lhs, rhs)
+  where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs / rhs;
   }
 
@@ -1979,8 +2008,8 @@ module ChapelBase {
   inline operator %=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("%=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator %=(ref lhs, rhs) {
+  inline operator %=(ref lhs, rhs)
+  where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs % rhs;
   }
 
@@ -1997,8 +2026,8 @@ module ChapelBase {
   inline operator &=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("&=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator &=(ref lhs, rhs) {
+  inline operator &=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs & rhs;
   }
 
@@ -2009,8 +2038,8 @@ module ChapelBase {
   inline operator |=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("|=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator |=(ref lhs, rhs) {
+  inline operator |=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs | rhs;
   }
 
@@ -2020,8 +2049,8 @@ module ChapelBase {
   inline operator ^=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("^=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator ^=(ref lhs, rhs) {
+  inline operator ^=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs ^ rhs;
   }
 
@@ -2031,8 +2060,8 @@ module ChapelBase {
   inline operator >>=(ref lhs:uint(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator >>=(ref lhs, rhs) {
+  inline operator >>=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs >> rhs;
   }
 
@@ -2042,12 +2071,14 @@ module ChapelBase {
   inline operator <<=(ref lhs:uint(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
-  pragma "last resort"
-  inline operator <<=(ref lhs, rhs) {
+  inline operator <<=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs << rhs;
   }
 
+  // TODO: can we remove last resort on this?
   /* swap operator */
+  pragma "last resort"
   pragma "ignore transfer errors"
   inline operator <=>(ref lhs, ref rhs) {
     // It's tempting to make `tmp` a `const`, but it causes problems

@@ -2754,7 +2754,10 @@ module ChapelArray {
 
   //
   // op= overloads for array/array pairs
-  //
+  // these help cases like A += A work correctly
+  // TODO but they do not work for A += [i in 1..3] A[i]
+  // because that calls the above array/scalar version
+  /*
   pragma "no doc"
   operator +=(a: [], b: []) {
     forall (x,y) in zip(a,b) do
@@ -2819,8 +2822,7 @@ module ChapelArray {
   operator <<=(a: [], b: []) {
     forall (x,y) in zip(a,b) do
       x <<= y;
-  }
-
+  }*/
 
   //
   // Swap operator for arrays

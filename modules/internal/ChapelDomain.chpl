@@ -294,6 +294,7 @@ module ChapelDomain {
   proc isAssociativeDom(d: domain) param return d.isAssociative();
 
   proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
+  pragma "last resort"
   proc chpl_isAssociativeDomClass(dc) param return false;
 
   deprecated "isSparseDom is deprecated - please use isSparse method on domain"
