@@ -4865,10 +4865,12 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
 }
 
 /*
-  Read the remaining contents of the Channel into the specified type
+  Read the remaining contents of the channel into an instance of the specified type
 
-  :arg t: the type of data to read, which must be ``string`` or ``bytes``. Defaults to ``string`` if not specified.
-  :returns: the data read from the channel
+  :arg t: the type to read into; must be ``string`` or ``bytes``. Defaults to ``string`` if not specified.
+  :returns: the contents of the channel as a ``t``
+
+  :throws SystemError: Thrown if data could not be read from the channel
 */
 proc _channel.readAll(type t=string): t throws
   where t==string || t==bytes
@@ -4889,13 +4891,15 @@ proc _channel.readAll(type t=string): t throws
 }
 
 /*
-  Read the remaining contents of the Channel into a ``string``.
+  Read the remaining contents of the channel into a ``string``.
 
-  Note that the contents of the current ``string`` are overwritten.
+  Note that any existing contents of the ``string`` are overwritten.
 
-  :arg s: the ``string`` to write into
-  :returns: the number of codepoints that were read into ``s``
+  :arg s: the ``string`` to read into
+  :returns: the number of codepoints that were stored in ``s``
   :rtype: int
+
+  :throws SystemError: Thrown if data could not be read from the channel
 */
 proc _channel.readAll(ref s: string): int throws {
   if this.writing then compilerError("attempt to read on write-only channel");
@@ -4910,13 +4914,15 @@ proc _channel.readAll(ref s: string): int throws {
 }
 
 /*
-  Read the remaining contents of the Channel into a ``bytes``.
+  Read the remaining contents of the channel into a ``bytes``.
 
-  Note that the contents of the current ``bytes`` are overwritten.
+  Note that any existing of the ``bytes`` are overwritten.
 
-  :arg b: the ``bytes`` to write into
-  :returns: the number of bytes that were read into ``b``
+  :arg b: the ``bytes`` to read into
+  :returns: the number of bytes that were stored in ``b``
   :rtype: int
+
+  :throws SystemError: Thrown if data could not be read from the channel
 */
 proc _channel.readAll(ref b: bytes): int throws {
   if this.writing then compilerError("attempt to read on write-only channel");
@@ -4931,18 +4937,19 @@ proc _channel.readAll(ref b: bytes): int throws {
 }
 
 /*
-  Read the remaining contents of the Channel into a an array of bytes.
+  Read the remaining contents of the channel into a an array of bytes.
 
   Note that this routine currently requires a 1D rectangular non-strided array.
+  Additionally, If the remaining contents of the channel exceed the size of
+  ``a``, then the first ``a.size`` bytes will be read into ``a``, and then an
+  ``EofError`` will be thrown.
 
-  :arg a: the array of bytes to write into.
-  :returns: the number of bytes that were read into ``a``
+  :arg a: the array of bytes to read into
+  :returns: the number of bytes that were stored in ``a``
   :rtype: int
 
-  :throws EofError: Thrown if the channel's contents do not fit in ``a``
-
-  .. note:
-    `a` must be one dimensional and confined to a single `locale`
+  :throws IoError: Thrown if the channel's contents do not fit into ``a``
+  :throws SystemError: Thrown if data could not be read from the channel
 */
 proc _channel.readAll(ref a: [?d] ?t): int throws
   where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
@@ -4961,25 +4968,30 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
       got = qio_channel_read_byte(false, this._channel_internal);
 
       if got == -EEOF {
-        // ran out of room, throw
-        throw new owned EofError(
-          "contents of channel exceeded capacity of provided array in 'channel.readAll'"
-        );
+        // reached EOF, stop reading
+        break;
       } else if got < 0 {
         // hit an IO error, throw
         try this._ch_ioerror((-got):errorCode, "in channel.readAll(ref a: [])");
       } else {
-        // store the byte
+        // got a byte, store it
         a[numRead] = got:t;
         numRead += 1;
       }
+    }
+
+    // if a is full, but we aren't at the EOF, throw
+    if numRead == bytesCapacity-1 && got != -EEOF {
+      throw new owned UnexpectedEofError(
+        "channel's contents exceeded capacity of bytes array in 'readAll'"
+      );
     }
   }
 
   return numRead;
 }
 
-// Helper method for readAll methods
+// Helper function for the (non-bytes-array) channel.readAll methods
 private proc readAllBytesOrString(ch: fileReader, ref out_var: ?t) : (errorCode, int) throws {
   var err     : errorCode = ENOERR,
       lenread : int(64);
@@ -5028,6 +5040,7 @@ private proc readAllBytesOrString(ch: fileReader, ref out_var: ?t) : (errorCode,
     }
   }
 
+  // reading the whole channel, so EOF isn't an error here
   if err == EEOF then err = ENOERR;
   return (err, lenread);
 }
