@@ -420,7 +420,7 @@ module IO {
       -- seems that we'd want some way to cache that...).
 */
 
-import SysBasic.{EFORMAT,fd_t,ENOERR,EEOF};
+import SysBasic.{EFORMAT,fd_t,ENOERR,EEOF,ESHORT};
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 import OS.POSIX.{EBADF};
 import OS.{errorCode};
@@ -4955,15 +4955,13 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
   where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
 {
   if this.writing then compilerError("attempt to read on write-only channel");
-
-  var numRead : int = 0;
+  var i = d.low;
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    const bytesCapacity = d.size;
     var got : int;
 
-    while numRead < bytesCapacity {
+    while d.contains(i) {
       // read a byte
       got = qio_channel_read_byte(false, this._channel_internal);
 
@@ -4975,20 +4973,30 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
         try this._ch_ioerror((-got):errorCode, "in channel.readAll(ref a: [])");
       } else {
         // got a byte, store it
-        a[numRead] = got:t;
-        numRead += 1;
+        a[i] = got:t;
+        i += 1;
       }
     }
 
-    // if a is full, but we aren't at the EOF, throw
-    if numRead == bytesCapacity-1 && got != -EEOF {
-      throw new owned UnexpectedEofError(
-        "channel's contents exceeded capacity of bytes array in 'readAll'"
-      );
+    // if a is full, but we haven't reached EOF, throw
+    if i-1 == d.high {
+      var has_more = false;
+
+      this._mark();
+      got = qio_channel_read_byte(false, this._channel_internal);
+      has_more = (got >= 0);
+      this._revert();
+
+      if has_more {
+         throw new owned IoError(
+          ESHORT:errorCode,
+          "channel's contents exceeded capacity of bytes array in 'readAll'"
+        );
+      }
     }
   }
 
-  return numRead;
+  return (i - d.low);
 }
 
 // Helper function for the (non-bytes-array) channel.readAll methods
