@@ -182,17 +182,16 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   wr.message("An implicit module named '",
              implicitModule->name(), "' is therefore being "
              "introduced to contain the file's contents.");
-  wr.message("The following statement is the first to be placed in the implict module");
+  wr.message("The following is the first file-scope statement:");
   wr.code(code);
 }
 
 void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   auto typeExpr = std::get<const uast::AstNode*>(info);
   auto type = std::get<types::QualifiedType>(info);
-  wr.heading(kind_, typeExpr, "Type expression produces a value while type was expected.");
+  wr.heading(kind_, typeExpr, "Type expression produces a ", type, " while a type was expected.");
   wr.message("In the following type expression:");
   wr.code(typeExpr, { typeExpr });
-  wr.message("The result of evaluating the expression is a ", type);
   // wr.message("Did you mean to use '.type'?");
 }
 
@@ -253,7 +252,7 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
   wr.message("In the following declaration:");
   wr.code(decl, { type, init });
   wr.message("the type expression has type '", typeExprType, "', while the "
-             "initialization expression has type '", initExprType, "'");
+             "initial value has type '", initExprType, "'");
 }
 
 void ErrorTupleDeclUnknownType::write(ErrorWriterBase& wr) const {
@@ -288,11 +287,12 @@ void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   auto stmt = std::get<const uast::AstNode*>(info);
   auto laterId = std::get<ID>(info);
-  wr.heading(kind_, stmt, "Statement uses a later variable, the type of which is not yet established.");
+  wr.heading(kind_, stmt, "Statement references a variable before it is defined.");
   wr.message("In the following statement:");
   wr.code(stmt);
-  wr.message("There is a reference to a variable declared later:");
+  wr.message("There is a reference to a variable defined later:");
   wr.code(laterId);
+  wr.message("Chapel doesn't allow references to variables before they are defined.");
 }
 
 void ErrorIncompatibleRangeBounds::write(ErrorWriterBase& wr) const {
