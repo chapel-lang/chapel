@@ -106,7 +106,7 @@ static void writeFile(std::ostream& oss, const Location& loc) {
 void ErrorWriter::writeHeading(ErrorBase::Kind kind, Location loc, const std::string& str) {
   if (outputFormat_ == DETAILED) {
     // In detailed mode, print some error decoration
-    oss_ << "--- ";
+    oss_ << "─── ";
   }
 
   setColor(kindColor(kind));
@@ -116,7 +116,9 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, Location loc, const std::st
   writeFile(oss_, loc);
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
-    oss_ << " ---" << std::endl;
+    oss_ << " ───" << std::endl;
+    // In detailed mode, the body is indented.
+    oss_  << "  ";
   } else {
     // We printed location, so add a separating colon.
     oss_ << ": ";
@@ -130,6 +132,9 @@ void ErrorWriter::writeNote(Location loc, const std::string& str) {
     oss_ << "  note in ";
     writeFile(oss_, loc);
     oss_ << ": ";
+  } else {
+    // In detailed mode, the body is indented.
+    oss_ << "  ";
   }
   oss_ << str << std::endl;
 }
@@ -163,7 +168,7 @@ void ErrorWriter::writeCode(const Location& location,
     ranges.push_back(std::make_pair(hlStart, hlEnd));
   }
 
-  size_t gutterSize = std::to_string(location.lastLine()).size();
+  size_t gutterSize = std::to_string(location.lastLine()).size() + 2;
   int lineNumber = location.firstLine();
 
   // printBlank(lineLength + 2);
@@ -182,7 +187,7 @@ void ErrorWriter::writeCode(const Location& location,
     bool highlight = std::any_of(ranges.begin(), ranges.end(), [&](auto range) {
       return i >= range.first && i < range.second;
     });
-    highlightString += highlight ? '^' : ' ';
+    highlightString += highlight ? "⎺" : " ";
     printHighlight = printHighlight || highlight;
 
     oss_ << str[i];

@@ -98,6 +98,10 @@ void Context::defaultReportError(Context* context, const ErrorBase* err) {
                    ErrorWriter::BRIEF,
                  context->currentTerminalSupportsColor_);
   err->write(ew);
+  if (context->detailedErrors) {
+    // Print an extra error separator
+    std::cerr << std::endl;
+  }
 }
 
 // unique'd strings are preceded by 4 bytes of length, gcMark and doNotCollectMark

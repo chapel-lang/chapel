@@ -313,6 +313,8 @@ class ErrorWriter : public ErrorWriterBase {
                     const std::string& message) override;
   void writeMessage(const std::string& message) override {
     if (outputFormat_ == DETAILED) {
+      // In detailed mode, the body is indented.
+      oss_  << "  ";
       oss_ << message << std::endl;
     }
   }
