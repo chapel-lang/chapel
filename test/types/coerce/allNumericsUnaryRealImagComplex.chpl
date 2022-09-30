@@ -19,11 +19,6 @@ proc f(x: complex(128)) {
   writeln("  f(", x.type:string, ")");
 }
 
-proc f(x) {
-  writeln("  f(generic)");
-}
-
-
 // next, call 'f' with all combinations of numeric types
 proc callF(type t1) {
   writef(" actual %-12s -> ", t1:string);

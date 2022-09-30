@@ -1,9 +1,8 @@
-allNumericsBinaryRealImagComplex-errors.chpl:28: In function 'callF':
-allNumericsBinaryRealImagComplex-errors.chpl:32: error: ambiguous call 'f(int(8), int(64))'
+allNumericsBinaryRealImagComplex-errors.chpl:23: In function 'callF':
+allNumericsBinaryRealImagComplex-errors.chpl:27: error: ambiguous call 'f(int(8), int(64))'
 allNumericsBinaryRealImagComplex-errors.chpl:1: note: candidates are: f(x: real(32), y: real(32))
 allNumericsBinaryRealImagComplex-errors.chpl:4: note:                 f(x: real(64), y: real(64))
 allNumericsBinaryRealImagComplex-errors.chpl:15: note:                 f(x: complex(64), y: complex(64))
 allNumericsBinaryRealImagComplex-errors.chpl:18: note:                 f(x: complex(128), y: complex(128))
-allNumericsBinaryRealImagComplex-errors.chpl:22: note:                 f(x, y)
-  allNumericsBinaryRealImagComplex-errors.chpl:48: called as callF(type t1 = int(8), type t2 = int(64)) from function 'callFVaryT2'
-  allNumericsBinaryRealImagComplex-errors.chpl:74: called as callFVaryT2(type t1 = int(8))
+  allNumericsBinaryRealImagComplex-errors.chpl:43: called as callF(type t1 = int(8), type t2 = int(64)) from function 'callFVaryT2'
+  allNumericsBinaryRealImagComplex-errors.chpl:69: called as callFVaryT2(type t1 = int(8))
