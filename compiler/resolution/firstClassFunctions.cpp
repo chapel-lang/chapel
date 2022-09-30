@@ -738,7 +738,7 @@ attachSuperThis(AggregateType* super,
   ret->insertFormalAtTail(receiver);
   ret->_this = receiver;
 
-  for (int i = 0; i < formals.size(); i++) {
+  for (size_t i = 0; i < formals.size(); i++) {
     auto& info = formals[i];
     std::ignore = info.name; // Assume all formals anonymous.
     std::string name;
