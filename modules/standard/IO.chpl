@@ -4865,7 +4865,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
 }
 
 /*
-  Read the entire contents of the Channel into the specified type
+  Read the remaining contents of the Channel into the specified type
 
   :arg t: the type of data to read, which must be ``string`` or ``bytes``. Defaults to ``string`` if not specified.
   :returns: the data read from the channel
@@ -4889,7 +4889,7 @@ proc _channel.readAll(type t=string): t throws
 }
 
 /*
-  Read the entire contents of the Channel into a ``string``.
+  Read the remaining contents of the Channel into a ``string``.
 
   Note that the contents of the current ``string`` are overwritten.
 
@@ -4910,7 +4910,7 @@ proc _channel.readAll(ref s: string): int throws {
 }
 
 /*
-  Read the entire contents of the Channel into a ``bytes``.
+  Read the remaining contents of the Channel into a ``bytes``.
 
   Note that the contents of the current ``bytes`` are overwritten.
 
@@ -4931,7 +4931,7 @@ proc _channel.readAll(ref b: bytes): int throws {
 }
 
 /*
-  Read the entire contents of the Channel into a an array of bytes.
+  Read the remaining contents of the Channel into a an array of bytes.
 
   Note that this routine currently requires a 1D rectangular non-strided array.
 
@@ -4979,7 +4979,7 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
   return numRead;
 }
 
-// Helper method for channel.readAll methods
+// Helper method for readAll methods
 private proc readAllBytesOrString(ch: fileReader, ref out_var: ?t) : (errorCode, int) throws {
   var err     : errorCode = ENOERR,
       lenread : int(64);
