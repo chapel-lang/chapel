@@ -352,7 +352,9 @@ static bool doLookupInImports(Context* context,
       bool named = is.lookupName(name, from);
       if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // mentioned in an except clause, so don't return it
-      } else if (named || is.kind() == VisibilitySymbols::ALL_CONTENTS) {
+      } else if (named
+          || is.kind() == VisibilitySymbols::ALL_CONTENTS
+          || is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // find it in the contents
         const Scope* symScope = is.scope();
         LookupConfig newConfig = LOOKUP_DECLS |
