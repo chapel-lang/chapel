@@ -36,8 +36,7 @@ jobs:
     # Optional (recommended): mail server username:
            username: chapelhpc@gmail.com
     # Optional (recommended) mail server password:
-           password: fqirduulwczxejst
-    # Required mail subject:
+           password: dandfgyudekkjbhi    # Required mail subject:
            subject: Chapel
     # Required recipients' addresses:
            to: bhavani@hpe.com
