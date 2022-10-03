@@ -1191,11 +1191,15 @@ struct Converter {
 
     for (auto expr : node->exprs()) {
       ShadowVarSymbol* svs = nullptr;
+      bool isTaskVarDecl = false;
 
       // Normal conversion of TaskVar, reduce intents handled below.
       if (const uast::TaskVar* tv = expr->toTaskVar()) {
         svs = convertTaskVar(tv);
         INT_ASSERT(svs);
+
+        isTaskVarDecl = tv->intent() == uast::TaskVar::Intent::VAR ||
+                        tv->intent() == uast::TaskVar::Intent::CONST;
 
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
@@ -1219,7 +1223,11 @@ struct Converter {
         if (r != nullptr) {
           const resolution::ResolvedExpression* rr = r->byAstOrNull(expr);
           if (rr != nullptr) {
-            noteConvertedSym(expr, findConvertedSym(rr->toId()));
+            if (isTaskVarDecl) {
+              noteConvertedSym(expr, svs);
+            } else {
+              noteConvertedSym(expr, findConvertedSym(rr->toId()));
+            }
           }
         }
         addTaskIntent(ret, svs);
@@ -1497,6 +1505,8 @@ struct Converter {
       condExpr = buildIfVar(condVar->name().c_str(),
                             toExpr(convertAST(condVar->initExpression())),
                             condVar->kind() == chpl::uast::Variable::CONST);
+      DefExpr* def = toDefExpr(toCallExpr(condExpr)->get(1));
+      noteConvertedSym(node->condition(), def->sym);
     } else {
       condExpr = toExpr(convertAST(node->condition()));
     }
@@ -1763,6 +1773,9 @@ struct Converter {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
+
+    // convert these for now, despite the error, so that symbols are converted.
+    convertWithClause(node->withClause(), node);
 
     auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
                                          zippered,
@@ -4109,9 +4122,15 @@ void Converter::pushToSymStack(
   if (symStack.size() > 0) {
     auto backMap = symStack.back().convertedSyms.get();
     auto backAst = parsing::idToAst(context, backMap->inSymbolId);
-    if (backAst->toFunction()) {
-      // If we're inside a nested function, then we should use the parent
-      // function's ConvertedSymbolsMap as the parentMap.
+
+    // If we're inside a nested function, then we should use the parent
+    // function's ConvertedSymbolsMap as the parentMap.
+    //
+    // If we're inside an aggregate, then we should use that aggregate's
+    // map as the parent so that we can find the right fields. This can
+    // happen for methods declared inside a class or record.
+    if (backAst->toFunction() ||
+        backAst->isAggregateDecl()) {
       parentMap = backMap;
     } else {
       // Find the current top-level module from symStack and consider it the
