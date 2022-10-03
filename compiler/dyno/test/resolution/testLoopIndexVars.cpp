@@ -468,6 +468,39 @@ static void testNestedParamFor() {
   assert(resolvedVals == pc.resolvedVals);
 }
 
+static void testIndexScope() {
+  printf("testIndexScope\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  errors.clear();
+  ctx.setErrorHandler(collectErrors);
+
+  //
+  // Ensure that the loop iterand is scope-resolved 'outside' of the loop,
+  // such that the argument 'i' doesn't refer to the loop index variable 'i'.
+  //
+
+  auto iterText = R""""(
+                  iter myiter(arg : int) {
+                    yield "str";
+                  }
+
+                  var i = 5;
+                  for i in myiter(i) {
+                  }
+                  )"""";
+
+  const Module* m = parseModule(context, iterText);
+  auto loop = m->stmt(2)->toFor();
+
+  const ResolutionResultByPostorderID& rr = scopeResolveModule(context, m->id());
+  auto arg = loop->iterand()->toCall()->actual(0);
+  auto argRes = rr.byAst(arg);
+  assert(argRes.toId() == m->stmt(1)->id());
+  assert(errors.size() == 0);
+}
+
 
 int main() {
   testSimpleLoop("for");
@@ -484,6 +517,7 @@ int main() {
   testCForLoop();
   testParamFor();
   testNestedParamFor();
+  testIndexScope();
 
   return 0;
 }
