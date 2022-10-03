@@ -750,18 +750,18 @@ module ChapelBase {
   }
 
   inline proc _cond_test(x: ?t): bool {
-    if isCoercible(t, borrowed object?) {
-      return x != nil;
-    } else if isCoercible(t, bool) {
-      return x;
-    } else if isCoercible(t, int) || isCoercible(t, uint) {
-      return x != 0;
-    } else if isSubtype(t, sync(?)) {
+    if isSubtype(t, sync(?)) {
       compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
       return _cond_test(x.readFE());
     } else if isSubtype(t, single(?)) {
       compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
       return _cond_test(x.readFF());
+    } else if isCoercible(t, borrowed object?) {
+      return x != nil;
+    } else if isCoercible(t, bool) {
+      return x;
+    } else if isCoercible(t, int) || isCoercible(t, uint) {
+      return x != 0;
     } else if isSubtype(t, c_ptr) || isSubtype(t, c_void_ptr) {
       return x != nil;
     } else {
