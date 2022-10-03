@@ -34,8 +34,8 @@ jobs:
     # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
     # Optional (recommended): mail server username:
-           username: ${{secrets.USERNAME}}
-           #username: chapelhpc@gmail.com
+           #username: ${{secrets.USERNAME}}
+           username: chapelhpc@gmail.com
     # Optional (recommended) mail server password:
            #password: ${{secrets.PASSWORD}}
            password: dandfgyudekkjbhi    
