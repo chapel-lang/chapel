@@ -30,6 +30,7 @@ target_sources(libdyno-obj
                chplenv.cpp
                filesystem.cpp
                filesystem_help.h
+               printf.cpp
                string-escapes.cpp
                subprocess.cpp
                terminal.cpp

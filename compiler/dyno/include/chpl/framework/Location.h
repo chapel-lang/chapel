@@ -85,6 +85,8 @@ public:
   size_t hash() const {
     return chpl::hash(path_, firstLine_, firstColumn_, lastLine_, lastColumn_);
   }
+
+  void stringify(std::ostream& os, StringifyKind stringifyKind) const;
 };
 
 /// \cond DO_NOT_DOCUMENT
@@ -93,5 +95,13 @@ public:
 
 
 } // end namespace chpl
+
+namespace std {
+  template<> struct hash<chpl::Location> {
+    size_t operator()(const chpl::Location& key) const {
+      return key.hash();
+    }
+  };
+} // end namespace std
 
 #endif

@@ -19,6 +19,7 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Identifier.h"
@@ -128,7 +129,7 @@ static void test1(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   auto error = parseResult.error(0);
   const char* expected = "Select has multiple otherwise clauses";
-  auto actual = error.message();
+  auto actual = error->message();
   assert(actual == expected);
 }
 

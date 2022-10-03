@@ -147,7 +147,11 @@ template<typename T, typename U> struct hash<std::pair<T,U>> {
     return chpl::hashPair(key);
   }
 };
-
+template <typename ... Ts> struct hash<std::tuple<Ts...>> {
+  size_t operator()(const std::tuple<Ts...>& key) const {
+    return chpl::hash(key);
+  }
+};
 
 
 } // end namespace std

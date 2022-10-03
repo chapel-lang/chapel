@@ -1465,7 +1465,8 @@ bool Resolver::enter(const uast::Conditional* cond) {
     auto ifType = commonType(context, returnTypes);
     if (!ifType && !condType.isUnknown()) {
       // do not error if the condition type is unknown
-      r.setType(typeErr(cond, "unable to reconcile branches of if-expression"));
+      r.setType(TYPE_ERROR(context, IncompatibleIfBranches, cond,
+                           returnTypes[0], returnTypes[1]));
     } else if (ifType) {
       r.setType(ifType.getValue());
     }
@@ -1659,15 +1660,9 @@ bool Resolver::enter(const NamedDecl* decl) {
     if (vec.size() > 0) {
       const BorrowedIdsWithName& m = vec[0];
       if (m.id(0) == decl->id() && m.numIds() > 1) {
-        auto error =
-          ErrorMessage::error(decl, "'%s' has multiple definitions",
-                              decl->name().c_str());
-        for (const ID& id : m) {
-          if (id != decl->id()) {
-            error.addDetail(ErrorMessage::note(id, "redefined here"));
-          }
-        }
-        context->report(error);
+        std::vector<ID> redefinedIds(m.numIds());
+        std::copy(m.begin(), m.end(), redefinedIds.begin());
+        REPORT(context, Redefinition, decl, redefinedIds);
       }
     }
   }
@@ -2004,8 +1999,7 @@ void Resolver::prepareCallInfoActuals(const Call* call,
                                        ErroneousType::get(context));
           } else {
             if (!byName.isEmpty()) {
-              context->error(op, "named argument passing cannot be used "
-                                 "with tuple expansion");
+              REPORT(context, TupleExpansionNamedArgs, op, fnCall);
             }
 
             auto tupleType = actualType.type()->toTupleType();
@@ -2344,10 +2338,7 @@ void Resolver::resolveNewForRecord(const uast::New* node,
   ResolvedExpression& re = byPostorder.byAst(node);
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
-    auto managementStr = New::managementToString(node->management());
-    context->error(node, "Cannot use new %s with record %s",
-                         managementStr,
-                         recordType->name().c_str());
+    REPORT(context, MemManagementRecords, node, recordType);
   } else {
     auto qt = QualifiedType(QualifiedType::VAR, recordType);
     re.setType(qt);

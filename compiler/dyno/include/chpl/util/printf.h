@@ -17,20 +17,25 @@
  * limitations under the License.
  */
 
-#include "chpl/framework/Location.h"
+#ifndef CHPL_UTIL_PRINTF_H
+#define CHPL_UTIL_PRINTF_H
 
-#include "chpl/framework/update-functions.h"
+#include <string>
+#include <cstdarg>
+
+// docs generator has trouble with the attribute applied to 'build'
+// so the above ifndef works around the issue.
+#ifndef DOXYGEN
+#define DYNO_ATTR_PRINTF_FORMAT(fmt__, rest__)\
+    __attribute__ ((format (printf, fmt__, rest__)))
+#else
+#define DYNO_ATTR_PRINTF_FORMAT(fmt__, rest__)
+#endif
 
 namespace chpl {
 
-
-bool Location::update(Location& keep, Location& addin) {
-  return defaultUpdate(keep, addin);
-}
-
-void Location::stringify(std::ostream& os, StringifyKind kind) const {
-  os << "Location(" << path_ << ", " << firstLine_ << ", " << firstColumn_
-    << ", " << lastLine_ << ", " << lastColumn_ << ")";
-}
+std::string vprintToString(const char* format, va_list vl);
 
 } // end namespace chpl
+
+#endif

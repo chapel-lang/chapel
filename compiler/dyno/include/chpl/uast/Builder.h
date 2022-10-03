@@ -56,7 +56,7 @@ class Builder final {
   UniqueString filepath_;
   UniqueString startingSymbolPath_;
   AstList topLevelExpressions_;
-  std::vector<ErrorMessage> errors_;
+  std::vector<const ErrorBase*> errors_;
 
   // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
@@ -107,7 +107,11 @@ class Builder final {
   /**
     Save an error.
    */
-  void addError(ErrorMessage);
+  void addError(const ErrorBase*);
+  /**
+    Convert an error message into a Dyno error and save it.
+   */
+  void addError(const ErrorMessage&);
 
   /**
     Record the location of an AST element.

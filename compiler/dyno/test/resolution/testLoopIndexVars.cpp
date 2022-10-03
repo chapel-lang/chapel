@@ -62,8 +62,8 @@ static auto recIter = std::string(R""""(
 
                       )"""");
 
-std::vector<ErrorMessage> errors;
-static void collectErrors(Context* context, const ErrorMessage& err) {
+std::vector<const ErrorBase*> errors;
+static void collectErrors(Context* context, const ErrorBase* err) {
   errors.push_back(err);
 }
 

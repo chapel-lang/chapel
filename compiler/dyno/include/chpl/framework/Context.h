@@ -41,6 +41,8 @@
 
 namespace chpl {
 
+class ErrorBase;
+
 namespace uast {
   class AstNode;
 }
@@ -48,7 +50,6 @@ namespace uast {
 namespace resolution {
   class TypedFnSignature;
 }
-
 
 /**
 
@@ -68,7 +69,7 @@ implement queries and how the query framework functions.
  */
 class Context {
  public:
-  using ReportErrorFnType = void(*)(Context*, const ErrorMessage&);
+  using ReportErrorFnType = void(*)(Context*, const ErrorBase*);
 
  private:
   // The CHPL_HOME variable
@@ -132,7 +133,7 @@ class Context {
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
-  static void defaultReportError(Context* context, const ErrorMessage& err);
+  static void defaultReportError(Context* context, const ErrorBase* err);
   ReportErrorFnType reportError = defaultReportError;
   // return an ANSI color code for this query depth, if supported by terminal
   void setQueryDepthColor(int depth, std::ostream& os) {
@@ -465,7 +466,7 @@ class Context {
 
     If no query is currently running, it just reports the error.
    */
-  void report(ErrorMessage error);
+  void report(const ErrorBase* error);
 
   /**
     Note an error for the currently running query.

@@ -24,6 +24,8 @@ DYNO_FRAMEWORK_SRCS =                               \
            compiler-configuration.cpp               \
            Context.cpp                              \
            ErrorMessage.cpp                         \
+           ErrorBase.cpp                            \
+           ErrorWriter.cpp                          \
            ID.cpp                                   \
            Location.cpp                             \
            UniqueString.cpp                         \

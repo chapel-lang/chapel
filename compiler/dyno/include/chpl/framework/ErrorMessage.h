@@ -22,6 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/framework/ID.h"
+#include "chpl/util/printf.h"
 
 #include <cstdarg>
 #include <string>
@@ -29,7 +30,6 @@
 #include <vector>
 
 namespace chpl {
-
 
 // forward declare AstNode
 namespace uast {
@@ -84,83 +84,48 @@ class ErrorMessage final {
 
   /** Build a note ErrorMessage from an ID and a printf-style format */
   static ErrorMessage note(ID id, const char* fmt, ...)
-#ifndef DOXYGEN
-    // docs generator has trouble with the attribute applied to 'build'
-    // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
-#endif
-  ;
+    DYNO_ATTR_PRINTF_FORMAT(2,3)
+    ;
+
   /** Build a note ErrorMessage from an AstNode* and a printf-style format */
   static ErrorMessage note(const uast::AstNode* ast, const char* fmt, ...)
-#ifndef DOXYGEN
-    // docs generator has trouble with the attribute applied to 'build'
-    // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
-#endif
-  ;
+    DYNO_ATTR_PRINTF_FORMAT(2,3)
+    ;
 
   /** Build a note ErrorMessage from a Location and a printf-style format */
   static ErrorMessage note(Location loc, const char* fmt, ...)
-#ifndef DOXYGEN
-    // docs generator has trouble with the attribute applied to 'build'
-    // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
-#endif
-  ;
+    DYNO_ATTR_PRINTF_FORMAT(2,3)
+    ;
 
   /** Build a warning ErrorMessage from an ID and a printf-style format */
   static ErrorMessage warning(ID id, const char* fmt, ...)
-#ifndef DOXYGEN
-    // docs generator has trouble with the attribute applied to 'build'
-    // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
-#endif
-  ;
+    DYNO_ATTR_PRINTF_FORMAT(2,3)
+    ;
 
   /** Build a warning ErrorMessage from an AstNode* and a printf-style format*/
   static ErrorMessage warning(const uast::AstNode*, const char* fmt, ...)
-#ifndef DOXYGEN
-    // docs generator has trouble with the attribute applied to 'build'
-    // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
-#endif
-  ;
+    DYNO_ATTR_PRINTF_FORMAT(2,3)
+    ;
 
   /** Build a warning ErrorMessage from a Location and a printf-style format */
   static ErrorMessage warning(Location loc, const char* fmt, ...)
-#ifndef DOXYGEN
-    // docs generator has trouble with the attribute applied to 'build'
-    // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
-#endif
-  ;
+    DYNO_ATTR_PRINTF_FORMAT(2,3)
+    ;
 
   /** Build an error ErrorMessage from an ID and a printf-style format */
   static ErrorMessage error(ID id, const char* fmt, ...)
-#ifndef DOXYGEN
-    // docs generator has trouble with the attribute applied to 'build'
-    // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
-#endif
-  ;
+    DYNO_ATTR_PRINTF_FORMAT(2,3)
+    ;
 
   /** Build an error ErrorMessage from an AstNode* and a printf-style format */
   static ErrorMessage error(const uast::AstNode*, const char* fmt, ...)
-#ifndef DOXYGEN
-    // docs generator has trouble with the attribute applied to 'build'
-    // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
-#endif
-  ;
+    DYNO_ATTR_PRINTF_FORMAT(2,3)
+    ;
 
   /** Build an error ErrorMessage from a Location and a printf-style format */
   static ErrorMessage error(Location loc, const char* fmt, ...)
-#ifndef DOXYGEN
-    // docs generator has trouble with the attribute applied to 'build'
-    // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
-#endif
-  ;
+    DYNO_ATTR_PRINTF_FORMAT(2,3)
+    ;
 
   /** Add an ErrorMessage as detail information to this ErrorMessage. */
   void addDetail(ErrorMessage err);
@@ -181,7 +146,7 @@ class ErrorMessage final {
   /**
     Return the location in the source code where this error occurred.
   */
-  Location location(Context* context) const;
+  Location computeLocation(Context* context) const;
 
   const std::string& message() const { return message_; }
 
@@ -190,6 +155,8 @@ class ErrorMessage final {
   Kind kind() const { return kind_; }
 
   inline ID id() const { return id_; }
+
+  inline Location location() const { return location_; }
 
   inline bool operator==(const ErrorMessage& other) const {
     return isDefaultConstructed_ == other.isDefaultConstructed_ &&
