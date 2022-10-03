@@ -4916,7 +4916,7 @@ proc _channel.readAll(ref s: string): int throws {
 /*
   Read the remaining contents of the channel into a ``bytes``.
 
-  Note that any existing of the ``bytes`` are overwritten.
+  Note that any existing contents of the ``bytes`` are overwritten.
 
   :arg b: the ``bytes`` to read into
   :returns: the number of bytes that were stored in ``b``
@@ -4942,7 +4942,7 @@ proc _channel.readAll(ref b: bytes): int throws {
   Note that this routine currently requires a 1D rectangular non-strided array.
   Additionally, If the remaining contents of the channel exceed the size of
   ``a``, then the first ``a.size`` bytes will be read into ``a``, and then an
-  ``EofError`` will be thrown.
+  ``IoError`` will be thrown.
 
   :arg a: the array of bytes to read into
   :returns: the number of bytes that were stored in ``a``
