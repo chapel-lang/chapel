@@ -47,8 +47,8 @@ jobs:
     # Required sender full name (address can be skipped):
            from: chapelhpc@gmail.com
     # Optional plain body:
-           body: ${{matrix.body}}
-    #  body: Build job of ${{github.repository}} completed successfully!
+    #       body: ${{matrix.body}}
+           body: Build job of ${{github.repository}} completed successfully!
     # Optional HTML body read from file:
     #       html_body: file://README.html
     # Optional carbon copy recipients:
