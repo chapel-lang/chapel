@@ -23,6 +23,8 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/stringify-functions.h"
+#include "chpl/framework/ErrorWriter.h"
+#include "chpl/framework/ErrorBase.h"
 
 #include <chrono>
 #include <fstream>
@@ -83,49 +85,10 @@ llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
   return chplEnv;
 }
 
-static void defaultReportErrorPrintDetail(Context* context,
-                                          const ErrorMessage& err,
-                                          const char* prefix,
-                                          const char* kind) {
-  Location loc = err.location(context);
-  const char* path = loc.path().c_str();
-  int lineno = loc.line();
-  bool validPath = (path != nullptr && path[0] != '\0');
-
-  if (validPath && lineno > 0) {
-    printf("%s%s:%i: %s: %s\n",
-           prefix, path, lineno, kind, err.message().c_str());
-  } else if (validPath) {
-    printf("%s%s: %s: %s\n",
-           prefix, path, kind, err.message().c_str());
-  } else {
-    printf("%s%s: %s\n",
-           prefix, kind, err.message().c_str());
-  }
-
-  for (const auto& detail : err.details()) {
-    defaultReportErrorPrintDetail(context, detail, "  ", "note");
-  }
-}
-
-void Context::defaultReportError(Context* context, const ErrorMessage& err) {
-  // if the err came with a kind, use it, otherwise just call it an "error"
-  std::string errKindString;
-  switch (err.kind()) {
-    case ErrorMessage::Kind::WARNING:
-      errKindString = "warning";
-      break;
-    case ErrorMessage::Kind::NOTE:
-      errKindString = "note";
-      break;
-    case ErrorMessage::Kind::SYNTAX:
-      errKindString = "syntax";
-      break;
-    default:
-      errKindString = "error";
-  }
-
-  defaultReportErrorPrintDetail(context, err, "", errKindString.c_str());
+void Context::defaultReportError(Context* context, const ErrorBase* err) {
+  ErrorWriter ew(context, std::cerr, ErrorWriter::BRIEF,
+                 context->currentTerminalSupportsColor_);
+  err->write(ew);
 }
 
 // unique'd strings are preceded by 4 bytes of length, gcMark and doNotCollectMark
@@ -563,7 +526,7 @@ void Context::collectGarbage() {
   }
 }
 
-void Context::report(ErrorMessage error) {
+void Context::report(const ErrorBase* error) {
   if (queryStack.size() > 0) {
     queryStack.back()->errors.push_back(std::move(error));
     reportError(this, queryStack.back()->errors.back());
@@ -573,30 +536,30 @@ void Context::report(ErrorMessage error) {
 }
 
 static void logErrorInContext(Context* context,
-                              ErrorMessage::Kind kind,
+                              ErrorBase::Kind kind,
                               Location loc,
                               const char* fmt,
                               va_list vl) {
-  auto err = ErrorMessage::vbuild(kind, loc, fmt, vl);
-  context->report(std::move(err));
+  auto err = GeneralError::vbuild(context, kind, loc, fmt, vl);
+  context->report(err);
 }
 
 static void logErrorInContext(Context* context,
-                              ErrorMessage::Kind kind,
+                              ErrorBase::Kind kind,
                               ID id,
                               const char* fmt,
                               va_list vl) {
-  auto err = ErrorMessage::vbuild(kind, id, fmt, vl);
-  context->report(std::move(err));
+  auto err = GeneralError::vbuild(context, kind, id, fmt, vl);
+  context->report(err);
 }
 
 static void logErrorInContext(Context* context,
-                              ErrorMessage::Kind kind,
+                              ErrorBase::Kind kind,
                               const uast::AstNode* ast,
                               const char* fmt,
                               va_list vl) {
-  auto err = ErrorMessage::vbuild(kind, ast->id(), fmt, vl);
-  context->report(std::move(err));
+  auto err = GeneralError::vbuild(context, kind, ast->id(), fmt, vl);
+  context->report(err);
 }
 
 #define CHPL_CONTEXT_LOG_ERROR_HELPER(context__, kind__, pin__, fmt__) \
@@ -609,21 +572,21 @@ static void logErrorInContext(Context* context,
 
 // TODO: Similar overloads for NOTE, WARN, etc.
 void Context::error(Location loc, const char* fmt, ...) {
-  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorMessage::ERROR, loc, fmt);
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, loc, fmt);
 }
 
 void Context::error(ID id, const char* fmt, ...) {
-  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorMessage::ERROR, id, fmt);
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, id, fmt);
 }
 
 void Context::error(const uast::AstNode* ast, const char* fmt, ...) {
-  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorMessage::ERROR, ast, fmt);
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);
 }
 
 void Context::error(const resolution::TypedFnSignature* inFn,
                     const uast::AstNode* ast,
                     const char* fmt, ...) {
-  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorMessage::ERROR, ast, fmt);
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);
   // TODO: add note about instantiation & POI stack
 }
 
@@ -699,9 +662,6 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
     resultEntry->markUniqueStringsInResult(this);
     // and also mark unique strings in the errors
-    for (const auto& err: resultEntry->errors) {
-      err.mark(this);
-    }
   }
   resultEntry->lastChecked = this->currentRevisionNumber;
 

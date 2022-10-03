@@ -36,7 +36,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 
-# Configure locale (taken from util/dockerfiles/Dockerfile)
+# Configure locale (taken from primary Chapel Dockerfile)
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     echo 'LANG="en_US.UTF-8"'>/etc/default/locale && \
     dpkg-reconfigure --frontend=noninteractive locales && \

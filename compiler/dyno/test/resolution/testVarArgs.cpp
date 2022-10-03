@@ -22,6 +22,7 @@
 
 #include "ResolvedVisitor.h"
 
+#include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -59,8 +60,8 @@ static Context* getNewContext() {
   return ret;
 }
 
-std::vector<ErrorMessage> errors;
-static void collectErrors(Context* context, const ErrorMessage& err) {
+std::vector<const ErrorBase*> errors;
+static void collectErrors(Context* context, const ErrorBase* err) {
   errors.push_back(err);
 }
 
@@ -394,13 +395,14 @@ static std::string buildProgram(IntentList formalIntent,
   return program;
 }
 
-static void printErrors() {
+static void printErrors(Context* context) {
   if (!verbose) {
     printf("Found %lu errors.\n\n", errors.size());
   } else {
     printf("======== Errors ========\n");
+    ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED, false);
     for (auto err : errors) {
-      printf("%s\n", err.message().c_str());
+      err->write(ew);
     }
     printf("========================\n\n");
   }
@@ -531,7 +533,7 @@ static void testMatcher(IntentList formalIntent,
 
   if (errors.size() > 0) {
     if (debug) {
-      printErrors();
+      printErrors(context);
     }
     assert(fail);
     return;
@@ -565,7 +567,7 @@ static Collector customHelper(std::string program, bool fail = false) {
     printf("========================\n");
 
     if (errors.size() > 0) {
-      printErrors();
+      printErrors(context);
     }
 
     if (verbose) pc.dump();
@@ -695,11 +697,11 @@ proc fn(param n : int, args...n) {
 
   auto less = std::string(R"""(var x = fn(3, 1, 2.0);)""");
   customHelper(paramFn + less, true);
-  assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   auto more = std::string(R"""(var x = fn(3, 1, 2.0, "hello", "oops");)""");
   customHelper(paramFn + more, true);
-  assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   // non-integrals should not be valid in count-expressions
   auto paramBoolFn = std::string(
@@ -711,7 +713,7 @@ proc fn(param n : bool, args...n) {
 fn(true, true);
 )""");
   customHelper(paramBoolFn, true);
-  assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   // TODO: Make sure uints resolve (cannot cast to param uints yet)
 }
@@ -786,11 +788,11 @@ proc fn(param n : int, args...n, y : int, z : real) {
 
   auto less = std::string(R"""(var x = fn(3, 1, 2, 2.0);)""");
   customHelper(paramFn + less, true);
-  assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   auto more = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5, 6, 7.0);)""");
   customHelper(paramFn + more, true);
-  assert(errors.size() == 1 && errors[0].message() == errMsg);
+  assert(errors.size() == 1 && errors[0]->message() == errMsg);
 
   auto named = std::string(R"""(var x = fn(z=5.0, 3, 1, 2, 3, 4);)""");
   customHelper(paramFn + named);

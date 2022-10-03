@@ -103,6 +103,27 @@ template<typename A, typename B> struct mark<std::pair<A,B>> {
     secondMarker(context, keep.second);
   }
 };
+
+template <typename Tuple, size_t ... Is>
+void mark_tuple_impl(Context* context, const Tuple& tuple, std::index_sequence<Is...>) {
+  auto doMark = [&](auto& x) {
+    // Template specialization uses T*, we have const T*&. Get the former.
+    using marker_type =
+      typename std::remove_const<
+        typename std::remove_reference<decltype(x)>::type>::type;
+    mark<marker_type> marker;
+    marker(context, x);
+  };
+  auto dummy = {(doMark(std::get<Is>(tuple)),0)...};
+  (void) dummy;
+}
+
+template<typename ... Ts> struct mark<std::tuple<Ts...>> {
+  void operator()(Context* context, const std::tuple<Ts...>& keep) const {
+    mark_tuple_impl(context, keep, std::index_sequence_for<Ts...>());
+  }
+};
+
 /// \endcond
 
 

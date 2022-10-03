@@ -1348,7 +1348,7 @@ struct RstResultBuilder {
       // process the warning about comments
       auto br = parseFileContainingIdToBuilderResult(context_, node->id());
       auto loc = br->commentToLocation(lastComment);
-      auto err = ErrorMessage(ErrorMessage::Kind::WARNING, loc, errMsg);
+      auto err = GeneralError::get(context_, ErrorBase::WARNING, loc, errMsg);
       context_->report(err);
     }
     // TODO: The presence of these node exceptions means we're probably missing
@@ -1543,7 +1543,7 @@ struct RstResultBuilder {
             // process the warning about comments
             auto br = parseFileContainingIdToBuilderResult(context_, m->id());
             auto loc = br->commentToLocation(lastComment);
-            auto err = ErrorMessage(ErrorMessage::Kind::WARNING, loc, errMsg);
+            auto err = GeneralError::get(context_, GeneralError::WARNING, loc, errMsg);
             context_->report(err);
           }
           if (!synopsis.empty()) {
@@ -2251,8 +2251,8 @@ int main(int argc, char** argv) {
       bool fatal = false;
       for (auto e : builderResult.errors()) {
       // just display the error messages right now, see TODO above
-        if (e.kind() == ErrorMessage::Kind::ERROR ||
-            e.kind() == ErrorMessage::Kind::SYNTAX) {
+        if (e->kind() == ErrorBase::Kind::ERROR ||
+            e->kind() == ErrorBase::Kind::SYNTAX) {
               fatal = true;
         }
         context.report(e);

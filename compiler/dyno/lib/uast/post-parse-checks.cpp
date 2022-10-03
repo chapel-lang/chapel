@@ -52,7 +52,7 @@ struct Visitor {
   // both errors and warnings below). This factory function is provided
   // because errors pinning on freshly parsed AST cannot be stored in
   // the context at this point.
-  void report(const AstNode* node, ErrorMessage::Kind kind,
+  void report(const AstNode* node, ErrorBase::Kind kind,
               const char* fmt,
               va_list vl);
   void error(const AstNode* node, const char* fmt, ...);
@@ -154,23 +154,23 @@ struct Visitor {
 // Note that even though we pass in the IDs for error messages here, the
 // locations map is not actually populated for the user until after the
 // builder wraps up and produces a builder result.
-void Visitor::report(const AstNode* node, ErrorMessage::Kind kind,
+void Visitor::report(const AstNode* node, ErrorBase::Kind kind,
                      const char* fmt,
                      va_list vl) {
-  auto err = ErrorMessage::vbuild(kind, node->id(), fmt, vl);
+  auto err = GeneralError::vbuild(context_, kind, node->id(), fmt, vl);
   builder_.addError(std::move(err));
 }
 
 void Visitor::error(const AstNode* node, const char* fmt, ...) {
   va_list vl;
   va_start(vl, fmt);
-  report(node, ErrorMessage::ERROR, fmt, vl);
+  report(node, ErrorBase::ERROR, fmt, vl);
 }
 
 void Visitor::warn(const AstNode* node, const char* fmt, ...) {
   va_list vl;
   va_start(vl, fmt);
-  report(node, ErrorMessage::WARNING, fmt, vl);
+  report(node, ErrorBase::WARNING, fmt, vl);
 }
 
 bool Visitor::isFlagSet(CompilerFlags::Name flag) const {

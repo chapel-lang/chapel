@@ -1084,7 +1084,7 @@ proc isProperSubtype(type sub, type super) param {
 
 /* :returns: isProperSubtype(a,b) */
 pragma "docs only"
-deprecated "< operator is deprecated to compare types, use isPropersubtype instead"
+deprecated "< operator is deprecated to compare types, use isProperSubtype instead"
 operator <(type a, type b) param {
   return isProperSubtype(a,b);
 }

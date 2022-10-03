@@ -33,27 +33,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHPL_VERSION 1.28.0
-ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
-ENV CHPL_GMP     system
-ENV CHPL_LLVM    system
-
-
-RUN mkdir -p /opt/chapel \
-    && wget -q -O - https://github.com/chapel-lang/chapel/releases/download/$CHPL_VERSION/chapel-$CHPL_VERSION.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
-    && make -C $CHPL_HOME \
-    && make -C $CHPL_HOME chpldoc test-venv mason \
-    && make -C $CHPL_HOME cleanall
-
-# Configure locale
+# configure locale
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     echo 'LANG="en_US.UTF-8"'>/etc/default/locale && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=en_US.UTF-8
 
-# Configure dummy git user
+# configure dummy git user (required for Mason unit tests)
 RUN git config --global user.email "noreply@example.com" && \
     git config --global user.name  "Chapel user"
+
+# set up Chapel environment variables
+ENV CHPL_HOME=/opt/chapel \
+    CHPL_GMP=system \
+    CHPL_LLVM=system
+
+# acquire sources
+WORKDIR $CHPL_HOME
+COPY . .
+
+# build Chapel
+RUN make \
+    && make chpldoc test-venv mason \
+    && make cleanall
 
 # Hack to get access to Chapel binaries
 RUN cd $CHPL_HOME/bin && ln -s */* .

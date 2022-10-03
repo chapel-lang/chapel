@@ -21,6 +21,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Comment.h"
@@ -140,7 +141,7 @@ void BuilderResult::mark(Context* context) const {
   }
 
   for (const auto& em : errors_) {
-    em.mark(context);
+    em->mark(context);
   }
 
   // update the filePathForModuleName query
@@ -159,7 +160,7 @@ void BuilderResult::updateFilePaths(Context* context,
 }
 
 void BuilderResult::appendError(BuilderResult& keep,
-                                const ErrorMessage& error) {
+                                const ErrorBase* error) {
   keep.errors_.push_back(error);
 }
 

@@ -39,6 +39,8 @@ namespace chpl {
 class Context;
 class ID;
 
+class ErrorBase;
+
 namespace detail {
 
 /**
@@ -220,7 +222,7 @@ static inline void queryArgsPrint(const std::tuple<>& tuple) {
 }
 
 using QueryDependencyVec = std::vector<const QueryMapResultBase*>;
-using QueryErrorVec = std::vector<ErrorMessage>;
+using QueryErrorVec = std::vector<const ErrorBase*>;
 
 class QueryMapResultBase {
  public:

@@ -26,6 +26,7 @@ DYNO_UTIL_SRCS =      \
   break.cpp \
   chplenv.cpp \
   filesystem.cpp \
+  printf.cpp \
   string-escapes.cpp \
   subprocess.cpp \
   terminal.cpp \
