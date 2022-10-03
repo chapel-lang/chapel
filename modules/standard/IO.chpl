@@ -4904,9 +4904,9 @@ proc _channel.readAll(type t=string): t throws
 proc _channel.readAll(ref s: string): int throws {
   if this.writing then compilerError("attempt to read on write-only channel");
 
-  const (err, lenread) = readAllBytesOrString(this, s);
+  const (err, lenread) = readBytesOrString(this, s, -1);
 
-  if err != ENOERR {
+  if err != ENOERR && err != EEOF {
     try this._ch_ioerror(err, "in channel.readAll(ref s: string)");
   }
 
@@ -4927,9 +4927,9 @@ proc _channel.readAll(ref s: string): int throws {
 proc _channel.readAll(ref b: bytes): int throws {
   if this.writing then compilerError("attempt to read on write-only channel");
 
-  const (err, lenread) = readAllBytesOrString(this, b);
+  const (err, lenread) = readBytesOrString(this, b, -1);
 
-  if err != ENOERR {
+  if err != ENOERR && err != EEOF {
     try this._ch_ioerror(err, "in channel.readAll(ref b: bytes)");
   }
 
@@ -4999,60 +4999,6 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
   return (i - d.low);
 }
 
-// Helper function for the (non-bytes-array) channel.readAll methods
-private proc readAllBytesOrString(ch: fileReader, ref out_var: ?t) : (errorCode, int) throws {
-  var err     : errorCode = ENOERR,
-      lenread : int(64);
-
-  on ch._home {
-    var tx     : c_string,
-        uselen : c_ssize_t = max(c_ssize_t);
-
-    try ch.lock(); defer { ch.unlock(); }
-
-    var binary    : uint(8) = qio_channel_binary(ch._channel_internal),
-        byteorder : uint(8) = qio_channel_byteorder(ch._channel_internal);
-
-    if binary {
-      err = qio_channel_read_string(false, byteorder,
-                                    iostringstyle.data_toeof:int(64),
-                                    ch._channel_internal, tx,
-                                    lenread, uselen);
-    } else {
-      var save_style : iostyleInternal = ch._styleInternal(),
-          style      : iostyleInternal = ch._styleInternal();
-
-      style.string_format = QIO_STRING_FORMAT_TOEOF;
-      ch._set_styleInternal(style);
-
-      if t == string {
-        err = qio_channel_scan_string(false,
-                                      ch._channel_internal, tx,
-                                      lenread, uselen);
-      }
-      else {
-        err = qio_channel_scan_bytes(false,
-                                     ch._channel_internal, tx,
-                                     lenread, uselen);
-      }
-      ch._set_styleInternal(save_style);
-    }
-
-    if t == string {
-      var tmp = createStringWithOwnedBuffer(tx, length=lenread);
-      out_var <=> tmp;
-    }
-    else {
-      var tmp = createBytesWithOwnedBuffer(tx, length=lenread);
-      out_var <=> tmp;
-    }
-  }
-
-  // reading the whole channel, so EOF isn't an error here
-  if err == EEOF then err = ENOERR;
-  return (err, lenread);
-}
-
 /* read a given number of bytes from a channel
 
    :arg str_out: The string to be read into
@@ -5065,7 +5011,7 @@ private proc readAllBytesOrString(ch: fileReader, ref out_var: ?t) : (errorCode,
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
-  var err = readBytesOrString(this, str_out, len);
+  var (err, _) = readBytesOrString(this, str_out, len);
 
   if !err {
     return true;
@@ -5089,7 +5035,7 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
-  var err = readBytesOrString(this, bytes_out, len);
+  var (err, _) = readBytesOrString(this, bytes_out, len);
 
   if !err {
     return true;
@@ -5101,12 +5047,14 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   return false;
 }
 
-private proc readBytesOrString(ch: fileReader, ref out_var: ?t,  len: int(64))
-    throws {
+private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
+  throws
+{
 
   var err:errorCode = ENOERR;
+  var lenread:int(64);
+
   on ch._home {
-    var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
     var actlen:int(64);
@@ -5157,7 +5105,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t,  len: int(64))
     }
   }
 
-  return err;
+  return (err, lenread);
 
 }
 
