@@ -2401,6 +2401,11 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
   iterand->traverse(resolver);
   ResolvedExpression& iterandRE = resolver.byPostorder.byAst(iterand);
 
+  if (resolver.scopeResolveOnly) {
+    return QualifiedType(QualifiedType::UNKNOWN,
+                         UnknownType::get(context));
+  }
+
   auto& MSC = iterandRE.mostSpecific();
   bool isIter = MSC.isEmpty() == false &&
                 MSC.numBest() == 1 &&
@@ -2448,17 +2453,17 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
 
 bool Resolver::enter(const IndexableLoop* loop) {
 
-  if (scopeResolveOnly) {
-    enterScope(loop);
-    return true;
-  }
-
   auto forLoop = loop->toFor();
   bool isParamLoop = forLoop != nullptr && forLoop->isParam();
 
   if (isParamLoop) {
     const AstNode* iterand = loop->iterand();
     iterand->traverse(*this);
+
+    if (scopeResolveOnly) {
+      enterScope(loop);
+      return true;
+    }
 
     if (iterand->isRange() == false) {
       context->error(loop, "param loops may only iterate over range literals");
@@ -2499,9 +2504,9 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
     return false;
   } else {
-    enterScope(loop);
-
     QualifiedType idxType = resolveSerialIterType(*this, loop);
+
+    enterScope(loop);
 
     if (const Decl* idx = loop->index()) {
       ResolvedExpression& re = byPostorder.byAst(idx);
