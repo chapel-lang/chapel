@@ -19,7 +19,7 @@ static double now_time(void) {
 int64_t numIters = 1000000;
 int64_t ntrials = 10000;
 
-int64_t for_loop()
+int64_t for_loop(void)
 {
   int64_t result = 0;
   int64_t i, j;
@@ -35,7 +35,7 @@ int64_t for_loop()
   return result;
 }
 
-int64_t while_loop()
+int64_t while_loop(void)
 {
   int64_t result2 = 0;
   int64_t i = 0, j;
@@ -54,7 +54,7 @@ int64_t while_loop()
   return result2;
 }
 
-int64_t c_trial() {
+int64_t c_trial(void) {
   double starttimeFor, endtimeFor;
   double starttimeWhile, endtimeWhile;
   starttimeFor = now_time();
