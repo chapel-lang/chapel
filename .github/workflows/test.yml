@@ -34,17 +34,17 @@ jobs:
     # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
     # Optional (recommended): mail server username:
-           username: chapelhpc@gmail.com
-    # Optional (recommended) mail server password:
-           password: dandfgyudekkjbhi
-    # Required mail subject:
-           subject: Chapel gmail generated email
-    # Required recipients' addresses:
+           username: ${{secrets.USERNAME}}
+           # Optional (recommended) mail server password:
+           password: ${{secrets.PASSWORD}}
+           # Required mail subject:
+           subject: ${{matrix.subject}}
+           # Required recipients' addresses:
            to: bhavani@hpe.com
     # Required sender full name (address can be skipped):
            from: chapelhpc@gmail.com
     # Optional plain body:
-           body: Build job of ${{github.repository}} completed successfully!
+           body: ${{matrix.body}}     
     # Optional HTML body read from file:
     #       html_body: file://README.html
     # Optional carbon copy recipients:
