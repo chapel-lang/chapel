@@ -411,7 +411,7 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
             ret.append(print_var('CHPL_HOME', ENV_VALS['CHPL_HOME']))
             this_dir = os.path.realpath(os.path.dirname(__file__))
             ret.append("script location: {0}\n".format(this_dir))
-        elif print_format == 'simple':
+        elif print_format in ['simple', 'cmake']:
             ret.append(print_var('CHPL_HOME', ENV_VALS['CHPL_HOME']))
 
     # Print environment variables and their values
