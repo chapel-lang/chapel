@@ -41,15 +41,13 @@ jobs:
            password: dandfgyudekkjbhi    
            
     # Required mail subject:
-           subject: Chapel
-    # Required recipients' addresses:
+           subject: ${{ github.job }} job of ${{ github.repository }} has ${{ job.status }}    # Required recipients' addresses:
            to: bhavani@hpe.com
     # Required sender full name (address can be skipped):
            from: chapelhpc@gmail.com
     # Optional plain body:
     #       body: ${{matrix.body}}
-           body: Build job of ${{github.repository}} completed successfully!
-    # Optional HTML body read from file:
+           body: ${{ github.job }} job in worflow ${{ github.workflow }} of ${{ github.repository }} has ${{ job.status }}    # Optional HTML body read from file:
     #       html_body: file://README.html
     # Optional carbon copy recipients:
     #cc: kyloren@example.com,leia@example.com
