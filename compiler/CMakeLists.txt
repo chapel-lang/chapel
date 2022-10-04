@@ -26,19 +26,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
-# Turns on verbose output from Makefile builds. Having it ON displays each
-# command line as it is launched.
-# https://cmake.org/cmake/help/latest/variable/CMAKE_VERBOSE_MAKEFILE.html
-set(CMAKE_VERBOSE_MAKEFILE 1)
+
 
 set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 
-# TODO: just use these directly, don't alias them
-string(CONCAT CHPL_LLVM_COMP_ARGS_JOIN ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
-string(CONCAT CHPL_LLVM_LINK_ARGS_JOIN ${CHPL_HOST_BUNDLED_LINK_ARGS} " " ${CHPL_HOST_SYSTEM_LINK_ARGS})
-
-set(CHPL_LLVM_COMP_ARGS ${CHPL_LLVM_COMP_ARGS_JOIN})
-set(CHPL_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS_JOIN})
+# TODO: See if we can use these directly, I am not sure we can because
+# the way to concat strings requires an output variable
+string(CONCAT CHPL_LLVM_COMP_ARGS ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
+string(CONCAT CHPL_LLVM_LINK_ARGS ${CHPL_HOST_BUNDLED_LINK_ARGS} " " ${CHPL_HOST_SYSTEM_LINK_ARGS})
 
 # message(DEBUG "CHPL_LLVM_COMP_ARGS: ${CHPL_LLVM_COMP_ARGS}")
 # message(DEBUG "CHPL_LLVM_LINK_ARGS: ${CHPL_LLVM_LINK_ARGS}")
@@ -48,11 +43,7 @@ set(CHPL_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS_JOIN})
 if (CHPL_LLVM_COMP_ARGS)
   string(STRIP ${CHPL_LLVM_COMP_ARGS} CHPL_LLVM_COMP_ARGS)
 endif()
-# string(STRIP ${CHPL_LLVM_COMP_ARGS} CHPL_LLVM_COMP_ARGS)
-# if (NOT STREQUAL ${CHPL_LLVM_LINK_ARGS} "")
-  string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
-# endif()
-# string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
+string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
 
 
 # need many of the outputs from printchplenv for the following values

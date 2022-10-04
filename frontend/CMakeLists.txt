@@ -41,6 +41,8 @@ if (NOT DYNO_LLVM_LINK_ARGS)
   set(DYNO_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS})
 else()
   # message(DEBUG "DYNO_LLVM_LINK_ARGS already set to ${DYNO_LLVM_LINK_ARGS}")
+  # remove whitespace or you'll get complaints about an error
+  # according to policy CMP0004
   string(STRIP "${DYNO_LLVM_LINK_ARGS}" DYNO_LLVM_LINK_ARGS)
 endif()
 
@@ -49,6 +51,8 @@ if (NOT DYNO_LLVM_COMP_ARGS)
   set(DYNO_LLVM_COMP_ARGS ${CHPL_LLVM_COMP_ARGS})
 else()
   # message(DEBUG "DYNO_LLVM_COMP_ARGS already set to ${DYNO_LLVM_COMP_ARGS}")
+  # remove whitespace or you'll get complaints about an error
+  # according to policy CMP0004
   string(STRIP "${DYNO_LLVM_COMP_ARGS}" DYNO_LLVM_COMP_ARGS)
 endif()
 

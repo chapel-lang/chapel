@@ -23,11 +23,21 @@ cmake_minimum_required(VERSION 3.13.4)
 # TODO: Write this to generated configured_prefix file
 # CMAKE_INSTALL_PREFIX
 
+# TODO: Work with config.h for version info
 project(Chapel VERSION 1.29.0)
 
 # This built-in module allows us to print variables easily, using
 # cmake_print_variables(MY_VARIABLE)
 include(CMakePrintHelpers)
+
+# Turns on verbose output from Makefile builds. Having it ON displays each
+# command line as it is launched.
+# https://cmake.org/cmake/help/latest/variable/CMAKE_VERBOSE_MAKEFILE.html
+# set(CMAKE_VERBOSE_MAKEFILE 1)
+
+# attempt to resolve error in chpl:
+# "relocation R_X86_64_32S against `.bss' can not be used when making a PIE object; recompile with -fPIE"
+# set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 
 # Options that correspond to printchplenv --internal --compiler
@@ -94,23 +104,16 @@ set(CHPL_PE_CHPL_PKGCONFIG_LIBS CACHE INTERNAL "Description")
 
 # Set ENV versions of CHPL_ vars that are not in printchplenv output, in the
 # case when they are set from the cmdline, otherwise get them from the environment
-if (NOT DEFINED ${CHPL_HOME})
-  message(NOTICE "CHPL_HOME not set, using $ENV{CHPL_HOME}")
-  set(CHPL_HOME $ENV{CHPL_HOME} CACHE STRING "Override home directory for Chapel" FORCE)
-else()
-  set(ENV{CHPL_HOME} ${CHPL_HOME})
-  message(NOTICE "CHPL_HOME updated to ${CHPL_HOME}")
-endif()
-
 if (NOT DEFINED ${CHPL_DEVELOPER})
-  message(NOTICE "CHPL_DEVELOPER not set, using $ENV{CHPL_DEVELOPER}")
+  message(NOTICE "CHPL_DEVELOPER not given, using $ENV{CHPL_DEVELOPER}")
   set(CHPL_DEVELOPER $ENV{CHPL_DEVELOPER} CACHE BOOL "Override CHPL_DEVELOPER flag" FORCE)
 else()
   set(ENV{CHPL_DEVELOPER} ${CHPL_DEVELOPER})
   message(STATUS "CHPL_DEVELOPER updated to ${CHPL_DEVELOPER}")
 endif()
 
-if (NOT DEFINED ${CHPL_LLVM_GCC_PREFIX})
+# If we didn't get a value from the cmdline and the environment has a value, use it
+if ((NOT DEFINED ${CHPL_LLVM_GCC_PREFIX}) AND (NOT $ENV{CHPL_LLVM_GCC_PREFIX} STREQUAL ""))
   message(NOTICE "CHPL_LLVM_GCC_PREFIX not set, using $ENV{CHPL_LLVM_GCC_PREFIX}")
   set(CHPL_LLVM_GCC_PREFIX $ENV{CHPL_LLVM_GCC_PREFIX} CACHE STRING "Override CHPL_LLVM_GCC_PREFIX flag" FORCE)
 else()
@@ -121,6 +124,10 @@ endif()
 
 # If any -DCHPL_ variables came to us from the command line, update them in the
 # environment so that they can be used by printchplenv
+if (DEFINED ${CHPL_HOME})
+  set(ENV{CHPL_HOME} ${CHPL_HOME})
+  message(NOTICE "CHPL_HOME updated to ${CHPL_HOME}")
+endif()
 if (DEFINED ${CHPL_HOST_PLATFORM})
   set(ENV{CHPL_HOST_PLATFORM} ${CHPL_HOST_PLATFORM})
   message(STATUS "CHPL_HOST_PLATFORM updated to ${CHPL_HOST_PLATFORM}")
@@ -176,7 +183,9 @@ set(CHPL_MAKE_PROFILE OFF CACHE BOOL "PROFILE flag from make")
 set(PRINTCHPLENV_COMMAND printchplenv --compiler --internal --cmake)
 # message(STATUS "running ${PRINTCHPLENV_COMMAND} from ${CMAKE_CURRENT_SOURCE_DIR}/util")
 
-execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
+# Pass the CMake detected C/CXX compilers to printchplenv
+execute_process(COMMAND ${CMAKE_COMMAND} -E env
+                  CHPL_HOST_CC=${CMAKE_C_COMPILER} CHPL_HOST_CXX=${CMAKE_CXX_COMPILER} ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/util
                 TIMEOUT 30
                 RESULT_VARIABLE CHPLENV_RETURNCODE
@@ -184,7 +193,7 @@ execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
 message(NOTICE "Updating build configuration with results from printchplenv:\n${CHPLENV_OUTPUT}")
-# string(REGEX REPLACE "\n$" "; " CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
+
 # This is a workaround for CMake not having any in-built way to
 # split a string into a list.  It's not perfect, but it works for this purpose
 STRING(REGEX REPLACE ";" "\\\\;" CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
