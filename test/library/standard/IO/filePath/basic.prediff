@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 
+# swaps occurences of $CHPL_HOME in the output with the string: "{CHPL_HOME}"
+
 tmpfile=$2
 
 tmptmp=`mktemp "tmp.XXXXXX"`
 
 regex="s~$CHPL_HOME~{CHPL_HOME}~g"
-
-echo $regex
-
 sed -e "$regex" $tmpfile > $tmptmp
 
 mv $tmptmp $tmpfile

@@ -1642,6 +1642,9 @@ and that this function may not work on all operating systems.
 The function :proc:`Path.realPath` is an alternative way
 to get the path to a file.
 
+:returns: the absolute path to the file
+:rtype: ``string``
+
 :throws SystemError: Thrown if the path could not be retrieved.
  */
 proc file.path : string throws {
@@ -1655,6 +1658,7 @@ proc file.path : string throws {
       ret = createStringWithNewBuffer(tmp,
                                       policy=decodePolicy.escape);
     }
+    chpl_free_c_string(tmp);
   }
   if err then try ioerror(err, "in file.path");
   return ret;
