@@ -2807,6 +2807,8 @@ proc openreader(path:string,
                           style: iostyleInternal);
 }
 
+config param useNewOpenReaderRegionBounds = false;
+
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
 // since we only will have one reference, will be right after we close this
@@ -2847,7 +2849,17 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking) throws {
+    : fileReader(kind, locking) throws where (!region.hasHighBound() ||
+                                              useNewOpenReaderRegionBounds) {
+  return openreaderHelper(path, kind, locking, region, hints);
+}
+
+deprecated "Currently the region argument high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                region: range(?) = 0.., hints=ioHintSet.empty)
+    : fileReader(kind, locking) throws where (region.hasHighBound() &&
+                                              !useNewOpenReaderRegionBounds) {
   return openreaderHelper(path, kind, locking, region, hints);
 }
 
@@ -2859,7 +2871,8 @@ private proc openreaderHelper(path:string,
   : fileReader(kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
-  return try fl.readerHelper(kind, locking, region, hints, style);
+  return try fl.readerHelper(kind, locking, region, hints, style,
+                             fromOpenReader=true);
 }
 
 @unstable "openwriter with a style argument is unstable"
@@ -2970,7 +2983,8 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
-                       style:iostyleInternal = this._style): fileReader(kind, locking) throws {
+                       style:iostyleInternal = this._style,
+                       fromOpenReader=false): fileReader(kind, locking) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
@@ -2983,14 +2997,27 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new fileReader(kind, locking, this, err, hints, region.low,
-                           region.high, style);
+      if (fromOpenReader && useNewOpenReaderRegionBounds) {
+        ret = new fileReader(kind, locking, this, err, hints, region.low,
+                             region.high + 1, style);
+      } else {
+        ret = new fileReader(kind, locking, this, err, hints, region.low,
+                             region.high, style);
+      }
+
     } else if (region.hasLowBound()) {
       ret = new fileReader(kind, locking, this, err, hints, region.low,
                            max(int(64)), style);
+
     } else if (region.hasHighBound()) {
-      ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                           style);
+      if (fromOpenReader && useNewOpenReaderRegionBounds) {
+        ret = new fileReader(kind, locking, this, err, hints, 0,
+                             region.high + 1, style);
+      } else {
+        ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                             style);
+      }
+
     } else {
       ret = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
                            style);
