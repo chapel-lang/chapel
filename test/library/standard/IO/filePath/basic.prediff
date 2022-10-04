@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+tmpfile=$2
+
+tmptmp=`mktemp "tmp.XXXXXX"`
+
+regex="s~$CHPL_HOME~{CHPL_HOME}~g"
+
+echo $regex
+
+sed -e "$regex" $tmpfile > $tmptmp
+
+mv $tmptmp $tmpfile

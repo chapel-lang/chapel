@@ -1634,7 +1634,7 @@ proc file.fsync() throws {
 
 /*
 
-Get the path to an open file.
+Get the absolute path to an open file.
 
 Note that not all files have a path (e.g. files opened with :proc:`openmem`),
 and that this function may not work on all operating systems.
@@ -1650,17 +1650,11 @@ proc file.path : string throws {
   on this._home {
     try this.checkAssumingLocal();
     var tmp:c_string;
-    var tmp2:c_string;
     err = qio_file_path(_file_internal, tmp);
     if !err {
-      err = qio_shortest_path(_file_internal, tmp2, tmp);
-    }
-    chpl_free_c_string(tmp);
-    if !err {
-      ret = createStringWithNewBuffer(tmp2,
+      ret = createStringWithNewBuffer(tmp,
                                       policy=decodePolicy.escape);
     }
-    chpl_free_c_string(tmp2);
   }
   if err then try ioerror(err, "in file.path");
   return ret;
