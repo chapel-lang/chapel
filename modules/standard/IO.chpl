@@ -343,6 +343,7 @@ Some of these subclasses commonly used within the I/O implementation include:
  * :class:`OS.EofError` - the end of file was reached
  * :class:`OS.UnexpectedEofError` - a read or write only returned part of the requested data
  * :class:`OS.BadFormatError` - data read did not adhere to the requested format
+ * :class:`OS.ExceededCapacityError` - a read or write operation required more memory than was available
 
 An error code can be converted to a string using the function
 :proc:`OS.errorToString()`.
@@ -4872,18 +4873,18 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
 
   :throws SystemError: Thrown if data could not be read from the channel
 */
-proc _channel.readAll(type t=string): t throws
+proc _channel.readAll(type t=bytes): t throws
   where t==string || t==bytes
 {
   if this.writing then compilerError("attempt to read on write-only channel");
 
   var out_var : t;
 
-  if t == string {
-    out_var = "";
+  if t == bytes {
+    out_var = b"";
     this.readAll(out_var);
   } else {
-    out_var = b"";
+    out_var = "";
     this.readAll(out_var);
   }
 
@@ -4948,7 +4949,7 @@ proc _channel.readAll(ref b: bytes): int throws {
   :returns: the number of bytes that were stored in ``a``
   :rtype: int
 
-  :throws IoError: Thrown if the channel's contents do not fit into ``a``
+  :throws ExceededCapacityError: Thrown if the channel's contents do not fit into ``a``
   :throws SystemError: Thrown if data could not be read from the channel
 */
 proc _channel.readAll(ref a: [?d] ?t): int throws
@@ -4988,8 +4989,7 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
       this._revert();
 
       if has_more {
-         throw new owned IoError(
-          ESHORT:errorCode,
+         throw new owned ExceededCapacityError(
           "channel's contents exceeded capacity of bytes array in 'readAll'"
         );
       }

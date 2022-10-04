@@ -1372,6 +1372,16 @@ module OS {
     }
   }
 
+  /*
+    :class:`ExceededCapacityError` is a subclass of :class:`IoError`
+    indicating that an IO operation required more memory than was provided
+  */
+  class ExceededCapacityError: IoError {
+    proc init(details: string = "") {
+      super.init(EIO: errorCode, details);
+    }
+  }
+
   // here's what we need from Sys
   private extern proc sys_strerror_syserr_str(error:errorCode, out err_in_strerror:c_int):c_string;
 

@@ -6,11 +6,11 @@ use CTypes;
 var a : [0..<100] uint(8),
     num_b: int = 0;
 
+// this causes an 'ExceededCapacityError' to be thrown:
 var ch = openreader("./jab.txt");
 try {
     num_b = ch.readAll(a);
-} catch e:IoError {
-    // correct error was thrown:
+} catch e:ExceededCapacityError {
     writeln(e);
 } catch {
     writeln("threw wrong error type");
