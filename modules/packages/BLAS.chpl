@@ -26,7 +26,7 @@ BLAS (Basic Linear Algebra Subprograms) are the de facto standard routines for
 low-level matrix, vector, and scalar operations. While `netlib
 <https://www.netlib.org/blas/#_documentation>`_ provides the official
 reference version of BLAS, this documentation refers to the
-`MKL BLAS <https://software.intel.com/en-us/mkl-developer-reference-fortran>`_
+`MKL BLAS <https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines.html>`_
 documentation, due to interface similarities.
 
 This module is intended to work with non-distributed dense rectangular
@@ -119,57 +119,57 @@ in memory.
 
 .. MKL Documentation References
 
-.. _GEMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gemm
-.. _HEMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hemm
-.. _HERK:   https://software.intel.com/en-us/mkl-developer-reference-fortran-herk
-.. _HER2K:  https://software.intel.com/en-us/mkl-developer-reference-fortran-her2k
-.. _SYMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-symm
-.. _SYRK:   https://software.intel.com/en-us/mkl-developer-reference-fortran-syrk
-.. _SYR2K:  https://software.intel.com/en-us/mkl-developer-reference-fortran-syr2k
-.. _TRMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trmm
-.. _TRSM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trsm
-.. _GBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gbmv
-.. _GEMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gemv
-.. _GER:    https://software.intel.com/en-us/mkl-developer-reference-fortran-ger
-.. _GERC:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gerc
-.. _GERU:   https://software.intel.com/en-us/mkl-developer-reference-fortran-geru
-.. _HBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hbmv
-.. _HEMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hemv
-.. _HER:    https://software.intel.com/en-us/mkl-developer-reference-fortran-her
-.. _HER2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-her2
-.. _HPMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hpmv
-.. _HPR:    https://software.intel.com/en-us/mkl-developer-reference-fortran-hpr
-.. _HPR2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hpr2
-.. _SBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-sbmv
-.. _SPMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-spmv
-.. _SPR:    https://software.intel.com/en-us/mkl-developer-reference-fortran-spr
-.. _SPR2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-spr2
-.. _SYMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-symv
-.. _SYR:    https://software.intel.com/en-us/mkl-developer-reference-fortran-syr
-.. _SYR2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-syr2
-.. _TBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tbmv
-.. _TBSV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tbsv
-.. _TPMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tpmv
-.. _TPSV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tpsv
-.. _TRMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trmv
-.. _TRSV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trsv
-.. _ASUM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-asum
-.. _AXPY:   https://software.intel.com/en-us/mkl-developer-reference-fortran-axpy
-.. _COPY:   https://software.intel.com/en-us/mkl-developer-reference-fortran-copy
-.. _DOT:    https://software.intel.com/en-us/mkl-developer-reference-fortran-dot
-.. _SDOT:   https://software.intel.com/en-us/mkl-developer-reference-fortran-sdot
-.. _DOTC:   https://software.intel.com/en-us/mkl-developer-reference-fortran-dotc
-.. _DOTU:   https://software.intel.com/en-us/mkl-developer-reference-fortran-dotu
-.. _NRM2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-nrm2
-.. _ROT:    https://software.intel.com/en-us/mkl-developer-reference-fortran-rot
-.. _ROTG:   https://software.intel.com/en-us/mkl-developer-reference-fortran-rotg
-.. _ROTM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-rotm
-.. _ROTMG:  https://software.intel.com/en-us/mkl-developer-reference-fortran-rotmg
-.. _SCAL:   https://software.intel.com/en-us/mkl-developer-reference-fortran-scal
-.. _SWAP:   https://software.intel.com/en-us/mkl-developer-reference-fortran-swap
-.. _AMAX:   https://software.intel.com/en-us/mkl-developer-reference-fortran-i-amax
-.. _AMIN:   https://software.intel.com/en-us/mkl-developer-reference-fortran-amin
-.. _CABS1:  https://software.intel.com/en-us/mkl-developer-reference-fortran-cabs1
+.. _ASUM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/asum.html
+.. _AXPY:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/axpy.html
+.. _COPY:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/copy.html
+.. _DOT:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/dot .html
+.. _SDOT:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/sdot.html
+.. _DOTC:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/dotc.html
+.. _DOTU:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/dotu.html
+.. _NRM2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/nrm2.html
+.. _ROT:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/rot .html
+.. _ROTG:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/rotg.html
+.. _ROTM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/rotm.html
+.. _ROTMG:  https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/rotmg.html
+.. _SCAL:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/scal.html
+.. _SWAP:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/swap.html
+.. _AMAX:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/i-amax.html
+.. _AMIN:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/amin.html
+.. _CABS1:  https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines/cabs1.html
+.. _GBMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/gbmv.html
+.. _GEMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/gemv.html
+.. _GER:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/ger .html
+.. _GERC:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/gerc.html
+.. _GERU:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/geru.html
+.. _HBMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hbmv.html
+.. _HEMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hemv.html
+.. _HER:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/her .html
+.. _HER2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/her2.html
+.. _HPMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hpmv.html
+.. _HPR:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hpr .html
+.. _HPR2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hpr2.html
+.. _SBMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/sbmv.html
+.. _SPMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/spmv.html
+.. _SPR:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/spr .html
+.. _SPR2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/spr2.html
+.. _SYMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/symv.html
+.. _SYR:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/syr .html
+.. _SYR2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/syr2.html
+.. _TBMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/tbmv.html
+.. _TBSV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/tbsv.html
+.. _TPMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/tpmv.html
+.. _TPSV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/tpsv.html
+.. _TRMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/trmv.html
+.. _TRSV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/trsv.html
+.. _GEMM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/gemm.html
+.. _HEMM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/hemm.html
+.. _HERK:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/herk.html
+.. _HER2K:  https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/her2.htmlk
+.. _SYMM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/symm.html
+.. _SYRK:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/syrk.html
+.. _SYR2K:  https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/syr2k.html
+.. _TRMM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/trmm.html
+.. _TRSM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/trsm.html
 
 .. BLAS Module TODO:
   - Support banded/packed matrix routines
