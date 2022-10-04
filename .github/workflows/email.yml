@@ -47,7 +47,10 @@ jobs:
            from: chapelhpc@gmail.com
     # Optional plain body:
     #       body: ${{matrix.body}}
-           body: ${{ github.job }} job in worflow ${{ github.workflow }} of ${{ github.repository }} has ${{ job.status }}    # Optional HTML body read from file:
+           body: |
+              ${{ github.job }} job in worflow 
+              ${{ github.workflow }} of ${{ github.repository }} 
+              has ${{ job.status }}    # Optional HTML body read from file:
     #       html_body: file://README.html
     # Optional carbon copy recipients:
     #cc: kyloren@example.com,leia@example.com
