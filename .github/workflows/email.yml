@@ -51,11 +51,11 @@ jobs:
               ${{ github.job }} job in worflow 
               branch ${{ github.branch }}
               ${{ github.head_commit_id }} 
-              ${{ github.head_commit_message }} 
-              ${{ github.changed_files }} 
-              ${{ github.compare_url }}
-              ${{ github.pr_url }}
-              ${{ github.workflow }} of ${{ github.repository }} 
+              ${{ github. event. head_commit.message }}  
+              ${{ github.event.changed_files }} 
+              ${{ github.event.compare_url }}
+              ${{ github.event.pr_url }}
+              ${{ github.event.workflow }} of ${{ github.repository }} 
               has ${{ job.status }}   
               
               # Optional HTML body read from file:
