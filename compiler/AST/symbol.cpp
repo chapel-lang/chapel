@@ -135,10 +135,10 @@ void Symbol::verify() {
   }
   verifyInTree(type, "Symbol::type");
 
-  if (name != astr(name))
+  if (name && name != astr(name))
     INT_FATAL("name is not an astr");
 
-  if (cname != astr(cname))
+  if (cname && cname != astr(cname))
     INT_FATAL("cname is not an astr");
 
   if (symExprsHead) {
