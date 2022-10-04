@@ -2571,7 +2571,7 @@ inline proc _channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
-config param useNewRegionBounds = false;
+config param useNewSeekRegionBounds = false;
 
 /*
    Reset a channel to point to a new part of a file.
@@ -2599,7 +2599,7 @@ config param useNewRegionBounds = false;
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
 proc _channel.seek(region: range(?)) throws where (!region.hasHighBound() ||
-                                                   useNewRegionBounds) {
+                                                   useNewSeekRegionBounds) {
 
   if this.locking then
     compilerError("Cannot seek on a locking channel");
@@ -2624,9 +2624,9 @@ proc _channel.seek(region: range(?)) throws where (!region.hasHighBound() ||
   }
 }
 
-deprecated "Currently the region argument high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+deprecated "Currently the region argument high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
 proc _channel.seek(region: range(?)) throws where (region.hasHighBound() &&
-                                                   !useNewRegionBounds) {
+                                                   !useNewSeekRegionBounds) {
   if (!region.hasLowBound()) {
     throw new IllegalArgumentError("region", "must have a lower bound");
 
