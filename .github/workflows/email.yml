@@ -49,10 +49,10 @@ jobs:
     #       body: ${{matrix.body}}
            body: |
               ${{ github.job }} job in worflow 
-              branch ${{ github.branch }}
+              branch ${GITHUB_REF#refs/heads/}
               ${{ github.head_commit_id }} 
               ${{ github. event. head_commit.message }}  
-              ${{ github.event.changed_files }} 
+              $(git rev-parse --short "$GITHUB_SHA")
               ${{ github.event.compare_url }}
               ${{ github.event.pr_url }}
               ${{ github.event.workflow }} of ${{ github.repository }} 
