@@ -178,10 +178,9 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, code,
              "This file-scope code is outside of any "
              "explicit module declarations (e.g., module ",
-             lastModule->name(), ")");
-  wr.message("An implicit module named '",
-             implicitModule->name(), "' is therefore being "
-             "introduced to contain the file's contents.");
+             lastModule->name(), "), so an implicit module named '",
+             implicitModule->name(), "' is being introduced to contain "
+             "the file's contents.");
   wr.message("The following is the first file-scope statement:");
   wr.code(code);
 }
