@@ -1,4 +1,5 @@
 #include <stdio.h>
-#include <stdbool.h>
 
-FILE* openTestFile(void);
+static FILE* openTestFile(void) {
+    return fopen("./test.txt", "r");
+}

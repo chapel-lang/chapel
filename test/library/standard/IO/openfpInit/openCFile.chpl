@@ -1,5 +1,5 @@
 module getACFile {
-    require "./cf.h";
+    require "cf.h";
 
     use IO;
     use CTypes;
@@ -9,21 +9,6 @@ module getACFile {
     try! {
         var f = openfp(openTestFile(), hints = ioHintSet.fromFlag(QIO_HINT_OWNED));
         var r = f.reader();
-        writeln(r.readLine());
+        write(r.readLine());
     }
 }
-
-// module cCode {
-//     extern {
-//         #include <stdio.h>
-
-//         static FILE* gimmeAFile() {
-//             return fopen("./test/txt", "r");
-//         }
-//     }
-// }
-
-// var f = openfp(cCode.gimmeAFile():c_FILE, hints = ioHintSet.fromFlag(QIO_HINT_OWNED));
-// var r = f.reader();
-
-// writeln(r.readLine());
