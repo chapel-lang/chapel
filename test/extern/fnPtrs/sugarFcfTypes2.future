@@ -1,4 +1,4 @@
-error message: Need to sugar first-class function (fcf) types
-
-We shouldn't be printing out internal fcf type names when we
-generate errors involving first-class functions.
+sugarFcfTypes2.chpl:13: error: unresolved call 'barIntInt(proc(x: int): int)'
+sugarFcfTypes2.chpl:7: note: this candidate did not match: barIntInt(f: c_fn_ptr)
+sugarFcfTypes2.chpl:13: note: because actual argument #1 with type 'proc(x: int): int'
+sugarFcfTypes2.chpl:7: note: is passed to formal 'f: c_fn_ptr'
