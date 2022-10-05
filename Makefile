@@ -72,6 +72,7 @@ notcompiler: FORCE
 dyno: FORCE
 	@echo "Making the compiler library..."
 	@cd third-party && $(MAKE) llvm
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno
 
 compiler: FORCE
