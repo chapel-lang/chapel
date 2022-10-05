@@ -1174,10 +1174,6 @@ module OS {
     }
   }
 
-  pragma "no doc"
-  deprecated "'BlockingIOError' is deprecated, please use 'BlockingIoError' instead"
-  class BlockingIOError: SystemError {}
-
   /*
      :class:`ChildProcessError` is the subclass of :class:`SystemError`
      corresponding to :const:`~POSIX.ECHILD`.
@@ -1330,10 +1326,6 @@ module OS {
     }
   }
 
-  pragma "no doc"
-  deprecated "'IOError' is deprecated, please use 'IoError' instead"
-  class IOError: SystemError {}
-
   /*
      :class:`EofError` is the subclass of :class:`IoError` corresponding to
      :const:`SysBasic.EEOF`.
@@ -1344,10 +1336,6 @@ module OS {
     }
   }
 
-  pragma "no doc"
-  deprecated "'EOFError is deprecated, please use 'EofError instead"
-  class EOFError : IoError {}
-
   /*
      :class:`UnexpectedEofError` is the subclass of :class:`IoError`
      corresponding to :const:`SysBasic.ESHORT`.
@@ -1357,10 +1345,6 @@ module OS {
       super.init(err, details);
     }
   }
-
-  pragma "no doc"
-  deprecated "'UnexpectedEOFError' is deprecated, please use 'UnexpectedEofError' instead"
-  class UnexpectedEOFError : IoError {}
 
   /*
      :class:`BadFormatError` is the subclass of :class:`IoError` corresponding

@@ -41,30 +41,6 @@ module SysBasic {
 /* BASIC TYPES */
 use CTypes;
 
-import OS.errorCode;
-
-/* A type storing an error code or an error message.
-   A syserr can be compared using == or != to an qio_err_t (ie integer error code)
-   or to another syserr. A syserr can be cast to or from an qio_err_t. It can be
-   assigned the value of an qio_err_t or another syserr. In addition, syserr can be
-   checked directly in an if statement like so:
-
-   .. code-block:: chapel
-
-     var err: syserr;
-     if err then do writeln("err contains an error, ie err != ENOERR");
-     if !err then do writeln("err does not contain an error; err == ENOERR");
-
-   When a :type:`syserr` formal has default intent, the actual is copied to the
-   formal upon a function call and the formal cannot be assigned within the
-   function.
-
-   The default value of the :type:`syserr` type is undefined.
-
- */
-deprecated "'SysBasic.syserr' has been deprecated; please use 'OS.errorCode' instead."
-extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc
-
 /* An integral error code. This is really just a `c_int`, but code is
    clearer if you use qio_err_t to indicate arguments, variables, and return types
    that are system error codes.
