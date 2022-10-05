@@ -3050,6 +3050,8 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
                           local_style: iostyleInternal);
 }
 
+config param useNewLinesRegionBounds = false;
+
 /* Iterate over all of the lines in a file.
 
    :returns: an object which yields strings read from the file
@@ -3057,9 +3059,18 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
    :throws SystemError: Thrown if an object could not be returned.
  */
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws {
+                hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
+                                                       useNewLinesRegionBounds) {
   return this.linesHelper(locking, region, hints);
 }
+
+deprecated "Currently the region argument high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc file.lines(param locking:bool = true, region: range(?) = 0..,
+                hints = ioHintSet.empty) throws where (region.hasHighBound() &&
+                                                       !useNewLinesRegionBounds) {
+  return this.linesHelper(locking, region, hints);
+}
+
 
 pragma "no doc"
 proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
@@ -3075,14 +3086,29 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
     try this.checkAssumingLocal();
     var ch: fileReader;
     if (region.hasLowBound() && region.hasHighBound()) {
-      ch = new fileReader(kind, locking, this, err, hints, region.low,
-                          region.high, local_style);
+      if (useNewLinesRegionBounds) {
+        ch = new fileReader(kind, locking, this, err, hints, region.low,
+                            region.high + 1, local_style);
+
+      } else {
+        ch = new fileReader(kind, locking, this, err, hints, region.low,
+                            region.high, local_style);
+      }
+
     } else if (region.hasLowBound()) {
       ch = new fileReader(kind, locking, this, err, hints, region.low,
                           max(int(64)), local_style);
+
     } else if (region.hasHighBound()) {
-      ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                          local_style);
+      if (useNewLinesRegionBounds) {
+        ch = new fileReader(kind, locking, this, err, hints, 0, region.high + 1,
+                            local_style);
+
+      } else {
+        ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                            local_style);
+      }
+
     } else {
       ch = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
                           local_style);
