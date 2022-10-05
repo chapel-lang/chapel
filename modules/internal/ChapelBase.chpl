@@ -851,6 +851,7 @@ module ChapelBase {
   }
 
   proc chpl_shouldDoGpuInit(): bool {
+    pragma "codegen for CPU and GPU"
     extern proc chpl_task_getRequestedSubloc(): int(32);
     return
       CHPL_LOCALE_MODEL=="gpu" &&

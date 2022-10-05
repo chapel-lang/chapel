@@ -335,6 +335,17 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
         return false;
       }
 
+      if(fn->hasFlag(FLAG_EXTERN) &&
+        !fn->hasFlag(FLAG_GPU_CODEGEN) &&
+        !fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN))
+      {
+        std::string msg = "function calls out to extern function (";
+        msg += fn->name;
+        msg += "), which is not marked as GPU eligible";
+        reportNotGpuizable(fn, msg.c_str());
+        return false;
+      }
+
       if (hasOuterVarAccesses(fn)) {
         reportNotGpuizable(call, "call has outer var access");
         return false;
