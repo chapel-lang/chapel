@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send mail
+        env:
+         USRNAME: ${{ secrets.USERNAME }}  
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
@@ -34,9 +36,9 @@ jobs:
     # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
     # Optional (recommended): mail server username:
-           #username: ${{secrets.USERNAME}}
+           username: USRNAME
            run: echo ${{secrets.USERNAME}}
-           username: chapelhpc@gmail.com
+           #username: chapelhpc@gmail.com
     # Optional (recommended) mail server password:
            #password: ${{secrets.PASSWORD}}
            password: dandfgyudekkjbhi    
@@ -45,7 +47,7 @@ jobs:
            subject: ${{ github.job }} job of ${{ github.repository }} has ${{ job.status }}    # Required recipients' addresses:
            to: bhavani@hpe.com
     # Required sender full name (address can be skipped):
-           from: chapelhpc@gmail.com
+           from: chapelhpc github actions 
     # Optional plain body:
     #       body: ${{matrix.body}}
            body: |
