@@ -906,10 +906,6 @@ void initPrimitiveTypes() {
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCFnPtr->defaultValue = gNil;
 
-  dtFile = createPrimitiveType("_file", "_cfile");
-  dtFile->symbol->addFlag(FLAG_EXTERN);
-  dtFile->symbol->addFlag(FLAG_DEPRECATED);
-
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
 
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
@@ -1687,7 +1683,6 @@ bool needsCapture(Type* t) {
       isRecord(t) ||
       isUnion(t) ||
       t == dtTaskID || // false?
-      t == dtFile ||
       // TODO: Move these down to the "no" section.
       t == dtNil ||
       t == dtOpaque ||
