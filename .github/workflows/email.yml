@@ -27,15 +27,11 @@ jobs:
     needs: changedfiles
     steps:
       - name: get env
-        run: env  
-    
-      - name: Get changed files
-       
-    # only run there are changed files
-       # if: ${{needs.changedfiles.outputs.ts}}
+        run: env       
         
       - name: echo changed files
-        run: echo ${{needs.changedfiles.outputs.ts}}    
+        run: echo ${{needs.changedfiles.outputs.ts}}
+        
       - name: Send mail      
         if: always()
         uses: dawidd6/action-send-mail@v3
