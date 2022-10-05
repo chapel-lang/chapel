@@ -47,6 +47,9 @@ setenv CHPL_TASKS fifo
 echo "Setting CHPL_MEM to cstdlib"
 setenv CHPL_MEM cstdlib
 
+echo "Setting CHPL_HOST_MEM to cstdlib"
+setenv CHPL_HOST_MEM cstdlib
+
 echo "Setting CHPL_GMP to none"
 setenv CHPL_GMP none
 
