@@ -20,7 +20,7 @@ proc foo() {
     var bar = 1; }
 // this comment will be text
 
-example.rst
+example.md
 ===========
 
 This is
@@ -34,12 +34,10 @@ proc foo() {
 
 this comment will be text"""
 
-from __future__ import print_function
-
 import os
 import sys
 from itertools import product
-from litchapel import to_pieces, titlecomment
+from literate_chapel import to_pieces, title_comment
 
 import argparse
 
@@ -104,20 +102,13 @@ def gen_md(pieces, chapelfile):
         output.append('')
     return '\n'.join(output)
 
-
-def iterate_lines(file):
-    """Yield every line from a compopts / execopts file. Doesn't
-    currently handle executable files."""
-
-    with open(file, 'r', encoding='utf-8') as handle:
-        yield from (l.strip('\n') for l in handle)
-
-def variant_iter(file):
-    """Create an iterator of an compopts / execopts file's lines if it
+def variant_list(file):
+    """Create a list of an compopts / execopts file's lines if it
     exists, and return None otherwise."""
 
     if not os.path.isfile(file): return None
-    return iterate_lines(file)
+    with open(file, 'r', encoding='utf-8') as handle:
+        return [l.strip("\n") for l in handle]
 
 def get_combinations(iterables):
     """Take iterables of compopts, execopts, etc and yield tuples of
@@ -146,10 +137,10 @@ def goodfiles(chapelfile):
     execoptsFile = os.path.join(filedir, ''.join([basename, '.execopts']))
 
     iters = []
-    compoptsIter = variant_iter(compoptsFile)
-    if compoptsIter is not None: iters.append(compoptsIter)
-    execoptsIer = variant_iter(execoptsFile)
-    if execoptsIer is not None: iters.append(execoptsIer)
+    compoptsList = variant_list(compoptsFile)
+    if compoptsList is not None: iters.append(compoptsList)
+    execoptsList = variant_list(execoptsFile)
+    if execoptsList is not None: iters.append(execoptsList)
 
     for (name, opts) in get_combinations(iters):
         yield (basename, name, ' '.join(opts))

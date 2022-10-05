@@ -34,11 +34,9 @@ This is
 
 this comment will be text"""
 
-from __future__ import print_function
-
 import os
 import sys
-from litchapel import to_pieces, titlecomment
+from literate_chapel import to_pieces, title_comment
 
 import argparse
 
@@ -98,7 +96,7 @@ def gen_title(chapelfile):
     """Generate file title, based on if title comment exists"""
     with open(chapelfile, 'r', encoding='utf-8') as handle:
         line1 = handle.readline()
-        if titlecomment(line1):
+        if title_comment(line1):
             title = line1.lstrip('//').strip()
         else:
             filename = os.path.split(chapelfile)[1]
@@ -165,7 +163,7 @@ def gen_codeblock(handle):
 
     for (i, line) in enumerate([l.strip('\n') for l in handle.readlines()]):
         if i == 0:
-            if titlecomment(line):
+            if title_comment(line):
                 continue
 
         output.append('  ' + line)

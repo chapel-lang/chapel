@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import sys
 
-def titlecomment(line):
+def title_comment(line):
     """Condition for a line to be a title comment"""
     return line.startswith('//') and len(line.lstrip('//').strip()) > 0
 
@@ -40,10 +40,10 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
     chunk_index = 0
     foundCommentExample = False
 
-    # Each line is rst or code-block
+    # Each line is prose or code-block
     for (i, line) in enumerate([l.strip('\n') for l in handle.readlines()]):
         # Skip title comment if present
-        if i == 0 and titlecomment(line):
+        if i == 0 and title_comment(line):
             switch_type('title')
             push_line(line.lstrip('//').strip())
             switch_type('prose')
@@ -74,39 +74,39 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
             state = 'codeblock'
 
         if 'comment' in state:
-            rstline = line
+            proseline = line
             if state == 'linecomment':
                 # Strip white space for line comments
-                rstline = rstline.replace('//', '  ', 1)
-                rstline = rstline.strip()
+                proseline = proseline.replace('//', '  ', 1)
+                proseline = proseline.strip()
             else:
                 # Preserve white space for block comments, for indent purposes
                 if commentstarts:
-                    rstline = rstline.replace('/*', '  ')
+                    proseline = proseline.replace('/*', '  ')
                 if commentends > 0:
-                    rstline = rstline.replace('*/', '  ')
+                    proseline = proseline.replace('*/', '  ')
                 # No need for trailing white space... ever
-                rstline = rstline.rstrip(' ')
+                proseline = proseline.rstrip(' ')
 
             # Handle indentation
             if indentation == -1:
                 # Detect level of indentation (number of leading whitespaces)
-                baseline = len(rstline) - len(rstline.lstrip(' '))
+                baseline = len(proseline) - len(proseline.lstrip(' '))
                 if baseline > 0:
                     # Set indentation for the proceeding block
                     indentation = baseline
                     # Set indentation for baseline to 0
-                    rstline = rstline.lstrip(' ')
+                    proseline = proseline.lstrip(' ')
             else:
                 # Remove the amount of indent that was removed from baseline
-                if rstline.startswith(' '*indentation):
-                    rstline = rstline[indentation:]
+                if proseline.startswith(' '*indentation):
+                    proseline = proseline[indentation:]
                 else:
-                    rstline = rstline.lstrip(' ')
+                    proseline = proseline.lstrip(' ')
             # Special case for multi line comment in learnChapelInYMinutes
-            if islearnChapelInYMinutes and 'multi-line comment' in rstline:
+            if islearnChapelInYMinutes and 'multi-line comment' in proseline:
                 push_line(' '*indentation + '/*')
-                push_line(rstline)
+                push_line(proseline)
                 push_line(' '*indentation + '*/')
                 if foundCommentExample:
                     print("Error: Found more than one line containing \"multi-line comment\" in \
@@ -115,7 +115,7 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
                 foundCommentExample = True
             else:
                switch_type('prose')
-               push_line(rstline)
+               push_line(proseline)
         else:
             # Reset indentation as we enter codeblock state
             indentation = -1
