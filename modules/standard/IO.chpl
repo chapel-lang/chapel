@@ -3201,7 +3201,8 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 pragma "no doc"
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
-                       style:iostyleInternal = this._style):
+                       style:iostyleInternal = this._style,
+                       fromOpenUrlWriter = false):
   fileWriter(kind,locking) throws {
 
   if (region.hasLowBound() && region.low < 0) {
@@ -3217,7 +3218,9 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      if (useNewFileWriterRegionBounds) {
+      // TODO: remove the fromOpenUrlWriter arg when the deprecated version is
+      // removed
+      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
         ret = new fileWriter(kind, locking, this, err, hints, region.low,
                              region.high + 1, style);
       } else {
@@ -3230,7 +3233,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                            max(int(64)), style);
 
     } else if (region.hasHighBound()) {
-      if (useNewFileWriterRegionBounds) {
+      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
         ret = new fileWriter(kind, locking, this, err, hints, 0,
                              region.high + 1, style);
       } else {

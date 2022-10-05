@@ -149,8 +149,10 @@ module URL {
     use Curl;
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.cw, style);
-    return f.writer(kind=kind, locking=locking,
-                    region=start..end);
+    // TODO: change this back to f.writer when the fromOpenUrlWriter arg is
+    // removed
+    return f.writerHelper(kind=kind, locking=locking,
+                          region=start..end, fromOpenUrlWriter=true);
   }
 
 }
