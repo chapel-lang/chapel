@@ -53,11 +53,11 @@ jobs:
               <p>   
               ${{ github.job }} job in worflow <br>
               branch ${GITHUB_REF#refs/heads/} <br>
-              ${{ github.head_commit_id }} <br>
-              ${{ github. event. head_commit.message }}  <br>
-              $(git rev-parse --short "$GITHUB_SHA") <br>
-              ${{ github.event.compare_url }} <br>
-              ${{ github.event.pr_url }} <br>
+              commit id : ${{ github.head_commit_id }} <br>
+              commit message: ${{ github. event. head_commit.message }}  <br>
+              sha: ${{ github.head_ref }}.${{ github.sha }}<br>
+              files changed: ${{ github.event.compare_url }} <br>
+              pr: ${{ GITHUB_REF }} <br>
               ${{ github.event.workflow }} of ${{ github.repository }} 
               has ${{ job.status }}   <br>
               </p>
