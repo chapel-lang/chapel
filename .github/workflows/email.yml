@@ -49,6 +49,7 @@ jobs:
     # Optional plain body:
     #       body: ${{matrix.body}}
            body: |
+              run: echo ${{secrets.USERNAME}}
               ${{ github.job }} job in worflow 
               branch ${GITHUB_REF#refs/heads/}
               ${{ github.head_commit_id }} 
