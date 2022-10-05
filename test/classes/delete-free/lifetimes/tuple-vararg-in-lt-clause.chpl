@@ -1,7 +1,8 @@
 // This test ensures that lifetime constraints involving varargs
 // work properly. It was motivated by
-//   test/library/packages/UnitTest/UnitTest.chpl
-// when its proc dependsOn is invoked from one of:
+//   modules/packages/UnitTest.chpl
+// when its proc dependsOn had a lifetime clause and was invoked from
+// one of:
 //   test/library/packages/UnitTest/test_locales.chpl
 //   test/library/packages/UnitTest/test_dependency.chpl
 
