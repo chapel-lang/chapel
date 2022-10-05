@@ -1878,11 +1878,20 @@ proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
 
+pragma "last resort"
+@unstable "openfp with a style argument is unstable"
+proc openfp(fp: _file, hints=ioHintSet.empty, style:iostyle):file throws {
+  return openfpHelper(fp, hints, style: iostyleInternal);
+}
+
 /*
 
-Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
-that once the file is open, you will need to use a :proc:`file.reader` or
-:proc:`file.writer` to create a channel to actually perform I/O operations
+Create a Chapel :record:`file` that wraps around an open C file. A pointer to
+a C ``FILE`` object can be obtained via Chapel's
+:ref:`C Interoperability <primers-C-interop-using-C>` functionality.
+
+Once the Chapel file is created, you will need to use a :proc:`file.reader` or
+:proc:`file.writer` to create a channel to perform I/O operations on the C file.
 
 .. note::
 
@@ -1891,14 +1900,20 @@ that once the file is open, you will need to use a :proc:`file.reader` or
   to a file opened with :proc:`openfp`.
 
 
-:arg fp: a pointer to a C ``FILE`` (represented by a :type:`~CTypes.c_FILE`)
+:arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` that uses the underlying FILE* argument.
+:returns: an open :record:`file` corresponding to the C file.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
 proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
+  return openfpHelper(fp, hints);
+}
+
+pragma "last resort"
+deprecated "the '_file' type is deprecated; use the variant of 'openfp' that takes a 'c_FILE'"
+proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 

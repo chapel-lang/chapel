@@ -906,7 +906,7 @@ void initPrimitiveTypes() {
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCFnPtr->defaultValue = gNil;
 
-  dtFile = createPrimitiveType ("chpl__c_file", "_cfile");
+  dtFile = createPrimitiveType ("_file", "_cfile");
   dtFile->symbol->addFlag(FLAG_EXTERN);
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
