@@ -53,7 +53,7 @@ jobs:
               <p>   
               ${{ github.job }} job in worflow <br>
               branch ${GITHUB_REF#refs/heads/} <br>
-              commit id : ${{ github.event.head_commit_id }} <br>
+              commit id : ${{ github.event.head_commit.id }} <br>
               commit message: ${{ github.event.head_commit.message }}  <br>
               sha: ${{ github.head_ref }}.${{ github.sha }}<br>
               files changed: ${{ github.event.compare_url }} <br>
