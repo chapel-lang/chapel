@@ -31,6 +31,9 @@ module ChapelBase {
   use CTypes;
   use ChplConfig;
 
+  deprecated "the '_file' type is deprecated; please use 'CTtypes.c_FILE' instead"
+  type _file = c_FILE;
+
   config param enablePostfixBangChecks = false;
 
   // These two are called by compiler-generated code.

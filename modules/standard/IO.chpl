@@ -1879,7 +1879,7 @@ proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
 }
 
 pragma "last resort"
-@unstable "openfp with a style argument is unstable"
+deprecated "the '_file' type is deprecated; use the variant of 'openfp' that takes a 'c_FILE'"
 proc openfp(fp: _file, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
