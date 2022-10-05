@@ -59,8 +59,15 @@ jobs:
               has ${{ job.status }}   
               
               # Optional HTML body read from file:
-    #       html_body: file://README.html
-    # Optional carbon copy recipients:
+           html_body: |
+              <!DOCTYPE html>
+              <html>
+              <body>
+              <h1>Heading</h1>
+              <p>Paragraph</p>
+              </body>
+              </html>
+              # Optional carbon copy recipients:
     #cc: kyloren@example.com,leia@example.com
     # Optional blind carbon copy recipients:
     #bcc: r2d2@example.com,hansolo@example.com
