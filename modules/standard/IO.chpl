@@ -2935,6 +2935,8 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
+config param useNewFileReaderRegionBounds = false;
+
 /*
    Create a :record:`channel` that supports reading from a file. See
    :ref:`about-io-overview`.
@@ -2976,7 +2978,17 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                                  byte 0.
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty): fileReader(kind, locking) throws {
+                 region: range(?) = 0.., hints = ioHintSet.empty)
+  : fileReader(kind, locking) throws where (!region.hasHighBound() ||
+                                            useNewFileReaderRegionBounds) {
+  return this.readerHelper(kind, locking, region, hints);
+}
+
+deprecated "Currently the region argument high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc file.reader(param kind=iokind.dynamic, param locking=true,
+                 region: range(?) = 0.., hints = ioHintSet.empty)
+  : fileReader(kind, locking) throws where (region.hasHighBound() &&
+                                            !useNewFileReaderRegionBounds) {
   return this.readerHelper(kind, locking, region, hints);
 }
 
@@ -2997,7 +3009,8 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      if (fromOpenReader && useNewOpenReaderRegionBounds) {
+      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
+          (!fromOpenReader && useNewFileReaderRegionBounds)) {
         ret = new fileReader(kind, locking, this, err, hints, region.low,
                              region.high + 1, style);
       } else {
@@ -3010,7 +3023,8 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                            max(int(64)), style);
 
     } else if (region.hasHighBound()) {
-      if (fromOpenReader && useNewOpenReaderRegionBounds) {
+      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
+          (!fromOpenReader && useNewFileReaderRegionBounds)) {
         ret = new fileReader(kind, locking, this, err, hints, 0,
                              region.high + 1, style);
       } else {
