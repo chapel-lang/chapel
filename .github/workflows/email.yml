@@ -29,10 +29,18 @@ jobs:
       - name: get env
         run: env 
         
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Get changed files
+        id: changes
+        # Set outputs using the command.
+        run: |
+          echo "::set-output name=all::$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)"
+          echo "::set-output name=ts::$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep .ts$ | xargs)"
+
+          echo "${{outputs.ts}}
     
-      - name: Send mail
-      
-        
+      - name: Send mail      
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
@@ -72,9 +80,7 @@ jobs:
               commit id : ${{ github.event.head_commit.id }} <br>
               commit message: ${{ github.event.head_commit.message }}  <br>
               sha: ${{ github.head_ref }}.${{ github.sha }}<br>
-              files changed: ${{ github.event.compare_url }} <br>
-              needs: changedfiles
-              files changed: ${{needs.changedfiles.outputs.ts}}
+              files changed: ${{changedfiles.outputs.ts}}
               ${{ github.event.workflow }} of ${{ github.repository }} 
               has ${{ job.status }}   <br>
               </p>
