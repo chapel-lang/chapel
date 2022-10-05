@@ -57,7 +57,7 @@ jobs:
               commit message: ${{ github.event.head_commit.message }}  <br>
               sha: ${{ github.head_ref }}.${{ github.sha }}<br>
               files changed: ${{ github.event.compare_url }} <br>
-              pr: ${{ GITHUB_REF }} <br>
+              #pr: ${{ GITHUB_REF }} <br>
               ${{ github.event.workflow }} of ${{ github.repository }} 
               has ${{ job.status }}   <br>
               </p>
