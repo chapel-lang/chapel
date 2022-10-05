@@ -4,6 +4,7 @@ on:
   push:
 env:
          USERNAME: ${{ secrets.USERNAME }} 
+         run: echo "user name is ${{ secrets.USERNAME }} "
 # NOTE: each job has to specify the container section in its entirety, which is
 # certainly repetetive, but the `defaults` section can't be applied and the `env`
 # context isn't available in the `jobs` section
@@ -37,7 +38,6 @@ jobs:
            secure: true
     # Optional (recommended): mail server username:
            #username: USRNAME
-           run: echo  " username is ${{env.USERNAME}}"
            username: chapelhpc@gmail.com
     # Optional (recommended) mail server password:
            #password: ${{secrets.PASSWORD}}
