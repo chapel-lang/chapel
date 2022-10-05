@@ -915,19 +915,21 @@ checkFormalActualBaseTypesMatch()
 // After resolution the retType field is just a cached version of the type of
 // the return value variable.
 static void
-checkRetTypeMatchesRetVarType()
-{
-  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    if (fn->isIterator())
-      // Iterators break this rule.
-      // retType is the type of the iterator record
-      // The return value type is the type of the index the iterator returns.
-      continue;
-    if (fn->hasFlag(FLAG_AUTO_II))
-      // auto ii functions break this rule, but only during the time that
-      // they are prototypes.  After the body is filled in, they should obey it.
-      continue;
+checkRetTypeMatchesRetVarType() {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+
+    // Iterators break this rule.
+    // retType is the type of the iterator record
+    // The return value type is the type of the index the iterator returns.
+    if (fn->isIterator()) continue;
+
+    // auto ii functions break this rule, but only during the time that
+    // they are prototypes.  After the body is filled in, they should obey it.
+    if (fn->hasFlag(FLAG_AUTO_II)) continue;
+
+    // No body, so no return symbol.
+    if (fn->hasFlag(FLAG_NO_FN_BODY)) continue;
+
     INT_ASSERT(fn->retType == fn->getReturnSymbol()->type);
   }
 }

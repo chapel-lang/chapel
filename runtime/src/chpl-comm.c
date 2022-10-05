@@ -155,7 +155,7 @@ void set_maxHeapSize(void)
   }
 }
 
-ssize_t chpl_comm_getenvMaxHeapSize()
+ssize_t chpl_comm_getenvMaxHeapSize(void)
 {
   if (pthread_once(&maxHeapSize_once, set_maxHeapSize) != 0) {
     chpl_internal_error("pthread_once(&maxHeapSize_once) failed");

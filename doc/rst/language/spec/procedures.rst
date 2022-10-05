@@ -90,8 +90,7 @@ Functions can be called using either parentheses or brackets.
    tradeoff.
 
 Functions that are defined without parentheses must be called without
-parentheses as defined by scope resolution. Functions without
-parentheses are discussed
+parentheses. Functions without parentheses are discussed
 in :ref:`Functions_without_Parentheses`.
 
 A ``named-expression`` is an expression that may be optionally named. It
@@ -124,7 +123,7 @@ Procedures are defined with the following syntax:
    operator-name: one of
      'align' 'by'
      + - * / % ** : ! == != <= >= < > << >> & | ^ ~
-     = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~> #
+     = += -= *= /= %= **= &= |= ^= <<= >>= <=> #
 
    argument-list:
      ( formals[OPT] )
@@ -577,6 +576,42 @@ Abstract Intents
 The abstract intents are ``const`` and the *default intent* (when no
 intent is specified).
 
+.. _The_Const_Intent:
+
+The Const Intent
+^^^^^^^^^^^^^^^^
+
+The ``const`` intent specifies that the function will not and cannot
+modify the formal argument within its dynamic scope. Whether ``const``
+is interpreted as ``const in`` or ``const ref`` intent depends on the
+argument type.  Generally, small values, such as scalar types, will be
+passed by ``const in``; while larger values, such as domains and
+arrays, will be passed by ``const ref`` intent. The
+:ref:`Abstract_Intents_Table` below lists the meaning of the ``const``
+intent for each type.
+
+.. _The_Default_Intent:
+
+The Default Intent
+^^^^^^^^^^^^^^^^^^
+
+When no intent is specified for a formal argument, the *default
+intent* is applied.  It is designed to take the most natural/least
+surprising action for the argument, based on its type.  In practice,
+this is ``const`` for most types (as defined by
+:ref:`The_Const_Intent`) to avoid surprises for programmers coming
+from languages where everything is passed by ``in`` or ``ref`` intent
+by default.  Exceptions are made for types where modification is
+considered part of their nature, such as types used for synchronization
+(like ``atomic``) and arrays.
+
+Default argument passing for tuples generally matches the default
+argument passing strategy that would be applied if each tuple element
+was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
+
+The :ref:`Abstract_Intents_Table` that follows defines the default
+intent for each type.
+
 .. _Abstract_Intents_Table:
 
 Abstract Intents Table
@@ -585,61 +620,48 @@ Abstract Intents Table
 The following table summarizes what these abstract intents mean for each
 type:
 
-=================== ================ ======================= ====================================================
-\                   meaning of       meaning of             
-type                ``const`` intent default intent          notes
-``bool``            ``const in``     ``const in``           
-``int``             ``const in``     ``const in``           
-``uint``            ``const in``     ``const in``           
-``real``            ``const in``     ``const in``           
-``imag``            ``const in``     ``const in``           
-``complex``         ``const in``     ``const in``           
-``range``           ``const in``     ``const in``           
-``owned class``     ``const ref``    ``const ref``          
-``shared class``    ``const ref``    ``const ref``          
-``borrowed class``  ``const in``     ``const in``           
-``unmanaged class`` ``const in``     ``const in``           
-``atomic``          ``const ref``    ``ref``                
-``single``          ``const ref``    ``ref``                
-``sync``            ``const ref``    ``ref``                
-``string``          ``const ref``    ``const ref``          
-``bytes``           ``const ref``    ``const ref``          
-``record``          ``const ref``    ``const ref``           see :ref:`Default_Intent_for_Arrays_and_Record_this`
-``union``           ``const ref``    ``const ref``          
-``dmap``            ``const ref``    ``const ref``          
-``domain``          ``const ref``    ``const ref``          
-array               ``const ref``    ``ref`` / ``const ref`` see :ref:`Default_Intent_for_Arrays_and_Record_this`
-tuple               per element      per element             see :ref:`Tuple_Argument_Intents`
-=================== ================ ======================= ====================================================
+.. table::
+    :widths: 28 18 22 32
 
-.. _The_Const_Intent:
-
-The Const Intent
-^^^^^^^^^^^^^^^^
-
-The ``const`` intent specifies the intention that the function will not
-and cannot modify the formal argument within its dynamic scope. Whether
-the actual argument will be passed by ``const in`` or ``const ref``
-intent depends on its type. In general, small values, such as scalar
-types, will be passed by ``const in``; while larger values, such as
-domains and arrays, will be passed by ``const ref`` intent. The
-:ref:`Abstract_Intents_Table` earlier in this sub-section lists the
-meaning of the const intent for each type.
-
-.. _The_Default_Intent:
-
-The Default Intent
-^^^^^^^^^^^^^^^^^^
-
-When no intent is specified for a formal argument, the *default intent*
-is applied. It is designed to take the most natural/least surprising
-action for the argument, based on its type.
-The :ref:`Abstract_Intents_Table` earlier in this sub-section lists the
-meaning of the default intent for each type.
-
-Default argument passing for tuples generally matches the default
-argument passing strategy that would be applied if each tuple element
-was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    |                         | ``const`` intent     |                         |                                                      |
+    | Type                    | meaning              | Default intent meaning  | Notes                                                |
+    +=========================+======================+=========================+======================================================+
+    | scalar types            |  ``const in``        | ``const in``            |                                                      |
+    |                         |                      |                         |                                                      |
+    | (``bool``,              |                      |                         |                                                      |
+    | ``int``, ``uint``,      |                      |                         |                                                      |
+    | ``real``, ``imag``,     |                      |                         |                                                      |
+    | ``complex``)            |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | string-like types       | ``const ref``        | ``const ref``           |                                                      |
+    |                         |                      |                         |                                                      |
+    | (``string``, ``bytes``) |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | ranges                  | ``const in``         | ``const in``            |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | domains / domain maps   | ``const ref``        | ``const ref``           |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | arrays                  | ``const ref``        | ``ref`` / ``const ref`` | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | records                 | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | auto-managed classes    | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_owned_and_shared`       |
+    | (``owned``, ``shared``) |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | non-managed classes     | ``const in``         | ``const in``            |                                                      |
+    |                         |                      |                         |                                                      |
+    | (``borrowed``,          |                      |                         |                                                      |
+    | ``umanaged``)           |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | tuples                  | per-element          | per-element             | see :ref:`Tuple_Argument_Intents`                    |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | unions                  | ``const ref``        | ``const ref``           |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | synchronization types   | ``const ref``        | ``ref``                 |                                                      |
+    | (``atomic``,            |                      |                         |                                                      |
+    | ``sync``, ``single``)   |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
 
 .. _Default_Intent_for_Arrays_and_Record_this:
 
@@ -1052,6 +1074,9 @@ statement in a procedure of a ``void`` return type or in an iterator
 must not include an expression. A return statement of a variable
 procedure must contain an lvalue expression.
 
+The statements following a return statement in the same block
+are ignored by the compiler because they cannot be executed.
+
 The syntax of the return statement is given by 
 
 .. code-block:: syntax
@@ -1201,7 +1226,7 @@ binary   ``+`` ``-`` ``*`` ``/`` ``%`` ``**`` ``:``
 binary   ``==`` ``<=`` ``>=`` ``<`` ``>``
 binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``#`` ``align`` ``by``
 binary   ``=`` ``+=`` ``-=`` ``*=`` ``/=`` ``%=`` ``**=``
-binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
+binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>``
 ======== ===============================
 
 The arity and precedence of the operator must be maintained when it is
@@ -1238,13 +1263,11 @@ Function resolution is defined as follows.
    found, this is determined to be the target function.
 
 -  From the set of candidate functions, determine the set of most
-   specific functions. In most cases, there is one most specific
-   function, but there can be several if they differ only in return
-   intent. The set of most specific functions is the set of functions
-   that are not *more specific* than each other but that are *more
-   specific* than every other candidate function. The *more specific*
-   relationship is defined in
-    :ref:`Determining_More_Specific_Functions`.
+   specific functions as described in
+    :ref:`Determining_Most_Specific_Functions`. In most cases, if the set
+   of most specific functions contains more than one element, it will
+   result in an ambiguity error. However, there can be several if they
+   differ only in return intent.
 
 -  From the set of most specific functions, the compiler determines a
    best function for each return intent as described in
@@ -1259,17 +1282,19 @@ Notation
 
 This section uses the following notation:
 
- * :math:`X` is a function under consideration
- * The actual argument under consideration is :math:`A` of type
-   :math:`T_A`
- * :math:`M_X` represents the argument mapping from :math:`A` to the
-   formal argument :math:`F_X` from function :math:`X`. :math:`F_X` has
-   type :math:`T_X`. When :math:`X` is a generic function, :math:`F_X`
-   refers to the possibly generic argument and :math:`T_X` refers to
-   the instantiated type.
- * When needed in the exposition, :math:`Y` is another function under
-   consideration, with mapping :math:`M_Y` from :math:`A` to a formal
-   argument :math:`F_Y` of type :math:`T_Y`.
+* :math:`X` is a function under consideration
+
+* An actual argument under consideration is :math:`A_i` of type
+  :math:`T(A_i)`
+
+* The formal argument in function :math:`X` that will receive :math:`A_i`
+  is :math:`X_i` and it has type :math:`T(X_i)`. When :math:`X` is a
+  generic function, :math:`X_i` refers to the possibly generic argument
+  and :math:`T(X_i)` refers to the instantiated type.
+
+* When needed in the exposition, :math:`Y` is another function under
+  consideration, where :math:`A_i` is passed to the formal :math:`Y_i` of
+  type :math:`T(Y_i)`.
 
 .. _Determining_Visible_Functions:
 
@@ -1292,12 +1317,8 @@ function call and one of the following conditions is met:
   and the call qualifies the function name with the module name,
   see also :ref:`Importing_Modules`.
 
-   *Open issue*.
-
-   What should be the visibility of methods? Applying the above rules
-   excludes, for example, the methods defined in the same module as the
-   receiver type when that module is neither visible nor reachable
-   through module uses or imports from the scope of the function call.
+- :math:`X` is a method and it is defined in the same module that defines
+  the receiver type.
 
 .. _Determining_Candidate_Functions:
 
@@ -1336,275 +1357,204 @@ to a function if one exists:
 Legal Argument Mapping
 ^^^^^^^^^^^^^^^^^^^^^^
 
-An actual argument :math:`A` of type :math:`T_A` can be legally mapped to
-a formal argument :math:`F_X` according to the following rules.
+An actual argument :math:`A_i` of type :math:`T(A_i)` can be legally mapped to
+a formal argument :math:`X_i` according to the following rules.
 
-First, if :math:`A` is a ``type`` but :math:`F_X` does not use the
+First, if :math:`A_i` is a ``type`` but :math:`X_i` does not use the
 ``type`` intent, then it is not a legal argument mapping.
 
-Then, if :math:`F_X` is a generic argument:
+Then, if :math:`X_i` is a generic argument:
 
- * if :math:`F_X` uses ``param`` intent, then :math:`A` must also be a
+ * if :math:`X_i` uses ``param`` intent, then :math:`A_i` must also be a
    ``param``
- * if :math:`F_X` uses ``type`` intent, then :math:`A` must also be a
+ * if :math:`X_i` uses ``type`` intent, then :math:`A_i` must also be a
    ``type``
- * there must exist an instantiation :math:`T_X` of the generic declared
-   type of :math:`F_X`, if any, that is compatible with the type
-   :math:`T_A` according to the rules below.
+ * there must exist an instantiation :math:`T(X_i)` of the generic declared
+   type of :math:`X_i`, if any, that is compatible with the type
+   :math:`T(A_i)` according to the rules below.
 
-Next, the type :math:`T_X` - which is either the declared type of the
-formal argument :math:`F_X` if it is concrete or the instantiated type if
-:math:`F_X` is generic - must be compatible with the type :math:`T_A`
-according to the concrete intent of :math:`F_X`:
+Next, the type :math:`T(X_i)` - which is either the declared type of the
+formal argument :math:`X_i` if it is concrete or the instantiated type if
+:math:`X_i` is generic - must be compatible with the type :math:`T(A_i)`
+according to the concrete intent of :math:`X_i`:
 
- * if :math:`F_X` uses ``ref`` intent, then :math:`T_A`
-   must be the same type as :math:`T_X`
- * if :math:`F_X` uses ``const ref`` intent, then :math:`T_A` and
-   :math:`T_X` must be the same type or a subtype of :math:`T_X` (see
+ * if :math:`X_i` uses ``ref`` intent, then :math:`T(A_i)`
+   must be the same type as :math:`T(X_i)`
+ * if :math:`X_i` uses ``const ref`` intent, then :math:`T(A_i)` and
+   :math:`T(X_i)` must be the same type or a subtype of :math:`T(X_i)` (see
    :ref:`Subtype_Arg_Conversions`)
- * if :math:`F_X` uses ``in`` or ``inout`` intent, then :math:`T_A`
+ * if :math:`X_i` uses ``in`` or ``inout`` intent, then :math:`T(A_i)`
    must be the same type, a subtype of, or implicitly convertible to
-   :math:`T_X`.
- * if :math:`F_X` uses  the ``out`` intent, it is always a legal
+   :math:`T(X_i)`.
+ * if :math:`X_i` uses  the ``out`` intent, it is always a legal
    argument mapping regardless of the type of the actual and formal.
-   In the event that setting :math:`T_A` from :math:`F_X` is not
+   In the event that setting :math:`T(A_i)` from :math:`X_i` is not
    possible then a compilation error will be emitted if this function
    is chosen as the best candidate.
- * if :math:`F_X` uses the ``type`` intent, then :math:`T_A`
-   must be the same type or a subtype of :math:`T_X` (see
+ * if :math:`X_i` uses the ``type`` intent, then :math:`T(A_i)`
+   must be the same type or a subtype of :math:`T(X_i)` (see
    :ref:`Subtype_Arg_Conversions`).
 
 Finally, if the above compatibility cannot be established, the mapping is
-checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`
+checked for promotion. If :math:`T(A_i)` is scalar promotable to :math:`T(X_i)`
 (see :ref:`Promotion`), then the above rules are checked with the element
-type, index type, or yielded type.  For example, if :math:`T_A` is an
-array of ``int`` and :math:`T_X` is ``int``, then promotion occurs and
-the above rules will be checked with :math:`T_A` == ``int``.
+type, index type, or yielded type.  For example, if :math:`T(A_i)` is an
+array of ``int`` and :math:`T(X_i)` is ``int``, then promotion occurs and
+the above rules will be checked with :math:`T(A_i)` == ``int``.
 
 .. _Determining_More_Specific_Functions:
 
-Determining More Specific Functions
+.. _Determining_Most_Specific_Functions:
+
+Determining Most Specific Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Given two candidate functions, :math:`X` and :math:`Y`, the more specific
-function is determined by the first of the following steps that applies:
+Given a set of candidate functions, the following steps are applied to
+remove candidates from the set. After the process completes, the
+remaining candidates in the set are the most specific functions.
 
--  If :math:`X` does not require promotion and :math:`Y` does
-   require promotion, then :math:`X` is more specific.
+1. If any candidate is more visible (or shadows) another candidate,
+   discard all candidates that are less visible than (or shadowed by)
+   another candidate.
 
--  If :math:`Y` does not require promotion and :math:`X` does
-   require promotion, then :math:`Y` is more specific.
+2. If at least one candidate requires promotion and at least one
+   candidate does not use promotion, discard all candidates that use
+   promotion.
 
--  If at least one of the legal argument mappings to :math:`X` is a
-   *more specific argument mapping* than the corresponding legal
-   argument mapping to :math:`Y` and none of the legal argument
-   mappings to :math:`Y` is a more specific argument mapping than the
-   corresponding legal argument mapping to :math:`X`, then :math:`X`
-   is more specific.
+3. Discard any function that has a less specific argument mapping than
+   any other function. See :ref:`More_Specific_Argument_Mappings` below
+   for details on the more specific argument mapping relation.
 
--  If at least one of the legal argument mappings to :math:`Y` is a
-   *more specific argument mapping* than the corresponding legal
-   argument mapping to :math:`X` and none of the legal argument
-   mappings to :math:`X` is a more specific argument mapping than the
-   corresponding legal argument mapping to :math:`Y`, then :math:`Y`
-   is more specific.
+4. Discard any candidates that have more formals that require implicit
+   conversion than other candidates. For this step, implicit conversions
+   between ``real(w)``, ``imag(w)``, and ``complex(2*w)`` are not
+   considered.
 
--  If neither :math:`X` nor :math:`Y` are methods, and :math:`X` shadows
-   :math:`Y`, then :math:`X` is more specific.
+5. Discard any candidates that have more formals that require a negative
+   ``param`` value is converted to an unsigned integral type of any width
+   (i.e. a ``uint(?w)``).
 
--  If neither :math:`X` nor :math:`Y` are methods, and :math:`Y` shadows
-   :math:`X`, then :math:`Y` is more specific.
+6. Discard any candidates that have more formals that require ``param``
+   narrowing conversions than another candidate. A ``param`` narrowing
+   conversion is when a ``param`` value is implicitly converted to a type
+   that would not normally be allowed. For example, an ``int`` value
+   cannot normally implicitly convert to an ``int(8)`` value. However,
+   the ``param`` value ``1``, which is an ``int``, can implicitly convert to
+   ``int(8)`` because the value is known to fit. See also
+   :ref:`Implicit_Compile_Time_Constant_Conversions`.
 
--  If at least one of the legal argument mappings to :math:`X` is
-   *weak preferred* and none of the legal argument mappings to
-   :math:`Y` are *weak preferred*, then :math:`X` is more specific.
 
--  If at least one of the legal argument mappings to :math:`Y` is
-   *weak preferred* and none of the legal argument mappings to
-   :math:`X` are *weak preferred*, then :math:`Y` is more specific.
+Note that ``where`` clauses are also considered but that happens in a
+later step. See :ref:`Determining_Best_Functions`.
 
--  If at least one of the legal argument mappings to :math:`X` is
-   *weaker preferred* and none of the legal argument mappings to
-   :math:`Y` are *weaker preferred*, then :math:`X` is more
-   specific.
+.. _More_Specific_Argument_Mappings:
 
--  If at least one of the legal argument mappings to :math:`Y` is
-   *weaker preferred* and none of the legal argument mappings to
-   :math:`X` are *weaker preferred*, then :math:`Y` is more
-   specific.
+More Specific Argument Mappings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  If at least one of the legal argument mappings to :math:`X` is
-   *weakest preferred* and none of the legal argument mappings to
-   :math:`Y` are *weakest preferred*, then :math:`X` is more
-   specific.
+Given candidate functions :math:`X` and :math:`Y` with formal arguments
+:math:`X_1` :math:`X_2` ... and :math:`Y_1` :math:`Y_2` ... that
+correspond to actual arguments :math:`A_1` :math:`A_2` ..., which
+candidate function is more specific is determined in two steps. First,
+the non-param actual arguments and their corresponding formal arguments
+are considered. Then, any param actual arguments and their corresponding
+formal arguments are considered.
 
--  If at least one of the legal argument mappings to :math:`Y` is
-   *weakest preferred* and none of the legal argument mappings to
-   :math:`X` are *weakest preferred*, then :math:`Y` is more
-   specific.
+Within each of those steps, the candidate function :math:`X` has a more
+specific argument mapping if:
 
--  Otherwise neither function is more specific.
+* for each argument :math:`i` considered, the argument mapping from
+  :math:`A_i` to :math:`Y_i` is not better than the argument mapping for
+  the argument :math:`A_i` to :math:`X_i`, and
 
-The next section discusses the level of preference for an argument
-mapping. As discussed above, :math:`M_X` represents the argument mapping
-from :math:`A` to the formal argument :math:`F_X` from function :math:`X`
-with type :math:`T_X`. When :math:`X` is a generic function, :math:`F_X`
-refers to the argument before instantiation and :math:`T_X` represents
-the type of :math:`F_X` after instantiation. :math:`M_Y`, :math:`F_Y`,
-and :math:`T_Y` are defined in a similar manner to represent the argument
-mapping for :math:`Y`.
+* for at least one argument :math:`j` considered, the argument mapping
+  from :math:`A_j` to :math:`X_j` is better than the argument mapping
+  from :math:`A_j` to :math:`Y_j`.
 
-The level of preference for one of these argument mappings is determined
-by the first of the following steps that applies:
+.. _Better_Argument_Mapping:
 
--  If :math:`F_X` or :math:`F_Y` uses the ``out`` intent, then neither
-   argument mapping is preferred.
+Better Argument Mapping
+^^^^^^^^^^^^^^^^^^^^^^^
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
-   an instantiated parameter, and :math:`F_Y` is not an instantiated
-   parameter, :math:`M_X` is more specific.
+Given an actual argument :math:`A_i` and the corresponding formal
+arguments :math:`X_i` and :math:`Y_i` (in the functions :math:`X` and
+:math:`Y` being considered), the following rules are applied in order to
+determine whether :math:`X_i` or :math:`Y_i` is a better argument
+mapping:
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_Y` is
-   an instantiated parameter, and :math:`F_X` is not an instantiated
-   parameter, :math:`M_Y` is more specific.
+1. If one of the formals requires promotion and the other does not, the
+   formal not requiring promotion is better
 
--  If :math:`M_X` does not require scalar promotion and :math:`M_Y`
-   requires scalar promotion, :math:`M_X` is more specific.
+2. If one of the formals is less generic than the other formal, the
+   less-generic formal is better
 
--  If :math:`M_X` requires scalar promotion and :math:`M_Y` does not
-   require scalar promotion, :math:`M_Y` is more specific.
+3. If one of the formals is ``param`` and the other is not, the ``param``
+   formal is better
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
-   generic, and :math:`F_Y` is not generic, :math:`M_X` is more specific.
+4. If one of the formals requires a param narrowing conversion and the
+   other is not, the one not requiring such narrowing is better
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_Y` is
-   generic, and :math:`F_X` is not generic, :math:`M_Y` is more specific.
+5. If the actual and both formals are numeric types and one formals is a
+   preferred numeric conversion target, that formal is better
 
--  If :math:`F_X` is not generic over all types and :math:`F_Y` is generic
-   over all types, :math:`M_X` is more specific.
+6. If one of the formals matches the actual type exactly and the other
+   does not, the matching formal is better
 
--  If :math:`F_X` is generic over all types and :math:`F_Y` is not generic
-   over all types, :math:`M_Y` is more specific.
+7. If the actual's scalar type for promotion matches one of the formals
+   but not the other, the matching formal is better
 
--  If :math:`F_X` and :math:`F_Y` are both generic, and :math:`F_X` is
-   partially concrete but :math:`F_Y` is not, then :math:`M_X` is more
-   specific.
+8. If an implicit conversion is possible from the type of one formal to
+   the other, but not vice versa, then the formal that can be converted
+   from is better. (I.e. if the type of :math:`X_i` can implicitly
+   convert to the type of :math:`Y_i`, then :math:`X_i` is better).
+   Similarly, if the type of one formal can be instantiated to produce
+   the type of another formal, the type of the more-instantiated formal
+   is better.
 
--  If :math:`F_X` and :math:`F_Y` are both generic, and :math:`F_Y` is
-   partially concrete but :math:`F_X` is not, then :math:`M_Y` is more
-   specific.
+.. _Preferred_Numeric_Conversion_Target:
 
--  If :math:`F_X` is a ``param`` argument but :math:`F_Y` is not, then
-   :math:`M_X` is weak preferred.
+Preferred Numeric Conversion Target
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  If :math:`F_Y` is a ``param`` argument but :math:`F_X` is not, then
-   :math:`M_Y` is weak preferred.
+To compute if a formal is a preferred numeric conversion target, apply
+the following rules in order:
 
--  If :math:`A` is not a ``param`` argument with a default size and
-   :math:`F_Y` requires a narrowing conversion but :math:`F_X` does not,
-   then :math:`M_X` is weak preferred.
+1. Classify the actual and formals by numeric kind. If one formal has the
+   same kind as the actual but the other does not, the formal with the
+   same kind is better. Each of the following bullets represents a
+   different numeric kind for this rule:
 
--  If :math:`A` is not a ``param`` argument with a default size and
-   :math:`F_X` requires a narrowing conversion but :math:`F_Y` does not,
-   then :math:`M_Y` is weak preferred.
+   * ``bool(?w)``, that is, a ``bool`` type of any width
 
--  If :math:`T_A` and :math:`T_X` are the same type and :math:`T_A`
-   and :math:`T_Y` are not the same type, :math:`M_X` is more
-   specific.
+   * ``int(?w)`` or ``uint(?w)``, that is, a signed or unsigned integral
+     type of any width
 
--  If :math:`T_A` and :math:`T_X` are not the same type and
-   :math:`T_A` and :math:`T_Y` are the same type, :math:`M_Y` is more
-   specific.
+   * ``real(?w)``
 
--  If :math:`A` uses a scalar promotion type equal to :math:`T_X` but
-   different from :math:`T_Y`, then :math:`M_X` will be preferred as
-   follows:
+   * ``imag(?w)``
 
-   -  if :math:`A` is a ``param`` argument with a default size, then
-      :math:`M_X` is weakest preferred
+   * ``complex(?w)``
 
-   -  if :math:`A` is a ``param`` argument with non-default size, then
-      :math:`M_X` is weaker preferred
+   * all other types
 
-   -  otherwise, :math:`M_X` is more specific
+2. Classify the actual and formals by numeric width. If one formal has
+   the same numeric width as the actual but the other does not, the
+   formal with the same width is better. Each of the following bullets
+   represents a different numeric width for this rule:
 
--  If :math:`A` uses a scalar promotion type equal to :math:`T_Y` but
-   different from :math:`T_X`, then :math:`M_Y` will be preferred as
-   follows:
+   * All numeric types that match the default width as well as all
+     ``bool`` types. This includes ``bool``, ``bool(?w)``, ``int``
+     ``uint`` ``real`` ``imag`` ``complex`` as well as their more
+     specific names ``int(64)`` ``uint(64)`` ``real(64)`` ``imag(64)``
+     ``complex(128)``
 
-   -  if :math:`A` is a ``param`` argument with a default size, then
-      :math:`M_Y` is weakest preferred
+   * All numeric types with 32-bit width: ``int(32)``, ``uint(32)``,
+     ``real(32)``, ``imag(32)``, ``complex(64)``. ``complex(64)`` is in
+     this category because the real element width is 32 bits.
 
-   -  if :math:`A` is a ``param`` argument with non-default size, then
-      :math:`M_Y` is weaker preferred
+   * All numeric types with 16-bit width: ``int(16)``, ``uint(16)``
 
-   -  otherwise, :math:`M_Y` is more specific
-
--  If :math:`T_A` or its scalar promotion type prefers conversion to
-   :math:`T_X` over conversion to :math:`T_Y`, then :math:`M_X` is
-   preferred. If :math:`A` is a ``param`` argument with a default size,
-   then :math:`M_X` is weakest preferred. Otherwise, :math:`M_X` is
-   weaker preferred.
-
-   Type conversion preferences are as follows:
-
-   -  Prefer converting a numeric argument to a numeric argument of a
-      different width but the same category over converting to another
-      type. Categories are
-
-      -  bool
-
-      -  enum
-
-      -  int or uint
-
-      -  real
-
-      -  imag
-
-      -  complex
-
-   -  Prefer an enum or bool cast to int over uint
-
-   -  Prefer an enum or bool cast to a default-sized int or uint over
-      another size of int or uint
-
-   -  Prefer an int or uint cast to a real with the same width
-      (if available) or next-largest width (if not) over a
-      larger real
-
-   -  Prefer an int or uint cast to a complex whose components are the
-      same width (if available) or the next largest width (if not)
-      over a larger complex
-
-   -  Prefer real/imag cast to the complex with that component size (ie
-      total width of twice the real/imag) over another size of complex
-
--  If :math:`T_A` or its scalar promotion type prefers conversion to
-   :math:`T_Y` over conversion to :math:`T_X`, then :math:`M_Y` is
-   preferred. If :math:`A` is a ``param`` argument with a default size,
-   then :math:`M_Y` is weakest preferred. Otherwise, :math:`M_Y` is
-   weaker preferred.
-
--  If :math:`T_X` is derived from :math:`T_Y`, then :math:`M_X` is
-   more specific.
-
--  If :math:`T_Y` is derived from :math:`T_X`, then :math:`M_Y` is
-   more specific.
-
--  If there is an implicit conversion from :math:`T_X` to
-   :math:`T_Y`, then :math:`M_X` is more specific.
-
--  If there is an implicit conversion from :math:`T_Y` to
-   :math:`T_X`, then :math:`M_Y` is more specific.
-
--  If :math:`T_X` is any ``int`` type and :math:`T_Y` is any
-   ``uint`` type, :math:`M_X` is more specific.
-
--  If :math:`T_Y` is any ``int`` type and :math:`T_X` is any
-   ``uint`` type, :math:`M_Y` is more specific.
-
--  Otherwise neither mapping is more specific.
+   * All numeric types with 8-bit width: ``int(8)``, ``uint(8)``
 
 .. _Determining_Best_Functions:
 

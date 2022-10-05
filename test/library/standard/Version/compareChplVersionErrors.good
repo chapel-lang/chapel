@@ -13,8 +13,8 @@ compareChplVersionErrors.chpl:35: error: can't compare versions that only differ
   compareChplVersionErrors.chpl:22: called as compareVersions(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareBothVersions'
   compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(2,1,0,\"aaa\"), v2: sourceVersion(2,1,0,\"bbb\"))
 Comparing versions:
-version 2.1.0
-version 2.1.0 (aaa)
+2.1.0
+2.1.0 (aaa)
 ------------------
 == : false
 != : true
@@ -24,8 +24,8 @@ version 2.1.0 (aaa)
 >= : true
 
 Comparing versions:
-version 2.1.0 (aaa)
-version 2.1.0
+2.1.0 (aaa)
+2.1.0
 ------------------
 == : false
 != : true
@@ -35,8 +35,8 @@ version 2.1.0
 >= : false
 
 Comparing versions:
-version 2.1.0 (aaa)
-version 2.1.0 (bbb)
+2.1.0 (aaa)
+2.1.0 (bbb)
 ------------------
 == : false
 != : true
@@ -46,8 +46,8 @@ version 2.1.0 (bbb)
 >= : false
 
 Comparing versions:
-version 2.1.0 (bbb)
-version 2.1.0 (aaa)
+2.1.0 (bbb)
+2.1.0 (aaa)
 ------------------
 == : false
 != : true
@@ -57,8 +57,8 @@ version 2.1.0 (aaa)
 >= : false
 
 Comparing versions:
-version 2.0.0 (aaa)
-version 2.1.0 (aaa)
+2.0.0 (aaa)
+2.1.0 (aaa)
 ------------------
 == : false
 != : true
@@ -68,8 +68,8 @@ version 2.1.0 (aaa)
 >= : false
 
 Comparing versions:
-version 2.1.0 (aaa)
-version 2.0.0 (aaa)
+2.1.0 (aaa)
+2.0.0 (aaa)
 ------------------
 == : false
 != : true
@@ -79,8 +79,8 @@ version 2.0.0 (aaa)
 >= : true
 
 Comparing versions:
-version 2.0.0 (aaa)
-version 2.1.0 (bbb)
+2.0.0 (aaa)
+2.1.0 (bbb)
 ------------------
 == : false
 != : true
@@ -90,8 +90,8 @@ version 2.1.0 (bbb)
 >= : false
 
 Comparing versions:
-version 2.1.0 (bbb)
-version 2.0.0 (aaa)
+2.1.0 (bbb)
+2.0.0 (aaa)
 ------------------
 == : false
 != : true

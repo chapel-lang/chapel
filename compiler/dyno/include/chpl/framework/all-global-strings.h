@@ -53,6 +53,7 @@ X(minmax         , "minmax")
 X(nil            , "nil")
 X(nilable        , "nilable")
 X(noinit         , "noinit")
+X(nothing        , "nothing")
 X(object_        , "object")
 X(owned          , "owned")
 X(real_          , "real")
@@ -120,6 +121,10 @@ X(modulus        , "%")
 X(leftShift      , "<<")
 X(rightShift     , ">>")
 X(rangeCount     , "#")
+
+X(swap           , "<=>")
+X(chplBy         , "chpl_by")
+X(chplAlign      , "chpl_align")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

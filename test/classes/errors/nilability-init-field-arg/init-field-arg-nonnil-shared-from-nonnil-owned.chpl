@@ -1,11 +1,11 @@
-//  lhs: shared!  rhs: owned!  ok
+//  lhs: shared!  rhs: owned!  error
 
 class MyClass {  var x: int;  }
 
 record MyRecord {
   var lhs: shared MyClass;
   proc init(in rhs) where ! isSubtype(rhs.type, MyRecord) {
-    lhs = rhs: shared MyClass;
+    lhs = rhs;
   }
 }
 

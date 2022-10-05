@@ -23,6 +23,7 @@
 #include "../util/filesystem_help.h"
 
 #include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
 

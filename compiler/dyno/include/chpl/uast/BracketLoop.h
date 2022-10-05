@@ -80,8 +80,14 @@ class BracketLoop final : public IndexableLoop {
                                   owned<Block> body,
                                   bool isExpressionLevel);
 
+  /**
+   * Check if this bracket loop is actually an array type
+   */
+  bool isMaybeArrayType() const;
 
 };
+
+
 
 
 } // end namespace uast

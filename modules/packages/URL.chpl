@@ -49,7 +49,7 @@ module URL {
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)),
                      style:iostyle)
-                    : channel(false, kind, locking) throws {
+                    : fileReader(kind, locking) throws {
     return openUrlReaderHelper(url, kind, locking, start, end,
                                style: iostyleInternal);
   }
@@ -79,7 +79,7 @@ module URL {
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)))
-                    : channel(false, kind, locking) throws {
+                    : fileReader(kind, locking) throws {
     return openUrlReaderHelper(url, kind, locking, start, end);
   }
 
@@ -88,7 +88,8 @@ module URL {
                            param kind=iokind.dynamic, param locking=true,
                            start:int(64) = 0, end:int(64) = max(int(64)),
                            style:iostyleInternal = defaultIOStyleInternal())
-    : channel(false, kind, locking) throws {
+    : fileReader(kind, locking) throws {
+
     use Curl;
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.r, style);
@@ -101,7 +102,7 @@ module URL {
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  style:iostyle)
-                : channel(true, kind, locking) throws {
+                : fileWriter(kind, locking) throws {
     return openUrlWriterHelper(url, kind, locking, start, end,
                                style: iostyleInternal);
   }
@@ -131,7 +132,7 @@ module URL {
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)))
-                : channel(true, kind, locking) throws {
+                : fileWriter(kind, locking) throws {
     return openUrlWriterHelper(url, kind, locking, start, end);
   }
 
@@ -141,7 +142,8 @@ module URL {
                                    start:int(64) = 0,
                                    end:int(64) = max(int(64)),
                                    style:iostyleInternal = defaultIOStyleInternal())
-    : channel(true, kind, locking) throws {
+    : fileWriter(kind, locking) throws {
+
     use Curl;
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.cw, style);

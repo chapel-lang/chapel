@@ -63,6 +63,8 @@ PRAGMA(ALWAYS_PROPAGATE_LINE_FILE_INFO, ypr,
 PRAGMA(ALWAYS_RVF, ypr,
        "always RVF",
        "attach to a type to force RVF for objects of that type")
+PRAGMA(ANONYMOUS_FN, npr, "anonymous fn", ncm)
+PRAGMA(ANONYMOUS_FORMAL, npr, "anonymous formal", ncm)
 PRAGMA(DEAD_END_OF_BLOCK, ypr, "dead at end of block", ncm)
 PRAGMA(DEAD_LAST_MENTION, ypr, "dead after last mention", ncm)
 PRAGMA(DONT_ALLOW_REF, ypr, "do not allow ref", ncm)
@@ -604,6 +606,8 @@ PRAGMA(OPT_INFO_NO_BLOCKING, npr, "forall not blocking", "forall does not have b
 PRAGMA(DESERIALIZATION_BLOCK_MARKER, npr, "marks deserialization options", "then block is var else block is ref serialization")
 
 PRAGMA(EXEMPT_INSTANTIATION_LIMIT, ypr, "fn exempt instantiation limit", "compiler will not limit the number of instantiations of this function")
+
+PRAGMA(COMPUTE_UNIFIED_TYPE_HELP, ypr, "compute unified type helper", "identify the internal chpl_computeUnifiedTypeHelp() routine")
 
 #undef ypr
 #undef npr

@@ -409,15 +409,16 @@ module SortedMap {
     }
 
     /*
-      Writes the contents of this sortedMap to a channel. The format looks like:
+      Writes the contents of this sortedMap to a fileWriter.
+      The format looks like:
 
         .. code-block:: chapel
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to write to.
+      :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter(); defer _leave();
       var first = true;
       ch._write("{");

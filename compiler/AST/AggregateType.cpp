@@ -1611,9 +1611,15 @@ void AggregateType::renameInstantiation() {
   }
 
   symbol->name = astr(name);
-
   buildFieldNames(this, cname, true);
   symbol->cname = astr(cname);
+
+  // adjust _channel naming
+  // TODO: remove this once the channel rename to fileReader/fileWriter
+  // is complete and channel is removed
+  if (0 == strncmp(symbol->name, "_channel", strlen("_channel"))) {
+    symbol->name = toString(this, false);
+  }
 }
 
 // Returns an instantiation of this AggregateType at the given index.
@@ -2914,7 +2920,14 @@ AggregateType::checkSameNameFields() {
   // that no field with the same name is defined in a parent class.
   // But, ignore the compiler-added 'super' field.
   for_fields(field, this) {
-    if (!field->hasFlag(FLAG_SUPER_CLASS)) {
+    // Compiler currently inserts DefExprs for DecoratedClassTypes adjacent to
+    // the DefExpr of the original AggregateType. For nested types, the
+    // DefExprs for DecoratedClassTypes might mistakenly be recognized as
+    // fields.
+    bool isDecoratedTypeDef = isTypeSymbol(field) &&
+                              isDecoratedClassType(field->type);
+    if (!field->hasFlag(FLAG_SUPER_CLASS) &&
+        !isDecoratedTypeDef) {
       auto pair = allFields.emplace(field->name, field);
       bool inserted = pair.second;
       if (!inserted) {
@@ -3027,8 +3040,15 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
       tsDec->addFlag(FLAG_GENERIC);
     // The generated code should just use the canonical class name
     tsDec->cname = at->symbol->cname;
-    DefExpr* defDec = new DefExpr(tsDec);
-    symbol->defPoint->insertAfter(defDec);
+
+    // 'symbol' might not be in the tree if we're running with --dyno and
+    // scope-resolving an AggregateType that contains a reference to itself
+    // (e.g. a linked-list with a 'next' node). The 'convert-uast' pass is
+    // meant to manually insert these defPoints later.
+    if (!fDynoCompilerLibrary || isAlive(symbol->defPoint)) {
+      DefExpr* defDec = new DefExpr(tsDec);
+      symbol->defPoint->insertAfter(defDec);
+    }
   }
 
   return at->decoratedClasses[packedDecorator];

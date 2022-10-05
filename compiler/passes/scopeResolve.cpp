@@ -452,7 +452,9 @@ static void scopeResolve(FnSymbol*           fn,
     scopeResolve(fn->retExprType, scope);
   }
 
-  scopeResolve(fn->body, scope);
+  if (fn->body && !fn->hasFlag(FLAG_NO_FN_BODY)) {
+    scopeResolve(fn->body, scope);
+  }
 }
 
 static void scopeResolve(TypeSymbol*         typeSym,
@@ -3104,7 +3106,9 @@ void scopeResolve() {
 
   resolveGotoLabels();
 
-  resolveUnresolvedSymExprs();
+  if (!fDynoCompilerLibrary || fDynoScopeProduction) {
+    resolveUnresolvedSymExprs();
+  }
 
   resolveEnumeratedTypes();
 

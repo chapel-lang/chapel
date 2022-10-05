@@ -215,6 +215,13 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
  */
 const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
 
+/*
+ * Scope-resolve an AggregateDecl's fields, along with their type expressions
+ * and initialization expressions.
+ */
+const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
+                                                          ID id);
+
 /**
   Returns the ResolvedFunction called by a particular
   ResolvedExpression, if there was exactly one candidate.

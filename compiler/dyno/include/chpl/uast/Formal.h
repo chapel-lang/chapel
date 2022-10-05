@@ -88,7 +88,7 @@ class Formal final : public VarLikeDecl {
   static owned<Formal> build(Builder* builder, Location loc,
                              owned<Attributes> attributes,
                              UniqueString name,
-                             Formal::Intent intent,
+                             Intent intent,
                              owned<AstNode> typeExpression,
                              owned<AstNode> initExpression);
 
@@ -98,6 +98,7 @@ class Formal final : public VarLikeDecl {
    */
   Intent intent() const { return (Intent)((int)storageKind()); }
 
+  static std::string intentToString(Intent intent);
 };
 
 

@@ -76,13 +76,13 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '1.28'                  # TODO -- parse from `chpl --version`
+chplversion = '1.29'                  # TODO -- parse from `chpl --version`
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '1.28.0 (pre-release)'
-#release = '1.28.0'
+release = '1.29.0 (pre-release)'
+#release = '1.29.0'
 
 # General information about the project.
 project = u'Chapel Documentation'
@@ -114,10 +114,13 @@ exclude_patterns = ['Makefile',
                     # These don't need to be processed separately
                     # since they are included in the spec with .. include::
                     'builtins/Atomics.rst',
+                    'builtins/Bytes.rst',
                     'builtins/ChapelArray.rst',
                     'builtins/ChapelDomain.rst',
                     'builtins/ChapelLocale.rst',
-                    'builtins/ChapelRange.rst'
+                    'builtins/ChapelRange.rst',
+                    'builtins/ChapelTuple.rst',
+                    'builtins/String.rst'
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all

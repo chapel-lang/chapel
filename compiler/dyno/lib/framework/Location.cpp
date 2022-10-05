@@ -28,5 +28,9 @@ bool Location::update(Location& keep, Location& addin) {
   return defaultUpdate(keep, addin);
 }
 
+void Location::stringify(std::ostream& os, StringifyKind kind) const {
+  os << "Location(" << path_ << ", " << firstLine_ << ", " << firstColumn_
+    << ", " << lastLine_ << ", " << lastColumn_ << ")";
+}
 
 } // end namespace chpl

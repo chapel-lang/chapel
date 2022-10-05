@@ -26,6 +26,16 @@
 namespace chpl {
 namespace resolution {
 
+/**
+  Helper macro to report an error to the context, and produce an
+  erroneous QualifiedType. Accepts the pointer to the context,
+  the name of the error to report, and additional error information arguments,
+  the exact types of which depend on the type of error (see error-classes-list.h)
+ */
+#define TYPE_ERROR(CONTEXT, NAME, EINFO...)\
+  (REPORT(CONTEXT, NAME, EINFO),\
+   QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
+
 struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
@@ -36,6 +46,8 @@ struct Resolver {
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const TypedFnSignature* typedSignature = nullptr;
   const PoiScope* poiScope = nullptr;
+  const uast::Decl* ignoreSubstitutionFor = nullptr;
+  bool skipTypeQueries = false;
 
   // internal variables
   std::vector<const uast::Decl*> declStack;
@@ -121,6 +133,11 @@ struct Resolver {
   createForScopeResolvingFunction(Context* context, const uast::Function* fn,
                                   ResolutionResultByPostorderID& byPostorder);
 
+  static Resolver createForScopeResolvingField(Context* context,
+                                         const uast::AggregateDecl* ad,
+                                         const uast::AstNode* fieldStmt,
+                                         ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to initially resolve field declaration types
   static Resolver
   createForInitialFieldStmt(Context* context,
@@ -174,7 +191,7 @@ struct Resolver {
   /* Compute the receiver scope (when resolving a method)
      and return nullptr if it is not applicable.
    */
-  const Scope* methodReceiverScope();
+  const Scope* methodReceiverScope(bool recompute = false);
   /* Compute the receiver scope (when resolving a method)
      and return nullptr if it is not applicable.
    */
@@ -196,8 +213,9 @@ struct Resolver {
 
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
-                          const types::Type* actualType,
-                          bool isNonStarVarArg = false);
+                          const types::QualifiedType& actualType,
+                          bool isNonStarVarArg = false,
+                          bool isTopLevel = true);
 
   /* When resolving a function with a TypeQuery, we need to
      resolve the type that is queried, since it can be used

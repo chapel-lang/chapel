@@ -102,7 +102,7 @@ static ModuleSymbol* parseFile(const char* fileName,
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
 static void dynoErrorHandler(chpl::Context* context,
-                             const chpl::ErrorMessage& err);
+                             const chpl::ErrorBase* err);
 
 static int dynoRealizeErrors(void);
 
@@ -818,7 +818,7 @@ static void maybePrintErrorHeader(chpl::ID id) {
 static void dynoDisplayError(chpl::Context* context,
                              const chpl::ErrorMessage& err) {
   const char* msg = err.message().c_str();
-  auto loc = err.location(context);
+  auto loc = err.computeLocation(context);
   auto id = err.id();
 
   // For now have syntax errors just do their own thing (mimic old parser).
@@ -859,6 +859,11 @@ static void dynoDisplayError(chpl::Context* context,
   }
 }
 
+static void dynoDisplayError(chpl::Context* context,
+                             const chpl::ErrorBase* err) {
+  // Try to maintain compatibility with the old reporting mechanism
+  dynoDisplayError(context, err->toErrorMessage(context));
+}
 //
 // TODO: The error handler would like to do something like fetch AST from
 // IDs, but it cannot due to the possibility of a query cycle:
@@ -878,11 +883,11 @@ static void dynoDisplayError(chpl::Context* context,
 // error handler more robust (e.g., make it a class, and separate out the
 // reporting and "realizing" of the errors, as we are doing here).
 //
-static std::vector<chpl::ErrorMessage> dynoErrorMessages;
+static std::vector<const chpl::ErrorBase*> dynoErrorMessages;
 
 // Store a copy of the error, to be realized at a later point.
 static void dynoErrorHandler(chpl::Context* context,
-                             const chpl::ErrorMessage& err) {
+                             const chpl::ErrorBase* err) {
   dynoErrorMessages.push_back(err);
 }
 
@@ -924,8 +929,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   // Manually report any errors collected by the builder.
   for (auto& e : builderResult.errors())
-    if (!e.isDefaultConstructed())
-      gContext->report(e);
+    gContext->report(e);
 
   if (dynoRealizeErrors()) USR_STOP();
 
@@ -1138,7 +1142,14 @@ static const char* searchThePath(const char*      modName,
   const char* retval   = NULL;
 
   forv_Vec(const char*, dirName, searchPath) {
-    const char* path = astr(dirName, "/", fileName);
+    std::string dirStr = dirName;
+
+    // Remove slashes at the end of the directory path
+    while (dirStr.size() > 1 && dirStr.back() == '/') {
+      dirStr.pop_back();
+    }
+
+    const char* path = astr(dirStr.c_str(), "/", fileName);
 
     if (FILE* file = openfile(path, "r", false)) {
       closefile(file);

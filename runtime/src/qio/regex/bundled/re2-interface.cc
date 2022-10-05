@@ -352,6 +352,9 @@ int qio_regex_channel_read_byte(qio_channel_s* ch)
   return ret;
 }
 
+// cur: what the search process believes to be the current offset
+// min: what the search process believes to be the minimum offset
+//      that we cannot discard
 void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 {
   int64_t buf;
@@ -367,7 +370,7 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
   if( min < buf ) min = buf;
 
   // advance to target.
-  //printf("DISCARD CALLED: advance to %i\n", (int) target);
+  //printf("DISCARD CALLED: advance to %i\n", (int) min);
   qio_channel_advance_unlocked(ch, min - buf);
   //printf("DISCARD CALLED: mark\n");
   qio_channel_mark(false, ch);

@@ -65,7 +65,7 @@ std::string getFgColorCode(TermColorName colorName) {
 }
 
 // This approach and these terminals are taken from googletest; see
-// https://github.com/google/googletest/blob/master/googletest/src/gtest.cc#L3216
+// https://github.com/google/googletest/blob/dfa67352364e00452360e1fa5d59677459712ee7/googletest/src/gtest.cc#L3237
 bool terminalSupportsColor(const char* term) {
   bool isColorTerm = false;
   const char* colorTerms[] = {"xterm",

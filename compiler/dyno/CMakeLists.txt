@@ -103,8 +103,10 @@ add_subdirectory(tools)
 # Utils like C++ linters for this codebase
 add_subdirectory(util)
 
-# Support for C++ compiler unit tests
-# Needs to happen in this file for ctest to work in this dir
-enable_testing()
-
-add_subdirectory(test)
+# Check if the directory is there, because in release tarballs, it shouldn't be
+if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test")
+  # Support for C++ compiler unit tests
+  # Needs to happen in this file for ctest to work in this dir
+  enable_testing()
+  add_subdirectory(test)
+endif()

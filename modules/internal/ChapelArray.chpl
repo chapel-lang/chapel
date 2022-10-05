@@ -42,12 +42,6 @@ module ChapelArray {
   pragma "no doc"
   param nullPid = -1;
 
-  // This permits a user to opt into upcoming behavior to always have
-  // .indices return local indices for an array
-  pragma "no doc"
-  deprecated "'arrayIndicesAlwaysLocal' is deprecated and no longer has an effect"
-  config param arrayIndicesAlwaysLocal = true;
-
   pragma "no doc"
   config param debugBulkTransfer = false;
   pragma "no doc"
@@ -277,10 +271,6 @@ module ChapelArray {
   }
 
 
-  proc _getLiteralType(type t) type {
-    if t != c_string then return t;
-    else return string;
-  }
   /*
    * Support for array literal expressions.
    *
@@ -309,23 +299,36 @@ module ChapelArray {
                       " If so, use {...} instead of [...].");
     }
 
+    param homog = isHomogeneousTuple(elems);
+
     // elements of string literals are assumed to be of type string
-    type eltType = _getLiteralType(elems(0).type);
+    type eltType = if homog then elems(0).type
+                            else chpl_computeUnifiedType(elems);
+
     var dom = {arrayLiteralLowBound..#k};
     var arr = dom.buildArray(eltType, initElts=false);
 
-    for param i in 0..k-1 {
-      type currType = _getLiteralType(elems(i).type);
-
-      if currType != eltType {
-        compilerError( "Array literal element " + i:string +
-                       " expected to be of type " + eltType:string +
-                       " but is of type " + currType:string );
+    if homog {
+      for i in 0..<k {
+        ref dst = arr(i+arrayLiteralLowBound);
+        ref src = elems(i);
+        __primitive("=", dst, src);
       }
+    } else {
+      for param i in 0..k-1 {
+        ref dst = arr(i+arrayLiteralLowBound);
+        ref src = elems(i);
+        type currType = src.type;
 
-      ref src = elems(i);
-      ref dst = arr(i+arrayLiteralLowBound);
-      __primitive("=", dst, src);
+        if (currType == eltType ||
+            Reflection.canResolve("=", dst, src)) {
+          __primitive("=", dst, src);
+        } else {
+          compilerError( "Array literal element " + i:string +
+                         " expected to be of type " + eltType:string +
+                         " but is of type " + currType:string );
+        }
+      }
     }
 
     arr.dsiElementInitializationComplete();
@@ -333,9 +336,37 @@ module ChapelArray {
     return arr;
   }
 
+  // For a given tuple, compute whether it has a potential unified
+  // type by leaning on return type unification via the following
+  // helper routine.  Ultimately, it should be the compiler doing this
+  // rather than this module code, but this is a nice short-term
+  // workaround until 'dyno' is ready for it.
+  proc chpl_computeUnifiedType(x: _tuple) type {
+    if isHomogeneousTuple(x) {
+      return x(0).type;
+    } else {
+      return chpl_computeUnifiedTypeHelp(x).type;
+    }
+  }
+
+  // For a given tuple, set up a return per element in order to
+  // leverage return type unification to determine whether there is a
+  // common type that can be used.  Note that the purpose of the
+  // seemingly unused 'j' argument is to avoid having the compiler
+  // fold it down to a single return statement if we relied on a param
+  // check against 0.
+  pragma "compute unified type helper"
+  proc chpl_computeUnifiedTypeHelp(x: _tuple, j: int=0) {
+    for param i in 0..<x.size {
+      if i == j then
+        return x(i);
+    }
+    halt("Should never get here");
+  }
+
   proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
-    type keyType = _getLiteralType(elems(0).type);
-    type valType = _getLiteralType(elems(1).type);
+    type keyType = elems(0).type;
+    type valType = elems(1).type;
     var D : domain(keyType);
 
     //Size the domain appropriately for the number of keys
@@ -349,8 +380,8 @@ module ChapelArray {
     for param i in 0..k-1 by 2 {
       var elemKey = elems(i);
       var elemVal = elems(i+1);
-      type elemKeyType = _getLiteralType(elemKey.type);
-      type elemValType = _getLiteralType(elemVal.type);
+      type elemKeyType = elemKey.type;
+      type elemValType = elemVal.type;
 
       if elemKeyType != keyType {
         compilerError("Associative array key element " + (i/2):string +
@@ -809,12 +840,14 @@ module ChapelArray {
     }
   }  // record _distribution
 
+  pragma "no doc"
   inline operator ==(d1: _distribution(?), d2: _distribution(?)) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
+  pragma "no doc"
   inline operator !=(d1: _distribution(?), d2: _distribution(?)) {
     return !(d1 == d2);
   }
@@ -1590,7 +1623,7 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
-    deprecated "'Array.sorted' is deprecated, use 'Sort.sorted' instead"
+    @unstable "'Array.sorted' is unstable"
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
@@ -1722,7 +1755,7 @@ module ChapelArray {
     }
 
     /* Reverse the order of the values in the array. */
-    deprecated "'Array.reverse' is deprecated"
+    @unstable "'Array.reverse' is unstable"
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
@@ -1738,7 +1771,7 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-     deprecated "'Array.find' is deprecated, use a reduction like 'maxloc reduce zip(A == val, A.domain)' instead"
+     @unstable "'Array.find' is unstable"
      proc find(val: this.eltType): (bool, index(this.domain)) {
       for i in this.domain {
         if this[i] == val then return (true, i);
@@ -1748,7 +1781,7 @@ module ChapelArray {
     }
 
     /* Return the number of times ``val`` occurs in the array. */
-    deprecated "'Array.count' is deprecated use a reduction like '+ reduce (A == val)' instead"
+    @unstable "'Array.count' is unstable"
     proc count(val: this.eltType): int {
       return + reduce (this == val);
     }
@@ -1938,16 +1971,19 @@ module ChapelArray {
     return stringify(x);
   }
 
+  pragma "no doc"
   pragma "fn returns aliasing array"
   operator #(arr: [], counts: integral) {
     return arr[arr.domain#counts];
   }
 
+  pragma "no doc"
   pragma "fn returns aliasing array"
   operator #(arr: [], counts: _tuple) {
     return arr[arr.domain#counts];
   }
 
+  pragma "no doc"
   pragma "last resort"
   operator #(arr: [], counts) {
     compilerError("cannot apply '#' to '", arr.type:string,
@@ -2038,6 +2074,7 @@ module ChapelArray {
   //
   // Assignment of distributions and arrays
   //
+  pragma "no doc"
   operator =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
       __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
@@ -2145,6 +2182,7 @@ module ChapelArray {
     }
   }
 
+  pragma "no doc"
   pragma "find user line"
   inline operator =(ref a: [], b:[]) {
     if a.rank != b.rank then
@@ -2522,6 +2560,7 @@ module ChapelArray {
       aa = b;
   }
 
+  pragma "no doc"
   inline operator =(ref a: [], b:domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
@@ -2530,6 +2569,7 @@ module ChapelArray {
     chpl__transferArray(a, b);
   }
 
+  pragma "no doc"
   inline operator =(a: [], b: range(?)) {
     if a.rank == 1 then
       chpl__transferArray(a, b);
@@ -2537,6 +2577,7 @@ module ChapelArray {
       compilerError("cannot assign from ranges to multidimensional arrays");
   }
 
+  pragma "no doc"
   inline operator =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
     chpl__transferArray(a, b);
   }
@@ -2593,6 +2634,7 @@ module ChapelArray {
     helpInitArrFromTuple(j, a.rank, a, b, kind);
   }
 
+  pragma "no doc"
   operator =(ref a: [], b: _tuple) where a.isRectangular() {
     initArrFromTuple(a, b, _tElt.assign);
   }
@@ -2633,6 +2675,7 @@ module ChapelArray {
     return _desync(eltType);
   }
 
+  pragma "no doc"
   operator =(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e = b;
@@ -2641,56 +2684,67 @@ module ChapelArray {
   //
   // op= overloads for array/scalar pairs
   //
+  pragma "no doc"
   operator +=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e += b;
   }
 
+  pragma "no doc"
   operator -=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e -= b;
   }
 
+  pragma "no doc"
   operator *=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e *= b;
   }
 
+  pragma "no doc"
   operator /=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e /= b;
   }
 
+  pragma "no doc"
   operator %=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e %= b;
   }
 
+  pragma "no doc"
   operator **=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e **= b;
   }
 
+  pragma "no doc"
   operator &=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e &= b;
   }
 
+  pragma "no doc"
   operator |=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e |= b;
   }
 
+  pragma "no doc"
   operator ^=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e ^= b;
   }
 
+  pragma "no doc"
   operator >>=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e >>= b;
   }
 
+  pragma "no doc"
   operator <<=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e <<= b;
@@ -2699,6 +2753,7 @@ module ChapelArray {
   //
   // Swap operator for arrays
   //
+  pragma "no doc"
   inline operator <=>(x: [?xD], y: [?yD]) {
     if x.rank != y.rank then
       compilerError("rank mismatch in array swap");

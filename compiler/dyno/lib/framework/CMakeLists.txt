@@ -20,7 +20,9 @@ target_sources(libdyno-obj
 
                compiler-configuration.cpp
                Context.cpp
+               ErrorBase.cpp
                ErrorMessage.cpp
+               ErrorWriter.cpp
                ID.cpp
                Location.cpp
                UniqueString.cpp

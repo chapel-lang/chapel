@@ -153,7 +153,7 @@ use IO; // required for file operations
 
 config const filename = "tempfile.txt";
 
-proc R.writeThis(ch: channel) throws {
+proc R.writeThis(ch: fileWriter) throws {
   ch.write("*", vals, "*");
 }
 
@@ -168,7 +168,7 @@ proc R.writeThis(ch: channel) throws {
 // The ``readThis`` method defines how to read an instance of R from a
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
-proc R.readThis(ch: channel) throws {
+proc R.readThis(ch: fileReader) throws {
   var star = new ioLiteral("*");
   ch.read(star);
   ch.read(vals);
@@ -183,7 +183,6 @@ proc R.readThis(ch: channel) throws {
   assert(r == r2);
 }
 
-// Using ``readThis`` and ``writeThis`` together:
 {
   var chW = openwriter(filename);
   chW.writeln(r);
@@ -194,7 +193,6 @@ proc R.readThis(ch: channel) throws {
   var chR = openreader(filename);
   chR.readln(r2);
   assert(r == r2);
-  
 }
 
 // Clean up the temporary file we created earlier.

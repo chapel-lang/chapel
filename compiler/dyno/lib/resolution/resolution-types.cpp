@@ -27,6 +27,7 @@
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
+#include "chpl/uast/OpCall.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
@@ -152,9 +153,14 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
 CallInfo::CallInfo(const uast::FnCall* call) {
   // set the name (simple cases only)
   if (auto called = call->calledExpression()) {
-    if (auto id = called->toIdentifier())
+    if (auto id = called->toIdentifier()) {
       name_ = id->name();
+      // should not be a valid operator name
+      assert(!uast::isOpName(name_));
+    }
   }
+
+  isOpCall_ = false;
 
   int i = 0;
   for (auto actual : call->actuals()) {
@@ -368,7 +374,10 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       }
       assert(entryIdx < numEntries);
 
-      // TODO: special handling for operators
+      // if this is a call to an operator method, skip the 'this' formal
+      if (call.isOpCall() && untyped->formalName(entryIdx) == USTR("this")) {
+        entryIdx++;
+      }
 
       FormalActual& entry = byFormalIdx_[entryIdx];
       entry.hasActual_ = true;
@@ -506,6 +515,7 @@ void CallInfo::stringify(std::ostream& ss,
   }
   if (stringKind != StringifyKind::CHPL_SYNTAX) {
     ss << " isMethodCall=" << isMethodCall_;
+    ss << " isOpCall=" << isOpCall_;
     ss << " hasQuestionArg=" << hasQuestionArg_;
     ss << " ";
   }

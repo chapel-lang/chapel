@@ -1172,7 +1172,7 @@ module UnrolledLinkedList {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter();
 
       ch._write("[");

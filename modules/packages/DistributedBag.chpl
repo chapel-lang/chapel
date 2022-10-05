@@ -126,7 +126,6 @@ module DistributedBag {
   public use Collection;
   use BlockDist;
   private use CTypes;
-  use IO only channel;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the

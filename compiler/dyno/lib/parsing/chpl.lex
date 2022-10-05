@@ -181,6 +181,7 @@ param            return processToken(yyscanner, TPARAM);
 pragma           return processToken(yyscanner, TPRAGMA);
 __primitive      return processToken(yyscanner, TPRIMITIVE);
 private          return processToken(yyscanner, TPRIVATE);
+proc"("          return processToken(yyscanner, TPROCLP);
 proc             return processToken(yyscanner, TPROC);
 prototype        return processToken(yyscanner, TPROTOTYPE);
 public           return processToken(yyscanner, TPUBLIC);
@@ -297,7 +298,6 @@ zip              return processToken(yyscanner, TZIP);
 <externmode>"{"  return processExternCode(yyscanner);
 <INITIAL>"{"     return processToken(yyscanner, TLCBR);
 "}"              return processToken(yyscanner, TRCBR);
-"<~>"            return processToken(yyscanner, TIO);
 "?"              return processToken(yyscanner, TQUESTION);
 
 {intLiteral}     return processToken(yyscanner, INTLITERAL);

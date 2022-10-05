@@ -58,9 +58,53 @@ static void test1() {
   assert(qt.type() == IntType::get(context, 0));
 }
 
+static void test2() {
+  printf("test2\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  // We want the return expression 'idxType' to find the record's field,
+  // not the module-scope type declaration.
+  auto path = UniqueString::get(context, "test2.chpl");
+  std::string contents = R""""(
+      module M {
+        type idxType = int;
+
+        record R {
+          type idxType;
+          var x : idxType;
+        }
+
+        proc R.helper() : idxType {
+          return x;
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 3);
+
+  const AggregateDecl* ad = m->stmt(1)->toAggregateDecl();
+  const VarLikeDecl* field = ad->declOrComment(0)->toVarLikeDecl();
+
+  const Function* fn = m->stmt(2)->toFunction();
+  assert(fn);
+  const Identifier* ret = fn->returnType()->toIdentifier();
+  assert(ret);
+
+  auto results = scopeResolveFunction(context, fn->id());
+  assert(field->id() == results->resolutionById().byAst(ret).toId());
+}
+
 
 int main() {
   test1();
+  test2();
 
   return 0;
 }

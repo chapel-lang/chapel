@@ -1,4 +1,4 @@
-//  lhs: shared!  rhs: owned!  ok
+//  lhs: shared!  rhs: owned!  error
 
 class MyClass {
   var x: int;
@@ -6,5 +6,5 @@ class MyClass {
 
 {
   var rhs = new owned MyClass();
-  var lhs: shared MyClass = rhs: shared MyClass;
+  var lhs: shared MyClass = rhs;
 }

@@ -19,6 +19,7 @@ target_sources(libdyno-obj
                PRIVATE
 
                AggregateDecl.cpp
+               AnonFormal.cpp
                Array.cpp
                AstList.cpp
                AstNode.cpp
@@ -61,6 +62,7 @@ target_sources(libdyno-obj
                Formal.cpp
                ForwardingDecl.cpp
                Function.cpp
+               FunctionSignature.cpp
                Identifier.cpp
                ImagLiteral.cpp
                Implements.cpp

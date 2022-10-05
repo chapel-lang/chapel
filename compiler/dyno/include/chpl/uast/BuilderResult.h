@@ -82,7 +82,7 @@ class BuilderResult final {
  private:
   UniqueString filePath_;
   AstList topLevelExpressions_;
-  std::vector<ErrorMessage> errors_;
+  std::vector<const ErrorBase*> errors_;
 
   // Given an ID, what is the AstNode?
   llvm::DenseMap<ID, const AstNode*> idToAst_;
@@ -140,12 +140,12 @@ class BuilderResult final {
   }
 
   /** return the i'th error */
-  const ErrorMessage& error(int i) const {
+  const ErrorBase* error(int i) const {
     return errors_[i];
   }
 
   // An iterable over the errors of this.
-  using ErrorIterable = Iterable<std::vector<ErrorMessage>>;
+  using ErrorIterable = Iterable<std::vector<const ErrorBase*>>;
 
   /**
     Iterate over the errors.
@@ -181,7 +181,7 @@ class BuilderResult final {
 
   // these two should only be called by the parser
   static void updateFilePaths(Context* context, const BuilderResult& keep);
-  static void appendError(BuilderResult& keep, const ErrorMessage& error);
+  static void appendError(BuilderResult& keep, const ErrorBase* error);
 };
 
 

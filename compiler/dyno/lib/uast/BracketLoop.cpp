@@ -70,6 +70,14 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
   return toOwned(ret);
 }
 
+bool BracketLoop::isMaybeArrayType() const {
+  if (!isExpressionLevel()) return false;
+  if (iterand()->isZip()) return false;
+  if (numStmts() != 1) return false;
+  if (index() && stmt(0)->isConditional()) return false;
+  return true;
+}
+
 
 } // namespace uast
 } // namespace chpl

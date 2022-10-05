@@ -1068,7 +1068,26 @@ the results as a new tuple.
 
 The size of the result tuple is the same as the size of the argument
 tuple. The type of each result component is the result type of the
-operator when applied to the corresponding argument component.
+operator when applied to the corresponding argument component. For example:
+
+   *Example (unary-ops.chpl)*.
+
+   The following code:
+
+   .. code-block:: chapel
+
+      var x = -(-1, 5, -3.14, 99.9);
+
+   creates a 3-tuple, ``x``, with the value ``(1, -5, 3.14, -99.9)`` which has
+   the same type as the tuple-literal on the right side of the expression.
+
+   .. BLOCK-test-chapelpost
+
+      writeln(x);
+
+   .. BLOCK-test-chapeloutput
+
+      (1, -5, 3.14, -99.9)
 
 The type of every element of the operand tuple must have a well-defined
 operator matching the unary operator being applied. That is, if the
@@ -1099,20 +1118,19 @@ result.
 
    *Example (binary-ops.chpl)*.
 
-   The code 
+   The code:
 
    .. code-block:: chapel
 
       var x = (1, 1, "1") + (2, 2.0, "2");
 
    creates a 3-tuple of an int, a real and a string with the value
-   ``(3, 3.0, "12")``. 
+   ``(3, 3.0, "12")``.
 
    .. BLOCK-test-chapelpost
 
       writeln(x);
 
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1141,7 +1159,7 @@ in the two operand tuples. Otherwise, a compile-time error will result.
 
    *Example (relational-ops.chpl)*.
 
-   The code 
+   The code:
 
    .. code-block:: chapel
 
@@ -1150,13 +1168,12 @@ in the two operand tuples. Otherwise, a compile-time error will result.
    creates a variable initialized to ``true``. After comparing the first
    components and determining they are equal, the next components are
    compared to determine that the first tuple is greater than the second
-   tuple. 
+   tuple.
 
    .. BLOCK-test-chapelpost
 
       writeln(x);
 
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1184,7 +1201,7 @@ Predefined Functions and Methods on Tuples
 
 
 
-.. function:: proc isTuple(t: tuple) param
+.. function:: proc isTuple(type t) param
 
    Returns true if ``t`` is a tuple; otherwise false.
 
@@ -1196,14 +1213,4 @@ Predefined Functions and Methods on Tuples
 
 
 
-.. function:: proc max(type t) where isTupleType(t)
-
-   Returns a tuple of type ``t`` with each component set to the maximum
-   value that can be stored in its position.
-
-
-
-.. function:: proc min(type t) where isTupleType(t)
-
-   Returns a tuple of type ``t`` with each component set to the minimum
-   value that can be stored in its position.
+.. include:: /builtins/ChapelTuple.rst

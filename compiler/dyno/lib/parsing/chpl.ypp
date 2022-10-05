@@ -150,6 +150,7 @@
   // It is just saving some components of a function to be used
   // when building the FunctionDecl.
   struct FunctionParts {
+    bool isBodyNonBlockExpression;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
     Attributes* attributes;
@@ -392,7 +393,7 @@
 %token <uniqueStr> TNEW TNIL TNOINIT TNONE TNOTHING
 %token <uniqueStr> TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
 %token <uniqueStr> TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE
-%token <uniqueStr> TPROC TPROTOTYPE TPUBLIC
+%token <uniqueStr> TPROC TPROTOTYPE TPUBLIC TPROCLP
 %token <uniqueStr> TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE
 %token <uniqueStr> TSTRING TSUBDOMAIN TSYNC
@@ -419,7 +420,6 @@
 %token <uniqueStr> TEQUAL TEXP TGREATER
 %token <uniqueStr> TGREATEREQUAL
 %token <uniqueStr> THASH
-%token <uniqueStr> TIO
 %token <uniqueStr> TLESS
 %token <uniqueStr> TLESSEQUAL
 %token <uniqueStr> TMINUS TMOD
@@ -438,10 +438,20 @@
 // keywords, operators, and punctuation that requires precedence
 //
 %left TNOELSE
-%left TELSE
-%left TCOMMA
+%left TELSE TTHROWS
+
+
+// Right associative to encourage shifting to happen.
+%right TTYPE TPARAM TREF TVAR TCONST
+%right TCOMMA
+
+// Add the 'internal_type_type_def' types here to resolve s/r for
+// function types/exprs, as well as TIDENT.
+%nonassoc TBOOL TINT TUINT TREAL TIMAG TCOMPLEX TBYTES TSTRING
+          TDOMAIN TINDEX TLOCALE TNOTHING TVOID TIDENT
+%nonassoc TFALSE TNONE TTHIS TTRUE
+
 %left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
-// %left TOWNED TUNMANAGED TSHARED
 %left TIN
 %left TALIGN TBY THASH
 %left TOR
@@ -462,12 +472,12 @@
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
+
 %right TBORROWED TOWNED TUNMANAGED TSHARED
 %left TQUESTION TBANG
 %right TNEW
 %left TDOT TLP TRSBR TLCBR
-%nonassoc TPRAGMA
-
+%nonassoc TPRAGMA TALIAS
 
 %type <throwsTag> opt_throws_error
 %type <moduleKind> opt_prototype
@@ -477,7 +487,7 @@
 %type <returnTag>  opt_ret_tag
 %type <astTag> class_tag
 
-%type <uniqueStr> ident_use ident_def ident_fn_def
+%type <uniqueStr> ident_use ident_def reserved_word_ident
 %type <uniqueStr> internal_type_ident_def reserved_type_ident_use
 %type <uniqueStr> fn_ident assignop_ident op_ident all_op_name opt_label_ident
 %type <uniqueStr> implements_type_ident implements_type_error_ident
@@ -555,20 +565,24 @@
 %type <exprList> var_decl_stmt_inner_ls tuple_var_decl_stmt_inner_ls
 %type <commentsAndStmt> var_decl_stmt_inner
 
-
 %type <exprList> function_body_stmt opt_function_body_stmt
 
 %type <commentsAndStmt> when_stmt
 %type <exprList> when_stmt_ls
 
 %type <expr> array_type
-%type <expr> opt_type opt_ret_type ret_array_type
-%type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type
+%type <expr> opt_type opt_ret_type ret_array_type ret_type colon_ret_type
+%type <expr> opt_fn_type_ret_type
+%type <expr> opt_colon_formal_type formal_array_type opt_formal_array_elt_type
+%type <expr> colon_formal_type
+%type <expr> formal_type
 %type <functionParts> lambda_decl_start
 %type <expr> lambda_decl_expr
 %type <typeDeclParts> enum_header_lcbr
 %type <exprList> enum_ls
 
+%type <expr> range_literal_expr cast_expr tuple_expand_expr
+%type <expr> super_expr
 %type <expr> zippered_iterator
 %type <expr> call_base_expr call_expr dot_expr
 %type <expr> lhs_expr
@@ -580,14 +594,14 @@
 %type <exprList> lifetime_components_expr
 %type <expr> lifetime_expr lifetime_ident
 %type <lifetimeAndWhere> opt_lifetime_where
-%type <expr> ident_expr for_expr cond_expr nil_expr io_expr new_expr
+%type <expr> ident_expr for_expr cond_expr nil_expr new_expr
 %type <expr> let_expr ifvar
 %type <uniqueStr> reduce_scan_op_expr
 %type <expr> reduce_expr scan_expr opt_init_expr
 %type <expr> opt_init_type formal_var_arg_expr
 %type <expr> opt_try_expr opt_expr
 %type <expr> tuple_component tuple_var_decl_component
-%type <expr> formal
+%type <expr> formal named_formal
 %type <commentsAndStmt> enum_item
 %type <expr> query_expr ifc_constraint
 
@@ -599,6 +613,9 @@
 %type <withClause> opt_task_intent_ls task_intent_clause forall_intent_clause
 
 %type <functionParts> fn_decl_stmt_start fn_decl_stmt_inner
+%type <functionParts> fn_type fn_expr
+%type <exprList> fn_type_formal_ls opt_fn_type_formal_ls
+%type <expr> fn_type_formal
 %type <exprList> opt_formal_ls req_formal_ls formal_ls formal_ls_inner
 %type <expr> fn_decl_receiver_expr
 %type <functionKind> proc_iter_or_op
@@ -1225,27 +1242,17 @@ opt_label_ident:
 | TIDENT { $$ = $1; }
 ;
 
-ident_fn_def:
-  TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
-| TTHIS                    { $$ = $1; }
-| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
-| internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
-                             msg += $1.c_str();
-                             msg += "'";
-                             $$ = $1; ERROR(@$, msg); }
+reserved_word_ident:
+  TNONE
+| TTHIS
+| TFALSE
+| TTRUE
+| internal_type_ident_def
+;
 
 ident_def:
-  TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
-| TTHIS                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'this'"); }
-| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
-| internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
-                             msg += $1.c_str();
-                             msg += "'";
-                             $$ = $1; ERROR(@$, msg); }
+  TIDENT
+| reserved_word_ident
 ;
 
 /* Represents a use of an identifier. This is not used as often as you
@@ -1261,14 +1268,8 @@ ident_use:
 | TTHIS                    { $$ = $1; }
 ;
 
+/* Error message has been moved to post-parse. */
 internal_type_ident_def:
- /* These reserved words should generate an error if an attempt
-    is made to redefine them. The name returned from this nonterminal
-    will be used in the error message.
-
-    Uses of these types are parsed differently.
-    See scalar_type and reserved_type_ident_use.
-  */
   TBOOL
 | TINT
 | TUINT
@@ -2285,6 +2286,94 @@ linkage_spec:
                        $$ = context->makeFunctionParts(false, true); }
 ;
 
+opt_fn_type_formal_ls:
+                                          { $$ = context->makeList(); }
+| fn_type_formal_ls                       { $$ = $1; }
+;
+
+fn_type_formal_ls:
+  fn_type_formal                          { $$ = context->makeList($1); }
+| fn_type_formal_ls TCOMMA fn_type_formal { $$ = context->appendList($1, $3); }
+;
+
+fn_type_formal:
+  named_formal
+  { $$ = $1; }
+  /* TODO: Would like to get rid of TCOLON here, but Bison... */
+| required_intent_tag TCOLON formal_type
+  { $$ = context->buildAnonFormal(@$, @1, $1, $3); }
+| formal_type
+  { $$ = context->buildAnonFormal(@$, $1); }
+;
+
+// TODO: We would like to replace the alternate with 'ret_type', but that
+// leads to some reduce/reduce conflicts.
+opt_fn_type_ret_type:
+  %prec TNOELSE   { $$ = nullptr; }
+| TCOLON expr     { $$ = $2; }
+;
+
+//
+// TODO: If you want to have spaces between the 'proc' and '(' text in the
+// TPROCLP token you will need to unfactor a bunch of stuff revolving
+// around 'fn_decl_receiver_expr', e.g., consider:
+// 'proc (borrowed class?).hash()'
+// -> Can we revert to TPROC TLP and then use precedence to fix this?
+// TODO: We need the return expression to be 'ret_type', not 'expr'.
+//
+fn_type:
+  TPROCLP opt_fn_type_formal_ls TRP opt_ret_tag opt_fn_type_ret_type
+  opt_throws_error
+  {
+    FunctionParts fp = context->makeFunctionParts(false, false);
+    fp.kind = Function::PROC;
+    fp.name = context->buildIdent(@1, STR("proc"));
+    fp.formals = $2;
+    fp.returnIntent = $4;
+    fp.returnType = $5;
+    fp.throws = ($6 == ThrowsTag_THROWS) ? true : false;
+    fp.body = nullptr;
+    fp.comments = nullptr;
+    fp.attributes = nullptr;
+    fp.visibility = context->visibility;
+    $$ = fp;
+  }
+;
+
+// TODO: This needs to use the old style formal list instead.
+fn_expr:
+  fn_type
+  {
+    context->clearComments();
+    context->resetDeclState();
+    context->enterScope(asttags::Function, STR("proc"));
+  }
+  block_stmt_body
+  {
+    FunctionParts fp = $1;
+    fp.isBodyNonBlockExpression = false;
+    fp.body = $3;
+    context->clearComments();
+    context->exitScope(asttags::Function, STR("proc"));
+    $$ = fp;
+  }
+| fn_type TALIAS
+  {
+    context->clearComments();
+    context->resetDeclState();
+    context->enterScope(asttags::Function, STR("proc"));
+  }
+  expr
+  {
+    FunctionParts fp = $1;
+    fp.isBodyNonBlockExpression = true;
+    fp.body = context->makeList($4);
+    context->clearComments();
+    context->exitScope(asttags::Function, STR("proc"));
+    $$ = fp;
+  }
+;
+
 fn_decl_stmt_complete:
   fn_decl_stmt
     {
@@ -2394,7 +2483,7 @@ fn_decl_receiver_expr:
 ;
 
 fn_ident:
-  ident_fn_def
+  ident_def
 | op_ident
 | ident_def TBANG
   {
@@ -2428,7 +2517,6 @@ op_ident:
 | THASH
 | TALIGN
 | TSWAP
-| TIO
 | TINITEQUALS
 | TCOLON
 ;
@@ -2466,7 +2554,8 @@ opt_formal_ls:
 ;
 
 req_formal_ls:
-  TLP formal_ls TRP  { $$ = $2; }
+  TLP TRP                   { $$ = context->makeList(); }
+| TLP formal_ls_inner TRP   { $$ = $2; }
 ;
 
 formal_ls_inner:
@@ -2480,61 +2569,32 @@ formal_ls:
 ;
 
 formal:
-  opt_formal_intent_tag ident_def opt_formal_type opt_init_expr
+  named_formal
+;
+
+named_formal:
+  opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
   {
-    $$ = Formal::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
-                       /*name*/ $2,
-                       /*intent*/ $1,
-                       toOwned($3),
-                       toOwned($4)).release();
-    context->noteIsBuildingFormal(false);
+    $$ = context->buildFormal(@$, $1, $2, $3, $4);
   }
-| pragma_ls opt_formal_intent_tag ident_def opt_formal_type opt_init_expr
+| pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
   {
-    auto attributes = context->buildAttributes(@$);
-    $$ = Formal::build(BUILDER, LOC(@$), std::move(attributes),
-                       /*name*/ $3,
-                       /*intent*/ $2,
-                       toOwned($4),
-                       toOwned($5)).release();
-    context->noteIsBuildingFormal(false);
-    context->resetAttributePartsState();
+    $$ = context->buildFormal(@$, $2, $3, $4, $5, true);
   }
-| opt_formal_intent_tag ident_def opt_formal_type formal_var_arg_expr
+| opt_formal_intent_tag ident_def opt_colon_formal_type formal_var_arg_expr
   {
-    $$ = VarArgFormal::build(BUILDER, LOC(@$),
-                             /*attributes*/ nullptr,
-                             /*name*/ $2,
-                             /*intent*/ $1,
-                             toOwned($3),
-                             toOwned($4)).release();
-    context->noteIsBuildingFormal(false);
+    $$ = context->buildVarArgFormal(@$, $1, $2, $3, $4);
   }
-| pragma_ls opt_formal_intent_tag ident_def opt_formal_type formal_var_arg_expr
+| pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type formal_var_arg_expr
   {
-    auto attributes = context->buildAttributes(@$);
-    $$ = VarArgFormal::build(BUILDER, LOC(@$),
-                             std::move(attributes),
-                             /*name*/ $3,
-                             /*intent*/ $2,
-                             toOwned($4),
-                             toOwned($5)).release();
-    context->noteIsBuildingFormal(false);
-    context->resetAttributePartsState();
+    $$ = context->buildVarArgFormal(@$, $2, $3, $4, $5, true);
   }
-| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type
   opt_init_expr
   {
-    $$ = TupleDecl::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
-                          context->visibility,
-                          context->linkage,
-                          ((TupleDecl::IntentOrKind) $1),
-                          context->consumeList($3),
-                          toOwned($5),
-                          toOwned($6)).release();
-    context->noteIsBuildingFormal(false);
+    $$ = context->buildTupleFormal(@$, $1, $3, $5, $6);
   }
-| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type
   formal_var_arg_expr
   {
     $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
@@ -2542,7 +2602,7 @@ formal:
 ;
 
 opt_formal_intent_tag:
-  {
+  %prec TFOR {
     context->noteIsBuildingFormal(true);
     $$ = Formal::DEFAULT_INTENT;
   }
@@ -2581,17 +2641,17 @@ proc_iter_or_op:
 ;
 
 opt_ret_tag:
-              { $$ = Function::DEFAULT_RETURN_INTENT; }
-| TCONST      { $$ = Function::CONST; }
-| TCONST TREF { $$ = Function::CONST_REF; }
-| TREF        { $$ = Function::REF; }
-| TPARAM      { $$ = Function::PARAM; }
-| TTYPE       { $$ = Function::TYPE; }
+    %prec TNOELSE   { $$ = Function::DEFAULT_RETURN_INTENT; }
+| TCONST            { $$ = Function::CONST; }
+| TCONST TREF       { $$ = Function::CONST_REF; }
+| TREF              { $$ = Function::REF; }
+| TPARAM            { $$ = Function::PARAM; }
+| TTYPE             { $$ = Function::TYPE; }
 ;
 
 opt_throws_error:
-          { $$ = ThrowsTag_DEFAULT; }
-| TTHROWS { $$ = ThrowsTag_THROWS; }
+          %prec TNOELSE   { $$ = ThrowsTag_DEFAULT; }
+| TTHROWS                 { $$ = ThrowsTag_THROWS; }
 
 opt_function_body_stmt:
   TSEMI               { context->clearComments(); $$ = nullptr; }
@@ -2814,7 +2874,6 @@ opt_init_expr:
 | TASSIGN opt_try_expr  { $$ = $2; }
 ;
 
-
 ret_array_type:
   TLSBR TRSBR type_level_expr
   {
@@ -2846,14 +2905,22 @@ ret_array_type:
   }
 ;
 
-opt_ret_type:
-                                 { $$ = nullptr; }
-| TCOLON type_level_expr         { $$ = $2; }
-| TCOLON ret_array_type          { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
+ret_type:
+  type_level_expr         { $$ = $1; }
+| ret_array_type          { $$ = $1; }
+| reserved_type_ident_use { $$ = context->buildIdent(@1, $1); }
+| error                   { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
+;
+
+colon_ret_type:
+  TCOLON ret_type { $$ = $2; }
 | error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
 ;
 
+opt_ret_type:
+                    { $$ = nullptr; }
+| colon_ret_type
+;
 
 opt_type:
                                  { $$ = nullptr; }
@@ -2933,12 +3000,20 @@ formal_array_type:
   }
 ;
 
-opt_formal_type:
-                                 { $$ = nullptr; }
-| TCOLON type_level_expr         { $$ = $2; }
-| TCOLON query_expr              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
-| TCOLON formal_array_type       { $$ = $2; }
+formal_type:
+  type_level_expr
+| query_expr
+| reserved_type_ident_use   { $$ = context->buildIdent(@1, $1); }
+| formal_array_type
+;
+
+colon_formal_type:
+  TCOLON formal_type             { $$ = $2; }
+;
+
+opt_colon_formal_type:
+                        { $$ = nullptr; }
+| colon_formal_type     { $$ = $1; }
 ;
 
 /** EXPRESSIONS **************************************************************/
@@ -3017,9 +3092,12 @@ type_level_expr:
   { $$ = context->buildUnaryOp(@$, $2, $1); }
 | TQUESTION
   { $$ = context->buildIdent(@$, $1); }
+| fn_type
+  { $$ = context->buildFunctionType(@$, $1); }
 ;
 
-// TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
+// TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?'
+// would not work.
 sub_type_level_expr:
   nil_expr
 | lhs_expr                  // var b: a.type || (?,?) || foo()
@@ -3061,7 +3139,6 @@ sub_type_level_expr:
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TBORROWED expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
-
 | TCLASS
   { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TRECORD
@@ -3306,8 +3383,6 @@ stmt_level_expr:
 | lambda_decl_expr
 | new_expr
 | let_expr
-| io_expr TIO expr
-  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 opt_task_intent_ls:
@@ -3376,12 +3451,6 @@ task_var_prefix:
 | TREF         { $$ = TaskVar::REF;       }
 | TCONST TREF  { $$ = TaskVar::CONST_REF; }
 | TVAR         { $$ = TaskVar::VAR;       }
-;
-
-io_expr:
-  lhs_expr
-| io_expr TIO expr
-  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 new_maybe_decorated:
@@ -3466,28 +3535,8 @@ let_expr:
   }
 ;
 
-/* exprs represent valid values and types. Any expression with a valid
-   type also has a valid value as types can appear on the rhs during
-   type-aliasing.  Hence, type_level_expr must be a subset of expr. */
-expr:
-  literal_expr
-| type_level_expr
-| for_expr
-| reduce_expr
-| scan_expr
-| lambda_decl_expr
-| new_expr
-| let_expr
-| ifc_constraint
-| TLP TDOTDOTDOT expr TRP
-  {
-    $$ = context->buildUnaryOp(@$, $2, $3);
-  }
-| expr TCOLON expr
-  {
-    $$ = context->buildBinOp(@$, $1, $2, $3);
-  }
-| expr TDOTDOT expr
+range_literal_expr:
+  expr TDOTDOT expr
   {
     $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT, toOwned($1),
                       toOwned($3)).release();
@@ -3520,7 +3569,6 @@ expr:
                       /*lowerBound*/ nullptr,
                       /*upperBound*/ nullptr).release();
   }
-
 /* The following cases would extend the current '..<' open range
    interval constructor to also support '<..' and '<..<'.  This
    concept didn't win enough support to merge as present, but are here
@@ -3542,7 +3590,40 @@ expr:
                       nullptr).release();
   }
 */
+;
 
+cast_expr:
+  expr TCOLON expr
+  {
+    $$ = context->buildBinOp(@$, $1, $2, $3);
+  }
+;
+
+tuple_expand_expr:
+  TLP TDOTDOTDOT expr TRP
+  {
+    $$ = context->buildUnaryOp(@$, $2, $3);
+  }
+;
+
+super_expr:
+  fn_expr { $$ = context->buildFunctionExpr(@$, $1); }
+| expr
+;
+
+expr:
+  literal_expr
+| for_expr
+| type_level_expr
+| reduce_expr
+| scan_expr
+| lambda_decl_expr
+| new_expr
+| let_expr
+| ifc_constraint
+| tuple_expand_expr
+| cast_expr
+| range_literal_expr
 ;
 
 opt_expr:
@@ -3553,7 +3634,7 @@ opt_expr:
 opt_try_expr:
   TTRY expr       { $$ = context->buildTryExpr(@$, $2, false); }
 | TTRYBANG expr   { $$ = context->buildTryExpr(@$, $2, true); }
-| expr            { $$ = $1; }
+| super_expr      { $$ = $1; }
 ;
 
 lhs_expr:

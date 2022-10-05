@@ -70,7 +70,7 @@ void chpl_gpu_startVerbose(chpl_bool stacktrace, chpl_bool print_unstable) {
 }
 
 
-void chpl_gpu_stopVerbose() {
+void chpl_gpu_stopVerbose(void) {
   chpl_verbose_gpu = 0;
   chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_verbose_gpu);
@@ -85,7 +85,7 @@ void chpl_gpu_startVerboseHere(chpl_bool stacktrace, chpl_bool print_unstable) {
 }
 
 
-void chpl_gpu_stopVerboseHere() {
+void chpl_gpu_stopVerboseHere(void) {
   chpl_verbose_gpu = 0;
 }
 
@@ -107,7 +107,7 @@ void chpl_gpu_startDiagnostics(chpl_bool print_unstable) {
 }
 
 
-void chpl_gpu_stopDiagnostics() {
+void chpl_gpu_stopDiagnostics(void) {
   // Make sure that there are no pending GPU operations.
   chpl_rmem_consist_release(0, 0);
 
@@ -128,7 +128,7 @@ void chpl_gpu_startDiagnosticsHere(chpl_bool print_unstable) {
 }
 
 
-void chpl_gpu_stopDiagnosticsHere() {
+void chpl_gpu_stopDiagnosticsHere(void) {
   // Make sure that there are no pending GPU operations.
   chpl_rmem_consist_release(0, 0);
 
@@ -136,7 +136,7 @@ void chpl_gpu_stopDiagnosticsHere() {
 }
 
 
-void chpl_gpu_resetDiagnosticsHere() {
+void chpl_gpu_resetDiagnosticsHere(void) {
   chpl_gpu_diags_reset();
 }
 

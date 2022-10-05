@@ -504,7 +504,7 @@ module Set {
 
       :arg ch: A channel to write to.
     */
-    proc const writeThis(ch: channel) throws {
+    proc const writeThis(ch: fileWriter) throws {
       on this {
         _enter(); defer _leave();
 

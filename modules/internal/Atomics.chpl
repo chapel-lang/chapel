@@ -86,6 +86,21 @@ Atomic variables can also be declared with an initial value:
 
       var y: atomic int = 1;
 
+Similarly, a temporary ``atomic`` value can be created by casting to atomic:
+
+.. code-block:: chapel
+
+      var one: int = 1;
+      ... one : atomic int... // creates an `atomic int` initialized with 1
+
+Assignment is supported between atomic variables as well:
+
+.. code-block:: chapel
+
+      var x: atomic int = 1;
+      var y: atomic int = 2;
+
+      x = y; // equivalent to x.write(y.read())
 
 Chapel currently supports atomic operations for bools, all supported sizes of
 signed and unsigned integers, as well as all supported sizes of reals.  Note
@@ -400,6 +415,8 @@ module Atomics {
 
   }
 
+  // TODO: should this be an operator method AtomicBool.: ?
+  pragma "no doc"
   operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=
     return lhs;
@@ -737,6 +754,8 @@ module Atomics {
 
   }
 
+  // TODO: should this be an operator method AtomicT.: ?
+  pragma "no doc"
   operator :(rhs, type t:AtomicT)
   where rhs.type == t.T {
     var lhs: t = rhs; // use init=
@@ -755,6 +774,7 @@ module Atomics {
   // to the normal record version of the function.  Sigh.
 
   /* Equivalent to ``a.write(b.read())`` */
+  pragma "no doc"
   inline operator AtomicBool.=(ref a:AtomicBool, const ref b:AtomicBool) {
     a.write(b.read());
   }
@@ -763,6 +783,7 @@ module Atomics {
     compilerError("Cannot directly assign atomic variables");
   }
   /* Equivalent to ``a.write(b.read())`` */
+  pragma "no doc"
   inline operator AtomicT.=(ref a:AtomicT, const ref b:AtomicT) {
     a.write(b.read());
   }

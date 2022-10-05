@@ -284,11 +284,6 @@ if there was an error. See:
  * :proc:`channel.readbits`
  * :proc:`FormattedIO.channel.readf` (see also :ref:`about-io-formatted-io`)
 
-In addition, there is a convenient synonym for :proc:`channel.write` and
-:proc:`channel.read`: the `<~> operator`
-
-.. note:: the <~> operator is deprecated
-
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 :proc:`channel.flush()` method. Flushing the buffer will make all writes available
 to other applications or other views of the file (e.g., it will call the OS call
@@ -754,38 +749,6 @@ pragma "no doc"
 extern const QIO_HINT_NOREUSE:c_int;
 pragma "no doc"
 extern const QIO_HINT_OWNED:c_int;
-
-/*  IOHINT_NONE means normal operation, nothing special
-    to hint. Expect to use NONE most of the time.
-    The other hints can be bitwise-ORed in.
- */
-deprecated "'IOHINT_NONE' is deprecated; please use 'ioHintSet.empty' instead"
-const IOHINT_NONE = 0:c_int;
-
-/* IOHINT_RANDOM means we expect random access to a file */
-deprecated "'IOHINT_RANDOM' is deprecated; please use 'ioHintSet.random' instead"
-const IOHINT_RANDOM = QIO_HINT_RANDOM;
-
-/*  IOHINT_SEQUENTIAL means expect sequential access. On
-    Linux, this should double the readahead.
- */
-deprecated "'IOHINT_SEQUENTIAL' is deprecated; please use 'ioHintSet.sequential' instead"
-const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
-
-/*  IOHINT_CACHED means we expect the entire file
-    to be cached and/or we pull it in all at
-    once. May request readahead on the entire file.
- */
-deprecated "'IOHINT_CACHED' is deprecated; please use 'ioHintSet.prefetch' instead"
-const IOHINT_CACHED = QIO_HINT_CACHED;
-
-/*  IOHINT_PARALLEL means that we expect to have many
-    channels working with this file in parallel.
-    It might change the reading/writing implementation
-    to something more efficient in that scenario.
- */
-deprecated "'IOHINT_PARALLEL' is deprecated"
-const IOHINT_PARALLEL = QIO_HINT_PARALLEL;
 
 pragma "no doc"
 extern type qio_file_ptr_t;
@@ -1405,9 +1368,6 @@ extern type fdflag_t = c_int;
 //  QIO_HINT_CACHED,
 //  QIO_HINT_NOREUSE
 
-deprecated "the 'iohints' type is deprecated; please use the 'ioHintSet' type instead."
-extern type iohints = c_int;
-
 private const IOHINTS_NONE:        c_int = 0;
 private const IOHINTS_SEQUENTIAL:  c_int = QIO_HINT_SEQUENTIAL;
 private const IOHINTS_RANDOM:      c_int = QIO_HINT_RANDOM;
@@ -1512,7 +1472,7 @@ It is illegal to perform any I/O operations on the default value.
 pragma "ignore noinit"
 record file {
   pragma "no doc"
-  var home: locale = here;
+  var _home: locale = here;
   pragma "no doc"
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
 
@@ -1526,10 +1486,10 @@ record file {
 // TODO -- shouldn't have to write this this way!
 pragma "no doc"
 proc file.init(x: file) {
-  this.home = x.home;
+  this._home = x._home;
   this._file_internal = x._file_internal;
   this.complete();
-  on home {
+  on this._home {
     qio_file_retain(_file_internal);
   }
 }
@@ -1542,16 +1502,16 @@ proc file.init=(x: file) {
 pragma "no doc"
 operator file.=(ref ret:file, x:file) {
   // retain -- release
-  on x.home {
+  on x._home {
     qio_file_retain(x._file_internal);
   }
 
-  on ret.home {
+  on ret._home {
     qio_file_release(ret._file_internal);
   }
 
   // compiler will do this copy.
-  ret.home = x.home;
+  ret._home = x._home;
   ret._file_internal = x._file_internal;
 }
 
@@ -1568,14 +1528,14 @@ proc file.checkAssumingLocal() throws {
    :throws SystemError: Indicates that `this` does not represent an OS file.
 */
 proc file.check() throws {
-  on this.home {
+  on this._home {
     this.checkAssumingLocal();
   }
 }
 
 pragma "no doc"
 proc ref file.deinit() {
-  on this.home {
+  on this._home {
     qio_file_release(_file_internal);
     this._file_internal = QIO_FILE_PTR_NULL;
   }
@@ -1586,12 +1546,12 @@ proc ref file.deinit() {
    at the moment I don't see any use case in which
    it would make sense.
 proc file.lock() {
-  on this.home {
+  on this._home {
     seterr(nil, qio_file_lock(_file_internal));
   }
 }
 proc file.unlock() {
-  on this.home {
+  on this._home {
     qio_file_unlock(_file_internal);
   }
 }
@@ -1608,7 +1568,7 @@ proc file.filePlugin() : QioPluginFile? {
 pragma "no doc"
 proc file._style:iostyleInternal throws {
   var ret:iostyleInternal;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     var local_style:iostyleInternal;
     qio_file_get_style(_file_internal, local_style);
@@ -1644,7 +1604,7 @@ proc file.close() throws {
     throw createSystemError(EBADF, "Operation attempted on an invalid file");
 
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     err = qio_file_close(_file_internal);
   }
   if err then try ioerror(err, "in file.close", this._tryGetPath());
@@ -1664,7 +1624,7 @@ This function will typically call the ``fsync`` system call.
  */
 proc file.fsync() throws {
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     err = qio_file_sync(_file_internal);
   }
@@ -1687,7 +1647,7 @@ to get the path to a file.
 proc file.path : string throws {
   var ret: string;
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     var tmp:c_string;
     var tmp2:c_string;
@@ -1717,17 +1677,6 @@ proc file._tryGetPath() : string {
 
 /*
 
-Get the path to an open file, or return "unknown" if there was
-a problem getting the path to the open file.
-
-*/
-deprecated "file.tryGetPath is deprecated"
-proc file.tryGetPath() : string {
-  return this._tryGetPath();
-}
-
-/*
-
 Get the current size of an open file. Note that the size can always
 change if other channels, tasks or programs are writing to the file.
 
@@ -1738,7 +1687,7 @@ change if other channels, tasks or programs are writing to the file.
 proc file.size: int throws {
   var err:errorCode = ENOERR;
   var len:int(64) = 0;
-  on this.home {
+  on this._home {
     err = qio_file_length(this._file_internal, len);
   }
   if err then try ioerror(err, "in file.size");
@@ -1763,12 +1712,6 @@ proc _modestring(mode:iomode) {
     when iomode.cwr do return _cwr;
     otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
   }
-}
-
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'open' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc open(path:string, mode:iomode, hints:iohints,
-          style:iostyle): file throws {
-  return openHelper(path, mode, new ioHintSet(hints), style:iostyleInternal);
 }
 
 @unstable "open with a style argument is unstable"
@@ -1797,19 +1740,13 @@ proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
 }
 
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'open' that takes an 'ioHintSet' instead."
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE): file throws {
-  return open(path, mode, new ioHintSet(hints));
-}
-
 private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
                         style:iostyleInternal = defaultIOStyleInternal()): file throws {
 
   var local_style = style;
   var error: errorCode = ENOERR;
   var ret: file;
-  ret.home = here;
+  ret._home = here;
 
   if (path == "") then
     try ioerror(ENOENT:errorCode, "in open: path is the empty string");
@@ -1834,7 +1771,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
 
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
 
   var flags:c_int = 0;
   select mode {
@@ -1880,11 +1817,6 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
   return ret;
 }
 
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'openfd' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc openfd(fd: fd_t, hints:iohints, style:iostyle):file throws {
-  return openfdHelper(fd, new ioHintSet(hints), style: iostyleInternal);
-}
-
 @unstable "openfd with a style argument is unstable"
 proc openfd(fd: fd_t, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfdHelper(fd, hints, style: iostyleInternal);
@@ -1920,17 +1852,11 @@ proc openfd(fd: fd_t, hints = ioHintSet.empty):file throws {
   return openfdHelper(fd, hints);
 }
 
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'openfd' that takes an 'ioHintSet' instead."
-proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE):file throws {
-  return openfd(fd, new ioHintSet(hints));
-}
-
 private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
   extern proc chpl_cnullfile():_file;
   var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
 
@@ -1945,11 +1871,6 @@ private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
     try ioerror(err, "in openfd", path);
   }
   return ret;
-}
-
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'openfp' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc openfp(fp: _file, hints:iohints, style:iostyle):file throws {
-  return openfpHelper(fp, new ioHintSet(hints), style: iostyleInternal);
 }
 
 @unstable "openfp with a style argument is unstable"
@@ -1981,17 +1902,11 @@ proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'openfp' that takes an 'ioHintSet' instead."
-proc openfp(fp: _file, hints:iohints=IOHINT_NONE):file throws {
-  return openfp(fp, new ioHintSet(hints));
-}
-
 private proc openfpHelper(fp: _file, hints=ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
   var err = qio_file_init(ret._file_internal, fp, -1, hints._internal, local_style, 1);
 
   // On return either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
@@ -2006,11 +1921,6 @@ private proc openfpHelper(fp: _file, hints=ioHintSet.empty,
     try ioerror(err, "in openfp", path);
   }
   return ret;
-}
-
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'opentmp' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc opentmp(hints:iohints, style:iostyle):file throws {
-  return opentmpHelper(new ioHintSet(hints), style: iostyleInternal);
 }
 
 @unstable "opentmp with a style argument is unstable"
@@ -2045,17 +1955,11 @@ proc opentmp(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
 
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'opentmp' that takes an 'ioHintSet' instead."
-proc opentmp(hints:iohints=IOHINT_NONE):file throws {
-  return opentmp(new ioHintSet(hints));
-}
-
 private proc opentmpHelper(hints=ioHintSet.empty,
                            style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
 
   // On return ret._file_internal.ref_cnt == 1.
   var err = qio_file_open_tmp(ret._file_internal, hints._internal, local_style);
@@ -2088,7 +1992,7 @@ private
 proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
-  ret.home = here;
+  ret._home = here;
 
   // On return ret._file_internal.ref_cnt == 1.
   var err = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
@@ -2120,6 +2024,108 @@ proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws
 */
 config param WritersReturnBool=true;
 
+pragma "ignore noinit"
+pragma "no doc"
+record _channel {
+  /*
+     writing is a boolean indicating whether the channels of this type
+     support writing (when `true`) or reading (when `false`).
+   */
+  param writing:bool;
+  /*
+     kind is an enum :type:`iokind` that allows narrowing
+     this channel's I/O style for more efficient binary I/O.
+   */
+  param kind:iokind;
+  /*
+     locking is a boolean indicating whether it is safe to use this
+     channel concurrently (when `true`).
+   */
+  param locking:bool;
+
+  pragma "no doc"
+  var _home:locale = here;
+  pragma "no doc"
+  var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
+
+  // The member variable _readWriteThisFromLocale is used to support
+  // writeThis needing to know where the I/O started. It is a member
+  // variable on channel so that calls to writeln etc within writeThis
+  // can preserve this information. Not used outside of
+  // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
+  // we are working on a channel created for running writeThis/readThis.
+  // Therefore further locking by the same task is not necessary.
+  pragma "no doc"
+  var _readWriteThisFromLocale = nilLocale;
+}
+
+/*
+
+A ``fileReader`` supports sequential reading from an underlying :record:`file`
+object. It can buffer data. Read operations on it might return old data. Use
+:proc:`channel.flush` to control this buffering.
+
+The :record:`fileReader` type is implementation-defined.
+A value of the :record:`fileReader` type refers to the state that is used
+to implement the reading operations.
+
+When a :record:`fileReader` formal argument has default intent, the actual is
+passed by ``const ref`` to the formal upon a function call, and the formal
+cannot be assigned within the function.
+
+The default value of the :record:`fileReader` type is not associated
+with any file, and so cannot be used to perform I/O.
+
+The :record:`fileReader` type is generic.
+
+The :record:`fileReader` type supports 3 fields:
+
+ * ``param writing: bool`` which is always ``false`` for ``fileReader``
+
+ * ``param kind:iokind``:
+   kind is an enum :type:`iokind` that allows narrowing
+   this channel's I/O style for more efficient binary I/O.
+
+ * ``param locking:bool``:
+   locking is a boolean indicating whether it is safe to use this
+   channel concurrently (when `true`).
+*/
+type fileReader;
+fileReader = _channel(writing=false, ?);
+
+/*
+
+A ``fileWriter`` supports sequential writing to an underlying :record:`file`
+object. A ``fileWriter`` can buffer data. Write operations might not have an
+immediate effect. Use :proc:`channel.flush` to control this buffering.
+
+The :record:`fileWriter` type is implementation-defined.
+A value of the :record:`fileWriter` type refers to the state that is used
+to implement the writing operations.
+
+When a :record:`fileWriter` formal argument has default intent, the actual is
+passed by ``const ref`` to the formal upon a function call, and the formal
+cannot be assigned within the function.
+
+The default value of the :record:`fileWriter` type is not associated with any
+file, and so cannot be used to perform I/O.
+
+The :record:`fileWriter` type is generic.
+
+The :record:`fileWriter` type supports 3 fields:
+
+ * ``param writing: bool`` which is always ``true`` for ``fileWriter``
+
+ * ``param kind:iokind``:
+   kind is an enum :type:`iokind` that allows narrowing
+   this channel's I/O style for more efficient binary I/O.
+
+ * ``param locking:bool``:
+   locking is a boolean indicating whether it is safe to use this
+   channel concurrently (when `true`).
+ */
+type fileWriter;
+fileWriter = _channel(writing=true, ?);
 
 /*
 
@@ -2141,42 +2147,30 @@ with any file, and so cannot be used to perform I/O.
 
 The :record:`channel` type is generic.
 
- */
-pragma "ignore noinit"
-record channel {
-  /*
-     writing is a boolean indicating whether the channels of this type
-     support writing (when `true`) or reading (when `false`).
-   */
-  param writing:bool;
-  /*
-     kind is an enum :type:`iokind` that allows narrowing
-     this channel's I/O style for more efficient binary I/O.
-   */
-  param kind:iokind;
-  /*
-     locking is a boolean indicating whether it is safe to use this
-     channel concurrently (when `true`).
-   */
-  param locking:bool;
-  pragma "no doc"
-  var home:locale = here;
-  pragma "no doc"
-  var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
+The :record:`channel` type supports 3 fields:
 
-  // The member variable _readWriteThisFromLocale is used to support
-  // writeThis needing to know where the I/O started. It is a member
-  // variable on channel so that calls to writeln etc within writeThis
-  // can preserve this information. Not used outside of
-  // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
-  // we are working on a channel created for running writeThis/readThis.
-  // Therefore further locking by the same task is not necessary.
-  pragma "no doc"
-  var _readWriteThisFromLocale = nilLocale;
-}
+ * ``param writing: bool``:
+   writing is a boolean indicating whether the channels of this type
+   support writing (when `true`) or reading (when `false`).
+
+ * ``param kind:iokind``:
+   kind is an enum :type:`iokind` that allows narrowing
+   this channel's I/O style for more efficient binary I/O.
+
+ * ``param locking:bool``:
+   locking is a boolean indicating whether it is safe to use this
+   channel concurrently (when `true`).
+
+.. note::
+
+  The ``channel`` type is deprecated. Please use ``fileReader`` or
+  ``fileWriter`` instead.
+ */
+deprecated "channel type is deprecated - use fileReader or fileWriter instead"
+type channel = _channel;
 
 pragma "no doc"
-operator channel.=(ref lhs:channel, rhs:channel) {
+operator _channel.=(ref lhs:_channel, rhs:_channel) {
   if lhs.writing==true && rhs.writing==false {
     compilerError("cannot assign writing channel to reading channel");
   } else if lhs.writing==false && rhs.writing == true {
@@ -2184,41 +2178,42 @@ operator channel.=(ref lhs:channel, rhs:channel) {
   }
 
   // retain -- release
-  on rhs.home {
+  on rhs._home {
     qio_channel_retain(rhs._channel_internal);
   }
 
-  on lhs.home {
+  on lhs._home {
     qio_channel_release(lhs._channel_internal);
   }
 
-  lhs.home = rhs.home;
+  lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
 }
 
 pragma "no doc"
-proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
 }
 
 pragma "no doc"
-proc channel.init(x: channel) {
-  compilerWarning("new channel(otherChannel) is deprecated");
+proc _channel.init(x: _channel) {
+  compilerWarning("new _channel(otherChannel) is deprecated");
   this.writing = x.writing;
   this.kind = x.kind;
   this.locking = x.locking;
-  this.home = x.home;
+  this._home = x._home;
   this._channel_internal = x._channel_internal;
-  _readWriteThisFromLocale = x._readWriteThisFromLocale;
+  this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
-  on x.home {
+  on x._home {
     qio_channel_retain(x._channel_internal);
   }
 }
 
-proc channel.init=(x: channel) {
+pragma "no doc"
+proc _channel.init=(x: _channel) {
   if this.type.writing != ? {
     if this.type.writing==true && x.writing==false {
       compilerError("cannot init writing channel from reading channel");
@@ -2234,17 +2229,17 @@ proc channel.init=(x: channel) {
                  then this.type.locking
                  else x.locking;
 
-  this.home = x.home;
+  this._home = x._home;
   this._channel_internal = x._channel_internal;
-  _readWriteThisFromLocale = x._readWriteThisFromLocale;
+  this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
-  on x.home {
+  on x._home {
     qio_channel_retain(x._channel_internal);
   }
 }
 
 pragma "no doc"
-operator :(rhs: channel, type t: channel) {
+operator :(rhs: _channel, type t: _channel) {
   var tmp: t = rhs; // just run init=
   return tmp;
 }
@@ -2256,22 +2251,22 @@ operator :(rhs: channel, type t: channel) {
 // a means to "opt-in" to including the compiler-provided initializer?
 //
 pragma "no doc"
-proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool,
                   home: locale, _channel_internal:qio_channel_ptr_t,
                   _readWriteThisFromLocale: locale) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
-  this.home = home;
+  this._home = home;
   this._channel_internal = _channel_internal;
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
 }
 
 pragma "no doc"
-proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:errorCode, hints: ioHintSet, start:int(64), end:int(64), in local_style:iostyleInternal) {
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:errorCode, hints: ioHintSet, start:int(64), end:int(64), in local_style:iostyleInternal) {
   this.init(writing, kind, locking);
-  on f.home {
-    this.home = f.home;
+  on f._home {
+    this._home = f._home;
     if kind != iokind.dynamic {
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
@@ -2283,8 +2278,8 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:f
 }
 
 pragma "no doc"
-proc ref channel.deinit() {
-  on this.home {
+proc ref _channel.deinit() {
+  on this._home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
   }
@@ -2405,10 +2400,10 @@ inline operator :(x: ioBits, type t:string) {
 
 
 pragma "no doc"
-proc channel._ch_ioerror(error:errorCode, msg:string) throws {
+proc _channel._ch_ioerror(error:errorCode, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
-  on this.home {
+  on this._home {
     var tmp_path:c_string;
     var tmp_offset:int(64);
     var err:errorCode = ENOERR;
@@ -2427,10 +2422,10 @@ proc channel._ch_ioerror(error:errorCode, msg:string) throws {
 }
 
 pragma "no doc"
-proc channel._ch_ioerror(errstr:string, msg:string) throws {
+proc _channel._ch_ioerror(errstr:string, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
-  on this.home {
+  on this._home {
     var tmp_path:c_string;
     var tmp_offset:int(64);
     var err:errorCode = ENOERR;
@@ -2453,14 +2448,14 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
-inline proc channel.lock() throws {
+inline proc _channel.lock() throws {
   var err:errorCode = ENOERR;
 
   if is_c_nil(_channel_internal) then
     throw createSystemError(EINVAL, "Operation attempted on an invalid channel");
 
   if locking {
-    on this.home {
+    on this._home {
       err = qio_channel_lock(_channel_internal);
     }
   }
@@ -2470,9 +2465,9 @@ inline proc channel.lock() throws {
 /*
    Release a channel's lock.
  */
-inline proc channel.unlock() {
+inline proc _channel.unlock() {
   if locking {
-    on this.home {
+    on this._home {
       qio_channel_unlock(_channel_internal);
     }
   }
@@ -2491,9 +2486,9 @@ inline proc channel.unlock() {
 
    :returns: the current offset of the channel
  */
-proc channel.offset():int(64) {
+proc _channel.offset():int(64) {
   var ret:int(64);
-  on this.home {
+  on this._home {
     try! this.lock();
     ret = qio_channel_offset_unlocked(_channel_internal);
     this.unlock();
@@ -2514,9 +2509,9 @@ proc channel.offset():int(64) {
 
    :throws SystemError: Throws if the channel offset was not moved.
  */
-proc channel.advance(amount:int(64)) throws {
+proc _channel.advance(amount:int(64)) throws {
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     err = qio_channel_advance(false, _channel_internal, amount);
   }
@@ -2530,9 +2525,9 @@ proc channel.advance(amount:int(64)) throws {
    :throws EofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
-proc channel.advancePastByte(byte:uint(8)) throws {
+proc _channel.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
   }
@@ -2569,7 +2564,7 @@ proc channel.advancePastByte(byte:uint(8)) throws {
   :returns: The offset that was marked
   :throws: SystemError: if marking the channel failed
  */
-proc channel.mark() throws where this.locking == false {
+proc _channel.mark() throws where this.locking == false {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
@@ -2585,7 +2580,7 @@ proc channel.mark() throws where this.locking == false {
    previous channel offset unchanged.  This function can only be
    called on a channel with ``locking==false``.
 */
-inline proc channel.revert() where this.locking == false {
+inline proc _channel.revert() where this.locking == false {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
@@ -2596,14 +2591,10 @@ inline proc channel.revert() where this.locking == false {
    only be called on a channel with ``locking==false``.
 
 */
-inline proc channel.commit() where this.locking == false {
+inline proc _channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
-deprecated "channel.seek with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
-  this.seek(start..end);
-}
 /*
    Reset a channel to point to a new part of a file.
    This function allows one to jump to a different part of a
@@ -2629,7 +2620,7 @@ proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
                          channel is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc channel.seek(region: range(?)) throws {
+proc _channel.seek(region: range(?)) throws {
 
   if this.locking then
     compilerError("Cannot seek on a locking channel");
@@ -2662,9 +2653,9 @@ proc channel.seek(region: range(?)) throws {
    For a channel locked with :proc:`channel.lock`, return the offset
    of that channel.
  */
-proc channel._offset():int(64) {
+proc _channel._offset():int(64) {
   var ret:int(64);
-  on this.home {
+  on this._home {
     ret = qio_channel_offset_unlocked(_channel_internal);
   }
   return ret;
@@ -2684,7 +2675,7 @@ proc channel._offset():int(64) {
   :returns: The offset that was marked
   :throws: SystemError: if marking the channel failed
  */
-proc channel._mark() throws {
+proc _channel._mark() throws {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
@@ -2701,7 +2692,7 @@ proc channel._mark() throws {
    only be called on a channel that has already been locked and
    marked.
 */
-inline proc channel._revert() {
+inline proc _channel._revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
@@ -2712,7 +2703,7 @@ inline proc channel._revert() {
    only be called on a channel that has already been locked and
    marked.
 */
-inline proc channel._commit() {
+inline proc _channel._commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
@@ -2724,9 +2715,9 @@ inline proc channel._commit() {
 
  */
 @unstable "channel._style is unstable because it returns a type that is unstable"
-proc channel._style():iostyle {
+proc _channel._style():iostyle {
   var ret:iostyle;
-  on this.home {
+  on this._home {
     var local_style:iostyle;
     qio_channel_get_style(_channel_internal, local_style);
     ret = local_style;
@@ -2737,9 +2728,9 @@ proc channel._style():iostyle {
 // Replacement for channel._style(), but it really shouldn't be used by users,
 // it will get replaced at some point.
 pragma "no doc"
-proc channel._styleInternal(): iostyleInternal {
+proc _channel._styleInternal(): iostyleInternal {
   var ret:iostyleInternal;
-  on this.home {
+  on this._home {
     var local_style:iostyleInternal;
     qio_channel_get_style(_channel_internal, local_style);
     ret = local_style;
@@ -2754,8 +2745,8 @@ proc channel._styleInternal(): iostyleInternal {
 
  */
 @unstable "channel._set_style is unstable because its purpose involves an unstable type"
-proc channel._set_style(style:iostyle) {
-  on this.home {
+proc _channel._set_style(style:iostyle) {
+  on this._home {
     var local_style:iostyle = style;
     qio_channel_set_style(_channel_internal, local_style);
   }
@@ -2764,8 +2755,8 @@ proc channel._set_style(style:iostyle) {
 // Replacement for channel._set_style(), but it really shouldn't be used by
 // users, it will get replaced at some point.
 pragma "no doc"
-proc channel._set_styleInternal(style: iostyleInternal) {
-  on this.home {
+proc _channel._set_styleInternal(style: iostyleInternal) {
+  on this._home {
     var local_style:iostyleInternal = style;
     qio_channel_set_style(_channel_internal, local_style);
   }
@@ -2779,7 +2770,7 @@ proc channel._set_styleInternal(style: iostyleInternal) {
 
  */
 inline
-proc channel.readWriteThisFromLocale() {
+proc _channel.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
 }
 
@@ -2791,7 +2782,7 @@ proc channel.readWriteThisFromLocale() {
 // so the original locale of the I/O is `here`.
 pragma "no doc"
 inline
-proc channel.getLocaleOfIoRequest() {
+proc _channel.getLocaleOfIoRequest() {
   var ret = this.readWriteThisFromLocale();
   if ret == nilLocale then
     ret = here;
@@ -2801,25 +2792,14 @@ proc channel.getLocaleOfIoRequest() {
 // QIO plugins don't have stable interface yet, hence no-doc
 // only works when called on locale owning channel.
 pragma "no doc"
-proc channel.channelPlugin() : borrowed QioPluginChannel? {
+proc _channel.channelPlugin() : borrowed QioPluginChannel? {
   var vptr = qio_channel_get_plugin(this._channel_internal);
   return vptr:borrowed QioPluginChannel?;
 }
 pragma "no doc"
-proc channel.filePlugin() : borrowed QioPluginFile? {
+proc _channel.filePlugin() : borrowed QioPluginFile? {
   var vptr = qio_file_get_plugin(qio_channel_get_file(this._channel_internal));
   return vptr:borrowed QioPluginFile?;
-}
-
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'openreader' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints,
-                style:iostyle)
-    : channel(false, kind, locking) throws {
-  return openreaderHelper(path, kind, locking, start..end, new ioHintSet(hints),
-                          style: iostyleInternal);
 }
 
 @unstable "openreader with a style argument is unstable"
@@ -2828,19 +2808,11 @@ proc openreader(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : channel(false, kind, locking) throws {
+    : fileReader(kind, locking) throws {
   return openreaderHelper(path, kind, locking, start..end, hints,
                           style: iostyleInternal);
 }
 
-pragma "last resort"
-deprecated "openreader with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty): channel(false, kind, locking) throws {
-  return openreader(path, kind, locking, start..end, hints);
-}
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
 // since we only will have one reference, will be right after we close this
@@ -2881,18 +2853,8 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : channel(false, kind, locking) throws {
+    : fileReader(kind, locking) throws {
   return openreaderHelper(path, kind, locking, region, hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'openreader' that takes an 'ioHintSet' instead."
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints)
-    : channel(false, kind, locking) throws {
-  return openreader(path, kind, locking, start..end, new ioHintSet(hints));
 }
 
 private proc openreaderHelper(path:string,
@@ -2900,31 +2862,10 @@ private proc openreaderHelper(path:string,
                               region: range(?) = 0..,
                               hints=ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal())
-  : channel(false, kind, locking) throws {
+  : fileReader(kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
   return try fl.readerHelper(kind, locking, region, hints, style);
-}
-
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'openwriter' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints,
-                style:iostyle)
-    : channel(true, kind, locking) throws {
-  return openwriterHelper(path, kind, locking, start, end, new ioHintSet(hints),
-                    style: iostyleInternal);
-}
-
-pragma "last resort"
-deprecated "openwriter with a start and/or end argument is deprecated."
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints = ioHintSet.empty)
-    : channel(true, kind, locking) throws {
-  return openwriterHelper(path, kind, locking, start, end, hints);
 }
 
 @unstable "openwriter with a style argument is unstable"
@@ -2933,7 +2874,7 @@ proc openwriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : channel(true, kind, locking) throws {
+    : fileWriter(kind, locking) throws {
   return openwriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
 }
@@ -2963,19 +2904,8 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty)
-    : channel(true, kind, locking) throws {
+    : fileWriter(kind, locking) throws {
   return openwriterHelper(path, kind, locking, hints=hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'openwriter' that takes an 'ioHintSet' instead."
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints)
-    : channel(true, kind, locking) throws {
-  return openwriterHelper(path, kind, locking, start, end,
-                          new ioHintSet(hints));
 }
 
 private proc openwriterHelper(path:string,
@@ -2983,37 +2913,19 @@ private proc openwriterHelper(path:string,
                               start:int(64) = 0, end:int(64) = max(int(64)),
                               hints = ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal())
-  : channel(true, kind, locking) throws {
+  : fileWriter(kind, locking) throws {
 
   var fl:file = try open(path, iomode.cw);
   return try fl.writerHelper(kind, locking, start..end, hints, style);
-}
-
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'file.reader' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:iohints,
-                 style:iostyle): channel(false, kind, locking)
-                 throws {
-  return this.readerHelper(kind, locking, start..end, new ioHintSet(hints), style: iostyleInternal);
 }
 
 @unstable "reader with a style argument is unstable"
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty,
-                 style:iostyle): channel(false, kind, locking)
+                 style:iostyle): fileReader(kind, locking)
                  throws {
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
-}
-
-pragma "last resort"
-deprecated "file.reader with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints = ioHintSet.empty)
-  : channel(false, kind, locking) throws {
-  return this.reader(kind, locking, start..end, hints);
 }
 
 /*
@@ -3057,21 +2969,14 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                                  byte 0.
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty): channel(false, kind, locking) throws {
+                 region: range(?) = 0.., hints = ioHintSet.empty): fileReader(kind, locking) throws {
   return this.readerHelper(kind, locking, region, hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'file.reader' that takes an 'ioHintSet' instead."
-proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
-                 end:int(64) = max(int(64)), hints:iohints): channel(false, kind, locking) throws {
-  return this.reader(kind, locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
-                       style:iostyleInternal = this._style): channel(false, kind, locking) throws {
+                       style:iostyleInternal = this._style): fileReader(kind, locking) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
@@ -3079,35 +2984,27 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   // It is the responsibility of the caller to release the returned channel
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
-  var ret:channel(false, kind, locking);
+  var ret:fileReader(kind, locking);
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new channel(false, kind, locking, this, err, hints, region.low,
-                        region.high, style);
+      ret = new fileReader(kind, locking, this, err, hints, region.low,
+                           region.high, style);
     } else if (region.hasLowBound()) {
-      ret = new channel(false, kind, locking, this, err, hints, region.low,
-                        max(int(64)), style);
+      ret = new fileReader(kind, locking, this, err, hints, region.low,
+                           max(int(64)), style);
     } else if (region.hasHighBound()) {
-      ret = new channel(false, kind, locking, this, err, hints, 0, region.high,
-                        style);
+      ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                           style);
     } else {
-      ret = new channel(false, kind, locking, this, err, hints, 0, max(int(64)),
-                        style);
+      ret = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
+                           style);
     }
   }
   if err then try ioerror(err, "in file.reader", this._tryGetPath());
 
   return ret;
-}
-
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'file.lines' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)), hints:iohints,
-                in local_style:iostyle) throws {
-  return this.linesHelper(locking, start..end, new ioHintSet(hints),
-                          local_style: iostyleInternal);
 }
 
 @unstable "lines with a local_style argument is unstable"
@@ -3116,14 +3013,6 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
                 in local_style:iostyle) throws {
   return this.linesHelper(locking, start..end, hints,
                           local_style: iostyleInternal);
-}
-
-pragma "last resort"
-deprecated "file.lines with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)),
-                hints = ioHintSet.empty) throws {
-  return this.lines(locking, start..end, hints);
 }
 
 /* Iterate over all of the lines in a file.
@@ -3137,14 +3026,6 @@ proc file.lines(param locking:bool = true, region: range(?) = 0..,
   return this.linesHelper(locking, region, hints);
 }
 
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'file.lines' that takes an 'ioHintSet' instead."
-proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)),
-                hints:iohints) throws {
-  return this.lines(locking, start..end, new ioHintSet(hints));
-}
-
 pragma "no doc"
 proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
                       hints = ioHintSet.empty,
@@ -3155,21 +3036,21 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
 
   var ret:itemReaderInternal(string, kind, locking);
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
-    var ch: channel;
+    var ch: fileReader;
     if (region.hasLowBound() && region.hasHighBound()) {
-      ch = new channel(false, kind, locking, this, err, hints, region.low,
-                       region.high, local_style);
+      ch = new fileReader(kind, locking, this, err, hints, region.low,
+                          region.high, local_style);
     } else if (region.hasLowBound()) {
-      ch = new channel(false, kind, locking, this, err, hints, region.low,
-                       max(int(64)), local_style);
+      ch = new fileReader(kind, locking, this, err, hints, region.low,
+                          max(int(64)), local_style);
     } else if (region.hasHighBound()) {
-      ch = new channel(false, kind, locking, this, err, hints, 0, region.high,
-                       local_style);
+      ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                          local_style);
     } else {
-      ch = new channel(false, kind, locking, this, err, hints, 0, max(int(64)),
-                       local_style);
+      ch = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
+                          local_style);
     }
     ret = new itemReaderInternal(string, kind, locking, ch);
   }
@@ -3178,29 +3059,12 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   return ret;
 }
 
-deprecated "The 'iohints' type is deprecated; please use the unstable variant of 'file.writer' that takes an 'ioHintSet' and an 'iostyle' instead."
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:iohints, style:iostyle):
-                 channel(true,kind,locking) throws {
-  return this.writerHelper(kind, locking, start..end, new ioHintSet(hints), style: iostyleInternal);
-}
-
 @unstable "writer with a style argument is unstable"
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty, style:iostyle):
-                 channel(true,kind,locking) throws {
+                 fileWriter(kind,locking) throws {
   return this.writerHelper(kind, locking, start..end, hints, style: iostyleInternal);
-}
-
-pragma "last resort"
-deprecated "file.writer with a start and/or end argument is deprecated.  Please use the new region argument instead"
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints = ioHintSet.empty):
-                 channel(true,kind,locking) throws {
-  return this.writer(kind, locking, start..end, hints);
 }
 
 /*
@@ -3251,24 +3115,16 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty):
-                 channel(true,kind,locking) throws {
+                 fileWriter(kind,locking) throws {
   return this.writerHelper(kind, locking, region, hints);
-}
-
-pragma "last resort"
-deprecated "The 'iohints' type is deprecated; please use a variant of 'file.writer' that takes an 'ioHintSet' instead."
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:iohints):
-                 channel(true,kind,locking) throws {
-  return this.writer(kind, locking, start..end, new ioHintSet(hints));
 }
 
 pragma "no doc"
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style):
-  channel(true,kind,locking) throws {
+  fileWriter(kind,locking) throws {
+
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
@@ -3277,22 +3133,22 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   // channel.
   // If the return error code is nonzero, the ref count will be 0 not 1.
   // The error code should be checked to avoid double-deletion errors.
-  var ret:channel(true, kind, locking);
+  var ret:fileWriter(kind, locking);
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new channel(true, kind, locking, this, err, hints, region.low,
-                        region.high, style);
+      ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                           region.high, style);
     } else if (region.hasLowBound()) {
-      ret = new channel(true, kind, locking, this, err, hints, region.low,
-                        max(int(64)), style);
+      ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                           max(int(64)), style);
     } else if (region.hasHighBound()) {
-      ret = new channel(true, kind, locking, this, err, hints, 0, region.high,
-                        style);
+      ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
+                           style);
     } else {
-      ret = new channel(true, kind, locking, this, err, hints, 0, max(int(64)),
-                        style);
+      ret = new fileWriter(kind, locking, this, err, hints, 0, max(int(64)),
+                           style);
     }
   }
   if err then try ioerror(err, "in file.writer", this._tryGetPath());
@@ -3614,7 +3470,7 @@ private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param b
 }
 
 pragma "no doc"
-proc channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
+proc _channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   var result: string = "while ";
 
   result += if this.writing then "writing " else "reading ";
@@ -3629,11 +3485,11 @@ proc channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
 }
 
 //
-// The channel must be locked and running on this.home.
+// The channel must be locked and running on this._home.
 // The intent of x is ref (vs out) because it might contain a string literal.
 //
 pragma "no doc"
-proc channel._readOne(param kind: iokind, ref x:?t,
+proc _channel._readOne(param kind: iokind, ref x:?t,
                              loc:locale) throws {
   // TODO: Make _read_one_internal(s) a method instead.
   var err = try _read_one_internal(_channel_internal, kind, x, loc);
@@ -3651,10 +3507,10 @@ private proc escapedNonUTF8ErrorMessage() : string {
 }
 
 //
-// The channel must be locked and running on this.home.
+// The channel must be locked and running on this._home.
 //
 pragma "no doc"
-proc channel._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
+proc _channel._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
   // TODO: Make _write_one_internal(s) a method instead.
   var err = _write_one_internal(_channel_internal, kind, x, loc);
 
@@ -3763,10 +3619,10 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
-  var reader = new channel(writing=false, iokind.dynamic, locking=false,
-                           home=here,
-                           _channel_internal=_channel_internal,
-                           _readWriteThisFromLocale=loc);
+  var reader = new fileReader(iokind.dynamic, locking=false,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
 
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
@@ -3814,10 +3670,10 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
-  var writer = new channel(writing=true, iokind.dynamic, locking=false,
-                           home=here,
-                           _channel_internal=_channel_internal,
-                           _readWriteThisFromLocale=loc);
+  var writer = new fileWriter(iokind.dynamic, locking=false,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
 
   // Set the channel pointer to NULL to make the
   // destruction of the local writer record safe
@@ -3853,102 +3709,32 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 }
 
 pragma "no doc"
-proc channel.readIt(ref x) throws {
+proc _channel.readIt(ref x) throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
-  on this.home {
+  on this._home {
     try! this.lock(); defer { this.unlock(); }
     try _readOne(kind, x, origLocale);
   }
 }
 
 pragma "no doc"
-proc channel.writeIt(const x) throws {
+proc _channel.writeIt(const x) throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
-  on this.home {
+  on this._home {
     try! this.lock(); defer { this.unlock(); }
     try _writeOne(kind, x, origLocale);
   }
 }
 
-  /*
-
-     The _`<~> operator`
-
-     This `<~>` operator invokes `readThis` or `writeThis` with `x`, depending
-     on the type of channel. This operator returns a const reference to the
-     same channel so that multiple operator calls can be chained together.
-
-     :returns: ch
-     :throws SystemError: When an IO error has occurred.
-   */
-  deprecated "the <~> operator is deprecated"
-  inline operator channel.<~>(const ref ch: channel, const x) const ref throws
-  where ch.writing {
-    try ch.writeIt(x);
-    return ch;
-  }
-
-  // documented in the writing version.
-  pragma "no doc"
-  deprecated "the <~> operator is deprecated"
-  inline operator channel.<~>(const ref ch: channel, ref x) const ref throws
-  where !ch.writing {
-    try ch.readIt(x);
-    return ch;
-  }
-
-  // these are overridden to not be inout
-  // since they don't change when read anyway
-  // and it's much more convenient to be able to do e.g.
-  //   reader <~> new ioLiteral("=")
-
-  /* Overload to support reading an :type:`IO.ioLiteral` without
-     passing ioLiterals by reference, so that
-
-     .. code-block:: chapel
-
-       reader <~> new ioLiteral("=")
-
-     works without requiring an explicit temporary value to store
-     the ioLiteral.
-   */
-  deprecated "the <~> operator is deprecated"
-  inline operator channel.<~>(const ref r: channel,
-                              lit:ioLiteral) const ref throws
-  where !r.writing {
-    var litCopy = lit;
-    try r.readIt(litCopy);
-    return r;
-  }
-
-  /* Overload to support reading an :type:`IO.ioNewline` without
-     passing ioNewline by reference, so that
-
-     .. code-block:: chapel
-
-       reader <~> new ioNewline()
-
-     works without requiring an explicit temporary value to store
-     the ioNewline.
-   */
-  deprecated "the <~> operator is deprecated"
-  inline operator channel.<~>(const ref r: channel,
-                              nl:ioNewline) const ref throws
-  where !r.writing {
-    var nlCopy = nl;
-    try r.readIt(nlCopy);
-    return r;
-  }
-
   /* Explicit call for reading or writing a literal as an
      alternative to using :type:`IO.ioLiteral`.
    */
   inline
-  proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
+  proc _channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
   {
     var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
     if this.writing then
@@ -3958,9 +3744,9 @@ proc channel.writeIt(const x) throws {
   }
 
   pragma "no doc"
-  inline proc channel._checkLiteralError(x:?t, err:errorCode,
-                                         action:string,
-                                         isLiteral:bool) : void throws {
+  inline proc _channel._checkLiteralError(x:?t, err:errorCode,
+                                          action:string,
+                                          isLiteral:bool) : void throws {
     // Error message construction is handled here so that messages are
     // consistent across the cross product of:
     //   {read,write,match} x {literal,newline} x {string, bytes}
@@ -3989,8 +3775,8 @@ proc channel.writeIt(const x) throws {
   }
 
   pragma "no doc"
-  inline proc channel._readLiteralCommon(x:?t, ignore:bool,
-                                         param isMatch:bool) throws {
+  inline proc _channel._readLiteralCommon(x:?t, ignore:bool,
+                                          param isMatch:bool) throws {
     if t != string && t != bytes then
       compilerError("expecting string or bytes");
 
@@ -4000,7 +3786,7 @@ proc channel.writeIt(const x) throws {
       compilerError(name + " on write-only channel", depth);
     }
 
-    on this.home {
+    on this._home {
       try! this.lock(); defer { this.unlock(); }
       const cstr = x.localize().c_str();
       const err = qio_channel_scan_literal(false, _channel_internal,
@@ -4015,7 +3801,7 @@ proc channel.writeIt(const x) throws {
   // non-unstable version we can use internally
   pragma "no doc"
   inline
-  proc channel._readLiteral(literal:string,
+  proc _channel._readLiteral(literal:string,
                             ignoreWhitespace=true) : void throws {
     var iolit = new ioLiteral(literal, ignoreWhitespace);
     this.readIt(iolit);
@@ -4040,7 +3826,7 @@ proc channel.writeIt(const x) throws {
   */
   @unstable "channel.readLiteral is unstable and subject to change."
   inline
-  proc channel.readLiteral(literal:string,
+  proc _channel.readLiteral(literal:string,
                            ignoreWhitespace=true) : void throws {
     _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
   }
@@ -4064,8 +3850,8 @@ proc channel.writeIt(const x) throws {
   */
   @unstable "channel.readLiteral is unstable and subject to change."
   inline
-  proc channel.readLiteral(literal:bytes,
-                           ignoreWhitespace=true) : void throws {
+  proc _channel.readLiteral(literal:bytes,
+                            ignoreWhitespace=true) : void throws {
     _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
   }
 
@@ -4076,13 +3862,13 @@ proc channel.writeIt(const x) throws {
   // to 'true' without changing behavior in existing programs.
   pragma "no doc"
   inline
-  proc channel._readNewlineCommon(param isMatch:bool) throws {
+  proc _channel._readNewlineCommon(param isMatch:bool) throws {
     if writing {
       param name = if isMatch then "matchNewline" else "readNewline";
       compilerError(name + " on write-only channel", 2);
     }
 
-    on this.home {
+    on this._home {
       try! this.lock(); defer { this.unlock(); }
       const err = qio_channel_skip_past_newline(false, _channel_internal,
                                                 /*skipWhitespaceOnly=*/ true);
@@ -4094,7 +3880,7 @@ proc channel.writeIt(const x) throws {
 
   // non-unstable version we can use internally
   pragma "no doc"
-  inline proc channel._readNewline() : void throws {
+  inline proc _channel._readNewline() : void throws {
     var ionl = new ioNewline(true);
     this.readIt(ionl);
   }
@@ -4115,13 +3901,13 @@ proc channel.writeIt(const x) throws {
   */
   @unstable "channel.readNewline is unstable and subject to change."
   inline
-  proc channel.readNewline() : void throws {
+  proc _channel.readNewline() : void throws {
     _readNewlineCommon(isMatch=false);
   }
 
   pragma "no doc"
   inline
-  proc channel._matchLiteralCommon(literal, ignore : bool) : bool throws {
+  proc _channel._matchLiteralCommon(literal, ignore : bool) : bool throws {
     try {
       _readLiteralCommon(literal, ignore, isMatch=true);
     } catch e : BadFormatError {
@@ -4153,7 +3939,7 @@ proc channel.writeIt(const x) throws {
   */
   @unstable "channel.matchLiteral is unstable and subject to change."
   inline
-  proc channel.matchLiteral(literal:string,
+  proc _channel.matchLiteral(literal:string,
                             ignoreWhitespace=true) : bool throws {
     return _matchLiteralCommon(literal, ignoreWhitespace);
   }
@@ -4178,7 +3964,7 @@ proc channel.writeIt(const x) throws {
   */
   @unstable "channel.matchLiteral is unstable and subject to change."
   inline
-  proc channel.matchLiteral(literal:bytes,
+  proc _channel.matchLiteral(literal:bytes,
                             ignoreWhitespace=true) : bool throws {
     return _matchLiteralCommon(literal, ignoreWhitespace);
   }
@@ -4199,7 +3985,7 @@ proc channel.writeIt(const x) throws {
   */
   @unstable "channel.matchNewline is unstable and subject to change."
   inline
-  proc channel.matchNewline() : bool throws {
+  proc _channel.matchNewline() : bool throws {
     try {
       _readNewlineCommon(isMatch=true);
     } catch e : BadFormatError {
@@ -4213,13 +3999,13 @@ proc channel.writeIt(const x) throws {
 
   pragma "no doc"
   inline
-  proc channel._writeLiteralCommon(x:?t) : void throws {
+  proc _channel._writeLiteralCommon(x:?t) : void throws {
     if t != string && t != bytes then
       compilerError("expecting string or bytes");
 
     if !writing then compilerError("writeLiteral on read-only channel", 2);
 
-    on this.home {
+    on this._home {
       try! this.lock(); defer { this.unlock(); }
       const cstr = x.localize().c_str();
       const err = qio_channel_print_literal(false, _channel_internal, cstr,
@@ -4230,7 +4016,7 @@ proc channel.writeIt(const x) throws {
 
   pragma "no doc"
   inline
-  proc channel._writeLiteral(literal:string) : void throws {
+  proc _channel._writeLiteral(literal:string) : void throws {
     var iolit = new ioLiteral(literal);
     this.writeIt(iolit);
   }
@@ -4241,7 +4027,7 @@ proc channel.writeIt(const x) throws {
   */
   @unstable "channel.writeLiteral is unstable and subject to change."
   inline
-  proc channel.writeLiteral(literal:string) : void throws {
+  proc _channel.writeLiteral(literal:string) : void throws {
     _writeLiteralCommon(literal);
   }
 
@@ -4251,7 +4037,7 @@ proc channel.writeIt(const x) throws {
   */
   @unstable "channel.writeLiteral is unstable and subject to change."
   inline
-  proc channel.writeLiteral(literal:bytes) : void throws {
+  proc _channel.writeLiteral(literal:bytes) : void throws {
     _writeLiteralCommon(literal);
   }
 
@@ -4262,10 +4048,10 @@ proc channel.writeIt(const x) throws {
   */
   @unstable "channel.writeNewline is unstable and subject to change."
   inline
-  proc channel.writeNewline() : void throws {
+  proc _channel.writeNewline() : void throws {
     if !writing then compilerError("writeNewline on read-only channel");
 
-    on this.home {
+    on this._home {
       try! this.lock(); defer { this.unlock(); }
       const err = qio_channel_write_newline(false, _channel_internal);
       try _checkLiteralError("", err, "writing", isLiteral=false);
@@ -4275,7 +4061,7 @@ proc channel.writeIt(const x) throws {
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
-  inline proc channel.readWriteNewline() throws
+  inline proc _channel.readWriteNewline() throws
   {
     var ionl = new ioNewline();
     if this.writing then
@@ -4286,9 +4072,9 @@ proc channel.writeIt(const x) throws {
 
   /* Returns `true` if this channel is configured for binary I/O.
    */
-  proc channel.binary():bool {
+  proc _channel.binary():bool {
     var ret:uint(8);
-    on this.home {
+    on this._home {
       ret = qio_channel_binary(_channel_internal);
     }
     return ret != 0;
@@ -4296,16 +4082,16 @@ proc channel.writeIt(const x) throws {
 
   /* return other style elements. */
   pragma "no doc"
-  proc channel.styleElement(element:int):int {
+  proc _channel.styleElement(element:int):int {
     var ret:int = 0;
-    on this.home {
+    on this._home {
       ret = qio_channel_style_element(_channel_internal, element);
     }
     return ret;
   }
 
   deprecated "The returning variant of ``writeBytes`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
-  proc channel.writeBytes(x, len:c_ssize_t):bool throws where WritersReturnBool == true {
+  proc _channel.writeBytes(x, len:c_ssize_t):bool throws where WritersReturnBool == true {
     try this._writeBytes(x, len);
     return true;
   }
@@ -4315,15 +4101,15 @@ proc channel.writeIt(const x) throws {
 
      :throws SystemError: Thrown if the byte sequence could not be written.
   */
-  proc channel.writeBytes(x, len:c_ssize_t) throws where WritersReturnBool == false {
+  proc _channel.writeBytes(x, len:c_ssize_t) throws where WritersReturnBool == false {
     try this._writeBytes(x, len);
   }
 
   // helper for bool-returning deprecation
   pragma "no doc"
-  proc channel._writeBytes(x, len:c_ssize_t) throws {
+  proc _channel._writeBytes(x, len:c_ssize_t) throws {
     var err:errorCode = ENOERR;
-    on this.home {
+    on this._home {
       try this.lock(); defer { this.unlock(); }
       err = qio_channel_write_amt(false, _channel_internal, x, len);
     }
@@ -4344,7 +4130,7 @@ proc channel.writeIt(const x) throws {
 
   :yields: lines ending in ``\n`` in channel
  */
-iter channel.lines() {
+iter _channel.lines() {
 
   try! this.lock();
 
@@ -4431,11 +4217,11 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
 }
 
 pragma "no doc"
-inline proc channel._readInner(ref args ...?k):void throws {
+inline proc _channel._readInner(ref args ...?k):void throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
       _readOne(kind, args[i], origLocale);
@@ -4456,7 +4242,7 @@ inline proc channel._readInner(ref args ...?k):void throws {
 
    :throws SystemError: Thrown if the channel could not be read.
  */
-inline proc channel.read(ref args ...?k):bool throws {
+inline proc _channel.read(ref args ...?k):bool throws {
   try {
     this._readInner((...args));
   } catch err: SystemError {
@@ -4468,17 +4254,17 @@ inline proc channel.read(ref args ...?k):bool throws {
 }
 
 @unstable "read with a style argument is unstable"
-proc channel.read(ref args ...?k, style:iostyle):bool throws {
+proc _channel.read(ref args ...?k, style:iostyle):bool throws {
   return this.readHelper((...args), style: iostyleInternal);
 }
 
 pragma "no doc"
-proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
+proc _channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
   try {
-    on this.home {
+    on this._home {
       try this.lock(); defer { this.unlock(); }
 
       var saveStyle: iostyleInternal = this._styleInternal();
@@ -4513,16 +4299,15 @@ proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
-
 deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
                       amount = arg.domain.highBound - start + 1) : bool throws
                       where arg.rank == 1 && arg.isRectangular() {
   if arg.size == 0 || !arg.domain.contains(start) ||
      amount <= 0 || (start + amount - 1 > arg.domain.highBound) then return false;
 
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     param newLineChar = 0x0A;
     var got: int;
@@ -4566,14 +4351,14 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
  */
-proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
+proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
   if a.size == 0 || maxSize == 0 ||
   ( a.domain.lowBound + maxSize - 1 > a.domain.highBound) then return 0;
 
   var err:errorCode = ENOERR;
   var numRead:int;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     this._mark();
     param newLineChar = 0x0A;
@@ -4627,7 +4412,7 @@ proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int thr
 
 pragma "no doc"
 pragma "last resort"
-inline proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws {
+inline proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
 }
 
@@ -4641,12 +4426,12 @@ inline proc channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): 
   :throws SystemError: Thrown if data could not be read from the channel.
 */
 deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
-proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
+proc _channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
   try {
-    on this.home {
+    on this._home {
       try this.lock(); defer { this.unlock(); }
       var saveStyle: iostyleInternal = this._styleInternal();
       defer {
@@ -4716,14 +4501,14 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
-proc channel.readLine(ref s: string,
+proc _channel.readLine(ref s: string,
                       maxSize=-1,
                       stripNewline=false): bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var ret: bool = false;
 
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     param newLineChar = 0x0A; // ascii newline.
     var maxCodepoints = if maxSize < 0 then max(int) else maxSize;
@@ -4801,14 +4586,14 @@ proc channel.readLine(ref s: string,
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
-proc channel.readLine(ref b: bytes,
+proc _channel.readLine(ref b: bytes,
                       maxSize=-1,
                       stripNewline=false): bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var ret: bool = false;
 
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     param newLineChar = 0x0A; // ascii newline.
     var maxBytes = if maxSize < 0 then max(int) else maxSize;
@@ -4888,7 +4673,7 @@ proc channel.readLine(ref b: bytes,
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
-proc channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
+proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;
   this.readLine(retval, maxSize, stripNewline);
   return retval;
@@ -4905,7 +4690,7 @@ proc channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws w
 
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
-proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
+proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   var err = readBytesOrString(this, str_out, len);
 
   if !err {
@@ -4929,7 +4714,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
 
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
-proc channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
+proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   var err = readBytesOrString(this, bytes_out, len);
 
   if !err {
@@ -4942,11 +4727,11 @@ proc channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   return false;
 }
 
-private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
+private proc readBytesOrString(ch: fileReader, ref out_var: ?t,  len: int(64))
     throws {
 
   var err:errorCode = ENOERR;
-  on ch.home {
+  on ch._home {
     var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
@@ -5012,7 +4797,7 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
 
    :throws SystemError: Thrown if the bits could not be read from the channel.
  */
-proc channel.readbits(ref v:integral, nbits:integral):bool throws {
+proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if reading more bits than fit into v
     if numBits(v.type) < nbits then
@@ -5031,7 +4816,7 @@ proc channel.readbits(ref v:integral, nbits:integral):bool throws {
 }
 
 deprecated "The returning variant of ``writebits`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
-proc channel.writebits(v:integral, nbits:integral):bool throws where WritersReturnBool == true {
+proc _channel.writebits(v:integral, nbits:integral):bool throws where WritersReturnBool == true {
   if castChecking {
     // Error if writing more bits than fit into v
     if numBits(v.type) < nbits then
@@ -5055,7 +4840,7 @@ proc channel.writebits(v:integral, nbits:integral):bool throws where WritersRetu
    :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
    :throws SystemError: Thrown if the bits could not be written to the channel.
  */
-proc channel.writebits(v:integral, nbits:integral) throws where WritersReturnBool == false {
+proc _channel.writebits(v:integral, nbits:integral) throws where WritersReturnBool == false {
   if castChecking {
     // Error if writing more bits than fit into v
     if numBits(v.type) < nbits then
@@ -5078,7 +4863,7 @@ proc channel.writebits(v:integral, nbits:integral) throws where WritersReturnBoo
 
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
-proc channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) throws {
+proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) throws {
   var e:errorCode = ENOERR;
 
   select (endian) {
@@ -5106,7 +4891,7 @@ proc channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) t
 
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
-proc channel.writeBinary(arg:numeric, endian:ioendian) throws {
+proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
   select (endian) {
     when ioendian.native {
       this.writeBinary(arg, ioendian.native);
@@ -5131,7 +4916,7 @@ proc channel.writeBinary(arg:numeric, endian:ioendian) throws {
    :throws SystemError: Thrown if an error occurred reading the number.
  */
 
-proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
+proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
   var e:errorCode = ENOERR;
 
   select (endian) {
@@ -5163,7 +4948,7 @@ proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native
 
    :throws SystemError: Thrown if an error occurred reading the number.
  */
-proc channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
+proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
   var rv: bool = false;
 
   select (endian) {
@@ -5183,7 +4968,7 @@ proc channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
 
 // Documented in the varargs version
 pragma "no doc"
-proc channel.readln():bool throws {
+proc _channel.readln():bool throws {
   var nl = new ioNewline();
   return try this.read(nl);
 }
@@ -5204,19 +4989,19 @@ proc channel.readln():bool throws {
 
    :throws SystemError: Thrown if a line could not be read from the channel.
  */
-proc channel.readln(ref args ...?k):bool throws {
+proc _channel.readln(ref args ...?k):bool throws {
   var nl = new ioNewline();
   return try this.read((...args), nl);
 }
 
 @unstable "readln with a style argument is unstable"
-proc channel.readln(ref args ...?k,
-                    style:iostyle):bool throws {
+proc _channel.readln(ref args ...?k,
+                     style:iostyle):bool throws {
   return this.readlnHelper((...args), style: iostyleInternal);
 }
 
 pragma "no doc"
-proc channel.readlnHelper(ref args ...?k,
+proc _channel.readlnHelper(ref args ...?k,
                           style:iostyleInternal):bool throws {
   var nl = new ioNewline();
   return try this.readHelper((...args), nl, style=style);
@@ -5238,7 +5023,7 @@ proc channel.readlnHelper(ref args ...?k,
 
    :throws SystemError: Thrown if the type could not be read from the channel.
  */
-proc channel.read(type t) throws {
+proc _channel.read(type t) throws {
   var tmp:t;
   this._readInner(tmp);
   return tmp;
@@ -5252,7 +5037,7 @@ proc channel.read(type t) throws {
 
    :throws SystemError: Thrown if the type could not be read from the channel.
  */
-proc channel.readln(type t) throws {
+proc _channel.readln(type t) throws {
   var tmp:t;
   var nl = new ioNewline();
   this._readInner(tmp, nl);
@@ -5268,7 +5053,7 @@ proc channel.readln(type t) throws {
 
    :throws SystemError: Thrown if the types could not be read from the channel.
  */
-proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
+proc _channel.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
   var nl = new ioNewline();
   this._readInner((...tupleVal), nl);
@@ -5283,14 +5068,14 @@ proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
 
    :throws SystemError: Thrown if the types could not be read from the channel.
  */
-proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
+proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
   this._readInner((...tupleVal));
   return tupleVal;
 }
 
 deprecated "The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
-inline proc channel.write(const args ...?k):bool throws where WritersReturnBool == true {
+inline proc _channel.write(const args ...?k):bool throws where WritersReturnBool == true {
   try this._write((...args));
   return true;
 }
@@ -5306,18 +5091,18 @@ inline proc channel.write(const args ...?k):bool throws where WritersReturnBool 
 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
-inline proc channel.write(const args ...?k) throws where WritersReturnBool == false {
+inline proc _channel.write(const args ...?k) throws where WritersReturnBool == false {
   try this._write((...args));
 }
 
 // helper function for bool-returning deprecation
 pragma "fn exempt instantiation limit"
 pragma "no doc"
-inline proc channel._write(const args ...?k) throws {
+inline proc _channel._write(const args ...?k) throws {
   if !writing then compilerError("write on read-only channel");
 
   const origLocale = this.getLocaleOfIoRequest();
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
       try _writeOne(kind, args(i), origLocale);
@@ -5327,26 +5112,26 @@ inline proc channel._write(const args ...?k) throws {
 // helper function for bool-returning deprecation (with deprecated style argument)
 pragma "no doc"
 @unstable "write with a style argument is unstable"
-proc channel._write(const args ...?k, style:iostyle) throws {
+proc _channel._write(const args ...?k, style:iostyle) throws {
   return this.writeHelper((...args), style: iostyleInternal);
 }
 
 @unstable "write with a style argument is unstable"
-proc channel.write(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
+proc _channel.write(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
   return this.writeHelper((...args), style: iostyleInternal);
 }
 @unstable "write with a style argument is unstable"
-proc channel.write(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
+proc _channel.write(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
   this.writeHelper((...args), style: iostyleInternal);
 }
 
 // helper function for iostyle deprecation
 pragma "no doc"
-proc channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
+proc _channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
 
     var saveStyle: iostyleInternal = this._styleInternal();
@@ -5366,22 +5151,22 @@ proc channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
 // documented in varargs version
 pragma "no doc"
 deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
-proc channel.writeln():bool throws where WritersReturnBool == true {
+proc _channel.writeln():bool throws where WritersReturnBool == true {
   try this._writeln();
   return true;
 }
 pragma "no doc"
-proc channel.writeln() throws where WritersReturnBool == false {
+proc _channel.writeln() throws where WritersReturnBool == false {
   try this._writeln();
 }
 // helper for bool-returning deprecation (yes, this is a lot of annoying misdirection, but I'm aiming for a consistent pattern among write(...), writeln() and writeln(...))
 pragma "no doc"
-proc channel._writeln() throws {
+proc _channel._writeln() throws {
   try this._write(new ioNewline());
 }
 
 deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
-proc channel.writeln(const args ...?k):bool throws where WritersReturnBool == true {
+proc _channel.writeln(const args ...?k):bool throws where WritersReturnBool == true {
   try this._writeln((...args));
   return true;
 }
@@ -5399,35 +5184,35 @@ proc channel.writeln(const args ...?k):bool throws where WritersReturnBool == tr
 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
-proc channel.writeln(const args ...?k) throws where WritersReturnBool == false {
+proc _channel.writeln(const args ...?k) throws where WritersReturnBool == false {
   try this._writeln((...args));
 }
 
 // helper function for bool-returning deprecation
 pragma "fn exempt instantiation limit"
 pragma "no doc"
-proc channel._writeln(const args ...?k) throws {
+proc _channel._writeln(const args ...?k) throws {
   try this._write((...args), new ioNewline());
 }
 // helper function for bool-returning deprecation (with deprecated style argument)
 pragma "no doc"
 @unstable "writeln with a style argument is unstable"
-proc channel._writeln(const args ...?k, style:iostyle) throws {
+proc _channel._writeln(const args ...?k, style:iostyle) throws {
   this.writelnHelper((...args), style: iostyleInternal);
 }
 
 @unstable "writeln with a style argument is unstable"
-proc channel.writeln(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
+proc _channel.writeln(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
   return this.writelnHelper((...args), style: iostyleInternal);
 }
 @unstable "writeln with a style argument is unstable"
-proc channel.writeln(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
+proc _channel.writeln(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
   this.writelnHelper((...args), style: iostyleInternal);
 }
 
 // helper function for iostyle deprecation
 pragma "no doc"
-proc channel.writelnHelper(const args ...?k, style:iostyleInternal):bool throws {
+proc _channel.writelnHelper(const args ...?k, style:iostyleInternal):bool throws {
   return try this.writeHelper((...args), new ioNewline(), style=style);
 }
 /*
@@ -5440,9 +5225,9 @@ proc channel.writelnHelper(const args ...?k, style:iostyleInternal):bool throws 
 
   :throws SystemError: Thrown if the flush fails.
 */
-proc channel.flush() throws {
+proc _channel.flush() throws {
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     err = qio_channel_flush(locking, _channel_internal);
   }
   if err then try this._ch_ioerror(err, "in channel.flush");
@@ -5450,7 +5235,7 @@ proc channel.flush() throws {
 
 // documented in throws version
 pragma "no doc"
-proc channel.flush(out error:errorCode) {
+proc _channel.flush(out error:errorCode) {
   error = ENOERR;
   try {
     this.flush();
@@ -5464,7 +5249,7 @@ proc channel.flush(out error:errorCode) {
 /* Assert that a channel has reached end-of-file and that there was no error
    doing the read.
  */
-proc channel.assertEOF(errStr: string = "- Not at EOF") {
+proc _channel.assertEOF(errStr: string = "- Not at EOF") {
   var isEOF = try! this.atEOF();
   if !isEOF then
     try! this._ch_ioerror("assert failed", errStr);
@@ -5477,7 +5262,7 @@ proc channel.assertEOF(errStr: string = "- Not at EOF") {
    Inherently racy for channels, hence no doc.
  */
 pragma "no doc"
-proc channel.atEOF(): bool throws {
+proc _channel.atEOF(): bool throws {
   if writing {
     try this._ch_ioerror(EINVAL, "assertEOF on writing channel");
   } else {
@@ -5492,13 +5277,13 @@ proc channel.atEOF(): bool throws {
 
   :throws SystemError: Thrown if the channel is not successfully closed.
 */
-proc channel.close() throws {
+proc _channel.close() throws {
   var err:errorCode = ENOERR;
 
   if is_c_nil(_channel_internal) then
     throw createSystemError(EINVAL, "cannot close invalid channel");
 
-  on this.home {
+  on this._home {
     err = qio_channel_close(locking, _channel_internal);
   }
   if err then try this._ch_ioerror(err, "in channel.close");
@@ -5507,9 +5292,9 @@ proc channel.close() throws {
 /*
    Return `true` if a channel is currently closed.
  */
-proc channel.isClosed() : bool {
+proc _channel.isClosed() : bool {
   var ret:bool;
-  on this.home {
+  on this._home {
     ret = qio_channel_isclosed(locking, _channel_internal);
   }
   return ret;
@@ -5517,7 +5302,7 @@ proc channel.isClosed() : bool {
 
 
 deprecated "channel.isclosed is deprecated. Please use channel.isClosed instead"
-proc channel.isclosed() : bool {
+proc _channel.isclosed() : bool {
   return this.isClosed();
 }
 
@@ -5527,8 +5312,8 @@ proc channel.isclosed() : bool {
 // in the type of the argument will only be caught by a type mismatch
 // in the call to qio_channel_read_amt.
 pragma "no doc"
-proc channel.readBytes(x, len:c_ssize_t) throws {
-  if here != this.home then
+proc _channel.readBytes(x, len:c_ssize_t) throws {
+  if here != this._home then
     throw new owned IllegalArgumentError("bad remote channel.readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
   if err then try this._ch_ioerror(err, "in channel.readBytes");
@@ -5543,7 +5328,7 @@ record itemReaderInternal {
   /* the locking field for our channel */
   param locking:bool;
   /* our channel */
-  var ch:channel(false,kind,locking);
+  var ch:fileReader(kind,locking);
   /* read a single item, throwing on error */
   proc read(out arg:ItemType):bool throws {
     return ch.read(arg);
@@ -5566,19 +5351,19 @@ record itemReaderInternal {
 // And now, the toplevel items.
 
 /* standard input, otherwise known as file descriptor 0 */
-const stdin:channel(false, iokind.dynamic, true);
+const stdin:fileReader(iokind.dynamic, true);
 stdin = try! openfd(0).reader();
 
 pragma "no doc"
 extern proc chpl_cstdout():_file;
 /* standard output, otherwise known as file descriptor 1 */
-const stdout:channel(true, iokind.dynamic, true);
+const stdout:fileWriter(iokind.dynamic, true);
 stdout = try! openfp(chpl_cstdout()).writer();
 
 pragma "no doc"
 extern proc chpl_cstderr():_file;
 /* standard error, otherwise known as file descriptor 2 */
-const stderr:channel(true, iokind.dynamic, true);
+const stderr:fileWriter(iokind.dynamic, true);
 stderr = try! openfp(chpl_cstderr()).writer();
 /* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {
@@ -5646,22 +5431,6 @@ proc readln(type t ...?numTypes) throws {
   return stdin.readln((...t));
 }
 
-
-// TODO -- change to FileSystem.remove
-/* Delete a file. This function is likely to be replaced
-   by :proc:`FileSystem.remove`.
-
-   :arg path: the path to the file to remove
-
-   :throws SystemError: Thrown if the file is not successfully deleted.
- */
-deprecated "unlink is deprecated. Please use FileSystem.remove instead"
-proc unlink(path:string) throws {
-  extern proc sys_unlink(path:c_string): c_int;
-  var err = sys_unlink(path.localize().c_str());
-  if err then try ioerror(err:errorCode, "in unlink", path);
-}
-
 /*
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
@@ -5679,7 +5448,7 @@ pragma "no doc"
 proc file.fstype():int throws {
   var t:c_int;
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     err = qio_get_fs_type(this._file_internal, t);
   }
   if err then try ioerror(err, "in file.fstype()");
@@ -5687,65 +5456,6 @@ proc file.fstype():int throws {
 }
 
 /*
-   Returns (chunk start, chunk end) for the first chunk in the file
-   containing data in the region start..end-1. Note that the returned
-   chunk might not cover all of the region in question.
-
-   Returns (0,0) if no such value exists.
-
-   :arg start: the file offset (starting from 0) where the region begins
-   :arg end: the file offset just after the region
-   :returns: a tuple of (chunkStart, chunkEnd) so that the bytes
-             in chunkStart..chunkEnd-1 are stored in a manner that makes
-             reading that chunk at a time most efficient
-
-   :throws SystemError: Thrown if the chunk is not attained.
- */
-deprecated "file.getchunk is deprecated"
-proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) throws {
-  var err:errorCode = ENOERR;
-  var s = 0;
-  var e = 0;
-
-  on this.home {
-    var real_end = min(end, this.size);
-    var len:int(64);
-
-    err = qio_get_chunk(this._file_internal, len);
-    if err then try ioerror(err, "in file.getchunk(start:int(64), end:int(64))");
-
-    if (len != 0 && (real_end > start)) {
-      // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
-      // will only return a non-zero start and end [n,m], iff n and m are in [start, end].
-      for i in start..real_end by len {
-        // Our stripes are too large, so we can't give back a range within the given
-        // bounds
-        if i > end then
-          break;
-
-        if i >= start {
-          var new_start = i;
-          var new_end:int(64);
-          if (i / len + 1) * len >= real_end then
-            new_end = real_end;
-          // rounding
-          else new_end = (i / len + 1) * len;
-          if new_start == new_end {
-            break;
-          } else {
-            s = new_start;
-            e = new_end;
-            break;
-          }
-        }
-      }
-    }
-  }
-  return (s, e);
-}
-
-/*
-
    Returns the 'best' locale to run something working with the region
    of the file in start..end-1.
 
@@ -5758,6 +5468,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
    :returns: a set of locales that are best for working with this region
    :rtype: domain(locale)
  */
+ deprecated "file.localesForRegion is deprecated"
 proc file.localesForRegion(start:int(64), end:int(64)) {
 
   proc findloc(loc:string, locs:c_ptr(c_string), end:int) {
@@ -5769,7 +5480,7 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
   }
 
   var ret: domain(locale);
-  on this.home {
+  on this._home {
     var err:errorCode;
     var locs: c_ptr(c_string);
     var num_hosts:c_int;
@@ -6981,7 +6692,7 @@ class _channel_regex_info {
 }
 
 pragma "no doc"
-proc channel._match_regex_if_needed(cur:c_size_t, len:c_size_t, ref error:errorCode,
+proc _channel._match_regex_if_needed(cur:c_size_t, len:c_size_t, ref error:errorCode,
     ref style:iostyleInternal, r:unmanaged _channel_regex_info)
 {
   if qio_regex_ok(r.theRegex) {
@@ -7045,7 +6756,7 @@ proc channel._match_regex_if_needed(cur:c_size_t, len:c_size_t, ref error:errorC
 // Assumes, for a reading channel, that we are within a mark/revert/commit
 //  in readf. (used in the regex handling here).
 pragma "no doc"
-proc channel._format_reader(
+proc _channel._format_reader(
     fmtStr:?fmtType, ref cur:c_size_t, len:c_size_t, ref error:errorCode,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
     ref r:unmanaged _channel_regex_info?,
@@ -7148,7 +6859,7 @@ proc channel._format_reader(
 }
 
 pragma "no doc"
-proc channel._conv_helper(
+proc _channel._conv_helper(
     ref error:errorCode,
     ref conv:qio_conv_t, ref gotConv:bool,
     ref j:int,
@@ -7195,7 +6906,7 @@ proc channel._conv_helper(
 }
 
 pragma "no doc"
-proc channel._conv_sethandler(
+proc _channel._conv_sethandler(
     ref error:errorCode,
     argtypei:c_int,
     ref style:iostyleInternal,
@@ -7287,7 +6998,7 @@ proc channel._conv_sethandler(
 }
 
 pragma "no doc"
-proc channel._write_signed(width:uint(32), t:int, i:int):errorCode
+proc _channel._write_signed(width:uint(32), t:int, i:int):errorCode
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -7310,7 +7021,7 @@ proc channel._write_signed(width:uint(32), t:int, i:int):errorCode
 }
 
 pragma "no doc"
-proc channel._read_signed(width:uint(32), out t:int, i:int):errorCode
+proc _channel._read_signed(width:uint(32), out t:int, i:int):errorCode
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -7337,7 +7048,7 @@ proc channel._read_signed(width:uint(32), out t:int, i:int):errorCode
 }
 
 pragma "no doc"
-proc channel._write_unsigned(width:uint(32), t:uint, i:int)
+proc _channel._write_unsigned(width:uint(32), t:uint, i:int)
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -7359,7 +7070,7 @@ proc channel._write_unsigned(width:uint(32), t:uint, i:int)
   return err;
 }
 pragma "no doc"
-proc channel._read_unsigned(width:uint(32), out t:uint, i:int)
+proc _channel._read_unsigned(width:uint(32), out t:uint, i:int)
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -7387,7 +7098,7 @@ proc channel._read_unsigned(width:uint(32), out t:uint, i:int)
 
 
 pragma "no doc"
-proc channel._write_real(width:uint(32), t:real, i:int)
+proc _channel._write_real(width:uint(32), t:real, i:int)
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -7403,7 +7114,7 @@ proc channel._write_real(width:uint(32), t:real, i:int)
   return err;
 }
 pragma "no doc"
-proc channel._read_real(width:uint(32), out t:real, i:int)
+proc _channel._read_real(width:uint(32), out t:real, i:int)
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -7423,7 +7134,7 @@ proc channel._read_real(width:uint(32), out t:real, i:int)
 
 
 pragma "no doc"
-proc channel._write_complex(width:uint(32), t:complex, i:int)
+proc _channel._write_complex(width:uint(32), t:complex, i:int)
 {
   var err:errorCode = ENOERR;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -7450,7 +7161,7 @@ proc channel._write_complex(width:uint(32), t:complex, i:int)
 }
 
 pragma "no doc"
-proc channel._read_complex(width:uint(32), out t:complex, i:int)
+proc _channel._read_complex(width:uint(32), out t:complex, i:int)
 {
   var err:errorCode = ENOERR;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -7486,7 +7197,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 // arguments from writef. This way, we can use the same code for an `arg` type
 // for which we have already created and instantiation of this.
 pragma "no doc"
-proc channel._writefOne(fmtStr, ref arg, i: int,
+proc _channel._writefOne(fmtStr, ref arg, i: int,
                         ref cur: c_size_t, ref j: int,
                         ref r: unmanaged _channel_regex_info?,
                         argType: c_ptr(c_int), argTypeLen: int,
@@ -7598,7 +7309,7 @@ proc channel._writefOne(fmtStr, ref arg, i: int,
 }
 
 deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
-proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
+proc _channel.writef(fmtStr: ?t, const args ...?k): bool throws
     where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
 {
   try this._writef(fmtStr, (...args));
@@ -7617,7 +7328,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
    :throws IllegalArgumentError: if an unsupported argument type is encountered.
    :throws SystemError: if the arguments could not be written.
  */
-proc channel.writef(fmtStr: ?t, const args ...?k) throws
+proc _channel.writef(fmtStr: ?t, const args ...?k) throws
     where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
 {
   try this._writef(fmtStr, (...args));
@@ -7625,13 +7336,13 @@ proc channel.writef(fmtStr: ?t, const args ...?k) throws
 
 // helper function for bool-returning deprecation
 pragma "no doc"
-proc channel._writef(fmtStr: ?t, const args ...?k) throws
+proc _channel._writef(fmtStr: ?t, const args ...?k) throws
     where isStringType(t) || isBytesType(t) {
 
   if !writing then compilerError("writef on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err: errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
 
     var save_style: iostyleInternal = this._styleInternal();
@@ -7685,7 +7396,7 @@ proc channel._writef(fmtStr: ?t, const args ...?k) throws
 
 // documented in varargs version
 deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
-proc channel.writef(fmtStr:?t): bool throws
+proc _channel.writef(fmtStr:?t): bool throws
     where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
 {
   try this._writef(fmtStr);
@@ -7693,7 +7404,7 @@ proc channel.writef(fmtStr:?t): bool throws
 }
 
 // documented in varargs version
-proc channel.writef(fmtStr:?t) throws
+proc _channel.writef(fmtStr:?t) throws
     where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
 {
   try this._writef(fmtStr);
@@ -7701,12 +7412,12 @@ proc channel.writef(fmtStr:?t) throws
 
 // helper function for bool-returning deprecation
 pragma "no doc"
-proc channel._writef(fmtStr:?t) throws
+proc _channel._writef(fmtStr:?t) throws
     where isStringType(t) || isBytesType(t) {
 
   if !writing then compilerError("writef on read-only channel");
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     var save_style: iostyleInternal = this._styleInternal();
     defer {
@@ -7768,7 +7479,7 @@ proc channel._writef(fmtStr:?t) throws
 
    :throws SystemError: Thrown if the arguments could not be read.
  */
-proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
+proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
     where isStringType(t) || isBytesType(t) {
 
   if writing then compilerError("readf on write-only channel");
@@ -7776,7 +7487,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
 
   var err:errorCode = ENOERR;
 
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     var save_style: iostyleInternal = this._styleInternal();
     defer {
@@ -8049,12 +7760,12 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
 
 // documented in varargs version
 pragma "no doc"
-proc channel.readf(fmtStr:?t) throws
+proc _channel.readf(fmtStr:?t) throws
     where isStringType(t) || isBytesType(t) {
 
   if writing then compilerError("readf on write-only channel");
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     var save_style: iostyleInternal = this._styleInternal();
     defer {
@@ -8134,9 +7845,9 @@ proc readf(fmt:string):bool throws {
 
    :throws SystemError: Thrown if the field could not be skipped.
  */
-proc channel.skipField() throws {
+proc _channel.skipField() throws {
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     var st = this.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
     if st == QIO_AGGREGATE_FORMAT_JSON {
@@ -8259,13 +7970,13 @@ use Regex;
 private extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;
 
 pragma "no doc"
-proc channel._extractMatch(m:regexMatch, ref arg:regexMatch, ref error:errorCode) {
+proc _channel._extractMatch(m:regexMatch, ref arg:regexMatch, ref error:errorCode) {
   // If the argument is a match record, just return it.
   arg = m;
 }
 
 pragma "no doc"
-proc channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:errorCode) {
+proc _channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:errorCode) {
   var cur:int(64);
   var target = m.byteOffset:int;
   var len = m.numBytes;
@@ -8306,7 +8017,7 @@ proc channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:errorCode) {
 }
 
 pragma "no doc"
-proc channel._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
+proc _channel._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
       where t != regexMatch && t != bytes {
   // If there was no match, return the default value of the type
   if !m.matched {
@@ -8354,9 +8065,9 @@ proc channel._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
 
     :throws SystemError: Thrown if a match could not be extracted.
  */
-proc channel.extractMatch(m:regexMatch, ref arg) throws {
+proc _channel.extractMatch(m:regexMatch, ref arg) throws {
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     _extractMatch(m, arg, err);
   }
@@ -8368,9 +8079,9 @@ proc channel.extractMatch(m:regexMatch, ref arg) throws {
 
 // documented in throws version
 pragma "no doc"
-proc channel.extractMatch(m:regexMatch, ref arg, ref error:errorCode) {
+proc _channel.extractMatch(m:regexMatch, ref arg, ref error:errorCode) {
   compilerWarning("`channel.extractMatch(m:regexMatch, ref arg, ref error:errorCode)` is deprecated");
-  on this.home {
+  on this._home {
     try! this.lock();
     _extractMatch(m, arg, error);
     this.unlock();
@@ -8380,7 +8091,7 @@ proc channel.extractMatch(m:regexMatch, ref arg, ref error:errorCode) {
 // Assumes that the channel has been marked where the search began
 // (or at least before the capture groups if discarding)
 pragma "no doc"
-proc channel._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
+proc _channel._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
                                  nmatches:int,
                                  ref captures, ref error:errorCode) {
   assert(nmatches >= captures.size);
@@ -8392,11 +8103,11 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
 
 // documented in the error= captures version
 pragma "no doc"
-proc channel.search(re:regex(?), ref error:errorCode):regexMatch
+proc _channel.search(re:regex(?), ref error:errorCode):regexMatch
 {
   compilerWarning("`channel.search(re:regex(?), ref error:errorCode)` is deprecated");
   var m:regexMatch;
-  on this.home {
+  on this._home {
     try! this.lock();
     var nm = 1;
     var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
@@ -8433,7 +8144,7 @@ proc channel.search(re:regex(?), ref error:errorCode):regexMatch
 
 // documented in the version with captures
 pragma "no doc"
-proc channel.search(re:regex(?)):regexMatch throws
+proc _channel.search(re:regex(?)):regexMatch throws
 {
   var e:errorCode = ENOERR;
   var ret = this.search(re, error=e);
@@ -8456,11 +8167,11 @@ proc channel.search(re:regex(?)):regexMatch throws
                    in the regular expression.
     :returns: the region of the channel that matched
  */
-proc channel.search(re:regex(?), ref captures ...?k): regexMatch throws
+proc _channel.search(re:regex(?), ref captures ...?k): regexMatch throws
 {
   var m:regexMatch;
   var err:errorCode = ENOERR;
-  on this.home {
+  on this._home {
     try this.lock(); defer { this.unlock(); }
     var nm = captures.size + 1;
     var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
@@ -8500,11 +8211,11 @@ proc channel.search(re:regex(?), ref captures ...?k): regexMatch throws
 
 // documented in the capture group version
 pragma "no doc"
-proc channel.match(re:regex(?), ref error:errorCode):regexMatch
+proc _channel.match(re:regex(?), ref error:errorCode):regexMatch
 {
   compilerWarning("`channel.match(re:regex(?), ref error:errorCode)` is deprecated");
   var m:regexMatch;
-  on this.home {
+  on this._home {
     try! this.lock();
     var nm = 1;
     var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
@@ -8540,7 +8251,7 @@ proc channel.match(re:regex(?), ref error:errorCode):regexMatch
 }
 
 pragma "no doc"
-proc channel.match(re:regex(?)):regexMatch throws
+proc _channel.match(re:regex(?)):regexMatch throws
 {
   compilerWarning("`channel.match(re:regex(?))` is deprecated");
   var e:errorCode = ENOERR;
@@ -8551,11 +8262,11 @@ proc channel.match(re:regex(?)):regexMatch throws
 
 // documented in the throws version
 pragma "no doc"
-proc channel.match(re:regex(?), ref captures ...?k, ref error:errorCode):regexMatch
+proc _channel.match(re:regex(?), ref captures ...?k, ref error:errorCode):regexMatch
 {
   compilerWarning("`channel.match(re:regex(?), ref captures ...?k, ref error:errorCode)` is deprecated");
   var m:regexMatch;
-  on this.home {
+  on this._home {
     try! this.lock();
     var nm = 1 + captures.size;
     var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
@@ -8606,7 +8317,7 @@ proc channel.match(re:regex(?), ref captures ...?k, ref error:errorCode):regexMa
                   in the regular expression.
    :returns: the region of the channel that matched
  */
-proc channel.match(re:regex(?), ref captures ...?k):regexMatch throws
+proc _channel.match(re:regex(?), ref captures ...?k):regexMatch throws
 {
   compilerWarning("`channel.match(re:regex(?), ref captures ...?k)` is deprecated");
   var e:errorCode = ENOERR;
@@ -8642,7 +8353,7 @@ proc channel.match(re:regex(?), ref captures ...?k):regexMatch throws
    :yields: tuples of :record:`Regex.regexMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
  */
-iter channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
+iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
 {
   var m:regexMatch;
@@ -8654,10 +8365,10 @@ iter channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
 
   // TODO should be try not try!  ditto try! _mark() below
   try! lock();
-  on this.home do try! _mark();
+  on this._home do try! _mark();
 
   while go && i < maxmatches {
-    on this.home {
+    on this._home {
       var nm = 1 + captures;
       var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
       if ! error {
