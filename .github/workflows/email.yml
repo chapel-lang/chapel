@@ -72,7 +72,7 @@ jobs:
               commit id : ${{ github.event.head_commit.id }} <br>
               commit message: ${{ github.event.head_commit.message }}  <br>
               sha: ${{ github.head_ref }}.${{ github.sha }}<br>
-              #files changed: ${{changedfiles.outputs.ts}}
+              
               ${{ github.event.workflow }} of ${{ github.repository }} 
               has ${{ job.status }}   <br>
               </p>
