@@ -31,6 +31,7 @@ module ChapelBase {
   use CTypes;
   use ChplConfig;
 
+  pragma "no doc"
   deprecated "the '_file' type is deprecated; please use 'CTtypes.c_FILE' instead"
   type _file = c_FILE;
 

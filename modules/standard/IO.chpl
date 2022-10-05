@@ -1878,12 +1878,6 @@ proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
 
-pragma "last resort"
-deprecated "the '_file' type is deprecated; use the variant of 'openfp' that takes a 'c_FILE'"
-proc openfp(fp: _file, hints=ioHintSet.empty, style:iostyle):file throws {
-  return openfpHelper(fp, hints, style: iostyleInternal);
-}
-
 /*
 
 Create a Chapel :record:`file` that wraps around an open C file. A pointer to
@@ -1912,7 +1906,7 @@ proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
 }
 
 pragma "last resort"
-deprecated "the '_file' type is deprecated; use the variant of 'openfp' that takes a 'c_FILE'"
+deprecated "'_file' is deprecated; use the variant of 'openfp' that takes a 'c_FILE' instead"
 proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }

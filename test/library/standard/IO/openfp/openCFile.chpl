@@ -1,4 +1,4 @@
-module getACFile {
+module m {
     require "cf.h";
 
     use IO;
