@@ -18,6 +18,7 @@ jobs:
       - name: Send mail
         env:
          USRNAME: ${{ secrets.USERNAME }}  
+         run: echo " $env.USRNAME"
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
