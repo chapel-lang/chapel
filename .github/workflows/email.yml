@@ -35,6 +35,7 @@ jobs:
            secure: true
     # Optional (recommended): mail server username:
            #username: ${{secrets.USERNAME}}
+           run: echo ${{secrets.USERNAME}}
            username: chapelhpc@gmail.com
     # Optional (recommended) mail server password:
            #password: ${{secrets.PASSWORD}}
