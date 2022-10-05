@@ -1012,11 +1012,24 @@ module GMP {
   // 7.7 Input and Output Functions
   //
 
+  extern proc mpf_out_str(stream: c_FILE,
+                          base: c_int,
+                          n_digits: c_size_t,
+                          const ref op: mpf_t);
+
+  pragma "last resort"
+  deprecated "the '_file' type is deprecated; use the variant of 'mpf_out_str' that takes a 'c_FILE'"
   extern proc mpf_out_str(stream: _file,
                           base: c_int,
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
+  extern proc mpf_inp_str(ref rop: mpf_t,
+                          stream: c_FILE,
+                          base: c_int);
+
+   pragma "last resort"
+  deprecated "the '_file' type is deprecated; use the variant of 'mpf_inp_str' that takes a 'c_FILE'"
   extern proc mpf_inp_str(ref rop: mpf_t,
                           stream: _file,
                           base: c_int);
@@ -1108,8 +1121,10 @@ module GMP {
   //
   extern proc gmp_printf(fmt: c_string, arg...);
 
-  extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
+  extern proc gmp_fprintf(fp: c_FILE, fmt: c_string, arg...);
 
+  pragma "last resort"
+  deprecated "the '_file' type is deprecated; use the variant of 'gmp_fprintf' that takes a 'c_FILE'"
   extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
 
   extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
