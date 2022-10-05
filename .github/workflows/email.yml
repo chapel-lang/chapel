@@ -14,9 +14,12 @@ on:
 jobs:
   make_check:
     runs-on: ubuntu-latest
+    
     steps:
+      - name: get env
+        run: env    
+    
       - name: Send mail
-         
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
