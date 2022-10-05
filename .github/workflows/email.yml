@@ -55,7 +55,7 @@ jobs:
               <h1>${{ github.job }} job in worflow </h1>
               <p>   
               ${{ github.job }} job in worflow <br>
-              branch ${{github.ref_name}} <br>
+              branch ${{github.ref}} <br>
               commit id : ${{ github.event.head_commit.id }} <br>
               commit message: ${{ github.event.head_commit.message }}  <br>
               sha: ${{ github.head_ref }}.${{ github.sha }}<br>
