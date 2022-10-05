@@ -3135,6 +3135,8 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
   return this.writerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
+config param useNewFileWriterRegionBounds = false;
+
 /*
    Create a :record:`channel` that supports writing to a file. See
    :ref:`about-io-overview`.
@@ -3183,7 +3185,16 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty):
-                 fileWriter(kind,locking) throws {
+                 fileWriter(kind,locking) throws where (!region.hasHighBound() ||
+                                                        useNewFileWriterRegionBounds) {
+  return this.writerHelper(kind, locking, region, hints);
+}
+
+deprecated "Currently the region argument high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 region: range(?) = 0.., hints = ioHintSet.empty):
+                 fileWriter(kind,locking) throws where (region.hasHighBound() &&
+                                                        !useNewFileWriterRegionBounds) {
   return this.writerHelper(kind, locking, region, hints);
 }
 
@@ -3206,14 +3217,27 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new fileWriter(kind, locking, this, err, hints, region.low,
-                           region.high, style);
+      if (useNewFileWriterRegionBounds) {
+        ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                             region.high + 1, style);
+      } else {
+        ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                             region.high, style);
+      }
+
     } else if (region.hasLowBound()) {
       ret = new fileWriter(kind, locking, this, err, hints, region.low,
                            max(int(64)), style);
+
     } else if (region.hasHighBound()) {
-      ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
-                           style);
+      if (useNewFileWriterRegionBounds) {
+        ret = new fileWriter(kind, locking, this, err, hints, 0,
+                             region.high + 1, style);
+      } else {
+        ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
+                             style);
+      }
+
     } else {
       ret = new fileWriter(kind, locking, this, err, hints, 0, max(int(64)),
                            style);
