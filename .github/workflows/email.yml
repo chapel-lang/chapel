@@ -16,21 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send mail
-          
+         
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
-    # Specify connection via URL (replaces server_address, server_port, secure,
-    # username and password)
-    #
-    # Format:
-    #
-    #  * smtp://user:password@server:port
-    #  * smtp+starttls://user:password@server:port
-    #       connection_url: ${{secrets.MAIL_CONNECTION}}
+   
     # Required mail server address if not connection_url:
            server_address: smtp.gmail.com
-   
            server_port: 465
     # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
@@ -49,16 +41,8 @@ jobs:
     # Optional plain body:
    
            body: |
-              run: echo ${{secrets.USERNAME}}
-              ${{ github.job }} job in worflow 
-              branch ${GITHUB_REF#refs/heads/}
-              ${{ github.head_commit_id }} 
-              ${{ github. event. head_commit.message }}  
-              $(git rev-parse --short "$GITHUB_SHA")
-              ${{ github.event.compare_url }}
-              ${{ github.event.pr_url }}
-              ${{ github.event.workflow }} of ${{ github.repository }} 
-              has ${{ job.status }}   
+              
+               ${{ github.job }} job in worflow
               
               # Optional HTML body read from file:
            html_body: |
@@ -67,14 +51,15 @@ jobs:
               <body>
               <h1>${{ github.job }} job in worflow </h1>
               <p>   
-              branch ${GITHUB_REF#refs/heads/}
-              ${{ github.head_commit_id }} 
-              ${{ github. event. head_commit.message }}  
-              $(git rev-parse --short "$GITHUB_SHA")
-              ${{ github.event.compare_url }}
-              ${{ github.event.pr_url }}
+              ${{ github.job }} job in worflow <br>
+              branch ${GITHUB_REF#refs/heads/} <br>
+              ${{ github.head_commit_id }} <br>
+              ${{ github. event. head_commit.message }}  <br>
+              $(git rev-parse --short "$GITHUB_SHA") <br>
+              ${{ github.event.compare_url }} <br>
+              ${{ github.event.pr_url }} <br>
               ${{ github.event.workflow }} of ${{ github.repository }} 
-              has ${{ job.status }} 
+              has ${{ job.status }}   <br>
               </p>
               </body>
               </html>
