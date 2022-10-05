@@ -40,8 +40,8 @@ jobs:
            username:  ${{ secrets.MAIL_USERNAME}} 
     #username: chapelhpc@gmail.com
     # Optional (recommended) mail server password:
-           #password: ${{secrets.PASSWORD}}
-           password: dandfgyudekkjbhi    
+           password: ${{secrets.MAIL_PASSWORD}}
+         #password: dandfgyudekkjbhi    
            
     # Required mail subject:
            subject: ${{ github.job }} job of ${{ github.repository }} has ${{ job.status }}    # Required recipients' addresses:
