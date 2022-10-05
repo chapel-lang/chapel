@@ -35,10 +35,6 @@ include(CMakePrintHelpers)
 # https://cmake.org/cmake/help/latest/variable/CMAKE_VERBOSE_MAKEFILE.html
 # set(CMAKE_VERBOSE_MAKEFILE 1)
 
-# attempt to resolve error in chpl:
-# "relocation R_X86_64_32S against `.bss' can not be used when making a PIE object; recompile with -fPIE"
-# set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 
 # Options that correspond to printchplenv --internal --compiler
 # Could be set from environment or command-line

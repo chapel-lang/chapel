@@ -33,28 +33,36 @@ endif()
 # TODO: enable easier cmake builds of dyno (outside of Chapel's Makefiles)
 # by falling back on find_package(LLVM) if
 # DYNO_LLVM_COMP_ARGS / DYNO_LLVM_LINK_ARGS are empty.
-option(DYNO_LLVM_COMP_ARGS "Override compile args for LLVM")
-option(DYNO_LLVM_LINK_ARGS "Override linker args for LLVM")
-
-if (NOT DYNO_LLVM_LINK_ARGS)
-  # message(DEBUG "setting DYNO_LLVM_LINK_ARGS to ${CHPL_LLVM_LINK_ARGS}")
-  set(DYNO_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS})
-else()
-  # message(DEBUG "DYNO_LLVM_LINK_ARGS already set to ${DYNO_LLVM_LINK_ARGS}")
-  # remove whitespace or you'll get complaints about an error
-  # according to policy CMP0004
-  string(STRIP "${DYNO_LLVM_LINK_ARGS}" DYNO_LLVM_LINK_ARGS)
+if (NOT DEFINED CHPL_HOST_BUNDLED_COMPILE_ARGS)
+  set(CHPL_HOST_BUNDLED_COMPILE_ARGS CACHE STRING "Override LLVM=bundled compile args")
+endif()
+if (NOT DEFINED CHPL_HOST_SYSTEM_COMPILE_ARGS)
+  set(CHPL_HOST_SYSTEM_COMPILE_ARGS CACHE STRING "Overide LLVM=system compile args")
+endif()
+if (NOT DEFINED CHPL_HOST_BUNDLED_LINK_ARGS)
+  set(CHPL_HOST_BUNDLED_LINK_ARGS CACHE STRING "Override LLVM=bundled link args")
+endif()
+if (NOT DEFINED CHPL_HOST_SYSTEM_LINK_ARGS)
+  set(CHPL_HOST_SYSTEM_LINK_ARGS CACHE STRING "Override LLVM=system link args")
 endif()
 
-if (NOT DYNO_LLVM_COMP_ARGS)
-  # message(DEBUG "setting DYNO_LLVM_COMP_ARGS to ${CHPL_LLVM_COMP_ARGS}")
-  set(DYNO_LLVM_COMP_ARGS ${CHPL_LLVM_COMP_ARGS})
-else()
-  # message(DEBUG "DYNO_LLVM_COMP_ARGS already set to ${DYNO_LLVM_COMP_ARGS}")
+if (NOT DEFINED CHPL_LLVM_COMP_ARGS)
+  # TODO: See if we can use these directly, I am not sure we can because
+  # the way to concat strings requires an output variable
+  string(CONCAT CHPL_LLVM_COMP_ARGS ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
   # remove whitespace or you'll get complaints about an error
   # according to policy CMP0004
-  string(STRIP "${DYNO_LLVM_COMP_ARGS}" DYNO_LLVM_COMP_ARGS)
+  if (CHPL_LLVM_COMP_ARGS)
+    string(STRIP ${CHPL_LLVM_COMP_ARGS} CHPL_LLVM_COMP_ARGS)
+  endif()
 endif()
+if (NOT DEFINED CHPL_LLVM_LINK_ARGS)
+  string(CONCAT CHPL_LLVM_LINK_ARGS ${CHPL_HOST_BUNDLED_LINK_ARGS} " " ${CHPL_HOST_SYSTEM_LINK_ARGS})
+  string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
+endif()
+
+# message(DEBUG "CHPL_LLVM_COMP_ARGS: ${CHPL_LLVM_COMP_ARGS}")
+# message(DEBUG "CHPL_LLVM_LINK_ARGS: ${CHPL_LLVM_LINK_ARGS}")
 
 # remove whitespace or you'll get complaints about an error
 # according to policy CMP0004
