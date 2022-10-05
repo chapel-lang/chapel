@@ -32,7 +32,7 @@ module ChapelBase {
   use ChplConfig;
 
   pragma "no doc"
-  deprecated "the '_file' type is deprecated; please use 'CTtypes.c_FILE' instead"
+  deprecated "the '_file' type is deprecated; please use 'CTypes.c_FILE' instead"
   type _file = c_FILE;
 
   config param enablePostfixBangChecks = false;
