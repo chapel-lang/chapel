@@ -2992,11 +2992,14 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, region, hints);
 }
 
+// TODO: remove fromOpenReader and fromOpenUrlReader when deprecated versions
+// are removed
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
-                       fromOpenReader=false): fileReader(kind, locking) throws {
+                       fromOpenReader=false, fromOpenUrlReader=false)
+  : fileReader(kind, locking) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
@@ -3010,7 +3013,9 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
       if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
-          (!fromOpenReader && useNewFileReaderRegionBounds)) {
+          fromOpenUrlReader ||
+          (!fromOpenReader && !fromOpenUrlReader
+           && useNewFileReaderRegionBounds)) {
         ret = new fileReader(kind, locking, this, err, hints, region.low,
                              region.high + 1, style);
       } else {
@@ -3024,7 +3029,9 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
 
     } else if (region.hasHighBound()) {
       if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
-          (!fromOpenReader && useNewFileReaderRegionBounds)) {
+          fromOpenUrlReader ||
+          (!fromOpenReader && !fromOpenUrlReader
+           && useNewFileReaderRegionBounds)) {
         ret = new fileReader(kind, locking, this, err, hints, 0,
                              region.high + 1, style);
       } else {
