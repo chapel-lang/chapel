@@ -1,7 +1,7 @@
 semantic: domain equality (range equality, really)
 
 This test was written to ask the similar questions as
-test/ranges/bradc/rangeEquality.chpl for domains.
+test/types/range/bradc/rangeEquality.chpl for domains.
 
 As noted in the range version of the .future, my proposed answer for
 the third comparison differs here from ranges because of the fact that
