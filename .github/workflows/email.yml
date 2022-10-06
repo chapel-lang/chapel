@@ -40,7 +40,9 @@ jobs:
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v32
-
+        with:
+         fetch-depth: 0 
+         
       - name: List all changed files
         run: |
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
@@ -92,7 +94,7 @@ jobs:
               Sha: ${{ github.head_ref }}.${{ github.sha }}<br>
               Link: ${{github.event.head_commit.url}} <br> 
               Log Message: ${{github.event.commits.message}} <br>
-              Modified Files: ${{github.event.repository.compare}} <br>
+              Modified Files: ${{github.event.compare}} <br>
               </p>
               </body>
               </html>
