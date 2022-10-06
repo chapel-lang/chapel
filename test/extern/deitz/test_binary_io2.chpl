@@ -1,3 +1,5 @@
+use CTypes;
+
 extern proc fopen(name: c_string, mode: c_string): c_FILE;
 extern proc fread(ref data, size: int, n: int, f: c_FILE): int;
 extern proc fwrite(ref data, size: int, n: int, f: c_FILE): int;
