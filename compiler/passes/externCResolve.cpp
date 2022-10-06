@@ -521,8 +521,8 @@ void convertDeclToChpl(ModuleSymbol* module,
                                            false,  // throws
                                            NULL, // where
                                            NULL, // lifetime constraints
-                                           NULL, // body
-                                           NULL); // docs
+                                           NULL // body
+                                         );
 
     //convert args
     for (clang::FunctionDecl::param_iterator it=fd->param_begin(); it < fd->param_end(); ++it) {

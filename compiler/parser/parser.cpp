@@ -24,7 +24,6 @@
 #include "build.h"
 #include "config.h"
 #include "convert-uast.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -327,31 +326,29 @@ static void countTokensInCmdLineFiles() {
 
 
 static void parseInternalModules() {
-  if (fDocs == false || fDocsProcessUsedModules == true) {
-    baseModule            = parseMod("ChapelBase",           true);
-    standardModule        = parseMod("ChapelStandard",       true);
-    printModuleInitModule = parseMod("PrintModuleInitOrder", true);
-    if (fLibraryFortran) {
-                            parseMod("ISO_Fortran_binding", true);
-    }
-
-    // parse ChapelSysCTypes right away to provide well-known types.
-    ModuleSymbol* sysctypes = parseMod("ChapelSysCTypes", false);
-    if (sysctypes == NULL && fMinimalModules == false) {
-      USR_FATAL("Could not find module 'ChapelSysCTypes', which should be defined by '%s/ChapelSysCTypes.chpl'", stdGenModulesPath);
-    }
-    // ditto Errors
-    ModuleSymbol* errors = parseMod("Errors", false);
-    if (errors == NULL && fMinimalModules == false) {
-      USR_FATAL("Could not find standard module 'Errors'");
-    }
-
-    parseDependentModules(true);
-
-    gatherIteratorTags();
-    gatherWellKnownTypes();
-    gatherWellKnownFns();
+  baseModule            = parseMod("ChapelBase",           true);
+  standardModule        = parseMod("ChapelStandard",       true);
+  printModuleInitModule = parseMod("PrintModuleInitOrder", true);
+  if (fLibraryFortran) {
+                          parseMod("ISO_Fortran_binding", true);
   }
+
+  // parse ChapelSysCTypes right away to provide well-known types.
+  ModuleSymbol* sysctypes = parseMod("ChapelSysCTypes", false);
+  if (sysctypes == NULL && fMinimalModules == false) {
+    USR_FATAL("Could not find module 'ChapelSysCTypes', which should be defined by '%s/ChapelSysCTypes.chpl'", stdGenModulesPath);
+  }
+  // ditto Errors
+  ModuleSymbol* errors = parseMod("Errors", false);
+  if (errors == NULL && fMinimalModules == false) {
+    USR_FATAL("Could not find standard module 'Errors'");
+  }
+
+  parseDependentModules(true);
+
+  gatherIteratorTags();
+  gatherWellKnownTypes();
+  gatherWellKnownFns();
 }
 
 
@@ -414,7 +411,7 @@ static void parseCommandLineFiles() {
     }
   }
 
-  if (fDocs == false || fDocsProcessUsedModules == true) {
+  {
     bool foundSomethingNew = false;
     do {
       foundSomethingNew = false;
@@ -933,7 +930,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   if (dynoRealizeErrors()) USR_STOP();
 
-  const chpl::uast::Comment* modComment = nullptr;
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;
 
@@ -949,8 +945,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   for (auto ast : builderResult.topLevelExpressions()) {
 
     // Store the last comment for use when converting the module.
-    if (auto comment = ast->toComment()) {
-      modComment = comment;
+    if (ast->isComment()) {
       continue;
     }
 
@@ -971,10 +966,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     yyfilename = nullptr;
 
     // Only converts the module, does not add to done list.
-    ModuleSymbol* got = convertToplevelModule(gContext, mod, modTag,
-                                              modComment,
-                                              builderResult);
-    modComment = nullptr;
+    ModuleSymbol* got = convertToplevelModule(gContext, mod, modTag);
     INT_ASSERT(got);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST

@@ -42,7 +42,6 @@
 #include "WhileDoStmt.h"
 #include "build.h"
 #include "config.h"
-#include "docsDriver.h"
 #include "global-ast-vecs.h"
 #include "optimizations.h"
 #include "parser.h"
@@ -138,19 +137,13 @@ struct Converter {
   bool trace = false;
 
   ModTag topLevelModTag;
-  // TODO: remove latestComment and builderResult once
-  // chpldoc is implemented as a separate tool on uAST
-  const char* latestComment = nullptr;
-  const uast::BuilderResult& builderResult;
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
 
 
-  Converter(chpl::Context* context, ModTag topLevelModTag,
-            const uast::BuilderResult& builderResult)
+  Converter(chpl::Context* context, ModTag topLevelModTag)
     : context(context),
-      topLevelModTag(topLevelModTag),
-      builderResult(builderResult) {}
+      topLevelModTag(topLevelModTag) { }
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node);
@@ -191,12 +184,6 @@ struct Converter {
        const uast::AstNode* ast,
        const resolution::ResolutionResultByPostorderID* resolved);
   void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
-
-  const char* consumeLatestComment() {
-    const char* ret = latestComment;
-    latestComment = nullptr;
-    return ret;
-  }
 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
@@ -261,121 +248,7 @@ struct Converter {
     return true;
   }
 
-  // This code duplicates what was done in 'processBlockComment' for the old
-  // scanner, minus all the state tracking for the scanner itself. It is
-  // meant to prepare a comment for use with chpldoc.
-  const char* trimBlockCommentForDocs(const uast::Comment* node) {
-    INT_ASSERT(isBlockComment(node));
-    INT_ASSERT(fDocs);
-
-    const auto& com = node->str();
-    int delimLen = strlen(fDocsCommentLabel);
-    int delimIdx = (delimLen >= 2) ? 2 : 0;
-    std::string str, line;
-    bool badComment = false;
-    int depth = 1;
-    size_t idx = 2;   // Skip opening '/*'.
-    int llc = 0;      // Last last char.
-    int lc = 0;       // Last char.
-    int c = 0;        // Current char.
-    int d = 1;        // TODO: Better name?
-
-    while (depth > 0) {
-      llc = lc;
-      lc = c;
-      c = idx < com.size() ? com[idx++] : 0; // Advance the scanner.
-
-      // Skip opening delimiter.
-      if (idx < 2) {
-        INT_ASSERT(c == '/' || c == '*');
-        continue;
-      }
-
-      // For newlines, append entire line if past the delimiter.
-      if (c == '\n') {
-        if (delimIdx == delimLen) {
-          str += line;
-          str += '\n';
-        }
-        line.clear();
-
-      // Maybe advance the delimiter, append character.
-      } else {
-        if ((delimIdx < delimLen) && (delimIdx != -1)) {
-          if (c == fDocsCommentLabel[delimIdx]) {
-            delimIdx++;
-          } else {
-            delimIdx = -1;
-          }
-        }
-
-        line += c;
-      }
-
-      if (delimLen != 0 && c == fDocsCommentLabel[delimLen - d]) {
-        d++;
-      } else {
-        d = 1;
-      }
-
-      // TODO: Eliminate depth tracking?
-      if (lc == '*' && c == '/' && llc != '/') {
-        if (delimIdx == delimLen && d != delimLen + 1) badComment = true;
-        depth--;
-        d = 1;
-      } else if (lc == '/' && c == '*') {
-        depth++;
-      } else if (c == 0) {
-        INT_FATAL("Should not reach here!");
-      }
-    }
-
-    // Back up to not print delimiter again.
-    if (line.size() >= 2) {
-      line.resize(line.size() - 2);
-    }
-
-    // Even further for special delimiters.
-    if (delimLen > 2 && delimIdx == delimLen) {
-      line.resize(line.size() - (delimLen - 2));
-    }
-
-    if (delimIdx == delimLen) {
-      str += line;
-
-      if (delimLen > 2) {
-        delimLen -= 2;
-        str = str.substr(delimLen);
-      }
-
-      // TODO: What is this doing?
-      auto loc = str.find("\\x09");
-      while (loc != std::string::npos) {
-        str = str.substr(0, loc) + str.substr(loc + 4);
-        str.insert(loc, "\t");
-        loc = str.find("\\x09");
-      }
-    }
-
-    if (badComment) {
-      auto loc = builderResult.commentToLocation(node);
-      INT_ASSERT(!loc.isEmpty());
-      USR_WARN(loc, "chpldoc comment not closed, "
-                    "ignoring comment:%s\n",
-                    str.c_str());
-      return nullptr;
-    }
-
-    auto ret = str.size() ? astr(str) : nullptr;
-
-    return ret;
-  }
-
   Expr* visit(const uast::Comment* node) {
-    if (!fDocs) return nullptr;
-    INT_ASSERT(node->str().size() >= 2);
-    latestComment = isBlockComment(node) ? trimBlockCommentForDocs(node)
-                                         : nullptr;
     return nullptr;
   }
 
@@ -872,9 +745,6 @@ struct Converter {
   Expr* visit(const uast::Include* node) {
     bool isIncPrivate = node->visibility() == uast::Decl::PRIVATE;
 
-    // Consume the comment but do not use it - module comment is used.
-    std::ignore = consumeLatestComment();
-
     const uast::Module* umod =
       parsing::getIncludedSubmodule(context, node->id());
     if (umod == nullptr) {
@@ -882,27 +752,15 @@ struct Converter {
     }
 
     bool isModPrivate = umod->visibility() == uast::Decl::PRIVATE;
-
-    // note any comment that occurs before the module for chpldoc
     const uast::BuilderResult* builderResult =
       parsing::parseFileContainingIdToBuilderResult(context, umod->id());
     INT_ASSERT(builderResult);
 
     UniqueString filePath;
 
-    if (builderResult != nullptr) {
-      filePath = builderResult->filePath();
-
-      for (auto ast : builderResult->topLevelExpressions()) {
-        // Store the last comment for use when converting the module.
-        if (auto comment = ast->toComment()) {
-          this->visit(comment);
-        }
-        if (ast == umod) {
-          break;
-        }
-      }
-    }
+   if (builderResult != nullptr) {
+     filePath = builderResult->filePath();
+   }
 
     // convert the included module
 
@@ -2284,7 +2142,6 @@ struct Converter {
 
   Expr* visit(const uast::MultiDecl* node) {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
-    auto comment = consumeLatestComment();
 
     for (auto decl : node->decls()) {
       INT_ASSERT(decl->linkage() == node->linkage());
@@ -2296,12 +2153,10 @@ struct Converter {
         const bool useLinkageName = false;
         conv = convertVariable(var, useLinkageName);
 
-        // Attach the doc comment if it exists.
         DefExpr* defExpr = toDefExpr(conv);
         INT_ASSERT(defExpr);
         auto varSym = toVarSymbol(defExpr->sym);
         INT_ASSERT(varSym);
-        varSym->doc = comment;
 
       // Otherwise convert in a generic fashion.
       } else {
@@ -2312,7 +2167,7 @@ struct Converter {
       ret->insertAtTail(conv);
     }
 
-    if (!fDocs) {
+    {
       INT_ASSERT(!inTupleDecl);
       CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
       ret->insertAtTail(end);
@@ -2322,11 +2177,9 @@ struct Converter {
   }
 
   // Right now components are one of: Variable, Formal, TupleDecl.
-  BlockStmt* convertTupleDeclComponents(const uast::TupleDecl* node,
-                                        bool attachComments=false) {
+  BlockStmt* convertTupleDeclComponents(const uast::TupleDecl* node) {
     astlocMarker markAstLoc(node->id());
 
-    auto comment = attachComments ? consumeLatestComment() : nullptr;
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
     const bool saveInTupleDecl = inTupleDecl;
@@ -2344,21 +2197,10 @@ struct Converter {
         conv = new DefExpr(varSym);
         noteConvertedSym(formal, varSym);
 
-        // Should not be attaching comments to tuple formals.
-        INT_ASSERT(!attachComments);
-
       // Do not use the visitor because it produces a block statement.
       } else if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
         conv = convertVariable(var, useLinkageName);
-
-        if (attachComments) {
-          auto defExpr = toDefExpr(conv);
-          INT_ASSERT(defExpr);
-          auto varSym = toVarSymbol(defExpr->sym);
-          INT_ASSERT(varSym);
-          varSym->doc = comment;
-        }
 
       // It must be a tuple.
       } else {
@@ -2390,8 +2232,7 @@ struct Converter {
 
   // This builds a statement. Arguments use 'convertTupleDeclComponents'.
   BlockStmt* visit(const uast::TupleDecl* node) {
-    const bool attachComments = true;
-    auto tuple = convertTupleDeclComponents(node, attachComments);
+    auto tuple = convertTupleDeclComponents(node);
     auto typeExpr = convertExprOrNull(node->typeExpression());
     auto initExpr = convertExprOrNull(node->initExpression());
 
@@ -2409,7 +2250,7 @@ struct Converter {
     }
 
     // Add a PRIM_END_OF_STATEMENT.
-    if (!fDocs) {
+    {
       INT_ASSERT(!inTupleDecl);
       CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
       ret->insertAtTail(end);
@@ -2592,7 +2433,7 @@ struct Converter {
     return ret;
   }
 
-  FnSymbol* convertFunction(const uast::Function* node, const char* comment) {
+  FnSymbol* convertFunction(const uast::Function* node) {
     // Decide if we want to resolve this function
     bool shouldResolveFunction = shouldResolve(node);
     bool shouldScopeResolveFunction = shouldResolveFunction ||
@@ -2792,8 +2633,7 @@ struct Converter {
     setupFunctionDecl(fn, retTag, retType, node->throws(),
                       whereClause,
                       lifetimeConstraints,
-                      body,
-                      /* docs */ comment);
+                      body);
 
     if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
@@ -2924,8 +2764,7 @@ struct Converter {
     setupFunctionDecl(fn, retTag, retType, node->throws(),
                       /*whereClause*/ nullptr,
                       /*lifetimeConstraints*/ nullptr,
-                      /*body*/ nullptr,
-                      /*docs*/ nullptr);
+                      /*body*/ nullptr);
 
     return fn;
   }
@@ -2954,11 +2793,10 @@ struct Converter {
   }
 
   Expr* visit(const uast::Function* node) {
-    auto comment = consumeLatestComment();
     FnSymbol* fn = nullptr;
     Expr* ret = nullptr;
 
-    fn = convertFunction(node, comment);
+    fn = convertFunction(node);
 
     // For anonymous functions, return a DefExpr instead of a BlockStmt
     // containing a DefExpr because this is the pattern expected
@@ -3004,8 +2842,6 @@ struct Converter {
   }
 
   ModuleSymbol* convertModule(const uast::Module* node) {
-    auto comment = consumeLatestComment();
-
     // Decide if we want to resolve this module
     bool shouldResolveModule = shouldResolve(node);
     bool shouldScopeResolveModule = shouldResolveModule ||
@@ -3057,8 +2893,7 @@ struct Converter {
                                     body,
                                     path,
                                     priv,
-                                    prototype,
-                                    comment);
+                                    prototype);
 
     if (node->kind() == uast::Module::IMPLICIT) {
       mod->addFlag(FLAG_IMPLICIT_MODULE);
@@ -3439,15 +3274,11 @@ struct Converter {
   Expr* visit(const uast::Variable* node) {
     auto isTypeVar = node->kind() == uast::Variable::TYPE;
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
-    auto comment = consumeLatestComment();
 
     auto defExpr = convertVariable(node, true);
     INT_ASSERT(defExpr);
     auto varSym = toVarSymbol(defExpr->sym);
     INT_ASSERT(varSym);
-
-    // Attach the doc comment if it exists.
-    varSym->doc = comment;
 
     stmts->insertAtTail(defExpr);
 
@@ -3469,7 +3300,7 @@ struct Converter {
     }
 
     // Add a PRIM_END_OF_STATEMENT.
-    if (!fDocs && !inTupleDecl && !isTypeVar) {
+    if (!inTupleDecl && !isTypeVar) {
       CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
       stmts->insertAtTail(end);
     }
@@ -3495,11 +3326,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Enum* node) {
-    auto comment = consumeLatestComment();
     auto enumType = new EnumType();
-
-    // Attach any doc comment to the enum type.
-    enumType->doc = comment;
 
     for (auto elem : node->enumElements()) {
       DefExpr* convElem = convertEnumElement(elem);
@@ -3548,7 +3375,6 @@ struct Converter {
     }
     pushToSymStack(node, resolved);
 
-    auto comment = consumeLatestComment();
     const char* name = astr(node->name());
     const char* cname = name;
     Expr* inherit = nullptr;
@@ -3574,8 +3400,7 @@ struct Converter {
 
     auto ret = buildClassDefExpr(name, cname, tag, inherit,
                                  decls,
-                                 externFlag,
-                                 comment);
+                                 externFlag);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
@@ -4373,20 +4198,12 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 ModuleSymbol*
 convertToplevelModule(chpl::Context* context,
                       const chpl::uast::Module* mod,
-                      ModTag modTag,
-                      const chpl::uast::Comment* comment,
-                      const chpl::uast::BuilderResult& builderResult) {
+                      ModTag modTag) {
   astlocMarker markAstLoc(mod->id());
-  Converter c(context, modTag, builderResult);
+  Converter c(context, modTag);
 
   c.canScopeResolve = fDynoCompilerLibrary;
   c.trace = fDynoDebugTrace;
-
-  // Maybe prepare a toplevel comment to attach to the module.
-  if (comment) {
-    auto convComment = c.visit(comment);
-    INT_ASSERT(convComment == nullptr);
-  }
 
   ModuleSymbol* ret = c.convertModule(mod);
   return ret;

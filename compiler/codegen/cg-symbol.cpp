@@ -35,7 +35,6 @@
 #include "clangUtil.h"
 #include "codegen.h"
 #include "CollapseBlocks.h"
-#include "docsDriver.h"
 #include "DoWhileStmt.h"
 #include "driver.h"
 #include "expr.h"

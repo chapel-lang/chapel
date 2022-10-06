@@ -268,17 +268,6 @@ public:
   int               id;         // Unique ID
   astlocT           astloc;     // Location of this node in the source code
 
-  void              printTabs(std::ostream *file, unsigned int tabs);
-  void              printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
-  void              printDocsDeprecation(const char *doc, std::ostream *file,
-                                         unsigned int tabs,
-                                         const char* deprecationMsg,
-                                         bool extraLine);
-  void              printDocsUnstable(const char *doc, std::ostream *file,
-                                         unsigned int tabs,
-                                         const char* unstableMsg,
-                                         bool extraLine);
-
   static  const     std::string tabText;
 
 protected:

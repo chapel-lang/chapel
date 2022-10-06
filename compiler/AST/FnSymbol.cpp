@@ -24,7 +24,6 @@
 #include "astutil.h"
 #include "bb.h"
 #include "CollapseBlocks.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "iterator.h"
@@ -1134,117 +1133,6 @@ QualifiedType FnSymbol::getReturnQualType() const {
   else if(retTag == RET_CONST_REF)
     q = isWideRef ? QUAL_CONST_WIDE_REF : QUAL_CONST_REF;
   return QualifiedType(retType, q);
-}
-
-
-std::string FnSymbol::docsDirective() {
-  if (fDocsTextOnly) {
-    return "";
-  }
-
-  if (this->isMethod() && this->isIterator()) {
-    return ".. itermethod:: ";
-  } else if (this->isIterator()) {
-    return ".. iterfunction:: ";
-  } else if (this->isMethod()) {
-    return ".. method:: ";
-  } else {
-    return ".. function:: ";
-  }
-}
-
-
-void FnSymbol::printDocs(std::ostream* file, unsigned int tabs) {
-  if (this->noDocGen() == false) {
-    // Print the rst directive, if one is needed.
-    this->printTabs(file, tabs);
-
-    *file << this->docsDirective();
-
-    // Print export. Externs do not get a prefix, since the user doesn't
-    // care whether it's an extern or not (they just want to use the function).
-    // Inlines don't get a prefix for symmetry in modules like Math.chpl and
-    // due to the argument that it's of negligible value in most cases.
-    if (this->hasFlag(FLAG_EXPORT)) {
-      *file << "export ";
-    }
-
-    if (this->hasFlag(FLAG_OVERRIDE)) {
-      *file << "override ";
-    }
-
-    // Print iter/proc.
-    if (this->isIterator()) {
-      *file << "iter ";
-
-    } else {
-      *file << "proc ";
-    }
-
-    // Print name and arguments.
-    AstToText info;
-
-    info.appendNameAndFormals(this);
-
-    *file << info.text();
-
-    // Print return intent, if one exists.
-    switch (this->retTag) {
-    case RET_REF:
-      *file << " ref";
-      break;
-
-    case RET_CONST_REF:
-      *file << " const ref";
-      break;
-
-    case RET_PARAM:
-      *file << " param";
-      break;
-
-    case RET_TYPE:
-      *file << " type";
-      break;
-
-    default:
-      break;
-    }
-
-    // Print return type.
-    if (this->retExprType != NULL) {
-      AstToText info;
-
-      info.appendExpr(this->retExprType->body.tail, true);
-      *file << ": ";
-      *file << info.text();
-    }
-
-    // Print throws
-    if (this->throwsError()) {
-      *file << " throws";
-    }
-
-    *file << std::endl;
-
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-
-    if (this->doc != NULL) {
-      this->printDocsDescription(this->doc, file, tabs + 1);
-      *file << std::endl;
-    }
-
-    if (this->hasFlag(FLAG_DEPRECATED)) {
-      this->printDocsDeprecation(this->doc, file, tabs + 1,
-                                 this->getDeprecationMsg(), true);
-    }
-
-    if (this->hasFlag(FLAG_UNSTABLE)) {
-      this->printDocsUnstable(this->doc, file, tabs + 1,
-                              this->getUnstableMsg(), true);
-    }
-  }
 }
 
 void FnSymbol::throwsErrorInit() {
