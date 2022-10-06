@@ -406,12 +406,12 @@ module UnitTest {
         if len1 > len2 {
           var size_diff = len1 - len2;
           tmpString += "\nFirst "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
-          tmpString += "First extra element is at index "+(len2+1):string+"\n'"+seq1[len2+1]:string+"'\n";
+          tmpString += "First extra element is at index "+(len2):string+"\n'"+seq1[len2]:string+"'\n";
         }
         else if len1 < len2 {
           var size_diff = len2 - len1;
           tmpString += "\nSecond "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
-          tmpString += "First extra element is at index "+(len1+1):string+"\n'"+seq2[len1+1]:string+"'\n";
+          tmpString += "First extra element is at index "+(len1):string+"\n'"+seq2[len1]:string+"'\n";
         }
       }
       throw new owned AssertionError(tmpString);
