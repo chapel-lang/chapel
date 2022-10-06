@@ -382,6 +382,51 @@ static void test8() {
   assert(reB.toId().isEmpty());
 }
 
+// test use with except-lists
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module A {
+        var x : int;
+        var y : int;
+        var z : int = 4;
+      }
+      module B {
+        public use A except y, z;
+
+        var a : int = x;
+        var b : int = y;
+        var c : int = A.x;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+  const Variable* z = findVariable(vec, "z");
+  assert(z);
+  const Variable* a = findVariable(vec, "a");
+  assert(a);
+  const Variable* b = findVariable(vec, "b");
+  assert(b);
+  const Variable* c = findVariable(vec, "c");
+  assert(c);
+
+  const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
+  assert(reA.toId() == x->id());
+  const ResolvedExpression& reB = scopeResolveIt(context, b->initExpression());
+  assert(reB.toId().isEmpty());
+  const ResolvedExpression& reC = scopeResolveIt(context, c->initExpression());
+  assert(reC.toId().isEmpty());
+}
 
 int main() {
   test1();
@@ -392,6 +437,7 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
 
   return 0;
 }
