@@ -362,6 +362,39 @@ void ErrorInvalidNew::write(ErrorWriterBase& wr) const {
   wr.message("The 'new' expression can only be used with records or classes.");
 }
 
+void ErrorMultipleQuestionArgs::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info);
+  auto firstQuestion = std::get<1>(info);
+  auto secondQuestion = std::get<2>(info);
+
+  wr.heading(kind_, type_, call, "cannot have ? more than once in a call");
+  wr.message("The first ? argument occurs here:");
+  wr.code(firstQuestion, { firstQuestion });
+  wr.message("The second ? argument occurs here:");
+  wr.code(secondQuestion, { secondQuestion });
+}
+
+void ErrorTupleExpansionNonTuple::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info);
+  auto expansion = std::get<const uast::OpCall*>(info);
+  auto& type = std::get<types::QualifiedType>(info);
+
+  wr.heading(kind_, type_, call, "cannot apply tuple expansion to non-tuple argument");
+  wr.message("In the following function call:");
+  wr.code(call, { expansion });
+  wr.message("the expanded element has type '", type.type(), "' while it's ",
+             "expected to be a tuple.");
+}
+
+void ErrorNonIterable::write(ErrorWriterBase &wr) const {
+  auto loop = std::get<const uast::IndexableLoop*>(info);
+  auto iterand = std::get<const uast::AstNode*>(info);
+  auto& iterandType = std::get<types::QualifiedType>(info);
+  wr.heading(kind_, type_, loop, "cannot iterate over ", iterandType);
+  wr.message("In the following loop:");
+  wr.code(loop, { iterand });
+}
+
 void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
   auto sig = std::get<const uast::FunctionSignature*>(info);
   auto formal = std::get<const uast::AnonFormal*>(info);

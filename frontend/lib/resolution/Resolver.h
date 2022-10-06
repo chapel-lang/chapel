@@ -343,7 +343,7 @@ struct Resolver {
   // includes special handling for operators and tuple literals
   void prepareCallInfoActuals(const uast::Call* call,
                               std::vector<CallInfoActual>& actuals,
-                              bool& hasQuestionArg);
+                              const uast::AstNode*& questionArg);
 
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);

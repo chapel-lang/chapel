@@ -1221,7 +1221,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // TODO: Unclear to me whether we should use this type or the above.
   auto calledType = QualifiedType(qtNewExpr.kind(), initReceiverType);
   bool isMethodCall = true;
-  bool hasQuestionArg = false;
+  const AstNode* questionArg = nullptr;
   std::vector<CallInfoActual> actuals;
 
   // Prepare receiver.
@@ -1230,11 +1230,12 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // Remaining actuals.
   if (call->numActuals()) {
-    prepareCallInfoActuals(call, actuals, hasQuestionArg);
-    assert(!hasQuestionArg);
+    prepareCallInfoActuals(call, actuals, questionArg);
+    assert(!questionArg);
   }
 
-  auto ci = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+  auto ci = CallInfo(name, calledType, isMethodCall,
+                     /* hasQuestionArg */ questionArg != nullptr,
                      /* isParenless */ false,
                      std::move(actuals));
   auto inScope = scopeStack.back();
@@ -2026,7 +2027,7 @@ bool Resolver::enter(const Call* call) {
 
 void Resolver::prepareCallInfoActuals(const Call* call,
                                       std::vector<CallInfoActual>& actuals,
-                                      bool& hasQuestionArg) {
+                                      const AstNode*& questionArg) {
   const FnCall* fnCall = call->toFnCall();
 
   // Prepare the actuals of the call.
@@ -2034,10 +2035,12 @@ void Resolver::prepareCallInfoActuals(const Call* call,
     auto actual = call->actual(i);
 
     if (isQuestionMark(actual)) {
-      if (hasQuestionArg) {
-        context->error(actual, "Cannot have ? more than once in a call");
+      if (questionArg) {
+        REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
+      } else {
+        // Keep questionArg pointing at the first question argument we found
+        questionArg = actual;
       }
-      hasQuestionArg = true;
     } else {
       ResolvedExpression& r = byPostorder.byAst(actual);
       QualifiedType actualType = r.type();
@@ -2067,7 +2070,7 @@ void Resolver::prepareCallInfoActuals(const Call* call,
           } else if (actualType.type()->isErroneousType()) {
             // let it stay erroneous type
           } else if (!actualType.type()->isTupleType()) {
-            context->error(op, "tuple expansion applied to non-tuple");
+            REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
             actualType = QualifiedType(QualifiedType::VAR,
                                        ErroneousType::get(context));
           } else {
@@ -2104,7 +2107,7 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   UniqueString name;
   QualifiedType calledType;
   bool isMethodCall = false;
-  bool hasQuestionArg = false;
+  const AstNode* questionArg = nullptr;
   std::vector<CallInfoActual> actuals;
 
   // Get the name of the called expression.
@@ -2164,9 +2167,10 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   }
 
   // Prepare the remaining actuals.
-  prepareCallInfoActuals(call, actuals, hasQuestionArg);
+  prepareCallInfoActuals(call, actuals, questionArg);
 
-  auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+  auto ret = CallInfo(name, calledType, isMethodCall,
+                      /* hasQuestionArg */ questionArg != nullptr,
                       /* isParenless */ false, actuals);
 
   return ret;
@@ -2559,11 +2563,7 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
       idxType = c.exprType();
       resolver.handleResolvedAssociatedCall(iterandRE, loop, ci, c);
     } else {
-      idxType = QualifiedType(QualifiedType::UNKNOWN,
-                              ErroneousType::get(context));
-      std::ostringstream oss;
-      iterandRE.type().type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-      context->error(loop, "unable to iterate over values of type %s", oss.str().c_str());
+      idxType = TYPE_ERROR(context, NonIterable, loop, iterand, iterandRE.type());
     }
   } else {
     idxType = QualifiedType(QualifiedType::UNKNOWN,

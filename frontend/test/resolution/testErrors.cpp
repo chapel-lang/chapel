@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
 
   Context context(chpl_home);
   Context* ctx = &context;
-  context.setDetailedErrorOutput(true);
+  context.setDetailedErrorOutput(!brief);
 
   if (files.size() == 0) {
     return 0; // need this to return 0 for testing to be happy
