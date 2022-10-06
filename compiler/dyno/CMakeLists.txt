@@ -30,7 +30,9 @@ option(DYNO_LLVM_LINK_ARGS "Override linker args for LLVM")
 # according to policy CMP0004
 string(STRIP ${DYNO_LLVM_COMP_ARGS} DYNO_LLVM_COMP_ARGS)
 string(STRIP ${DYNO_LLVM_LINK_ARGS} DYNO_LLVM_LINK_ARGS)
-string(REPLACE "-ljemalloc" "-ljemalloc_pic" DYNO_LLVM_LINK_ARGS ${DYNO_LLVM_LINK_ARGS})
+# Don't pass through jemalloc for the time being.
+string(REPLACE "-ljemalloc" "" DYNO_LLVM_LINK_ARGS ${DYNO_LLVM_LINK_ARGS})
+
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
