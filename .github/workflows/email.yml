@@ -15,6 +15,9 @@ jobs:
         # Make sure we have some code to diff.
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+         fetch-depth: 0
+
       - name: Get changed files
         id: changes
         # Set outputs using the command.
@@ -28,7 +31,8 @@ jobs:
     steps:
       - name: get env
         run: env       
-        
+      - name: get env
+        run: github.event    
       - name: echo changed files
         run: echo ${{needs.changedfiles.output.ts}}
         
@@ -50,7 +54,8 @@ jobs:
          
            
     # Required mail subject:
-           subject: ${{ github.job }} job of ${{ github.repository }} has ${{ job.status }}    # Required recipients' addresses:
+           subject: ${{ github.job }} job of ${{ github.repository }} has ${{ job.status }}   
+           # Required recipients' addresses:
            to: bhavani@hpe.com
     # Required sender full name (address can be skipped):
            from: chapel-lang github actions 
