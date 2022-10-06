@@ -489,6 +489,8 @@ void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
             if (UnresolvedSymExpr* typeName =
                 toUnresolvedSymExpr(cType->baseExpr)) {
               mMethodsOnTypeName.insert(typeName->unresolved);
+            } else if (SymExpr* typeName = toSymExpr(cType->baseExpr)) {
+              mMethodsOnTypeName.insert(typeName->symbol()->name);
             }
           }
         } else {
