@@ -1056,7 +1056,7 @@ private extern proc qio_style_init_default(ref s: iostyleInternal);
 private extern proc qio_file_retain(f:qio_file_ptr_t);
 private extern proc qio_file_release(f:qio_file_ptr_t);
 
-private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, const ref style:iostyleInternal, usefilestar:c_int):errorCode;
+private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp: c_FILE, fd:fd_t, iohints:c_int, const ref style:iostyleInternal, usefilestar:c_int):errorCode;
 private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyleInternal):errorCode;
 private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyleInternal):errorCode;
 private extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyleInternal):errorCode;
@@ -1144,7 +1144,7 @@ private extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):errorCode;
 private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):errorCode;
 
 private extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):errorCode;
-private extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):errorCode;
+private extern proc qio_file_path_for_fp(fp:c_FILE, ref path:c_string):errorCode;
 private extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):errorCode;
 private extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):errorCode;
 
@@ -1857,7 +1857,7 @@ private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
   var local_style = style;
   var ret:file;
   ret._home = here;
-  extern proc chpl_cnullfile():_file;
+  extern proc chpl_cnullfile():c_FILE;
   var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
 
   // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
@@ -1874,15 +1874,18 @@ private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
 }
 
 @unstable "openfp with a style argument is unstable"
-proc openfp(fp: _file, hints=ioHintSet.empty, style:iostyle):file throws {
+proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
 
 /*
 
-Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
-that once the file is open, you will need to use a :proc:`file.reader` or
-:proc:`file.writer` to create a channel to actually perform I/O operations
+Create a Chapel :record:`file` that wraps around an open C file. A pointer to
+a C ``FILE`` object can be obtained via Chapel's
+:ref:`C Interoperability <primers-C-interop-using-C>` functionality.
+
+Once the Chapel file is created, you will need to use a :proc:`file.reader` or
+:proc:`file.writer` to create a channel to perform I/O operations on the C file.
 
 .. note::
 
@@ -1891,18 +1894,24 @@ that once the file is open, you will need to use a :proc:`file.reader` or
   to a file opened with :proc:`openfp`.
 
 
-:arg fp: a C ``FILE*`` to work with
+:arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` that uses the underlying FILE* argument.
+:returns: an open :record:`file` corresponding to the C file.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
+proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
+  return openfpHelper(fp, hints);
+}
+
+pragma "last resort"
+deprecated "'_file' is deprecated; use the variant of 'openfp' that takes a 'c_FILE' instead"
 proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
-private proc openfpHelper(fp: _file, hints=ioHintSet.empty,
+private proc openfpHelper(fp: c_FILE, hints=ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
@@ -5251,13 +5260,13 @@ const stdin:fileReader(iokind.dynamic, true);
 stdin = try! openfd(0).reader();
 
 pragma "no doc"
-extern proc chpl_cstdout():_file;
+extern proc chpl_cstdout():c_FILE;
 /* standard output, otherwise known as file descriptor 1 */
 const stdout:fileWriter(iokind.dynamic, true);
 stdout = try! openfp(chpl_cstdout()).writer();
 
 pragma "no doc"
-extern proc chpl_cstderr():_file;
+extern proc chpl_cstderr():c_FILE;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:fileWriter(iokind.dynamic, true);
 stderr = try! openfp(chpl_cstderr()).writer();

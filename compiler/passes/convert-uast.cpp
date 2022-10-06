@@ -3713,7 +3713,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     // subclasses of BuiltinType
 
     // concrete builtin types
-    case typetags::CFileType:     return dtFile;
     case typetags::CFnPtrType:    return dtCFnPtr;
     case typetags::CVoidPtrType:  return dtCVoidPtr;
     case typetags::OpaqueType:    return dtOpaque;

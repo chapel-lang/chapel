@@ -57,7 +57,6 @@ TYPE_NODE(VoidType)
 
 TYPE_BEGIN_SUBCLASSES(BuiltinType)
   // concrete builtin types
-  BUILTIN_TYPE_NODE(CFileType, "_cfile")
   BUILTIN_TYPE_NODE(CFnPtrType, "c_fn_ptr")
   BUILTIN_TYPE_NODE(CVoidPtrType, "chpl__c_void_ptr")
   BUILTIN_TYPE_NODE(OpaqueType, "opaque")

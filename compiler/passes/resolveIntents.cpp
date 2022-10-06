@@ -39,7 +39,6 @@ IntentTag constIntentForType(Type* t) {
       isDecoratedClassType(t) ||
       t == dtOpaque ||
       t == dtTaskID ||
-      t == dtFile ||
       t == dtNil ||
       t == dtStringC ||
       t == dtCVoidPtr ||
@@ -153,7 +152,6 @@ IntentTag blankIntentForType(Type* t) {
              isUnion(t)                              ||
              isConstrainedType(t)                    ||
              t == dtTaskID                           ||
-             t == dtFile                             ||
              t == dtNil                              ||
              t == dtVoid                             ||
              t == dtOpaque                           ||

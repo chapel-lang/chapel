@@ -228,8 +228,6 @@ void ResolveScope::addBuiltIns() {
   extend(dtCVoidPtr->symbol);
   extend(dtCFnPtr->symbol);
 
-  extend(dtFile->symbol);
-
   extend(dtOpaque->symbol);
   extend(gOpaque);
 
