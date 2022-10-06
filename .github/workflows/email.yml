@@ -25,14 +25,19 @@ jobs:
           echo "::set-output name=all::$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)"
           echo "::set-output name=ts::$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep .ts$ | xargs)"
   
-  make_check:
+  send_email:
     runs-on: ubuntu-latest
     needs: changedfiles
     steps:
       - name: get env
         run: env       
-      - name: get env
-        run: echo {{$github.event}}    
+      - name: get git events
+        run:  cat "$GITHUB_EVENT_PATH"
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"  
+        
       - name: echo changed files
         run: echo ${{needs.changedfiles.output.ts}}
         
