@@ -1,1 +1,8 @@
-plusassign_error.chpl:3: error: Cannot assign to int(32) from int(64)
+plusassign_error.chpl:3: error: unresolved call '+=(int(32), int(64))'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:1873: note: this candidate did not match: +=(lhs: int(8), rhs: int(8))
+plusassign_error.chpl:3: note: because actual argument #1 with type 'int(32)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:1873: note: is passed to formal 'ref lhs: int(8)'
+plusassign_error.chpl:3: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:1873: note:   +=(lhs: int(16), rhs: int(16))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:1873: note:   +=(lhs: int(32), rhs: int(32))
+note: and 22 other candidates, use --print-all-candidates to see them
