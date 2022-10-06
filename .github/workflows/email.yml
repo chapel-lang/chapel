@@ -32,7 +32,7 @@ jobs:
       - name: get env
         run: env       
       - name: get env
-        run: github.event    
+        run: echo {{$github.event}}    
       - name: echo changed files
         run: echo ${{needs.changedfiles.output.ts}}
         
