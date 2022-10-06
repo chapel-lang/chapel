@@ -689,7 +689,7 @@ void chpl_task_init(void)
         int *cpus = NULL;
         int numCpus;
         chpl_bool physical;
-        char *unit = getenv("QT_WORKER_UNIT");
+        char *unit = chpl_qt_getenv_str("WORKER_UNIT");
         if ((unit != NULL) && !strcmp(unit, "pu")) {
             physical = false;
             numCpus = chpl_topo_getNumCPUsLogical(true);
