@@ -212,7 +212,9 @@ proc isSharedClassType(type t)    param return isSubtype(t, _shared);
 pragma "no doc"
 proc isUnmanagedClassType(type t) param return isSubtype(t, unmanaged);
 pragma "no doc"
-proc isBorrowedClassType(type t)  param return isSubtype(t, borrowed);
+proc isBorrowedClassType(type t)  param {
+  return __primitive("is borrowed class type", t);
+}
 
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain

@@ -1209,6 +1209,26 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_IS_BORROWED_CLASS_TYPE: {
+    bool isBorrowed = false;
+    Type* t = call->get(1)->typeInfo();
+    if (isClassLikeOrManaged(t)) {
+      auto dec = classTypeDecorator(t);
+      isBorrowed = isDecoratorBorrowed(dec);
+    }
+
+    if (isBorrowed) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
+    break;
+  }
+
+
   case PRIM_IS_ABS_ENUM_TYPE: {
     EnumType* et = toEnumType(call->get(1)->typeInfo());
     if (et && et->isAbstract()) {
