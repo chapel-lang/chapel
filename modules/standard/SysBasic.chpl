@@ -20,15 +20,7 @@
 
 /* Types for low-level system error integration.
 
-   This module defines the error types :type:`syserr` and :type:`qio_err_t`.
-
-   When should one use :type:`syserr` and when should one use :type:`qio_err_t`?
-   :type:`qio_err_t` is a system error code (a `c_int` by a nicer name to
-   indicate its purpose). :type:`syserr` is an enhanced error that might also
-   include an error message. All user-facing Chapel library code, or user
-   Chapel code, should generally use :type:`syserr`. When wrapping functions
-   or declaring them in C, use :type:`qio_err_t` to indicate that a function is
-   returning an error code.
+   This module defines the some system error types.
 
    A note about the error code documentation in this file. Error descriptions
    for system errors are included here for convenience only. Other
