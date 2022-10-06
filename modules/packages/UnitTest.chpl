@@ -395,7 +395,7 @@ module UnitTest {
         if len1 == len2 {
           if all(seq1 == seq2) then return;
         }
-        var shorterLength = if len1 < len2 then len1 else len2;
+        var shorterLength = min(len1, len2);
         tmpString = seq_type_name+"s differ: ";
         tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
         for i in 0..#shorterLength {
