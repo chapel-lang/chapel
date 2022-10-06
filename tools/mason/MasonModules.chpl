@@ -67,7 +67,7 @@ proc masonModules(args: [] string) throws {
 
   // generate list of dependencies and get src code
   var (sourceList, gitList) = genSourceList(lockFile);
-  getSrcCode(sourceList, false);
+  getSrcCode(sourceList, skipUpdate, false);
   getGitCode(gitList, false);
 
   const depPath = MASON_HOME + '/src/';
