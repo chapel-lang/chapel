@@ -285,8 +285,8 @@ void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
             "Tuple size mismatch in split tuple declaration.");
   wr.code(decl);
   wr.message("The left-hand side of the declaration expects a tuple with ",
-             decl->numDecls(), " elements, but the right-hand side, which is a '",
-             type, "' has ", type->numElements(), " elements");
+             decl->numDecls(), " elements, but the right-hand side, which is a tuple '",
+             type, "', has ", type->numElements(), " elements");
 }
 
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
