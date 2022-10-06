@@ -43,7 +43,7 @@ proc checkpointArray(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLoc
     const start = eltSize * if idx == offsetDom.low then 0 else cumulativeOffsets[idx-1];
     const end = eltSize * cumulativeOffsets[idx];
     var ch = f.writer(kind = ionative,
-                      region = start..end);
+                      region = start..#end);
     for sub in A.localSubdomains(targetLocs(idx)) {
       ch.write(A[sub]);
     }
