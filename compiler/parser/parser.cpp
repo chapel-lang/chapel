@@ -405,6 +405,16 @@ static void parseCommandLineFiles() {
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName))
     {
+      auto path = chpl::UniqueString::get(gContext, inputFileName);
+      chpl::UniqueString emptySymbolPath;
+      chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
+    }
+  }
+
+  fileNum = 0;
+  while ((inputFileName = nthFilename(fileNum++))) {
+    if (isChplSource(inputFileName))
+    {
       parseChplSourceFile(inputFileName);
     }
   }
