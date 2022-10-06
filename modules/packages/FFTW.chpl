@@ -814,15 +814,7 @@ module FFTW {
 
     extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : c_FILE) : void;
 
-    pragma "last resort"
-    deprecated "the '_file' type is deprecated; use the variant of 'fftw_fprint_plan' that takes a 'c_FILE'"
-    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : _file) : void;
-
     extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(c_FILE)) : void;
-
-    pragma "last resort"
-    deprecated "the '_file' type is deprecated; use the variant of 'fftw_fprint_plan' that takes a 'c_FILE'"
-    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(_file)) : void;
 
     extern proc fftw_print_plan(p : fftw_plan) : void;
 

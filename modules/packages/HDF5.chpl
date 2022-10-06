@@ -1040,10 +1040,6 @@ module HDF5 {
 
     extern proc H5Eprint2(err_stack : hid_t, ref stream : c_FILE) : herr_t;
 
-    pragma "last resort"
-    deprecated "the '_file' type is deprecated; use the variant of 'H5Eprint2' that takes a 'c_FILE'"
-    extern proc H5Eprint2(err_stack : hid_t, ref stream : _file) : herr_t;
-
     extern proc H5Ewalk2(err_stack : hid_t, direction : H5E_direction_t, func : H5E_walk2_t, client_data : c_void_ptr) : herr_t;
 
     extern proc H5Eget_auto2(estack_id : hid_t, ref func : H5E_auto2_t, ref client_data : c_void_ptr) : herr_t;
@@ -1065,10 +1061,6 @@ module HDF5 {
     extern proc H5Epush1(file : c_string, func : c_string, line : c_uint, maj : H5E_major_t, min : H5E_minor_t, str : c_string) : herr_t;
 
     extern proc H5Eprint1(ref stream : c_FILE) : herr_t;
-
-    pragma "last resort"
-    deprecated "the '_file' type is deprecated; use the variant of 'H5Eprint1' that takes a 'c_FILE'"
-    extern proc H5Eprint1(ref stream : _file) : herr_t;
 
     extern proc H5Eset_auto1(func : H5E_auto1_t, client_data : c_void_ptr) : herr_t;
 

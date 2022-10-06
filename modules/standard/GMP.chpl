@@ -1017,23 +1017,9 @@ module GMP {
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
-  pragma "last resort"
-  deprecated "the '_file' type is deprecated; use the variant of 'mpf_out_str' that takes a 'c_FILE'"
-  extern proc mpf_out_str(stream: _file,
-                          base: c_int,
-                          n_digits: c_size_t,
-                          const ref op: mpf_t);
-
   extern proc mpf_inp_str(ref rop: mpf_t,
                           stream: c_FILE,
                           base: c_int);
-
-   pragma "last resort"
-  deprecated "the '_file' type is deprecated; use the variant of 'mpf_inp_str' that takes a 'c_FILE'"
-  extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: _file,
-                          base: c_int);
-
 
   //
   // 7.8 Miscellaneous Functions
