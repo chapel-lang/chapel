@@ -11,3 +11,12 @@ First extra element is at index 13
 '!'
 
 ----------------------------------------------------------------------
+equality_diff_lengths()
+Flavour: FAIL
+======================================================================
+AssertionError: Strings differ: 'aaaaa' != 'aa'
+First String contains 3 additional elements.
+First extra element is at index 2
+'a'
+
+----------------------------------------------------------------------
