@@ -1,3 +1,5 @@
+
+
 class C {
   proc deinit () {writeln("inside ~C");}
 }
