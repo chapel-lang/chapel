@@ -1222,7 +1222,6 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   pragma "no doc"
-  pragma "last resort"
   inline proc range.translate(offset: integral) where chpl__singleValIdxType(idxType) {
     compilerError("can't apply '.translate()' to a range whose 'idxType' only has one value");
 
@@ -1265,7 +1264,6 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   pragma "no doc"
-  pragma "last resort"
   proc range.expand(offset: integral) where chpl__singleValIdxType(idxType)
   {
     compilerError("can't apply '.expand()' to a range whose 'idxType' only has one value");
@@ -1391,7 +1389,6 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   pragma "no doc"
-  pragma "last resort"
   proc range.exterior(offset: integral) where chpl__singleValIdxType(idxType)
   {
     compilerError("can't apply '.exterior()' to a range whose 'idxType' only has one value");
