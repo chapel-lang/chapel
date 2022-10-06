@@ -162,13 +162,15 @@ void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
 void ErrorImplicitSubModule::write(ErrorWriterBase& wr) const {
   const char* stmtKind = "require', 'use', and/or 'import";
   auto mod = std::get<const uast::Module*>(info);
+  auto requireUseOrImport = std::get<const uast::AstNode*>(info);
   auto path = std::get<UniqueString>(info);
-  wr.heading(kind_, type_, mod,
-             "As written, '", mod->name(), "' is a sub-module of the "
-             "module created for file '", path, "' due to the "
-             "file-level '", stmtKind, "' statements.  If you meant for '",
-             mod->name(), "' to be a top-level module, move the '",
-             stmtKind, "' statements into '", mod->name(),"'.");
+  wr.heading(kind_, type_, mod, "an implicit module for file '", path, "' is "
+            "being created with '", mod->name(), "' as a sub-module");
+  wr.message("This is due to file-level '", stmtKind, "' statements in file '",
+             path, "'. The first such statement is here:");
+  wr.code(requireUseOrImport);
+  wr.message("If you meant for '", mod->name(), "' to be a top-level module, ",
+             "move the '", stmtKind, "' statements into '", mod->name(), "'.");
 }
 
 void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {

@@ -61,7 +61,7 @@ ERROR_CLASS(IncompatibleRangeBounds, const uast::Range*, types::QualifiedType, t
 ERROR_CLASS(UnknownEnumElem, const uast::AstNode*, chpl::UniqueString, const types::EnumType*)
 ERROR_CLASS(MultipleEnumElems, const uast::AstNode*, chpl::UniqueString, const types::EnumType*, std::vector<ID>)
 ERROR_CLASS(InvalidNew, const uast::New*, types::QualifiedType)
-WARNING_CLASS(ImplicitSubModule, const uast::Module*, UniqueString)
+WARNING_CLASS(ImplicitSubModule, const uast::Module*, const uast::AstNode*, UniqueString)
 WARNING_CLASS(ImplicitFileModule,
     const uast::AstNode*,
     const uast::Module*,
