@@ -130,7 +130,13 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
     // We printed location, so add a separating colon.
     oss_ << ": ";
   }
-  oss_ << str << std::endl;
+
+  // Fix up capitalization in detailed mode.
+  std::string toWrite = str;
+  if (outputFormat_ == DETAILED && !toWrite.empty()) {
+    toWrite[0] = std::toupper(toWrite[0]);
+  }
+  oss_ << toWrite << std::endl;
 }
 
 void ErrorWriter::writeNote(Location loc, const std::string& str) {
@@ -143,7 +149,12 @@ void ErrorWriter::writeNote(Location loc, const std::string& str) {
     // In detailed mode, the body is indented.
     oss_ << "  ";
   }
-  oss_ << str << std::endl;
+  // Fix up capitalization in detailed mode.
+  std::string toWrite = str;
+  if (outputFormat_ == DETAILED && !toWrite.empty()) {
+    toWrite[0] = std::toupper(toWrite[0]);
+  }
+  oss_ << toWrite << std::endl;
 }
 
 static void printBlank(std::ostream& os, int n) {

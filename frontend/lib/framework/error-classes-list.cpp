@@ -103,10 +103,10 @@ void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
   wr.heading(kind_, type_, moduleInclude,
-             "Cannot make a private module public through "
-             "an include statement.");
+             "cannot make a private module public through "
+             "an include statement");
   wr.code(moduleInclude);
-  wr.note(moduleDef, "Module declared private here");
+  wr.note(moduleDef, "module declared private here");
   wr.code(moduleDef);
 }
 
@@ -114,17 +114,18 @@ void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
   wr.heading(kind_, type_, moduleInclude,
-             "Cannot apply prototype to module in include statement.");
+             "cannot apply prototype to module in include statement");
   wr.code(moduleInclude);
-  wr.note(moduleDef, "Put prototype keyword at module declaration here");
+  wr.note(moduleDef, "put prototype keyword at module declaration here");
   wr.code(moduleDef);
 }
 
 void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto& filePath = std::get<std::string>(info);
-  wr.heading(kind_, type_, moduleInclude, "Cannot find included submodule.");
-  wr.note(moduleInclude, "Expected file at path '", filePath, "'");
+  wr.heading(kind_, type_, moduleInclude, "cannot find included submodule");
+  wr.code(moduleInclude);
+  wr.note(moduleInclude, "expected file at path '", filePath, "'");
 }
 
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
@@ -144,9 +145,9 @@ void ErrorAmbiguousConfigName::write(ErrorWriterBase& wr) const {
   auto& name = std::get<std::string>(info);
   auto variable = std::get<const uast::Variable*>(info);
   auto otherId = std::get<ID>(info);
-  wr.heading(kind_, type_, locationOnly(variable), "Ambiguous config name (", name, ").");
+  wr.heading(kind_, type_, locationOnly(variable), "ambiguous config name (", name, ")");
   wr.code(variable);
-  wr.note(locationOnly(otherId), "Also defined here");
+  wr.note(locationOnly(otherId), "also defined here");
   wr.code(otherId);
   wr.note(locationOnly(otherId), "(disambiguate using -s<modulename>.", name, "...)");
 }
@@ -156,7 +157,7 @@ void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
   auto& name2 = std::get<2>(info);
   auto variable = std::get<const uast::Variable*>(info);
   wr.heading(kind_, type_, locationOnly(variable),
-            "Config set ambiguously via '-s", name1, "' and '-s", name2, "'.");
+            "config set ambiguously via '-s", name1, "' and '-s", name2, "'");
 }
 
 void ErrorImplicitSubModule::write(ErrorWriterBase& wr) const {
