@@ -1,0 +1,13 @@
+first_longer()
+Flavour: FAIL
+======================================================================
+AssertionError: Strings differ: 'Goodbye, Mars!' != 'Hello, World!'
+First differing element at index 0:
+'G'
+'H'
+
+First String contains 1 additional elements.
+First extra element is at index 13
+'!'
+
+----------------------------------------------------------------------
