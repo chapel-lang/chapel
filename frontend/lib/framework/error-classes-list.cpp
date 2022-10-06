@@ -178,14 +178,16 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   auto code = std::get<const uast::AstNode*>(info);
   auto lastModule = std::get<1>(info);
   auto implicitModule = std::get<2>(info);
-  wr.heading(kind_, type_, code,
-             "This file-scope code is outside of any "
-             "explicit module declarations (e.g., module ",
-             lastModule->name(), "), so an implicit module named '",
-             implicitModule->name(), "' is being introduced to contain "
-             "the file's contents.");
+  wr.heading(kind_, type_, code, "an implicit module named '",
+             implicitModule->name(), "' is being introduced to contain this "
+             "file-scope code.");
   wr.message("The following is the first file-scope statement:");
   wr.code(code);
+  wr.message("The implicit module '", implicitModule->name(), "' is being "
+             "created because the above code is outside of any module "
+             "declarations (e.g., 'module ", lastModule->name(), "').");
+  wr.message("Note that all of the file's contents will be placed into the "
+             "new '", implicitModule->name(), "' module.");
 }
 
 void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
