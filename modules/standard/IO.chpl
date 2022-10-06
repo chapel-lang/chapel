@@ -3012,10 +3012,17 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
+      // This is to ensure the user sees consistent behavior and can control it.
+      // - All calls from `openUrlReader` should use the new behavior.
+      // - Only calls from `openreader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // - Only calls from `file.reader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // Calls from `openreader` should not be impacted by `file.reader`'s flag
+      // and vice versa.
       if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
           fromOpenUrlReader ||
-          (!fromOpenReader && !fromOpenUrlReader
-           && useNewFileReaderRegionBounds)) {
+          (!fromOpenReader && useNewFileReaderRegionBounds)) {
         ret = new fileReader(kind, locking, this, err, hints, region.low,
                              region.high + 1, style);
       } else {
@@ -3028,10 +3035,17 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                            max(int(64)), style);
 
     } else if (region.hasHighBound()) {
+      // This is to ensure the user sees consistent behavior and can control it.
+      // - All calls from `openUrlReader` should use the new behavior.
+      // - Only calls from `openreader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // - Only calls from `file.reader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // Calls from `openreader` should not be impacted by `file.reader`'s flag
+      // and vice versa.
       if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
           fromOpenUrlReader ||
-          (!fromOpenReader && !fromOpenUrlReader
-           && useNewFileReaderRegionBounds)) {
+          (!fromOpenReader && useNewFileReaderRegionBounds)) {
         ret = new fileReader(kind, locking, this, err, hints, 0,
                              region.high + 1, style);
       } else {
