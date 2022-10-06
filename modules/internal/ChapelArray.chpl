@@ -2584,6 +2584,7 @@ module ChapelArray {
     chpl__transferArray(a, b);
   }
 
+  pragma "last resort"
   pragma "no doc"
   inline operator =(ref a: [], b: ?t)
   where !(isTupleType(t) || isCoercible(t, _desync(a.eltType))) {
