@@ -884,8 +884,9 @@ doResolveUseStmt(Context* context, const Use* use,
     const Scope* foundScope = findUseImportTarget(context, scope, r,
                                                   expr, VIS_USE, oldName);
     if (foundScope != nullptr) {
-      // First, add VisibilitySymbols entry for the symbol itself,
-      // iff the use is renamed or non-public
+      // First, add VisibilitySymbols entry for the symbol itself.
+      // Per the spec, we only have visibility of the symbol itself if the
+      // use is renamed (with 'as') or non-public.
       if (!newName.isEmpty()) {
         r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
                                isPrivate, convertOneRename(oldName, newName));
