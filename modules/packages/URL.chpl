@@ -152,7 +152,7 @@ module URL {
     // TODO: change this back to f.writer when the fromOpenUrlWriter arg is
     // removed
     return f.writerHelper(kind=kind, locking=locking,
-                          region=start..end, fromOpenUrlWriter=true);
+                          region=start..#end, fromOpenUrlWriter=true);
   }
 
 }
