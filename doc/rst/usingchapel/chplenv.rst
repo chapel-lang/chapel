@@ -489,7 +489,8 @@ CHPL_HOST_MEM
         jemalloc  use Jason Evan's memory allocator
         ========= =======================================================
 
-   If unset, ``CHPL_HOST_MEM`` defaults to ``cstdlib``.
+   If unset, ``CHPL_HOST_MEM`` defaults to ``jemalloc`` everywhere except
+   for Cygwin and MacOS. On those systems, it defaults to ``cstdlib``.
 
 .. _readme-chplenv.CHPL_HOST_JEMALLOC:
 
