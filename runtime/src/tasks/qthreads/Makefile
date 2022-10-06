@@ -33,6 +33,14 @@ include Makefile.share
 
 TARGETS = $(TASKS_OBJS)
 
+# define a macro containing the qthreads topology module
+
+ifeq (, $(CHPL_QTHREAD_TOPOLOGY))
+RUNTIME_DEFS += -DCHPL_QTHREAD_TOPOLOGY=hwloc	# default
+else
+RUNTIME_DEFS += -DCHPL_QTHREAD_TOPOLOGY=$(CHPL_QTHREAD_TOPOLOGY)
+endif
+
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 
 FORCE:
