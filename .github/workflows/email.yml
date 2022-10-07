@@ -80,7 +80,7 @@ jobs:
               Log Message: ${{github.event.commit.message}} <br>
                
               Modified Files: ${{github.event.compare}} <br>
-              ${{ steps.changed-files.outputs.all_changed_files <br>
+              ${{steps.changed-files.outputs.all_changed_files}} <br>
               </p>
               </body>
               </html>
