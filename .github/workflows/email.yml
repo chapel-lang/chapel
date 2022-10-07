@@ -30,6 +30,7 @@ jobs:
         uses: tj-actions/changed-files@v32
         with:
           separator: ","
+          dir_names: "true"
           
       - name: Send mail      
         if: always()
