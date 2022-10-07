@@ -160,20 +160,6 @@ void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
             "config set ambiguously via '-s", name1, "' and '-s", name2, "'");
 }
 
-void ErrorImplicitSubModule::write(ErrorWriterBase& wr) const {
-  const char* stmtKind = "require', 'use', and/or 'import";
-  auto mod = std::get<const uast::Module*>(info);
-  auto requireUseOrImport = std::get<const uast::AstNode*>(info);
-  auto path = std::get<UniqueString>(info);
-  wr.heading(kind_, type_, mod, "an implicit module for file '", path, "' is "
-            "being created with '", mod->name(), "' as a sub-module");
-  wr.message("This is due to file-level '", stmtKind, "' statements in file '",
-             path, "'. The first such statement is here:");
-  wr.code(requireUseOrImport);
-  wr.message("If you meant for '", mod->name(), "' to be a top-level module, ",
-             "move the '", stmtKind, "' statements into '", mod->name(), "'.");
-}
-
 void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   auto code = std::get<const uast::AstNode*>(info);
   auto lastModule = std::get<1>(info);
@@ -181,7 +167,7 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, code, "an implicit module named '",
              implicitModule->name(), "' is being introduced to contain this "
              "file-scope code");
-  wr.message("The following is the first file-scope statement:");
+  wr.message("The following is the offending file-scope statement:");
   wr.code(code);
   wr.message("The implicit module '", implicitModule->name(), "' is being "
              "created because the above code is outside of any module "

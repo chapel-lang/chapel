@@ -197,8 +197,8 @@ void Builder::createImplicitModuleIfNeeded() {
 
     // emit warnings as needed
     if (firstUseImportOrRequire && !containsOther && nModules == 1) {
-      addError(ErrorImplicitSubModule::get(context(),
-            std::make_tuple(lastModule, firstUseImportOrRequire, filepath_)));
+      addError(ErrorImplicitFileModule::get(context(),
+            std::make_tuple(firstUseImportOrRequire, lastModule, implicitModule)));
     } else if (nModules >= 1 && !containsOnlyModules) {
       addError(ErrorImplicitFileModule::get(context(),
             std::make_tuple(firstNonModule, lastModule, implicitModule)));

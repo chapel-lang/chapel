@@ -1,2 +1,2 @@
-topleveluse.chpl:3: warning: an implicit module for file 'topleveluse.chpl' is being created with 'b' as a sub-module
+topleveluse.chpl:1: warning: an implicit module named 'topleveluse' is being introduced to contain this file-scope code
 But the code runs anyway!

@@ -1,4 +1,4 @@
-./modSameNameAsFileBadRequire2.chpl:3: warning: an implicit module for file './modSameNameAsFileBadRequire2.chpl' is being created with 'modSameNameAsFileBadRequire2' as a sub-module
+./modSameNameAsFileBadRequire2.chpl:1: warning: an implicit module named 'modSameNameAsFileBadRequire2' is being introduced to contain this file-scope code
 ./modSameNameAsFileBadRequire2.chpl:3: warning: module 'modSameNameAsFileBadRequire2' has the same name as the implicit file module
 ./modSameNameAsFileBadRequire2.chpl:3: note: did you mean to include all statements in the module declaration?
 test-modSameNameBadRequire2.chpl:3: error: 'inner' undeclared (first use this function)
