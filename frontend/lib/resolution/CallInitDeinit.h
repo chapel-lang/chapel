@@ -34,9 +34,17 @@ class Resolver;
   // TODO -- figure out where to store copy (associatedFns?)
   //         and where to store deinit (associatedFns not so good)
 struct InitDeinitState {
-  bool inited;
-  bool lastIsCopy;
-  bool inScope;
+  bool inited = false;
+  bool lastIsCopy = false;
+  bool inScope = false;
+};
+
+struct InitDeinitFrame {
+  const Scope* scope = nullptr;
+  std::vector<ID> vars;
+  std::map<ID, InitDeinitState> varState;
+
+  InitDeinitFrame(const Scope* scope) : scope(scope) { }
 };
 
 struct CallInitDeinit {
@@ -47,7 +55,7 @@ struct CallInitDeinit {
   Resolver& resolver;
 
   // internal variables
-  std::map<ID, InitDeinitState> varState;
+  std::vector<InitDeinitFrame> scopeStack;
 
   // main entry point to this code
   // updates the ResolutionResultsByPostorderID
@@ -55,9 +63,19 @@ struct CallInitDeinit {
 
   CallInitDeinit(Resolver& resolver);
 
+  void addDeinitCalls(InitDeinitFrame& frame);
+
+  void enterScope(const uast::AstNode* ast);
+  void exitScope(const uast::AstNode* ast);
+
+  bool enter(const VarLikeDecl* ast, RV& rv);
+  void exit(const VarLikeDecl* ast, RV& rv);
+
+  bool enter(const OpCall* ast, RV& rv);
+  void exit(const OpCall* ast, RV& rv);
+
   bool enter(const uast::AstNode* node, RV& rv);
   void exit(const uast::AstNode* node, RV& rv);
-
 };
 
 
