@@ -251,7 +251,7 @@ struct amRequest_execOnLrg_t {
 
 #define NUM_AM_HANDLERS 1
 static int numAmHandlers = NUM_AM_HANDLERS;
-static int reservedCPUs[NUM_AM_HANDLERS];
+static int reservedCores[NUM_AM_HANDLERS];
 
 //
 // AM request landing zones.
@@ -1062,6 +1062,7 @@ void chpl_comm_post_mem_init(void) {
   if (chpl_numNodes > 1) {
     init_ofiFabricDomain();
   }
+  init_ofiReserveCores();
 }
 
 
@@ -2000,9 +2001,15 @@ void init_ofiFabricDomain(void) {
 //
 static
 void init_ofiReserveCores() {
-  for (int i = 0; i < numAmHandlers; i++) {
-    reservedCPUs[i] = envUseDedicatedAmhCores ?
-      chpl_topo_reserveCPUPhysical() : -1;
+  if (envUseDedicatedAmhCores &&
+      (chpl_topo_getNumCPUsPhysical(true) > numAmHandlers)) {
+    for (int i = 0; i < numAmHandlers; i++) {
+      reservedCores[i] = chpl_topo_reserveCPUPhysical();
+    }
+  } else {
+    for (int i = 0; i < numAmHandlers; i++) {
+      reservedCores[i] = -1;
+    }
   }
 }
 
@@ -4649,9 +4656,10 @@ void init_amHandling(void) {
   // least one is running.
   //
   atomic_init_bool(&amHandlersExit, false);
+  
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   for (int i = 0; i < numAmHandlers; i++) {
-    CHK_TRUE(chpl_task_createCommTask(amHandler, NULL, reservedCPUs[i]) == 0);
+    CHK_TRUE(chpl_task_createCommTask(amHandler, &reservedCores[i]) == 0);
   }
   PTHREAD_CHK(pthread_cond_wait(&amStartStopCond, &amStartStopMutex));
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
@@ -4687,7 +4695,8 @@ void fini_amHandling(void) {
 static __thread struct perTxCtxInfo_t* amTcip;
 
 static
-void amHandler(void* argNil) {
+void amHandler(void* arg) {
+  int cpu = *((int *) arg);
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAllocForAmHandler()) != NULL);
   amTcip = tcip;
@@ -4705,6 +4714,15 @@ void amHandler(void* argNil) {
   if (++numAmHandlersActive == 1)
     PTHREAD_CHK(pthread_cond_signal(&amStartStopCond));
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
+
+  //
+  // If we are using dedicated cores for the AM handlers then bind
+  // this thread to its core.
+  //
+  if (cpu >= 0) {
+    CHK_TRUE(chpl_topo_bindCPUPhysical(cpu) == 0);
+    DBG_PRINTF(DBG_AM, "AM handler bound to CPU %d", cpu);
+  }
 
   //
   // Process AM requests and watch transmit responses arrive.

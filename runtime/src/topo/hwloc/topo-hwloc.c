@@ -64,12 +64,12 @@ static int topoDepth;
 static int numaLevel;
 static int numNumaDomains;
 
-// A note on core and PU numbering. As per the hwloc documentation, a cpuset
-// contains OS indices of PUs, which are guaranteed to be unique across the
-// machine. In order to use a cpuset to represent a collection of cores and
-// not break this invariant, we represent a core in a cpuset with the smallest
-// OS index of its PUs. For example, the physAccSet contains the OS indices of
-// the smallest PU for each accessible core.
+// A note on core and PU numbering. An hwloc cpuset contains OS indices of PUs,
+// which are guaranteed to be unique across the topology. The logical index
+// and physical index of a core are not guaranteed to be unique, however. For
+// this reason we represent a core in a cpuset with the smallest OS index of
+// its PUs. For example, the physAccSet contains the OS indices of the
+// smallest PU for each accessible core.
 
 // Accessible cores and PUs.
 static hwloc_cpuset_t physAccSet = NULL;
@@ -289,10 +289,6 @@ void getCPUInfo(void) {
   // the set of accessible PUs here.  But that seems not to reflect the
   // schedaffinity settings, so use hwloc_get_proc_cpubind() instead.
   //
-  if (testProcCPUBind == NULL) {
-    if (topoSupport->cpubind->get_proc_cpubind) {
-      int rc = hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0);
-      CHK_ERR_ERRNO(rc == 0);
     } else {
       // assume all PUs are accessible
       hwloc_bitmap_fill(logAccSet);
@@ -309,7 +305,8 @@ void getCPUInfo(void) {
   hwloc_get_next_obj_inside_cpuset_by_type(topology, logAccSet,    \
                                            HWLOC_OBJ_PU, pu)
 
-  for (hwloc_obj_t pu = NEXT_PU(NULL); pu != NULL; pu = NEXT_PU(pu)) {
+  for (hwloc_obj_t pu = NEXT_PU(logAccSet, NULL); pu != NULL;
+       pu = NEXT_PU(logAccSet, pu)) {
     hwloc_obj_t core;
     CHK_ERR_ERRNO(core = hwloc_get_ancestor_obj_by_type(topology,
                                                          HWLOC_OBJ_CORE,
@@ -666,6 +663,88 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
   hwloc_bitmap_free(nodeset);
 
   return node;
+}
+
+//
+// Reserves a physical CPU (core) and returns its ID. Will not reserve a core
+// if CPU binding is not supported on this platform.
+//
+// Returns OS index of reserved physical CPU, -1 otherwise
+//
+int
+chpl_topo_reserveCPUPhysical(void) {
+  int id = -1;
+  CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
+  if (topoSupport->cpubind->set_thread_cpubind) {
+
+#ifdef DEBUG
+    char buf[100];
+    _DBG_P("chpl_topo_reserveCPUPhysical before");
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
+    _DBG_P("physAccSet: %s", buf);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), physReservedSet);
+    _DBG_P("physReservedSet: %s", buf);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+    _DBG_P("logAccSet: %s", buf);
+#endif
+    // Reserve the highest-numbered core.
+    id = hwloc_bitmap_last(physAccSet);
+    if (id >= 0) {
+
+      // Find the core's object in the topology so we can reserve its PUs.
+      hwloc_obj_t pu, core;
+      CHK_ERR_ERRNO(pu = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                                      physAccSet,
+                                                      HWLOC_OBJ_PU, id));
+      CHK_ERR_ERRNO(core = hwloc_get_ancestor_obj_by_type(topology,
+                                                          HWLOC_OBJ_CORE,
+                                                          pu));
+      // Reserve the core.
+      hwloc_bitmap_andnot(physAccSet, physAccSet, pu->cpuset);
+      numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
+      hwloc_bitmap_or(physReservedSet, physReservedSet, pu->cpuset);
+
+      // Reserve the core's PUs.
+      hwloc_bitmap_andnot(logAccSet, logAccSet, core->cpuset);
+      numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+
+      _DBG_P("reserved core %d", id);
+    }
+  }
+#ifdef DEBUG
+  char buf[100];
+  _DBG_P("chpl_topo_reserveCPUPhysical %d", id);
+  hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
+  _DBG_P("physAccSet: %s", buf);
+  hwloc_bitmap_list_snprintf(buf, sizeof(buf), physReservedSet);
+  _DBG_P("physReservedSet: %s", buf);
+  hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+  _DBG_P("logAccSet: %s", buf);
+#endif
+  return id;
+}
+
+
+//
+// Binds the current thread to the specified physical CPU (core). The core must
+// have previously been reserved via chpl_topo_reserveCPUPhysical.
+//
+// Returns 0 on success, 1 otherwise
+//
+int chpl_topo_bindCPUPhysical(int id) {
+  int status = 1;
+  CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
+  if (hwloc_bitmap_isset(physReservedSet, id)) {
+    int flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
+    hwloc_cpuset_t cpuset;
+    CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
+    hwloc_bitmap_set(cpuset, id);
+    CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
+    hwloc_bitmap_free(cpuset);
+    status = 0;
+  }
+  _DBG_P("chpl_topo_bindCPUPhysical id: %d status: %d", id, status);
+  return status;
 }
 
 
