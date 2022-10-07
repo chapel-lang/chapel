@@ -1,6 +1,6 @@
 use DistributedMap;
 
-var dm1 = new owned distributedMap(string, int);
+var dm1 = new distributedMap(string, int);
 var inputArr = ["John", "Jacob", "Jingleheimer", "Schmidt", "his", "name", "is",
                 "my", "name", "too", "whenever", "we", "go", "out", "the",
                 "people", "always", "shout", "there", "goes", "John", "Jacob",
@@ -8,7 +8,7 @@ var inputArr = ["John", "Jacob", "Jingleheimer", "Schmidt", "his", "name", "is",
                 "la"];
 
 forall key in inputArr with
-(var agg = dm1.updateAggregator(updater=lambda (key, ref element) { element += 1; })) {
+(var agg = dm1.updateAggregator(updater=lambda (key: string, ref element: int) { element += 1; })) {
   agg.update(key);
 }
 
