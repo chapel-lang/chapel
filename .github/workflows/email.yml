@@ -35,7 +35,7 @@ jobs:
           dir_names: "true"
           
       - name: Send mail      
-        if: always()
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true  
         uses: dawidd6/action-send-mail@v3
         with:
    
