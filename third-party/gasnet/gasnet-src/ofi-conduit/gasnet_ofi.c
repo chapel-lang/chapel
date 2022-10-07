@@ -417,7 +417,7 @@ ssize_t gasnetc_fi_cq_readerr(struct fid_cq *cq, struct fi_cq_err_entry *buf, ui
 // a high-performance provider (unless used w/ inappropriate h/w)
 int gasnetc_check_portable_conduit(void) {
   gasneti_assert(gasnetc_ofi_inited);
-  if (strcmp(gasnetc_ofi_provider, "verbs;ofi_rxm")) {
+  if (! strcmp(gasnetc_ofi_provider, "verbs;ofi_rxm")) {
     // extension of bug 3609: some verbs-compatible networks need special handling
     // TODO: warn specifically about the right providers
     if (!strncmp(gasnetc_ofi_domain, "hfi1_", 5)) return 1; // psm2
