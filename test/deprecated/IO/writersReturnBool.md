@@ -26,6 +26,5 @@ Switch `ch._write`, `ch._writeln`, `ch._writef`, and `ch._writeBytes` calls back
 Tests
 ---
 
-1. Remove the COMPOPTS file with `-s WritersReturnBool=false` from the test directory
-2. In `start_test.py` : `set_up_environment()`, remove ` + " -s WritersReturnBool=false"` from lines 693, 695 (at the time this was written)
-3. Update `test/library/standard/Spawn/cat-stdout-stderr` to use `ch.write` instead of `ch._write`
+1. In `start_test.py` : `set_up_environment()`, remove ` + " -s WritersReturnBool=false"` from lines 693, 695 (at the time this was written)
+2. Update `test/library/standard/Spawn/cat-stdout-stderr` to use `ch.write` instead of `ch._write`

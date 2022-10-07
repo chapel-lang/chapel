@@ -6,10 +6,14 @@ var w = openwriter("./wrb.txt");
 
 w.write("a");
 w.writeln("b");
-w.writebits(2, 2);
-w.writeBytes(0xF, 1);
-w.writef("%i", 5);
 
-w.close(); remove("./wrb.txt");
+w.writebits(097, 8);
+w.writeln();
+
+w.writeBytes(098, 1);
+w.writeln();
+
+w.writef("%i", 5);
+w.writeln();
 
 writef("%i\n", 5);
