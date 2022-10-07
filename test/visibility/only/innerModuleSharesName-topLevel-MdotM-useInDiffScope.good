@@ -1,2 +1,2 @@
-innerModuleSharesName-topLevel-MdotM-useInDiffScope.chpl:9: warning: an implicit module named 'innerModuleSharesName-topLevel-MdotM-useInDiffScope' is being introduced to contain this file-scope code.
+innerModuleSharesName-topLevel-MdotM-useInDiffScope.chpl:9: warning: an implicit module named 'innerModuleSharesName-topLevel-MdotM-useInDiffScope' is being introduced to contain this file-scope code
 whee

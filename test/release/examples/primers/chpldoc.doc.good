@@ -1,4 +1,4 @@
-warning in chpldoc.doc.chpl:31: an implicit module named 'chpldoc.doc' is being introduced to contain this file-scope code.
+warning in chpldoc.doc.chpl:31: an implicit module named 'chpldoc.doc' is being introduced to contain this file-scope code
 chpldoc.doc
 
 Usage:

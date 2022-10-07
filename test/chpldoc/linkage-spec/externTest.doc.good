@@ -1,4 +1,4 @@
-warning in externTest.doc.chpl:24: an implicit module named 'externTest.doc' is being introduced to contain this file-scope code.
+warning in externTest.doc.chpl:24: an implicit module named 'externTest.doc' is being introduced to contain this file-scope code
 .. default-domain:: chpl
 
 .. module:: externTest.doc

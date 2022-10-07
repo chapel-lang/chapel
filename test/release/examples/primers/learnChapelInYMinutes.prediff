@@ -37,7 +37,7 @@ else:
 
 # Check Serial section as a whole
 # Should be a 1:1 mapping of each other
-good_serial = [ "learnChapelInYMinutes.chpl:24: warning: an implicit module named 'learnChapelInYMinutes' is being introduced to contain this file-scope code.",
+good_serial = [ "learnChapelInYMinutes.chpl:24: warning: an implicit module named 'learnChapelInYMinutes' is being introduced to contain this file-scope code",
                 'Hello, World!', 
                 'There are 3 commas (",") in this line of code', 
                 'This goes to standard output, just like plain writeln() does',

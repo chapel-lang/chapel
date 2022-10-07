@@ -1,4 +1,4 @@
-warning in exportTest.doc.chpl:76: an implicit module named 'exportTest.doc' is being introduced to contain this file-scope code.
+warning in exportTest.doc.chpl:76: an implicit module named 'exportTest.doc' is being introduced to contain this file-scope code
 .. default-domain:: chpl
 
 .. module:: exportTest.doc

@@ -1,2 +1,2 @@
-code-outside-of-module-error.chpl:2: warning: an implicit module named 'code-outside-of-module-error' is being introduced to contain this file-scope code.
+code-outside-of-module-error.chpl:2: warning: an implicit module named 'code-outside-of-module-error' is being introduced to contain this file-scope code
 X

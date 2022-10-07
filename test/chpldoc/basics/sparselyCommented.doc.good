@@ -1,4 +1,4 @@
-warning in sparselyCommented.doc.chpl:36: an implicit module named 'sparselyCommented.doc' is being introduced to contain this file-scope code.
+warning in sparselyCommented.doc.chpl:36: an implicit module named 'sparselyCommented.doc' is being introduced to contain this file-scope code
 .. default-domain:: chpl
 
 .. module:: sparselyCommented.doc
