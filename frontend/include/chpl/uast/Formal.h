@@ -20,6 +20,7 @@
 #ifndef CHPL_UAST_FORMAL_H
 #define CHPL_UAST_FORMAL_H
 
+#include "chpl/framework/global-strings.h"
 #include "chpl/framework/Location.h"
 #include "chpl/uast/IntentList.h"
 #include "chpl/uast/VarLikeDecl.h"
@@ -99,6 +100,17 @@ class Formal final : public VarLikeDecl {
   Intent intent() const { return (Intent)((int)storageKind()); }
 
   static std::string intentToString(Intent intent);
+
+  /**
+    If `true`, then this formal's name is '_', as in `proc(_: int)`. This is
+    different from a formal that is anonymous in a type context, e.g.,
+    `type T = proc(int)`, where the formal _might_ be anonymous if it is
+    taken to represent a type.
+  */
+  inline bool isExplicitlyAnonymous() const {
+    return name() == USTR("_");
+  }
+
 };
 
 

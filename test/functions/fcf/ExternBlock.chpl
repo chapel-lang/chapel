@@ -11,7 +11,7 @@ module ExternBlock {
       }
     }
 
-    extern proc foo(fn: proc(int, int): int): void;
+    extern proc foo(fn: proc(_: int, _: int): int): void;
 
     // Call 'foo' with our proc literal.
     foo(proc(x: int, y: int) {

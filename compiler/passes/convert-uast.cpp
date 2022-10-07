@@ -2691,6 +2691,11 @@ struct Converter {
             if (thisTag == INTENT_TYPE) {
               setupTypeIntentArg(convertedReceiver);
             }
+
+          // E.g., a formal like 'proc(_: int)'.
+          } else if (formal->isExplicitlyAnonymous()) {
+            conv->sym->addFlag(FLAG_ANONYMOUS_FORMAL);
+            INT_ASSERT(!strcmp(conv->sym->name, "_"));
           }
 
         // A varargs formal.
@@ -2714,6 +2719,7 @@ struct Converter {
           conv = buildTupleArgDefExpr(tag, tuple, type, init);
           INT_ASSERT(conv);
         } else if (auto anon = decl->toAnonFormal()) {
+          INT_FATAL("Not possible - should have been handled by frontend");
           conv = toDefExpr(convertAST(anon));
           INT_ASSERT(conv);
         } else {

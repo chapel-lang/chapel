@@ -1,0 +1,3 @@
+ExplicitAnonFormalInNamedProc.chpl:5: In function 'foo':
+ExplicitAnonFormalInNamedProc.chpl:5: error: formals in a procedure definition must be named
+ExplicitAnonFormalInNamedProc.chpl:5: error: formals in a procedure definition must be named
