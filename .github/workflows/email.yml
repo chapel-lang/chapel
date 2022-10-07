@@ -78,6 +78,10 @@ jobs:
               Sha: ${{ github.head_ref }}.${{ github.sha }}<br>
               Link: ${{github.event.head_commit.url}} <br> 
               Log Message: ${{github.event.commits.message}} <br>
+              run: |
+               for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+               echo "$files changed"
+               done  
               Modified Files: ${{github.event.compare}} <br>
               </p>
               </body>
