@@ -1662,6 +1662,12 @@ to get the path to a file.
 :throws SystemError: Thrown if the path could not be retrieved.
  */
 proc file.path : string throws where filePathAbsolute {
+  return this._abspath;
+}
+
+// helper for relative-path deprecation
+pragma "no doc"
+proc file._abspath: string throws {
   var ret: string;
   var err:errorCode = ENOERR;
   on this._home {
