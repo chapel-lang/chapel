@@ -163,7 +163,7 @@ proc absPath(path: string): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc absPath(f: file): string throws {
-  return try f.path;
+  return try absPath(f.path);
 }
 
 /* Returns the file name portion of the path provided.  For instance:
