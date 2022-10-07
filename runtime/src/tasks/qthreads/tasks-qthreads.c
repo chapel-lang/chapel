@@ -66,18 +66,6 @@
 #include <unistd.h>
 #include <math.h>
 
-#define _TOSTR(x) _TOSTR2(x)
-#define _TOSTR2(x) #x
-
-#ifndef CHPL_QTHREAD_TOPOLOGY
-#define CHPL_QTHREAD_TOPOLOGY unknown
-#endif
-
-static char *topology = _TOSTR(CHPL_QTHREAD_TOPOLOGY);
-
-#undef _TOSTR
-#undef _TOSTR2
-
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
 #define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
 
@@ -671,26 +659,31 @@ static void setupAffinity(void) {
 
   // Explicitly bind shepherd threads to cores/PUs when using the
   // binders topology.
-  if (!strcmp(topology, "binders")) {
-      int *cpus = NULL;
-      int numCpus;
-      chpl_bool physical;
-      char *unit = chpl_qt_getenv_str("WORKER_UNIT");
-      if ((unit != NULL) && !strcmp(unit, "pu")) {
-          physical = false;
-          numCpus = chpl_topo_getNumCPUsLogical(true);
-      } else {
-          physical = true;
-          numCpus = chpl_topo_getNumCPUsPhysical(true);
+  if (CHPL_QTHREAD_TOPOLOGY_BINDERS) {
+    int *cpus = NULL;
+    int numCpus;
+    chpl_bool physical;
+    char *unit = chpl_qt_getenv_str("WORKER_UNIT");
+    if ((unit != NULL) && !strcmp(unit, "pu")) {
+        physical = false;
+        numCpus = chpl_topo_getNumCPUsLogical(true);
+    } else {
+        physical = true;
+        numCpus = chpl_topo_getNumCPUsPhysical(true);
+    }
+    int numShepherds = (int) chpl_qt_getenv_num("NUM_SHEPHERDS", numCpus);
+    if (numShepherds < numCpus) {
+        numCpus = numShepherds;
+    }
+    cpus = (int *) chpl_malloc(numCpus * sizeof(*cpus));
+    numCpus = chpl_topo_getCPUs(physical, cpus, numCpus);
+    if (numCpus > 0) {
+      // Determine how much space we need for the string of CPU IDs.
+      // Note: last ':' will be replaced with NULL.
+      int bufSize = 0;
+      for (int i = 0; i < numCpus; i++) {
+        bufSize +=  snprintf(NULL, 0, "%d:", cpus[i]);
       }
-      int numShepherds = (int) chpl_qt_getenv_num("NUM_SHEPHERDS", numCpus);
-      if (numShepherds < numCpus) {
-          numCpus = numShepherds;
-      }
-      cpus = (int *) chpl_malloc(numCpus * sizeof(*cpus));
-      numCpus = chpl_topo_getCPUs(physical, cpus, numCpus);
-      // allocate 5 characters for each CPU ID including separator
-      int bufSize = numCpus * 5;
       char *buf = chpl_malloc(bufSize);
       int offset = 0;
       buf[0] = '\0';
@@ -703,8 +696,9 @@ static void setupAffinity(void) {
       }
       // tell binders which PUs to use
       chpl_qt_setenv("CPUBIND", buf, 1);
-      chpl_free(cpus);
       chpl_free(buf);
+    }
+    chpl_free(cpus);
   }
 }
 
@@ -727,7 +721,6 @@ void chpl_task_init(void)
     setupAffinity();
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
-
 
     // Initialize qthreads
     pthread_create(&initer, NULL, initializer, NULL);

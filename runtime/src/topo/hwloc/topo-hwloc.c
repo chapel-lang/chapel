@@ -68,7 +68,6 @@ static int numNumaDomains;
 static hwloc_cpuset_t physAccSet = NULL;
 static hwloc_cpuset_t logAccSet = NULL;
 
-
 static hwloc_obj_t getNumaObj(c_sublocid_t);
 static void alignAddrSize(void*, size_t, chpl_bool,
                           size_t*, unsigned char**, size_t*);
@@ -282,13 +281,13 @@ void getNumCPUs(void) {
   for (hwloc_obj_t pu = NEXT_PU(NULL); pu != NULL; pu = NEXT_PU(pu)) {
     hwloc_obj_t core;
     CHK_ERR_ERRNO((core = hwloc_get_ancestor_obj_by_type(topology,
-                                                       HWLOC_OBJ_CORE,
-                                                       pu))
+                                                         HWLOC_OBJ_CORE,
+                                                         pu))
                   != NULL);
     // Only use the first PU per core.
     hwloc_obj_t first = hwloc_get_obj_inside_cpuset_by_type(topology,
-                                                     core->cpuset,
-                                                     HWLOC_OBJ_PU, 0);
+                                                            core->cpuset,
+                                                            HWLOC_OBJ_PU, 0);
     hwloc_bitmap_or(physAccSet, physAccSet, first->cpuset);
   }
 
@@ -317,7 +316,10 @@ void getNumCPUs(void) {
   CHK_ERR(numCPUsLogAll > 0);
 }
 
-// Fills the cpus array with the physical indices of the CPUs in the cpuset.
+//
+// Fills the "cpus" array with the hwloc "cpuset" (a bitmap whose bits are
+// set according to CPU physical OS indexes).
+//
 static
 int getCPUs(hwloc_cpuset_t cpuset, int *cpus, int size) {
   int count = 0;
@@ -331,6 +333,12 @@ int getCPUs(hwloc_cpuset_t cpuset, int *cpus, int size) {
 }
 
 
+//
+// Fills the "cpus" array with up to "count" physical OS indices of the
+// accessible cores or PUs. If "physical" is true, then "cpus" contains
+// core indices, otherwise it contains PU indices. Returns the number
+// of indices in the "cpus" array.
+//
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
   return getCPUs(physical ? physAccSet : logAccSet, cpus, count);
 }

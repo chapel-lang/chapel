@@ -48,6 +48,14 @@ ifneq (, $(TOPOLOGY))
 CHPL_QTHREAD_CFG_OPTIONS += --with-topology=$(TOPOLOGY)
 endif
 
+# Used to create qthread-chapel.h
+USE_TOPOLOGY_HWLOC = 0
+USE_TOPOLOGY_BINDERS = 0
+ifeq ($(TOPOLOGY),hwloc)
+  USE_TOPOLOGY_HWLOC=1
+else ifeq ($(TOPOLOGY),binders)
+  USE_TOPOLOGY_BINDERS=1
+endif
 
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
@@ -235,6 +243,12 @@ qthread-chapel-h: FORCE
 	echo "#define CHPL_QTHREAD_HAVE_GUARD_PAGES" \
 	     $(HAVE_GUARD_PAGES) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_TOPOLOGY_BINDERS" \
+       $(USE_TOPOLOGY_BINDERS) \
+       >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_TOPOLOGY_HWLOC" \
+       $(USE_TOPOLOGY_HWLOC) \
+       >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 
 qthread: qthread-config qthread-build qthread-chapel-h
 
