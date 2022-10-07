@@ -58,13 +58,7 @@ jobs:
            to: bhavani@hpe.com
     # Required sender full name (address can be skipped):
            from: chapel-lang 
-    # Optional plain body:
-   
-           body: |
-              
-               ${{ github.job }} job in worflow
-              
-              # Optional HTML body read from file:
+  
            html_body: |
               <!DOCTYPE html>
               <html>
