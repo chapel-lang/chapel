@@ -32,7 +32,7 @@ jobs:
         uses: tj-actions/changed-files@v32
         with:
           separator: ","
-          dir_names: "true"
+         
           
       - name: Send mail      
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true  
