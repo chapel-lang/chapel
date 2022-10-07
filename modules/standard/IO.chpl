@@ -2571,6 +2571,11 @@ inline proc _channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
+/* Used to control the behavior of the region argument for
+   :proc:`channel.seek`.  When set to ``true``, the region argument will fully
+   specify the bounds of the seek.  When set to ``false``, the region argument
+   will exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
 config param useNewSeekRegionBounds = false;
 
 /*
@@ -2807,6 +2812,11 @@ proc openreader(path:string,
                           style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`openreader`.
+   When set to ``true``, the region argument will fully specify the bounds of
+   the :type:`fileReader`.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
 config param useNewOpenReaderRegionBounds = false;
 
 // We can simply call channel.close() on these, since the underlying file will
@@ -2935,30 +2945,36 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`file.reader`.
+   When set to ``true``, the region argument will fully specify the bounds of
+   the :type:`fileReader`.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
 config param useNewFileReaderRegionBounds = false;
 
 /*
-   Create a :record:`channel` that supports reading from a file. See
+   Create a :record:`fileReader` that supports reading from a file. See
    :ref:`about-io-overview`.
 
-   The ``start=`` and ``end=`` arguments define the region of the file that the
-   channel will read from.  These are byte offsets; the beginning of the file is
-   at the offset 0.  The defaults for these arguments enable the channel to
-   access the entire file.
+   The ``region=`` argument defines the portion of the file that the fileReader
+   will read from.  This is a byte offset; the beginning of the file is at the
+   offset 0.  The default for this argument enables the fileReader to access the
+   entire file.
 
-   A channel will never read beyond its maximum end position. In addition,
-   reading from a channel beyond the end of the underlying file will not extend
-   that file.  Reading beyond the end of the file or beyond the end offset of
-   the channel will produce the error ``EEOF`` (and return `false` in many
-   cases such as :proc:`channel.read`) to indicate that the end was reached.
+   A fileReader will never read beyond its maximum end position. In addition,
+   reading from a fileReader beyond the end of the underlying file will not
+   extend that file.  Reading beyond the end of the file or beyond the end
+   offset of the fileReader will produce the error ``EEOF`` (and return `false`
+   in many cases such as :proc:`channel.read`) to indicate that the end was
+   reached.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`channel` type. Defaults
+              corresponding parameter of the :record:`fileReader` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the
-                 corresponding parameter of the :record:`channel` type.
+                 corresponding parameter of the :record:`fileReader` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
    :arg region: zero-based byte offset indicating where in the file the
@@ -3071,6 +3087,11 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
                           local_style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`file.lines`.
+   When set to ``true``, the region argument will fully specify the bounds that
+   this function would cover.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
 config param useNewLinesRegionBounds = false;
 
 /* Iterate over all of the lines in a file.
@@ -3149,44 +3170,51 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
   return this.writerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`file.writer`.
+   When set to ``true``, the region argument will fully specify the bounds of
+   the :record:`fileWriter`.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+
+ */
 config param useNewFileWriterRegionBounds = false;
 
 /*
-   Create a :record:`channel` that supports writing to a file. See
+   Create a :record:`fileWriter` that supports writing to a file. See
    :ref:`about-io-overview`.
 
-   The ``start=`` and ``end=`` arguments define the region of the file that the
-   channel will write to.  These are byte offsets; the beginning of the file is
-   at the offset 0.  The defaults for these arguments enable the channel to
-   access the entire file.
+   The ``region=`` argument defines the portion of the file that the fileWriter
+   will write to.  This is a byte offset; the beginning of the file is at the
+   offset 0.  The default for this argument enables the fileWriter to access the
+   entire file.
 
-   When a channel writes to a file, it will replace file data that was
+   When a fileWriter writes to a file, it will replace file data that was
    previously stored at the relevant offset. If the offset is beyond the
    end of the file, the file will be extended.
 
-   A channel will never write beyond its maximum end position.  It will extend
-   the file only as necessary to store data written to the channel. In other
-   words, specifying end here does not impact the file size directly; it
-   impacts only the section of the file that this channel can write to. After
-   all channels to a file are closed, that file will have a size equal to the
-   last position written to by any channel.
+   A fileWriter will never write beyond its maximum end position.  It will
+   extend the file only as necessary to store data written to the fileWriter. In
+   other words, specifying the high bound of the region argument here does not
+   impact the file size directly; it impacts only the section of the file that
+   this fileWriter can write to. After all fileWriters to a file are closed,
+   that file will have a size equal to the last position written to by any
+   fileWriter.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`channel` type. Defaults
+              corresponding parameter of the :record:`fileWriter` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the
-                 corresponding parameter of the :record:`channel` type.
+                 corresponding parameter of the :record:`fileWriter` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
    :arg region: zero-based byte offset indicating where in the file the
-               channel should start and stop writing. Defaults to
+               fileWriter should start and stop writing. Defaults to
                ``0..`` - meaning from the start of the file to no specified end
                point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
-               will cause the channel to use the hints provided when the
+               will cause the fileWriter to use the hints provided when the
                file was opened.
 
    .. warning::
