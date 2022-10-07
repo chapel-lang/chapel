@@ -59,6 +59,7 @@ struct Resolver {
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
+  std::set<ID> initedVariables;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopeComputed = false;
   const Scope* savedReceiverScope = nullptr;
@@ -286,6 +287,11 @@ struct Resolver {
                                     const uast::AstNode* astForErr,
                                     const CallInfo& ci,
                                     const CallResolutionResult& c);
+
+  // handles setting types of variables for split init
+  void adjustTypesOnAssign(const uast::AstNode* lhsAst,
+                           const uast::AstNode* rhsAst,
+                           const uast::AstNode* astForErr);
 
   // e.g. (a, b) = mytuple
   // checks that tuple size matches and that the elements are assignable

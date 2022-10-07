@@ -989,6 +989,7 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
       context->error(astForErr, "Cannot resolve call: ambiguity");
     } else {
       // could not find a most specific candidate
+      gdbShouldBreakHere();
       context->error(astForErr, "Cannot resolve call: no matching candidates");
     }
   } else {
@@ -1034,7 +1035,59 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
   }
 }
 
+// handle adjusting a variable's type to support split init
+void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
+                                   const AstNode* rhsAst,
+                                   const AstNode* astForErr) {
 
+
+  ResolvedExpression& lhsExpr = byPostorder.byAst(lhsAst);
+
+  ID id = lhsExpr.toId();
+  if (id.isEmpty()) {
+    return;
+  }
+
+  // what variable does the LHS refer to? is it within the purvue of this
+  // Resolver?
+  bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
+                         id.postOrderId() >= 0);
+
+  // if the the lhs variable has not been initialized and
+  // the type of LHS is generic or unknown, update it based on the RHS type.
+  if (!useLocalResult) {
+    return;
+  }
+
+  ResolvedExpression& lhs = byPostorder.byId(id);
+  QualifiedType lhsType = lhs.type();
+  QualifiedType rhsType = byPostorder.byAst(rhsAst).type();
+
+  auto g = Type::MAYBE_GENERIC;
+  if (const Type* lhsTypePtr = lhsType.type()) {
+    if (lhsTypePtr->isUnknownType()) {
+      g = Type::GENERIC;
+    } else {
+      g = getTypeGenericity(context, lhsTypePtr);
+    }
+  }
+
+  if (g != Type::GENERIC) {
+    return;
+  }
+
+  auto pair = initedVariables.insert(lhsAst->id());
+  if (pair.second) {
+    // insertion took place, so update the type
+    const Param* p = rhsType.param();
+    if (lhsType.kind() != QualifiedType::PARAM) {
+      p = nullptr;
+    }
+    auto q = QualifiedType(lhsType.kind(), rhsType.type(), p);
+    lhs.setType(q);
+    lhsExpr.setType(q);
+  }
+}
 
 void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
                                         const uast::AstNode* astForErr,
@@ -1292,6 +1345,9 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
                                  lhsTuple, lhsType, rhsType);
         return true;
       }
+
+      // Update a generic type when split-init is used.
+      adjustTypesOnAssign(op->actual(0), op->actual(1), op);
     }
   } else if (op->op() == USTR("...")) {
     // just leave it unknown -- tuple expansion only makes sense
@@ -2265,6 +2321,10 @@ void Resolver::exit(const Call* call) {
         break;
       }
     }
+  }
+  // Don't try to resolve calls to '=' until later
+  if (ci.isOpCall() && ci.name() == USTR("=")) {
+    skip = true;
   }
 
   if (!skip) {
