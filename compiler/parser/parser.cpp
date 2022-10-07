@@ -411,27 +411,25 @@ static void parseCommandLineFiles() {
     }
   }
 
-  {
-    bool foundSomethingNew = false;
-    do {
-      foundSomethingNew = false;
+  bool foundSomethingNew = false;
+  do {
+    foundSomethingNew = false;
 
-      parseDependentModules(false);
+    parseDependentModules(false);
 
-      fileNum--;  // back up from previous NULL
-      while ((inputFileName = nthFilename(fileNum++))) {
-        if (isChplSource(inputFileName)) {
-          parseChplSourceFile(inputFileName);
-          foundSomethingNew=true;
-        }
+    fileNum--;  // back up from previous NULL
+    while ((inputFileName = nthFilename(fileNum++))) {
+      if (isChplSource(inputFileName)) {
+        parseChplSourceFile(inputFileName);
+        foundSomethingNew=true;
       }
-    } while (foundSomethingNew);
-
-    ensureRequiredStandardModulesAreParsed();
-
-    forv_Vec(ModuleSymbol, mod, allModules) {
-      mod->addDefaultUses();
     }
+  } while (foundSomethingNew);
+
+  ensureRequiredStandardModulesAreParsed();
+
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    mod->addDefaultUses();
   }
 }
 

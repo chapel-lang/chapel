@@ -218,10 +218,8 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
   //
   // Clean up the global pointers to AST.
   //
-  {
-    tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-    cleanAst();
-  }
+  tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
+  cleanAst();
 
   if (printPasses == true || printPassesFile != 0) {
     tracker.ReportPass();

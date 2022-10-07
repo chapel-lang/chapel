@@ -283,53 +283,6 @@ ModuleSymbol* ModuleSymbol::copyInner(SymbolMap* map) {
   return NULL;
 }
 
-// Collect the top-level classes for this Module.
-//
-// 2014/07/25 MDN.  This function is currently only called by
-// docs.  Historically all of the top-level classes were buried
-// inside the prototypical module initFn.
-//
-// Installing The initFn is being moved forward but there are
-// still short periods of time when the classes will still be
-// buried inside the module initFn.
-//
-// Hence this function is currently able to handle the before
-// and after case.  The before case can be pulled out once the
-// construction of the initFn is cleaned up.
-//
-/*
-std::vector<AggregateType*> ModuleSymbol::getTopLevelClasses() {
-  std::vector<AggregateType*> classes;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
-
-      if (TypeSymbol* type = toTypeSymbol(def->sym)) {
-        if (AggregateType* cl = toAggregateType(type->type)) {
-          classes.push_back(cl);
-        }
-
-      // Step in to the initFn
-      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (fn->hasFlag(FLAG_MODULE_INIT)) {
-          for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2)) {
-              if (TypeSymbol* type = toTypeSymbol(def2->sym)) {
-                if (AggregateType* cl = toAggregateType(type->type)) {
-                  classes.push_back(cl);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return classes;
-}*/
-
-
 /*
  * Generate a name that represents the path to the module
  * For a top-level module this is simply the name.

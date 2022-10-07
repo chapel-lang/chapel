@@ -2167,11 +2167,9 @@ struct Converter {
       ret->insertAtTail(conv);
     }
 
-    {
-      INT_ASSERT(!inTupleDecl);
-      CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-      ret->insertAtTail(end);
-    }
+    INT_ASSERT(!inTupleDecl);
+    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+    ret->insertAtTail(end);
 
     return ret;
   }
@@ -2250,11 +2248,9 @@ struct Converter {
     }
 
     // Add a PRIM_END_OF_STATEMENT.
-    {
-      INT_ASSERT(!inTupleDecl);
-      CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-      ret->insertAtTail(end);
-    }
+    INT_ASSERT(!inTupleDecl);
+    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+    ret->insertAtTail(end);
 
     return ret;
   }
