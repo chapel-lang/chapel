@@ -31,6 +31,7 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
+#include "CallInitDeinit.h"
 #include "Resolver.h"
 #include "default-functions.h"
 #include "prims.h"
@@ -1692,6 +1693,9 @@ resolveFunctionByInfoQuery(Context* context,
     assert(visitor.initResolver.get());
     if (fn) fn->body()->traverse(visitor);
     auto newTfsForInitializer = visitor.initResolver->finalize();
+
+    // then, resolve '=' and add any copy init/deinit calls as needed
+    CallInitDeinit::process(visitor);
 
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);

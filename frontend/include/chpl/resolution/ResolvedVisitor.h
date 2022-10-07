@@ -277,7 +277,7 @@ public:
 
       if (goInto) {
         ResolvedExpression& rr = byPostorder_.byAst(loop);
-        ResolvedParamLoop* resolvedLoop = rr.paramLoop();
+        const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
 
         const AstNode* iterand = loop->iterand();
         iterand->traverse(*this);
@@ -285,7 +285,7 @@ public:
         // TODO: Should there be some kind of function the UserVisitor can
         // implement to observe a new iteration of the loop body?
         for (auto loopBody : resolvedLoop->loopBodies()) {
-          ResolvedVisitor<UV> loopVis(context_, loop, userVisitor_, loopBody);
+          MutatingResolvedVisitor<UV> loopVis(context_, loop, userVisitor_, loopBody);
 
           for (const AstNode* child : loop->children()) {
             // Written to visit "all but the iterand" in case we add more
