@@ -164,7 +164,7 @@ proc absPath(path: string): string throws {
 */
 proc absPath(f: file): string throws {
   // switch this to "return try f.path" after relative path deprecation is removed
-  return try f._abspath
+  return try f._abspath;
 }
 
 /* Returns the file name portion of the path provided.  For instance:
