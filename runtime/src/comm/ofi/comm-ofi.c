@@ -177,6 +177,7 @@ static chpl_bool envUseAmRxCntr;        // env: AMH uses receive counters
 static chpl_bool envInjectRMA;          // env: inject RMA messages
 static chpl_bool envInjectAMO;          // env: inject AMO messages
 static chpl_bool envInjectAM;           // env: inject AM messages
+static chpl_bool envUseDedicatedAmhCores;  // env: use dedicated AM cores
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -248,7 +249,9 @@ struct amRequest_execOnLrg_t {
   void* pPayload;                 // addr of arg payload on initiator node
 };
 
-static int numAmHandlers = 1;
+#define NUM_AM_HANDLERS 1
+static int numAmHandlers = NUM_AM_HANDLERS;
+static int reservedCPUs[NUM_AM_HANDLERS];
 
 //
 // AM request landing zones.
@@ -959,6 +962,7 @@ pthread_t pthread_that_inited;
 
 static void init_ofi(void);
 static void init_ofiFabricDomain(void);
+static void init_ofiReserveCores(void);
 static void init_ofiDoProviderChecks(void);
 static void init_ofiEp(void);
 static void init_ofiEpTxCtx(int, chpl_bool, struct fi_av_attr*,
@@ -1014,6 +1018,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   envInjectRMA = chpl_env_rt_get_bool("COMM_OFI_INJECT_RMA", true);
   envInjectAMO = chpl_env_rt_get_bool("COMM_OFI_INJECT_AMO", true);
   envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", true);
+  envUseDedicatedAmhCores = chpl_env_rt_get_bool(
+                                  "COMM_OFI_DEDICATED_AMH_CORES", false);
   //
   // The user can specify the provider by setting either the Chapel
   // CHPL_RT_COMM_OFI_PROVIDER environment variable or the libfabric
@@ -1048,6 +1054,7 @@ void chpl_comm_post_mem_init(void) {
   if (chpl_numNodes > 1) {
     init_ofiFabricDomain();
   }
+  init_ofiReserveCores();
 }
 
 
@@ -1978,6 +1985,24 @@ void init_ofiFabricDomain(void) {
   }
 
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
+}
+
+
+//
+// Reserve cores for the AM handler(s).
+//
+static
+void init_ofiReserveCores() {
+  if (envUseDedicatedAmhCores &&
+      (chpl_topo_getNumCPUsPhysical(true) > numAmHandlers)) {
+    for (int i = 0; i < numAmHandlers; i++) {
+      reservedCPUs[i] = chpl_topo_reserveCPUPhysical();
+    }
+  } else {
+    for (int i = 0; i < numAmHandlers; i++) {
+      reservedCPUs[i] = -1;
+    }
+  }
 }
 
 
@@ -4623,10 +4648,9 @@ void init_amHandling(void) {
   // least one is running.
   //
   atomic_init_bool(&amHandlersExit, false);
-
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   for (int i = 0; i < numAmHandlers; i++) {
-    CHK_TRUE(chpl_task_createCommTask(amHandler, NULL) == 0);
+    CHK_TRUE(chpl_task_createCommTask(amHandler, &reservedCPUs[i]) == 0);
   }
   PTHREAD_CHK(pthread_cond_wait(&amStartStopCond, &amStartStopMutex));
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
@@ -4662,7 +4686,8 @@ void fini_amHandling(void) {
 static __thread struct perTxCtxInfo_t* amTcip;
 
 static
-void amHandler(void* argNil) {
+void amHandler(void* arg) {
+  int cpu = *((int *) arg);
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAllocForAmHandler()) != NULL);
   amTcip = tcip;
@@ -4680,6 +4705,14 @@ void amHandler(void* argNil) {
   if (++numAmHandlersActive == 1)
     PTHREAD_CHK(pthread_cond_signal(&amStartStopCond));
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
+
+  //
+  // Bind the thread to its CPU if one was specified.
+  //
+  if (cpu >= 0) {
+    CHK_TRUE(chpl_topo_bindCPU(cpu) == 0);
+    DBG_PRINTF(DBG_AM, "AM handler bound to CPU %d", cpu);
+  }
 
   //
   // Process AM requests and watch transmit responses arrive.

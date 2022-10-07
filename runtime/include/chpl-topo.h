@@ -58,6 +58,23 @@ int chpl_topo_getNumCPUsLogical(chpl_bool /*accessible_only*/);
 //
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count);
 
+// Reserves a physical CPU (core) and returns its hwloc OS index. The
+// core and its PUs will no longer be included in the results returned
+// by chpl_topo_getCPUs, chpl_topo_getNumCPUsPhysical, and
+// chpl_topo_getNumCPUsLogical.
+//
+// Returns -1 if the reservation failed.
+//
+int chpl_topo_reserveCPUPhysical(void);
+
+// Binds the current thread to the PU specified by the hwloc OS index.
+// The index must have previously been returned by
+// chpl_topo_reserveCPUPhysical.
+//
+// Returns 0 on success, 1 otherwise
+//
+int chpl_topo_bindCPU(int id);
+
 //
 // how many NUMA domains are there?
 //
