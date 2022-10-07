@@ -37,6 +37,7 @@
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "firstClassFunctions.h"
 #include "fixupExports.h"
 #include "forallOptimizations.h"
 #include "ForallStmt.h"
@@ -2926,7 +2927,7 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             se->getStmtExpr()->insertBefore(call);
           } else {
             if (fWarnUnstable) {
-              USR_WARN(call, "type comparsion operators are unstable; "
+              USR_WARN(call, "type comparison operators are unstable; "
                 "consider using isSubtype/isProperSubtype as a stable alternative");
             }
 
@@ -5789,7 +5790,7 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
 //   proc f(uint(32), uint(32))
 //   proc f(int(64), int(64))
 //   f(myUint32, max(int));
-//  .... but it causes problems with prefering generic to non-generic.
+//  .... but it causes problems with preferring generic to non-generic.
 /*static void discardWorseConversionsToNotMentioned(
     Vec<ResolutionCandidate*>&   candidates,
     const DisambiguationContext& DC,
@@ -7692,6 +7693,12 @@ static void resolveInitField(CallExpr* call) {
         Type* exprType = fs->defPoint->exprType->typeInfo();
         if (exprType == dtUnknown) {
           fs->type = srcType;
+        } else if (exprType->symbol->hasFlag(FLAG_GENERIC)) {
+          // e.g. the type so far is a partial instantiation
+          // but the field declaration is concrete
+          // TODO: does this need to check srcType is compatible
+          // with any partial instantiation?
+          fs->type = srcType;
         } else {
           // Try calling resolveGenericActuals in case the field is e.g. range
           CallExpr* dummyCall = new CallExpr(PRIM_NOOP,
@@ -8761,8 +8768,7 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
   } else if (rhsType == dtNil) {
     bool lhsIsPointer = isClassLikeOrPtr(lhsType) ||
                         lhsType == dtCVoidPtr ||
-                        lhsType == dtCFnPtr ||
-                        lhsType == dtFile;
+                        lhsType == dtCFnPtr;
 
     if (lhsType != dtNil && !lhsIsPointer) {
       USR_FATAL(userCall(call),
@@ -9821,6 +9827,37 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
   }
 }
 
+// TODO: For now, let's just produce the wrapper class type for this.
+static Expr* resolveAnonFunctionType(DefExpr* def) {
+  auto fn = toFnSymbol(def->sym);
+  auto t = fcfWrapperSuperTypeFromFnType(fn);
+  auto ret = new SymExpr(t->symbol);
+  return ret;
+}
+
+// TODO: Will probably need to reseat the original function as well.
+static Expr* resolveAnonFunctionExpr(DefExpr* def) {
+  auto fn = toFnSymbol(def->sym);
+  auto ret = fcfWrapperInstanceFromFnExpr(fn);
+  return ret;
+}
+
+static Expr* resolveAnonFunction(DefExpr* def) {
+  if (def->id == breakOnResolveID) gdbShouldBreakHere();
+
+  auto fn = toFnSymbol(def->sym);
+  INT_ASSERT(fn);
+  INT_ASSERT(fn->hasFlag(FLAG_ANONYMOUS_FN));
+  Expr* ret = nullptr;
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) {
+    ret = resolveAnonFunctionType(def);
+  } else {
+    ret = resolveAnonFunctionExpr(def);
+  }
+  def->replace(ret);
+  return ret;
+}
+
 /************************************* | **************************************
 *                                                                             *
 * resolveExpr(expr) resolves 'expr' and manages the callStack.                *
@@ -9877,10 +9914,14 @@ Expr* resolveExpr(Expr* expr) {
     }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
-    resolveConstrainedGenericSymbol(def->sym, false);
-
-    retval = foldTryCond(postFold(def));
-
+    Expr* fold = def;
+    if (isConstrainedGenericSymbol(def->sym)) {
+      resolveConstrainedGenericSymbol(def->sym, false);
+    } else if (auto fn = toFnSymbol(def->sym)) {
+      if (fn->hasFlag(FLAG_ANONYMOUS_FN)) fold = resolveAnonFunction(def);
+      INT_ASSERT(!def->init);
+    }
+    retval = foldTryCond(postFold(fold));
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
@@ -13038,7 +13079,7 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
 static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Symbol* val) {
   USR_FATAL_CONT(call,
                  "Cannot default-initialize a variable with generic type");
-  USR_PRINT(call, "'%s' has generic type '%s'", val->name, type->symbol->name);
+  USR_PRINT(call, "'%s' has generic type '%s'", val->name, toString(type));
   printUndecoratedClassTypeNote(call, type);
   USR_STOP();
 }

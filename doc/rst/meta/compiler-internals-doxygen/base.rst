@@ -9,7 +9,7 @@ This section contains a selection of the definitions declared in the `chpl`
 namespace. The entries may not be exhaustive.
 
 .. comment:
-   See entries in '$CHPL_HOME/compiler/dyno/include/chpl/queries'
+   See entries in '$CHPL_HOME/compiler/dyno/include/chpl/framework'
 
 .. doxygentypedef:: chpl::ChplEnvMap
 
@@ -22,6 +22,32 @@ namespace. The entries may not be exhaustive.
    :undoc-members:
 
 .. doxygenclass:: chpl::ErrorMessage
+   :members:
+   :undoc-members:
+
+.. doxygenenum:: chpl::ErrorType
+
+.. doxygenclass:: chpl::ErrorWriterBase
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::ErrorWriter
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::ErrorBase
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::BasicError
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::ParseError
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::GeneralError
    :members:
    :undoc-members:
 

@@ -500,13 +500,13 @@ all:
       config: chapcs
   06/14/22:
     - text: Improve BlockDist scan scalability (#19968)
-      config: 16-node-cs, 16-node-cs-hdr
+      config: 16-node-xc, 16-node-cs-hdr
   06/29/22:
     - text: Further reduce communication for BlockDist scans (#20100)
-      config: 16-node-cs, 16-node-cs-hdr
+      config: 16-node-xc, 16-node-cs-hdr
   07/09/22:
     - text: Bring block dist scan performance on par with local DR arrays (#19999)
-      config: 16-node-cs, 16-node-cs-hdr
+      config: 16-node-xc, 16-node-cs-hdr
 
 
 # End all
@@ -2180,6 +2180,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Rebuild llvm 14 without debug
   06/02/22:
     - Cache module-level scope resolution (#19900)
+  07/17/22:
+    - Use LLVM ADTs to improve compile times (#19561)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2314,6 +2316,10 @@ arkouda: &arkouda-base
     - Closes 1220 Implementing Chapel's Random module to resolve modulo bias (Bears-R-Us/arkouda#1542)
   08/11/22:
     - Reduce sort bucket exchange overhead (Bears-R-Us/arkouda#1635)
+  08/16/22:
+    - arkouda_server_refactor with metrics integration (Bears-R-Us/arkouda#1604)
+  09/23/22:
+    - Closes 1783 SegArray.__getitem__ to Server (Bears-R-Us/arkouda#1790)
 
 
 arkouda-string:

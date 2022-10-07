@@ -1,7 +1,9 @@
 reserved-locale.chpl:1: error: attempt to redefine reserved type 'locale'
+reserved-locale.chpl:3: In function 'f':
 reserved-locale.chpl:3: error: attempt to redefine reserved type 'locale'
 reserved-locale.chpl:6: error: attempt to redefine reserved type 'locale'
 reserved-locale.chpl:7: error: attempt to redefine reserved type 'locale'
 reserved-locale.chpl:10: error: attempt to redefine reserved type 'locale'
 reserved-locale.chpl:12: error: attempt to redefine reserved type 'locale'
+reserved-locale.chpl:15: In function 'test':
 reserved-locale.chpl:17: error: attempt to redefine reserved type 'locale'

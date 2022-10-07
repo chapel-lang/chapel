@@ -374,7 +374,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
 //   test/functions/bradc/intents/test_construct_atomic_intent.chpl
 //   test/users/vass/barrierWF.test-1.chpl
 //   test/studies/shootout/spectral-norm/sidelnik/spectralnorm.chpl
-//   test/release/examples/benchmarks/ssca2/SSCA2_main.chpl
+//   test/studies/ssca2/main/SSCA2_main.chpl
 //   test/parallel/taskPar/sungeun/barrier/*.chpl
 //
 static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
@@ -436,8 +436,6 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
 ************************************** | *************************************/
 
 void resolveSpecifiedReturnType(FnSymbol* fn) {
-  Type* retType = NULL;
-
 
   // resolve specified return types for any 'out' intent formals
   for_formals(formal, fn) {
@@ -448,6 +446,11 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       }
     }
   }
+
+  // Stop if there is nothing else to do.
+  if (!fn->retExprType || fn->retType != dtUnknown) return;
+
+  Type* retType = NULL;
 
   resolveBlockStmt(fn->retExprType);
 
@@ -532,10 +535,19 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       }
     }
 
-    if (fn->hasFlag(FLAG_EXTERN) == true) {
+    if (fn->hasFlag(FLAG_NO_FN_BODY) || fn->hasFlag(FLAG_EXTERN)) {
+      // TODO: Should be empty, can we just remove this?
       resolveBlockStmt(fn->body);
 
-      resolveReturnType(fn);
+
+      if (fn->retExprType) {
+        resolveSpecifiedReturnType(fn);
+
+      // If there is no body and no return type, the function returns void.
+      } else {
+        INT_ASSERT(fn->retType == dtVoid || fn->retType == dtUnknown);
+        fn->retType = dtVoid;
+      }
 
     } else {
       if (fn->isIterator() == true) {
@@ -1008,9 +1020,9 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
   bool skipArray = doNotUnaliasArray(fn);
   bool skipTuple = doNotChangeTupleTypeRefLevel(fn, true);
 
-  if (skipArray && skipTuple)
-    // neither tuple nor array unref is necessary, so return
-    return;
+  // neither tuple nor array unref is necessary, so return
+  if (skipArray && skipTuple) return;
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
 
   Symbol* ret = fn->getReturnSymbol();
 
@@ -1880,8 +1892,10 @@ static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
 // resolveSpecifiedReturnType handles the case that the type is
 // specified explicitly.
 void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
 
-  bool isIterator = fn->isIterator(); // TODO - do we need || fn->iteratorInfo != NULL;
+  // TODO - do we need || fn->iteratorInfo != NULL;
+  bool isIterator = fn->isIterator();
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;
 
@@ -1976,7 +1990,12 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     ret->type = retType;
 
     if (retType == dtUnknown) {
-      USR_FATAL(fn, "unable to resolve return type");
+      if (fn->hasFlag(FLAG_COMPUTE_UNIFIED_TYPE_HELP)) {
+        USR_FATAL(callStack.v[callStack.n-2],
+                  "can't compute a unified element type for this array");
+      } else {
+        USR_FATAL(fn, "unable to resolve return type");
+      }
     }
 
     fn->retType = retType;
@@ -2000,7 +2019,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 }
 
 void resolveReturnType(FnSymbol* fn) {
-  return resolveReturnTypeAndYieldedType(fn, NULL);
+  resolveReturnTypeAndYieldedType(fn, NULL);
 }
 
 

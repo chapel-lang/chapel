@@ -1,3 +1,0 @@
-warning: 'arrayIndicesAlwaysLocal' is deprecated and no longer has an effect
-note: 'arrayIndicesAlwaysLocal' was set via a compiler flag
-{1..10}

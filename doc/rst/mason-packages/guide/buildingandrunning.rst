@@ -10,7 +10,7 @@ When invoked, ``mason build [ options ]`` will do the following:
     - Run update to make sure any manual manifest edits are reflected in the dependency code.
     - Build ``MyPackage.chpl`` in the ``src/`` directory.
     - All packages are compiled into binaries and placed into ``target/``
-    - To forward options to the Chapel compiler(``chpl``), seperate them with a double dash
+    - To forward options to the Chapel compiler(``chpl``), separate them with a double dash
        - e.g., mason build --force -- --savec tmpdir
 
 ``mason run [ options ]`` will, in turn:

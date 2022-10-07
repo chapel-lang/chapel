@@ -590,17 +590,9 @@ The syntax of the ``by`` operator is:
    step-expression:
      expression
 
-The type of the step must be a signed or unsigned integer of the same
-bit size as the base range’s ``idxType``, or an implicit conversion must
-be allowed to that type from the step’s type. It is an error for the
-step to be zero.
-
-   .. note::
-
-      *Future*.
-
-      We may consider allowing the step to be of any integer type, for
-      maximum flexibility.
+The step expression can be any integral or boolean type.  Boolean
+values are interpreted as 0 or 1, respectively.  It is an error for
+the step to be zero.
 
 The type of the result of the ``by`` operator is the type of the base
 range, but with the ``stridable`` parameter set to ``true``.
@@ -757,8 +749,7 @@ new range containing the specified number of indices. The low or high
 bound of the left operand is preserved, and the other bound adjusted to
 provide the specified number of indices. If the count is positive,
 indices are taken from the start of the range; if the count is negative,
-indices are taken from the end of the range. The count must be less than
-or equal to the ``length`` of the range.
+indices are taken from the end of the range.
 
 
 
@@ -767,9 +758,9 @@ or equal to the ``length`` of the range.
    counted-range-expression:
      range-expression # expression
 
-The type of the count expression must be a signed or unsigned integer of
-the same bit size as the base range’s ``idxType``, or an implicit
-conversion must be allowed to that type from the count’s type.
+The count expression can be any integral or boolean value, where
+boolean values are interpreted as 0 or 1, respectively.  The count
+value must be less than or equal to the ``size`` of the range.
 
 The type of the result of the ``#`` operator is the type of the range
 argument.
@@ -980,21 +971,23 @@ Range Type Queries
 
 
 
-.. function:: proc range.boundedType : BoundedRangeType
+.. function:: proc range.boundedType param : BoundedRangeType
 
-   Returns the ``boundedType`` parameter of the range’s type.
-
-
-
-.. function:: proc range.idxType : type
-
-   Returns the ``idxType`` parameter of the range’s type.
+   Returns which bounds the range explicitly represents (its
+   ``boundedType`` value).
 
 
 
-.. function:: proc range.stridable : bool
+.. function:: proc range.idxType type
 
-   Returns the ``stridable`` parameter of the range’s type.
+   Returns the type of the range's indices (its ``idxType``).
+
+
+
+.. function:: proc range.stridable param : bool
+
+   Returns whether or not the range can have non-unit strides (its
+   ``stridable`` value).
 
 
 .. include:: ../../builtins/ChapelRange.rst

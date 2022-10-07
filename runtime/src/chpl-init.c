@@ -330,7 +330,7 @@ void chpl_std_module_init(void) {
     // We want to treat how we allocate arrays on GPUs differently
     // for standard modules so we start the runtime assuming we're doing
     // all initialization for the standard modules until this callback
-    // functiong gets called.  (see comments on the `impl` version of this
+    // function gets called.  (see comments on the `impl` version of this
     // function for more details on why).
     #ifdef HAS_GPU_LOCALE
     chpl_gpu_on_std_modules_finished_initializing();

@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/framework/ErrorWriter.h"
 #include "chpl/types/all-types.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -41,14 +42,15 @@ static const Module* oneModule(const ModuleVec& vec) {
 }
 
 // TODO maybe we want to support something like this
-std::vector<ErrorMessage> errors;
-static void collectErrors(Context* context, const ErrorMessage& err) {
+std::vector<const ErrorBase*> errors;
+static void collectErrors(Context* context, const ErrorBase* err) {
   errors.push_back(err);
 }
 
-static void printErrors() {
+static void printErrors(Context* context) {
+  ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED, false);
   for (auto err: errors) {
-    printf("%s\n", err.message().c_str());
+    err->write(ew);
   }
 }
 
@@ -115,9 +117,9 @@ static void test2() {
     printf("e loc is line %d\n", l.firstLine());
     assert(l.firstLine() == 1);
 
-    printErrors();
+    printErrors(context);
     assert(errors.size() == 1);
-    assert(errors[0].location(context).firstLine() == 1);
+    assert(errors[0]->location(context).firstLine() == 1);
   }
 
   {
@@ -139,10 +141,10 @@ static void test2() {
     fflush(stdout);
     assert(l.firstLine() == 3);
 
-    printErrors();
+    printErrors(context);
     assert(errors.size() == 1);
-    printf("%d\n", errors[0].location(context).firstLine());
-    assert(errors[0].location(context).firstLine() == 3);
+    printf("%d\n", errors[0]->location(context).firstLine());
+    assert(errors[0]->location(context).firstLine() == 3);
   }
 }
 

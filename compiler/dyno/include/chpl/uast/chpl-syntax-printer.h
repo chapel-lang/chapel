@@ -46,6 +46,9 @@ namespace chpl {
   */
   void printFunctionSignature(std::ostream& os, const uast::Function* node);
 
+  void printFunctionSignature(std::ostream& os,
+                              const uast::FunctionSignature* node);
+
   /*
    * Do we want to print spaces around this binary operator?
    */

@@ -956,6 +956,23 @@ module OS {
 
   } // end POSIX
 
+/* A type storing an error code or an error message.
+   An :type:`errorCode` can be compared using == or != to a
+   :type:`CTypes.c_int` or to another :type:`errorCode`. An :type:`errorCode`
+   can be cast to or from a :type:`CTypes.c_int`. It can be assigned the
+   value of a :type:`CTypes.c_int` or another :type:`errorCode`. In addition,
+   :type:`errorCode` can be checked directly in an if statement like so:
+
+   .. code-block:: chapel
+
+     var err: errorCode;
+     if err then writeln("err contains an error, ie err != ENOERR");
+     else writeln("err does not contain an error; err == ENOERR");
+
+   The default intent for a formal of type :type:`errorCode` is `const in`.
+
+   The default value of the :type:`errorCode` type is undefined.
+*/
   extern "syserr" type errorCode; // opaque so we can manually override ==,!=,etc
 
   // error numbers
@@ -1148,8 +1165,8 @@ module OS {
 
   /*
      :class:`BlockingIoError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EAGAIN`, :const:`SysBasic.EALREADY`,
-     :const:`SysBasic.EWOULDBLOCK`, and :const:`SysBasic.EINPROGRESS`.
+     corresponding to :const:`~POSIX.EAGAIN`, :const:`~POSIX.EALREADY`,
+     :const:`~POSIX.EWOULDBLOCK`, and :const:`~POSIX.EINPROGRESS`.
   */
   class BlockingIoError : SystemError {
     proc init(details: string = "", err: errorCode = EWOULDBLOCK:errorCode) {
@@ -1163,7 +1180,7 @@ module OS {
 
   /*
      :class:`ChildProcessError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.ECHILD`.
+     corresponding to :const:`~POSIX.ECHILD`.
   */
   class ChildProcessError : SystemError {
     proc init(details: string = "", err: errorCode = ECHILD:errorCode) {
@@ -1183,7 +1200,7 @@ module OS {
 
   /*
      :class:`BrokenPipeError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`SysBasic.EPIPE` and :const:`SysBasic.ESHUTDOWN`.
+     corresponding to :const:`~POSIX.EPIPE` and :const:`SysBasic.ESHUTDOWN`.
   */
   class BrokenPipeError : ConnectionError {
     proc init(details: string = "", err: errorCode = EPIPE:errorCode) {
@@ -1193,7 +1210,7 @@ module OS {
 
   /*
      :class:`ConnectionAbortedError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`SysBasic.ECONNABORTED`.
+     corresponding to :const:`~POSIX.ECONNABORTED`.
   */
   class ConnectionAbortedError : ConnectionError {
     proc init(details: string = "", err: errorCode = ECONNABORTED:errorCode) {
@@ -1203,7 +1220,7 @@ module OS {
 
   /*
      :class:`ConnectionRefusedError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`SysBasic.ECONNREFUSED`.
+     corresponding to :const:`~POSIX.ECONNREFUSED`.
   */
   class ConnectionRefusedError : ConnectionError {
     proc init(details: string = "", err: errorCode = ECONNREFUSED:errorCode) {
@@ -1213,7 +1230,7 @@ module OS {
 
   /*
      :class:`ConnectionResetError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`SysBasic.ECONNRESET`.
+     corresponding to :const:`~POSIX.ECONNRESET`.
   */
   class ConnectionResetError : ConnectionError {
     proc init(details: string = "", err: errorCode = ECONNRESET:errorCode) {
@@ -1223,7 +1240,7 @@ module OS {
 
   /*
      :class:`FileExistsError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EEXIST`.
+     corresponding to :const:`~POSIX.EEXIST`.
   */
   class FileExistsError : SystemError {
     proc init(details: string = "", err: errorCode = EEXIST:errorCode) {
@@ -1233,7 +1250,7 @@ module OS {
 
   /*
      :class:`FileNotFoundError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.ENOENT`.
+     corresponding to :const:`~POSIX.ENOENT`.
   */
   class FileNotFoundError : SystemError {
     proc init(details: string = "", err: errorCode = ENOENT:errorCode) {
@@ -1243,7 +1260,7 @@ module OS {
 
   /*
      :class:`InterruptedError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EINTR`.
+     corresponding to :const:`~POSIX.EINTR`.
   */
   class InterruptedError : SystemError {
     proc init(details: string = "", err: errorCode = EINTR:errorCode) {
@@ -1253,7 +1270,7 @@ module OS {
 
   /*
      :class:`IsADirectoryError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EISDIR`.
+     corresponding to :const:`~POSIX.EISDIR`.
   */
   class IsADirectoryError : SystemError {
     proc init(details: string = "", err: errorCode = EISDIR:errorCode) {
@@ -1263,7 +1280,7 @@ module OS {
 
   /*
      :class:`NotADirectoryError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.ENOTDIR`.
+     corresponding to :const:`~POSIX.ENOTDIR`.
   */
   class NotADirectoryError : SystemError {
     proc init(details: string = "", err: errorCode = ENOTDIR:errorCode) {
@@ -1273,7 +1290,7 @@ module OS {
 
   /*
      :class:`PermissionError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EACCES` and :const:`SysBasic.EPERM`.
+     corresponding to :const:`~POSIX.EACCES` and :const:`~POSIX.EPERM`.
   */
   class PermissionError : SystemError {
     proc init(details: string = "", err: errorCode = EPERM:errorCode) {
@@ -1283,7 +1300,7 @@ module OS {
 
   /*
      :class:`ProcessLookupError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.ESRCH`.
+     corresponding to :const:`~POSIX.ESRCH`.
   */
   class ProcessLookupError : SystemError {
     proc init(details: string = "", err: errorCode = ESRCH:errorCode) {
@@ -1293,7 +1310,7 @@ module OS {
 
   /*
      :class:`TimeoutError` is the subclass of :class:`SystemError` corresponding
-     to :const:`SysBasic.ETIMEDOUT`.
+     to :const:`~POSIX.ETIMEDOUT`.
   */
   class TimeoutError : SystemError {
     proc init(details: string = "", err: errorCode = ETIMEDOUT:errorCode) {
@@ -1328,7 +1345,7 @@ module OS {
   }
 
   pragma "no doc"
-  deprecated "'EOFError is deprecated, please use 'EofError instedad"
+  deprecated "'EOFError is deprecated, please use 'EofError instead"
   class EOFError : IoError {}
 
   /*

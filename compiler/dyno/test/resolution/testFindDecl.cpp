@@ -19,6 +19,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
@@ -806,6 +807,48 @@ static void test16() {
   assert(m1.found() == InnermostMatch::ONE);
 }
 
+static void test17() {
+  printf("test17\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "test17.chpl");
+  std::string contents = R""""(
+      module MainMod {
+        use MyClass;
+        MyClass;
+      }
+
+      module MyClass {
+        class MyClass {
+          var x : int;
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+
+  const Module* MainMod = vec[0]->toModule();
+  assert(MainMod);
+  assert(MainMod->numStmts() == 2);
+  const Identifier* ClassIdent = MainMod->stmt(1)->toIdentifier();
+  assert(ClassIdent);
+
+  const Module* MyClass = vec[1]->toModule();
+  assert(MyClass);
+  assert(MyClass->numStmts() == 1);
+  const AggregateDecl* ClassDecl = MyClass->stmt(0)->toAggregateDecl();
+
+  const Scope* scopeForIdent = scopeForId(context, ClassIdent->id());
+  assert(scopeForIdent);
+
+  const auto& m1 = findInnermostDecl(context, scopeForIdent, ClassIdent->name());
+  assert(m1.id() == ClassDecl->id());
+  assert(m1.found() == InnermostMatch::ONE);
+}
+
 
 int main() {
   test1();
@@ -824,6 +867,7 @@ int main() {
   test14();
   test15();
   test16();
+  test17();
 
   return 0;
 }

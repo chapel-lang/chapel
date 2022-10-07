@@ -13,7 +13,7 @@ on Locales(1) {
 
 var B = A!.next;
 local {
-  B!.next = new C(B!.a + 1);
+  B!.next = new shared C(B!.a + 1);
 }
 
 proc foo(c: C?) {

@@ -36,11 +36,13 @@
 #include "resolution.h"
 #include "stringutil.h"
 #include "wellknown.h"
+#include "chpl/uast/OpCall.h"
 
 #include "global-ast-vecs.h"
 
 #include <algorithm>
 #include <regex>
+#include <cstring>
 
 //
 // The function that represents the compiler-generated entry point
@@ -133,10 +135,10 @@ void Symbol::verify() {
   }
   verifyInTree(type, "Symbol::type");
 
-  if (name != astr(name))
+  if (name && name != astr(name))
     INT_FATAL("name is not an astr");
 
-  if (cname != astr(cname))
+  if (cname && cname != astr(cname))
     INT_FATAL("cname is not an astr");
 
   if (symExprsHead) {
@@ -1049,7 +1051,7 @@ ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
   specBlock(NULL),
   svInitBlock(new BlockStmt()),
   svDeinitBlock(new BlockStmt()),
-  pruneit(false)
+  svExplicit(false)
 {
   if (intentsResolved)
     if (intent == TFI_DEFAULT || intent == TFI_CONST)
@@ -1109,6 +1111,7 @@ ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
 
   ss->copyFlags(this);
   ss->cname = cname;
+  ss->svExplicit = svExplicit;
   return ss;
 }
 
@@ -2179,28 +2182,7 @@ void initAstrConsts() {
 }
 
 bool isAstrOpName(const char* name) {
-  if (name == astrSassign || name == astrSeq || name == astrSne ||
-      name == astrSgt || name == astrSgte || name == astrSlt ||
-      name == astrSlte || name == astrSswap || strcmp(name, "&") == 0 ||
-      strcmp(name, "|") == 0 || strcmp(name, "^") == 0 ||
-      strcmp(name, "~") == 0 || strcmp(name, "+") == 0 ||
-      strcmp(name, "-") == 0 || strcmp(name, "*") == 0 ||
-      strcmp(name, "/") == 0 || strcmp(name, "<<") == 0 ||
-      strcmp(name, ">>") == 0 || strcmp(name, "%") == 0 ||
-      strcmp(name, "**") == 0 || strcmp(name, "!") == 0 ||
-      strcmp(name, "<~>") == 0 || strcmp(name, "+=") == 0 ||
-      strcmp(name, "-=") == 0 || strcmp(name, "*=") == 0 ||
-      strcmp(name, "/=") == 0 || strcmp(name, "%=") == 0 ||
-      strcmp(name, "**=") == 0 || strcmp(name, "&=") == 0 ||
-      strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
-      strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
-      strcmp(name, "#") == 0 || strcmp(name, "chpl_by") == 0 ||
-      strcmp(name, "by") == 0 || strcmp(name, "align") == 0 ||
-      strcmp(name, "chpl_align") == 0 || name == astrScolon) {
-    return true;
-  } else {
-    return false;
-  }
+  return chpl::uast::isOpName(UniqueString::get(gContext, name, strlen(name)));
 }
 
 /************************************* | **************************************

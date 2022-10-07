@@ -228,8 +228,6 @@ void ResolveScope::addBuiltIns() {
   extend(dtCVoidPtr->symbol);
   extend(dtCFnPtr->symbol);
 
-  extend(dtFile->symbol);
-
   extend(dtOpaque->symbol);
   extend(gOpaque);
 
@@ -381,6 +379,13 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
   const char* name   = newSym->name;
   bool        retval = false;
 
+  // This symbol has no name. It may be attached to something else that
+  // has a name, but we'll end up visiting that entity later.
+  if (newSym->hasFlag(FLAG_ANONYMOUS_FORMAL) ||
+      newSym->hasFlag(FLAG_ANONYMOUS_FN)) {
+    return true;
+  }
+
   // If this is a top-level module, we look up the symbol's name as
   // though we were resolving a 'use' in order to take module symbols
   // (not visible through normal lexical scoping) into consideration.
@@ -482,6 +487,8 @@ void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
             if (UnresolvedSymExpr* typeName =
                 toUnresolvedSymExpr(cType->baseExpr)) {
               mMethodsOnTypeName.insert(typeName->unresolved);
+            } else if (SymExpr* typeName = toSymExpr(cType->baseExpr)) {
+              mMethodsOnTypeName.insert(typeName->symbol()->name);
             }
           }
         } else {

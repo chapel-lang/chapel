@@ -27,3 +27,9 @@ as follows:
 
 * Pulled in an upstream fix for build errors on Alpine linux
   https://github.com/Qthreads/qthreads/pull/105
+
+* We modified the configuration to support the
+  --with-hwloc-get-topology-function argument that specifies a function that
+    qthreads should call to get the hwloc topology, and several files to
+    support this behavior including the Makefile to pass this argument to
+    configure, and binders.c and hwloc.c to call the function.

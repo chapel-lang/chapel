@@ -1,0 +1,2 @@
+openfp.chpl:6: In function 'openTestFile':
+openfp.chpl:6: warning: the '_file' type is deprecated; please use 'CTypes.c_FILE' instead

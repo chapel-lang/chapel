@@ -48,9 +48,9 @@ buildErrorStr(const char* file, int line, const char* msg) {
 
 static void displayErrors(Context* ctx, const BuilderResult& br) {
   for (const auto& err : br.errors()) {
-    auto loc = err.location(ctx);
+    auto loc = err->location(ctx);
     auto out = buildErrorStr(loc.path().c_str(), loc.firstLine(),
-                             err.message().c_str());
+                             err->message().c_str());
     printf("%s\n", out.c_str());
   }
 }
@@ -61,9 +61,9 @@ static void assertErrorMatches(Context* ctx, const BuilderResult& br,
                                int line,
                                const char* msg) {
   const auto& err = br.error(idx);
-  auto loc = err.location(ctx);
+  auto loc = err->location(ctx);
   auto output = buildErrorStr(loc.path().c_str(), loc.firstLine(),
-                              err.message().c_str());
+                              err->message().c_str());
   auto expect = buildErrorStr(file, line, msg);
   assert(output == expect);
 }
@@ -459,6 +459,48 @@ static void test14(void) {
                      "current uses.");
 }
 
+// test that operators must have valid operator names
+static void test15(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
+    R""""(
+      record R {
+        var field: int;
+      }
+      operator notAnOpName(z: R, type t: int) { return z.field; }
+    )"""";
+  auto path = UniqueString::get(ctx, "test15.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
+  assert(br.numErrors() == 1);
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test15.chpl", 5,
+                     "'notAnOpName' is not a legal operator name");
+}
+
+// test that non-operator procs cannot have operator names
+static void test16(void) {
+  Context context;
+  Context* ctx = &context;
+  std::string text =
+    R""""(
+      record R {
+        var field: int;
+      }
+      proc :(z: R, type t: int) { return z.field; }
+    )"""";
+  auto path = UniqueString::get(ctx, "test16.chpl");
+  setFileText(ctx, path, text);
+  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+
+  assert(br.numErrors() == 1);
+  displayErrors(ctx, br);
+  assertErrorMatches(ctx, br, 0, "test16.chpl", 5,
+                     "Operators cannot be declared without the operator keyword");
+}
+
 int main() {
   test0();
   test1();
@@ -475,6 +517,8 @@ int main() {
   test12();
   test13();
   test14();
+  test15();
+  test16();
 
   return 0;
 }

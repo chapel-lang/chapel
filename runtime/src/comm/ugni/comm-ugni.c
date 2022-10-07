@@ -575,7 +575,7 @@ static mem_region_table_t** mem_regions_all_my_entry_map;
 static chpl_bool can_register_memory = false;
 
 static chpl_bool do_mr_extent_checks;
-static int cache_pagesize;
+static size_t cache_max_readahead_size;
 
 //
 // The high bit of the 'len' member of a mem_region_t in the table
@@ -643,6 +643,7 @@ struct mregs_supp {
 struct mregs_supp* mr_mregs_supplement;  // parallels mem_regions->mregs[]
 
 static chpl_bool exit_without_cleanup = false;
+static chpl_bool coordinated_shutdown = true;
 
 
 //
@@ -1027,6 +1028,7 @@ typedef struct {
 
 typedef struct {
   fork_base_info_t b;
+  chpl_bool coordinated_shutdown;
 } fork_shutdown_info_t;
 
 typedef union fork_t {
@@ -1446,7 +1448,7 @@ static void      fork_put(void*, c_nodeid_t, void*, size_t);
 static void      fork_get(void*, c_nodeid_t, void*, size_t);
 static void      fork_free(c_nodeid_t, void*);
 static void      fork_amo(fork_t*, c_nodeid_t);
-static void      fork_shutdown(c_nodeid_t);
+static void      fork_shutdown(c_nodeid_t, chpl_bool);
 static void      do_fork_post(c_nodeid_t, chpl_bool,
                               uint64_t, fork_base_info_t*, int*, int*);
 static void      acquire_comm_dom(void);
@@ -1901,7 +1903,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 
   do_mr_extent_checks = chpl_env_rt_get_bool("COMM_UGNI_DO_MR_EXTENT_CHECKS",
                                              true);
-  cache_pagesize = chpl_cache_pagesize();
+  cache_max_readahead_size = chpl_getSysPageSize();
 
   //
   // We have to create the local memory region table before the first
@@ -2774,7 +2776,7 @@ mem_region_t* mreg_for_local_addr(void* addr, size_t size)
   }
   if (do_mr_extent_checks && mr != NULL) {
     size_t mrLen = chpl_cache_enabled()
-                   ? ALIGN_UP(mrtl_len(mr->len), cache_pagesize)
+                   ? ALIGN_UP(mrtl_len(mr->len), cache_max_readahead_size)
                    : mrtl_len(mr->len);
     if ((uint64_t) addr + size > mr->addr + mrLen) {
       CHPL_INTERNAL_ERROR("local xfer size extends beyond MR!");
@@ -2811,7 +2813,7 @@ mem_region_t* mreg_for_remote_addr(void* addr, size_t size, c_nodeid_t locale)
   }
   if (do_mr_extent_checks && mr != NULL) {
     size_t mrLen = chpl_cache_enabled()
-                   ? ALIGN_UP(mrtl_len(mr->len), cache_pagesize)
+                   ? ALIGN_UP(mrtl_len(mr->len), cache_max_readahead_size)
                    : mrtl_len(mr->len);
     if ((uint64_t) addr + size > mr->addr + mrLen) {
       CHPL_INTERNAL_ERROR("remote xfer size extends beyond MR!");
@@ -4025,19 +4027,31 @@ void chpl_comm_pre_task_exit(int all)
   if (all) {
     if (chpl_nodeID == 0) {
       for (int i = 1; i < chpl_numNodes; i++) {
-        fork_shutdown(i);
+        fork_shutdown(i, true /*coordinated_shutdown*/);
       }
     } else {
       chpl_wait_for_shutdown();
     }
 
-    chpl_comm_barrier("chpl_comm_pre_task_exit");
+    if (coordinated_shutdown) {
+      chpl_comm_barrier("chpl_comm_pre_task_exit");
 
-    polling_task_please_exit = true;
+      polling_task_please_exit = true;
 
-    if (chpl_nodeID == 0) {
-      while (!polling_task_done)
-        sched_yield();
+      if (chpl_nodeID == 0) {
+        while (!polling_task_done)
+          sched_yield();
+      }
+    }
+  } else {
+    for (int i = 0; i < chpl_numNodes; i++) {
+      if (i != chpl_nodeID) {
+        fork_shutdown(i, false /*coordinated_shutdown*/);
+      } else {
+        coordinated_shutdown = false;
+        polling_task_please_exit = true;
+        chpl_signal_shutdown();
+      }
     }
   }
 
@@ -4255,6 +4269,10 @@ void rf_handler(gni_cq_entry_t* ev)
              (int) req_li, sprintf_rf_req(-1, f));
 
     {
+      coordinated_shutdown = f->s.coordinated_shutdown;
+      if (!coordinated_shutdown) {
+        polling_task_please_exit = true;
+      }
       release_req_buf(req_li, req_cdi, req_rbi);
       chpl_signal_shutdown();
     }
@@ -7214,11 +7232,11 @@ void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
 
 
 static
-void fork_shutdown(c_nodeid_t locale)
+void fork_shutdown(c_nodeid_t locale, chpl_bool coordinated_shutdown)
 {
   fork_base_info_t hdr = { .op = fork_op_shutdown };
 
-  fork_shutdown_info_t req = { .b = hdr };
+  fork_shutdown_info_t req = { .b = hdr, .coordinated_shutdown = coordinated_shutdown };
 
   if (locale < 0 || locale >= chpl_numNodes)
     CHPL_INTERNAL_ERROR("fork_shutdown(): remote locale out of range");

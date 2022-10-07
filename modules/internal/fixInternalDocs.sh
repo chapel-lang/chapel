@@ -130,11 +130,11 @@ function removeUsage() {
 
 ## ChapelTuple ##
 
-file=ChapelTuple.rst
+file="./ChapelTuple.rst"
 removePrefixFunctions $file
 removePattern "param size" $file
 removePattern "record:: _tuple" $file
-fixTitle "Tuples" $file
+removeTitle $file
 removeUsage $file
 
 ## End ChapelTuple ##
@@ -214,7 +214,7 @@ removeUsage $file
 ## String ##
 
 file="./String.rst"
-fixTitle "Strings" $file
+removeTitle $file
 removeUsage $file
 replace "chpl_bytes" "bytes" $file
 
@@ -223,9 +223,9 @@ replace "chpl_bytes" "bytes" $file
 ## Bytes ##
 
 file="./Bytes.rst"
-fixTitle "Bytes" $file
-removeUsage $file
 replace "chpl_bytes" "bytes" $file
+removeTitle $file
+removeUsage $file
 
 ## End of Bytes ##
 

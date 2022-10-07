@@ -46,7 +46,7 @@ Implicit conversion for function calls, initialization, and assignment
 are allowed between the following source and target types, as defined in
 the referenced subsections:
 
--  numeric and boolean
+-  boolean and numeric types
    types (:ref:`Implicit_NumBool_Conversions`),
 
 -  numeric types in the special case when the expression’s value is a
@@ -72,8 +72,8 @@ Implicit conversions among numeric types are allowed when all values
 representable in the source type can also be represented in the target
 type, retaining their full precision. In addition, implicit conversions
 are permitted from ``int(s)`` and ``uint(s)`` values to ``real(t)`` and
-``complex(2*t)`` when ``s`` is less than or equal to ``t``, even
-though these cases may result in a loss of precision.
+``complex(2*t)``, for any widths ``s`` and ``t``, even though these cases
+may result in a loss of precision.
 
    *Rationale*.
 
@@ -84,6 +84,40 @@ though these cases may result in a loss of precision.
    benefits, the loss of precision seemed like a reasonable tradeoff,
    particularly given that floating point types are approximate by
    nature.
+
+Signed integral types ``int(s)`` can implicitly convert to ``uint(s)``
+where ``s <= t``.
+
+   *Rationale*.
+
+   We allow these conversions to avoid the situation that something
+   similar to a binary operator produces surprising results when mixing
+   ``int`` and ``uint`` types. In particular, without this rule, the
+   ``plus`` function defined below would surprisingly produce values of a
+   different width or a different kind:
+
+   .. code-block:: chapel
+
+     proc plus(a: int(32), b: int(32)) : int(32) { ... }
+     proc plus(a: int(64), b: int(64)) : int(64) { ... }
+     proc plus(a: uint(32), b: uint(32)) : uint(32) { ... }
+     proc plus(a: uint(32), b: uint(32)) : uint(32) { ... }
+     proc plus(a: real(64), b: real(64)) : real(64) { ... }
+
+     var myInt32: int(32);
+     var myUint32: uint(32);
+     plus(myInt32, myUint32); // calls 'uint(32)' version, but
+                              // without int->uint implicit conversion,
+                              // would call the 'int(64)' version
+     var myInt64: int(64);
+     var myUint64: uint(64);
+     plus(myInt64, myUint64); // calls 'uint(64)' version, but
+                              // without int->uint implicit conversion,
+                              // would call the 'real(64)' version
+
+   While implicitly converting an ``int`` to a ``uint`` can lead to
+   surprising behavior, this behavior is less problematic than the
+   surprising behavior that comes from the above scenario.
 
 Any boolean type can be implicitly converted to any other boolean type,
 retaining the boolean value. Any boolean type can be implicitly
@@ -103,12 +137,12 @@ Legal implicit conversions with numeric and boolean types may thus be
 summarized as follows:
 
 ==================== ================= ================= ================ ================= ================= ====================
-\                                                                  **Destination Type**                                   
+\                                                                  **Destination Type**
 -------------------- -------------------------------------------------------------------------------------------------------------
 **Source Type**      bool(\ :math:`t`) uint(\ :math:`t`) int(\ :math:`t`) real(\ :math:`t`) imag(\ :math:`t`) complex(\ :math:`t`)
-bool(\ :math:`s`)    all :math:`s,t`   all :math:`s,t`   all :math:`s,t`                                          
-uint(\ :math:`s`)                      :math:`s \le t`   :math:`s < t`    :math:`s \le t`                     :math:`s \le t/2`
-int(\ :math:`s`)                                         :math:`s \le t`  :math:`s \le t`                     :math:`s \le t/2`
+bool(\ :math:`s`)    all :math:`s,t`   all :math:`s,t`   all :math:`s,t`
+uint(\ :math:`s`)                      :math:`s \le t`   :math:`s < t`    all :math:`s,t`                     all :math:`s,t`
+int(\ :math:`s`)                       :math:`s \le t`   :math:`s \le t`  all :math:`s,t`                     all :math:`s,t`
 real(\ :math:`s`)                                                         :math:`s \le t`                     :math:`s \le t/2`
 imag(\ :math:`s`)                                                                           :math:`s \le t`   :math:`s \le t/2`
 complex(\ :math:`s`)                                                                                          :math:`s \le t`
@@ -120,13 +154,27 @@ complex(\ :math:`s`)                                                            
 Implicit Compile-Time Constant Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A ``param`` of numeric type can be implicitly converted to any other
-numeric type if the value of the ``param`` can be represented exactly by
-the target type. This rule does not allow conversions from ``real`` to
-``imag``, or from ``complex`` to a non-``complex`` type. It does allow
-conversions from ``real`` or ``imag`` to ``complex``.  As with the
-implicit numeric conversions, integral ``param`` values can implicitly
-convert to ``real`` of matching size or ``complex`` of larger sizes.
+A ``param`` of numeric type can be implicitly converted to another numeric
+type in some cases if the ``param`` value can be represented exactly by
+the target type. In particular:
+
+ * ``param`` ``int(s)`` and ``uint(s)`` values that are exactly
+   representable in the target type can implicit convert to ``int(t)``
+   and ``uint(t)`` regardless of the values of ``s`` and ``t``.
+ * ``param`` ``real(s)`` that is exactly representable in the target
+   type can implicitly convert to ``real(t)`` or to ``complex(t)``
+   regardless of the values of ``s`` and ``t``.
+ * ``param`` ``imag(s)`` that is exactly representable in the target
+   type can implicitly convert to ``imag(t)`` or to ``complex(t)``
+   regardless of the values of ``s`` and ``t``.
+ * ``param`` ``complex(s)`` that is exactly representable in the target
+   type can implicitly convert to ``complex(t)``.
+
+As with the implicit numeric conversions, integral ``param`` values can
+implicitly convert:
+
+ * to ``uint`` of matching or greater size or to ``real``
+ * or, to ``complex`` of any size.
 
 .. _Implicit_Class_Conversions:
 

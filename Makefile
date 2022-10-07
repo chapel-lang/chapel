@@ -119,6 +119,7 @@ test-venv: third-party-test-venv
 
 chpldoc: compiler third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
+	@cd modules && $(MAKE)
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
 
 always-build-test-venv: FORCE
@@ -166,6 +167,7 @@ clean: FORCE
 	cd modules && $(MAKE) clean
 	cd runtime && $(MAKE) clean
 	cd third-party && $(MAKE) clean
+	cd compiler/dyno/tools/chpldoc && $(MAKE) clean
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clean; fi
 	rm -f util/chplenv/*.pyc
 
@@ -174,6 +176,7 @@ cleanall: FORCE
 	cd modules && $(MAKE) cleanall
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
+	cd compiler/dyno/tools/chpldoc && $(MAKE) cleanall
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) cleanall; fi
 	rm -f util/chplenv/*.pyc
 	rm -rf build
@@ -191,6 +194,7 @@ clobber: FORCE
 	cd tools/c2chapel && $(MAKE) clobber
 	cd tools/mason && $(MAKE) clobber
 	cd tools/protoc-gen-chpl && $(MAKE) clobber
+	cd compiler/dyno/tools/chpldoc && $(MAKE) clobber
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib

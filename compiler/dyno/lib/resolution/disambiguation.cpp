@@ -91,8 +91,6 @@ enum MoreVisibleResult {
   FOUND_NEITHER
 };
 
-#define ENABLE_TRACING_OF_DISAMBIGUATION 1
-
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
 
 #define EXPLAIN(...) \
@@ -905,6 +903,7 @@ static void testArgMapping(const DisambiguationContext& dctx,
   // TODO: for sync/single use the valType
 
   const char* reason = "";
+  (void) reason;
   typedef enum {
     NONE,
     WEAKEST,
@@ -1026,6 +1025,7 @@ static void testArgMapping(const DisambiguationContext& dctx,
 
   if (prefer1 != NONE) {
     const char* level = "";
+    (void) level;
     if (prefer1 == STRONG)  { ds.fn1MoreSpecific = true;     level = "strong"; }
     if (prefer1 == WEAK)    { ds.fn1WeakPreferred = true;    level = "weak"; }
     if (prefer1 == WEAKER)  { ds.fn1WeakerPreferred = true;  level = "weaker"; }
@@ -1033,6 +1033,7 @@ static void testArgMapping(const DisambiguationContext& dctx,
     EXPLAIN("%s: Fn %d is %s preferred\n", reason, candidate1.idx, level);
   } else if (prefer2 != NONE) {
     const char* level = "";
+    (void) level;
     if (prefer2 == STRONG)  { ds.fn2MoreSpecific = true;     level = "strong"; }
     if (prefer2 == WEAK)    { ds.fn2WeakPreferred = true;    level = "weak"; }
     if (prefer2 == WEAKER)  { ds.fn2WeakerPreferred = true;  level = "weaker"; }

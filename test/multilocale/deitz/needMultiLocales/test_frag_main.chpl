@@ -51,7 +51,7 @@ proc chpl_send_int(data: int, loc) {
   on Locales[loc] {
     var b = buffer[here.id][from]!;
     b.lock$.writeEF(true);
-    b.tail = new node(data, b.tail);
+    b.tail = new shared node(data, b.tail);
     if b.head == nil then
       b.head = b.tail;
     b.signal$.writeXF(true);

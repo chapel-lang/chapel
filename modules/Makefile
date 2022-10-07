@@ -77,8 +77,8 @@ MODULES_TO_DOCUMENT = \
 	standard/CommDiagnostics.chpl \
 	standard/Communication.chpl \
 	standard/GPUDiagnostics.chpl \
+	standard/GPU.chpl \
 	standard/CTypes.chpl \
-	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/Errors.chpl \
 	standard/FileSystem.chpl \
@@ -102,7 +102,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Subprocess.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
-	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \

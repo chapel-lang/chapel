@@ -23,10 +23,14 @@
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/framework/stringify-functions.h"
+#include "chpl/framework/ErrorBase.h"
 
 #include <string>
 
 namespace chpl {
+
+class ErrorBase;
+
 namespace parsing {
 
 
@@ -36,7 +40,9 @@ namespace parsing {
 class FileContents {
  private:
   std::string text_;
-  ErrorMessage error_;
+  // TODO: it would be better to use the LLVM error handling strategy here,
+  //       instead of storing errors created via Context.
+  const ParseError* error_;
 
  public:
   /** Construct a FileContents containing empty text and no error */
@@ -46,14 +52,14 @@ class FileContents {
   FileContents(std::string text)
     : text_(std::move(text)), error_() { }
   /** Construct a FileContents containing the passed text and error */
-  FileContents(std::string text, ErrorMessage error)
+  FileContents(std::string text, const ParseError* error)
     : text_(std::move(text)), error_(std::move(error)) { }
 
   /** Return a reference to the contents of this file */
   const std::string& text() const { return text_; }
 
   /** Return a reference to an error encountered when reading this file */
-  const ErrorMessage& error() const { return error_; }
+  const ParseError* error() const { return error_; }
 
   bool operator==(const FileContents& other) const {
     return text_ == other.text_ &&
@@ -64,13 +70,13 @@ class FileContents {
   }
   void swap(FileContents& other) {
     text_.swap(other.text_);
-    error_.swap(other.error_);
+    std::swap(error_, other.error_);
   }
   static bool update(FileContents& keep, FileContents& addin) {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    error_.mark(context);
+    if (error_ != nullptr) error_->mark(context);
   }
 };
 

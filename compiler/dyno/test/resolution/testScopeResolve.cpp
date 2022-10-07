@@ -331,6 +331,102 @@ static void test7() {
   assert(re.toId() == y->id());
 }
 
+// test transitive visibility through public/non-public uses
+// TODO: Test that private auto-uses (ChapelStandard) are subject to the
+// correct transitive visibility rules. Currently this is not very well
+// possible because we cannot change which module is auto-used to one that
+// would be conducive to testing -- see private issue #3830 which would
+// change this.
+static void test8() {
+  printf("test8\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module A {
+        var x : int;
+      }
+      module B {
+        public use A;
+      }
+      module C {
+        use B;
+        var y = x;
+      }
+      module D {
+        use C;
+        var a = y;
+        var b = x;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+  const Variable* a = findVariable(vec, "a");
+  assert(a);
+  const Variable* b = findVariable(vec, "b");
+  assert(b);
+
+  assert(x->initExpression() == nullptr);
+  const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
+  assert(reY.toId() == x->id());
+  const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
+  assert(reA.toId() == y->id());
+  const ResolvedExpression& reB = scopeResolveIt(context, b->initExpression());
+  assert(reB.toId().isEmpty());
+}
+
+// test use with except-lists
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module A {
+        var x : int;
+        var y : int;
+        var z : int = 4;
+      }
+      module B {
+        public use A except y, z;
+
+        var a : int = x;
+        var b : int = y;
+        var c : int = A.x;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+  const Variable* z = findVariable(vec, "z");
+  assert(z);
+  const Variable* a = findVariable(vec, "a");
+  assert(a);
+  const Variable* b = findVariable(vec, "b");
+  assert(b);
+  const Variable* c = findVariable(vec, "c");
+  assert(c);
+
+  const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
+  assert(reA.toId() == x->id());
+  const ResolvedExpression& reB = scopeResolveIt(context, b->initExpression());
+  assert(reB.toId().isEmpty());
+  const ResolvedExpression& reC = scopeResolveIt(context, c->initExpression());
+  assert(reC.toId().isEmpty());
+}
 
 int main() {
   test1();
@@ -340,6 +436,8 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
+  test9();
 
   return 0;
 }

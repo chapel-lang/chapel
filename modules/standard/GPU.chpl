@@ -25,26 +25,30 @@
     This module is unstable and its interface is subject to change in the
     future.
 
+    GPU support is a relatively new feature to Chapel and is under active
+    development.
+
+    For the most up-to-date information about GPU support see the
+    :ref:`technical note <readme-gpu>` about it.
 */
 module GPU
 {
+  pragma "no doc"
   extern proc chpl_gpu_write(const str : c_string) : void;
 
   /*
-     This function is intended to be called from within a GPU
-     kernel and is useful for debugging purposes.
+     This function is intended to be called from within a GPU kernel and is
+     useful for debugging purposes.
 
-     Currently writeln() will make a loop ineligable for
-     gpuization. This function is here as a stopgap measure
-     until we fix that.
+     Currently using :proc:`~ChapelIO.write` to send output to ``stdout`` will
+     make a loop ineligible for GPU execution; use :proc:`gpuWrite` instead.
 
-     Currently this function will only work if values of type
-     c_string are passed.
+     Currently this function will only work if values of type ``c_string`` are
+     passed.
 
-     On NVIDIA GPUs the written values will be flushed to the
-     terminal after the kernel has finished executing.
-     Note that there is (by default) a 1MB limit on the size
-     of this buffer.
+     On NVIDIA GPUs the written values will be flushed to the terminal after
+     the kernel has finished executing.  Note that there is a 1MB limit on the
+     size of this buffer.
    */
   proc gpuWrite(const args ...?k) {
     // Right now this function will only work if passed in c_strings.
@@ -58,7 +62,7 @@ module GPU
     //
     // Unfortunately that made things un-gpuizable as I believe
     // it ends up calling the constructor for string which
-    // somewhere uses the the "outside variable" "nil", which
+    // somewhere uses the "outside variable" "nil", which
     // fails our gpuization check.
     //
     // I also explored making `printf` an extern proc
@@ -70,18 +74,20 @@ module GPU
   }
 
   /*
-     Pass arguments to gpuWrite and follow with a newline
+     Pass arguments to :proc:`gpuWrite` and follow with a newline.
   */
   proc gpuWriteln(const args ...?k) {
     gpuWrite((...args), "\n".c_str());
   }
 
   /*
-    Will halt execution if called from outside a GPU.
+    Will halt execution at runtime if called from outside a GPU.  If used on
+    first line in ``foreach`` or ``forall`` loop will also do a compile time
+    check that the loop is eligible for execution on a GPU.
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc assertOnGpu() {
+  inline proc assertOnGpu() {
     __primitive("chpl_assert_on_gpu");
   }
 }

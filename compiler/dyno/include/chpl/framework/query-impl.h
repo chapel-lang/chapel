@@ -394,6 +394,23 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
     changed = combiner(r->result, result);
     // now 'r->result' is updated and 'result' is garbage for collection
   }
+#ifndef NDEBUG
+  // In release mode, the only thing that we care about marking are the
+  // unique strings, and those are already marked when they are retrieved
+  // with ::get. In debug mode, though, we do checking to make sure the
+  // pointers are valid, which means we need to run the below code to make sure
+  // that we mark pointers that are not automatically marked when you
+  // get them.
+  //
+  // This initially came up with uast AstNode pointers that were nested
+  // within the uAST.
+  if(this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
+    // Maybe this is a good idea, but maybe not. Make sure query results
+    // are marked after being recomputed.
+    // Maybe we can avoid doing this if assertions are off.
+    r->markUniqueStringsInResult(this);
+  }
+#endif
 
   // save old result when appropriate
   // no need to save old result 1st time running this query

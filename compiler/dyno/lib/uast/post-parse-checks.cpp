@@ -52,7 +52,7 @@ struct Visitor {
   // both errors and warnings below). This factory function is provided
   // because errors pinning on freshly parsed AST cannot be stored in
   // the context at this point.
-  void report(const AstNode* node, ErrorMessage::Kind kind,
+  void report(const AstNode* node, ErrorBase::Kind kind,
               const char* fmt,
               va_list vl);
   void error(const AstNode* node, const char* fmt, ...);
@@ -97,6 +97,9 @@ struct Visitor {
   //
   bool isParentFalseBlock(int depth=0) const;
 
+  bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
+  bool isNameReservedWord(const NamedDecl* node);
+
   // Checks.
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
@@ -107,6 +110,7 @@ struct Visitor {
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
+  void checkOperatorNameValidity(const Function* node);
   void checkEmptyProcedureBody(const Function* node);
   void checkExternProcedure(const Function* node);
   void checkExportProcedure(const Function* node);
@@ -114,6 +118,7 @@ struct Visitor {
   void checkOverrideNonMethod(const Function* node);
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
+  void checkLambdaReturnIntent(const Function* node);
 
   /*
   TODO
@@ -130,6 +135,8 @@ struct Visitor {
   // Called in the visitor loop to check against superclass types.
   void checkPrivateDecl(const Decl* node);
   void checkExportedName(const NamedDecl* node);
+  void checkReservedSymbolName(const NamedDecl* node);
+  void checkLinkageName(const NamedDecl* node);
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
@@ -147,23 +154,23 @@ struct Visitor {
 // Note that even though we pass in the IDs for error messages here, the
 // locations map is not actually populated for the user until after the
 // builder wraps up and produces a builder result.
-void Visitor::report(const AstNode* node, ErrorMessage::Kind kind,
+void Visitor::report(const AstNode* node, ErrorBase::Kind kind,
                      const char* fmt,
                      va_list vl) {
-  auto err = ErrorMessage::vbuild(kind, node->id(), fmt, vl);
+  auto err = GeneralError::vbuild(context_, kind, node->id(), fmt, vl);
   builder_.addError(std::move(err));
 }
 
 void Visitor::error(const AstNode* node, const char* fmt, ...) {
   va_list vl;
   va_start(vl, fmt);
-  report(node, ErrorMessage::ERROR, fmt, vl);
+  report(node, ErrorBase::ERROR, fmt, vl);
 }
 
 void Visitor::warn(const AstNode* node, const char* fmt, ...) {
   va_list vl;
   va_start(vl, fmt);
-  report(node, ErrorMessage::WARNING, fmt, vl);
+  report(node, ErrorBase::WARNING, fmt, vl);
 }
 
 bool Visitor::isFlagSet(CompilerFlags::Name flag) const {
@@ -227,7 +234,9 @@ void Visitor::check(const AstNode* node) {
   if (auto decl = node->toDecl()) checkPrivateDecl(decl);
   if (auto named = node->toNamedDecl()) {
     checkExportedName(named);
+    checkReservedSymbolName(named);
     warnUnstableSymbolNames(named);
+    checkLinkageName(named);
   }
 
   // Now run checks via visitor and recurse to children.
@@ -500,6 +509,21 @@ void Visitor::checkExportVar(const Variable* node) {
   }
 }
 
+void Visitor::checkOperatorNameValidity(const Function* node) {
+  if (node->kind() == Function::Kind::OPERATOR) {
+    // operators must have valid operator names
+    if (!isOpName(node->name())) {
+      error(node, "'%s' is not a legal operator name", node->name().c_str());
+    }
+  } else {
+    // functions with operator names must be declared as operators
+    if (isOpName(node->name())) {
+      error(node, "Operators cannot be declared without the operator keyword",
+            node->name().c_str());
+    }
+  }
+}
+
 void Visitor::checkEmptyProcedureBody(const Function* node) {
   if (!node->body() && node->linkage() != Decl::EXTERN) {
     auto decl = searchParentsForDecl(nullptr);
@@ -518,6 +542,10 @@ void Visitor::checkExternProcedure(const Function* node) {
 
   if (node->throws()) {
     error(node, "Extern functions cannot throw errors.");
+  }
+
+  if (node->kind() == Function::ITER) {
+    error(node, "'iter' is not legal with 'extern'");
   }
 }
 
@@ -606,6 +634,25 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   }
 }
 
+void Visitor::checkLambdaReturnIntent(const Function* node) {
+  if (node->kind() != Function::LAMBDA) return;
+
+  switch (node->returnIntent()) {
+    case Function::CONST_REF:
+    case Function::REF:
+      error(node, "'ref' return types are not allowed in lambdas");
+      break;
+    case Function::PARAM:
+      error(node, "'param' return types are not allowed in lambdas");
+      break;
+    case Function::TYPE:
+      error(node, "'type' return types are not allowed in lambdas");
+      break;
+    default:
+      break;
+  }
+}
+
 void Visitor::checkPrivateDecl(const Decl* node) {
   if (node->visibility() != Decl::PRIVATE) return;
 
@@ -657,6 +704,86 @@ void Visitor::checkExportedName(const NamedDecl* node) {
   (void) node;
 }
 
+bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
+  if (node->name() != USTR("this")) return false;
+  if (node->isFunction()) return false;
+  if (node->isFormal())
+    if (auto decl = searchParentsForDecl(nullptr))
+      if (auto fn = decl->toFunction())
+        if (fn->thisFormal() == node)
+          return false;
+  return true;
+}
+
+bool Visitor::isNameReservedWord(const NamedDecl* node) {
+  auto name = node->name();
+  if (isNamedThisAndNotReceiverOrFunction(node)) return true;
+  if (name == "none") return true;
+  if (name == "false") return true;
+  if (name == "true") return true;
+  return false;
+}
+
+// TODO: Maybe migrate this to a common place?
+static bool isNameReservedType(UniqueString name) {
+  if (name == USTR("bool")      ||
+      name == USTR("int")       ||
+      name == USTR("uint")      ||
+      name == USTR("real")      ||
+      name == USTR("imag")      ||
+      name == USTR("complex")   ||
+      name == USTR("bytes")     ||
+      name == USTR("string")    ||
+      name == USTR("sync")      ||
+      name == USTR("single")    ||
+      name == USTR("owned")     ||
+      name == USTR("shared")    ||
+      name == USTR("borrowed")  ||
+      name == USTR("unmanaged") ||
+      name == USTR("domain")    ||
+      name == USTR("index")     ||
+      name == USTR("locale")    ||
+      name == USTR("nothing")   ||
+      name == USTR("void"))
+    return true;
+  return false;
+}
+
+// TODO: May have to restrict errors to fire only for functions/formals.
+void Visitor::checkReservedSymbolName(const NamedDecl* node) {
+  auto name = node->name();
+
+  // TODO: Do we really want this sort of exception?
+  if (auto mod = node->toModule())
+    if (mod->kind() == Module::IMPLICIT)
+      return;
+
+  // TODO: Specialize warnings for reduce intents, see...
+  // test/parallel/forall/checks/with-this.chpl
+  if (node->isTaskVar()) return;
+
+  if (isNameReservedWord(node)) {
+    error(node, "attempt to redefine reserved word '%s'", name.c_str());
+  } else if (isNameReservedType(name)) {
+    error(node, "attempt to redefine reserved type '%s'", name.c_str());
+  }
+}
+
+void Visitor::checkLinkageName(const NamedDecl* node) {
+  auto linkageName = node->linkageName();
+  if (!linkageName) return;
+
+  assert(node->linkage() != Decl::DEFAULT_LINKAGE);
+
+  // Functions accept complex expressions for their linkage name.
+  if (node->isFunction()) return;
+
+  if (!linkageName->isStringLiteral()) {
+    error(linkageName, "the linkage name for '%s' must be a string literal",
+                       node->name().c_str());
+  }
+}
+
 // TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
   if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
@@ -698,6 +825,7 @@ void Visitor::visit(const TypeQuery* node) {
 }
 
 void Visitor::visit(const Function* node) {
+  checkOperatorNameValidity(node);
   checkEmptyProcedureBody(node);
   checkExternProcedure(node);
   checkExportProcedure(node);
@@ -705,6 +833,7 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
+  checkLambdaReturnIntent(node);
 }
 
 void Visitor::visit(const Union* node) {

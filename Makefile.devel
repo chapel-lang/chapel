@@ -73,9 +73,6 @@ test-dyno: dyno FORCE
 dyno-parser: FORCE
 	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-parser
 
-dyno-chpldoc: FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-chpldoc
-
 run-dyno-linters: FORCE
 	@cd compiler/dyno && $(MAKE) -f Makefile.help run-dyno-linters
 

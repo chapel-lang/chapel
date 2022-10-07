@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/uast/AnonFormal.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Array.h"
 #include "chpl/uast/As.h"
@@ -54,6 +55,7 @@
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/ForwardingDecl.h"
 #include "chpl/uast/Function.h"
+#include "chpl/uast/FunctionSignature.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/ImagLiteral.h"
 #include "chpl/uast/Implements.h"

@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
@@ -53,11 +54,13 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
 
   std::string text;
   ErrorMessage error;
+  const ParseError* parseError = nullptr;
   bool ok = readfile(path.c_str(), text, error);
   if (!ok) {
-    context->report(error);
+    parseError = ParseError::get(context, error);
+    context->report(parseError);
   }
-  auto result = FileContents(std::move(text), std::move(error));
+  auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
 }
 
@@ -102,10 +105,10 @@ parseFileToBuilderResult(Context* context, UniqueString path,
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
-  const ErrorMessage& error = contents.error();
+  const ParseError* error = contents.error();
   BuilderResult result(path);
 
-  if (error.isEmpty()) {
+  if (error == nullptr) {
     // if there was no error reading the file, proceed to parse
     auto parser = helpMakeParser(context, parentSymbolPath);
     const char* pathc = path.c_str();
@@ -140,9 +143,9 @@ parseFileContainingIdToBuilderResult(Context* context, ID id) {
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
-  const ErrorMessage& error = contents.error();
+  const ErrorBase* error = contents.error();
   BuilderResult result(path);
-  if (error.isEmpty()) {
+  if (error == nullptr) {
     // if there was no error reading the file, proceed to parse
     auto parser = Parser::createForTopLevelModule(context);
     const char* pathc = path.c_str();
@@ -187,7 +190,7 @@ const ModuleVec& parse(Context* context, UniqueString path,
 
   // Report any errors encountered to the context.
   for (auto& e : p.errors())
-    if (!e.isDefaultConstructed())
+    if (e != nullptr)
       context->report(e);
 
   // Compute a vector of Modules
@@ -541,10 +544,7 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
         }
       }
     } else {
-      auto err = ErrorMessage::error(include, "cannot find included submodule");
-      err.addDetail(ErrorMessage::note(include, "expected file at path '%s'",
-                                       check.c_str()));
-      context->report(err);
+      REPORT(context, MissingInclude, include, check);
     }
   }
 
@@ -555,22 +555,11 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
     bool isModPrivate = (result->visibility() == uast::Decl::PRIVATE);
 
     if (isModPrivate && !isIncPrivate) {
-      auto error = ErrorMessage::error(include,
-                            "cannot make a private module public through "
-                            "an include statement");
-      error.addDetail(ErrorMessage::note(result,
-                            "module declared private here"));
-      context->report(std::move(error));
+      REPORT(context, PrivateToPublicInclude, include, result);
     }
 
     if (isIncPrototype) {
-      auto error = ErrorMessage::error(include,
-                            "cannot apply prototype to module in "
-                            "include statement");
-      error.addDetail(ErrorMessage::note(result,
-                            "put prototype keyword at "
-                            "module declaration here"));
-      context->report(std::move(error));
+      REPORT(context, PrototypeInclude, include, result);
     }
   }
 

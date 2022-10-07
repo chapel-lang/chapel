@@ -707,7 +707,10 @@ module Errors {
   //
 
   /*
-    Exit the program
+    Exit the program.
+
+    The compiler ignores the code following a call to `exit`
+    until the end of the block where this call is made.
 
     :arg status: The exit code for the program
   */
@@ -718,8 +721,10 @@ module Errors {
 
   /*
      Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
+     ``halt`` in the Chapel source, then exits the program.
+
+     The compiler ignores the code following a call to `halt`
+     until the end of the block where this call is made.
    */
   pragma "function terminates program"
   pragma "always propagate line file info"
@@ -727,11 +732,7 @@ module Errors {
     __primitive("chpl_error", c"halt reached");
   }
 
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
+  pragma "no doc"  // documented in the varargs overload
   pragma "function terminates program"
   pragma "always propagate line file info"
   proc halt(msg:string) {
@@ -741,7 +742,10 @@ module Errors {
   /*
      Prints an error message to stderr giving the location of the call to
      ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
+     then exits the program.
+
+     The compiler ignores the code following a call to `halt`
+     until the end of the block where this call is made.
    */
   pragma "function terminates program"
   pragma "always propagate line file info"
