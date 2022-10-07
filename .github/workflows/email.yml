@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-   branches:
-      - master
-      - main 
+   # branches:
+    #  - master
+    #  - main 
       
 jobs:
   
@@ -34,8 +34,9 @@ jobs:
           separator: ","
          
           
-      - name: Send mail      
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true  
+      - name: Send mail  
+       
+       # if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true  
         uses: dawidd6/action-send-mail@v3
         with:
    
