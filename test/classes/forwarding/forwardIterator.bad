@@ -1,0 +1,5 @@
+forwardIterator.chpl:23: In function 'main':
+forwardIterator.chpl:26: error: unresolved call 'Foo.all()'
+forwardIterator.chpl:16: note: this candidate did not match: Bar.all()
+forwardIterator.chpl:26: note: because method call receiver with type 'Foo'
+forwardIterator.chpl:16: note: is passed to formal 'this: borrowed Bar'
