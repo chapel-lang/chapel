@@ -64,7 +64,7 @@ struct ParamCollector {
   bool enter(const uast::VarLikeDecl* decl, RV& rv) {
     if (decl->storageKind() == IntentList::PARAM ||
         decl->storageKind() == IntentList::INDEX) {
-      const ResolvedExpression& rr = rv.byPostorder.byAst(decl);
+      const ResolvedExpression& rr = rv.byAst(decl);
       auto val = rr.type().param()->toIntParam();
       assert(val != nullptr);
 

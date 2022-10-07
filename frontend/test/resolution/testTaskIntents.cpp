@@ -79,8 +79,8 @@ struct Collector {
   }
 
   bool enter(const uast::NamedDecl* decl, RV& rv) {
-    if (rv.byPostorder.hasId(decl->id())) {
-      const ResolvedExpression& rr = rv.byPostorder.byAst(decl);
+    if (rv.hasAst(decl)) {
+      const ResolvedExpression& rr = rv.byAst(decl);
       auto name = decl->name().str();
       declTypes.emplace(name, rr.type());
 
@@ -95,8 +95,8 @@ struct Collector {
   }
 
   bool enter(const uast::Identifier* ident, RV& rv) {
-    if (rv.byPostorder.hasId(ident->id())) {
-      const ResolvedExpression& rr = rv.byPostorder.byAst(ident);
+    if (rv.hasAst(ident)) {
+      const ResolvedExpression& rr = rv.byAst(ident);
       identTypes.emplace(ident->name().str(), rr.type());
     }
 
@@ -104,8 +104,8 @@ struct Collector {
   }
 
   bool enter(const uast::TypeQuery* tq, RV& rv) {
-    if (rv.byPostorder.hasId(tq->id())) {
-      const ResolvedExpression& rr = rv.byPostorder.byAst(tq);
+    if (rv.hasAst(tq)) {
+      const ResolvedExpression& rr = rv.byAst(tq);
       declTypes.emplace(tq->name().str(), rr.type());
     }
 
@@ -119,14 +119,14 @@ struct Collector {
     // TODO: Eventually this logic should be moved into ResolvedVisitor as
     // a helper method.
     //
-    if (rv.byPostorder.hasId(call->id())) {
-      const ResolvedExpression& result = rv.byPostorder.byAst(call);
+    if (rv.hasAst(call)) {
+      const ResolvedExpression& result = rv.byAst(call);
       if (result.mostSpecific().isEmpty() == false) {
         const TypedFnSignature* sig = result.mostSpecific().only();
-        auto fn = resolveFunction(rv.context, sig, result.poiScope());
+        auto fn = resolveFunction(rv.context(), sig, result.poiScope());
 
-        ResolvedVisitor<Collector> newRV(rv.context, nullptr, *this, fn->resolutionById());
-        auto untyped = idToAst(rv.context, sig->id());
+        ResolvedVisitor<Collector> newRV(rv.context(), nullptr, *this, fn->resolutionById());
+        auto untyped = idToAst(rv.context(), sig->id());
         assert(untyped->id() == sig->id());
         untyped->traverse(newRV);
       }
