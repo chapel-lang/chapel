@@ -26,8 +26,38 @@ module DistributedMap {
   private use CyclicDist;
   private use IO;
 
-  // TODO: document type, methods
   record distributedMap {
+    pragma "no doc"
+    forwarding var m: shared distributedMapImpl?;
+
+    proc init(type keyType, type valType) {
+      m = new shared distributedMapImpl(keyType, valType);
+    }
+
+    proc init(type keyType, type valType, hasher: func(keyType, int, int)) {
+      m = new shared distributedMapImpl(keyType, valType, hasher);
+    }
+
+    /*proc const contains(const k: m.keyType): bool {
+      return m.contains(k);
+      }*/
+
+    proc clear() {
+      m.mapClear(); // Note: can't be just forwarded, due to #20336
+    }
+
+    proc readThis(ch: fileReader) throws {
+      m.readThis(ch);
+    }
+
+    proc writeThis(ch: fileWriter) throws {
+      m.writeThis(ch);
+    }
+
+  }
+
+  // TODO: document type, methods
+  class distributedMapImpl {
     /* Type of map keys. */
     type keyType;
     /* Type of map values. */
@@ -94,7 +124,7 @@ module DistributedMap {
     /*
       Clears the contents of this map.
     */
-    proc clear() {
+    proc mapClear() {
       for i in locDom {
         locks[i].lock();
       }
@@ -223,10 +253,11 @@ module DistributedMap {
       for already-existing keys.
 
       :arg m: The other map
-      :type m: distributedMap(keyType, valType)
+      :type m: distributedMap with matching keyType and valType
     */
     proc extend(pragma "intent ref maybe const formal"
-                m: distributedMap(keyType, valType)) {
+                m: distributedMap) where (m.m.keyType == keyType &&
+                                          m.m.valType == valType) {
       for i in locDom {
         locks[i].lock();
       }
@@ -428,9 +459,9 @@ module DistributedMap {
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to read from.
+      :arg ch: A fileReader to read from.
     */
-    proc readThis(ch: channel) throws {
+    proc readThis(ch: fileReader) throws {
       for i in locDom {
         locks[i].lock();
       }
@@ -475,9 +506,9 @@ module DistributedMap {
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to write to.
+      :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       for i in locDom {
         locks[i].lock();
       }
