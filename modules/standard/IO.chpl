@@ -1634,8 +1634,8 @@ proc file.fsync() throws {
 /*
   A compile-time parameter to control the behavior of :proc:`file.path`
 
-  When 'false', the deprecated behavior is used (i.e., return the relative path
-  whenever available)
+  When 'false', the deprecated behavior is used (i.e., return the shortest of
+  the relative path and the absolute path)
 
   When 'true', the new behavior is used (i.e., always return the absolute path)
 */
