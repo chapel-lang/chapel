@@ -1,4 +1,4 @@
-warning in sparselyCommented.doc.chpl:36: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'sparselyCommented.doc' is being introduced to contain the file's contents.
+warning in sparselyCommented.doc.chpl:36: an implicit module named 'sparselyCommented.doc' is being introduced to contain this file-scope code.
 .. default-domain:: chpl
 
 .. module:: sparselyCommented.doc
