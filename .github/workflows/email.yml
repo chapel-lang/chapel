@@ -79,7 +79,8 @@ jobs:
               Log Message: ${{github.event.commit.message}} <br>  
               Compare: ${{github.event.compare}} <br>
               Modified Files: <br>
-              ${{steps.changed-files.outputs.all_changed_and_modified_files} <br>
+              ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
+              ${{steps.changed-files.outputs.deleted_files}} <br>
               </p>
               </body>
               </html>
