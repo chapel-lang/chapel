@@ -66,7 +66,6 @@ jobs:
              
               <p>   
               <br>
-              {{ github.event.head_commit.author.name}}
               <br>
               <br>
               Branch ${{github.ref}} <br>
