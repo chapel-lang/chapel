@@ -27,15 +27,23 @@ module DistributedMap {
   private use IO;
 
   record distributedMap {
+    type keyType;
+    type valType;
     pragma "no doc"
-    var m: shared distributedMapImpl?;
-    forwarding m except contains, size, isEmpty;
+    var m: shared distributedMapImpl(keyType, valType)?;
+    forwarding m only chpl_verify;
+    // Might be able to forward updateAggregator and the toArray functions, but
+    // given the trouble I've had so far, let's save that
 
     proc init(type keyType, type valType) {
+      this.keyType = keyType;
+      this.valType = valType;
       m = new shared distributedMapImpl(keyType, valType);
     }
 
     proc init(type keyType, type valType, hasher: func(keyType, int, int)) {
+      this.keyType = keyType;
+      this.valType = valType;
       m = new shared distributedMapImpl(keyType, valType, hasher);
     }
 
@@ -47,26 +55,56 @@ module DistributedMap {
       return m!.isEmpty();
     }
 
-    proc const contains(const k: m.keyType): bool {
+    proc const contains(const k: keyType): bool {
       return m!.contains(k);
     }
 
+    proc extend(pragma "intent ref maybe const formal"
+                m: map(keyType, valType)) {
+      this.m!.extend(m);
+    }
+
+    proc extend(pragma "intent ref maybe const formal"
+                m: distributedMap(keyType, valType)) {
+      this.m!.extend(m.m!);
+    }
+
+    proc getValue(k: keyType) const throws {
+      return m!.getValue(k);
+    }
+
+    proc getAndRemove(k: keyType): valType {
+      return m!.getAndRemove(k);
+    }
+
     proc clear() {
-      m.mapClear(); // Note: can't be just forwarded, due to #20336
+      // Note: wouldn't be able to just be forwarded, due to #20336
+      m!.mapClear();
+    }
+
+    iter values() const {
+      // How would you do this?
     }
 
     proc readThis(ch: fileReader) throws {
-      m.readThis(ch);
+      m!.readThis(ch);
     }
 
     proc writeThis(ch: fileWriter) throws {
-      m.writeThis(ch);
+      m!.writeThis(ch);
     }
 
-    proc add(in k: m.keyType, in v: m.valType): bool lifetime this < v {
+    proc add(in k: keyType, in v: valType): bool lifetime this < v {
       return m!.add(k, v);
     }
 
+    proc addOrSet(in k: keyType, in v: valType) {
+      m!.addOrSet(k, v);
+    }
+
+    proc remove(k: keyType): bool {
+      return m!.remove(k);
+    }
   }
 
   // TODO: document type, methods
@@ -269,8 +307,7 @@ module DistributedMap {
       :type m: distributedMap with matching keyType and valType
     */
     proc extend(pragma "intent ref maybe const formal"
-                m: distributedMap) where (m.m.keyType == keyType &&
-                                          m.m.valType == valType) {
+                m: distributedMapImpl(keyType, valType)) {
       for i in locDom {
         locks[i].lock();
       }
