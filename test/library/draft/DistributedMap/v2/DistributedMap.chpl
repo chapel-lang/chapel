@@ -28,7 +28,8 @@ module DistributedMap {
 
   record distributedMap {
     pragma "no doc"
-    forwarding var m: shared distributedMapImpl?;
+    var m: shared distributedMapImpl?;
+    forwarding m except contains, size, isEmpty;
 
     proc init(type keyType, type valType) {
       m = new shared distributedMapImpl(keyType, valType);
@@ -38,9 +39,17 @@ module DistributedMap {
       m = new shared distributedMapImpl(keyType, valType, hasher);
     }
 
-    /*proc const contains(const k: m.keyType): bool {
-      return m.contains(k);
-      }*/
+    inline proc const size {
+      return m!.size;
+    }
+
+    inline proc const isEmpty(): bool {
+      return m!.isEmpty();
+    }
+
+    proc const contains(const k: m.keyType): bool {
+      return m!.contains(k);
+    }
 
     proc clear() {
       m.mapClear(); // Note: can't be just forwarded, due to #20336
@@ -52,6 +61,10 @@ module DistributedMap {
 
     proc writeThis(ch: fileWriter) throws {
       m.writeThis(ch);
+    }
+
+    proc add(in k: m.keyType, in v: m.valType): bool lifetime this < v {
+      return m!.add(k, v);
     }
 
   }
