@@ -428,6 +428,38 @@ static void test9() {
   assert(reC.toId().isEmpty());
 }
 
+// test name conflicts can occur with uses
+static void test10() {
+  printf("test10\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module A {
+        var x = 2;
+      }
+      module B {
+        var x = 4;
+      }
+      module Z {
+        use A, B;
+        var a = x;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* a = findVariable(vec, "a");
+  assert(a);
+
+  const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
+  assert(reA.toId().isEmpty());
+}
+
 int main() {
   test1();
   test2();
@@ -438,6 +470,7 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
 
   return 0;
 }
