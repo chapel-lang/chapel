@@ -1,6 +1,6 @@
 record Foo {
   var b: shared Bar?;
-  forwarding b except whatever;
+  forwarding b!;
 
   proc init() {
     b = new shared Bar();
