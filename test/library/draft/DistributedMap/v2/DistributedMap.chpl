@@ -31,7 +31,7 @@ module DistributedMap {
     type valType;
     pragma "no doc"
     var m: shared distributedMapImpl(keyType, valType)?;
-    forwarding m only chpl_verify;
+    forwarding m!;
     // Might be able to forward updateAggregator and the toArray functions, but
     // given the trouble I've had so far, let's save that
 
@@ -47,43 +47,9 @@ module DistributedMap {
       m = new shared distributedMapImpl(keyType, valType, hasher);
     }
 
-    inline proc const size {
-      return m!.size;
-    }
-
-    inline proc const isEmpty(): bool {
-      return m!.isEmpty();
-    }
-
-    proc const contains(const k: keyType): bool {
-      return m!.contains(k);
-    }
-
-    proc extend(pragma "intent ref maybe const formal"
-                m: map(keyType, valType)) {
-      this.m!.extend(m);
-    }
-
-    proc extend(pragma "intent ref maybe const formal"
-                m: distributedMap(keyType, valType)) {
-      this.m!.extend(m.m!);
-    }
-
-    proc getValue(k: keyType) const throws {
-      return m!.getValue(k);
-    }
-
-    proc getAndRemove(k: keyType): valType {
-      return m!.getAndRemove(k);
-    }
-
     proc clear() {
       // Note: wouldn't be able to just be forwarded, due to #20336
       m!.mapClear();
-    }
-
-    iter values() const {
-      // How would you do this?
     }
 
     proc readThis(ch: fileReader) throws {
@@ -92,18 +58,6 @@ module DistributedMap {
 
     proc writeThis(ch: fileWriter) throws {
       m!.writeThis(ch);
-    }
-
-    proc add(in k: keyType, in v: valType): bool lifetime this < v {
-      return m!.add(k, v);
-    }
-
-    proc addOrSet(in k: keyType, in v: valType) {
-      m!.addOrSet(k, v);
-    }
-
-    proc remove(k: keyType): bool {
-      return m!.remove(k);
     }
   }
 
@@ -307,7 +261,7 @@ module DistributedMap {
       :type m: distributedMap with matching keyType and valType
     */
     proc extend(pragma "intent ref maybe const formal"
-                m: distributedMapImpl(keyType, valType)) {
+                m: distributedMap(keyType, valType)) {
       for i in locDom {
         locks[i].lock();
       }
