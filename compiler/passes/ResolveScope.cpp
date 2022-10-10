@@ -228,8 +228,6 @@ void ResolveScope::addBuiltIns() {
   extend(dtCVoidPtr->symbol);
   extend(dtCFnPtr->symbol);
 
-  extend(dtFile->symbol);
-
   extend(dtOpaque->symbol);
   extend(gOpaque);
 
@@ -489,6 +487,8 @@ void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
             if (UnresolvedSymExpr* typeName =
                 toUnresolvedSymExpr(cType->baseExpr)) {
               mMethodsOnTypeName.insert(typeName->unresolved);
+            } else if (SymExpr* typeName = toSymExpr(cType->baseExpr)) {
+              mMethodsOnTypeName.insert(typeName->symbol()->name);
             }
           }
         } else {

@@ -91,7 +91,7 @@ module FileHashing {
     var f = open(path, iomode.r);
     var len = f.size;
     var r = f.reader(kind=iokind.big, locking=false,
-                     region=0..len);
+                     region=0..#len);
 
 
     var msg:16*uint(32); // aka 64 bytes

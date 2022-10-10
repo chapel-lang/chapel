@@ -477,7 +477,6 @@ TYPE_EXTERN PrimitiveType*    dtInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtUInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtReal[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtImag[FLOAT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType*    dtFile;
 TYPE_EXTERN PrimitiveType*    dtOpaque;
 TYPE_EXTERN PrimitiveType*    dtTaskID;
 TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;

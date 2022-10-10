@@ -2711,4 +2711,3 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
     return finishStmt(err);
   }
 }
-

@@ -56,6 +56,9 @@ module CTypes {
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
+  /* The Chapel type corresponding to the C 'FILE*' type defined in <stdio.h> */
+  extern "_cfile" type c_FILE;
+
   // Former CPtr contents start here
 
   /*

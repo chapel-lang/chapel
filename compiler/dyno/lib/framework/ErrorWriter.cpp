@@ -93,7 +93,8 @@ static TermColorName kindColor(ErrorBase::Kind kind) {
 }
 
 static void writeFile(std::ostream& oss, const Location& loc) {
-  auto path = loc.path().c_str();
+  auto pathUstr = loc.path();
+  auto path = pathUstr.c_str();
   int lineno = loc.line();
   bool validPath = (path != nullptr && path[0] != '\0');
 

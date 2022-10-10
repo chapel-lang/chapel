@@ -812,9 +812,9 @@ module FFTW {
 
     extern proc fftw_import_wisdom(read_char : fftw_read_char_func, data : c_void_ptr) : c_int;
 
-    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : _file) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : c_FILE) : void;
 
-    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(_file)) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(c_FILE)) : void;
 
     extern proc fftw_print_plan(p : fftw_plan) : void;
 

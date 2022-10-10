@@ -1095,7 +1095,7 @@ module DefaultRectangular {
     // TODO: Without this where clause any code using `unsafeAssign` to
     // resize a 2D+ array will explode, because the 'locales' array tries
     // to reuse an existing instantiation. Comment this out and run
-    // 'test/domains/unsafeAssign/TestUnsafeAssign2D.chpl' to see.
+    // 'test/domains/unsafeAssign/DefaultRectangular2D.chpl' to see.
     //
     override proc chpl_unsafeAssignIsClassElementNil(manager, idx)
     where idx.type == (rank*idxType) {

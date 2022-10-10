@@ -44,7 +44,7 @@ module NetCDF {
   /* This module defines the C interface to the netCDF library.
      Documentation for its functions, types, and constants can be found
      at the official netCDF web site:
-     https://www.unidata.ucar.edu/software/netcdf/docs
+     https://docs.unidata.ucar.edu/netcdf-c/current/
    */
   module C_NetCDF {
     public use CTypes;

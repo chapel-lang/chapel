@@ -8768,8 +8768,7 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
   } else if (rhsType == dtNil) {
     bool lhsIsPointer = isClassLikeOrPtr(lhsType) ||
                         lhsType == dtCVoidPtr ||
-                        lhsType == dtCFnPtr ||
-                        lhsType == dtFile;
+                        lhsType == dtCFnPtr;
 
     if (lhsType != dtNil && !lhsIsPointer) {
       USR_FATAL(userCall(call),

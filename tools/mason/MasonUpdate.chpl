@@ -28,7 +28,7 @@ use MasonHelp;
 use MasonSystem;
 use MasonUtils;
 use TOML;
-
+import Path;
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
@@ -72,8 +72,8 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
   try! {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tf);
-    const tomlPath = projectHome + "/" + tf;
-    const lockPath = projectHome + "/" + lf;
+    const tomlPath = projectHome + "/" + Path.relPath(tf);
+    const lockPath = projectHome + "/" + Path.relPath(lf);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;

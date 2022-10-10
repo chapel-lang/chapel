@@ -1056,7 +1056,7 @@ private extern proc qio_style_init_default(ref s: iostyleInternal);
 private extern proc qio_file_retain(f:qio_file_ptr_t);
 private extern proc qio_file_release(f:qio_file_ptr_t);
 
-private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, const ref style:iostyleInternal, usefilestar:c_int):errorCode;
+private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp: c_FILE, fd:fd_t, iohints:c_int, const ref style:iostyleInternal, usefilestar:c_int):errorCode;
 private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyleInternal):errorCode;
 private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyleInternal):errorCode;
 private extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyleInternal):errorCode;
@@ -1144,7 +1144,7 @@ private extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):errorCode;
 private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):errorCode;
 
 private extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):errorCode;
-private extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):errorCode;
+private extern proc qio_file_path_for_fp(fp:c_FILE, ref path:c_string):errorCode;
 private extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):errorCode;
 private extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):errorCode;
 
@@ -1631,10 +1631,24 @@ proc file.fsync() throws {
   if err then try ioerror(err, "in file.fsync", this._tryGetPath());
 }
 
+/*
+  A compile-time parameter to control the behavior of :proc:`file.path`
+
+  When 'false', the deprecated behavior is used (i.e., return the shortest of
+  the relative path and the absolute path)
+
+  When 'true', the new behavior is used (i.e., always return the absolute path)
+*/
+config param filePathAbsolute = false;
+
+deprecated "The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant"
+proc file.path: string throws where !filePathAbsolute {
+  return fileRelPathHelper(this);
+}
 
 /*
 
-Get the path to an open file.
+Get the absolute path to an open file.
 
 Note that not all files have a path (e.g. files opened with :proc:`openmem`),
 and that this function may not work on all operating systems.
@@ -1642,18 +1656,55 @@ and that this function may not work on all operating systems.
 The function :proc:`Path.realPath` is an alternative way
 to get the path to a file.
 
+:returns: the absolute path to the file
+:rtype: ``string``
+
 :throws SystemError: Thrown if the path could not be retrieved.
  */
-proc file.path : string throws {
+proc file.path : string throws where filePathAbsolute {
+  return this._abspath;
+}
+
+// helper for relative-path deprecation
+pragma "no doc"
+proc file._abspath: string throws {
   var ret: string;
   var err:errorCode = ENOERR;
   on this._home {
     try this.checkAssumingLocal();
     var tmp:c_string;
-    var tmp2:c_string;
     err = qio_file_path(_file_internal, tmp);
     if !err {
-      err = qio_shortest_path(_file_internal, tmp2, tmp);
+      ret = createStringWithNewBuffer(tmp,
+                                      policy=decodePolicy.escape);
+    }
+    chpl_free_c_string(tmp);
+  }
+  if err then try ioerror(err, "in file.path");
+  return ret;
+}
+
+// internal version of 'file.path' used to generate error messages in other IO methods
+// produces a relative path when avilible
+pragma "no doc"
+proc file._tryGetPath() : string {
+  try {
+    return fileRelPathHelper(this);
+  } catch {
+    return "unknown";
+  }
+}
+
+private proc fileRelPathHelper(f: file): string throws {
+  var ret: string;
+  var err:errorCode = ENOERR;
+  on f._home {
+    try f.checkAssumingLocal();
+    var tmp:c_string;
+    var tmp2:c_string;
+    err = qio_file_path(f._file_internal, tmp);
+    if !err {
+      err = qio_shortest_path(f._file_internal, tmp2, tmp);
     }
     chpl_free_c_string(tmp);
     if !err {
@@ -1664,15 +1715,6 @@ proc file.path : string throws {
   }
   if err then try ioerror(err, "in file.path");
   return ret;
-}
-
-pragma "no doc"
-proc file._tryGetPath() : string {
-  try {
-    return this.path;
-  } catch {
-    return "unknown";
-  }
 }
 
 /*
@@ -1857,7 +1899,7 @@ private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
   var local_style = style;
   var ret:file;
   ret._home = here;
-  extern proc chpl_cnullfile():_file;
+  extern proc chpl_cnullfile():c_FILE;
   var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
 
   // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
@@ -1874,15 +1916,18 @@ private proc openfdHelper(fd: fd_t, hints = ioHintSet.empty,
 }
 
 @unstable "openfp with a style argument is unstable"
-proc openfp(fp: _file, hints=ioHintSet.empty, style:iostyle):file throws {
+proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
 
 /*
 
-Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
-that once the file is open, you will need to use a :proc:`file.reader` or
-:proc:`file.writer` to create a channel to actually perform I/O operations
+Create a Chapel :record:`file` that wraps around an open C file. A pointer to
+a C ``FILE`` object can be obtained via Chapel's
+:ref:`C Interoperability <primers-C-interop-using-C>` functionality.
+
+Once the Chapel file is created, you will need to use a :proc:`file.reader` or
+:proc:`file.writer` to create a channel to perform I/O operations on the C file.
 
 .. note::
 
@@ -1891,18 +1936,24 @@ that once the file is open, you will need to use a :proc:`file.reader` or
   to a file opened with :proc:`openfp`.
 
 
-:arg fp: a C ``FILE*`` to work with
+:arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` that uses the underlying FILE* argument.
+:returns: an open :record:`file` corresponding to the C file.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
+proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
+  return openfpHelper(fp, hints);
+}
+
+pragma "last resort"
+deprecated "'_file' is deprecated; use the variant of 'openfp' that takes a 'c_FILE' instead"
 proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
-private proc openfpHelper(fp: _file, hints=ioHintSet.empty,
+private proc openfpHelper(fp: c_FILE, hints=ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
@@ -2595,6 +2646,13 @@ inline proc _channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
+/* Used to control the behavior of the region argument for
+   :proc:`channel.seek`.  When set to ``true``, the region argument will fully
+   specify the bounds of the seek.  When set to ``false``, the region argument
+   will exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
+config param useNewSeekRegionBounds = false;
+
 /*
    Reset a channel to point to a new part of a file.
    This function allows one to jump to a different part of a
@@ -2620,7 +2678,8 @@ inline proc _channel.commit() where this.locking == false {
                          channel is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc _channel.seek(region: range(?)) throws {
+proc _channel.seek(region: range(?)) throws where (!region.hasHighBound() ||
+                                                   useNewSeekRegionBounds) {
 
   if this.locking then
     compilerError("Cannot seek on a locking channel");
@@ -2630,7 +2689,8 @@ proc _channel.seek(region: range(?)) throws {
 
   } else {
     if (region.hasHighBound()) {
-      const err = qio_channel_seek(_channel_internal, region.low, region.high);
+      const err = qio_channel_seek(_channel_internal, region.low,
+                                   region.high + 1);
 
       if err then
         throw createSystemError(err);
@@ -2641,6 +2701,20 @@ proc _channel.seek(region: range(?)) throws {
       if err then
         throw createSystemError(err);
     }
+  }
+}
+
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc _channel.seek(region: range(?)) throws where (region.hasHighBound() &&
+                                                   !useNewSeekRegionBounds) {
+  if (!region.hasLowBound()) {
+    throw new IllegalArgumentError("region", "must have a lower bound");
+
+  } else {
+    const err = qio_channel_seek(_channel_internal, region.low, region.high);
+
+    if err then
+      throw createSystemError(err);
   }
 }
 
@@ -2813,6 +2887,13 @@ proc openreader(path:string,
                           style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`openreader`.
+   When set to ``true``, the region argument will fully specify the bounds of
+   the :type:`fileReader`.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
+config param useNewOpenReaderRegionBounds = false;
+
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
 // since we only will have one reference, will be right after we close this
@@ -2853,7 +2934,17 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking) throws {
+    : fileReader(kind, locking) throws where (!region.hasHighBound() ||
+                                              useNewOpenReaderRegionBounds) {
+  return openreaderHelper(path, kind, locking, region, hints);
+}
+
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                region: range(?) = 0.., hints=ioHintSet.empty)
+    : fileReader(kind, locking) throws where (region.hasHighBound() &&
+                                              !useNewOpenReaderRegionBounds) {
   return openreaderHelper(path, kind, locking, region, hints);
 }
 
@@ -2865,7 +2956,8 @@ private proc openreaderHelper(path:string,
   : fileReader(kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
-  return try fl.readerHelper(kind, locking, region, hints, style);
+  return try fl.readerHelper(kind, locking, region, hints, style,
+                             fromOpenReader=true);
 }
 
 @unstable "openwriter with a style argument is unstable"
@@ -2928,28 +3020,36 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`file.reader`.
+   When set to ``true``, the region argument will fully specify the bounds of
+   the :type:`fileReader`.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
+config param useNewFileReaderRegionBounds = false;
+
 /*
-   Create a :record:`channel` that supports reading from a file. See
+   Create a :record:`fileReader` that supports reading from a file. See
    :ref:`about-io-overview`.
 
-   The ``start=`` and ``end=`` arguments define the region of the file that the
-   channel will read from.  These are byte offsets; the beginning of the file is
-   at the offset 0.  The defaults for these arguments enable the channel to
-   access the entire file.
+   The ``region=`` argument defines the portion of the file that the fileReader
+   will read from.  This is a byte offset; the beginning of the file is at the
+   offset 0.  The default for this argument enables the fileReader to access the
+   entire file.
 
-   A channel will never read beyond its maximum end position. In addition,
-   reading from a channel beyond the end of the underlying file will not extend
-   that file.  Reading beyond the end of the file or beyond the end offset of
-   the channel will produce the error ``EEOF`` (and return `false` in many
-   cases such as :proc:`channel.read`) to indicate that the end was reached.
+   A fileReader will never read beyond its maximum end position. In addition,
+   reading from a fileReader beyond the end of the underlying file will not
+   extend that file.  Reading beyond the end of the file or beyond the end
+   offset of the fileReader will produce the error ``EEOF`` (and return `false`
+   in many cases such as :proc:`channel.read`) to indicate that the end was
+   reached.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`channel` type. Defaults
+              corresponding parameter of the :record:`fileReader` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the
-                 corresponding parameter of the :record:`channel` type.
+                 corresponding parameter of the :record:`fileReader` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
    :arg region: zero-based byte offset indicating where in the file the
@@ -2969,14 +3069,28 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                                  byte 0.
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty): fileReader(kind, locking) throws {
+                 region: range(?) = 0.., hints = ioHintSet.empty)
+  : fileReader(kind, locking) throws where (!region.hasHighBound() ||
+                                            useNewFileReaderRegionBounds) {
   return this.readerHelper(kind, locking, region, hints);
 }
 
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc file.reader(param kind=iokind.dynamic, param locking=true,
+                 region: range(?) = 0.., hints = ioHintSet.empty)
+  : fileReader(kind, locking) throws where (region.hasHighBound() &&
+                                            !useNewFileReaderRegionBounds) {
+  return this.readerHelper(kind, locking, region, hints);
+}
+
+// TODO: remove fromOpenReader and fromOpenUrlReader when deprecated versions
+// are removed
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
-                       style:iostyleInternal = this._style): fileReader(kind, locking) throws {
+                       style:iostyleInternal = this._style,
+                       fromOpenReader=false, fromOpenUrlReader=false)
+  : fileReader(kind, locking) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
@@ -2989,14 +3103,47 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new fileReader(kind, locking, this, err, hints, region.low,
-                           region.high, style);
+      // This is to ensure the user sees consistent behavior and can control it.
+      // - All calls from `openUrlReader` should use the new behavior.
+      // - Only calls from `openreader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // - Only calls from `file.reader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // Calls from `openreader` should not be impacted by `file.reader`'s flag
+      // and vice versa.
+      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
+          fromOpenUrlReader ||
+          (!fromOpenReader && useNewFileReaderRegionBounds)) {
+        ret = new fileReader(kind, locking, this, err, hints, region.low,
+                             region.high + 1, style);
+      } else {
+        ret = new fileReader(kind, locking, this, err, hints, region.low,
+                             region.high, style);
+      }
+
     } else if (region.hasLowBound()) {
       ret = new fileReader(kind, locking, this, err, hints, region.low,
                            max(int(64)), style);
+
     } else if (region.hasHighBound()) {
-      ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                           style);
+      // This is to ensure the user sees consistent behavior and can control it.
+      // - All calls from `openUrlReader` should use the new behavior.
+      // - Only calls from `openreader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // - Only calls from `file.reader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // Calls from `openreader` should not be impacted by `file.reader`'s flag
+      // and vice versa.
+      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
+          fromOpenUrlReader ||
+          (!fromOpenReader && useNewFileReaderRegionBounds)) {
+        ret = new fileReader(kind, locking, this, err, hints, 0,
+                             region.high + 1, style);
+      } else {
+        ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                             style);
+      }
+
     } else {
       ret = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
                            style);
@@ -3015,6 +3162,13 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
                           local_style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`file.lines`.
+   When set to ``true``, the region argument will fully specify the bounds that
+   this function would cover.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
+config param useNewLinesRegionBounds = false;
+
 /* Iterate over all of the lines in a file.
 
    :returns: an object which yields strings read from the file
@@ -3022,9 +3176,18 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
    :throws SystemError: Thrown if an object could not be returned.
  */
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws {
+                hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
+                                                       useNewLinesRegionBounds) {
   return this.linesHelper(locking, region, hints);
 }
+
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc file.lines(param locking:bool = true, region: range(?) = 0..,
+                hints = ioHintSet.empty) throws where (region.hasHighBound() &&
+                                                       !useNewLinesRegionBounds) {
+  return this.linesHelper(locking, region, hints);
+}
+
 
 pragma "no doc"
 proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
@@ -3040,14 +3203,29 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
     try this.checkAssumingLocal();
     var ch: fileReader;
     if (region.hasLowBound() && region.hasHighBound()) {
-      ch = new fileReader(kind, locking, this, err, hints, region.low,
-                          region.high, local_style);
+      if (useNewLinesRegionBounds) {
+        ch = new fileReader(kind, locking, this, err, hints, region.low,
+                            region.high + 1, local_style);
+
+      } else {
+        ch = new fileReader(kind, locking, this, err, hints, region.low,
+                            region.high, local_style);
+      }
+
     } else if (region.hasLowBound()) {
       ch = new fileReader(kind, locking, this, err, hints, region.low,
                           max(int(64)), local_style);
+
     } else if (region.hasHighBound()) {
-      ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                          local_style);
+      if (useNewLinesRegionBounds) {
+        ch = new fileReader(kind, locking, this, err, hints, 0, region.high + 1,
+                            local_style);
+
+      } else {
+        ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                            local_style);
+      }
+
     } else {
       ch = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
                           local_style);
@@ -3067,42 +3245,51 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
   return this.writerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`file.writer`.
+   When set to ``true``, the region argument will fully specify the bounds of
+   the :record:`fileWriter`.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+
+ */
+config param useNewFileWriterRegionBounds = false;
+
 /*
-   Create a :record:`channel` that supports writing to a file. See
+   Create a :record:`fileWriter` that supports writing to a file. See
    :ref:`about-io-overview`.
 
-   The ``start=`` and ``end=`` arguments define the region of the file that the
-   channel will write to.  These are byte offsets; the beginning of the file is
-   at the offset 0.  The defaults for these arguments enable the channel to
-   access the entire file.
+   The ``region=`` argument defines the portion of the file that the fileWriter
+   will write to.  This is a byte offset; the beginning of the file is at the
+   offset 0.  The default for this argument enables the fileWriter to access the
+   entire file.
 
-   When a channel writes to a file, it will replace file data that was
+   When a fileWriter writes to a file, it will replace file data that was
    previously stored at the relevant offset. If the offset is beyond the
    end of the file, the file will be extended.
 
-   A channel will never write beyond its maximum end position.  It will extend
-   the file only as necessary to store data written to the channel. In other
-   words, specifying end here does not impact the file size directly; it
-   impacts only the section of the file that this channel can write to. After
-   all channels to a file are closed, that file will have a size equal to the
-   last position written to by any channel.
+   A fileWriter will never write beyond its maximum end position.  It will
+   extend the file only as necessary to store data written to the fileWriter. In
+   other words, specifying the high bound of the region argument here does not
+   impact the file size directly; it impacts only the section of the file that
+   this fileWriter can write to. After all fileWriters to a file are closed,
+   that file will have a size equal to the last position written to by any
+   fileWriter.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`channel` type. Defaults
+              corresponding parameter of the :record:`fileWriter` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the
-                 corresponding parameter of the :record:`channel` type.
+                 corresponding parameter of the :record:`fileWriter` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
    :arg region: zero-based byte offset indicating where in the file the
-               channel should start and stop writing. Defaults to
+               fileWriter should start and stop writing. Defaults to
                ``0..`` - meaning from the start of the file to no specified end
                point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
-               will cause the channel to use the hints provided when the
+               will cause the fileWriter to use the hints provided when the
                file was opened.
 
    .. warning::
@@ -3115,14 +3302,24 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty):
-                 fileWriter(kind,locking) throws {
+                 fileWriter(kind,locking) throws where (!region.hasHighBound() ||
+                                                        useNewFileWriterRegionBounds) {
+  return this.writerHelper(kind, locking, region, hints);
+}
+
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 region: range(?) = 0.., hints = ioHintSet.empty):
+                 fileWriter(kind,locking) throws where (region.hasHighBound() &&
+                                                        !useNewFileWriterRegionBounds) {
   return this.writerHelper(kind, locking, region, hints);
 }
 
 pragma "no doc"
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
-                       style:iostyleInternal = this._style):
+                       style:iostyleInternal = this._style,
+                       fromOpenUrlWriter = false):
   fileWriter(kind,locking) throws {
 
   if (region.hasLowBound() && region.low < 0) {
@@ -3138,14 +3335,29 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new fileWriter(kind, locking, this, err, hints, region.low,
-                           region.high, style);
+      // TODO: remove the fromOpenUrlWriter arg when the deprecated version is
+      // removed
+      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
+        ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                             region.high + 1, style);
+      } else {
+        ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                             region.high, style);
+      }
+
     } else if (region.hasLowBound()) {
       ret = new fileWriter(kind, locking, this, err, hints, region.low,
                            max(int(64)), style);
+
     } else if (region.hasHighBound()) {
-      ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
-                           style);
+      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
+        ret = new fileWriter(kind, locking, this, err, hints, 0,
+                             region.high + 1, style);
+      } else {
+        ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
+                             style);
+      }
+
     } else {
       ret = new fileWriter(kind, locking, this, err, hints, 0, max(int(64)),
                            style);
@@ -5355,13 +5567,13 @@ const stdin:fileReader(iokind.dynamic, true);
 stdin = try! openfd(0).reader();
 
 pragma "no doc"
-extern proc chpl_cstdout():_file;
+extern proc chpl_cstdout():c_FILE;
 /* standard output, otherwise known as file descriptor 1 */
 const stdout:fileWriter(iokind.dynamic, true);
 stdout = try! openfp(chpl_cstdout()).writer();
 
 pragma "no doc"
-extern proc chpl_cstderr():_file;
+extern proc chpl_cstderr():c_FILE;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:fileWriter(iokind.dynamic, true);
 stderr = try! openfp(chpl_cstderr()).writer();

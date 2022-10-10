@@ -34,7 +34,7 @@ module SortedMap {
   private use IO;
   public use Sort only defaultComparator;
 
-  // Lock code lifted from modules/standard/Lists.chpl.
+  // Lock code lifted from modules/standard/List.chpl.
   pragma "no doc"
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
