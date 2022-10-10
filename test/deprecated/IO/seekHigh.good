@@ -1,0 +1,2 @@
+seekHigh.chpl:4: warning: Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.
+re mi

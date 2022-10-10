@@ -1,0 +1,5 @@
+linesHigh.chpl:6: warning: Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.
+linesHigh.chpl:10: warning: Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.
+doe, a deer, a female deer
+ray, a drop of golden sun
+ray, a drop of golden sun
