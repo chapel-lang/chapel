@@ -2206,7 +2206,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc expand(off: rank*intIdxType) where !this.isRectangular() {
+    proc expand(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("expand not supported on associative domains");
       else if this.isSparse() then
@@ -2216,13 +2216,13 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc expand(off: intIdxType ...rank) return expand(off);
+    proc expand(off: integral ...rank) return expand(off);
 
     /* Return a new domain that is the current domain expanded by
        ``off(d)`` in dimension ``d`` if ``off(d)`` is positive or
        contracted by ``off(d)`` in dimension ``d`` if ``off(d)``
        is negative. */
-    proc expand(off: rank*intIdxType) {
+    proc expand(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
         ranges(i) = ranges(i).expand(off(i));
@@ -2237,7 +2237,7 @@ module ChapelDomain {
     /* Return a new domain that is the current domain expanded by
        ``off`` in all dimensions if ``off`` is positive or contracted
        by ``off`` in all dimensions if ``off`` is negative. */
-    proc expand(off: intIdxType) where rank > 1 {
+    proc expand(off: integral) where rank > 1 {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).expand(off);
@@ -2245,7 +2245,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc exterior(off: rank*intIdxType) where !this.isRectangular() {
+    proc exterior(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("exterior not supported on associative domains");
       else if this.isSparse() then
@@ -2255,14 +2255,14 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc exterior(off: intIdxType ...rank) return exterior(off);
+    proc exterior(off: integral ...rank) return exterior(off);
 
     /* Return a new domain that is the exterior portion of the
        current domain with ``off(d)`` indices for each dimension ``d``.
        If ``off(d)`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
        from the high bound. */
-    proc exterior(off: rank*intIdxType) {
+    proc exterior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).exterior(off(i));
@@ -2274,15 +2274,15 @@ module ChapelDomain {
        If ``off`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
        from the high bound. */
-    proc exterior(off:intIdxType) where rank != 1 {
-      var offTup: rank*intIdxType;
+    proc exterior(off:integral) where rank != 1 {
+      var offTup: rank*off.type;
       for i in 0..rank-1 do
         offTup(i) = off;
       return exterior(offTup);
     }
 
     pragma "no doc"
-    proc interior(off: rank*intIdxType) where !this.isRectangular() {
+    proc interior(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("interior not supported on associative domains");
       else if this.isSparse() then
@@ -2292,14 +2292,14 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc interior(off: intIdxType ...rank) return interior(off);
+    proc interior(off: integral ...rank) return interior(off);
 
     /* Return a new domain that is the interior portion of the
        current domain with ``off(d)`` indices for each dimension
        ``d``. If ``off(d)`` is negative, compute the interior from
        the low bound of the dimension; if positive, compute the
        interior from the high bound. */
-    proc interior(off: rank*intIdxType) {
+    proc interior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
         if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
@@ -2316,8 +2316,8 @@ module ChapelDomain {
        If ``off`` is negative, compute the interior from the low
        bound of the dimension; if positive, compute the interior
        from the high bound. */
-    proc interior(off: intIdxType) where rank != 1 {
-      var offTup: rank*intIdxType;
+    proc interior(off: integral) where rank != 1 {
+      var offTup: rank*off.type;
       for i in 0..rank-1 do
         offTup(i) = off;
       return interior(offTup);
