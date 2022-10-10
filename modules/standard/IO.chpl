@@ -2051,6 +2051,30 @@ proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws
   return ret;
 }
 
+/*
+  A parameter to select between the new and deprecated overloads of the
+  :record:`channel` type's `writer` methods.
+
+  These include: :proc:`channel.write`, :proc:`channel.writeln`, :proc:`channel.writebits`,
+  :proc:`channel.writeBytes`, and :proc:`FormattedIO.channel.writef`
+
+  This parameter also toggles the new and deprecated variants of the top-level
+  :proc:`ChapelIO.writef` method.
+
+  - When `WritersReturnBool=true` the deprecated variants of the writer methods are called
+  - When `WritersReturnBool=false` the new variants of the writer methods are called
+
+  .. note::
+    The only difference between the new and deprecated versions of these methods is the
+    return type. The deprecated overloads return a `bool` which is always ``true``, while
+    the new overloads do not return anything.
+
+    Leaving this param with its default value of ``true``, will allow you to rely on the
+    return value for the time being; however, the returning methods will be removed in
+    a future release.
+*/
+config param WritersReturnBool=true;
+
 pragma "ignore noinit"
 pragma "no doc"
 record _channel {
@@ -2363,7 +2387,7 @@ record ioNewline {
   pragma "no doc"
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f.write("\n");
+    f._write("\n");
   }
 }
 
@@ -2392,7 +2416,7 @@ record ioLiteral {
   var ignoreWhiteSpace: bool = true;
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f.write(val);
+    f._write(val);
   }
 }
 
@@ -2415,7 +2439,7 @@ record ioBits {
   pragma "no doc"
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f.write(v);
+    f._write(v);
   }
 }
 
@@ -4278,19 +4302,30 @@ proc _channel.writeIt(const x) throws {
     return ret;
   }
 
+  deprecated "The returning variant of ``writeBytes`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+  proc _channel.writeBytes(x, len:c_ssize_t):bool throws where WritersReturnBool == true {
+    try this._writeBytes(x, len);
+    return true;
+  }
+
   /*
      Write a sequence of bytes.
 
      :throws SystemError: Thrown if the byte sequence could not be written.
-   */
-  proc _channel.writeBytes(x, len:c_ssize_t):bool throws {
+  */
+  proc _channel.writeBytes(x, len:c_ssize_t) throws where WritersReturnBool == false {
+    try this._writeBytes(x, len);
+  }
+
+  // helper for bool-returning deprecation
+  pragma "no doc"
+  proc _channel._writeBytes(x, len:c_ssize_t) throws {
     var err:errorCode = ENOERR;
     on this._home {
       try this.lock(); defer { this.unlock(); }
       err = qio_channel_write_amt(false, _channel_internal, x, len);
     }
     if err then try this._ch_ioerror(err, "in channel.writeBytes()");
-    return true;
   }
 
 /*
@@ -4356,7 +4391,7 @@ proc stringify(const args ...?k):string {
       var w = f.writer(locking=false);
       defer try! w.close();
 
-      w.write((...args));
+      w._write((...args));
 
       var offset = w.offset();
 
@@ -4992,17 +5027,8 @@ proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
   return ret;
 }
 
-/*
-   Write bits with binary I/O
-
-   :arg v: a value containing *nbits* bits to write the least-significant bits
-   :arg nbits: how many bits to write
-   :returns: `true` if the bits were written without error, `false` on error
-
-   :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
-   :throws SystemError: Thrown if the bits could not be written to the channel.
- */
-proc _channel.writebits(v:integral, nbits:integral):bool throws {
+deprecated "The returning variant of ``writebits`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+proc _channel.writebits(v:integral, nbits:integral):bool throws where WritersReturnBool == true {
   if castChecking {
     // Error if writing more bits than fit into v
     if numBits(v.type) < nbits then
@@ -5013,7 +5039,31 @@ proc _channel.writebits(v:integral, nbits:integral):bool throws {
       throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
   }
 
-  return try this.write(new ioBits(v:uint(64), nbits:int(8)));
+  try this._write(new ioBits(v:uint(64), nbits:int(8)));
+  return true;
+}
+
+/*
+   Write bits with binary I/O
+
+   :arg v: a value containing *nbits* bits to write the least-significant bits
+   :arg nbits: how many bits to write
+
+   :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
+   :throws SystemError: Thrown if the bits could not be written to the channel.
+ */
+proc _channel.writebits(v:integral, nbits:integral) throws where WritersReturnBool == false {
+  if castChecking {
+    // Error if writing more bits than fit into v
+    if numBits(v.type) < nbits then
+      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits:string +
+                                                 " > bits in v:" + v.type:string);
+    // Error if writing negative number of bits
+    if isIntType(nbits.type) && nbits < 0 then
+      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
+  }
+
+  try this._write(new ioBits(v:uint(64), nbits:int(8)));
 }
 
 /*
@@ -5236,6 +5286,12 @@ proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
   return tupleVal;
 }
 
+deprecated "The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+inline proc _channel.write(const args ...?k):bool throws where WritersReturnBool == true {
+  try this._write((...args));
+  return true;
+}
+
 /*
    Write values to a channel. The output will be produced atomically -
    the channel lock will be held while writing all of the passed
@@ -5244,11 +5300,17 @@ proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
               value.writeThis() with the channel as an argument.
-   :returns: `true` if the write succeeded
 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
-inline proc _channel.write(const args ...?k):bool throws {
+inline proc _channel.write(const args ...?k) throws where WritersReturnBool == false {
+  try this._write((...args));
+}
+
+// helper function for bool-returning deprecation
+pragma "fn exempt instantiation limit"
+pragma "no doc"
+inline proc _channel._write(const args ...?k) throws {
   if !writing then compilerError("write on read-only channel");
 
   const origLocale = this.getLocaleOfIoRequest();
@@ -5258,15 +5320,24 @@ inline proc _channel.write(const args ...?k):bool throws {
       try _writeOne(kind, args(i), origLocale);
     }
   }
-
-  return true;
 }
-
+// helper function for bool-returning deprecation (with deprecated style argument)
+pragma "no doc"
 @unstable "write with a style argument is unstable"
-proc _channel.write(const args ...?k, style:iostyle):bool throws {
+proc _channel._write(const args ...?k, style:iostyle) throws {
   return this.writeHelper((...args), style: iostyleInternal);
 }
 
+@unstable "write with a style argument is unstable"
+proc _channel.write(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
+  return this.writeHelper((...args), style: iostyleInternal);
+}
+@unstable "write with a style argument is unstable"
+proc _channel.write(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
+  this.writeHelper((...args), style: iostyleInternal);
+}
+
+// helper function for iostyle deprecation
 pragma "no doc"
 proc _channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
   if !writing then compilerError("write on read-only channel");
@@ -5291,8 +5362,25 @@ proc _channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
 
 // documented in varargs version
 pragma "no doc"
-proc _channel.writeln():bool throws {
-  return try this.write(new ioNewline());
+deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+proc _channel.writeln():bool throws where WritersReturnBool == true {
+  try this._writeln();
+  return true;
+}
+pragma "no doc"
+proc _channel.writeln() throws where WritersReturnBool == false {
+  try this._writeln();
+}
+// helper for bool-returning deprecation (yes, this is a lot of annoying misdirection, but I'm aiming for a consistent pattern among write(...), writeln() and writeln(...))
+pragma "no doc"
+proc _channel._writeln() throws {
+  try this._write(new ioNewline());
+}
+
+deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+proc _channel.writeln(const args ...?k):bool throws where WritersReturnBool == true {
+  try this._writeln((...args));
+  return true;
 }
 
 /*
@@ -5305,24 +5393,40 @@ proc _channel.writeln():bool throws {
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
               value.writeThis() with the channel as an argument.
-   :returns: `true` if the write succeeded
 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
-proc _channel.writeln(const args ...?k):bool throws {
-  return try this.write((...args), new ioNewline());
+proc _channel.writeln(const args ...?k) throws where WritersReturnBool == false {
+  try this._writeln((...args));
+}
+
+// helper function for bool-returning deprecation
+pragma "fn exempt instantiation limit"
+pragma "no doc"
+proc _channel._writeln(const args ...?k) throws {
+  try this._write((...args), new ioNewline());
+}
+// helper function for bool-returning deprecation (with deprecated style argument)
+pragma "no doc"
+@unstable "writeln with a style argument is unstable"
+proc _channel._writeln(const args ...?k, style:iostyle) throws {
+  this.writelnHelper((...args), style: iostyleInternal);
 }
 
 @unstable "writeln with a style argument is unstable"
-proc _channel.writeln(const args ...?k, style:iostyle):bool throws {
+proc _channel.writeln(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
   return this.writelnHelper((...args), style: iostyleInternal);
 }
+@unstable "writeln with a style argument is unstable"
+proc _channel.writeln(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
+  this.writelnHelper((...args), style: iostyleInternal);
+}
 
+// helper function for iostyle deprecation
 pragma "no doc"
 proc _channel.writelnHelper(const args ...?k, style:iostyleInternal):bool throws {
   return try this.writeHelper((...args), new ioNewline(), style=style);
 }
-
 /*
 
   Makes all writes to the channel, if any, available to concurrent viewers
@@ -6791,11 +6895,11 @@ class _channel_regex_info {
     clear();
   }
   override proc writeThis(f) throws {
-    f.write("{hasRegex = " + hasRegex: string);
-    f.write(", matchedRegex = " + matchedRegex: string);
-    f.write(", releaseRegex = " + releaseRegex: string);
-    f.write(", ... capturei = " + capturei: string);
-    f.write(", ncaptures = " + ncaptures: string + "}");
+    f._write("{hasRegex = " + hasRegex: string);
+    f._write(", matchedRegex = " + matchedRegex: string);
+    f._write(", releaseRegex = " + releaseRegex: string);
+    f._write(", ... capturei = " + capturei: string);
+    f._write(", ncaptures = " + ncaptures: string + "}");
   }
 }
 
@@ -7416,6 +7520,14 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
   }
 }
 
+deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
+proc _channel.writef(fmtStr: ?t, const args ...?k): bool throws
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
+{
+  try this._writef(fmtStr, (...args));
+  return true;
+}
+
 /*
 
    Write arguments according to a format. See
@@ -7424,12 +7536,19 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
    :arg fmt: the format as string or bytes
 
    :arg args: 0 or more arguments to write
-   :returns: true
 
    :throws IllegalArgumentError: if an unsupported argument type is encountered.
    :throws SystemError: if the arguments could not be written.
  */
-proc _channel.writef(fmtStr: ?t, const args ...?k): bool throws
+proc _channel.writef(fmtStr: ?t, const args ...?k) throws
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
+{
+  try this._writef(fmtStr, (...args));
+}
+
+// helper function for bool-returning deprecation
+pragma "no doc"
+proc _channel._writef(fmtStr: ?t, const args ...?k) throws
     where isStringType(t) || isBytesType(t) {
 
   if !writing then compilerError("writef on read-only channel");
@@ -7485,11 +7604,27 @@ proc _channel.writef(fmtStr: ?t, const args ...?k): bool throws
   }
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string)");
+}
+
+// documented in varargs version
+deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
+proc _channel.writef(fmtStr:?t): bool throws
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
+{
+  try this._writef(fmtStr);
   return true;
 }
 
 // documented in varargs version
-proc _channel.writef(fmtStr:?t): bool throws
+proc _channel.writef(fmtStr:?t) throws
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
+{
+  try this._writef(fmtStr);
+}
+
+// helper function for bool-returning deprecation
+pragma "no doc"
+proc _channel._writef(fmtStr:?t) throws
     where isStringType(t) || isBytesType(t) {
 
   if !writing then compilerError("writef on read-only channel");
@@ -8003,7 +8138,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
         w.close();
       } catch { /* ignore deferred close error */ }
     }
-    try w.writef(fmt, (...args));
+    try w._writef(fmt, (...args));
     offset = w.offset();
 
     // close error is thrown instead of ignored

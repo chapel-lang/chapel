@@ -57,7 +57,7 @@ module JsonStuff {
     var fbTwo = new FooBar('fbTwo', 2, false, foo, bar);
     try! writeln("Writing FooBar to JSON:  %jt".format(fb));
     var mem = try! openmem();
-    var writer = try! mem.writer().write("%jt".format(fb));
+    try! mem.writer().write("%jt".format(fb));
     var reader = try! mem.reader();
 
     var f = new FooBar();

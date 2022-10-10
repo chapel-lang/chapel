@@ -239,7 +239,7 @@ module LocaleModel {
 
     override proc writeThis(f) throws {
       parent.writeThis(f);
-      f.write("-GPU" + sid:string);
+      f._write("-GPU" + sid:string);
     }
 
     override proc getChildCount(): int { return 0; }
@@ -425,7 +425,7 @@ module LocaleModel {
     proc local_name() return "rootLocale";
 
     override proc writeThis(f) throws {
-      f.write(name);
+      f._write(name);
     }
 
     override proc getChildCount() return this.myLocaleSpace.size;
