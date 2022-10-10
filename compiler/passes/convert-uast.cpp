@@ -132,6 +132,7 @@ struct Converter {
 
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
+  bool inTupleAssign = false;
   bool inImportOrUse = false;
   bool canScopeResolve = false;
   bool trace = false;
@@ -376,6 +377,11 @@ struct Converter {
       return nullptr;
     }
 
+    if (inTupleAssign && node->name() == USTR("_")) {
+      // Don't resolve underscore node, just return chpl__tuple_blank.
+      return new UnresolvedSymExpr("chpl__tuple_blank");
+    }
+
     // Check for a resolution result that includes a target ID
     if (symStack.size() > 0) {
       auto r = symStack.back().resolved;
@@ -426,6 +432,30 @@ struct Converter {
 
             SymExpr* se = new SymExpr(sym);
             Expr* ret = se;
+
+
+            // TODO(Resolver): This logic should probably be handled from
+            //                 within Dyno.
+            if (!inImportOrUse && rr->type().kind() == types::QualifiedType::MODULE) {
+              const char* reason = "cannot be mentioned like variables";
+              auto parentId = parsing::idToParentId(context, node->id());
+              auto parentAst = parsing::idToAst(context, parentId);
+              if (auto callAst = parentAst->toCall()) {
+                if (callAst->calledExpression() == node) {
+                  reason = "cannot be called like procedures";
+                }
+              } else if (auto dotAst = parentAst->toDot()) {
+                if (dotAst->receiver() == node) {
+                  // Not an error to reference a module name in a dot expression.
+                  reason = nullptr;
+                }
+              }
+
+              if (reason != nullptr) {
+                USR_FATAL_CONT(se, "modules (like '%s' here) %s", node->name().c_str(), reason);
+              }
+            }
+
             if (parsing::idIsParenlessFunction(context, id)) {
               // it's a parenless function call so add a CallExpr
               ret = new CallExpr(se);
@@ -1169,7 +1199,7 @@ struct Converter {
    * This helper checks if a conditional node has an assignment op in its
    * condition expression, and reproduces an error similar to that in the
    * old parser
-   * NOTE: This checking should move to the dyno resolver in the future
+   * TODO(Resolver): This checking should move to the dyno resolver in the future
    */
   bool checkAssignConditional(const uast::Conditional* node) {
     bool assignOp = false;
@@ -2052,6 +2082,26 @@ struct Converter {
     return buildLOrAssignment(lhs, rhs);
   }
 
+  Expr* convertTupleAssign(const uast::OpCall* node) {
+    if (node->op() != USTR("=") || node->numActuals() < 1
+        || !node->actual(0)->isTuple()) return nullptr;
+
+    INT_ASSERT(node->numActuals() == 2);
+    inTupleAssign = true;
+    Expr* lhs = convertAST(node->actual(0));
+    inTupleAssign = false;
+    INT_ASSERT(lhs);
+    Expr* rhs = convertAST(node->actual(1));
+    INT_ASSERT(rhs);
+
+    const char* opName = astr(node->op());
+    CallExpr* ret = new CallExpr(opName);
+    ret->insertAtTail(lhs);
+    ret->insertAtTail(rhs);
+
+    return ret;
+  }
+
   Expr* convertRegularBinaryOrUnaryOp(const uast::OpCall* node,
                                       const char* name=nullptr) {
     astlocMarker markAstLoc(node->id());
@@ -2083,6 +2133,8 @@ struct Converter {
     } else if (auto conv = convertLogicalAndAssign(node)) {
       ret = conv;
     } else if (auto conv = convertLogicalOrAssign(node)) {
+      ret = conv;
+    } else if (auto conv = convertTupleAssign(node)) {
       ret = conv;
     } else if (node->op() == USTR("align")) {
       ret = convertRegularBinaryOrUnaryOp(node, "chpl_align");
