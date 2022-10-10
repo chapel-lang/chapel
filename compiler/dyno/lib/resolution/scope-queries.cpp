@@ -366,10 +366,8 @@ static bool doLookupInImports(Context* context,
         }
 
         // find it in that scope
-        if (doLookupInScope(context, symScope, nullptr, resolving, from,
-                            newConfig, checkedScopes, result)) {
-          found = true;
-        }
+        found |= doLookupInScope(context, symScope, nullptr, resolving, from,
+                                 newConfig, checkedScopes, result);
       }
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
