@@ -54,6 +54,14 @@ int unitsMB = 0;
 int doputs = 1;
 int dogets = 1;
 
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  static int use_loc_gpu = 0;
+  static int use_rem_gpu = 1;
+#else
+  #define use_loc_gpu 0
+  #define use_rem_gpu 0
+#endif
+
 size_t min_payload = 0;
 size_t max_payload;
 size_t max_step = 0;
@@ -296,8 +304,10 @@ int main(int argc, char **argv)
     int fullduplexmode = 0;
     int crossmachinemode = 0;
     int skipwarmup = 0;
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
     int use_cuda_uva = 0;
     int use_hip = 0;
+#endif
     int help = 0;   
 
     /* call startup */
@@ -353,6 +363,21 @@ int main(int argc, char **argv)
       } else if (!strcmp(argv[arg], "-hip")) {
         use_hip = 1;
         use_cuda_uva = 0;
+        ++arg;
+#endif
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+      // UNDOCUMENTED
+      } else if (!strcmp(argv[arg], "-local-gpu")) {
+        use_loc_gpu = 1;
+        ++arg;
+      } else if (!strcmp(argv[arg], "-local-host")) {
+        use_loc_gpu = 0;
+        ++arg;
+      } else if (!strcmp(argv[arg], "-remote-gpu")) {
+        use_rem_gpu = 1;
+        ++arg;
+      } else if (!strcmp(argv[arg], "-remote-host")) {
+        use_rem_gpu = 0;
         ++arg;
 #endif
       } else if (argv[arg][0] == '-') {
@@ -443,13 +468,15 @@ int main(int argc, char **argv)
     int use_device = 0;
 
     if (use_cuda_uva) {
-      MSG0("***NOTICE***: Using EXPERIMENTAL support for CUDA UVA remote memory");
+      MSG0("***NOTICE***: Using EXPERIMENTAL support for CUDA UVA memory kind (local %s, remote %s)",
+           (use_loc_gpu ? "GPU" : "host"), (use_rem_gpu ? "GPU" : "host"));
       args.gex_class = GEX_MK_CLASS_CUDA_UVA;
       args.gex_args.gex_class_cuda_uva.gex_CUdevice = 0;
       use_device = 1;
     }
     if (use_hip) {
-      MSG0("***NOTICE***: Using EXPERIMENTAL support for HIP remote memory");
+      MSG0("***NOTICE***: Using EXPERIMENTAL support for HIP memory kind (local %s, remote %s)",
+           (use_loc_gpu ? "GPU" : "host"), (use_rem_gpu ? "GPU" : "host"));
       args.gex_class = GEX_MK_CLASS_HIP;
       args.gex_args.gex_class_hip.gex_hipDevice = 0;
       use_device = 1;
@@ -465,17 +492,22 @@ int main(int argc, char **argv)
       GASNET_Safe( gex_MK_Create(&kind, myclient, &args, 0) );
       GASNET_Safe( gex_Segment_Create(&d_segment, myclient, NULL, TEST_SEGSZ_REQUEST, kind, 0) );
       GASNET_Safe( gex_EP_Create(&gpu_ep, myclient, GEX_EP_CAPABILITY_RMA, 0) );
-      gex_EP_BindSegment(gpu_ep, d_segment, 0);
+      GASNET_Safe( gex_EP_BindSegment(gpu_ep, d_segment, 0) );
       gex_EP_PublishBoundSegment(myteam, &gpu_ep, 1, 0);
 
-      // The "trick" to diverting RMA operation to the remote GPU memory
-      myteam = gex_TM_Pair(myep, gex_EP_QueryIndex(gpu_ep));
+      // The "trick" to diverting RMA operation to local and/or remote GPU memory
+      myteam = gex_TM_Pair(use_loc_gpu ? gpu_ep : myep,
+                           use_rem_gpu ? gex_EP_QueryIndex(gpu_ep) : 0);
       gex_Event_Wait( gex_EP_QueryBoundSegmentNB(myteam, peerproc, (void**)&tgtmem, NULL, NULL, 0) );
     }
 #endif
 
         if (insegment) {
-	    msgbuf = (void *) myseg;
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+           msgbuf = use_loc_gpu ? gex_Segment_QueryAddr(d_segment) : (void *) myseg;
+#else
+           msgbuf = (void *) myseg;
+#endif
         } else {
 	    alloc = (void *) test_calloc(maxsz+PAGESZ,1); /* calloc prevents valgrind warnings */
             msgbuf = (void *) alignup(((uintptr_t)alloc), PAGESZ); /* ensure page alignment of base */
@@ -483,11 +515,12 @@ int main(int argc, char **argv)
         assert(((uintptr_t)msgbuf) % PAGESZ == 0);
 
         if (myproc == 0) 
-          MSG("Running %i iterations of %s%s%sbulk put/get with local addresses %sside the segment for sizes: %"PRIuPTR"...%"PRIuPTR"\n", 
+          MSG("Running %i iterations of %s%s%sbulk %s%s%s with local addresses %sside the segment for sizes: %"PRIuPTR"...%"PRIuPTR"\n", 
           iters, 
           (firstlastmode ? "first/last " : ""),
           (fullduplexmode ? "full-duplex ": ""),
           (crossmachinemode ? "cross-machine ": ""),
+          doputs?"put":"", (doputs&&dogets)?"/":"", dogets?"get":"",
           insegment ? "in" : "out", 
           (uintptr_t)min_payload, (uintptr_t)max_payload);
         BARRIER();
@@ -522,6 +555,7 @@ int main(int argc, char **argv)
         BARRIER();
         if (alloc) test_free(alloc);
 
+    MSG0("done.");
     gasnet_exit(0);
 
     return 0;

@@ -524,9 +524,12 @@ static void rwlock_test(int id) {
       if (writer) { /* write lock */
         if (trywrite++ & 1) {
           int retval;
-          while ((retval=gasneti_rwlock_trywrlock(&lock1)) != 0) {
+          for (int t = 0; t < 100; t++) { // bounded try loop
+            retval = gasneti_rwlock_trywrlock(&lock1);
+            if (!retval) break; // success
             gasneti_assert_always_int(retval ,==, EBUSY);
           }
+          if (retval == EBUSY) gasneti_rwlock_wrlock(&lock1); // gave up on try, block instead
         } else {
           gasneti_rwlock_wrlock(&lock1);
         }
@@ -540,9 +543,12 @@ static void rwlock_test(int id) {
       if (!writer) { /* read lock */
         if (i & 1) {
           int retval;
-          while ((retval=gasneti_rwlock_tryrdlock(&lock1)) != 0) {
+          for (int t = 0; t < 100; t++) { // bounded try loop
+            retval = gasneti_rwlock_tryrdlock(&lock1);
+            if (!retval) break; // success
             gasneti_assert_always_int(retval ,==, EBUSY);
           }
+          if (retval == EBUSY) gasneti_rwlock_rdlock(&lock1); // gave up on try, block instead
         } else {
           gasneti_rwlock_rdlock(&lock1);
         }

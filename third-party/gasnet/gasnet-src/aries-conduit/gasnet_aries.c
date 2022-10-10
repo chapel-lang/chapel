@@ -735,11 +735,9 @@ void gasnetc_init_gni(gasnet_seginfo_t seginfo)
       gasnetc_mem_consistency = GASNETC_RELAXED_MEM_CONSISTENCY;
     } else if (!strcmp(envval, "none") || !strcmp(envval, "NONE")) {
       gasnetc_mem_consistency = GASNETC_NEITHER_MEM_CONSISTENCY;
-    } else if (!gasneti_mynode) {
-      fflush(NULL);
-      fprintf(stderr, "WARNING: ignoring unknown value '%s' for environment "
-                      "variable GASNET_GNI_MEM_CONSISTENCY\n", envval);
-      fflush(NULL);
+    } else { 
+      gasneti_console0_message("WARNING","ignoring unknown value '%s' for environment "
+                                         "variable GASNET_GNI_MEM_CONSISTENCY", envval);
     }
   }
 
@@ -780,7 +778,7 @@ void gasnetc_init_gni(gasnet_seginfo_t seginfo)
 
   {
     gni_mem_handle_t *all_mem_handle = gasneti_malloc(gasneti_nodes * sizeof(gni_mem_handle_t));
-    gasnetc_bootstrapExchange_gni(&my_aux_handle, sizeof(gni_mem_handle_t), all_mem_handle);
+    gasneti_bootstrapExchange_am(&my_aux_handle, sizeof(gni_mem_handle_t), all_mem_handle);
     for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) {
       peer_data[i].aux_handle = all_mem_handle[i];
     }
@@ -1280,8 +1278,8 @@ uintptr_t gasnetc_init_messaging(void)
 am_memory_report:
   if (report_to_stderr || GASNETI_TRACE_ENABLED(I)) {
     #define DO_PRINT(...) do { \
-        GASNETI_TRACE_PRINTF(I, (__VA_ARGS__));             \
-        if (report_to_stderr) fprintf(stderr, __VA_ARGS__); \
+        if (report_to_stderr) gasneti_console_message("INFO",__VA_ARGS__); \
+        else GASNETI_TRACE_PRINTF(I, (__VA_ARGS__));             \
       } while (0);
     char valstr1[32], valstr2[32];
     DO_PRINT("Fixed AM Memory used by this process:\n");
@@ -2899,23 +2897,38 @@ static void print_post_desc(const char *title, gni_post_descriptor_t *cmd)) {
   gasneti_EP_t i_ep = gasneti_import_ep(gasneti_THUNK_EP);
   const int in_seg = gasneti_in_local_clientsegment(i_ep, (void *) cmd->local_addr, cmd->length);
   const int in_aux = gasneti_in_local_auxsegment(i_ep, (void *) cmd->local_addr, cmd->length);
-  printf("r %d %s-segment %s, desc addr %p\n", gasneti_mynode, (in_seg?"in":(in_aux?"aux":"non")), title, cmd);
-  printf("r %d status: %"PRIu64"\n", gasneti_mynode, cmd->status);
-  printf("r %d cq_mode_complete: 0x%x\n", gasneti_mynode, cmd->cq_mode_complete);
-  printf("r %d type: %d (%s)\n", gasneti_mynode, cmd->type, gasnetc_post_type_string(cmd->type));
-  printf("r %d cq_mode: 0x%x\n", gasneti_mynode, cmd->cq_mode);
-  printf("r %d dlvr_mode: 0x%x\n", gasneti_mynode, cmd->dlvr_mode);
-  printf("r %d local_address: %p(0x%"PRIx64", 0x%"PRIx64")\n", gasneti_mynode, (void *) cmd->local_addr, 
-	 cmd->local_mem_hndl.qword1, cmd->local_mem_hndl.qword2);
-  printf("r %d remote_address: %p(0x%"PRIx64", 0x%"PRIx64")\n", gasneti_mynode, (void *) cmd->remote_addr, 
-	 cmd->remote_mem_hndl.qword1, cmd->remote_mem_hndl.qword2);
-  printf("r %d length: 0x%"PRIx64"\n", gasneti_mynode, cmd->length);
-  printf("r %d rdma_mode: 0x%x\n", gasneti_mynode, cmd->rdma_mode);
-  printf("r %d src_cq_hndl: %p\n", gasneti_mynode, cmd->src_cq_hndl);
-  printf("r %d sync: (0x%"PRIx64",0x%"PRIx64")\n", gasneti_mynode, cmd->sync_flag_value, cmd->sync_flag_addr);
-  printf("r %d amo_cmd: %d\n", gasneti_mynode, cmd->amo_cmd);
-  printf("r %d amo: 0x%"PRIx64", 0x%"PRIx64"\n", gasneti_mynode, cmd->first_operand, cmd->second_operand);
-  printf("r %d cqwrite_value: 0x%"PRIx64"\n", gasneti_mynode, cmd->cqwrite_value);
+  gasneti_console_message("Post descriptor dump:",
+  "%s-segment %s, desc addr %p\n"
+  "    status: %"PRIu64"\n"
+  "    cq_mode_complete: 0x%x\n"
+  "    type: %d (%s)\n"
+  "    cq_mode: 0x%x\n"
+  "    dlvr_mode: 0x%x\n"
+  "    local_address: %p(0x%"PRIx64", 0x%"PRIx64")\n"
+  "    remote_address: %p(0x%"PRIx64", 0x%"PRIx64")\n"
+  "    length: 0x%"PRIx64"\n"
+  "    rdma_mode: 0x%x\n"
+  "    src_cq_hndl: %p\n"
+  "    sync: (0x%"PRIx64",0x%"PRIx64")\n"
+  "    amo_cmd: %d\n"
+  "    amo: 0x%"PRIx64", 0x%"PRIx64"\n"
+  "    cqwrite_value: 0x%"PRIx64"\n"
+  , (in_seg?"in":(in_aux?"aux":"non")), title, cmd
+  , cmd->status
+  , cmd->cq_mode_complete
+  , cmd->type, gasnetc_post_type_string(cmd->type)
+  , cmd->cq_mode
+  , cmd->dlvr_mode
+  , (void *) cmd->local_addr, cmd->local_mem_hndl.qword1, cmd->local_mem_hndl.qword2
+  , (void *) cmd->remote_addr, cmd->remote_mem_hndl.qword1, cmd->remote_mem_hndl.qword2
+  , cmd->length
+  , cmd->rdma_mode
+  , cmd->src_cq_hndl
+  , cmd->sync_flag_value, cmd->sync_flag_addr
+  , cmd->amo_cmd
+  , cmd->first_operand, cmd->second_operand
+  , cmd->cqwrite_value
+  );
 }
 
 GASNETI_INLINE(myPostRdma)
@@ -3711,7 +3724,7 @@ static int jobrank_leads_nbrhd(const gex_Rank_t jobrank) {
 // TODO: generalize to other than TEAM_ALL??
 static uint32_t *gather_ce_ids(uint32_t my_ce_id) {
   uint32_t *result = gasneti_calloc(gasneti_nodes, sizeof(uint32_t));
-  gasnetc_bootstrapExchange_gni(&my_ce_id, sizeof(my_ce_id), result);
+  gasneti_bootstrapExchange_am(&my_ce_id, sizeof(my_ce_id), result);
 
   // Scan result for failure (-1 value) from any host-leader
   // TODO: there must be a better way to iterate over the leaders
@@ -3918,7 +3931,7 @@ void gasnete_init_ce(void) {
   gasnete_ce_available = 1;
   GASNETI_TRACE_PRINTF(I,("Aries CE: available, inter-host radix = %d", radix));
 
-  gasnetc_bootstrapBarrier_gni();
+  gasneti_bootstrapBarrier_am();
 
 #if GASNET_DEBUG && !GASNET_PSHM // TODO: remove or update for PSHM?
   for (int i = 0; i < 4; ++i) {

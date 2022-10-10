@@ -16,7 +16,7 @@
   #include <sys/statvfs.h>
 #endif
 
-#if (PLATFORM_OS_LINUX || PLATFORM_OS_CNL) && !GASNETI_BUG3480_WORKAROUND // Suspect bug 3480
+#if PLATFORM_OS_LINUX && !GASNETI_BUG3480_WORKAROUND // Suspect bug 3480
 #define GASNETI_BUG3480_MSG "\nYour system is suspected to be impacted by bug 3480"
 #else
 #define GASNETI_BUG3480_MSG
@@ -93,6 +93,9 @@
        pagesz = gethugepagesize();
        gasneti_assert_uint(pagesz ,>=, GASNETI_PAGESIZE);
        gasneti_assert_uint(pagesz % GASNETI_PAGESIZE ,==, 0);
+       char valstr[16];
+       GASNETI_TRACE_PRINTF(I, ("gethugepagesize() yields %s",
+                                 gasnett_format_number(pagesz, valstr, sizeof(valstr), 1)));
      }
      return pagesz;
   }
@@ -460,7 +463,7 @@ static const char *gasneti_pshm_makeunique(const char *unique) {
             perror("sigaction(save)"); \
             sigprof = 0; \
           } else if (sigaction(sigprof, &act_ign, 0)) perror("sigaction(clear)"); \
-          /*fprintf(stderr,"SIGPROF sa_flags=\t%x sa_handler=%p sa_sigaction=%p\n", act_save.sa_flags,  act_save.sa_handler, act_save.sa_sigaction);*/ \
+          /*gasneti_console_message("INFO","SIGPROF sa_flags=\t%x sa_handler=%p sa_sigaction=%p", act_save.sa_flags,  act_save.sa_handler, act_save.sa_sigaction);*/ \
         } \
         /* wait a bit.. */ \
         pause = MIN(1e9,pause<<3); \
@@ -1019,7 +1022,7 @@ static void *gasneti_mmap_fixed_with_retry(void *segbase, uintptr_t segsize, int
 static gasnet_seginfo_t gasneti_mmap_binary_segsrch(uintptr_t lowsz, uintptr_t highsz) {
   gasnet_seginfo_t si;
 
-  if (highsz - lowsz <= GASNETI_MMAP_GRANULARITY) {
+  if (highsz - lowsz <= MAX(GASNETI_MMAP_GRANULARITY,gasneti_mmap_pagesize())) {
     si.size = 0;
     si.addr = NULL;
     return si;
@@ -1343,7 +1346,17 @@ uint64_t gasneti_sharedLimit(void) {
    for exchangefn and barrierfn: the implementations are only required to
     perform their functions with respect the peers on a host
     (though exchangefn does require a "full" third argument).
-    however, global implementations are acceptible
+    however, global implementations are acceptable
+
+   If exchangefn is NULL, then gasneti_host_sumu64() is used, which required
+   that gex_AM_RequestShort() be usable.
+
+   If barrierfn is NULL, then gasneti_host_barrier() is used, which requires
+   that gex_AM_RequestShort() be usable.
+
+   So a conduit only needs to provide an exchangefn or barrierfn when
+   gex_AM_RequestShort() is not usable, or when it can provide a more
+   efficient alternative.
  */
 uintptr_t gasneti_segmentLimit(uintptr_t localLimit, uint64_t sharedLimit,
                             gasneti_bootstrapExchangefn_t exchangefn,
@@ -1352,14 +1365,14 @@ uintptr_t gasneti_segmentLimit(uintptr_t localLimit, uint64_t sharedLimit,
   const gex_Rank_t local_count = gasneti_myhost.node_count;
 
 #if GASNET_PSHM
-  gasneti_pshm_cs_enter(&gasneti_cleanup_shm);
+  gasneti_pshm_cs_enter(" in gasneti_segmentLimit()",  &gasneti_cleanup_shm);
 #endif
 
   // This is assumed implictly
   gasneti_assert_uint(gasneti_mmap_pagesize() ,>=, GASNETI_PAGESIZE);
 
-  gasneti_assert(exchangefn);
-  gasneti_assert(barrierfn); /* No longer optional */
+  if (! barrierfn) barrierfn = &gasneti_host_barrier;
+
   gasneti_assert(gasneti_nodemap);
 
   /* Apply intial limits, even if not sharing nodes */
@@ -1371,7 +1384,6 @@ uintptr_t gasneti_segmentLimit(uintptr_t localLimit, uint64_t sharedLimit,
 
   /* Coordinate the search IFF there are any shared nodes. */
   if (gasneti_myhost.grp_count != gasneti_nodes) {
-    uintptr_t *sz_exchg = gasneti_calloc(gasneti_nodes, sizeof(uintptr_t));
     gasnet_seginfo_t se = {0,0};
 
     /* Ensure our probe will not collectively exceed the shareLimit, if any. */
@@ -1392,7 +1404,6 @@ uintptr_t gasneti_segmentLimit(uintptr_t localLimit, uint64_t sharedLimit,
         }
         /* Bcast because we can use "declining expectations" to potentially speed later probes */
         gasneti_pshmnet_bootstrapBroadcast(gasneti_request_pshmnet, &maxsz, sizeof(uintptr_t), &maxsz, i);
-        sz_exchg[gasneti_nodemap_local[i]] = maxsz;
         if (!maxsz) break;
       }
     } else
@@ -1419,13 +1430,21 @@ uintptr_t gasneti_segmentLimit(uintptr_t localLimit, uint64_t sharedLimit,
         (*barrierfn)();
       }
     }
-    (*exchangefn)(&se.size, sizeof(uintptr_t), sz_exchg);
 
-    /* Compute the host-local mean */
-    { uint64_t sum = 0;
+    // Compute the host-local mean
+    uint64_t sum = 0;
+    if (exchangefn) {
+      uintptr_t *sz_exchg = gasneti_calloc(gasneti_nodes, sizeof(uintptr_t));
+      (*exchangefn)(&se.size, sizeof(uintptr_t), sz_exchg);
       for (i = 0; i < local_count; ++i) {
         sum += sz_exchg[gasneti_myhost.nodes[i]];
       }
+      gasneti_free(sz_exchg);
+    } else {
+      sum = gasneti_host_sumu64(se.size);
+    }
+
+    {
       maxsz = gasneti_mmap_aligndown(sum / local_count);
 
 #if GASNET_PSHM
@@ -1485,7 +1504,6 @@ uintptr_t gasneti_segmentLimit(uintptr_t localLimit, uint64_t sharedLimit,
     }
 
     /* Free held resources */
-    gasneti_free(sz_exchg);
     if (se.size) gasneti_do_munmap(se.addr, se.size);
     (*barrierfn)(); /* Ensures munmap()s complete on-node before return */
   }
@@ -1521,7 +1539,7 @@ void gasneti_segmentInit(uintptr_t localSegmentLimit,
 {
   const int legacy_mode = flags & GASNETI_FLAG_INIT_LEGACY;
 #if GASNET_PSHM
-  gasneti_pshm_cs_enter(&gasneti_cleanup_shm);
+  gasneti_pshm_cs_enter(" in gasneti_segmentInit()", &gasneti_cleanup_shm);
 #endif
 
   gasneti_assert_uint(gasneti_MaxLocalSegmentSize ,==, 0);
@@ -1599,15 +1617,15 @@ void gasneti_segmentInit(uintptr_t localSegmentLimit,
          if (fp) {
            int VMrand = fgetc(fp);
            if (VMrand != EOF && VMrand != '0') {
-             const char *wmsg = "WARNING: It appears your compute nodes are using a Linux security feature "
+             const char *wmsg = "It appears your compute nodes are using a Linux security feature "
                                 "which intentionally randomizes the virtual address space, "
                                 "but GASNet was configured to optimize for congruent address spaces. "
                                 "You probably need to re-configure with --disable-aligned-segments to avoid "
                                 "errors at job startup (especially for runs with large node count or shared segment size).";
-             GASNETI_TRACE_MSG(I, wmsg);
              if (!gasneti_getenv_yesno_withdefault("GASNET_QUIET",0)) {
-               fprintf(stderr, "%s\n", wmsg);
-               fflush(stderr);
+               gasneti_console_message("WARNING", "%s", wmsg);
+             } else {
+               GASNETI_TRACE_PRINTF(I, ("WARNING: %s", wmsg));
              }
            }
            fclose(fp);
@@ -1632,19 +1650,20 @@ void gasneti_segmentInit(uintptr_t localSegmentLimit,
     GASNETI_TRACE_MSG(C, alignstats);
 
     if (maxbase >= minend) { /* no overlap - maybe should be a fatal error... */
-      const char *wmsg = "WARNING: unable to locate overlapping mmap segments: "
+      const char *wmsg = "unable to locate overlapping mmap segments: "
                          "perhaps you need to re-configure with --disable-aligned-segments";
       GASNETI_TRACE_MSG(I, wmsg);
-      if (!gasneti_mynode && !gasneti_getenv_yesno_withdefault("GASNET_QUIET",0)) {
-        fprintf(stderr, "%s\n%s\n", wmsg, alignstats);
+      if (!gasneti_getenv_yesno_withdefault("GASNET_QUIET",0)) {
+        gasneti_console0_message("WARNING","%s\n%s", wmsg, alignstats);
         for (int i = 0; i < gasneti_nodes; i++) {
-          fprintf(stderr, " %i: seg=["GASNETI_LADDRFMT","GASNETI_LADDRFMT"]"
+          gasneti_console0_message("WARNING", " %i: seg=["GASNETI_LADDRFMT","GASNETI_LADDRFMT"]"
                           " size=%"PRIuPTR"\n", i,
                   GASNETI_LADDRSTR(gasneti_segexch[i].addr),
                   GASNETI_LADDRSTR(((uintptr_t)gasneti_segexch[i].addr)+gasneti_segexch[i].size),
                   gasneti_segexch[i].size);
-          fflush(stderr);
         }
+      } else {
+        GASNETI_TRACE_PRINTF(I, ("WARNING: %s\n%s", wmsg, alignstats));
       }
 
       // Zero my size (in two place) to yield Max{Local,Global}SegmentSize == 0
@@ -1901,7 +1920,10 @@ gasneti_do_attach_segment(
 {
 #if GASNET_PSHM
   /* Avoid leaking shared memory files in case of non-collective exit between init/attach */
-  gasneti_pshm_cs_enter(&gasneti_cleanup_shm);
+  const char *context = (all_segments == gasneti_seginfo_aux)
+                      ? " while attaching the aux segment"
+                      : " while attaching the client segment";
+  gasneti_pshm_cs_enter(context, &gasneti_cleanup_shm);
   gasneti_pshmnet_bootstrapBarrier();
 #endif
 
@@ -1975,34 +1997,44 @@ static void gasneti_record_seginfo(
   si->size = size;
 }
 
-extern void gex_EP_BindSegment(
+extern int gex_EP_BindSegment(
                 gex_EP_t            ep,
                 gex_Segment_t       segment,
                 gex_Flags_t         flags)
 {
   gasneti_Segment_t i_segment = gasneti_import_segment(segment);
   gasneti_EP_t      i_ep      = gasneti_import_ep(ep);
+  gex_EP_Index_t    safe_idx  =  i_ep ? i_ep->_index : -1;
 
   // TODO: macros for formatting when naming segments in tracing?
   // TODO: macros for formatting when naming endpoints in tracing?
   GASNETI_TRACE_PRINTF(O,("gex_EP_BindSegment: segment=%p, EP index=%d, flags=%d",
-                          (void *)segment, i_ep->_index, flags));
+                          (void *)segment, safe_idx, flags));
   GASNETI_CHECK_INJECT();
 
+  if (ep == GEX_EP_INVALID) {
+    GASNETI_RETURN_ERRR(BAD_ARG,"Invalid call to gex_EP_BindSegment() with GEX_EP_INVALID");
+  }
   if (segment == GEX_SEGMENT_INVALID) {
-    gasneti_fatalerror("Invalid call to gex_EP_BindSegment() with GEX_SEGMENT_INVALID");
+    GASNETI_RETURN_ERRR(BAD_ARG,"Invalid call to gex_EP_BindSegment() with GEX_SEGMENT_INVALID");
   }
   if (flags) {
-    gasneti_fatalerror("Invalid call to gex_EP_BindSegment() with non-zero flags");
+    GASNETI_RETURN_ERRR(BAD_ARG,"Invalid call to gex_EP_BindSegment() with non-zero flags");
   }
   if (i_ep->_segment) {
-    gasneti_fatalerror("Invalid call to gex_EP_BindSegment() on EP with a bound segment");
+    GASNETI_RETURN_ERRR(BAD_ARG,"Invalid call to gex_EP_BindSegment() on EP with a bound segment");
   }
+
+#if GASNETC_EP_BINDSEGMENT_HOOK
+  GASNETI_SAFE_PROPAGATE( gasnetc_ep_bindsegment_hook(i_ep, i_segment, flags) );
+#endif
 
   i_ep->_segment = i_segment;
   gasneti_record_seginfo(gasneti_mynode, i_ep->_index, i_segment->_addr, i_segment->_size);
 
   gasneti_legacy_segment_attach_hook(i_ep);
+
+  return GASNET_OK;
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -2029,7 +2061,10 @@ extern int gex_EP_PublishBoundSegment(
   } *local, *global, *p;
 
   size_t elem_sz = sizeof(struct exchg_data);
-  local = gasneti_malloc(num_eps * elem_sz);
+  // NOTE: explicit NULL case for !num_eps prevents (at least) GCC 12 LTO from
+  // incorrectly warning that gasneti_blockingRotatedExchangeV() reads from a
+  // zero-byte allocation.
+  local = num_eps ? gasneti_malloc(num_eps * elem_sz) : NULL;
 
   // Pack
   p = local;
@@ -2121,6 +2156,13 @@ int gasneti_segmentAttach(
   // EP_BindSegment:
   i_ep->_segment = i_segment;
   gasneti_legacy_segment_attach_hook(i_ep);
+#if GASNETC_EP_BINDSEGMENT_HOOK
+  if (gasnetc_ep_bindsegment_hook(i_ep, i_segment, flags)) {
+    gasneti_fatalerror("Failed to bind segment to endpoint in %s",
+                       (flags & GASNETI_FLAG_INIT_LEGACY) ? "gasnet_attach"
+                                                          : "gex_Segment_Attach");
+  }
+#endif
   
   // After local segment is attached, call optional client-provided hook
   if (gasnet_client_attach_hook) {
@@ -2656,46 +2698,3 @@ gasneti_auxsegAttach(uint64_t maxsize, gasneti_bootstrapExchangefn_t exchangefn)
   gasneti_assert_uint(gasneti_seginfo_aux[gasneti_mynode].size ,==, auxsize);
   return local_segment;
 }
-
-/* ------------------------------------------------------------------------------------ */
-// Host-scoped (potentially superset of supernode) barrier
-
-static gasneti_weakatomic32_t gasneti_hbarr_rcvd[2][32]; // Implicitly zero-initialized
-
-extern void gasnetc_hbarr_reqh(gex_Token_t token, gex_AM_Arg_t arg0)
-{
-  const int phase = arg0 & 1;
-  const int step = (arg0 >> 1) & 0x1f; // Max 2^5 steps => 2^32 proc/host!
-  const int distance = (1 << step);
-  gasneti_assert_uint(distance ,<, gasneti_myhost.node_count);
-  gasneti_weakatomic32_increment(&gasneti_hbarr_rcvd[phase][step], GASNETI_ATOMIC_REL);
-}
-
-void gasneti_host_barrier(void)
-{
-  // Simple dissemination barrier with two phase
-  static int phase = 0;
-  const gex_Rank_t rank = gasneti_myhost.node_rank;
-  const gex_Rank_t size = gasneti_myhost.node_count;
-  for (unsigned int step = 0, distance = 1; distance < size; ++step, distance *= 2) {
-    gex_Rank_t peer = (distance <= rank) ? rank - distance : rank + (size - distance);
-    gex_AM_Arg_t arg0 = phase | (step << 1);
-
-    gex_AM_RequestShort(gasneti_THUNK_TM, gasneti_myhost.nodes[peer],
-                        gasneti_handleridx(gasnetc_hbarr_reqh), 0, arg0);
-
-    // Poll until we have received the same phase we've just sent
-    GASNET_BLOCKUNTIL((int)gasneti_weakatomic32_read(&gasneti_hbarr_rcvd[phase][step], 0));
-    gasneti_assert_int((int)gasneti_weakatomic32_read(&gasneti_hbarr_rcvd[phase][step], 0) ,==, 1);
-    gasneti_weakatomic32_set(&gasneti_hbarr_rcvd[phase][step], 0, 0);
-  }
-
-#if GASNET_PSHM
-  // Cannot use AMPSHM and pshm bootstrap collectives in same pshmnet barrier phase
-  gasneti_pshmnet_bootstrapBarrierPoll();
-#endif
-
-  phase ^= 1;
-}
-
-/* ------------------------------------------------------------------------------------ */

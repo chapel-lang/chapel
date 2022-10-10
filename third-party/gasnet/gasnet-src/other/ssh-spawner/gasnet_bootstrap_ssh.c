@@ -221,15 +221,16 @@ static gex_Rank_t nnodes = 0;	/* nodes, as distinct from ranks */
 static int nnodes_set = 0;		/* non-zero if nnodes set explicitly */
 static int keepdup = -1; // Value of [PREFIX]_SSH_KEEPDUP
 
-GASNETI_FORMAT_PRINTF(do_verbose,1,2,
-static void do_verbose(const char *fmt, ...)) {
+GASNETI_FORMAT_PRINTF(do_message,1,2,
+static void do_message(const char *fmt, ...)) {
   va_list args;
   va_start(args, fmt);
-  vfprintf(stderr, fmt, args);
-  fflush(stderr);
+  gasneti_console_messageVA(0,0,0,-1, "SSH-SPAWNER", fmt, args);
   va_end(args);
 }
-#define BOOTSTRAP_VERBOSE(ARGS)		if_pf (is_verbose) do_verbose ARGS
+#define BOOTSTRAP_VERBOSE(ARGS) do { \
+  if_pf (is_verbose) do_message ARGS; \
+} while (0)
 
 /* Add single quotes around a string, taking care of any existing quotes */
 static char *quote_arg(const char *arg) {
@@ -255,14 +256,8 @@ GASNETI_FORMAT_PRINTF(die,2,3,
 GASNETI_NORETURN
 static void die(int exitcode, const char *msg, ...)) {
   va_list argptr;
-  char expandedmsg[1024];
-
-  strcpy(expandedmsg, "*** ERROR: ");
-  strcat(expandedmsg, msg);
-  strcat(expandedmsg, "\n");
   va_start(argptr, msg);
-    vfprintf(stderr, expandedmsg, argptr);
-    fflush(stderr);
+    gasneti_console_messageVA(0,0,0,-1, "ERROR",msg,argptr);
   va_end(argptr);
   gasneti_killmyprocess(exitcode);
 }
@@ -497,9 +492,9 @@ static void reap_one(pid_t pid, int status)
 				  myname, kind, child[j].rank, tmp, fini));
           if (!sock && (j < ctrl_children)) { // Ctrl proc which did not yet connect
             const char *host = child[j].nodelist ? child[j].nodelist[0] : nodelist[0];
-            fprintf(stderr, "*** Failed to start processes on %s, possibly due to an "
+            do_message("Failed to start processes on %s, possibly due to an "
                             "inability to establish an ssh connection from %s without "
-                            "interactive authentication.\n",
+                            "interactive authentication.",
                             host, my_host);
           }
 	} else if (WIFSIGNALED(status)) {
@@ -620,7 +615,7 @@ static void do_write(int fd, const void *buf, size_t len)
   while (len) {
     ssize_t rc = write(fd, p, len);
     if_pf (!rc || ((rc < 0) && (errno != EINTR))) {
-      fprintf(stderr, "Spawner: write() returned %d, errno = %d(%s)\n",
+      do_message("write() returned %d, errno = %d(%s)",
               (int)rc, errno, strerror(errno));
       do_abort(-1);
     }
@@ -656,7 +651,7 @@ static void do_writev(int fd, struct iovec *iov, int iovcnt)
       continue;
     }
     if_pf (!rc || ((rc < 0) && (errno != EINTR))) {
-      fprintf(stderr, "Spawner: writev() returned %d, errno = %d(%s)\n",
+      do_message("writev() returned %d, errno = %d(%s)",
               (int)rc, errno, strerror(errno));
       do_abort(-1);
     }
@@ -697,10 +692,10 @@ static void do_read(int fd, void *buf, size_t len)
   while (len) {
     ssize_t rc = read(fd, p, len);
     if_pf (!rc) {
-      fprintf(stderr, "Spawner: read() returned 0 (EOF)\n");
+      do_message("read() returned 0 (EOF)");
       do_abort(-1);
     } else if_pf ((rc < 0) && (errno != EINTR)) {
-      fprintf(stderr, "Spawner: read() returned %d, errno = %d(%s)\n",
+      do_message("read() returned %d, errno = %d(%s)",
               (int)rc, errno, strerror(errno));
       do_abort(-1);
     }
@@ -740,10 +735,10 @@ static void do_readv(int fd, struct iovec *iov, int iovcnt)
       continue;
     }
     if_pf (!rc) {
-      fprintf(stderr, "Spawner: readv() returned 0 (EOF)\n");
+      do_message("readv() returned 0 (EOF)");
       do_abort(-1);
     } else if_pf ((rc < 0) && (errno != EINTR)) {
-      fprintf(stderr, "Spawner: readv() returned %d, errno = %d(%s)\n",
+      do_message("readv() returned %d, errno = %d(%s)",
               (int)rc, errno, strerror(errno));
       do_abort(-1);
     }
@@ -948,16 +943,16 @@ static void configure_ssh(void) {
   for (i=0; i<ssh_argc; ++i) {
     BOOTSTRAP_VERBOSE(("\t%s\n", ssh_argv[i]));
   }
-  BOOTSTRAP_VERBOSE(("\tHOST\n\tCMD\n"));
+  BOOTSTRAP_VERBOSE(("\tHOST"));
+  BOOTSTRAP_VERBOSE(("\tCMD"));
 }
 
 /* Reduce nnodes when presented with a short nodelist */
 static char ** short_nodelist(char **nodelist, gex_Rank_t count) {
   if (nnodes_set) {
-    fprintf(stderr, "WARNING: "
-                    "Request for %d nodes ignored because only %d nodes are available%s.\n",
+    do_message("WARNING: "
+                    "Request for %d nodes ignored because only %d nodes are available%s.",
                     nnodes, count, keepdup?"":" after de-duplication");
-    fflush(stderr);
   }
 
   nnodes = count;
@@ -1535,9 +1530,9 @@ static void spawn_one_control(gex_Rank_t child_id, const char *cmdline, const ch
 	(void)prctl(PR_SET_PDEATHSIG, SIGHUP);
       }
       #endif
-      BOOTSTRAP_VERBOSE(("[%d] spawning process %d on %s via %s\n",
+      BOOTSTRAP_VERBOSE(("[%d] spawning process %d on %s via %s\n\tCMD: %s",
 			 myname,
-			 (int)child[child_id].rank, host, ssh_argv[0]));
+			 (int)child[child_id].rank, host, ssh_argv[0], cmd));
       ssh_argv[ssh_argc] = (/* noconst */ char *)host;
       ssh_argv[ssh_argc+1] = cmd;
       execvp(ssh_argv[0], ssh_argv);
@@ -2148,7 +2143,7 @@ static void dispatch(char cmd, int k) {
       break;
 
     default:
-      fprintf(stderr, "Spawner protocol error\n");
+      do_message("Spawner protocol error");
       do_abort(-1);
   }
 }
@@ -2325,6 +2320,7 @@ static void do_master(const char *spawn_args, int *argc_p, char ***argv_p) {
 
   is_root = 1;
   is_control = 1;
+  is_verbose = gasneti_getenv_yesno_withdefault(ENV_PREFIX "SPAWN_VERBOSE",0); // can be provided via env or cmdline
 
   fd_sets_init();
   gasneti_reghandler(SIGURG, &sigurg_handler);
@@ -2456,9 +2452,8 @@ static void do_master(const char *spawn_args, int *argc_p, char ***argv_p) {
       die(1, "Node count %ld is out-of-range of gex_Rank_t", lnnodes);
     }
     if (nnodes > nranks) {
-      fprintf(stderr, "WARNING: requested node count reduced from %d to process count of %d\n",
+      do_message("WARNING: requested node count reduced from %d to process count of %d",
                       (int)nnodes, (int)nranks);
-      fflush(stderr);
       nnodes = nranks;
     }
     BOOTSTRAP_VERBOSE(("Spawning '%s': %d processes on %d nodes\n", argv0, (int)nranks, (int)nnodes));

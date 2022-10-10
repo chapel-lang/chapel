@@ -17,12 +17,11 @@
 #define GASNETC_HSL_SPINLOCK 1
 
 /* ------------------------------------------------------------------------------------ */
-#define _hidx_gasnetc_hbarr_reqh              (GASNETC_HANDLER_BASE+0)
-#define _hidx_gasnetc_exit_reduce_reqh        (GASNETC_HANDLER_BASE+1)
-#define _hidx_gasnetc_exit_role_reqh          (GASNETC_HANDLER_BASE+2)
-#define _hidx_gasnetc_exit_role_reph          (GASNETC_HANDLER_BASE+3)
-#define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+4)
-#define _hidx_gasnetc_exit_reph               (GASNETC_HANDLER_BASE+5)
+#define _hidx_gasnetc_exit_reduce_reqh        (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_exit_role_reqh          (GASNETC_HANDLER_BASE+1)
+#define _hidx_gasnetc_exit_role_reph          (GASNETC_HANDLER_BASE+2)
+#define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+3)
+#define _hidx_gasnetc_exit_reph               (GASNETC_HANDLER_BASE+4)
 
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
@@ -121,8 +120,9 @@ extern void gasnetc_counter_wait(gasnetc_counter_t *counter,
  */
 extern gasneti_spawnerfn_t const *gasneti_spawner;
 
-#define gasneti_bootstrapBarrier        (*(gasneti_spawner->Barrier))
-#define gasneti_bootstrapExchange       (*(gasneti_spawner->Exchange))
+// Indirection allows use of the AM-based implementation after init
+extern void gasneti_bootstrapBarrier(void);
+extern void gasneti_bootstrapExchange(void *src, size_t len, void *dest);
 #define gasneti_bootstrapBroadcast      (*(gasneti_spawner->Broadcast))
 #define gasneti_bootstrapSNodeBroadcast (*(gasneti_spawner->SNodeBroadcast))
 #define gasneti_bootstrapAlltoall       (*(gasneti_spawner->Alltoall))

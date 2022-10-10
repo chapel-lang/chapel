@@ -62,7 +62,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   See the extended-ref README for the GASNet general-purpose configuration parameters.
 
   --with-ucx-max-medium=[value]
-    By default gex_AM_LUB{Request,Reply}Long() return 3992, which is a
+    By default gex_AM_LUB{Request,Reply}Medium() return 3992, which is a
     4KiB buffer minus overheads such as handler arguments.  This configure
     option sets the default value for the GASNET_UCX_MAX_MEDIUM environment
     variable, which determines the LUB size at runtime.
@@ -125,7 +125,7 @@ Additional environment variables:
   + GASNET_UCX_MAX_MEDIUM
 
     This setting determines the size of buffers used for AM Mediums, and
-    thus the return value of the gex_AM_LUB{Request,Reply}Long() queries.
+    thus the return value of the gex_AM_LUB{Request,Reply}Medium() queries.
     The value cannot be less than 512.
     Unless a different value was set using --with-ucx-max-medium=[value]
     at configure time, the default value is 3992.
@@ -246,9 +246,10 @@ Additional environment variables:
   Use of GASNet-EX "CUDA_UVA" memory kinds with ucx-conduit may crash due
   to incorrect default algorithm selection inside UCX for RMA transfers
   involving device memory.
-  For sufficiently recent UCX versions, there are work-arounds based on
+  For a certain range of UCX versions, there are work-arounds based on
   setting environment variables to modify the algorithm selection to be
   correct for device memory at the expense of slowing of host memory RMA.
+  For other versions, there is no known work-around.
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4384
 
@@ -260,6 +261,16 @@ Additional environment variables:
   work-around.  Others are described in the bug report.
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4393
+
+* Bug 4474
+  When using hugepages together with Mellanox InfiniBand and RoCE devices,
+  it may be necessary to set `RDMAV_HUGEPAGES_SAFE=1` in the environment.
+  Failure to do so may result in a self-explanatory error message:
+    UCX  ERROR ibv_reg_mr(address=0x7f49c5a02800, length=2048, access=0xf) failed:
+    Invalid argument. Application is using HUGE pages. Please set environment
+    variable RDMAV_HUGEPAGES_SAFE=1
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4474
 
 + See the GASNet Bugzilla server for details on other known bugs:
   https://gasnet-bugs.lbl.gov/

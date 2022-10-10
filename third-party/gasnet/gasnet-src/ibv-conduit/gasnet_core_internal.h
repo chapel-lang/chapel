@@ -88,16 +88,13 @@ extern gasneti_atomic_t gasnetc_exit_running;
  * These are registered early and are available even before _attach()
  */
 #define _hidx_gasnetc_ack                     0 /* Special case */
-#define _hidx_gasnetc_hbarr_reqh              (GASNETC_HANDLER_BASE+0)
-#define _hidx_gasnetc_exit_reduce_reqh        (GASNETC_HANDLER_BASE+1)
-#define _hidx_gasnetc_exit_role_reqh          (GASNETC_HANDLER_BASE+2)
-#define _hidx_gasnetc_exit_role_reph          (GASNETC_HANDLER_BASE+3)
-#define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+4)
-#define _hidx_gasnetc_exit_reph               (GASNETC_HANDLER_BASE+5)
-#define _hidx_gasnetc_sys_barrier_reqh        (GASNETC_HANDLER_BASE+6)
-#define _hidx_gasnetc_sys_exchange_reqh       (GASNETC_HANDLER_BASE+7)
-#define _hidx_gasnetc_sys_flush_reph          (GASNETC_HANDLER_BASE+8)
-#define _hidx_gasnetc_sys_close_reqh          (GASNETC_HANDLER_BASE+9)
+#define _hidx_gasnetc_exit_reduce_reqh        (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_exit_role_reqh          (GASNETC_HANDLER_BASE+1)
+#define _hidx_gasnetc_exit_role_reph          (GASNETC_HANDLER_BASE+2)
+#define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+3)
+#define _hidx_gasnetc_exit_reph               (GASNETC_HANDLER_BASE+4)
+#define _hidx_gasnetc_sys_flush_reph          (GASNETC_HANDLER_BASE+5)
+#define _hidx_gasnetc_sys_close_reqh          (GASNETC_HANDLER_BASE+6)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
 /* ------------------------------------------------------------------------------------ */
