@@ -1631,10 +1631,24 @@ proc file.fsync() throws {
   if err then try ioerror(err, "in file.fsync", this._tryGetPath());
 }
 
+/*
+  A compile-time parameter to control the behavior of :proc:`file.path`
+
+  When 'false', the deprecated behavior is used (i.e., return the shortest of
+  the relative path and the absolute path)
+
+  When 'true', the new behavior is used (i.e., always return the absolute path)
+*/
+config param filePathAbsolute = false;
+
+deprecated "The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant"
+proc file.path: string throws where !filePathAbsolute {
+  return fileRelPathHelper(this);
+}
 
 /*
 
-Get the path to an open file.
+Get the absolute path to an open file.
 
 Note that not all files have a path (e.g. files opened with :proc:`openmem`),
 and that this function may not work on all operating systems.
@@ -1642,18 +1656,55 @@ and that this function may not work on all operating systems.
 The function :proc:`Path.realPath` is an alternative way
 to get the path to a file.
 
+:returns: the absolute path to the file
+:rtype: ``string``
+
 :throws SystemError: Thrown if the path could not be retrieved.
  */
-proc file.path : string throws {
+proc file.path : string throws where filePathAbsolute {
+  return this._abspath;
+}
+
+// helper for relative-path deprecation
+pragma "no doc"
+proc file._abspath: string throws {
   var ret: string;
   var err:errorCode = ENOERR;
   on this._home {
     try this.checkAssumingLocal();
     var tmp:c_string;
-    var tmp2:c_string;
     err = qio_file_path(_file_internal, tmp);
     if !err {
-      err = qio_shortest_path(_file_internal, tmp2, tmp);
+      ret = createStringWithNewBuffer(tmp,
+                                      policy=decodePolicy.escape);
+    }
+    chpl_free_c_string(tmp);
+  }
+  if err then try ioerror(err, "in file.path");
+  return ret;
+}
+
+// internal version of 'file.path' used to generate error messages in other IO methods
+// produces a relative path when avilible
+pragma "no doc"
+proc file._tryGetPath() : string {
+  try {
+    return fileRelPathHelper(this);
+  } catch {
+    return "unknown";
+  }
+}
+
+private proc fileRelPathHelper(f: file): string throws {
+  var ret: string;
+  var err:errorCode = ENOERR;
+  on f._home {
+    try f.checkAssumingLocal();
+    var tmp:c_string;
+    var tmp2:c_string;
+    err = qio_file_path(f._file_internal, tmp);
+    if !err {
+      err = qio_shortest_path(f._file_internal, tmp2, tmp);
     }
     chpl_free_c_string(tmp);
     if !err {
@@ -1664,15 +1715,6 @@ proc file.path : string throws {
   }
   if err then try ioerror(err, "in file.path");
   return ret;
-}
-
-pragma "no doc"
-proc file._tryGetPath() : string {
-  try {
-    return this.path;
-  } catch {
-    return "unknown";
-  }
 }
 
 /*

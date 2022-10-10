@@ -1,0 +1,3 @@
+filepath.chpl:5: warning: The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant
+f.txt
+{CHPL_HOME}/test/deprecated/IO/f.txt
