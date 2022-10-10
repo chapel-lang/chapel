@@ -18,12 +18,6 @@
  * limitations under the License.
  */
 
-/**
-  To test this today, you can force sub_test to use this version by doing:
-  > CHPL_CHPLDOC_NEXT=$(find $(pwd) -name chpldoc -type f) ./util/test/start_test.py test/chpldoc/enum.doc.chpl
-  You'll want to make sure that the find command finds a single chpldoc executable
- */
-
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -211,10 +205,6 @@ static void printStuff(const char* argv0, void* mainAddr) {
   if (fPrintVersion) {
     std::string version = get_version();
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
-
-    #ifdef HAVE_LLVM
-        fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
-    #endif
 
     fPrintCopyright  = true;
     printedSomething = true;
