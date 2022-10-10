@@ -580,6 +580,73 @@ static void testMockupRangeBuilderAndRangeClass() {
   assert(mod->numStmts() == 13); // 9 for the base and 4 for test
 }
 
+static void testFieldUseBeforeInit1(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = UniqueString::get(ctx, "input.chpl");
+  std::string contents = R""""(
+    record r {
+      var x: int;
+    }
+    proc foo(x) return;
+    proc r.init() {
+      foo(x);
+      if x == 8 then foo(x); else foo(x);
+      for i in 1..7 do foo(x);
+      this.x = 16;
+      foo(x);
+    }
+    var obj = new r();
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+  assert(guard.errors().size() == 4);
+
+  // Should be one error related to use-before-initialization.
+  auto& msg = guard.errors()[0];
+  assert(msg->message() == "'x' is used before it is initialized");
+  assert(msg->location(ctx).firstLine() == 7);
+  assert(guard.realizeErrors());
+}
+
+static void testRecordNewSegfault(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = UniqueString::get(ctx, "input.chpl");
+  std::string contents = R""""(
+    record MyRecord {}
+    var r1 = new owned MyRecord();
+    var r2 = new shared MyRecord();
+    var r3 = new borrowed MyRecord();
+    var r4 = new unmanaged MyRecord();
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+  assert(!guard.realizeErrors());
+}
+
 int main() {
   testEmptyRecordUserInit();
   testEmptyRecordCompilerGenInit();
@@ -587,6 +654,8 @@ int main() {
   testClassManagementNilabilityInNewExpr();
   testGenericRecordUserInitDependentField();
   testMockupRangeBuilderAndRangeClass();
+  testFieldUseBeforeInit1();
+  testRecordNewSegfault();
 
   return 0;
 }

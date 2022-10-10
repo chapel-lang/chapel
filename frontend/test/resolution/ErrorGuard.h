@@ -49,13 +49,14 @@ class ErrorGuard {
     return handler->errors();
   }
 
-  bool realizeErrors() {
+  int realizeErrors() {
     auto handler = ctx_->errorHandler();
     assert(handler);
     if (!handler->errors().size()) return false;
     for (auto err : handler->errors()) handler->report(ctx_, err);
+    int ret = (int) handler->errors().size();
     std::ignore = ctx_->installErrorHandler(prepareHandler());
-    return true;
+    return ret;
   }
 
   ~ErrorGuard() {

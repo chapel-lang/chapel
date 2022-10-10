@@ -27,6 +27,19 @@
 #include <cmath>
 #include <cinttypes>
 
+//
+// TODO: Error messages we need to capture here:
+//
+// - [ ] "can't omit initialization of field '%s', no type or default "
+//       "value provided"
+// - [ ] "can't initialize %s field '%s' with 'new' expression"
+//       (for types and params)
+// - [ ] "cannot take a reference to 'this' before this.complete()"
+// - [ ] "cannot initialize a variable from 'this' before this.complete()"
+// - [ ] "cannot pass 'this' to a funciton before calling super.init() "
+//       "or this.init()"
+// - [ ] "cannot pass a record to a function before this.complete()"
+//
 namespace {
   using namespace chpl;
   using namespace resolution;
@@ -34,6 +47,7 @@ namespace {
   using namespace uast;
 
   struct Visitor {
+    using NameVec = std::vector<BorrowedIdsWithName>;
 
     // Used to keep track of field state while walking the initializer.
     struct FieldInitState {
@@ -110,8 +124,11 @@ namespace {
     void exit(const OpCall* node);
     bool enter(const FnCall* node);
     void exit(const FnCall* node);
+
+    ID disambiguateNameConflictByIgnoringField(const NameVec& vec);
     bool enter(const Identifier* node);
     void exit(const Identifier* node);
+
     bool enter(const Dot* node);
     void exit(const Dot* node);
   };
@@ -515,14 +532,13 @@ namespace {
     return true;
   }
 
+  // TODO: Detect calls to super.
   bool Visitor::handleCallToSuperInit(const FnCall* node) {
-    if (!isCallToSuperInitRequired()) assert(false && "Not handled!");
-    assert(false && "Not handled!");
     return false;
   }
 
+  // TODO: Detect calls to init.
   bool Visitor::handleCallToInit(const FnCall* node) {
-    assert(false && "Not handled!");
     return false;
   }
 
@@ -579,18 +595,21 @@ namespace {
   }
 
   bool Visitor::handleUseOfField(const AstNode* node) {
-    auto fieldId = fieldIdFromPossibleMentionOfField(node);
-    if (fieldId.isEmpty()) return false;
+    auto id = fieldIdFromPossibleMentionOfField(node);
+    if (id.isEmpty()) return false;
 
-    if (isFieldInitialized(fieldId)) return true;
+    if (isFieldInitialized(id)) return true;
 
+    auto state = fieldStateFromId(id);
     bool isValidPreInitMention = false;
+
     if (isDescendingIntoAssignment_)
       if (isMentionOfNodeInLhsOfAssign(node))
         isValidPreInitMention = true;
 
     if (!isValidPreInitMention) {
-      assert(false && "Not handled!");
+      ctx_->error(node, "'%s' is used before it is initialized",
+                        state->name.c_str());
     }
 
     return true;
@@ -620,7 +639,8 @@ namespace {
 
   bool Visitor::enter(const Dot* node) {
     if (auto ident = node->receiver()->toIdentifier()) {
-      // TODO: this.this.this
+
+      // TODO: Check parent for more context, and 'this.this'.
       if (ident->name() == USTR("this")) {
         auto name = node->field();
         auto id = fieldIdFromName(name);
@@ -643,24 +663,55 @@ namespace {
     std::ignore = handleUseOfField(node);
   }
 
+  ID Visitor::disambiguateNameConflictByIgnoringField(const NameVec& vec) {
+    if (vec.size() != 2) return ID();
+    if (vec[0].numIds() > 1 || vec[1].numIds() > 1) return ID();
+    auto one = vec[0].id(0);
+    auto two = vec[1].id(0);
+    assert(one != two);
+    if (!parsing::idIsField(ctx_, one) &&
+        !parsing::idIsField(ctx_, two)) return ID();
+    auto ret = parsing::idIsField(ctx_, one) ? two : one;
+    return ret;
+  }
+
   bool Visitor::enter(const Identifier* node) {
-    if (phase_ < PHASE_COMPLETE) {
-      auto vec = initResolver_.lookupIdentifier(node, nullptr);
-      if (vec.size() == 1 && vec[0].numIds() == 1) {
-        auto& id = vec[0].id(0);
-        if (!parsing::idIsField(ctx_, id)) {
-          std::ignore = initResolver_.resolveIdentifier(node, nullptr);
-        } else {
-          auto state = fieldStateFromId(id);
-          auto qt = state->qt;
-          auto& re = initResolver_.byPostorder.byAst(node);
-          re.setToId(id);
-          re.setType(qt);
-        }
+    auto scope = initResolver_.methodReceiverScope();
+
+    // At this point just lean on the type resolver.
+    if (phase_ >= PHASE_COMPLETE) {
+      std::ignore = initResolver_.resolveIdentifier(node, scope);
+      return false;
+    }
+
+    auto vec = initResolver_.lookupIdentifier(node, scope);
+
+    // Handle and exit early if there were no ambiguities.
+    if (vec.size() == 1 && vec[0].numIds() == 1) {
+      auto& id = vec[0].id(0);
+      if (!parsing::idIsField(ctx_, id)) {
+        std::ignore = initResolver_.resolveIdentifier(node, scope);
+      } else {
+        auto state = fieldStateFromId(id);
+        auto qt = state->qt;
+        auto& re = initResolver_.byPostorder.byAst(node);
+        re.setToId(id);
+        re.setType(qt);
       }
-    } else {
-      auto receiverScope = initResolver_.methodReceiverScope();
-      std::ignore = initResolver_.resolveIdentifier(node, receiverScope);
+
+      return false;
+    }
+
+    // If there are two names and one is a field, get the thing that is
+    // _NOT_ a field, and determine if we can use that name.
+    auto id = disambiguateNameConflictByIgnoringField(vec);
+    if (!id.isEmpty()) {
+      assert(!parsing::idIsField(ctx_, id));
+      const bool localGenericToUnknown = true;
+      auto qt = initResolver_.typeForId(id, localGenericToUnknown);
+      auto& re = initResolver_.byPostorder.byAst(node);
+      re.setToId(id);
+      re.setType(qt);
     }
 
     return false;
