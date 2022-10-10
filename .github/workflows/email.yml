@@ -12,7 +12,16 @@ jobs:
     runs-on: ubuntu-latest
   
     steps:
-   
+     
+      - name: print git events
+        run:  cat "$GITHUB_EVENT_PATH"
+        
+      - name: print GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"  
+        
+        
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
