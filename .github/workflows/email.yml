@@ -15,6 +15,7 @@ jobs:
    
       - name: checkout
         uses: actions/checkout@v3
+        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
           fetch-depth: 2
           
@@ -31,34 +32,30 @@ jobs:
         uses: dawidd6/action-send-mail@v3
         with:
    
-    # Required mail server address if not connection_url:
+           # Required mail server address if not connection_url:
            server_address: ${{ secrets.SMTP_PROVIDER}}
            server_port: 465
-    # Optional whether this connection use TLS (default is true if server_port is 465)
+           # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
-    # Optional (recommended): mail server username:
+           # Optional (recommended): mail server username:
            username:  ${{ secrets.MAIL_USERNAME}} 
  
-    # Optional (recommended) mail server password:
+           # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
          
            
-    # Required mail subject:
+           # Required mail subject:
            subject: Chapel Merge ${{ github.event.head_commit.message }}  
            # Required recipients' addresses:
-           to: bhavani@hpe.com
-    # Required sender full name (address can be skipped):
+           to: bhavani@hpe.com, elliot.ronaghan@hpe.com
+           # Required sender full name (address can be skipped):
            from: chapel-lang 
   
            html_body: |
               <!DOCTYPE html>
               <html>
               <body>
-             
               <p>   
-              <br>
-              <br>
-              <br>
               Branch ${{github.ref}} <br>
               Author: ${{ github.event.head_commit.author.name}} <br>
               Revision: ${{github.event.repository.id}}  <br>
@@ -75,9 +72,7 @@ jobs:
               </body>
               </html>
 
-    # Optional converting Markdown to HTML (set content_type to text/html too):
+           # Optional converting Markdown to HTML (set content_type to text/html too):
            convert_markdown: true
-    # Optional attachments:
-           attachments: attachments.zip,git.diff,./dist/static/*.js
-    # Optional priority: 'high', 'normal' (default) or 'low'
+           # Optional priority: 'high', 'normal' (default) or 'low'
            priority: low
