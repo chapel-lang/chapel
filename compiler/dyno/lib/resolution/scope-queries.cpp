@@ -342,6 +342,7 @@ static bool doLookupInImports(Context* context,
 
   if (r != nullptr) {
     // check to see if it's mentioned in names/renames
+    bool found = false;
     for (const VisibilitySymbols& is: r->visibilityClauses()) {
       // if we should not continue transitively through private use/includes,
       // and this is private, skip it
@@ -365,17 +366,18 @@ static bool doLookupInImports(Context* context,
         }
 
         // find it in that scope
-        bool found = doLookupInScope(context, symScope, nullptr, resolving,
-                                     from, newConfig,
-                                     checkedScopes, result);
-        if (found && onlyInnermost)
-          return true;
+        found |= doLookupInScope(context, symScope, nullptr, resolving, from,
+                                 newConfig, checkedScopes, result);
       }
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
         result.push_back(BorrowedIdsWithName(is.scope()->id()));
-        return true;
+        found = true;
       }
+    }
+
+    if (found && onlyInnermost) {
+      return true;
     }
   }
 
