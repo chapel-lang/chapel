@@ -172,6 +172,29 @@ def check_llvm_packages(llvm_config):
         s = "Could not find the clang library {0}".format(clang_cpp_lib)
         s += "\nPerhaps you need to install the libclang-cpp-dev package"
 
+    host_platform = chpl_platform.get('host')
+    if host_platform == "darwin":
+        # on Mac OS X with Homebrew, require LLVM 14 or newer
+        # because these LLVM versions fix a problem with
+        # mixing libc++ versions
+        llvm_version, ignored_err = check_llvm_config(llvm_config)
+        llvm_version = llvm_version.strip()
+        bad_vers = ('11', '12', '13')
+        if llvm_version in bad_vers:
+            # compute the set subtraction:
+            #    llvm_versions() - bad_vers
+            # for use in the error message
+            ok_vers = [ ]
+            vers = llvm_versions()
+            for v in vers:
+                if not v in bad_vers:
+                    ok_vers.append(v)
+
+            s = ("LLVM version {0} is not supported on Mac OS X. "
+                 "Please use one of these versions: {1}"
+                 .format(llvm_version, ', '.join(ok_vers)))
+
+
     return (s == '', s)
 
 
