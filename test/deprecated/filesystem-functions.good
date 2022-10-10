@@ -1,0 +1,8 @@
+filesystem-functions.chpl:3: warning: walkdirs is deprecated; please use walkDirs instead
+filesystem-functions.chpl:5: warning: walkdirs is deprecated; please use walkDirs instead
+filesystem-functions.chpl:7: warning: listdir is deprecated, please use listDir instead
+filesystem-functions.chpl:9: warning: getUID is deprecated, please use getUid instead
+filesystem-functions.chpl:10: warning: getGID is deprecated, please use getGid instead
+uncaught FileNotFoundError: No such file or directory (in getUid)
+  filesystem-functions.chpl:9: thrown here
+  filesystem-functions.chpl:9: uncaught here
