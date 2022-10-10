@@ -28,17 +28,18 @@ namespace chpl {
 // Generate query function implementations, like ErrorMessage::get for every
 // error type. We do this by defining the DIAGNOSTIC_CLASS macro, and including
 // error-classes-list.h which invokes this macro for every error type.
-#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...)\
-  const owned<Error##NAME>&\
-  Error##NAME::getError##NAME(Context* context, std::tuple<EINFO> tuple) {\
-    QUERY_BEGIN(getError##NAME, context, tuple);\
-    auto result = owned<Error##NAME>(new Error##NAME(tuple));\
+#define DIAGNOSTIC_CLASS(NAME__, KIND__, EINFO__...)\
+  const owned<Error##NAME__>&\
+  Error##NAME__::getError##NAME__(Context* context,\
+                                  std::tuple<EINFO__> tuple) {\
+    QUERY_BEGIN(getError##NAME__, context, tuple);\
+    auto result = owned<Error##NAME__>(new Error##NAME__(tuple));\
     return QUERY_END(result);\
   }\
 \
-  const Error##NAME*\
-  Error##NAME::get(Context* context, std::tuple<EINFO> tuple) {\
-    return Error##NAME::getError##NAME(context, std::move(tuple)).get();\
+  const Error##NAME__*\
+  Error##NAME__::get(Context* context, std::tuple<EINFO__> tuple) {\
+    return Error##NAME__::getError##NAME__(context, std::move(tuple)).get();\
   }
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
@@ -169,9 +170,11 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
-  auto ast = std::get<const uast::AstNode*>(info);
-  wr.heading(kind_, ast, "unannotated formal is ambiguous in this context");
-  wr.code(ast);
+  auto sig = std::get<const uast::FunctionSignature*>(info);
+  auto formal = std::get<const uast::AnonFormal*>(info);
+  wr.heading(kind_, formal, "unannotated formal is ambiguous in this "
+                            "context");
+  wr.code(sig, {formal});
   wr.message("The meaning of an unannotated formal (a formal not of the "
              "form '<name>:<type>') in a procedure type is ambiguous."
              "It is currently undecided whether it represents a formal's "
@@ -179,9 +182,11 @@ void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorProcDefExplicitAnonFormal::write(ErrorWriterBase& wr) const {
-  auto ast = std::get<const uast::AstNode*>(info);
-  wr.heading(kind_, ast, "formals in a procedure definition must be named");
-  wr.code(ast);
+  auto fn = std::get<const uast::Function*>(info);
+  auto formal = std::get<const uast::Formal*>(info);
+  wr.heading(kind_, formal, "formals in a procedure definition must "
+                            "be named");
+  wr.code(fn, {formal});
 }
 
 } // end namespace 'chpl'

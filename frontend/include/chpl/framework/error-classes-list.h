@@ -47,5 +47,9 @@ WARNING_CLASS(ImplicitFileModule,
     const uast::AstNode*,
     const uast::Module*,
     const uast::Module*)
-ERROR_CLASS(ProcTypeUnannotatedFormal, const uast::AstNode*)
-ERROR_CLASS(ProcDefExplicitAnonFormal, const uast::AstNode*)
+ERROR_CLASS(ProcTypeUnannotatedFormal,
+    const uast::FunctionSignature*,
+    const uast::AnonFormal*)
+ERROR_CLASS(ProcDefExplicitAnonFormal,
+    const uast::Function*,
+    const uast::Formal*)
