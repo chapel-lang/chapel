@@ -7,8 +7,9 @@ on:
       
 jobs:
   
-  
+   
   send_email:
+    if: github.event.pull_request.merged == false     
     runs-on: ubuntu-latest
   
     steps:
@@ -25,7 +26,7 @@ jobs:
         
         
       - name: checkout
-        if: github.event.pull_request.merged == false   
+        #if: github.event.pull_request.merged == false   
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
@@ -33,6 +34,7 @@ jobs:
           
       - name: Get changed files
         id: changed-files
+        #if: github.event.pull_request.merged == false  
         uses: tj-actions/changed-files@v32
         with:
           separator: ","
@@ -40,7 +42,7 @@ jobs:
           
       - name: Send mail  
         
-        if: github.event.pull_request.merged == false  
+        #if: github.event.pull_request.merged == false  
         uses: dawidd6/action-send-mail@v3
         with:
    
