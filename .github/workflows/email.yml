@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
   
     steps:
+      - name: print git merge status
+        run:  echo "$github.event.pull_request.merged $github.event_name" 
+               
      
       - name: print git events
         run:  cat "$GITHUB_EVENT_PATH"
@@ -36,7 +39,7 @@ jobs:
          
           
       - name: Send mail  
-       
+        
         if: github.event.pull_request.merged == true  
         uses: dawidd6/action-send-mail@v3
         with:
