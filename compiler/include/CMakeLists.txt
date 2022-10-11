@@ -15,9 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(CHPL_LLVM STREQUAL "none")
-  message(NOTICE "Cannot build linters without LLVM - skipping")
-else()
-  add_subdirectory(linters)
-endif()
-
+file(GLOB_RECURSE headers CONFIGURE_DEPENDS "*.h")
+target_sources(chpl
+               PRIVATE
+               ${headers})

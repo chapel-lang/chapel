@@ -15,9 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(CHPL_LLVM STREQUAL "none")
-  message(NOTICE "Cannot build linters without LLVM - skipping")
-else()
-  add_subdirectory(linters)
-endif()
-
+target_sources(chpl
+               PRIVATE
+               astlocs.cpp
+               exprAnalysis.cpp
+               files.cpp
+               misc.cpp
+               mysystem.cpp
+               stringutil.cpp
+               timer.cpp
+               tmpdirname.cpp
+              )

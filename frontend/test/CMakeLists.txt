@@ -35,7 +35,7 @@ function(comp_unit_test target)
   add_dependencies(${target} libdyno)
   add_test(NAME ${target} COMMAND ${target})
   set_tests_properties(${target} PROPERTIES
-                       ENVIRONMENT "CHPL_HOME=${DYNO_CHPL_HOME}")
+                       ENVIRONMENT "CHPL_HOME=${CHPL_HOME}")
   add_dependencies(tests ${target})
 endfunction(comp_unit_test)
 

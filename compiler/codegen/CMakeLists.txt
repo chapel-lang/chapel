@@ -15,9 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(CHPL_LLVM STREQUAL "none")
-  message(NOTICE "Cannot build linters without LLVM - skipping")
-else()
-  add_subdirectory(linters)
-endif()
-
+target_sources(chpl
+               PRIVATE
+               cg-alist.cpp
+               cg-CForLoop.cpp
+               cg-DoWhileStmt.cpp
+               cg-expr.cpp
+               cg-LoopStmt.cpp
+               cg-stmt.cpp
+               cg-symbol.cpp
+               cg-type.cpp
+               cg-WhileDoStmt.cpp
+               codegen.cpp
+               library.cpp
+               mli.cpp
+              )

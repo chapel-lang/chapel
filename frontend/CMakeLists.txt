@@ -19,19 +19,56 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(dyno VERSION 0.1)
 
-option(DYNO_CHPL_HOME "The CHPL_HOME environment variable for tests to use")
+# CHPL_HOME may have been defined by an upstream CMakeLists.txt, so check if
+# it doesn't exist before trying to create it.
+if (NOT DEFINED CHPL_HOME)
+  message(STATUS "CHPL_HOME not defined, adding to cache...")
+  set(CHPL_HOME CACHE STRING "The CHPL_HOME environment variable for tests to use")
+else()
+  set(CHPL_HOME ${CHPL_HOME})
+endif()
+
+if (NOT DEFINED ${CHPL_HOME})
+  set(CHPL_HOME ${ENV${CHPL_HOME}})
+endif()
+
 # Options to integrate LLVM support library into dyno
 # TODO: enable easier cmake builds of dyno (outside of Chapel's Makefiles)
 # by falling back on find_package(LLVM) if
 # DYNO_LLVM_COMP_ARGS / DYNO_LLVM_LINK_ARGS are empty.
-option(DYNO_LLVM_COMP_ARGS "Override compile args for LLVM")
-option(DYNO_LLVM_LINK_ARGS "Override linker args for LLVM")
-# remove whitespace or you'll get complaints about an error
-# according to policy CMP0004
-string(STRIP ${DYNO_LLVM_COMP_ARGS} DYNO_LLVM_COMP_ARGS)
-string(STRIP ${DYNO_LLVM_LINK_ARGS} DYNO_LLVM_LINK_ARGS)
+if (NOT DEFINED CHPL_HOST_BUNDLED_COMPILE_ARGS)
+  set(CHPL_HOST_BUNDLED_COMPILE_ARGS CACHE STRING "Override LLVM=bundled compile args")
+endif()
+if (NOT DEFINED CHPL_HOST_SYSTEM_COMPILE_ARGS)
+  set(CHPL_HOST_SYSTEM_COMPILE_ARGS CACHE STRING "Overide LLVM=system compile args")
+endif()
+if (NOT DEFINED CHPL_HOST_BUNDLED_LINK_ARGS)
+  set(CHPL_HOST_BUNDLED_LINK_ARGS CACHE STRING "Override LLVM=bundled link args")
+endif()
+if (NOT DEFINED CHPL_HOST_SYSTEM_LINK_ARGS)
+  set(CHPL_HOST_SYSTEM_LINK_ARGS CACHE STRING "Override LLVM=system link args")
+endif()
+
+if (NOT DEFINED CHPL_LLVM_COMP_ARGS)
+  # TODO: See if we can use these directly, I am not sure we can because
+  # the way to concat strings requires an output variable
+  string(CONCAT CHPL_LLVM_COMP_ARGS ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
+  # remove whitespace or you'll get complaints about an error
+  # according to policy CMP0004
+  if (CHPL_LLVM_COMP_ARGS)
+    string(STRIP ${CHPL_LLVM_COMP_ARGS} CHPL_LLVM_COMP_ARGS)
+  endif()
+endif()
+if (NOT DEFINED CHPL_LLVM_LINK_ARGS)
+  string(CONCAT CHPL_LLVM_LINK_ARGS ${CHPL_HOST_BUNDLED_LINK_ARGS} " " ${CHPL_HOST_SYSTEM_LINK_ARGS})
+  string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
+endif()
+
+# message(DEBUG "CHPL_LLVM_COMP_ARGS: ${CHPL_LLVM_COMP_ARGS}")
+# message(DEBUG "CHPL_LLVM_LINK_ARGS: ${CHPL_LLVM_LINK_ARGS}")
+
 # Don't pass through jemalloc for the time being.
-string(REPLACE "-ljemalloc" "" DYNO_LLVM_LINK_ARGS ${DYNO_LLVM_LINK_ARGS})
+string(REPLACE "-ljemalloc" "" CHPL_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS})
 
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
