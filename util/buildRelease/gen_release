@@ -143,7 +143,8 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
 
 # C/C++ sources
 @code_dirs = (
-    "compiler"
+    "compiler",
+    "frontend"
 );
 
 # include these dirs and their entire contents
@@ -164,6 +165,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     "util/config",
     "util/quickstart",
     "util/test",
+    "tools/chpldoc",
     "tools/chplvis",
     "tools/c2chapel",
     "tools/mason"
