@@ -19,14 +19,17 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(dyno VERSION 0.1)
 
-# TODO: Options are technically only booleans in CMake, although this still
-# appears to work with strings, but I'm not sure it's correct or best practice
-# to do this way. Check if these option() calls should really be set() instead.
-option(DYNO_CHPL_HOME "The CHPL_HOME environment variable for tests to use")
+# CHPL_HOME may have been defined by an upstream CMakeLists.txt, so check if
+# it doesn't exist before trying to create it.
+if (NOT DEFINED CHPL_HOME)
+  message(STATUS "CHPL_HOME not defined, adding to cache...")
+  set(CHPL_HOME CACHE STRING "The CHPL_HOME environment variable for tests to use")
+else()
+  set(CHPL_HOME ${CHPL_HOME})
+endif()
 
-if (NOT DYNO_CHPL_HOME)
-  message(STATUS "setting DYNO_CHPL_HOME to ${CHPL_HOME}")
-  set(DYNO_CHPL_HOME ${CHPL_HOME})
+if (NOT DEFINED ${CHPL_HOME})
+  set(CHPL_HOME ${ENV${CHPL_HOME}})
 endif()
 
 # Options to integrate LLVM support library into dyno
@@ -64,12 +67,8 @@ endif()
 # message(DEBUG "CHPL_LLVM_COMP_ARGS: ${CHPL_LLVM_COMP_ARGS}")
 # message(DEBUG "CHPL_LLVM_LINK_ARGS: ${CHPL_LLVM_LINK_ARGS}")
 
-# remove whitespace or you'll get complaints about an error
-# according to policy CMP0004
-# string(STRIP ${DYNO_LLVM_COMP_ARGS} DYNO_LLVM_COMP_ARGS)
-# string(STRIP ${DYNO_LLVM_LINK_ARGS} DYNO_LLVM_LINK_ARGS)
 # Don't pass through jemalloc for the time being.
-string(REPLACE "-ljemalloc" "" DYNO_LLVM_LINK_ARGS ${DYNO_LLVM_LINK_ARGS})
+string(REPLACE "-ljemalloc" "" CHPL_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS})
 
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})

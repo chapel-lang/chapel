@@ -36,9 +36,8 @@ include(CMakePrintHelpers)
 # set(CMAKE_VERBOSE_MAKEFILE 1)
 
 
-# Options that correspond to printchplenv --internal --compiler
+# Options that correspond to printchplenv --compiler
 # Could be set from environment or command-line
-# Print the output of PRINTCHPLENV to user
 # TODO: Update these "Description" values to meaningful values
 set(CHPL_HOST_PLATFORM CACHE STRING "Description")
 set(CHPL_HOST_COMPILER CACHE STRING "Description")
@@ -168,18 +167,33 @@ endif()
 # Makefile arguments we still want to support
 # TODO: SEE IF CMAKE COVERS THESE VARIABLES
 # TODO: Wire these up to do something
-set(CHPL_MAKE_ASSERTS OFF CACHE BOOL "ASSERTS flag from make")
-set(CHPL_MAKE_WARNINGS OFF CACHE BOOL "WARNINGS flag from make")
-set(CHPL_MAKE_OPTIMIZE OFF CACHE BOOL "OPTIMIZE flag from make")
-set(CHPL_MAKE_DEBUG OFF CACHE BOOL "DEBUG flag from make")
-set(CHPL_MAKE_PROFILE OFF CACHE BOOL "PROFILE flag from make")
+set(ASSERTS OFF CACHE BOOL "ASSERTS flag from make")
+set(WARNINGS OFF CACHE BOOL "WARNINGS flag from make")
+set(OPTIMIZE OFF CACHE BOOL "OPTIMIZE flag from make")
+set(DEBUG OFF CACHE BOOL "DEBUG flag from make")
+set(PROFILE OFF CACHE BOOL "PROFILE flag from make")
 
+# TODO: Update the C/CXX flags with the proper values for each of the above options
+if (${DEBUG})
+  set(CMAKE_BUILD_TYPE CACHE BOOL Debug "Debug build" FORCE)
+endif()
 
+if (${WARNINGS})
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+endif()
+
+if (${OPTIMIZE})
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+endif()
 
 set(PRINTCHPLENV_COMMAND printchplenv --compiler --internal --cmake)
 # message(STATUS "running ${PRINTCHPLENV_COMMAND} from ${CMAKE_CURRENT_SOURCE_DIR}/util")
 
 # Pass the CMake detected C/CXX compilers to printchplenv
+# TODO: we should support the standard cmake way of overriding these and have
+# setting them from the command-line be an error, e.g., `cmake -DCHPL_HOST_CC=bla`
 execute_process(COMMAND ${CMAKE_COMMAND} -E env
                   CHPL_HOST_CC=${CMAKE_C_COMPILER} CHPL_HOST_CXX=${CMAKE_CXX_COMPILER} ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/util
