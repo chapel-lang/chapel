@@ -21,6 +21,7 @@ FRONTEND_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/frontend/lib/resolution
 ALL_SRCS += ../frontend/lib/resolution/*.h ../frontend/lib/resolution/*.cpp
 
 FRONTEND_RESOLUTION_SRCS =                          \
+           CallInitDeinit.cpp                       \
            Resolver.cpp                             \
            can-pass.cpp                             \
            default-functions.cpp                    \
