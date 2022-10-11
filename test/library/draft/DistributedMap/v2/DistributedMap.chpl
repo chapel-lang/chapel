@@ -32,8 +32,6 @@ module DistributedMap {
     pragma "no doc"
     var m: shared distributedMapImpl(keyType, valType)?;
     forwarding m!;
-    // Might be able to forward updateAggregator and the toArray functions, but
-    // given the trouble I've had so far, let's save that
 
     proc init(type keyType, type valType) {
       this.keyType = keyType;
