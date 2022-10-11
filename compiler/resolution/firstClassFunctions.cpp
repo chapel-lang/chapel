@@ -61,6 +61,7 @@ namespace {
     std::vector<FcfFormalInfo> formals;
     RetTag retTag;
     Type* retType;
+    bool throws;
     bool isAnyFormalNamed;
     AggregateType* type;
     Type* sharedType;
@@ -465,6 +466,7 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   v->formals = formals;
   v->retTag = retTag;
   v->retType = retType;
+  v->throws = throws;
   v->isAnyFormalNamed = isAnyFormalNamed;
 
   v->type = at;
@@ -729,6 +731,7 @@ attachSuperThis(AggregateType* super,
   ret->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   ret->addFlag(FLAG_COMPILER_GENERATED);
   ret->setMethod(true);
+  if (throws) ret->throwsErrorInit();
 
   auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ret->insertFormalAtTail(mt);
@@ -832,6 +835,7 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
   ret->addFlag(FLAG_OVERRIDE);
   ret->setMethod(true);
   ret->retTag = superThis->retTag;
+  if (info->throws) ret->throwsErrorInit();
 
   auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ret->insertFormalAtTail(mt);

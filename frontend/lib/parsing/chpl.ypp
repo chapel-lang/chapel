@@ -2249,6 +2249,7 @@ lambda_decl_start:
 
 lambda_decl_expr:
   lambda_decl_start req_formal_ls opt_ret_tag opt_type
+  opt_throws_error
   opt_lifetime_where
     {
       context->clearComments();
@@ -2262,11 +2263,11 @@ lambda_decl_expr:
       fp.formals = $2;
       fp.returnIntent = $3;
       fp.returnType = $4;
-      WhereAndLifetime wl = $5;
-      fp.body = $7;
-
+      fp.throws = ($5 == ThrowsTag_THROWS) ? true : false;
+      WhereAndLifetime wl = $6;
       fp.lifetime = wl.lifetime;
       fp.where = wl.where;
+      fp.body = $8;
 
       context->clearComments();
       context->exitScope(asttags::Function, STR("lambda"));

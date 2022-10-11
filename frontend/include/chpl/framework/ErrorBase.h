@@ -230,9 +230,6 @@ class GeneralError : public BasicError {
 // macro to generate class declarations for each error. This way, the only
 // steps needed to add a new error are to add a line to error-classes-list.h,
 // and to implement the new error classes' ::write method.
-//
-// TODO: Should this expansion be moved into 'error-classes-list.h'?
-//
 #define DIAGNOSTIC_CLASS(NAME__, KIND__, EINFO__...)\
   class Error##NAME__ : public ErrorBase {\
    private:\
