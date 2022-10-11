@@ -658,7 +658,7 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
 
 void
 Visitor::checkProcTypeFormalsAreAnnotated(const FunctionSignature* node) {
-  bool isProcType = (parent() && parent()->isFunction()) ? false : true;
+  bool isProcType = !parent() || !parent()->isFunction();
   if (!isProcType) return;
 
   for (auto ast : node->formals())

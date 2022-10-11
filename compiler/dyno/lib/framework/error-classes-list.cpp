@@ -176,7 +176,7 @@ void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
                             "context");
   wr.code(sig, {formal});
   wr.message("The meaning of an unannotated formal (a formal not of the "
-             "form '<name>:<type>') in a procedure type is ambiguous."
+             "form '<name>:<type>') in a procedure type is ambiguous. "
              "It is currently undecided whether it represents a formal's "
              "type or name.");
 }
