@@ -17,15 +17,11 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
+
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
 #include <cstdlib>
 
 using namespace chpl;

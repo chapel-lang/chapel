@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#include <algorithm>
-#include <sstream>
-
+#include "test-resolution.h"
 #include "ResolvedVisitor.h"
 
 #include "chpl/framework/ErrorWriter.h"
@@ -35,20 +33,9 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
 
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
+#include <algorithm>
+#include <sstream>
 #include <map>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace types;
-using namespace uast;
 
 static bool debug = false;
 static bool verbose = false;

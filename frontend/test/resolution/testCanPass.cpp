@@ -17,20 +17,10 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
+
 #include "chpl/resolution/can-pass.h"
 #include "chpl/types/all-types.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace resolution;
-using namespace types;
-using namespace uast;
 
 static bool passesAsIs(CanPassResult r) {
   return r.passes() &&

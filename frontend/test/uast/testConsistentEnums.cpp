@@ -17,15 +17,12 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
+
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/TaskVar.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
 
 using namespace chpl;
 using namespace uast;

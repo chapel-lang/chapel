@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-parsing.h"
+
 #include "chpl/uast/Array.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
@@ -30,17 +32,6 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace uast;
-using namespace parsing;
 
 static void testRange(Parser* parser, const char* testName,
                       const char* intervalStr,

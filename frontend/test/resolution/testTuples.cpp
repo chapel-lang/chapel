@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
+
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -26,21 +28,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/Variable.h"
-#include "common.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace types;
-using namespace uast;
-
 
 // assumes the last statement is a variable declaration for x.
 // returns the type of that.

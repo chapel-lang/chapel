@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-parsing.h"
+
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
 #include "chpl/uast/AstNode.h"
@@ -28,17 +30,7 @@
 #include "chpl/uast/OpCall.h"
 #include "chpl/uast/Variable.h"
 
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
 #include <iostream>
-
-using namespace chpl;
-using namespace uast;
-using namespace parsing;
 
 static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
