@@ -26,6 +26,7 @@ module DistributedMap {
   private use CyclicDist;
   private use IO;
 
+  // TODO: document
   record distributedMap {
     type keyType;
     type valType;
