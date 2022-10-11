@@ -123,7 +123,7 @@ astlocMarker::astlocMarker(int lineno, const char* filename)
   currentAstLoc = astlocT(lineno, astr(filename));
 }
 
-// constructor, for compiler/dyno Locations
+// constructor, for dyno Locations
 astlocMarker::astlocMarker(chpl::Location location)
   : previousAstLoc(currentAstLoc)
 {

@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DYNO_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/dyno/lib/resolution
+FRONTEND_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/frontend/lib/resolution
 
-ALL_SRCS += dyno/lib/resolution/*.h dyno/lib/resolution/*.cpp
+ALL_SRCS += ../frontend/lib/resolution/*.h ../frontend/lib/resolution/*.cpp
 
-DYNO_RESOLUTION_SRCS =                              \
+FRONTEND_RESOLUTION_SRCS =                          \
            Resolver.cpp                             \
            can-pass.cpp                             \
            default-functions.cpp                    \
@@ -33,7 +33,7 @@ DYNO_RESOLUTION_SRCS =                              \
            scope-types.cpp                          \
 
 
-SRCS = $(DYNO_RESOLUTION_SRCS)
+SRCS = $(FRONTEND_RESOLUTION_SRCS)
 
-DYNO_RESOLUTION_OBJS = \
-	$(DYNO_RESOLUTION_SRCS:%.cpp=$(DYNO_RESOLUTION_OBJDIR)/%.$(OBJ_SUFFIX))
+FRONTEND_RESOLUTION_OBJS = \
+	$(FRONTEND_RESOLUTION_SRCS:%.cpp=$(FRONTEND_RESOLUTION_OBJDIR)/%.$(OBJ_SUFFIX))

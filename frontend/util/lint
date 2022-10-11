@@ -16,7 +16,7 @@ log = partial(print, file=sys.stderr)
 
 compile_commands = None
 
-lib_dir = Path('compiler/dyno/lib')
+lib_dir = Path('frontend/lib')
 
 # What lib dirs dirs do we look in for .cpp files to check
 lib_dirs = [
@@ -30,6 +30,8 @@ skip_flags = [
     r'-Walloc-size-larger-than=(\d+)',
     r'-Wno-stringop-truncation',
     r'-Wno-format-truncation',
+    r'-Wno-use-after-free',
+    r'-Wno-error=missing-template-keyword',
 ]
 
 def files_changed(to='main') -> Set[Path]:
@@ -99,10 +101,10 @@ if __name__ == '__main__':
         args.jobs = multiprocessing.cpu_count()
 
     if args.only_changed:
-        dyno_includes = Path('compiler/dyno/include')
+        dyno_includes = Path('frontend/include')
         changed_files = files_changed()
         # Check the cpp files that have changed we would check by default
-        # And also include any header that changed in compiler/dyno/include
+        # And also include any header that changed in frontend/include
         args.files = (set(args.files) & changed_files) | {x for x in changed_files if x.is_relative_to(dyno_includes)}
 
         if args.files:

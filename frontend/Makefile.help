@@ -17,11 +17,11 @@
 # limitations under the License.
 
 ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/../..
+export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 
-COMPILER_ROOT = ..
-COMPILER_SUBDIR = dyno
+COMPILER_ROOT = ../compiler
+COMPILER_SUBDIR = ../frontend
 
 # disable -MMD etc because cmake already specifies it
 NO_DEPEND = 1
@@ -58,7 +58,7 @@ $(LIBCOMPILER_BUILD_DIR):
 	@echo "Configuring the compiler library..."
 	@mkdir -p $(LIBCOMPILER_BUILD_DIR)
 	cd $(LIBCOMPILER_BUILD_DIR) && \
-	  $(CMAKE) $(CHPL_MAKE_HOME)/compiler/dyno \
+	  $(CMAKE) $(CHPL_MAKE_HOME)/frontend \
 	    $(LIB_CMAKE_ARG) \
 	    $(SDKROOT_ARG) \
 	    -DCMAKE_C_COMPILER='$(CC)' \
@@ -73,21 +73,23 @@ $(LIBCOMPILER_BUILD_DIR):
 	    -DDYNO_LINTERS_CLANG_CMAKE_PATH='$(CLANG_CMAKE_DIR)' \
 	    -DBUILD_SHARED_LIBS=OFF
 
-dyno-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
+parser: $(LIBCOMPILER_BUILD_DIR) FORCE
 	cd $(LIBCOMPILER_BUILD_DIR)/lib/parsing && $(CMAKE) --build . --target parser
 
-dyno-chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
+chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
 	+cd $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc && $(CMAKE) --build . --target chpldoc
 	mkdir -p $(CHPL_BIN_DIR)
 	cp -f $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc/chpldoc $(CHPL_BIN_DIR)/chpldoc
 
-dyno-linters: $(LIBCOMPILER_BUILD_DIR) FORCE
+frontend-linters: $(LIBCOMPILER_BUILD_DIR) FORCE
 	+cd $(LIBCOMPILER_BUILD_DIR)/util && $(CMAKE) --build .
 
-run-dyno-linters: dyno-linters
+run-frontend-linters: frontend-linters
 	@env PATH=$(LIBCOMPILER_BUILD_DIR)/util/linters:$(PATH) ./util/lint --compile-commands $(LIBCOMPILER_BUILD_DIR) --jobs=-1
 
-dyno: $(LIBCOMPILER_BUILD_DIR) FORCE
+run-frontend-linters: frontend-linters FORCE
+
+frontend: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
 	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) libdyno ; \
@@ -97,7 +99,7 @@ dyno: $(LIBCOMPILER_BUILD_DIR) FORCE
 
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --quiet --copy
 
-dyno-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
+frontend-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library docs..."
 	cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target api-docs
 # copy the generated doxygen output to the build directory
@@ -105,20 +107,22 @@ dyno-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 	  $(COPY_IF_DIFFERENT) $(LIBCOMPILER_BUILD_DIR)/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
 	fi
 
-clean-dyno-docs: FORCE
+clean-frontend-docs: FORCE
 	rm -rf $(CHPL_MAKE_HOME)/build/doc/doxygen
 
-clobber-dyno: clean-dyno-docs FORCE
+clobber-frontend: clean-frontend-docs FORCE
 	rm -rf $(LIBCOMPILER_BUILD_DIR)
 
-test-dyno: $(LIBCOMPILER_BUILD_DIR) FORCE
-	@echo "Making and running the tests..."
+test-frontend: $(LIBCOMPILER_BUILD_DIR) FORCE
+	@echo "Making and running the frontend tests..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
 	  JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
 	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && ctest $$JOBSFLAG . ; \
 	else \
 	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target tests && ctest . ; \
 	fi
+
+test-dyno: test-frontend FORCE
 
 FORCE:
 

@@ -17,11 +17,11 @@
 # limitations under the License.
 
 ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
 
-COMPILER_ROOT = ../../..
-COMPILER_SUBDIR = dyno/tools/chpldoc
+COMPILER_ROOT = ../../compiler
+COMPILER_SUBDIR = chpldoc
 
 #
 # standard header

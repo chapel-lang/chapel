@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DYNO_PARSING_OBJDIR = $(COMPILER_BUILD)/dyno/lib/parsing
+FRONTEND_PARSING_OBJDIR = $(COMPILER_BUILD)/frontend/lib/parsing
 
-ALL_SRCS += dyno/lib/parsing/*.h dyno/lib/parsing/*.cpp
+ALL_SRCS += ../frontend/lib/parsing/*.h ../frontend/lib/parsing/*.cpp
 
-DYNO_PARSING_SRCS =                                 \
+FRONTEND_PARSING_SRCS =                             \
            bison-chpl-lib.cpp                       \
            flex-chpl-lib.cpp                        \
            parsing-queries.cpp                      \
@@ -28,7 +28,7 @@ DYNO_PARSING_SRCS =                                 \
            parser-stats.cpp                         \
 
 
-SRCS = $(DYNO_PARSING_SRCS)
+SRCS = $(FRONTEND_PARSING_SRCS)
 
-DYNO_PARSING_OBJS = \
-	$(DYNO_PARSING_SRCS:%.cpp=$(DYNO_PARSING_OBJDIR)/%.$(OBJ_SUFFIX))
+FRONTEND_PARSING_OBJS = \
+	$(FRONTEND_PARSING_SRCS:%.cpp=$(FRONTEND_PARSING_OBJDIR)/%.$(OBJ_SUFFIX))

@@ -16,12 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DYNO_UTIL_OBJDIR = $(COMPILER_BUILD)/dyno/lib/util
+FRONTEND_UTIL_OBJDIR = $(COMPILER_BUILD)/frontend/lib/util
 
-ALL_SRCS += dyno/lib/util/*.h dyno/lib/util/*.cpp
+ALL_SRCS += ../frontend/lib/util/*.h ../frontend/lib/util/*.cpp
 
 
-DYNO_UTIL_SRCS =      \
+FRONTEND_UTIL_SRCS =      \
   bitmap.cpp \
   break.cpp \
   chplenv.cpp \
@@ -32,9 +32,9 @@ DYNO_UTIL_SRCS =      \
   terminal.cpp \
 
 
-SRCS = $(DYNO_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c
+SRCS = $(FRONTEND_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c
 
-DYNO_UTIL_OBJS = \
-	$(DYNO_UTIL_SRCS:%.cpp=$(DYNO_UTIL_OBJDIR)/%.$(OBJ_SUFFIX)) \
-        $(DYNO_UTIL_OBJDIR)/my_aligned_alloc.o \
-        $(DYNO_UTIL_OBJDIR)/my_strerror_r.o \
+FRONTEND_UTIL_OBJS = \
+	$(FRONTEND_UTIL_SRCS:%.cpp=$(FRONTEND_UTIL_OBJDIR)/%.$(OBJ_SUFFIX)) \
+        $(FRONTEND_UTIL_OBJDIR)/my_aligned_alloc.o \
+        $(FRONTEND_UTIL_OBJDIR)/my_strerror_r.o \

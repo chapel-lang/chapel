@@ -101,8 +101,6 @@ add_subdirectory(lib)
 add_subdirectory(include/chpl)
 # Support for documentation of AST header
 add_subdirectory(doc)
-# Tools like chpldoc
-add_subdirectory(tools)
 # Utils like C++ linters for this codebase
 add_subdirectory(util)
 

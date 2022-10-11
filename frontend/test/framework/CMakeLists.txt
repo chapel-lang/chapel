@@ -23,5 +23,5 @@ comp_unit_test(testIds)
 comp_unit_test(testUniqueString)
 
 # Copy the moby.txt to the binary dir for use by testUniqueString
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../../../test/types/string/psahabu/perf/moby.txt
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../../test/types/string/psahabu/perf/moby.txt
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

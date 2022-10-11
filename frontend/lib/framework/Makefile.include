@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DYNO_FRAMEWORK_OBJDIR = $(COMPILER_BUILD)/dyno/lib/framework
+FRONTEND_FRAMEWORK_OBJDIR = $(COMPILER_BUILD)/frontend/lib/framework
 
-ALL_SRCS += dyno/lib/framework/*.h dyno/lib/framework/*.cpp
+ALL_SRCS += ../frontend/lib/framework/*.h ../frontend/lib/framework/*.cpp
 
-DYNO_FRAMEWORK_SRCS =                               \
+FRONTEND_FRAMEWORK_SRCS =                           \
            compiler-configuration.cpp               \
            Context.cpp                              \
            ErrorMessage.cpp                         \
@@ -31,7 +31,7 @@ DYNO_FRAMEWORK_SRCS =                               \
            UniqueString.cpp                         \
 
 
-SRCS = $(DYNO_FRAMEWORK_SRCS)
+SRCS = $(FRONTEND_FRAMEWORK_SRCS)
 
-DYNO_FRAMEWORK_OBJS = \
-	$(DYNO_FRAMEWORK_SRCS:%.cpp=$(DYNO_FRAMEWORK_OBJDIR)/%.$(OBJ_SUFFIX))
+FRONTEND_FRAMEWORK_OBJS = \
+	$(FRONTEND_FRAMEWORK_SRCS:%.cpp=$(FRONTEND_FRAMEWORK_OBJDIR)/%.$(OBJ_SUFFIX))

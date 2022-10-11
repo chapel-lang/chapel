@@ -17,11 +17,11 @@
 # limitations under the License.
 
 ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+export CHPL_MAKE_HOME=$(shell pwd)/../../..
 endif
 
-COMPILER_ROOT = ../../..
-COMPILER_SUBDIR = dyno/lib/util
+COMPILER_ROOT = ../../../compiler
+COMPILER_SUBDIR = frontend/lib/util
 
 #
 # standard header
@@ -30,14 +30,14 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 include Makefile.include
 
-TARGETS = $(DYNO_UTIL_OBJS)
+TARGETS = $(FRONTEND_UTIL_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
-$(DYNO_UTIL_OBJDIR)/my_aligned_alloc.o: my_aligned_alloc.c $(OBJ_SUBDIR_MADE)
+$(FRONTEND_UTIL_OBJDIR)/my_aligned_alloc.o: my_aligned_alloc.c $(OBJ_SUBDIR_MADE)
 	$(CC) -c $(COMP_CFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ $<
 
-$(DYNO_UTIL_OBJDIR)/my_strerror_r.o: my_strerror_r.c $(OBJ_SUBDIR_MADE)
+$(FRONTEND_UTIL_OBJDIR)/my_strerror_r.o: my_strerror_r.c $(OBJ_SUBDIR_MADE)
 	$(CC) -c $(COMP_CFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ $<
 
 FORCE:

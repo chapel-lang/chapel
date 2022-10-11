@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DYNO_CHPLDOC_OBJDIR = $(COMPILER_BUILD)/dyno/tools/chpldoc
+DYNO_CHPLDOC_OBJDIR = $(COMPILER_BUILD)/chpldoc
 
 DYNO_CHPLDOC_SRCS =                              \
            arg-helpers.cpp \

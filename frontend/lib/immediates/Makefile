@@ -17,11 +17,11 @@
 # limitations under the License.
 
 ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+export CHPL_MAKE_HOME=$(shell pwd)/../../..
 endif
 
-COMPILER_ROOT = ../../..
-COMPILER_SUBDIR = dyno/lib/immediates
+COMPILER_ROOT = ../../../compiler
+COMPILER_SUBDIR = frontend/lib/immediates
 
 #
 # standard header
@@ -30,7 +30,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 include Makefile.include
 
-TARGETS = $(DYNO_IMMEDIATES_OBJS)
+TARGETS = $(FRONTEND_IMMEDIATES_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

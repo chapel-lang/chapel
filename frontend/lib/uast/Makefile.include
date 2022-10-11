@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DYNO_UAST_OBJDIR = $(COMPILER_BUILD)/dyno/lib/uast
+FRONTEND_UAST_OBJDIR = $(COMPILER_BUILD)/frontend/lib/uast
 
-ALL_SRCS += dyno/lib/uast/*.h dyno/lib/uast/*.cpp
+ALL_SRCS += ../frontend/lib/uast/*.h ../frontend/lib/uast/*.cpp
 
-DYNO_UAST_SRCS =                                 \
+FRONTEND_UAST_SRCS = \
   AggregateDecl.cpp \
   AnonFormal.cpp \
   Array.cpp \
@@ -126,7 +126,7 @@ DYNO_UAST_SRCS =                                 \
   Zip.cpp \
 
 
-SRCS = $(DYNO_UAST_SRCS)
+SRCS = $(FRONTEND_UAST_SRCS)
 
-DYNO_UAST_OBJS = \
-	$(DYNO_UAST_SRCS:%.cpp=$(DYNO_UAST_OBJDIR)/%.$(OBJ_SUFFIX))
+FRONTEND_UAST_OBJS = \
+	$(FRONTEND_UAST_SRCS:%.cpp=$(FRONTEND_UAST_OBJDIR)/%.$(OBJ_SUFFIX))

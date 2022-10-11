@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DYNO_TYPES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/types
+FRONTEND_TYPES_OBJDIR = $(COMPILER_BUILD)/frontend/lib/types
 
-ALL_SRCS += dyno/lib/types/*.h dyno/lib/types/*.cpp
+ALL_SRCS += ../frontend/lib/types/*.h ../frontend/lib/types/*.cpp
 
-DYNO_TYPES_SRCS =                                 \
+FRONTEND_TYPES_SRCS = \
   AnyType.cpp \
   BasicClassType.cpp \
   BoolType.cpp \
@@ -50,7 +50,7 @@ DYNO_TYPES_SRCS =                                 \
   VoidType.cpp \
 
 
-SRCS = $(DYNO_TYPES_SRCS)
+SRCS = $(FRONTEND_TYPES_SRCS)
 
-DYNO_TYPES_OBJS = \
-	$(DYNO_TYPES_SRCS:%.cpp=$(DYNO_TYPES_OBJDIR)/%.$(OBJ_SUFFIX))
+FRONTEND_TYPES_OBJS = \
+	$(FRONTEND_TYPES_SRCS:%.cpp=$(FRONTEND_TYPES_OBJDIR)/%.$(OBJ_SUFFIX))
