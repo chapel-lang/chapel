@@ -3,6 +3,6 @@ const f2 = lambda(n: int): int throws { throw new Error(n:string); };
 
 proc test() {
   try! writeln(f1(4));
-  try! f2(8);
+  try! writeln(f2(8));
 }
 test();

@@ -2263,7 +2263,7 @@ lambda_decl_expr:
       fp.formals = $2;
       fp.returnIntent = $3;
       fp.returnType = $4;
-      fp.throws = ($5 == ThrowsTag_THROWS) ? true : false;
+      fp.throws = ($5 == ThrowsTag_THROWS);
       WhereAndLifetime wl = $6;
       fp.lifetime = wl.lifetime;
       fp.where = wl.where;
@@ -2332,7 +2332,7 @@ fn_type:
     fp.formals = $2;
     fp.returnIntent = $4;
     fp.returnType = $5;
-    fp.throws = ($6 == ThrowsTag_THROWS) ? true : false;
+    fp.throws = ($6 == ThrowsTag_THROWS);
     fp.body = nullptr;
     fp.comments = nullptr;
     fp.attributes = nullptr;
@@ -2400,7 +2400,7 @@ fn_decl_stmt:
     FunctionParts fp = $1;
     fp.returnIntent = $2;
     fp.returnType = $3;
-    fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
+    fp.throws = ($4 == ThrowsTag_THROWS);
     WhereAndLifetime wl = $5;
     fp.body = $7;
     fp.lifetime = wl.lifetime;
