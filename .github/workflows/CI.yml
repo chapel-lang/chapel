@@ -40,9 +40,9 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v2
-    - name: make dyno-docs
+    - name: make frontend-docs
       run: |
-        make dyno-docs
+        make frontend-docs
     - name: make check-chpldoc && make docs
       # Uses a quickstart config to keep it from running too long
       run: |
