@@ -53,7 +53,7 @@ include_directories(
         ${SRC_DIR}/../build/compiler/${CHPL_COMPILER_SUBDIR} # for enabling CONFIGURED_PREFIX in configured_prefix.h
         ${SRC_DIR}/../runtime/include/encoding # support for sharing unicode support between compiler and runtime
         ${SRC_DIR}/../third-party/utf8-decoder # support for sharing unicode support between compiler and runtime
-        ${SRC_DIR}/dyno/include # headers for dyno, needed all the time
+        ${SRC_DIR}/../frontend/include # headers for dyno, needed all the time
         )
 
 add_executable(chpl)
@@ -61,7 +61,6 @@ add_subdirectory(AST)
 add_subdirectory(adt)
 add_subdirectory(backend)
 add_subdirectory(codegen)
-add_subdirectory(dyno)
 add_subdirectory(include)
 add_subdirectory(llvm)
 add_subdirectory(main)

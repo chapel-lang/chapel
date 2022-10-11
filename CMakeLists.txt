@@ -214,7 +214,7 @@ foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   # Split the line into the parts we want, variable name and value
   string(FIND "${CHPLENV_LINE}" " " SPLIT_POS)
   if (SPLIT_POS LESS 1)
-    message(WARNING "${CHPLENV_LINE} did not contain a value - unsetting")
+    message(NOTICE "${CHPLENV_LINE} did not contain a value - unsetting")
     unset(${CHPLENV_LINE} CACHE)
     continue()
   endif()
@@ -228,5 +228,4 @@ foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
 endforeach()
 # message(DEBUG "${CHPL_HOST_BUNDLED_LINK_ARGS} ${CHPL_HOST_SYSTEM_LINK_ARGS}")
 add_subdirectory(compiler)
-
-
+add_subdirectory(frontend)
