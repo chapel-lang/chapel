@@ -18,10 +18,10 @@ iter myfindfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
     foreach subdir in mywalkdirs(startdir, hidden=hidden) do
-      foreach file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    foreach file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
 
@@ -34,7 +34,7 @@ iter mywalkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 
   if (depth) {
-    var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
+    var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) {
       use Sort /* only sort */;
       sort(subdirs);

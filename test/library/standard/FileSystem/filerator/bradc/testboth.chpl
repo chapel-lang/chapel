@@ -1,6 +1,6 @@
 use FileSystem;
 
-for dir in walkdirs("subdir", sort=true) {
+for dir in walkDirs("subdir", sort=true) {
   writeln("dir ", dir, " contains:");
   for file in glob(dir+"/*") do
     writeln("  ", file);

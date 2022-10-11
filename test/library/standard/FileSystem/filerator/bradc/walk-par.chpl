@@ -9,5 +9,5 @@ config const followlinks = true;
 config const sort = true;
 config const defaults = false;
 
-forall filename in walkdirs(startdir, topdown, depth, dotfiles, followlinks, sort=sort) do
+forall filename in walkDirs(startdir, topdown, depth, dotfiles, followlinks, sort=sort) do
   writeln(filename);
