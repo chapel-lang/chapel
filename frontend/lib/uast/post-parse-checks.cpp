@@ -663,7 +663,7 @@ Visitor::checkProcTypeFormalsAreAnnotated(const FunctionSignature* node) {
 
   for (auto ast : node->formals())
     if (auto anon = ast->toAnonFormal())
-      REPORT(context_, ProcTypeUnannotatedFormal, node, anon);
+      CHPL_REPORT(context_, ProcTypeUnannotatedFormal, node, anon);
 }
 
 void Visitor::checkProcDefFormalsAreNamed(const Function* node) {
@@ -673,7 +673,7 @@ void Visitor::checkProcDefFormalsAreNamed(const Function* node) {
     // All procedure formals must have names.
     if (auto formal = ast->toFormal())
       if (formal->isExplicitlyAnonymous())
-        REPORT(context_, ProcDefExplicitAnonFormal, node, formal);
+        CHPL_REPORT(context_, ProcDefExplicitAnonFormal, node, formal);
   }
 }
 

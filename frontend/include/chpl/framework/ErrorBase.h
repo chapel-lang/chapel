@@ -269,7 +269,7 @@ class GeneralError : public BasicError {
   This macro takes care of packaging the error information into a tuple;
   it's sufficient to provide it via varargs.
  */
-#define REPORT(CONTEXT__, NAME__, EINFO__...)\
+#define CHPL_REPORT(CONTEXT__, NAME__, EINFO__...)\
   CONTEXT__->report(Error##NAME__::get(CONTEXT__, std::make_tuple(EINFO__)))
 
 template <>
