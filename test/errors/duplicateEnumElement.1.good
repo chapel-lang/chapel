@@ -1,0 +1,23 @@
+─── error in test/errors/duplicateEnumElement.chpl:5 [MultipleEnumElems] ───
+  Enum 'languagesILike' has multiple elements named 'chapel'.
+      |
+    5 | var chpl = languagesILike.chapel;
+      |            ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺  
+      |
+  One instance occurs here:
+      |
+    2 |   chapel, cpp, haskell,
+      |   ⎺⎺⎺⎺⎺⎺                
+      |
+  One instance occurs here:
+      |
+    3 |   chapel, chapel
+      |   ⎺⎺⎺⎺⎺⎺         
+      |
+  One instance occurs here:
+      |
+    3 |   chapel, chapel
+      |           ⎺⎺⎺⎺⎺⎺ 
+      |
+  In Chapel, an enum should not have repeated elements of the same name.
+

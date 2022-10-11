@@ -1,0 +1,9 @@
+─── warning in test/errors/implicitModule.chpl:4 [ImplicitFileModule] ───
+  An implicit module named 'implicitModule' is being introduced to contain this file-scope code.
+  The following is the first file-scope statement:
+      |
+    4 | var x = 1;
+      |
+  The implicit module 'implicitModule' is being created because the above code is outside of any module declarations (e.g., 'module TheModule').
+  Note that all of the file's contents will be placed into the new 'implicitModule' module.
+

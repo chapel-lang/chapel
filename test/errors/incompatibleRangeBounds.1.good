@@ -1,0 +1,18 @@
+─── error in test/errors/incompatibleRangeBounds.chpl:3 [IncompatibleRangeBounds] ───
+  Upper and lower bounds of range expression have incompatible types.
+  In the following if-expression:
+      |
+    3 | var r1 = 1.."hello";
+      |          ⎺   ⎺⎺⎺⎺⎺⎺  
+      |
+  the lower bound is a param of type 'int(64)', while the upper bound is a param of type 'string'.
+
+─── error in test/errors/incompatibleRangeBounds.chpl:4 [IncompatibleRangeBounds] ───
+  Upper and lower bounds of range expression have incompatible types.
+  In the following if-expression:
+      |
+    4 | var r2 = y..x;
+      |          ⎺  ⎺  
+      |
+  the lower bound is a value of type 'string', while the upper bound is a value of type 'int(64)'.
+

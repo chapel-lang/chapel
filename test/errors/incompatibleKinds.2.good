@@ -1,0 +1,5 @@
+error in test/errors/incompatibleKinds.chpl:3: a regular variable cannot be initialized with a type
+error in test/errors/incompatibleKinds.chpl:4: a type variable cannot be initialized using a regular value
+error in test/errors/incompatibleKinds.chpl:7: a 'param' cannot be initialized using a non-'param' value
+error in test/errors/incompatibleKinds.chpl:10: a regular variable cannot be initialized with a type
+error in test/errors/incompatibleKinds.chpl:13: a regular variable cannot be initialized with a type

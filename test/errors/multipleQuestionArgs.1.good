@@ -1,0 +1,29 @@
+─── error in test/errors/multipleQuestionArgs.chpl:4 [MultipleQuestionArgs] ───
+  Cannot have ? more than once in a call
+  The first ? argument occurs here:
+      |
+    4 | test(?, ?, ?);
+      |      ⎺         
+      |
+  The second ? argument occurs here:
+      |
+    4 | test(?, ?, ?);
+      |         ⎺      
+      |
+
+─── error in test/errors/multipleQuestionArgs.chpl:4 [MultipleQuestionArgs] ───
+  Cannot have ? more than once in a call
+  The first ? argument occurs here:
+      |
+    4 | test(?, ?, ?);
+      |      ⎺         
+      |
+  The second ? argument occurs here:
+      |
+    4 | test(?, ?, ?);
+      |            ⎺   
+      |
+
+─── error in test/errors/multipleQuestionArgs.chpl:4 ───
+  Cannot resolve call: no matching candidates
+

@@ -54,18 +54,18 @@ void ErrorIncompatibleIfBranches::write(ErrorWriterBase& wr) const {
   auto qt1 = std::get<1>(info);
   auto qt2 = std::get<2>(info);
 
-  wr.heading(kind_, type_, ifExpr, "Branches of if-expression have incompatible types.");
+  wr.heading(kind_, type_, ifExpr, "branches of if-expression have incompatible types.");
   wr.message("In the following if-expression:");
   wr.code(ifExpr, { ifExpr->thenBlock(), ifExpr->elseBlock() });
   wr.message("the first branch is a ", qt1,
-              ", while the second is a ", qt2);
+              ", while the second is a ", qt2, ".");
 }
 
 void ErrorTupleExpansionNamedArgs::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info);
   auto tupleOp = std::get<const uast::OpCall*>(info);
 
-  wr.heading(kind_, type_, fnCall, "Tuple expansion cannot be used with named arguments.");
+  wr.heading(kind_, type_, fnCall, "tuple expansion cannot be used with named arguments.");
   wr.message("A tuple is being expanded here:");
   wr.code(fnCall, { tupleOp });
 }
@@ -77,13 +77,13 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
 
   if (record) {
     wr.heading(kind_, type_, newCall,
-               "Cannot use memory management strategy '",
+               "cannot use memory management strategy '",
                uast::New::managementToString(newCall->management()),
                "' with record '",
                record->name(), "'.");
   } else {
     wr.heading(kind_, type_, newCall,
-               "Cannot use memory management strategy '",
+               "cannot use memory management strategy '",
                uast::New::managementToString(newCall->management()),
                "' with non-class type '", type, "'.");
   }
@@ -95,7 +95,7 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
     wr.message(
                "Remove the '", uast::New::managementToString(newCall->management()),
                "' keyword to fix this error, " "or define '", record->name(),
-               "' as a class");
+               "' as a class.");
   }
 }
 
@@ -180,7 +180,7 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   auto typeExpr = std::get<const uast::AstNode*>(info);
   auto type = std::get<types::QualifiedType>(info);
   wr.heading(kind_, type_, typeExpr,
-             "Type expression produces a ", type, " while a type was expected.");
+             "type expression produces a ", type, " while a type was expected.");
   wr.message("In the following type expression:");
   wr.code(typeExpr, { typeExpr });
   // wr.message("Did you mean to use '.type'?");
@@ -199,17 +199,17 @@ void ErrorIncompatibleKinds::write(ErrorWriterBase& wr) const {
     initType.kind() != types::QualifiedType::Kind::PARAM;
   if (valueToType) {
     wr.heading(kind_, type_, initExpr,
-               "A type variable cannot be initialized using a regular value.");
+               "a type variable cannot be initialized using a regular value.");
   } else if (typeToValue) {
     wr.heading(kind_, type_, initExpr,
-               "A regular variable cannot be initialized with a type.");
+               "a regular variable cannot be initialized with a type.");
   } else if (nonParamToParam) {
     wr.heading(kind_, type_, initExpr,
-               "A 'param' cannot be initialized using a non-'param' value.");
+               "a 'param' cannot be initialized using a non-'param' value.");
   }
   wr.message("In the following initialization expression:");
   wr.code(initExpr, { initExpr });
-  wr.message("the initialization expression is a ", initType);
+  wr.message("the initialization expression is a ", initType, ".");
   if (valueToType) {
     wr.message("If you were trying to extract the type of the expression on "
                "the left of the '=', try using '.type'?");
@@ -243,17 +243,17 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
   auto initExprType = std::get<4>(info);
 
   wr.heading(kind_, type_, decl,
-             "Type mismatch in declared type and initialization expression");
+             "type mismatch in declared type and initialization expression.");
   wr.message("In the following declaration:");
   wr.code(decl, { type, init });
   wr.message("the type expression has type '", typeExprType, "', while the "
-             "initial value has type '", initExprType, "'");
+             "initial value has type '", initExprType, "'.");
 }
 
 void ErrorTupleDeclUnknownType::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   wr.heading(kind_, type_, decl,
-             "Attempt to split unknown type using split tuple assignment.");
+             "attempt to split unknown type using split tuple assignment.");
   wr.code(decl);
 }
 
@@ -261,33 +261,33 @@ void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   auto type = std::get<const types::Type*>(info);
   wr.heading(kind_, type_, decl,
-            "Attempt to use tuple declaration to split a value of "
+            "attempt to use tuple declaration to split a value of "
             "non-tuple type '", type, "'.");
   wr.message("In the following tuple declaration:");
   wr.code(decl);
-  wr.message("The value being assigned has type '", type, "', while it is expected "
-             "to be a ", decl->numDecls(), "-element tuple");
+  wr.message("the value being assigned has type '", type, "', while it is expected "
+             "to be a ", decl->numDecls(), "-element tuple.");
 }
 
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   auto type = std::get<const types::TupleType*>(info);
   wr.heading(kind_, type_, decl,
-            "Tuple size mismatch in split tuple declaration.");
+            "tuple size mismatch in split tuple declaration.");
   wr.code(decl);
   wr.message("The left-hand side of the declaration expects a tuple with ",
              decl->numDecls(), " elements, but the right-hand side, which is a tuple '",
-             type, "', has ", type->numElements(), " elements");
+             type, "', has ", type->numElements(), " elements.");
 }
 
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   auto stmt = std::get<const uast::AstNode*>(info);
   auto laterId = std::get<ID>(info);
   wr.heading(kind_, type_, stmt,
-             "Statement references a variable before it is defined.");
+             "statement references a variable before it is defined.");
   wr.message("In the following statement:");
   wr.code(stmt);
-  wr.message("There is a reference to a variable defined later:");
+  wr.message("there is a reference to a variable defined later:");
   wr.code(laterId);
   wr.message("Chapel doesn't allow references to variables before they are defined.");
 }
@@ -298,10 +298,10 @@ void ErrorIncompatibleRangeBounds::write(ErrorWriterBase& wr) const {
   auto qt2 = std::get<2>(info);
 
   wr.heading(kind_, type_, range,
-            "Upper and lower bounds of range expression have incompatible types.");
+            "upper and lower bounds of range expression have incompatible types.");
   wr.message("In the following if-expression:");
   wr.code(range, { range->lowerBound(), range->upperBound() });
-  wr.message("the lower bound is a ", qt1, ", while the upper bound is a ", qt2);
+  wr.message("the lower bound is a ", qt1, ", while the upper bound is a ", qt2, ".");
 }
 
 void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
@@ -309,10 +309,10 @@ void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
   auto elemName = std::get<UniqueString>(info);
   auto enumType = std::get<const types::EnumType*>(info);
 
-  wr.heading(kind_, type_, node, "The enum '", enumType->name(),
+  wr.heading(kind_, type_, node, "enum '", enumType->name(),
              "' has no element named '", elemName, "'.");
   wr.code(node, { node });
-  wr.note(enumType->id(), "the enum '", enumType->name(), "' is declared here.");
+  wr.note(enumType->id(), "'", enumType->name(), "' is declared here.");
   wr.code(enumType->id());
 }
 
@@ -322,11 +322,11 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
   auto elemName = std::get<UniqueString>(info);
   auto& possibleElems = std::get<std::vector<ID>>(info);
 
-  wr.heading(kind_, type_, node, "The enum '", enumType->name(),
+  wr.heading(kind_, type_, node, "enum '", enumType->name(),
              "' has multiple elements named '", elemName, "'.");
   wr.code(node, { node } );
   for (auto& id : possibleElems) {
-    wr.note(id, "one instance occurs here");
+    wr.note(id, "one instance occurs here:");
     wr.code<ID, ID>(id, { id });
   }
   wr.message("In Chapel, an enum should not have repeated elements of the same name.");
@@ -339,9 +339,9 @@ void ErrorInvalidNew::write(ErrorWriterBase& wr) const {
   // TODO: Specialize this error to more types (e.g. enum).
   if (auto primType = type.type()->toPrimitiveType()) {
     wr.heading(kind_, type_, newExpr,
-               "Invalid use of 'new' on primitive '", primType, "'");
+               "invalid use of 'new' on primitive '", primType, "'");
   } else {
-    wr.heading(kind_, type_, newExpr, "Invalid use of 'new' with type '",
+    wr.heading(kind_, type_, newExpr, "invalid use of 'new' with type '",
                type.type(), "', which is neither a class nor a record.");
   }
   wr.code(newExpr, { newExpr->typeExpression() });
@@ -365,7 +365,7 @@ void ErrorTupleExpansionNonTuple::write(ErrorWriterBase& wr) const {
   auto expansion = std::get<const uast::OpCall*>(info);
   auto& type = std::get<types::QualifiedType>(info);
 
-  wr.heading(kind_, type_, call, "cannot apply tuple expansion to non-tuple argument");
+  wr.heading(kind_, type_, call, "cannot apply tuple expansion to non-tuple argument.");
   wr.message("In the following function call:");
   wr.code(call, { expansion });
   wr.message("the expanded element has type '", type.type(), "' while it's ",
@@ -376,7 +376,7 @@ void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   auto loop = std::get<const uast::IndexableLoop*>(info);
   auto iterand = std::get<const uast::AstNode*>(info);
   auto& iterandType = std::get<types::QualifiedType>(info);
-  wr.heading(kind_, type_, loop, "cannot iterate over ", iterandType);
+  wr.heading(kind_, type_, loop, "cannot iterate over ", iterandType, ".");
   wr.message("In the following loop:");
   wr.code(loop, { iterand });
 }

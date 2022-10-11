@@ -1,0 +1,2 @@
+error in test/errors/nonIterable.chpl:2: cannot iterate over value of type 'int(64)'
+error in test/errors/nonIterable.chpl:3: cannot iterate over param of type 'int(64)'

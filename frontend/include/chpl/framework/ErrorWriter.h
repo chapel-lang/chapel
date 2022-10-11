@@ -239,9 +239,7 @@ class ErrorWriterBase {
 
     auto dummy = { (write(ts), 0)..., };
     (void) dummy;
-    auto str = oss.str();
-    tweakErrorString(str);
-    return str;
+    return oss.str();
   }
  public:
   /**
@@ -254,7 +252,9 @@ class ErrorWriterBase {
    */
   template <typename LocationType, typename ... Ts>
   void heading(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
-    writeHeading(kind, type, loc, toString(std::forward<Ts>(ts)...));
+    auto str = toString(std::forward<Ts>(ts)...);
+    tweakErrorString(str);
+    writeHeading(kind, type, loc, str);
   }
 
   /**
@@ -282,7 +282,9 @@ class ErrorWriterBase {
    */
   template <typename LocationType, typename ... Ts>
   void note(LocationType loc, Ts ... ts) {
-    writeNote(loc, toString(std::forward<Ts>(ts)...));
+    auto str = toString(std::forward<Ts>(ts)...);
+    tweakErrorString(str);
+    writeNote(loc, str);
   }
 
   /**

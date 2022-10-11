@@ -1,0 +1,12 @@
+─── error in test/errors/laterVar.chpl:1 [UseOfLaterVariable] ───
+  Statement references a variable before it is defined.
+  In the following statement:
+      |
+    1 | var x = y;
+      |
+  there is a reference to a variable defined later:
+      |
+    2 | var y = 1;
+      |
+  Chapel doesn't allow references to variables before they are defined.
+

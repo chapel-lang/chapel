@@ -1,0 +1,1 @@
+warning in test/errors/implicitSubModule.chpl:4: an implicit module named 'implicitSubModule' is being introduced to contain this file-scope code

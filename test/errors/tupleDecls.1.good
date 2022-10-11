@@ -1,0 +1,23 @@
+─── error in test/errors/tupleDecls.chpl:1 [TupleDeclNotTuple] ───
+  Attempt to use tuple declaration to split a value of non-tuple type 'type UnknownType'.
+  In the following tuple declaration:
+      |
+    1 | var (x,y) = notKnown;
+      |
+  the value being assigned has type 'type UnknownType', while it is expected to be a 2-element tuple.
+
+─── error in test/errors/tupleDecls.chpl:3 [TupleDeclNotTuple] ───
+  Attempt to use tuple declaration to split a value of non-tuple type 'int(64)'.
+  In the following tuple declaration:
+      |
+    3 | var (u,v) = z;
+      |
+  the value being assigned has type 'int(64)', while it is expected to be a 2-element tuple.
+
+─── error in test/errors/tupleDecls.chpl:4 [TupleDeclMismatchedElems] ───
+  Tuple size mismatch in split tuple declaration.
+      |
+    4 | var (a,b,c) = (1,2);
+      |
+  The left-hand side of the declaration expects a tuple with 3 elements, but the right-hand side, which is a tuple '(int(64), int(64))', has 2 elements.
+

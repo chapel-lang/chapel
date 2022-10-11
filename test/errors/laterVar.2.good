@@ -1,0 +1,1 @@
+error in test/errors/laterVar.chpl:1: statement references a variable before it is defined
