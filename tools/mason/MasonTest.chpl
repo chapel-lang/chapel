@@ -517,7 +517,7 @@ proc testFile(file, ref result, show: bool) throws {
   const compilation = runWithStatus(compCommand, !show);
 
   if compilation != 0 {
-    stderr.writeln("compilation failed for " + fileName);
+    stderr._writeln("compilation failed for " + fileName);
     const errMsg = fileName +" failed to compile";
     result.addError(executable, fileName,  errMsg);
   }

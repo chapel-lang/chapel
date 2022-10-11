@@ -351,7 +351,7 @@ proc printAvailableExamples() {
     writeln("--------------------------");
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
     exit(1);
   }
 }
