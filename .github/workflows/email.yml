@@ -2,8 +2,7 @@ name: email
 
 on:
   push:
-   branches:
-    - main
+ 
       
 jobs:
   
