@@ -12,7 +12,8 @@ jobs:
     runs-on: ubuntu-latest
   
     steps:
-                   
+        
+                 
      
       - name: print git events
         run:  cat "$GITHUB_EVENT_PATH"
@@ -24,6 +25,7 @@ jobs:
         
         
       - name: checkout
+        if: github.event.pull_request.merged == false   
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
