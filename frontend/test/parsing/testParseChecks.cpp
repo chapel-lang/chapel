@@ -92,7 +92,7 @@ static void test1(void) {
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test1.chpl", 2,
                      "The named argument 'bar' is used more than once in "
-                     "the same function call.");
+                     "the same function call");
 }
 
 static void test2(void) {
@@ -304,11 +304,11 @@ static void test9(void) {
   assertErrorMatches(ctx, br, 0, "test9.chpl", 2,
                      "Extern functions cannot have a body");
   assertErrorMatches(ctx, br, 1, "test9.chpl", 3,
-                     "Extern functions cannot throw errors.");
+                     "Extern functions cannot throw errors");
   assertErrorMatches(ctx, br, 2, "test9.chpl", 4,
                      "Extern functions cannot have a body");
   assertErrorMatches(ctx, br, 3, "test9.chpl", 4,
-                     "Extern functions cannot throw errors.");
+                     "Extern functions cannot throw errors");
 }
 
 static void test10(void) {
@@ -408,22 +408,22 @@ static void test13(void) {
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test13.chpl", 2,
                      "Symbol names with leading underscores (_bad1) "
-                     "are unstable.");
+                     "are unstable");
   assertErrorMatches(ctx, br, 1, "test13.chpl", 3,
                      "Symbol names with leading underscores (_bad2) "
-                     "are unstable.");
+                     "are unstable");
   assertErrorMatches(ctx, br, 2, "test13.chpl", 4,
                      "Symbol names with leading underscores (_bad3) "
-                     "are unstable.");
+                     "are unstable");
   assertErrorMatches(ctx, br, 3, "test13.chpl", 5,
                      "Symbol names beginning with 'chpl_' (chpl_bad4) "
-                     "are unstable.");
+                     "are unstable");
   assertErrorMatches(ctx, br, 4, "test13.chpl", 6,
                      "Symbol names beginning with 'chpl_' (chpl_bad5) "
-                     "are unstable.");
+                     "are unstable");
   assertErrorMatches(ctx, br, 5, "test13.chpl", 7,
                      "Symbol names beginning with 'chpl_' (chpl_bad6) "
-                     "are unstable.");
+                     "are unstable");
 }
 
 static void test14(void) {
@@ -448,7 +448,7 @@ static void test14(void) {
   assertErrorMatches(ctx, br, 0, "test14.chpl", 2,
                      "Unions are currently unstable and are expected "
                      "to change in ways that will break their "
-                     "current uses.");
+                     "current uses");
 }
 
 // test that operators must have valid operator names

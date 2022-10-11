@@ -54,7 +54,7 @@ class CompatibilityWriter : public ErrorWriterBase {
 
  public:
   CompatibilityWriter(Context* context)
-    : ErrorWriterBase(context) {}
+    : ErrorWriterBase(context, OutputFormat::BRIEF) {}
 
   void writeHeading(ErrorBase::Kind kind, ErrorType type,
                     Location loc, const std::string& message) override {

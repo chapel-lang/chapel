@@ -167,10 +167,25 @@ errordetail::LocationOnly<T> locationOnly(T t) {
   out the error heading, as well as setting the error message's location.
  */
 class ErrorWriterBase {
+ public:
+   /** The style of error reporting that the ErrorWriter should produce. */
+  enum OutputFormat {
+    /** Specify that all information about the error should be printed. */
+    DETAILED,
+    /** Specify that only key parts of the error should be printed. */
+    BRIEF,
+  };
  protected:
   Context* context;
+  OutputFormat outputFormat_;
 
-  ErrorWriterBase(Context* context) : context(context) {}
+  ErrorWriterBase(Context* context, OutputFormat outputFormat)
+    : context(context), outputFormat_(outputFormat) {}
+
+  /**
+    Makes tweaks to an error string depending on output format.
+   */
+  void tweakErrorString(std::string& message) const;
 
   /**
     Write the error heading, possibly with some color and text decoration.
@@ -224,7 +239,9 @@ class ErrorWriterBase {
 
     auto dummy = { (write(ts), 0)..., };
     (void) dummy;
-    return oss.str();
+    auto str = oss.str();
+    tweakErrorString(str);
+    return str;
   }
  public:
   /**
@@ -294,17 +311,9 @@ class ErrorWriterBase {
   in brief or detailed mode, as well as if the useColor flag is set.
  */
 class ErrorWriter : public ErrorWriterBase {
- public:
-   /** The style of error reporting that the ErrorWriter should produce. */
-  enum OutputFormat {
-    /** Specify that all information about the error should be printed. */
-    DETAILED,
-    /** Specify that only key parts of the error should be printed. */
-    BRIEF,
-  };
  protected:
   std::ostream& oss_;
-  OutputFormat outputFormat_;
+  ErrorWriterBase::OutputFormat outputFormat_;
   bool useColor_;
 
   void setColor(TermColorName color);
@@ -323,8 +332,8 @@ class ErrorWriter : public ErrorWriterBase {
                  const std::vector<Location>& toHighlight = {}) override;
  public:
   ErrorWriter(Context* context, std::ostream& oss,
-              OutputFormat outputFormat, bool useColor) :
-    ErrorWriterBase(context), oss_(oss),
+              ErrorWriterBase::OutputFormat outputFormat, bool useColor) :
+    ErrorWriterBase(context, outputFormat), oss_(oss),
     outputFormat_(outputFormat), useColor_(useColor) {}
 
   void writeNewline();

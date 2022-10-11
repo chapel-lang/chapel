@@ -90,7 +90,7 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   wr.code(newCall, { newCall->typeExpression() });
   wr.message("Memory management strategies can only be used with classes.");
   if (record) {
-    wr.note(record->id(), "'", record->name(), "' declared as record here.");
+    wr.note(record->id(), "'", record->name(), "' declared as record here:");
     wr.code(record->id());
     wr.message(
                "Remove the '", uast::New::managementToString(newCall->management()),
@@ -106,7 +106,7 @@ void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
              "cannot make a private module public through "
              "an include statement");
   wr.code(moduleInclude);
-  wr.note(moduleDef, "module declared private here");
+  wr.note(moduleDef, "module declared private here:");
   wr.code(moduleDef);
 }
 
@@ -116,7 +116,7 @@ void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, moduleInclude,
              "cannot apply prototype to module in include statement");
   wr.code(moduleInclude);
-  wr.note(moduleDef, "put prototype keyword at module declaration here");
+  wr.note(moduleDef, "put prototype keyword at module declaration here:");
   wr.code(moduleDef);
 }
 
@@ -135,7 +135,7 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   wr.code(decl);
   for (const ID& id : ids) {
     if (id != decl->id()) {
-      wr.note(id, "Redefined here.");
+      wr.note(id, "redefined here:");
       wr.code<ID, ID>(id);
     }
   }
@@ -145,9 +145,9 @@ void ErrorAmbiguousConfigName::write(ErrorWriterBase& wr) const {
   auto& name = std::get<std::string>(info);
   auto variable = std::get<const uast::Variable*>(info);
   auto otherId = std::get<ID>(info);
-  wr.heading(kind_, type_, locationOnly(variable), "ambiguous config name (", name, ")");
+  wr.heading(kind_, type_, locationOnly(variable), "ambiguous config name (", name, ").");
   wr.code(variable);
-  wr.note(locationOnly(otherId), "also defined here");
+  wr.note(locationOnly(otherId), "also defined here:");
   wr.code(otherId);
   wr.note(locationOnly(otherId), "(disambiguate using -s<modulename>.", name, "...)");
 }
@@ -166,7 +166,7 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   auto implicitModule = std::get<2>(info);
   wr.heading(kind_, type_, code, "an implicit module named '",
              implicitModule->name(), "' is being introduced to contain this "
-             "file-scope code");
+             "file-scope code.");
   wr.message("The following is the first file-scope statement:");
   wr.code(code);
   wr.message("The implicit module '", implicitModule->name(), "' is being "
@@ -312,7 +312,7 @@ void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, node, "The enum '", enumType->name(),
              "' has no element named '", elemName, "'.");
   wr.code(node, { node });
-  wr.note(enumType->id(), "The enum '", enumType->name(), "' is declared here.");
+  wr.note(enumType->id(), "the enum '", enumType->name(), "' is declared here.");
   wr.code(enumType->id());
 }
 
@@ -326,7 +326,7 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
              "' has multiple elements named '", elemName, "'.");
   wr.code(node, { node } );
   for (auto& id : possibleElems) {
-    wr.note(id, "One instance occurs here");
+    wr.note(id, "one instance occurs here");
     wr.code<ID, ID>(id, { id });
   }
   wr.message("In Chapel, an enum should not have repeated elements of the same name.");

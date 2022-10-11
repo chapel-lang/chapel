@@ -20,6 +20,25 @@
 
 namespace chpl {
 
+static bool hiddenPunctuationInBrief(char c) {
+  return c == ':' || c == '.';
+}
+
+void ErrorWriterBase::tweakErrorString(std::string& str) const {
+  if (outputFormat_ == ErrorWriter::DETAILED && !str.empty()) {
+    // Capitalize errors in detailed mode
+    str[0] = std::toupper(str[0]);
+  }
+
+  if (outputFormat_ == ErrorWriter::BRIEF) {
+    // Strip punctuation at the end of the error in brief mode
+    while (!str.empty() &&
+        hiddenPunctuationInBrief(str.back())) {
+      str.pop_back();
+    }
+  }
+}
+
 void ErrorWriterBase::writeHeading(ErrorBase::Kind kind, ErrorType type,
                                    const ID& id, const std::string& str) {
   writeHeading(kind, type, errordetail::locate(context, id), str);
@@ -131,12 +150,7 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
     oss_ << ": ";
   }
 
-  // Fix up capitalization in detailed mode.
-  std::string toWrite = str;
-  if (outputFormat_ == DETAILED && !toWrite.empty()) {
-    toWrite[0] = std::toupper(toWrite[0]);
-  }
-  oss_ << toWrite << std::endl;
+  oss_ << str << std::endl;
 }
 
 void ErrorWriter::writeNote(Location loc, const std::string& str) {
@@ -149,12 +163,7 @@ void ErrorWriter::writeNote(Location loc, const std::string& str) {
     // In detailed mode, the body is indented.
     oss_ << "  ";
   }
-  // Fix up capitalization in detailed mode.
-  std::string toWrite = str;
-  if (outputFormat_ == DETAILED && !toWrite.empty()) {
-    toWrite[0] = std::toupper(toWrite[0]);
-  }
-  oss_ << toWrite << std::endl;
+  oss_ << str << std::endl;
 }
 
 static void printBlank(std::ostream& os, int n) {
