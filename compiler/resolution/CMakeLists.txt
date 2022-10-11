@@ -25,6 +25,7 @@ target_sources(chpl
                cleanups.cpp
                cullOverReferences.cpp
                expandVarArgs.cpp
+               firstClassFunctions.cpp
                fixupExports.cpp
                functionResolution.cpp
                generics.cpp
