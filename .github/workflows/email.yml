@@ -2,13 +2,14 @@ name: email
 
 on:
   push:
-  
+   branches:
+    - main
       
 jobs:
   
    
   send_email:
-    if: github.event.pull_request.merged == true     
+    if: github.event.pull_request.merged == false     
     runs-on: ubuntu-latest
   
     steps:
