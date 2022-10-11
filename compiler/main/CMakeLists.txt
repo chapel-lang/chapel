@@ -21,7 +21,6 @@ target_sources(chpl
                checks.cpp
                commonFlags.cpp
                config.cpp
-               docsDriver.cpp
                driver.cpp
                log.cpp
                PhaseTracker.cpp

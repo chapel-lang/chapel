@@ -26,7 +26,6 @@ target_sources(chpl
                convert-uast.cpp
                createTaskFunctions.cpp
                denormalize.cpp
-               docs.cpp
                errorHandling.cpp
                expandExternArrayCalls.cpp
                externCResolve.cpp

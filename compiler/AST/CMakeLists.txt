@@ -24,7 +24,6 @@ target_sources(chpl
                AstDumpToHtml.cpp
                AstDumpToNode.cpp
                AstLogger.cpp
-               AstPrintDocs.cpp
                AstToText.cpp
                astutil.cpp
                AstVisitor.cpp
