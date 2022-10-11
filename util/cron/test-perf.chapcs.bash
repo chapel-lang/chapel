@@ -10,4 +10,4 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs"
 
-$CWD/nightly -cron -performance -releasePerformance -numtrials 5 -startdate 09/10/15
+$CWD/nightly -cron -performance -numtrials 5 -startdate 09/10/15
