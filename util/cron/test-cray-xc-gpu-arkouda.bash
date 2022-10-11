@@ -15,20 +15,10 @@ export ARKOUDA_NUMLOCALES=16
 
 # List of Arkouda server modules we exempt from testing (that goal is to
 # eventually have this be an empty list).
-export CHPL_TEST_ARKOUDA_DISABLE_MODELS=ArraySetopsMsg:KExtremeMsg:ArgSortMsg:SegmentedMsg:DataFrameIndexingMsg:UniqueMsg:In1dMsg:SortMsg:ReductionMsg:EfuncMsg:HDF5Msg:EncodingMsg
+export CHPL_TEST_ARKOUDA_DISABLE_MODULES=ArraySetopsMsg:KExtremeMsg:ArgSortMsg:SegmentedMsg:DataFrameIndexingMsg:UniqueMsg:In1dMsg:SortMsg:ReductionMsg:EfuncMsg:HDF5Msg:EncodingMsg
 export CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD="true"
 
 module list
-
-# setup for CS perf (gasnet-large, gnu, 128-core Rome)
-source $CWD/common-cray-cs.bash
-export CHPL_LAUNCHER_PARTITION=rome64Share
-export CHPL_TARGET_CPU=none
-
-module list
-
-export GASNET_PHYSMEM_MAX="9/10"
 nightly_args="${nightly_args} -no-buildcheck"
 
 test_nightly
-sync_graphs
