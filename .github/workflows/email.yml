@@ -1,8 +1,8 @@
 name: CI
-
 on:
   pull_request:
-   # branches:
+    branches:
+     - experiment
     #  - master
     #  - main 
       
