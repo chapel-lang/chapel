@@ -551,13 +551,13 @@ proc Matrix(rows, cols, type eltType=real) where isIntegral(rows) && isIntegral(
 
 
 /* Return a square matrix (2D array) over domain ``{space, space}`` */
-proc Matrix(space: range, type eltType=real) {
+proc Matrix(space: range(?), type eltType=real) {
   return Matrix({space, space}, eltType);
 }
 
 
 /* Return a matrix (2D array) over domain ``{rowSpace, colSpace}`` */
-proc Matrix(rowSpace: range, colSpace: range, type eltType=real) {
+proc Matrix(rowSpace: range(?), colSpace: range(?), type eltType=real) {
   return Matrix({rowSpace, colSpace}, eltType);
 }
 
