@@ -9,4 +9,9 @@ tmptmp=`mktemp "tmp.XXXXXX"`
 regex="s~$CHPL_HOME~{CHPL_HOME}~g"
 sed -e "$regex" $tmpfile > $tmptmp
 
+# also use realpath to work with absolute paths
+realhome=`realpath $CHPL_HOME`
+regex="s~$realhome~{CHPL_HOME}~g"
+sed -e "$regex" $tmpfile > $tmptmp
+
 mv $tmptmp $tmpfile
