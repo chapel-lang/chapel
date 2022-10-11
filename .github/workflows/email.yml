@@ -3,7 +3,7 @@ name: email
 on:
   push:
     branches:
-      - main 
+      - triage 
       
 jobs:
   
@@ -37,7 +37,7 @@ jobs:
           
       - name: Send mail  
        
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true  
+       # if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true  
         uses: dawidd6/action-send-mail@v3
         with:
    
