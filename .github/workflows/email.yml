@@ -37,7 +37,7 @@ jobs:
           
       - name: Send mail  
        
-        if: github.event.pull_request.merged == false  
+        if: github.event.pull_request.merged == true  
         uses: dawidd6/action-send-mail@v3
         with:
    
