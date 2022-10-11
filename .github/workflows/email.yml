@@ -1,0 +1,87 @@
+name: email
+
+on:
+  push:
+    branches:
+      - main 
+      
+jobs:
+  
+  
+  send_email:
+    runs-on: ubuntu-latest
+  
+    steps:
+     
+      - name: print git events
+        run:  cat "$GITHUB_EVENT_PATH"
+        
+      - name: print GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"  
+        
+        
+      - name: checkout
+        uses: actions/checkout@v3
+        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
+        with:
+          fetch-depth: 2
+          
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v32
+        with:
+          separator: ","
+         
+          
+      - name: Send mail  
+       
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true  
+        uses: dawidd6/action-send-mail@v3
+        with:
+   
+           # Required mail server address if not connection_url:
+           server_address: ${{ secrets.SMTP_PROVIDER}}
+           server_port: 465
+           # Optional whether this connection use TLS (default is true if server_port is 465)
+           secure: true
+           # Optional (recommended): mail server username:
+           username:  ${{ secrets.MAIL_USERNAME}} 
+ 
+           # Optional (recommended) mail server password:
+           password: ${{secrets.MAIL_PASSWORD}}
+         
+           
+           # Required mail subject:
+           subject: Chapel Merge ${{ github.event.head_commit.message }}  
+           # Required recipients' addresses:
+           to: bhavani@hpe.com, elliot.ronaghan@hpe.com
+           # Required sender full name (address can be skipped):
+           from: chapel-lang 
+  
+           html_body: |
+              <!DOCTYPE html>
+              <html>
+              <body>
+              <p>   
+              Branch ${{github.ref}} <br>
+              Author: ${{ github.event.head_commit.author.name}} <br>
+              Revision: ${{github.event.repository.id}}  <br>
+              Commit id : ${{ github.event.head_commit.id }} <br>
+              Commit message: ${{ github.event.head_commit.message }}  <br>
+              Sha: ${{ github.head_ref }}.${{ github.sha }}<br>
+              Link: ${{github.event.head_commit.url}} <br> 
+              Log Message: ${{github.event.commit.message}} <br>  
+              Compare: ${{github.event.compare}} <br>
+              Files changed: <br>
+              ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
+              ${{steps.changed-files.outputs.deleted_files}} <br>
+              </p>
+              </body>
+              </html>
+
+           # Optional converting Markdown to HTML (set content_type to text/html too):
+           convert_markdown: true
+           # Optional priority: 'high', 'normal' (default) or 'low'
+           priority: low
