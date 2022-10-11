@@ -195,11 +195,7 @@ MAKEALLCHPLDOCSUBDIRS = $(CHPLDOC_SUBDIRS:%=%.makedir)
 $(CHPLDOC): $(MAKEALLCHPLDOCSUBDIRS) $(CHPLDOC_OBJS) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPLDOC_OBJS) $(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS) $(LIBS) $(LLVM_EXTRA_LIBS) $(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)
 
-$(CHPLDOC)-legacy: | $(CHPL_BIN_DIR)
-	rm -f $(CHPLDOC)-legacy
-	ln -s $(notdir $(CHPL)) $(CHPLDOC)-legacy
-
-chpldoc: $(CHPLDOC) $(CHPLDOC)-legacy
+chpldoc: $(CHPLDOC)
 
 dyno-chpldoc: chpldoc
 

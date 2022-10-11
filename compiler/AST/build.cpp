@@ -26,7 +26,6 @@
 #include "CatchStmt.h"
 #include "config.h"
 #include "DeferStmt.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "files.h"
 #include "ForallStmt.h"
@@ -806,20 +805,17 @@ buildExternBlockStmt(const char* c_code) {
   BlockStmt* ret = buildChapelStmt(useBlock);
 
   // Check that the compiler supports extern blocks
-  // but skip these checks for chpldoc.
-  if (fDocs == false) {
 #ifdef HAVE_LLVM
-    // Chapel was built with LLVM
-    // Just bring up an error if extern blocks are disabled
-    if (fAllowExternC == false)
-      USR_FATAL(ret, "extern block syntax is turned off. Use "
-                     "--extern-c flag to turn on.");
+  // Chapel was built with LLVM
+  // Just bring up an error if extern blocks are disabled
+  if (fAllowExternC == false)
+    USR_FATAL(ret, "extern block syntax is turned off. Use "
+                   "--extern-c flag to turn on.");
 #else
-    // If Chapel wasn't built with LLVM, we can't handle extern blocks
-    USR_FATAL(ret, "Chapel must be built with llvm in order to "
-                    "use the extern block syntax");
+  // If Chapel wasn't built with LLVM, we can't handle extern blocks
+  USR_FATAL(ret, "Chapel must be built with llvm in order to "
+                  "use the extern block syntax");
 #endif
-  }
 
   return ret;
 }
@@ -829,8 +825,7 @@ ModuleSymbol* buildModule(const char* name,
                           BlockStmt*  block,
                           const char* filename,
                           bool        priv,
-                          bool        prototype,
-                          const char* docs) {
+                          bool        prototype) {
   ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
 
   if (priv == true) {
@@ -842,15 +837,13 @@ ModuleSymbol* buildModule(const char* name,
   }
 
   mod->filename = astr(filename);
-  mod->doc      = docs;
 
   return mod;
 }
 
 BlockStmt* buildIncludeModule(const char* name,
                               bool priv,
-                              bool prototype,
-                              const char* docs) {
+                              bool prototype) {
   astlocT loc(chplLineno, yyfilename);
   ModuleSymbol* mod = parseIncludedSubmodule(name);
   INT_ASSERT(mod != NULL);
@@ -875,8 +868,6 @@ BlockStmt* buildIncludeModule(const char* name,
     USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
     USR_PRINT(mod, "put prototype keyword at module declaration here");
   }
-
-  // docs comment is ignored (the one in the module declaration is used)
 
   if (fWarnUnstable && mod->modTag == MOD_USER) {
     USR_WARN(loc, "module include statements are not yet stable and may change");
@@ -1593,7 +1584,7 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
+BlockStmt* buildVarDecls(BlockStmt* stmts,
                          std::set<Flag>* flags, Expr* cnameExpr) {
   bool firstvar = true;
   const char* cname = NULL;
@@ -1633,7 +1624,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
           }
         }
 
-        var->doc = docs;
         firstvar = false;
         continue;
       }
@@ -1656,10 +1646,8 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
   }
 
   // Add a PRIM_END_OF_STATEMENT.
-  if (fDocs == false) {
-    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-    stmts->insertAtTail(end);
-  }
+  CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+  stmts->insertAtTail(end);
 
   // this was allocated in buildVarDeclFlags()
   if (flags)
@@ -1696,8 +1684,7 @@ DefExpr* buildClassDefExpr(const char*  name,
                            AggregateTag tag,
                            Expr*        inherit,
                            BlockStmt*   decls,
-                           Flag         externFlag,
-                           const char*  docs) {
+                           Flag         externFlag) {
   bool isExtern = externFlag == FLAG_EXTERN;
   AggregateType* ct = NULL;
   TypeSymbol* ts = NULL;
@@ -1761,8 +1748,6 @@ DefExpr* buildClassDefExpr(const char*  name,
   if (inherit != NULL) {
     ct->inherits.insertAtTail(inherit);
   }
-
-  ct->doc = docs;
 
   return def;
 }
@@ -1902,7 +1887,7 @@ void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
   if (cname[0] != '\0') {
     // The user explicitly named this function (controls mangling).
     fn->cname = cname;
-  } else if (paramCNameExpr && cname[0] == '\0' && fDocs == false) {
+  } else if (paramCNameExpr && cname[0] == '\0') {
     // cname should be set based upon param
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
@@ -1930,9 +1915,7 @@ setupFunctionDecl(FnSymbol*   fn,
                   bool        optThrowsError,
                   Expr*       optWhere,
                   Expr*       optLifetimeConstraints,
-                  BlockStmt*  optFnBody,
-                  const char* docs)
-{
+                  BlockStmt*  optFnBody) {
   fn->retTag = optRetTag;
 
   if (optRetType)
@@ -1969,8 +1952,6 @@ setupFunctionDecl(FnSymbol*   fn,
   } else {
     fn->addFlag(FLAG_NO_FN_BODY);
   }
-
-  fn->doc = docs;
 }
 
 BlockStmt*
@@ -1980,11 +1961,9 @@ buildFunctionDecl(FnSymbol*   fn,
                   bool        optThrowsError,
                   Expr*       optWhere,
                   Expr*       optLifetimeConstraints,
-                  BlockStmt*  optFnBody,
-                  const char* docs)
-{
+                  BlockStmt*  optFnBody) {
   setupFunctionDecl(fn, optRetTag, optRetType, optThrowsError,
-                    optWhere, optLifetimeConstraints, optFnBody, docs);
+                    optWhere, optLifetimeConstraints, optFnBody);
   return buildChapelStmt(new DefExpr(fn));
 }
 
@@ -2617,8 +2596,6 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
-          ts->doc = theVs->doc;
-
           // TODO: Loop/copy all flags here instead of two?
           if (theVs->hasFlag(FLAG_PRIVATE)) ts->addFlag(FLAG_PRIVATE);
           if (theVs->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) ts->addFlag(FLAG_C_MEMORY_ORDER_TYPE);

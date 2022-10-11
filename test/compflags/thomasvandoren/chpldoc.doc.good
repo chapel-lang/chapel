@@ -15,7 +15,6 @@ Documentation Options:
       --project-version <projectversion>
                                       Sets the documentation version to
                                       <projectversion>
-      --legacy                        Use the legacy version of chpldoc
       --[no-]print-commands           [Don't] print system commands
 
 Information Options:

@@ -68,8 +68,6 @@ AST_SRCS =                                          \
                                                     \
            AstCount.cpp                             \
                                                     \
-           AstPrintDocs.cpp                         \
-                                                    \
            AstToText.cpp                            \
                                                     \
            CollapseBlocks.cpp                       \

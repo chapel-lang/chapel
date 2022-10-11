@@ -28,7 +28,6 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "DecoratedClassType.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -435,53 +434,6 @@ void PrimitiveType::verify() {
   }
 }
 
-void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
-  // Only print extern types.
-  if (this->symbol->noDocGen()) {
-    return;
-  }
-
-  this->printTabs(file, tabs);
-  *file << this->docsDirective();
-  *file << "type ";
-  *file << this->symbol->name;
-  *file << std::endl;
-
-  // For .rst mode, put a line break after the .. data:: directive and
-  // its description text.
-  if (!fDocsTextOnly) {
-    *file << std::endl;
-  }
-
-  if (this->symbol->doc != NULL) {
-    this->printDocsDescription(this->symbol->doc, file, tabs + 1);
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-  }
-
-  if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
-    this->printDocsDeprecation(this->symbol->doc, file, tabs + 1,
-                               this->symbol->getDeprecationMsg(),
-                               !fDocsTextOnly);
-  }
-
-  if (this->symbol->hasFlag(FLAG_UNSTABLE)) {
-    this->printDocsUnstable(this->symbol->doc, file, tabs + 1,
-                               this->symbol->getUnstableMsg(),
-                               !fDocsTextOnly);
-  }
-}
-
-
-std::string PrimitiveType::docsDirective() {
-  if (!fDocsTextOnly) {
-    return ".. type:: ";
-  } else {
-    return "";
-  }
-}
-
 
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
@@ -539,10 +491,6 @@ const char* ConstrainedType::useString() const {
   }
   INT_FATAL(this, "unknown ConstrainedType use");
   return NULL;
-}
-
-void ConstrainedType::printDocs(std::ostream *file, unsigned int tabs) {
-  return;  // not to be printed
 }
 
 void ConstrainedType::accept(AstVisitor* visitor) {
@@ -660,62 +608,6 @@ void EnumType::accept(AstVisitor* visitor) {
     visitor->exitEnumType(this);
   }
 }
-
-
-void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->symbol->noDocGen()) {
-    return;
-  }
-
-  this->printTabs(file, tabs);
-  *file << this->docsDirective();
-  *file << "enum ";
-  AstToText info;
-  info.appendEnumDecl(this);
-  *file << info.text();
-  *file << std::endl;
-
-  // In rst mode, ensure there is an empty line between the enum signature and
-  // its description or the next directive.
-  if (!fDocsTextOnly) {
-    *file << std::endl;
-  }
-
-  if (this->doc != NULL) {
-    this->printDocsDescription(this->doc, file, tabs + 1);
-    *file << std::endl;
-
-    // In rst mode, ensure there is an empty line between the enum description
-    // and the next directive.
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-  }
-
-  if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
-    this->printDocsDeprecation(this->doc, file, tabs + 1,
-                               this->symbol->getDeprecationMsg(),
-                               !fDocsTextOnly);
-  }
-
-  if (this->symbol->hasFlag(FLAG_UNSTABLE)) {
-    this->printDocsUnstable(this->doc, file, tabs + 1,
-                               this->symbol->getUnstableMsg(),
-                               !fDocsTextOnly);
-  }
-}
-
-
-std::string EnumType::docsDirective() {
-  if (fDocsTextOnly) {
-    return "";
-  } else {
-    return ".. enum:: ";
-  }
-}
-
-
-
 
 
 /************************************* | **************************************

@@ -22,7 +22,6 @@
 #include "ModuleSymbol.h"
 
 #include "AstVisitor.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "files.h"
 #include "stlUtil.h"
@@ -240,7 +239,6 @@ ModuleSymbol::ModuleSymbol(const char* iName,
   initFn              = NULL;
   deinitFn            = NULL;
   filename            = NULL;
-  doc                 = NULL;
   extern_info         = NULL;
   llvmDINameSpace     = NULL;
 
@@ -283,217 +281,6 @@ ModuleSymbol* ModuleSymbol::copyInner(SymbolMap* map) {
   INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
 
   return NULL;
-}
-
-// Collect the top-level classes for this Module.
-//
-// 2014/07/25 MDN.  This function is currently only called by
-// docs.  Historically all of the top-level classes were buried
-// inside the prototypical module initFn.
-//
-// Installing The initFn is being moved forward but there are
-// still short periods of time when the classes will still be
-// buried inside the module initFn.
-//
-// Hence this function is currently able to handle the before
-// and after case.  The before case can be pulled out once the
-// construction of the initFn is cleaned up.
-//
-
-std::vector<AggregateType*> ModuleSymbol::getTopLevelClasses() {
-  std::vector<AggregateType*> classes;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
-
-      if (TypeSymbol* type = toTypeSymbol(def->sym)) {
-        if (AggregateType* cl = toAggregateType(type->type)) {
-          classes.push_back(cl);
-        }
-
-      // Step in to the initFn
-      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (fn->hasFlag(FLAG_MODULE_INIT)) {
-          for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2)) {
-              if (TypeSymbol* type = toTypeSymbol(def2->sym)) {
-                if (AggregateType* cl = toAggregateType(type->type)) {
-                  classes.push_back(cl);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return classes;
-}
-
-
-void ModuleSymbol::printDocs(std::ostream* file,
-                             unsigned int  tabs,
-                             std::string   parentName) {
-  if (this->noDocGen()) {
-    return;
-  }
-
-  // Print the module directive first, for .rst mode. This will associate the
-  // Module: <name> title with the module. If the .. module:: directive comes
-  // after the title, sphinx will complain about a duplicate id error.
-  if (!fDocsTextOnly) {
-    *file << ".. default-domain:: chpl" << std::endl << std::endl;
-    if (this->docsName() == "ChapelSysCTypes") {
-      return;
-    }
-    *file << ".. module:: " << this->docsName() << std::endl;
-    // Don't index internal modules since that will make them show up
-    // in the module index (chpl-modindex.html).  This has the side
-    // effect of making references to the :mod: tag for the module
-    // illegal, which is appropriate since the modules are not
-    // user-facing.
-    if (this->modTag == MOD_INTERNAL) {
-      *file << "   :noindex:" << std::endl;
-    } else if (this->doc != NULL) {
-      this->printTabs(file, tabs + 1);
-
-      *file << ":synopsis: ";
-      *file << firstNonEmptyLine(this->doc);
-      *file << std::endl;
-    }
-
-    *file << std::endl;
-  }
-
-  this->printTabs(file, tabs);
-
-  const char* moduleTitle = astr(this->docsName().c_str());
-
-  *file << moduleTitle << std::endl;
-
-  if (fDocsTextOnly == false) {
-    int length = tabs * this->tabText.length() + strlen(moduleTitle);
-
-    for (int i = 0; i < length; i++) {
-      *file << "=";
-    }
-
-    *file << std::endl;
-  }
-
-  if (!this->hasFlag(FLAG_MODULE_INCLUDED_BY_DEFAULT)) {
-
-    if (fDocsTextOnly == false) {
-      *file << "**Usage**" << std::endl << std::endl;
-      *file << ".. code-block:: chapel" << std::endl << std::endl;
-
-    } else {
-      *file << std::endl;
-      *file << "Usage:" << std::endl;
-    }
-
-    this->printTabs(file, tabs + 1);
-
-    *file << "use ";
-
-    if (parentName != "") {
-      *file << parentName << ".";
-    }
-
-    *file << name << ";" << std::endl << std::endl;
-
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-
-    *file  << "or" << std::endl << std::endl;
-
-    if (fDocsTextOnly == false) {
-      *file << ".. code-block:: chapel" << std::endl << std::endl;
-    }
-
-    this->printTabs(file, tabs + 1);
-
-    *file << "import ";
-
-    if (parentName != "") {
-      *file << parentName << ".";
-    }
-
-    *file << name << ";" << std::endl << std::endl;
-  } else {
-    *file << ".. note::" << std::endl << std::endl;
-    this->printTabs(file, tabs + 1);
-    *file <<
-      "All Chapel programs automatically ``use`` this module by default.";
-    *file << std::endl;
-    this->printTabs(file, tabs + 1);
-    *file << "An explicit ``use`` statement is not necessary.";
-    *file << std::endl;
-    *file << std::endl;
-  }
-
-  // If we had submodules, be sure to link to them
-  if (hasTopLevelModule() == true) {
-    this->printTableOfContents(file);
-  }
-
-  // Only print tabs for text only mode. The .rst prefers not to have the
-  // tabs for module level comments and leading whitespace removed.
-  unsigned int t = tabs;
-
-  if (fDocsTextOnly == true) {
-    t += 1;
-  }
-
-  if (this->doc != NULL) {
-
-    this->printDocsDescription(this->doc, file, t);
-
-    if (fDocsTextOnly == false) {
-      *file << std::endl;
-    }
-  }
-
-  if (this->hasFlag(FLAG_DEPRECATED)) {
-    this->printDocsDeprecation(this->doc, file, t, this->getDeprecationMsg(),
-                               !fDocsTextOnly);
-  }
-}
-
-
-/*
- * Append 'prefix' to existing module name prefix.
- */
-void ModuleSymbol::printTableOfContents(std::ostream* file) {
-  int tabs = 1;
-
-  if (fDocsTextOnly == false) {
-    *file << "**Submodules**" << std::endl << std::endl;
-
-    *file << ".. toctree::" << std::endl;
-    this->printTabs(file, tabs);
-
-    *file << ":maxdepth: 1" << std::endl;
-    this->printTabs(file, tabs);
-
-    *file << ":glob:" << std::endl << std::endl;
-    this->printTabs(file, tabs);
-    *file << name << "/*" << std::endl << std::endl;
-
-  } else {
-    *file << "Submodules for this module are located in the " << name;
-    *file << "/ directory" << std::endl << std::endl;
-  }
-}
-
-
-/*
- * Returns name of module, including any prefixes that have been set.
- */
-std::string ModuleSymbol::docsName() const {
-  return name;
 }
 
 /*
@@ -641,20 +428,6 @@ std::vector<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
   }
 
   return mods;
-}
-
-// Intended for documentation purposes only, please don't use otherwise.
-bool ModuleSymbol::hasTopLevelModule() {
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
-      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (mod->defPoint->parentExpr == block && !mod->noDocGen()) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
 }
 
 void ModuleSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {

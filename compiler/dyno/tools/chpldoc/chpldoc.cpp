@@ -85,7 +85,6 @@ bool fPrintSettingsHelp = false;
 bool fPrintLicense = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
-bool fLegacyChpldoc = false;
 
 
 
@@ -168,7 +167,6 @@ ArgumentDescription docs_arg_desc[] = {
  {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
 
- {"legacy", ' ', NULL, "Use the legacy version of chpldoc", "F", &fLegacyChpldoc, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
  DRIVER_ARG_HELP,
@@ -2113,30 +2111,6 @@ int main(int argc, char** argv) {
   // initial value of CHPL_HOME may be overridden by cmdline arg
   CHPL_HOME = getenv("CHPL_HOME");
   Args args = parseArgs(argc, argv, (void*)main);
-
-  // check if user asked for legacy chpldoc
-  if (fLegacyChpldoc) {
-    std::string pathToExe = getExecutablePath(argv[0], (void*)main);
-    std::string cmd = pathToExe + "-legacy ";
-    for (int i = 1; i < argc; i++) {
-      std::string arg = std::string(argv[i]);
-      if (arg != "--legacy") {
-        // these flags had their args unwrapped, add quotes back to avoid
-        // situation where shell evaluates or splits the args
-        // TODO: Should we just wrap all the possible values in quotes?
-        if (arg == "--comment-style" || arg == "--author") {
-          assert(i + 1 < argc);
-          cmd += arg;
-          cmd += " \""+std::string(argv[i+1])+"\"";
-          i++;
-        } else {
-          cmd += arg;
-        }
-        cmd += " ";
-      }
-    }
-    return myshell(cmd, "running legacy chpldoc", true);
-  }
 
   // TODO: there is a future for this, asking for a better error message and I
   // think we can provide it by checking here.

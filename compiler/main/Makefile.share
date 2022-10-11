@@ -21,7 +21,6 @@ MAIN_SRCS =                  \
             checks.cpp       \
             commonFlags.cpp  \
             config.cpp       \
-            docsDriver.cpp   \
             driver.cpp       \
             log.cpp          \
             runpasses.cpp    \
