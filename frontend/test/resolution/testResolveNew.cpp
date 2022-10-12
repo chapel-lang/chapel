@@ -595,6 +595,8 @@ static void testFieldUseBeforeInit1(void) {
       foo(x);
       if x == 8 then foo(x); else foo(x);
       for i in 1..7 do foo(x);
+      forall i in 1..7 do foo(x);
+      foreach i in 1..7 do foo(x);
       this.x = 16;
       foo(x);
     }
@@ -611,9 +613,10 @@ static void testFieldUseBeforeInit1(void) {
 
   // Resolve the module.
   std::ignore = resolveModule(ctx, mod->id());
-  assert(guard.errors().size() == 4);
 
-  // Should be one error related to use-before-initialization.
+  assert(guard.errors().size() == 6);
+
+  // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "'x' is used before it is initialized");
   assert(msg->location(ctx).firstLine() == 7);

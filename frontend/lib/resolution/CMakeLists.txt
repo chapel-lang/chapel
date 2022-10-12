@@ -22,7 +22,7 @@ target_sources(libdyno-obj
                can-pass.cpp
                default-functions.cpp
                disambiguation.cpp
-               init-resolver-visitor.cpp
+               InitResolver.cpp
                intents.cpp
                prims.cpp
                resolution-queries.cpp

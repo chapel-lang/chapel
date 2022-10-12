@@ -29,6 +29,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "InitResolver.h"
 
 #include <cstdio>
 #include <set>
@@ -185,6 +186,18 @@ Resolver::createForFunction(Context* context,
       ret.resolveTupleUnpackDecl(td, qt);
   }
 
+  return ret;
+}
+
+Resolver
+Resolver::createForInitializer(Context* context,
+                               const uast::Function* fn,
+                               const PoiScope* poiScope,
+                               const TypedFnSignature* typedFnSignature,
+                               ResolutionResultByPostorderID& byPostorder) {
+  auto ret = createForFunction(context, fn, poiScope, typedFnSignature,
+                               byPostorder);
+  ret.initResolver = InitResolver::create(context, ret, fn);
   return ret;
 }
 
@@ -1621,8 +1634,13 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
 }
 
 bool Resolver::enter(const Identifier* ident) {
-  auto ret = resolveIdentifier(ident, methodReceiverScope());
-  return ret;
+  if (initResolver && initResolver->handleResolvingFieldAccess(ident)) {
+    std::ignore = initResolver->handleUseOfField(ident);
+    return false;
+  } else {
+    auto ret = resolveIdentifier(ident, methodReceiverScope());
+    return ret;
+  }
 }
 
 void Resolver::exit(const Identifier* ident) {
@@ -1985,12 +2003,15 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
 }
 
 bool Resolver::enter(const Call* call) {
-
   inLeafCall = call;
+  auto op = call->toOpCall();
+
+  if (op && initResolver) {
+    initResolver->doDetectPossibleAssignmentToField(op);
+  }
 
   // handle && and || to not bother to evaluate the RHS
   // if the LHS is param and false/true, respectively.
-  auto op = call->toOpCall();
   if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
     QualifiedType result = typeForBooleanOp(op);
     // Update the type of the && call
@@ -2166,6 +2187,9 @@ void Resolver::exit(const Call* call) {
   if (scopeResolveOnly)
     return;
 
+  if (initResolver && initResolver->handleResolvingCall(call))
+    return;
+
   auto op = call->toOpCall();
   if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
     // these are handled in 'enter' to do param folding
@@ -2241,6 +2265,8 @@ void Resolver::exit(const Call* call) {
 }
 
 bool Resolver::enter(const Dot* dot) {
+  if (initResolver && initResolver->handleResolvingFieldAccess(dot))
+    return false;
   return true;
 }
 
@@ -2269,6 +2295,8 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
 }
 
 void Resolver::exit(const Dot* dot) {
+  if (initResolver && initResolver->handleUseOfField(dot)) return;
+
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
 
   bool resolvingCalledDot = (inLeafCall &&

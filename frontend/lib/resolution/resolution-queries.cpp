@@ -1300,12 +1300,18 @@ static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
   return type;
 }
 
+static bool isCallInfoForInitializer(const CallInfo& ci) {
+  if (ci.name() == USTR("init"))
+    if (ci.isMethodCall())
+      return true;
+  return false;
+}
+
+// TODO: Move these to the 'InitResolver' visitor.
 static bool isTfsForInitializer(const TypedFnSignature* tfs) {
-  if (tfs->needsInstantiation())
-    if (tfs->untyped()->name() == USTR("init"))
-      if (tfs->untyped()->isMethod())
-        if (!tfs->formalIsInstantiated(0))
-          return true;
+  if (tfs->untyped()->name() == USTR("init"))
+    if (tfs->untyped()->isMethod())
+      return true;
   return false;
 }
 
@@ -1663,12 +1669,6 @@ resolveFunctionByPoisQuery(Context* context,
   return QUERY_END(result);
 }
 
-// TODO: Should we expose this thing in a header somewhere?
-extern bool
-handleResolvingInitFn(Context* context, Resolver& visitor,
-                      const Function* fn,
-                      const TypedFnSignature*& outFinalTfs);
-
 static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(Context* context,
                            const TypedFnSignature* sig,
@@ -1683,31 +1683,26 @@ resolveFunctionByInfoQuery(Context* context,
 
   PoiInfo resolvedPoiInfo;
 
-  if (fn) {
+  // Note that in this case the AST for the function can be nullptr.
+  if (isTfsForInitializer(sig)) {
     ResolutionResultByPostorderID resolutionById;
-    auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
-                                               resolutionById);
+    auto visitor = Resolver::createForInitializer(context, fn, poiScope,
+                                                  sig,
+                                                  resolutionById);
+    assert(visitor.initResolver.get());
+    if (fn) fn->body()->traverse(visitor);
+    auto newTfsForInitializer = visitor.initResolver->finalize();
 
-    const TypedFnSignature* newTfsForInitializer = nullptr;
-    bool didResolveInitializer = false;
-
-    // TODO: What other info does the init visitor need to communicate?
-    didResolveInitializer |= handleResolvingInitFn(context, visitor, fn,
-                                                   newTfsForInitializer);
-
-    if (!didResolveInitializer) fn->body()->traverse(visitor);
-
-    // TODO can this be encapsulated in a method?
+    // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
     resolvedPoiInfo.setResolved(true);
     resolvedPoiInfo.setPoiScope(nullptr);
 
     // If we resolved an initializer, then we started with a function
-    // signature that needed instantiation (for the receiver at the very
-    // least)  and ended with a new signature via resolving the body. We
-    // need to communicate to the query framework that the new TFS does
-    // not need to have its corresponding function resolved.
-    if (didResolveInitializer && newTfsForInitializer != sig) {
+    // signature that might have needed instantiation for the receiver.
+    // We need to communicate to the query framework that the new TFS
+    // does not need to have its corresponding function resolved.
+    if (newTfsForInitializer != sig) {
       auto resolutionByIdCopy = resolutionById;
       auto resolvedInit = toOwned(new ResolvedFunction(newTfsForInitializer,
                                   fn->returnIntent(),
@@ -1736,6 +1731,33 @@ resolveFunctionByInfoQuery(Context* context,
 
     owned<ResolvedFunction> resolved
         = toOwned(new ResolvedFunction(finalTfs, fn->returnIntent(),
+                  std::move(resolutionById),
+                  resolvedPoiInfo));
+
+    // Store the result in the query under the POIs used.
+    // If there was already a value for this revision, this
+    // call will not update it. (If it did, that could lead to
+    // memory errors).
+    QUERY_STORE_RESULT(resolveFunctionByPoisQuery,
+                       context,
+                       resolved,
+                       sig,
+                       resolvedPoiInfo.poiFnIdsUsed());
+
+  // On this path we are just resolving a normal function.
+  } else if (fn) {
+    ResolutionResultByPostorderID resolutionById;
+    auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
+                                               resolutionById);
+    fn->body()->traverse(visitor);
+
+    // TODO: can this be encapsulated in a method?
+    resolvedPoiInfo.swap(visitor.poiInfo);
+    resolvedPoiInfo.setResolved(true);
+    resolvedPoiInfo.setPoiScope(nullptr);
+
+    owned<ResolvedFunction> resolved
+        = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
                   std::move(resolutionById),
                   resolvedPoiInfo));
 
@@ -2999,7 +3021,6 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope) {
-
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
   if (ci.calledType().kind() == QualifiedType::TYPE) {
@@ -3044,6 +3065,18 @@ CallResolutionResult resolveFnCall(Context* context,
                                             instantiationPoiScope, poiInfo);
         }
       }
+    }
+  }
+
+  // Make sure that we are resolving initializer bodies even when the
+  // signature is concrete, because there are semantic checks.
+  if (isCallInfoForInitializer(ci) && mostSpecific.numBest() == 1) {
+    auto candidate = mostSpecific.only();
+    assert(isTfsForInitializer(candidate));
+
+    // TODO: Can we move this into the 'InitVisitor'?
+    if (!candidate->untyped()->isCompilerGenerated()) {
+      std::ignore = resolveInitializer(context, candidate, inPoiScope);
     }
   }
 
