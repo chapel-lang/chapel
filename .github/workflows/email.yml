@@ -10,13 +10,16 @@ jobs:
   
   send_email:
    # run this workflow step only when the PR is merged 
-    if:  github.event.pull_request.merged == true 
+    #if:  github.event.pull_request.merged == false 
     runs-on: ubuntu-latest
   
     steps:
      
       - name: print git events
-        run:  cat "$GITHUB_EVENT_PATH"
+        run:  cat "$GITHUB_EVENT_PATH" 
+
+      - name: print git event merge status
+        run: echo "$github.event.pull_request.merged == false"       
         
       - name: print GitHub context
         env:
@@ -26,9 +29,9 @@ jobs:
         
       - name: checkout
         uses: actions/checkout@v3
-        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
+        # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           
       - name: Get changed files
         id: changed-files
