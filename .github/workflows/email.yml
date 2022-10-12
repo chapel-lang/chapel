@@ -23,8 +23,8 @@ jobs:
         run: echo "$GITHUB_CONTEXT"  
       
       - name: print secrets
-        run: echo "$env.SMTP_PROVIDER" |
-             echo "$secrets.SMTP_PROVIDER"
+        run: echo "${{env.SMTP_PROVIDER}}" |
+             echo "${{secrets.SMTP_PROVIDER}}"
         
       - name: checkout
         uses: actions/checkout@v3
