@@ -30,7 +30,8 @@ jobs:
       
       - name: print secrets
         run: echo "${{secrets.SMTP_PROVIDER}}" |
-             echo "${{secrets.EMAIL_SERVER}}"
+             echo "${{secrets.EMAIL_SERVER}}" |
+             echo "$SERVER"
         
       - name: checkout
         uses: actions/checkout@v3
