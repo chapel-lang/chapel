@@ -36,8 +36,9 @@ using namespace types;
 struct SplitInitFrame {
   const Scope* scope = nullptr;
 
-  // Which variables are declared in this scope?
-  std::set<ID> declaredVars;
+  // Which variables are declared in this scope without
+  // an initialization expression?
+  std::set<ID> declaredEligibleVars;
 
   // Which variables are initialized in this scope before
   // being mentioned, throwing or returning?
@@ -131,7 +132,7 @@ void FindSplitInits::handleMention(ID dstId) {
     if (frame->mentionedVars.count(dstId) > 0) {
       foundMentionedVar = true;
     }
-    if (frame->declaredVars.count(dstId) > 0) {
+    if (frame->declaredEligibleVars.count(dstId) > 0) {
       foundDeclaredVar = true;
       break;
     }
@@ -165,7 +166,7 @@ void FindSplitInits::handleInitOrAssign(ID dstId) {
     if (frame->mentionedVars.count(dstId) > 0) {
       foundMentionedVar = true;
     }
-    if (frame->declaredVars.count(dstId) > 0) {
+    if (frame->declaredEligibleVars.count(dstId) > 0) {
       foundDeclaredVar = true;
       break;
     }
@@ -200,7 +201,7 @@ void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
   // gather the set of variables to consider
   std::set<ID> initedVars;
   for (auto id : thenFrame->initedVars) {
-    if (thenFrame->declaredVars.count(id) > 0) {
+    if (thenFrame->declaredEligibleVars.count(id) > 0) {
       // variable declared in this scope, so save the result
       splitInitedVars.insert(id);
     } else {
@@ -209,7 +210,7 @@ void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
   }
   if (elseFrame != nullptr) {
     for (auto id : elseFrame->initedVars) {
-      if (elseFrame->declaredVars.count(id) > 0) {
+      if (elseFrame->declaredEligibleVars.count(id) > 0) {
         // variable declared in this scope, so save the result
         splitInitedVars.insert(id);
       } else {
@@ -251,13 +252,13 @@ void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
   }
   // propagate the mentioned variables
   for (auto id : thenFrame->mentionedVars) {
-    if (thenFrame->declaredVars.count(id) == 0) {
+    if (thenFrame->declaredEligibleVars.count(id) == 0) {
       frame->mentionedVars.insert(id);
     }
   }
   if (elseFrame != nullptr) {
     for (auto id : elseFrame->mentionedVars) {
-      if (elseFrame->declaredVars.count(id) == 0) {
+      if (elseFrame->declaredEligibleVars.count(id) == 0) {
         frame->mentionedVars.insert(id);
       }
     }
@@ -283,7 +284,7 @@ void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
 
     // propagate initedVars and update global result
     for (auto id : frame->initedVars) {
-      if (frame->declaredVars.count(id) > 0) {
+      if (frame->declaredEligibleVars.count(id) > 0) {
         // variable declared in this scope, so save the result
         splitInitedVars.insert(id);
       } else if (parent != nullptr) {
@@ -295,7 +296,7 @@ void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
     if (parent != nullptr) {
       // propagate mentionedVars
       for (auto id : frame->mentionedVars) {
-        if (frame->declaredVars.count(id) == 0) {
+        if (frame->declaredEligibleVars.count(id) == 0) {
           parent->mentionedVars.insert(id);
         }
       }
@@ -315,12 +316,12 @@ void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
       // propagate initedVars and mentionedVars
       // to mentionedVars in the parent
       for (auto id : frame->initedVars) {
-        if (frame->declaredVars.count(id) == 0) {
+        if (frame->declaredEligibleVars.count(id) == 0) {
           parent->mentionedVars.insert(id);
         }
       }
       for (auto id : frame->mentionedVars) {
-        if (frame->declaredVars.count(id) == 0) {
+        if (frame->declaredEligibleVars.count(id) == 0) {
           parent->mentionedVars.insert(id);
         }
       }
@@ -383,9 +384,11 @@ bool FindSplitInits::enter(const VarLikeDecl* ast, RV& rv) {
 void FindSplitInits::exit(const VarLikeDecl* ast, RV& rv) {
   assert(!scopeStack.empty());
   if (!scopeStack.empty()) {
-    printf("SPLIT INIT ADDING VARIABLE %s\n", ast->id().str().c_str());
-    SplitInitFrame* frame = scopeStack.back().get();
-    frame->declaredVars.insert(ast->id());
+    if (ast->initExpression() == nullptr) {
+      printf("SPLIT INIT ADDING VARIABLE %s\n", ast->id().str().c_str());
+      SplitInitFrame* frame = scopeStack.back().get();
+      frame->declaredEligibleVars.insert(ast->id());
+    }
   }
 
   exitScope(ast);
