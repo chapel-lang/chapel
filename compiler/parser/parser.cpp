@@ -1036,60 +1036,6 @@ static void addModuleToDoneList(ModuleSymbol* module) {
 ************************************** | *************************************/
 
 
-ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
-  // save parser global variables to restore after parsing the submodule
-  BlockStmt*  s_yyblock = yyblock;
-  const char* s_yyfilename = yyfilename;
-  int         s_yystartlineno = yystartlineno;
-  ModTag      s_currentModuleType = currentModuleType;
-  const char* s_currentModuleName = currentModuleName;
-  int         s_chplLineno = chplLineno;
-  bool        s_chplParseString = chplParseString;
-  const char* s_chplParseStringMsg = chplParseStringMsg;
-
-  std::string curPath = path;
-
-  // compute the path of the file to include
-  size_t lastDot = curPath.rfind(".");
-  INT_ASSERT(lastDot < curPath.size());
-  std::string noDot = curPath.substr(0, lastDot);
-  std::string includeFile = noDot + "/" + name + ".chpl";
-
-  const char* modNameFromFile = filenameToModulename(curPath.c_str());
-  if (0 != strcmp(modNameFromFile, currentModuleName)) {
-    UnresolvedSymExpr* dummy = new UnresolvedSymExpr("module");
-    USR_FATAL(dummy, "Cannot include modules from a module whose name doesn't match its filename");
-  }
-
-  ModuleSymbol* ret = nullptr;
-  const bool namedOnCommandLine = false;
-
-  ret = parseFile(astr(includeFile), currentModuleType,
-                  namedOnCommandLine);
-  INT_ASSERT(ret);
-
-  ret->addFlag(FLAG_INCLUDED_MODULE);
-
-  // restore parser global variables
-  yyblock = s_yyblock;
-  yyfilename = s_yyfilename;
-  yystartlineno = s_yystartlineno;
-  currentModuleType = s_currentModuleType;
-  currentModuleName = s_currentModuleName;
-  chplLineno = s_chplLineno;
-  chplParseString = s_chplParseString;
-  chplParseStringMsg = s_chplParseStringMsg;
-
-  return ret;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-
 static const char* stdModNameToPath(const char* modName,
                                     bool*       isStandard) {
   const char* usrPath = searchThePath(modName, false, sUsrModPath);

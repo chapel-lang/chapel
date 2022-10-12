@@ -109,9 +109,6 @@ ModuleSymbol* buildModule(const char* name,
                           const char* filename,
                           bool        priv,
                           bool        prototype);
-BlockStmt* buildIncludeModule(const char* name,
-                              bool priv,
-                              bool prototype);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
