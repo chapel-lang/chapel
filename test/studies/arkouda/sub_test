@@ -6,7 +6,6 @@
 ARKOUDA_URL=${ARKOUDA_URL:-https://github.com/Bears-R-Us/arkouda.git}
 ARKOUDA_BRANCH=${ARKOUDA_BRANCH:-master}
 
-export CHPL_TEST_ARKOUDA_DISABLE_MODULES=${CHPL_TEST_ARKOUDA_DISABLE_MODULES:- }
 export CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD=${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD:-"false"}
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
@@ -47,7 +46,7 @@ if [ -n "${CHPL_TEST_ARKOUDA_DISABLE_MODULES}" ] ; then
   IFS=":"
   for mod in $CHPL_TEST_ARKOUDA_DISABLE_MODULES; do
     cmd="s/^\s*$mod/#$mod/g"
-    sed -i $cmd ServerModules.cfg
+    sed -i'' -e $cmd ServerModules.cfg
   done
   unset IFS
 fi
