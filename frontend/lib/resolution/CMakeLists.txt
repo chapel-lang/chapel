@@ -18,8 +18,8 @@
 target_sources(libdyno-obj
                PRIVATE
 
-               CallInitDeinit.cpp
                Resolver.cpp
+               call-init-deinit.cpp
                can-pass.cpp
                default-functions.cpp
                disambiguation.cpp
