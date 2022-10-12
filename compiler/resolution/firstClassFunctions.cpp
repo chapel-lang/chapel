@@ -28,6 +28,7 @@
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
+#include "ResolveScope.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -86,6 +87,8 @@ static int uniqueFcfId = 0;
 *                                                                            *
 ************************************** | ************************************/
 
+static bool legacyFirstClassFunctions(void);
+
 static bool isConcreteIntentBlank(IntentTag tag, Type* t);
 
 static VarSymbol* getDummyFcfErrorInsertedAtProgram(void);
@@ -98,6 +101,10 @@ static bool checkAndResolveFunction(FnSymbol* fn, Expr* use);
 
 static FnSymbol* findFunctionFromNameMaybeError(UnresolvedSymExpr* usym,
                                                 CallExpr* root);
+
+static FcfFormalInfo extractFormalInfo(ArgSymbol* formal);
+
+static FcfFormalInfo extractFormalInfoWithLegacyRules(ArgSymbol* formal);
 
 static const SharedFcfSuperInfo
 buildWrapperSuperTypeAtProgram(FnSymbol* fn);
@@ -175,6 +182,33 @@ insertSharedParentFactory(const SharedFcfSuperInfo info,
 *                                                                            *
 *                                                                            *
 ************************************** | ************************************/
+
+static bool legacyFirstClassFunctions(void) {
+  static VarSymbol* valueOfConfigParam = nullptr;
+
+  // TODO: This is O(n) number of params, we need a better way to look
+  // things up after resolve. I think that 'dyno' can always do the
+  // elegant thing here. Just preserve the ID for 'ChapelBase', and then
+  // use it in conjunction with a lookup for the config name.
+  if (!valueOfConfigParam) {
+    auto configName = "legacyFirstClassFunctions";
+    form_Map(SymbolMapElem, e, paramMap) {
+      auto sym = e->key;
+      if (sym->defPoint && sym->defPoint->getModule() == baseModule) {
+        if (!strcmp(sym->name, configName)) {
+          valueOfConfigParam = toVarSymbol(e->value);
+          INT_ASSERT(valueOfConfigParam == gTrue ||
+                     valueOfConfigParam == gFalse);
+          break;
+        }
+      }
+    }
+  }
+
+  INT_ASSERT(valueOfConfigParam);
+  bool ret = (valueOfConfigParam == gTrue);
+  return ret;
+}
 
 static bool isConcreteIntentBlank(IntentTag tag, Type* t) {
   auto ret = concreteIntent(INTENT_BLANK, t) == concreteIntent(tag, t);
@@ -334,7 +368,36 @@ Expr* fcfRawFunctionPointerFromPrimCall(CallExpr* call) {
   return ret;
 }
 
-// TODO: Do we need to ensure the function is resolved first?
+static FcfFormalInfo extractFormalInfo(ArgSymbol* formal) {
+  const bool isAnonymous = formal->hasFlag(FLAG_ANONYMOUS_FORMAL);
+  FcfFormalInfo ret;
+
+  ret.type = formal->type;
+  ret.concreteIntent = formal->intent;
+  ret.name = isAnonymous ? nullptr : formal->cname;
+
+  return ret;
+}
+
+static FcfFormalInfo extractFormalInfoWithLegacyRules(ArgSymbol* formal) {
+  FcfFormalInfo ret;
+
+  ret.type = formal->type;
+  ret.concreteIntent = concreteIntent(INTENT_BLANK, ret.type);
+  ret.name = nullptr;
+
+  // Previously we did not warn and would just let the implementation
+  // break. We _could_ potentially error, but for now emit a warning.
+  if (!isConcreteIntentBlank(formal->intent, formal->type)) {
+    USR_WARN(formal, "the default intent for formal '%s' will be "
+                     "used instead of the specified intent '%s'",
+                     formal->name,
+                     intentToString(formal->intent));
+  }
+
+  return ret;
+}
+
 static const SharedFcfSuperInfo
 buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
   std::vector<FcfFormalInfo> formals;
@@ -343,11 +406,9 @@ buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
   bool throws = fn->throwsError();
 
   for_formals(formal, fn) {
-    const bool isAnonymous = formal->hasFlag(FLAG_ANONYMOUS_FORMAL);
-    FcfFormalInfo info;
-    info.type = formal->type;
-    info.concreteIntent = formal->intent;
-    info.name = isAnonymous ? nullptr : formal->cname;
+    auto info = legacyFirstClassFunctions()
+      ? extractFormalInfoWithLegacyRules(formal)
+      : extractFormalInfo(formal);
     formals.push_back(std::move(info));
   }
 
@@ -356,6 +417,7 @@ buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
   return ret;
 }
 
+// TODO: This has to have already been done elsewhere, right?
 static const char* intentToString(IntentTag tag) {
   switch (tag) {
     case INTENT_IN: return "in";
@@ -373,6 +435,7 @@ static const char* intentToString(IntentTag tag) {
   return nullptr;
 }
 
+// TODO: This has to have already been done elsewhere, right?
 static const char* typeToStringSpecializing(Type* t) {
   auto vt = t->getValType();
   if (vt == dtInt[INT_SIZE_DEFAULT]) return "int";
@@ -532,6 +595,13 @@ Type* fcfWrapperSuperTypeFromFuncFnCall(CallExpr* call) {
 }
 
 Type* fcfWrapperSuperTypeFromFnType(FnSymbol* fn) {
+  if (legacyFirstClassFunctions()) {
+    USR_FATAL(fn, "Syntax for constructing procedure types is not supported "
+                  "unless the 'legacyFirstClassFunctions' config param is "
+                  "set to 'false'");
+    return nullptr;
+  }
+
   INT_ASSERT(fn->hasFlag(FLAG_ANONYMOUS_FN));
   INT_ASSERT(fn->hasFlag(FLAG_NO_FN_BODY));
   if (!checkAndResolveFunction(fn, fn->defPoint)) return dtUnknown;

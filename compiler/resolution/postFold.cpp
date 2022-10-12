@@ -807,7 +807,8 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
           rhsSym == gUninstantiated) {
         paramMap.put(lhsSym, rhsSym);
 
-        lhsSym->defPoint->remove();
+        // Do not remove the definition point or we lose context.
+        // lhsSym->defPoint->remove();
 
         call->convertToNoop();
 
