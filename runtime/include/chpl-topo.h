@@ -51,6 +51,14 @@ int chpl_topo_getNumCPUsPhysical(chpl_bool /*accessible_only*/);
 int chpl_topo_getNumCPUsLogical(chpl_bool /*accessible_only*/);
 
 //
+// Fills the "cpus" array with up to "count" physical OS indices of the
+// accessible cores or PUs. If "physical" is true, then "cpus" contains
+// core indices, otherwise it contains PU indices. Returns the number
+// of indices in the "cpus" array.
+//
+int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count);
+
+//
 // how many NUMA domains are there?
 //
 int chpl_topo_getNumNumaDomains(void);
