@@ -1035,7 +1035,8 @@ module OS {
 
   private use CTypes;
   private use POSIX;
-  import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,ENOERR};
+  import SysBasic.{ESHUTDOWN,ENOERR};
+  import IO.{EFORMAT,ESHORT,EEOF};
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s
      generated from ``errorCode``. It provides factory methods to create

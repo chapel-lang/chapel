@@ -137,7 +137,7 @@ pragma "module included by default"
 module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
-  import SysBasic.{ENOERR, EFORMAT, EEOF};
+  import SysBasic.{ENOERR};
   use OS;
 
   // TODO -- this should probably be private
