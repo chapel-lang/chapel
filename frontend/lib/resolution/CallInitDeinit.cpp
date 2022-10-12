@@ -65,9 +65,19 @@ CallInitDeinit::CallInitDeinit(Resolver& resolver)
 {
 }
 
-void CallInitDeinit::addDeinitCalls(InitDeinitFrame& frame) {
-  for (auto varId : frame.vars) {
-    printf("deinit %s\n", varId.str().c_str());
+void CallInitDeinit::printActions(const std::vector<Action>& actions) {
+  for (auto act : actions) {
+    switch (act.action) {
+      case Action::COPY_INIT:
+        printf("copy-init %s\n", act.id.str().c_str());
+        break;
+      case Action::WRITE_BACK:
+        printf("writeback %s\n", act.id.str().c_str());
+        break;
+      case Action::DEINIT:
+        printf("deinit %s\n", act.id.str().c_str());
+        break;
+    }
   }
 }
 
@@ -75,7 +85,7 @@ void CallInitDeinit::enterScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
     printf("ENTER SCOPE %s\n", ast->id().str().c_str());
     const Scope* scope = scopeForId(context, ast->id());
-    scopeStack.push_back(InitDeinitFrame(scope));
+    scopeStack.push_back(ScopeFrame(scope));
   }
   /*if (auto d = ast->toDecl()) {
     declStack.push_back(d);
@@ -83,8 +93,10 @@ void CallInitDeinit::enterScope(const AstNode* ast) {
 }
 void CallInitDeinit::exitScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
-    addDeinitCalls(scopeStack.back());
     printf("EXIT SCOPE %s\n", ast->id().str().c_str());
+    ScopeFrame& frame = scopeStack.back();
+    printActions(frame.endOfScopeActions);
+
     assert(!scopeStack.empty());
     scopeStack.pop_back();
   }
@@ -104,8 +116,8 @@ void CallInitDeinit::exit(const VarLikeDecl* ast, RV& rv) {
   assert(!scopeStack.empty());
   if (!scopeStack.empty()) {
     printf("ADDING VARIABLE %s\n", ast->id().str().c_str());
-    InitDeinitFrame& frame = scopeStack.back();
-    frame.vars.push_back(ast->id());
+    ScopeFrame& frame = scopeStack.back();
+    frame.declaredVars.insert(ast);
   }
 
   exitScope(ast);
@@ -114,16 +126,25 @@ void CallInitDeinit::exit(const VarLikeDecl* ast, RV& rv) {
 // TODO: visit nested calls & record their IDs
 // in InitDeinitState to record required deinit actions
 
-bool CallInitDeinit::enter(const OpCall* ast, RV& rv) {
-  if (ast->op() == USTR("=")) {
-    // TODO: determine which of these cases it really is:
-    //  * assignment
-    //  * copy initialization
-    //  * move initialization
+bool CallInitDeinit::enter(const Call* ast, RV& rv) {
+
+  if (auto op = ast->toOpCall()) {
+    if (op->op() == USTR("=")) {
+      // TODO: determine which of these cases it really is:
+      //  * assignment
+      //  * copy initialization
+      //  * move initialization
+    }
   }
+
+  callStack.push_back(ast);
+
   return true;
 }
-void CallInitDeinit::exit(const OpCall* ast, RV& rv) {
+void CallInitDeinit::exit(const Call* ast, RV& rv) {
+  // handle in/out/inout temporaries for nested calls by adding
+  // to the call's CallFrame (which is currently at callStack.back()).
+  callStack.pop_back();
 }
 
 
