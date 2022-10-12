@@ -841,41 +841,6 @@ ModuleSymbol* buildModule(const char* name,
   return mod;
 }
 
-BlockStmt* buildIncludeModule(const char* name,
-                              bool priv,
-                              bool prototype) {
-  astlocT loc(chplLineno, yyfilename);
-  ModuleSymbol* mod = parseIncludedSubmodule(name);
-  INT_ASSERT(mod != NULL);
-
-  // check visibility specifiers
-  //
-  //  include public/default   +  declaration public/default -> OK, public
-  //  include public/default   +  declaration private        -> error
-  //  include private          +  declaration public/default -> OK, private
-  //  include private          +  declaration private        -> OK, private
-  //
-  if (priv && !mod->hasFlag(FLAG_PRIVATE)) {
-    // make the module private (override public)
-    mod->addFlag(FLAG_PRIVATE);
-  } else if (mod->hasFlag(FLAG_PRIVATE) && !priv) {
-    USR_FATAL_CONT(loc,
-          "cannot make a private module public through an include statement");
-    USR_PRINT(mod, "module declared private here");
-  }
-
-  if (prototype) {
-    USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
-    USR_PRINT(mod, "put prototype keyword at module declaration here");
-  }
-
-  if (fWarnUnstable && mod->modTag == MOD_USER) {
-    USR_WARN(loc, "module include statements are not yet stable and may change");
-  }
-
-  return buildChapelStmt(new DefExpr(mod));
-}
-
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
   if (exprs->argList.length == 0)
