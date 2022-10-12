@@ -340,6 +340,8 @@ int getCPUs(hwloc_cpuset_t cpuset, int *cpus, int size) {
 // of indices in the "cpus" array.
 //
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
+  // Initializes CPU information.
+  CHK_ERR(pthread_once(&numCPUs_ctrl, getNumCPUs) == 0);
   return getCPUs(physical ? physAccSet : logAccSet, cpus, count);
 }
 
