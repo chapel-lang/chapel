@@ -26,6 +26,8 @@ class VisibilityStmt;
 
 #include "symbol.h"
 
+extern bool fDetailedErrors;
+
 extern int         chplLineno;
 extern bool        chplParseString;
 extern const char* chplParseStringMsg;
