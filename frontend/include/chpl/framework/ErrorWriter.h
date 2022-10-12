@@ -158,17 +158,18 @@ errordetail::LocationOnly<T> locationOnly(T t) {
   information. It abstracts away writing code to output streams (in fact,
   some instances of ErrorWriterBase do not write to a stream at all),
   and provides functionality like printing and underlining code. The way
-  data is formatted when fed to the various printing functions like ::heading
-  and ::message is specified by specializations of the errordetail::Writer
-  class.
+  data is formatted when fed to the various printing functions like
+  ErrorWriterBase::heading and ErrorWriterBase::message is specified by
+  specializations of the errordetail::Writer class.
 
-  The ErrorWriterBase expects that the ::heading function be called first
-  by every error message; this function serves the double purpose of printing
-  out the error heading, as well as setting the error message's location.
+  The ErrorWriterBase expects that the ErrorWriterBase::heading function be
+  called first by every error message; this function serves the double purpose
+  of printing out the error heading, as well as setting the error message's
+  location.
  */
 class ErrorWriterBase {
  public:
-   /** The style of error reporting that the ErrorWriter should produce. */
+   /** The style of error reporting that the ErrorWriterBase should produce. */
   enum OutputFormat {
     /** Specify that all information about the error should be printed. */
     DETAILED,
@@ -223,7 +224,7 @@ class ErrorWriterBase {
 
   /**
     Prints the lines of code associated with the given location. Additional
-    locations provided via ::toHighlight field are underlined when the
+    locations provided via \p toHighlight parameter are underlined when the
     code is printed.
    */
   virtual void writeCode(const Location& place,
@@ -289,7 +290,7 @@ class ErrorWriterBase {
 
   /**
     Prints the lines of code associated with the given location. Additional
-    locations provided via ::toHighlight field are underlined when the
+    locations provided via \p toHighlight field are underlined when the
     code is printed.
 
     This function accepts any type for which location can be inferred,
