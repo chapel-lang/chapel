@@ -17,25 +17,13 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
+
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-#include "common.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace types;
-using namespace uast;
 
 // error handler that causes the test to fail if it runs
 static void reportError(Context* context, const ErrorBase* err) {

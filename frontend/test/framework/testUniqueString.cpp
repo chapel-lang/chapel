@@ -17,21 +17,17 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
+
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/global-strings.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
 
 #include <chrono>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <iostream>
-#include <cassert>
 
 using namespace chpl;
 

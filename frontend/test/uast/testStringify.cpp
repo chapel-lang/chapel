@@ -17,9 +17,8 @@
  * limitations under the License.
  */
 
-#include <climits>
-#include <map>
-#include <vector>
+#include "test-common.h"
+
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/UniqueString.h"
@@ -27,11 +26,9 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
+#include <climits>
+#include <map>
+#include <vector>
 
 using namespace chpl;
 using namespace uast;

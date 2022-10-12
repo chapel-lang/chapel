@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
+
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -24,18 +26,6 @@
 #include "chpl/uast/Call.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace uast;
 
 static UniqueString nameForAst(const AstNode* ast) {
   UniqueString empty;

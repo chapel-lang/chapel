@@ -16,33 +16,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/Module.h"
-#include "chpl/uast/Record.h"
-#include "chpl/uast/Variable.h"
 
-using namespace chpl;
+#ifndef TEST_RESOLUTION_H
+#define TEST_RESOLUTION_H
+
+#include "test-parsing.h"
+
+#include "chpl/types/QualifiedType.h"
+
+// forward declare classes and namespaces
+namespace chpl {
+  namespace resolution {
+  }
+  namespace types {
+  }
+}
+
 using namespace resolution;
 using namespace types;
-using namespace uast;
-
-// Get the top-level module resulting from parsing the given string.
-const Module* parseModule(Context* context, std::string src);
 
 // assumes the last statement is a variable declaration for x
 // with an initialization expression.
 // Returns the type of the initializer expression.
-QualifiedType
-resolveTypeOfXInit(Context* context, std::string program, bool requireTypeKnown = true);
+QualifiedType resolveTypeOfXInit(Context* context,
+                                 std::string program,
+                                 bool requireTypeKnown = true);
 
-QualifiedType
-resolveQualifiedTypeOfX(Context* context, std::string program);
+QualifiedType resolveQualifiedTypeOfX(Context* context, std::string program);
 
-const Type*
-resolveTypeOfX(Context* context, std::string program);
+const Type* resolveTypeOfX(Context* context, std::string program);
 
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
 #endif

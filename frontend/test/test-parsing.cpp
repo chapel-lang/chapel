@@ -17,30 +17,16 @@
  * limitations under the License.
  */
 
-#include "test-resolution.h"
+#include "test-parsing.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/Module.h"
-#include "chpl/uast/Record.h"
-#include "chpl/uast/Variable.h"
 
-static void test1() {
-  Context ctx;
-  auto context = &ctx;
-  auto qt = resolveQualifiedTypeOfX(context,
-                             R""""(
-                               var x: bool = true;
-                             )"""");
-  qt.dump();
-  assert(qt.kind() == QualifiedType::VAR);
-  assert(qt.type()->isBoolType());
-}
+const Module* parseModule(Context* context, std::string src) {
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(src));
 
-int main() {
-    test1();
-    return 0;
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+
+  return vec[0];
 }

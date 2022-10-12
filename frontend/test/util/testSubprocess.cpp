@@ -17,14 +17,9 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
+
 #include "chpl/util/subprocess.h"
-
-#include <cassert>
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
 
 using namespace chpl;
 

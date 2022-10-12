@@ -17,23 +17,11 @@
  * limitations under the License.
  */
 
+#include "test-parsing.h"
+
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Include.h"
 #include "chpl/uast/Module.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace uast;
 
 static void test1() {
   printf("test1\n");

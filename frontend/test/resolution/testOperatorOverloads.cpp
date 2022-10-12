@@ -17,14 +17,7 @@
  * limitations under the License.
  */
 
-#include "common.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
+#include "test-resolution.h"
 
 // basic definition tests with cast operator
 static void test1() {

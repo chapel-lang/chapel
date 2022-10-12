@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-parsing.h"
+
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
 #include "chpl/uast/BytesLiteral.h"
@@ -24,17 +26,6 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/StringLiteral.h"
 #include "chpl/uast/Variable.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace uast;
-using namespace parsing;
 
 static uast::BuilderResult parseExprAsVarInit(Parser* parser,
                                               const std::string& testname,

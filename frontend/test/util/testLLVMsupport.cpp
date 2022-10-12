@@ -17,15 +17,9 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
+
 #include "llvm/Support/FileSystem.h"
-
-#include <cassert>
-
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
 
 // Filesystem create/delete works from LLVM support library.
 static void test1() {

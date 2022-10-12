@@ -16,7 +16,7 @@
 # limitations under the License.
 
 # define target for the common code for all dyno tests
-add_library(tests-common OBJECT common.cpp)
+add_library(tests-common OBJECT test-parsing.cpp test-resolution.cpp)
 target_link_libraries(tests-common libdyno)
 
 add_custom_target(tests)

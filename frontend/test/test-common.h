@@ -17,30 +17,14 @@
  * limitations under the License.
  */
 
-#include "test-resolution.h"
+#ifndef TEST_COMMON_H
+#define TEST_COMMON_H
 
-#include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/Module.h"
-#include "chpl/uast/Record.h"
-#include "chpl/uast/Variable.h"
+// always check assertions in the tests
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 
-static void test1() {
-  Context ctx;
-  auto context = &ctx;
-  auto qt = resolveQualifiedTypeOfX(context,
-                             R""""(
-                               var x: bool = true;
-                             )"""");
-  qt.dump();
-  assert(qt.kind() == QualifiedType::VAR);
-  assert(qt.type()->isBoolType());
-}
+#include <cassert>
 
-int main() {
-    test1();
-    return 0;
-}
+#endif

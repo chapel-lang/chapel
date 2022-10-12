@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
+
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/Location.h"
@@ -26,11 +28,6 @@
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
 
 using namespace chpl;
 using namespace uast;
