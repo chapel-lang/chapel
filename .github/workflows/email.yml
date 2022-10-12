@@ -2,7 +2,7 @@ name: email
 
 on:
   pull_request_target:
-     types: edited
+    # types: edited
         
 jobs:
   
