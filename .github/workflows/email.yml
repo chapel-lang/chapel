@@ -3,7 +3,7 @@ name: email
 on:
   push:
     branches:
-      - main 
+     # - main 
       
 jobs:
   
