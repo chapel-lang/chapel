@@ -12,6 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     # Set to use the Email repository enviroment secretes 
     environment: Email
+    
+    env:
+      SERVER: ${{secrets.EMAIL_SERVER}}
+      EMAIL: ${{secrets.EMAIL_USER}}
+      PASSWORD: ${{secrets.EMAIL_PASSWORD}}   
+      
     steps:
      
       - name: print git events
@@ -45,7 +51,7 @@ jobs:
         with:
    
            # Required mail server address if not connection_url:
-           server_address: ${{ secrets.EMAIL_SERVER}}
+           server_address: $SERVER
            server_port: 465
            # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
