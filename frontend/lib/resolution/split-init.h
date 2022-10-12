@@ -17,17 +17,23 @@
  * limitations under the License.
  */
 
-#ifndef CALL_INIT_DEINIT_H
-#define CALL_INIT_DEINIT_H
+#ifndef SPLIT_INIT_H
+#define SPLIT_INIT_H
+
+#include "chpl/framework/ID.h"
+
+#include <set>
 
 namespace chpl {
 namespace resolution {
 
+
 class Resolver;
 
-/* Add calls to default init, copy init, deinit, etc to the Resolver's
-   results after analyzing for split-init and copy-elision. */
-void callInitDeinit(Resolver& resolver);
+/* Computes the set of variable IDs which will use split init
+   when being initialized. */
+std::set<ID> computeSplitInits(Resolver& resolver);
+
 
 } // end namespace resolution
 } // end namespace chpl

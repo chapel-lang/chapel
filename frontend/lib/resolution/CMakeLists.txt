@@ -30,5 +30,6 @@ target_sources(libdyno-obj
                resolution-types.cpp
                scope-queries.cpp
                scope-types.cpp
+               split-init.cpp
 
               )

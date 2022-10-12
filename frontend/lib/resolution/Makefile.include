@@ -33,6 +33,7 @@ FRONTEND_RESOLUTION_SRCS =                          \
            resolution-types.cpp                     \
            scope-queries.cpp                        \
            scope-types.cpp                          \
+           split-init.cpp                           \
 
 
 SRCS = $(FRONTEND_RESOLUTION_SRCS)
