@@ -1,9 +1,9 @@
 name: email
 
 on:
-  push:
-
-      
+  pull_request_target:
+     types: [closed,opened]
+     # - closed      
 jobs:
   
   
