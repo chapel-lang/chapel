@@ -127,9 +127,6 @@ void setHome(const ArgumentDescription* desc, const char* arg) {
 #define DRIVER_ARG_HELP_SETTINGS \
   {"help-settings", ' ', NULL, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue}
 
-#define DRIVER_ARG_LICENSE \
-  {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL}
-
 #define DRIVER_ARG_HOME \
   {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome}
 
