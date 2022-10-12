@@ -230,25 +230,25 @@ class GeneralError : public BasicError {
 // macro to generate class declarations for each error. This way, the only
 // steps needed to add a new error are to add a line to error-classes-list.h,
 // and to implement the new error classes' ::write method.
-#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...)\
-  class Error##NAME : public ErrorBase {\
+#define DIAGNOSTIC_CLASS(NAME__, KIND__, EINFO__...)\
+  class Error##NAME__ : public ErrorBase {\
    private:\
-    using ErrorInfo = std::tuple<EINFO>;\
+    using ErrorInfo = std::tuple<EINFO__>;\
     ErrorInfo info;\
 \
-    Error##NAME(ErrorInfo info) :\
-      ErrorBase(KIND, NAME), info(std::move(info)) {}\
+    Error##NAME__(ErrorInfo info) :\
+      ErrorBase(KIND__, NAME__), info(std::move(info)) {}\
 \
-    static const owned<Error##NAME>&\
-    getError##NAME(Context* context, ErrorInfo info);\
+    static const owned<Error##NAME__>&\
+    getError##NAME__(Context* context, ErrorInfo info);\
    protected:\
     bool contentsMatchInner(const ErrorBase* other) const override {\
-      auto otherCast = static_cast<const Error##NAME*>(other);\
+      auto otherCast = static_cast<const Error##NAME__*>(other);\
       return info == otherCast->info;\
     }\
    public:\
-    ~Error##NAME() = default;\
-    static const Error##NAME* get(Context* context, ErrorInfo info);\
+    ~Error##NAME__() = default;\
+    static const Error##NAME__* get(Context* context, ErrorInfo info);\
 \
     void write(ErrorWriterBase& writer) const override;\
     void mark(Context* context) const override {\
@@ -267,8 +267,8 @@ class GeneralError : public BasicError {
   This macro takes care of packaging the error information into a tuple;
   it's sufficient to provide it via varargs.
  */
-#define REPORT(CONTEXT, NAME, EINFO...)\
-  context->report(Error##NAME::get(CONTEXT, std::make_tuple(EINFO)))
+#define REPORT(CONTEXT__, NAME__, EINFO__...)\
+  CONTEXT__->report(Error##NAME__::get(CONTEXT__, std::make_tuple(EINFO__)))
 
 template <>
 struct stringify<chpl::ErrorBase::Kind> {

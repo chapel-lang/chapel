@@ -119,6 +119,8 @@ struct Visitor {
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
   void checkLambdaReturnIntent(const Function* node);
+  void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
+  void checkProcDefFormalsAreNamed(const Function* node);
 
   /*
   TODO
@@ -148,6 +150,7 @@ struct Visitor {
   void visit(const Variable* node);
   void visit(const TypeQuery* node);
   void visit(const Function* node);
+  void visit(const FunctionSignature* node);
   void visit(const Union* node);
 };
 
@@ -653,6 +656,27 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
   }
 }
 
+void
+Visitor::checkProcTypeFormalsAreAnnotated(const FunctionSignature* node) {
+  bool isProcType = !parent() || !parent()->isFunction();
+  if (!isProcType) return;
+
+  for (auto ast : node->formals())
+    if (auto anon = ast->toAnonFormal())
+      REPORT(context_, ProcTypeUnannotatedFormal, node, anon);
+}
+
+void Visitor::checkProcDefFormalsAreNamed(const Function* node) {
+  for (auto ast : node->formals()) {
+    assert(!ast->isAnonFormal());
+
+    // All procedure formals must have names.
+    if (auto formal = ast->toFormal())
+      if (formal->isExplicitlyAnonymous())
+        REPORT(context_, ProcDefExplicitAnonFormal, node, formal);
+  }
+}
+
 void Visitor::checkPrivateDecl(const Decl* node) {
   if (node->visibility() != Decl::PRIVATE) return;
 
@@ -834,6 +858,11 @@ void Visitor::visit(const Function* node) {
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
   checkLambdaReturnIntent(node);
+  checkProcDefFormalsAreNamed(node);
+}
+
+void Visitor::visit(const FunctionSignature* node) {
+  checkProcTypeFormalsAreAnnotated(node);
 }
 
 void Visitor::visit(const Union* node) {

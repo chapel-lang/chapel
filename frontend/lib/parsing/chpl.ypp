@@ -487,7 +487,7 @@
 %type <returnTag>  opt_ret_tag
 %type <astTag> class_tag
 
-%type <uniqueStr> ident_use ident_def reserved_word_ident
+%type <uniqueStr> ident_use ident_def reserved_word_ident formal_ident_def
 %type <uniqueStr> internal_type_ident_def reserved_type_ident_use
 %type <uniqueStr> fn_ident assignop_ident op_ident all_op_name opt_label_ident
 %type <uniqueStr> implements_type_ident implements_type_error_ident
@@ -2249,6 +2249,7 @@ lambda_decl_start:
 
 lambda_decl_expr:
   lambda_decl_start req_formal_ls opt_ret_tag opt_type
+  opt_throws_error
   opt_lifetime_where
     {
       context->clearComments();
@@ -2262,11 +2263,11 @@ lambda_decl_expr:
       fp.formals = $2;
       fp.returnIntent = $3;
       fp.returnType = $4;
-      WhereAndLifetime wl = $5;
-      fp.body = $7;
-
+      fp.throws = ($5 == ThrowsTag_THROWS);
+      WhereAndLifetime wl = $6;
       fp.lifetime = wl.lifetime;
       fp.where = wl.where;
+      fp.body = $8;
 
       context->clearComments();
       context->exitScope(asttags::Function, STR("lambda"));
@@ -2331,7 +2332,7 @@ fn_type:
     fp.formals = $2;
     fp.returnIntent = $4;
     fp.returnType = $5;
-    fp.throws = ($6 == ThrowsTag_THROWS) ? true : false;
+    fp.throws = ($6 == ThrowsTag_THROWS);
     fp.body = nullptr;
     fp.comments = nullptr;
     fp.attributes = nullptr;
@@ -2399,7 +2400,7 @@ fn_decl_stmt:
     FunctionParts fp = $1;
     fp.returnIntent = $2;
     fp.returnType = $3;
-    fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
+    fp.throws = ($4 == ThrowsTag_THROWS);
     WhereAndLifetime wl = $5;
     fp.body = $7;
     fp.lifetime = wl.lifetime;
@@ -2572,30 +2573,38 @@ formal:
   named_formal
 ;
 
+formal_ident_def:
+  ident_def
+| TUNDERSCORE
+;
+
 named_formal:
-  opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
+  opt_formal_intent_tag formal_ident_def opt_colon_formal_type opt_init_expr
   {
     $$ = context->buildFormal(@$, $1, $2, $3, $4);
   }
-| pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
+| pragma_ls opt_formal_intent_tag formal_ident_def opt_colon_formal_type
+  opt_init_expr
   {
     $$ = context->buildFormal(@$, $2, $3, $4, $5, true);
   }
-| opt_formal_intent_tag ident_def opt_colon_formal_type formal_var_arg_expr
+| opt_formal_intent_tag formal_ident_def opt_colon_formal_type
+  formal_var_arg_expr
   {
     $$ = context->buildVarArgFormal(@$, $1, $2, $3, $4);
   }
-| pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type formal_var_arg_expr
+| pragma_ls opt_formal_intent_tag formal_ident_def opt_colon_formal_type
+  formal_var_arg_expr
   {
     $$ = context->buildVarArgFormal(@$, $2, $3, $4, $5, true);
   }
-| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type
-  opt_init_expr
+| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP
+  opt_colon_formal_type opt_init_expr
   {
     $$ = context->buildTupleFormal(@$, $1, $3, $5, $6);
   }
-| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type
-  formal_var_arg_expr
+| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP
+  opt_colon_formal_type formal_var_arg_expr
   {
     $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
   }

@@ -1078,7 +1078,7 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
                              Function::LAMBDA,
                              /* receiver */ nullptr,
                              fp.returnIntent,
-                             /* throws */ false,
+                             fp.throws,
                              /* primaryMethod */ false,
                              /* parenless */ false,
                              this->consumeList(fp.formals),

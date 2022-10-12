@@ -38,6 +38,18 @@ ERROR_CLASS(PrototypeInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(MissingInclude, const uast::Include*, std::string)
 ERROR_CLASS(Redefinition, const uast::NamedDecl*, std::vector<ID>)
 ERROR_CLASS(AmbiguousConfigName, std::string, const uast::Variable*, ID)
-ERROR_CLASS(AmbiguousConfigSet, const uast::Variable*, std::string, std::string)
+ERROR_CLASS(AmbiguousConfigSet,
+    const uast::Variable*,
+    std::string,
+    std::string)
 WARNING_CLASS(ImplicitSubModule, const uast::Module*, UniqueString)
-WARNING_CLASS(ImplicitFileModule, const uast::AstNode*, const uast::Module*, const uast::Module*)
+WARNING_CLASS(ImplicitFileModule,
+    const uast::AstNode*,
+    const uast::Module*,
+    const uast::Module*)
+ERROR_CLASS(ProcTypeUnannotatedFormal,
+    const uast::FunctionSignature*,
+    const uast::AnonFormal*)
+ERROR_CLASS(ProcDefExplicitAnonFormal,
+    const uast::Function*,
+    const uast::Formal*)

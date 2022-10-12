@@ -21,6 +21,7 @@ target_sources(libdyno-obj
                compiler-configuration.cpp
                Context.cpp
                ErrorBase.cpp
+               error-classes-list.cpp
                ErrorMessage.cpp
                ErrorWriter.cpp
                ID.cpp
