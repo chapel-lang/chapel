@@ -3,9 +3,8 @@ name: email
 on:
   push:
   pull_request:
-      types: edited
-  pull_request_target:
-    # types: edited
+      types: closed
+ 
         
 jobs:
   
