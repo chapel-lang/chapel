@@ -19,13 +19,13 @@
 
 #include "call-init-deinit.h"
 
-#include "split-init.h"
 #include "Resolver.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/split-init.h"
 #include "chpl/uast/all-uast.h"
 
 namespace chpl {

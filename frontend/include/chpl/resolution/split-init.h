@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef SPLIT_INIT_H
-#define SPLIT_INIT_H
+#ifndef CHPL_RESOLUTION_SPLIT_INIT_H
+#define CHPL_RESOLUTION_SPLIT_INIT_H
 
 #include "chpl/framework/ID.h"
 #include "chpl/resolution/resolution-types.h"

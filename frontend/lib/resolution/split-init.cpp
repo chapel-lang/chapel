@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "split-init.h"
+#include "chpl/resolution/split-init.h"
 
 #include "Resolver.h"
 
