@@ -2,8 +2,8 @@ name: email
 
 on:
   pull_request_target:
-     types: [closed,opened,edited]
-     # - closed      
+     types: edited
+        
 jobs:
   
   
