@@ -76,7 +76,6 @@ bool fPrintCopyright = false;
 bool fPrintHelp = false;
 bool fPrintEnvHelp = false;
 bool fPrintSettingsHelp = false;
-bool fPrintLicense = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
 
@@ -165,7 +164,6 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_HELP_SETTINGS,
  DRIVER_ARG_VERSION,
  DRIVER_ARG_COPYRIGHT,
- DRIVER_ARG_LICENSE,
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
  DRIVER_ARG_HOME,
  DRIVER_ARG_PRINT_CHPL_HOME,
@@ -206,16 +204,6 @@ static void printStuff(const char* argv0, void* mainAddr) {
     fPrintCopyright  = true;
     printedSomething = true;
     shouldExit       = true;
-  }
-
-  if (fPrintLicense) {
-    fprintf(stdout,
-#include "LICENSE"
-            );
-
-    fPrintCopyright  = false;
-    shouldExit       = true;
-    printedSomething = true;
   }
 
   if (fPrintCopyright) {
@@ -2011,7 +1999,6 @@ struct Args {
   std::vector<std::string> files;
   bool printSystemCommands = false;
   bool noHTML = false;
-  std::string chplHome;
 };
 
 static Args parseArgs(int argc, char **argv, void* mainAddr) {
@@ -2096,9 +2083,15 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 
 int main(int argc, char** argv) {
   // initial value of CHPL_HOME may be overridden by cmdline arg
-  CHPL_HOME = getenv("CHPL_HOME");
+  if (getenv("CHPL_HOME") != NULL) {
+    CHPL_HOME = getenv("CHPL_HOME");
+  }
   Args args = parseArgs(argc, argv, (void*)main);
-
+  if (CHPL_HOME.empty()) {
+    fprintf(stderr, "CHPL_HOME not set. Please set CHPL_HOME or pass a value "
+                     "using the --home option\n" );
+    clean_exit(1);
+  }
   // TODO: there is a future for this, asking for a better error message and I
   // think we can provide it by checking here.
   // see test/chpldoc/compflags/folder/save-sphinx/saveSphinxInDocs.doc.future
