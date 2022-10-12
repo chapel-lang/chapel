@@ -18,7 +18,10 @@ jobs:
       - name: print git events
         run:  cat "$GITHUB_EVENT_PATH" 
            
-        
+      - if_merged:
+         if: github.event.pull_request.merged == true
+         run:  echo The PR was merged  
+         
       - name: print GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
