@@ -17,9 +17,7 @@ jobs:
      
       - name: print git events
         run:  cat "$GITHUB_EVENT_PATH" 
-
-      - name: print git event merge status
-        run: echo "$github.event.pull_request.merged == false"       
+           
         
       - name: print GitHub context
         env:
