@@ -365,9 +365,16 @@ static bool doLookupInImports(Context* context,
           newConfig |= LOOKUP_INNERMOST;
         }
 
-        // find it in that scope
-        found |= doLookupInScope(context, symScope, nullptr, resolving, from,
-                                 newConfig, checkedScopes, result);
+        // If the whole module is being renamed, still search for the original
+        // name within the module. Otherwise, search for the name that our
+        // target was renamed from.
+        UniqueString nameToLookUp = from;
+        if (is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
+          nameToLookUp = name;
+        }
+
+        found |= doLookupInScope(context, symScope, nullptr, resolving,
+                                 nameToLookUp, newConfig, checkedScopes, result);
       }
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {

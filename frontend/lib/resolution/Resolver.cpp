@@ -1807,6 +1807,10 @@ bool Resolver::enter(const Range* range) {
   return true;
 }
 void Resolver::exit(const Range* range) {
+  if (scopeResolveOnly) {
+    return;
+  }
+
   // For the time being, we're resolving ranges by manually finding the record
   // and instantiating it appropriately. However, long-term, range literals
   // should be equivalent to a call to chpl_build_bounded_range. The resolver
