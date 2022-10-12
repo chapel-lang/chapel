@@ -118,445 +118,445 @@
     "compiler/codegen/mli.cpp"
   ],
   "a7eb801c-f560-11eb-bb15-35b7469d4b43": [
-    "compiler/dyno/README"
+    "frontend/README"
   ],
   "92d71e1a-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/framework/Context-detail.h"
+    "frontend/include/chpl/framework/Context-detail.h"
   ],
   "7bff0162-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/framework/Context.h"
+    "frontend/include/chpl/framework/Context.h"
   ],
   "8cade56e-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/framework/ErrorMessage.h"
+    "frontend/include/chpl/framework/ErrorMessage.h"
   ],
   "7a8e3a00-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/framework/UniqueString.h"
+    "frontend/include/chpl/framework/UniqueString.h"
   ],
   "9a17c742-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/framework/all-global-strings.h"
+    "frontend/include/chpl/framework/all-global-strings.h"
   ],
   "a1dfe432-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/framework/global-strings.h"
+    "frontend/include/chpl/framework/global-strings.h"
   ],
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/framework/stringify-functions.h"
+    "frontend/include/chpl/framework/stringify-functions.h"
   ],
   "b6b773fa-e3ab-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/parsing/parser-stats.h"
+    "frontend/include/chpl/parsing/parser-stats.h"
   ],
   "7fabd8d0-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/AnyType.h"
+    "frontend/include/chpl/types/AnyType.h"
   ],
   "a8a34048-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/BoolType.h"
+    "frontend/include/chpl/types/BoolType.h"
   ],
   "8ee06334-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/BuiltinType.h"
+    "frontend/include/chpl/types/BuiltinType.h"
   ],
   "e045c08a-9f6f-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/CStringType.h"
+    "frontend/include/chpl/types/CStringType.h"
   ],
   "092689de-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/ComplexType.h"
+    "frontend/include/chpl/types/ComplexType.h"
   ],
   "9ae680c8-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/CompositeType.h"
+    "frontend/include/chpl/types/CompositeType.h"
   ],
   "9dba0644-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/ErroneousType.h"
+    "frontend/include/chpl/types/ErroneousType.h"
   ],
   "7d5a9986-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/ImagType.h"
+    "frontend/include/chpl/types/ImagType.h"
   ],
   "e9f785aa-9f6f-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/IntType.h"
+    "frontend/include/chpl/types/IntType.h"
   ],
   "0a7c5278-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/NothingType.h"
+    "frontend/include/chpl/types/NothingType.h"
   ],
   "894be330-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/Param.h"
+    "frontend/include/chpl/types/Param.h"
   ],
   "e5093692-9f6f-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/ParamTag.h"
+    "frontend/include/chpl/types/ParamTag.h"
   ],
   "082123be-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/QualifiedType.h"
+    "frontend/include/chpl/types/QualifiedType.h"
   ],
   "a9aa4b58-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/RealType.h"
+    "frontend/include/chpl/types/RealType.h"
   ],
   "16268030-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/UnknownType.h"
+    "frontend/include/chpl/types/UnknownType.h"
   ],
   "8085b514-9f70-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/VoidType.h"
+    "frontend/include/chpl/types/VoidType.h"
   ],
   "111b0bc4-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/types/type-classes-list.h"
+    "frontend/include/chpl/types/type-classes-list.h"
   ],
   "b2d3a318-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/ASTTypes.h"
+    "frontend/include/chpl/uast/ASTTypes.h"
   ],
   "c6d33490-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/AggregateDecl.h"
+    "frontend/include/chpl/uast/AggregateDecl.h"
   ],
   "398ec004-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Array.h"
+    "frontend/include/chpl/uast/Array.h"
   ],
   "ca94ec3c-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/As.h"
+    "frontend/include/chpl/uast/As.h"
   ],
   "c33f61fa-e3ab-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/uast/AstList.h"
+    "frontend/include/chpl/uast/AstList.h"
   ],
   "c4ce7bbe-e3ab-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/uast/AstNode.h"
+    "frontend/include/chpl/uast/AstNode.h"
   ],
   "d743109e-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Begin.h"
+    "frontend/include/chpl/uast/Begin.h"
   ],
   "f36f73b6-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/BlockStyle.h"
+    "frontend/include/chpl/uast/BlockStyle.h"
   ],
   "3a4a084a-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/BoolLiteral.h"
+    "frontend/include/chpl/uast/BoolLiteral.h"
   ],
   "ed23284e-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/BracketLoop.h"
+    "frontend/include/chpl/uast/BracketLoop.h"
   ],
   "358c21ae-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Break.h"
+    "frontend/include/chpl/uast/Break.h"
   ],
   "4a72881e-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/BuilderResult.h"
+    "frontend/include/chpl/uast/BuilderResult.h"
   ],
   "09cc7194-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/BytesLiteral.h"
+    "frontend/include/chpl/uast/BytesLiteral.h"
   ],
   "d56e1494-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/CStringLiteral.h"
+    "frontend/include/chpl/uast/CStringLiteral.h"
   ],
   "3aae948c-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Catch.h"
+    "frontend/include/chpl/uast/Catch.h"
   ],
   "f6c35dca-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Class.h"
+    "frontend/include/chpl/uast/Class.h"
   ],
   "d0f16e38-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Cobegin.h"
+    "frontend/include/chpl/uast/Cobegin.h"
   ],
   "3e40f74c-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Coforall.h"
+    "frontend/include/chpl/uast/Coforall.h"
   ],
   "26bbfbfe-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Conditional.h"
+    "frontend/include/chpl/uast/Conditional.h"
   ],
   "0163ea46-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Continue.h"
+    "frontend/include/chpl/uast/Continue.h"
   ],
   "22c5fcf2-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Decl.h"
+    "frontend/include/chpl/uast/Decl.h"
   ],
   "fc6af246-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Defer.h"
+    "frontend/include/chpl/uast/Defer.h"
   ],
   "f1585970-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Delete.h"
+    "frontend/include/chpl/uast/Delete.h"
   ],
   "ded2da32-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/DoWhile.h"
+    "frontend/include/chpl/uast/DoWhile.h"
   ],
   "4bb86216-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Domain.h"
+    "frontend/include/chpl/uast/Domain.h"
   ],
   "c15a9aee-e3ab-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/uast/EmptyStmt.h"
+    "frontend/include/chpl/uast/EmptyStmt.h"
   ],
   "bb77b0c6-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Enum.h"
+    "frontend/include/chpl/uast/Enum.h"
   ],
   "cc832ba2-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/EnumElement.h"
+    "frontend/include/chpl/uast/EnumElement.h"
   ],
   "b9e8cbd2-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/ErroneousExpression.h"
+    "frontend/include/chpl/uast/ErroneousExpression.h"
   ],
   "f38e8b92-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/ExternBlock.h"
+    "frontend/include/chpl/uast/ExternBlock.h"
   ],
   "2fe3c446-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/FnCall.h"
+    "frontend/include/chpl/uast/FnCall.h"
   ],
   "c8b99538-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/For.h"
+    "frontend/include/chpl/uast/For.h"
   ],
   "c8b99539-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Forall.h"
+    "frontend/include/chpl/uast/Forall.h"
   ],
   "bb35557e-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Foreach.h"
+    "frontend/include/chpl/uast/Foreach.h"
   ],
   "ed76a74a-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Formal.h"
+    "frontend/include/chpl/uast/Formal.h"
   ],
   "df9b832a-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/ForwardingDecl.h"
+    "frontend/include/chpl/uast/ForwardingDecl.h"
   ],
   "e35a9ff0-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Function.h"
+    "frontend/include/chpl/uast/Function.h"
   ],
   "cfbceba0-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Identifier.h"
+    "frontend/include/chpl/uast/Identifier.h"
   ],
   "315b55b8-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/ImagLiteral.h"
+    "frontend/include/chpl/uast/ImagLiteral.h"
   ],
   "0b03fc3c-e553-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/uast/Implements.h"
+    "frontend/include/chpl/uast/Implements.h"
   ],
   "373799b6-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Import.h"
+    "frontend/include/chpl/uast/Import.h"
   ],
   "2cb7747a-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Include.h"
+    "frontend/include/chpl/uast/Include.h"
   ],
   "c010ed0a-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/IndexableLoop.h"
+    "frontend/include/chpl/uast/IndexableLoop.h"
   ],
   "32ad6e7e-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/IntLiteral.h"
+    "frontend/include/chpl/uast/IntLiteral.h"
   ],
   "e9ef4e78-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/IntentList.h"
+    "frontend/include/chpl/uast/IntentList.h"
   ],
   "06d28642-e553-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/uast/Interface.h"
+    "frontend/include/chpl/uast/Interface.h"
   ],
   "0c514296-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Label.h"
+    "frontend/include/chpl/uast/Label.h"
   ],
   "2e59a00e-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Let.h"
+    "frontend/include/chpl/uast/Let.h"
   ],
   "3327c724-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Local.h"
+    "frontend/include/chpl/uast/Local.h"
   ],
   "25416ab6-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Manage.h"
+    "frontend/include/chpl/uast/Manage.h"
   ],
   "bf51d6dc-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Module.h"
+    "frontend/include/chpl/uast/Module.h"
   ],
   "4e749aec-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/MultiDecl.h"
+    "frontend/include/chpl/uast/MultiDecl.h"
   ],
   "c2094ef0-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/NamedDecl.h"
+    "frontend/include/chpl/uast/NamedDecl.h"
   ],
   "c461eff4-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/New.h"
+    "frontend/include/chpl/uast/New.h"
   ],
   "52dcfb24-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/NumericLiteral.h"
+    "frontend/include/chpl/uast/NumericLiteral.h"
   ],
   "2fc07314-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/On.h"
+    "frontend/include/chpl/uast/On.h"
   ],
   "cdf2efbe-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/OpCall.h"
+    "frontend/include/chpl/uast/OpCall.h"
   ],
   "2b010178-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Pragma.h"
+    "frontend/include/chpl/uast/Pragma.h"
   ],
   "ef4d808e-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/PrimCall.h"
+    "frontend/include/chpl/uast/PrimCall.h"
   ],
   "d0f16e39-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Range.h"
+    "frontend/include/chpl/uast/Range.h"
   ],
   "fe2ad90c-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/RealLiteral.h"
+    "frontend/include/chpl/uast/RealLiteral.h"
   ],
   "e9ef4e79-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Record.h"
+    "frontend/include/chpl/uast/Record.h"
   ],
   "06d28643-e553-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/include/chpl/uast/Reduce.h"
+    "frontend/include/chpl/uast/Reduce.h"
   ],
   "a074aca8-9f80-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Require.h"
+    "frontend/include/chpl/uast/Require.h"
   ],
   "ded2da33-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Return.h"
+    "frontend/include/chpl/uast/Return.h"
   ],
   "cc49bb0c-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Scan.h"
+    "frontend/include/chpl/uast/Scan.h"
   ],
   "c1821d12-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Select.h"
+    "frontend/include/chpl/uast/Select.h"
   ],
   "3f2f81e6-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Serial.h"
+    "frontend/include/chpl/uast/Serial.h"
   ],
   "c4ba33ac-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/SimpleBlockLike.h"
+    "frontend/include/chpl/uast/SimpleBlockLike.h"
   ],
   "e2ddb174-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/StringLikeLiteral.h"
+    "frontend/include/chpl/uast/StringLikeLiteral.h"
   ],
   "388ac7a6-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/StringLiteral.h"
+    "frontend/include/chpl/uast/StringLiteral.h"
   ],
   "35a13476-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Sync.h"
+    "frontend/include/chpl/uast/Sync.h"
   ],
   "dcd1606e-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/TaskVar.h"
+    "frontend/include/chpl/uast/TaskVar.h"
   ],
   "e791e8ca-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Throw.h"
+    "frontend/include/chpl/uast/Throw.h"
   ],
   "27dd52c6-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Try.h"
+    "frontend/include/chpl/uast/Try.h"
   ],
   "50840840-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Tuple.h"
+    "frontend/include/chpl/uast/Tuple.h"
   ],
   "b56cc532-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/TupleDecl.h"
+    "frontend/include/chpl/uast/TupleDecl.h"
   ],
   "2ea504c8-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/TypeDecl.h"
+    "frontend/include/chpl/uast/TypeDecl.h"
   ],
   "036aa00a-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/TypeQuery.h"
+    "frontend/include/chpl/uast/TypeQuery.h"
   ],
   "1e463c3c-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/UintLiteral.h"
+    "frontend/include/chpl/uast/UintLiteral.h"
   ],
   "e5530b8e-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Union.h"
+    "frontend/include/chpl/uast/Union.h"
   ],
   "387bc64e-9f72-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Use.h"
+    "frontend/include/chpl/uast/Use.h"
   ],
   "06937e78-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/VarArgFormal.h"
+    "frontend/include/chpl/uast/VarArgFormal.h"
   ],
   "1d9efc3c-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/VarLikeDecl.h"
+    "frontend/include/chpl/uast/VarLikeDecl.h"
   ],
   "4cec2a3c-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Variable.h"
+    "frontend/include/chpl/uast/Variable.h"
   ],
   "0f67ca54-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/VisibilityClause.h"
+    "frontend/include/chpl/uast/VisibilityClause.h"
   ],
   "4bb86217-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/While.h"
+    "frontend/include/chpl/uast/While.h"
   ],
   "3bab9b90-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/WithClause.h"
+    "frontend/include/chpl/uast/WithClause.h"
   ],
   "3f2f81e7-9f73-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/Yield.h"
+    "frontend/include/chpl/uast/Yield.h"
   ],
   "d2eb1668-9f71-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/uast/prim-ops-list.h"
+    "frontend/include/chpl/uast/prim-ops-list.h"
   ],
   "f78bc170-300d-11ed-b71b-d7492178b4dc": [
-    "compiler/dyno/include/chpl/util/filesystem.h"
+    "frontend/include/chpl/util/filesystem.h"
   ],
   "6e8fb3ba-9f6f-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/include/chpl/util/iteration.h"
+    "frontend/include/chpl/util/iteration.h"
   ],
   "f8771086-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/framework/Context.cpp"
+    "frontend/lib/framework/Context.cpp"
   ],
   "ffd515bc-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/framework/ErrorMessage.cpp"
+    "frontend/lib/framework/ErrorMessage.cpp"
   ],
   "360f852e-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/immediates/num.cpp"
+    "frontend/lib/immediates/num.cpp"
   ],
   "95534796-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/parsing/Parser.cpp"
+    "frontend/lib/parsing/Parser.cpp"
   ],
   "a96a12f0-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/parsing/ParserContext.h"
+    "frontend/lib/parsing/ParserContext.h"
   ],
   "495be19a-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/parsing/ParserContextImpl.h"
+    "frontend/lib/parsing/ParserContextImpl.h"
   ],
   "8af2955e-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/parsing/parser-help.h"
+    "frontend/lib/parsing/parser-help.h"
   ],
   "da1e91c6-e553-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/parsing/parser-stats.cpp"
+    "frontend/lib/parsing/parser-stats.cpp"
   ],
   "c4ce7bbf-e3ab-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/parsing/parser-yyerror.h"
+    "frontend/lib/parsing/parser-yyerror.h"
   ],
   "d4c8ff4a-e553-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/parsing/parser-yylloc-default.h"
+    "frontend/lib/parsing/parser-yylloc-default.h"
   ],
   "45947086-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/parsing/parsing-queries.cpp"
+    "frontend/lib/parsing/parsing-queries.cpp"
   ],
   "0cc92926-9f75-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/resolution/Resolver.h"
+    "frontend/lib/resolution/Resolver.h"
   ],
   "fcb9430e-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/resolution/can-pass.cpp"
+    "frontend/lib/resolution/can-pass.cpp"
   ],
   "0ebe9126-9f75-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/resolution/disambiguation.cpp"
+    "frontend/lib/resolution/disambiguation.cpp"
   ],
   "ffedfa58-e3ab-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/resolution/prims.cpp"
+    "frontend/lib/resolution/prims.cpp"
   ],
   "1a2ad1ac-e3ac-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/resolution/resolution-queries.cpp"
+    "frontend/lib/resolution/resolution-queries.cpp"
   ],
   "c662e13e-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/types/ClassType.cpp"
+    "frontend/lib/types/ClassType.cpp"
   ],
   "bd49d274-9f74-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/types/Param.cpp"
+    "frontend/lib/types/Param.cpp"
   ],
   "2c60856a-e3ac-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/uast/AstNode.cpp"
+    "frontend/lib/uast/AstNode.cpp"
   ],
   "202a65c2-e3ac-11ec-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/uast/Builder.cpp"
+    "frontend/lib/uast/Builder.cpp"
   ],
   "82e3c60c-9f75-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/uast/Pragma.cpp"
+    "frontend/lib/uast/Pragma.cpp"
   ],
   "7415e1e6-9f75-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/lib/uast/chpl-syntax-printer.cpp"
+    "frontend/lib/uast/chpl-syntax-printer.cpp"
   ],
   "079d1948-12c1-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/uast/post-parse-checks.cpp"
+    "frontend/lib/uast/post-parse-checks.cpp"
   ],
   "b4d7b308-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/util/filesystem.cpp"
+    "frontend/lib/util/filesystem.cpp"
   ],
   "f0807cd2-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/util/subprocess.cpp"
+    "frontend/lib/util/subprocess.cpp"
   ],
   "eda6a798-12c0-11ed-a8be-cd81bce0efc4": [
-    "compiler/dyno/lib/util/terminal.cpp"
+    "frontend/lib/util/terminal.cpp"
   ],
   "3eb6fb72-300f-11ed-b71b-d7492178b4dc": [
-    "compiler/dyno/tools/chpldoc/arg.cpp"
+    "frontend/tools/chpldoc/arg.cpp"
   ],
   "c2297db6-9f75-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/tools/chpldoc/chpldoc.cpp"
+    "frontend/tools/chpldoc/chpldoc.cpp"
   ],
   "5e93026e-9f6f-11ec-866d-111c8d7a1817": [
-    "compiler/dyno/util/linters/fieldsUsed.cpp"
+    "frontend/util/linters/fieldsUsed.cpp"
   ],
   "a4a99de4-f560-11eb-bb15-35b7469d4b43": [
     "compiler/include/ResolutionCandidate.h"
