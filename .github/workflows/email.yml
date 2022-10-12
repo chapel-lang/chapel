@@ -2,6 +2,7 @@ name: email
 
 on:
   push:
+     types: closed
   pull_request:
       types: closed
  
