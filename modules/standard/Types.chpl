@@ -1062,9 +1062,6 @@ proc isCoercible(type from, type to) param {
      * ``sub`` is a class type inheriting from ``super``
      * ``sub`` is non-nilable class type and ``super`` is the nilable version of the
        same class type
-
-   Note that ``isSubtype(a,b)`` can also be written as
-   ``a <= b`` or ``b >= a``.
    */
 pragma "docs only"
 proc isSubtype(type sub, type super) param {
@@ -1073,9 +1070,6 @@ proc isSubtype(type sub, type super) param {
 
 /* Similar to :proc:`isSubtype` but returns ``false`` if
    ``sub`` and ``super`` refer to the same type.
-
-   Note that ``isProperSubtype(a,b)`` can also be written
-   as ``a < b`` or ``b > a``.
    */
 pragma "docs only"
 proc isProperSubtype(type sub, type super) param {
@@ -1084,25 +1078,25 @@ proc isProperSubtype(type sub, type super) param {
 
 /* :returns: isProperSubtype(a,b) */
 pragma "docs only"
-deprecated "< operator is deprecated to compare types, use isProperSubtype instead"
+@unstable "< operator is unstable when comparing types; consider using isProperSubtype() as a stable alternative"
 operator <(type a, type b) param {
   return isProperSubtype(a,b);
 }
 /* :returns: isSubtype(a,b) */
 pragma "docs only"
-deprecated "<= operator is deprecated to compare types, use isSubtype instead"
+@unstable "<= operator is unstable when comparing types; consider using isSubtype() as a stable alternative"
 operator <=(type a, type b) param {
   return isSubtype(a,b);
 }
 /* :returns: isProperSubtype(b,a) */
 pragma "docs only"
-deprecated "> operator is deprecated to compare types, use isProperSubtype instead"
+@unstable "> operator is unstable when comparing types; consider using isProperSubtype() as a stable alternative"
 operator >(type a, type b) param {
   return isProperSubtype(b,a);
 }
 /* :returns: isSubtype(b,a) */
 pragma "docs only"
-deprecated "< operator is deprecated to compare types, use isSubtype instead"
+@unstable ">= operator is unstable when comparing types; consider using isSubtype() as a stable alternative"
 operator >=(type a, type b) param {
   return isSubtype(b,a);
 }
