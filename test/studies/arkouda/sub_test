@@ -43,7 +43,7 @@ fi
 
 # CHPL_TEST_ARKOUDA_DISABLE_MODULES is a colon separated list of modules to
 # disable.  Disable these modules by commenting them out in ServerModules.cfg
-if [ ! -z "${CHPL_TEST_ARKOUDA_DISABLE_MODULES+x}" ] ; then
+if [ -n "${CHPL_TEST_ARKOUDA_DISABLE_MODULES}" ] ; then
   IFS=":"
   for mod in $CHPL_TEST_ARKOUDA_DISABLE_MODULES; do
     cmd="s/^\s*$mod/#$mod/g"
