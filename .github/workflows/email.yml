@@ -2,8 +2,8 @@ name: email
 
 on:
     pull_request:
-    types:
-      - closed
+      types:
+        - closed
       
 jobs:
   
