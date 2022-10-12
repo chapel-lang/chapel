@@ -421,7 +421,7 @@ module IO {
       -- seems that we'd want some way to cache that...).
 */
 
-import SysBasic.{EFORMAT,fd_t,ENOERR,EEOF,ESHORT};
+import SysBasic.{EFORMAT,fd_t,ENOERR,EEOF};
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 import OS.POSIX.{EBADF};
 import OS.{errorCode};
@@ -4868,7 +4868,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
 /*
   Read the remaining contents of the channel into an instance of the specified type
 
-  :arg t: the type to read into; must be ``string`` or ``bytes``. Defaults to ``string`` if not specified.
+  :arg t: the type to read into; must be ``string`` or ``bytes``. Defaults to ``bytes`` if not specified.
   :returns: the contents of the channel as a ``t``
 
   :throws SystemError: Thrown if data could not be read from the channel
@@ -4942,8 +4942,8 @@ proc _channel.readAll(ref b: bytes): int throws {
 
   Note that this routine currently requires a 1D rectangular non-strided array.
   Additionally, If the remaining contents of the channel exceed the size of
-  ``a``, then the first ``a.size`` bytes will be read into ``a``, and then an
-  ``IoError`` will be thrown.
+  ``a``, the first ``a.size`` bytes will be read into ``a``, and then an
+  ``ExceededCapacityError`` will be thrown.
 
   :arg a: the array of bytes to read into
   :returns: the number of bytes that were stored in ``a``

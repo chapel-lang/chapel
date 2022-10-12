@@ -1378,7 +1378,7 @@ module OS {
   */
   class ExceededCapacityError: IoError {
     proc init(details: string = "") {
-      super.init(EIO: errorCode, details);
+      super.init(ERANGE: errorCode, details);
     }
   }
 
