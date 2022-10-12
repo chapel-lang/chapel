@@ -10,7 +10,7 @@ jobs:
    # run this workflow step only when the PR is merged 
     if:  github.event.pull_request.merged == false 
     runs-on: ubuntu-latest
-    environment: Email
+  
     steps:
      
       - name: print git events
@@ -21,10 +21,7 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"  
         
-      - name: print secrets
-        run: echo "${{secrets.EMAIL_SERVER}}" |
-             echo "${{secrets.SMTP_PROVIDER}}"
-             
+        
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
@@ -44,16 +41,16 @@ jobs:
         with:
    
            # Required mail server address if not connection_url:
-           server_address: ${{ secrets.EMAIL_SERVER}}
+           server_address: ${{ secrets.SMTP_PROVIDER}}
                       
            server_port: 465
            # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
            # Optional (recommended): mail server username:
-           username:  ${{ secrets.EMAIL_USER}} 
+           username:  ${{ secrets.MAIL_USERNAME}} 
  
            # Optional (recommended) mail server password:
-           password: ${{secrets.EMAIL_PASSWORD}}
+           password: ${{secrets.MAIL_PASSWORD}}
          
            
            # Required mail subject:
