@@ -23,12 +23,12 @@ jobs:
         run: echo "$GITHUB_CONTEXT"  
       
       - name: print secrets
-        run: echo "${{env.SMTP_PROVIDER}}" |
-             echo "${{secrets.SMTP_PROVIDER}}"
+        run: echo "${{secrets.SMTP_PROVIDER}}" |
+             echo "${{secrets.EMAIL_SERVER}}"
         
       - name: checkout
         uses: actions/checkout@v3
-        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
+        # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
         with:
           fetch-depth: 0
           
@@ -45,15 +45,15 @@ jobs:
         with:
    
            # Required mail server address if not connection_url:
-           server_address: ${{ env.SMTP_PROVIDER}}
+           server_address: ${{ secrets.EMAIL_SERVER}}
            server_port: 465
            # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
            # Optional (recommended): mail server username:
-           username:  ${{ env.MAIL_USERNAME}} 
+           username:  ${{ secrets.EMAIL_USER}} 
  
            # Optional (recommended) mail server password:
-           password: ${{env.MAIL_PASSWORD}}
+           password: ${{secrets.EMAIL_PASSWORD}}
          
            
            # Required mail subject:
