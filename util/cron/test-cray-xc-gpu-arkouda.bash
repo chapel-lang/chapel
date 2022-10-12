@@ -3,12 +3,26 @@
 # Build Arkouda on a cray-xc with GPU locale model
 
 CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common-native-gpu.bash
-export CHPL_COMM=none
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-xc-gpu-arkouda"
+# Setup for GPU:
+source /cray/css/users/chapelu/setup_system_llvm.bash $LLVM_VERSION
+module load cudatoolkit
+export CHPL_TARGET_COMPILER=llvm
+export CHPL_LLVM=system
+export CHPL_TARGET_CPU=native
+export CHPL_COMM=none
+export CHPL_LOCALE_MODEL=gpu
+export CHPL_TEST_GPU=true
+export CHPL_LAUNCHER_CONSTRAINT=BW18
+export CHPL_LAUNCHER="slurm-srun"
+
+# For some reason needed to not fail when building Arkouda with
+# CHPL_LOCALE_MODEL=gpu:
+module unload cce
+module load PrgEnv-gnu
 
 # setup arkouda
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-xc-gpu-arkouda"
 export CHPL_TEST_ARKOUDA_PERF=false
 source $CWD/common-arkouda.bash
 
