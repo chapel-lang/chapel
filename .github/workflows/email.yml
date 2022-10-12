@@ -25,9 +25,9 @@ jobs:
         
       - name: checkout
         uses: actions/checkout@v3
-        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
+        # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           
       - name: Get changed files
         id: changed-files
