@@ -68,7 +68,7 @@ endif()
 # message(DEBUG "CHPL_LLVM_LINK_ARGS: ${CHPL_LLVM_LINK_ARGS}")
 
 # Don't pass through jemalloc for the time being.
-string(REPLACE "-ljemalloc" "" CHPL_LLVM_LINK_ARGS ${CHPL_LLVM_LINK_ARGS})
+string(REPLACE "-ljemalloc" "" CHPL_LLVM_LINK_ARGS "${CHPL_LLVM_LINK_ARGS}")
 
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
