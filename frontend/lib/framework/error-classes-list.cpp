@@ -322,14 +322,18 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
   auto elemName = std::get<UniqueString>(info);
   auto& possibleElems = std::get<std::vector<ID>>(info);
 
-  wr.heading(kind_, type_, node, "enum '", enumType->name(),
+  wr.heading(kind_, type_, enumType->id(), "enum '", enumType->name(),
              "' has multiple elements named '", elemName, "'.");
+  wr.code(enumType->id());
+  wr.message("Referenced here:");
   wr.code(node, { node } );
+  bool printedOne = false;
   for (auto& id : possibleElems) {
-    wr.note(id, "one instance occurs here:");
+    wr.note(id, printedOne ? "another" : "one", " instance occurs here:");
+    printedOne = true;
     wr.code<ID, ID>(id, { id });
   }
-  wr.message("In Chapel, an enum should not have repeated elements of the same name.");
+  wr.message("In Chapel, an enum cannot have repeated elements of the same name.");
 }
 
 void ErrorInvalidNew::write(ErrorWriterBase& wr) const {

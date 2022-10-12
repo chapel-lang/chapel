@@ -1,4 +1,4 @@
-error in test/errors/duplicateEnumElement.chpl:5: enum 'languagesILike' has multiple elements named 'chapel'
+error in test/errors/duplicateEnumElement.chpl:1: enum 'languagesILike' has multiple elements named 'chapel'
   note in test/errors/duplicateEnumElement.chpl:2: one instance occurs here
-  note in test/errors/duplicateEnumElement.chpl:3: one instance occurs here
-  note in test/errors/duplicateEnumElement.chpl:3: one instance occurs here
+  note in test/errors/duplicateEnumElement.chpl:3: another instance occurs here
+  note in test/errors/duplicateEnumElement.chpl:3: another instance occurs here
