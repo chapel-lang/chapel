@@ -21,6 +21,7 @@
 #define SPLIT_INIT_H
 
 #include "chpl/framework/ID.h"
+#include "chpl/resolution/resolution-types.h"
 
 #include <set>
 
@@ -31,8 +32,11 @@ namespace resolution {
 class Resolver;
 
 /* Computes the set of variable IDs which will use split init
-   when being initialized. */
-std::set<ID> computeSplitInits(Resolver& resolver);
+   when being initialized. This is not a query. */
+std::set<ID>
+computeSplitInits(Context* context,
+                  const uast::AstNode* symbol,
+                  const ResolutionResultByPostorderID& byPostorder);
 
 
 } // end namespace resolution

@@ -22,6 +22,7 @@
 #include "split-init.h"
 #include "Resolver.h"
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
@@ -238,10 +239,14 @@ void CallInitDeinit::exit(const AstNode* ast, RV& rv) {
 
 
 void callInitDeinit(Resolver& resolver) {
-  std::set<ID> splitInitedVars = computeSplitInits(resolver);
+  std::set<ID> splitInitedVars = computeSplitInits(resolver.context,
+                                                   resolver.symbol,
+                                                   resolver.byPostorder);
   printf("SPLIT INIT ANALYSIS RESULTS\n");
   for (auto id : splitInitedVars) {
-    printf("SPLIT INITED %s\n", id.str().c_str());
+    auto ast = parsing::idToAst(resolver.context, id);
+    printf("SPLIT INITED ");
+    ast->dump();
   }
 
   CallInitDeinit::process(resolver);

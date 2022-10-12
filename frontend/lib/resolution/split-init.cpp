@@ -65,11 +65,10 @@ struct SplitInitFrame {
 };
 
 struct FindSplitInits {
-  using RV = MutatingResolvedVisitor<FindSplitInits>;
+  using RV = ResolvedVisitor<FindSplitInits>;
 
   // inputs to the process
   Context* context = nullptr;
-  Resolver& resolver;
 
   // result of the process
   std::set<ID> splitInitedVars;
@@ -80,7 +79,7 @@ struct FindSplitInits {
   // main entry point to this code
   static void process(Resolver& resolver, std::set<ID>& splitInitedVars);
 
-  FindSplitInits(Resolver& resolver);
+  FindSplitInits(Context* context);
 
   void handleMention(ID dstId);
   void handleInitOrAssign(ID dstId);
@@ -109,22 +108,8 @@ struct FindSplitInits {
   void exit(const uast::AstNode* node, RV& rv);
 };
 
-void FindSplitInits::process(Resolver& resolver,
-                             std::set<ID>& splitInitedVars) {
-  FindSplitInits uv(resolver);
-  MutatingResolvedVisitor<FindSplitInits> rv(resolver.context,
-                                             resolver.symbol,
-                                             uv,
-                                             resolver.byPostorder);
-
-  resolver.symbol->traverse(rv);
-
-  // swap the result into place
-  splitInitedVars.swap(uv.splitInitedVars);
-}
-
-FindSplitInits::FindSplitInits(Resolver& resolver)
-  : context(resolver.context), resolver(resolver)
+FindSplitInits::FindSplitInits(Context* context)
+  : context(context)
 {
 }
 
@@ -492,9 +477,22 @@ void FindSplitInits::exit(const AstNode* ast, RV& rv) {
   exitScope(ast);
 }
 
-std::set<ID> computeSplitInits(Resolver& resolver) {
+std::set<ID>
+computeSplitInits(Context* context,
+                  const uast::AstNode* symbol,
+                  const ResolutionResultByPostorderID& byPostorder) {
   std::set<ID> splitInitedVars;
-  FindSplitInits::process(resolver, splitInitedVars);
+  FindSplitInits uv(context);
+
+  ResolvedVisitor<FindSplitInits> rv(context,
+                                     symbol,
+                                     uv,
+                                     byPostorder);
+
+  symbol->traverse(rv);
+
+  // swap the result into place
+  splitInitedVars.swap(uv.splitInitedVars);
 
   return splitInitedVars;
 }
