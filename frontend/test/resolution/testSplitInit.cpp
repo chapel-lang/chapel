@@ -235,6 +235,76 @@ static void test9() {
     {});
 }
 
+static void test10() {
+  testSplitInit("test10",
+    R""""(
+      module M {
+        config const cond = false;
+        proc test() {
+          var x;
+          if cond then
+            return;
+          x = 11;
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test11() {
+  testSplitInit("test11",
+    R""""(
+      module M {
+        config const cond = false;
+        proc test() {
+          var x;
+          if cond then
+            throw g(); // or new Error() once it works
+          x = 11;
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test12() {
+  testSplitInit("test12",
+    R""""(
+      module M {
+        proc test() {
+          var x:int;
+          try {
+            {
+              x = 1;
+            }
+          } catch {
+            return;
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test13() {
+  testSplitInit("test13",
+    R""""(
+      module M {
+        proc test() {
+          var x:int;
+          try {
+            {
+              x = 1;
+            }
+          } catch {
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+
 int main() {
   test1();
   test2();
@@ -245,6 +315,10 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
+  test11();
+  test12();
+  test13();
 
   return 0;
 }

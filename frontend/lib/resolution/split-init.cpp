@@ -54,7 +54,8 @@ struct SplitInitFrame {
   // has the block already encountered a throw?
   bool throws = false;
 
-  // When processing a conditional,
+  // When processing a conditional
+  // TODO: or Catch blocks
   // instead of popping the SplitInitFrame for the if/else Blocks,
   // store them here, for use in exit(Conditional).
   const Block* thenBlock = nullptr;
