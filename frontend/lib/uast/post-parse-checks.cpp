@@ -294,7 +294,7 @@ void Visitor::checkNoDuplicateNamedArguments(const FnCall* node) {
       if (!actualNames.insert(name).second) {
         auto actual = node->actual(i);
         assert(actual);
-        error(actual, "The named argument '%s' is used more "
+        error(actual, "the named argument '%s' is used more "
                       "than once in the same function call.",
                       name.c_str());
       }

@@ -91,7 +91,7 @@ static void test1(void) {
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test1.chpl", 2,
-                     "The named argument 'bar' is used more than once in "
+                     "the named argument 'bar' is used more than once in "
                      "the same function call");
 }
 
