@@ -26,6 +26,9 @@
 #include "chpl/uast/all-uast.h"
 #include "./ErrorGuard.h"
 
+#define TEST_NAME(ctx__)\
+  chpl::UniqueString::getConcat(ctx__, __FUNCTION__, ".chpl")
+
 static const BuilderResult&
 parseAndReportErrors(Context* ctx, UniqueString path) {
   auto& ret = parseFileToBuilderResult(ctx, path, UniqueString());
@@ -38,7 +41,7 @@ static void testEmptyRecordUserInit() {
   Context* ctx = &context;
   ErrorGuard guard(ctx);
 
-  auto path = UniqueString::get(ctx, "input.chpl");
+  auto path = TEST_NAME(ctx);
   std::string contents =
     " record r {\n"
     "   proc init() {}\n"
@@ -105,7 +108,7 @@ static void testEmptyRecordCompilerGenInit() {
   Context* ctx = &context;
   ErrorGuard guard(ctx);
 
-  auto path = UniqueString::get(ctx, "input.chpl");
+  auto path = TEST_NAME(ctx);
   std::string contents =
     " record r {\n"
     " }\n"
@@ -167,7 +170,7 @@ static void testTertMethodCallCrossModule() {
   Context* ctx = &context;
   ErrorGuard guard(ctx);
 
-  auto path = UniqueString::get(ctx, "input.chpl");
+  auto path = TEST_NAME(ctx);
   std::string contents =
     R""""(
     module A {
@@ -410,7 +413,7 @@ static void testGenericRecordUserInitDependentField() {
   Context* ctx = &context;
   ErrorGuard guard(ctx);
 
-  auto path = UniqueString::get(ctx, "input.chpl");
+  auto path = TEST_NAME(ctx);
   std::string contents = R""""(
     record r {
       type f1;
@@ -518,7 +521,7 @@ static void testMockupRangeBuilderAndRangeClass() {
 
   ctx->advanceToNextRevision(true);
 
-  auto path = UniqueString::get(ctx, "input.chpl");
+  auto path = TEST_NAME(ctx);
   std::string myRangeCodeStr = R""""(
     enum Bound { bounded, boundedLow, boundedHigh, boundedNone }
 
@@ -585,7 +588,7 @@ static void testFieldUseBeforeInit1(void) {
   Context* ctx = &context;
   ErrorGuard guard(ctx);
 
-  auto path = UniqueString::get(ctx, "input.chpl");
+  auto path = TEST_NAME(ctx);
   std::string contents = R""""(
     record r {
       var x: int;
@@ -593,7 +596,8 @@ static void testFieldUseBeforeInit1(void) {
     proc foo(x) return;
     proc r.init() {
       foo(x);
-      if x == 8 then foo(x); else foo(x);
+      var doNotFold: bool;
+      if doNotFold then foo(x); else foo(x);
       for i in 1..7 do foo(x);
       forall i in 1..7 do foo(x);
       foreach i in 1..7 do foo(x);
@@ -628,13 +632,13 @@ static void testRecordNewSegfault(void) {
   Context* ctx = &context;
   ErrorGuard guard(ctx);
 
-  auto path = UniqueString::get(ctx, "input.chpl");
+  auto path = TEST_NAME(ctx);
   std::string contents = R""""(
-    record MyRecord {}
-    var r1 = new owned MyRecord();
-    var r2 = new shared MyRecord();
-    var r3 = new borrowed MyRecord();
-    var r4 = new unmanaged MyRecord();
+    class C {}
+    var r1 = new owned C();
+    var r2 = new shared C();
+    var r3 = new borrowed C();
+    var r4 = new unmanaged C();
     )"""";
 
   setFileText(ctx, path, contents);

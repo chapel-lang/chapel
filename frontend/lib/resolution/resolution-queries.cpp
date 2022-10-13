@@ -2492,19 +2492,15 @@ lookupCalledExpr(Context* context,
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
-  const Scope* scopeToUse = scope;
+  const Scope* receiverScope = nullptr;
 
-  // For method calls, perform an initial lookup starting at the scope for
-  // the definition of the receiver type, if it can be found.
+  // For method calls, also consider the receiver scope.
   if (ci.isMethodCall() || ci.isOpCall()) {
     assert(ci.numActuals() >= 1);
-
-    auto& receiverQualType = ci.actual(0).type();
-
-    // Try to fetch the scope of the receiver type's definition.
-    if (auto receiverType = receiverQualType.type()) {
-      if (auto compType = receiverType->getCompositeType()) {
-        scopeToUse = scopeForId(context, compType->id());
+    auto& qtReceiver = ci.actual(0).type();
+    if (auto t = qtReceiver.type()) {
+      if (auto compType = t->getCompositeType()) {
+        receiverScope = scopeForId(context, compType->id());
       }
     }
   }
@@ -2512,7 +2508,7 @@ lookupCalledExpr(Context* context,
   UniqueString name = ci.name();
 
   std::vector<BorrowedIdsWithName> ret =
-    lookupNameInScopeWithSet(context, scopeToUse, nullptr,
+    lookupNameInScopeWithSet(context, scope, receiverScope,
                              name, config, visited);
 
   return ret;
@@ -2929,6 +2925,38 @@ considerCompilerGeneratedCandidates(Context* context,
   return true;
 }
 
+static std::vector<BorrowedIdsWithName>
+lookupCalledExprConsideringReceiver(Context* context,
+                                    const Scope* inScope,
+                                    const CallInfo& ci,
+                                    ScopeSet& visited) {
+  const Scope* receiverScope = nullptr;
+
+  // For method and operator calls, also consider the receiver scope.
+  if (ci.isMethodCall() || ci.isOpCall()) {
+    assert(ci.numActuals() >= 1);
+    auto& qtReceiver = ci.actual(0).type();
+    if (auto t = qtReceiver.type()) {
+      if (auto compType = t->getCompositeType()) {
+        receiverScope = scopeForId(context, compType->id());
+      }
+    }
+  }
+
+  // TODO: Ensure that secondary methods are considered as well.
+  std::vector<BorrowedIdsWithName> ret;
+  if (receiverScope) {
+    auto v = lookupCalledExpr(context, receiverScope, ci, visited);
+    ret.insert(ret.end(), v.begin(), v.end());
+  }
+
+  // Consider tertiary methods starting at the callsite.
+  auto v = lookupCalledExpr(context, inScope, ci, visited);
+  ret.insert(ret.end(), v.begin(), v.end());
+
+  return ret;
+}
+
 // call can be nullptr. in that event, ci.name() will be used
 // to find the call with that name.
 static MostSpecificCandidates
@@ -2952,7 +2980,8 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   // next, look for candidates without using POI.
   {
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, inScope, ci, visited);
+    auto v = lookupCalledExprConsideringReceiver(context, inScope, ci,
+                                                 visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2979,7 +3008,9 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
     }
 
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, curPoi->inScope(), ci, visited);
+    auto v = lookupCalledExprConsideringReceiver(context, curPoi->inScope(),
+                                                 ci,
+                                                 visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
