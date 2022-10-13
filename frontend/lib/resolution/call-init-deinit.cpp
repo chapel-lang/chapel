@@ -39,6 +39,11 @@ using namespace types;
 // TODO -- figure out where to store copy (associatedFns?)
 //         and where to store deinit (associatedFns not so good).
 //         For now it just prints these.
+//
+// TODO -- a default argument can have a RHS that is a reference
+//         even though it is 'in' intent. As such, it would require
+//         a copy, but it's hard to associate that information
+//         with a call actual (because the actual doesn't exist).
 
 struct Action {
   enum ActionKind {
@@ -158,27 +163,18 @@ void CallInitDeinit::printActions(const std::vector<Action>& actions) {
 
 void CallInitDeinit::enterScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
-    printf("ENTER SCOPE %s\n", ast->id().str().c_str());
     const Scope* scope = scopeForId(context, ast->id());
     scopeStack.push_back(ScopeFrame(scope));
   }
-  /*if (auto d = ast->toDecl()) {
-    declStack.push_back(d);
-  }*/
 }
 void CallInitDeinit::exitScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
-    printf("EXIT SCOPE %s\n", ast->id().str().c_str());
     ScopeFrame& frame = scopeStack.back();
     printActions(frame.endOfScopeActions);
 
     assert(!scopeStack.empty());
     scopeStack.pop_back();
   }
-  /*if (ast->isDecl()) {
-    assert(!declStack.empty());
-    declStack.pop_back();
-  }*/
 }
 
 bool CallInitDeinit::enter(const VarLikeDecl* ast, RV& rv) {
@@ -190,7 +186,6 @@ bool CallInitDeinit::enter(const VarLikeDecl* ast, RV& rv) {
 void CallInitDeinit::exit(const VarLikeDecl* ast, RV& rv) {
   assert(!scopeStack.empty());
   if (!scopeStack.empty()) {
-    printf("ADDING VARIABLE %s\n", ast->id().str().c_str());
     ScopeFrame& frame = scopeStack.back();
     frame.declaredVars.insert(ast);
   }
@@ -226,11 +221,6 @@ void CallInitDeinit::exit(const Call* ast, RV& rv) {
 bool CallInitDeinit::enter(const AstNode* ast, RV& rv) {
   enterScope(ast);
 
-  printf("IN CALLINITDEINIT %s\n", ast->id().str().c_str());
-  if (rv.hasAst(ast)) {
-    rv.byAst(ast).dump();
-    printf("\n");
-  }
   return true;
 }
 void CallInitDeinit::exit(const AstNode* ast, RV& rv) {
@@ -242,13 +232,6 @@ void callInitDeinit(Resolver& resolver) {
   std::set<ID> splitInitedVars = computeSplitInits(resolver.context,
                                                    resolver.symbol,
                                                    resolver.byPostorder);
-  printf("SPLIT INIT ANALYSIS RESULTS\n");
-  for (auto id : splitInitedVars) {
-    auto ast = parsing::idToAst(resolver.context, id);
-    printf("SPLIT INITED ");
-    ast->dump();
-  }
-
   CallInitDeinit::process(resolver);
 }
 

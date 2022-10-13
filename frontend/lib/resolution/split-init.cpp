@@ -419,7 +419,6 @@ void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
 
 void FindSplitInits::enterScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
-    printf("SPLIT INIT ENTER SCOPE %s\n", ast->id().str().c_str());
     scopeStack.push_back(toOwned(new SplitInitFrame(ast)));
   }
   if (auto c = ast->toConditional()) {
@@ -437,7 +436,6 @@ void FindSplitInits::enterScope(const AstNode* ast) {
 }
 void FindSplitInits::exitScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
-    printf("SPLIT INIT EXIT SCOPE %s\n", ast->id().str().c_str());
     assert(!scopeStack.empty());
     size_t n = scopeStack.size();
     owned<SplitInitFrame>& curFrame = scopeStack[n-1];
@@ -474,7 +472,6 @@ void FindSplitInits::exit(const VarLikeDecl* ast, RV& rv) {
   assert(!scopeStack.empty());
   if (!scopeStack.empty()) {
     if (ast->initExpression() == nullptr) {
-      printf("SPLIT INIT ADDING VARIABLE %s\n", ast->id().str().c_str());
       SplitInitFrame* frame = scopeStack.back().get();
       frame->declaredEligibleVars.insert(ast->id());
     }
@@ -486,8 +483,6 @@ void FindSplitInits::exit(const VarLikeDecl* ast, RV& rv) {
 bool FindSplitInits::enter(const OpCall* ast, RV& rv) {
 
   if (ast->op() == USTR("=")) {
-    printf("SPLIT INIT PROCESSING = %s\n", ast->id().str().c_str());
-
     // What is the RHS and LHS of the '=' call?
     auto lhsAst = ast->actual(0);
     auto rhsAst = ast->actual(1);
@@ -638,11 +633,6 @@ void FindSplitInits::exit(const Identifier* ast, RV& rv) {
 bool FindSplitInits::enter(const AstNode* ast, RV& rv) {
   enterScope(ast);
 
-  printf("SPLIT INIT IN %s\n", ast->id().str().c_str());
-  if (rv.hasAst(ast)) {
-    rv.byAst(ast).dump();
-    printf("\n");
-  }
   return true;
 }
 void FindSplitInits::exit(const AstNode* ast, RV& rv) {
