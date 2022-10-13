@@ -16,26 +16,26 @@
 # limitations under the License.
 
 
-add_library(libdyno-obj OBJECT)
+add_library(ChplFrontend-obj OBJECT)
 
 # turn on position-independent code so we can use the same
 # dyno-obj for both a static and dynamic library
-set_property(TARGET libdyno-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
+set_property(TARGET ChplFrontend-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 # Include the public library .h files as well as any generated .h files
-target_include_directories(libdyno-obj PUBLIC
+target_include_directories(ChplFrontend-obj PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
 
 
 # Library code can also use headers from the lib/ directory
 # but these are not to be public
-target_include_directories(libdyno-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(ChplFrontend-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # SHELL: is needed here to remove unwanted quotes from the list of arguments
 # COMPILE_LANGUAGE:CXX is needed here to make sure we only set the flags
 # for C++ files, not C files.
-target_compile_options(libdyno-obj PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
+target_compile_options(ChplFrontend-obj PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
 
 add_subdirectory(immediates)
 add_subdirectory(parsing)
@@ -45,10 +45,10 @@ add_subdirectory(types)
 add_subdirectory(uast)
 add_subdirectory(util)
 
-add_library(libdyno SHARED $<TARGET_OBJECTS:libdyno-obj>)
-target_include_directories(libdyno PUBLIC
+add_library(ChplFrontend SHARED $<TARGET_OBJECTS:ChplFrontend-obj>)
+target_include_directories(ChplFrontend PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
-target_link_libraries(libdyno PUBLIC ${CHPL_LLVM_LINK_ARGS})
+target_link_libraries(ChplFrontend PUBLIC ${CHPL_LLVM_LINK_ARGS})
 # TODO: Get printchplenv output proper so that we don't need to SHELL here
-target_compile_options(libdyno PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
+target_compile_options(ChplFrontend PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
