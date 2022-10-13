@@ -4,6 +4,8 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 
+source $CWD/common.bash
+
 # Setup for GPU:
 source /cray/css/users/chapelu/setup_system_llvm.bash $LLVM_VERSION
 module load cudatoolkit
@@ -16,10 +18,14 @@ export CHPL_TEST_GPU=true
 export CHPL_LAUNCHER_CONSTRAINT=BW18
 export CHPL_LAUNCHER="slurm-srun"
 
-# For some reason needed to not fail when building Arkouda with
-# CHPL_LOCALE_MODEL=gpu:
-module unload cce
+# setup for XC perf (ugni, gnu, 28-core broadwell)
+module unload $(module -t list 2>&1 | grep PrgEnv-)
 module load PrgEnv-gnu
+module unload $(module -t list 2>&1 | grep craype-hugepages)
+module load craype-hugepages16M
+module unload perftools-base
+module unload atp
+module load craype-x86-cascadelake
 
 # setup arkouda
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-xc-gpu-arkouda"

@@ -132,6 +132,13 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     fi
     test_end
   fi
+else
+  # If we've gotten here then the build succeeded I need to create a "fake"
+  # test for Jenkins even though in this mode all I really care about is the
+  # build.
+  test_start "build"
+  log_success "build output"
+  test_end
 fi
 
 subtest_end
