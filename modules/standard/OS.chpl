@@ -1341,7 +1341,7 @@ module OS {
 
   /*
      :class:`EofError` is the subclass of :class:`IoError` corresponding to
-     :const:`SysBasic.EEOF`.
+     :const:`IO.EEOF`.
   */
   class EofError : IoError {
     proc init(details: string = "", err: errorCode = EEOF:errorCode) {
@@ -1351,7 +1351,7 @@ module OS {
 
   /*
      :class:`UnexpectedEofError` is the subclass of :class:`IoError`
-     corresponding to :const:`SysBasic.ESHORT`.
+     corresponding to :const:`IO.ESHORT`.
   */
   class UnexpectedEofError : IoError {
     proc init(details: string = "", err: errorCode = ESHORT:errorCode) {
@@ -1361,7 +1361,7 @@ module OS {
 
   /*
      :class:`BadFormatError` is the subclass of :class:`IoError` corresponding
-     to :const:`SysBasic.EFORMAT`.
+     to :const:`IO.EFORMAT`.
   */
   class BadFormatError : IoError {
     proc init(details: string = "", err: errorCode = EFORMAT:errorCode) {
