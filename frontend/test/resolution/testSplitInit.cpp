@@ -77,14 +77,15 @@ static void testSplitInit(const char* test,
   // check that each thing in expectNames is in splitNames
   for (auto expectName : expectNames) {
     if (splitNames.count(expectName) == 0) {
-      printf("Missing expected split init for %s\n", expectName.c_str());
+      printf("%s: missing expected split init for '%s'\n",
+             test, expectName.c_str());
     }
   }
 
   // check that each thing in splitNames is in expectNames
   for (auto splitName : splitNames) {
     if (expectNames.count(splitName) == 0) {
-      printf("Unexpected split init for %s\n", splitName.c_str());
+      printf("%s: unexpected split init for '%s'\n", test, splitName.c_str());
     }
   }
 
@@ -339,6 +340,31 @@ static void test15() {
     {});
 }
 
+static void test16() {
+  testSplitInit("test16",
+    R""""(
+      module M {
+        proc test(out formal: int) {
+          formal = 4;
+        }
+      }
+    )"""",
+    {"formal"});
+}
+
+static void test17() {
+  testSplitInit("test17",
+    R""""(
+      module M {
+        proc fOut(out formal: int) { formal = 4; }
+        proc test() {
+          var x:int;
+          fOut(x);
+        }
+      }
+    )"""",
+    {"x"});
+}
 
 int main() {
   test1();
@@ -356,6 +382,8 @@ int main() {
   test13();
   test14();
   test15();
+  test16();
+  test17();
 
   return 0;
 }

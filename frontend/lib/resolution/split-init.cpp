@@ -42,7 +42,7 @@ struct ControlFlowSubBlock {
 };
 
 struct SplitInitFrame {
-  const Scope* scope = nullptr;
+  const AstNode* scopeAst = nullptr; // for debugging
 
   // Which variables are declared in this scope without
   // an initialization expression?
@@ -67,7 +67,7 @@ struct SplitInitFrame {
   // store them here, for use in handleExitScope(Conditional or Try).
   std::vector<ControlFlowSubBlock> subBlocks;
 
-  SplitInitFrame(const Scope* scope) : scope(scope) { }
+  SplitInitFrame(const AstNode* scopeAst) : scopeAst(scopeAst) { }
 };
 
 struct FindSplitInits {
@@ -101,6 +101,9 @@ struct FindSplitInits {
 
   bool enter(const OpCall* ast, RV& rv);
   void exit(const OpCall* ast, RV& rv);
+
+  bool enter(const FnCall* ast, RV& rv);
+  void exit(const FnCall* ast, RV& rv);
 
   bool enter(const Return* ast, RV& rv);
   void exit(const Return* ast, RV& rv);
@@ -330,7 +333,7 @@ void FindSplitInits::handleExitTry(const uast::Try* t) {
       }
     }
   }
- 
+
   // now, update mentionedVars with anything at all mentioned in a catch
   for (const auto& sub : tryFrame->subBlocks) {
     SplitInitFrame* subFrame = sub.frame.get();
@@ -417,8 +420,7 @@ void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
 void FindSplitInits::enterScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
     printf("SPLIT INIT ENTER SCOPE %s\n", ast->id().str().c_str());
-    const Scope* scope = scopeForId(context, ast->id());
-    scopeStack.push_back(toOwned(new SplitInitFrame(scope)));
+    scopeStack.push_back(toOwned(new SplitInitFrame(ast)));
   }
   if (auto c = ast->toConditional()) {
     // note thenBlock / elseBlock
@@ -439,6 +441,7 @@ void FindSplitInits::exitScope(const AstNode* ast) {
     assert(!scopeStack.empty());
     size_t n = scopeStack.size();
     owned<SplitInitFrame>& curFrame = scopeStack[n-1];
+    assert(curFrame->scopeAst == ast);
     SplitInitFrame* parentFrame = nullptr; // Conditional or Try
     bool savedSubBlock = false;
     if (n >= 2) {
@@ -483,6 +486,8 @@ void FindSplitInits::exit(const VarLikeDecl* ast, RV& rv) {
 bool FindSplitInits::enter(const OpCall* ast, RV& rv) {
 
   if (ast->op() == USTR("=")) {
+    printf("SPLIT INIT PROCESSING = %s\n", ast->id().str().c_str());
+
     // What is the RHS and LHS of the '=' call?
     auto lhsAst = ast->actual(0);
     auto rhsAst = ast->actual(1);
@@ -509,6 +514,89 @@ bool FindSplitInits::enter(const OpCall* ast, RV& rv) {
 
 void FindSplitInits::exit(const OpCall* ast, RV& rv) {
 }
+
+bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
+
+  // variables can be split-inited if they are
+  // directly passed to an 'out' intent formal
+
+  if (rv.hasAst(callAst)) {
+    // Do all of the return-intent-overloads use 'out' intent at all?
+    // This filter is intended as an optimization.
+    bool eachCandidateHasAnOutFormal = true;
+    const MostSpecificCandidates& candidates = rv.byAst(callAst).mostSpecific();
+    for (const TypedFnSignature* fn : candidates) {
+      if (fn != nullptr) {
+        int n = fn->numFormals();
+        bool candidateHasAnOutFormal = false;
+        for (int i = 0; i < n; i++) {
+          const QualifiedType& formalQt = fn->formalType(i);
+          if (formalQt.kind() == QualifiedType::OUT) {
+            candidateHasAnOutFormal = true;
+            break;
+          }
+        }
+        if (!candidateHasAnOutFormal) {
+          eachCandidateHasAnOutFormal = false;
+          break;
+        }
+      }
+    }
+
+    if (!eachCandidateHasAnOutFormal) {
+      // visit the actuals to gather mentions
+      for (auto actualAst : callAst->actuals()) {
+        actualAst->traverse(rv);
+      }
+    } else {
+      // Use FormalActualMap to figure out which variable ID
+      // is passed to a formal with out intent for all return intent overloads
+      // and then record it with handleInitOrAssign.
+
+      // compute a vector indicating which actuals are passed to
+      // an 'out' formal in all return intent overloads
+      std::vector<int8_t> actualIdxToOutAll(callAst->numActuals(), 1);
+      auto callInfo = CallInfo(callAst);
+      int nActuals = callAst->numActuals();
+
+      for (const TypedFnSignature* fn : candidates) {
+        if (fn != nullptr) {
+          auto formalActualMap = FormalActualMap(fn, callInfo);
+          for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+            const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
+            int8_t isOutFormal = fa->formalType().kind() == QualifiedType::OUT;
+            actualIdxToOutAll[actualIdx] &= isOutFormal;
+          }
+        }
+      }
+
+      int actualIdx = 0;
+      for (auto actualAst : callAst->actuals()) {
+        // find an actual referring to an ID that is passed to an 'out' formal
+        ID toId;
+        if (rv.hasAst(actualAst)) {
+          toId = rv.byAst(actualAst).toId();
+        }
+
+        if (actualIdxToOutAll[actualIdx] && !toId.isEmpty()) {
+          // it is like an assignment to the variable with ID toID
+          handleInitOrAssign(toId);
+        } else {
+          // otherwise, visit the actuals to gather mentions
+          actualAst->traverse(rv);
+        }
+
+        actualIdx++;
+      }
+    }
+  }
+
+  return false;
+}
+
+void FindSplitInits::exit(const FnCall* ast, RV& rv) {
+}
+
 
 bool FindSplitInits::enter(const Return* ast, RV& rv) {
   return true;
@@ -573,7 +661,25 @@ computeSplitInits(Context* context,
                                      uv,
                                      byPostorder);
 
-  symbol->traverse(rv);
+  if (auto fn = symbol->toFunction()) {
+    // traverse formals and then traverse the body
+    if (auto body = fn->body()) {
+      // make a pretend scope for the formals
+      uv.enterScope(body);
+
+      // traverse the formals
+      for (auto formal : fn->formals()) {
+        formal->traverse(rv);
+      }
+
+      // traverse the real body
+      body->traverse(rv);
+
+      uv.exitScope(body);
+    }
+  } else {
+    symbol->traverse(rv);
+  }
 
   // swap the result into place
   splitInitedVars.swap(uv.splitInitedVars);
