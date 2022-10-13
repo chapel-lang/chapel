@@ -5,5 +5,5 @@
     4 | use List;
       |
   The implicit module 'implicitSubModule' is being created because the above code is outside of any module declarations (e.g., 'module M').
-  Note that all of the file's contents will be placed into the new 'implicitSubModule' module.
+  Note that all of the file's contents -- including module 'M' -- will be placed into the new 'implicitSubModule' module.
 

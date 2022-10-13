@@ -5,5 +5,5 @@
     4 | var x = 1;
       |
   The implicit module 'implicitModule' is being created because the above code is outside of any module declarations (e.g., 'module TheModule').
-  Note that all of the file's contents will be placed into the new 'implicitModule' module.
+  Note that all of the file's contents -- including module 'TheModule' -- will be placed into the new 'implicitModule' module.
 

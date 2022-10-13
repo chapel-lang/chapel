@@ -172,8 +172,9 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   wr.message("The implicit module '", implicitModule->name(), "' is being "
              "created because the above code is outside of any module "
              "declarations (e.g., 'module ", lastModule->name(), "').");
-  wr.message("Note that all of the file's contents will be placed into the "
-             "new '", implicitModule->name(), "' module.");
+  wr.message("Note that all of the file's contents -- including module '",
+             lastModule->name() ,"' -- will be placed into the new '",
+             implicitModule->name(), "' module.");
 }
 
 void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
