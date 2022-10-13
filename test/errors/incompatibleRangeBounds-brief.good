@@ -1,0 +1,2 @@
+error in incompatibleRangeBounds.chpl:3: upper and lower bounds of range expression have incompatible types
+error in incompatibleRangeBounds.chpl:4: upper and lower bounds of range expression have incompatible types

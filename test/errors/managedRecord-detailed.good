@@ -1,0 +1,15 @@
+─── error in managedRecord.chpl:4 [MemManagementNonClass] ───
+  Cannot use memory management strategy 'shared' with record 'MyRecord'.
+      |
+    4 | var r2 = new shared MyRecord();
+      |                     ⎺⎺⎺⎺⎺⎺⎺⎺    
+      |
+  Memory management strategies can only be used with classes.
+  'MyRecord' declared as record here:
+      |
+    1 | record MyRecord {
+    2 |   
+    3 | }
+      |
+  Remove the 'shared' keyword to fix this error, or define 'MyRecord' as a class.
+

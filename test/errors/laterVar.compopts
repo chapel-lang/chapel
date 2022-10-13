@@ -1,2 +1,2 @@
-
---brief-errors
+--detailed-errors # laterVar-detailed.good
+--no-detailed-errors # laterVar-brief.good

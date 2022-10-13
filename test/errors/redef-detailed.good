@@ -1,0 +1,15 @@
+─── error in redef.chpl:1 [Redefinition] ───
+  'x' has multiple definitions.
+      |
+    1 | var x =
+    2 |         1;
+      |
+  Redefined here:
+      |
+    3 | var x = 2;
+      |
+  Redefined here:
+      |
+    4 | var x = 3;
+      |
+

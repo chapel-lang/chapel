@@ -1,2 +1,2 @@
-
---brief-errors
+--detailed-errors # incompatibleKinds-detailed.good
+--no-detailed-errors # incompatibleKinds-brief.good

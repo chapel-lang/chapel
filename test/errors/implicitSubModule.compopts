@@ -1,2 +1,2 @@
-
---brief-errors
+--detailed-errors # implicitSubModule-detailed.good
+--no-detailed-errors # implicitSubModule-brief.good

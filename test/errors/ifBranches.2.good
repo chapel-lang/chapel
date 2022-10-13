@@ -1,2 +1,0 @@
-error in test/errors/ifBranches.chpl:2: branches of if-expression have incompatible types
-error in test/errors/ifBranches.chpl:5: branches of if-expression have incompatible types

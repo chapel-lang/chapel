@@ -1,2 +1,2 @@
-
---brief-errors
+--detailed-errors # incompatibleRangeBounds-detailed.good
+--no-detailed-errors # incompatibleRangeBounds-brief.good

@@ -1,0 +1,2 @@
+error in managedRecord.chpl:4: cannot use memory management strategy 'shared' with record 'MyRecord'
+  note in managedRecord.chpl:1: 'MyRecord' declared as record here

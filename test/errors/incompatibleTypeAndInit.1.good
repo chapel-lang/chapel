@@ -1,9 +1,0 @@
-─── error in test/errors/incompatibleTypeAndInit.chpl:1 [IncompatibleTypeAndInit] ───
-  Type mismatch in declared type and initialization expression.
-  In the following declaration:
-      |
-    1 | var x: int = "hello";
-      |        ⎺⎺⎺    ⎺⎺⎺⎺⎺⎺  
-      |
-  the type expression has type 'int(64)', while the initial value has type 'string'.
-

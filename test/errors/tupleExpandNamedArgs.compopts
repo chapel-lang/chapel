@@ -1,2 +1,2 @@
-
---brief-errors
+--detailed-errors # tupleExpandNamedArgs-detailed.good
+--no-detailed-errors # tupleExpandNamedArgs-brief.good

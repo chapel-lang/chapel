@@ -1,3 +1,0 @@
-error in test/errors/redef.chpl:1: 'x' has multiple definitions
-  note in test/errors/redef.chpl:3: redefined here
-  note in test/errors/redef.chpl:4: redefined here

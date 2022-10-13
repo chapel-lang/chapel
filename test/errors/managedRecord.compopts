@@ -1,2 +1,2 @@
-
---brief-errors
+--detailed-errors # managedRecord-detailed.good
+--no-detailed-errors # managedRecord-brief.good

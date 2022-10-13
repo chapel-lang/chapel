@@ -1,0 +1,21 @@
+─── error in ifBranches.chpl:2 [IncompatibleIfBranches] ───
+  Branches of if-expression have incompatible types.
+  In the following if-expression:
+      |
+    2 | var y = if b then 42 else "hello";
+      |                   ⎺⎺       ⎺⎺⎺⎺⎺⎺  
+      |
+  the first branch is a param of type 'int(64)', while the second is a param of type 'string'.
+
+─── error in ifBranches.chpl:5 [IncompatibleIfBranches] ───
+  Branches of if-expression have incompatible types.
+  In the following if-expression:
+      |
+    5 |   if b
+    6 |   then 42
+      |        ⎺⎺ 
+    7 |   else "hello";
+      |         ⎺⎺⎺⎺⎺⎺  
+      |
+  the first branch is a param of type 'int(64)', while the second is a param of type 'string'.
+

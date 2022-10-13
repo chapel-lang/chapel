@@ -1,2 +1,2 @@
-
---brief-errors
+--detailed-errors # unknownEnumElement-detailed.good
+--no-detailed-errors # unknownEnumElement-brief.good

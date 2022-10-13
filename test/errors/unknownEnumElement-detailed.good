@@ -1,0 +1,13 @@
+─── error in unknownEnumElement.chpl:5 [UnknownEnumElem] ───
+  Enum 'creativeColors' has no element named 'green'.
+      |
+    5 | var x = creativeColors.green;
+      |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺  
+      |
+  'creativeColors' is declared here.
+      |
+    1 | enum creativeColors {
+    2 |   red, blue
+    3 | };
+      |
+

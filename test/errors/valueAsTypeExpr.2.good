@@ -1,2 +1,0 @@
-error in /Users/daniel.fedorin/Documents/software/chapel/modules/internal/ChapelDomain.chpl:373: Cannot resolve call: no matching candidates
-error in test/errors/valueAsTypeExpr.chpl:2: type expression produces a value of type 'int(64)' while a type was expected
