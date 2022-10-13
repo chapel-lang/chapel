@@ -1788,7 +1788,9 @@ const ResolvedFunction* resolveInitializer(Context* context,
                                            const TypedFnSignature* sig,
                                            const PoiScope* poiScope) {
   bool isAcceptable = isTfsForInitializer(sig);
-  assert(isAcceptable);
+  if (!isAcceptable) {
+    assert(false && "Should only be called for initializers");
+  }
 
   // construct the PoiInfo for this case
   auto poiInfo = PoiInfo(poiScope);
