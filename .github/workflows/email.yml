@@ -60,7 +60,7 @@ jobs:
            # Required mail subject:
            subject: Chapel Merge ${{ github.event.head_commit.message }}  
            # Required recipients' addresses:
-           to: bhavani@hpe.com, elliot.ronaghan@hpe.com
+           to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from: chapel-lang 
   
