@@ -52,6 +52,10 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 }
 
 
+int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
+  return 0;
+}
+
 int chpl_topo_getNumNumaDomains(void) {
   return 1;
 }

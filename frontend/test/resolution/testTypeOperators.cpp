@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
+
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/ComplexType.h"
@@ -24,14 +26,6 @@
 #include "chpl/types/Param.h"
 #include "chpl/types/RealType.h"
 #include "chpl/uast/Module.h"
-#include "common.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
 
 static void test1() {
   Context ctx;

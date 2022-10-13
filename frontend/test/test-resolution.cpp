@@ -16,21 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "common.h"
-#include "chpl/parsing/parsing-queries.h"
+
+#include "test-resolution.h"
+
 #include "chpl/resolution/resolution-queries.h"
-
-using namespace parsing;
-
-const Module* parseModule(Context* context, std::string src) {
-  auto path = UniqueString::get(context, "input.chpl");
-  setFileText(context, path, std::move(src));
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-
-  return vec[0];
-}
+#include "chpl/uast/Module.h"
 
 QualifiedType
 resolveTypeOfXInit(Context* context, std::string program, bool requireTypeKnown) {

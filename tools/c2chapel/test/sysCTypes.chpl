@@ -22,7 +22,7 @@ extern proc test_chars(a : c_char, b : c_string, c : c_schar, d : c_uchar) : c_c
 
 extern proc test_shorts(a : c_short, b : c_ushort) : c_short;
 
-extern proc test_ptrs(a : c_intptr, b : c_uintptr, c : c_ptrdiff, d : ssize_t, e : size_t) : void;
+extern proc test_ptrs(a : c_intptr, b : c_uintptr, c : c_ptrdiff, d : c_ssize_t, e : c_size_t) : void;
 
 extern proc signedWidths(a : int(8), b : int(16), c : int(32), d : int(64)) : void;
 

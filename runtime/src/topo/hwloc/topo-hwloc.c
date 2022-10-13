@@ -64,6 +64,9 @@ static int topoDepth;
 static int numaLevel;
 static int numNumaDomains;
 
+// Accessible cores and PUs.
+static hwloc_cpuset_t physAccSet = NULL;
+static hwloc_cpuset_t logAccSet = NULL;
 
 static hwloc_obj_t getNumaObj(c_sublocid_t);
 static void alignAddrSize(void*, size_t, chpl_bool,
@@ -198,6 +201,14 @@ void chpl_topo_exit(void) {
     return;
   }
 
+  if (physAccSet != NULL) {
+    hwloc_bitmap_free(physAccSet);
+    physAccSet = NULL;
+  }
+  if (logAccSet != NULL) {
+    hwloc_bitmap_free(logAccSet);
+    logAccSet = NULL;
+  }
   hwloc_topology_destroy(topology);
 }
 
@@ -232,8 +243,10 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 static
 void getNumCPUs(void) {
   //
-  // accessible cores
+  // accessible cores and PUs
   //
+  CHK_ERR_ERRNO((physAccSet = hwloc_bitmap_alloc()) != NULL);
+  CHK_ERR_ERRNO((logAccSet = hwloc_bitmap_alloc()) != NULL);
 
   //
   // Hwloc can't tell us the number of accessible cores directly, so
@@ -245,8 +258,6 @@ void getNumCPUs(void) {
   // the set of accessible PUs here.  But that seems not to reflect the
   // schedaffinity settings, so use hwloc_get_proc_cpubind() instead.
   //
-  hwloc_cpuset_t logAccSet;
-  CHK_ERR_ERRNO((logAccSet = hwloc_bitmap_alloc()) != NULL);
   if (hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0) != 0) {
 #ifdef __APPLE__
     const int errRecoverable = (errno == ENOSYS); // no cpubind on macOS
@@ -263,9 +274,6 @@ void getNumCPUs(void) {
   hwloc_bitmap_and(logAccSet, logAccSet,
                    hwloc_topology_get_online_cpuset(topology));
 
-  hwloc_cpuset_t physAccSet;
-  CHK_ERR_ERRNO((physAccSet = hwloc_bitmap_alloc()) != NULL);
-
 #define NEXT_PU(pu)                                                     \
   hwloc_get_next_obj_inside_cpuset_by_type(topology, logAccSet,         \
                                            HWLOC_OBJ_PU, pu)
@@ -276,13 +284,16 @@ void getNumCPUs(void) {
                                                          HWLOC_OBJ_CORE,
                                                          pu))
                   != NULL);
-    hwloc_bitmap_set(physAccSet, core->logical_index);
+    // Only use the first PU per core.
+    hwloc_obj_t first = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                                            core->cpuset,
+                                                            HWLOC_OBJ_PU, 0);
+    hwloc_bitmap_or(physAccSet, physAccSet, first->cpuset);
   }
 
 #undef NEXT_PU
 
   numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
-  hwloc_bitmap_free(physAccSet);
 
   CHK_ERR(numCPUsPhysAcc > 0);
 
@@ -298,13 +309,40 @@ void getNumCPUs(void) {
   numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
   CHK_ERR(numCPUsLogAcc > 0);
 
-  hwloc_bitmap_free(logAccSet);
-
   //
   // all PUs
   //
   numCPUsLogAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
   CHK_ERR(numCPUsLogAll > 0);
+}
+
+//
+// Fills the "cpus" array with the hwloc "cpuset" (a bitmap whose bits are
+// set according to CPU physical OS indexes).
+//
+static
+int getCPUs(hwloc_cpuset_t cpuset, int *cpus, int size) {
+  int count = 0;
+  for (int i = hwloc_bitmap_first(cpuset);
+        i <= hwloc_bitmap_last(cpuset) && (count < size); i++) {
+    if (hwloc_bitmap_isset(cpuset, i)) {
+      cpus[count++] = i;
+    }
+  }
+  return count;
+}
+
+
+//
+// Fills the "cpus" array with up to "count" physical OS indices of the
+// accessible cores or PUs. If "physical" is true, then "cpus" contains
+// core indices, otherwise it contains PU indices. Returns the number
+// of indices in the "cpus" array.
+//
+int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
+  // Initializes CPU information.
+  CHK_ERR(pthread_once(&numCPUs_ctrl, getNumCPUs) == 0);
+  return getCPUs(physical ? physAccSet : logAccSet, cpus, count);
 }
 
 

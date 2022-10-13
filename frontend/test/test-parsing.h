@@ -17,30 +17,30 @@
  * limitations under the License.
  */
 
-#include "test-resolution.h"
+#ifndef TEST_PARSING_H
+#define TEST_PARSING_H
 
-#include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/Module.h"
-#include "chpl/uast/Record.h"
-#include "chpl/uast/Variable.h"
+#include "test-common.h"
 
-static void test1() {
-  Context ctx;
-  auto context = &ctx;
-  auto qt = resolveQualifiedTypeOfX(context,
-                             R""""(
-                               var x: bool = true;
-                             )"""");
-  qt.dump();
-  assert(qt.kind() == QualifiedType::VAR);
-  assert(qt.type()->isBoolType());
+#include <string>
+
+// forward declare classes and namespaces
+namespace chpl {
+  class Context;
+  namespace uast {
+    class Module;
+  }
+  namespace parsing {
+  }
+  namespace uast {
+  }
 }
 
-int main() {
-    test1();
-    return 0;
-}
+using namespace chpl;
+using namespace parsing;
+using namespace uast;
+
+// Get the top-level module resulting from parsing the given string.
+const Module* parseModule(Context* context, std::string src);
+
+#endif

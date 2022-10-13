@@ -17,20 +17,11 @@
  * limitations under the License.
  */
 
+#include "test-parsing.h"
+
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
 #include "chpl/uast/all-uast.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace uast;
-using namespace parsing;
 
 static bool areAttributesEqual(const Decl* lhs, const Decl* rhs) {
   auto lhsAttr = lhs->attributes();

@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-parsing.h"
+
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Begin.h"
@@ -28,18 +30,6 @@
 #include "chpl/uast/ForwardingDecl.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/VisibilityClause.h"
-
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace uast;
-using namespace parsing;
 
 static void test0(Parser* parser) {
 

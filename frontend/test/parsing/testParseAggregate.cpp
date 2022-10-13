@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-parsing.h"
+
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
 #include "chpl/uast/Class.h"
@@ -28,17 +30,6 @@
 #include "chpl/uast/StringLiteral.h"
 #include "chpl/uast/Union.h"
 #include "chpl/uast/Variable.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace uast;
-using namespace parsing;
 
 static BuilderResult parseAggregate(Parser* parser,
                                     const AggregateDecl*& agg,

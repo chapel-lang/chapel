@@ -17,18 +17,13 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
+
 #include "chpl/util/iteration.h"
 
-#include <cassert>
 #include <cstddef>
-
 #include <vector>
 #include <unordered_set>
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
 
 using namespace chpl;
 

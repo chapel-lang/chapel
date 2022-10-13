@@ -2564,6 +2564,13 @@ void runClang(const char* just_parse_filename) {
       std::string genHeaderFilename;
       genHeaderFilename = genIntermediateFilename("command-line-includes.h");
       FILE* fp =  openfile(genHeaderFilename.c_str(), "w");
+      if(usingGpuLocaleModel()) {
+        // In some version of the CUDA headers they end up redefining
+        // __noinline__, which is used as an attribute in gcc. This was
+        // causing us to fail to compile Arkouda and so we undef it
+        // here as a workaround
+        fprintf(fp, "#undef __noinline__\n");
+      }
 
       int filenum = 0;
       while (const char* inputFilename = nthFilename(filenum++)) {

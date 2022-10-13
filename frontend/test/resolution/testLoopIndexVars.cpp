@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
 #include "ResolvedVisitor.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -29,22 +30,8 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
-#include "common.h"
 
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
 #include <map>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace types;
-using namespace uast;
 
 static auto myiter = std::string(R""""(
 iter myiter() {

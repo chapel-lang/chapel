@@ -226,6 +226,15 @@ foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   # message(DEBUG "Setting ${CHPLENV_LINE} as ${CHPL_ENV_NAME} ${CHPL_ENV_VALUE}")
   set(${CHPL_ENV_NAME} ${CHPL_ENV_VALUE} CACHE STRING "overwritten description" FORCE)
 endforeach()
+
+if ((CHPL_HOME STREQUAL CMAKE_BINARY_DIR) OR
+    (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR))
+  # running cmake in the source directory would overwrite Makefiles
+  # even failing with this error creates a CMakeCache.txt that
+  # messes things up, so ask the user to remove that if this happens.
+  message(FATAL_ERROR "It won't work to run cmake from the Chapel source directory. Please run 'rm CMakeCache.txt' and then cd to a different directory before running cmake.")
+endif()
+
 # message(DEBUG "${CHPL_HOST_BUNDLED_LINK_ARGS} ${CHPL_HOST_SYSTEM_LINK_ARGS}")
 add_subdirectory(compiler)
 add_subdirectory(frontend)

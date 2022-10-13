@@ -324,14 +324,41 @@ class VisibilitySymbols {
  public:
   /** The kind of import symbol */
   enum Kind {
-    /** the scope itself only (one name in names) */
+    /**
+      the scope itself only, e.g.:
+
+          import Bar as Baz;
+
+      The names field will contain one pair, denoting the renaming
+      of the module itself.
+
+     */
     SYMBOL_ONLY,
-    /** all the contents of the scope (and names is empty) */
+    /**
+      all the contents of the scope, e.g.:
+
+          import Foo;
+
+      The names field will be empty.
+
+     */
     ALL_CONTENTS,
-    /** only the contents of the scope named in names */
+    /**
+      only the contents of the scope named in names, e.g.:
+
+          import Foo.{a as x,b};
+
+      The names field will contain the imported names.
+     */
     ONLY_CONTENTS,
-    /** contents of the scope except the contents named in names
-        (no renaming) */
+    /**
+      contents of the scope except listed names, e.g.:
+
+          use Foo except {a, b};
+
+      The names field will contain the excluded names. There is no renaming
+      in this case.
+     */
     CONTENTS_EXCEPT,
   };
 

@@ -17,23 +17,15 @@
  * limitations under the License.
  */
 
+#include "test-parsing.h"
+
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/CompilerFlags.h"
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/all-uast.h"
 
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
 #include <iostream>
-
-using namespace chpl;
-using namespace uast;
-using namespace parsing;
 
 static std::string
 buildErrorStr(const char* file, int line, const char* msg) {

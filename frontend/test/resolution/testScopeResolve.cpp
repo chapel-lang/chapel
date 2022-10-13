@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
+
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -26,44 +28,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace uast;
-
 // helper functions
-/*
-static const Module* findModule(const AstNode* ast, const char* name) {
-  if (auto v = ast->toModule()) {
-    if (v->name() == name) {
-      return v;
-    }
-  }
-
-  for (auto child : ast->children()) {
-    auto got = findModule(child, name);
-    if (got) return got;
-  }
-
-  return nullptr;
-}
-
-static const Module* findModule(const ModuleVec& vec, const char* name) {
-  for (auto mod : vec) {
-    auto got = findModule(mod, name);
-    if (got) return got;
-  }
-
-  return nullptr;
-}
-*/
 
 static const Variable* findVariable(const AstNode* ast, const char* name) {
   if (auto v = ast->toVariable()) {

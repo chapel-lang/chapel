@@ -95,8 +95,7 @@ static void deinitializeGlobalParserState(YYLTYPE* yylloc=nullptr);
 
 static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
-                               bool        namedOnCommandLine,
-                               bool        include);
+                               bool        namedOnCommandLine);
 
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
@@ -107,8 +106,7 @@ static int dynoRealizeErrors(void);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
-                                   bool        namedOnCommandLine,
-                                   bool        include);
+                                   bool        namedOnCommandLine);
 
 static const char*   stdModNameToPath(const char* modName,
                                       bool*       isStandard);
@@ -389,7 +387,7 @@ static void parseChplSourceFile(const char* inputFileName) {
     USR_FATAL(errorMessage, baseName, maxFileName);
   }
 
-  parseFile(inputFileName, MOD_USER, true, false);
+  parseFile(inputFileName, MOD_USER, true);
 }
 
 static void parseCommandLineFiles() {
@@ -404,6 +402,16 @@ static void parseCommandLineFiles() {
     printModuleSearchPath();
   }
 
+  while ((inputFileName = nthFilename(fileNum++))) {
+    if (isChplSource(inputFileName))
+    {
+      auto path = chpl::UniqueString::get(gContext, inputFileName);
+      chpl::UniqueString emptySymbolPath;
+      chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
+    }
+  }
+
+  fileNum = 0;
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName))
     {
@@ -556,7 +564,7 @@ static void ensureRequiredStandardModulesAreParsed() {
       // then we need to parse it
       if (foundInt == false) {
         if (const char* path = searchThePath(modName, false, sStdModPath)) {
-          ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false, false);
+          ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false);
 
           // If we also found a user module by the same name,
           // we need to rename the standard module and the use of it
@@ -632,7 +640,7 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
   // into AST instead.
   if (path != nullptr) {
     INT_ASSERT(ret == nullptr);
-    ret = parseFile(path, modTag, false, false);
+    ret = parseFile(path, modTag, false);
   }
 
   return ret;
@@ -710,9 +718,8 @@ static void deinitializeGlobalParserState(YYLTYPE* yylloc) {
 
 static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
-                               bool        namedOnCommandLine,
-                               bool        include) {
-  return dynoParseFile(path, modTag, namedOnCommandLine, include);
+                               bool        namedOnCommandLine) {
+  return dynoParseFile(path, modTag, namedOnCommandLine);
 }
 
 static void maybePrintModuleFile(ModTag modTag, const char* path) {
@@ -900,8 +907,7 @@ static int dynoRealizeErrors(void) {
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
-                                   bool        namedOnCommandLine,
-                                   bool        include) {
+                                   bool        namedOnCommandLine) {
   ModuleSymbol* ret = nullptr;
 
   if (gContext == nullptr) {
@@ -912,8 +918,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   if (haveAlreadyParsed(fileName)) return nullptr;
 
   auto path = chpl::UniqueString::get(gContext, fileName);
-
-  INT_ASSERT(!include);
 
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.
@@ -981,10 +985,8 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
       got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
     }
 
-    if (!include) {
-      SET_LINENO(got);
-      ModuleSymbol::addTopLevelModule(got);
-    }
+    SET_LINENO(got);
+    ModuleSymbol::addTopLevelModule(got);
 
     lastModSym = got;
     numModSyms++;
@@ -1004,11 +1006,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   // top level modules were produced by parsing the file.
   if (numModSyms == 1) {
     ret = lastModSym;
-  } else {
-    if (include) {
-      auto msg = "included module file contains multiple modules";
-      USR_FATAL(lastModSym, "%s", msg);
-    }
   }
 
   // TODO: Helper function to do this.
@@ -1030,62 +1027,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
 static void addModuleToDoneList(ModuleSymbol* module) {
   sModDoneSet.set_add(astr(module->name));
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-
-ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
-  // save parser global variables to restore after parsing the submodule
-  BlockStmt*  s_yyblock = yyblock;
-  const char* s_yyfilename = yyfilename;
-  int         s_yystartlineno = yystartlineno;
-  ModTag      s_currentModuleType = currentModuleType;
-  const char* s_currentModuleName = currentModuleName;
-  int         s_chplLineno = chplLineno;
-  bool        s_chplParseString = chplParseString;
-  const char* s_chplParseStringMsg = chplParseStringMsg;
-
-  std::string curPath = path;
-
-  // compute the path of the file to include
-  size_t lastDot = curPath.rfind(".");
-  INT_ASSERT(lastDot < curPath.size());
-  std::string noDot = curPath.substr(0, lastDot);
-  std::string includeFile = noDot + "/" + name + ".chpl";
-
-  const char* modNameFromFile = filenameToModulename(curPath.c_str());
-  if (0 != strcmp(modNameFromFile, currentModuleName)) {
-    UnresolvedSymExpr* dummy = new UnresolvedSymExpr("module");
-    USR_FATAL(dummy, "Cannot include modules from a module whose name doesn't match its filename");
-  }
-
-  ModuleSymbol* ret = nullptr;
-  const bool namedOnCommandLine = false;
-  const bool include = true;
-
-  ret = parseFile(astr(includeFile), currentModuleType,
-                  namedOnCommandLine,
-                  include);
-  INT_ASSERT(ret);
-
-  ret->addFlag(FLAG_INCLUDED_MODULE);
-
-  // restore parser global variables
-  yyblock = s_yyblock;
-  yyfilename = s_yyfilename;
-  yystartlineno = s_yystartlineno;
-  currentModuleType = s_currentModuleType;
-  currentModuleName = s_currentModuleName;
-  chplLineno = s_chplLineno;
-  chplParseString = s_chplParseString;
-  chplParseStringMsg = s_chplParseStringMsg;
-
-  return ret;
 }
 
 /************************************* | **************************************

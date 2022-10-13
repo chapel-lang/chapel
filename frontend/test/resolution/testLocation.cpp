@@ -17,24 +17,14 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
+
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/types/all-types.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Module.h"
-
-// always check assertions in this test
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include <cassert>
-
-using namespace chpl;
-using namespace parsing;
-using namespace resolution;
-using namespace uast;
 
 static const Module* oneModule(const ModuleVec& vec) {
   assert(vec.size() == 1);

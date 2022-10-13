@@ -365,9 +365,16 @@ static bool doLookupInImports(Context* context,
           newConfig |= LOOKUP_INNERMOST;
         }
 
-        // find it in that scope
-        found |= doLookupInScope(context, symScope, nullptr, resolving, from,
-                                 newConfig, checkedScopes, result);
+        // If the whole module is being renamed, still search for the original
+        // name within the module. Otherwise, search for the name that our
+        // target was renamed from.
+        UniqueString nameToLookUp = from;
+        if (is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
+          nameToLookUp = name;
+        }
+
+        found |= doLookupInScope(context, symScope, nullptr, resolving,
+                                 nameToLookUp, newConfig, checkedScopes, result);
       }
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
@@ -1077,10 +1084,34 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
     result = toOwned(new ResolvedVisibilityScope(scope));
     auto r = result.get();
     // Visit child nodes to find use/import statements therein
+    std::vector<const AstNode*> usesAndImports;
+    std::vector<const Require*> requireNodes;
     for (const AstNode* child : ast->children()) {
       if (child->isUse() || child->isImport()) {
-        doResolveVisibilityStmt(context, child, r);
+        usesAndImports.push_back(child);
+      } else if (auto req = child->toRequire()) {
+        requireNodes.push_back(req);
       }
+    }
+
+    // Process 'require' statements before uses/imports so that the modules
+    // are available.
+    //
+    // TODO: Handle 'require' statements with param expressions
+    for (auto req : requireNodes) {
+      for (const AstNode* child : req->children()) {
+        if (const StringLiteral* str = child->toStringLiteral()) {
+          const auto& path = str->str().str();
+          const std::string suffix = ".chpl";
+          if (path.compare(path.size() - suffix.size(), suffix.size(), suffix) == 0) {
+            parsing::parseFileToBuilderResult(context, str->str(), UniqueString());
+          }
+        }
+      }
+    }
+
+    for (auto node : usesAndImports) {
+      doResolveVisibilityStmt(context, node, r);
     }
   }
 
