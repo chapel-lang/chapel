@@ -1,10 +1,11 @@
 name: email
 on:
+   push: 
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
     pull_request_target:
-      types:
-        - closed
+      #types:
+        #- closed
       
 jobs: 
   send_email:
@@ -44,7 +45,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: Chapel Merge ${{ github.event.head_commit.message }}  
+           subject: Chapel Merge ${{ github.event.pull_request.head_commit.message }}  
            # Required recipients' addresses:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
@@ -55,14 +56,14 @@ jobs:
               <body>
               <p>   
               Branch ${{github.ref}} <br>
-              Author: ${{ github.event.head_commit.author.name}} <br>
-              Revision: ${{github.event.repository.id}}  <br>
-              Commit id : ${{ github.event.head_commit.id }} <br>
-              Commit message: ${{ github.event.head_commit.message }}  <br>
+              Author: ${{ github.event.pull_request.head_commit.author.name}} <br>
+              Revision: ${{github.event.pull_request.repository.id}}  <br>
+              Commit id : ${{ github.event.pull_request.head_commit.id }} <br>
+              Commit message: ${{ github.pull_request.event.head_commit.message }}  <br>
               Sha: ${{ github.head_ref }}.${{ github.sha }}<br>
-              Link: ${{github.event.head_commit.url}} <br> 
-              Log Message: ${{github.event.commit.message}} <br>  
-              Compare: ${{github.event.compare}} <br>
+              Link: ${{github.event.pull_request.head_commit.url}} <br> 
+              Log Message: ${{github.event.pull_request.commit.message}} <br>  
+              Compare: ${{github.event.pull_request.compare}} <br>
               Files changed: <br>
               ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
               ${{steps.changed-files.outputs.deleted_files}} <br>
