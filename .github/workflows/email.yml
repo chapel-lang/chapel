@@ -45,16 +45,16 @@ jobs:
         with:
    
            # Required mail server address if not connection_url:
-           server_address: $SERVER
+           server_address: ${{env.SERVER}}
                       
            server_port: 465
            # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
            # Optional (recommended): mail server username:
-           username:  $EMAIL
+           username:  ${{env.EMAIL}}
  
            # Optional (recommended) mail server password:
-           password: $PASSWORD
+           password: ${{env.PASSWORD}}
          
            
            # Required mail subject:
