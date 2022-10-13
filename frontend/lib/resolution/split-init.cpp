@@ -33,6 +33,14 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+struct SplitInitFrame;
+
+struct ControlFlowSubBlock {
+  const AstNode* block = nullptr; // then block / else block / catch block
+  owned<SplitInitFrame> frame;
+  ControlFlowSubBlock(const AstNode* block) : block(block) { }
+};
+
 struct SplitInitFrame {
   const Scope* scope = nullptr;
 
@@ -54,14 +62,10 @@ struct SplitInitFrame {
   // has the block already encountered a throw?
   bool throws = false;
 
-  // When processing a conditional
-  // TODO: or Catch blocks
-  // instead of popping the SplitInitFrame for the if/else Blocks,
-  // store them here, for use in exit(Conditional).
-  const Block* thenBlock = nullptr;
-  const Block* elseBlock = nullptr;
-  owned<SplitInitFrame> thenBlockFrame;
-  owned<SplitInitFrame> elseBlockFrame;
+  // When processing a conditional or catch blocks,
+  // instead of popping the SplitInitFrame for the if/else/catch blocks,
+  // store them here, for use in handleExitScope(Conditional or Try).
+  std::vector<ControlFlowSubBlock> subBlocks;
 
   SplitInitFrame(const Scope* scope) : scope(scope) { }
 };
@@ -86,6 +90,7 @@ struct FindSplitInits {
   void handleMention(ID dstId);
   void handleInitOrAssign(ID dstId);
   void handleExitConditional(const uast::Conditional* cond);
+  void handleExitTry(const uast::Try* t);
   void handleExitScope(const uast::AstNode* ast);
 
   void enterScope(const uast::AstNode* ast);
@@ -195,8 +200,13 @@ static bool allowsSplitInit(const uast::AstNode* ast) {
 // the then/else blocks from the conditional
 void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
   SplitInitFrame* frame = scopeStack.back().get();
-  SplitInitFrame* thenFrame = frame->thenBlockFrame.get();
-  SplitInitFrame* elseFrame = frame->elseBlockFrame.get();
+  assert(frame->subBlocks.size() == 1 || frame->subBlocks.size() == 2);
+
+  SplitInitFrame* thenFrame = frame->subBlocks[0].frame.get();
+  SplitInitFrame* elseFrame = nullptr;
+  if (frame->subBlocks.size() == 2) {
+    elseFrame = frame->subBlocks[1].frame.get();
+  }
 
   // save results for vars declared in then/else
   // gather the set of variables to consider
@@ -266,6 +276,76 @@ void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
   }
 }
 
+void FindSplitInits::handleExitTry(const uast::Try* t) {
+  SplitInitFrame* tryFrame = scopeStack.back().get();
+
+  // if there are no catch clauses, there is nothing to do
+  if (tryFrame->subBlocks.size() == 0) {
+    return;
+  }
+
+  // otherwise, consider the catch clauses
+
+  // do all of the catch clauses always throw or return?
+  bool allThrowOrReturn = true;
+  for (const auto& sub : tryFrame->subBlocks) {
+    SplitInitFrame* subFrame = sub.frame.get();
+    if (!subFrame->returns && !subFrame->throws) {
+      allThrowOrReturn = false;
+    }
+  }
+
+  // collect variables to tell parent frame we are split initing here
+  std::set<ID> trySplitInitVars;
+  std::set<ID> tryMentionedVars = tryFrame->mentionedVars;
+
+  // consider the variables we wish to init.
+  // Are they mentioned in any catch clauses? Including with assignment?
+  // If they are not eligible for split-init, move them to mentionedVars.
+  for (auto id : tryFrame->initedVars) {
+    if (tryFrame->declaredEligibleVars.count(id) > 0) {
+      // variable declared in the Try scope, so save the result
+      splitInitedVars.insert(id);
+    } else {
+      // gather variables to be split-inited for parent frames
+      // into trySplitInitVars
+      bool allowSplitInit = false;
+      if (allThrowOrReturn) {
+        bool mentionedOrInitedInCatch = false;
+        for (const auto& sub : tryFrame->subBlocks) {
+          SplitInitFrame* subFrame = sub.frame.get();
+          if (subFrame->initedVars.count(id) > 0 ||
+              subFrame->mentionedVars.count(id) > 0) {
+            mentionedOrInitedInCatch = true;
+            break;
+          }
+        }
+        // if no catch clauses mention the variable, it is a split init
+        allowSplitInit = !mentionedOrInitedInCatch;
+      }
+      if (allowSplitInit) {
+        trySplitInitVars.insert(id);
+      } else {
+        tryMentionedVars.insert(id);
+      }
+    }
+  }
+ 
+  // now, update mentionedVars with anything at all mentioned in a catch
+  for (const auto& sub : tryFrame->subBlocks) {
+    SplitInitFrame* subFrame = sub.frame.get();
+    tryMentionedVars.insert(subFrame->initedVars.begin(),
+                            subFrame->initedVars.end());
+    tryMentionedVars.insert(subFrame->mentionedVars.begin(),
+                            subFrame->mentionedVars.end());
+  }
+
+  // swap trySplitInitVars / tryMentionedVars into place
+  // for use in handleExitScope
+  tryFrame->initedVars.swap(trySplitInitVars);
+  tryFrame->mentionedVars.swap(tryMentionedVars);
+}
+
 void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
   size_t n = scopeStack.size();
   SplitInitFrame* frame = scopeStack.back().get();
@@ -277,10 +357,14 @@ void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
   if (allowsSplitInit(ast)) {
     // a scope that allows split init (e.g. a regular { } block)
 
-    // merge conditionals
+    // update 'frame' with control-flow logic
     if (auto cond = ast->toConditional()) {
-      // note: updates 'frame'
+      // process then/else blocks to merge into Conditional's frame
       handleExitConditional(cond);
+    }
+    if (auto t = ast->toTry()) {
+      // process catch blocks to merge into Try's frame
+      handleExitTry(t);
     }
 
     // propagate initedVars and update global result
@@ -339,12 +423,15 @@ void FindSplitInits::enterScope(const AstNode* ast) {
   if (auto c = ast->toConditional()) {
     // note thenBlock / elseBlock
     SplitInitFrame* condFrame = scopeStack.back().get();
-    condFrame->thenBlock = c->thenBlock();
-    condFrame->elseBlock = c->elseBlock();
+    condFrame->subBlocks.push_back(ControlFlowSubBlock(c->thenBlock()));
+    condFrame->subBlocks.push_back(ControlFlowSubBlock(c->elseBlock()));
+  } else if (auto t = ast->toTry()) {
+    // note each of the catch handlers (aka catch clauses)
+    SplitInitFrame* tryFrame = scopeStack.back().get();
+    for (auto clause : t->handlers()) {
+      tryFrame->subBlocks.push_back(ControlFlowSubBlock(clause));
+    }
   }
-  /*if (auto d = ast->toDecl()) {
-    declStack.push_back(d);
-  }*/
 }
 void FindSplitInits::exitScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
@@ -352,28 +439,26 @@ void FindSplitInits::exitScope(const AstNode* ast) {
     assert(!scopeStack.empty());
     size_t n = scopeStack.size();
     owned<SplitInitFrame>& curFrame = scopeStack[n-1];
-    SplitInitFrame* condFrame = nullptr;
-    if (ast->isBlock() && n >= 2) {
+    SplitInitFrame* parentFrame = nullptr; // Conditional or Try
+    bool savedSubBlock = false;
+    if (n >= 2) {
       // Are we in the situation of just finishing a Block
-      // that is within a Conditional?
-      // If so, save it as the if or else block.
-      condFrame = scopeStack[n-2].get();
+      // that is within a Conditional? or a Catch clause?
+      // If so, save the frame in the subBlocks, to
+      // be handled when processing condFrame.
+      parentFrame = scopeStack[n-2].get();
+      for (auto & subBlock : parentFrame->subBlocks) {
+        if (subBlock.block == ast) {
+          subBlock.frame.swap(curFrame);
+          savedSubBlock = true;
+        }
+      }
     }
-    if (condFrame && ast == condFrame->thenBlock) {
-      // will be handled with Conditional
-      condFrame->thenBlockFrame.swap(curFrame);
-    } else if (condFrame && ast == condFrame->elseBlock) {
-      // will be handled with Conditional
-      condFrame->elseBlockFrame.swap(curFrame);
-    } else {
+    if (!savedSubBlock) {
       handleExitScope(ast);
     }
     scopeStack.pop_back();
   }
-  /*if (ast->isDecl()) {
-    assert(!declStack.empty());
-    declStack.pop_back();
-  }*/
 }
 
 bool FindSplitInits::enter(const VarLikeDecl* ast, RV& rv) {
@@ -417,11 +502,6 @@ bool FindSplitInits::enter(const OpCall* ast, RV& rv) {
       // visit the LHS to check for mentions
       lhsAst->traverse(rv);
     }
-
-    // TODO: determine which of these cases it really is:
-    //  * assignment
-    //  * copy initialization
-    //  * move initialization
   }
 
   return false;

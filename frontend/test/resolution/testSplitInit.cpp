@@ -304,6 +304,41 @@ static void test13() {
     {});
 }
 
+static void test14() {
+  testSplitInit("test14",
+    R""""(
+      module M {
+        proc test() {
+          var x:int;
+          try {
+            {
+              x = 1;
+            }
+          } catch {
+            x = 1;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test15() {
+  testSplitInit("test15",
+    R""""(
+      module M {
+        proc test() {
+          var x:int;
+          try {
+          } catch {
+            x = 1;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
 
 int main() {
   test1();
@@ -319,6 +354,8 @@ int main() {
   test11();
   test12();
   test13();
+  test14();
+  test15();
 
   return 0;
 }
