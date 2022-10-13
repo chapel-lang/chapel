@@ -1,6 +1,6 @@
 Comparing versions:
-version 2.1.0
-version 2.1.0 (aaa)
+2.1.0
+2.1.0 (aaa)
 ------------------
 == : false
 != : true
@@ -10,8 +10,8 @@ version 2.1.0 (aaa)
 >= : true
 
 Comparing versions:
-version 2.1.0 (aaa)
-version 2.1.0
+2.1.0 (aaa)
+2.1.0
 ------------------
 == : false
 != : true
@@ -21,8 +21,8 @@ version 2.1.0
 >= : false
 
 Comparing versions:
-version 2.0.0 (aaa)
-version 2.1.0 (aaa)
+2.0.0 (aaa)
+2.1.0 (aaa)
 ------------------
 == : false
 != : true
@@ -32,8 +32,8 @@ version 2.1.0 (aaa)
 >= : false
 
 Comparing versions:
-version 2.1.0 (aaa)
-version 2.0.0 (aaa)
+2.1.0 (aaa)
+2.0.0 (aaa)
 ------------------
 == : false
 != : true
@@ -43,8 +43,8 @@ version 2.0.0 (aaa)
 >= : true
 
 Comparing versions:
-version 2.0.0 (aaa)
-version 2.1.0 (bbb)
+2.0.0 (aaa)
+2.1.0 (bbb)
 ------------------
 == : false
 != : true
@@ -54,8 +54,8 @@ version 2.1.0 (bbb)
 >= : false
 
 Comparing versions:
-version 2.1.0 (bbb)
-version 2.0.0 (aaa)
+2.1.0 (bbb)
+2.0.0 (aaa)
 ------------------
 == : false
 != : true

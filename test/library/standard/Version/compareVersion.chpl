@@ -2,23 +2,23 @@ use Version;
 
 var x = 2, y = 1, z = 3, q = 0;
 
-const v2_1_0 = createProgramVersion(x,y);
-const v2_1_1 = createProgramVersion(x,y,y);
-const v2_2_0 = createProgramVersion(x,x,q);
-const v2_2_1 = createProgramVersion(x,x,y);
-const v3_1_0 = createProgramVersion(z,y);
-const v3_1_1 = createProgramVersion(z,y,y);
+var v2_1_0 = new version(x,y);
+var v2_1_1 = new version(x,y,y);
+var v2_2_0 = new version(x,x,q);
+var v2_2_1 = new version(x,x,y);
+var v3_1_0 = new version(z,y);
+var v3_1_1 = new version(z,y,y);
 
-const v2_1_0_p = createProgramVersion(x,y,q,"aaa");
-const v2_1_1_p = createProgramVersion(x,y,y,"bbb");
-const v2_2_0_p = createProgramVersion(x,x,commit="ccc");
-const v2_2_1_p = createProgramVersion(x,x,y,"ddd");
-const v3_1_0_p = createProgramVersion(z,y,q,"eee");
-const v3_1_1_p = createProgramVersion(z,y,y,"fff");
+var v2_1_0_p = new version(x,y,q,"aaa");
+var v2_1_1_p = new version(x,y,y,"bbb");
+var v2_2_0_p = new version(x,x,commit="ccc");
+var v2_2_1_p = new version(x,x,y,"ddd");
+var v3_1_0_p = new version(z,y,q,"eee");
+var v3_1_1_p = new version(z,y,y,"fff");
 
-var v3_1_1copy = createProgramVersion(2,2,2,"xyz");
+var v3_1_1copy = new version(2,2,2,"xyz");
 v3_1_1copy = v3_1_1;
-var v3_1_1_pcopy = createProgramVersion(0,0,1);
+var v3_1_1_pcopy = new version(0,0,1);
 v3_1_1_pcopy = v3_1_1_p;
 compareVersions(v3_1_1copy, v3_1_1);
 compareVersions(v3_1_1_pcopy, v3_1_1_p);
@@ -76,8 +76,8 @@ proc compareBothVersions(v1, v2) {
 
 proc compareVersions(v1, v2) {
   writeln("Comparing versions:");
-  writeln("version " + v1:string);
-  writeln("version " + v2:string);
+  writeln(v1:string);
+  writeln(v2:string);
   writeln("------------------");
   writeln("== : ", v1 == v2);
   writeln("!= : ", v1 != v2);
@@ -90,8 +90,8 @@ proc compareVersions(v1, v2) {
 
 proc compareLTVersions(v1, v2) {
   writeln("Comparing versions:");
-  writeln("version " + v1:string);
-  writeln("version " + v2:string);
+  writeln(v1:string);
+  writeln(v2:string);
   writeln("------------------");
   writeln("== : ", v1 == v2);
   writeln("!= : ", v1 != v2);
@@ -102,8 +102,8 @@ proc compareLTVersions(v1, v2) {
 
 proc compareGTVersions(v1, v2) {
   writeln("Comparing versions:");
-  writeln("version " + v1:string);
-  writeln("version " + v2:string);
+  writeln(v1:string);
+  writeln(v2:string);
   writeln("------------------");
   writeln("== : ", v1 == v2);
   writeln("!= : ", v1 != v2);

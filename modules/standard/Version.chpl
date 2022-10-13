@@ -29,16 +29,16 @@ specifically.  In more detail, it features:
 * :var:`chplVersion`: the version number of the copy of ``chpl`` used
   to compile the program.
 
-* :type:`sourceVersion`: a type that can be used to represent a semantic
+* :type:`versionValue`: a type that can be used to represent a semantic
   version number plus an optional commit value.
 
-* :proc:`createVersion`: a utility function for creating new version values
+* :proc:`versionValue`: a utility function for creating new version values
 
 Version numbers in this module are represented using ``param`` values
 to permit code specialization by being able to reason about versions
 at compile-time.
 
-The :type:`sourceVersion` type supports:
+The :type:`versionValue` type supports:
 
 * being printed out or cast to a ``param`` string
 
@@ -46,7 +46,7 @@ The :type:`sourceVersion` type supports:
   and ``>``.  Generally speaking, "less than" corresponds to "is an
   earlier version than."  For example::
 
-    if chplVersion < createVersion(1,23) then
+    if chplVersion < new versionValue(1,23) then
       compilerWarning("This package doesn't support 'chpl' prior to 1.23.0");
 
 */
@@ -70,35 +70,7 @@ module Version {
   */
 
   const chplVersion;
-  chplVersion = createVersion(chplMajor, chplMinor, chplUpdate, chplSHA);
-
-
-  /*
-    A helper function that creates a new version value from its
-    arguments.
-
-    :arg major: The major version number
-    :type major: `int`
-
-    :arg minor: The minor version number
-    :type minor: `int`
-
-    :arg update: The optional update version number (defaults to 0)
-    :type update: `int`
-
-    :arg commit: The optional commit ID (defaults to "")
-    :type commit: `string`
-
-    :returns: A new version value of type :type:`sourceVersion`.
-  */
-  proc createVersion(param major: int,
-                     param minor: int,
-                     param update: int = 0,
-                     param commit: string = ""): sourceVersion(?) {
-    return new sourceVersion(major, minor, update, commit);
-
-  }
-
+  chplVersion = new versionValue(chplMajor, chplMinor, chplUpdate, chplSHA);
 
   /*
     This record represents a software version in a Git repository.  It
@@ -108,7 +80,7 @@ module Version {
     printed or converted to a string, it is represented as
     ``major.minor.update (commit)``.
 
-    Note that ordered comparisons between two :type:`sourceVersion`
+    Note that ordered comparisons between two :type:`versionValue`
     values that only differ in their ``commit`` values are not
     supported due to the challenges involved in ordering commit
     values.  However, when a value with an empty ``update`` value is
@@ -118,7 +90,7 @@ module Version {
     release.
   */
 
-  record sourceVersion {
+  record versionValue {
     /*
       The major version number. For version ``2.0.1``, this would be ``2``.
     */
@@ -141,11 +113,28 @@ module Version {
     proc writeThis(s) throws {
       s._write(this:string);
     }
+
+    pragma "no doc"
+    proc init(param major: int,
+              param minor: int,
+              param update: int = 0,
+              param commit: string = "") {
+      this.major = major;
+      this.minor = minor;
+      this.update = update;
+      this.commit = commit;
+    }
+
   }
 
-  // cast from sourceVersion to string
   pragma "no doc"
-  operator :(x: sourceVersion(?), type t: string) param {
+  operator :(x: versionValue(?), type t: version) {
+    return new version(x.major, x.minor, x.update, x.commit);
+  }
+
+  // cast from versionValue to string
+  pragma "no doc"
+  operator :(x: versionValue(?), type t: string) param {
     if (x.commit == "") then
       return (x.major:string + "." + x.minor:string + "." +
               x.update:string);
@@ -156,8 +145,8 @@ module Version {
 
 
   // helper function for comparison operators
-  private proc spaceship(v1: sourceVersion(?),
-                         v2: sourceVersion(?)) param : int {
+  private proc spaceship(v1: versionValue(?),
+                         v2: versionValue(?)) param : int {
     param majComp = spaceship(v1.major, v2.major);
     if majComp != 0 {
       return majComp;
@@ -185,39 +174,39 @@ module Version {
 
   // Comparisons between sourceVersions
 
-  operator sourceVersion.==(v1: sourceVersion(?),
-                            v2: sourceVersion(?)) param : bool {
+  operator versionValue.==(v1: versionValue(?),
+                            v2: versionValue(?)) param : bool {
     return spaceship(v1, v2) == 0;
   }
 
   /*
     Equality/inequality operators between two values of type
-    :type:`sourceVersion` check whether or not the two values
+    :type:`versionValue` check whether or not the two values
     have identical major, minor, update, and commit values.
   */
-  operator sourceVersion.!=(v1: sourceVersion(?),
-                            v2: sourceVersion(?)) param : bool {
+  operator versionValue.!=(v1: versionValue(?),
+                            v2: versionValue(?)) param : bool {
     return spaceship(v1, v2) != 0;
   }
 
-  operator sourceVersion.<(v1: sourceVersion(?),
-                           v2: sourceVersion(?)) param : bool {
+  operator versionValue.<(v1: versionValue(?),
+                           v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval < 0;
   }
 
-  operator sourceVersion.<=(v1: sourceVersion(?),
-                            v2: sourceVersion(?)) param : bool {
+  operator versionValue.<=(v1: versionValue(?),
+                            v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval <= 0;
   }
 
-  operator sourceVersion.>(v1: sourceVersion(?),
-                           v2: sourceVersion(?)) param : bool {
+  operator versionValue.>(v1: versionValue(?),
+                           v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
@@ -226,7 +215,7 @@ module Version {
 
   /*
     Ordered comparisons between two values of type
-    :type:`sourceVersion` are based on the ordering of the semantic
+    :type:`versionValue` are based on the ordering of the semantic
     versions of the two values, as defined by their ``major``,
     ``minor``, and ``update`` components.  If the two values have
     identical semantic versions, any cases that rely on an ordering of
@@ -237,70 +226,120 @@ module Version {
     the former is considered an official release and the latter a
     pre-release.
   */
-  operator sourceVersion.>=(v1: sourceVersion(?),
-                            v2: sourceVersion(?)) param : bool {
+  operator versionValue.>=(v1: versionValue(?),
+                            v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval >= 0 && retval != 2;
   }
 
+
   /*
-    A helper function that creates a new version value from its
-    arguments.
+    This record represents a software version in a Git repository.  It
+    uses ``var`` values to represent its components in order to
+    support run-time building and comparison of version numbers.
+    When printed or converted to a string, it is represented as
+    ``major.minor.update (commit)``.
 
-    :arg major: The major version number
-    :type major: `int`
-
-    :arg minor: The minor version number
-    :type minor: `int`
-
-    :arg update: The optional update version number (defaults to 0)
-    :type update: `int`
-
-    :arg commit: The optional commit ID (defaults to "")
-    :type commit: `string`
-
-    :returns: A new version value of type :type:`programVersion`.
+    Note that ordered comparisons between two :type:`version`
+    types that only differ in their ``commit`` values are not
+    supported due to the challenges involved in ordering commit
+    values.  However, when a value with an empty ``update`` value is
+    compared to one whose ``update`` is non-empty, the latter is
+    considered to be earlier than (less than) the former, due to the
+    interpretation that it represents a pre-release of the official
+    release.
   */
-  proc createProgramVersion(major: int,
-                            minor: int,
-                            update: int = 0,
-                            commit: string = ""): programVersion {
-    return new programVersion(major, minor, update, commit);
 
-  }
-
-
-  record programVersion {
+  record version {
     /*
       The major version number. For version ``2.0.1``, this would be ``2``.
+      Defaults to ``-1``
     */
-    const major: int;
+    var major: int;
 
     /*
       The minor version number. For version ``2.0.1``, this would be ``0``.
+      Defaults to ``-1``
     */
-    const minor: int;
+    var minor: int;
 
     /*
       The update version number. For version ``2.0.1``, this would be ``1``.
+      Defaults to ``0``
     */
-    const update: int;
+    var update: int;
 
-    /* The commit ID of the version (e.g., a Git SHA) */
-    const commit: string = "";
+    /*
+      The commit ID of the version (e.g., a Git SHA)
+      Defaults to ``""``
+    */
+    var commit: string = "";
 
 
     pragma "no doc"
     proc writeThis(s) throws {
       s.write(this:string);
     }
+
+    pragma "no doc"
+    proc init(major: int = -1,
+              minor: int = -1,
+              update: int = 0,
+              commit: string = "") {
+      this.major = major;
+      this.minor = minor;
+      this.update = update;
+      this.commit = commit;
+    }
+
+    pragma "no doc"
+    proc init(otherVersion: version) {
+      this.major = otherVersion.major;
+      this.minor = otherVersion.minor;
+      this.update = otherVersion.update;
+      this.commit = otherVersion.commit;
+    }
+
+    pragma "no doc"
+    proc init=(otherVersion: version) {
+      major = otherVersion.major;
+      minor = otherVersion.minor;
+      update = otherVersion.update;
+      commit = otherVersion.commit;
+    }
+
+    pragma "no doc"
+    proc init=(otherVersion: versionValue(?)) {
+      major = otherVersion.major;
+      minor = otherVersion.minor;
+      update = otherVersion.update;
+      commit = otherVersion.commit;
+    }
+
   }
 
-  // cast from programVersion to string
   pragma "no doc"
-  operator :(x: programVersion, type t: string) const {
+    operator = (ref LHS:version, otherVersion: version) {
+      LHS.major = otherVersion.major;
+      LHS.minor = otherVersion.minor;
+      LHS.update = otherVersion.update;
+      LHS.commit = otherVersion.commit;
+    }
+
+    pragma "no doc"
+    operator = (ref LHS:version, otherVersion: versionValue) {
+      LHS.major = otherVersion.major;
+      LHS.minor = otherVersion.minor;
+      LHS.update = otherVersion.update;
+      LHS.commit = otherVersion.commit;
+    }
+
+
+  // cast from version to string
+  pragma "no doc"
+  operator :(x: version, type t: string) const {
     if (x.commit == "") then
       return (x.major:string + "." + x.minor:string + "." +
               x.update:string);
@@ -309,17 +348,17 @@ module Version {
               x.update:string + " (" + x.commit + ")");
   }
 
-  private proc spaceship(v1: programVersion,
-                         v2: programVersion) const : int {
-    const majComp = spaceship(v1.major, v2.major);
+  private proc spaceship(v1: version,
+                         v2: version) : int {
+    var majComp = spaceship(v1.major, v2.major);
     if majComp != 0 {
       return majComp;
     } else {
-      const minComp = spaceship(v1.minor, v2.minor);
+      var minComp = spaceship(v1.minor, v2.minor);
       if minComp != 0 {
         return minComp;
       } else {
-        const upComp = spaceship(v1.update, v2.update);
+        var upComp = spaceship(v1.update, v2.update);
         if upComp != 0 {
           return upComp;
         } else if v1.commit == v2.commit {
@@ -337,39 +376,39 @@ module Version {
   }
 
   // Comparisons between programVersions
-  operator programVersion.==(v1: programVersion,
-                             v2: programVersion) : bool {
+  operator version.==(v1: version,
+                             v2: version) : bool {
     return spaceship(v1, v2) == 0;
   }
 
   /*
     Equality/inequality operators between two values of type
-    :type:`programVersion` check whether or not the two values
+    :type:`version` check whether or not the two values
     have identical major, minor, update, and commit values.
   */
-  operator programVersion.!=(v1: programVersion,
-                             v2: programVersion) : bool {
+  operator version.!=(v1: version,
+                             v2: version) : bool {
     return spaceship(v1, v2) != 0;
   }
 
-  operator programVersion.<(v1: programVersion,
-                            v2: programVersion) : bool throws {
+  operator version.<(v1: version,
+                            v2: version) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
     return retval < 0;
   }
 
-  operator programVersion.<=(v1: programVersion,
-                             v2: programVersion) : bool throws {
+  operator version.<=(v1: version,
+                             v2: version) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
     return retval <= 0;
   }
 
-  operator programVersion.>(v1: programVersion,
-                            v2: programVersion) : bool throws {
+  operator version.>(v1: version,
+                            v2: version) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
@@ -378,7 +417,7 @@ module Version {
 
   /*
     Ordered comparisons between two values of type
-    :type:`programVersion` are based on the ordering of the semantic
+    :type:`version` are based on the ordering of the semantic
     versions of the two values, as defined by their ``major``,
     ``minor``, and ``update`` components.  If the two values have
     identical semantic versions, any cases that rely on an ordering of
@@ -389,94 +428,94 @@ module Version {
     the former is considered an official release and the latter a
     pre-release.
   */
-  operator programVersion.>=(v1: programVersion,
-                             v2: programVersion) : bool throws {
+  operator version.>=(v1: version,
+                             v2: version) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
     return retval >= 0 && retval != 2;
   }
 
-  // Comparisons between programVersion and sourceVersion
-  operator ==(v1: programVersion,
-              v2: sourceVersion) : bool {
+  // Comparisons between version and versionValue
+  operator ==(v1: version,
+              v2: versionValue) : bool {
     return spaceship(v1, v2) == 0;
   }
 
-  operator ==(v1: sourceVersion,
-              v2: programVersion) : bool {
+  operator ==(v1: versionValue,
+              v2: version) : bool {
     return v2 == v1;
   }
 
   /*
-    Equality/inequality operators between values of :type:`programVersion` and
-    :type:`sourceVersion` check whether or not the two values
+    Equality/inequality operators between values of :type:`version` and
+    :type:`versionValue` check whether or not the two values
     have identical major, minor, update, and commit values.
   */
-  operator !=(v1: programVersion,
-              v2: sourceVersion) : bool {
+  operator !=(v1: version,
+              v2: versionValue) : bool {
     return spaceship(v1, v2) != 0;
   }
 
-  operator !=(v1: sourceVersion,
-              v2: programVersion) : bool {
+  operator !=(v1: versionValue,
+              v2: version) : bool {
     return v2 != v1;
   }
 
-  operator <(v1: programVersion,
-             v2: sourceVersion) : bool throws {
+  operator <(v1: version,
+             v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
     return retval < 0;
   }
 
-  operator <(v1: sourceVersion,
-             v2: programVersion) : bool throws {
+  operator <(v1: versionValue,
+             v2: version) : bool throws {
     return v2 > v1;
   }
 
-  operator <=(v1: programVersion,
-              v2: sourceVersion) : bool throws {
+  operator <=(v1: version,
+              v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
     return retval <= 0;
   }
 
-  operator <=(v1: sourceVersion,
-              v2: programVersion) : bool throws {
+  operator <=(v1: versionValue,
+              v2: version) : bool throws {
     return v2 >= v1;
   }
 
-  operator >(v1: programVersion,
-             v2: sourceVersion) : bool throws {
+  operator >(v1: version,
+             v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
     return retval > 0 && retval != 2;
   }
 
-  operator >(v1: sourceVersion,
-             v2: programVersion) : bool throws {
+  operator >(v1: versionValue,
+             v2: version) : bool throws {
     return v2 < v1;
   }
 
-  operator >=(v1: programVersion,
-              v2: sourceVersion) : bool throws {
+  operator >=(v1: version,
+              v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
     return retval >= 0 && retval != 2;
   }
 
-  operator >=(v1: sourceVersion,
-              v2: programVersion) : bool throws {
+  operator >=(v1: versionValue,
+              v2: version) : bool throws {
     return v2 <= v1;
   }
 
-  private proc spaceship(v1: programVersion(?),
-                         v2: sourceVersion(?)) : int {
+  private proc spaceship(v1: version(?),
+                         v2: versionValue(?)) : int {
     const majComp = spaceship(v1.major, v2.major);
     if majComp != 0 {
       return majComp;
@@ -512,16 +551,27 @@ module Version {
       return 1;
   }
 
+  // helper function for comparison operators
+  private proc spaceship(param x: int, param y: int) param : int {
+    if x < y then
+      return -1;
+    else if x == y then
+      return 0;
+    else
+      return 1;
+  }
+
+
 
   class VersionComparisonError : Error {
-    var _msg:string;
+    var msg:string;
 
     proc init(msg:string) {
-      this._msg = msg;
+      this.msg = msg;
     }
 
     override proc message() {
-      return _msg;
+      return msg;
     }
   }
 
