@@ -74,7 +74,7 @@ enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 /* Specifies the day of the week */
 enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
   /* Days in the week, starting with `Monday` = 0 */
-  enum DayOfWeek {
+  enum dayOfWeek {
     Monday =    0,
     Tuesday =   1,
     Wednesday = 2,
@@ -84,8 +84,13 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     Sunday =    6
   }
 
+  pragma "no doc"
+  proc DayOfWeek {
+    compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
+  }
+
   /* Days in the week, starting with `Monday` = 1 */
-  enum ISODayOfWeek {
+  enum isoDayOfWeek {
     Monday =    1,
     Tuesday =   2,
     Wednesday = 3,
@@ -93,6 +98,11 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     Friday =    5,
     Saturday =  6,
     Sunday =    7
+  }
+
+  pragma "no doc"
+  proc ISODayOfWeek {
+    compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
   }
 
   /* The minimum year allowed in `date` objects */
@@ -383,18 +393,18 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return ymdToOrd(year, month, day);
   }
 
-  /* Return the day of the week as a `DayOfWeek`.
+  /* Return the day of the week as a `dayOfWeek`.
      `Monday` == 0, `Sunday` == 6
    */
   proc date.weekday() {
     // January 1 0001 is a Monday
-    return try! ((toOrdinal() + 6) % 7): DayOfWeek;
+    return try! ((toOrdinal() + 6) % 7): dayOfWeek;
   }
 
-  /* Return the day of the week as an `ISODayOfWeek`.
+  /* Return the day of the week as an `isoDayOfWeek`.
      `Monday` == 1, `Sunday` == 7 */
   proc date.isoWeekday() {
-    return try! (weekday(): int + 1): ISODayOfWeek;
+    return try! (weekday(): int + 1): isoDayOfWeek;
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
@@ -403,7 +413,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc date.isoCalendar() {
     proc findThursday(d: date) {
       var wd = d.weekday();
-      return d + new timedelta(days = (DayOfWeek.Thursday:int - wd:int));
+      return d + new timedelta(days = (dayOfWeek.Thursday:int - wd:int));
     }
 
     proc findyear(d: date) {
@@ -573,7 +583,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     pragma "no doc"
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     pragma "no doc"
-    var chpl_tzinfo: shared TZInfo?;
+    var chpl_tzinfo: shared Timezone?;
 
     /* The hour represented by this `time` value */
     proc hour {
@@ -596,8 +606,14 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
 
     /* The timezone represented by this `time` value */
-    proc tzinfo {
+    proc timezone {
       return chpl_tzinfo;
+    }
+
+    pragma "no doc"
+    deprecated "'tzinfo' is deprecated, please use 'timezone' instead"
+    proc tzinfo {
+      return timezone;
     }
 
     /* The minimum representable `time` */
@@ -623,7 +639,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    */
   @unstable "tzinfo is unstable; its type may change in the future"
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
-                 in tzinfo: shared TZInfo?) {
+                 in tzinfo: shared Timezone?) {
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -1002,8 +1018,14 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
 
     /* The timezone represented by this `datetime` value */
+    proc timezone {
+      return chpl_time.timezone;
+    }
+
+    pragma "no doc"
+    deprecated "'tzinfo' is deprecated, please use 'timezone' instead"
     proc tzinfo {
-      return chpl_time.tzinfo;
+      return timezone;
     }
   }
 
@@ -1052,7 +1074,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a `datetime` value representing the current time and date */
-  proc type datetime.now(in tz: shared TZInfo?) {
+  proc type datetime.now(in tz: shared Timezone?) {
     if tz.borrow() == nil {
       const timeSinceEpoch = getTimeOfDay();
       const lt = getLocalTime(timeSinceEpoch);
@@ -1086,7 +1108,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* The `datetime` that is `timestamp` seconds from the epoch */
   @unstable "tzinfo is unstable; its type may change in the future"
   proc type datetime.fromTimestamp(timestamp: real,
-                                   in tz: shared TZInfo?) {
+                                   in tz: shared Timezone?) {
     if tz.borrow() == nil {
       var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
       const lt = getLocalTime(t);
@@ -1159,7 +1181,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the date and time converted into the timezone in the argument */
   @unstable "tzinfo is unstable; its type may change in the future"
-  proc datetime.astimezone(in tz: shared TZInfo) {
+  proc datetime.astimezone(in tz: shared Timezone) {
     if tzinfo == tz {
       return this;
     }
@@ -1234,25 +1256,37 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return getdate().toOrdinal();
   }
 
-  /* Return the day of the week as a `DayOfWeek`.
+  /* Return the day of the week as a `dayOfWeek`.
      `Monday` == 0, `Sunday` == 6
    */
   proc datetime.weekday() {
     return getdate().weekday();
   }
 
-  /* Return the day of the week as an `ISODayOfWeek`.
+  /* Return the day of the week as an `isoDayOfWeek`.
      `Monday` == 1, `Sunday` == 7
    */
+  proc datetime.isoWeekday() {
+    return getdate().isoWeekday();
+  }
+
+  pragma "no doc"
+  deprecated "'isoweekday' is deprecated, please use 'isoWeekday' instead"
   proc datetime.isoweekday() {
-    return getdate().isoweekday();
+    return isoWeekday();
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
      and ISO day of the week
    */
+  proc datetime.isoCalendar() {
+    return getdate().isoCalendar();
+  }
+
+  pragma "no doc"
+  deprecated "'isocalendar' is deprecated, please use 'isoCalendar' instead"
   proc datetime.isocalendar() {
-    return getdate().isocalendar();
+    return getdate().isoCalendar();
   }
 
   /* Return the `datetime` as a `string` in ISO format */
@@ -1828,10 +1862,14 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return str;
   }
 
+  pragma "no doc"
+  deprecated "'TZInfo' is deprecated, please use 'Timezone' instead"
+  class TZInfo: Timezone { }
+
   /* Abstract base class for time zones. This class should not be used
      directly, but concrete implementations of time zones should be
      derived from it. */
-  class TZInfo {
+  class Timezone {
     /* The offset from UTC this class represents */
     proc utcOffset(dt: datetime): timedelta {
       HaltWrappers.pureVirtualMethodHalt();
