@@ -1035,7 +1035,20 @@ module OS {
 
   private use CTypes;
   private use POSIX;
-  import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,ENOERR};
+  import SysBasic.{ESHUTDOWN,ENOERR};
+
+  /*
+   Private local copies of IO.{EEOF,ESHORT,EFORMAT}, since if we import IO
+   here it modifies module initialization order and causes issues in
+   ChapelLocale.chpl_localeID_to_locale.
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
+  private extern proc chpl_macro_int_ESHORT():c_int;
+  private extern proc chpl_macro_int_EFORMAT():c_int;
+  private inline proc EEOF return chpl_macro_int_EEOF():c_int;
+  private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+  private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s
      generated from ``errorCode``. It provides factory methods to create
@@ -1328,7 +1341,7 @@ module OS {
 
   /*
      :class:`EofError` is the subclass of :class:`IoError` corresponding to
-     :const:`SysBasic.EEOF`.
+     :const:`IO.EEOF`.
   */
   class EofError : IoError {
     proc init(details: string = "", err: errorCode = EEOF:errorCode) {
@@ -1338,7 +1351,7 @@ module OS {
 
   /*
      :class:`UnexpectedEofError` is the subclass of :class:`IoError`
-     corresponding to :const:`SysBasic.ESHORT`.
+     corresponding to :const:`IO.ESHORT`.
   */
   class UnexpectedEofError : IoError {
     proc init(details: string = "", err: errorCode = ESHORT:errorCode) {
@@ -1348,7 +1361,7 @@ module OS {
 
   /*
      :class:`BadFormatError` is the subclass of :class:`IoError` corresponding
-     to :const:`SysBasic.EFORMAT`.
+     to :const:`IO.EFORMAT`.
   */
   class BadFormatError : IoError {
     proc init(details: string = "", err: errorCode = EFORMAT:errorCode) {

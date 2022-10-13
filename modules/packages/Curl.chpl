@@ -512,7 +512,7 @@ module Curl {
     use Curl;
     use CTypes;
     use OS.POSIX;
-    import SysBasic.{ENOERR,EEOF};
+    import SysBasic.{ENOERR};
     import OS.{errorCode};
 
     pragma "no doc"

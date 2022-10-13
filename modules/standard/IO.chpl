@@ -420,7 +420,7 @@ module IO {
       -- seems that we'd want some way to cache that...).
 */
 
-import SysBasic.{EFORMAT,fd_t,ENOERR,EEOF};
+import SysBasic.{fd_t, ENOERR};
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 import OS.POSIX.{EBADF};
 import OS.{errorCode};
@@ -2448,6 +2448,29 @@ inline operator :(x: ioBits, type t:string) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
 }
+
+/*
+ EEOF, ESHORT, and EFORMAT are Chapel-specific IO error codes.
+ */
+
+private extern proc chpl_macro_int_EEOF():c_int;
+/* An error code indicating the end of file has been reached (Chapel specific)
+ */
+inline proc EEOF return chpl_macro_int_EEOF():c_int;
+
+private extern proc chpl_macro_int_ESHORT():c_int;
+/* An error code indicating that the end of file or the end of the
+   input was reached before the requested amount of data could be read.
+   (Chapel specific)
+  */
+inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+
+private extern proc chpl_macro_int_EFORMAT():c_int;
+/* An error code indicating a format error; for example when reading a quoted
+   string literal, this would be returned if we never encountered the
+   opening quote. (Chapel specific)
+  */
+inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
 
 pragma "no doc"
