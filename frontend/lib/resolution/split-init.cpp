@@ -548,40 +548,57 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
       // is passed to a formal with out intent for all return intent overloads
       // and then record it with handleInitOrAssign.
 
-      // compute a vector indicating which actuals are passed to
-      // an 'out' formal in all return intent overloads
-      std::vector<int8_t> actualIdxToOutAll(callAst->numActuals(), 1);
-      auto callInfo = CallInfo(callAst);
-      int nActuals = callAst->numActuals();
+      auto calledExprAst = callAst->calledExpression();
+      if (rv.hasAst(calledExprAst)) {
+        auto calledExprKind = rv.byAst(calledExprAst).type().kind();
 
-      for (const TypedFnSignature* fn : candidates) {
-        if (fn != nullptr) {
-          auto formalActualMap = FormalActualMap(fn, callInfo);
-          for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
-            const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
-            int8_t isOutFormal = fa->formalType().kind() == QualifiedType::OUT;
-            actualIdxToOutAll[actualIdx] &= isOutFormal;
+        auto ci = CallInfo(callAst, calledExprKind);
+        int nActuals = ci.numActuals();
+
+        // compute a vector indicating which actuals are passed to
+        // an 'out' formal in all return intent overloads
+        std::vector<int8_t> actualIdxToOutAll(nActuals, 1);
+
+        for (const TypedFnSignature* fn : candidates) {
+          if (fn != nullptr) {
+            auto formalActualMap = FormalActualMap(fn, ci);
+            for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+              const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
+              int8_t isOutFormal = fa->formalType().kind() == QualifiedType::OUT;
+              actualIdxToOutAll[actualIdx] &= isOutFormal;
+            }
           }
         }
-      }
 
-      int actualIdx = 0;
-      for (auto actualAst : callAst->actuals()) {
-        // find an actual referring to an ID that is passed to an 'out' formal
-        ID toId;
-        if (rv.hasAst(actualAst)) {
-          toId = rv.byAst(actualAst).toId();
+        int actualIdx = 0;
+        int astActualIdx = 0;
+        if (ci.isMethodCall())
+          astActualIdx = -1; // ci actual 0 is the receiver
+        for (auto actual : ci.actuals()) {
+          (void) actual; // avoid compilation error about unused variable
+          // find an actual referring to an ID that is passed to an 'out' formal
+          ID toId;
+          const AstNode* actualAst = nullptr;
+          if (astActualIdx == -1) {
+            actualAst = callAst->calledExpression();
+          } else if (actualIdx >= 0) {
+            actualAst = callAst->actual(astActualIdx);
+          }
+          if (rv.hasAst(actualAst)) {
+            toId = rv.byAst(actualAst).toId();
+          }
+
+          if (actualIdxToOutAll[actualIdx] && !toId.isEmpty()) {
+            // it is like an assignment to the variable with ID toID
+            handleInitOrAssign(toId);
+          } else {
+            // otherwise, visit the actuals to gather mentions
+            actualAst->traverse(rv);
+          }
+
+          astActualIdx++;
+          actualIdx++;
         }
-
-        if (actualIdxToOutAll[actualIdx] && !toId.isEmpty()) {
-          // it is like an assignment to the variable with ID toID
-          handleInitOrAssign(toId);
-        } else {
-          // otherwise, visit the actuals to gather mentions
-          actualAst->traverse(rv);
-        }
-
-        actualIdx++;
       }
     }
   }

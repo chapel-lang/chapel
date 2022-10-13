@@ -547,7 +547,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       auto sig = typeConstructorInitial(context, baseCt);
 
       // Generate a simple CallInfo for the call
-      auto callInfo = CallInfo(call);
+      auto callInfo = CallInfo(call, QualifiedType::FUNCTION);
       // generate a FormalActualMap
       auto faMap = FormalActualMap(sig, callInfo);
 
@@ -1346,7 +1346,7 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
         return true;
       }
 
-      // Update a generic type when split-init is used.
+      // Update a generic/unknown type when split-init is used.
       adjustTypesOnAssign(op->actual(0), op->actual(1), op);
     }
   } else if (op->op() == USTR("...")) {
@@ -2292,34 +2292,62 @@ void Resolver::exit(const Call* call) {
 
   auto ci = prepareCallInfoNormalCall(call);
 
-  // Don't try to resolve a call other than type construction that accepts:
+  // With two exceptions (see below), don't try to resolve a call that accepts:
   //  * an unknown param
   //  * a type that is a generic type unless there are substitutions
   //  * a value of generic type
   //  * UnknownType, ErroneousType
+  // EXCEPT, to handle split-init with an 'out' formal,
+  // the actual argument can have unknown / generic type if it
+  // refers directly to a particular variable.
+  // EXCEPT, type construction can work with unknown or generic types
   bool skip = false;
   if (!ci.calledType().isType()) {
+    int astActualIdx = 0;
+    if (ci.isMethodCall())
+      astActualIdx = -1; // ci actual 0 is the receiver
     for (auto actual : ci.actuals()) {
+      ID toId; // does the actual refer directly to a particular variable?
+      const AstNode* actualAst = nullptr;
+      if (call->isFnCall()) {
+        if (astActualIdx == -1) {
+          actualAst = call->calledExpression();
+        } else if (astActualIdx >= 0) {
+          actualAst = call->actual(astActualIdx);
+        }
+      }
+      if (actualAst != nullptr) {
+        if (byPostorder.hasAst(actualAst)) {
+          toId = byPostorder.byAst(actualAst).toId();
+        }
+      }
       QualifiedType qt = actual.type();
-      if (qt.isParam() && qt.param() == nullptr) {
+      const Type* t = qt.type();
+      if (t != nullptr && t->isErroneousType()) {
+        // always skip if there is an ErroneousType
         skip = true;
-      } else if (qt.isUnknown()) {
-        skip = true;
-      } else if (const Type* t = qt.type()) {
-        auto g = getTypeGenericity(context, t);
-        bool isBuiltinGeneric = (g == Type::GENERIC &&
-                                 (t->isAnyType() || t->isBuiltinType()));
-        if (qt.isType() && isBuiltinGeneric && substitutions == nullptr) {
+      } else if (!toId.isEmpty()) {
+        // don't skip because it could be initialized with 'out' intent
+      } else {
+        if (qt.isParam() && qt.param() == nullptr) {
           skip = true;
-        } else if (t->isErroneousType()) {
+        } else if (qt.isUnknown()) {
           skip = true;
-        } else if (!qt.isType() && g != Type::CONCRETE) {
-          skip = true;
+        } else if (t != nullptr) {
+          auto g = getTypeGenericity(context, t);
+          bool isBuiltinGeneric = (g == Type::GENERIC &&
+                                   (t->isAnyType() || t->isBuiltinType()));
+          if (qt.isType() && isBuiltinGeneric && substitutions == nullptr) {
+            skip = true;
+          } else if (!qt.isType() && g != Type::CONCRETE) {
+            skip = true;
+          }
         }
       }
       if (skip) {
         break;
       }
+      astActualIdx++;
     }
   }
   // Don't try to resolve calls to '=' until later

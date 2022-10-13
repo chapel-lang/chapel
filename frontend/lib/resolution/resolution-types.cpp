@@ -150,17 +150,24 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
   return getUntypedFnSignatureForIdQuery(context, functionId);
 }
 
-CallInfo::CallInfo(const uast::FnCall* call) {
+CallInfo::CallInfo(const uast::FnCall* call,
+                   QualifiedType::Kind calledExprKind) {
   // set the name (simple cases only)
-  if (auto called = call->calledExpression()) {
-    if (auto id = called->toIdentifier()) {
-      name_ = id->name();
-      // should not be a valid operator name
-      assert(!uast::isOpName(name_));
+  if (calledExprKind == QualifiedType::FUNCTION) {
+    if (auto called = call->calledExpression()) {
+      if (auto id = called->toIdentifier()) {
+        name_ = id->name();
+        // should not be a valid operator name
+        assert(!uast::isOpName(name_));
+      }
     }
+  } else {
+    isMethodCall_ = true;
+    actuals_.push_back(CallInfoActual(QualifiedType(), USTR("this")));
   }
 
   isOpCall_ = false;
+
 
   int i = 0;
   for (auto actual : call->actuals()) {
@@ -170,8 +177,8 @@ CallInfo::CallInfo(const uast::FnCall* call) {
       UniqueString byName;
       if (call->isNamedActual(i)) {
         byName = call->actualName(i);
-        if (i == 0 && byName == USTR("this"))
-          isMethodCall_ = true;
+        //if (i == 0 && byName == USTR("this"))
+        //  isMethodCall_ = true;
       }
       actuals_.push_back(CallInfoActual(QualifiedType(), byName));
       i++;

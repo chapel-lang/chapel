@@ -366,6 +366,36 @@ static void test17() {
     {"x"});
 }
 
+static void test18() {
+  testSplitInit("test18",
+    R""""(
+      module M {
+        proc fOut(out formal: int) { formal = 4; }
+        proc test() {
+          var x;
+          fOut(x);
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test19() {
+  testSplitInit("test19",
+    R""""(
+      module M {
+        proc int.fOut(out formal: int) { formal = 4; }
+        proc test() {
+          var myInt = 4;
+          var x;
+          myInt.fOut(x);
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+
 int main() {
   test1();
   test2();
@@ -384,6 +414,8 @@ int main() {
   test15();
   test16();
   test17();
+  test18();
+  test19();
 
   return 0;
 }
