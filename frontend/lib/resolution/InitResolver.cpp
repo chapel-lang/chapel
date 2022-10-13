@@ -236,7 +236,9 @@ const TypedFnSignature* InitResolver::finalize(void) {
     for (int i = start; i < stop; i++) {
       auto id = fieldIdsByOrdinal_[i];
       bool handled = implicitlyResolveFieldType(id);
-      assert(handled);
+      if (!handled) {
+        assert(false && "Not handled yet!");
+      }
     }
   }
 
@@ -294,7 +296,8 @@ InitResolver::FieldInitState* InitResolver::fieldStateFromId(ID id) {
 }
 
 InitResolver::FieldInitState* InitResolver::fieldStateFromIndex(int idx) {
-  if (idx < 0 || idx >= fieldIdsByOrdinal_.size()) return nullptr;
+  int numFields = fieldIdsByOrdinal_.size();
+  if (idx < 0 || idx >= numFields) return nullptr;
   auto id = fieldIdsByOrdinal_[idx];
   auto ret = fieldStateFromId(id);
   return ret;
@@ -419,8 +422,9 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
   currentFieldIndex_ = state->ordinalPos + 1;
   for (int i = old + 1; i < state->ordinalPos; i++) {
       auto id = fieldIdsByOrdinal_[i];
-      bool handled = implicitlyResolveFieldType(id);
-      assert(handled);
+
+      // TODO: Anything to do if this doesn't hold?
+      std::ignore = implicitlyResolveFieldType(id);
   }
 
   // TODO: Anything to do if the opposite is true?
