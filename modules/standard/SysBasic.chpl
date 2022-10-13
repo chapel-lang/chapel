@@ -54,6 +54,7 @@ private extern proc chpl_macro_int_EEOF():c_int;
 
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
+pragma "last resort"
 deprecated "'SysBasic.EEOF' has been deprecated; please use 'IO.EEOF' instead."
 inline proc EEOF return chpl_macro_int_EEOF():c_int;
 
@@ -63,6 +64,7 @@ private extern proc chpl_macro_int_ESHORT():c_int;
    input was reached before the requested amount of data could be read.
    (Chapel specific)
   */
+pragma "last resort"
 deprecated "'SysBasic.ESHORT' has been deprecated; please use 'IO.ESHORT' instead."
 inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
 
@@ -72,6 +74,7 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
    string literal, this would be returned if we never encountered the
    opening quote. (Chapel specific)
   */
+pragma "last resort"
 deprecated "'SysBasic.EFORMAT' has been deprecated; please use 'IO.EFORMAT' instead."
 inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
