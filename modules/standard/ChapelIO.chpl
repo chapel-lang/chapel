@@ -138,7 +138,6 @@ module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
   import SysBasic.{ENOERR};
-  use OS;
 
   // TODO -- this should probably be private
   pragma "no doc"
