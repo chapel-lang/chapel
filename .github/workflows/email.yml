@@ -27,6 +27,7 @@ jobs:
         run: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o events.json
               jq -r  '"$EVENTS_PAYLOAD_TYPE=\(.[].id)"' events.json >> $GITHUB_ENV
+              jq -r  '"$AUTHOR=\(.[].payload.commits[].message )"' events.json >> $GITHUB_ENV
       - name: use events
         run: echo  ${{ env.EVENTS_PAYLOAD_TYPE }} 
       - name: checkout
@@ -52,7 +53,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: Chapel Merge ${{ github.event.pull_request.head_commit.message }}  
+           subject: Chapel Merge ${{ env.AUTHOR }}  
            # Required recipients' addresses:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
