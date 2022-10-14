@@ -26,6 +26,8 @@
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/framework/ErrorBase.h"
 
+#include "llvm/Support/FileSystem.h"
+
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -435,10 +437,11 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
            moduleIdSymbolPath.c_str(), path.c_str());
   }
   #ifndef NDEBUG
+    // check that querying the file path gives the same file
     UniqueString gotPath;
     UniqueString gotParentSymbolPath;
     bool ok = filePathForId(moduleID, gotPath, gotParentSymbolPath);
-    assert(ok && path == gotPath);
+    assert(ok && llvm::sys::fs::equivalent(path.str(), gotPath.str()));
   #endif
 }
 
