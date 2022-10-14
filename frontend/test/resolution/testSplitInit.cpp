@@ -90,6 +90,22 @@ static void testSplitInit(const char* test,
   }
 
   assert(expectNames == splitNames);
+
+  // check that all split-inited variables have type 'int'
+  auto intType = IntType::get(context, 0);
+  for (auto id : splitIds) {
+    QualifiedType varType = r->byId(id).type();
+    if (varType.type() != intType) {
+      auto ast = idToAst(context, id);
+      auto vl = ast->toVarLikeDecl();
+      auto name = vl->name().str();
+      printf("%s: variable '%s' with id %s has unexpected type ",
+             test, name.c_str(), id.str().c_str());
+      varType.dump();
+      printf(" rather than type 'int'\n");
+    }
+    assert(varType.type() == IntType::get(context, 0));
+  }
 }
 
 static void test1() {

@@ -554,22 +554,10 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
         auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
                                    /* raiseErrors */ false,
                                    &actualAsts);
-        int nActuals = ci.numActuals();
 
         // compute a vector indicating which actuals are passed to
         // an 'out' formal in all return intent overloads
-        std::vector<int8_t> actualIdxToOutAll(nActuals, 1);
-
-        for (const TypedFnSignature* fn : candidates) {
-          if (fn != nullptr) {
-            auto formalActualMap = FormalActualMap(fn, ci);
-            for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
-              const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
-              int8_t isOutFormal = fa->formalType().kind() == QualifiedType::OUT;
-              actualIdxToOutAll[actualIdx] &= isOutFormal;
-            }
-          }
-        }
+        std::vector<int8_t> actualIdxToOut = candidates.computeOutFormals(ci);
 
         int actualIdx = 0;
         for (auto actual : ci.actuals()) {
@@ -581,7 +569,7 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
           if (actualAst != nullptr && rv.hasAst(actualAst)) {
             toId = rv.byAst(actualAst).toId();
           }
-          if (actualIdxToOutAll[actualIdx] && !toId.isEmpty()) {
+          if (actualIdxToOut[actualIdx] && !toId.isEmpty()) {
             // it is like an assignment to the variable with ID toID
             handleInitOrAssign(toId);
           } else {

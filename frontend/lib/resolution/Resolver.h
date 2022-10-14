@@ -288,10 +288,21 @@ struct Resolver {
                                     const CallInfo& ci,
                                     const CallResolutionResult& c);
 
-  // handles setting types of variables for split init
+  // If the variable with the passed ID has unknown or generic type,
+  // and it has not yet been initialized, set its type to rhsType.
+  // Also sets lhsExprAst to have this new type.
+  void adjustTypesForSplitInit(ID id,
+                               const types::QualifiedType& rhsType,
+                               const uast::AstNode* lhsExprAst);
+
+  // handles setting types of variables for split init with '='
   void adjustTypesOnAssign(const uast::AstNode* lhsAst,
-                           const uast::AstNode* rhsAst,
-                           const uast::AstNode* astForErr);
+                           const uast::AstNode* rhsAst);
+
+  // handles setting types of variables for split init with 'out' formals
+  void adjustTypesForOutFormals(const CallInfo& ci,
+                                std::vector<const uast::AstNode*>& asts,
+                                const MostSpecificCandidates& fns);
 
   // e.g. (a, b) = mytuple
   // checks that tuple size matches and that the elements are assignable

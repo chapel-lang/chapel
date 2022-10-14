@@ -683,6 +683,40 @@ void TypedFnSignature::stringify(std::ostream& ss,
   ss << ")";
 }
 
+std::vector<int8_t>
+MostSpecificCandidates::computeOutFormals(const CallInfo& ci) const {
+
+  int nActuals = ci.numActuals();
+  std::vector<int8_t> ret(nActuals, 0);
+
+  int nFns = numBest();
+  if (nFns == 0) {
+    // return early if there are no actual candidates
+    return ret;
+  }
+
+  for (const TypedFnSignature* fn : *this) {
+    if (fn != nullptr) {
+      auto formalActualMap = FormalActualMap(fn, ci);
+      for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
+        int8_t isOutFormal = fa->formalType().kind() == QualifiedType::OUT;
+        ret[actualIdx] += isOutFormal;
+      }
+    }
+  }
+
+  for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+    if (ret[actualIdx] == nFns) {
+      ret[actualIdx] = 1;
+    } else {
+      ret[actualIdx] = 0;
+    }
+  }
+
+  return ret;
+}
+
 void CallInfoActual::stringify(std::ostream& ss,
                                chpl::StringifyKind stringKind) const {
   if (!byName_.isEmpty()) {

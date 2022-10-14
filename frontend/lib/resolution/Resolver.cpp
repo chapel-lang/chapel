@@ -989,7 +989,6 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
       context->error(astForErr, "Cannot resolve call: ambiguity");
     } else {
       // could not find a most specific candidate
-      gdbShouldBreakHere();
       context->error(astForErr, "Cannot resolve call: no matching candidates");
     }
   } else {
@@ -1035,15 +1034,9 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
   }
 }
 
-// handle adjusting a variable's type to support split init
-void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
-                                   const AstNode* rhsAst,
-                                   const AstNode* astForErr) {
-
-
-  ResolvedExpression& lhsExpr = byPostorder.byAst(lhsAst);
-
-  ID id = lhsExpr.toId();
+void Resolver::adjustTypesForSplitInit(ID id,
+                                       const QualifiedType& rhsType,
+                                       const AstNode* lhsExprAst) {
   if (id.isEmpty()) {
     return;
   }
@@ -1055,13 +1048,13 @@ void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
 
   // if the the lhs variable has not been initialized and
   // the type of LHS is generic or unknown, update it based on the RHS type.
+
   if (!useLocalResult) {
     return;
   }
 
   ResolvedExpression& lhs = byPostorder.byId(id);
   QualifiedType lhsType = lhs.type();
-  QualifiedType rhsType = byPostorder.byAst(rhsAst).type();
 
   auto g = Type::MAYBE_GENERIC;
   if (const Type* lhsTypePtr = lhsType.type()) {
@@ -1071,12 +1064,16 @@ void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
       g = getTypeGenericity(context, lhsTypePtr);
     }
   }
+  // also params that don't have a value yet count as generic for this purpose
+  if (lhsType.isParam() && !lhsType.hasParamPtr()) {
+    g = Type::GENERIC;
+  }
 
   if (g != Type::GENERIC) {
     return;
   }
 
-  auto pair = initedVariables.insert(lhsAst->id());
+  auto pair = initedVariables.insert(id);
   if (pair.second) {
     // insertion took place, so update the type
     const Param* p = rhsType.param();
@@ -1085,7 +1082,71 @@ void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
     }
     auto q = QualifiedType(lhsType.kind(), rhsType.type(), p);
     lhs.setType(q);
-    lhsExpr.setType(q);
+
+    if (lhsExprAst != nullptr) {
+      ResolvedExpression& lhsExpr = byPostorder.byAst(lhsExprAst);
+      lhsExpr.setType(q);
+    }
+  }
+}
+
+// handle adjusting a variable's type to support split init
+void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
+                                   const AstNode* rhsAst) {
+
+  ResolvedExpression& lhsExpr = byPostorder.byAst(lhsAst);
+
+  ID id = lhsExpr.toId();
+  if (id.isEmpty()) {
+    return;
+  }
+
+  QualifiedType rhsType = byPostorder.byAst(rhsAst).type();
+
+  adjustTypesForSplitInit(id, rhsType, lhsAst);
+}
+
+// Update a variable's type if it is generic/unknown
+// and the variable is initialized by an 'out' formal
+void
+Resolver::adjustTypesForOutFormals(const CallInfo& ci,
+                                   std::vector<const uast::AstNode*>& asts,
+                                   const MostSpecificCandidates& fns) {
+
+  std::vector<int8_t> actualIdxToOut = fns.computeOutFormals(ci);
+
+  int actualIdx = 0;
+  for (auto actual : ci.actuals()) {
+    (void) actual; // avoid compilation error about unused variable
+
+    // find an actual referring to an ID that is passed to an 'out' formal
+    ID id;
+    const AstNode* actualAst = asts[actualIdx];
+    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
+      id = byPostorder.byAst(actualAst).toId();
+    }
+    if (actualIdxToOut[actualIdx] && !id.isEmpty()) {
+      bool hasFormalType = false;
+      QualifiedType formalType;
+      // compute the type of the 'out' formal, which must match among
+      // the candidates
+      for (const TypedFnSignature* fn : fns) {
+        if (fn != nullptr) {
+          auto formalActualMap = FormalActualMap(fn, ci);
+          const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
+          assert(fa->formalType().kind() == QualifiedType::OUT);
+          if (!hasFormalType) {
+            formalType = fa->formalType();
+            hasFormalType = true;
+          } else if (formalType != fa->formalType()) {
+            context->error(actualAst, "when using split-init with return intent overloads with 'out' formals, the return intent overloads do not have matching 'out' formal types");
+          }
+        }
+      }
+      assert(hasFormalType);
+      adjustTypesForSplitInit(id, formalType, actualAst);
+    }
+    actualIdx++;
   }
 }
 
@@ -1347,7 +1408,7 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
       }
 
       // Update a generic/unknown type when split-init is used.
-      adjustTypesOnAssign(op->actual(0), op->actual(1), op);
+      adjustTypesOnAssign(op->actual(0), op->actual(1));
     }
   } else if (op->op() == USTR("...")) {
     // just leave it unknown -- tuple expansion only makes sense
@@ -2149,7 +2210,6 @@ void Resolver::exit(const Call* call) {
   }
 
   std::vector<const uast::AstNode*> actualAsts;
-
   auto ci = CallInfo::create(context, call, byPostorder,
                              /* raiseErrors */ true,
                              &actualAsts);
@@ -2213,6 +2273,9 @@ void Resolver::exit(const Call* call) {
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
     handleResolvedCall(r, call, ci, c);
+
+    // handle type inference for variables split-inited by 'out' formals
+    adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
   }
 
   inLeafCall = nullptr;

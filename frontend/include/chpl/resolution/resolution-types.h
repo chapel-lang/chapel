@@ -921,6 +921,13 @@ class MostSpecificCandidates {
     return emptyDueToAmbiguity;
   }
 
+  /**
+    Compute a vector indicating which actuals are passed to an 'out'
+    formal in all return intent overloads. The vector elements are 0 or 1;
+    where 1 means all best candidates used an 'out' formal for that actual.
+   */
+  std::vector<int8_t> computeOutFormals(const CallInfo& ci) const;
+
   bool operator==(const MostSpecificCandidates& other) const {
     for (int i = 0; i < NUM_INTENTS; i++) {
       if (candidates[i] != other.candidates[i])
