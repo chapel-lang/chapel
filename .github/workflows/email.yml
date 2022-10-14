@@ -27,7 +27,7 @@ jobs:
         run: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o events.json
               jq -r  '"$EVENTS_PAYLOAD_TYPE=\(.[].id)"' events.json >> $GITHUB_ENV
-              jq -r  '"$AUTHOR=\(.[].payload.commits[].message )"' events.json >> $GITHUB_ENV
+              jq -r  '"$AUTHOR=\(.[].payload.push_id)"' events.json >> $GITHUB_ENV
       - name: use events
         run: echo  ${{ env.EVENTS_PAYLOAD_TYPE }} 
       - name: checkout
