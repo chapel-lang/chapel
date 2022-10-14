@@ -2094,11 +2094,8 @@ void Resolver::prepareCallInfoActuals(const Call* call,
                                       const AstNode*& questionArg) {
   CallInfo::prepareActuals(context, call, byPostorder,
                            /* raiseErrors */ true,
-                           actuals, questionArg);
-}
-
-CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
-  return CallInfo::create(context, call, byPostorder, /* raiseErrors */ true);
+                           actuals, questionArg,
+                           /* actualAsts */ nullptr);
 }
 
 QualifiedType Resolver::typeForTypeOperator(const OpCall* op,
@@ -2151,7 +2148,11 @@ void Resolver::exit(const Call* call) {
     return;
   }
 
-  auto ci = prepareCallInfoNormalCall(call);
+  std::vector<const uast::AstNode*> actualAsts;
+
+  auto ci = CallInfo::create(context, call, byPostorder,
+                             /* raiseErrors */ true,
+                             &actualAsts);
 
   // With two exceptions (see below), don't try to resolve a call that accepts:
   //  * an unknown param
@@ -2162,25 +2163,15 @@ void Resolver::exit(const Call* call) {
   // the actual argument can have unknown / generic type if it
   // refers directly to a particular variable.
   // EXCEPT, type construction can work with unknown or generic types
+
   bool skip = false;
   if (!ci.calledType().isType()) {
-    int astActualIdx = 0;
-    if (ci.isMethodCall())
-      astActualIdx = -1; // ci actual 0 is the receiver
+    int actualIdx = 0;
     for (auto actual : ci.actuals()) {
       ID toId; // does the actual refer directly to a particular variable?
-      const AstNode* actualAst = nullptr;
-      if (call->isFnCall()) {
-        if (astActualIdx == -1) {
-          actualAst = call->calledExpression();
-        } else if (astActualIdx >= 0) {
-          actualAst = call->actual(astActualIdx);
-        }
-      }
-      if (actualAst != nullptr) {
-        if (byPostorder.hasAst(actualAst)) {
-          toId = byPostorder.byAst(actualAst).toId();
-        }
+      const AstNode* actualAst = actualAsts[actualIdx];
+      if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
+        toId = byPostorder.byAst(actualAst).toId();
       }
       QualifiedType qt = actual.type();
       const Type* t = qt.type();
@@ -2208,7 +2199,7 @@ void Resolver::exit(const Call* call) {
       if (skip) {
         break;
       }
-      astActualIdx++;
+      actualIdx++;
     }
   }
   // Don't try to resolve calls to '=' until later

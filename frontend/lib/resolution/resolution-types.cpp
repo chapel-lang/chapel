@@ -192,7 +192,8 @@ void CallInfo::prepareActuals(Context* context,
                               const ResolutionResultByPostorderID& byPostorder,
                               bool raiseErrors,
                               std::vector<CallInfoActual>& actuals,
-                              const AstNode*& questionArg) {
+                              const AstNode*& questionArg,
+                              std::vector<const uast::AstNode*>* actualAsts) {
 
   const FnCall* fnCall = call->toFnCall();
 
@@ -215,7 +216,7 @@ void CallInfo::prepareActuals(Context* context,
         byName = fnCall->actualName(i);
       }
 
-      bool handled = false;
+      bool handledTupleExpansion = false;
       if (auto op = actual->toOpCall()) {
         if (op->op() == USTR("...")) {
           if (op->numActuals() != 1) {
@@ -256,14 +257,20 @@ void CallInfo::prepareActuals(Context* context,
               // set and we issued an error above)
               actuals.push_back(CallInfoActual(tupleType->elementType(i),
                                                UniqueString()));
+              if (actualAsts != nullptr) {
+                actualAsts->push_back(op);
+              }
             }
-            handled = true;
+            handledTupleExpansion = true;
           }
         }
       }
 
-      if (!handled) {
+      if (!handledTupleExpansion) {
         actuals.push_back(CallInfoActual(actualType, byName));
+        if (actualAsts != nullptr) {
+          actualAsts->push_back(actual);
+        }
       }
     }
   }
@@ -272,7 +279,8 @@ void CallInfo::prepareActuals(Context* context,
 CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
-                          bool raiseErrors) {
+                          bool raiseErrors,
+                          std::vector<const uast::AstNode*>* actualAsts) {
 
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -280,6 +288,10 @@ CallInfo CallInfo::create(Context* context,
   bool isMethodCall = false;
   const AstNode* questionArg = nullptr;
   std::vector<CallInfoActual> actuals;
+
+  if (actualAsts != nullptr) {
+    actualAsts->clear();
+  }
 
   // Get the name of the called expression.
   if (auto op = call->toOpCall()) {
@@ -309,6 +321,9 @@ CallInfo CallInfo::create(Context* context,
             qtReceiver.kind() != QualifiedType::MODULE) {
 
           actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+          if (actualAsts != nullptr) {
+            actualAsts->push_back(receiver);
+          }
           calledType = qtReceiver;
           isMethodCall = true;
         }
@@ -331,6 +346,9 @@ CallInfo CallInfo::create(Context* context,
         // add the 'this' argument as well
         isMethodCall = true;
         actuals.push_back(CallInfoActual(calledType, USTR("this")));
+        if (actualAsts != nullptr) {
+          actualAsts->push_back(calledExpr);
+        }
         // and reset calledType
         calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
       }
@@ -339,7 +357,11 @@ CallInfo CallInfo::create(Context* context,
 
   // Prepare the remaining actuals.
   prepareActuals(context, call, byPostorder, raiseErrors,
-                 actuals, questionArg);
+                 actuals, questionArg, actualAsts);
+
+  if (actualAsts != nullptr) {
+    assert(actualAsts->size() == actuals.size());
+  }
 
   auto ret = CallInfo(name, calledType, isMethodCall,
                       /* hasQuestionArg */ questionArg != nullptr,

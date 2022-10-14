@@ -394,26 +394,35 @@ class CallInfo {
       raise errors that occur when doing so.
       Assumes that the actual arguments have already been resolved
       and their types are available in 'byPostorder'.
+
       If 'raiseErrors' is 'true' (the default), then errors encountered
       will be raised on the current query.
+
+      If actualAsts is provided and not 'nullptr', it will be updated
+      to contain the uAST pointers for each actual.
    */
   static CallInfo create(Context* context,
                          const uast::Call* call,
                          const ResolutionResultByPostorderID& byPostorder,
-                         bool raiseErrors = true);
+                         bool raiseErrors = true,
+                         std::vector<const uast::AstNode*>* actualAsts=nullptr);
 
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
       useful to call separately.
 
       Sets 'actuals' and 'hasQuesionArg'.
+
+      If actualIds is not 'nullptr', then the toID value of each actual is
+      pushed to that array.
     */
   static void prepareActuals(Context* context,
                              const uast::Call* call,
                              const ResolutionResultByPostorderID& byPostorder,
                              bool raiseErrors,
                              std::vector<CallInfoActual>& actuals,
-                             const AstNode*& questionArg);
+                             const AstNode*& questionArg,
+                             std::vector<const uast::AstNode*>* actualAsts);
 
 
   /** return the name of the called thing */

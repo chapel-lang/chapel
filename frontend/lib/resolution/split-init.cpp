@@ -550,8 +550,10 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
 
       auto calledExprAst = callAst->calledExpression();
       if (rv.hasAst(calledExprAst)) {
+        std::vector<const AstNode*> actualAsts;
         auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
-                                   /* raiseErrors */ false);
+                                   /* raiseErrors */ false,
+                                   &actualAsts);
         int nActuals = ci.numActuals();
 
         // compute a vector indicating which actuals are passed to
@@ -570,23 +572,15 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
         }
 
         int actualIdx = 0;
-        int astActualIdx = 0;
-        if (ci.isMethodCall())
-          astActualIdx = -1; // ci actual 0 is the receiver
         for (auto actual : ci.actuals()) {
           (void) actual; // avoid compilation error about unused variable
+
           // find an actual referring to an ID that is passed to an 'out' formal
           ID toId;
-          const AstNode* actualAst = nullptr;
-          if (astActualIdx == -1) {
-            actualAst = callAst->calledExpression();
-          } else if (actualIdx >= 0) {
-            actualAst = callAst->actual(astActualIdx);
-          }
-          if (rv.hasAst(actualAst)) {
+          const AstNode* actualAst = actualAsts[actualIdx];
+          if (actualAst != nullptr && rv.hasAst(actualAst)) {
             toId = rv.byAst(actualAst).toId();
           }
-
           if (actualIdxToOutAll[actualIdx] && !toId.isEmpty()) {
             // it is like an assignment to the variable with ID toID
             handleInitOrAssign(toId);
@@ -595,7 +589,6 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
             actualAst->traverse(rv);
           }
 
-          astActualIdx++;
           actualIdx++;
         }
       }
