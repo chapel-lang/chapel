@@ -23,7 +23,7 @@
 module Aggregator {
 
   // TODO: document
-  record Aggregator {
+  record aggregator {
      // whatever's stored here must be a class to avoid copying, right?
     const client;
     const updater;
@@ -32,6 +32,18 @@ module Aggregator {
     // TODO: make this use a type that's passed in instead of keyType so that
     // we can maybe use this aggregator with lists and sets as well
     var buffers: [client.locDom][0..<bufferSize] sync client.keyType;
+
+    proc init(clientInst, updaterFcf) {
+      client = clientInst;
+      updater = updaterFcf;
+      bufferSize = 20;
+    }
+
+    proc init(clientInst, updaterFcf, buffSize) {
+      client = clientInst;
+      updater = updaterFcf;
+      bufferSize = buffSize;
+    }
 
     // How to avoid race in adding updates to buffer?
 

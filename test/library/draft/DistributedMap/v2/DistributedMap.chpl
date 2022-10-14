@@ -25,6 +25,7 @@ module DistributedMap {
   private use HaltWrappers;
   private use CyclicDist;
   private use IO;
+  private use Aggregator;
 
   // TODO: document
   record distributedMap {
@@ -758,7 +759,7 @@ module DistributedMap {
     // will handle putting its contents into the map using a lower-level
     // interface.
     proc updateAggregator(updater) {
-      compilerError("unimplemented");
+      return new aggregator(this, updater);
     }
 
     // default function to hash across locales

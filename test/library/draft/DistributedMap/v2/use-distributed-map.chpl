@@ -21,6 +21,6 @@ for key in dm1.keys() { // won't be great perf but that's okay for now
   } else {
     first = false;
   }
-  write(key, "=", dm1[key]); // TODO: different syntax for access?
+  write(key, "=", dm1.getValue(key)); // TODO: different syntax for access?
 }
 writeln();
