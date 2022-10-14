@@ -5,8 +5,8 @@ on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
    pull_request_target:
-     # types:
-      #  - closed
+      types:
+       - closed
       
 jobs: 
   send_email:
@@ -46,7 +46,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: Chapel Merge ${{ github.event.pull_request.head_commit.message }}  
+           subject: Chapel Merge ${{ github.event.head_commit.message }}  
            # Required recipients' addresses:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
