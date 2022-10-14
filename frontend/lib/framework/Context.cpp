@@ -437,11 +437,28 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
            moduleIdSymbolPath.c_str(), path.c_str());
   }
   #ifndef NDEBUG
-    // check that querying the file path gives the same file
+    // check that querying the module ID works...
     UniqueString gotPath;
     UniqueString gotParentSymbolPath;
     bool ok = filePathForId(moduleID, gotPath, gotParentSymbolPath);
-    assert(ok && llvm::sys::fs::equivalent(path.str(), gotPath.str()));
+    assert(ok);
+
+    // ... and gives the same path
+
+    // Note: if this check causes problems in the future, it could
+    // be removed, or we could wire up setFileText used in tests
+    // to work with the LLVM VirtualFilesystem
+    llvm::SmallVector<char> realPath;
+    llvm::SmallVector<char> realGotPath;
+    std::error_code errPath;
+    std::error_code errGotPath;
+    errPath = llvm::sys::fs::real_path(path.str(), realPath);
+    errGotPath = llvm::sys::fs::real_path(gotPath.str(), realGotPath);
+    if (errPath || errGotPath) {
+      // ignore the check if there were errors
+    } else {
+      assert(realPath == realGotPath);
+    }
   #endif
 }
 
