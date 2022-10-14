@@ -22,32 +22,84 @@
 
 .. highlight:: chapel
 
-This module contains features that support compile-time reasoning
-about version numbers in general, and Chapel version numbers
-specifically.  In more detail, it features:
+This module contains features that support reasoning about version numbers.
+The :type:`versionValue` supports compile-time reasoning about version numbers
+in general, and Chapel version numbers specifically, while the :type:`version`
+supports run-time reasoning about version numbers.
+
+In more detail, the module features:
 
 * :var:`chplVersion`: the version number of the copy of ``chpl`` used
   to compile the program.
 
 * :type:`versionValue`: a type that can be used to represent a semantic
-  version number plus an optional commit value.
+  version number plus an optional commit value. This type supports
+  `compile-time` reasoning about version numbers.
 
-* :proc:`versionValue`: a utility function for creating new version values
+* :type:`version`: a type that can be used to represent a semantic
+  version number plus an optional commit value. This type supports
+  `run-time` reasoning about version numbers.
 
-Version numbers in this module are represented using ``param`` values
+Version numbers in :type:`versionValue` are represented using ``param`` values
 to permit code specialization by being able to reason about versions
-at compile-time.
+at `compile-time`.
 
 The :type:`versionValue` type supports:
 
 * being printed out or cast to a ``param`` string
 
-* compile-time comparisons via ``==``, ``!=``, ``<``, ``<=``, ``>``,
+* `compile-time` comparisons via ``==``, ``!=``, ``<``, ``<=``, ``>``,
   and ``>``.  Generally speaking, "less than" corresponds to "is an
   earlier version than."  For example::
 
     if chplVersion < new versionValue(1,23) then
       compilerWarning("This package doesn't support 'chpl' prior to 1.23.0");
+
+Version numbers in :type:`version` are represented using ``var`` values
+to permit constructing and assigning version number values at `run-time`.
+
+The :type:`version` type supports:
+
+* being printed out or cast to a string
+
+* `run-time` comparisons via ``==``, ``!=``, ``<``, ``<=``, ``>``,
+  and ``>``. Generally speaking, "less than" corresponds to "is an
+  earlier version than."
+
+The type :type:`versionValue` is useful for modifying compilation behavior,
+such as requiring a minimum version of the Chapel compiler. The type
+:type:`version` is useful for reasoning about version numbers that are not
+known at compile-time, such as values read from a text file.
+
+Comparisons between two :type:`versionValue`, two :type:`version`, or
+a :type:`versionValue` and a :type:`version` are supported.
+Equality/inequality operations check whether or not the two values
+have identical major, minor, update, and commit values.
+
+Ordered comparisons are based on the ordering of the semantic
+versions of the two values, as defined by their ``major``,
+``minor``, and ``update`` components.
+Note that ff the two values have identical semantic versions,
+any cases that rely on an ordering of the commits will generate an error
+if the values have differing, non-empty ``commit`` values due to the
+challenge of ordering commits. An empty ``commit`` value is considered to
+come after (be greater than) a non-empty value, as the former is considered
+an official release and the latter a pre-release.
+
+For example::
+
+    var v1 = new version(1, 2, 3);        // any of these can be
+    var v2 = new version(1, 2, 4);        // can be replaced with
+    var v3 = new version(1, 2, 4, "abc"); // const vN = new versionValue(...)
+    var v4 = new version(1, 2, 4, "def"); // instead of using the version type
+
+    writeln(v1 < v2); // prints "true"
+    writeln(v2 < v3); // prints "false" as v3 and v4 are considered pre-releases of v2
+    writeln(v3 < v4); // error: cannot compare commits of different versions
+
+    var v5 = new version(1, 2, 4, "abc");
+    writeln(v3 == v5); // prints "true"
+    writeln(v3 != v5); // prints "false"
 
 */
 
@@ -68,26 +120,17 @@ module Version {
     corresponds to version ``0.x.y``/``1.x.y`` in traditional semantic
     versioning.
   */
-
   const chplVersion;
   chplVersion = new versionValue(chplMajor, chplMinor, chplUpdate, chplSHA);
 
   /*
     This record represents a software version in a Git repository.  It
     uses ``param`` values to represent its components in order to
-    support compile-time comparison of version numbers which in turn
+    support `compile-time` comparison of version numbers which in turn
     permits code to specialize to specific versions of Chapel.  When
     printed or converted to a string, it is represented as
     ``major.minor.update (commit)``.
 
-    Note that ordered comparisons between two :type:`versionValue`
-    values that only differ in their ``commit`` values are not
-    supported due to the challenges involved in ordering commit
-    values.  However, when a value with an empty ``update`` value is
-    compared to one whose ``update`` is non-empty, the latter is
-    considered to be earlier than (less than) the former, due to the
-    interpretation that it represents a pre-release of the official
-    release.
   */
 
   record versionValue {
@@ -173,9 +216,9 @@ module Version {
   }
 
   // Comparisons between sourceVersions
-
+  pragma "no doc"
   operator versionValue.==(v1: versionValue(?),
-                            v2: versionValue(?)) param : bool {
+                           v2: versionValue(?)) param : bool {
     return spaceship(v1, v2) == 0;
   }
 
@@ -184,29 +227,33 @@ module Version {
     :type:`versionValue` check whether or not the two values
     have identical major, minor, update, and commit values.
   */
+  pragma "no doc"
   operator versionValue.!=(v1: versionValue(?),
-                            v2: versionValue(?)) param : bool {
+                           v2: versionValue(?)) param : bool {
     return spaceship(v1, v2) != 0;
   }
 
+  pragma "no doc"
   operator versionValue.<(v1: versionValue(?),
-                           v2: versionValue(?)) param : bool {
+                          v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval < 0;
   }
 
+  pragma "no doc"
   operator versionValue.<=(v1: versionValue(?),
-                            v2: versionValue(?)) param : bool {
+                           v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval <= 0;
   }
 
+  pragma "no doc"
   operator versionValue.>(v1: versionValue(?),
-                           v2: versionValue(?)) param : bool {
+                          v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
@@ -226,8 +273,9 @@ module Version {
     the former is considered an official release and the latter a
     pre-release.
   */
+  pragma "no doc"
   operator versionValue.>=(v1: versionValue(?),
-                            v2: versionValue(?)) param : bool {
+                           v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
@@ -236,20 +284,10 @@ module Version {
 
 
   /*
-    This record represents a software version in a Git repository.  It
-    uses ``var`` values to represent its components in order to
-    support run-time building and comparison of version numbers.
-    When printed or converted to a string, it is represented as
-    ``major.minor.update (commit)``.
-
-    Note that ordered comparisons between two :type:`version`
-    types that only differ in their ``commit`` values are not
-    supported due to the challenges involved in ordering commit
-    values.  However, when a value with an empty ``update`` value is
-    compared to one whose ``update`` is non-empty, the latter is
-    considered to be earlier than (less than) the former, due to the
-    interpretation that it represents a pre-release of the official
-    release.
+    This record represents a software version. It uses ``var`` values to
+    represent its components in order to support `run-time` building and
+    comparison of version numbers. When printed or converted to a string,
+    it is represented as ``major.minor.update (commit)``.
   */
 
   record version {
@@ -375,22 +413,25 @@ module Version {
     }
   }
 
-  // Comparisons between programVersions
-  operator version.==(v1: version,
-                             v2: version) : bool {
-    return spaceship(v1, v2) == 0;
-  }
-
+  // Comparisons between versions
   /*
-    Equality/inequality operators between two values of type
+    Equality/inequality operators between two objects of type
     :type:`version` check whether or not the two values
     have identical major, minor, update, and commit values.
   */
+  pragma "no doc"
+  operator version.==(v1: version,
+                      v2: version) : bool {
+    return spaceship(v1, v2) == 0;
+  }
+
+  pragma "no doc"
   operator version.!=(v1: version,
                              v2: version) : bool {
     return spaceship(v1, v2) != 0;
   }
 
+  pragma "no doc"
   operator version.<(v1: version,
                             v2: version) : bool throws {
     const retval = spaceship(v1, v2);
@@ -399,6 +440,7 @@ module Version {
     return retval < 0;
   }
 
+  pragma "no doc"
   operator version.<=(v1: version,
                              v2: version) : bool throws {
     const retval = spaceship(v1, v2);
@@ -407,6 +449,7 @@ module Version {
     return retval <= 0;
   }
 
+  pragma "no doc"
   operator version.>(v1: version,
                             v2: version) : bool throws {
     const retval = spaceship(v1, v2);
@@ -421,15 +464,15 @@ module Version {
     versions of the two values, as defined by their ``major``,
     ``minor``, and ``update`` components.  If the two values have
     identical semantic versions, any cases that rely on an ordering of
-    the commits will generate a compile-time error if the values have
+    the commits will generate a run-time error if the values have
     differing, non-empty ``commit`` values due to the challenge of
-    ordering commits at compile-time.  An empty ``commit`` value is
-    considered to come after (be greater than) a non-empty value, as
-    the former is considered an official release and the latter a
-    pre-release.
+    ordering commits.  An empty ``commit`` value is considered to come
+    after (be greater than) a non-empty value, as the former is considered
+    an official release and the latter a pre-release.
   */
+  pragma "no doc"
   operator version.>=(v1: version,
-                             v2: version) : bool throws {
+                      v2: version) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
@@ -437,31 +480,38 @@ module Version {
   }
 
   // Comparisons between version and versionValue
+
+  /*
+    Equality/inequality operators between and object of type
+    :type:`version` and a value of type :type:versionValue`
+    check whether or not the two have identical major, minor, update,
+    and commit values.
+  */
+  pragma "no doc"
   operator ==(v1: version,
               v2: versionValue) : bool {
     return spaceship(v1, v2) == 0;
   }
 
+  pragma "no doc"
   operator ==(v1: versionValue,
               v2: version) : bool {
     return v2 == v1;
   }
 
-  /*
-    Equality/inequality operators between values of :type:`version` and
-    :type:`versionValue` check whether or not the two values
-    have identical major, minor, update, and commit values.
-  */
+  pragma "no doc"
   operator !=(v1: version,
               v2: versionValue) : bool {
     return spaceship(v1, v2) != 0;
   }
 
+  pragma "no doc"
   operator !=(v1: versionValue,
               v2: version) : bool {
     return v2 != v1;
   }
 
+  pragma "no doc"
   operator <(v1: version,
              v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
@@ -470,11 +520,13 @@ module Version {
     return retval < 0;
   }
 
+  pragma "no doc"
   operator <(v1: versionValue,
              v2: version) : bool throws {
     return v2 > v1;
   }
 
+  pragma "no doc"
   operator <=(v1: version,
               v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
@@ -483,11 +535,13 @@ module Version {
     return retval <= 0;
   }
 
+  pragma "no doc"
   operator <=(v1: versionValue,
               v2: version) : bool throws {
     return v2 >= v1;
   }
 
+  pragma "no doc"
   operator >(v1: version,
              v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
@@ -496,11 +550,13 @@ module Version {
     return retval > 0 && retval != 2;
   }
 
+  pragma "no doc"
   operator >(v1: versionValue,
              v2: version) : bool throws {
     return v2 < v1;
   }
 
+  pragma "no doc"
   operator >=(v1: version,
               v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
@@ -509,6 +565,7 @@ module Version {
     return retval >= 0 && retval != 2;
   }
 
+  pragma "no doc"
   operator >=(v1: versionValue,
               v2: version) : bool throws {
     return v2 <= v1;
