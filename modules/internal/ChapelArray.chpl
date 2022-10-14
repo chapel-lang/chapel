@@ -2431,7 +2431,6 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "ignore transfer errors"
-  pragma "no gpu codegen"
   inline proc chpl__transferArray(ref a: [], const ref b,
                            param kind=_tElt.assign) lifetime a <= b {
     if (a.eltType == b.type ||
@@ -2930,7 +2929,6 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  pragma "no gpu codegen"
   proc chpl__coerceMove(type dstType:_array,
                         pragma "no auto destroy" in rhs:_array,
                         definedConst: bool) {
