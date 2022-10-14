@@ -96,10 +96,6 @@ reStructuredText as an intermediate format.
 
     Print **chpldoc**\ 's copyright information.
 
-**\--license**
-
-    Print **chpldoc**\ 's license information.
-
 ENVIRONMENT
 -----------
 
