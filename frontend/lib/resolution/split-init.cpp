@@ -550,9 +550,8 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
 
       auto calledExprAst = callAst->calledExpression();
       if (rv.hasAst(calledExprAst)) {
-        auto calledExprKind = rv.byAst(calledExprAst).type().kind();
-
-        auto ci = CallInfo(callAst, calledExprKind);
+        auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
+                                   /* raiseErrors */ false);
         int nActuals = ci.numActuals();
 
         // compute a vector indicating which actuals are passed to
