@@ -77,41 +77,34 @@ class Context {
 
   /**
     This ErrorHandler class is used by the context to report errors.
-
-    By default, the error handler will report errors immediately and will
-    not store them for later use. This behavior can be customized by calling
-    the appropriate constructor.
+    It can be subclassed to override its behavior. The default
+    subclass used by the context will print the errors.
   */
   class ErrorHandler {
-   private:
-    std::vector<const ErrorBase*> errors_;
-    bool report_;
-    bool store_;
-
    public:
-    ErrorHandler() : report_(true), store_(false) {}
-    ErrorHandler(bool report, bool store) : report_(report), store_(store) {}
-    virtual ~ErrorHandler() {}
-
-    const std::vector<const ErrorBase*>& errors() const { return errors_; }
-
-    virtual void report(Context* context, const ErrorBase* err) const {
-      defaultReportError(context, err);
-    }
-
-    virtual void handle(Context* context, const ErrorBase* err) {
-      if (report_) report(context, err);
-      if (store_) errors_.push_back(err);
-    }
+    virtual ~ErrorHandler() = default;
+    virtual void report(Context* context, const ErrorBase* err) = 0;
   };
 
  private:
+
+  // The implementation of the default error handler.
+  class DefaultErrorHandler : public Context::ErrorHandler {
+   public:
+    DefaultErrorHandler() = default;
+    ~DefaultErrorHandler() = default;
+    virtual void report(Context* context, const ErrorBase* err) override {
+      defaultReportError(context, err);
+    }
+  };
+
   // The current error handler.
-  owned<ErrorHandler> handler_ = toOwned(new ErrorHandler());
+  owned<ErrorHandler> handler_
+    = toOwned((ErrorHandler*) new DefaultErrorHandler());
 
   // Report an error to the current handler.
   void reportError(Context* context, const ErrorBase* err) {
-    handler_->handle(context, err);
+    handler_->report(context, err);
   }
 
   // The CHPL_HOME variable
@@ -320,8 +313,9 @@ class Context {
     the context will revert to using the default error handler.
   */
   owned<ErrorHandler> installErrorHandler(owned<ErrorHandler> substitute) {
-    auto ret = substitute.get() ? std::move(substitute)
-                                : toOwned(new ErrorHandler());
+    auto ret = substitute.get()
+        ? std::move(substitute)
+        : toOwned((ErrorHandler*) new DefaultErrorHandler());
     std::swap(this->handler_, ret);
     return ret;
   }

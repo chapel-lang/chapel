@@ -99,8 +99,26 @@ static ModuleSymbol* parseFile(const char* fileName,
 
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
-static chpl::owned<chpl::Context::ErrorHandler>
-dynoPrepareErrorHandler(void);
+class DynoErrorHandler : chpl::Context::ErrorHandler {
+  std::vector<const chpl::ErrorBase*> errors_;
+ public:
+  DynoErrorHandler() = default;
+  ~DynoErrorHandler() = default;
+
+  const std::vector<const chpl::ErrorBase*>& errors() const {
+    return errors_;
+  }
+
+  virtual void
+  report(chpl::Context* context, const chpl::ErrorBase* err) override {
+    errors_.push_back(err);
+  }
+
+  inline void clear() { errors_.clear(); }
+};
+
+// Call to insert an instance of the error handler above into the context.
+static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
 
 static int dynoRealizeErrors(void);
 
@@ -114,40 +132,6 @@ static const char*   stdModNameToPath(const char* modName,
 static const char*   searchThePath(const char*      modName,
                                    bool             isInternal,
                                    Vec<const char*> searchPath);
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void parse() {
-
-  // TODO: Runtime configuration of debug level for dyno parser.
-  if (debugParserLevel) {
-    INT_FATAL("The '%s' flag currently has no effect", "parser-debug");
-  }
-
-  // Swap in our configured error handler (don't worry about the old one).
-  std::ignore = gContext->installErrorHandler(dynoPrepareErrorHandler());
-
-  if (countTokens || printTokens) countTokensInCmdLineFiles();
-
-  parseInternalModules();
-
-  parseCommandLineFiles();
-
-  checkConfigs();
-
-  postConvertApplyFixups(gContext);
-
-  if (dynoRealizeErrors()) USR_STOP();
-
-  // Revert to using the default error handler now.
-  gContext->installErrorHandler(nullptr);
-
-  parsed = true;
-}
 
 /************************************* | **************************************
 *                                                                             *
@@ -862,26 +846,25 @@ static void dynoDisplayError(chpl::Context* context,
   }
 }
 
-static chpl::owned<chpl::Context::ErrorHandler>
-dynoPrepareErrorHandler(void) {
-  const bool report = false;
-  const bool store = true;
-  auto ret = chpl::toOwned(new chpl::Context::ErrorHandler(report, store));
+static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
+  auto ret = new DynoErrorHandler();
+  auto handler = chpl::toOwned((chpl::Context::ErrorHandler*) ret);
+  gContext->installErrorHandler(std::move(handler));
   return ret;
 }
 
-static int dynoRealizeErrors(void) {
-  auto handler = gContext->errorHandler();
-  assert(handler);
+// Only install one of these for the entire session.
+static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
-  int ret = handler->errors().size();
-  for (auto err : handler->errors()) {
-    dynoDisplayError(gContext, err->toErrorMessage(gContext));
+int dynoRealizeErrors(void) {
+  INT_ASSERT(gDynoErrorHandler);
+  int ret = (int) gDynoErrorHandler->errors().size();
+  if (ret) {
+    for (auto err : gDynoErrorHandler->errors()) {
+      dynoDisplayError(gContext, err->toErrorMessage(gContext));
+    }
+    gDynoErrorHandler->clear();
   }
-
-  // Clear the error handler by swapping in a new one.
-  std::ignore = gContext->installErrorHandler(dynoPrepareErrorHandler());
-
   return ret;
 }
 
@@ -906,9 +889,8 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
 
-  // Manually report any errors collected by the builder.
-  for (auto& e : builderResult.errors())
-    gContext->report(e);
+  // Manually report any parsing errors collected by the builder.
+  for (auto e : builderResult.errors()) gContext->report(e);
 
   if (dynoRealizeErrors()) USR_STOP();
 
@@ -1081,4 +1063,32 @@ static const char* searchThePath(const char*      modName,
   }
 
   return retval;
+}
+
+void parse() {
+
+  // TODO: Runtime configuration of debug level for dyno parser.
+  if (debugParserLevel) {
+    INT_FATAL("The '%s' flag currently has no effect", "parser-debug");
+  }
+
+  gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
+
+  if (countTokens || printTokens) countTokensInCmdLineFiles();
+
+  parseInternalModules();
+
+  parseCommandLineFiles();
+
+  checkConfigs();
+
+  postConvertApplyFixups(gContext);
+
+  // One last catchall for errors.
+  if (dynoRealizeErrors()) USR_STOP();
+
+  // Revert to using the default error handler now.
+  gContext->installErrorHandler(nullptr);
+
+  parsed = true;
 }

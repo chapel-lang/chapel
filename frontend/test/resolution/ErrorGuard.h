@@ -22,40 +22,60 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/ErrorWriter.h"
 #include <vector>
+
+using BaseHandler = chpl::Context::ErrorHandler;
+
+class AggregatingErrorHandler : BaseHandler {
+  std::vector<const chpl::ErrorBase*> errors_;
+ public:
+  AggregatingErrorHandler() = default;
+  ~AggregatingErrorHandler() = default;
+
+  const std::vector<const chpl::ErrorBase*>& errors() const {
+    return errors_;
+  }
+
+  virtual void
+  report(chpl::Context* context, const chpl::ErrorBase* err) override {
+    errors_.push_back(err);
+  }
+};
 
 class ErrorGuard {
  private:
-  using BaseHandler = chpl::owned<chpl::Context::ErrorHandler>;
-  BaseHandler oldErrorHandler_;
+  chpl::owned<BaseHandler> oldErrorHandler_;
   chpl::Context* ctx_;
+  AggregatingErrorHandler* handler_ = nullptr;
 
-  BaseHandler prepareHandler() const {
-    bool report = false;
-    bool store = true;
-    return chpl::toOwned(new chpl::Context::ErrorHandler(report, store));
+  chpl::owned<BaseHandler> prepareAndStoreHandler() {
+    handler_ = new AggregatingErrorHandler();
+    auto ret = chpl::toOwned((BaseHandler*) handler_);
+    assert(handler_);
+    return ret;
   }
 
  public:
   ErrorGuard(chpl::Context* ctx) : ctx_(ctx) {
-    oldErrorHandler_ = ctx_->installErrorHandler(prepareHandler());
+    auto handler = prepareAndStoreHandler();
+    oldErrorHandler_ = ctx_->installErrorHandler(std::move(handler));
   }
 
   inline chpl::Context* context() const { return ctx_; }
 
   const std::vector<const chpl::ErrorBase*>& errors() const {
-    auto handler = ctx_->errorHandler();
-    assert(handler);
-    return handler->errors();
+    assert(handler_);
+    return handler_->errors();
   }
 
   int realizeErrors() {
-    auto handler = ctx_->errorHandler();
-    assert(handler);
-    if (!handler->errors().size()) return false;
-    for (auto err : handler->errors()) handler->report(ctx_, err);
-    int ret = (int) handler->errors().size();
-    std::ignore = ctx_->installErrorHandler(prepareHandler());
+    assert(handler_);
+    if (!handler_->errors().size()) return false;
+    chpl::ErrorWriter ew(ctx_, std::cerr, chpl::ErrorWriter::BRIEF, false);
+    for (auto err : handler_->errors()) err->write(ew);
+    int ret = (int) handler_->errors().size();
+    std::ignore = ctx_->installErrorHandler(prepareAndStoreHandler());
     return ret;
   }
 
