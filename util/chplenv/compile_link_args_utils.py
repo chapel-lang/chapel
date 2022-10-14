@@ -58,9 +58,15 @@ def get_runtime_includes_and_defines():
             bundled.append("-DCHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE")
 
         # If compiling for GPU locales, add CUDA runtime headers to include path
-        cuda_path = chpl_gpu.get_cuda_path()
-        system.append("-I" + os.path.join(cuda_path, "include"))
+        sdk_path = chpl_gpu.get_sdk_path()
+        gpu_type = chpl_gpu.get()
+
         bundled.append("-I" + os.path.join(incl, "gpu", chpl_gpu.get()))
+        if gpu_type == "cuda":
+            system.append("-I" + os.path.join(sdk_path, "include"))
+        elif gpu_type == "amd":
+            system.append("-I" + os.path.join(sdk_path, "hip", "include"))
+            system.append("-I" + os.path.join(sdk_path, "hsa", "include"))
 
     if mem == "jemalloc":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
@@ -85,10 +91,15 @@ def get_runtime_link_args(runtime_subdir):
     if locale_model == "gpu":
         # If compiling for GPU locales, add CUDA to link path,
         # and add cuda libraries
-        cuda_path = chpl_gpu.get_cuda_path()
-        system.append("-L" + os.path.join(cuda_path, "lib64"))
-        system.append("-lcuda")
-        system.append("-lcudart")
+        sdk_path = chpl_gpu.get_sdk_path()
+        gpu_type = chpl_gpu.get()
+        if gpu_type == "cuda":
+            system.append("-L" + os.path.join(sdk_path, "lib64"))
+            system.append("-lcuda")
+            system.append("-lcudart")
+        elif gpu_type == "amd":
+            system.append("-L" + os.path.join(sdk_path, "hip", "lib"))
+            system.append("-lamdhip64")
 
     # always link with the math library
     system.append("-lm")

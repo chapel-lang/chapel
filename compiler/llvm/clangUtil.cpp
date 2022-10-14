@@ -4353,7 +4353,6 @@ void makeBinaryLLVM(void) {
                                  ",file=" + asmFilename.c_str();
 
       mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
-
     }
   }
 
