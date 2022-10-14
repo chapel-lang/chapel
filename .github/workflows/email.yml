@@ -30,7 +30,7 @@ jobs:
               events_payload=$(curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}')
               echo "$events_payload" 
       - name: use events
-         echo "$events_payload" 
+        run: echo "$events_payload" 
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
