@@ -1,0 +1,2 @@
+--detailed-errors # unknownUseImport-detailed.good
+--no-detailed-errors # unknownUseImport-brief.good

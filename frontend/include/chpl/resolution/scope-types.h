@@ -573,6 +573,14 @@ class ResolvedVisibilityScope {
   }
 };
 
+/*
+ * Type of visibility statement (use or import)
+ */
+enum VisibilityStmtKind {
+  VIS_USE,
+  VIS_IMPORT,
+};
+
 enum {
   LOOKUP_DECLS = 1,
   LOOKUP_IMPORT_AND_USE = 2,
@@ -707,6 +715,30 @@ class InnermostMatch {
 } // end namespace resolution
 
 /// \cond DO_NOT_DOCUMENT
+
+template <>
+struct stringify<resolution::VisibilityStmtKind> {
+  void operator()(std::ostream& streamOut, StringifyKind stringKind,
+		  resolution::VisibilityStmtKind kind) const {
+    switch (kind) {
+      case resolution::VisibilityStmtKind::VIS_USE:
+		streamOut << "use";
+		break;
+      case resolution::VisibilityStmtKind::VIS_IMPORT:
+		streamOut << "import";
+		break;
+      default:
+		assert(false && "should not reach this point");
+    }
+  }
+};
+
+template <>
+struct mark<resolution::VisibilityStmtKind> {
+  void operator()(Context* context, resolution::VisibilityStmtKind t) {
+    // No need to mark enums
+  }
+};
 
 /// \endcond
 

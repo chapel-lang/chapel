@@ -36,6 +36,9 @@ ERROR_CLASS(MemManagementNonClass, const uast::New*, const types::Type*)
 ERROR_CLASS(PrivateToPublicInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(PrototypeInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(MissingInclude, const uast::Include*, std::string)
+ERROR_CLASS(UseImportUnknown, const uast::VisibilityClause*,
+            const resolution::Scope*, const resolution::VisibilityStmtKind,
+            std::string)
 ERROR_CLASS(Redefinition, const uast::NamedDecl*, std::vector<ID>)
 ERROR_CLASS(AmbiguousConfigName, std::string, const uast::Variable*, ID)
 ERROR_CLASS(AmbiguousConfigSet,

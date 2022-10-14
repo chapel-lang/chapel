@@ -541,11 +541,6 @@ static bool doLookupInScope(Context* context,
   return result.size() > startSize;
 }
 
-enum VisibilityStmtKind {
-  VIS_USE,    // the expr is the thing being use'd e.g. use A.B
-  VIS_IMPORT, // the expr is the thing being imported e.g. import C.D
-};
-
 // It can return multiple results because that is important for 'import'.
 // 'isFirstPart' is true for A in A.B.C but not for B or C.
 // On return:
@@ -687,7 +682,7 @@ static void errorIfNameNotInScope(Context* context,
                                   const Scope* scope,
                                   const ResolvedVisibilityScope* resolving,
                                   UniqueString name,
-                                  ID idForErr,
+                                  const VisibilityClause* clauseForError,
                                   VisibilityStmtKind useOrImport) {
   NamedScopeSet checkedScopes;
   std::vector<BorrowedIdsWithName> result;
@@ -699,12 +694,8 @@ static void errorIfNameNotInScope(Context* context,
                              checkedScopes, result);
 
   if (got == false || result.size() == 0) {
-    if (useOrImport == VIS_USE) {
-      context->error(idForErr, "could not find '%s' for 'use'", name.c_str());
-    } else {
-      context->error(idForErr, "could not find '%s' for 'import'",
-                     name.c_str());
-    }
+    CHPL_REPORT(context, UseImportUnknown, clauseForError, scope, useOrImport,
+                name.c_str());
   }
 }
 
@@ -717,11 +708,11 @@ errorIfAnyLimitationNotInScope(Context* context,
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
       errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                            ident->id(), useOrImport);
+                            clause, useOrImport);
     } else if (auto as = e->toAs()) {
       if (auto ident = as->symbol()->toIdentifier()) {
         errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                              ident->id(), useOrImport);
+                              clause, useOrImport);
       }
     }
   }
@@ -1019,7 +1010,7 @@ doResolveImportStmt(Context* context, const Import* imp,
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
             errorIfNameNotInScope(context, foundScope, r,
-                                  dotName, clause->id(), VIS_IMPORT);
+                                  dotName, clause, VIS_IMPORT);
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
               r->addVisibilityClause(foundScope, kind, isPrivate,

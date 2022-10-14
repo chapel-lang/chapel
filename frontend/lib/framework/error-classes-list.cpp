@@ -19,6 +19,7 @@
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/scope-types.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/types/all-types.h"
 #include <sstream>
@@ -152,6 +153,20 @@ void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, moduleInclude, "cannot find included submodule");
   wr.code(moduleInclude);
   wr.note(moduleInclude, "expected file at path '", filePath, "'");
+}
+
+void ErrorUseImportUnknown::write(ErrorWriterBase& wr) const {
+  auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
+  auto symbolName = std::get<std::string>(info);
+  auto searchedScope = std::get<const resolution::Scope*>(info);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+  wr.heading(kind_, type_, locationOnly(visibilityClause),
+             "cannot find symbol '", symbolName, "' for ", useOrImport);
+  wr.note(locationOnly(visibilityClause), "symbol named here:");
+  wr.code(visibilityClause);
+  wr.note(locationOnly(searchedScope->id()), "searching in scope of '",
+          searchedScope->name(), "':");
+  wr.code(searchedScope->id());
 }
 
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
