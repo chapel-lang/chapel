@@ -23,13 +23,13 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT" 
       - name: get commits payload
+        
         env:
           COMMIT_URL: ${{github.event.repository.events_url}}
         run: |
               events_payload=$(curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}')
-              
-              TYPE= $events_payload.type
-              echo "type = $TYPE"
+              echo "$events_payload" 
+             
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
