@@ -25,10 +25,10 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.repository.events_url}}
         run: |
-              EVENTS_PAYLOAD=$(curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}')
-              echo "$EVENTS_PAYLOAD" >> $GITHUB_ENV
+              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o events.json
+              jq -r  '"$EVENTS_PAYLOAD_TYPE=\(.type)"' events.json >> $GITHUB_ENV
       - name: use events
-        run: echo  ${{ env.events_payload }} 
+        run: echo  ${{ env.EVENTS_PAYLOAD_TYPE }} 
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
