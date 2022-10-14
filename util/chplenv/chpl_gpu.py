@@ -6,14 +6,21 @@ import chpl_llvm
 from utils import error, memoize, run_command
 
 def get():
-    if chpl_locale_model.get() == 'gpu':
-        return 'cuda'
-    else:
+    if chpl_locale_model.get() != 'gpu':
         return 'none'
+
+    chpl_gpu_codegen = os.environ.get("CHPL_GPU_CODEGEN")
+    if chpl_gpu_codegen:
+        if chpl_gpu_codegen != 'cuda' and chpl_gpu_codegen != 'amd':
+            error("Only 'cuda' or 'amd' supported for 'CHPL_GPU_CODEGEN'")
+        else:
+            return chpl_gpu_codegen
+    else:
+        return 'cuda'
 
 @memoize
 def get_cuda_path():
-    if chpl_locale_model.get() == 'gpu':
+    if get() == 'cuda':
         chpl_cuda_path = os.environ.get("CHPL_CUDA_PATH")
         if chpl_cuda_path:
             return chpl_cuda_path
@@ -41,7 +48,7 @@ def get_gpu_mem_strategy():
 
 
 def get_cuda_libdevice_path():
-    if chpl_locale_model.get() == 'gpu':
+    if get() == 'cuda':
         # TODO this only makes sense when we are generating for nvidia
         chpl_cuda_path = get_cuda_path()
 
@@ -62,8 +69,8 @@ def get_cuda_libdevice_path():
 def get_runtime():
     chpl_gpu_runtime = os.environ.get("CHPL_GPU_RUNTIME")
     if chpl_gpu_runtime:
-        if chpl_gpu_runtime != "cuda":
-            error("Only 'cuda' supported for 'CHPL_GPU_RUNTIME'")
+        if chpl_gpu_runtime != "cuda" and chpl_gpu_runtime != "amd":
+            error("Only 'cuda' or 'amd' supported for 'CHPL_GPU_RUNTIME'")
         else:
             return chpl_gpu_runtime
     return "cuda"
