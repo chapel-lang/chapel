@@ -48,6 +48,8 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 void chpl_gpu_init(void);
 void chpl_gpu_on_std_modules_finished_initializing(void);
 
+void chpl_gpu_get_device_count(int* into);
+
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
