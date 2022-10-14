@@ -27,7 +27,7 @@ jobs:
           COMMIT_URL: ${{github.event.repository.events_url}}
         run: |
               events_payload=$(curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}')
-              echo "$events_payload"
+              #echo "$events_payload"
               echo "$events_payload.type"
       - name: checkout
         uses: actions/checkout@v3
