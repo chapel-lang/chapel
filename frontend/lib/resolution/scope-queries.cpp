@@ -909,7 +909,12 @@ doResolveUseStmt(Context* context, const Use* use,
           kind = VisibilitySymbols::CONTENTS_EXCEPT;
           // check that we do not have 'except A as B'
           for (const AstNode* e : clause->limitations()) {
-            assert(e->isIdentifier());
+            // If we just assert this condition directly, and Chapel is
+            // compiled without assertions, we get unused variable warnings.
+            // This otherwise redundant if condition avoids that possibility.
+            if (!e->isIdentifier()) {
+              assert(false && "should not be reached");
+            }
           }
           // add the visibility clause for only/except
           r->addVisibilityClause(foundScope, kind, isPrivate,
