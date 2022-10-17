@@ -4990,7 +4990,7 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
 
       if has_more {
          throw new owned ExceededCapacityError(
-          "channel's contents exceeded capacity of bytes array in 'readAll'"
+          "channel's contents exceeded capacity of bytes array (" + a.size:string + " bytes) in 'readAll'"
         );
       }
     }
