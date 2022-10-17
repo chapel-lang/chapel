@@ -24,7 +24,7 @@ jobs:
       - name: get commits payload
         env:
           COMMIT_URL: ${{github.event.pull_request.commits}}
-          EVRNTS_URL: ${{github.event.repository.events_url}}
+          EVENTS_URL: ${{github.event.repository.events_url}}
         run: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
