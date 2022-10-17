@@ -20,7 +20,7 @@
 
 /* Types for low-level system error integration.
 
-   This module defines the some system error types.
+   This module defines some system error types.
 
    A note about the error code documentation in this file. Error descriptions
    for system errors are included here for convenience only. Other
