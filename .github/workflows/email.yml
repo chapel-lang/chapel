@@ -23,7 +23,7 @@ jobs:
       - name: get commits payload
         
         env:
-          COMMIT_URL: "https://api.github.com/repos/chapel-lang/chapel/pulls/20865/commits"
+          COMMIT_URL: github.event.pull_request.repository.commits_url
           run: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               cat commits.json
