@@ -23,7 +23,7 @@ jobs:
       - name: get commits payload
         
         env:
-          COMMIT_URL: github.event.pull_request.repository.commits_url
+          COMMIT_URL: github.event.pull_request.repository.events_url
           run: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               cat commits.json
