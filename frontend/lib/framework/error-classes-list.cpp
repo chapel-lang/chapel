@@ -189,6 +189,13 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   wr.code(id);
 }
 
+void ErrorAsWithExcept::write(ErrorWriterBase& wr) const {
+  auto as = std::get<const uast::AstNode*>(info);
+  wr.heading(kind_, type_, locationOnly(as), "cannot use 'as' with 'except'");
+  wr.note(locationOnly(as), "occured here:");
+  wr.code(as);
+}
+
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::NamedDecl*>(info);
   auto& ids = std::get<std::vector<ID>>(info);
