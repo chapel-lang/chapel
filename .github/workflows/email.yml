@@ -31,13 +31,7 @@ jobs:
               echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
               echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[].html_url' commits.json)" >> $GITHUB_ENV
-              
-            
-             
-              jq -r '"$COMMIT_ID=\(.[].id)"' commits.json >> $GITHUB_ENV
-              jq -r '"$DIFF_URL=\(.[].diff_url)"' commits.json >> $GITHUB_ENV
-              jq -r '"$COMPARE_URL=\(.[].repo.compare_url)"' commits.json >> $GITHUB_ENV     
-              echo "action_state=yellow" >> $GITHUB_ENV
+ 
       - name: use events
         
         run: |
@@ -83,9 +77,9 @@ jobs:
               Branch ${{github.ref}} <br>
               Author: ${{ env.AUTHOR}} <br>
               Revision: ${{github.event.pull_request.repository.id}}  <br>
-              Commit id : ${{ env.COMMIT_ID }} <br>
-              #Commit message: ${{env.MESSAGE }}  <br>
-              Sha: echo "${{ env.SHA }}" <br>
+              Commit id : ${{ github.event.id }} <br>
+              Commit message: ${{github.event.merge_commit_message}}  <br>
+              Sha: echo "${{ github.event.base.sha }}" <br>
               Link: ${{env.LINK}} <br> 
               Log Message: ${{github.event.body}} <br>  
               Diff: ${{github.event.diff_url}} <br>
