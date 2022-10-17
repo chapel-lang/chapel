@@ -1,0 +1,2 @@
+error in dotExprInAs.chpl:6: cannot use a dot expression in 'as'
+  note in dotExprInAs.chpl:6: 'as' here

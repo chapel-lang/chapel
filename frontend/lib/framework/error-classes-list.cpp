@@ -196,6 +196,13 @@ void ErrorAsWithExcept::write(ErrorWriterBase& wr) const {
   wr.code(as);
 }
 
+void ErrorDotExprInAs::write(ErrorWriterBase& wr) const {
+  auto as = std::get<const uast::As*>(info);
+  wr.heading(kind_, type_, locationOnly(as), "cannot use a dot expression in 'as'");
+  wr.note(locationOnly(as), "'as' here:");
+  wr.code(as);
+}
+
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::NamedDecl*>(info);
   auto& ids = std::get<std::vector<ID>>(info);

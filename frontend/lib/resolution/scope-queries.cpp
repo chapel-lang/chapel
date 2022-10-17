@@ -882,7 +882,9 @@ doResolveUseStmt(Context* context, const Use* use,
 
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
-      assert(newIdent);
+      if (!newIdent) {
+        CHPL_REPORT(context, DotExprInAs, as);
+      }
       // search for the original name
       expr = as->symbol();
       newName = newIdent->name();
