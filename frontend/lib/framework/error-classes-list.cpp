@@ -190,15 +190,22 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorAsWithExcept::write(ErrorWriterBase& wr) const {
-  auto as = std::get<const uast::AstNode*>(info);
+  auto as = std::get<const uast::As*>(info);
   wr.heading(kind_, type_, locationOnly(as), "cannot use 'as' with 'except'");
   wr.note(locationOnly(as), "occured here:");
   wr.code(as);
 }
 
-void ErrorDotExprInAs::write(ErrorWriterBase& wr) const {
+void ErrorDotExprNotAllowed::write(ErrorWriterBase& wr) const {
+  auto dot = std::get<const uast::Dot*>(info);
+  wr.heading(kind_, type_, locationOnly(dot), "dot expression not supported here");
+  wr.note(locationOnly(dot), "dot expression here:");
+  wr.code(dot);
+}
+
+void ErrorUnsupportedAs::write(ErrorWriterBase& wr) const {
   auto as = std::get<const uast::As*>(info);
-  wr.heading(kind_, type_, locationOnly(as), "cannot use a dot expression in 'as'");
+  wr.heading(kind_, type_, locationOnly(as), "this form of as is not yet supported");
   wr.note(locationOnly(as), "'as' here:");
   wr.code(as);
 }

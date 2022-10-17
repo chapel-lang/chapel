@@ -1,7 +1,0 @@
-─── error in dotExprInAs.chpl:6 [DotExprInAs] ───
-  Cannot use a dot expression in 'as'
-  'as' here:
-      |
-    6 |   use M as b.a;
-      |
-

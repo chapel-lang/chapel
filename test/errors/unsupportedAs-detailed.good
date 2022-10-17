@@ -1,0 +1,7 @@
+─── error in unsupportedAs.chpl:6 [UnsupportedAs] ───
+  This form of as is not yet supported
+  'as' here:
+      |
+    6 |   use M as b.a;
+      |
+

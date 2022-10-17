@@ -742,11 +742,11 @@ static std::vector<std::pair<UniqueString,UniqueString>>
 convertLimitations(Context* context, const VisibilityClause* clause) {
   std::vector<std::pair<UniqueString,UniqueString>> ret;
   for (const AstNode* e : clause->limitations()) {
-    // dot expression not supported here
-    assert(e->toDot() == nullptr);
     if (auto ident = e->toIdentifier()) {
       UniqueString name = ident->name();
       ret.push_back(std::make_pair(name, name));
+    } else if (auto dot = e->toDot()) {
+      CHPL_REPORT(context, DotExprNotAllowed, dot);
     } else if (auto as = e->toAs()) {
       UniqueString name;
       UniqueString rename;
@@ -883,7 +883,7 @@ doResolveUseStmt(Context* context, const Use* use,
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
-        CHPL_REPORT(context, DotExprInAs, as);
+        CHPL_REPORT(context, UnsupportedAs, as);
       }
       // search for the original name
       expr = as->symbol();
@@ -911,8 +911,8 @@ doResolveUseStmt(Context* context, const Use* use,
           kind = VisibilitySymbols::CONTENTS_EXCEPT;
           // check that we do not have 'except A as B'
           for (const AstNode* e : clause->limitations()) {
-            if (!e->isIdentifier()) {
-              CHPL_REPORT(context, AsWithExcept, e);
+            if (auto as = e->toAs()) {
+              CHPL_REPORT(context, AsWithExcept, as);
             }
           }
           // add the visibility clause for only/except
@@ -955,7 +955,9 @@ doResolveImportStmt(Context* context, const Import* imp,
 
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
-      assert(newIdent);
+      if (!newIdent) {
+        CHPL_REPORT(context, UnsupportedAs, as);
+      }
       // search for the original name
       expr = as->symbol();
       newName = newIdent->name();
