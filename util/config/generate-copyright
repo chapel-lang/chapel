@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+import os
+import argparse
+
+parser = argparse.ArgumentParser(description='Write the COPYRIGHT file suitable for importing')
+parser.add_argument('source', help='The source directory where COPYRIGHT is found')
+parser.add_argument('destination', help='The location to write the updated COPYRIGHT file')
+
+args = parser.parse_args()
+
+if not os.path.exists(args.source):
+  raise Exception('Source directory does not exist')
+
+if not os.path.exists(args.destination):
+  os.makedirs(args.destination)
+copyright_contents = []
+
+with open(os.path.join(args.source, 'COPYRIGHT'), 'r') as l:
+  copyright_contents = l.readlines()
+
+with open(os.path.join(args.destination, 'COPYRIGHT'), 'w') as f:
+    for line in copyright_contents:
+      line = line.replace('"','')
+      line = line.strip("\n")
+      line = f'"{line}\\n"\n'
+      f.write(line)

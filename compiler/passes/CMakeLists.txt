@@ -14,33 +14,39 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+set(SRCS
+    addInitGuards.cpp
+    buildDefaultFunctions.cpp
+    checkNormalized.cpp
+    checkParsed.cpp
+    checkResolved.cpp
+    cleanup.cpp
+    convert-uast.cpp
+    createTaskFunctions.cpp
+    denormalize.cpp
+    errorHandling.cpp
+    expandExternArrayCalls.cpp
+    externCResolve.cpp
+    flattenClasses.cpp
+    flattenFunctions.cpp
+    initializerRules.cpp
+    InitNormalize.cpp
+    insertLineNumbers.cpp
+    insertWideReferences.cpp
+    normalize.cpp
+    normalizeErrors.cpp
+    parallel.cpp
+    resolveIntents.cpp
+    ResolveScope.cpp
+    returnStarTuplesByRefArgs.cpp
+    scopeResolve.cpp
+    splitInit.cpp
+   )
 target_sources(chpl
                PRIVATE
-               addInitGuards.cpp
-               buildDefaultFunctions.cpp
-               checkNormalized.cpp
-               checkParsed.cpp
-               checkResolved.cpp
-               cleanup.cpp
-               convert-uast.cpp
-               createTaskFunctions.cpp
-               denormalize.cpp
-               errorHandling.cpp
-               expandExternArrayCalls.cpp
-               externCResolve.cpp
-               flattenClasses.cpp
-               flattenFunctions.cpp
-               initializerRules.cpp
-               InitNormalize.cpp
-               insertLineNumbers.cpp
-               insertWideReferences.cpp
-               normalize.cpp
-               normalizeErrors.cpp
-               parallel.cpp
-               resolveIntents.cpp
-               ResolveScope.cpp
-               returnStarTuplesByRefArgs.cpp
-               scopeResolve.cpp
-               splitInit.cpp
-              )
+               ${SRCS})
+get_filename_component(DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+set_property(SOURCE ${SRCS}
+             TARGET_DIRECTORY chpl
+             PROPERTY COMPILE_DEFINITIONS COMPILER_SUBDIR=${DIR_NAME}
+             APPEND)

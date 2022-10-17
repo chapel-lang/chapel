@@ -14,14 +14,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+set(SRCS
+    clangUtil.cpp
+    llvmAggregateGlobalOps.cpp
+    llvmDebug.cpp
+    llvmDumpIR.cpp
+    llvmExtractIR.cpp
+    llvmGlobalToWide.cpp
+    llvmUtil.cpp
+   )
 target_sources(chpl
                PRIVATE
-               clangUtil.cpp
-               llvmAggregateGlobalOps.cpp
-               llvmDebug.cpp
-               llvmDumpIR.cpp
-               llvmExtractIR.cpp
-               llvmGlobalToWide.cpp
-               llvmUtil.cpp
-              )
+               ${SRCS})
+get_filename_component(DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+set_property(SOURCE ${SRCS}
+             TARGET_DIRECTORY chpl
+             PROPERTY COMPILE_DEFINITIONS COMPILER_SUBDIR=${DIR_NAME}
+             APPEND)

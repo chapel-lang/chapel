@@ -136,7 +136,7 @@ then
     TEST_STATUS=$?
     if [ $TEST_STATUS -ne 0 ]
     then
-      echo "--prefix install: running chpldoc failed" 1>&2
+      echo "--chpl-home install: running chpldoc failed" 1>&2
       EXITSTATUS=$TEST_STATUS
     fi
   fi

@@ -50,6 +50,7 @@
 #include "chpl/util/chplenv.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/util/assertions.h"
+#include "chpl/util/filesystem.h"
 
 #include <inttypes.h>
 #include <string>
@@ -331,6 +332,8 @@ static bool compilerSetChplLLVM = false;
 
 static std::vector<std::string> cmdLineModPaths;
 
+// TODO: with the updates to filesystem that utilize GetExecutablePath,
+// do we still need this block comment?
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -347,15 +350,8 @@ llvm::sys::Path GetExecutablePath(const char *Argv0) {
 
 static bool isMaybeChplHome(const char* path)
 {
-  bool  ret  = false;
-  char* real = dirHasFile(path, "util/chplenv");
+  return chpl::isMaybeChplHome(std::string(path));
 
-  if (real)
-    ret = true;
-
-  free(real);
-
-  return ret;
 }
 
 static void setChplHomeDerivedVars() {

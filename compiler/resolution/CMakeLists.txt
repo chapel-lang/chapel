@@ -14,37 +14,43 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+set(SRCS
+    addAutoDestroyCalls.cpp
+    AutoDestroyScope.cpp
+    caches.cpp
+    callDestructors.cpp
+    callInfo.cpp
+    cleanups.cpp
+    cullOverReferences.cpp
+    expandVarArgs.cpp
+    firstClassFunctions.cpp
+    fixupExports.cpp
+    functionResolution.cpp
+    generics.cpp
+    implementForallIntents.cpp
+    initializerResolution.cpp
+    interfaceResolution.cpp
+    lateConstCheck.cpp
+    lifetime.cpp
+    loopDetails.cpp
+    lowerForalls.cpp
+    lowerIterators.cpp
+    nilChecking.cpp
+    postFold.cpp
+    preFold.cpp
+    ResolutionCandidate.cpp
+    resolveFunction.cpp
+    tuples.cpp
+    typeSpecifier.cpp
+    virtualDispatch.cpp
+    visibleFunctions.cpp
+    wrappers.cpp
+   )
 target_sources(chpl
                PRIVATE
-               addAutoDestroyCalls.cpp
-               AutoDestroyScope.cpp
-               caches.cpp
-               callDestructors.cpp
-               callInfo.cpp
-               cleanups.cpp
-               cullOverReferences.cpp
-               expandVarArgs.cpp
-               firstClassFunctions.cpp
-               fixupExports.cpp
-               functionResolution.cpp
-               generics.cpp
-               implementForallIntents.cpp
-               initializerResolution.cpp
-               interfaceResolution.cpp
-               lateConstCheck.cpp
-               lifetime.cpp
-               loopDetails.cpp
-               lowerForalls.cpp
-               lowerIterators.cpp
-               nilChecking.cpp
-               postFold.cpp
-               preFold.cpp
-               ResolutionCandidate.cpp
-               resolveFunction.cpp
-               tuples.cpp
-               typeSpecifier.cpp
-               virtualDispatch.cpp
-               visibleFunctions.cpp
-               wrappers.cpp
-              )
+               ${SRCS})
+get_filename_component(DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+set_property(SOURCE ${SRCS}
+             TARGET_DIRECTORY chpl
+             PROPERTY COMPILE_DEFINITIONS COMPILER_SUBDIR=${DIR_NAME}
+             APPEND)

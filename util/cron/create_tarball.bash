@@ -17,10 +17,10 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 export CHPL_LLVM=none
 
-version_num_text=$(cat $CHPL_HOME/compiler/main/version_num.h)
-major=$(echo "${version_num_text}" | grep MAJOR_VERSION | cut -f3 -d" " | sed "s/\"//g")
-minor=$(echo "${version_num_text}" | grep MINOR_VERSION | cut -f3 -d" " | sed "s/\"//g")
-patch=$(echo "${version_num_text}" | grep UPDATE_VERSION | cut -f3 -d" " | sed "s/\"//g")
+version_num_text=$(cat $CHPL_HOME/CMakeLists.txt)
+major=$(echo "${version_num_text}" | grep 'set(CHPL_MAJOR_VERSION' | cut -f2 -d" " | sed "s/\)//g")
+minor=$(echo "${version_num_text}" | grep 'set(CHPL_MINOR_VERSION' | cut -f2 -d" " | sed "s/\)//g")
+patch=$(echo "${version_num_text}" | grep 'set(CHPL_PATCH_VERSION' | cut -f2 -d" " | sed "s/\)//g")
 sha=$(git rev-parse --short HEAD)
 
 short_version="${major}.${minor}"

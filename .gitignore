@@ -65,6 +65,8 @@ cmake-build-*/
 /doc/tutorial/workbooks/*.blg
 /doc/sphinx/build
 
+# Frontend ignores
+/frontend/lib/util/git-version.cpp
 
 # Make ignores.
 /make/Chapel.xcodeproj/*.pbxuser
