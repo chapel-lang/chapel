@@ -882,14 +882,10 @@ doResolveUseStmt(Context* context, const Use* use,
 
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
-      if (newIdent != nullptr) {
-        // search for the original name
-        expr = as->symbol();
-        newName = newIdent->name();
-      } else {
-        context->error(expr, "this form of as is not yet supported");
-        continue; // move on to the next visibility clause
-      }
+      assert(newIdent);
+      // search for the original name
+      expr = as->symbol();
+      newName = newIdent->name();
     }
 
     const Scope* foundScope = findUseImportTarget(context, scope, r,
@@ -913,9 +909,7 @@ doResolveUseStmt(Context* context, const Use* use,
           kind = VisibilitySymbols::CONTENTS_EXCEPT;
           // check that we do not have 'except A as B'
           for (const AstNode* e : clause->limitations()) {
-            if (!e->isIdentifier()) {
-              context->error(e, "'as' cannot be used with 'except'");
-            }
+            assert(!e->isIdentifier());
           }
           // add the visibility clause for only/except
           r->addVisibilityClause(foundScope, kind, isPrivate,
@@ -957,14 +951,10 @@ doResolveImportStmt(Context* context, const Import* imp,
 
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
-      if (newIdent != nullptr) {
-        // search for the original name
-        expr = as->symbol();
-        newName = newIdent->name();
-      } else {
-        context->error(expr, "this form of as is not yet supported");
-        continue; // move on to the next visibility clause
-      }
+      assert(newIdent);
+      // search for the original name
+      expr = as->symbol();
+      newName = newIdent->name();
     }
 
     // For import, because 'import M.f' should handle the case that 'f'
