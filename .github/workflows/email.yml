@@ -80,9 +80,9 @@ jobs:
               Revision: ${{github.event.pull_request.repository.id}}  <br>
               Commit id : ${{ github.event.id }} <br>
               Commit message: ${{github.event.merge_commit_message}}  <br>
-              Sha: echo "${{ github.event.base.sha }}" <br>
+              Sha: ${{ github.event.base.sha }} <br>
               Link: ${{env.LINK}} <br> 
-              Log Message: ${{github.event.body}} <br>  
+              Log Message:${{env.MESSAGE}} <br>  
               Diff: ${{github.event.diff_url}} <br>
               Compare: ${{github.event.base.repo.compare_url}} <br>              </p>
               </body>
