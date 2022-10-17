@@ -100,7 +100,7 @@ class Context {
 
   // The current error handler.
   owned<ErrorHandler> handler_
-    = toOwned((ErrorHandler*) new DefaultErrorHandler());
+    = toOwned<ErrorHandler>(new DefaultErrorHandler());
 
   // Report an error to the current handler.
   void reportError(Context* context, const ErrorBase* err) {
@@ -315,13 +315,13 @@ class Context {
   owned<ErrorHandler> installErrorHandler(owned<ErrorHandler> substitute) {
     auto ret = substitute.get()
         ? std::move(substitute)
-        : toOwned((ErrorHandler*) new DefaultErrorHandler());
+        : toOwned<ErrorHandler>(new DefaultErrorHandler());
     std::swap(this->handler_, ret);
     return ret;
   }
 
   /**
-    Get a pointer to the currently installed error handler.
+    Get a mutable pointer to the currently installed error handler.
   */
   ErrorHandler* errorHandler() {
     return this->handler_.get();

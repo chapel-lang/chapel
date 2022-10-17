@@ -99,7 +99,7 @@ static ModuleSymbol* parseFile(const char* fileName,
 
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
-class DynoErrorHandler : chpl::Context::ErrorHandler {
+class DynoErrorHandler : public chpl::Context::ErrorHandler {
   std::vector<const chpl::ErrorBase*> errors_;
  public:
   DynoErrorHandler() = default;
@@ -848,8 +848,8 @@ static void dynoDisplayError(chpl::Context* context,
 
 static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
   auto ret = new DynoErrorHandler();
-  auto handler = chpl::toOwned((chpl::Context::ErrorHandler*) ret);
-  gContext->installErrorHandler(std::move(handler));
+  auto handler = chpl::toOwned<chpl::Context::ErrorHandler>(ret);
+  std::ignore = gContext->installErrorHandler(std::move(handler));
   return ret;
 }
 

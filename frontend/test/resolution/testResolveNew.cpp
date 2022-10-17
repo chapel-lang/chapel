@@ -514,75 +514,6 @@ static void testGenericRecordUserInitDependentField() {
   assert(qtRecv.kind() == QualifiedType::REF);
 }
 
-static void testMockupRangeBuilderAndRangeClass() {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
-
-  ctx->advanceToNextRevision(true);
-
-  auto path = TEST_NAME(ctx);
-  std::string myRangeCodeStr = R""""(
-    enum Bound { bounded, boundedLow, boundedHigh, boundedNone }
-
-    record myRange {
-      type idxType = int;
-      param boundedType: Bound = Bound.bounded;
-      param stridable: bool = false;
-      var low: idxType;
-      var high: idxType;
-      var stride: intType;
-      var alignment: if stridable then idxType else nothing;
-      var aligned: if stridable then bool else nothing;
-    }
-
-    // The initializer that is invoked by the builder.
-    proc myRange.init(type idxType, low: idxType, high: idxType) {
-      this.idxType = idxType;
-      this.boundedType = Bound.bounded;
-      this.low = low:int;
-      this.high = high:int;
-    }
-
-    // Some of the builders we might encounter in module code.
-    proc buildBoundedRange(param low: integral, param high: integral) {
-      type idxType = (low + high).type; // Hack to skip param method.
-      var ret = new range(idxType, low=low, high=high);
-      return ret;
-    }
-    proc buildBoundedRange(low: int(?w), high: int(w)) {
-      var ret = new range(low.type, low=low, high=high);
-      return ret;
-    }
-    proc buildBoundedRange(low: uint(?w), high: uint(w)) {
-      var ret = new range(low.type, low=low, high=high);
-      return ret;
-    }
-    proc buildBoundedRange(low: bool, high: bool) {
-      var ret = new range(low.type, low=low, high=high);
-      return ret;
-    }
-    )"""";
-
-  std::string contents = myRangeCodeStr +
-    R""""(
-    var r1 = buildBoundedRange(0, 8);
-    var lo = 9;
-    var hi = 13;
-    var r2 = buildBoundedRange(lo, hi);
-    )"""";
-
-  setFileText(ctx, path, contents);
-
-  // Get the module and the UAST we need.
-  auto& br = parseAndReportErrors(ctx, path);
-  assert(!guard.realizeErrors());
-  assert(br.numTopLevelExpressions() == 1);
-  auto mod = br.singleModule();
-  assert(mod);
-  assert(mod->numStmts() == 13); // 9 for the base and 4 for test
-}
-
 static void testFieldUseBeforeInit1(void) {
   Context context;
   Context* ctx = &context;
@@ -660,7 +591,6 @@ int main() {
   testTertMethodCallCrossModule();
   testClassManagementNilabilityInNewExpr();
   testGenericRecordUserInitDependentField();
-  testMockupRangeBuilderAndRangeClass();
   testFieldUseBeforeInit1();
   testRecordNewSegfault();
 

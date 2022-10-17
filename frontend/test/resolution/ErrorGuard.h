@@ -41,6 +41,8 @@ class AggregatingErrorHandler : BaseHandler {
   report(chpl::Context* context, const chpl::ErrorBase* err) override {
     errors_.push_back(err);
   }
+
+  inline void clear() { errors_.clear(); }
 };
 
 class ErrorGuard {
@@ -75,7 +77,7 @@ class ErrorGuard {
     chpl::ErrorWriter ew(ctx_, std::cerr, chpl::ErrorWriter::BRIEF, false);
     for (auto err : handler_->errors()) err->write(ew);
     int ret = (int) handler_->errors().size();
-    std::ignore = ctx_->installErrorHandler(prepareAndStoreHandler());
+    handler_->clear();
     return ret;
   }
 

@@ -144,8 +144,7 @@ static void testAmbiguous() {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto idx = rr.byAst(loop->index());
   assert(idx.type().isErroneousType());
-  assert(guard.errors().size() == 1);
-  assert(guard.realizeErrors());
+  assert(guard.realizeErrors() == 1);
 }
 
 static void testThese() {
@@ -223,8 +222,7 @@ static void testNoThese() {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto idx = rr.byAst(loop->index());
   assert(idx.type().isErroneousType());
-  assert(guard.errors().size() == 1);
-  assert(guard.realizeErrors());
+  assert(guard.realizeErrors() == 1);
 }
 
 static void testAmbiguousThese() {
@@ -256,8 +254,7 @@ static void testAmbiguousThese() {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto idx = rr.byAst(loop->index());
   assert(idx.type().isErroneousType());
-  assert(guard.errors().size() == 1);
-  assert(guard.realizeErrors());
+  assert(guard.realizeErrors() == 1);
 }
 
 static void testNoIndex() {
