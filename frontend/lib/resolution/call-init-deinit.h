@@ -23,7 +23,7 @@
 namespace chpl {
 namespace resolution {
 
-class Resolver;
+struct Resolver;
 
 /* Add calls to default init, copy init, deinit, etc to the Resolver's
    results after analyzing for split-init and copy-elision. */

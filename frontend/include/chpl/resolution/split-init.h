@@ -29,8 +29,6 @@ namespace chpl {
 namespace resolution {
 
 
-class Resolver;
-
 /* Computes the set of variable IDs which will use split init
    when being initialized. This is not a query. */
 std::set<ID>
