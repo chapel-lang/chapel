@@ -26,6 +26,7 @@ jobs:
           COMMIT_URL: https://api.github.com/repos/chapel-lang/chapel/pulls/20865/commits
           run: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              cat commits.json
               jq -r  '"$AUTHOR=\(.[].author[].name)"' commits.json >> $GITHUB_ENV
               jq -r '"$SHA=\(.[].sha)"' commits.json >> $GITHUB_ENV
               jq -r '"$MESSAGE=\(.[].message)"' commits.json >> $GITHUB_ENV
@@ -35,6 +36,7 @@ jobs:
                jq -r '"$COMPARE_URL=\(.[].repo[].compare_url"' commits.json >> $GITHUB_ENV
               
         run: |
+           cat commits.json
            echo ${{env.AUTHOR}}
       - name: checkout
         uses: actions/checkout@v3
