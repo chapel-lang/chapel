@@ -646,7 +646,7 @@ module ChapelRange {
       if isEnumOrBool(idxType) {
         return chpl_intToIdx(implicitHighBound(idxType));
       } else {
-        compilerError("Querying the high bound of a range not thought to have one");
+        compilerError("can't query the high bound of a range without one");
       }
     }
     return chpl_intToIdx(_high);
