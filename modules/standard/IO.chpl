@@ -8644,7 +8644,7 @@ iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
               if error == EEOF {
                 error = ENOERR;
                 go = false;
-              }  
+              }
             }
           }
         } else {
