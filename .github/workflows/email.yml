@@ -6,7 +6,8 @@ on:
     pull_request_target:
       #types:
        # - closed
-      
+
+
 jobs: 
   send_email:
    # run this workflow step only when the PR is merged 
@@ -35,8 +36,9 @@ jobs:
               jq -r '"$COMPARE_URL=\(.[].repo.compare_url)"' commits.json >> $GITHUB_ENV              
       - name: use events
         run: |
-           echo  ${{ env.SHA }}
-           echo ${{env.AUTHOR}}
+           echo   $env.SHA 
+           echo  $env.AUTHOR
+           
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
@@ -60,7 +62,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: Chapel Merge ${{ env.AUTHOR }}  
+           subject: Chapel Merge ${{env.SHA}}  
            # Required recipients' addresses:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
