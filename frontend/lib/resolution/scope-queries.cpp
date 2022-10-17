@@ -909,7 +909,7 @@ doResolveUseStmt(Context* context, const Use* use,
           kind = VisibilitySymbols::CONTENTS_EXCEPT;
           // check that we do not have 'except A as B'
           for (const AstNode* e : clause->limitations()) {
-            assert(!e->isIdentifier());
+            assert(e->isIdentifier());
           }
           // add the visibility clause for only/except
           r->addVisibilityClause(foundScope, kind, isPrivate,
