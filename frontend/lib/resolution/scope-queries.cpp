@@ -752,7 +752,10 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
       UniqueString rename;
       auto s = as->symbol();
       auto symId = s->toIdentifier();
-      assert(symId);
+      if (!symId) {
+        CHPL_REPORT(context, UnsupportedAs, as);
+        continue;
+      }
       name = symId->name();
 
       // Expect an identifier by construction.

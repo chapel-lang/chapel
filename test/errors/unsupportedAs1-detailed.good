@@ -1,4 +1,4 @@
-─── error in unsupportedAs.chpl:6 [UnsupportedAs] ───
+─── error in unsupportedAs1.chpl:6 [UnsupportedAs] ───
   This form of as is not yet supported
   'as' here:
       |
