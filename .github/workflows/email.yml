@@ -21,11 +21,23 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"  
+      - name: get commits payload
+        env:
+          COMMIT_URL: ${{github.event.pull_request.commits}}
+          EVRNTS_URL: ${{github.event.repository.events_url}}
+        run: |
+              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
+              echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
+              echo "LINK=$(jq -r '.[].html_url' commits.json)" >> $GITHUB_ENV
+              echo "MESSAGE=$(jq  '.[].commit.message' commits.json)" >> $GITHUB_ENV 
+              curl --location --request GET $EVENTS_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o events.json
+              echo "COMMIT_ID=$(jq -r '.[].id' events.json)" >> $GITHUB_ENV    
       - name: checkout
         uses: actions/checkout@v3
-        # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
+        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
-          fetch-depth: 0          
+          fetch-depth: 2          
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v32
@@ -44,7 +56,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: Chapel Merge ${{ github.event.head_commit.message }}  
+           subject: Chapel Merge ${{github.event.head.label}}  
            # Required recipients' addresses:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
@@ -54,18 +66,16 @@ jobs:
               <html>
               <body>
               <p>   
-              Branch ${{github.ref}} <br>
-              Author: ${{ github.event.head_commit.author.name}} <br>
-              Revision: ${{github.event.repository.id}}  <br>
-              Commit id : ${{ github.event.head_commit.id }} <br>
-              Commit message: ${{ github.event.head_commit.message }}  <br>
-              Sha: ${{ github.head_ref }}.${{ github.sha }}<br>
-              Link: ${{github.event.head_commit.url}} <br> 
-              Log Message: ${{github.event.commit.message}} <br>  
-              Compare: ${{github.event.compare}} <br>
-              Files changed: <br>
-              ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
-              ${{steps.changed-files.outputs.deleted_files}} <br>
+              Author: ${{ env.AUTHOR}} <br>
+              Revision: ${{github.event.pull_request.repository.id}}  <br>
+              Commit id : ${{ github.event.pull_request.id }}<br>
+                         ${{ env.COMMIT_ID}}  <br>
+              Commit message: ${{github.event.merge_commit_message}}  <br>
+              Sha: ${{ github.event.base.sha }} <br>
+              Link: ${{env.LINK}} <br> 
+              Log Message:${{github.event.pull_request.body}} <br>  
+              Diff: ${{github.event.pull_request.diff_url}} <br>
+              Compare: ${{github.event.repository.compare_url}} <br> 
               </p>
               </body>
               </html>
