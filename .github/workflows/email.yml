@@ -77,7 +77,7 @@ jobs:
               Revision: ${{github.event.pull_request.repository.id}}  <br>
               Commit id : ${{ env.COMMIT_ID }} <br>
               Commit message: ${{env.MESSAGE }}  <br>
-              Sha: echo ${{ env.SHA }} <br>
+              Sha: echo "${{ env.SHA }}" <br>
               Link: ${{env.LINK}} <br> 
               Log Message: ${{env.MESSAGE}} <br>  
               Diff: ${{env.DIFF_URL}} <br>
