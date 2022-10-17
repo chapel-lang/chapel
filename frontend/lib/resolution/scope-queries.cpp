@@ -694,7 +694,7 @@ static void errorIfNameNotInScope(Context* context,
                              checkedScopes, result);
 
   if (got == false || result.size() == 0) {
-    CHPL_REPORT(context, UseImportUnknown, clauseForError, scope, useOrImport,
+    CHPL_REPORT(context, UseImportUnknownSym, clauseForError, scope, useOrImport,
                 name.c_str());
   }
 }
@@ -742,22 +742,18 @@ static std::vector<std::pair<UniqueString,UniqueString>>
 convertLimitations(Context* context, const VisibilityClause* clause) {
   std::vector<std::pair<UniqueString,UniqueString>> ret;
   for (const AstNode* e : clause->limitations()) {
+    // dot expression not supported here
+    assert(e->toDot() == nullptr);
     if (auto ident = e->toIdentifier()) {
       UniqueString name = ident->name();
       ret.push_back(std::make_pair(name, name));
-    } else if (auto dot = e->toDot()) {
-      context->error(dot, "dot expression not supported here");
-      continue;
     } else if (auto as = e->toAs()) {
       UniqueString name;
       UniqueString rename;
       auto s = as->symbol();
-      if (auto symId = s->toIdentifier()) {
-        name = symId->name();
-      } else {
-        context->error(s, "expression type not supported for 'as'");
-        continue;
-      }
+      auto symId = s->toIdentifier();
+      assert(symId);
+      name = symId->name();
 
       // Expect an identifier by construction.
       auto ident = as->rename()->toIdentifier();
@@ -777,18 +773,15 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
 // anchor errors.
 // 'isFirstPart' is true for A in A.B.C but not for B or C.
 // Returns nullptr in the event of an error.
-static const Scope* findScopeViz(Context* context,
-                                 const Scope* scope,
+static const Scope* findScopeViz(Context* context, const Scope* scope,
                                  UniqueString nameInScope,
                                  const ResolvedVisibilityScope* resolving,
-                                 ID idForErrs,
-                                 VisibilityStmtKind useOrImport,
+                                 ID idForErrs, VisibilityStmtKind useOrImport,
                                  bool isFirstPart) {
-
   // lookup 'field' in that scope
   std::vector<BorrowedIdsWithName> vec;
-  bool got = lookupInScopeViz(context, scope, resolving,
-                              nameInScope, useOrImport, isFirstPart, vec);
+  bool got = lookupInScopeViz(context, scope, resolving, nameInScope,
+                              useOrImport, isFirstPart, vec);
 
   // We might've discovered the same ID multiple times, via different
   // scopes (i.e., via multiple BorrowedIdsWithName). Delete duplicates by
@@ -815,21 +808,13 @@ static const Scope* findScopeViz(Context* context,
   // scope).
 
   if (got == false || vec.size() == 0) {
-    if (useOrImport == VIS_USE)
-      context->error(idForErrs, "could not find target of 'use'");
-    else
-      context->error(idForErrs, "could not find target of 'import'");
-
-    return nullptr;
-
-  } else if (allIds.size() > 1) {
-    if (useOrImport == VIS_USE)
-      context->error(idForErrs, "ambiguity in finding target of 'use'");
-    else
-      context->error(idForErrs, "ambiguity in finding target of 'import'");
-
+    CHPL_REPORT(context, UnknownUseImport, idForErrs, useOrImport,
+                nameInScope.c_str());
     return nullptr;
   }
+
+  // should not encounter ambiguous matches
+  assert(allIds.size() <= 1);
 
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
@@ -838,7 +823,8 @@ static const Scope* findScopeViz(Context* context,
     return scopeForModule(context, foundId);
   }
 
-  context->error(idForErrs, "does not refer to a module");
+  CHPL_REPORT(context, UseImportNotModule, idForErrs, useOrImport,
+              nameInScope.c_str());
   return nullptr;
 }
 

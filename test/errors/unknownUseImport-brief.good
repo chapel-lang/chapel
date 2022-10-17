@@ -1,3 +1,2 @@
-error in unknownUseImport.chpl:6: cannot find symbol 'b' for import
-  note in unknownUseImport.chpl:6: symbol named here
-  note in unknownUseImport.chpl:1: searching in scope of 'M'
+error in unknownUseImport.chpl:6: cannot find target module 'X' for import
+  note in unknownUseImport.chpl:6: target named here

@@ -155,7 +155,7 @@ void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   wr.note(moduleInclude, "expected file at path '", filePath, "'");
 }
 
-void ErrorUseImportUnknown::write(ErrorWriterBase& wr) const {
+void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
   auto symbolName = std::get<std::string>(info);
   auto searchedScope = std::get<const resolution::Scope*>(info);
@@ -167,6 +167,26 @@ void ErrorUseImportUnknown::write(ErrorWriterBase& wr) const {
   wr.note(locationOnly(searchedScope->id()), "searching in scope of '",
           searchedScope->name(), "':");
   wr.code(searchedScope->id());
+}
+
+void ErrorUnknownUseImport::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto moduleName = std::get<std::string>(info);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+  wr.heading(kind_, type_, id,
+             "cannot find target module '", moduleName, "' for ", useOrImport);
+  wr.note(id, "target named here:");
+  wr.code(id);
+}
+
+void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto moduleName = std::get<std::string>(info);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+  wr.heading(kind_, type_, id,
+             "target '", moduleName, "' of ", useOrImport, " is not a module");
+  wr.note(id, "target named here:");
+  wr.code(id);
 }
 
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {

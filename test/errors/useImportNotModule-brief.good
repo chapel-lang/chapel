@@ -1,0 +1,2 @@
+error in useImportNotModule.chpl:8: target 'someProc' of use is not a module
+  note in useImportNotModule.chpl:8: target named here

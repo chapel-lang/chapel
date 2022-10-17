@@ -1,9 +1,11 @@
 module M {
-  var a : int = 3;
+  proc someProc() {
+    return 0;
+  }
 }
 
 module N {
-  import X.b;
+  use M.someProc;
 
   proc main() {
     writeln("here");
