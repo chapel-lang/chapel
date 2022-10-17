@@ -74,7 +74,7 @@ enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 /* Specifies the day of the week */
 enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
   /* Days in the week, starting with `Monday` = 0 */
-  enum DayOfWeek {
+  enum dayOfWeek {
     Monday =    0,
     Tuesday =   1,
     Wednesday = 2,
@@ -84,8 +84,13 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     Sunday =    6
   }
 
+  pragma "no doc"
+  proc DayOfWeek {
+    compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
+  }
+
   /* Days in the week, starting with `Monday` = 1 */
-  enum ISODayOfWeek {
+  enum isoDayOfWeek {
     Monday =    1,
     Tuesday =   2,
     Wednesday = 3,
@@ -93,6 +98,11 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     Friday =    5,
     Saturday =  6,
     Sunday =    7
+  }
+
+  pragma "no doc"
+  proc ISODayOfWeek {
+    compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
   }
 
   /* The minimum year allowed in `date` objects */
@@ -383,18 +393,18 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return ymdToOrd(year, month, day);
   }
 
-  /* Return the day of the week as a `DayOfWeek`.
+  /* Return the day of the week as a `dayOfWeek`.
      `Monday` == 0, `Sunday` == 6
    */
   proc date.weekday() {
     // January 1 0001 is a Monday
-    return try! ((toOrdinal() + 6) % 7): DayOfWeek;
+    return try! ((toOrdinal() + 6) % 7): dayOfWeek;
   }
 
-  /* Return the day of the week as an `ISODayOfWeek`.
+  /* Return the day of the week as an `isoDayOfWeek`.
      `Monday` == 1, `Sunday` == 7 */
   proc date.isoWeekday() {
-    return try! (weekday(): int + 1): ISODayOfWeek;
+    return try! (weekday(): int + 1): isoDayOfWeek;
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
@@ -403,7 +413,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc date.isoCalendar() {
     proc findThursday(d: date) {
       var wd = d.weekday();
-      return d + new timedelta(days = (DayOfWeek.Thursday:int - wd:int));
+      return d + new timedelta(days = (dayOfWeek.Thursday:int - wd:int));
     }
 
     proc findyear(d: date) {
@@ -495,7 +505,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Writes this `date` in ISO 8601 format: YYYY-MM-DD */
   proc date.writeThis(f) throws {
-    f.write(isoFormat());
+    f._write(isoFormat());
   }
 
   // Exists to support some common functionality for `datetime.readThis`
@@ -573,7 +583,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     pragma "no doc"
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     pragma "no doc"
-    var chpl_tzinfo: shared TZInfo?;
+    var chpl_tzinfo: shared Timezone?;
 
     /* The hour represented by this `time` value */
     proc hour {
@@ -596,8 +606,14 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
 
     /* The timezone represented by this `time` value */
-    proc tzinfo {
+    proc timezone {
       return chpl_tzinfo;
+    }
+
+    pragma "no doc"
+    deprecated "'tzinfo' is deprecated, please use 'timezone' instead"
+    proc tzinfo {
+      return timezone;
     }
 
     /* The minimum representable `time` */
@@ -623,7 +639,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    */
   @unstable "tzinfo is unstable; its type may change in the future"
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
-                 in tzinfo: shared TZInfo?) {
+                 in tzinfo: shared Timezone?) {
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -712,7 +728,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       ret = ret + "." + makeNDigits(6, microsecond);
     }
     var offset = utcOffset();
-    if tzinfo.borrow() != nil {
+    if timezone.borrow() != nil {
       var sign: string;
       if offset.days < 0 {
         offset = -offset;
@@ -728,28 +744,28 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the offset from UTC */
   proc time.utcOffset() {
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       return new timedelta();
     } else {
-      return tzinfo!.utcOffset(datetime.now());
+      return timezone!.utcOffset(datetime.now());
     }
   }
 
   /* Return the daylight saving time offset */
   proc time.dst() {
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       return new timedelta();
     } else {
-      return tzinfo!.dst(datetime.now());
+      return timezone!.dst(datetime.now());
     }
   }
 
   /* Return the name of the timezone for this `time` value */
   proc time.tzname() {
-    if tzinfo.borrow() == nil then
+    if timezone.borrow() == nil then
       return "";
     else
-      return tzinfo!.tzname(new datetime(1,1,1));
+      return timezone!.tzname(new datetime(1,1,1));
   }
 
   /* Return a `string` matching the `format` argument for this `time` */
@@ -769,7 +785,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_wday = ((new date(1900, 1, 1)).weekday():int(32) + 1) % 7;
     timeStruct.tm_yday = 0;
 
-    if tzinfo.borrow() != nil {
+    if timezone.borrow() != nil {
       timeStruct.tm_gmtoff = abs(utcOffset()).seconds: c_long;
       timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
@@ -790,7 +806,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Writes this `time` in ISO format: hh:mm:ss.sss */
   proc time.writeThis(f) throws {
-    f.write(isoFormat());
+    f._write(isoFormat());
   }
 
   // Exists to support some common functionality for `datetime.readThis`
@@ -839,10 +855,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator time.<(t1: time, t2: time): bool {
-    if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
-        (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
+    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
+        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if t1.tzinfo == t2.tzinfo {
+    } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -877,10 +893,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator time.<=(t1: time, t2: time): bool {
-    if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
-        (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
+    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
+        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if t1.tzinfo == t2.tzinfo {
+    } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -900,10 +916,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator time.>(t1: time, t2: time): bool {
-    if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
-        (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
+    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
+        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if t1.tzinfo == t2.tzinfo {
+    } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -923,10 +939,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator time.>=(t1: time, t2: time): bool {
-    if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
-        (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
+    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
+        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if t1.tzinfo == t2.tzinfo {
+    } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -1002,8 +1018,14 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
 
     /* The timezone represented by this `datetime` value */
+    proc timezone {
+      return chpl_time.timezone;
+    }
+
+    pragma "no doc"
+    deprecated "'tzinfo' is deprecated, please use 'timezone' instead"
     proc tzinfo {
-      return chpl_time.tzinfo;
+      return timezone;
     }
   }
 
@@ -1052,7 +1074,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a `datetime` value representing the current time and date */
-  proc type datetime.now(in tz: shared TZInfo?) {
+  proc type datetime.now(in tz: shared Timezone?) {
     if tz.borrow() == nil {
       const timeSinceEpoch = getTimeOfDay();
       const lt = getLocalTime(timeSinceEpoch);
@@ -1086,7 +1108,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* The `datetime` that is `timestamp` seconds from the epoch */
   @unstable "tzinfo is unstable; its type may change in the future"
   proc type datetime.fromTimestamp(timestamp: real,
-                                   in tz: shared TZInfo?) {
+                                   in tz: shared Timezone?) {
     if tz.borrow() == nil {
       var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
       const lt = getLocalTime(t);
@@ -1113,7 +1135,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Form a `datetime` value from a given `date` and `time` */
   proc type datetime.combine(d: date, t: time) {
     return new datetime(d.year, d.month, d.day,
-                        t.hour, t.minute, t.second, t.microsecond, t.tzinfo);
+                        t.hour, t.minute, t.second, t.microsecond, t.timezone);
   }
 
   /* Methods on datetime values */
@@ -1125,7 +1147,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Get the `time` portion of the `datetime` value, with `tzinfo` = nil */
   proc datetime.gettime() {
-    if chpl_time.tzinfo.borrow() == nil then
+    if chpl_time.timezone.borrow() == nil then
       return chpl_time;
     else
       return new time(hour=hour, minute=minute,
@@ -1145,7 +1167,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    */
   proc datetime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
-                        in tzinfo=this.tzinfo) {
+                        in tzinfo=this.timezone) {
     return datetime.combine(
       new date(if year == -1 then this.year else year,
                if month == -1 then this.month else month,
@@ -1159,8 +1181,8 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the date and time converted into the timezone in the argument */
   @unstable "tzinfo is unstable; its type may change in the future"
-  proc datetime.astimezone(in tz: shared TZInfo) {
-    if tzinfo == tz {
+  proc datetime.astimezone(in tz: shared Timezone) {
+    if timezone == tz {
       return this;
     }
     const utc = (this - this.utcOffset()).replace(tzinfo=tz);
@@ -1169,24 +1191,24 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the offset from UTC */
   proc datetime.utcOffset() {
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       halt("utcOffset called on naive datetime");
     } else {
-      return tzinfo!.utcOffset(this);
+      return timezone!.utcOffset(this);
     }
   }
   /* Return the daylight saving time offset */
   proc datetime.dst() {
-    if tzinfo.borrow() == nil then
-      halt("dst() called with nil tzinfo");
-    return tzinfo!.dst(this);
+    if timezone.borrow() == nil then
+      halt("dst() called with nil timezone");
+    return timezone!.dst(this);
   }
 
   /* Return the name of the timezone for this `datetime` value */
   proc datetime.tzname() {
-    if tzinfo.borrow() == nil then
+    if timezone.borrow() == nil then
       return "";
-    return tzinfo!.tzname(this);
+    return timezone!.tzname(this);
   }
 
   /* Return a filled record matching the C `struct tm` type for the given
@@ -1202,7 +1224,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_wday = weekday(): int(32);
     timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
 
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       timeStruct.tm_isdst = -1;
     } else if dst() == new timedelta(0) {
       timeStruct.tm_isdst = 0;
@@ -1217,7 +1239,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `datetime` in UTC
    */
   proc datetime.utctimetuple() {
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       var ret = timetuple();
       ret.tm_isdst = 0;
       return ret;
@@ -1234,25 +1256,37 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return getdate().toOrdinal();
   }
 
-  /* Return the day of the week as a `DayOfWeek`.
+  /* Return the day of the week as a `dayOfWeek`.
      `Monday` == 0, `Sunday` == 6
    */
   proc datetime.weekday() {
     return getdate().weekday();
   }
 
-  /* Return the day of the week as an `ISODayOfWeek`.
+  /* Return the day of the week as an `isoDayOfWeek`.
      `Monday` == 1, `Sunday` == 7
    */
+  proc datetime.isoWeekday() {
+    return getdate().isoWeekday();
+  }
+
+  pragma "no doc"
+  deprecated "'isoweekday' is deprecated, please use 'isoWeekday' instead"
   proc datetime.isoweekday() {
-    return getdate().isoweekday();
+    return isoWeekday();
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
      and ISO day of the week
    */
+  proc datetime.isoCalendar() {
+    return getdate().isoCalendar();
+  }
+
+  pragma "no doc"
+  deprecated "'isocalendar' is deprecated, please use 'isoCalendar' instead"
   proc datetime.isocalendar() {
-    return getdate().isocalendar();
+    return getdate().isoCalendar();
   }
 
   /* Return the `datetime` as a `string` in ISO format */
@@ -1266,7 +1300,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
     var micro = if microsecond > 0 then "." + zeroPad(6, microsecond) else "";
     var offset: string;
-    if tzinfo.borrow() != nil {
+    if timezone.borrow() != nil {
       var utcoff = utcOffset();
       var sign: string;
       if utcoff < new timedelta(0) {
@@ -1316,9 +1350,9 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_min = minute: int(32);
     timeStruct.tm_sec = second: int(32);
 
-    if tzinfo.borrow() != nil {
-      timeStruct.tm_isdst = tzinfo!.dst(this).seconds: int(32);
-      timeStruct.tm_gmtoff = tzinfo!.utcOffset(this).seconds: c_long;
+    if timezone.borrow() != nil {
+      timeStruct.tm_isdst = timezone!.dst(this).seconds: int(32);
+      timeStruct.tm_gmtoff = timezone!.utcOffset(this).seconds: c_long;
       timeStruct.tm_zone = nil;
     } else {
       timeStruct.tm_isdst = -1: int(32);
@@ -1384,7 +1418,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Writes this `datetime` in ISO format: YYYY-MM-DDThh:mm:ss.sss */
   proc datetime.writeThis(f) throws {
-    f.write(isoFormat());
+    f._write(isoFormat());
   }
 
   /* Reads this `datetime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
@@ -1432,7 +1466,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return datetime.combine(date.fromOrdinal(dt.getdate().toOrdinal()+adddays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
-                                     tzinfo=dt.tzinfo));
+                                     tzinfo=dt.timezone));
 
   }
 
@@ -1473,16 +1507,16 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return datetime.combine(date.fromOrdinal(dt.getdate().toOrdinal()-subDays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
-                                     tzinfo=dt.tzinfo));
+                                     tzinfo=dt.timezone));
   }
 
   pragma "no doc"
   operator datetime.-(dt1: datetime, dt2: datetime): timedelta {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-       (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+       (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
     }
-    if dt1.tzinfo == dt2.tzinfo {
+    if dt1.timezone == dt2.timezone {
       const newmicro = dt1.microsecond - dt2.microsecond,
             newsec = dt1.second - dt2.second,
             newmin = dt1.minute - dt2.minute,
@@ -1499,11 +1533,11 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.==(dt1: datetime, dt2: datetime): bool {
-    if dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil ||
-       dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil {
+    if dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil ||
+       dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil {
       halt("Cannot compare naive datetime to aware datetime");
-    } else if dt1.tzinfo == dt2.tzinfo {
-      // just ignore tzinfo
+    } else if dt1.timezone == dt2.timezone {
+      // just ignore timezone
       var d1: date = dt1.replace(tzinfo=nil).getdate(),
           d2: date = dt2.replace(tzinfo=nil).getdate();
       var t1: time = dt1.replace(tzinfo=nil).gettime(),
@@ -1526,10 +1560,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.<(dt1: datetime, dt2: datetime): bool {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 < date2 then return true;
@@ -1543,10 +1577,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.<=(dt1: datetime, dt2: datetime): bool {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 < date2 then return true;
@@ -1560,10 +1594,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.>(dt1: datetime, dt2: datetime): bool {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 > date2 then return true;
@@ -1577,10 +1611,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.>=(dt1: datetime, dt2: datetime): bool {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 > date2 then return true;
@@ -1828,10 +1862,14 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return str;
   }
 
+  pragma "no doc"
+  deprecated "'TZInfo' is deprecated, please use 'Timezone' instead"
+  class TZInfo: Timezone { }
+
   /* Abstract base class for time zones. This class should not be used
      directly, but concrete implementations of time zones should be
      derived from it. */
-  class TZInfo {
+  class Timezone {
     /* The offset from UTC this class represents */
     proc utcOffset(dt: datetime): timedelta {
       HaltWrappers.pureVirtualMethodHalt();

@@ -39,7 +39,7 @@ proc masonModify(args: [] string) throws {
   parser.parseArgs(args);
 
   if !depArg.hasValue() {
-    stderr.writeln("package name missing value");
+    stderr._writeln("package name missing value");
     masonModifyHelp();
     exit(1);
   }
@@ -259,7 +259,7 @@ private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
 proc generateToml(toml: borrowed Toml, tomlPath: string) {
   const tomlFile = open(tomlPath, iomode.cw);
   const tomlWriter = tomlFile.writer();
-  tomlWriter.writeln(toml);
+  tomlWriter._writeln(toml);
   tomlWriter.close();
   tomlFile.close();
 }

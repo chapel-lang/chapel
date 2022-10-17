@@ -1072,11 +1072,13 @@ module AutoMath {
   }
 
 
-  /* Returns the rounded integral value of the argument `x`. */
+  /* Returns the nearest integral value of the argument `x`, returning that
+     value which is larger than `x` in absolute value for the half-way case. */
   pragma "fn synchronization free"
   extern proc round(x: real(64)): real(64);
 
-  /* Returns the rounded integral value of the argument `x`. */
+  /* Returns the nearest integral value of the argument `x`, returning that
+     value which is larger than `x` in absolute value for the half-way case. */
   inline proc round(x : real(32)): real(32) {
     pragma "fn synchronization free"
     extern proc roundf(x: real(32)): real(32);

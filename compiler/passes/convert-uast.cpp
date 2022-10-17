@@ -42,7 +42,6 @@
 #include "WhileDoStmt.h"
 #include "build.h"
 #include "config.h"
-#include "docsDriver.h"
 #include "global-ast-vecs.h"
 #include "optimizations.h"
 #include "parser.h"
@@ -133,24 +132,19 @@ struct Converter {
 
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
+  bool inTupleAssign = false;
   bool inImportOrUse = false;
   bool canScopeResolve = false;
   bool trace = false;
 
   ModTag topLevelModTag;
-  // TODO: remove latestComment and builderResult once
-  // chpldoc is implemented as a separate tool on uAST
-  const char* latestComment = nullptr;
-  const uast::BuilderResult& builderResult;
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
 
 
-  Converter(chpl::Context* context, ModTag topLevelModTag,
-            const uast::BuilderResult& builderResult)
+  Converter(chpl::Context* context, ModTag topLevelModTag)
     : context(context),
-      topLevelModTag(topLevelModTag),
-      builderResult(builderResult) {}
+      topLevelModTag(topLevelModTag) { }
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node);
@@ -192,12 +186,6 @@ struct Converter {
        const resolution::ResolutionResultByPostorderID* resolved);
   void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
 
-  const char* consumeLatestComment() {
-    const char* ret = latestComment;
-    latestComment = nullptr;
-    return ret;
-  }
-
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
       return fDynoScopeBundled ||
@@ -231,9 +219,10 @@ struct Converter {
 
   const char* convertLinkageNameAstr(const uast::Decl* node) {
     if (auto linkageName = node->linkageName()) {
-      if (auto linkageStr = linkageName->toStringLiteral()) {
-        return astr(linkageStr->str());
-      }
+      auto linkageStr = linkageName->toStringLiteral();
+      INT_ASSERT(linkageStr);
+      auto ret = astr(linkageStr->str());
+      return ret;
     }
 
     return nullptr;
@@ -260,121 +249,7 @@ struct Converter {
     return true;
   }
 
-  // This code duplicates what was done in 'processBlockComment' for the old
-  // scanner, minus all the state tracking for the scanner itself. It is
-  // meant to prepare a comment for use with chpldoc.
-  const char* trimBlockCommentForDocs(const uast::Comment* node) {
-    INT_ASSERT(isBlockComment(node));
-    INT_ASSERT(fDocs);
-
-    const auto& com = node->str();
-    int delimLen = strlen(fDocsCommentLabel);
-    int delimIdx = (delimLen >= 2) ? 2 : 0;
-    std::string str, line;
-    bool badComment = false;
-    int depth = 1;
-    size_t idx = 2;   // Skip opening '/*'.
-    int llc = 0;      // Last last char.
-    int lc = 0;       // Last char.
-    int c = 0;        // Current char.
-    int d = 1;        // TODO: Better name?
-
-    while (depth > 0) {
-      llc = lc;
-      lc = c;
-      c = idx < com.size() ? com[idx++] : 0; // Advance the scanner.
-
-      // Skip opening delimiter.
-      if (idx < 2) {
-        INT_ASSERT(c == '/' || c == '*');
-        continue;
-      }
-
-      // For newlines, append entire line if past the delimiter.
-      if (c == '\n') {
-        if (delimIdx == delimLen) {
-          str += line;
-          str += '\n';
-        }
-        line.clear();
-
-      // Maybe advance the delimiter, append character.
-      } else {
-        if ((delimIdx < delimLen) && (delimIdx != -1)) {
-          if (c == fDocsCommentLabel[delimIdx]) {
-            delimIdx++;
-          } else {
-            delimIdx = -1;
-          }
-        }
-
-        line += c;
-      }
-
-      if (delimLen != 0 && c == fDocsCommentLabel[delimLen - d]) {
-        d++;
-      } else {
-        d = 1;
-      }
-
-      // TODO: Eliminate depth tracking?
-      if (lc == '*' && c == '/' && llc != '/') {
-        if (delimIdx == delimLen && d != delimLen + 1) badComment = true;
-        depth--;
-        d = 1;
-      } else if (lc == '/' && c == '*') {
-        depth++;
-      } else if (c == 0) {
-        INT_FATAL("Should not reach here!");
-      }
-    }
-
-    // Back up to not print delimiter again.
-    if (line.size() >= 2) {
-      line.resize(line.size() - 2);
-    }
-
-    // Even further for special delimiters.
-    if (delimLen > 2 && delimIdx == delimLen) {
-      line.resize(line.size() - (delimLen - 2));
-    }
-
-    if (delimIdx == delimLen) {
-      str += line;
-
-      if (delimLen > 2) {
-        delimLen -= 2;
-        str = str.substr(delimLen);
-      }
-
-      // TODO: What is this doing?
-      auto loc = str.find("\\x09");
-      while (loc != std::string::npos) {
-        str = str.substr(0, loc) + str.substr(loc + 4);
-        str.insert(loc, "\t");
-        loc = str.find("\\x09");
-      }
-    }
-
-    if (badComment) {
-      auto loc = builderResult.commentToLocation(node);
-      INT_ASSERT(!loc.isEmpty());
-      USR_WARN(loc, "chpldoc comment not closed, "
-                    "ignoring comment:%s\n",
-                    str.c_str());
-      return nullptr;
-    }
-
-    auto ret = str.size() ? astr(str) : nullptr;
-
-    return ret;
-  }
-
   Expr* visit(const uast::Comment* node) {
-    if (!fDocs) return nullptr;
-    INT_ASSERT(node->str().size() >= 2);
-    latestComment = isBlockComment(node) ? trimBlockCommentForDocs(node)
-                                         : nullptr;
     return nullptr;
   }
 
@@ -502,6 +377,11 @@ struct Converter {
       return nullptr;
     }
 
+    if (inTupleAssign && node->name() == USTR("_")) {
+      // Don't resolve underscore node, just return chpl__tuple_blank.
+      return new UnresolvedSymExpr("chpl__tuple_blank");
+    }
+
     // Check for a resolution result that includes a target ID
     if (symStack.size() > 0) {
       auto r = symStack.back().resolved;
@@ -552,6 +432,30 @@ struct Converter {
 
             SymExpr* se = new SymExpr(sym);
             Expr* ret = se;
+
+
+            // TODO(Resolver): This logic should probably be handled from
+            //                 within Dyno.
+            if (!inImportOrUse && rr->type().kind() == types::QualifiedType::MODULE) {
+              const char* reason = "cannot be mentioned like variables";
+              auto parentId = parsing::idToParentId(context, node->id());
+              auto parentAst = parsing::idToAst(context, parentId);
+              if (auto callAst = parentAst->toCall()) {
+                if (callAst->calledExpression() == node) {
+                  reason = "cannot be called like procedures";
+                }
+              } else if (auto dotAst = parentAst->toDot()) {
+                if (dotAst->receiver() == node) {
+                  // Not an error to reference a module name in a dot expression.
+                  reason = nullptr;
+                }
+              }
+
+              if (reason != nullptr) {
+                USR_FATAL_CONT(se, "modules (like '%s' here) %s", node->name().c_str(), reason);
+              }
+            }
+
             if (parsing::idIsParenlessFunction(context, id)) {
               // it's a parenless function call so add a CallExpr
               ret = new CallExpr(se);
@@ -871,9 +775,6 @@ struct Converter {
   Expr* visit(const uast::Include* node) {
     bool isIncPrivate = node->visibility() == uast::Decl::PRIVATE;
 
-    // Consume the comment but do not use it - module comment is used.
-    std::ignore = consumeLatestComment();
-
     const uast::Module* umod =
       parsing::getIncludedSubmodule(context, node->id());
     if (umod == nullptr) {
@@ -881,27 +782,15 @@ struct Converter {
     }
 
     bool isModPrivate = umod->visibility() == uast::Decl::PRIVATE;
-
-    // note any comment that occurs before the module for chpldoc
     const uast::BuilderResult* builderResult =
       parsing::parseFileContainingIdToBuilderResult(context, umod->id());
     INT_ASSERT(builderResult);
 
     UniqueString filePath;
 
-    if (builderResult != nullptr) {
-      filePath = builderResult->filePath();
-
-      for (auto ast : builderResult->topLevelExpressions()) {
-        // Store the last comment for use when converting the module.
-        if (auto comment = ast->toComment()) {
-          this->visit(comment);
-        }
-        if (ast == umod) {
-          break;
-        }
-      }
-    }
+   if (builderResult != nullptr) {
+     filePath = builderResult->filePath();
+   }
 
     // convert the included module
 
@@ -1190,11 +1079,15 @@ struct Converter {
 
     for (auto expr : node->exprs()) {
       ShadowVarSymbol* svs = nullptr;
+      bool isTaskVarDecl = false;
 
       // Normal conversion of TaskVar, reduce intents handled below.
       if (const uast::TaskVar* tv = expr->toTaskVar()) {
         svs = convertTaskVar(tv);
         INT_ASSERT(svs);
+
+        isTaskVarDecl = tv->intent() == uast::TaskVar::Intent::VAR ||
+                        tv->intent() == uast::TaskVar::Intent::CONST;
 
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
@@ -1218,7 +1111,11 @@ struct Converter {
         if (r != nullptr) {
           const resolution::ResolvedExpression* rr = r->byAstOrNull(expr);
           if (rr != nullptr) {
-            noteConvertedSym(expr, findConvertedSym(rr->toId()));
+            if (isTaskVarDecl) {
+              noteConvertedSym(expr, svs);
+            } else {
+              noteConvertedSym(expr, findConvertedSym(rr->toId()));
+            }
           }
         }
         addTaskIntent(ret, svs);
@@ -1302,7 +1199,7 @@ struct Converter {
    * This helper checks if a conditional node has an assignment op in its
    * condition expression, and reproduces an error similar to that in the
    * old parser
-   * NOTE: This checking should move to the dyno resolver in the future
+   * TODO(Resolver): This checking should move to the dyno resolver in the future
    */
   bool checkAssignConditional(const uast::Conditional* node) {
     bool assignOp = false;
@@ -1496,6 +1393,8 @@ struct Converter {
       condExpr = buildIfVar(condVar->name().c_str(),
                             toExpr(convertAST(condVar->initExpression())),
                             condVar->kind() == chpl::uast::Variable::CONST);
+      DefExpr* def = toDefExpr(toCallExpr(condExpr)->get(1));
+      noteConvertedSym(node->condition(), def->sym);
     } else {
       condExpr = toExpr(convertAST(node->condition()));
     }
@@ -1762,6 +1661,9 @@ struct Converter {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
+
+    // convert these for now, despite the error, so that symbols are converted.
+    convertWithClause(node->withClause(), node);
 
     auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
                                          zippered,
@@ -2180,6 +2082,26 @@ struct Converter {
     return buildLOrAssignment(lhs, rhs);
   }
 
+  Expr* convertTupleAssign(const uast::OpCall* node) {
+    if (node->op() != USTR("=") || node->numActuals() < 1
+        || !node->actual(0)->isTuple()) return nullptr;
+
+    INT_ASSERT(node->numActuals() == 2);
+    inTupleAssign = true;
+    Expr* lhs = convertAST(node->actual(0));
+    inTupleAssign = false;
+    INT_ASSERT(lhs);
+    Expr* rhs = convertAST(node->actual(1));
+    INT_ASSERT(rhs);
+
+    const char* opName = astr(node->op());
+    CallExpr* ret = new CallExpr(opName);
+    ret->insertAtTail(lhs);
+    ret->insertAtTail(rhs);
+
+    return ret;
+  }
+
   Expr* convertRegularBinaryOrUnaryOp(const uast::OpCall* node,
                                       const char* name=nullptr) {
     astlocMarker markAstLoc(node->id());
@@ -2211,6 +2133,8 @@ struct Converter {
     } else if (auto conv = convertLogicalAndAssign(node)) {
       ret = conv;
     } else if (auto conv = convertLogicalOrAssign(node)) {
+      ret = conv;
+    } else if (auto conv = convertTupleAssign(node)) {
       ret = conv;
     } else if (node->op() == USTR("align")) {
       ret = convertRegularBinaryOrUnaryOp(node, "chpl_align");
@@ -2270,7 +2194,6 @@ struct Converter {
 
   Expr* visit(const uast::MultiDecl* node) {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
-    auto comment = consumeLatestComment();
 
     for (auto decl : node->decls()) {
       INT_ASSERT(decl->linkage() == node->linkage());
@@ -2282,12 +2205,10 @@ struct Converter {
         const bool useLinkageName = false;
         conv = convertVariable(var, useLinkageName);
 
-        // Attach the doc comment if it exists.
         DefExpr* defExpr = toDefExpr(conv);
         INT_ASSERT(defExpr);
         auto varSym = toVarSymbol(defExpr->sym);
         INT_ASSERT(varSym);
-        varSym->doc = comment;
 
       // Otherwise convert in a generic fashion.
       } else {
@@ -2298,21 +2219,17 @@ struct Converter {
       ret->insertAtTail(conv);
     }
 
-    if (!fDocs) {
-      INT_ASSERT(!inTupleDecl);
-      CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-      ret->insertAtTail(end);
-    }
+    INT_ASSERT(!inTupleDecl);
+    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+    ret->insertAtTail(end);
 
     return ret;
   }
 
   // Right now components are one of: Variable, Formal, TupleDecl.
-  BlockStmt* convertTupleDeclComponents(const uast::TupleDecl* node,
-                                        bool attachComments=false) {
+  BlockStmt* convertTupleDeclComponents(const uast::TupleDecl* node) {
     astlocMarker markAstLoc(node->id());
 
-    auto comment = attachComments ? consumeLatestComment() : nullptr;
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
     const bool saveInTupleDecl = inTupleDecl;
@@ -2330,21 +2247,10 @@ struct Converter {
         conv = new DefExpr(varSym);
         noteConvertedSym(formal, varSym);
 
-        // Should not be attaching comments to tuple formals.
-        INT_ASSERT(!attachComments);
-
       // Do not use the visitor because it produces a block statement.
       } else if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
         conv = convertVariable(var, useLinkageName);
-
-        if (attachComments) {
-          auto defExpr = toDefExpr(conv);
-          INT_ASSERT(defExpr);
-          auto varSym = toVarSymbol(defExpr->sym);
-          INT_ASSERT(varSym);
-          varSym->doc = comment;
-        }
 
       // It must be a tuple.
       } else {
@@ -2376,8 +2282,7 @@ struct Converter {
 
   // This builds a statement. Arguments use 'convertTupleDeclComponents'.
   BlockStmt* visit(const uast::TupleDecl* node) {
-    const bool attachComments = true;
-    auto tuple = convertTupleDeclComponents(node, attachComments);
+    auto tuple = convertTupleDeclComponents(node);
     auto typeExpr = convertExprOrNull(node->typeExpression());
     auto initExpr = convertExprOrNull(node->initExpression());
 
@@ -2395,11 +2300,9 @@ struct Converter {
     }
 
     // Add a PRIM_END_OF_STATEMENT.
-    if (!fDocs) {
-      INT_ASSERT(!inTupleDecl);
-      CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-      ret->insertAtTail(end);
-    }
+    INT_ASSERT(!inTupleDecl);
+    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+    ret->insertAtTail(end);
 
     return ret;
   }
@@ -2480,22 +2383,24 @@ struct Converter {
             name == USTR("<<="));
   }
 
+  const char* createLambdaName(void) {
+    static const int maxDigits = 100;
+    static unsigned int nextId = 0;
+    char buf[maxDigits];
+
+    if ((nextId + 1) == 0) INT_FATAL("Overflow for lambda ID number");
+
+    // Use sprintf to prevent buffer overflow if there are too many lambdas.
+    int n = snprintf(buf, maxDigits, "chpl_lambda_%i", nextId++);
+    if (n > (int) maxDigits) INT_FATAL("Too many lambdas.");
+
+    auto ret = astr(buf);
+    return ret;
+  }
+
   const char* convertFunctionNameAndAstr(UniqueString name,
                                          uast::Function::Kind kind) {
-
-    if (kind == uast::Function::LAMBDA) {
-      static unsigned int nextId = 0;
-      char buffer[100];
-
-      /*
-       Use sprintf to prevent buffer overflow if there are too many lambdas
-       */
-      if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
-        INT_FATAL("Too many lambdas.");
-      }
-
-      return astr(buffer);
-    }
+    if (kind == uast::Function::LAMBDA) return createLambdaName();
 
     const char* ret = nullptr;
     if (name == USTR("by")) {
@@ -2557,7 +2462,26 @@ struct Converter {
     return callExpr;
   }
 
-  FnSymbol* convertFunction(const uast::Function* node, const char* comment) {
+  // build up the userString as in old parser
+  // needed to match up some error outputs
+  // NOTE: parentheses may have been discarded from the original user
+  // declaration, and if so, we are not able to reconstruct them at
+  // this time
+  const char* constructUserString(const uast::Function* node) {
+    std::stringstream ss;
+    printFunctionSignature(ss, node);
+    auto ret = astr(ss.str());
+    return ret;
+  }
+
+  const char* constructUserString(const uast::FunctionSignature* node) {
+    std::stringstream ss;
+    printFunctionSignature(ss, node);
+    auto ret = astr(ss.str());
+    return ret;
+  }
+
+  FnSymbol* convertFunction(const uast::Function* node) {
     // Decide if we want to resolve this function
     bool shouldResolveFunction = shouldResolve(node);
     bool shouldScopeResolveFunction = shouldResolveFunction ||
@@ -2591,14 +2515,7 @@ struct Converter {
     if (resolvedFn)
       noteConvertedFn(resolvedFn->signature(), fn);
 
-    // build up the userString as in old parser
-    // needed to match up some error outputs
-    // NOTE:
-    // parentheses may have been discarded from the original user declaration,
-    // and if so, we are not able to reconstruct them at this time
-    std::stringstream ss;
-    printFunctionSignature(ss, node);
-    fn->userString = astr(ss.str());
+    fn->userString = constructUserString(node);
 
     attachSymbolAttributes(node, fn);
     attachSymbolVisibility(node, fn);
@@ -2711,9 +2628,6 @@ struct Converter {
     RetTag retTag = convertRetTag(node->returnIntent());
 
     if (node->kind() == uast::Function::ITER) {
-      // TODO (dlongnecke): Move me to new frontend!
-      if (fn->hasFlag(FLAG_EXTERN))
-        USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
       fn->addFlag(FLAG_ITERATOR_FN);
 
     } else if (node->kind() == uast::Function::OPERATOR) {
@@ -2725,15 +2639,6 @@ struct Converter {
 
     } else if (node->kind() == uast::Function::LAMBDA) {
       fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
-
-      // TODO: move these to new frontend if they continue
-      // to be relevant as FCFs are improved.
-      if (retTag == RET_REF || retTag == RET_CONST_REF)
-        USR_FATAL(fn, "'ref' return types are not allowed in lambdas");
-      if (retTag == RET_PARAM)
-        USR_FATAL(fn, "'param' return types are not allowed in lambdas");
-      if (retTag == RET_TYPE)
-        USR_FATAL(fn, "'type' return types are not allowed in lambdas");
     }
 
     Expr* retType = nullptr;
@@ -2765,26 +2670,26 @@ struct Converter {
 
     BlockStmt* body = nullptr;
 
-    if (node->body() && node->linkage() != uast::Decl::EXTERN) {
+    if (node->body()) {
+      INT_ASSERT(node->linkage() != uast::Decl::EXTERN);
 
       // TODO: What about 'proc foo() return 0;'?
       auto style = uast::BlockStyle::EXPLICIT;
       body = createBlockWithStmts(node->stmts(), style);
-    } else {
-      if (node->numStmts()) {
-        USR_FATAL_CONT("Extern functions cannot have a body");
-      }
     }
 
     setupFunctionDecl(fn, retTag, retType, node->throws(),
                       whereClause,
                       lifetimeConstraints,
-                      body,
-                      /* docs */ comment);
+                      body);
 
     if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
       Expr* linkageExpr = convertExprOrNull(node->linkageName());
+
+      // This thing sets the 'cname' if it's a string literal, attaches
+      // some flags, sets the return type to 'void' if no type is
+      // specified, and attaches a dummy formal for the C name (?).
       setupExternExportFunctionDecl(linkageFlag, linkageExpr, fn);
     }
 
@@ -2800,21 +2705,165 @@ struct Converter {
     return fn;
   }
 
-  Expr* visit(const uast::Function* node) {
-    auto comment = consumeLatestComment();
-    FnSymbol* fn = convertFunction(node, comment);
+  // TODO: Wire up the resolution/scope-resolve stuff as for functions.
+  FnSymbol* convertFunctionSignature(const uast::FunctionSignature* node) {
+    FnSymbol* fn = new FnSymbol(nullptr);
 
-    // For lambdas, return a DefExpr instead of a BlockStmt
-    // containing a DefExpr because this is the pattern expected
-    // by the production compiler.
-    if (node->kind() == uast::Function::LAMBDA) {
-      // leaves the BlockStmt ret and other DefExpr to be GC'd
-      DefExpr* def = new DefExpr(fn);
-      return def;
+    fn->userString = constructUserString(node);
+
+    if (node->isParenless()) fn->addFlag(FLAG_NO_PARENS);
+    if (node->thisFormal() != nullptr) {
+      fn->addFlag(FLAG_METHOD);
     }
 
-    // Otherwise, return a block containing a DefExpr
-    BlockStmt* ret = buildChapelStmt(new DefExpr(fn));
+    IntentTag thisTag = INTENT_BLANK;
+    ArgSymbol* convertedReceiver = nullptr;
+
+    // Add the formals
+    if (node->numFormals() > 0) {
+      for (auto decl : node->formals()) {
+        DefExpr* conv = nullptr;
+
+        // A "normal" formal.
+        if (auto formal = decl->toFormal()) {
+          conv = toDefExpr(convertAST(formal));
+          INT_ASSERT(conv);
+
+          // Special handling for implicit receiver formal.
+          if (formal->name() == USTR("this")) {
+            INT_ASSERT(convertedReceiver == nullptr);
+
+            thisTag = convertFormalIntent(formal->intent());
+
+            convertedReceiver = toArgSymbol(conv->sym);
+            INT_ASSERT(convertedReceiver);
+
+            conv->sym->addFlag(FLAG_ARG_THIS);
+
+            if (thisTag == INTENT_TYPE) {
+              setupTypeIntentArg(convertedReceiver);
+            }
+
+          // E.g., a formal like 'proc(_: int)'.
+          } else if (formal->isExplicitlyAnonymous()) {
+            conv->sym->addFlag(FLAG_ANONYMOUS_FORMAL);
+            INT_ASSERT(!strcmp(conv->sym->name, "_"));
+          }
+
+        // A varargs formal.
+        } else if (auto formal = decl->toVarArgFormal()) {
+          INT_ASSERT(formal->name() != USTR("this"));
+          conv = toDefExpr(convertAST(formal));
+          INT_ASSERT(conv);
+
+        // A tuple decl, where components are formals or tuple decls.
+        } else if (auto formal = decl->toTupleDecl()) {
+          auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
+          IntentTag tag = convertFormalIntent(castIntent);
+          BlockStmt* tuple = convertTupleDeclComponents(formal);
+          INT_ASSERT(tuple);
+
+          Expr* type = convertExprOrNull(formal->typeExpression());
+          Expr* init = convertExprOrNull(formal->initExpression());
+
+          // TODO: Move this specialization into visitor? We can just
+          // detect if components are formals.
+          conv = buildTupleArgDefExpr(tag, tuple, type, init);
+          INT_ASSERT(conv);
+        } else if (auto anon = decl->toAnonFormal()) {
+          INT_FATAL("Not possible - should have been handled by frontend");
+          conv = toDefExpr(convertAST(anon));
+          INT_ASSERT(conv);
+        } else {
+          INT_FATAL("Not handled yet!");
+        }
+
+        // Attaches def to function's formal list.
+        if (conv) {
+          buildFunctionFormal(fn, conv);
+          // Note the formal is converted so we can wire up SymExprs later
+          noteConvertedSym(decl, conv->sym);
+        }
+      }
+    }
+
+    // Should not be possible - other cases should be using the
+    // 'convertFunction' routine for now, even if they store
+    // the info using a signature under the covers.
+    INT_ASSERT(node->kind() == uast::Function::PROC);
+
+    // The name is not relevant as this will not participate in
+    // function resolution in the typical way - this symbol is only
+    // a vehicle for its formals and return type.
+    // auto convName = astr(uast::Function::kindToString(node->kind()));
+    fn->cname = nullptr;
+
+    if (convertedReceiver) {
+      fn->thisTag = thisTag;
+      fn->_this = convertedReceiver;
+      fn->setMethod(true);
+      auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+      fn->insertFormalAtHead(new DefExpr(mt));
+    }
+
+    RetTag retTag = convertRetTag(node->returnIntent());
+    auto nodeRetType = node->returnType();
+    Expr* retType = (nodeRetType && nodeRetType->isBracketLoop())
+            ? convertArrayType(nodeRetType->toBracketLoop())
+            : convertExprOrNull(nodeRetType);
+
+    // TODO: I'd like to get rid of these build calls (if Michael
+    // has not already gotten rid of them on main), as there's not
+    // too much in them.
+    setupFunctionDecl(fn, retTag, retType, node->throws(),
+                      /*whereClause*/ nullptr,
+                      /*lifetimeConstraints*/ nullptr,
+                      /*body*/ nullptr);
+
+    return fn;
+  }
+
+  Expr* visit(const uast::AnonFormal* node) {
+    auto intent = convertFormalIntent(node->intent());
+    Expr* typeExpr = nullptr;
+
+    if (auto te = node->typeExpression()) {
+      typeExpr = convertAST(te);
+      INT_ASSERT(typeExpr);
+    }
+
+    auto convFormal = new ArgSymbol(intent, nullptr, dtUnknown, typeExpr);
+    convFormal->addFlag(FLAG_ANONYMOUS_FORMAL);
+
+    auto ret = new DefExpr(convFormal);
+    return ret;
+  }
+
+  Expr* visit(const uast::FunctionSignature* node) {
+    FnSymbol* fn = convertFunctionSignature(node);
+    fn->addFlag(FLAG_ANONYMOUS_FN);
+    auto ret = new DefExpr(fn);
+    return ret;
+  }
+
+  Expr* visit(const uast::Function* node) {
+    FnSymbol* fn = nullptr;
+    Expr* ret = nullptr;
+
+    fn = convertFunction(node);
+
+    // For anonymous functions, return a DefExpr instead of a BlockStmt
+    // containing a DefExpr because this is the pattern expected
+    // by the production compiler. Otherwise, return a block containing
+    // a DefExpr.
+    if (node->isAnonymous()) {
+      DefExpr* def = new DefExpr(fn);
+      ret = def;
+    } else {
+      BlockStmt* stmt = buildChapelStmt(new DefExpr(fn));
+      ret = stmt;
+    }
+
     return ret;
   }
 
@@ -2847,8 +2896,6 @@ struct Converter {
   }
 
   ModuleSymbol* convertModule(const uast::Module* node) {
-    auto comment = consumeLatestComment();
-
     // Decide if we want to resolve this module
     bool shouldResolveModule = shouldResolve(node);
     bool shouldScopeResolveModule = shouldResolveModule ||
@@ -2900,8 +2947,7 @@ struct Converter {
                                     body,
                                     path,
                                     priv,
-                                    prototype,
-                                    comment);
+                                    prototype);
 
     if (node->kind() == uast::Module::IMPLICIT) {
       mod->addFlag(FLAG_IMPLICIT_MODULE);
@@ -3232,7 +3278,6 @@ struct Converter {
       USR_FATAL(varSym, "external params are not supported");
     }
 
-    // TODO (dlongnecke): Should be sanitized by the new parser.
     if (useLinkageName && node->linkageName()) {
       INT_ASSERT(linkageFlag != FLAG_UNKNOWN);
       varSym->cname = convertLinkageNameAstr(node);
@@ -3283,15 +3328,11 @@ struct Converter {
   Expr* visit(const uast::Variable* node) {
     auto isTypeVar = node->kind() == uast::Variable::TYPE;
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
-    auto comment = consumeLatestComment();
 
     auto defExpr = convertVariable(node, true);
     INT_ASSERT(defExpr);
     auto varSym = toVarSymbol(defExpr->sym);
     INT_ASSERT(varSym);
-
-    // Attach the doc comment if it exists.
-    varSym->doc = comment;
 
     stmts->insertAtTail(defExpr);
 
@@ -3313,7 +3354,7 @@ struct Converter {
     }
 
     // Add a PRIM_END_OF_STATEMENT.
-    if (!fDocs && !inTupleDecl && !isTypeVar) {
+    if (!inTupleDecl && !isTypeVar) {
       CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
       stmts->insertAtTail(end);
     }
@@ -3339,11 +3380,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Enum* node) {
-    auto comment = consumeLatestComment();
     auto enumType = new EnumType();
-
-    // Attach any doc comment to the enum type.
-    enumType->doc = comment;
 
     for (auto elem : node->enumElements()) {
       DefExpr* convElem = convertEnumElement(elem);
@@ -3392,7 +3429,6 @@ struct Converter {
     }
     pushToSymStack(node, resolved);
 
-    auto comment = consumeLatestComment();
     const char* name = astr(node->name());
     const char* cname = name;
     Expr* inherit = nullptr;
@@ -3418,8 +3454,7 @@ struct Converter {
 
     auto ret = buildClassDefExpr(name, cname, tag, inherit,
                                  decls,
-                                 externFlag,
-                                 comment);
+                                 externFlag);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
@@ -3557,7 +3592,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     // subclasses of BuiltinType
 
     // concrete builtin types
-    case typetags::CFileType:     return dtFile;
     case typetags::CFnPtrType:    return dtCFnPtr;
     case typetags::CVoidPtrType:  return dtCVoidPtr;
     case typetags::OpaqueType:    return dtOpaque;
@@ -3966,9 +4000,15 @@ void Converter::pushToSymStack(
   if (symStack.size() > 0) {
     auto backMap = symStack.back().convertedSyms.get();
     auto backAst = parsing::idToAst(context, backMap->inSymbolId);
-    if (backAst->toFunction()) {
-      // If we're inside a nested function, then we should use the parent
-      // function's ConvertedSymbolsMap as the parentMap.
+
+    // If we're inside a nested function, then we should use the parent
+    // function's ConvertedSymbolsMap as the parentMap.
+    //
+    // If we're inside an aggregate, then we should use that aggregate's
+    // map as the parent so that we can find the right fields. This can
+    // happen for methods declared inside a class or record.
+    if (backAst->toFunction() ||
+        backAst->isAggregateDecl()) {
       parentMap = backMap;
     } else {
       // Find the current top-level module from symStack and consider it the
@@ -4212,20 +4252,12 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 ModuleSymbol*
 convertToplevelModule(chpl::Context* context,
                       const chpl::uast::Module* mod,
-                      ModTag modTag,
-                      const chpl::uast::Comment* comment,
-                      const chpl::uast::BuilderResult& builderResult) {
+                      ModTag modTag) {
   astlocMarker markAstLoc(mod->id());
-  Converter c(context, modTag, builderResult);
+  Converter c(context, modTag);
 
   c.canScopeResolve = fDynoCompilerLibrary;
   c.trace = fDynoDebugTrace;
-
-  // Maybe prepare a toplevel comment to attach to the module.
-  if (comment) {
-    auto convComment = c.visit(comment);
-    INT_ASSERT(convComment == nullptr);
-  }
 
   ModuleSymbol* ret = c.convertModule(mod);
   return ret;

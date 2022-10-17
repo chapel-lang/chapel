@@ -253,7 +253,7 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
   }
 
   // Create a "write to file" channel.
-  err = qio_channel_create(&writing, f, ch_hints, 0, 1, start, ch_end, NULL);
+  err = qio_channel_create(&writing, f, ch_hints, 0, 1, start, ch_end, NULL, 0);
   assert(!err);
   // Write stuff to the file.
   err = qio_channel_write_amt(threadsafe,writing,test->data,strlen(test->data));
@@ -290,7 +290,7 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
 
   // Read the data.
   //err = qio_channel_init_file(&reading, type, f, ch_hints, 1, 0, start, end);
-  err = qio_channel_create(&reading, f, ch_hints, 1, 0, test_start, ch_end, NULL);
+  err = qio_channel_create(&reading, f, ch_hints, 1, 0, test_start, ch_end, NULL, 0);
   assert(!err);
 
   // Read stuff from the file.

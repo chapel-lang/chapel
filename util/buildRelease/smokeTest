@@ -159,7 +159,9 @@ fi
 
 # Source common.bash, which sets up a bunch of environment variables that are
 # required for nightly testing.
-source $CHPL_HOME/util/cron/common.bash
+if [ "$GITHUB_ACTIONS" != "true" ]; then
+  source $CHPL_HOME/util/cron/common.bash
+fi
 
 # Disable GMP and re2 to speed up build.
 export CHPL_GMP=none

@@ -35,6 +35,8 @@ Options:
                  and which are set by configuration files (+)
   --simple      Print variables in format: CHPL_KEY=VALUE
                  output is compatible with chplconfig format
+  --cmake       Print variables in format: CHPL_KEY VALUE with quotes stripped
+                 from values. Output is compatible with cmake format
   --make        Print variables in format: CHPL_MAKE_KEY=VALUE
   --path        Print variables in format: VALUE1/VALUE2/...
                  this flag always excludes CHPL_HOME and CHPL_MAKE
@@ -352,6 +354,8 @@ def _print_var(key, value, print_format=None, shortname=None):
         return "{0}: {1}{2}\n".format(key, value, user_set_symbol)
     elif print_format == 'simple':
         return "{0}={1}\n".format(key_stripped, value)
+    elif print_format == 'cmake':
+        return "{0} {1}\n".format(key_stripped, value)
     elif print_format == 'make':
         make_key = key_stripped.replace("CHPL_", "CHPL_MAKE_", 1)
         return "{0}={1}\n".format(make_key, value)
@@ -407,7 +411,7 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
             ret.append(print_var('CHPL_HOME', ENV_VALS['CHPL_HOME']))
             this_dir = os.path.realpath(os.path.dirname(__file__))
             ret.append("script location: {0}\n".format(this_dir))
-        elif print_format == 'simple':
+        elif print_format in ['simple', 'cmake']:
             ret.append(print_var('CHPL_HOME', ENV_VALS['CHPL_HOME']))
 
     # Print environment variables and their values
@@ -465,6 +469,7 @@ def parse_args():
     parser.add_option('--pretty', action='store_const', dest='format', const='pretty')
     parser.add_option('--simple', action='store_const', dest='format', const='simple')
     parser.add_option('--make',   action='store_const', dest='format', const='make')
+    parser.add_option('--cmake',  action='store_const', dest='format', const='cmake')
     parser.add_option('--path',   action='store_const', dest='format', const='path')
 
     # Hijack the help message to use the module docstring

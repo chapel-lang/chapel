@@ -129,7 +129,7 @@ module NetworkAtomics {
     }
 
     proc const writeThis(x) throws {
-      x.write(read());
+      x._write(read());
     }
 
   }
@@ -329,7 +329,7 @@ module NetworkAtomics {
     }
 
     proc const writeThis(x) throws {
-      x.write(read());
+      x._write(read());
     }
 
   }

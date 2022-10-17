@@ -274,7 +274,7 @@ proc addGitIgnore(dirName: string) {
   var toIgnore = "target/\nMason.lock\n";
   var gitIgnore = open(dirName+"/.gitignore", iomode.cw);
   var GIwriter = gitIgnore.writer();
-  GIwriter.write(toIgnore);
+  GIwriter._write(toIgnore);
   GIwriter.close();
 }
 
@@ -309,7 +309,7 @@ proc makeBasicToml(dirName: string, path: string, version: string,
                                      defaultLicense, packageType);
   var tomlFile = open(path+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
-  tomlWriter.write(baseToml);
+  tomlWriter._write(baseToml);
   tomlWriter.close();
 }
 
@@ -330,7 +330,7 @@ proc makeModule(path:string, fileName:string, packageType="application") {
   }
   var lib = open(path+'/src/'+fileName+'.chpl', iomode.cw);
   var libWriter = lib.writer();
-  libWriter.write(libTemplate + '\n');
+  libWriter._write(libTemplate + '\n');
   libWriter.close();
 }
 

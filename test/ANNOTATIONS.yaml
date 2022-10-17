@@ -1487,6 +1487,8 @@ memleaksfull:
     - Skip memleaks testing of DistributedMap (#19629)
   04/24/22:
     - Clean up unmanaged classes in a test (#19695)
+  09/30/22:
+    - Begin the effort of improving Chapel's first-class-function support (#20554)
 # End memleaksfull
 
 meteor:
@@ -2318,6 +2320,8 @@ arkouda: &arkouda-base
     - Reduce sort bucket exchange overhead (Bears-R-Us/arkouda#1635)
   08/16/22:
     - arkouda_server_refactor with metrics integration (Bears-R-Us/arkouda#1604)
+  09/23/22:
+    - Closes 1783 SegArray.__getitem__ to Server (Bears-R-Us/arkouda#1790)
 
 
 arkouda-string:

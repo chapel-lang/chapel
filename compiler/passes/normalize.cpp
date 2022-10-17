@@ -1672,6 +1672,8 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
                           bool genericArrayRet);
 
 static void normalizeReturns(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
+
   SET_LINENO(fn);
 
   fixupExportedArrayReturns(fn);
@@ -1754,9 +1756,8 @@ static void normalizeReturns(FnSymbol* fn) {
   //  return/yield type)
   if (isIterator == false && numVoidReturns != 0) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-
   } else {
-    // Handle declared return type.
+
     retval = newTemp("ret", fn->retType);
 
     retval->addFlag(FLAG_RVV);

@@ -4,9 +4,9 @@ var line:string;
 var i = 0;
 while stdin.readLine(line) {
   if i & 1 == 0 {
-    stdout.write(line);
+    stdout._write(line);
   } else {
-    stderr.write(line);
+    stderr._write(line);
   }
   i += 1;
 }

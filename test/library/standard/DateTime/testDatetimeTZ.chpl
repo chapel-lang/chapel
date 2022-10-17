@@ -1,6 +1,6 @@
 use Time;
 
-class FixedOffset: TZInfo {
+class FixedOffset: Timezone {
   var offset: timedelta;
   var name: string;
   var dstoffset: timedelta;
@@ -43,7 +43,7 @@ proc test_trivial() {
   assert(dt.minute == 5);
   assert(dt.second == 6);
   assert(dt.microsecond == 7);
-  assert(dt.tzinfo.borrow() == nil);
+  assert(dt.timezone.borrow() == nil);
 }
 
 proc test_even_more_compare() {
@@ -99,9 +99,9 @@ proc test_zones() {
   var t1 = new datetime(2002, 3, 19,  7, 47, tzinfo=est);
   var t2 = new datetime(2002, 3, 19, 12, 47, tzinfo=utc);
   var t3 = new datetime(2002, 3, 19, 13, 47, tzinfo=met);
-  assert(t1.tzinfo == est);
-  assert(t2.tzinfo == utc);
-  assert(t3.tzinfo == met);
+  assert(t1.timezone == est);
+  assert(t2.timezone == utc);
+  assert(t3.timezone == met);
   assert(t1.utcOffset() == new timedelta(minutes=-300));
   assert(t2.utcOffset() == new timedelta(minutes=0));
   assert(t3.utcOffset() == new timedelta(minutes=60));
@@ -138,7 +138,7 @@ proc test_tz_aware_arithmetic() {
   var tz55 = new shared FixedOffset(-330, "west 5:30");
   var timeaware = now.gettime().replace(tzinfo=tz55);
   var nowaware = datetime.combine(now.getdate(), timeaware);
-  assert(nowaware.tzinfo == tz55);
+  assert(nowaware.timezone == tz55);
   assert(nowaware.timetz() == timeaware);
 
   // Subtracting should yield 0.
@@ -148,15 +148,15 @@ proc test_tz_aware_arithmetic() {
   // Adding a delta should preserve tzinfo.
   var delta = new timedelta(weeks=1, minutes=12, microseconds=5678);
   var nowawareplus = nowaware + delta;
-  assert(nowaware.tzinfo == tz55);
+  assert(nowaware.timezone == tz55);
   var nowawareplus2 = delta + nowaware;
-  assert(nowawareplus2.tzinfo == tz55);
+  assert(nowawareplus2.timezone == tz55);
   assert(nowawareplus == nowawareplus2);
 
   // that - delta should be what we started with, and that - what we
   // started with should be delta.
   var diff = nowawareplus - delta;
-  assert(diff.tzinfo == tz55);
+  assert(diff.timezone == tz55);
   assert(nowaware == diff);
   //self.assertRaises(TypeError, lambda: delta - nowawareplus);
   assert(nowawareplus - nowaware == delta);
@@ -165,7 +165,7 @@ proc test_tz_aware_arithmetic() {
   var tzr = new shared FixedOffset(rng.getNext(-1439, 1439), "randomtimezone");
   // Attach it to nowawareplus.
   nowawareplus = nowawareplus.replace(tzinfo=tzr);
-  assert(nowawareplus.tzinfo == tzr);
+  assert(nowawareplus.timezone == tzr);
   // Make sure the difference takes the timezone adjustments into account.
   var got = nowaware - nowawareplus;
   // Expected:  (nowaware base - nowaware offset) -
@@ -193,7 +193,7 @@ proc test_tzinfo_now() {
   var off42 = new shared FixedOffset(42, "42");
   var another = datetime.now(off42);
   var again = datetime.now(tz=off42);
-  assert(another.tzinfo == again.tzinfo);
+  assert(another.timezone == again.timezone);
   assert(another.utcOffset() == new timedelta(minutes=42));
 
   // We don't know which time zone we're in, and don't have a tzinfo
@@ -204,7 +204,7 @@ proc test_tzinfo_now() {
   var utc = new shared FixedOffset(0, "utc", 0);
   for 0..2 {
     var now = datetime.now(weirdtz);
-    assert(now.tzinfo == weirdtz);
+    assert(now.timezone == weirdtz);
     var utcnow = datetime.utcNow().replace(tzinfo=utc);
     var now2 = utcnow.astimezone(weirdtz);
     if abs(now - now2) < new timedelta(seconds=30) {
@@ -239,7 +239,7 @@ proc test_tzinfo_fromtimestamp() {
   var off42 = new shared FixedOffset(42, "42");
   var another = datetime.fromTimestamp(ts, off42);
   var again = datetime.fromTimestamp(ts, tz=off42);
-  assert(another.tzinfo == again.tzinfo);
+  assert(another.timezone == again.timezone);
   assert(another.utcOffset() == new timedelta(minutes=42));
 
   // Try to make sure tz= actually does some conversion.
@@ -259,7 +259,7 @@ proc test_tzinfo_fromtimestamp() {
 proc test_tzinfo_timetuple() {
   // TestDateTime tested most of this.  datetime adds a twist to the
   // DST flag.
-  class DST: TZInfo {
+  class DST: Timezone {
     var dstvalue: timedelta;
     proc init(i) {
       dstvalue = new timedelta(minutes=i);
@@ -290,7 +290,7 @@ proc test_tzinfo_timetuple() {
 }
 
 proc test_utctimetuple() {
-  class DST: TZInfo {
+  class DST: Timezone {
     var dstvalue: timedelta;
     proc init(dstvalue) {
       this.dstvalue = new timedelta(minutes=dstvalue);
@@ -381,7 +381,7 @@ proc test_replace() {
   var zm200 = new shared FixedOffset(new timedelta(minutes=-200), "-200");
   var args = (1, 2, 3, 4, 5, 6, 7);
   var base = new datetime((...args), z100);
-  assert(base == base.replace(tzinfo=base.tzinfo));
+  assert(base == base.replace(tzinfo=base.timezone));
 
   var i = 0;
   for (name, newval) in (("year", 2),
@@ -423,12 +423,12 @@ proc test_replace() {
   // Ensure we can get rid of a tzinfo.
   assert(base.tzname() == "+100");
   var base2 = base.replace(tzinfo=nil);
-  assert(base2.tzinfo.borrow() == nil);
+  assert(base2.timezone.borrow() == nil);
 
   // Ensure we can add one.
   var base3 = base2.replace(tzinfo=z100);
   assert(base == base3);
-  assert(base.tzinfo == base3.tzinfo);
+  assert(base.timezone == base3.timezone);
 }
 
 proc test_more_astimezone() {
@@ -437,17 +437,17 @@ proc test_more_astimezone() {
   var fm5h = new shared FixedOffset(-(new timedelta(hours=5)), "m300");
 
   var dt = datetime.now(tz=f44m);
-  assert(dt.tzinfo == f44m);
+  assert(dt.timezone == f44m);
 
   // Replacing with same tzinfo makes no change.
-  var x = dt.astimezone(dt.tzinfo:shared TZInfo);
-  assert(x.tzinfo == f44m);
+  var x = dt.astimezone(dt.timezone:shared Timezone);
+  assert(x.timezone == f44m);
   assert(x.getdate() == dt.getdate());
   assert(x.gettime() == dt.gettime());
 
   // Replacing with different tzinfo does adjust.
   var got = dt.astimezone(fm5h);
-  assert(got.tzinfo == fm5h);
+  assert(got.timezone == fm5h);
   assert(got.utcOffset() == new timedelta(hours=-5));
   var expected = dt - dt.utcOffset();  // in effect, convert to UTC
   expected += fm5h.utcOffset(dt);  // and from there to local time
@@ -455,14 +455,14 @@ proc test_more_astimezone() {
   assert(got.getdate() == expected.getdate());
   assert(got.gettime() == expected.gettime());
   assert(got.timetz() == expected.timetz());
-  assert(got.tzinfo == expected.tzinfo);
+  assert(got.timezone == expected.timezone);
   assert(got == expected);
 }
 
 proc test_aware_subtract() {
   // Ensure that utcoffset() is ignored when the operands have the
   // same tzinfo member.
-  class OperandDependentOffset: TZInfo {
+  class OperandDependentOffset: Timezone {
     override proc utcOffset(dt: datetime) {
       if dt.minute < 10 {
         // d0 and d1 equal after adjustment
@@ -475,9 +475,9 @@ proc test_aware_subtract() {
   }
 
   var base = new datetime(8, 9, 10, 11, 12, 13, 14, tzinfo=new shared OperandDependentOffset());
-  var d0 = base.replace(minute=3, tzinfo=base.tzinfo);
-  var d1 = base.replace(minute=9, tzinfo=base.tzinfo);
-  var d2 = base.replace(minute=11, tzinfo=base.tzinfo);
+  var d0 = base.replace(minute=3, tzinfo=base.timezone);
+  var d1 = base.replace(minute=9, tzinfo=base.timezone);
+  var d2 = base.replace(minute=11, tzinfo=base.timezone);
   for x in (d0, d1, d2) {
     for y in (d0, d1, d2) {
       var got = x - y;
@@ -519,7 +519,7 @@ proc test_mixed_compare() {
   t2 = t2.replace(tzinfo=new shared FixedOffset(0, ""));
 
   // In datetime w/ identical tzinfo objects, utcoffset is ignored.
-  class Varies: TZInfo {
+  class Varies: Timezone {
     var offset: timedelta;
     proc init() {
       offset = new timedelta(minutes=22);

@@ -34,7 +34,7 @@ module SortedMap {
   private use IO;
   public use Sort only defaultComparator;
 
-  // Lock code lifted from modules/standard/Lists.chpl.
+  // Lock code lifted from modules/standard/List.chpl.
   pragma "no doc"
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
@@ -409,27 +409,28 @@ module SortedMap {
     }
 
     /*
-      Writes the contents of this sortedMap to a channel. The format looks like:
+      Writes the contents of this sortedMap to a fileWriter.
+      The format looks like:
 
         .. code-block:: chapel
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to write to.
+      :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter(); defer _leave();
       var first = true;
-      ch.write("{");
+      ch._write("{");
       for kv in _set {
         if first {
           first = false;
         } else {
-          ch.write(", ");
+          ch._write(", ");
         }
-        ch.write(kv[0], ": ", kv[1]!.val);
+        ch._write(kv[0], ": ", kv[1]!.val);
       }
-      ch.write("}");
+      ch._write("}");
     }
 
     /*

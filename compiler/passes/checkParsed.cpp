@@ -24,7 +24,6 @@
 
 #include "astutil.h"
 #include "DeferStmt.h"
-#include "docsDriver.h"
 #include "expr.h"
 #include "stmt.h"
 #include "stlUtil.h"
@@ -51,19 +50,6 @@ static void checkUseStmt(UseStmt* use);
 
 void
 checkParsed() {
-  //
-  // Let's not bother checking the parsed code if we're generating
-  // docs.  In part because it seems reasonable to generate
-  // documentation for incorrect code; in part because there are other
-  // checks that occur post-docs pass that won't fire (i.e., this pass
-  // doesn't check everything); and in part because the code below, as
-  // written, doesn't work if you're documenting just a single file
-  // and haven't parsed all the other files it depends on.
-  //
-  if (fDocs) {
-    return;
-  }
-
   setupForCheckExplicitDeinitCalls();
 
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -364,9 +350,17 @@ checkFunction(FnSymbol* fn) {
   // support prototypes, so require such programmers to type the
   // empty body instead.  This is consistent with the current draft
   // of the spec as well.
+  bool doErrorAboutNoBody = false;
   if (fn->hasFlag(FLAG_NO_FN_BODY) && !fn->hasFlag(FLAG_EXTERN))
     if (!isInterfaceSymbol(fn->defPoint->parentSymbol))
-      USR_FATAL_CONT(fn, "no-op procedures are only legal for extern functions");
+      doErrorAboutNoBody = true;
+
+  if (fn->hasFlag(FLAG_ANONYMOUS_FN))
+    doErrorAboutNoBody = false;
+
+  if (doErrorAboutNoBody)
+    USR_FATAL_CONT(fn, "no-op procedures are only legal for extern "
+                       "functions");
 
   if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_NO_FN_BODY))
     USR_FATAL_CONT(fn, "Extern functions cannot have a body");

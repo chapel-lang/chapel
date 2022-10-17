@@ -26,7 +26,6 @@
 #include "build.h"
 #include "clangUtil.h"
 #include "codegen.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"

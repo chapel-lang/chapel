@@ -158,8 +158,8 @@ cmake-build-*/
 /test/compflags/sungeun/configs/type_variables/configTypeFunNoType.good
 /test/compflags/sungeun/configs/type_variables/configTypeFun.good
 
-/test/compflags/thomasvandoren/chpldoc/*.doc.good
-/test/compflags/thomasvandoren/chpldoc/docs/
+/test/chpldoc/compflags/combinations/*.doc.good
+!/test/chpldoc/compflags/combinations/license.doc.good
 
 /test/compflags/waynew/*.bc
 /test/compflags/waynew/*.c

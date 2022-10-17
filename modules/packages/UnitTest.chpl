@@ -395,23 +395,24 @@ module UnitTest {
         if len1 == len2 {
           if all(seq1 == seq2) then return;
         }
+        var shorterLength = min(len1, len2);
         tmpString = seq_type_name+"s differ: ";
         tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
-        for (item1, item2, i) in zip(seq1, seq2, 0..) {
-          if item1 != item2 {
-            tmpString += "\nFirst differing element at index "+i:string +":\n'"+item1:string+"'\n'"+item2:string+"'\n";
+        for i in 0..#shorterLength {
+          if seq1[i] != seq2[i] {
+            tmpString += "\nFirst differing element at index "+i:string +":\n'"+seq1[i]:string+"'\n'"+seq2[i]:string+"'\n";
             break;
           }
         }
         if len1 > len2 {
           var size_diff = len1 - len2;
           tmpString += "\nFirst "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
-          tmpString += "First extra element is at index "+(len2+1):string+"\n'"+seq1[len2+1]:string+"'\n";
+          tmpString += "First extra element is at index "+(len2):string+"\n'"+seq1[len2]:string+"'\n";
         }
         else if len1 < len2 {
           var size_diff = len2 - len1;
           tmpString += "\nSecond "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
-          tmpString += "First extra element is at index "+(len1+1):string+"\n'"+seq2[len1+1]:string+"'\n";
+          tmpString += "First extra element is at index "+(len1):string+"\n'"+seq2[len1]:string+"'\n";
         }
       }
       throw new owned AssertionError(tmpString);
@@ -1060,45 +1061,45 @@ module UnitTest {
         separator2 = "-"* 70;
 
     proc startTest(test) throws {
-      stdout.writeln(test: string);
+      stdout._writeln(test: string);
     }
 
     proc addError(test, errMsg) throws {
-      stdout.writeln("Flavour: ERROR");
+      stdout._writeln("Flavour: ERROR");
       PrintError(errMsg);
     }
 
     proc addFailure(test, errMsg) throws {
-      stdout.writeln("Flavour: FAIL");
+      stdout._writeln("Flavour: FAIL");
       PrintError(errMsg);
     }
 
     proc addSuccess(test) throws {
-      stdout.writeln("Flavour: OK");
-      stdout.writeln(this.separator1);
-      stdout.writeln(this.separator2);
+      stdout._writeln("Flavour: OK");
+      stdout._writeln(this.separator1);
+      stdout._writeln(this.separator2);
     }
 
     proc addSkip(test, reason) throws {
-      stdout.writeln("Flavour: SKIPPED");
+      stdout._writeln("Flavour: SKIPPED");
       PrintError(reason);
     }
 
     proc addIncorrectNumLocales(test, reason) throws {
-      stdout.writeln("Flavour: IncorrectNumLocales");
+      stdout._writeln("Flavour: IncorrectNumLocales");
       PrintError(reason);
     }
 
     proc dependencyNotMet(test) throws {
-      stdout.writeln("Flavour: Dependence");
-      stdout.writeln(this.separator1);
-      stdout.writeln(this.separator2);
+      stdout._writeln("Flavour: Dependence");
+      stdout._writeln(this.separator1);
+      stdout._writeln(this.separator2);
     }
 
     proc PrintError(err) throws {
-      stdout.writeln(this.separator1);
-      stdout.writeln(err);
-      stdout.writeln(this.separator2);
+      stdout._writeln(this.separator1);
+      stdout._writeln(err);
+      stdout._writeln(this.separator2);
     }
 
   }

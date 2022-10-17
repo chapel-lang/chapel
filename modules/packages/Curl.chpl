@@ -46,7 +46,8 @@ Using Curl Support in Chapel
 ----------------------------
 
 Simple uses of Curl work through the generic :mod:`URL` module. This module
-allows a URL to be opened as a :record:`IO.channel`.
+allows a URL to be opened as a :record:`IO.fileReader` or
+`:record:`IO.fileWriter`.
 
 .. code-block:: chapel
 
@@ -168,10 +169,11 @@ module Curl {
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
    */
-  proc getCurlHandle(ch:channel):c_ptr(CURL) throws {
+  proc getCurlHandle(ch):c_ptr(CURL) throws
+  where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
     use CurlQioIntegration;
 
-    if ch.home != here {
+    if ch._home != here {
       throw createSystemError(EINVAL, "getCurlHandle only functions with local channels");
     }
 
@@ -193,16 +195,17 @@ module Curl {
      :arg arg: the value to set the curl option specified by opt.
      :type arg: `int`, `string`, `bool`, or `slist`
   */
-  proc setopt(ch:channel, opt:c_int, arg):bool throws {
+  proc setopt(ch, opt:c_int, arg):bool throws
+  where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
     use CurlQioIntegration;
 
     var err:CURLcode = CURLE_OK;
 
-    if (arg.type == slist) && (arg.home != ch.home) {
+    if (arg.type == slist) && (arg._home != ch._home) {
       throw createSystemError(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
     }
 
-    on ch.home {
+    on ch._home {
       var plugin = ch.channelPlugin():CurlChannel?;
       if plugin == nil then
         throw createSystemError(EINVAL, "in channel.setopt(): not a curl channel");
@@ -283,10 +286,12 @@ module Curl {
        setopt(curlfile, (CURLOPT_USERNAME, username),
                         (CURLOPT_PASSWORD, password));
 
+     :arg ch: a :record:`IO.fileReader` or :record:`IO.fileWriter`
      :arg args: any number of tuples of the form (curl_option, value).
                 This function will call ``setopt`` on each pair in turn.
    */
-  proc setopt(ch:channel, args ...?k) throws {
+  proc setopt(ch, args ...?k) throws
+  where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
     for param i in 0..k-1 {
       setopt(ch, args(i)(0), args(i)(1));
     }
@@ -507,7 +512,7 @@ module Curl {
     use Curl;
     use CTypes;
     use OS.POSIX;
-    import SysBasic.{ENOERR,EEOF};
+    import SysBasic.{ENOERR};
     import OS.{errorCode};
 
     pragma "no doc"

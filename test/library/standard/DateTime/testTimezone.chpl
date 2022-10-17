@@ -1,6 +1,6 @@
 use Time;
 
-class FixedOffset: TZInfo {
+class FixedOffset: Timezone {
   var offset: timedelta;
   var name: string;
   var dstoffset: timedelta;
@@ -34,7 +34,7 @@ proc test_empty() {
   assert(t.minute == 0);
   assert(t.second == 0);
   assert(t.microsecond == 0);
-  assert(t.tzinfo.borrow() == nil);
+  assert(t.timezone.borrow() == nil);
 }
 
 proc test_zones() {
@@ -47,11 +47,11 @@ proc test_zones() {
   var t4 = new time(microsecond=40);
   var t5 = new time(microsecond=40, tzinfo=utc);
 
-  assert(t1.tzinfo == est);
-  assert(t2.tzinfo == utc);
-  assert(t3.tzinfo == met);
-  assert(t4.tzinfo.borrow() == nil);
-  assert(t5.tzinfo == utc);
+  assert(t1.timezone == est);
+  assert(t2.timezone == utc);
+  assert(t3.timezone == met);
+  assert(t4.timezone.borrow() == nil);
+  assert(t5.timezone == utc);
 
   assert(t1.utcOffset() == new timedelta(minutes=-300));
   assert(t2.utcOffset() == new timedelta(minutes=0));
@@ -99,7 +99,7 @@ proc test_replace() {
   var zm200 = new shared FixedOffset(new timedelta(minutes=-200), "-200");
   var args = (1, 2, 3, 4);
   var base = new time((...args), z100);
-  assert(base == base.replace(tzinfo=base.tzinfo));
+  assert(base == base.replace(tzinfo=base.timezone));
 
   var i = 0;
   for (name, newval) in (("hour", 5),
@@ -111,13 +111,13 @@ proc test_replace() {
     var expected = new time((...newargs), z100);
     var got: time;
     if name == "hour" then
-      got = base.replace(hour=newval, tzinfo=base.tzinfo);
+      got = base.replace(hour=newval, tzinfo=base.timezone);
     else if name == "minute" then
-      got = base.replace(minute=newval, tzinfo=base.tzinfo);
+      got = base.replace(minute=newval, tzinfo=base.timezone);
     else if name == "second" then
-      got = base.replace(second=newval, tzinfo=base.tzinfo);
+      got = base.replace(second=newval, tzinfo=base.timezone);
     else if name == "microsecond" then
-      got = base.replace(microsecond=newval, tzinfo=base.tzinfo);
+      got = base.replace(microsecond=newval, tzinfo=base.timezone);
 
     assert(expected == got);
     i += 1;
@@ -133,13 +133,13 @@ proc test_replace() {
   // Ensure we can get rid of a tzinfo.
   assert(base.tzname() == "+100");
   var base2 = base.replace(tzinfo=nil);
-  assert(base2.tzinfo.borrow() == nil);
+  assert(base2.timezone.borrow() == nil);
   assert(base2.tzname() == "");
 
   // Ensure we can add one.
   var base3 = base2.replace(tzinfo=z100);
   assert(base == base3);
-  assert(base.tzinfo == base3.tzinfo);
+  assert(base.timezone == base3.timezone);
 }
 
 proc test_mixed_compare() {
@@ -151,7 +151,7 @@ proc test_mixed_compare() {
   t2 = t2.replace(tzinfo=new shared FixedOffset(0, ""));
 
   // In time w/ identical tzinfo objects, utcoffset is ignored.
-  class Varies: TZInfo {
+  class Varies: Timezone {
     var offset: timedelta;
     var name = "Var";
     proc init() {

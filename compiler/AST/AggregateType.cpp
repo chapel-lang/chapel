@@ -24,7 +24,6 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "DecoratedClassType.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "initializerRules.h"
@@ -39,7 +38,7 @@
 #include "symbol.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
-#include "../dyno/lib/immediates/prim_data.h"
+#include "../../frontend/lib/immediates/prim_data.h"
 
 #include "global-ast-vecs.h"
 
@@ -1611,9 +1610,15 @@ void AggregateType::renameInstantiation() {
   }
 
   symbol->name = astr(name);
-
   buildFieldNames(this, cname, true);
   symbol->cname = astr(cname);
+
+  // adjust _channel naming
+  // TODO: remove this once the channel rename to fileReader/fileWriter
+  // is complete and channel is removed
+  if (0 == strncmp(symbol->name, "_channel", strlen("_channel"))) {
+    symbol->name = toString(this, false);
+  }
 }
 
 // Returns an instantiation of this AggregateType at the given index.
@@ -2042,102 +2047,6 @@ QualifiedType AggregateType::getFieldType(Expr* e) {
     return QualifiedType(NULL, QUAL_UNKNOWN);
 }
 
-
-void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
-  // TODO: Include unions... (thomasvandoren, 2015-02-25)
-  if (this->symbol->noDocGen() || this->isUnion()) {
-    return;
-  }
-
-  this->printTabs(file, tabs);
-  *file << this->docsDirective();
-  *file << this->symbol->name;
-  *file << this->docsSuperClass();
-  *file << std::endl;
-
-  // In rst mode, ensure there is an empty line between the class/record
-  // signature and its description or the next directive.
-  if (!fDocsTextOnly) {
-    *file << std::endl;
-  }
-
-  if (this->doc != NULL) {
-    this->printDocsDescription(this->doc, file, tabs + 1);
-    *file << std::endl;
-
-    // In rst mode, ensure there is an empty line between the class/record
-    // description and the next directive.
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-  }
-
-  if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
-    this->printDocsDeprecation(this->doc, file, tabs + 1,
-                               this->symbol->getDeprecationMsg(),
-                               !fDocsTextOnly);
-  }
-
-  if (this->symbol->hasFlag(FLAG_UNSTABLE)) {
-    this->printDocsUnstable(this->doc, file, tabs + 1,
-                            this->symbol->getUnstableMsg(),
-                            !fDocsTextOnly);
-  }
-}
-
-
-/*
- * Returns super class string for documentation. If super class exists, returns
- * ": <super class name>".
- */
-std::string AggregateType::docsSuperClass() {
-  if (this->inherits.length > 0) {
-    std::vector<std::string> superClassNames;
-
-    for_alist(expr, this->inherits) {
-      if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
-        superClassNames.push_back(use->unresolved);
-      } else {
-        INT_FATAL(expr,
-                  "Expected UnresolvedSymExpr for all members "
-                  "of inherits alist.");
-      }
-    }
-
-    if (superClassNames.empty()) {
-      return "";
-    }
-
-    // If there are super classes, join them into a single comma delimited
-    // string prefixed with a colon.
-    std::string superClasses = " : " + superClassNames.front();
-    for (unsigned int i = 1; i < superClassNames.size(); i++) {
-      superClasses += ", " + superClassNames.at(i);
-    }
-    return superClasses;
-  } else {
-    return "";
-  }
-}
-
-
-std::string AggregateType::docsDirective() {
-  if (fDocsTextOnly) {
-    if (this->isClass()) {
-      return "Class: ";
-    } else if (this->isRecord()) {
-      return "Record: ";
-    }
-  } else {
-    if (this->isClass()) {
-      return ".. class:: ";
-    } else if (this->isRecord()) {
-      return ".. record:: ";
-    }
-  }
-
-  return "";
-}
 
 static const char* buildTypeSignature(AggregateType* at) {
   std::string temp = at->symbol->name;
@@ -2806,6 +2715,10 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
     USR_FATAL(storesName, "Illegal super class");
   }
 
+  if (ts->hasFlag(FLAG_DEPRECATED)) {
+    ts->generateDeprecationWarning(storesName);
+  }
+
   AggregateType* pt = toAggregateType(ts->type);
 
   if (pt == NULL) {
@@ -2914,7 +2827,14 @@ AggregateType::checkSameNameFields() {
   // that no field with the same name is defined in a parent class.
   // But, ignore the compiler-added 'super' field.
   for_fields(field, this) {
-    if (!field->hasFlag(FLAG_SUPER_CLASS)) {
+    // Compiler currently inserts DefExprs for DecoratedClassTypes adjacent to
+    // the DefExpr of the original AggregateType. For nested types, the
+    // DefExprs for DecoratedClassTypes might mistakenly be recognized as
+    // fields.
+    bool isDecoratedTypeDef = isTypeSymbol(field) &&
+                              isDecoratedClassType(field->type);
+    if (!field->hasFlag(FLAG_SUPER_CLASS) &&
+        !isDecoratedTypeDef) {
       auto pair = allFields.emplace(field->name, field);
       bool inserted = pair.second;
       if (!inserted) {

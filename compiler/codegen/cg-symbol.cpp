@@ -35,7 +35,6 @@
 #include "clangUtil.h"
 #include "codegen.h"
 #include "CollapseBlocks.h"
-#include "docsDriver.h"
 #include "DoWhileStmt.h"
 #include "driver.h"
 #include "expr.h"
@@ -2255,6 +2254,11 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 }
 
 void FnSymbol::codegenPrototype() {
+  if (id == breakOnCodegenID) gdbShouldBreakHere();
+  if (breakOnCodegenCname[0] && !strcmp(cname, breakOnCodegenCname)) {
+    gdbShouldBreakHere();
+  }
+
   GenInfo *info = gGenInfo;
 
   if (hasFlag(FLAG_EXTERN) && !hasFlag(FLAG_GENERATE_SIGNATURE)) return;
@@ -2263,12 +2267,6 @@ void FnSymbol::codegenPrototype() {
     if (hasFlag(FLAG_GPU_AND_CPU_CODEGEN) == false &&
        hasFlag(FLAG_GPU_CODEGEN) == false)
       return;
-  }
-
-  if( id == breakOnCodegenID ||
-      (breakOnCodegenCname[0] &&
-       0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
   }
 
   if( info->cfile ) {

@@ -90,7 +90,7 @@ proc testReadLineArray(){
 }
 
 /*
-Borrowed the check_expected() function from test/io/casella/readline.chpl */
+Borrowed the check_expected() function from test/io/cassella/readline.chpl */
 proc check_expected(data, expected:string, len) {
   for i in 0..#min(len, expected.numBytes) {
     var n = data[i];

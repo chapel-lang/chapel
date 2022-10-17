@@ -1723,27 +1723,27 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       var isBinary = ch.binary();
 
       _enter();
 
       if isBinary {
         // Write the number of elements
-        ch.write(_size);
+        ch._write(_size);
       } else {
         ch._writeLiteral("[");
       }
 
       for i in 0..(_size - 2) {
-        ch.write(_getRef(i));
+        ch._write(_getRef(i));
         if !isBinary {
           ch._writeLiteral(", ");
         }
       }
 
       if _size > 0 then
-        ch.write(_getRef(_size-1));
+        ch._write(_getRef(_size-1));
 
       if !isBinary {
         ch._writeLiteral("]");
@@ -1757,7 +1757,7 @@ module List {
 
      :arg ch: A channel to read from.
      */
-    proc readThis(ch: channel) throws {
+    proc readThis(ch: fileReader) throws {
       //
       // Special handling for reading in order to handle reading an arbitrary
       // size.
@@ -1971,4 +1971,3 @@ module List {
 
 
 } // End module "Lists".
-

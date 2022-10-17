@@ -188,7 +188,6 @@ public:
 
   bool               isKnownToBeGeneric();
   virtual bool       isVisible(BaseAST* scope)                 const;
-  bool               noDocGen()                                const;
 
   // Future: consider merging qual, type into a single
   // field of type QualifiedType
@@ -339,8 +338,6 @@ public:
   bool   isParameter()                                 const override;
   bool   isType()                                               const;
 
-  const char* doc;
-
   GenRet codegenVarSymbol(bool lhsInSetReference=false);
   GenRet codegen()                                           override;
   void   codegenDefC(bool global = false, bool isHeader = false);
@@ -348,12 +345,9 @@ public:
   // global vars are different ...
   void   codegenGlobalDef(bool isHeader);
 
-  void printDocs(std::ostream *file, unsigned int tabs);
-
   void makeField();
 
 private:
-  std::string docsDirective();
   bool isField;
 
 protected:
@@ -603,7 +597,6 @@ public:
   void  accept(AstVisitor* visitor)                      override;
 
   void  replaceChild(BaseAST* oldAst, BaseAST* newAst)   override;
-  void  printDocs(std::ostream* file, unsigned int tabs);
 
   int   numFormals()   const { return ifcFormals.length; }
   int   numAssocCons() const { return associatedConstraints.size(); }

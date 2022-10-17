@@ -31,6 +31,10 @@ module ChapelBase {
   use CTypes;
   use ChplConfig;
 
+  pragma "no doc"
+  deprecated "the '_file' type is deprecated; please use 'CTypes.c_FILE' instead"
+  type _file = c_FILE;
+
   config param enablePostfixBangChecks = false;
 
   // These two are called by compiler-generated code.
@@ -2311,7 +2315,7 @@ module ChapelBase {
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {
       try {
-      ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+      ch._writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
       }
       catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");

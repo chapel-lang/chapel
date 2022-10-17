@@ -95,7 +95,7 @@ proc parseToml(input: file) : shared Toml {
 
 /* Receives a channel to a TOML file as a parameter and outputs a Toml object.
 */
-proc parseToml(input: channel) : shared Toml {
+proc parseToml(input: fileReader) : shared Toml {
   var tomlStr: string;
   input.readstring(tomlStr);
   return parseToml(tomlStr);
@@ -134,7 +134,7 @@ module TomlParser {
   private use Regex;
   use Time;
   use Map, List;
-  import IO.channel;
+  import IO.fileWriter;
   private use TOML.TomlReader;
   import TOML.TomlError;
   use Sort;
@@ -868,7 +868,7 @@ used to recursively hold tables and respective values
 
         var indent=0;
 
-        f.writeln('{');
+        f._writeln('{');
         indent += tabSpace;
 
         // Prints key values in containing Toml
@@ -879,14 +879,14 @@ used to recursively hold tables and respective values
           flat.remove('root');
         }
         for k in sorted(flat.keysToArray()) {
-          f.writef('%s"%s": {\n', ' '*indent, k);
+          f._writef('%s"%s": {\n', ' '*indent, k);
           indent += tabSpace;
           printValuesJSON(f, flat[k]!, indent=indent);
           indent -= tabSpace;
-          f.writef('%s}\n', ' '*indent);
+          f._writef('%s}\n', ' '*indent);
         }
         indent -= tabSpace;
-        f.writeln('}');
+        f._writeln('}');
       }
       catch e: TomlError {
         writeln(e.message());
@@ -910,21 +910,21 @@ used to recursively hold tables and respective values
     }
 
     pragma "no doc"
-    proc printTables(ref flat: map(string, shared Toml?, false), f:channel) {
+    proc printTables(ref flat: map(string, shared Toml?, false), f:fileWriter) {
       if flat.contains('root') {
-        f.writeln('[root]');
+        f._writeln('[root]');
         printValues(f, flat['root']!);
         flat.remove('root');
       }
       for k in sorted(flat.keysToArray()) {
-        f.writeln('[', k, ']');
+        f._writeln('[', k, ']');
         printValues(f, flat[k]!);
       }
     }
 
     pragma "no doc"
     /* Send values from table to toString for writing  */
-    proc printValues(f: channel, v: borrowed Toml) throws {
+    proc printValues(f: fileWriter, v: borrowed Toml) throws {
       var keys = v.A.keysToArray();
       sort(keys);
       for key in keys {
@@ -932,14 +932,14 @@ used to recursively hold tables and respective values
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldInt {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldArr {
             var final: string;
-            f.write(key, ' = ');
+            f._write(key, ' = ');
             final += '[';
             for k in value.arr {
               if value.arr.domain.size == 1 || k == value.arr[value.arr.domain.last] {
@@ -950,38 +950,38 @@ used to recursively hold tables and respective values
               }
             }
             final += ']';
-            f.write(final);
+            f._write(final);
           }
           when fieldReal {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldString {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldEmpty {
             throw new owned TomlError("Keys must have a value");
           }
           when fieldDate {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldTime {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           when fieldDateTime {
-            f.write(key, ' = ', toString(value));
+            f._write(key, ' = ', toString(value));
           }
           otherwise {
             throw new owned TomlError("Not yet supported");
           }
         }
-        f.writeln();
+        f._writeln();
       }
-      f.writeln();
+      f._writeln();
     }
 
     pragma "no doc"
     /* Send values from table to toString for writing  */
-    proc printValuesJSON(f: channel, v: borrowed Toml, in indent=0) throws {
+    proc printValuesJSON(f: fileWriter, v: borrowed Toml, in indent=0) throws {
       var keys = v.A.keysToArray();
       sort(keys);
       for (key, i) in zip(keys, 1..v.A.size) {
@@ -989,57 +989,57 @@ used to recursively hold tables and respective values
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldInt {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldArr {
-            f.writef('%s"%s": {\n', ' '*indent, key);
+            f._writef('%s"%s": {\n', ' '*indent, key);
             indent += tabSpace;
-            f.writef('%s"%s": "type",\n', ' '*indent, this.tomlType);
-            f.writef('%s"value": [\n', ' '*indent);
+            f._writef('%s"%s": "type",\n', ' '*indent, this.tomlType);
+            f._writef('%s"value": [\n', ' '*indent);
             indent += tabSpace;
             var arrayElements: string;
             for i in value.arr.domain {
               ref k = value.arr[i];
-              f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, k!.tomlType, toString(k!));
+              f._writef('%s{"type": "%s", "value": "%s"}', ' '*indent, k!.tomlType, toString(k!));
               if i != value.arr.domain.last {
-                f.writef(',');
+                f._writef(',');
               }
-              f.writef('\n');
+              f._writef('\n');
             }
             indent -= tabSpace;
-            f.writef('%s]\n', ' '*indent);
+            f._writef('%s]\n', ' '*indent);
             indent -= tabSpace;
-            f.writef('%s}\n', ' '*indent);
+            f._writef('%s}\n', ' '*indent);
           }
           when fieldReal {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldString {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldEmpty {
             throw new owned TomlError("Keys must have a value");
           }
           when fieldDate {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldTime {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           when fieldDateTime {
-            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+            f._writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
           }
           otherwise {
             throw new owned TomlError("Not yet supported");
           }
         }
         if i != v.A.size {
-          f.writef(',');
+          f._writef(',');
         }
-        f.writef('\n');
+        f._writef('\n');
       }
     }
 
@@ -1358,7 +1358,7 @@ module TomlReader {
     }
 
     proc writeThis(f) throws {
-      f.write(this.A.toArray());
+      f._write(this.A.toArray());
     }
   }
 }

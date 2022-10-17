@@ -1,0 +1,168 @@
+/*
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef CHPL_UAST_FUNCTION_SIGNATURE_H
+#define CHPL_UAST_FUNCTION_SIGNATURE_H
+
+#include "chpl/framework/Location.h"
+#include "chpl/uast/Formal.h"
+#include "chpl/uast/Function.h"
+#include "chpl/uast/IntentList.h"
+#include "chpl/uast/NamedDecl.h"
+
+namespace chpl {
+namespace uast {
+
+
+/**
+  This class represents a function signature. For example:
+
+  \rst
+  .. code-block:: chapel
+
+    type T = proc(int, int): int;
+
+  \endrst
+
+  The type alias 'T' stores the function signature for a procedure
+  that takes two ints and returns an int.
+*/
+class FunctionSignature final : public AstNode {
+ public:
+  using ReturnIntent = Function::ReturnIntent;
+  using Kind = Function::Kind;
+
+ private:
+  Kind kind_;
+  ReturnIntent returnIntent_;
+  int formalsChildNum_;
+  int thisFormalChildNum_;
+  int numFormals_; // Count includes the 'this' formal.
+  int returnTypeChildNum_;
+  bool throws_;
+  bool isParenless_;
+
+  FunctionSignature(AstList children, Kind kind,
+                    ReturnIntent returnIntent,
+                    bool throws,
+                    bool isParenless,
+                    int formalsChildNum,
+                    int thisFormalChildNum,
+                    int numFormals,
+                    int returnTypeChildNum) :
+      AstNode(asttags::FunctionSignature, std::move(children)),
+      kind_(kind),
+      returnIntent_(returnIntent),
+      formalsChildNum_(formalsChildNum),
+      thisFormalChildNum_(thisFormalChildNum),
+      numFormals_(numFormals),
+      returnTypeChildNum_(returnTypeChildNum),
+      throws_(throws),
+      isParenless_(isParenless) {
+
+    assert(-1 <= formalsChildNum_ &&
+                 formalsChildNum_ < (ssize_t)children_.size());
+    assert(-1 <= thisFormalChildNum_ &&
+                 thisFormalChildNum_ < (ssize_t)children_.size());
+    assert(0 <= numFormals_ &&
+                numFormals_ <= (ssize_t)children_.size());
+    assert(-1 <= returnTypeChildNum_ &&
+                 returnTypeChildNum_ < (ssize_t)children_.size());
+  }
+
+  bool contentsMatchInner(const AstNode* other) const override {
+    auto lhs = this;
+    auto rhs = (const FunctionSignature*) other;
+    return lhs->kind_ == rhs->kind_ &&
+           lhs->returnIntent_ == rhs->returnIntent_ &&
+           lhs->throws_ == rhs->throws_ &&
+           lhs->isParenless_ == rhs->isParenless_ &&
+           lhs->formalsChildNum_ == rhs->formalsChildNum_ &&
+           lhs->thisFormalChildNum_ == rhs->thisFormalChildNum_ &&
+           lhs->numFormals_ == rhs->numFormals_ &&
+           lhs->returnTypeChildNum_ == rhs->returnTypeChildNum_;
+  }
+
+  void markUniqueStringsInner(Context* context) const override {}
+
+ public:
+  ~FunctionSignature() override = default;
+
+  static owned<FunctionSignature> build(Builder* builder, Location loc,
+                                        Kind kind,
+                                        owned<Formal> receiver,
+                                        ReturnIntent returnIntent,
+                                        bool parenless,
+                                        AstList formals,
+                                        owned<AstNode> returnType,
+                                        bool throws);
+
+  inline Kind kind() const { return this->kind_; }
+  inline ReturnIntent returnIntent() const { return this->returnIntent_; }
+  inline bool throws() const { return this->throws_; }
+  inline bool isParenless() const { return isParenless_; }
+
+  /**
+    Return a way to iterate over the formals, including the method
+    receiver, if present, as the first formal.
+  */
+  AstListIteratorPair<AstNode> formals() const {
+    return childRange<AstNode>(formalsChildNum_, numFormals_);
+  }
+
+  /**
+    Return the number of Formals
+  */
+  inline int numFormals() const { return numFormals_; }
+
+  /**
+    Return the i'th formal
+  */
+  const Decl* formal(int i) const {
+    assert(0 <= i && i < numFormals_);
+    auto ret = this->child(formalsChildNum_ + i);
+    return (const Decl*) ret;
+  }
+
+  /**
+    Returns the Formal for the 'this' formal argument,
+    or 'nullptr' if there is none.
+  */
+  const Formal* thisFormal() const {
+    if (thisFormalChildNum_ == NO_CHILD) return nullptr;
+    auto ret = this->child(thisFormalChildNum_);
+    assert(ret->isFormal());
+    return (const Formal*) ret;
+  }
+
+  /**
+    Returns the expression for the return type or nullptr if there was none.
+  */
+  const AstNode* returnType() const {
+    if (returnTypeChildNum_ == NO_CHILD) return nullptr;
+    const AstNode* ret = this->child(returnTypeChildNum_);
+    return ret;
+  }
+
+};
+
+} // end namespace uast
+} // end namespace chpl
+
+#endif

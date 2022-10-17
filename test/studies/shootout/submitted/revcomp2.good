@@ -1,6 +1,3 @@
-revcomp2.chpl:19: warning: The 'iohints' type is deprecated; please use a variant of 'file.writer' that takes an 'ioHintSet' instead.
-revcomp2.chpl:24: In function 'main':
-revcomp2.chpl:26: warning: The 'iohints' type is deprecated; please use a variant of 'file.reader' that takes an 'ioHintSet' instead.
 >ONE Homo sapiens alu
 CGGAGTCTCGCTCTGTCGCCCAGGCTGGAGTGCAGTGGCGCGATCTCGGCTCACTGCAAC
 CTCCGCCTCCCGGGTTCAAGCGATTCTCCTGCCTCAGCCTCCCGAGTAGCTGGGATTACA

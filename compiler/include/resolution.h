@@ -178,6 +178,7 @@ void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 void resolveInterfaceSymbol(InterfaceSymbol* isym);
 void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
+bool isConstrainedGenericSymbol(Symbol* sym);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
 Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
 struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;

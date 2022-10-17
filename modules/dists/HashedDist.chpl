@@ -236,14 +236,14 @@ class Hashed : BaseDist {
   // print out the distribution
   //
   proc writeThis(x) throws {
-    x.writeln("Hashed");
-    x.writeln("-------");
-    x.writeln("distributed using: ", mapper);
-    x.writeln("across locales: ", targetLocales);
-    x.writeln("indexed via: ", targetLocDom);
-    x.writeln("resulting in: ");
+    x._writeln("Hashed");
+    x._writeln("-------");
+    x._writeln("distributed using: ", mapper);
+    x._writeln("across locales: ", targetLocales);
+    x._writeln("indexed via: ", targetLocDom);
+    x._writeln("resulting in: ");
     //for locid in targetLocDom do
-    //  x.writeln("  [", locid, "] ", locDist(locid));
+    //  x._writeln("  [", locid, "] ", locDist(locid));
   }
 
   //
@@ -473,7 +473,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       //
       //        ("locale" + here.id + " owns: ").writeThis(x);
 
-        x.write(locDom);
+        x._write(locDom);
       //      }
   }
 
@@ -650,7 +650,7 @@ class LocUserMapAssocDom {
   // how to write out this locale's indices
   //
   proc writeThis(x) throws {
-    x.write(myInds);
+    x._write(myInds);
   }
 
 
@@ -1027,7 +1027,7 @@ class LocUserMapAssocArr {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
-    x.write(myElems);
+    x._write(myElems);
   }
 
   //
@@ -1046,5 +1046,3 @@ class LocUserMapAssocArr {
     return locDom.myInds.dim(1).boundsCheck(x.dim(1));
   }
 }
-
-

@@ -61,7 +61,7 @@ proc masonExample(args: [] string, checkProj=true) throws {
     parser.parseArgs(args);
   }
   catch ex : ArgumentError {
-    stderr.writeln(ex.message());
+    stderr._writeln(ex.message());
     exit(1);
   }
   var show = showFlag.valueAsBool();
@@ -75,11 +75,11 @@ proc masonExample(args: [] string, checkProj=true) throws {
   }
   var examples = new list(exampleOpts.values());
   updateLock(skipUpdate);
-  runExamples(show, run, build, release, force, examples);
+  runExamples(show, run, build, release, skipUpdate, force, examples);
 }
 
 
-private proc getBuildInfo(projectHome: string) {
+private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
 
   // parse lock and toml(examples dont make it to lock file)
   const lock = open(projectHome + "/Mason.lock", iomode.r);
@@ -95,7 +95,7 @@ private proc getBuildInfo(projectHome: string) {
   // support parallel iteration, which the `getSrcCode` method _must_
   // have for good performance.
   //
-  getSrcCode(sourceList, false);
+  getSrcCode(sourceList, skipUpdate, false);
   getGitCode(gitList, false);
   const project = lockFile["root"]!["name"]!.s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
@@ -185,7 +185,7 @@ private proc determineExamples(exampleNames: list(string),
 
 
 private proc runExamples(show: bool, run: bool, build: bool, release: bool,
-                         force: bool, examplesRequested: list(string)) throws {
+                         skipUpdate: bool, force: bool, examplesRequested: list(string)) throws {
 
   try! {
 
@@ -194,7 +194,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
     // Get buildInfo: dependencies, path to src code, compopts,
     // names of examples, example compopts
-    var buildInfo = getBuildInfo(projectHome);
+    var buildInfo = getBuildInfo(projectHome, skipUpdate);
     const sourceList = buildInfo[0];
     const gitList = buildInfo[1];
     const projectPath = buildInfo[2];
@@ -243,7 +243,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
             const compilation = runWithStatus(compCommand);
 
             if compilation != 0 {
-              stderr.writeln("compilation failed for " + example);
+              stderr._writeln("compilation failed for " + example);
             }
             else {
               if show || !run then writeln("compiled ", example, " successfully");
@@ -271,7 +271,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     }
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
     exit(1);
   }
 }
@@ -351,7 +351,7 @@ proc printAvailableExamples() {
     writeln("--------------------------");
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
     exit(1);
   }
 }

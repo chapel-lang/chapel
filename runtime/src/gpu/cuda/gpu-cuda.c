@@ -115,7 +115,7 @@ void chpl_gpu_impl_on_std_modules_finished_initializing(void) {
   //
   // Basically during the setup of the locale model we need to be "on" a given
   // sublocale when we instantiate the object for it (the expectation is that
-  // the widepointer for a sublocale appears to be on that sublocale),
+  // the wide pointer for a sublocale appears to be on that sublocale),
   // but in practice we don't actually want the data for the GPU sublocale
   // object to be on the GPU).
   //
@@ -286,7 +286,7 @@ void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
   #else
 
   // for unified memory strategy we don't want to generate calls to copy
-  // data from the device to host (since it can just be acessed directly)
+  // data from the device to host (since it can just be accessed directly)
   return memmove(dst, src, n);
   #endif
 }

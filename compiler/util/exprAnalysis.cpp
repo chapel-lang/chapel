@@ -89,6 +89,12 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
 
 bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
 
+  // Must always assume that a function marked extern is side-effecting.
+  if (fnSym->hasFlag(FLAG_EXTERN)) {
+    safeFnCache[fnSym] = false;
+    return false;
+  }
+
   const bool cachedSafeFn = safeFnCache.count(fnSym);
   if(cachedSafeFn) {
     return safeFnCache[fnSym];

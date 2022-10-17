@@ -393,7 +393,7 @@ prototype module AtomicObjects {
 
     /* Writes an ABA */
     proc writeThis(f) throws {
-      f.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
+      f._write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
     }
 
     forwarding this.getObject()!;
@@ -630,7 +630,7 @@ prototype module AtomicObjects {
     }
 
     proc writeThis(f) throws {
-      f.write(atomicVariable.read());
+      f._write(atomicVariable.read());
     }
   }
 }

@@ -1172,20 +1172,20 @@ module UnrolledLinkedList {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter();
 
-      ch.write("[");
+      ch._write("[");
 
       var first = true;
 
       for x in this {
-        if !first then ch.write(", ");
+        if !first then ch._write(", ");
         else first = false;
-        ch.write(x);
+        ch._write(x);
       }
 
-      ch.write("]");
+      ch._write("]");
 
       _leave();
     }
@@ -1300,4 +1300,3 @@ module UnrolledLinkedList {
   }
 
 } // End module "UnrolledLinkedList".
-

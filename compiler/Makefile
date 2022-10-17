@@ -38,13 +38,13 @@ SUBDIRS = \
 	codegen \
 	llvm \
 	main \
-	dyno/lib/immediates \
-	dyno/lib/parsing \
-	dyno/lib/framework \
-	dyno/lib/resolution \
-	dyno/lib/types \
-	dyno/lib/uast \
-	dyno/lib/util \
+	../frontend/lib/immediates \
+	../frontend/lib/parsing \
+	../frontend/lib/framework \
+	../frontend/lib/resolution \
+	../frontend/lib/types \
+	../frontend/lib/uast \
+	../frontend/lib/util \
 	optimizations \
 	parser \
 	passes \
@@ -53,14 +53,14 @@ SUBDIRS = \
 
 
 CHPLDOC_SUBDIRS = \
-	dyno/lib/immediates \
-	dyno/lib/parsing \
-	dyno/lib/framework \
-	dyno/lib/resolution \
-	dyno/lib/types \
-	dyno/lib/uast \
-	dyno/lib/util \
-	dyno/tools/chpldoc \
+	../frontend/lib/immediates \
+	../frontend/lib/parsing \
+	../frontend/lib/framework \
+	../frontend/lib/resolution \
+	../frontend/lib/types \
+	../frontend/lib/uast \
+	../frontend/lib/util \
+	../tools/chpldoc \
 
 
 #
@@ -68,7 +68,7 @@ CHPLDOC_SUBDIRS = \
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-ALL_HEADERS= */*.h dyno/include/chpl/*/*.h
+ALL_HEADERS= */*.h ../frontend/include/chpl/*/*.h
 
 # Generate tags command, dependent on if Make variable, TAGS == 1
 ifeq ($(TAGS), 1)
@@ -92,13 +92,13 @@ include backend/Makefile.include
 include codegen/Makefile.include
 include llvm/Makefile.include
 include main/Makefile.include
-include dyno/lib/immediates/Makefile.include
-include dyno/lib/parsing/Makefile.include
-include dyno/lib/framework/Makefile.include
-include dyno/lib/resolution/Makefile.include
-include dyno/lib/types/Makefile.include
-include dyno/lib/uast/Makefile.include
-include dyno/lib/util/Makefile.include
+include ../frontend/lib/immediates/Makefile.include
+include ../frontend/lib/parsing/Makefile.include
+include ../frontend/lib/framework/Makefile.include
+include ../frontend/lib/resolution/Makefile.include
+include ../frontend/lib/types/Makefile.include
+include ../frontend/lib/uast/Makefile.include
+include ../frontend/lib/util/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
@@ -106,7 +106,7 @@ include resolution/Makefile.include
 include util/Makefile.include
 
 # sources here are only used to build chpldoc
-include dyno/tools/chpldoc/Makefile.include
+include ../tools/chpldoc/Makefile.include
 
 SRCS =
 
@@ -124,23 +124,23 @@ CHPL_OBJS = \
 	$(RESOLUTION_OBJS) \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
-	$(DYNO_FRAMEWORK_OBJS) \
-	$(DYNO_IMMEDIATES_OBJS) \
-	$(DYNO_PARSING_OBJS) \
-	$(DYNO_RESOLUTION_OBJS) \
-	$(DYNO_TYPES_OBJS) \
-	$(DYNO_UAST_OBJS) \
-	$(DYNO_UTIL_OBJS) \
+	$(FRONTEND_FRAMEWORK_OBJS) \
+	$(FRONTEND_IMMEDIATES_OBJS) \
+	$(FRONTEND_PARSING_OBJS) \
+	$(FRONTEND_RESOLUTION_OBJS) \
+	$(FRONTEND_TYPES_OBJS) \
+	$(FRONTEND_UAST_OBJS) \
+	$(FRONTEND_UTIL_OBJS) \
 
 
 CHPLDOC_OBJS = \
-	$(DYNO_FRAMEWORK_OBJS) \
-	$(DYNO_IMMEDIATES_OBJS) \
-	$(DYNO_PARSING_OBJS) \
-	$(DYNO_RESOLUTION_OBJS) \
-	$(DYNO_TYPES_OBJS) \
-	$(DYNO_UAST_OBJS) \
-	$(DYNO_UTIL_OBJS) \
+	$(FRONTEND_FRAMEWORK_OBJS) \
+	$(FRONTEND_IMMEDIATES_OBJS) \
+	$(FRONTEND_PARSING_OBJS) \
+	$(FRONTEND_RESOLUTION_OBJS) \
+	$(FRONTEND_TYPES_OBJS) \
+	$(FRONTEND_UAST_OBJS) \
+	$(FRONTEND_UTIL_OBJS) \
         $(DYNO_CHPLDOC_OBJS) \
 
 
@@ -195,13 +195,7 @@ MAKEALLCHPLDOCSUBDIRS = $(CHPLDOC_SUBDIRS:%=%.makedir)
 $(CHPLDOC): $(MAKEALLCHPLDOCSUBDIRS) $(CHPLDOC_OBJS) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPLDOC_OBJS) $(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS) $(LIBS) $(LLVM_EXTRA_LIBS) $(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)
 
-$(CHPLDOC)-legacy: | $(CHPL_BIN_DIR)
-	rm -f $(CHPLDOC)-legacy
-	ln -s $(notdir $(CHPL)) $(CHPLDOC)-legacy
-
-chpldoc: $(CHPLDOC) $(CHPLDOC)-legacy
-
-dyno-chpldoc: chpldoc
+chpldoc: $(CHPLDOC)
 
 $(COMPILER_BUILD):
 	mkdir -p $@

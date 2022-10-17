@@ -56,6 +56,9 @@ module CTypes {
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
+  /* The Chapel type corresponding to the C 'FILE*' type defined in <stdio.h> */
+  extern "_cfile" type c_FILE;
+
   // Former CPtr contents start here
 
   /*
@@ -230,7 +233,7 @@ module CTypes {
       var first = true;
       for i in 0..#size {
 
-        ch.write(this(i));
+        ch._write(this(i));
 
         if i != size-1 then
           ch.readWriteLiteral(", ");
@@ -272,7 +275,7 @@ module CTypes {
 
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) throws {
-    ch.writef("0x%xu", this:c_uintptr);
+    ch._writef("0x%xu", this:c_uintptr);
   }
 
   pragma "no doc"

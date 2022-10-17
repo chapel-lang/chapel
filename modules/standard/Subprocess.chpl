@@ -224,19 +224,19 @@ module Subprocess {
     pragma "no doc"
     var stdin_buffering:bool;
     pragma "no doc"
-    var stdin_channel:channel(writing=true, kind=kind, locking=locking);
+    var stdin_channel:fileWriter(kind=kind, locking=locking);
     pragma "no doc"
     var stdout_pipe:bool;
     pragma "no doc"
     var stdout_file:file;
     pragma "no doc"
-    var stdout_channel:channel(writing=false, kind=kind, locking=locking);
+    var stdout_channel:fileReader(kind=kind, locking=locking);
     pragma "no doc"
     var stderr_pipe:bool;
     pragma "no doc"
     var stderr_file:file;
     pragma "no doc"
-    var stderr_channel:channel(writing=false, kind=kind, locking=locking);
+    var stderr_channel:fileReader(kind=kind, locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts

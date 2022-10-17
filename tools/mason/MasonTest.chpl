@@ -178,7 +178,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
 
     updateLock(skipUpdate);
     compopts.append("".join("--comm=",comm));
-    runTests(show, run, parallel, compopts);
+    runTests(show, run, parallel, skipUpdate, compopts);
   }
   catch e: MasonError {
     try! {
@@ -207,7 +207,8 @@ proc masonTest(args: [] string, checkProj=true) throws {
   }
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts: list(string)) throws {
+private proc runTests(show: bool, run: bool, parallel: bool,
+                      skipUpdate: bool, ref cmdLineCompopts: list(string)) throws {
 
   try! {
 
@@ -221,7 +222,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     // Get project source code and dependencies
     const (sourceList, gitList) = genSourceList(lockFile);
 
-    getSrcCode(sourceList, show);
+    getSrcCode(sourceList, skipUpdate, show);
     getGitCode(gitList, show);
 
     const project = lockFile["root"]!["name"]!.s;
@@ -288,7 +289,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const compilation = runWithStatus(compCommand, !show);
 
         if compilation != 0 {
-          stderr.writeln("compilation failed for " + test);
+          stderr._writeln("compilation failed for " + test);
           var errMsg = test + " failed to compile";
           if !show then
             errMsg += "\nTry running 'mason test --show' for more details";
@@ -316,7 +317,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     toParse.close();
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
     exit(1);
   }
 }
@@ -516,7 +517,7 @@ proc testFile(file, ref result, show: bool) throws {
   const compilation = runWithStatus(compCommand, !show);
 
   if compilation != 0 {
-    stderr.writeln("compilation failed for " + fileName);
+    stderr._writeln("compilation failed for " + fileName);
     const errMsg = fileName +" failed to compile";
     result.addError(executable, fileName,  errMsg);
   }

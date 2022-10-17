@@ -28,7 +28,7 @@ use MasonHelp;
 use MasonSystem;
 use MasonUtils;
 use TOML;
-
+import Path;
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
@@ -72,8 +72,8 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
   try! {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tf);
-    const tomlPath = projectHome + "/" + tf;
-    const lockPath = projectHome + "/" + lf;
+    const tomlPath = projectHome + "/" + Path.relPath(tf);
+    const lockPath = projectHome + "/" + Path.relPath(lf);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
@@ -98,9 +98,9 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
       const prefix = if failedChapelVersion.size == 1
         then "The following package is"
         else "The following packages are";
-      stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
+      stderr._writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
       for msg in failedChapelVersion do
-        stderr.writeln("  ", msg);
+        stderr._writeln("  ", msg);
       exit(1);
     }
     // Generate Lock File
@@ -110,7 +110,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
 
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
     exit(1);
   }
   return (tf, lf);
@@ -121,7 +121,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
 proc genLock(lock: borrowed Toml, lf: string) {
   const lockFile = open(lf, iomode.cw);
   const tomlWriter = lockFile.writer();
-  tomlWriter.writeln(lock);
+  tomlWriter._writeln(lock);
   tomlWriter.close();
   lockFile.close();
 }
@@ -223,7 +223,7 @@ private proc createDepTree(root: Toml) {
     depTree.set("root", new shared Toml(root["brick"]!));
   }
   else {
-    stderr.writeln("Could not find brick; Mason cannot update");
+    stderr._writeln("Could not find brick; Mason cannot update");
     exit(1);
   }
 
@@ -360,9 +360,9 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
   const version1 = A["version"]!.s;
   const version2 = B["version"]!.s;
   if okA == false && okB == false {
-    stderr.writeln("Dependency resolution error: unable to find version of '", name, "' compatible with your version of Chapel (", getChapelVersionStr(), "):");
-    stderr.writeln("  v", version1, " expecting ", prettyVersionRange(Alo, Ahi));
-    stderr.writeln("  v", version2, " expecting ", prettyVersionRange(Blo, Bhi));
+    stderr._writeln("Dependency resolution error: unable to find version of '", name, "' compatible with your version of Chapel (", getChapelVersionStr(), "):");
+    stderr._writeln("  v", version1, " expecting ", prettyVersionRange(Alo, Ahi));
+    stderr._writeln("  v", version2, " expecting ", prettyVersionRange(Blo, Bhi));
     exit(1);
   } else if okA == true && okB == false {
     return A;
@@ -377,9 +377,9 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
   var v1 = vers1(0): int;
   var v2 = vers2(0): int;
   if vers1(0) != vers2(0) {
-    stderr.writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
-    stderr.writeln("  v", version1);
-    stderr.writeln("  v", version2);
+    stderr._writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
+    stderr._writeln("  v", version1);
+    stderr._writeln("  v", version2);
     exit(1);
   }
   else if vers1(1) != vers2(1) {
@@ -428,7 +428,7 @@ private proc retrieveDep(name: string, version: string) {
     }
   }
 
-  stderr.writeln("No toml file found in mason-registry for " + name +'-'+ version);
+  stderr._writeln("No toml file found in mason-registry for " + name +'-'+ version);
   exit(1);
 }
 
@@ -453,7 +453,7 @@ private proc retrieveGitDep(name: string, branch: string) {
     return depToml;
   }
 
-  stderr.writeln("No toml file found in git dependency for " + name +'-'+ branch);
+  stderr._writeln("No toml file found in git dependency for " + name +'-'+ branch);
   exit(1);
 }
 
@@ -572,4 +572,3 @@ private proc pullGitDeps(gitDeps, show=false) {
   }
   return gitDepsWithRevision;
 }
-

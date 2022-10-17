@@ -151,7 +151,8 @@ module BigInteger {
   use GMP;
   use HaltWrappers;
   use CTypes;
-  use SysBasic only EFORMAT, ENOERR;
+  use SysBasic only ENOERR;
+  use IO only EFORMAT;
   use OS;
 
   /*
@@ -509,7 +510,7 @@ module BigInteger {
         }
       }
 
-      writer.write(s);
+      writer._write(s);
     }
   }
 

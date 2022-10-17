@@ -28,7 +28,6 @@
 #include "chpl.h"
 #include "commonFlags.h"
 #include "config.h"
-#include "docsDriver.h"
 #include "files.h"
 #include "library.h"
 #include "log.h"
@@ -1636,7 +1635,7 @@ static void checkRuntimeBuilt(void) {
       stopBeforeCodegen = true;
     }
   }
-  if (fDocs || no_codegen || stopBeforeCodegen) {
+  if (no_codegen || stopBeforeCodegen) {
     return;
   }
 
@@ -1786,16 +1785,8 @@ int main(int argc, char* argv[]) {
 
     init_args(&sArgState, argv[0], (void*)main);
 
-    fDocs   = (strncmp(sArgState.program_name, "chpldoc", 7)  == 0) ? true : false;
-
-    // Initialize the arguments for argument state. If chpldoc, use the docs
-    // specific arguments. Otherwise, use the regular arguments.
-    if (fDocs) {
-      init_arg_desc(&sArgState, docs_arg_desc);
-    } else {
-      init_arg_desc(&sArgState, arg_desc);
-    }
-
+    // Initialize the arguments for argument state.
+    init_arg_desc(&sArgState, arg_desc);
 
     initFlags();
     initAstrConsts();
@@ -1872,7 +1863,7 @@ int main(int argc, char* argv[]) {
 
   assertSourceFilesFound();
 
-  runPasses(tracker, fDocs);
+  runPasses(tracker);
 
   tracker.StartPhase("driverCleanup");
 

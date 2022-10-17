@@ -37,7 +37,7 @@ class astlocT {
 private:
   // Primarily, astlocT stores the location in the id_ field,
   // which is computed for each AST element by the dyno parser.
-  chpl::ID            id_;        // id from compiler/dyno
+  chpl::ID            id_;        // id from dyno
 
   // Secondarily, an astlocT can store a filename / line number
   // directly for use in extern C blocks.
