@@ -31,8 +31,8 @@ jobs:
               jq -r '"$MESSAGE=\(.[].message)"' commits.json >> $GITHUB_ENV
               jq -r '"$LINK=\(.[].html_url)"' commits.json >> $GITHUB_ENV
               jq -r '"$COMMIT_ID=\(.[].id)"' commits.json >> $GITHUB_ENV
-              jq -r '"$DIFF_URL=\(.[].diff_url"' commits.json >> $GITHUB_ENV
-              jq -r '"$COMPARE_URL=\(.[].repo.compare_url"' commits.json >> $GITHUB_ENV              
+              jq -r '"$DIFF_URL=\(.[].diff_url)"' commits.json >> $GITHUB_ENV
+              jq -r '"$COMPARE_URL=\(.[].repo.compare_url)"' commits.json >> $GITHUB_ENV              
       - name: use events
         run: |
            echo  ${{ env.SHA }}
