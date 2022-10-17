@@ -36,8 +36,8 @@ jobs:
               jq -r '"$COMPARE_URL=\(.[].repo.compare_url)"' commits.json >> $GITHUB_ENV              
       - name: use events
         run: |
-           echo   ${{env.SHA}} 
-           echo  ${{env.AUTHOR}}
+           echo   " SHA : ${{env.SHA}}"
+           echo  " Author: ${{env.AUTHOR}}"
            
       - name: checkout
         uses: actions/checkout@v3
