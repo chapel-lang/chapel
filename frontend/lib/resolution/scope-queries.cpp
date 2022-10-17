@@ -884,6 +884,7 @@ doResolveUseStmt(Context* context, const Use* use,
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
         CHPL_REPORT(context, UnsupportedAs, as);
+        continue;
       }
       // search for the original name
       expr = as->symbol();
@@ -957,6 +958,7 @@ doResolveImportStmt(Context* context, const Import* imp,
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
         CHPL_REPORT(context, UnsupportedAs, as);
+        continue;
       }
       // search for the original name
       expr = as->symbol();
