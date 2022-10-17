@@ -27,8 +27,8 @@ jobs:
           COMMIT_URL: ${{github.event.repository.events_url}}
         run: |
               curl --location --request GET 'https://api.github.com/repos/chapel-lang/chapel/pulls/20725/commits' --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
-              jq -r  '"$COMMIT_AUTHOR=\(.[].author.name)"' commits.json >> $GITHUB_ENV
-              jq -r '"$COMMIT_SHA=\(.[].sha)"' commits.json >> $GITHUB_ENV
+              jq -r  '"$COMMIT_AUTHOR=\(.[].author.name)"' commits.json  >> $GITHUB_ENV
+              jq -r '"$commit_sha=\(.[].sha)"' commits.json >> $GITHUB_ENV
               jq -r '"$MESSAGE=\(.[].message)"' commits.json >> $GITHUB_ENV
               jq -r '"$LINK=\(.[].html_url)"' commits.json >> $GITHUB_ENV
               jq -r '"$COMMIT_ID=\(.[].id)"' commits.json >> $GITHUB_ENV
@@ -39,7 +39,7 @@ jobs:
         
         run: |
             echo "${{ env.action_state }}"
-            echo   " SHA ${{env.COMMIT_SHA}}"
+            echo   " SHA ${{env.commit_sha}}"
           
            
       - name: checkout
