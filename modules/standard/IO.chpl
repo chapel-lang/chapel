@@ -8215,6 +8215,7 @@ proc _channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:errorCode) {
   var cur:int(64);
   var target = m.byteOffset:int;
   var len = m.numBytes;
+  const oldPosition = qio_channel_offset_unlocked(_channel_internal);
 
   // If there was no match, return the default value of the type
   if !m.matched {
@@ -8249,6 +8250,11 @@ proc _channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:errorCode) {
   } else {
     arg = b"";
   }
+
+  // Put back 'oldPosition' at the top of the mark stack.
+  cur = qio_channel_offset_unlocked(_channel_internal);
+  if oldPosition > cur then
+    qio_channel_advance(false, _channel_internal, oldPosition - cur);
 }
 
 pragma "no doc"
@@ -8591,7 +8597,6 @@ proc _channel.match(re:regex(?), ref captures ...?k):regexMatch throws
 iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
 {
-  var m:regexMatch;
   var go = true;
   var i = 0;
   var error:errorCode = ENOERR;
@@ -8604,8 +8609,11 @@ iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
 
   while go && i < maxmatches {
     on this._home {
-      var nm = 1 + captures;
-      var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
+      // todo: create local clones of 'error', 'ret', 'go'
+      var m:regexMatch;
+      // todo: hoist the alloc+free outside the loop, allocating on this._home
+      const matches = _ddata_allocate(qio_regex_string_piece_t, nret);
+
       if ! error {
         error = qio_regex_channel_match(re._regex,
                                  false, _channel_internal, max(int(64)),
@@ -8613,7 +8621,7 @@ iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
                                  /* can_discard */ true,
                                  /* keep_unmatched */ false,
                                  /* keep_whole_pattern */ true,
-                                 matches, nm);
+                                 matches, nret);
       }
       if !error {
         m = _to_regexMatch(matches[0]);
@@ -8623,18 +8631,27 @@ iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
             _extractMatch(m, ret[i], error);
           }
           // Advance to the start of the match.
+          // TODO: avoid duplication with qio_regex_channel_match()
           qio_channel_revert_unlocked(_channel_internal);
           error = qio_channel_mark(false, _channel_internal);
           if !error {
             var cur = qio_channel_offset_unlocked(_channel_internal);
             var target = m.byteOffset:int;
             error = qio_channel_advance(false, _channel_internal, target - cur);
+            // Advance by 1 if the regex matched an empty string.
+            if m.numBytes == 0 {
+              error = qio_channel_advance(false, _channel_internal, 1);
+              if error == EEOF {
+                error = ENOERR;
+                go = false;
+              }  
+            }
           }
         } else {
           // Stay at the end of the searched region.
         }
       }
-      _ddata_free(matches, nm);
+      _ddata_free(matches, nret);
       if error then go = false;
     }
     if ! error then yield ret;

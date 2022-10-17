@@ -1,0 +1,4 @@
+[^]  ((matched = true, byteOffset = 0, numBytes = 0),) <> 0
+[^]  done 2
+
+((matched = true, byteOffset = 2, numBytes = 0),)
