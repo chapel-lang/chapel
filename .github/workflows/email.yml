@@ -39,7 +39,7 @@ jobs:
             echo " SHA ${{env.SHA}}"
             echo " LINK ${{env.LINK}}"
             echo "AUTHOR ${{env.AUTHOR}}"
-            echo "MESSAGE ${{env.MESSAGE}}"
+            echo  ${{env.MESSAGE}}
           
            
       - name: checkout
