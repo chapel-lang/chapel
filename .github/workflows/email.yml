@@ -30,8 +30,7 @@ jobs:
               echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
               echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[].html_url' commits.json)" >> $GITHUB_ENV
-              echo "MESSAGE=$(jq -r '.[].commit.message' commits.json)" >> $GITHUB_ENV
-              echo "ID=$(jq -r '.[].message' commits.json)" >> $GITHUB_ENV
+            
             
              
               jq -r '"$COMMIT_ID=\(.[].id)"' commits.json >> $GITHUB_ENV
@@ -83,7 +82,7 @@ jobs:
               Author: ${{ env.AUTHOR}} <br>
               Revision: ${{github.event.pull_request.repository.id}}  <br>
               Commit id : ${{ env.COMMIT_ID }} <br>
-              Commit message: ${{env.MESSAGE }}  <br>
+              #Commit message: ${{env.MESSAGE }}  <br>
               Sha: echo "${{ env.SHA }}" <br>
               Link: ${{env.LINK}} <br> 
               Log Message: ${{env.MESSAGE}} <br>  
