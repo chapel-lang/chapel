@@ -35,4 +35,5 @@ target_sources(libdyno-obj
                string-escapes.cpp
                subprocess.cpp
                terminal.cpp
+               version-info.cpp
               )

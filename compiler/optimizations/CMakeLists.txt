@@ -14,28 +14,34 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+set(SRCS
+    bulkCopyRecords.cpp
+    copyPropagation.cpp
+    deadCodeElimination.cpp
+    forallOptimizations.cpp
+    gpuTransforms.cpp
+    inferConstRefs.cpp
+    inlineFunctions.cpp
+    liveVariableAnalysis.cpp
+    localizeGlobals.cpp
+    loopInvariantCodeMotion.cpp
+    noAliasSets.cpp
+    optimizeForallUnorderedOps.cpp
+    optimizeOnClauses.cpp
+    propagateDomainConstness.cpp
+    refPropagation.cpp
+    remoteValueForwarding.cpp
+    removeEmptyRecords.cpp
+    removeUnnecessaryAutoCopyCalls.cpp
+    removeUnnecessaryGotos.cpp
+    replaceArrayAccessesWithRefTemps.cpp
+    scalarReplace.cpp
+   )
 target_sources(chpl
                PRIVATE
-               bulkCopyRecords.cpp
-               copyPropagation.cpp
-               deadCodeElimination.cpp
-               forallOptimizations.cpp
-               gpuTransforms.cpp
-               inferConstRefs.cpp
-               inlineFunctions.cpp
-               liveVariableAnalysis.cpp
-               localizeGlobals.cpp
-               loopInvariantCodeMotion.cpp
-               noAliasSets.cpp
-               optimizeForallUnorderedOps.cpp
-               optimizeOnClauses.cpp
-               propagateDomainConstness.cpp
-               refPropagation.cpp
-               remoteValueForwarding.cpp
-               removeEmptyRecords.cpp
-               removeUnnecessaryAutoCopyCalls.cpp
-               removeUnnecessaryGotos.cpp
-               replaceArrayAccessesWithRefTemps.cpp
-               scalarReplace.cpp
-              )
+               ${SRCS})
+get_filename_component(DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+set_property(SOURCE ${SRCS}
+             TARGET_DIRECTORY chpl
+             PROPERTY COMPILE_DEFINITIONS COMPILER_SUBDIR=${DIR_NAME}
+             APPEND)

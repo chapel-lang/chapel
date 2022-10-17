@@ -51,7 +51,7 @@ function ck_chpl_home()
     fi
 }
 
-# return Chapel version number from source (version_num.h)
+# return Chapel version number from source (CMakeLists.txt)
 function get_src_version()
 {
     local thisfunc=get_src_version
@@ -62,34 +62,35 @@ function get_src_version()
     ( * )   log_error "$thisfunc: Invalid argv1 (CHPL_HOME)='$1'"; exit 2;;
     esac
 
-    # get major.minor.update version from version_num.h file
-    local version_file="$1/compiler/main/version_num.h"
+    # get major.minor.update version from CMakeLists.txt file
+    local version_file="$1/CMakeLists.txt"
     ls >/dev/null "$version_file" || {
         log_error "$thisfunc: Missing source file '$version_file'"
         exit 2
     }
 
-    local major=$( grep MAJOR_VERSION < "$version_file" | cut -f3 -d\  )
-    local minor=$( grep MINOR_VERSION < "$version_file" | cut -f3 -d\  | sed -e 's,",,g' )
-    local update=$( grep UPDATE_VERSION < "$version_file" | cut -f3 -d\  | sed -e 's,",,g' )
-    case "$major" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (MAJOR_VERSION='$major')"; exit 2;; esac
-    case "$minor" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (MINOR_VERSION='$minor')"; exit 2;; esac
-    case "$update" in   ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (UPDATE_VERSION='$update')"; exit 2;; esac
+    local major=$( grep 'set(CHPL_MAJOR_VERSION' < "$version_file" | cut -f2 -d\  | sed "s/\)//g")
+    local minor=$( grep 'set(CHPL_MINOR_VERSION' < "$version_file" | cut -f2 -d\  | sed "s/\)//g")
+    local update=$( grep 'set(CHPL_PATCH_VERSION' < "$version_file" | cut -f2 -d\ | sed "s/\)//g")
+    case "$major" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (CHPL_MAJOR_VERSION='$major')"; exit 2;; esac
+    case "$minor" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (CHPL_MINOR_VERSION='$minor')"; exit 2;; esac
+    case "$update" in   ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (CHPL_PATCH_VERSION='$update')"; exit 2;; esac
 
-    # if release_type (argv2) is nightly or release, return src_version as major.minor.update (from version_num.h)
+    # if release_type (argv2) is nightly or release, return src_version as major.minor.update (from CMakeLists.txt)
     case "$2" in
     ( [dD]* | developer ) ;;
     ( * )   echo "$major.$minor.$update"; return;;
     esac
 
-    # release_type is developer, get the contents of BUILD_VERSION file
-    local build_version_file="$1/compiler/main/BUILD_VERSION"
+    # release_type is developer, get the contents of git-version.cpp file
+    # TODO: when do we want the build_version and when do we want the git-sha?
+    local build_version_file="$1/frontend/lib/util/git-version.cpp"
     ls >/dev/null "$build_version_file" || {
         log_error "$thisfunc: Missing source file '$build_version_file'"
         exit 2
     }
 
-    local gitrev=$( sed -e 's,",,g' < "$build_version_file" )
+    local gitrev= $( grep 'const char\* GIT_SHA = ' < "$build_version_file" | sed "s/\"//g" | cut -f7 -d" " | sed "s/\;//g")
 
     # and return src_version as major.minor.update.gitrev
     case "$gitrev" in

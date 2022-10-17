@@ -15,9 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.13.4)
-
-project(dyno VERSION 0.1)
 
 # CHPL_HOME may have been defined by an upstream CMakeLists.txt, so check if
 # it doesn't exist before trying to create it.
@@ -51,7 +48,7 @@ endif()
 
 if (NOT DEFINED CHPL_LLVM_COMP_ARGS)
   # TODO: See if we can use these directly, I am not sure we can because
-  # the way to concat strings requires an output variable
+  # the CMake way to concat strings requires an output variable
   string(CONCAT CHPL_LLVM_COMP_ARGS ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
   # remove whitespace or you'll get complaints about an error
   # according to policy CMP0004
