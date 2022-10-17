@@ -25,12 +25,13 @@ jobs:
         
         env:
           COMMIT_URL: ${{github.event.repository.events_url}}
+          
         run: |
               curl --location --request GET 'https://api.github.com/repos/chapel-lang/chapel/pulls/20725/commits' --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
               echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[].html_url' commits.json)" >> $GITHUB_ENV
-            
+              
             
              
               jq -r '"$COMMIT_ID=\(.[].id)"' commits.json >> $GITHUB_ENV
@@ -43,6 +44,7 @@ jobs:
             echo "${{ env.action_state }}"
             echo   " SHA ${{env.SHA}}"
             echo " LINK ${{env.LINK}}"
+            echo "AUTHOR ${{env.AUTHOR}}"
           
            
       - name: checkout
@@ -68,7 +70,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: Chapel Merge ${{env.SHA}}  
+           subject: Chapel Merge ${{github.event.head.label}}  
            # Required recipients' addresses:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
@@ -85,9 +87,9 @@ jobs:
               #Commit message: ${{env.MESSAGE }}  <br>
               Sha: echo "${{ env.SHA }}" <br>
               Link: ${{env.LINK}} <br> 
-              Log Message: ${{env.MESSAGE}} <br>  
-              Diff: ${{env.DIFF_URL}} <br>
-              Compare: ${{env.COMPARE_URL}} <br>              </p>
+              Log Message: ${{github.event.body}} <br>  
+              Diff: ${{github.event.diff_url}} <br>
+              Compare: ${{github.event.base.repo.compare_url} <br>              </p>
               </body>
               </html>
            # Optional converting Markdown to HTML (set content_type to text/html too):
