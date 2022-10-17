@@ -728,7 +728,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       ret = ret + "." + makeNDigits(6, microsecond);
     }
     var offset = utcOffset();
-    if tzinfo.borrow() != nil {
+    if timezone.borrow() != nil {
       var sign: string;
       if offset.days < 0 {
         offset = -offset;
@@ -744,28 +744,28 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the offset from UTC */
   proc time.utcOffset() {
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       return new timedelta();
     } else {
-      return tzinfo!.utcOffset(datetime.now());
+      return timezone!.utcOffset(datetime.now());
     }
   }
 
   /* Return the daylight saving time offset */
   proc time.dst() {
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       return new timedelta();
     } else {
-      return tzinfo!.dst(datetime.now());
+      return timezone!.dst(datetime.now());
     }
   }
 
   /* Return the name of the timezone for this `time` value */
   proc time.tzname() {
-    if tzinfo.borrow() == nil then
+    if timezone.borrow() == nil then
       return "";
     else
-      return tzinfo!.tzname(new datetime(1,1,1));
+      return timezone!.tzname(new datetime(1,1,1));
   }
 
   /* Return a `string` matching the `format` argument for this `time` */
@@ -785,7 +785,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_wday = ((new date(1900, 1, 1)).weekday():int(32) + 1) % 7;
     timeStruct.tm_yday = 0;
 
-    if tzinfo.borrow() != nil {
+    if timezone.borrow() != nil {
       timeStruct.tm_gmtoff = abs(utcOffset()).seconds: c_long;
       timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
@@ -855,10 +855,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator time.<(t1: time, t2: time): bool {
-    if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
-        (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
+    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
+        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if t1.tzinfo == t2.tzinfo {
+    } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -893,10 +893,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator time.<=(t1: time, t2: time): bool {
-    if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
-        (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
+    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
+        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if t1.tzinfo == t2.tzinfo {
+    } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -916,10 +916,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator time.>(t1: time, t2: time): bool {
-    if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
-        (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
+    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
+        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if t1.tzinfo == t2.tzinfo {
+    } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -939,10 +939,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator time.>=(t1: time, t2: time): bool {
-    if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
-        (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
+    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
+        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if t1.tzinfo == t2.tzinfo {
+    } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -1135,7 +1135,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Form a `datetime` value from a given `date` and `time` */
   proc type datetime.combine(d: date, t: time) {
     return new datetime(d.year, d.month, d.day,
-                        t.hour, t.minute, t.second, t.microsecond, t.tzinfo);
+                        t.hour, t.minute, t.second, t.microsecond, t.timezone);
   }
 
   /* Methods on datetime values */
@@ -1147,7 +1147,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Get the `time` portion of the `datetime` value, with `tzinfo` = nil */
   proc datetime.gettime() {
-    if chpl_time.tzinfo.borrow() == nil then
+    if chpl_time.timezone.borrow() == nil then
       return chpl_time;
     else
       return new time(hour=hour, minute=minute,
@@ -1167,7 +1167,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    */
   proc datetime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
-                        in tzinfo=this.tzinfo) {
+                        in tzinfo=this.timezone) {
     return datetime.combine(
       new date(if year == -1 then this.year else year,
                if month == -1 then this.month else month,
@@ -1182,7 +1182,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return the date and time converted into the timezone in the argument */
   @unstable "tzinfo is unstable; its type may change in the future"
   proc datetime.astimezone(in tz: shared Timezone) {
-    if tzinfo == tz {
+    if timezone == tz {
       return this;
     }
     const utc = (this - this.utcOffset()).replace(tzinfo=tz);
@@ -1191,24 +1191,24 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the offset from UTC */
   proc datetime.utcOffset() {
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       halt("utcOffset called on naive datetime");
     } else {
-      return tzinfo!.utcOffset(this);
+      return timezone!.utcOffset(this);
     }
   }
   /* Return the daylight saving time offset */
   proc datetime.dst() {
-    if tzinfo.borrow() == nil then
-      halt("dst() called with nil tzinfo");
-    return tzinfo!.dst(this);
+    if timezone.borrow() == nil then
+      halt("dst() called with nil timezone");
+    return timezone!.dst(this);
   }
 
   /* Return the name of the timezone for this `datetime` value */
   proc datetime.tzname() {
-    if tzinfo.borrow() == nil then
+    if timezone.borrow() == nil then
       return "";
-    return tzinfo!.tzname(this);
+    return timezone!.tzname(this);
   }
 
   /* Return a filled record matching the C `struct tm` type for the given
@@ -1224,7 +1224,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_wday = weekday(): int(32);
     timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
 
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       timeStruct.tm_isdst = -1;
     } else if dst() == new timedelta(0) {
       timeStruct.tm_isdst = 0;
@@ -1239,7 +1239,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `datetime` in UTC
    */
   proc datetime.utctimetuple() {
-    if tzinfo.borrow() == nil {
+    if timezone.borrow() == nil {
       var ret = timetuple();
       ret.tm_isdst = 0;
       return ret;
@@ -1300,7 +1300,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
     var micro = if microsecond > 0 then "." + zeroPad(6, microsecond) else "";
     var offset: string;
-    if tzinfo.borrow() != nil {
+    if timezone.borrow() != nil {
       var utcoff = utcOffset();
       var sign: string;
       if utcoff < new timedelta(0) {
@@ -1350,9 +1350,9 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_min = minute: int(32);
     timeStruct.tm_sec = second: int(32);
 
-    if tzinfo.borrow() != nil {
-      timeStruct.tm_isdst = tzinfo!.dst(this).seconds: int(32);
-      timeStruct.tm_gmtoff = tzinfo!.utcOffset(this).seconds: c_long;
+    if timezone.borrow() != nil {
+      timeStruct.tm_isdst = timezone!.dst(this).seconds: int(32);
+      timeStruct.tm_gmtoff = timezone!.utcOffset(this).seconds: c_long;
       timeStruct.tm_zone = nil;
     } else {
       timeStruct.tm_isdst = -1: int(32);
@@ -1466,7 +1466,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return datetime.combine(date.fromOrdinal(dt.getdate().toOrdinal()+adddays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
-                                     tzinfo=dt.tzinfo));
+                                     tzinfo=dt.timezone));
 
   }
 
@@ -1507,16 +1507,16 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return datetime.combine(date.fromOrdinal(dt.getdate().toOrdinal()-subDays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
-                                     tzinfo=dt.tzinfo));
+                                     tzinfo=dt.timezone));
   }
 
   pragma "no doc"
   operator datetime.-(dt1: datetime, dt2: datetime): timedelta {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-       (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+       (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
     }
-    if dt1.tzinfo == dt2.tzinfo {
+    if dt1.timezone == dt2.timezone {
       const newmicro = dt1.microsecond - dt2.microsecond,
             newsec = dt1.second - dt2.second,
             newmin = dt1.minute - dt2.minute,
@@ -1533,11 +1533,11 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.==(dt1: datetime, dt2: datetime): bool {
-    if dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil ||
-       dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil {
+    if dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil ||
+       dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil {
       halt("Cannot compare naive datetime to aware datetime");
-    } else if dt1.tzinfo == dt2.tzinfo {
-      // just ignore tzinfo
+    } else if dt1.timezone == dt2.timezone {
+      // just ignore timezone
       var d1: date = dt1.replace(tzinfo=nil).getdate(),
           d2: date = dt2.replace(tzinfo=nil).getdate();
       var t1: time = dt1.replace(tzinfo=nil).gettime(),
@@ -1560,10 +1560,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.<(dt1: datetime, dt2: datetime): bool {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 < date2 then return true;
@@ -1577,10 +1577,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.<=(dt1: datetime, dt2: datetime): bool {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 < date2 then return true;
@@ -1594,10 +1594,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.>(dt1: datetime, dt2: datetime): bool {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 > date2 then return true;
@@ -1611,10 +1611,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator datetime.>=(dt1: datetime, dt2: datetime): bool {
-    if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
-        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
+    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
+        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
-    } else if dt1.tzinfo == dt2.tzinfo {
+    } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getdate(),
             date2 = dt2.getdate();
       if date1 > date2 then return true;

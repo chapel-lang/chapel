@@ -11,7 +11,7 @@ var DSTSTART = new datetime(1, 4, 1, 2);
 // the last hour of DST (that's 1:MM DST, but 1:MM is taken as standard time).
 var DSTEND = new datetime(1, 10, 25, 1);
 
-class USTimeZone: TZInfo {
+class USTimeZone: Timezone {
   var stdoffset: timedelta;
   var reprname: string;
   var stdname: string;
@@ -39,19 +39,19 @@ class USTimeZone: TZInfo {
   }
 
   override proc dst(dt: datetime) {
-    if dt.tzinfo.borrow() == nil {
+    if dt.timezone.borrow() == nil {
       // An exception instead may be sensible here, in one or more of
       // the cases.
       return ZERO;
     }
-    assert(dt.tzinfo.borrow() == this);
+    assert(dt.timezone.borrow() == this);
 
     // Find first Sunday in April.
-    var start = first_sunday_on_or_after(DSTSTART.replace(year=dt.year, tzinfo=DSTSTART.tzinfo));
+    var start = first_sunday_on_or_after(DSTSTART.replace(year=dt.year, tzinfo=DSTSTART.timezone));
     assert(start.weekday():int == 6 && start.month == 4 && start.day <= 7);
 
     // Find last Sunday in October.
-    var end = first_sunday_on_or_after(DSTEND.replace(year=dt.year, tzinfo=DSTEND.tzinfo));
+    var end = first_sunday_on_or_after(DSTEND.replace(year=dt.year, tzinfo=DSTEND.timezone));
     assert(end.weekday():int == 6 && end.month == 10 && end.day >= 25);
 
     // Can't compare naive to aware objects, so strip the timezone from
@@ -74,7 +74,7 @@ class USTimeZone: TZInfo {
 
 }
 
-class FixedOffset: TZInfo {
+class FixedOffset: Timezone {
   var offset: timedelta;
   var name: string;
   var dstoffset: timedelta;
@@ -169,10 +169,10 @@ proc checkinside(dt, tz:shared, utc:shared, dston, dstoff) {
   if dt.getdate() == dstoff.getdate() && dt.hour == 0 {
     // We're in the hour before the last DST hour.  The last DST hour
     // is ineffable.  We want the conversion back to repeat 1:MM.
-    assert(nexthour_tz == dt.replace(hour=1, tzinfo=dt.tzinfo));
+    assert(nexthour_tz == dt.replace(hour=1, tzinfo=dt.timezone));
     nexthour_utc += HOUR;
     nexthour_tz = nexthour_utc.astimezone(tz);
-    assert(nexthour_tz == dt.replace(hour=1, tzinfo=dt.tzinfo));
+    assert(nexthour_tz == dt.replace(hour=1, tzinfo=dt.timezone));
   } else {
     assert(nexthour_tz - dt == HOUR);
   }
@@ -256,7 +256,7 @@ proc test_tricky() {
   // to 22:00 lands on 2:00, which makes no sense in local time (the
   // local clock jumps from 1 to 3).  The point here is to make sure we
   // get the 3 spelling.
-  var expected = dston.replace(hour=3, tzinfo=dston.tzinfo);
+  var expected = dston.replace(hour=3, tzinfo=dston.timezone);
   var got = fourback.astimezone(Eastern).replace(tzinfo=nil);
   assert(expected == got);
 
@@ -266,7 +266,7 @@ proc test_tricky() {
   // Now 6:00 "looks like daylight", so the offset wrt Eastern is -4,
   // and adding -4-0 == -4 gives the 2:00 spelling.  We want the 1:00 EST
   // spelling.
-  expected = dston.replace(hour=1, tzinfo=dston.tzinfo);
+  expected = dston.replace(hour=1, tzinfo=dston.timezone);
   got = sixutc.astimezone(Eastern).replace(tzinfo=nil);
   assert(expected == got);
 
@@ -286,10 +286,10 @@ proc test_tricky() {
       // tz=Eastern.
       var asutcbase = asutc.replace(tzinfo=utc);
       for tzhour in (0, 1, 1, 2) {
-        var expectedbase = dstoff.replace(hour=tzhour, tzinfo=dstoff.tzinfo);
+        var expectedbase = dstoff.replace(hour=tzhour, tzinfo=dstoff.timezone);
         for minute in (0, 30, 59) {
-          expected = expectedbase.replace(minute=minute, tzinfo=expectedbase.tzinfo);
-          asutc = asutcbase.replace(minute=minute, tzinfo=asutcbase.tzinfo);
+          expected = expectedbase.replace(minute=minute, tzinfo=expectedbase.timezone);
+          asutc = asutcbase.replace(minute=minute, tzinfo=asutcbase.timezone);
           var astz = asutc.astimezone(tz);
           assert(astz.replace(tzinfo=nil) == expected);
         }
@@ -303,7 +303,7 @@ proc test_fromutc() {
   var now = datetime.utcNow().replace(tzinfo=utc_real);
   now = now.replace(tzinfo=Eastern);   // insert correct tzinfo
   var enow = Eastern.fromUtc(now);         // doesn't blow up
-  assert(enow.tzinfo == Eastern); // has right tzinfo member
+  assert(enow.timezone == Eastern); // has right tzinfo member
 
   // Always converts UTC to standard time.
   class FauxUSTimeZone: USTimeZone {
@@ -327,7 +327,7 @@ proc test_fromutc() {
   var start = dston.replace(hour=4, tzinfo=Eastern);
   var fstart = start.replace(tzinfo=FEastern);
   for wall in (23, 0, 1, 3, 4, 5) {
-    var expected = start.replace(hour=wall, tzinfo=start.tzinfo);
+    var expected = start.replace(hour=wall, tzinfo=start.timezone);
     if wall == 23 {
       expected -= new timedelta(days=1);
     }
@@ -350,7 +350,7 @@ proc test_fromutc() {
   start = dstoff.replace(hour=4, tzinfo=Eastern);
   fstart = start.replace(tzinfo=FEastern);
   for wall in (0, 1, 1, 2, 3, 4) {
-    var expected = start.replace(hour=wall, tzinfo=start.tzinfo);
+    var expected = start.replace(hour=wall, tzinfo=start.timezone);
     var got = Eastern.fromUtc(start);
     assert(expected == got);
 
