@@ -35,10 +35,11 @@ jobs:
       - name: use events
         
         run: |
-            echo "${{ env.action_state }}"
-            echo   " SHA ${{env.SHA}}"
+          
+            echo " SHA ${{env.SHA}}"
             echo " LINK ${{env.LINK}}"
             echo "AUTHOR ${{env.AUTHOR}}"
+            echo "MESSAGE ${{env.MESSAGE}}"
           
            
       - name: checkout
