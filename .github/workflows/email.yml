@@ -43,6 +43,7 @@ jobs:
         run: |
             echo "${{ env.action_state }}"
             echo   " SHA ${{env.SHA}}"
+            echo " LINK ${{env.LINK}}"
           
            
       - name: checkout
