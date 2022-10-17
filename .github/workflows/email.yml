@@ -31,7 +31,7 @@ jobs:
               echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
               echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[].html_url' commits.json)" >> $GITHUB_ENV
-              echo "MESSAGE=$(jq -r '.[].commit.message' commits.json)" >> $GITHUB_ENV 
+              echo "MESSAGE=$(jq  '.[].commit.message' commits.json)" >> $GITHUB_ENV 
       - name: use events
         
         run: |
