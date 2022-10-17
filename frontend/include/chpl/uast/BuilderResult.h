@@ -126,7 +126,7 @@ class BuilderResult final {
 
   /** If the top-level expressions contain only a single Module,
      return it. Otherwise, return nullptr. */
-  const Module* singleModule() {
+  const Module* singleModule() const {
     if (topLevelExpressions_.size() == 1) {
       return topLevelExpressions_[0]->toModule();
     }

@@ -35,6 +35,33 @@ namespace uast {
 AstNode::~AstNode() {
 }
 
+bool AstNode::isLeaf() const {
+  bool ret = false;
+  switch (this->tag()) {
+  #define AST_NODE(NAME__)
+  #define AST_BEGIN_SUBCLASSES(NAME__)
+  #define AST_END_SUBCLASSES(NAME__)
+  #define AST_LEAF(NAME__) \
+    case asttags::NAME__: \
+      ret = true; \
+      break;
+    #include "chpl/uast/uast-classes-list.h"
+    AST_NODE(NUM_AST_TAGS)
+    AST_NODE(AST_TAG_UNKNOWN)
+    default: break;
+  #undef AST_NODE
+  #undef AST_BEGIN_SUBCLASSES
+  #undef AST_END_SUBCLASSES
+  #undef AST_LEAF
+  }
+
+  if (ret) {
+    assert(numChildren() == 0);
+  }
+
+  return ret;
+}
+
 bool AstNode::mayContainStatements(AstTag tag) {
   switch (tag) {
     // cannot contain Chapel statements

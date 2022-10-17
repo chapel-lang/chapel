@@ -1300,6 +1300,28 @@ static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
   return type;
 }
 
+static bool isCallInfoForInitializer(const CallInfo& ci) {
+  if (ci.name() == USTR("init"))
+    if (ci.isMethodCall())
+      return true;
+  return false;
+}
+
+// TODO: Move these to the 'InitResolver' visitor.
+static bool isTfsForInitializer(const TypedFnSignature* tfs) {
+  if (tfs->untyped()->name() == USTR("init"))
+    if (tfs->untyped()->isMethod())
+      return true;
+  return false;
+}
+
+static bool ensureBodyIsResolved(Context* context, const CallInfo& ci,
+                                 const TypedFnSignature* tfs) {
+  if (tfs->untyped()->isCompilerGenerated()) return false;
+  if (isTfsForInitializer(tfs)) return true;
+  return false;
+}
+
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -1613,6 +1635,22 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                       /* instantiatedFrom */ sig,
                                       /* parentFn */ parentFnTyped,
                                       std::move(formalsInstantiated));
+
+  // May need to resolve the body at this point to compute final TFS.
+  if (ensureBodyIsResolved(context, call, result)) {
+    if (!result->untyped()->isCompilerGenerated()) {
+      if (isTfsForInitializer(result)) {
+        auto resolvedFn = resolveInitializer(context, result, poiScope);
+        auto newTfs = resolvedFn->signature();
+        assert(!newTfs->needsInstantiation());
+        result = newTfs;
+      } else {
+        assert(false && "Not handled yet!");
+        std::ignore = resolveFunction(context, result, poiScope);
+      }
+    }
+  }
+
   return result;
 }
 
@@ -1633,8 +1671,8 @@ resolveFunctionByPoisQuery(Context* context,
 
 static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(Context* context,
-                            const TypedFnSignature* sig,
-                            PoiInfo poiInfo) {
+                           const TypedFnSignature* sig,
+                           PoiInfo poiInfo) {
   QUERY_BEGIN(resolveFunctionByInfoQuery, context, sig, poiInfo);
 
   const UntypedFnSignature* untypedSignature = sig->untyped();
@@ -1645,23 +1683,56 @@ resolveFunctionByInfoQuery(Context* context,
 
   PoiInfo resolvedPoiInfo;
 
-  if (fn) {
+  // Note that in this case the AST for the function can be nullptr.
+  if (isTfsForInitializer(sig)) {
     ResolutionResultByPostorderID resolutionById;
-    auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
-                                               resolutionById);
+    auto visitor = Resolver::createForInitializer(context, fn, poiScope,
+                                                  sig,
+                                                  resolutionById);
+    assert(visitor.initResolver.get());
+    if (fn) fn->body()->traverse(visitor);
+    auto newTfsForInitializer = visitor.initResolver->finalize();
 
-    // visit the function body
-    fn->body()->traverse(visitor);
-
+    // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
-    // TODO can this be encapsulated in a method?
     resolvedPoiInfo.setResolved(true);
     resolvedPoiInfo.setPoiScope(nullptr);
 
-    owned<ResolvedFunction> resolved =
-      toOwned(new ResolvedFunction(sig, fn->returnIntent(),
-                                   std::move(resolutionById),
-                                   resolvedPoiInfo));
+    // If we resolved an initializer, then we started with a function
+    // signature that might have needed instantiation for the receiver.
+    // We need to communicate to the query framework that the new TFS
+    // does not need to have its corresponding function resolved.
+    if (newTfsForInitializer != sig) {
+      auto resolutionByIdCopy = resolutionById;
+      auto resolvedInit = toOwned(new ResolvedFunction(newTfsForInitializer,
+                                  fn->returnIntent(),
+                                  std::move(resolutionByIdCopy),
+                                  resolvedPoiInfo));
+      auto idsUsed = resolvedPoiInfo.poiFnIdsUsed();
+      QUERY_STORE_RESULT(resolveFunctionByPoisQuery,
+                         context,
+                         resolvedInit,
+                         newTfsForInitializer,
+                         idsUsed);
+      auto& saved = resolveFunctionByPoisQuery(context, newTfsForInitializer,
+                                               idsUsed);
+      const ResolvedFunction* resultInit = saved.get();
+      QUERY_STORE_RESULT(resolveFunctionByInfoQuery,
+                         context,
+                         resultInit,
+                         newTfsForInitializer,
+                         poiInfo);
+    }
+
+    // If we resolved an initializer, the result should point to the
+    // final, fully instantiated TFS that was created (if there is
+    // one). In other cases, we just use the input signature.
+    auto finalTfs = newTfsForInitializer ? newTfsForInitializer : sig;
+
+    owned<ResolvedFunction> resolved
+        = toOwned(new ResolvedFunction(finalTfs, fn->returnIntent(),
+                  std::move(resolutionById),
+                  resolvedPoiInfo));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -1672,6 +1743,34 @@ resolveFunctionByInfoQuery(Context* context,
                        resolved,
                        sig,
                        resolvedPoiInfo.poiFnIdsUsed());
+
+  // On this path we are just resolving a normal function.
+  } else if (fn) {
+    ResolutionResultByPostorderID resolutionById;
+    auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
+                                               resolutionById);
+    fn->body()->traverse(visitor);
+
+    // TODO: can this be encapsulated in a method?
+    resolvedPoiInfo.swap(visitor.poiInfo);
+    resolvedPoiInfo.setResolved(true);
+    resolvedPoiInfo.setPoiScope(nullptr);
+
+    owned<ResolvedFunction> resolved
+        = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
+                  std::move(resolutionById),
+                  resolvedPoiInfo));
+
+    // Store the result in the query under the POIs used.
+    // If there was already a value for this revision, this
+    // call will not update it. (If it did, that could lead to
+    // memory errors).
+    QUERY_STORE_RESULT(resolveFunctionByPoisQuery,
+                       context,
+                       resolved,
+                       sig,
+                       resolvedPoiInfo.poiFnIdsUsed());
+
   } else {
     assert(false && "this query should be called on Functions");
   }
@@ -1685,9 +1784,25 @@ resolveFunctionByInfoQuery(Context* context,
   return QUERY_END(result);
 }
 
+const ResolvedFunction* resolveInitializer(Context* context,
+                                           const TypedFnSignature* sig,
+                                           const PoiScope* poiScope) {
+  bool isAcceptable = isTfsForInitializer(sig);
+  if (!isAcceptable) {
+    assert(false && "Should only be called for initializers");
+  }
+
+  // construct the PoiInfo for this case
+  auto poiInfo = PoiInfo(poiScope);
+
+  // lookup in the map using this PoiInfo
+  return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
+}
+
 const ResolvedFunction* resolveFunction(Context* context,
-                                         const TypedFnSignature* sig,
-                                         const PoiScope* poiScope) {
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* poiScope) {
+
   // this should only be applied to concrete fns or instantiations
   assert(!sig->needsInstantiation());
 
@@ -2377,19 +2492,15 @@ lookupCalledExpr(Context* context,
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
-  const Scope* scopeToUse = scope;
+  const Scope* receiverScope = nullptr;
 
-  // For method calls, perform an initial lookup starting at the scope for
-  // the definition of the receiver type, if it can be found.
+  // For method calls, also consider the receiver scope.
   if (ci.isMethodCall() || ci.isOpCall()) {
     assert(ci.numActuals() >= 1);
-
-    auto& receiverQualType = ci.actual(0).type();
-
-    // Try to fetch the scope of the receiver type's definition.
-    if (auto receiverType = receiverQualType.type()) {
-      if (auto compType = receiverType->getCompositeType()) {
-        scopeToUse = scopeForId(context, compType->id());
+    auto& qtReceiver = ci.actual(0).type();
+    if (auto t = qtReceiver.type()) {
+      if (auto compType = t->getCompositeType()) {
+        receiverScope = scopeForId(context, compType->id());
       }
     }
   }
@@ -2397,7 +2508,7 @@ lookupCalledExpr(Context* context,
   UniqueString name = ci.name();
 
   std::vector<BorrowedIdsWithName> ret =
-    lookupNameInScopeWithSet(context, scopeToUse, nullptr,
+    lookupNameInScopeWithSet(context, scope, receiverScope,
                              name, config, visited);
 
   return ret;
@@ -2600,6 +2711,27 @@ static const Type* getNumericType(Context* context,
   return nullptr;
 }
 
+static const Type*
+convertClassTypeToNilable(Context* context, const Type* t) {
+  const ClassType* ct = nullptr;
+
+  if (auto bct = t->toBasicClassType()) {
+    auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+    ct = ClassType::get(context, bct, nullptr, d);
+  } else {
+    ct = t->toClassType();
+  }
+
+  if (ct) {
+    // get the nilable version of the class type
+    ClassTypeDecorator d = ct->decorator().addNilable();
+    auto ret= ct->withDecorator(context, d);
+    return ret;
+  }
+
+  return nullptr;
+}
+
 // Resolving compiler-supported type-returning patterns
 // 'call' and 'inPoiScope' are used for the location for error reporting.
 static const Type* resolveFnCallSpecialType(Context* context,
@@ -2609,19 +2741,7 @@ static const Type* resolveFnCallSpecialType(Context* context,
   if (ci.name() == USTR("?")) {
     if (ci.numActuals() > 0) {
       if (const Type* t = ci.actual(0).type().type()) {
-        const ClassType* ct = nullptr;
-
-        if (auto bct = t->toBasicClassType()) {
-          auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
-          ct = ClassType::get(context, bct, nullptr, d);
-        } else {
-          ct = t->toClassType();
-        }
-
-        if (ct) {
-          // get the nilable version of the class type
-          ClassTypeDecorator d = ct->decorator().addNilable();
-          auto nilable = ct->withDecorator(context, d);
+        if (auto nilable = convertClassTypeToNilable(context, t)) {
           return nilable;
         }
       }
@@ -2639,6 +2759,37 @@ static const Type* resolveFnCallSpecialType(Context* context,
   return nullptr;
 }
 
+static
+bool resolvePostfixNilableAppliedToNew(Context* context, const Call* call,
+                                       const CallInfo& ci,
+                                       QualifiedType& exprTypeOut) {
+
+  // First, pattern match to find something like 'new C()?'...
+  if (!call || !call->isOpCall()) return false;
+
+  auto opCall = call->toOpCall();
+  if (opCall->op() != USTR("?") || opCall->numActuals() != 1) return false;
+
+  auto newCall = opCall->actual(0)->toFnCall();
+  if (!newCall || !newCall->calledExpression() ||
+      !newCall->calledExpression()->isNew()) {
+    return false;
+  }
+
+  // Now, adjust the type to be nilable, but not the kind.
+  auto qtNewCall = ci.actual(0).type();
+
+  if (qtNewCall.isUnknown() || qtNewCall.isErroneousType()) {
+    exprTypeOut = qtNewCall;
+  }
+
+  auto convToNilable = convertClassTypeToNilable(context, qtNewCall.type());
+  auto outType = convToNilable ? convToNilable : qtNewCall.type();
+
+  exprTypeOut = QualifiedType(qtNewCall.kind(), outType);
+
+  return true;
+}
 
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
@@ -2731,8 +2882,9 @@ considerCompilerGeneratedCandidates(Context* context,
 
   // if not compiler-generated, then nothing to do
   if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
-                                   ci.isParenless()))
+                                   ci.isParenless())) {
     return false;
+  }
 
   // get the compiler-generated function, may be generic
   auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
@@ -2773,6 +2925,38 @@ considerCompilerGeneratedCandidates(Context* context,
   return true;
 }
 
+static std::vector<BorrowedIdsWithName>
+lookupCalledExprConsideringReceiver(Context* context,
+                                    const Scope* inScope,
+                                    const CallInfo& ci,
+                                    ScopeSet& visited) {
+  const Scope* receiverScope = nullptr;
+
+  // For method and operator calls, also consider the receiver scope.
+  if (ci.isMethodCall() || ci.isOpCall()) {
+    assert(ci.numActuals() >= 1);
+    auto& qtReceiver = ci.actual(0).type();
+    if (auto t = qtReceiver.type()) {
+      if (auto compType = t->getCompositeType()) {
+        receiverScope = scopeForId(context, compType->id());
+      }
+    }
+  }
+
+  // TODO: Ensure that secondary methods are considered as well.
+  std::vector<BorrowedIdsWithName> ret;
+  if (receiverScope) {
+    auto v = lookupCalledExpr(context, receiverScope, ci, visited);
+    ret.insert(ret.end(), v.begin(), v.end());
+  }
+
+  // Consider tertiary methods starting at the callsite.
+  auto v = lookupCalledExpr(context, inScope, ci, visited);
+  ret.insert(ret.end(), v.begin(), v.end());
+
+  return ret;
+}
+
 // call can be nullptr. in that event, ci.name() will be used
 // to find the call with that name.
 static MostSpecificCandidates
@@ -2788,6 +2972,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   ScopeSet visited;
 
   // inject compiler-generated candidates in a manner similar to below
+  // (note that any added candidates are already fully instantiated)
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,
                                       poiInfo,
                                       candidates);
@@ -2795,7 +2980,8 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   // next, look for candidates without using POI.
   {
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, inScope, ci, visited);
+    auto v = lookupCalledExprConsideringReceiver(context, inScope, ci,
+                                                 visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2822,7 +3008,9 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
     }
 
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, curPoi->inScope(), ci, visited);
+    auto v = lookupCalledExprConsideringReceiver(context, curPoi->inScope(),
+                                                 ci,
+                                                 visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2858,7 +3046,6 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   return mostSpecific;
 }
 
-
 // call can be nullptr. in that event ci.name() will be used to find
 // what is called.
 static
@@ -2867,10 +3054,8 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope) {
-
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
-
   if (ci.calledType().kind() == QualifiedType::TYPE) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
@@ -2913,6 +3098,18 @@ CallResolutionResult resolveFnCall(Context* context,
                                             instantiationPoiScope, poiInfo);
         }
       }
+    }
+  }
+
+  // Make sure that we are resolving initializer bodies even when the
+  // signature is concrete, because there are semantic checks.
+  if (isCallInfoForInitializer(ci) && mostSpecific.numBest() == 1) {
+    auto candidate = mostSpecific.only();
+    assert(isTfsForInitializer(candidate));
+
+    // TODO: Can we move this into the 'InitVisitor'?
+    if (!candidate->untyped()->isCompilerGenerated()) {
+      std::ignore = resolveInitializer(context, candidate, inPoiScope);
     }
   }
 
@@ -3009,6 +3206,9 @@ CallResolutionResult resolveCall(Context* context,
   if (call->isFnCall() || call->isOpCall()) {
     // see if the call is handled directly by the compiler
     QualifiedType tmpRetType;
+    if (resolvePostfixNilableAppliedToNew(context, call, ci, tmpRetType)) {
+      return CallResolutionResult(std::move(tmpRetType));
+    }
     if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }

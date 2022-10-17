@@ -24,16 +24,15 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "./ErrorGuard.h"
 
-// test resolving a very simple module
-// Test resolving a simple primary and secondary method call on a record.
+// Test resolving a simple primary and secondary method in defining scope.
 static void test1() {
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
-  context->advanceToNextRevision(true);
-
-  auto path = UniqueString::get(context, "input.chpl");
+  auto path = UniqueString::get(context, "test1.chpl");
   std::string contents =
     " record r {\n"
     "   proc doPrimary() {}\n"
@@ -98,17 +97,15 @@ static void test1() {
   assert(tfsCallSecondary->numFormals() == 1);
   assert(tfsCallSecondary->formalName(0) == "this");
   assert(tfsCallSecondary->formalType(0).type() == qtR.type());
-
-  context->collectGarbage();
 }
 
+// Similar test but for parenless methods.
 static void test2() {
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
-  context->advanceToNextRevision(true);
-
-  auto path = UniqueString::get(context, "input.chpl");
+  auto path = UniqueString::get(context, "test2.chpl");
   std::string contents =
     R""""(
       record r {
@@ -174,8 +171,6 @@ static void test2() {
   assert(tfsCallSecondary->numFormals() == 1);
   assert(tfsCallSecondary->formalName(0) == "this");
   assert(tfsCallSecondary->formalType(0).type() == qtR.type());
-
-  context->collectGarbage();
 }
 
 // test case to lock in correct behavior w.r.t. T being both a
@@ -183,6 +178,7 @@ static void test2() {
 static void test3() {
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
   const char* contents = R""""(
                               module M {
@@ -202,10 +198,71 @@ static void test3() {
   assert(qt.type()->isRealType()); // and not real
 }
 
+static void test4() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "test3.chpl");
+  std::string contents =
+    R""""(
+    module A {
+      record r {}
+    }
+    module B {
+      use A;
+      proc r.foo() {}
+      var x: r;
+      x.foo();
+    }
+    )"""";
+  setFileText(context, path, contents);
+
+  // Get the modules.
+  auto& br = parseFileToBuilderResult(context, path, UniqueString());
+  assert(!br.numErrors());
+  assert(br.numTopLevelExpressions() == 2);
+  auto modA = br.topLevelExpression(0)->toModule();
+  assert(modA);
+  auto modB = br.topLevelExpression(1)->toModule();
+  assert(modB);
+
+  // Get the record from module 'A'.
+  assert(modA->numStmts() == 1);
+  auto rec = modA->stmt(0)->toRecord();
+  assert(rec);
+
+  // Get the tertiary method, variable, and call from module 'B'.
+  assert(modB->numStmts() == 4);
+  auto tert = modB->stmt(1)->toFunction();
+  assert(tert);
+  auto x = modB->stmt(2)->toVariable();
+  assert(x && !x->initExpression() && x->typeExpression());
+  auto typeExpr = x->typeExpression()->toIdentifier();
+  assert(typeExpr);
+  auto call = modB->stmt(3)->toFnCall();
+  assert(call);
+
+  auto& rr = resolveModule(context, modB->id());
+  assert(!guard.realizeErrors());
+
+  auto& reX = rr.byAst(x);
+  assert(reX.type().kind() == QualifiedType::VAR);
+  assert(!reX.type().isUnknown());
+  assert(!reX.type().isErroneousType());
+  assert(reX.type().type()->isRecordType());
+
+  // TODO: Confirm other things.
+  (void) typeExpr;
+  (void) call;
+  (void) tert;
+}
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }

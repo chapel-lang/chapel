@@ -32,6 +32,7 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
+#include "./ErrorGuard.h"
 
 #include <algorithm>
 #include <sstream>
@@ -48,9 +49,6 @@ static Context* getNewContext() {
 }
 
 std::vector<const ErrorBase*> errors;
-static void collectErrors(Context* context, const ErrorBase* err) {
-  errors.push_back(err);
-}
 
 static const Module* parseModule(Context* context, const char* src) {
   auto path = UniqueString::get(context, "input.chpl");
@@ -201,13 +199,13 @@ static const char* kindToString(IntentList kind) {
   return "";
 }
 
-static void printErrors(Context* context) {
+static void printErrors(const ErrorGuard& guard) {
   if (!verbose) {
-    printf("Found %lu errors.\n\n", errors.size());
+    printf("Found %lu errors.\n\n", guard.errors().size());
   } else {
     printf("======== Errors ========\n");
-    ErrorWriter ew(context, std::cout, ErrorWriter::DETAILED, false);
-    for (auto err : errors) {
+    ErrorWriter ew(guard.context(), std::cout, ErrorWriter::DETAILED, false);
+    for (auto& err : guard.errors()) {
       err->write(ew);
     }
     printf("========================\n\n");
@@ -215,9 +213,7 @@ static void printErrors(Context* context) {
 }
 
 static Collector customHelper(std::string program, Context* context, bool fail = false) {
-
-  errors.clear();
-  context->setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   const Module* m = parseModule(context, program.c_str());
 
@@ -235,16 +231,14 @@ static Collector customHelper(std::string program, Context* context, bool fail =
     printf("%s\n", program.c_str());
     printf("========================\n");
 
-    if (errors.size() > 0) {
-      printErrors(context);
-    }
+    if (guard.errors().size()) printErrors(guard);
 
     if (verbose) pc.dump();
     printf("\n");
   }
 
   if (!fail) {
-    assert(errors.size() == 0);
+    assert(!guard.realizeErrors());
   }
 
   return pc;
@@ -303,8 +297,7 @@ forall i in 1..10 with (+ reduce x) {
 }
 )""";
 
-  errors.clear();
-  context->setErrorHandler(collectErrors);
+  ErrorGuard guard(context);
 
   const Module* m = parseModule(context, program.c_str());
 

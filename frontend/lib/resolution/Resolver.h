@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef RESOLVER_H
-#define RESOLVER_H
+#ifndef CHPL_LIB_RESOLUTION_RESOLVER_H
+#define CHPL_LIB_RESOLUTION_RESOLVER_H
 
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/uast/all-uast.h"
+#include "InitResolver.h"
 
 namespace chpl {
 namespace resolution {
@@ -63,6 +64,7 @@ struct Resolver {
   const Scope* savedReceiverScope = nullptr;
   const types::CompositeType* savedReceiverType = nullptr;
   Resolver* parentResolver = nullptr;
+  owned<InitResolver> initResolver = nullptr;
 
   // results of the resolution process
 
@@ -127,6 +129,13 @@ struct Resolver {
                    const PoiScope* poiScope,
                    const TypedFnSignature* typedFnSignature,
                    ResolutionResultByPostorderID& byPostorder);
+
+  static Resolver
+  createForInitializer(Context* context,
+                       const uast::Function* fn,
+                       const PoiScope* poiScope,
+                       const TypedFnSignature* typedFnSignature,
+                       ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to scope resolve a Function
   static Resolver
@@ -347,6 +356,13 @@ struct Resolver {
   void resolveNewForClass(const uast::New* node,
                           const types::ClassType* classType);
 
+  std::vector<BorrowedIdsWithName>
+  lookupIdentifier(const uast::Identifier* ident,
+                   const Scope* receiverScope);
+
+  bool resolveIdentifier(const uast::Identifier* ident,
+                         const Scope* receiverScope);
+
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
   void enterScope(const uast::AstNode* ast);
@@ -400,7 +416,6 @@ struct Resolver {
   bool enter(const uast::AstNode* ast);
   void exit(const uast::AstNode* ast);
 };
-
 
 } // end namespace resolution
 } // end namespace chpl

@@ -204,6 +204,16 @@ const ResolvedFunction* resolveFunction(Context* context,
                                         const PoiScope* poiScope);
 
 /**
+  Compute a ResolvedFunction given a TypedFnSignature for an initializer.
+  The difference between this and 'resolveFunction' is that it is
+  possible for the type of the receiver to still be generic (as the
+  initializer body must be resolved before the concrete type is known).
+*/
+const ResolvedFunction* resolveInitializer(Context* context,
+                                           const TypedFnSignature* sig,
+                                           const PoiScope* poiScope);
+
+/**
   Helper to resolve a concrete function using the above queries.
   Will return `nullptr` if the function is generic or has a `where false`.
   */
