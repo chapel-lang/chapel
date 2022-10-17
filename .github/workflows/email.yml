@@ -33,10 +33,13 @@ jobs:
               jq -r '"$LINK=\(.[].html_url)"' commits.json >> $GITHUB_ENV
               jq -r '"$COMMIT_ID=\(.[].id)"' commits.json >> $GITHUB_ENV
               jq -r '"$DIFF_URL=\(.[].diff_url)"' commits.json >> $GITHUB_ENV
-              jq -r '"$COMPARE_URL=\(.[].repo.compare_url)"' commits.json >> $GITHUB_ENV              
+              jq -r '"$COMPARE_URL=\(.[].repo.compare_url)"' commits.json >> $GITHUB_ENV     
+              echo "action_state=yellow" >> $GITHUB_ENV
       - name: use events
         
-        run: echo   " SHA ${{env.COMMIT_SHA}}"
+        run: |
+            echo "${{ env.action_state }}"
+            echo   " SHA ${{env.COMMIT_SHA}}"
           
            
       - name: checkout
