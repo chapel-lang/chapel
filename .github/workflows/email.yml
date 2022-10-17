@@ -23,20 +23,14 @@ jobs:
       - name: get commits payload
         
         env:
-          COMMIT_URL: ${{github.event.pull_request.repository.events_url}}
-          run: |
-              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
-              cat commits.json
-              jq -r  '"$AUTHOR=\(.[].author[].name)"' commits.json >> $GITHUB_ENV
-              jq -r '"$SHA=\(.[].sha)"' commits.json >> $GITHUB_ENV
-              jq -r '"$MESSAGE=\(.[].message)"' commits.json >> $GITHUB_ENV
-              jq -r '"$LINK=\(.[].html_url)"' commits.json >> $GITHUB_ENV
-              jq -r '"$COMMIT_ID=\(.[].id)"' commits.json >> $GITHUB_ENV
-              jq -r '"$DIFF_URL=\(.[].diff_url"' commits.json >> $GITHUB_ENV
-               jq -r '"$COMPARE_URL=\(.[].repo[].compare_url"' commits.json >> $GITHUB_ENV
-              
+          COMMIT_URL: ${{github.event.repository.events_url}}
         run: |
-           
+              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o events.json
+              jq -r  '"$EVENTS_PAYLOAD_TYPE=\(.[].id)"' events.json >> $GITHUB_ENV
+              jq -r  '"$AUTHOR=\(.[].payload.push_id)"' events.json >> $GITHUB_ENV
+      - name: use events
+        run: |
+           echo  ${{ env.EVENTS_PAYLOAD_TYPE }}
            echo ${{env.AUTHOR}}
       - name: checkout
         uses: actions/checkout@v3
@@ -72,15 +66,14 @@ jobs:
               <body>
               <p>   
               Branch ${{github.ref}} <br>
-              Author: ${{ env.AUTHOR}} <br>
+              Author: ${{ github.event.pull_request.head_commit.author.name}} <br>
               Revision: ${{github.event.pull_request.repository.id}}  <br>
-              Commit id : ${{ env.COMMIT_ID }} <br>
-              Commit message: ${{env.MESSAGE }}  <br>
-              Sha: ${{ env.SHA }}<br>
-              Link: ${{env.LINK}} <br> 
-              Log Message: ${{env.MESSAGE}} <br>  
-              Diff: ${{env.DIFF_URL}} <br>
-              Compare: ${{env.COMPARE_URL}} <br>
+              Commit id : ${{ github.event.pull_request.head_commit.id }} <br>
+              Commit message: ${{ github.event.pull_request.head_commit.message }}  <br>
+              Sha: ${{ github.head_ref }}.${{ github.sha }}<br>
+              Link: ${{github.event.pull_request.head_commit.url}} <br> 
+              Log Message: ${{github.event.pull_request.commit.message}} <br>  
+              Compare: ${{github.event.pull_request.compare}} <br>
               Files changed: <br>
               ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
               ${{steps.changed-files.outputs.deleted_files}} <br>
