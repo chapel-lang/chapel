@@ -109,6 +109,25 @@ module ChapelRange {
     return chpl__idxTypeToIntIdxType(idxType);
   }
 
+  // Helper routines for unbounded ranges of enum or bool types
+  //
+  private proc isEnumOrBool(type t) param {
+    return isBoolType(t) || isEnumType(t);
+  }
+
+  private proc implicitLowBound(type t) param {
+    if isEnumOrBool(t) then
+      return 0;
+    compilerError("implicitLowBound() undefined for type '" + t:string + "'");
+  }
+
+  private proc implicitHighBound(type t) param {
+    if isBoolType(t) then
+      return 1;
+    if isEnumType(t) then
+      return t.size-1;
+    compilerError("implicitHighBound() undefined for type '" + t:string + "'");
+  }
 
   //################################################################################
   //# Initializers
@@ -132,10 +151,9 @@ module ChapelRange {
     this.boundedType = BoundedRangeType.boundedLow;
     this._low = chpl__idxToInt(low);
     this.complete();
-    if isBoolType(t) then
-      this._high = 1;
-    else if isEnumType(t) then
-      this._high = t.size-1;
+    if isEnumOrBool(idxType) {
+      this._high = implicitHighBound(idxType);
+    }
   }
 
   // This is the initializer for a ..high unbounded range
@@ -146,8 +164,9 @@ module ChapelRange {
     this.boundedType = BoundedRangeType.boundedHigh;
     this._high = chpl__idxToInt(high);
     this.complete();
-    if isBoolType(t) || isEnumType(t) then
+    if isEnumOrBool(idxType) {
       this._low = 0;
+    }
   }
 
   // This is the initializer for a .. unbounded range
@@ -157,12 +176,10 @@ module ChapelRange {
     this.idxType = int;
     this.boundedType = BoundedRangeType.boundedNone;
     this.complete();
-    if isBoolType(idxType) || isEnumType(idxType) then
-      this._low = 0;
-    if isBoolType(idxType) then
-      this._high = 1;
-    else if isEnumType(idxType) then
-      this._high = idxType.size-1;
+    if isEnumOrBool(idxType) {
+      this._low = implicitLowBound(idxType);
+      this._high = implicitHighBound(idxType);
+    }
   }
 
   // This is an initializer for defining a default range value
@@ -219,26 +236,22 @@ module ChapelRange {
     if !stridable && s then
       compilerError("cannot initialize a non-stridable range from a stridable range");
 
-    const isEnumBool = isEnumType(idxType) || isBoolType(idxType);
+    param isEnumBool = isEnumOrBool(idxType);
     type bt = other.intIdxType;
-    const low = if isEnumBool && !other.hasLowBound() then 0:bt
+    const low = if isEnumBool && !other.hasLowBound() then implicitLowBound(idxType):bt
                                                       else other._low;
     const high = if isEnumBool && !other.hasHighBound()
-                 then (if isEnumType(idxType) then (idxType.size-1):bt
-                                              else 1:bt) // bool
+                 then implicitHighBound(idxType):bt
                  else other._high;
 
     const str = if stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
 
     var alignment = chpl__idxToInt(other.alignment);
-    if !other.aligned && (isBoolType(idxType) || isEnumType(idxType)) {
+    if !other.aligned && isEnumBool {
       if (str > 0) {
-        alignment = 0;
+        alignment = implicitLowBound(idxType);;
       } else {
-        if isEnumType(idxType) then
-          alignment = idxType.size-1;
-        else
-          alignment = 1;
+        alignment = implicitHighBound(idxType);
       }
     }
 
@@ -246,7 +259,7 @@ module ChapelRange {
               low, high,
               str,
               alignment,
-              other.aligned || isBoolType(idxType) || isEnumType(idxType));
+              other.aligned || isEnumBool);
   }
 
   /////////////////////////////////
@@ -541,8 +554,7 @@ module ChapelRange {
   proc range.hasLowBound() param
     return boundedType == BoundedRangeType.bounded ||
            boundedType == BoundedRangeType.boundedLow ||
-           isBoolType(idxType) ||
-           isEnumType(idxType);
+           isEnumOrBool(idxType);
 
   /* Returns the range's low bound. If the range does not have a low
      bound (e.g., ``..10``), the behavior is undefined.  See also
@@ -613,8 +625,7 @@ module ChapelRange {
   proc range.hasHighBound() param
     return boundedType == BoundedRangeType.bounded ||
            boundedType == BoundedRangeType.boundedHigh ||
-           isBoolType(idxType) ||
-           isEnumType(idxType);
+           isEnumOrBool(idxType);
 
   /* Return the range's high bound. If the range does not have a high
      bound (e.g., ``1..``), the behavior is undefined.  See also
@@ -632,10 +643,8 @@ module ChapelRange {
     }
     if (boundedType == BoundedRangeType.boundedLow ||
         boundedType == BoundedRangeType.boundedNone) {
-      if isEnumType(idxType) {
-        return chpl_intToIdx(idxType.size - 1);
-      } else if isBoolType(idxType) {
-        return chpl_intToIdx(1);
+      if isEnumOrBool(idxType) {
+        return chpl_intToIdx(implicitHighBound(idxType));
       } else {
         compilerError("Querying the high bound of a range not thought to have one");
       }
@@ -2035,7 +2044,7 @@ operator :(r: range(?), type t: range(?)) {
 
   pragma "no doc"
   proc range.checkIfIterWillOverflow(shouldHalt=true) {
-    if (isBoolType(idxType) || isEnumType(idxType)) then
+    if isEnumOrBool(idxType) then
       return false;
     return chpl_checkIfRangeIterWillOverflow(this.intIdxType, this._low, this._high,
         this.stride, this.firstAsInt, this.lastAsInt, shouldHalt);
@@ -2380,7 +2389,7 @@ operator :(r: range(?), type t: range(?)) {
     // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
-    const end = if isBoolType(idxType) || isEnumType(idxType)
+    const end = if isEnumOrBool(idxType)
                 then chpl__idxToInt(this.last)
                 else max(intIdxType) - stride: intIdxType;
 
@@ -2416,7 +2425,7 @@ operator :(r: range(?), type t: range(?)) {
     // case above.  See it for additional comments.
     var i: intIdxType;
     const start = alignedHighAsInt;
-    const end = if isBoolType(idxType) || isEnumType(idxType)
+    const end = if isEnumOrBool(idxType)
                   then chpl__idxToInt(this.last)
                   else min(intIdxType) - stride: intIdxType;
     while __primitive("C for loop",
@@ -2980,7 +2989,7 @@ operator :(r: range(?), type t: range(?)) {
   private proc chpl__rangeStrideType(type idxType) type {
     if isIntegralType(idxType) {
       return chpl__signedType(idxType);
-    } else if isEnumType(idxType) || isBoolType(idxType) {
+    } else if isEnumOrBool(idxType) {
       return int;
     } else {
       chpl__rangeIdxTypeError(idxType);
@@ -2990,7 +2999,7 @@ operator :(r: range(?), type t: range(?)) {
   private proc chpl__rangeUnsignedType(type idxType) type {
     if isIntegralType(idxType) {
       return chpl__unsignedType(idxType);
-    } else if isEnumType(idxType) || isBoolType(idxType) {
+    } else if isEnumOrBool(idxType) {
       return uint;
     } else {
       chpl__rangeIdxTypeError(idxType);
@@ -3097,10 +3106,8 @@ operator :(r: range(?), type t: range(?)) {
       return -1:chpl__idxTypeToIntIdxType(t);
     } else if (boundedType == BoundedRangeType.boundedLow ||
                boundedType == BoundedRangeType.boundedNone) {
-      if isEnumType(t) {
-        return (t.size-1):chpl__idxTypeToIntIdxType(t);
-      } else if isBoolType(t) {
-        return 1:chpl__idxTypeToIntIdxType(t);
+      if isEnumOrBool(t) {
+        return implicitHighBound(t):chpl__idxTypeToIntIdxType(t);
       } else {
         return 0:chpl__idxTypeToIntIdxType(t);
       }
