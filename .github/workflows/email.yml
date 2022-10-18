@@ -36,7 +36,7 @@ jobs:
       - name: use events
         
         run: |
-            echo $COMMIT_URL 
+            echo ${{env.COMMIT_URL}} 
             echo " SHA ${{env.SHA}}"
             echo " LINK ${{env.LINK}}"
             echo "AUTHOR ${{env.AUTHOR}}"
