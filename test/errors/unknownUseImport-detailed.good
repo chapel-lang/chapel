@@ -1,3 +1,0 @@
-─── error in unknownUseImport.chpl:6 [UnknownUseImport] ───
-  Cannot find target module 'X' for import.
-

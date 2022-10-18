@@ -168,7 +168,7 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   wr.code(searchedScope->id());
 }
 
-void ErrorUnknownUseImport::write(ErrorWriterBase& wr) const {
+void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);

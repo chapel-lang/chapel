@@ -1,0 +1,3 @@
+─── error in useImportUnknownMod.chpl:6 [UseImportUnknownMod] ───
+  Cannot find target module 'X' for import.
+

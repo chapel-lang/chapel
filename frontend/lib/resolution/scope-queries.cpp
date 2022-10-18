@@ -811,7 +811,7 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // scope).
 
   if (got == false || vec.size() == 0) {
-    CHPL_REPORT(context, UnknownUseImport, idForErrs, useOrImport,
+    CHPL_REPORT(context, UseImportUnknownMod, idForErrs, useOrImport,
                 nameInScope.c_str());
     return nullptr;
   }

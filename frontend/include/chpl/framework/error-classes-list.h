@@ -39,7 +39,7 @@ ERROR_CLASS(MissingInclude, const uast::Include*, std::string)
 ERROR_CLASS(UseImportUnknownSym, const uast::VisibilityClause*,
             const resolution::Scope*, const resolution::VisibilityStmtKind,
             std::string)
-ERROR_CLASS(UnknownUseImport, const ID, const resolution::VisibilityStmtKind,
+ERROR_CLASS(UseImportUnknownMod, const ID, const resolution::VisibilityStmtKind,
             std::string)
 ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind,
             std::string)
