@@ -1,2 +1,1 @@
-error in unsupportedAs1.chpl:6: this form of as is not yet supported
-  note in unsupportedAs1.chpl:6: 'as' here
+error in unsupportedAs1.chpl:6: this form of 'as' is not yet supported

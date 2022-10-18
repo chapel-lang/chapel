@@ -1,5 +1,5 @@
 ─── error in useImportNotModule.chpl:8 [UseImportNotModule] ───
-  Target 'someProc' of use is not a module
+  Attempted to use 'someProc' which is not a module.
   Target named here:
       |
     8 |   use M.someProc;

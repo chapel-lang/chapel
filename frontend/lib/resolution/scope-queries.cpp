@@ -753,7 +753,7 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
       auto s = as->symbol();
       auto symId = s->toIdentifier();
       if (!symId) {
-        CHPL_REPORT(context, UnsupportedAs, as);
+        CHPL_REPORT(context, UnsupportedAs, as, s);
         continue;
       }
       name = symId->name();
@@ -886,7 +886,7 @@ doResolveUseStmt(Context* context, const Use* use,
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
-        CHPL_REPORT(context, UnsupportedAs, as);
+        CHPL_REPORT(context, UnsupportedAs, as, as->rename());
         continue;
       }
       // search for the original name
@@ -916,7 +916,7 @@ doResolveUseStmt(Context* context, const Use* use,
           // check that we do not have 'except A as B'
           for (const AstNode* e : clause->limitations()) {
             if (auto as = e->toAs()) {
-              CHPL_REPORT(context, AsWithExcept, as);
+              CHPL_REPORT(context, AsWithUseExcept, use, as);
             }
           }
           // add the visibility clause for only/except
@@ -960,7 +960,7 @@ doResolveImportStmt(Context* context, const Import* imp,
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
-        CHPL_REPORT(context, UnsupportedAs, as);
+        CHPL_REPORT(context, UnsupportedAs, as, as->rename());
         continue;
       }
       // search for the original name

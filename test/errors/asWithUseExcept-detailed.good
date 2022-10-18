@@ -1,0 +1,5 @@
+─── error in asWithUseExcept.chpl:6 [AsWithUseExcept] ───
+  Invalid use of 'as' in this use statement.
+  Cannot use 'as' with 'except'.
+  Renaming in 'except'-lists is not supported.
+

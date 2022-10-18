@@ -1,7 +1,0 @@
-─── error in asWithExcept.chpl:6 [AsWithExcept] ───
-  Cannot use 'as' with 'except'
-  Occured here:
-      |
-    6 |   use M except a as b;
-      |
-

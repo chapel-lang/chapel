@@ -1,3 +1,1 @@
 error in useImportUnknownSym.chpl:6: cannot find symbol 'b' for import
-  note in useImportUnknownSym.chpl:6: symbol named here
-  note in useImportUnknownSym.chpl:1: searching in scope of 'M'

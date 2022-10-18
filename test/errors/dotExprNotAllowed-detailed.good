@@ -1,7 +1,3 @@
 ─── error in dotExprNotAllowed.chpl:6 [DotExprNotAllowed] ───
-  Dot expression not supported here
-  Dot expression here:
-      |
-    6 |   use M except M.a;
-      |
+  Dot expression not supported here.
 

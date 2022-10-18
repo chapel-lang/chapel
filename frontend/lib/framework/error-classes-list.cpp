@@ -161,11 +161,10 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   auto searchedScope = std::get<const resolution::Scope*>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
   wr.heading(kind_, type_, locationOnly(visibilityClause),
-             "cannot find symbol '", symbolName, "' for ", useOrImport);
-  wr.note(locationOnly(visibilityClause), "symbol named here:");
+             "cannot find symbol '", symbolName, "' for ", useOrImport, ".");
+  wr.message("Symbol named here:");
   wr.code(visibilityClause);
-  wr.note(locationOnly(searchedScope->id()), "searching in scope of '",
-          searchedScope->name(), "':");
+  wr.message("Searching in scope of '", searchedScope->name(), "':");
   wr.code(searchedScope->id());
 }
 
@@ -173,41 +172,43 @@ void ErrorUnknownUseImport::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  wr.heading(kind_, type_, id,
-             "cannot find target module '", moduleName, "' for ", useOrImport);
-  wr.note(id, "target named here:");
-  wr.code(id);
+  wr.heading(kind_, type_, id, "cannot find target module '", moduleName,
+             "' for ", useOrImport, ".");
 }
 
 void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  wr.heading(kind_, type_, id,
-             "target '", moduleName, "' of ", useOrImport, " is not a module");
-  wr.note(id, "target named here:");
+  wr.heading(kind_, type_, id, "attempted to ", useOrImport, " '", moduleName,
+             "' which is not a module.");
+  wr.message("Target named here:");
   wr.code(id);
 }
 
-void ErrorAsWithExcept::write(ErrorWriterBase& wr) const {
+void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
+  auto use = std::get<const uast::Use*>(info);
   auto as = std::get<const uast::As*>(info);
-  wr.heading(kind_, type_, locationOnly(as), "cannot use 'as' with 'except'");
-  wr.note(locationOnly(as), "occured here:");
-  wr.code(as);
+  wr.heading(kind_, type_, locationOnly(use),
+             "invalid use of 'as' in this use statement.");
+  wr.note(locationOnly(as), "cannot use 'as' with 'except'.");
+  wr.message("Renaming in 'except'-lists is not supported.");
 }
 
 void ErrorDotExprNotAllowed::write(ErrorWriterBase& wr) const {
   auto dot = std::get<const uast::Dot*>(info);
-  wr.heading(kind_, type_, locationOnly(dot), "dot expression not supported here");
-  wr.note(locationOnly(dot), "dot expression here:");
-  wr.code(dot);
+  wr.heading(kind_, type_, locationOnly(dot),
+             "dot expression not supported here.");
 }
 
 void ErrorUnsupportedAs::write(ErrorWriterBase& wr) const {
   auto as = std::get<const uast::As*>(info);
-  wr.heading(kind_, type_, locationOnly(as), "this form of as is not yet supported");
-  wr.note(locationOnly(as), "'as' here:");
-  wr.code(as);
+  auto expectedIdentifier = std::get<const uast::AstNode*>(info);
+  wr.heading(kind_, type_, locationOnly(as),
+             "this form of 'as' is not yet supported.");
+  wr.message(
+      "'As' requires a simple identifier, but instead got the following:");
+  wr.code(expectedIdentifier);
 }
 
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {

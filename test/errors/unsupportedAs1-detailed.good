@@ -1,6 +1,6 @@
 ─── error in unsupportedAs1.chpl:6 [UnsupportedAs] ───
-  This form of as is not yet supported
-  'as' here:
+  This form of 'as' is not yet supported.
+  'As' requires a simple identifier, but instead got the following:
       |
     6 |   use M as b.a;
       |

@@ -1,2 +1,0 @@
-error in asWithExcept.chpl:6: cannot use 'as' with 'except'
-  note in asWithExcept.chpl:6: occured here
