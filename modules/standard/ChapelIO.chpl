@@ -645,7 +645,7 @@ module ChapelIO {
 
     if (boundedType == BoundedRangeType.bounded ||
         boundedType == BoundedRangeType.boundedLow) then
-      f.write(lowBound);
+      f._write(lowBound);
     f._writeLiteral("..");
     if (boundedType == BoundedRangeType.bounded ||
         boundedType == BoundedRangeType.boundedHigh) {
