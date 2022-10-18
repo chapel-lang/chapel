@@ -33,12 +33,7 @@ jobs:
               echo "LINK=$(jq -r '.[].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$(jq  '.[].commit.message' commits.json)" >> $GITHUB_ENV 
               echo  jq -r '"$COMMIT_ID=\(.[].id)"' commits.json >> $GITHUB_ENV        
-      - name: get events payload
-        env:
-           EVENTS_URL: ${{github.event.repository.events_url}}
-        run: |
-               curl --location --request GET $EVENTS_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o events.json
-               echo "COMMITS_ID=$(jq -r '.[].id' events.json)" >> $GITHUB_ENV 
+    
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
