@@ -25,13 +25,10 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
         run: |
-              echo "commits url $COMMIT_URL"
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
-              echo "SHA=$(jq -r '.[0].sha' commits.json)" >> $GITHUB_ENV  
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
-              echo "MESSAGE=$(jq  '.[0].commit.message' commits.json)" >> $GITHUB_ENV
-             
+              echo "MESSAGE=$(jq  '.[0].commit.message' commits.json)" >> $GITHUB_ENV 
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -64,20 +61,19 @@ jobs:
               <!DOCTYPE html>
               <html>
               <body>
-              <p>   
+              <p>
+              Branch: ${{github.ref}} 
+              Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
               Author: ${{ env.AUTHOR}} <br>
-              Revision: ${{github.event.pull_request.repository.id}}  <br>
-              Commit id : ${{ github.event.pull_request.id }}<br>
-              Commit message: ${{env.MESSAGE}}  <br>
-              Sha: ${{ env.SHA }} <br>
-              Link: ${{env.LINK}} <br> 
+              Link: ${{env.LINK}} <br>             
               Log Message: ${{env.MESSAGE}} <br>  
                            ${{github.event.pull_request.body}} <br>
               Diff: ${{github.event.pull_request.diff_url}} <br>
-              Compare: ${{github.event.repository.compare_url}} <br> 
-              Files changed: <br>
-              ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
-              ${{steps.changed-files.outputs.deleted_files}} <br>
+              
+              Modified Files: <br>
+                M . ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
+                D . ${{steps.changed-files.outputs.deleted_files}} <br>
+              Compare: ${{github.event.repository.compare_url}} <br>   
               </p>
               </body>
               </html>
