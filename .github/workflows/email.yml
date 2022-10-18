@@ -25,6 +25,7 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.pull_request.commits}}
         run: |
+              echo "commits url $COMMIT_URL"
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
               echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
