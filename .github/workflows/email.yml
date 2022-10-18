@@ -34,10 +34,10 @@ jobs:
               echo "MESSAGE=$(jq  '.[].commit.message' commits.json)" >> $GITHUB_ENV 
         
       - name: get events payload
-        #env:
-           #EVENTS_URL: ${{github.event.repository.events_url}}
+        env:
+           EVENTS_URL: ${{github.event.repository.events_url}}
         run: |
-               curl --location --request GET 'https://api.github.com/repos/chapel-lang/chapel/events' --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o events.json
+               curl --location --request GET $EVENTS_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o events.json
                echo "COMMIT_ID=$(jq -r '.[].id' events.json)" >> $GITHUB_ENV 
       - name: checkout
         uses: actions/checkout@v3
