@@ -1,0 +1,3 @@
+bug: Short-circuiting operators don't fold RHS param values
+
+#20873
