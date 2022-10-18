@@ -3,8 +3,8 @@ on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
      push:
-   # pull_request_target:
-    #  types:
+     pull_request_target:
+       #types:
      #   - closed
       
 jobs: 
@@ -23,22 +23,21 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"  
       - name: get commits payload
-        #env:
-          #COMMIT_URL: ${{github.event.pull_request.commits}}
-         
+        env:
+          COMMIT_URL: ${{github.event.repository.events_url}}         
         run: |
               curl --location --request GET 'https://api.github.com/repos/chapel-lang/chapel/pulls/20872/commits' --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
               echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$(jq  '.[].commit.message' commits.json)" >> $GITHUB_ENV 
-        
+              echo  jq -r '"$COMMIT_ID=\(.[].id)"' commits.json >> $GITHUB_ENV        
       - name: get events payload
         env:
            EVENTS_URL: ${{github.event.repository.events_url}}
         run: |
                curl --location --request GET $EVENTS_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o events.json
-               echo "COMMIT_ID=$(jq -r '.[].id' events.json)" >> $GITHUB_ENV 
+               echo "COMMITS_ID=$(jq -r '.[].id' events.json)" >> $GITHUB_ENV 
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
