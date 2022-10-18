@@ -1,1 +1,2 @@
+unstableTimezones.chpl:3: warning: 'TZInfo' is deprecated, please use 'Timezone' instead
 unstableTimezones.chpl:27: warning: tzinfo is unstable; its type may change in the future
