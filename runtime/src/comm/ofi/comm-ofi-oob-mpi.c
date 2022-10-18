@@ -97,7 +97,7 @@ void chpl_comm_ofi_oob_bcast(void* buf, size_t size) {
   MPI_CHK(MPI_Bcast(buf, size, MPI_BYTE, 0, MPI_COMM_WORLD));
 }
 
-int chpl_comm_ofi_oob_locales_on_node(void) {
+int chpl_comm_ofi_oob_locales_on_node(int *rank) {
   //
   // The MPI_Comm_split_type() call splits the specified input communicator
   // (MPI_COMM_WORLD) into one or more output communicators which, because of the
@@ -116,6 +116,9 @@ int chpl_comm_ofi_oob_locales_on_node(void) {
   int nodeSize;
   MPI_CHK(MPI_Comm_size(nodeComm, &nodeSize));
   MPI_CHK(MPI_Comm_free(&nodeComm));
-  DBG_PRINTF(DBG_OOB, "OOB locales on node: %d", nodeSize);
+  DBG_PRINTF(DBG_OOB, "MPI OOB locales on node: %d", nodeSize);
+  if (rank != NULL) {
+    *rank = -1;  // not implemented
+  }
   return nodeSize;
 }

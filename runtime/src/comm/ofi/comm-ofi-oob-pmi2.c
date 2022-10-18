@@ -290,7 +290,12 @@ void decode_kvs(char* raw, const char* enc, size_t size) {
   }
 }
 
-int chpl_comm_ofi_oob_locales_on_node(void) {
+typedef struct locale_info_t {
+  uint64_t  hash;     // hash of the locale's hostname
+  int       nodeID;   // locale's ID
+} locale_info_t;
+
+int chpl_comm_ofi_oob_locales_on_node(int *rank) {
   int count = 0;
   if (PMI_Get_clique_size != NULL) {
     PMI_CHK(PMI_Get_clique_size(&count));
@@ -324,19 +329,30 @@ int chpl_comm_ofi_oob_locales_on_node(void) {
 
     // get the hashes for all locales
 
-    uint64_t *hashes = NULL;
-    CHK_SYS_CALLOC(hashes, chpl_numNodes);
-    chpl_comm_ofi_oob_allgather(&hash, hashes, sizeof(*hashes));
+    locale_info_t info;
+    info.hash = hash;
+    DBG_PRINTF(DBG_OOB, "PMI2 OOB chpl_nodeID %d", chpl_nodeID);
+    info.nodeID = chpl_nodeID;
+    locale_info_t *infos = NULL;
+    CHK_SYS_CALLOC(infos, chpl_numNodes);
+    chpl_comm_ofi_oob_allgather(&info, infos, sizeof(*infos));
 
     // count the number of hashes that match ours
 
     for (int i = 0; i < chpl_numNodes; i++) {
-      if (hashes[i] == hash) {
+      if (infos[i].hash == hash) {
+        if ((rank != NULL) && (infos[i].nodeID == chpl_nodeID)) {
+          // record our rank among the locales on the same node
+          *rank = count;
+        }
         count++;
       }
     }
-    CHK_SYS_FREE(hashes);
+    CHK_SYS_FREE(infos);
   }
-  DBG_PRINTF(DBG_OOB, "OOB locales on node: %d", count);
+  DBG_PRINTF(DBG_OOB, "PMI2 OOB locales on node: %d", count);
+  if (rank != NULL) {
+    DBG_PRINTF(DBG_OOB, "PMI2 OOB local rank: %d", *rank);
+  }
   return count;
 }

@@ -1,0 +1,12 @@
+# See the README.
+
+--execenv=ex,one,sc                 # lps.ex-one-sc.good
+--execenv=ex,one,dc                 # lps.ex-one-dc.good
+--execenv=ex,two,sc                 # lps.ex-two-sc.good
+--execenv=ex,two,dc                 # lps.ex-two-dc.good
+--execenv=ex,four                   # lps.ex-four.good
+
+--execenv=cs,one,sc                 # lps.cs-one-sc.good
+--execenv=cs,one,dc                 # lps.cs-one-dc.good
+--execenv=cs,two,sc                 # lps.cs-two-sc.good
+--execenv=cs,two,dc                 # lps.cs-two-dc.good

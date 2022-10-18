@@ -251,7 +251,7 @@ struct amRequest_execOnLrg_t {
 
 #define NUM_AM_HANDLERS 1
 static int numAmHandlers = NUM_AM_HANDLERS;
-static int reservedCores[NUM_AM_HANDLERS];
+static int reservedCPUs[NUM_AM_HANDLERS];
 
 //
 // AM request landing zones.
@@ -308,7 +308,6 @@ static const char* mcmModeNames[] = { "undefined",
 //
 
 static bool cxiHybridMRMode = false;
-
 
 ////////////////////////////////////////
 //
@@ -992,8 +991,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   time_init();
   chpl_comm_ofi_oob_init();
   DBG_INIT();
-  int32_t count = chpl_comm_ofi_oob_locales_on_node();
+  int32_t rank;
+  int32_t count = chpl_comm_ofi_oob_locales_on_node(&rank);
   chpl_set_num_locales_on_node(count);
+  if (rank != -1) {
+    chpl_set_local_rank(rank);
+  }
   //
   // Gather run-invariant environment info as early as possible.
   //
@@ -1034,14 +1037,17 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     }
   }
 
+  pthread_that_inited = pthread_self();
+}
+
+void chpl_comm_pre_mem_init(void) {
   //
-  // Reserve cores for the AM handlers. This has to be done early before
-  // calling other routines that use information about the cores, such as
-  // pinning the heap.
+  // Reserve cores for the AM handlers. This is done here because it has
+  // to happen after chpl_topo_post_comm_init has been called, but before
+  // other functions access information about the cores, such as pinning the
+  // heap.
   //
   init_ofiReserveCores();
-
-  pthread_that_inited = pthread_self();
 }
 
 
@@ -1062,7 +1068,6 @@ void chpl_comm_post_mem_init(void) {
   if (chpl_numNodes > 1) {
     init_ofiFabricDomain();
   }
-  init_ofiReserveCores();
 }
 
 
@@ -2001,15 +2006,9 @@ void init_ofiFabricDomain(void) {
 //
 static
 void init_ofiReserveCores() {
-  if (envUseDedicatedAmhCores &&
-      (chpl_topo_getNumCPUsPhysical(true) > numAmHandlers)) {
-    for (int i = 0; i < numAmHandlers; i++) {
-      reservedCores[i] = chpl_topo_reserveCPUPhysical();
-    }
-  } else {
-    for (int i = 0; i < numAmHandlers; i++) {
-      reservedCores[i] = -1;
-    }
+  for (int i = 0; i < numAmHandlers; i++) {
+    reservedCPUs[i] = envUseDedicatedAmhCores ?
+      chpl_topo_reserveCPUPhysical() : -1;
   }
 }
 
@@ -4659,7 +4658,7 @@ void init_amHandling(void) {
   
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   for (int i = 0; i < numAmHandlers; i++) {
-    CHK_TRUE(chpl_task_createCommTask(amHandler, &reservedCores[i]) == 0);
+    CHK_TRUE(chpl_task_createCommTask(amHandler, NULL, reservedCPUs[i]) == 0);
   }
   PTHREAD_CHK(pthread_cond_wait(&amStartStopCond, &amStartStopMutex));
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
@@ -4695,8 +4694,7 @@ void fini_amHandling(void) {
 static __thread struct perTxCtxInfo_t* amTcip;
 
 static
-void amHandler(void* arg) {
-  int cpu = *((int *) arg);
+void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAllocForAmHandler()) != NULL);
   amTcip = tcip;
@@ -4714,15 +4712,6 @@ void amHandler(void* arg) {
   if (++numAmHandlersActive == 1)
     PTHREAD_CHK(pthread_cond_signal(&amStartStopCond));
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
-
-  //
-  // If we are using dedicated cores for the AM handlers then bind
-  // this thread to its core.
-  //
-  if (cpu >= 0) {
-    CHK_TRUE(chpl_topo_bindCPUPhysical(cpu) == 0);
-    DBG_PRINTF(DBG_AM, "AM handler bound to CPU %d", cpu);
-  }
 
   //
   // Process AM requests and watch transmit responses arrive.

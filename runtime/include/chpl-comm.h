@@ -194,8 +194,15 @@ int32_t chpl_comm_getMaxThreads(void);
 void chpl_comm_init(int *argc_p, char ***argv_p);
 
 //
-// Allow the communication layer to do any secondary initialization it needs
-// to, after the memory layer is initialized.
+// Allow the communication layer to do any additional initialization
+// after the topology layer has been fully initialized but before the
+// memory layer is initialized.
+//
+void chpl_comm_pre_mem_init(void);
+
+//
+// Allow the communication layer to do any additional initialization
+// after the memory layer is initialized.
 //
 void chpl_comm_post_mem_init(void);
 
@@ -586,11 +593,16 @@ void chpl_wait_for_shutdown(void);
 void chpl_set_num_locales_on_node(int32_t count);
 
 // Returns the number of locales on the local node.
-
 int32_t chpl_get_num_locales_on_node(void);
 
-// Returns true if node is oversubscribed, false otherwise.
+// Sets our local rank on the node.
+void chpl_set_local_rank(int32_t rank);
 
+// Returns our local rank on the node, -1 if chpl_set_local_rank has
+// not been called.
+int32_t chpl_get_local_rank(void);
+
+// Returns true if node is oversubscribed, false otherwise.
 chpl_bool chpl_get_oversubscribed(void);
 
 #ifdef __cplusplus

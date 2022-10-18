@@ -273,7 +273,15 @@ void chpl_comm_ofi_oob_fini(void);
 void chpl_comm_ofi_oob_barrier(void);
 void chpl_comm_ofi_oob_allgather(const void*, void*, size_t);
 void chpl_comm_ofi_oob_bcast(void*, size_t);
-int  chpl_comm_ofi_oob_locales_on_node(void);
+
+/*
+Returns the number of locales on the local node. If localRank is not
+NULL it will contain the rank of the locale on the local node starting
+at 0. This may be used to distinguish between locales on the same
+node. If the rank functionality isn't implemented then *localRank is
+set to -1.
+*/
+int  chpl_comm_ofi_oob_locales_on_node(int *localRank);
 
 
 //

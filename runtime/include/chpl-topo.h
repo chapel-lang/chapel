@@ -37,6 +37,7 @@ extern "C" {
 // initialize the topology support
 //
 void chpl_topo_init(void);
+void chpl_topo_post_comm_init(void);
 void chpl_topo_exit(void);
 
 //
@@ -57,16 +58,6 @@ int chpl_topo_getNumCPUsLogical(chpl_bool /*accessible_only*/);
 // of indices in the "cpus" array.
 //
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count);
-
-// Reserves a physical CPU and returns its physical OS index.
-// Returns -1 if the reservation failed.
-//
-int chpl_topo_reserveCPUPhysical(void);
-
-// Binds the current thread to the specified physical CPU (core)
-// Returns 0 on success, 1 otherwise
-//
-int chpl_topo_bindCPUPhysical(int id);
 
 //
 // Reserves a physical CPU (core) and returns its hwloc OS index. The

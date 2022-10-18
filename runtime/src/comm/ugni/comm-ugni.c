@@ -1926,6 +1926,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 }
 
 
+void chpl_comm_pre_mem_init(void) { }
+
 void chpl_comm_post_mem_init(void)
 {
   chpl_comm_init_prv_bcast_tab();

@@ -66,6 +66,24 @@
 #include <unistd.h>
 #include <math.h>
 
+#ifdef DEBUG
+// note: format arg 'f' must be a string constant
+#ifdef DEBUG_NODEID
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%d:%s:%d: " f "\n", chpl_nodeID, __FILE__, __LINE__,     \
+                                      ## __VA_ARGS__);                  \
+        } while (0)
+#else
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%s:%d: " f "\n", __FILE__, __LINE__, ## __VA_ARGS__); \
+        } while (0)
+#endif
+#else
+#define _DBG_P(f, ...)
+#endif
+
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
 #define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
 
@@ -665,6 +683,7 @@ static void setupAffinity(void) {
     int numCpus;
     chpl_bool physical;
     char *unit = chpl_qt_getenv_str("WORKER_UNIT");
+    _DBG_P("QT_WORKER_UNIT: %s", unit);
     if ((unit != NULL) && !strcmp(unit, "pu")) {
         physical = false;
         numCpus = chpl_topo_getNumCPUsLogical(true);
@@ -696,6 +715,7 @@ static void setupAffinity(void) {
           buf[offset-1] = '\0';
       }
       // tell binders which PUs to use
+      _DBG_P("QT_CPUBIND: %s (%d)", buf, numCpus);
       chpl_qt_setenv("CPUBIND", buf, 1);
       chpl_free(buf);
     }
@@ -803,6 +823,7 @@ static void *comm_task_wrapper(void *arg)
                      "binding comm task to CPU %d failed", rarg->cpu);
             chpl_warning(msg, 0, 0);
         }
+        _DBG_P("comm task bound to CPU %d", rarg->cpu);
     }
     (*(chpl_fn_p)(rarg->fn))(rarg->arg);
     return 0;

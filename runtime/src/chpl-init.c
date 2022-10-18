@@ -228,6 +228,8 @@ void chpl_rt_init(int argc, char* argv[]) {
   chpl_error_init();  // This does local-only initialization
   chpl_topo_init();
   chpl_comm_init(&argc, &argv);
+  chpl_topo_post_comm_init();
+  chpl_comm_pre_mem_init();
   chpl_mem_init();
   chpl_comm_post_mem_init();
 

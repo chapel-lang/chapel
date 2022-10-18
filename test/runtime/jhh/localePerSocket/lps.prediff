@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Extract what we want from the output.
+grep -e "^QT_CPUBIND" -e "^error:" $2 | sort > $2.tmp &&
+mv $2.tmp $2
