@@ -26,6 +26,7 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.repository.events_url}}         
         run: |
+             echo COMMIT_URL
               curl --location --request GET 'https://api.github.com/repos/chapel-lang/chapel/pulls/20872/commits' --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
               echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
