@@ -55,7 +55,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: Chapel Merge ${{github.event.head.label}}  
+           subject: Chapel Merge ${{env.MESSAGE}}  
            # Required recipients' addresses:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
@@ -68,10 +68,11 @@ jobs:
               Author: ${{ env.AUTHOR}} <br>
               Revision: ${{github.event.pull_request.repository.id}}  <br>
               Commit id : ${{ github.event.pull_request.id }}<br>
-              Commit message: ${{github.event.merge_commit_message}}  <br>
-              Sha: ${{ github.event.base.sha }} <br>
+              Commit message: ${{env.MESSAGE}}  <br>
+              Sha: ${{ env.SHA }} <br>
               Link: ${{env.LINK}} <br> 
-              Log Message:${{github.event.pull_request.body}} <br>  
+              Log Message: ${{env.MESSAGE}} <br>  
+                           ${{github.event.pull_request.body}} <br>
               Diff: ${{github.event.pull_request.diff_url}} <br>
               Compare: ${{github.event.repository.compare_url}} <br> 
               Files changed: <br>
