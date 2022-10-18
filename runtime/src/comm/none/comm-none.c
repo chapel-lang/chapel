@@ -113,6 +113,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_set_num_locales_on_node(1);
 }
 
+void chpl_comm_pre_mem_init(void) { }
+
 void chpl_comm_post_mem_init(void) { }
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
