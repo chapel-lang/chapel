@@ -1373,10 +1373,10 @@ module OS {
   }
 
   /*
-    :class:`ExceededCapacityError` is a subclass of :class:`IoError`
+    :class:`InsufficientCapacityError` is a subclass of :class:`IoError`
     indicating that an IO operation required more memory than was provided
   */
-  class ExceededCapacityError: IoError {
+  class InsufficientCapacityError: IoError {
     proc init(details: string = "") {
       super.init(ERANGE: errorCode, details);
     }

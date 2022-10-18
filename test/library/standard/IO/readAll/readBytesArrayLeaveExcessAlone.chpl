@@ -9,7 +9,7 @@ var ch = openreader("./jab.txt");
 const num_b = ch.readAll(a);
 ch.close();
 
-// only read the number of bytes in the file:
+// only the number of bytes in the file were read:
 writeln(num_b == NUMBYTES);
 
 // the remainder of the array is still zero:

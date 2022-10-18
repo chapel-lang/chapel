@@ -343,7 +343,7 @@ Some of these subclasses commonly used within the I/O implementation include:
  * :class:`OS.EofError` - the end of file was reached
  * :class:`OS.UnexpectedEofError` - a read or write only returned part of the requested data
  * :class:`OS.BadFormatError` - data read did not adhere to the requested format
- * :class:`OS.ExceededCapacityError` - a read or write operation required more memory than was available
+ * :class:`OS.InsufficientCapacityError` - a read or write operation required more memory than was available
 
 An error code can be converted to a string using the function
 :proc:`OS.errorToString()`.
@@ -1128,6 +1128,8 @@ private extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
 
 private extern proc qio_channel_get_style(ch:qio_channel_ptr_t, ref style:iostyleInternal);
 private extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:iostyleInternal);
+
+private extern proc qio_channel_get_size(ch: qio_channel_ptr_t):int(64);
 
 private extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
@@ -4943,13 +4945,13 @@ proc _channel.readAll(ref b: bytes): int throws {
   Note that this routine currently requires a 1D rectangular non-strided array.
   Additionally, If the remaining contents of the channel exceed the size of
   ``a``, the first ``a.size`` bytes will be read into ``a``, and then an
-  ``ExceededCapacityError`` will be thrown.
+  ``InsufficientCapacityError`` will be thrown.
 
   :arg a: the array of bytes to read into
   :returns: the number of bytes that were stored in ``a``
   :rtype: int
 
-  :throws ExceededCapacityError: Thrown if the channel's contents do not fit into ``a``
+  :throws InsufficientCapacityError: Thrown if the channel's contents do not fit into ``a``
   :throws SystemError: Thrown if data could not be read from the channel
 */
 proc _channel.readAll(ref a: [?d] ?t): int throws
@@ -4989,9 +4991,16 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
       this._revert();
 
       if has_more {
-         throw new owned ExceededCapacityError(
-          "channel's contents exceeded capacity of bytes array (" + a.size:string + " bytes) in 'readAll'"
-        );
+        const sz = qio_channel_get_size(this._channel_internal);
+        if sz == -1 {
+          throw new owned InsufficientCapacityError(
+            "channel's contents exceeded capacity of bytes array (" + a.size:string + " bytes) in 'readAll'"
+          );
+        } else {
+          throw new owned InsufficientCapacityError(
+            "channel's contents (" + sz:string + " bytes) exceeded capacity of bytes array (" + a.size:string + " bytes) in 'readAll'"
+          );
+        }
       }
     }
   }
