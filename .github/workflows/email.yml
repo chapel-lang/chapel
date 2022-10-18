@@ -32,6 +32,7 @@ jobs:
               echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$(jq  '.[].commit.message' commits.json)" >> $GITHUB_ENV 
+              echo "ID=$(jq -r '.[].id' commits.json)" >> $GITHUB_ENV
       - name: use events
         
         run: |
@@ -40,6 +41,7 @@ jobs:
             echo " LINK ${{env.LINK}}"
             echo "AUTHOR ${{env.AUTHOR}}"
             echo  ${{env.MESSAGE}}
+            echo ${{env.ID}}
           
            
       - name: checkout
