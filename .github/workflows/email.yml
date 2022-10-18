@@ -23,14 +23,14 @@ jobs:
         run: echo "$GITHUB_CONTEXT"  
       - name: get commits payload
         env:
-          COMMIT_URL: ${{github.event.pull_request.commits}}
+          COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
         run: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "SHA=$(jq -r '.[].sha' commits.json)" >> $GITHUB_ENV  
               echo "AUTHOR=$(jq -r '.[].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$(jq  '.[].commit.message' commits.json)" >> $GITHUB_ENV
-              echo "COMMIT_ID=$(jq -r '.[].id' commits.json)" >> $GITHUB_ENV 
+             
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -67,7 +67,6 @@ jobs:
               Author: ${{ env.AUTHOR}} <br>
               Revision: ${{github.event.pull_request.repository.id}}  <br>
               Commit id : ${{ github.event.pull_request.id }}<br>
-                         ${{ env.COMMIT_ID}}  <br>
               Commit message: ${{github.event.merge_commit_message}}  <br>
               Sha: ${{ github.event.base.sha }} <br>
               Link: ${{env.LINK}} <br> 
