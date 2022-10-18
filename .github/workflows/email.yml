@@ -67,7 +67,6 @@ jobs:
               Author: ${{ env.AUTHOR}} <br>
               Revision: ${{github.event.pull_request.repository.id}}  <br>
               Commit id : ${{ github.event.pull_request.id }}<br>
-                         ${{ env.COMMIT_ID}}  <br>
               Commit message: ${{github.event.merge_commit_message}}  <br>
               Sha: ${{ github.event.base.sha }} <br>
               Link: ${{env.LINK}} <br> 
