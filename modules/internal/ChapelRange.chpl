@@ -129,6 +129,16 @@ module ChapelRange {
     compilerError("implicitHighBound() undefined for type '" + t:string + "'");
   }
 
+  private proc hasDeclaredLowBound(r) param {
+    return (r.boundedType == BoundedRangeType.bounded ||
+            r.boundedType == BoundedRangeType.boundedLow);
+  }
+
+  private proc hasDeclaredHighBound(r) param {
+    return (r.boundedType == BoundedRangeType.bounded ||
+            r.boundedType == BoundedRangeType.boundedHigh);
+  }
+
   //################################################################################
   //# Initializers
   //#
@@ -165,7 +175,7 @@ module ChapelRange {
     this._high = chpl__idxToInt(high);
     this.complete();
     if isEnumOrBool(idxType) {
-      this._low = 0;
+      this._low = implicitLowBound(idxType);
     }
   }
 
@@ -247,7 +257,7 @@ module ChapelRange {
     const str = if stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
 
     var alignment = chpl__idxToInt(other.alignment);
-    if !other.aligned && isEnumBool {
+    if isEnumBool && !other.aligned {
       if (str > 0) {
         alignment = implicitLowBound(idxType);;
       } else {
@@ -552,9 +562,7 @@ module ChapelRange {
   /* Returns ``true`` if this range's low bound is *not* -:math:`\infty`,
      and ``false`` otherwise. */
   proc range.hasLowBound() param
-    return boundedType == BoundedRangeType.bounded ||
-           boundedType == BoundedRangeType.boundedLow ||
-           isEnumOrBool(idxType);
+    return hasDeclaredLowBound(this) || isEnumOrBool(idxType);
 
   /* Returns the range's low bound. If the range does not have a low
      bound (e.g., ``..10``), the behavior is undefined.  See also
@@ -622,10 +630,9 @@ module ChapelRange {
 
   /* Returns ``true`` if this range's high bound is *not* :math:`\infty`,
      and ``false`` otherwise. */
-  proc range.hasHighBound() param
-    return boundedType == BoundedRangeType.bounded ||
-           boundedType == BoundedRangeType.boundedHigh ||
-           isEnumOrBool(idxType);
+  proc range.hasHighBound() param {
+    return hasDeclaredHighBound(this) || isEnumOrBool(idxType);
+  }
 
   /* Return the range's high bound. If the range does not have a high
      bound (e.g., ``1..``), the behavior is undefined.  See also
@@ -641,8 +648,7 @@ module ChapelRange {
         return lowBound;
       }
     }
-    if (boundedType == BoundedRangeType.boundedLow ||
-        boundedType == BoundedRangeType.boundedNone) {
+    if !hasDeclaredHighBound(this) {
       if isEnumOrBool(idxType) {
         return chpl_intToIdx(implicitHighBound(idxType));
       } else {
@@ -1122,11 +1128,9 @@ operator :(r: range(?), type t: range(?)) {
     var boundedOther = new range(
                           idxType, BoundedRangeType.bounded,
                           s || this.stridable,
-                          if (other.boundedType == BoundedRangeType.bounded ||
-                              other.boundedType == BoundedRangeType.boundedLow)
+                          if hasDeclaredLowBound(other)
                             then other._low else _low,
-                          if (other.boundedType == BoundedRangeType.bounded ||
-                              other.boundedType == BoundedRangeType.boundedHigh)
+                          if hasDeclaredHighBound(other)
                             then other._high else _high,
                           other.stride,
                           chpl__idxToInt(other.alignment),
@@ -2804,12 +2808,10 @@ operator :(r: range(?), type t: range(?)) {
   operator :(x: range(?), type t: string) {
     var ret: string;
 
-    if (x.boundedType == BoundedRangeType.bounded ||
-        x.boundedType == BoundedRangeType.boundedLow) then
+    if hasDeclaredLowBound(x) then
       ret += x.lowBound:string;
     ret += "..";
-    if (x.boundedType == BoundedRangeType.bounded ||
-        x.boundedType == BoundedRangeType.boundedHigh) {
+    if hasDeclaredHighBound(x) {
       // handle the special case of an empty range with a singleton idxType
       if (chpl__singleValIdxType(x.idxType) && x._high != x._low) {
         ret += "<" + x.lowBound:string;
