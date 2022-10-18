@@ -28,7 +28,7 @@ jobs:
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
-              echo "MESSAGE=$(jq  '.[0].commit.message' commits.json)" >> $GITHUB_ENV 
+              echo "MESSAGE=$(jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g'" >> $GITHUB_ENV 
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -62,7 +62,7 @@ jobs:
               <html>
               <body>
               <p>
-              Branch: ${{github.ref}} 
+              Branch: ${{github.ref}} <br>
               Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
               Author: ${{ env.AUTHOR}} <br>
               Link: ${{env.LINK}} <br>             
