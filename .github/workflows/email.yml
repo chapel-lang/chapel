@@ -26,7 +26,7 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
         run: |
-               "${firstString/Suzi/"$secondString"}" 
+              
                echo "MESSAGE=$( ${{github.event.repository.compare_url}}/{base}/"${github.event.repository.compare_url}" ) " >> $GITHUB_ENV 
       - name: print
         run: |
