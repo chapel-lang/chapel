@@ -2,7 +2,7 @@
   Enum 'creativeColors' has no element named 'green'.
       |
     5 | var x = creativeColors.green;
-      |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺  
+      |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   'creativeColors' is declared here.
       |

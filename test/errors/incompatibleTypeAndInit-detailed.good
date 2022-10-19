@@ -3,7 +3,7 @@
   In the following declaration:
       |
     1 | var x: int = "hello";
-      |        ⎺⎺⎺    ⎺⎺⎺⎺⎺⎺  
+      |        ⎺⎺⎺    ⎺⎺⎺⎺⎺⎺
       |
   the type expression has type 'int(64)', while the initial value has type 'string'.
 

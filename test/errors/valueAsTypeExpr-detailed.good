@@ -6,6 +6,6 @@
   In the following type expression:
       |
     2 | var x: someInt = 1;
-      |        ⎺⎺⎺⎺⎺⎺⎺      
+      |        ⎺⎺⎺⎺⎺⎺⎺
       |
 

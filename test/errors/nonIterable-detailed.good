@@ -18,7 +18,7 @@
   In the following loop:
       |
     2 | for i in x {}
-      |          ⎺    
+      |          ⎺
       |
 
 ─── error in nonIterable.chpl:3 [NonIterable] ───
@@ -26,6 +26,6 @@
   In the following loop:
       |
     3 | for i in 1 {}
-      |          ⎺    
+      |          ⎺
       |
 

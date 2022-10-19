@@ -221,6 +221,12 @@ void ErrorWriter::writeCode(const Location& location,
     if (str[i] == '\n') {
       if (printHighlight) {
         printBlank(oss_, gutterSize + 3);
+
+        // Clean up trailing whitespace
+        while (!highlightString.empty() && highlightString.back() == ' ') {
+          highlightString.pop_back();
+        }
+
         oss_ << "| " << highlightString << std::endl;
       }
       lineNumber += 1;

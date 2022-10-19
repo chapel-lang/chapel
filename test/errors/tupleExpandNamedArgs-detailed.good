@@ -3,7 +3,7 @@
   A tuple is being expanded here:
       |
     3 | f(a=(...t));
-      |     ⎺⎺⎺⎺⎺⎺   
+      |     ⎺⎺⎺⎺⎺⎺
       |
 
 ─── error in tupleExpandNamedArgs.chpl:3 ───

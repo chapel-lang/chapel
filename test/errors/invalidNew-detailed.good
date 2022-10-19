@@ -2,7 +2,7 @@
   Cannot use memory management strategy 'owned' with non-class type 'E'.
       |
     3 | var y = new owned E();
-      |                   ⎺    
+      |                   ⎺
       |
   Memory management strategies can only be used with classes.
 
@@ -10,7 +10,7 @@
   Invalid use of 'new' with type 'E', which is neither a class nor a record.
       |
     3 | var y = new owned E();
-      |                   ⎺    
+      |                   ⎺
       |
   The 'new' expression can only be used with records or classes.
 

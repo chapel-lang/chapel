@@ -2,7 +2,7 @@
   Cannot use memory management strategy 'shared' with record 'MyRecord'.
       |
     4 | var r2 = new shared MyRecord();
-      |                     ⎺⎺⎺⎺⎺⎺⎺⎺    
+      |                     ⎺⎺⎺⎺⎺⎺⎺⎺
       |
   Memory management strategies can only be used with classes.
   'MyRecord' declared as record here:

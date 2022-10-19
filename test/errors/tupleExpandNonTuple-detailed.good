@@ -3,7 +3,7 @@
   In the following function call:
       |
     3 | f((...x));
-      |   ⎺⎺⎺⎺⎺⎺   
+      |   ⎺⎺⎺⎺⎺⎺
       |
   the expanded element has type 'int(64)' while it's expected to be a tuple.
 

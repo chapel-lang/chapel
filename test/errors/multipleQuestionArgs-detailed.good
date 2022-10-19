@@ -3,12 +3,12 @@
   The first ? argument occurs here:
       |
     4 | test(?, ?, ?);
-      |      ⎺         
+      |      ⎺
       |
   The second ? argument occurs here:
       |
     4 | test(?, ?, ?);
-      |         ⎺      
+      |         ⎺
       |
 
 ─── error in multipleQuestionArgs.chpl:4 [MultipleQuestionArgs] ───
@@ -16,12 +16,12 @@
   The first ? argument occurs here:
       |
     4 | test(?, ?, ?);
-      |      ⎺         
+      |      ⎺
       |
   The second ? argument occurs here:
       |
     4 | test(?, ?, ?);
-      |            ⎺   
+      |            ⎺
       |
 
 ─── error in multipleQuestionArgs.chpl:4 ───
