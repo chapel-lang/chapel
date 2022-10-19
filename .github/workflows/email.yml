@@ -2,14 +2,15 @@ name: email
 on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
+    push:
     pull_request_target:
-      types:
-        - closed
+      #types:
+        #- closed
       
 jobs: 
   send_email:
    # run this workflow step only when the PR is merged 
-    if:  github.event.pull_request.merged == true 
+    #if:  github.event.pull_request.merged == true 
     runs-on: ubuntu-latest 
     steps:
       - name: print git events
@@ -25,10 +26,11 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
         run: |
-              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              curl --location --request GET 'https://api.github.com/repos/chapel-lang/chapel/pulls/20886/commits' --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
+              echo "COMPARE_URL= $(${{github.event.repository.compare_url}} | awk '{ gsub("{base}","${{ github.event.pull_request.base.sha }}")gsub("{head}","${{ github.event.pull_request.merge_commit_sha }}") }''{print}') >> $GITHUB_ENV 
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -73,7 +75,7 @@ jobs:
               Modified Files: <br>
                 M . ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
                 D . ${{steps.changed-files.outputs.deleted_files}} <br>
-              Compare: ${{github.event.repository.compare_url}} <br>   
+              Compare: ${{env.COMPARE_URL}} <br>   
               </p>
               </body>
               </html>
