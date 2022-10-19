@@ -31,7 +31,7 @@ jobs:
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
               #echo "COMPARE_URL= $($github.event.repository.compare_url | awk '{gsub("{base}","$github.event.pull_request.base.sha") gsub("{head}","$github.event.pull_request.merge_commit_sha") }' '{print}' )" >> $GITHUB_ENV 
-              echo "COMPARE_URL= $(echo 'https://api.github.com/repos/chapel-lang/chapel/compare/{base}...{head}' | awk '{gsub("{base}","$github.event.pull_request.base.sha") gsub("{head}","$github.event.pull_request.merge_commit_sha") } {print}' )" >> $GITHUB_ENV 
+              echo "COMPARE_URL= $(echo 'https://api.github.com/repos/chapel-lang/chapel/compare/{base}...{head}' | awk '{gsub("{base}","${{github.event.pull_request.base.sha}}") gsub("{head}","${{github.event.pull_request.merge_commit_sha}}") } {print}' )" >> $GITHUB_ENV 
               
       - name: checkout
         uses: actions/checkout@v3
