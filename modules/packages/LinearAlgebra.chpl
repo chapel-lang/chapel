@@ -1813,7 +1813,7 @@ proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
 
    Returns a tuple of ``(x, residues, rank, s)``, where:
 
-    - ``x`` is the the least-squares solution with shape of ``b``
+    - ``x`` is the least-squares solution with shape of ``b``
 
     - ``residues`` is:
 
