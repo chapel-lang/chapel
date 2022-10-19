@@ -26,5 +26,8 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
         run: |
-              echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
+              echo "MESSAGE=$(${{github.event.repository.compare_url}} | awk -v '{gsub("{base}", "${{github.event.before}} ) } print{}')" >> $GITHUB_ENV 
+      - name: print
+         run |
+             echo {{env.MESSAGE}}
              
