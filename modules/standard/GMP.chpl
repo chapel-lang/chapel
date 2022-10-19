@@ -1175,7 +1175,7 @@ module GMP {
 
   /* Return the number of limbs allocated in an __mpz_struct */
   private extern proc chpl_gmp_mpz_struct_nalloc(from: __mpz_struct) : mp_size_t;
-  /* Return the the number of limbs used with the sign of the mpz number
+  /* Return the number of limbs used with the sign of the mpz number
      for an __mpz_struct */
   private extern proc chpl_gmp_mpz_struct_sign_size(from: __mpz_struct) : mp_size_t;
   /* Set the sign and number of fields used in an mpz
