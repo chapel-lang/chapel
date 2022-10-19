@@ -23,11 +23,10 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"  
       - name: get commits payload
-        env:
-          COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
+       
         run: |
               
-               echo "MESSAGE=$( ${{github.event.repository.compare_url}}/{base}/"${{github.event.repository.compare_url}}" ) " >> $GITHUB_ENV 
+               echo "MESSAGE=$( ${{github.event.repository.compare_url}}| tr {base} ${{github.event.repository.compare_url}} ) " >> $GITHUB_ENV 
       - name: print
         run: |
              echo {{env.MESSAGE}}
