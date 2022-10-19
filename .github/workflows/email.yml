@@ -28,6 +28,6 @@ jobs:
         run: |
               echo "MESSAGE=$(${{github.event.repository.compare_url}} | awk -v '{gsub("{base}", "${{github.event.before}} ) } print{}')" >> $GITHUB_ENV 
       - name: print
-         run |
+        run: |
              echo {{env.MESSAGE}}
              
