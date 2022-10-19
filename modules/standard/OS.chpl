@@ -1380,6 +1380,14 @@ module OS {
     proc init(details: string = "") {
       super.init(ERANGE: errorCode, details);
     }
+
+    override proc message() {
+      return
+        if details.isEmpty() then
+          "Result too large"
+        else
+          details;
+    }
   }
 
   // here's what we need from Sys

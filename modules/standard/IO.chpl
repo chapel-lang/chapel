@@ -4992,15 +4992,10 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
 
       if has_more {
         const sz = qio_channel_get_size(this._channel_internal);
-        if sz == -1 {
-          throw new owned InsufficientCapacityError(
-            "channel's contents exceeded capacity of bytes array (" + a.size:string + " bytes) in 'readAll'"
-          );
-        } else {
-          throw new owned InsufficientCapacityError(
-            "channel's contents (" + sz:string + " bytes) exceeded capacity of bytes array (" + a.size:string + " bytes) in 'readAll'"
-          );
-        }
+        const err_msg = "Channel's contents" + (if sz == -1 then " " else " (" + sz:string + " bytes) ") +
+          "exceeded capacity of array argument (" + a.size:string + " bytes) in 'readAll'";
+
+        throw new owned InsufficientCapacityError(err_msg);
       }
     }
   }
