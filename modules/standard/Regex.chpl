@@ -1321,7 +1321,7 @@ iter string.split(pattern: regex(string), maxsplit: int = 0)
 
 
 /*
-   Split the the receiving string by occurrences of the passed regular
+   Split the receiving string by occurrences of the passed regular
    expression by calling :proc:`regex.split`.
 
    :arg sep: the regular expression to use to split
@@ -1347,7 +1347,7 @@ iter bytes.split(pattern: regex(bytes), maxsplit: int = 0)
 
 
 /*
-   Split the the receiving bytes by occurrences of the passed regular
+   Split the receiving bytes by occurrences of the passed regular
    expression by calling :proc:`regex.split`.
 
    :arg sep: the regular expression to use to split

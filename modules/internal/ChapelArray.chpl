@@ -409,7 +409,7 @@ module ChapelArray {
   // increment/decrement the reference count based on the
   // number of indices in the outer domain instead; this could
   // cause the domain to be deallocated prematurely in the
-  // case the the outer domain was empty.  For example:
+  // case the outer domain was empty.  For example:
   //
   //   var D = {1..0};   // start empty; we'll resize later
   //   var A: [D] [1..2] real;

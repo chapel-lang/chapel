@@ -374,7 +374,7 @@ The *these* Method
 
 An iterator method declared with the name ``these`` allows the receiver
 to be “iterated over” similarly to how a domain or array supports
-iteration. When a value supporting a ``these`` method is used as the the
+iteration. When a value supporting a ``these`` method is used as the
 ``iteratable-expression`` of a loop, the loop proceeds in a manner
 controlled by the ``these`` iterator.
 

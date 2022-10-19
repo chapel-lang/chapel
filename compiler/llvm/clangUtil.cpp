@@ -3506,7 +3506,7 @@ const clang::CodeGen::ABIArgInfo*
 getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
 {
 
-  // Don't try to use the the calling convention code for variadic args.
+  // Don't try to use the calling convention code for variadic args.
   if ((unsigned) curCArg >= CGI->arg_size() && CGI->isVariadic())
     return NULL;
 

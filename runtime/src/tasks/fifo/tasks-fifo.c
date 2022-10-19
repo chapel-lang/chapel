@@ -667,7 +667,7 @@ static chpl_taskID_t get_next_task_id(void) {
 
 
 //
-// Get the the thread private data pointer for my thread.
+// Get the thread private data pointer for my thread.
 //
 static inline
 thread_private_data_t* get_thread_private_data(void) {

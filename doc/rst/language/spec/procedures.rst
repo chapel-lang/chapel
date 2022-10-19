@@ -12,7 +12,7 @@ this programming-languages sense, rather than in the mathematical sense.
 A function has zero or more *formal arguments*, or simply *formals*.
 Upon a function call each formal is associated with the corresponding
 *actual argument*, or simply *actual*. Actual arguments are provided as
-part of the call expression, or at the the *call site*. Direct and
+part of the call expression, or at the *call site*. Direct and
 indirect recursion is supported.
 
 A function can be a *procedure*, which completes and returns to the call

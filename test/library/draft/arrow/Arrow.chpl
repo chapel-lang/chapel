@@ -224,7 +224,7 @@
       // Adding the column to the list
       fields = g_list_append(fields, col);
 
-      // Moving on the the next pair of arguments
+      // Moving on to the next pair of arguments
     }
 
     // Gotta build this schema now

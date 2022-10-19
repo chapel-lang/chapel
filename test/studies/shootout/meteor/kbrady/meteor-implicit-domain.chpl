@@ -296,7 +296,7 @@ module meteor {
 
   /* To thin the number of pieces, I calculate if any of them trap any empty
    * cells at the edges.  There are only a handful of exceptions where the
-   * the board can be solved with the trapped cells.  For example:  piece 8 can
+   * board can be solved with the trapped cells.  For example:  piece 8 can
    * trap 5 cells in the corner, but piece 3 can fit in those cells, or piece 0
    * can split the board in half where both halves are viable.
    */
