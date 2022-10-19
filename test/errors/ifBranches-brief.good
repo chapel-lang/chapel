@@ -1,2 +1,4 @@
 error in ifBranches.chpl:2: branches of if-expression have incompatible types
 error in ifBranches.chpl:5: branches of if-expression have incompatible types
+error in ifBranches.chpl:9: branches of if-expression have incompatible types
+error in ifBranches.chpl:11: branches of if-expression have incompatible types

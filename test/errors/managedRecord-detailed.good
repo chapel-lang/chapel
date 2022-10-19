@@ -11,5 +11,5 @@
     2 |   
     3 | }
       |
-  Remove the 'shared' keyword to fix this error, or define 'MyRecord' as a class.
+  Consider removing the 'shared' keyword to fix this error, or defining 'MyRecord' as a class.
 

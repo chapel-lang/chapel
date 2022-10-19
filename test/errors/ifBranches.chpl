@@ -5,3 +5,7 @@ var z =
   if b
   then 42
   else "hello";
+
+var w = if b then int else string;
+
+var v = if b then int else 1;

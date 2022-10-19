@@ -1,9 +1,9 @@
 ─── error in tupleExpandNonTuple.chpl:3 [TupleExpansionNonTuple] ───
-  Cannot apply tuple expansion to non-tuple argument.
+  Cannot apply tuple expansion to an expression of non-tuple type
   In the following function call:
       |
     3 | f((...x));
       |   ⎺⎺⎺⎺⎺⎺
       |
-  the expanded element has type 'int(64)' while it's expected to be a tuple.
+  the expanded element has non-tuple type 'int(64)', but expansion can only be used on tuples.
 

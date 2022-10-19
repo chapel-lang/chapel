@@ -117,17 +117,17 @@ template <>
 struct Writer<types::QualifiedType> {
   void operator()(Context* context, std::ostream& oss, const types::QualifiedType& qt) {
     if (!qt.hasTypePtr()) {
-      oss << "value of unknown type" << std::endl;
+      oss << "a value of unknown type" << std::endl;
     } else if (qt.kind() == types::QualifiedType::TYPE) {
-      oss << "type '";
+      oss << "the type '";
       qt.type()->stringify(oss, CHPL_SYNTAX);
       oss << "'";
     } else if (qt.kind() == types::QualifiedType::PARAM) {
-      oss << "param of type '";
+      oss << "a param of type '";
       qt.type()->stringify(oss, CHPL_SYNTAX);
       oss << "'";
     } else {
-      oss << "value of type '";
+      oss << "a value of type '";
       qt.type()->stringify(oss, CHPL_SYNTAX);
       oss << "'";
     }

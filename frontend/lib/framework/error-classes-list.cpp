@@ -44,6 +44,21 @@ namespace chpl {
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 
+/**
+  Get a non-param version of the given type.
+
+  This function is useful if the param-ness of something is unimportant to the
+  error message (e.g., string and int aren't compatible if-expression types,
+  whether or not they are params), so we might as well print them as values
+  to reduce confusion.
+ */
+static types::QualifiedType decayToValue(const types::QualifiedType& qt) {
+  if (qt.kind() == types::QualifiedType::PARAM) {
+    return types::QualifiedType(types::QualifiedType::VAR, qt.type());
+  }
+  return qt;
+}
+
 //
 // Below are the implementations of 'write' for each error class, which does
 // the specialized work.
@@ -57,8 +72,18 @@ void ErrorIncompatibleIfBranches::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, ifExpr, "branches of if-expression have incompatible types.");
   wr.message("In the following if-expression:");
   wr.code(ifExpr, { ifExpr->thenBlock(), ifExpr->elseBlock() });
-  wr.message("the first branch is a ", qt1,
-              ", while the second is a ", qt2, ".");
+  if (qt1.kind() == types::QualifiedType::TYPE ||
+      qt2.kind() == types::QualifiedType::TYPE) {
+    // If any of the branches is not a value (i.e. a type, since we pretend
+    // params are values for the sake of clarity) then we need to be more
+    // clear about when something is a type and when it isn't.
+    wr.message("the first branch is ", decayToValue(qt1),
+                ", while the second is ", decayToValue(qt2), ".");
+  } else {
+    // Otherwise, both things are values, so just talk about their types.
+    wr.message("the first branch is of type '", qt1.type(), "'"
+                ", while the second is of type '", qt2.type(), "'.");
+  }
 }
 
 void ErrorTupleExpansionNamedArgs::write(ErrorWriterBase& wr) const {
@@ -93,8 +118,8 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
     wr.note(record->id(), "'", record->name(), "' declared as record here:");
     wr.code(record->id());
     wr.message(
-               "Remove the '", uast::New::managementToString(newCall->management()),
-               "' keyword to fix this error, " "or define '", record->name(),
+               "Consider removing the '", uast::New::managementToString(newCall->management()),
+               "' keyword to fix this error, or defining '", record->name(),
                "' as a class.");
   }
 }
@@ -181,8 +206,8 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   auto typeExpr = std::get<const uast::AstNode*>(info);
   auto type = std::get<types::QualifiedType>(info);
   wr.heading(kind_, type_, typeExpr,
-             "type expression produces a ", type, " while a type was expected.");
-  wr.message("In the following type expression:");
+             "type specifier is ", type, " while a type was expected.");
+  wr.message("In the following type specifier:");
   wr.code(typeExpr, { typeExpr });
   // wr.message("Did you mean to use '.type'?");
 }
@@ -200,17 +225,17 @@ void ErrorIncompatibleKinds::write(ErrorWriterBase& wr) const {
     initType.kind() != types::QualifiedType::Kind::PARAM;
   if (valueToType) {
     wr.heading(kind_, type_, initExpr,
-               "a type variable cannot be initialized using a regular value.");
+               "a type variable cannot be initialized with a regular value.");
   } else if (typeToValue) {
     wr.heading(kind_, type_, initExpr,
                "a regular variable cannot be initialized with a type.");
   } else if (nonParamToParam) {
     wr.heading(kind_, type_, initExpr,
-               "a 'param' cannot be initialized using a non-'param' value.");
+               "a 'param' cannot be initialized with a non-'param' value.");
   }
   wr.message("In the following initialization expression:");
   wr.code(initExpr, { initExpr });
-  wr.message("the initialization expression is a ", initType, ".");
+  wr.message("the initialization expression is ", initType, ".");
   if (valueToType) {
     wr.message("If you were trying to extract the type of the expression on "
                "the left of the '=', try using '.type'?");
@@ -244,10 +269,10 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
   auto initExprType = std::get<4>(info);
 
   wr.heading(kind_, type_, decl,
-             "type mismatch in declared type and initialization expression.");
+             "type mismatch between declared type and initialization expression.");
   wr.message("In the following declaration:");
   wr.code(decl, { type, init });
-  wr.message("the type expression has type '", typeExprType, "', while the "
+  wr.message("the type specifier has type '", typeExprType, "', while the "
              "initial value has type '", initExprType, "'.");
 }
 
@@ -266,8 +291,8 @@ void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
             "non-tuple type '", type, "'.");
   wr.message("In the following tuple declaration:");
   wr.code(decl);
-  wr.message("the value being assigned has type '", type, "', while it is expected "
-             "to be a ", decl->numDecls(), "-element tuple.");
+  wr.message("the initialization expression has type '", type, "', while it is expected "
+             "to be a ", decl->numDecls(), "-tuple.");
 }
 
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
@@ -276,9 +301,9 @@ void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, decl,
             "tuple size mismatch in split tuple declaration.");
   wr.code(decl);
-  wr.message("The left-hand side of the declaration expects a tuple with ",
-             decl->numDecls(), " elements, but the right-hand side, which is a tuple '",
-             type, "', has ", type->numElements(), " elements.");
+  wr.message("The left-hand side of the declaration expects a ",
+             decl->numDecls(), "-tuple, but the right-hand side is a ",
+             type->numElements(), "-tuple, '", type, "'.");
 }
 
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
@@ -302,7 +327,17 @@ void ErrorIncompatibleRangeBounds::write(ErrorWriterBase& wr) const {
             "upper and lower bounds of range expression have incompatible types.");
   wr.message("In the following if-expression:");
   wr.code(range, { range->lowerBound(), range->upperBound() });
-  wr.message("the lower bound is a ", qt1, ", while the upper bound is a ", qt2, ".");
+  if (qt1.kind() == types::QualifiedType::TYPE ||
+      qt2.kind() == types::QualifiedType::TYPE) {
+    // As in IncompatibleIfBranches, if one of the things is a type, be more
+    // explicit about what is and what isn't a type.
+    wr.message("the lower bound is ", decayToValue(qt1),
+               ", while the upper bound is ", decayToValue(qt2), ".");
+  } else {
+    // Both things are values, just refer to their types.
+    wr.message("the lower bound is of type '", qt1.type(), "'"
+               ", while the upper bound is of type '", qt2.type(), "'.");
+  }
 }
 
 void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
@@ -318,7 +353,6 @@ void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info);
   auto enumType = std::get<const types::EnumType*>(info);
   auto elemName = std::get<UniqueString>(info);
   auto& possibleElems = std::get<std::vector<ID>>(info);
@@ -326,8 +360,6 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, enumType->id(), "enum '", enumType->name(),
              "' has multiple elements named '", elemName, "'.");
   wr.code(enumType->id());
-  wr.message("Referenced here:");
-  wr.code(node, { node } );
   bool printedOne = false;
   for (auto& id : possibleElems) {
     wr.note(id, printedOne ? "another" : "one", " instance occurs here:");
@@ -370,18 +402,19 @@ void ErrorTupleExpansionNonTuple::write(ErrorWriterBase& wr) const {
   auto expansion = std::get<const uast::OpCall*>(info);
   auto& type = std::get<types::QualifiedType>(info);
 
-  wr.heading(kind_, type_, call, "cannot apply tuple expansion to non-tuple argument.");
+  wr.heading(kind_, type_, call, "cannot apply tuple expansion to an "
+             "expression of non-tuple type");
   wr.message("In the following function call:");
   wr.code(call, { expansion });
-  wr.message("the expanded element has type '", type.type(), "' while it's ",
-             "expected to be a tuple.");
+  wr.message("the expanded element has non-tuple type '", type.type(), "', "
+             "but expansion can only be used on tuples.");
 }
 
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   auto loop = std::get<const uast::IndexableLoop*>(info);
   auto iterand = std::get<const uast::AstNode*>(info);
   auto& iterandType = std::get<types::QualifiedType>(info);
-  wr.heading(kind_, type_, loop, "cannot iterate over ", iterandType, ".");
+  wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
   wr.message("In the following loop:");
   wr.code(loop, { iterand });
 }

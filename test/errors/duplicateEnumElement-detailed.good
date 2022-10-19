@@ -6,11 +6,6 @@
     3 |   chapel, chapel
     4 | }
       |
-  Referenced here:
-      |
-    5 | var chpl = languagesILike.chapel;
-      |            ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-      |
   One instance occurs here:
       |
     2 |   chapel, cpp, haskell,

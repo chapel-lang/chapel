@@ -14,7 +14,7 @@
   Where clause does not result in a param bool value
 
 ─── error in nonIterable.chpl:2 [NonIterable] ───
-  Cannot iterate over value of type 'int(64)'.
+  Cannot iterate over a value of type 'int(64)'.
   In the following loop:
       |
     2 | for i in x {}
@@ -22,7 +22,7 @@
       |
 
 ─── error in nonIterable.chpl:3 [NonIterable] ───
-  Cannot iterate over param of type 'int(64)'.
+  Cannot iterate over a value of type 'int(64)'.
   In the following loop:
       |
     3 | for i in 1 {}
