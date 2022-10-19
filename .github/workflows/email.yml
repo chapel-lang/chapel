@@ -27,7 +27,7 @@ jobs:
         run: |
               
               # echo "MESSAGE=$(  $github.event.repository.compare_url| awk '{ gsub("{base}","709910b9af30aeba78de12af217c464a70737995")gsub("{head}","c9276b0f62225d1223165316b6c7d48a07374286") } {print}' )" >> $GITHUB_ENV 
-                echo "MESSAGE=$(  $github.event.repository.compare_url| awk '{ gsub("{base}","709910b9af30aeba78de12af217c464a70737995") }  {print}' )" >> $GITHUB_ENV   
+                echo "MESSAGE=$(  $github.event.repository.compare_url | awk '{ gsub("{base}","709910b9af30aeba78de12af217c464a70737995") }  {print}' )" >> $GITHUB_ENV   
       - name: print
         run: |
              echo {{env.MESSAGE}}
