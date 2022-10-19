@@ -2,14 +2,15 @@ name: email
 on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
+    push:
     pull_request_target:
-      types:
-        - closed
+      #types:
+       # - closed
       
 jobs: 
   send_email:
    # run this workflow step only when the PR is merged 
-    if:  github.event.pull_request.merged == true 
+    #if:  github.event.pull_request.merged == true 
     runs-on: ubuntu-latest 
     steps:
       - name: print git events
@@ -25,59 +26,5 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
         run: |
-              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
-              echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
-              echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
-      - name: checkout
-        uses: actions/checkout@v3
-        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
-        with:
-          fetch-depth: 2          
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v32
-        with:
-          separator: ","                 
-      - name: Send mail  
-        uses: dawidd6/action-send-mail@v3
-        with:
-           # Required mail server address if not connection_url:
-           server_address: ${{ secrets.SMTP_PROVIDER}}
-           server_port: 465
-           # Optional whether this connection use TLS (default is true if server_port is 465)
-           secure: true
-           # Optional (recommended): mail server username:
-           username:  ${{ secrets.MAIL_USERNAME}} 
-           # Optional (recommended) mail server password:
-           password: ${{secrets.MAIL_PASSWORD}}
-           # Required mail subject:
-           subject: Chapel Merge ${{env.MESSAGE}}  
-           # Required recipients' addresses:
-           to: bhavani@hpe.com
-           # Required sender full name (address can be skipped):
-           from: chapel-lang 
-           html_body: |
-              <!DOCTYPE html>
-              <html>
-              <body>
-              <p>
-              Branch: ${{github.ref}} <br>
-              Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
-              Author: ${{ env.AUTHOR}} <br>
-              Link: ${{env.LINK}} <br>             
-              Log Message: ${{env.MESSAGE}} <br>  
-                           ${{github.event.pull_request.body}} <br>
-              Diff: ${{github.event.pull_request.diff_url}} <br>
-              
-              Modified Files: <br>
-                M . ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
-                D . ${{steps.changed-files.outputs.deleted_files}} <br>
-              Compare: ${{github.event.repository.compare_url}} <br>   
-              </p>
-              </body>
-              </html>
-           # Optional converting Markdown to HTML (set content_type to text/html too):
-           convert_markdown: true
-           # Optional priority: 'high', 'normal' (default) or 'low'
-           priority: low
+             
