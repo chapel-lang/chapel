@@ -375,7 +375,7 @@ non-nilable classes are not currently supported.
    ``nil``. The next statement assigned to it an instance of the class
    ``C``. The declaration of variable ``c2`` shows that these steps can
    be combined. The type of ``c2`` is also ``borrowed C?``, determined
-   implicitly from the the initialization expression. Finally, an object
+   implicitly from the initialization expression. Finally, an object
    of type ``owned D`` is created and assigned to ``c``.
 
 .. _Class_nil_value:
