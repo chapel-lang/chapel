@@ -21,7 +21,7 @@ jobs:
       - name: print GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-          COMPARE_URL: ${{github.event.compare}
+          COMPARE_URL: ${{github.event.compare}}
         run: echo "$GITHUB_CONTEXT"  
       - name: get commits payload
        
