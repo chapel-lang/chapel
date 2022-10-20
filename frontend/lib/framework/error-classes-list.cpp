@@ -172,8 +172,10 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  wr.heading(kind_, type_, id, "cannot find target module '", moduleName,
+  wr.heading(kind_, type_, id, "cannot find module '", moduleName,
              "' for ", useOrImport, ".");
+  wr.message("Module named here:");
+  wr.code(id);
 }
 
 void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
@@ -195,10 +197,13 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   wr.message("Renaming in 'except'-lists is not supported.");
 }
 
-void ErrorDotExprNotAllowed::write(ErrorWriterBase& wr) const {
+void ErrorDotExprInLimitations::write(ErrorWriterBase& wr) const {
   auto dot = std::get<const uast::Dot*>(info);
-  wr.heading(kind_, type_, locationOnly(dot),
-             "dot expression not supported here.");
+  wr.heading(kind_, type_, locationOnly(dot), "encountered dot expression '",
+             dot, "' in visibility limitation.");
+  wr.message(
+      "Dot expressions are not allowed in the limitations of a visibility "
+      "statement (use/import).");
 }
 
 void ErrorUnsupportedAs::write(ErrorWriterBase& wr) const {
@@ -207,7 +212,8 @@ void ErrorUnsupportedAs::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, locationOnly(as),
              "this form of 'as' is not yet supported.");
   wr.message(
-      "'As' requires a simple identifier, but instead got the following:");
+      "'As' requires both original and new names to be simple identifiers, but "
+      "instead got the following:");
   wr.code(expectedIdentifier);
 }
 

@@ -746,7 +746,7 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
       UniqueString name = ident->name();
       ret.push_back(std::make_pair(name, name));
     } else if (auto dot = e->toDot()) {
-      CHPL_REPORT(context, DotExprNotAllowed, dot);
+      CHPL_REPORT(context, DotExprInLimitations, dot);
     } else if (auto as = e->toAs()) {
       UniqueString name;
       UniqueString rename;
