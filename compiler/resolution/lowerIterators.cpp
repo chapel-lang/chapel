@@ -2523,27 +2523,26 @@ expandForLoop(ForLoop* forLoop) {
         break;
       }
 
-      if (isBoundedIterator(iterFn)) {
-        if (testBlock == NULL) {
-          if (isNotDynIter) {
-            // note that we have found the first test
-            testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
+      if (testBlock == NULL) {
+        if (isNotDynIter) {
+          // note that we have found the first test
+          testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
 
-          } else {
-            // note that we have found the first test block and add checks for
-            // more before and at the end of the loop. As mentioned above,
-            // dynamic iterators generate things that can't be in the header of
-            // the c for loop, so we generate a simple bool variable to put at
-            // the test of the c for loop, and update that condition var before
-            // the loop is run, and at the end of each iteration.
-            forLoop->insertBefore(new DefExpr(cond));
-            forLoop->insertBefore(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
-            forLoop->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
+        } else {
+          // note that we have found the first test block and add checks for
+          // more before and at the end of the loop. As mentioned above,
+          // dynamic iterators generate things that can't be in the header of
+          // the c for loop, so we generate a simple bool variable to put at
+          // the test of the c for loop, and update that condition var before
+          // the loop is run, and at the end of each iteration.
+          forLoop->insertBefore(new DefExpr(cond));
+          forLoop->insertBefore(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
+          forLoop->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
 
-            testBlock = new BlockStmt(new SymExpr(cond));
-          }
-
-        } else if (!fNoBoundsChecks) {
+          testBlock = new BlockStmt(new SymExpr(cond));
+        }
+      } else if (isBoundedIterator(iterFn)) {
+        if (!fNoBoundsChecks) {
           // for all but the first iterator add checks at the beginning of each loop run
           // and a final one after to make sure the other iterators don't finish before
           // the "leader" and they don't have more afterwards.
