@@ -1,7 +1,7 @@
-─── error in unsupportedAs1.chpl:6 [UnsupportedAs] ───
+─── error in unsupportedAsIdent2.chpl:6 [UnsupportedAsIdent] ───
   This form of 'as' is not yet supported.
   'As' requires both original and new names to be simple identifiers, but instead got the following:
       |
-    6 |   use M as b.a;
+    6 |   use M only a.b as b;
       |
 

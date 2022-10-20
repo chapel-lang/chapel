@@ -206,7 +206,7 @@ void ErrorDotExprInLimitations::write(ErrorWriterBase& wr) const {
       "statement (use/import).");
 }
 
-void ErrorUnsupportedAs::write(ErrorWriterBase& wr) const {
+void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
   auto as = std::get<const uast::As*>(info);
   auto expectedIdentifier = std::get<const uast::AstNode*>(info);
   wr.heading(kind_, type_, locationOnly(as),

@@ -45,7 +45,7 @@ ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind,
             std::string)
 ERROR_CLASS(AsWithUseExcept, const uast::Use*, const uast::As*)
 ERROR_CLASS(DotExprInLimitations, const uast::Dot*)
-ERROR_CLASS(UnsupportedAs, const uast::As*, const uast::AstNode*)
+ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 ERROR_CLASS(Redefinition, const uast::NamedDecl*, std::vector<ID>)
 ERROR_CLASS(AmbiguousConfigName, std::string, const uast::Variable*, ID)
 ERROR_CLASS(AmbiguousConfigSet,
