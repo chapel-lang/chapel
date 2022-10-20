@@ -34,4 +34,53 @@ jobs:
       - name: print
         run: |
              echo "${{env.MESSAGE}}"
+      - name: checkout
+        uses: actions/checkout@v3
+        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
+        with:
+          fetch-depth: 2          
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v32
+        with:
+          separator: ","                 
+      - name: Send mail  
+        uses: dawidd6/action-send-mail@v3
+        with:
+           # Required mail server address if not connection_url:
+           server_address: ${{ secrets.SMTP_PROVIDER}}
+           server_port: 465
+           # Optional whether this connection use TLS (default is true if server_port is 465)
+           secure: true
+           # Optional (recommended): mail server username:
+           username:  ${{ secrets.MAIL_USERNAME}} 
+           # Optional (recommended) mail server password:
+           password: ${{secrets.MAIL_PASSWORD}}
+           # Required mail subject:
+           subject: Chapel Merge ${{env.MESSAGE}}  
+           # Required recipients' addresses:
+           to: bhavani@hpe.com
+           # Required sender full name (address can be skipped):
+           from: chapel-lang 
+           html_body: |
+              <!DOCTYPE html>
+              <html>
+              <body>
+              <p>
+              Branch: ${{github.ref}} <br>
+         
+              Modified Files: <br>
+                M . ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
+                M   ${{steps.changed-files.outputs.modified_files}}
+                M   ${{steps.changed-files.outputs.changed_files}}
+                D . ${{steps.changed-files.outputs.deleted_files}} <br>
+                 
+              </p>
+              </body>
+              </html>
+           # Optional converting Markdown to HTML (set content_type to text/html too):
+           convert_markdown: true
+           # Optional priority: 'high', 'normal' (default) or 'low'
+           priority: low
+
              
