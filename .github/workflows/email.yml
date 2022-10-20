@@ -26,7 +26,7 @@ jobs:
       - name: get commits payload
        
         run: |
-                echo "MESSAGE=$( echo 'https://api.github.com/repos/chapel-lang/chapel/compare/{base}...{head}' | awk '{gsub("{base}","blah") gsub("{head}","bla-blah") } {print}')" >> $GITHUB_ENV   
+                echo "MESSAGE=$( echo $COMPARE_URL | awk '{gsub("{base}","blah") gsub("{head}","bla-blah") } {print}')" >> $GITHUB_ENV   
       - name: print
         run: |
              echo "${{env.MESSAGE}}"
