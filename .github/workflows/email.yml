@@ -29,5 +29,5 @@ jobs:
                 echo "MESSAGE=$(echo $COMPARE_URL | awk -v repl="709910b9af30aeba78de12af217c464a70737995" '{ gsub("{base}",repl); print}' )" >> $GITHUB_ENV   
       - name: print
         run: |
-             echo {{env.MESSAGE}}
+             echo "${{env.MESSAGE}}"
              
