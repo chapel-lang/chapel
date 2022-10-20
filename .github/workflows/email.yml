@@ -26,7 +26,7 @@ jobs:
       - name: get commits payload
        
         run: |
-                echo "MESSAGE=$(echo $COMPARE_URL | awk  repl="709910b9af30aeba78de12af217c464a70737995" '{ gsub("{base}",repl); print}' )" >> $GITHUB_ENV   
+                echo "MESSAGE=$(echo $COMPARE_URL | awk  repl="709910b9af30aeba78de12af217c464a70737995" '{ gsub("{base}",repl); print $0}' )" >> $GITHUB_ENV   
       - name: print
         run: |
              echo "${{env.MESSAGE}}"
