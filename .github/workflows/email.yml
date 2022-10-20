@@ -30,7 +30,7 @@ jobs:
                 echo "before ${{github.event.before}}"
                 echo "${{github.event.repository.compare_url}}"
                 echo "sha $SHA"
-                echo "MESSAGE=$( echo 'https://api.github.com/repos/bhavanijayakumaran/chapel/compare/{base}...{head}' | awk -v rep='${{github.event.before}}' '{gsub("{base}",rep) gsub("{head}","bla-blah") } {print}')" >> $GITHUB_ENV   
+                echo "MESSAGE=$( echo '${{github.event.repository.compare_url}' | awk -v repbase='${{github.event.before}}' -v rephead='${{github.event.before}}' '{gsub("{base}",repbase) gsub("{head}",rephead) } {print}')" >> $GITHUB_ENV   
       - name: print
         run: |
              echo "${{env.MESSAGE}}"
