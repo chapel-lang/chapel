@@ -21,13 +21,14 @@ jobs:
       - name: print GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          COMPARE_URL: ${{github.event.compare_url}}
         run: echo "$GITHUB_CONTEXT"  
       - name: get commits payload
        
         run: |
               
               # echo "MESSAGE=$(  $github.event.repository.compare_url| awk '{ gsub("{base}","709910b9af30aeba78de12af217c464a70737995")gsub("{head}","c9276b0f62225d1223165316b6c7d48a07374286") } {print}' )" >> $GITHUB_ENV 
-                echo "MESSAGE=$(  ${{github.event.compare_url}} | awk '{ gsub("{base}","709910b9af30aeba78de12af217c464a70737995") }  {print}' )" >> $GITHUB_ENV   
+                echo "MESSAGE=$(echo $COMPARE_URL | awk -v repl="709910b9af30aeba78de12af217c464a70737995" '{ gsub("{base}",repl) print}' )" >> $GITHUB_ENV   
       - name: print
         run: |
              echo {{env.MESSAGE}}
