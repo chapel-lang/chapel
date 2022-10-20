@@ -27,7 +27,7 @@ jobs:
       - name: get commits payload
        
         run: |
-                echo "${{env.SHA}}"
+                echo "before ${{github.event.before}}"
                 
                 echo "MESSAGE=$( echo 'https://api.github.com/repos/bhavanijayakumaran/chapel/compare/{base}...{head}' | awk -v rep='$env.SHA' '{gsub("{base}",rep) gsub("{head}","bla-blah") } {print}')" >> $GITHUB_ENV   
       - name: print
