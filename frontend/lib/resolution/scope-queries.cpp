@@ -798,6 +798,30 @@ static const Scope* findScopeViz(Context* context,
   bool got = lookupInScopeViz(context, scope, resolving,
                               nameInScope, useOrImport, isFirstPart, vec);
 
+  // We might've discovered the same ID multiple times, via different
+  // scopes (i.e., via multiple BorrowedIdsWithName). Delete duplicates by
+  // first combining all IDs into one vector, and then cleaning up
+  // that vector.
+  std::vector<ID> allIds;
+  for (auto bids : vec) {
+    std::copy(bids.begin(), bids.end(), std::back_inserter(allIds));
+  }
+  // This will _not_ turn x,y,x into x,y, but that's fine, since distinct
+  // IDs in this vector represent an error.
+  allIds.erase(std::unique(allIds.begin(), allIds.end()), allIds.end());
+
+  // Note that this logic isn't needed for regular identifiers, since
+  // they aren't aliased in the same way, i.e.,
+  //
+  //     var y = x;
+  //
+  // resolves to a new variable y, whereas
+  //
+  //     import A as B;
+  //
+  // should still resolve to the original A (but now, B is found in a different
+  // scope).
+
   if (got == false || vec.size() == 0) {
     if (useOrImport == VIS_USE)
       context->error(idForErrs, "could not find target of 'use'");
@@ -806,7 +830,7 @@ static const Scope* findScopeViz(Context* context,
 
     return nullptr;
 
-  } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+  } else if (allIds.size() > 1) {
     if (useOrImport == VIS_USE)
       context->error(idForErrs, "ambiguity in finding target of 'use'");
     else
