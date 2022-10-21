@@ -2524,6 +2524,9 @@ expandForLoop(ForLoop* forLoop) {
       }
 
       if (testBlock == NULL) {
+        if (!isBoundedIterator(iterFn)) {
+          USR_WARN("The behavior of zippered serial loops whose leader is an unbounded range has changed in this release; to maintain the previous behavior, swap a bounded iterand into the leader position (the first expression in the 'zip(...)').");
+        }
         if (isNotDynIter) {
           // note that we have found the first test
           testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
