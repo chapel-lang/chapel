@@ -1709,12 +1709,9 @@ bool Resolver::enter(const NamedDecl* decl) {
   assert(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
-  bool canOverload = false;
-  if (const Function* fn = decl->toFunction()) {
-    if (fn->isParenless() == false) {
-      canOverload = true;
-    }
-  }
+  // All functions can be overloaded, even parenless ones (via return
+  // intent overloading).
+  bool canOverload = decl->isFunction();
 
   if (canOverload == false) {
     // check for multiple definitions
@@ -1725,10 +1722,21 @@ bool Resolver::enter(const NamedDecl* decl) {
 
     if (vec.size() > 0) {
       const BorrowedIdsWithName& m = vec[0];
-      if (m.id(0) == decl->id() && m.numIds() > 1) {
-        std::vector<ID> redefinedIds(m.numIds());
-        std::copy(m.begin(), m.end(), redefinedIds.begin());
-        CHPL_REPORT(context, Redefinition, decl, redefinedIds);
+      if (m.id(0) == decl->id()) {
+        // Checks if the given ID refers to a declaration conflicting
+        // with this one. Functions don't conflict.
+        auto isConflictingId = [&](auto decl) {
+          auto ast = parsing::idToAst(context, decl);
+          return !ast->isFunction();
+        };
+
+        std::vector<ID> redefinedIds;
+        std::copy_if(m.begin(), m.end(),
+                     std::back_inserter(redefinedIds), isConflictingId);
+        if (redefinedIds.size() > 1) {
+          // The first one is the ID we're looking at itself.
+          CHPL_REPORT(context, Redefinition, decl, redefinedIds);
+        }
       }
     }
   }
