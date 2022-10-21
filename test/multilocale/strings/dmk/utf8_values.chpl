@@ -9,7 +9,7 @@ on Locales[numLocales-1] {
       write("#", c2);
     on Locales[0] {
       write("\t", str);
-      for (j, bval) in zip(0.., str.bytes()) {
+      for (bval, j) in zip(str.bytes(), 0..) {
         write(" ", bval);
         var bval2 = str.byte(j);
         if bval2 != bval then
