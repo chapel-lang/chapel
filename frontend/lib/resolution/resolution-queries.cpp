@@ -2488,7 +2488,7 @@ static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const CallInfo& ci,
-                 ScopeSet& visited) {
+                 NamedScopeSet& visited) {
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
@@ -2929,7 +2929,7 @@ static std::vector<BorrowedIdsWithName>
 lookupCalledExprConsideringReceiver(Context* context,
                                     const Scope* inScope,
                                     const CallInfo& ci,
-                                    ScopeSet& visited) {
+                                    NamedScopeSet& visited) {
   const Scope* receiverScope = nullptr;
 
   // For method and operator calls, also consider the receiver scope.
@@ -2969,7 +2969,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   // search for candidates at each POI until we have found a candidate
   CandidatesVec candidates;
   size_t firstPoiCandidate = 0;
-  ScopeSet visited;
+  NamedScopeSet visited;
 
   // inject compiler-generated candidates in a manner similar to below
   // (note that any added candidates are already fully instantiated)

@@ -304,7 +304,7 @@ static bool doLookupInScope(Context* context,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
-                            ScopeSet& checkedScopes,
+                            NamedScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result);
 
 static const ResolvedVisibilityScope*
@@ -330,7 +330,7 @@ static bool doLookupInImports(Context* context,
                               UniqueString name,
                               bool onlyInnermost,
                               bool skipPrivateVisibilities,
-                              ScopeSet& checkedScopes,
+                              NamedScopeSet& checkedScopes,
                               std::vector<BorrowedIdsWithName>& result) {
   // Get the resolved visibility statements, if available
   const ResolvedVisibilityScope* r = nullptr;
@@ -429,7 +429,7 @@ static bool doLookupInScope(Context* context,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
-                            ScopeSet& checkedScopes,
+                            NamedScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result) {
 
   bool checkDecls = (config & LOOKUP_DECLS) != 0;
@@ -449,7 +449,7 @@ static bool doLookupInScope(Context* context,
   // two 'result' vector entries in that case...
   size_t startSize = result.size();
 
-  auto pair = checkedScopes.insert(scope);
+  auto pair = checkedScopes.insert(std::make_pair(name, scope));
   if (pair.second == false) {
     // scope has already been visited by this function,
     // so don't try it again.
@@ -556,7 +556,7 @@ static bool lookupInScopeViz(Context* context,
                              VisibilityStmtKind useOrImport,
                              bool isFirstPart,
                              std::vector<BorrowedIdsWithName>& result) {
-  ScopeSet checkedScopes;
+  NamedScopeSet checkedScopes;
 
   LookupConfig config = LOOKUP_INNERMOST;
 
@@ -601,7 +601,7 @@ std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
                                                    const Scope* receiverScope,
                                                    UniqueString name,
                                                    LookupConfig config) {
-  ScopeSet checkedScopes;
+  NamedScopeSet checkedScopes;
 
   return lookupNameInScopeWithSet(context, scope, receiverScope, name,
                                   config, checkedScopes);
@@ -613,7 +613,7 @@ lookupNameInScopeWithSet(Context* context,
                          const Scope* receiverScope,
                          UniqueString name,
                          LookupConfig config,
-                         ScopeSet& visited) {
+                         NamedScopeSet& visited) {
   std::vector<BorrowedIdsWithName> vec;
 
   if (scope) {
@@ -688,7 +688,7 @@ static void errorIfNameNotInScope(Context* context,
                                   UniqueString name,
                                   ID idForErr,
                                   VisibilityStmtKind useOrImport) {
-  ScopeSet checkedScopes;
+  NamedScopeSet checkedScopes;
   std::vector<BorrowedIdsWithName> result;
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |
