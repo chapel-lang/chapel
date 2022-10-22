@@ -674,7 +674,7 @@ static void printErrorFooter(int guess) {
       "and we're sorry for the hassle.  We would appreciate your reporting this bug --\n"
       "please see %s for instructions.%s\n", help_url,
       (guess == -1) ? "" : "  In the meantime,\n"
-      "the filename + line number above may be useful in working around the issue.\n\n");
+      "the filename + line number above may be useful in working around the issue.\n");
 
     //
     // and exit if it's fatal (isn't it always?)
