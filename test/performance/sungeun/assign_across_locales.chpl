@@ -43,7 +43,7 @@ proc dit (A, param ttype: testTypes) {
         var Diagnostics = getCommDiagnostics();
         writeln("Remote ", ttype:string, " (Locale ", loc.id,
                 "): (gets, puts, forks, fast forks, non-blocking forks)");
-        for (lid, diagnostics) in zip(1..,Diagnostics) do
+        for (diagnostics, lid) in zip(Diagnostics,1..) do
           writeln(lid, ": ", diagnostics);
       }
       if printTiming {

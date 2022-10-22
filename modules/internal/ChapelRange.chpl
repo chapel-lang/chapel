@@ -933,6 +933,26 @@ module ChapelRange {
   pragma "no doc"
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
 
+  pragma "no doc"
+  operator <(r1: range(?), r2: range(?)) {
+    compilerError("Ranges don't support comparisons other than '==' and '!='");
+  }
+
+  pragma "no doc"
+  operator >(r1: range(?), r2: range(?)) {
+    compilerError("Ranges don't support comparisons other than '==' and '!='");
+  }
+
+  pragma "no doc"
+  operator <=(r1: range(?), r2: range(?)) {
+    compilerError("Ranges don't support comparisons other than '==' and '!='");
+  }
+
+  pragma "no doc"
+  operator >=(r1: range(?), r2: range(?)) {
+    compilerError("Ranges don't support comparisons other than '==' and '!='");
+  }
+  
   proc chpl_ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&
     r1.boundedType == r2.boundedType &&
