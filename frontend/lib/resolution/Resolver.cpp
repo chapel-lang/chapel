@@ -1571,7 +1571,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
     // call, we'll establish it later anyway.
   } else {
     // vec.size() == 1 and vec[0].numIds() <= 1
-    const ID& id = vec[0].id(0);
+    const ID& id = vec[0].firstId();
     QualifiedType type;
     if (id.isEmpty()) {
       // empty IDs from the scope resolution process are builtins
@@ -1722,7 +1722,7 @@ bool Resolver::enter(const NamedDecl* decl) {
 
     if (vec.size() > 0) {
       const BorrowedIdsWithName& m = vec[0];
-      if (m.id(0) == decl->id()) {
+      if (m.firstId() == decl->id()) {
         // Checks if the given ID refers to a declaration conflicting
         // with this one. Functions don't conflict.
         auto isConflictingId = [&](auto decl) {
@@ -2305,7 +2305,7 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
       CHPL_REPORT(context, MultipleEnumElems, nodeForErr, elementName, enumType, std::move(redefinedIds));
       return QualifiedType(QualifiedType::CONST_VAR, enumType);
     } else {
-      auto id = vec[0].id(0);
+      auto id = vec[0].firstId();
       auto newParam = EnumParam::get(context, id);
       outElemId = id;
       return QualifiedType(QualifiedType::PARAM, enumType, newParam);
@@ -2355,7 +2355,7 @@ void Resolver::exit(const Dot* dot) {
       // call, we'll establish it later anyway.
     } else {
       // vec.size() == 1 and vec[0].numIds() <= 1
-      const ID& id = vec[0].id(0);
+      const ID& id = vec[0].firstId();
       QualifiedType type;
       if (id.isEmpty()) {
         // empty IDs from the scope resolution process are builtins
@@ -2679,7 +2679,7 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
   auto vec = lookupNameInScope(resolver.context, scope, receiverScope,
                                intent->name(), config);
   if (vec.size() == 1) {
-    resolvedId = vec[0].id(0);
+    resolvedId = vec[0].firstId();
     if (resolver.scopeResolveOnly == false) {
       if (resolvedId.isEmpty()) {
         type = typeForBuiltin(resolver.context, intent->name());

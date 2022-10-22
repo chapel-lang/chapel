@@ -44,17 +44,18 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-static void gather(DeclMap& declared, UniqueString name, const AstNode* d) {
+static void gather(DeclMap& declared, UniqueString name, const AstNode* d,
+                   Decl::Visibility visibility) {
   auto search = declared.find(name);
   if (search == declared.end()) {
     // add a new entry containing just the one ID
     declared.emplace_hint(search,
                           name,
-                          OwnedIdsWithName(d->id()));
+                          OwnedIdsWithName(d->id(), visibility));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.appendId(d->id());
+    val.appendId(d->id(), visibility);
   }
 }
 
@@ -63,7 +64,7 @@ struct GatherQueryDecls {
   GatherQueryDecls(DeclMap& declared) : declared(declared) { }
 
   bool enter(const TypeQuery* ast) {
-    gather(declared, ast->name(), ast);
+    gather(declared, ast->name(), ast, ast->visibility());
     return true;
   }
   void exit(const TypeQuery* ast) { }
@@ -93,7 +94,7 @@ struct GatherDecls {
     }
 
     if (skip == false) {
-      gather(declared, d->name(), d);
+      gather(declared, d->name(), d, d->visibility());
     }
 
     if (d->isFunction()) {
@@ -147,7 +148,7 @@ struct GatherDecls {
 
   // consider 'include module' something that defines a name
   bool enter(const Include* d) {
-    gather(declared, d->name(), d);
+    gather(declared, d->name(), d, uast::Decl::PUBLIC);
     return false;
   }
   void exit(const Include* d) { }
@@ -378,7 +379,7 @@ static bool doLookupInImports(Context* context,
       }
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
-        result.push_back(BorrowedIdsWithName(is.scope()->id()));
+        result.push_back(BorrowedIdsWithName(is.scope()->id(), uast::Decl::PUBLIC));
         found = true;
       }
     }
@@ -418,7 +419,7 @@ static bool doLookupInToplevelModules(Context* context,
   if (mod == nullptr)
     return false;
 
-  result.push_back(BorrowedIdsWithName(mod->id()));
+  result.push_back(BorrowedIdsWithName(mod->id(), uast::Decl::PUBLIC));
   return true;
 }
 
@@ -457,7 +458,7 @@ static bool doLookupInScope(Context* context,
   }
 
   if (checkDecls) {
-    bool got = scope->lookupInScope(name, result);
+    bool got = scope->lookupInScope(name, result, skipPrivateVisibilities);
     if (onlyInnermost && got) return true;
   }
 
@@ -839,7 +840,7 @@ static const Scope* findScopeViz(Context* context,
     return nullptr;
   }
 
-  ID foundId = vec[0].id(0);
+  ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
   if (isModule(tag) || isInclude(tag) ||
       (useOrImport == VIS_USE && isEnum(tag))) {
@@ -1245,7 +1246,7 @@ const InnermostMatch& findInnermostDecl(Context* context,
     else
       count = InnermostMatch::ONE;
 
-    id = r.id(0);
+    id = r.firstId();
   }
 
   auto result = InnermostMatch(id, count);
