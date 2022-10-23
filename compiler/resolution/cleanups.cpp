@@ -789,7 +789,7 @@ static void cleanupNothingVarsAndFields() {
       case PRIM_ASSIGN:
         if (isNothingType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtNothing->refType) {
-          INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
+          INT_ASSERT(call, call->get(1)->typeInfo() == call->get(2)->typeInfo());
           // Remove moves where the rhs has type nothing. If the rhs is a
           // call to something other than a few primitives, still make
           // that call, just don't move the result into anything.
