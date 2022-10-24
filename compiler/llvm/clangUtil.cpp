@@ -2386,11 +2386,16 @@ void runClang(const char* just_parse_filename) {
   static bool is_installed_fatal_error_handler = false;
 
   // These warnings are _required_ to make sure the code Clang generates
-  // will play well with our backend.
+  // when compiling the code in Chapel 'extern' blocks will play well
+  // with our backend.
   const char* clangRequiredWarningFlags[] = {
-    "-Wall", "-Werror", "-Wpointer-arith",
-    "-Wwrite-strings", "-Wno-strict-aliasing",
-    "-Wmissing-declarations", "-Wmissing-prototypes",
+    "-Wall",
+    "-Werror",
+    "-Wpointer-arith",
+    "-Wwrite-strings",
+    "-Wno-strict-aliasing",
+    "-Wmissing-declarations",
+    "-Wmissing-prototypes",
     "-Wstrict-prototypes",
     "-Wmissing-format-attribute",
     // clang can't tell which functions we use
