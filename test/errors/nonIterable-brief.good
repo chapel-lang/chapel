@@ -1,7 +1,2 @@
-error in /Users/daniel.fedorin/Documents/software/chapel/modules/internal/ChapelRange.chpl:2277: where clause does not result in a param bool value
-error in /Users/daniel.fedorin/Documents/software/chapel/modules/internal/ChapelRange.chpl:2294: where clause does not result in a param bool value
-error in /Users/daniel.fedorin/Documents/software/chapel/modules/internal/ChapelRange.chpl:2333: where clause does not result in a param bool value
-error in /Users/daniel.fedorin/Documents/software/chapel/modules/internal/ChapelRange.chpl:2362: where clause does not result in a param bool value
-error in /Users/daniel.fedorin/Documents/software/chapel/modules/internal/ChapelRange.chpl:2391: where clause does not result in a param bool value
 error in nonIterable.chpl:2: cannot iterate over a value of type 'int(64)'
 error in nonIterable.chpl:3: cannot iterate over a value of type 'int(64)'

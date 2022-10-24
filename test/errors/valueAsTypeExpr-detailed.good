@@ -1,6 +1,3 @@
-─── error in /Users/daniel.fedorin/Documents/software/chapel/modules/internal/ChapelDomain.chpl:373 ───
-  Cannot resolve call: no matching candidates
-
 ─── error in valueAsTypeExpr.chpl:2 [ValueUsedAsType] ───
   Type specifier is a value of type 'int(64)' while a type was expected.
   In the following type specifier:
