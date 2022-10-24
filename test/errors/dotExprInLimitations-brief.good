@@ -1,1 +1,1 @@
-error in dotExprInLimitations.chpl:6: encountered dot expression 'M.a' in visibility limitation
+error in dotExprInLimitations.chpl:6: encountered dot expression 'M.a' in 'except' list

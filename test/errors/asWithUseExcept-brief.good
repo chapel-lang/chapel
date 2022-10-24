@@ -1,2 +1,1 @@
-error in asWithUseExcept.chpl:6: invalid use of 'as' in this use statement
-  note in asWithUseExcept.chpl:6: cannot use 'as' with 'except'
+error in asWithUseExcept.chpl:6: invalid use of 'as' in this 'use' statement

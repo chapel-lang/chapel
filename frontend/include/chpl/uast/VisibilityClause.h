@@ -164,6 +164,41 @@ class VisibilityClause final : public AstNode {
 
 
 } // end namespace uast
+
+/// \cond DO_NOT_DOCUMENT
+
+template <>
+struct stringify<uast::VisibilityClause::LimitationKind> {
+  void operator()(std::ostream& streamOut, StringifyKind stringKind,
+                  uast::VisibilityClause::LimitationKind limitationKind) const {
+    switch (limitationKind) {
+      case uast::VisibilityClause::LimitationKind::BRACES:
+        streamOut << "braces";
+        break;
+      case uast::VisibilityClause::LimitationKind::EXCEPT:
+        streamOut << "except";
+        break;
+      case uast::VisibilityClause::LimitationKind::ONLY:
+        streamOut << "only";
+        break;
+      case uast::VisibilityClause::LimitationKind::NONE:
+        streamOut << "none";
+        break;
+      default:
+        assert(false && "should not reach this point");
+    }
+  }
+};
+
+template <>
+struct mark<uast::VisibilityClause::LimitationKind> {
+  void operator()(Context* context, uast::VisibilityClause::LimitationKind t) {
+    // No need to mark enums
+  }
+};
+
+/// \endcond
+
 } // end namespace chpl
 
 #endif

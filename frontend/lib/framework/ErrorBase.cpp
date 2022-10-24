@@ -20,6 +20,7 @@
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/uast/VisibilityClause.h"
 #include "chpl/types/all-types.h"
 #include <sstream>
 

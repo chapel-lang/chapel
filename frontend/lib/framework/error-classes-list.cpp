@@ -14,6 +14,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
+ *
  * limitations under the License.
  */
 #include "chpl/framework/ErrorBase.h"
@@ -21,8 +22,10 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/uast/VisibilityClause.h"
 #include "chpl/types/all-types.h"
 #include <sstream>
+#include <cstring>
 
 namespace chpl {
 
@@ -162,9 +165,14 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
   wr.heading(kind_, type_, locationOnly(visibilityClause),
              "cannot find symbol '", symbolName, "' for ", useOrImport, ".");
-  wr.message("Symbol named here:");
-  wr.code(visibilityClause);
-  wr.message("Searching in scope of '", searchedScope->name(), "':");
+  wr.message("In the following '", useOrImport, "' statement:");
+  wr.code(visibilityClause, { visibilityClause });
+  // get class name of AstNode that generated scope (probably Module or Enum)
+  // and lowercase it for readability
+  std::string whatIsSearched = tagToString(searchedScope->tag());
+  whatIsSearched[0] = std::tolower(whatIsSearched[0]);
+  wr.message("Searching in the scope of ", whatIsSearched, " '",
+             searchedScope->name(), "':");
   wr.code(searchedScope->id());
 }
 
@@ -173,37 +181,43 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
   wr.heading(kind_, type_, id, "cannot find module '", moduleName,
-             "' for ", useOrImport, ".");
-  wr.message("Module named here:");
-  wr.code(id);
+             "' for '", useOrImport, "'.");
+  wr.message("In the following '", useOrImport, "' statement:");
+  wr.code<ID, ID>(id, { id });
 }
 
 void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  wr.heading(kind_, type_, id, "attempted to ", useOrImport, " '", moduleName,
+  wr.heading(kind_, type_, id, "attempted to '", useOrImport, "' '", moduleName,
              "' which is not a module.");
-  wr.message("Target named here:");
-  wr.code(id);
+  wr.message("In the following '", useOrImport, "' statement:");
+  wr.code<ID, ID>(id, { id });
+  wr.message("Only modules and enums can be used with '", useOrImport,
+             "' statements.");
 }
 
 void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   auto use = std::get<const uast::Use*>(info);
   auto as = std::get<const uast::As*>(info);
   wr.heading(kind_, type_, locationOnly(use),
-             "invalid use of 'as' in this use statement.");
-  wr.note(locationOnly(as), "cannot use 'as' with 'except'.");
-  wr.message("Renaming in 'except'-lists is not supported.");
+             "invalid use of 'as' in this 'use' statement.");
+  wr.code(use, { as });
+  wr.message("The 'except' keyword and renaming cannot be used together.");
 }
 
 void ErrorDotExprInLimitations::write(ErrorWriterBase& wr) const {
   auto dot = std::get<const uast::Dot*>(info);
+  auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
+  auto limitationKind = std::get<const uast::VisibilityClause::LimitationKind>(info);
   wr.heading(kind_, type_, locationOnly(dot), "encountered dot expression '",
-             dot, "' in visibility limitation.");
+             dot, "' in '", limitationKind, "' list.");
+  wr.code(visibilityClause, {dot});
   wr.message(
-      "Dot expressions are not allowed in the limitations of a visibility "
-      "statement (use/import).");
+      "Dot expressions are not allowed in the 'except' or 'only' list of a "
+      "'use' "
+      "or 'import'.");
 }
 
 void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
@@ -212,9 +226,9 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, locationOnly(as),
              "this form of 'as' is not yet supported.");
   wr.message(
-      "'As' requires both original and new names to be simple identifiers, but "
+      "'as' requires both the original and new names to be simple identifiers, but "
       "instead got the following:");
-  wr.code(expectedIdentifier);
+  wr.code(expectedIdentifier, { expectedIdentifier });
 }
 
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {

@@ -1,4 +1,8 @@
 ─── error in dotExprInLimitations.chpl:6 [DotExprInLimitations] ───
-  Encountered dot expression 'M.a' in visibility limitation.
-  Dot expressions are not allowed in the limitations of a visibility statement (use/import).
+  Encountered dot expression 'M.a' in 'except' list.
+      |
+    6 |   use M except M.a;
+      |                ⎺⎺⎺  
+      |
+  Dot expressions are not allowed in the 'except' or 'only' list of a 'use' or 'import'.
 

@@ -1,10 +1,11 @@
 ─── error in useImportUnknownSym.chpl:6 [UseImportUnknownSym] ───
   Cannot find symbol 'b' for import.
-  Symbol named here:
+  In the following 'import' statement:
       |
     6 |   import M.b;
+      |          ⎺⎺⎺  
       |
-  Searching in scope of 'M':
+  Searching in the scope of module 'M':
       |
     1 | module M {
       |
