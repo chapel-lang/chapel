@@ -304,8 +304,8 @@ proc Replicated.dsiIndexToLocale(indexx): locale {
 // common redirects
 override proc ReplicatedDom.dsiLow           return whole.lowBound;
 override proc ReplicatedDom.dsiHigh          return whole.highBound;
-override proc ReplicatedDom.dsiAlignedLow    return whole.alignedLow;
-override proc ReplicatedDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc ReplicatedDom.dsiAlignedLow    return whole.low;
+override proc ReplicatedDom.dsiAlignedHigh   return whole.high;
 override proc ReplicatedDom.dsiFirst         return whole.first;
 override proc ReplicatedDom.dsiLast          return whole.last;
 override proc ReplicatedDom.dsiStride        return whole.stride;

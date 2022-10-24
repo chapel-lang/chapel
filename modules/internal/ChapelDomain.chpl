@@ -1236,7 +1236,7 @@ module ChapelDomain {
       for param i in 0..rank-1 {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
-          idx(i) = dim(i).alignedLow;
+          idx(i) = dim(i).low;
           upranges(updim) = this._value.dsiDim(i)[args(i)]; // intersect ranges
           updim += 1;
         } else {
@@ -2156,8 +2156,8 @@ module ChapelDomain {
       for param i in 0..<rank {
           var currDim = this.dim(i);
           div /= currDim.sizeAs(int);
-          const lo = currDim.alignedLow;
-          const hi = currDim.alignedHigh;
+          const lo = currDim.low;
+          const hi = currDim.high;
           const stride = currDim.stride;
           const zeroInd = rankOrder/div;
           var currInd = zeroInd*stride;
