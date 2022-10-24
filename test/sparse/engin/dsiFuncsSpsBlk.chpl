@@ -34,5 +34,5 @@ writeln("stride:\t\t",SparseDom.stride);
 writeln("alignment:\t",SparseDom.alignment);
 writeln("first:\t\t",SparseDom.first);
 writeln("last:\t\t",SparseDom.last);
-writeln("alignedLow:\t",SparseDom.low);
-writeln("alignedHigh:\t",SparseDom.high);
+writeln("low:\t",SparseDom.low);
+writeln("high:\t",SparseDom.high);

@@ -58,5 +58,5 @@ else {
   writeln("last:\t\t", SparseDom.last == expectedLast);
 }
 
-writeln("alignedLow:\t",SparseDom.low);
-writeln("alignedHigh:\t",SparseDom.high);
+writeln("low:\t",SparseDom.low);
+writeln("high:\t",SparseDom.high);
