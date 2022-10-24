@@ -639,7 +639,7 @@ module ChapelRange {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
     }
-    return this.alignedHigh;
+    return this.high;
   }
 
   pragma "no doc"

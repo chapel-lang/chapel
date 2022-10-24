@@ -8,11 +8,11 @@ const ParentDom = {7..#2*N align 1, 17..#3*N align 5}
 var SparseDom: sparse subdomain (ParentDom);
 var SparseMat: [SparseDom] int;
 
-writeln(ParentDom.alignedLow);
+writeln(ParentDom.low);
 
-var row = [i in ParentDom.dim(1)] (ParentDom.dim(0).alignedLow + 
+var row = [i in ParentDom.dim(1)] (ParentDom.dim(0).low + 
     ParentDom.stride[0]*2, i);
-var col = [i in ParentDom.dim(0)] (i, ParentDom.dim(1).alignedLow + 
+var col = [i in ParentDom.dim(0)] (i, ParentDom.dim(1).low + 
     ParentDom.stride[1]*3);
 //add one full row and column
 SparseDom += row;
@@ -34,5 +34,5 @@ writeln("stride:\t\t",SparseDom.stride);
 writeln("alignment:\t",SparseDom.alignment);
 writeln("first:\t\t",SparseDom.first);
 writeln("last:\t\t",SparseDom.last);
-writeln("alignedLow:\t",SparseDom.alignedLow);
-writeln("alignedHigh:\t",SparseDom.alignedHigh);
+writeln("alignedLow:\t",SparseDom.low);
+writeln("alignedHigh:\t",SparseDom.high);
