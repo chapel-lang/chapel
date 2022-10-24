@@ -719,16 +719,16 @@ class InnermostMatch {
 template <>
 struct stringify<resolution::VisibilityStmtKind> {
   void operator()(std::ostream& streamOut, StringifyKind stringKind,
-		  resolution::VisibilityStmtKind kind) const {
+                  resolution::VisibilityStmtKind kind) const {
     switch (kind) {
       case resolution::VisibilityStmtKind::VIS_USE:
-		streamOut << "use";
-		break;
+        streamOut << "use";
+        break;
       case resolution::VisibilityStmtKind::VIS_IMPORT:
-		streamOut << "import";
-		break;
+        streamOut << "import";
+        break;
       default:
-		assert(false && "should not reach this point");
+        assert(false && "should not reach this point");
     }
   }
 };
