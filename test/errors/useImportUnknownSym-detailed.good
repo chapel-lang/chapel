@@ -3,7 +3,7 @@
   In the following 'import' statement:
       |
     6 |   import M.b;
-      |          ⎺⎺⎺  
+      |          ⎺⎺⎺
       |
   Searching in the scope of module 'M':
       |

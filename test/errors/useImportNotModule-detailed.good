@@ -3,7 +3,7 @@
   In the following 'use' statement:
       |
     8 |   use M.someProc;
-      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺  
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   Only modules and enums can be used with 'use' statements.
 

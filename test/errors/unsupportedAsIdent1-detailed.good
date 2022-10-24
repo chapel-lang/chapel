@@ -3,6 +3,6 @@
   'as' requires both the original and new names to be simple identifiers, but instead got the following:
       |
     6 |   use M as b.a;
-      |            ⎺⎺⎺  
+      |            ⎺⎺⎺
       |
 

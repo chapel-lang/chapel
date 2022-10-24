@@ -2,7 +2,7 @@
   Invalid use of 'as' in this 'use' statement.
       |
     6 |   use M except a as b;
-      |                ⎺⎺⎺⎺⎺⎺  
+      |                ⎺⎺⎺⎺⎺⎺
       |
   The 'except' keyword and renaming cannot be used together.
 
