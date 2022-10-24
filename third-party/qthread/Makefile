@@ -27,7 +27,7 @@ endif
 ifneq ($(CHPL_MAKE_HWLOC),none)
   # Have Qthreads get its hwloc topology from the Chapel runtime,
   # unless directed not to.
-  TOPOLOGY=hwloc
+  TOPOLOGY=binders
   ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
     CFLAGS_NEEDS_RT_INCLUDES = y
     CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-get-topology-function="chpl_topo_getHwlocTopology()"
