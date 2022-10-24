@@ -96,9 +96,10 @@ strategy in a ``new-expression``, it also creates an instance that has its
 lifetime managed by the compiler (:ref:`Class_New`).
 
 Class instances that are ``unmanaged`` have their lifetime managed
-explicitly and ``delete`` must be used to reclaim their memory.
+explicitly by the programmer. The ``delete`` keyword must be used to
+reclaim their memory.
 
-No matter the memory management strategy used, class types support
+Regardless of the memory management strategy used, class types support
 *borrowing*. A ``borrowed`` class instance refers to the same class
 instance as another variable but has no impact on the lifetime of that
 instance. The process of getting such a reference to an instance is
@@ -163,8 +164,8 @@ Class Types
 ~~~~~~~~~~~
 
 A class type is formed by the combination of a basic class type and a
-memory management strategy.
-
+memory management strategy. Class types can be used in a variety of scenarios
+such as variable declarations or type specifiers on formal arguments.
 
 
 .. code-block:: syntax
@@ -176,11 +177,10 @@ memory management strategy.
      'borrowed' basic-class-type
      'unmanaged' basic-class-type
 
-A basic-class-type can be specified using the name of a class. Generic classes
-must be instantiated to serve as a fully-specified type, for example, to declare
-a variable. More information on instantiating generic types can be found in the
-:ref:`Type_Constructors` Section.
-
+A `basic-class-type` can be specified using the name of any non-generic class.
+To use a generic class in a `class-type`, it must be fully-instantiated. More
+information on instantiating generic types can be found in the
+:ref:`Type Constructors <Type_Constructors>` Section.
 
 
 .. code-block:: syntax
@@ -194,10 +194,9 @@ specified, may appear in the inheritance lists of other class
 declarations.
 
 If a class type's memory management strategy is unspecified, it will be
-generic. To be clear, instances of classes default to ``owned`` memory
-management when the strategy is left unspecified; however, a class type
-(e.g., as a type specifier on a formal argument) does not have a default
-strategy
+generic. (This is not the case for instances of classes. When a new class
+instance is created with an unspecified memory management strategy it
+will default to ``owned``.)
 
 Variables of class type cannot store ``nil`` unless the class type is
 nilable (:ref:`Nilable_Classes`).
@@ -2019,10 +2018,10 @@ the memory.
 Owned Objects
 -------------
 
-`owned` (along with :record:`~SharedObject.shared`) manage the
-deallocation of a class instance. :record:`~OwnedObject.owned` is meant to be
-used when only one reference to an object needs to manage that object's storage
-at a time.
+Including ``owned`` (or :record:`~SharedObject.shared`) in a class type directs
+the compiler to manage the deallocation of a class instances of that type.
+:record:`~OwnedObject.owned` is meant to be used when only one reference to an
+object needs to manage that object's storage at a time.
 
 Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
 
@@ -2041,7 +2040,7 @@ Additionally, it is possible to explicitly request an ``owned`` class instance
  var myOwnedObject = new owned MyClass();
 
 When ``myOwnedObject`` goes out of scope, the class instance it refers to will
-be deleted.  It is possible to transfer the ownership to another `owned`
+be deleted. It is possible to transfer the ownership to another ``owned``
 variable before that happens.
 
 Copy initializing from ``myOwnedObject`` or assigning it to another
@@ -2062,7 +2061,7 @@ and transfer the owned class instance to the other value.
  // when myOwnedObject goes out of scope.
 
 
-`owned` forms part of a type and can be used in type expressions:
+``owned`` forms part of a type and can be used in type expressions:
 
 .. code-block:: chapel
 
@@ -2134,8 +2133,8 @@ For example:
 The default intent for :record:`~OwnedObject.owned` is ``const ref``.
 See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
 
-Methods on `owned`:
-~~~~~~~~~~~~~~~~~~~~
+Methods on `owned` Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. include:: /builtins/OwnedObject.rst
 
@@ -2146,10 +2145,11 @@ Methods on `owned`:
 Shared Objects
 --------------
 
-:record:`~SharedObject.shared` (along with :record:`~OwnedObject.owned`) manage
-the deallocation of a class instance. :record:`~SharedObject.shared` is meant to
-be used when many different references will exist to the object at the same time
-and these references need to keep the object alive.
+Including ``shared`` (or :record:`~OwnedObject.owned`) in a class type directs
+the compiler to manage the deallocation of a class instances of that type.
+:record:`~OwnedObject.owned` is meant to be used when many different references
+will exist to the object at the same time and these references need to keep
+the object alive.
 
 Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
 
@@ -2210,7 +2210,7 @@ See :ref:`about-owned-coercions` for more details and examples.
 The default intent for :record:`~SharedObject.shared` types is ``const ref``.
 See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
 
-Methods on `shared`:
-~~~~~~~~~~~~~~~~~~~~
+Methods on `shared` Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. include:: /builtins/SharedObject.rst
