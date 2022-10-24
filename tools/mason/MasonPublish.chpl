@@ -678,7 +678,7 @@ private proc checkLicense(projectHome: string) throws {
     const url = 'https://github.com/spdx/license-list.git ';
     const command = 'git clone -q ' + branch + depth + url + dest;
     if !isDir(dest) then runCommand(command);
-    var licenseList = listdir(MASON_HOME + "/spdx");
+    var licenseList = listDir(MASON_HOME + "/spdx");
     for licenses in licenseList {
       const licenseName: string = licenses.strip('.txt', trailing=true);
       if licenseName == defaultLicense || defaultLicense == 'None' {
@@ -769,7 +769,7 @@ private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
 /* Checks to make sure the package only has one main module
  */
 private proc moduleCheck(projectHome : string) throws {
-  const subModules = listdir(projectHome + '/src');
+  const subModules = listDir(projectHome + '/src');
   if subModules.size > 1 then return false;
   else return true;
 }
@@ -777,7 +777,7 @@ private proc moduleCheck(projectHome : string) throws {
 /* Checks package for examples */
 proc exampleCheck(projectHome: string) {
   if isDir(projectHome + '/example') {
-    const examples = listdir(projectHome + '/example');
+    const examples = listDir(projectHome + '/example');
     return examples.size > 0;
   } else return false;
 }
@@ -785,7 +785,7 @@ proc exampleCheck(projectHome: string) {
 /* Checks package for tests */
 proc testCheck(projectHome: string) {
   if isDir(projectHome + '/test') {
-    const tests = listdir(projectHome + '/test');
+    const tests = listDir(projectHome + '/test');
     return tests.size > 0;
   } else return false;
 }
