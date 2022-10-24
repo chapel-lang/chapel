@@ -672,9 +672,9 @@ static void printErrorFooter(int guess) {
     print_error("\n\n"
       "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
       "and we're sorry for the hassle.  We would appreciate your reporting this bug --\n"
-      "please see %s for instructions.%s\n", help_url,
+      "please see %s for instructions.%s\n\n", help_url,
       (guess == -1) ? "" : "  In the meantime,\n"
-      "the filename + line number above may be useful in working around the issue.\n");
+      "the filename + line number above may be useful in working around the issue.");
 
     //
     // and exit if it's fatal (isn't it always?)
