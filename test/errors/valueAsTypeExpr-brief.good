@@ -1,1 +1,1 @@
-error in valueAsTypeExpr.chpl:2: type specifier is a value of type 'int(64)' while a type was expected
+error in valueAsTypeExpr.chpl:2: type specifier is a value of type 'int(64)', but it was expected to be a type

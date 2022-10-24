@@ -206,7 +206,7 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   auto typeExpr = std::get<const uast::AstNode*>(info);
   auto type = std::get<types::QualifiedType>(info);
   wr.heading(kind_, type_, typeExpr,
-             "type specifier is ", type, " while a type was expected.");
+             "type specifier is ", type, ", but it was expected to be a type.");
   wr.message("In the following type specifier:");
   wr.code(typeExpr, { typeExpr });
   // wr.message("Did you mean to use '.type'?");
