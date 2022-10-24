@@ -2037,9 +2037,16 @@ module ChapelDomain {
     proc first return _value.dsiFirst;
     /* Return the last index in this domain */
     proc last return _value.dsiLast;
+
+    // ***
+    // TODO: Deprecate these too
+    // ***
+
     /* Return the low index in this domain factoring in alignment */
+    deprecated "'.alignedLow' is deprecated; please use '.low' instead"
     proc alignedLow return _value.dsiAlignedLow;
     /* Return the high index in this domain factoring in alignment */
+    deprecated "'.alignedHigh' is deprecated; please use '.high' instead"
     proc alignedHigh return _value.dsiAlignedHigh;
 
     /* This error overload is here because without it, the domain's

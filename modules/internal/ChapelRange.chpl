@@ -550,7 +550,7 @@ module ChapelRange {
   /* Return the range's aligned low bound.  Note that this is a
      synonym for :proc:`range.low`.
   */
-  deprecated "'.alignedLow' is now deprecated; please use '.low' instead"
+  deprecated "'.alignedLow' is deprecated; please use '.low' instead"
   inline proc range.alignedLow: idxType {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
@@ -634,7 +634,7 @@ module ChapelRange {
   /* Return the range's aligned high bound.  Note that this is a
      synonym for :proc:`range.high`.
   */
-  deprecated "'.alignedHigh' is now deprecated; please use '.high' instead"
+  deprecated "'.alignedHigh' is deprecated; please use '.high' instead"
   inline proc range.alignedHigh: idxType {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
