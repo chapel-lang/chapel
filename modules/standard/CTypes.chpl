@@ -468,6 +468,7 @@ module CTypes {
 
   pragma "no doc"
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
   pragma "no doc"
   pragma "fn synchronization free"
