@@ -131,10 +131,10 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
-        compilers=gnu,llvm,cray,intel
+        compilers=gnu,llvm,intel
         comms=gasnet,none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
-        substrates=aries,mpi,none
+        substrates=aries,none
         locale_models=flat
         auxfs=none,lustre
         libpics=none,pic
@@ -395,10 +395,7 @@ else
         load_prgenv_intel
         export CHPL_TARGET_COMPILER=cray-prgenv-intel
         ;;
-    ( cray )
-        load_prgenv_cray
-        export CHPL_TARGET_COMPILER=cray-prgenv-cray
-        ;;
+ 
     ( compiler )
         load_prgenv_gnu
         ;;
