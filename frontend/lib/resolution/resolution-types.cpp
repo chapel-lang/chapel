@@ -463,6 +463,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
       entryIdx++;
     } else {
+      // handle a varargs formal
       numVarArgFormals += 1;
 
       if (numVarArgFormals > 1) {
@@ -475,19 +476,34 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       numEntries = numFormals + attemptedNumVarArgs - 1;
       byFormalIdx_.resize(numEntries);
 
+      QualifiedType starQT;
       if (formalQT.type() != nullptr) {
         const TupleType* tup = formalQT.type()->toTupleType();
-        formalQT = tup->starType();
+        assert(tup);
+        if (tup->isStarTuple()) {
+          starQT = tup->starType();
+        }
       }
 
       for (int j = 0; j < attemptedNumVarArgs; j++) {
         FormalActual& entry = byFormalIdx_[entryIdx];
 
+        QualifiedType qt;
+        if (starQT.type() != nullptr) {
+          qt = starQT;
+        } else if (formalQT.type() != nullptr) {
+          // try to pull the type out of the formalQT if it
+          // is after instantiation.
+          const TupleType* tup = formalQT.type()->toTupleType();
+          assert(tup);
+          qt = tup->elementType(j);
+        }
+
         entry.formal_ = decl;
         entry.hasActual_ = false;
         entry.formalIdx_ = i;
         entry.actualIdx_ = -1;
-        entry.formalType_ = formalQT;
+        entry.formalType_ = qt;
         entry.formalInstantiated_ = formalInstantiated;
         entry.hasDefault_ = untyped->formalHasDefault(i);
         entry.isVarArgEntry_ = true;
