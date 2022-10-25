@@ -1,4 +1,4 @@
-operatorsFirst.chpl:213: warning: an implicit module named 'operatorsFirst' is being introduced to contain this file-scope code
+operatorsFirst.chpl:213: warning: an implicit module named 'operatorsFirst' is being introduced to contain file-scope code
 In DefinesOp.+
 {x = 10}
 In DefinesOp.align

@@ -1,2 +1,2 @@
-topleveluse.chpl:1: warning: an implicit module named 'topleveluse' is being introduced to contain this file-scope code
+topleveluse.chpl:1: warning: an implicit module named 'topleveluse' is being introduced to contain file-scope code
 But the code runs anyway!

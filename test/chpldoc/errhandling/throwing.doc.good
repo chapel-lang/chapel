@@ -1,4 +1,4 @@
-warning in throwing.doc.chpl:1: an implicit module named 'throwing.doc' is being introduced to contain this file-scope code
+warning in throwing.doc.chpl:1: an implicit module named 'throwing.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: throwing.doc

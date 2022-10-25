@@ -1,4 +1,4 @@
-warning in calls.doc.chpl:19: an implicit module named 'calls.doc' is being introduced to contain this file-scope code
+warning in calls.doc.chpl:19: an implicit module named 'calls.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: calls.doc

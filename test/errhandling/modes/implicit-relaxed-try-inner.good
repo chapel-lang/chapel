@@ -1,4 +1,4 @@
-implicit-relaxed-try-inner.chpl:19: warning: an implicit module named 'implicit-relaxed-try-inner' is being introduced to contain this file-scope code
+implicit-relaxed-try-inner.chpl:19: warning: an implicit module named 'implicit-relaxed-try-inner' is being introduced to contain file-scope code
 In outer implicit module
 in test
 OK

@@ -1,5 +1,5 @@
 ─── warning in implicitSubModule.chpl:4 [ImplicitFileModule] ───
-  An implicit module named 'implicitSubModule' is being introduced to contain this file-scope code.
+  An implicit module named 'implicitSubModule' is being introduced to contain file-scope code.
   The following is the first file-scope statement:
       |
     4 | use List;

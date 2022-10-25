@@ -1,4 +1,4 @@
-warning in inlineTest.doc.chpl:74: an implicit module named 'inlineTest.doc' is being introduced to contain this file-scope code
+warning in inlineTest.doc.chpl:74: an implicit module named 'inlineTest.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: inlineTest.doc

@@ -1,4 +1,4 @@
-operatorsAlone.chpl:214: warning: an implicit module named 'operatorsAlone' is being introduced to contain this file-scope code
+operatorsAlone.chpl:214: warning: an implicit module named 'operatorsAlone' is being introduced to contain file-scope code
 In DefinesOp.+
 {x = 10}
 In DefinesOp.align

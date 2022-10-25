@@ -1,4 +1,4 @@
-warning in basic.doc.chpl:54: an implicit module named 'basic.doc' is being introduced to contain this file-scope code
+warning in basic.doc.chpl:54: an implicit module named 'basic.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: basic.doc

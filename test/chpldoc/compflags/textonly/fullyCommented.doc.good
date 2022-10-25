@@ -1,4 +1,4 @@
-warning in fullyCommented.doc.chpl:22: an implicit module named 'fullyCommented.doc' is being introduced to contain this file-scope code
+warning in fullyCommented.doc.chpl:22: an implicit module named 'fullyCommented.doc' is being introduced to contain file-scope code
 fullyCommented.doc
 
 Usage:

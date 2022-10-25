@@ -1,4 +1,4 @@
-warning in longerComments.doc.chpl:27: an implicit module named 'longerComments.doc' is being introduced to contain this file-scope code
+warning in longerComments.doc.chpl:27: an implicit module named 'longerComments.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: longerComments.doc

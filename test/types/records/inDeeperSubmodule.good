@@ -1,4 +1,4 @@
-inDeeperSubmodule.chpl:12: warning: an implicit module named 'inDeeperSubmodule' is being introduced to contain this file-scope code
+inDeeperSubmodule.chpl:12: warning: an implicit module named 'inDeeperSubmodule' is being introduced to contain file-scope code
 blah
 0
 0

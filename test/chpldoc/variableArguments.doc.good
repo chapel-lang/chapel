@@ -1,4 +1,4 @@
-warning in variableArguments.doc.chpl:33: an implicit module named 'variableArguments.doc' is being introduced to contain this file-scope code
+warning in variableArguments.doc.chpl:33: an implicit module named 'variableArguments.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: variableArguments.doc

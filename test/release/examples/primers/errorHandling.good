@@ -1,4 +1,4 @@
-errorHandling.chpl:20: warning: an implicit module named 'errorHandling' is being introduced to contain this file-scope code
+errorHandling.chpl:20: warning: an implicit module named 'errorHandling' is being introduced to contain file-scope code
 an error occurred
 Warning: input.txt does not exist
 Warning: backup_input.txt does not exist

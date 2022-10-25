@@ -191,7 +191,7 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   auto lastModule = std::get<1>(info);
   auto implicitModule = std::get<2>(info);
   wr.heading(kind_, type_, code, "an implicit module named '",
-             implicitModule->name(), "' is being introduced to contain this "
+             implicitModule->name(), "' is being introduced to contain "
              "file-scope code.");
   wr.message("The following is the first file-scope statement:");
   wr.code(code);
