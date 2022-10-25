@@ -690,9 +690,9 @@ def set_up_environment():
     # compopts (note that we have to strip out our preprocessing)
     if args.compopts:
         args.compopts = [strip_preprocessing(x) for x in args.compopts]
-        args.compopts = "--cc-warnings " + " ".join(args.compopts) + " -s WritersReturnBool=false"
+        args.compopts = "--cc-warnings " + " ".join(args.compopts)
     else:
-        args.compopts = "--cc-warnings" + " -s WritersReturnBool=false"
+        args.compopts = "--cc-warnings"
 
     # execopts (note that we have to strip out our preprocessing)
     if args.execopts:

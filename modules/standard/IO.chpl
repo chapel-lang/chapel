@@ -2053,27 +2053,28 @@ proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws
 
 /*
   A parameter to select between the new and deprecated overloads of the
-  :record:`channel` type's `writer` methods.
+  :record:`fileWriter` type's `writer` methods.
 
-  These include: :proc:`channel.write`, :proc:`channel.writeln`, :proc:`channel.writebits`,
-  :proc:`channel.writeBytes`, and :proc:`FormattedIO.channel.writef`
+  These include: :proc:`channel.write`, :proc:`channel.writeln`,
+  :proc:`channel.writebits`, :proc:`channel.writeBytes`, and
+  :proc:`FormattedIO.channel.writef`
 
   This parameter also toggles the new and deprecated variants of the top-level
-  :proc:`ChapelIO.writef` method.
+  :proc:`~ChapelIO.writef` method.
 
-  - When `WritersReturnBool=true` the deprecated variants of the writer methods are called
+  - When `WritersReturnBool=true` the deprecated variants of the writer methodsare called
   - When `WritersReturnBool=false` the new variants of the writer methods are called
 
   .. note::
-    The only difference between the new and deprecated versions of these methods is the
-    return type. The deprecated overloads return a `bool` which is always ``true``, while
-    the new overloads do not return anything.
+    The only difference between the new and deprecated versions of these methods
+    is the return type. The deprecated overloads return a `bool` which is always
+    ``true``, while the new overloads do not return anything.
 
-    Leaving this param with its default value of ``true``, will allow you to rely on the
-    return value for the time being; however, the returning methods will be removed in
-    a future release.
+    Compiling with this param set to ``true`` will allow you to rely on the
+    return value for the time being; however, the returning methods will be
+    removed in a future release.
 */
-config param WritersReturnBool=true;
+config param WritersReturnBool=false;
 
 pragma "ignore noinit"
 pragma "no doc"
@@ -4325,7 +4326,7 @@ proc _channel.writeIt(const x) throws {
     return ret;
   }
 
-  deprecated "The returning variant of ``writeBytes`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+  deprecated "The returning variant of ``writeBytes`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
   proc _channel.writeBytes(x, len:c_ssize_t):bool throws where WritersReturnBool == true {
     try this._writeBytes(x, len);
     return true;
@@ -5050,7 +5051,7 @@ proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
   return ret;
 }
 
-deprecated "The returning variant of ``writebits`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+deprecated "The returning variant of ``writebits`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
 proc _channel.writebits(v:integral, nbits:integral):bool throws where WritersReturnBool == true {
   if castChecking {
     // Error if writing more bits than fit into v
@@ -5309,7 +5310,7 @@ proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
   return tupleVal;
 }
 
-deprecated "The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+deprecated "The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
 inline proc _channel.write(const args ...?k):bool throws where WritersReturnBool == true {
   try this._write((...args));
   return true;
@@ -5385,7 +5386,7 @@ proc _channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
 
 // documented in varargs version
 pragma "no doc"
-deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
 proc _channel.writeln():bool throws where WritersReturnBool == true {
   try this._writeln();
   return true;
@@ -5400,7 +5401,7 @@ proc _channel._writeln() throws {
   try this._write(new ioNewline());
 }
 
-deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with :param:`WritersReturnBool` = false"
+deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
 proc _channel.writeln(const args ...?k):bool throws where WritersReturnBool == true {
   try this._writeln((...args));
   return true;
@@ -7543,7 +7544,7 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
   }
 }
 
-deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
+deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
 proc _channel.writef(fmtStr: ?t, const args ...?k): bool throws
     where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
 {
@@ -7630,7 +7631,7 @@ proc _channel._writef(fmtStr: ?t, const args ...?k) throws
 }
 
 // documented in varargs version
-deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
+deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
 proc _channel.writef(fmtStr:?t): bool throws
     where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
 {
