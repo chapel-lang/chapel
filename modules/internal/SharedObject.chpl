@@ -94,21 +94,36 @@ module SharedObject {
   // reason it couldn't be one class.
   pragma "no doc"
   class ReferenceCount {
-    var count: atomic int;
+    var strong_count: atomic int;
+    var weak_count: atomic int;
 
     // count should be initialized to 1 in default initializer.
     proc init() {
-      // Want this:      count = 1;
+      // Want this:      strong_count = 1, weak_count = 0;
       this.complete();
-      count.write(1);
+      strong_count.write(1);
+      weak_count.write(0);
     }
 
+    // strong interface for normal 'shared' classes
     proc retain() {
-      count.add(1);
+      strong_count.add(1);
     }
     proc release() {
-      var oldValue = count.fetchSub(1);
-      return oldValue - 1;
+      var oldValue = strong_count.fetchSub(1);
+      return (oldValue - 1, this.weak_count.read());
+    }
+
+    // weak interface for 'WeakPointer's to 'shared' classes
+    proc incrementWeak() {
+      weak_count.add(1);
+    }
+    proc decrementWeak() {
+      var oldValue = weak_count.fetchSub(1);
+      return (this.strong_count.read(), oldValue - 1);
+    }
+    proc strongCount() {
+      return this.strong_count.read();
     }
   }
 
@@ -332,10 +347,14 @@ module SharedObject {
     pragma "no doc"
     proc ref doClear() {
       if chpl_p != nil && chpl_pn != nil {
-        var count = chpl_pn!.release();
-        if count == 0 {
+        var (strong_count, weak_count) = chpl_pn!.release();
+        if strong_count == 0 {
+          // if i'm the last strong pointer, free the underlying class
           delete _to_unmanaged(chpl_p);
-          delete chpl_pn;
+          if weak_count == 0 {
+            // if there are no weak pointers, free the reference counter
+            delete chpl_pn;
+          }
         }
       }
       chpl_p = nil;
@@ -440,6 +459,16 @@ module SharedObject {
 
     // = should call retain-release
     // copy-init should call retain
+
+    /*
+      Return a :class:`WeakPointer` to the class instance manged by this
+      'shared' pointer.
+
+      The weak reference count will be incremented.
+    */
+    proc getWeakPointer() {
+      return new WeakPointer(true, this.chpl_t, this.chpl_p, this.chpl_pn);
+    }
   }
 
 
@@ -656,5 +685,102 @@ module SharedObject {
       }
     }
     return _to_nonnil(x.chpl_p);
+  }
+
+  record WeakPointer {
+    pragma "no doc"
+    type chpl_t;  // contained type (class type)
+
+    pragma "no doc"
+    pragma "owned"
+    var chpl_p:__primitive("to nilable class", chpl_t); // instance pointer
+
+    pragma "no doc"
+    pragma "owned"
+    var chpl_pn:unmanaged ReferenceCount?; // reference counter
+
+    // Private initializer for creating from a shared object
+    pragma "no doc"
+    proc init(_private: bool, type t, p, pn) {
+      var ptr = p:_to_nilable(_to_unmanaged(t));
+      var count = pn;
+      if ptr != nil {
+        // increment the weak reference count
+        count!.incrementWeak();
+      } else {
+        // don't store a count for the nil pointer
+        count = nil;
+      }
+
+      this.chpl_t = t;
+      this.chpl_p = ptr;
+      this.chpl_pn = count;
+    }
+
+    // pragma "no doc"
+    // proc init(type t) {
+    //   // compilerError(
+    //   //   "a 'WeakPointer' cannot be initialized directly; instead, call the 'getWeakPointer' method on a shared class instance."
+    //   // );
+    //   this.chpl_t = t;
+    //   this.chpl_p = nil;
+    //   this.chpl_pn = nil;
+    // }
+
+    /*
+      Return a nilable shared reference to the underlying class instance.
+
+      The return value will be ``nil`` if there are no strong references
+      to the class instance (i.e., the underlying class has been deinitialized).
+
+      Otherwise, a shared reference to the underlying class will be returned
+      and the strong reference count will be incremented.
+    */
+    proc upgrade() {
+      if this.chpl_p != nil && this.chpl_p!.strongCount() > 0 {
+        return new _shared(true, this.chpl_t, this.chpl_p, this.chpl_pn);
+      } else {
+        return nil;
+      }
+    }
+
+    /*
+      When a :class:`WeakPointer` is deinitialized, the underlying classes weak
+      reference count will be decremented.
+    */
+    proc deinit() {
+      if this.chpl_p != nil && this.chpl_pn != nil {
+          var (strong_count, weak_count) = this.chpl_pn!.decrementWeak();
+          if weak_count == 0 && strong_count == 0 {
+            // if I'm the last weak pointer, and there are no strong pointers, free the ReferenceCounter
+            delete this.chpl_pn;
+          }
+        }
+        this.chpl_p = nil;
+        this.chpl_pn = nil;
+    }
+
+    /*
+       Copy-initializer. Creates a new :record:`shared`
+       that refers to the same class instance as `src`.
+       These will share responsibility for managing the instance.
+     */
+    proc init=(pragma "nil from arg" const ref src: WeakPointer) {
+      this.chpl_t = src.chpl_t;
+
+      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+
+      this.chpl_p = src.chpl_p;
+      this.chpl_pn = src.chpl_pn;
+
+      this.complete();
+
+      if this.chpl_pn != nil then
+        this.chpl_pn!.incrementWeak();
+
+      if isNonNilableClass(this.type) && isNilableClass(src) then
+        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+    }
   }
 }
