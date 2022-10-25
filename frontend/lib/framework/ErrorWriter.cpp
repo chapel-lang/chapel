@@ -138,7 +138,7 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
   writeFile(oss_, loc);
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
-    const char* name =ErrorBase::getTypeName(type);
+    const char* name = ErrorBase::getTypeName(type);
     if (name != nullptr) {
       oss_ << " [" << name << "]";
     }
@@ -195,12 +195,25 @@ void ErrorWriter::writeCode(const Location& location,
     ranges.push_back(std::make_pair(hlStart, hlEnd));
   }
 
+  // Example:
+  //   Error message text
+  //         |
+  //     123 | proc f() {}
+  //         |
+  //
+  // ^^   Error message indent
+  //   ^^ Code indent
+  //     ^^^ Last line length
+  //        ^ One extra space of padding
+
+  // Gutter size includes just the code indent and the last line length.
   size_t gutterSize = std::to_string(location.lastLine()).size() + 2;
+  // When not printing the line number, we need to manually print the error
+  // message indent and the one extra space of padding.
+  size_t codeIndent = gutterSize+3;
   int lineNumber = location.firstLine();
 
-  // printBlank(lineLength + 2);
-  // oss_ << "(file " << location.path() << ")" << std::endl;
-  printBlank(oss_, gutterSize + 3);
+  printBlank(oss_, codeIndent);
   oss_ << "|";
   oss_ << std::endl;
   std::string highlightString = "";
@@ -220,7 +233,7 @@ void ErrorWriter::writeCode(const Location& location,
     oss_ << str[i];
     if (str[i] == '\n') {
       if (printHighlight) {
-        printBlank(oss_, gutterSize + 3);
+        printBlank(oss_, codeIndent);
 
         // Clean up trailing whitespace
         while (!highlightString.empty() && highlightString.back() == ' ') {
@@ -239,7 +252,7 @@ void ErrorWriter::writeCode(const Location& location,
     // No newline at the end in the file, insert one ourselves.
     oss_ << std::endl;
   }
-  printBlank(oss_, gutterSize + 3);
+  printBlank(oss_, codeIndent);
   oss_ << "|";
   oss_ << std::endl;
 }
