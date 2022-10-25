@@ -1374,7 +1374,7 @@ module OS {
 
   /*
     :class:`InsufficientCapacityError` is a subclass of :class:`IoError`
-    indicating that an IO operation required more memory than was provided
+    indicating that an IO operation required more storage than was provided
   */
   class InsufficientCapacityError: IoError {
     proc init(details: string = "") {

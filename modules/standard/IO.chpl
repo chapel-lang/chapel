@@ -343,7 +343,7 @@ Some of these subclasses commonly used within the I/O implementation include:
  * :class:`OS.EofError` - the end of file was reached
  * :class:`OS.UnexpectedEofError` - a read or write only returned part of the requested data
  * :class:`OS.BadFormatError` - data read did not adhere to the requested format
- * :class:`OS.InsufficientCapacityError` - a read or write operation required more memory than was available
+ * :class:`OS.InsufficientCapacityError` - a read or write operation required more storage than was available
 
 An error code can be converted to a string using the function
 :proc:`OS.errorToString()`.
