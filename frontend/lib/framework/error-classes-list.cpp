@@ -190,8 +190,8 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  wr.heading(kind_, type_, id, "attempted to '", useOrImport, "' '", moduleName,
-             "' which is not a module.");
+  wr.heading(kind_, type_, id, "cannot '", useOrImport, "' '", moduleName,
+             "', which is not a module.");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
   wr.message("Only modules and enums can be used with '", useOrImport,
@@ -211,7 +211,7 @@ void ErrorDotExprInLimitations::write(ErrorWriterBase& wr) const {
   auto dot = std::get<const uast::Dot*>(info);
   auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
   auto limitationKind = std::get<const uast::VisibilityClause::LimitationKind>(info);
-  wr.heading(kind_, type_, locationOnly(dot), "encountered dot expression '",
+  wr.heading(kind_, type_, locationOnly(dot), "cannot use dot expression '",
              dot, "' in '", limitationKind, "' list.");
   wr.code(visibilityClause, {dot});
   wr.message(

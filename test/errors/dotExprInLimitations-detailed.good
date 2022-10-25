@@ -1,5 +1,5 @@
 ─── error in dotExprInLimitations.chpl:6 [DotExprInLimitations] ───
-  Encountered dot expression 'M.a' in 'except' list.
+  Cannot use dot expression 'M.a' in 'except' list.
       |
     6 |   use M except M.a;
       |                ⎺⎺⎺
