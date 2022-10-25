@@ -14,8 +14,8 @@ isMount works: true
 exists works: true
 
 Creating a copy
-getGID works: true
-getUID works: true
+getGid works: true
+getUid works: true
 getMode works: true
 getFileSize works: true
 
