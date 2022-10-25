@@ -2035,11 +2035,11 @@ void Resolver::prepareCallInfoActuals(const Call* call,
     auto actual = call->actual(i);
 
     if (isQuestionMark(actual)) {
-      if (questionArg) {
-        CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
-      } else {
-        // Keep questionArg pointing at the first question argument we found
+      if (questionArg == nullptr) {
         questionArg = actual;
+      } else {
+        CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
+        // Keep questionArg pointing at the first question argument we found
       }
     } else {
       ResolvedExpression& r = byPostorder.byAst(actual);
@@ -2511,8 +2511,6 @@ void Resolver::exit(const New* node) {
     resolveNewForRecord(node, recordType);
 
   } else {
-
-    // TODO: Need to also print the type name.
     if (node->management() != New::DEFAULT_MANAGEMENT) {
       CHPL_REPORT(context, MemManagementNonClass, node, qtTypeExpr.type());
     }
