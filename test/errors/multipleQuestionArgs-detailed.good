@@ -1,5 +1,5 @@
 ─── error in multipleQuestionArgs.chpl:4 [MultipleQuestionArgs] ───
-  Cannot have ? more than once in a call
+  Cannot have '?' more than once in a call
   The first ? argument occurs here:
       |
     4 | test(?, ?, ?);
@@ -12,7 +12,7 @@
       |
 
 ─── error in multipleQuestionArgs.chpl:4 [MultipleQuestionArgs] ───
-  Cannot have ? more than once in a call
+  Cannot have '?' more than once in a call
   The first ? argument occurs here:
       |
     4 | test(?, ?, ?);

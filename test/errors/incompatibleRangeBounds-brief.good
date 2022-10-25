@@ -1,4 +1,4 @@
-error in incompatibleRangeBounds.chpl:3: upper and lower bounds of range expression have incompatible types
-error in incompatibleRangeBounds.chpl:4: upper and lower bounds of range expression have incompatible types
-error in incompatibleRangeBounds.chpl:5: upper and lower bounds of range expression have incompatible types
-error in incompatibleRangeBounds.chpl:6: upper and lower bounds of range expression have incompatible types
+error in incompatibleRangeBounds.chpl:3: bounds of range expression have incompatible types
+error in incompatibleRangeBounds.chpl:4: bounds of range expression have incompatible types
+error in incompatibleRangeBounds.chpl:5: bounds of range expression have incompatible types
+error in incompatibleRangeBounds.chpl:6: bounds of range expression have incompatible types

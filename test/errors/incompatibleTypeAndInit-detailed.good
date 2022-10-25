@@ -1,5 +1,5 @@
 ─── error in incompatibleTypeAndInit.chpl:1 [IncompatibleTypeAndInit] ───
-  Type mismatch between declared type and initialization expression.
+  Type mismatch between declared type of 'x' and initialization expression.
   In the following declaration:
       |
     1 | var x: int = "hello";

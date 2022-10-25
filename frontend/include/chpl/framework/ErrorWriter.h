@@ -114,6 +114,18 @@ struct Writer<errordetail::AsFileName<T>> {
 };
 
 template <>
+struct Writer<const types::Type*> {
+  void operator()(Context* context, std::ostream& oss, const types::Type* type) {
+    if (type->isUnknownType()) {
+      oss << "unknown type";
+    } else {
+      stringify<const types::Type*> str;
+      str(oss, CHPL_SYNTAX, type);
+    }
+  }
+};
+
+template <>
 struct Writer<types::QualifiedType> {
   void operator()(Context* context, std::ostream& oss, const types::QualifiedType& qt) {
     if (!qt.hasTypePtr()) {

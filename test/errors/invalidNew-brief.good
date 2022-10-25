@@ -1,2 +1,2 @@
 error in invalidNew.chpl:3: cannot use memory management strategy 'owned' with non-class type 'E'
-error in invalidNew.chpl:3: invalid use of 'new' with type 'E', which is neither a class nor a record
+error in invalidNew.chpl:3: invalid use of 'new' on enum type 'E'

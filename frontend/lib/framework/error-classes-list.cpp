@@ -157,6 +157,7 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::NamedDecl*>(info);
   auto& ids = std::get<std::vector<ID>>(info);
   wr.heading(kind_, type_, decl, "'", decl->name(), "' has multiple definitions.");
+  wr.message("The first definition is here:");
   wr.code(decl);
   for (const ID& id : ids) {
     if (id != decl->id()) {
@@ -268,8 +269,14 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
   auto typeExprType = std::get<3>(info);
   auto initExprType = std::get<4>(info);
 
-  wr.heading(kind_, type_, decl,
-             "type mismatch between declared type and initialization expression.");
+  if (auto namedDecl = decl->toNamedDecl()) {
+    wr.heading(kind_, type_, decl,
+               "type mismatch between declared type of '", namedDecl->name(),
+               "' and initialization expression.");
+  } else {
+    wr.heading(kind_, type_, decl,
+               "type mismatch between declared type and initialization expression.");
+  }
   wr.message("In the following declaration:");
   wr.code(decl, { type, init });
   wr.message("the type specifier has type '", typeExprType, "', while the "
@@ -279,7 +286,7 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
 void ErrorTupleDeclUnknownType::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   wr.heading(kind_, type_, decl,
-             "attempt to split unknown type using split tuple assignment.");
+             "value of unknown type cannot be split using tuple assignment.");
   wr.code(decl);
 }
 
@@ -287,8 +294,8 @@ void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   auto type = std::get<const types::Type*>(info);
   wr.heading(kind_, type_, decl,
-            "attempt to use tuple declaration to split a value of "
-            "non-tuple type '", type, "'.");
+            "value of non-tuple type '", type, "' cannot be split using a tuple "
+            "declaration.");
   wr.message("In the following tuple declaration:");
   wr.code(decl);
   wr.message("the initialization expression has type '", type, "', while it is expected "
@@ -315,7 +322,7 @@ void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   wr.code(stmt);
   wr.message("there is a reference to a variable defined later:");
   wr.code(laterId);
-  wr.message("Chapel doesn't allow references to variables before they are defined.");
+  wr.message("Variables cannot be referenced before they are defined.");
 }
 
 void ErrorIncompatibleRangeBounds::write(ErrorWriterBase& wr) const {
@@ -324,8 +331,8 @@ void ErrorIncompatibleRangeBounds::write(ErrorWriterBase& wr) const {
   auto qt2 = std::get<2>(info);
 
   wr.heading(kind_, type_, range,
-            "upper and lower bounds of range expression have incompatible types.");
-  wr.message("In the following if-expression:");
+            "bounds of range expression have incompatible types.");
+  wr.message("In the following range expression:");
   wr.code(range, { range->lowerBound(), range->upperBound() });
   if (qt1.kind() == types::QualifiedType::TYPE ||
       qt2.kind() == types::QualifiedType::TYPE) {
@@ -366,17 +373,22 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
     printedOne = true;
     wr.code<ID, ID>(id, { id });
   }
-  wr.message("In Chapel, an enum cannot have repeated elements of the same name.");
+  wr.message("An enum cannot have repeated elements of the same name.");
 }
 
 void ErrorInvalidNew::write(ErrorWriterBase& wr) const {
   auto newExpr = std::get<const uast::New*>(info);
   auto type = std::get<types::QualifiedType>(info);
 
-  // TODO: Specialize this error to more types (e.g. enum).
   if (auto primType = type.type()->toPrimitiveType()) {
     wr.heading(kind_, type_, newExpr,
                "invalid use of 'new' on primitive '", primType, "'");
+  } else if (auto enumType = type.type()->toEnumType()) {
+    wr.heading(kind_, type_, newExpr,
+               "invalid use of 'new' on enum type '", enumType->name(), "'");
+  } else if (auto tupleType = type.type()->toTupleType()) {
+    wr.heading(kind_, type_, newExpr,
+               "invalid use of 'new' on tuple type '", tupleType, "'");
   } else {
     wr.heading(kind_, type_, newExpr, "invalid use of 'new' with type '",
                type.type(), "', which is neither a class nor a record.");
@@ -390,7 +402,7 @@ void ErrorMultipleQuestionArgs::write(ErrorWriterBase& wr) const {
   auto firstQuestion = std::get<1>(info);
   auto secondQuestion = std::get<2>(info);
 
-  wr.heading(kind_, type_, call, "cannot have ? more than once in a call");
+  wr.heading(kind_, type_, call, "cannot have '?' more than once in a call");
   wr.message("The first ? argument occurs here:");
   wr.code(firstQuestion, { firstQuestion });
   wr.message("The second ? argument occurs here:");

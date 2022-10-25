@@ -1,1 +1,1 @@
-error in incompatibleTypeAndInit.chpl:1: type mismatch between declared type and initialization expression
+error in incompatibleTypeAndInit.chpl:1: type mismatch between declared type of 'x' and initialization expression

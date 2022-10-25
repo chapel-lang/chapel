@@ -13,3 +13,24 @@
       |
   Consider removing the 'shared' keyword to fix this error, or defining 'MyRecord' as a class.
 
+─── error in managedRecord.chpl:4 ───
+  Cannot resolve call: no matching candidates
+
+─── error in managedRecord.chpl:5 [MemManagementNonClass] ───
+  Cannot use memory management strategy 'owned' with record 'MyRecord'.
+      |
+    5 | var r1 = new owned MyRecord();
+      |                    ⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Memory management strategies can only be used with classes.
+  'MyRecord' declared as record here:
+      |
+    1 | record MyRecord {
+    2 |   
+    3 | }
+      |
+  Consider removing the 'owned' keyword to fix this error, or defining 'MyRecord' as a class.
+
+─── error in managedRecord.chpl:5 ───
+  Cannot resolve call: no matching candidates
+

@@ -8,5 +8,5 @@
       |
     2 | var y = 1;
       |
-  Chapel doesn't allow references to variables before they are defined.
+  Variables cannot be referenced before they are defined.
 
