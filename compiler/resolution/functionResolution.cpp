@@ -8654,17 +8654,20 @@ static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
           // this deprecation-specific error message should be removed
           // when the bool-returning-writers deprecation is finalized
           if (
-            // writer methods on channels
-            (rhsFn->isMethod() == 1 &&
-            (
-                std::strcmp("write", rhsName) == 0 ||
-                std::strcmp("writeln", rhsName) == 0 ||
-                std::strcmp("writebits", rhsName) == 0 ||
-                std::strcmp("writeBytes", rhsName) == 0 ||
-                std::strcmp("writef", rhsName) == 0
-            )) ||
-            // or, top-level writef
-            std::strcmp("writef", rhsName) == 0
+            rhsFn->getModule()->modTag != MOD_USER && (
+              // writer methods on channels
+              (rhsFn->isMethod() == 1 &&
+                (
+                    std::strcmp("write", rhsName) == 0 ||
+                    std::strcmp("writeln", rhsName) == 0 ||
+                    std::strcmp("writebits", rhsName) == 0 ||
+                    std::strcmp("writeBytes", rhsName) == 0 ||
+                    std::strcmp("writef", rhsName) == 0
+                )
+              ) ||
+              // or, top-level writef
+              std::strcmp("writef", rhsName) == 0
+            )
           ) {
             // emit the write* specific error message:
             USR_FATAL(userCall(call),
