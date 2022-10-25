@@ -207,7 +207,7 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   wr.message("The 'except' keyword and renaming cannot be used together.");
 }
 
-void ErrorDotExprInLimitations::write(ErrorWriterBase& wr) const {
+void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
   auto dot = std::get<const uast::Dot*>(info);
   auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
   auto limitationKind = std::get<const uast::VisibilityClause::LimitationKind>(info);

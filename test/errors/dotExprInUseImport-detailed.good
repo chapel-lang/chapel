@@ -1,4 +1,4 @@
-─── error in dotExprInLimitations.chpl:6 [DotExprInLimitations] ───
+─── error in dotExprInUseImport.chpl:6 [DotExprInUseImport] ───
   Cannot use dot expression 'M.a' in 'except' list.
       |
     6 |   use M except M.a;
