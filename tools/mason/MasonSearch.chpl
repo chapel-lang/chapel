@@ -80,7 +80,7 @@ proc masonSearch(ref args: list(string)) {
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
 
-    for dir in listdir(searchDir, files=false, dirs=true) {
+    for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
       if pattern.search(name) {
         if isHidden(name) {
