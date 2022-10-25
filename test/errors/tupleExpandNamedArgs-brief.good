@@ -1,2 +1,2 @@
-error in tupleExpandNamedArgs.chpl:3: tuple expansion cannot be used with named arguments
+error in tupleExpandNamedArgs.chpl:3: tuple expansion cannot be used to pass values to a non-variadic named argument
 error in tupleExpandNamedArgs.chpl:3: Cannot resolve call: no matching candidates

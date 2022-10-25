@@ -1,5 +1,5 @@
 ─── error in tupleExpandNamedArgs.chpl:3 [TupleExpansionNamedArgs] ───
-  Tuple expansion cannot be used with named arguments.
+  Tuple expansion cannot be used to pass values to a non-variadic named argument.
   A tuple is being expanded here:
       |
     3 | f(a=(...t));

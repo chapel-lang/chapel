@@ -90,7 +90,8 @@ void ErrorTupleExpansionNamedArgs::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info);
   auto tupleOp = std::get<const uast::OpCall*>(info);
 
-  wr.heading(kind_, type_, fnCall, "tuple expansion cannot be used with named arguments.");
+  wr.heading(kind_, type_, fnCall, "tuple expansion cannot be used to pass "
+             "values to a non-variadic named argument.");
   wr.message("A tuple is being expanded here:");
   wr.code(fnCall, { tupleOp });
 }
