@@ -73,7 +73,7 @@ static void test0(void) {
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test0.chpl", 2,
-                     "Domain query expressions may currently only be used "
+                     "domain query expressions may currently only be used "
                      "in formal argument types");
 }
 
@@ -109,13 +109,13 @@ static void test2(void) {
   assert(br.numErrors() == 3);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test2.chpl", 2,
-                     "Type expression uses multiple class kinds: "
+                     "type expression uses multiple class kinds: "
                      "owned shared");
   assertErrorMatches(ctx, br, 1, "test2.chpl", 2,
-                     "Type expression uses multiple class kinds: "
+                     "type expression uses multiple class kinds: "
                      "shared borrowed");
   assertErrorMatches(ctx, br, 2, "test2.chpl", 2,
-                     "Type expression uses multiple class kinds: "
+                     "type expression uses multiple class kinds: "
                      "borrowed unmanaged");
 }
 
@@ -171,31 +171,31 @@ static void test4(void) {
   assert(br.numErrors() == 10);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test4.chpl", 2,
-                     "Can't apply private to types yet");
+                     "can't apply private to types yet");
   assertErrorMatches(ctx, br, 1, "test4.chpl", 3,
-                     "Can't apply private to types yet");
+                     "can't apply private to types yet");
   assertErrorMatches(ctx, br, 2, "test4.chpl", 4,
-                     "Can't apply private to types yet");
+                     "can't apply private to types yet");
   assertErrorMatches(ctx, br, 3, "test4.chpl", 6,
-                     "Private declarations within function bodies "
+                     "private declarations within function bodies "
                      "are meaningless");
   assertErrorMatches(ctx, br, 4, "test4.chpl", 9,
-                     "Can't apply private to the fields or methods of "
+                     "can't apply private to the fields or methods of "
                      "a class or record yet");
   assertErrorMatches(ctx, br, 5, "test4.chpl", 10,
-                     "Can't apply private to the fields or methods of "
+                     "can't apply private to the fields or methods of "
                      "a class or record yet");
   assertErrorMatches(ctx, br, 6, "test4.chpl", 12,
-                     "Can't apply private to the fields or methods of "
+                     "can't apply private to the fields or methods of "
                      "a class or record yet");
   assertErrorMatches(ctx, br, 7, "test4.chpl", 14,
-                     "Private declarations within nested blocks are "
+                     "private declarations within nested blocks are "
                      "meaningless");
   assertErrorMatches(ctx, br, 8, "test4.chpl", 16,
-                     "Private declarations are meaningless outside of "
+                     "private declarations are meaningless outside of "
                      "module level declarations");
   assertErrorMatches(ctx, br, 9, "test4.chpl", 17,
-                     "Can't apply private to types yet");
+                     "can't apply private to types yet");
 }
 
 static void test5(void) {
@@ -239,16 +239,16 @@ static void test6(void) {
   assert(br.numErrors() == 4);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test6.chpl", 3,
-                     "Configuration constants are allowed only at module "
+                     "configuration constants are allowed only at module "
                      "scope");
   assertErrorMatches(ctx, br, 1, "test6.chpl", 4,
-                     "Configuration constants are allowed only at module "
+                     "configuration constants are allowed only at module "
                      "scope");
   assertErrorMatches(ctx, br, 2, "test6.chpl", 5,
-                     "Configuration parameters are allowed only at module "
+                     "configuration parameters are allowed only at module "
                      "scope");
   assertErrorMatches(ctx, br, 3, "test6.chpl", 6,
-                     "Configuration variables are allowed only at module "
+                     "configuration variables are allowed only at module "
                      "scope");
 }
 
@@ -266,7 +266,7 @@ static void test7(void) {
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test7.chpl", 2,
-                     "Export variables are not yet supported");
+                     "export variables are not yet supported");
 }
 
 static void test8(void) {
@@ -302,13 +302,13 @@ static void test9(void) {
   assert(br.numErrors() == 4);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test9.chpl", 2,
-                     "Extern functions cannot have a body");
+                     "extern functions cannot have a body");
   assertErrorMatches(ctx, br, 1, "test9.chpl", 3,
-                     "Extern functions cannot throw errors");
+                     "extern functions cannot throw errors");
   assertErrorMatches(ctx, br, 2, "test9.chpl", 4,
-                     "Extern functions cannot have a body");
+                     "extern functions cannot have a body");
   assertErrorMatches(ctx, br, 3, "test9.chpl", 4,
-                     "Extern functions cannot throw errors");
+                     "extern functions cannot throw errors");
 }
 
 static void test10(void) {
@@ -325,7 +325,7 @@ static void test10(void) {
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test10.chpl", 2,
-                     "Exported functions cannot have where clauses");
+                     "exported functions cannot have where clauses");
 }
 
 static void test11(void) {
@@ -367,16 +367,16 @@ static void test12(void) {
   assert(br.numErrors() == 4);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test12.chpl", 2,
-                     "Cannot use 'out' intent in a function returning "
+                     "cannot use 'out' intent in a function returning "
                      "with 'type' intent");
   assertErrorMatches(ctx, br, 1, "test12.chpl", 3,
-                     "Cannot use 'inout' intent in a function returning "
+                     "cannot use 'inout' intent in a function returning "
                      "with 'type' intent");
   assertErrorMatches(ctx, br, 2, "test12.chpl", 4,
-                     "Cannot use 'out' intent in a function returning "
+                     "cannot use 'out' intent in a function returning "
                      "with 'param' intent");
   assertErrorMatches(ctx, br, 3, "test12.chpl", 5,
-                     "Cannot use 'inout' intent in a function returning "
+                     "cannot use 'inout' intent in a function returning "
                      "with 'param' intent");
 }
 
@@ -407,22 +407,22 @@ static void test13(void) {
   assert(br.numErrors() == 6);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test13.chpl", 2,
-                     "Symbol names with leading underscores (_bad1) "
+                     "symbol names with leading underscores (_bad1) "
                      "are unstable");
   assertErrorMatches(ctx, br, 1, "test13.chpl", 3,
-                     "Symbol names with leading underscores (_bad2) "
+                     "symbol names with leading underscores (_bad2) "
                      "are unstable");
   assertErrorMatches(ctx, br, 2, "test13.chpl", 4,
-                     "Symbol names with leading underscores (_bad3) "
+                     "symbol names with leading underscores (_bad3) "
                      "are unstable");
   assertErrorMatches(ctx, br, 3, "test13.chpl", 5,
-                     "Symbol names beginning with 'chpl_' (chpl_bad4) "
+                     "symbol names beginning with 'chpl_' (chpl_bad4) "
                      "are unstable");
   assertErrorMatches(ctx, br, 4, "test13.chpl", 6,
-                     "Symbol names beginning with 'chpl_' (chpl_bad5) "
+                     "symbol names beginning with 'chpl_' (chpl_bad5) "
                      "are unstable");
   assertErrorMatches(ctx, br, 5, "test13.chpl", 7,
-                     "Symbol names beginning with 'chpl_' (chpl_bad6) "
+                     "symbol names beginning with 'chpl_' (chpl_bad6) "
                      "are unstable");
 }
 
@@ -446,7 +446,7 @@ static void test14(void) {
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test14.chpl", 2,
-                     "Unions are currently unstable and are expected "
+                     "unions are currently unstable and are expected "
                      "to change in ways that will break their "
                      "current uses");
 }
@@ -490,7 +490,7 @@ static void test16(void) {
   assert(br.numErrors() == 1);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test16.chpl", 5,
-                     "Operators cannot be declared without the operator keyword");
+                     "operators cannot be declared without the operator keyword");
 }
 
 int main() {
