@@ -1033,6 +1033,13 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     }
   }
 
+  // 
+  // Reserve cores for the AM handlers. This has to be done early before
+  // calling other routines that use information about the cores, such as
+  // pinning the heap.
+  //
+  init_ofiReserveCores();
+
   pthread_that_inited = pthread_self();
 }
 
@@ -1054,7 +1061,6 @@ void chpl_comm_post_mem_init(void) {
   if (chpl_numNodes > 1) {
     init_ofiFabricDomain();
   }
-  init_ofiReserveCores();
 }
 
 
@@ -1993,15 +1999,9 @@ void init_ofiFabricDomain(void) {
 //
 static
 void init_ofiReserveCores() {
-  if (envUseDedicatedAmhCores &&
-      (chpl_topo_getNumCPUsPhysical(true) > numAmHandlers)) {
-    for (int i = 0; i < numAmHandlers; i++) {
-      reservedCPUs[i] = chpl_topo_reserveCPUPhysical();
-    }
-  } else {
-    for (int i = 0; i < numAmHandlers; i++) {
-      reservedCPUs[i] = -1;
-    }
+  for (int i = 0; i < numAmHandlers; i++) {
+    reservedCPUs[i] = envUseDedicatedAmhCores ?
+      chpl_topo_reserveCPUPhysical() : -1;
   }
 }
 
@@ -4650,7 +4650,7 @@ void init_amHandling(void) {
   atomic_init_bool(&amHandlersExit, false);
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   for (int i = 0; i < numAmHandlers; i++) {
-    CHK_TRUE(chpl_task_createCommTask(amHandler, &reservedCPUs[i]) == 0);
+    CHK_TRUE(chpl_task_createCommTask(amHandler, NULL, reservedCPUs[i]) == 0);
   }
   PTHREAD_CHK(pthread_cond_wait(&amStartStopCond, &amStartStopMutex));
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
@@ -4686,8 +4686,7 @@ void fini_amHandling(void) {
 static __thread struct perTxCtxInfo_t* amTcip;
 
 static
-void amHandler(void* arg) {
-  int cpu = *((int *) arg);
+void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAllocForAmHandler()) != NULL);
   amTcip = tcip;
@@ -4705,14 +4704,6 @@ void amHandler(void* arg) {
   if (++numAmHandlersActive == 1)
     PTHREAD_CHK(pthread_cond_signal(&amStartStopCond));
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
-
-  //
-  // Bind the thread to its CPU if one was specified.
-  //
-  if (cpu >= 0) {
-    CHK_TRUE(chpl_topo_bindCPU(cpu) == 0);
-    DBG_PRINTF(DBG_AM, "AM handler bound to CPU %d", cpu);
-  }
 
   //
   // Process AM requests and watch transmit responses arrive.

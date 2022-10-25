@@ -771,7 +771,7 @@ static void start_polling(void) {
   pollingRunning = 0;
   pollingQuit = 0;
 
-  if (chpl_task_createCommTask(polling, NULL)) {
+  if (chpl_task_createCommTask(polling, NULL, -1)) {
     chpl_internal_error("unable to start polling task for gasnet");
   }
 

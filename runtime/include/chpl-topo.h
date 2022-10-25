@@ -58,10 +58,13 @@ int chpl_topo_getNumCPUsLogical(chpl_bool /*accessible_only*/);
 //
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count);
 
+//
 // Reserves a physical CPU (core) and returns its hwloc OS index. The
-// core and its PUs will no longer be included in the results returned
-// by chpl_topo_getCPUs, chpl_topo_getNumCPUsPhysical, and
-// chpl_topo_getNumCPUsLogical.
+// core and its PUs will not be returned by chpl_topo_getCPUs,
+// chpl_topo_getNumCPUsPhysical, and chpl_topo_getNumCPUsLogical. Must
+// be called before those functions. Will not reserve a core if CPU
+// binding is not supported on this platform or if there is only one
+// unreserved core.
 //
 // Returns -1 if the reservation failed.
 //

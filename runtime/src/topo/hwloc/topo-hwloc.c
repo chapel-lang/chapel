@@ -82,6 +82,9 @@ static void alignAddrSize(void*, size_t, chpl_bool,
 static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
                                             hwloc_obj_t);
 
+// CPU reservation must happen before CPU information is returned to other
+// layers.
+static chpl_bool okToReserveCPU = true;
 
 //
 // Error reporting.
@@ -241,12 +244,14 @@ static int numCPUsLogAll  = -1;
 
 int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
   CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
+  okToReserveCPU = true;
   return (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
 }
 
 
 int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
   CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
+  okToReserveCPU = false;
   return (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
 }
 
@@ -355,6 +360,7 @@ int getCPUs(hwloc_cpuset_t cpuset, int *cpus, int size) {
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
   // Initializes CPU information.
   CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
+  okToReserveCPU = false;
   return getCPUs(physical ? physAccSet : logAccSet, cpus, count);
 }
 
@@ -653,54 +659,60 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
 
 //
 // Reserves a physical CPU (core) and returns its hwloc OS index. The core and
-// its PUs will no longer be returned by chpl_topo_getCPUs,
-// chpl_topo_getNumCPUsPhysical, and chpl_topo_getNumCPUsLogical. Will not
-// reserve a core if CPU binding is not supported on this platform.
+// its PUs will not be returned by chpl_topo_getCPUs,
+// chpl_topo_getNumCPUsPhysical, and chpl_topo_getNumCPUsLogical. Must be
+// called before those functions. Will not reserve a core if CPU binding is
+// not supported on this platform or if there is only one unreserved core.
 //
-// Returns OS index of reserved physical CPU, -1 otherwise
+// Returns OS index of reserved core, -1 otherwise
 //
 int
 chpl_topo_reserveCPUPhysical(void) {
   int id = -1;
   CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
-  if (topoSupport->cpubind->set_thread_cpubind) {
+  if (okToReserveCPU) {
+    if (topoSupport->cpubind->set_thread_cpubind && (numCPUsPhysAcc > 1)) {
 
 #ifdef DEBUG
-    char buf[1024];
-    _DBG_P("chpl_topo_reserveCPUPhysical before");
-    hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
-    _DBG_P("physAccSet: %s", buf);
-    hwloc_bitmap_list_snprintf(buf, sizeof(buf), physReservedSet);
-    _DBG_P("physReservedSet: %s", buf);
-    hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
-    _DBG_P("logAccSet: %s", buf);
+      char buf[1024];
+      _DBG_P("chpl_topo_reserveCPUPhysical before");
+      hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
+      _DBG_P("physAccSet: %s", buf);
+      hwloc_bitmap_list_snprintf(buf, sizeof(buf), physReservedSet);
+      _DBG_P("physReservedSet: %s", buf);
+      hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+      _DBG_P("logAccSet: %s", buf);
 #endif
-    // Reserve the highest-numbered core.
-    id = hwloc_bitmap_last(physAccSet);
-    if (id >= 0) {
+      // Reserve the highest-numbered core.
+      id = hwloc_bitmap_last(physAccSet);
+      if (id >= 0) {
 
-      // Find the core's object in the topology so we can reserve its PUs.
-      hwloc_obj_t pu, core;
-      CHK_ERR_ERRNO(pu = hwloc_get_obj_inside_cpuset_by_type(topology,
-                                                      physAccSet,
-                                                      HWLOC_OBJ_PU, id));
-      CHK_ERR_ERRNO(core = hwloc_get_ancestor_obj_by_type(topology,
-                                                          HWLOC_OBJ_CORE,
-                                                          pu));
-      // Reserve the core.
-      hwloc_bitmap_andnot(physAccSet, physAccSet, pu->cpuset);
-      numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
-      hwloc_bitmap_or(physReservedSet, physReservedSet, pu->cpuset);
-      CHK_ERR(numCPUsPhysAcc > 0);
+        // Find the core's object in the topology so we can reserve its PUs.
+        hwloc_obj_t pu, core;
+        CHK_ERR_ERRNO(pu = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                                        physAccSet,
+                                                        HWLOC_OBJ_PU, id));
+        CHK_ERR_ERRNO(core = hwloc_get_ancestor_obj_by_type(topology,
+                                                            HWLOC_OBJ_CORE,
+                                                            pu));
+        // Reserve the core.
+        hwloc_bitmap_andnot(physAccSet, physAccSet, pu->cpuset);
+        numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
+        hwloc_bitmap_or(physReservedSet, physReservedSet, pu->cpuset);
+        CHK_ERR(numCPUsPhysAcc > 0);
 
-      // Reserve the core's PUs.
-      hwloc_bitmap_andnot(logAccSet, logAccSet, core->cpuset);
-      numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
-      CHK_ERR(numCPUsLogAcc > 0);
+        // Reserve the core's PUs.
+        hwloc_bitmap_andnot(logAccSet, logAccSet, core->cpuset);
+        numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+        CHK_ERR(numCPUsLogAcc > 0);
 
-      _DBG_P("reserved core %d", id);
+        _DBG_P("reserved core %d", id);
+      }
     }
+  } else {
+    _DBG_P("okToReserveCPU is false");
   }
+
 #ifdef DEBUG
   char buf[1024];
   _DBG_P("chpl_topo_reserveCPUPhysical %d", id);

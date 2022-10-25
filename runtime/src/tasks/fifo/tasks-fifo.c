@@ -410,7 +410,7 @@ void chpl_task_stdModulesInitialized(void) {
 }
 
 
-int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
+int chpl_task_createCommTask(chpl_fn_p fn, void* arg, int cpu) {
   comm_task_fn = fn;
   return chpl_thread_createCommThread(comm_task_wrapper, arg);
 }
