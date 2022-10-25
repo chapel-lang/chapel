@@ -411,6 +411,101 @@ static void test19() {
     {"x"});
 }
 
+// test out intent combined with varargs formals oh my!
+static void test20() {
+  testSplitInit("test20",
+    R""""(
+      module M {
+        proc fOut(out formals:int...) {
+          formals = (4,);
+        }
+        proc test() {
+          var x;
+          fOut(x);
+        }
+      }
+    )"""",
+    {"x"});
+}
+static void test21() {
+  testSplitInit("test21",
+    R""""(
+      module M {
+        proc fOut(out formals:int...) {
+          formals = (4,5);
+        }
+        proc test() {
+          var x;
+          var y;
+          fOut(x, y);
+        }
+      }
+    )"""",
+    {"x", "y"});
+}
+static void test22() {
+  testSplitInit("test22",
+    R""""(
+      module M {
+        proc fOut(out formals...) {
+          formals = (4,);
+        }
+        proc test() {
+          var x:int;
+          fOut(x);
+        }
+      }
+    )"""",
+    {"x"});
+}
+static void test23() {
+  testSplitInit("test23",
+    R""""(
+      module M {
+        proc fOut(out formals...) {
+          formals = (4,5);
+        }
+        proc test() {
+          var x:int;
+          var y:int;
+          fOut(x, y);
+        }
+      }
+    )"""",
+    {"x", "y"});
+}
+static void test24() {
+  testSplitInit("test24",
+    R""""(
+      module M {
+        proc fOut(out formals...) {
+          formals = (4,);
+        }
+        proc test() {
+          var x;
+          fOut(x);
+        }
+      }
+    )"""",
+    {"x"});
+}
+static void test25() {
+  testSplitInit("test25",
+    R""""(
+      module M {
+        proc fOut(out formals...) {
+          formals = (4,5);
+        }
+        proc test() {
+          var x;
+          var y;
+          fOut(x, y);
+        }
+      }
+    )"""",
+    {"x", "y"});
+}
+
 
 int main() {
   test1();
@@ -432,6 +527,12 @@ int main() {
   test17();
   test18();
   test19();
+  test20();
+  test21();
+  test22();
+  test23();
+  test24();
+  test25();
 
   return 0;
 }
