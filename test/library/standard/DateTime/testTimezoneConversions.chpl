@@ -47,16 +47,16 @@ class USTimeZone: Timezone {
     assert(dt.timezone.borrow() == this);
 
     // Find first Sunday in April.
-    var start = first_sunday_on_or_after(DSTSTART.replace(year=dt.year, tzinfo=DSTSTART.timezone));
+    var start = first_sunday_on_or_after(DSTSTART.replace(year=dt.year, tz=DSTSTART.timezone));
     assert(start.weekday():int == 6 && start.month == 4 && start.day <= 7);
 
     // Find last Sunday in October.
-    var end = first_sunday_on_or_after(DSTEND.replace(year=dt.year, tzinfo=DSTEND.timezone));
+    var end = first_sunday_on_or_after(DSTEND.replace(year=dt.year, tz=DSTEND.timezone));
     assert(end.weekday():int == 6 && end.month == 10 && end.day >= 25);
 
     // Can't compare naive to aware objects, so strip the timezone from
     // dt first.
-    if start <= dt.replace(tzinfo=nil) && dt.replace(tzinfo=nil) < end {
+    if start <= dt.replace(tz=nil) && dt.replace(tz=nil) < end {
       return HOUR;
     } else {
       return ZERO;
@@ -169,10 +169,10 @@ proc checkinside(dt, tz:shared, utc:shared, dston, dstoff) {
   if dt.getdate() == dstoff.getdate() && dt.hour == 0 {
     // We're in the hour before the last DST hour.  The last DST hour
     // is ineffable.  We want the conversion back to repeat 1:MM.
-    assert(nexthour_tz == dt.replace(hour=1, tzinfo=dt.timezone));
+    assert(nexthour_tz == dt.replace(hour=1, tz=dt.timezone));
     nexthour_utc += HOUR;
     nexthour_tz = nexthour_utc.astimezone(tz);
-    assert(nexthour_tz == dt.replace(hour=1, tzinfo=dt.timezone));
+    assert(nexthour_tz == dt.replace(hour=1, tz=dt.timezone));
   } else {
     assert(nexthour_tz - dt == HOUR);
   }
@@ -191,13 +191,13 @@ proc checkoutside(dt, tz:shared, utc:shared) {
 }
 
 proc convert_between_tz_and_utc(tz:shared, utc:shared) {
-  var mydston = dston.replace(tzinfo=tz);
+  var mydston = dston.replace(tz=tz);
   // Because 1:MM on the day DST ends is taken as being standard time,
   // there is no spelling in tz for the last hour of daylight time.
   // For purposes of the test, the last hour of DST is 0:MM, which is
   // taken as being daylight time (and 1:MM is taken as being standard
   // time).
-  var mydstoff = dstoff.replace(tzinfo=tz);
+  var mydstoff = dstoff.replace(tz=tz);
   for delta in (new timedelta(weeks=13),
                 DAY,
                 HOUR,
@@ -232,7 +232,7 @@ proc test_easy() {
 
   // OTOH, these fail!  Don't enable them.  The difficulty is that
   // the edge case tests assume that every hour is representable in
-  // the "utc" class.  This is always true for a fixed-offset tzinfo
+  // the "utc" class.  This is always true for a fixed-offset tz
   // class (lke utc_real and utc_fake), but not for Eastern or Central.
   // For these adjacent DST-aware time zones, the range of time offsets
   // tested ends up creating hours in the one that aren't representable
@@ -248,7 +248,7 @@ proc test_tricky() {
   // 22:00 on day before daylight starts.
   var fourback = dston - new timedelta(hours=4);
   var ninewest = new shared FixedOffset(-9*60, "-0900", 0);
-  fourback = fourback.replace(tzinfo=ninewest);
+  fourback = fourback.replace(tz=ninewest);
   // 22:00-0900 is 7:00 UTC == 2:00 EST == 3:00 DST.  Since it's "after
   // 2", we should get the 3 spelling.
   // If we plug 22:00 the day before into Eastern, it "looks like std
@@ -256,18 +256,18 @@ proc test_tricky() {
   // to 22:00 lands on 2:00, which makes no sense in local time (the
   // local clock jumps from 1 to 3).  The point here is to make sure we
   // get the 3 spelling.
-  var expected = dston.replace(hour=3, tzinfo=dston.timezone);
-  var got = fourback.astimezone(Eastern).replace(tzinfo=nil);
+  var expected = dston.replace(hour=3, tz=dston.timezone);
+  var got = fourback.astimezone(Eastern).replace(tz=nil);
   assert(expected == got);
 
   // Similar, but map to 6:00 UTC == 1:00 EST == 2:00 DST.  In that
   // case we want the 1:00 spelling.
-  var sixutc = dston.replace(hour=6, tzinfo=utc_real);
+  var sixutc = dston.replace(hour=6, tz=utc_real);
   // Now 6:00 "looks like daylight", so the offset wrt Eastern is -4,
   // and adding -4-0 == -4 gives the 2:00 spelling.  We want the 1:00 EST
   // spelling.
-  expected = dston.replace(hour=1, tzinfo=dston.timezone);
-  got = sixutc.astimezone(Eastern).replace(tzinfo=nil);
+  expected = dston.replace(hour=1, tz=dston.timezone);
+  got = sixutc.astimezone(Eastern).replace(tz=nil);
   assert(expected == got);
 
   // Now on the day DST ends, we want "repeat an hour" behavior.
@@ -284,14 +284,14 @@ proc test_tricky() {
       var asutc = first_std_hour + utc.borrow().utcOffset(new datetime(1,1,1));
       // First UTC hour to convert; this is 4:00 when utc=utc_real &
       // tz=Eastern.
-      var asutcbase = asutc.replace(tzinfo=utc);
+      var asutcbase = asutc.replace(tz=utc);
       for tzhour in (0, 1, 1, 2) {
-        var expectedbase = dstoff.replace(hour=tzhour, tzinfo=dstoff.timezone);
+        var expectedbase = dstoff.replace(hour=tzhour, tz=dstoff.timezone);
         for minute in (0, 30, 59) {
-          expected = expectedbase.replace(minute=minute, tzinfo=expectedbase.timezone);
-          asutc = asutcbase.replace(minute=minute, tzinfo=asutcbase.timezone);
+          expected = expectedbase.replace(minute=minute, tz=expectedbase.timezone);
+          asutc = asutcbase.replace(minute=minute, tz=asutcbase.timezone);
           var astz = asutc.astimezone(tz);
-          assert(astz.replace(tzinfo=nil) == expected);
+          assert(astz.replace(tz=nil) == expected);
         }
         asutcbase += HOUR;
       }
@@ -300,10 +300,10 @@ proc test_tricky() {
 }
 
 proc test_fromutc() {
-  var now = datetime.utcNow().replace(tzinfo=utc_real);
-  now = now.replace(tzinfo=Eastern);   // insert correct tzinfo
+  var now = datetime.utcNow().replace(tz=utc_real);
+  now = now.replace(tz=Eastern);   // insert correct tz
   var enow = Eastern.fromUtc(now);         // doesn't blow up
-  assert(enow.timezone == Eastern); // has right tzinfo member
+  assert(enow.timezone == Eastern); // has right tz member
 
   // Always converts UTC to standard time.
   class FauxUSTimeZone: USTimeZone {
@@ -324,10 +324,10 @@ proc test_fromutc() {
   //  EDT  0:MM  1:MM  2:MM  3:MM  4:MM  5:MM
 
   // Check around DST start.
-  var start = dston.replace(hour=4, tzinfo=Eastern);
-  var fstart = start.replace(tzinfo=FEastern);
+  var start = dston.replace(hour=4, tz=Eastern);
+  var fstart = start.replace(tz=FEastern);
   for wall in (23, 0, 1, 3, 4, 5) {
-    var expected = start.replace(hour=wall, tzinfo=start.timezone);
+    var expected = start.replace(hour=wall, tz=start.timezone);
     if wall == 23 {
       expected -= new timedelta(days=1);
     }
@@ -339,7 +339,7 @@ proc test_fromutc() {
     assert(expected == got);
 
     // Ensure astimezone() calls fromutc() too.
-    got = fstart.replace(tzinfo=utc_real).astimezone(FEastern);
+    got = fstart.replace(tz=utc_real).astimezone(FEastern);
     assert(expected == got);
 
     start += HOUR;
@@ -347,10 +347,10 @@ proc test_fromutc() {
   }
 
   // Check around DST end.
-  start = dstoff.replace(hour=4, tzinfo=Eastern);
-  fstart = start.replace(tzinfo=FEastern);
+  start = dstoff.replace(hour=4, tz=Eastern);
+  fstart = start.replace(tz=FEastern);
   for wall in (0, 1, 1, 2, 3, 4) {
-    var expected = start.replace(hour=wall, tzinfo=start.timezone);
+    var expected = start.replace(hour=wall, tz=start.timezone);
     var got = Eastern.fromUtc(start);
     assert(expected == got);
 
@@ -359,7 +359,7 @@ proc test_fromutc() {
     assert(expected == got);
 
     // Ensure astimezone() calls fromutc() too.
-    got = fstart.replace(tzinfo=utc_real).astimezone(FEastern);
+    got = fstart.replace(tz=utc_real).astimezone(FEastern);
     assert(expected == got);
 
     start += HOUR;
