@@ -611,7 +611,7 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
       declaredType.kind() != QualifiedType::UNKNOWN &&
       declaredType.kind() != QualifiedType::TYPE_QUERY) {
     if (declaredType.kind() != QualifiedType::TYPE) {
-      context->error(typeForErr, "Value provided where type expected");
+      CHPL_REPORT(context, ValueUsedAsType, typeForErr, declaredType);
       return true;
     }
   }
@@ -622,15 +622,15 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
       initExprType.kind() != QualifiedType::UNKNOWN) {
     if (declKind == QualifiedType::TYPE &&
         initExprType.kind() != QualifiedType::TYPE) {
-      context->error(initForErr, "Cannot initialize type with value");
+      CHPL_REPORT(context, IncompatibleKinds, declKind, initForErr, initExprType);
       return true;
     } else if (declKind != QualifiedType::TYPE &&
                initExprType.kind() == QualifiedType::TYPE) {
-      context->error(initForErr, "Cannot initialize value with type");
+      CHPL_REPORT(context, IncompatibleKinds, declKind, initForErr, initExprType);
       return true;
     } else if (declKind == QualifiedType::PARAM &&
                initExprType.kind() != QualifiedType::PARAM) {
-      context->error(initForErr, "Cannot initialize param with non-param");
+      CHPL_REPORT(context, IncompatibleKinds, declKind, initForErr, initExprType);
       return true;
     }
   }
@@ -680,7 +680,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     auto got = canPass(context, initExprType,
                        QualifiedType(declKind, declaredType.type()));
     if (!got.passes()) {
-      context->error(declForErr, "Type mismatch in declared type vs init expr");
+      CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+                  initForErr, declaredType.type(), initExprType.type());
       typePtr = ErroneousType::get(context);
     } else if (!got.instantiates()) {
       // use the declared type since no conversion/promotion was needed
@@ -1105,20 +1106,20 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
 void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
                                       QualifiedType rhsType) {
   if (!rhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown rhs tuple type in split tuple decl");
+    CHPL_REPORT(context, TupleDeclUnknownType, lhsTuple);
     return;
   }
 
   const TupleType* rhsT = rhsType.type()->toTupleType();
 
   if (rhsT == nullptr) {
-    context->error(lhsTuple, "rhs type is not tuple in split tuple decl");
+    CHPL_REPORT(context, TupleDeclNotTuple, lhsTuple, rhsType.type());
     return;
   }
 
   // Then, check that they have the same size
   if (lhsTuple->numDecls() != rhsT->numElements()) {
-    context->error(lhsTuple, "tuple size mismatch in split tuple decl");
+    CHPL_REPORT(context, TupleDeclMismatchedElems, lhsTuple, rhsT);
     return;
   }
 
@@ -1220,7 +1221,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // TODO: Unclear to me whether we should use this type or the above.
   auto calledType = QualifiedType(qtNewExpr.kind(), initReceiverType);
   bool isMethodCall = true;
-  bool hasQuestionArg = false;
+  const AstNode* questionArg = nullptr;
   std::vector<CallInfoActual> actuals;
 
   // Prepare receiver.
@@ -1229,11 +1230,12 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // Remaining actuals.
   if (call->numActuals()) {
-    prepareCallInfoActuals(call, actuals, hasQuestionArg);
-    assert(!hasQuestionArg);
+    prepareCallInfoActuals(call, actuals, questionArg);
+    assert(!questionArg);
   }
 
-  auto ci = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+  auto ci = CallInfo(name, calledType, isMethodCall,
+                     /* hasQuestionArg */ questionArg != nullptr,
                      /* isParenless */ false,
                      std::move(actuals));
   auto inScope = scopeStack.back();
@@ -1355,7 +1357,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   }
 
   if (error) {
-    context->error(curStmt, "Uses later variable, type not established");
+    CHPL_REPORT(context, UseOfLaterVariable, curStmt, id);
     auto unknownType = UnknownType::get(context);
     return QualifiedType(QualifiedType::UNKNOWN, unknownType);
   }
@@ -1509,8 +1511,8 @@ bool Resolver::enter(const uast::Conditional* cond) {
     auto ifType = commonType(context, returnTypes);
     if (!ifType && !condType.isUnknown()) {
       // do not error if the condition type is unknown
-      r.setType(TYPE_ERROR(context, IncompatibleIfBranches, cond,
-                           returnTypes[0], returnTypes[1]));
+      r.setType(CHPL_TYPE_ERROR(context, IncompatibleIfBranches, cond,
+                                returnTypes[0], returnTypes[1]));
     } else if (ifType) {
       r.setType(ifType.getValue());
     }
@@ -1726,7 +1728,7 @@ bool Resolver::enter(const NamedDecl* decl) {
       if (m.id(0) == decl->id() && m.numIds() > 1) {
         std::vector<ID> redefinedIds(m.numIds());
         std::copy(m.begin(), m.end(), redefinedIds.begin());
-        REPORT(context, Redefinition, decl, redefinedIds);
+        CHPL_REPORT(context, Redefinition, decl, redefinedIds);
       }
     }
   }
@@ -1912,7 +1914,8 @@ void Resolver::exit(const Range* range) {
     }
     auto idxTypeResult = commonType(context, suppliedTypes);
     if (!idxTypeResult) {
-      re.setType(typeErr(range, "incompatible bound types for range"));
+      re.setType(CHPL_TYPE_ERROR(context, IncompatibleRangeBounds, range,
+                                 suppliedTypes[0], suppliedTypes[1]));
       return;
     } else {
       idxType = idxTypeResult.getValue();
@@ -2024,7 +2027,7 @@ bool Resolver::enter(const Call* call) {
 
 void Resolver::prepareCallInfoActuals(const Call* call,
                                       std::vector<CallInfoActual>& actuals,
-                                      bool& hasQuestionArg) {
+                                      const AstNode*& questionArg) {
   const FnCall* fnCall = call->toFnCall();
 
   // Prepare the actuals of the call.
@@ -2032,10 +2035,12 @@ void Resolver::prepareCallInfoActuals(const Call* call,
     auto actual = call->actual(i);
 
     if (isQuestionMark(actual)) {
-      if (hasQuestionArg) {
-        context->error(actual, "Cannot have ? more than once in a call");
+      if (questionArg == nullptr) {
+        questionArg = actual;
+      } else {
+        CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
+        // Keep questionArg pointing at the first question argument we found
       }
-      hasQuestionArg = true;
     } else {
       ResolvedExpression& r = byPostorder.byAst(actual);
       QualifiedType actualType = r.type();
@@ -2065,12 +2070,12 @@ void Resolver::prepareCallInfoActuals(const Call* call,
           } else if (actualType.type()->isErroneousType()) {
             // let it stay erroneous type
           } else if (!actualType.type()->isTupleType()) {
-            context->error(op, "tuple expansion applied to non-tuple");
+            CHPL_REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
             actualType = QualifiedType(QualifiedType::VAR,
                                        ErroneousType::get(context));
           } else {
             if (!byName.isEmpty()) {
-              REPORT(context, TupleExpansionNamedArgs, op, fnCall);
+              CHPL_REPORT(context, TupleExpansionNamedArgs, op, fnCall);
             }
 
             auto tupleType = actualType.type()->toTupleType();
@@ -2102,7 +2107,7 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   UniqueString name;
   QualifiedType calledType;
   bool isMethodCall = false;
-  bool hasQuestionArg = false;
+  const AstNode* questionArg = nullptr;
   std::vector<CallInfoActual> actuals;
 
   // Get the name of the called expression.
@@ -2162,9 +2167,10 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   }
 
   // Prepare the remaining actuals.
-  prepareCallInfoActuals(call, actuals, hasQuestionArg);
+  prepareCallInfoActuals(call, actuals, questionArg);
 
-  auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+  auto ret = CallInfo(name, calledType, isMethodCall,
+                      /* hasQuestionArg */ questionArg != nullptr,
                       /* isParenless */ false, actuals);
 
   return ret;
@@ -2280,11 +2286,15 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
                                  /* receiverScope */ nullptr,
                                  elementName, config);
     if (vec.size() == 0) {
-      return typeErr(nodeForErr, "no enum element with given name");
+      return CHPL_TYPE_ERROR(context, UnknownEnumElem, nodeForErr,
+                             elementName, enumType);
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+      auto& ids = vec[0];
       // multiple candidates. report a type error, but the
       // expression most likely has a type given by the enum.
-      typeErr(nodeForErr, "duplicate enum elements with given name");
+      std::vector<ID> redefinedIds(ids.numIds());
+      std::copy(ids.begin(), ids.end(), redefinedIds.begin());
+      CHPL_REPORT(context, MultipleEnumElems, nodeForErr, elementName, enumType, std::move(redefinedIds));
       return QualifiedType(QualifiedType::CONST_VAR, enumType);
     } else {
       auto id = vec[0].id(0);
@@ -2462,7 +2472,7 @@ void Resolver::resolveNewForRecord(const New* node,
   ResolvedExpression& re = byPostorder.byAst(node);
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
-    REPORT(context, MemManagementRecords, node, recordType);
+    CHPL_REPORT(context, MemManagementNonClass, node, recordType);
   } else {
     auto qt = QualifiedType(QualifiedType::VAR, recordType);
     re.setType(qt);
@@ -2501,21 +2511,11 @@ void Resolver::exit(const New* node) {
     resolveNewForRecord(node, recordType);
 
   } else {
-
-    // TODO: Need to also print the type name.
     if (node->management() != New::DEFAULT_MANAGEMENT) {
-      auto managementStr = New::managementToString(node->management());
-      context->error(node, "cannot use management %s on non-class",
-                           managementStr);
+      CHPL_REPORT(context, MemManagementNonClass, node, qtTypeExpr.type());
     }
 
-    // TODO: Specialize this error to more types (e.g. enum).
-    if (auto primType = qtTypeExpr.type()->toPrimitiveType()) {
-      context->error(node, "invalid use of 'new' on primitive %s",
-                           primType->c_str());
-    } else {
-      context->error(node, "invalid use of 'new'");
-    }
+    CHPL_REPORT(context, InvalidNew, node, qtTypeExpr);
   }
 }
 
@@ -2562,11 +2562,7 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
       idxType = c.exprType();
       resolver.handleResolvedAssociatedCall(iterandRE, loop, ci, c);
     } else {
-      idxType = QualifiedType(QualifiedType::UNKNOWN,
-                              ErroneousType::get(context));
-      std::ostringstream oss;
-      iterandRE.type().type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-      context->error(loop, "unable to iterate over values of type %s", oss.str().c_str());
+      idxType = CHPL_TYPE_ERROR(context, NonIterable, loop, iterand, iterandRE.type());
     }
   } else {
     idxType = QualifiedType(QualifiedType::UNKNOWN,

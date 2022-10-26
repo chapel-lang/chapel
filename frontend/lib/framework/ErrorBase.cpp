@@ -25,6 +25,15 @@
 
 namespace chpl {
 
+const char* ErrorBase::getTypeName(ErrorType type) {
+  switch (type) {
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) case NAME: return #NAME;
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
+    default: return nullptr;
+  }
+}
+
 /**
   Implementation of ErrorWriterBase that records calls
   to the various API functions in order to convert ErrorBase
@@ -45,14 +54,16 @@ class CompatibilityWriter : public ErrorWriterBase {
 
  public:
   CompatibilityWriter(Context* context)
-    : ErrorWriterBase(context) {}
+    : ErrorWriterBase(context, OutputFormat::BRIEF) {}
 
-  void writeHeading(ErrorBase::Kind kind, Location loc, const std::string& message) override {
+  void writeHeading(ErrorBase::Kind kind, ErrorType type,
+                    Location loc, const std::string& message) override {
     this->loc_ = loc;
     this->computedLoc_ = std::move(loc);
     this->message_ = message;
   }
-  void writeHeading(ErrorBase::Kind kind, const ID& id, const std::string& message) override {
+  void writeHeading(ErrorBase::Kind kind, ErrorType type,
+                    const ID& id, const std::string& message) override {
     // Just store the ID, but don't pollute the output stream.
     this->id_ = id;
     this->computedLoc_ = errordetail::locate(context, id);
@@ -149,9 +160,9 @@ ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
 void BasicError::write(ErrorWriterBase& wr) const {
   // if the ID is set, determine the location from that
   if (!id_.isEmpty()) {
-    wr.heading(kind_, id_, message_);
+    wr.heading(kind_, type_, id_, message_);
   } else {
-    wr.heading(kind_, loc_, message_);
+    wr.heading(kind_, type_, loc_, message_);
   }
   for (auto note : notes_) {
     auto& id = std::get<ID>(note);

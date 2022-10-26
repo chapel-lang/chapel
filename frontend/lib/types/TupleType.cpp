@@ -32,6 +32,27 @@ static ID idForTupElt(int i) {
   return ID(UniqueString(), i, 0);
 }
 
+void TupleType::stringify(std::ostream& ss,
+                              chpl::StringifyKind stringKind) const {
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    CompositeType::stringify(ss, stringKind);
+    return;
+  }
+
+  auto sorted = sortedSubstitutions();
+  bool emittedField = false;
+  ss << "(";
+  for (auto sub : sorted) {
+    if (emittedField) ss << ", ";
+    if (sub.second.type()) {
+      sub.second.type()->stringify(ss, stringKind);
+    }
+    emittedField = true;
+  }
+  ss << ")";
+}
+
+
 void TupleType::computeIsStarTuple() {
   if (isKnownSize_ == false) {
     isStarTuple_ = true;

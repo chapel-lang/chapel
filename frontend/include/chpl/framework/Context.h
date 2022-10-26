@@ -69,10 +69,6 @@ implement queries and how the query framework functions.
 
  */
 class Context {
- private:
-  // Hook to implement default error reporting.
-  static void defaultReportError(Context* context, const ErrorBase* err);
-
  public:
 
   /**
@@ -116,6 +112,9 @@ class Context {
   // State for printchplenv data
   bool computedChplEnv = false;
   ChplEnvMap chplEnv;
+
+  // Whether or no to use detailed error output
+  bool detailedErrors = true;
 
   // map that supports uniqueCString / UniqueString
   using UniqueStringsTableType = std::unordered_set<chpl::detail::StringAndLength, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
@@ -289,6 +288,9 @@ class Context {
   // hashtable?
 
  public:
+  /** Report the error to standard error output. */
+  static void defaultReportError(Context* context, const ErrorBase* err);
+
   /**
     Create a new AST Context. Optionally, specify the value of the
     CHPL_HOME environment variable, which is used for determining
@@ -299,6 +301,8 @@ class Context {
   ~Context();
 
   const std::string& chplHome() const;
+
+  void setDetailedErrorOutput(bool useDetailed);
 
   /**
     Run printchplenv, or return a cached result of doing so. To get output,

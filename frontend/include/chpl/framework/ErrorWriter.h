@@ -98,11 +98,51 @@ struct Writer<std::string> {
   }
 };
 
+template <>
+struct Writer<UniqueString> {
+  void operator()(Context* context, std::ostream& oss, UniqueString us) {
+    oss << us.c_str();
+  }
+};
+
 template <typename T>
 struct Writer<errordetail::AsFileName<T>> {
   void operator()(Context* context, std::ostream& oss, const errordetail::AsFileName<T>& e) {
     auto loc = e.location(context);
     oss << loc.path().c_str() << ":" << loc.firstLine();
+  }
+};
+
+template <>
+struct Writer<const types::Type*> {
+  void operator()(Context* context, std::ostream& oss, const types::Type* type) {
+    if (type->isUnknownType()) {
+      oss << "unknown type";
+    } else {
+      stringify<const types::Type*> str;
+      str(oss, CHPL_SYNTAX, type);
+    }
+  }
+};
+
+template <>
+struct Writer<types::QualifiedType> {
+  void operator()(Context* context, std::ostream& oss, const types::QualifiedType& qt) {
+    if (!qt.hasTypePtr()) {
+      oss << "a value of unknown type" << std::endl;
+    } else if (qt.kind() == types::QualifiedType::TYPE) {
+      oss << "the type '";
+      qt.type()->stringify(oss, CHPL_SYNTAX);
+      oss << "'";
+    } else if (qt.kind() == types::QualifiedType::PARAM) {
+      oss << "a param of type '";
+      qt.type()->stringify(oss, CHPL_SYNTAX);
+      oss << "'";
+    } else {
+      oss << "a value of type '";
+      qt.type()->stringify(oss, CHPL_SYNTAX);
+      oss << "'";
+    }
   }
 };
 /// \endcond
@@ -130,31 +170,47 @@ errordetail::LocationOnly<T> locationOnly(T t) {
   information. It abstracts away writing code to output streams (in fact,
   some instances of ErrorWriterBase do not write to a stream at all),
   and provides functionality like printing and underlining code. The way
-  data is formatted when fed to the various printing functions like ::heading
-  and ::message is specified by specializations of the errordetail::Writer
-  class.
+  data is formatted when fed to the various printing functions like
+  ErrorWriterBase::heading and ErrorWriterBase::message is specified by
+  specializations of the errordetail::Writer class.
 
-  The ErrorWriterBase expects that the ::heading function be called first
-  by every error message; this function serves the double purpose of printing
-  out the error heading, as well as setting the error message's location.
+  The ErrorWriterBase expects that the ErrorWriterBase::heading function be
+  called first by every error message; this function serves the double purpose
+  of printing out the error heading, as well as setting the error message's
+  location.
  */
 class ErrorWriterBase {
+ public:
+   /** The style of error reporting that the ErrorWriterBase should produce. */
+  enum OutputFormat {
+    /** Specify that all information about the error should be printed. */
+    DETAILED,
+    /** Specify that only key parts of the error should be printed. */
+    BRIEF,
+  };
  protected:
   Context* context;
+  OutputFormat outputFormat_;
 
-  ErrorWriterBase(Context* context) : context(context) {}
+  ErrorWriterBase(Context* context, OutputFormat outputFormat)
+    : context(context), outputFormat_(outputFormat) {}
+
+  /**
+    Makes tweaks to an error string depending on output format.
+   */
+  void tweakErrorString(std::string& message) const;
 
   /**
     Write the error heading, possibly with some color and text decoration.
     The location given to this function and its overloads is considered
     the error's main location.
    */
-  virtual void writeHeading(ErrorBase::Kind kind, Location loc, const std::string& message) = 0;
-  virtual void writeHeading(ErrorBase::Kind kind, const ID& id, const std::string& message);
-  virtual void writeHeading(ErrorBase::Kind kind, const uast::AstNode* ast, const std::string& message);
+  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, Location loc, const std::string& message) = 0;
+  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, const ID& id, const std::string& message);
+  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, const uast::AstNode* ast, const std::string& message);
   template <typename T>
-  void writeHeading(ErrorBase::Kind kind, errordetail::LocationOnly<T> t, const std::string& message) {
-    writeHeading(kind, errordetail::locate(context, t.t), message);
+  void writeHeading(ErrorBase::Kind kind, ErrorType type, errordetail::LocationOnly<T> t, const std::string& message) {
+    writeHeading(kind, type, errordetail::locate(context, t.t), message);
   }
 
   /**
@@ -180,7 +236,7 @@ class ErrorWriterBase {
 
   /**
     Prints the lines of code associated with the given location. Additional
-    locations provided via ::toHighlight field are underlined when the
+    locations provided via \p toHighlight parameter are underlined when the
     code is printed.
    */
   virtual void writeCode(const Location& place,
@@ -208,8 +264,10 @@ class ErrorWriterBase {
     to strings.
    */
   template <typename LocationType, typename ... Ts>
-  void heading(ErrorBase::Kind kind, LocationType loc, Ts ... ts) {
-    writeHeading(kind, loc, toString(std::forward<Ts>(ts)...));
+  void heading(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
+    auto str = toString(std::forward<Ts>(ts)...);
+    tweakErrorString(str);
+    writeHeading(kind, type, loc, str);
   }
 
   /**
@@ -237,12 +295,14 @@ class ErrorWriterBase {
    */
   template <typename LocationType, typename ... Ts>
   void note(LocationType loc, Ts ... ts) {
-    writeNote(loc, toString(std::forward<Ts>(ts)...));
+    auto str = toString(std::forward<Ts>(ts)...);
+    tweakErrorString(str);
+    writeNote(loc, str);
   }
 
   /**
     Prints the lines of code associated with the given location. Additional
-    locations provided via ::toHighlight field are underlined when the
+    locations provided via \p toHighlight field are underlined when the
     code is printed.
 
     This function accepts any type for which location can be inferred,
@@ -266,25 +326,19 @@ class ErrorWriterBase {
   in brief or detailed mode, as well as if the useColor flag is set.
  */
 class ErrorWriter : public ErrorWriterBase {
- public:
-   /** The style of error reporting that the ErrorWriter should produce. */
-  enum OutputFormat {
-    /** Specify that all information about the error should be printed. */
-    DETAILED,
-    /** Specify that only key parts of the error should be printed. */
-    BRIEF,
-  };
  protected:
   std::ostream& oss_;
-  OutputFormat outputFormat_;
+  ErrorWriterBase::OutputFormat outputFormat_;
   bool useColor_;
 
   void setColor(TermColorName color);
 
-  void writeHeading(ErrorBase::Kind kind, Location loc,
+  void writeHeading(ErrorBase::Kind kind, ErrorType type, Location loc,
                     const std::string& message) override;
   void writeMessage(const std::string& message) override {
     if (outputFormat_ == DETAILED) {
+      // In detailed mode, the body is indented.
+      oss_  << "  ";
       oss_ << message << std::endl;
     }
   }
@@ -293,8 +347,8 @@ class ErrorWriter : public ErrorWriterBase {
                  const std::vector<Location>& toHighlight = {}) override;
  public:
   ErrorWriter(Context* context, std::ostream& oss,
-              OutputFormat outputFormat, bool useColor) :
-    ErrorWriterBase(context), oss_(oss),
+              ErrorWriterBase::OutputFormat outputFormat, bool useColor) :
+    ErrorWriterBase(context, outputFormat), oss_(oss),
     outputFormat_(outputFormat), useColor_(useColor) {}
 
   void writeNewline();

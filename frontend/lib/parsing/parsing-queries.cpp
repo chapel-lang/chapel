@@ -544,7 +544,7 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
         }
       }
     } else {
-      REPORT(context, MissingInclude, include, check);
+      CHPL_REPORT(context, MissingInclude, include, check);
     }
   }
 
@@ -555,11 +555,11 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
     bool isModPrivate = (result->visibility() == uast::Decl::PRIVATE);
 
     if (isModPrivate && !isIncPrivate) {
-      REPORT(context, PrivateToPublicInclude, include, result);
+      CHPL_REPORT(context, PrivateToPublicInclude, include, result);
     }
 
     if (isIncPrototype) {
-      REPORT(context, PrototypeInclude, include, result);
+      CHPL_REPORT(context, PrototypeInclude, include, result);
     }
   }
 

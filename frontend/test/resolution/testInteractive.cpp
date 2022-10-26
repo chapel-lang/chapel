@@ -232,6 +232,7 @@ int main(int argc, char** argv) {
   bool gc = false;
   bool trace = false;
   bool scopeResolveOnly = false;
+  bool brief = false;
   std::string chpl_home;
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
@@ -258,6 +259,8 @@ int main(int argc, char** argv) {
       }
       timing = argv[i+1];
       i++;
+    } else if (0 == strcmp(argv[i], "--brief")) {
+      brief = true;
     } else {
       files.push_back(argv[i]);
     }
@@ -275,6 +278,7 @@ int main(int argc, char** argv) {
 
   Context context(chpl_home);
   Context* ctx = &context;
+  context.setDetailedErrorOutput(!brief);
 
   if (files.size() == 0) {
     usage(argc, argv);

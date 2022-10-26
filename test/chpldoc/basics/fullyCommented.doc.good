@@ -1,4 +1,4 @@
-warning in fullyCommented.doc.chpl:22: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'fullyCommented.doc' is being introduced to contain the file's contents.
+warning in fullyCommented.doc.chpl:22: an implicit module named 'fullyCommented.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: fullyCommented.doc

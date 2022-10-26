@@ -254,7 +254,7 @@ nested modules.
 
    .. BLOCK-test-chapeloutput
 
-      nested.chpl:9: warning: This file-scope code is outside of any explicit module declarations (e.g., module MY), so an implicit module named 'nested' is being introduced to contain the file's contents.
+      nested.chpl:9: warning: an implicit module named 'nested' is being introduced to contain file-scope code
       0
       0
 

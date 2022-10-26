@@ -20,14 +20,35 @@
 
 namespace chpl {
 
-void ErrorWriterBase::writeHeading(ErrorBase::Kind kind, const ID& id, const std::string& str) {
-  writeHeading(kind, errordetail::locate(context, id), str);
+static bool hiddenPunctuationInBrief(char c) {
+  return c == ':' || c == '.';
+}
+
+void ErrorWriterBase::tweakErrorString(std::string& str) const {
+  if (outputFormat_ == ErrorWriter::DETAILED && !str.empty()) {
+    // Capitalize errors in detailed mode
+    str[0] = std::toupper(str[0]);
+  }
+
+  if (outputFormat_ == ErrorWriter::BRIEF) {
+    // Strip punctuation at the end of the error in brief mode
+    while (!str.empty() &&
+        hiddenPunctuationInBrief(str.back())) {
+      str.pop_back();
+    }
+  }
+}
+
+void ErrorWriterBase::writeHeading(ErrorBase::Kind kind, ErrorType type,
+                                   const ID& id, const std::string& str) {
+  writeHeading(kind, type, errordetail::locate(context, id), str);
 }
 
 void ErrorWriterBase::writeHeading(ErrorBase::Kind kind,
-                                    const uast::AstNode* node,
-                                    const std::string& str) {
-  writeHeading(kind, node->id(), str);
+                                   ErrorType type,
+                                   const uast::AstNode* node,
+                                   const std::string& str) {
+  writeHeading(kind, type, node->id(), str);
 }
 
 void ErrorWriterBase::writeNote(const ID& id, const std::string& str) {
@@ -103,10 +124,11 @@ static void writeFile(std::ostream& oss, const Location& loc) {
   else oss << "(unknown location)";
 }
 
-void ErrorWriter::writeHeading(ErrorBase::Kind kind, Location loc, const std::string& str) {
+void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
+                               Location loc, const std::string& str) {
   if (outputFormat_ == DETAILED) {
     // In detailed mode, print some error decoration
-    oss_ << "=== ";
+    oss_ << "─── ";
   }
 
   setColor(kindColor(kind));
@@ -116,11 +138,18 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, Location loc, const std::st
   writeFile(oss_, loc);
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
-    oss_ << " ===" << std::endl;
+    const char* name = ErrorBase::getTypeName(type);
+    if (name != nullptr) {
+      oss_ << " [" << name << "]";
+    }
+    oss_ << " ───" << std::endl;
+    // In detailed mode, the body is indented.
+    oss_  << "  ";
   } else {
     // We printed location, so add a separating colon.
     oss_ << ": ";
   }
+
   oss_ << str << std::endl;
 }
 
@@ -130,6 +159,9 @@ void ErrorWriter::writeNote(Location loc, const std::string& str) {
     oss_ << "  note in ";
     writeFile(oss_, loc);
     oss_ << ": ";
+  } else {
+    // In detailed mode, the body is indented.
+    oss_ << "  ";
   }
   oss_ << str << std::endl;
 }
@@ -163,12 +195,25 @@ void ErrorWriter::writeCode(const Location& location,
     ranges.push_back(std::make_pair(hlStart, hlEnd));
   }
 
-  size_t gutterSize = std::to_string(location.lastLine()).size();
+  // Example:
+  //   Error message text
+  //         |
+  //     123 | proc f() {}
+  //         |
+  //
+  // ^^   Error message indent
+  //   ^^ Code indent
+  //     ^^^ Last line length
+  //        ^ One extra space of padding
+
+  // Gutter size includes just the code indent and the last line length.
+  size_t gutterSize = std::to_string(location.lastLine()).size() + 2;
+  // When not printing the line number, we need to manually print the error
+  // message indent and the one extra space of padding.
+  size_t codeIndent = gutterSize+3;
   int lineNumber = location.firstLine();
 
-  // printBlank(lineLength + 2);
-  // oss_ << "(file " << location.path() << ")" << std::endl;
-  printBlank(oss_, gutterSize + 3);
+  printBlank(oss_, codeIndent);
   oss_ << "|";
   oss_ << std::endl;
   std::string highlightString = "";
@@ -182,13 +227,19 @@ void ErrorWriter::writeCode(const Location& location,
     bool highlight = std::any_of(ranges.begin(), ranges.end(), [&](auto range) {
       return i >= range.first && i < range.second;
     });
-    highlightString += highlight ? '^' : ' ';
+    highlightString += highlight ? "⎺" : " ";
     printHighlight = printHighlight || highlight;
 
     oss_ << str[i];
     if (str[i] == '\n') {
       if (printHighlight) {
-        printBlank(oss_, gutterSize + 3);
+        printBlank(oss_, codeIndent);
+
+        // Clean up trailing whitespace
+        while (!highlightString.empty() && highlightString.back() == ' ') {
+          highlightString.pop_back();
+        }
+
         oss_ << "| " << highlightString << std::endl;
       }
       lineNumber += 1;
@@ -201,7 +252,7 @@ void ErrorWriter::writeCode(const Location& location,
     // No newline at the end in the file, insert one ourselves.
     oss_ << std::endl;
   }
-  printBlank(oss_, gutterSize + 3);
+  printBlank(oss_, codeIndent);
   oss_ << "|";
   oss_ << std::endl;
 }
