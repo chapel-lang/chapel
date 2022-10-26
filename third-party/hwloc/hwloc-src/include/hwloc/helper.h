@@ -136,18 +136,32 @@ static __hwloc_inline hwloc_obj_t
 hwloc_get_obj_inside_cpuset_by_depth (hwloc_topology_t topology, hwloc_const_cpuset_t set,
 				      unsigned depth, unsigned idx)
 {
+  fprintf(stderr, "XXX hwloc_get_obj_inside_cpuset_by_depth depth %d idx %d\n",
+          depth, idx);
+    char buf[100];
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    fprintf(stderr, "XXX set: %s\n", buf);
   hwloc_obj_t obj = hwloc_get_obj_by_depth (topology, depth, 0);
+  fprintf(stderr, "XXX first obj %p\n", obj);
   unsigned count = 0;
   if (!obj || !obj->cpuset)
     return NULL;
   while (obj) {
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), obj->cpuset);
+    fprintf(stderr, "XXX obj %p cpuset: %s\n", obj, buf);
+
+    fprintf(stderr, "XXX is included: %d\n", hwloc_bitmap_isincluded(obj->cpuset, set));
     if (!hwloc_bitmap_iszero(obj->cpuset) && hwloc_bitmap_isincluded(obj->cpuset, set)) {
-      if (count == idx)
-	return obj;
+      if (count == idx) {
+            fprintf(stderr, "XXX returning obj %p\n", obj);
+
+	         return obj;
+      }
       count++;
     }
     obj = obj->next_cousin;
   }
+  fprintf(stderr, "XXX returning NULL\n");
   return NULL;
 }
 
