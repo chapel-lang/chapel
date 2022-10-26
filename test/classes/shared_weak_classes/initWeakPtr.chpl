@@ -2,25 +2,43 @@ class myClass {
     var x :int;
 }
 
-var mc = new shared myClass(1);
-writeln(mc, "\t", mc.type:string);
+var wmc;
 
-mc.x += 1;
-var mc_wp = new weakPointer(mc);
-writeln(mc_wp, "\t", mc_wp.type:string);
+{
+    {
+        writeln("create a new shared class instance");
+        var mc = new shared myClass(0);
+        info(mc);
 
-mc.x += 1;
-var mc_shared2 = shared.fromWeak(mc_wp);
-writeln(mc_shared2, "\t", mc_shared2.type:string);
+        writeln("create weak pointer via downgrading");
+        wmc = mc.downgrade();
+        info(wmc);
 
-mc.x += 1;
-var mc_shared3 = mc_wp.upgrade();
-writeln(mc_shared3, "\t", mc_shared3.type:string);
+        writeln("create a new shared from the first");
+        var mc2 = shared.create(mc);
+        info(mc);
+        info(wmc);
 
-mc_shared2!.x += 1;
-var mc_wp2 = new weakPointer(mc_shared3);
-writeln(mc_wp2, "\t", mc_wp2.type:string);
+        writeln("create a new shared by upgrading a weak pointer");
+        var mc3 = wmc.upgrade() : shared myClass;
+        info(mc3);
+        info(wmc);
+    }
+    writeln("all shared instances deinitialized here");
+    info(wmc);
 
-mc_shared3!.x += 1;
-var mc_shared4 = mc_wp2.upgrade();
-writeln(mc_shared4, "\t", mc_shared4.type:string);
+    writeln("copy-init a new weak pointer");
+    var wmc2 = wmc;
+    info(wmc2);
+
+    // upgrades now result in 'nil'
+    writeln("try to upgrade a weak pointer");
+    var wmc_up = wmc.upgrade();
+    info(wmc_up);
+}
+writeln("second weak pointer deinitialized here");
+info(wmc);
+
+proc info(x) {
+    writeln("\t\tvalue: '", x, "' \ttype: '", x.type:string, "'");
+}

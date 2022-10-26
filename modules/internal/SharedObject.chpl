@@ -352,7 +352,7 @@ module SharedObject {
           // if i'm the last strong pointer, free the underlying class
           delete _to_unmanaged(chpl_p);
           if weak_count == 0 {
-            // if there are no weak pointers, free the reference counter
+            // if there are no weak pointers, free the reference counter too
             delete chpl_pn;
           }
         }
@@ -410,11 +410,9 @@ module SharedObject {
       var result: (w.internalType? : shared);
 
       if w.chpl_pn!.strongCount() > 0 {
-        var count = w.chpl_pn;
-        count!.retain();
-        result.chpl_pn = count;
-
+        result.chpl_pn = w.chpl_pn;
         result.chpl_p = w.chpl_p;
+        result.chpl_pn!.retain();
         return result;
       } else {
         return nil;
@@ -741,26 +739,33 @@ module SharedObject {
 
     pragma "no doc"
     proc init(c : unmanaged) {
-      this.internalType = _to_unmanaged(c.type);
+      this.internalType = c.type;
       compilerError(
-        "a 'weakPointer' cannot be initialized from an unmanaged object; try initializing from a shared"
+        "cannot initialize a weakPointer from an unmanaged type: '" + c.type:string + "'"
       );
     }
 
     pragma "no doc"
     proc init(c : owned) {
-      this.internalType = _to_unmanaged(c.type);
+      this.internalType = c.type;
       compilerError(
-        "a 'weakPointer' cannot be initialized from an owned object; try initializing from a shared"
+         "cannot initialize a weakPointer from an owned type: '" + c.type:string + "'"
       );
     }
 
     pragma "no doc"
     proc init(c : borrowed) {
-      this.internalType = _to_unmanaged(c.type);
+      this.internalType = c.type;
       compilerError(
-        "a 'weakPointer' cannot be initialized from a borrowed object; try initializing from a shared"
+         "cannot initialize a weakPointer from a borrowed type: '" + c.type:string + "'"
       );
+    }
+
+    // disallow initialization from all other types
+    pragma "no doc"
+    proc init(c) {
+      this.internalType = c.type;
+      compilerError("cannot initialize a weakPointer from a: '" + c.type:string + "'");
     }
 
     /*
@@ -835,6 +840,14 @@ module SharedObject {
       return if this.chpl_pn != nil then this.chpl_pn!.strongCount() > 0 else false;
     }
 
+    proc getStrongCount(): int {
+      return this.chpl_pn!.strong_count.read();
+    }
+
+    proc getWeakCount(): int {
+      return this.chpl_pn!.weak_count.read();
+    }
+
     /*
       When a :record:`weakPointer` is deinitialized, the underlying classes weak
       reference count will be decremented. This will not cause a deinitialization
@@ -877,6 +890,8 @@ module SharedObject {
   }
 
   class EmptyWeakPointerError: Error {
-
+    override proc message() {
+      return "Unable to upgrade weakPointer to shared reference; the underlying class has already been deinitialized";
+    }
   }
 }

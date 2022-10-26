@@ -1,6 +1,18 @@
-{x = 1}	shared myClass
-(chpl_p = {x = 2}, chpl_pn = {strong_count = 1, weak_count = 1})	weakPointer(unmanaged myClass)
-{x = 3}	shared myClass?
-{x = 4}	shared myClass?
-(chpl_p = {x = 5}, chpl_pn = {strong_count = 3, weak_count = 2})	weakPointer(unmanaged myClass?)
-{x = 6}	shared myClass?
+create a new shared class instance
+		value: '{x = 0}' 	type: 'shared myClass'
+create weak pointer via downgrading
+		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 1, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
+create a new shared from the first
+		value: '{x = 0}' 	type: 'shared myClass'
+		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 2, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
+create a new shared by upgrading a weak pointer
+		value: '{x = 0}' 	type: 'shared myClass'
+		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 3, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
+all shared instances deinitialized here
+		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 0, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
+copy-init a new weak pointer
+		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 0, weak_count = 2})' 	type: 'weakPointer(unmanaged myClass)'
+try to upgrade a weak pointer
+		value: 'nil' 	type: 'shared myClass?'
+second weak pointer deinitialized here
+		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 0, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
