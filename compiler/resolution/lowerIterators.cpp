@@ -2523,6 +2523,9 @@ expandForLoop(ForLoop* forLoop) {
         break;
       }
 
+      // If we haven't yet generated a test to terminate the loop and
+      // are in a zippered context, we'll set it up based on this
+      // iterator which is presumably the first.
       if (testBlock == NULL) {
         if (!isBoundedIterator(iterFn) && iterators.n > 1) {
           USR_WARN(forLoop, "The behavior of zippered serial loops whose leader is an unbounded range has changed in this release; to maintain the previous behavior, swap a bounded iterand into the leader position (the first expression in the 'zip(...)').");
@@ -2605,16 +2608,6 @@ expandForLoop(ForLoop* forLoop) {
     // the loop index.
     if (index != gNone)
       forLoop->insertAtHead(index->defPoint->remove());
-
-    // Ensure that the test clause for completely unbounded loops contains
-    // something.
-    // testBlock is only non-NULL if isBoundedIterator() evaluates to true for
-    // at least one of the iterators being zippered together.
-    if (testBlock == NULL) {
-      testBlock = new BlockStmt();
-
-      testBlock->insertAtTail(new SymExpr(gTrue));
-    }
 
     // NOAKES 2014/11/19: An error occurs if the replacement is moved to
     // earlier in the pass.  I have yet to identify the issue but suspect
