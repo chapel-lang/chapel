@@ -1,5 +1,5 @@
-$CHPL_HOME/modules/standard/IO.chpl:8388: In method 'search':
-$CHPL_HOME/modules/standard/IO.chpl:8391: warning: `channel.search(re:regex(?), ref error:errorCode)` is deprecated
+$CHPL_HOME/modules/standard/IO.chpl:8389: In method 'search':
+$CHPL_HOME/modules/standard/IO.chpl:8392: warning: `channel.search(re:regex(?), ref error:errorCode)` is deprecated
   empty-channel-matches.chpl:49: called as (fileReader(dynamic,true)).search(re: regex(string))
 []  ((matched = true, byteOffset = 0, numBytes = 0),) 0
 [^]  ((matched = true, byteOffset = 0, numBytes = 0),) 0

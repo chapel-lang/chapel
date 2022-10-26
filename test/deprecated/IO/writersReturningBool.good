@@ -1,12 +1,12 @@
-writersReturningBool.chpl:7: warning: The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with WritersReturnBool = false
-writersReturningBool.chpl:8: warning: The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with WritersReturnBool = false
-writersReturningBool.chpl:10: warning: The returning variant of ``writebits`` is deprecated; use the new variant by compiling with WritersReturnBool = false
-writersReturningBool.chpl:11: warning: The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with WritersReturnBool = false
-writersReturningBool.chpl:13: warning: The returning variant of ``writeBytes`` is deprecated; use the new variant by compiling with WritersReturnBool = false
-writersReturningBool.chpl:14: warning: The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with WritersReturnBool = false
-writersReturningBool.chpl:16: warning: The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with IO.WritersReturnBool = false
-writersReturningBool.chpl:17: warning: The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with WritersReturnBool = false
-writersReturningBool.chpl:19: warning: The returning variant of ``writef`` is deprecated; use the new variant by compiling with IO.WritersReturnBool = false
+writersReturningBool.chpl:7: warning: The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`
+writersReturningBool.chpl:8: warning: The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`
+writersReturningBool.chpl:10: warning: The returning variant of ``writebits`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`
+writersReturningBool.chpl:11: warning: The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`
+writersReturningBool.chpl:13: warning: The returning variant of ``writeBytes`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`
+writersReturningBool.chpl:14: warning: The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`
+writersReturningBool.chpl:16: warning: The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`
+writersReturningBool.chpl:17: warning: The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`
+writersReturningBool.chpl:19: warning: The returning variant of ``writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`
 5
 ab
 a
