@@ -2,32 +2,32 @@
 import Map.map;
 
 class PassiveCache {
-    var items: map(int, WeakPointer(shared someDataType));
+    var items: map(int, weakPointer(unmanaged someDataType));
 
     proc init() {
-        this.items = new map(int, WeakPointer(shared someDataType));
+        this.items = new map(int, weakPointer(unmanaged someDataType));
     }
 
-    proc getOrBuild(key: int): shared someDataType {
+    proc getOrBuild(key: int) : shared someDataType {
         if this.items.contains(key) {
             // we've computed a value for this key before, try to get a strong pointer to it
-            var weak_pointer = this.items.getValue(key);
-            var maybe_strong = weak_pointer.upgrade();
+            var weak_pointer = this.items.getReference(key);
+            var maybe_strong : shared someDataType? = weak_pointer.upgrade();
 
             // if there is a strong pointer, return it; otherwise recompute the item and return
-            return if maybe_strong != nil then maybe_strong! else this.buildAndSave(key);
+            return if maybe_strong != nil then maybe_strong:shared else this.buildAndSave(key);
         } else {
             // we haven't seen this key before; compute the item and return it
             return this.buildAndSave(key);
         }
     }
 
-    proc buildAndSave(key: int): shared someDataType {
+    proc buildAndSave(key: int) : shared someDataType {
         // make an array with some relation to the key value
         const item = new shared someDataType(key % 5);
 
         // create and store a weak pointer to the shared object
-        const weak_ptr = item.getWeakPointer();
+        const weak_ptr = new weakPointer(item);
         this.items.add(key, weak_ptr);
 
         // return the shared pointer to the object

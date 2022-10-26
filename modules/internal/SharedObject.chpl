@@ -114,7 +114,7 @@ module SharedObject {
       return (oldValue - 1, this.weak_count.read());
     }
 
-    // weak interface for 'WeakPointer's to 'shared' classes
+    // weak interface for 'weakPointer's to 'shared' classes
     proc incrementWeak() {
       weak_count.add(1);
     }
@@ -398,6 +398,30 @@ module SharedObject {
     }
 
     /*
+      Create a new ``shared`` class by upgrading a :record:`weakPointer`
+
+      If the shared class referenced by the ``weakPointer`` has already been
+      deinitialized, this method will return ``nil``.
+
+      If the shared class is still initialized, this method will return a
+      nilable shared reference to it and increment the shared-reference count
+    */
+    proc type create(ref w: weakPointer) {
+      var result: (w.internalType? : shared);
+
+      if w.chpl_pn!.strongCount() > 0 {
+        var count = w.chpl_pn;
+        count!.retain();
+        result.chpl_pn = count;
+
+        result.chpl_p = w.chpl_p;
+        return result;
+      } else {
+        return nil;
+      }
+    }
+
+    /*
        The deinitializer for :record:`shared` will destroy the class
        instance once there are no longer any copies of this
        :record:`shared` that refer to it.
@@ -459,16 +483,6 @@ module SharedObject {
 
     // = should call retain-release
     // copy-init should call retain
-
-    /*
-      Return a :class:`WeakPointer` to the class instance manged by this
-      'shared' pointer.
-
-      The weak reference count will be incremented.
-    */
-    proc getWeakPointer() {
-      return new WeakPointer(true, this.chpl_t, this.chpl_p, this.chpl_pn);
-    }
   }
 
 
@@ -687,17 +701,18 @@ module SharedObject {
     return _to_nonnil(x.chpl_p);
   }
 
-  record WeakPointer {
-    pragma "no doc"
-    type chpl_t;  // contained type (class type)
+
+  record weakPointer {
+    /* the type of the shared class instance referenced by this pointer */
+    type internalType;
 
     pragma "no doc"
     pragma "owned"
-    var chpl_p:__primitive("to nilable class", chpl_t); // instance pointer
+    var chpl_p: __primitive("to nilable class", internalType); // instance pointer
 
     pragma "no doc"
     pragma "owned"
-    var chpl_pn:unmanaged ReferenceCount?; // reference counter
+    var chpl_pn: unmanaged ReferenceCount?; // reference counter
 
     // Private initializer for creating from a shared object
     pragma "no doc"
@@ -712,41 +727,60 @@ module SharedObject {
         count = nil;
       }
 
-      this.chpl_t = t;
+      this.internalType = _to_unmanaged(t);
       this.chpl_p = ptr;
       this.chpl_pn = count;
     }
 
-    // pragma "no doc"
-    // proc init(type t) {
-    //   // compilerError(
-    //   //   "a 'WeakPointer' cannot be initialized directly; instead, call the 'getWeakPointer' method on a shared class instance."
-    //   // );
-    //   this.chpl_t = t;
-    //   this.chpl_p = nil;
-    //   this.chpl_pn = nil;
-    // }
+    pragma "no doc"
+    proc init(c : unmanaged) {
+      this.internalType = _to_unmanaged(c.type);
+      compilerError(
+        "a 'weakPointer' cannot be initialized from an unmanaged object; try initializing from a shared"
+      );
+    }
+
+    pragma "no doc"
+    proc init(c : owned) {
+      this.internalType = _to_unmanaged(c.type);
+      compilerError(
+        "a 'weakPointer' cannot be initialized from an owned object; try initializing from a shared"
+      );
+    }
+
+    pragma "no doc"
+    proc init(c : borrowed) {
+      this.internalType = _to_unmanaged(c.type);
+      compilerError(
+        "a 'weakPointer' cannot be initialized from a borrowed object; try initializing from a shared"
+      );
+    }
+
+    /*
+      Create a new weak pointer from a shared class instance 'c'
+    */
+    proc init(c : shared) {
+      this.init(true, c.chpl_t, c.chpl_p, c.chpl_pn);
+    }
 
     /*
       Return a nilable shared reference to the underlying class instance.
 
       The return value will be ``nil`` if there are no strong references
-      to the class instance (i.e., the underlying class has been deinitialized).
+      to the class instance remaining (i.e., the underlying class has already
+      been deinitialized).
 
-      Otherwise, a shared reference to the underlying class will be returned
-      and the strong reference count will be incremented.
+      Otherwise, a nilable shared reference to the underlying class will be
+      returned, and the strong reference count will be incremented.
     */
     proc upgrade() {
-      if this.chpl_p != nil && this.chpl_p!.strongCount() > 0 {
-        return new _shared(true, this.chpl_t, this.chpl_p, this.chpl_pn);
-      } else {
-        return nil;
-      }
+      return _shared.create(this);
     }
 
     /*
-      When a :class:`WeakPointer` is deinitialized, the underlying classes weak
-      reference count will be decremented.
+      When a :record:`weakPointer` is deinitialized, the underlying classes weak
+      reference count will be decremented. This will not cause a deinitialization
+      of the underlying class.
     */
     proc deinit() {
       if this.chpl_p != nil && this.chpl_pn != nil {
@@ -761,14 +795,14 @@ module SharedObject {
     }
 
     /*
-       Copy-initializer. Creates a new :record:`shared`
+       Copy-initializer. Creates a new :record:`weakPointer`
        that refers to the same class instance as `src`.
-       These will share responsibility for managing the instance.
+       The objects weak reference count will be incremented
      */
-    proc init=(pragma "nil from arg" const ref src: WeakPointer) {
-      this.chpl_t = src.chpl_t;
+    proc init=(pragma "nil from arg" const ref src: weakPointer) {
+      this.internalType = src.internalType;
 
-      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+      if isCoercible(src.internalType, this.type.internalType) == false then
         compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
       this.chpl_p = src.chpl_p;

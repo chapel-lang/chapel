@@ -1,0 +1,6 @@
+{x = 1}	shared myClass
+(chpl_p = {x = 2}, chpl_pn = {strong_count = 1, weak_count = 1})	weakPointer(unmanaged myClass)
+{x = 3}	shared myClass?
+{x = 4}	shared myClass?
+(chpl_p = {x = 5}, chpl_pn = {strong_count = 3, weak_count = 2})	weakPointer(unmanaged myClass?)
+{x = 6}	shared myClass?
