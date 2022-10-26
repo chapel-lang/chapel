@@ -2038,10 +2038,6 @@ module ChapelDomain {
     /* Return the last index in this domain */
     proc last return _value.dsiLast;
 
-    // ***
-    // TODO: Deprecate these too
-    // ***
-
     /* Return the low index in this domain factoring in alignment */
     deprecated "'.alignedLow' is deprecated; please use '.low' instead"
     proc alignedLow return _value.dsiAlignedLow;
