@@ -37,7 +37,7 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v32
         with:
-          separator: ","                 
+          separator: "\n"                 
       - name: Send mail  
         uses: dawidd6/action-send-mail@v3
         with:
@@ -64,16 +64,16 @@ jobs:
               Branch: ${{github.ref}} <br>
               Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
               Author: ${{ env.AUTHOR}} <br>
-              Link: ${{env.LINK}} <br>             
-              Log Message: <br>
+              Link: ${{env.LOG}} &nbsp;&nbsp;${{github.event.pull_request._links.html.href}} <br>             
+              Log Message: <br><br>
                            ${{env.LOG}} <br>
                            ${{env.MESSAGE}} <br>  
                            ${{github.event.pull_request.body}} <br><br>
               Diff: ${{github.event.pull_request.diff_url}} <br><br>
-              
               Modified Files: <br>
-                M . ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br><br>
-                D . ${{steps.changed-files.outputs.deleted_files}} <br>
+                   ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br><br>
+              Removed Files: <br>     
+                   ${{steps.changed-files.outputs.deleted_files}} <br>
               Compare: ${{env.COMPARE_URL}} <br>   
               </p>
               </body>
