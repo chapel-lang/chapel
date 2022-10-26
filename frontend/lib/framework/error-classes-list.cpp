@@ -225,9 +225,17 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
   auto expectedIdentifier = std::get<const uast::AstNode*>(info);
   wr.heading(kind_, type_, locationOnly(as),
              "this form of 'as' is not yet supported.");
-  wr.message(
-      "'as' requires both the original and new names to be simple identifiers, but "
-      "instead got the following:");
+  // determine and report which of the original or new name is invalid
+  std::string whichName;
+  if (expectedIdentifier == as->symbol()) {
+    whichName = "original";
+  } else if (expectedIdentifier == as->rename()) {
+    whichName = "new";
+  } else {
+    assert(false && "should not be reachable");
+  }
+  wr.message("'as' requires the ", whichName,
+             " name to be a simple identifier, but instead got the following:");
   wr.code(expectedIdentifier, { expectedIdentifier });
 }
 
