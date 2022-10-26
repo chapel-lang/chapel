@@ -917,14 +917,6 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       typePtr = qt.type();
       paramPtr = qt.param();
     }
-
-    // TODO: handle split init
-
-    if (typePtr == nullptr) {
-      context->error(var, "Cannot establish type for %s",
-                           var->name().c_str());
-      typePtr = ErroneousType::get(context);
-    }
   }
 
   if (typePtr == nullptr) {
@@ -932,9 +924,9 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         qtKind == QualifiedType::MODULE) {
       // OK, type can be null for now
     } else {
-      // type should have been established above
-      context->error(decl, "Cannot establish type");
-      typePtr = ErroneousType::get(context);
+      // typePtr should not be null; it should use UnknownType instead.
+      // it can be UnknownType for a variable that is split inited.
+      typePtr = UnknownType::get(context);
     }
   }
 
@@ -1951,9 +1943,8 @@ void Resolver::exit(const MultiDecl* decl) {
     const Type* t = nullptr;
     if (typeExpr == nullptr && initExpr == nullptr) {
       if (lastType == nullptr) {
-        // TODO: allow this when we allow split init
-        context->error(d, "invalid multiple declaration");
-        t = ErroneousType::get(context);
+        // this could be split init
+        t = UnknownType::get(context);
       } else {
         t = lastType;
       }
