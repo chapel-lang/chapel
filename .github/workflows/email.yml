@@ -53,7 +53,7 @@ jobs:
            # Required mail subject:
            subject: Chapel Merge  ${{github.event.pull_request.title}}  
            # Required recipients' addresses:
-           to: bhavani@hpe.com
+           to: chapel+commits@discoursemail.com
            # Required sender full name (address can be skipped):
            from: chapel-lang 
            html_body: |
