@@ -27,6 +27,7 @@ namespace chpl {
 namespace resolution {
 
   using ScopeSet = llvm::SmallPtrSet<const Scope*, 5>;
+  using NamedScopeSet = std::unordered_set<std::pair<UniqueString, const Scope*>>;
 
   /**
     Returns true if this AST type can create a scope.
@@ -85,7 +86,7 @@ namespace resolution {
                            const Scope* receiverScope,
                            UniqueString name,
                            LookupConfig config,
-                           ScopeSet& visited);
+                           NamedScopeSet& visited);
 
   /**
     Returns true if all of checkScope is visible from fromScope

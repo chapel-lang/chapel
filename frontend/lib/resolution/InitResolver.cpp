@@ -495,8 +495,8 @@ bool InitResolver::handleUseOfField(const AstNode* node) {
 ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
   if (vec.size() != 2) return ID();
   if (vec[0].numIds() > 1 || vec[1].numIds() > 1) return ID();
-  auto one = vec[0].id(0);
-  auto two = vec[1].id(0);
+  auto one = vec[0].firstId();
+  auto two = vec[1].firstId();
   assert(one != two);
   if (!parsing::idIsField(ctx_, one) &&
       !parsing::idIsField(ctx_, two)) return ID();
@@ -511,7 +511,7 @@ bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
 
   // Handle and exit early if there were no ambiguities.
   if (vec.size() == 1 && vec[0].numIds() == 1) {
-    auto& id = vec[0].id(0);
+    auto& id = vec[0].firstId();
     if (parsing::idIsField(ctx_, id)) {
       auto state = fieldStateFromId(id);
       auto qt = state->qt;
