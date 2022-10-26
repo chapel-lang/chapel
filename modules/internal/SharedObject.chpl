@@ -719,24 +719,6 @@ module SharedObject {
     pragma "owned"
     var chpl_pn: unmanaged ReferenceCount?; // reference counter
 
-    // Private initializer for creating from a shared object
-    pragma "no doc"
-    proc init(_private: bool, type t, p, pn) {
-      var ptr = p:_to_nilable(_to_unmanaged(t));
-      var count = pn;
-      if ptr != nil {
-        // increment the weak reference count
-        count!.incrementWeak();
-      } else {
-        // don't store a count for the nil pointer
-        count = nil;
-      }
-
-      this.internalType = _to_unmanaged(t);
-      this.chpl_p = ptr;
-      this.chpl_pn = count;
-    }
-
     pragma "no doc"
     proc init(c : unmanaged) {
       this.internalType = c.type;
@@ -772,7 +754,19 @@ module SharedObject {
       Create a new weak pointer from a shared class instance 'c'
     */
     proc init(c : shared) {
-      this.init(true, c.chpl_t, c.chpl_p, c.chpl_pn);
+      var ptr = c.chpl_p: _to_nilable(_to_unmanaged(c.chpl_t));
+      var count = c.chpl_pn;
+      if ptr != nil {
+        // increment the weak reference count
+        count!.incrementWeak();
+      } else {
+        // don't store a count for the nil pointer
+        count = nil;
+      }
+
+      this.internalType = c.chpl_t;
+      this.chpl_p = ptr;
+      this.chpl_pn = count;
     }
 
     /*
