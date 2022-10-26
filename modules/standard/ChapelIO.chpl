@@ -739,7 +739,7 @@ module ChapelIO {
     try! { stdout._writef(fmt); }
   }
 
-  deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
+  deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
   proc writef(fmt:?t, const args ...?k):bool
       where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
   {
@@ -750,7 +750,7 @@ module ChapelIO {
   }
   // documented in string version
   pragma "no doc"
-  deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
+  deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with :param:`IO.WritersReturnBool` = false"
   proc writef(fmt:?t):bool
       where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
   {

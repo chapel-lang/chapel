@@ -22,13 +22,9 @@ All Modules (and tools/mason/*)
 
 Switch `ch._write`, `ch._writeln`, `ch._writef`, and `ch._writeBytes` calls back to `ch.write`, `ch.writeln`, `ch.writef` and `ch.writeBytes`
 
-Compiler
----
-
-Remove specialized 'illegal use of boolean return value from...' error message from functionResolution.cpp (in 'moveDetermineRhsTypeErrorIfInvalid()')
 
 Tests
 ---
 
-1. Update `test/library/standard/Spawn/cat-stdout-stderr` to use `ch.write` instead of `ch._write`
-2. Delete deprecation tests
+1. In `start_test.py` : `set_up_environment()`, remove ` + " -s WritersReturnBool=false"` from lines 693, 695 (at the time this was written)
+2. Update `test/library/standard/Spawn/cat-stdout-stderr` to use `ch.write` instead of `ch._write`
