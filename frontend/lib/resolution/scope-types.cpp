@@ -41,7 +41,7 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 }
 
 llvm::Optional<BorrowedIdsWithName> OwnedIdsWithName::borrow(bool skipPrivateVisibilities) const {
-  if (BorrowedIdsWithName::isIDVisible(id_, skipPrivateVisibilities)) {
+  if (BorrowedIdsWithName::isIdVisible(id_, skipPrivateVisibilities)) {
     return BorrowedIdsWithName(id_, moreIds_.get(), skipPrivateVisibilities);
   }
   // The first ID isn't visible; are others?
@@ -50,7 +50,7 @@ llvm::Optional<BorrowedIdsWithName> OwnedIdsWithName::borrow(bool skipPrivateVis
   }
 
   for (auto& id : *moreIds_) {
-    if (!BorrowedIdsWithName::isIDVisible(id, skipPrivateVisibilities)) continue;
+    if (!BorrowedIdsWithName::isIdVisible(id, skipPrivateVisibilities)) continue;
 
     // Found a visible ID!
     return BorrowedIdsWithName(id, moreIds_.get(), skipPrivateVisibilities);

@@ -55,7 +55,7 @@ static void gather(DeclMap& declared, UniqueString name, const AstNode* d,
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.appendId(d->id(), visibility);
+    val.appendIdAndVis(d->id(), visibility);
   }
 }
 
