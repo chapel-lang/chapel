@@ -30,6 +30,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
+#include "./ErrorGuard.h"
 
 // resolves the last function
 // checks that the set of split init variables matches
@@ -474,7 +475,7 @@ static void test23() {
     )"""",
     {"x", "y"});
 }
-static void test24() {
+/*static void test24() {
   testSplitInit("test24",
     R""""(
       module M {
@@ -504,6 +505,53 @@ static void test25() {
       }
     )"""",
     {"x", "y"});
+}*/
+
+static void test26() {
+  // check that this program generates an error
+  const char* test = "test26";
+  const char* program =
+    R""""(
+      module M {
+        proc test(r: int) {
+          var x;
+          if __primitive(">", r, 2) {
+            x = 2;
+          } else {
+            x = 3.0i;
+          }
+        }
+      }
+    )"""";
+
+  printf("%s\n", test);
+
+  Context ctx;
+  Context* context = &ctx;
+
+  ErrorGuard guard(context);
+
+  std::string testname = test;
+  testname += ".chpl";
+  auto path = UniqueString::get(context, testname);
+  std::string contents = program;
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* M = vec[0]->toModule();
+  assert(M);
+  assert(M->numStmts() >= 1);
+
+  const Function* func = M->stmt(M->numStmts()-1)->toFunction();
+  assert(func);
+
+  // resolve runM1
+  const ResolvedFunction* r = resolveConcreteFunction(context, func->id());
+  assert(r);
+
+  assert(guard.errors().size() > 0);
+  guard.realizeErrors();
 }
 
 
@@ -531,8 +579,9 @@ int main() {
   test21();
   test22();
   test23();
-  test24();
-  test25();
+  //test24(); TODO
+  //test25(); TODO
+  test26();
 
   return 0;
 }
