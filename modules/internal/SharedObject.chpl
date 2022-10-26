@@ -406,7 +406,7 @@ module SharedObject {
       If the shared class is still initialized, this method will return a
       nilable shared reference to it and increment the shared-reference count
     */
-    proc type create(ref w: weakPointer) {
+    proc type fromWeak(ref w: weakPointer) {
       var result: (w.internalType? : shared);
 
       if w.chpl_pn!.strongCount() > 0 {
@@ -419,6 +419,13 @@ module SharedObject {
       } else {
         return nil;
       }
+    }
+
+    /*
+      Create a :record:`weakPointer` to this shared class
+    */
+    proc downgrade() {
+      return new weakPointer(this);
     }
 
     /*
@@ -774,7 +781,58 @@ module SharedObject {
       returned, and the strong reference count will be incremented.
     */
     proc upgrade() {
-      return _shared.create(this);
+      return _shared.fromWeak(this);
+    }
+
+    /*
+      Return a shared reference to the underlying class instance.
+
+      Halt if the pointer cannot be upgraded (i.e., it has already been
+      deinitialized)
+    */
+    proc forceUpgrade() {
+      var result: (this.internalType? : shared);
+
+      if this.chpl_pn!.strongCount() > 0 {
+        var count = this.chpl_pn;
+        count!.retain();
+        result.chpl_pn = count;
+
+        result.chpl_p = this.chpl_p;
+
+        return try! result : (this.internalType: shared);
+      } else {
+        halt("Attempt to upgrade weakPointer of a deinitialized class in 'forceUpgrade'");
+      }
+    }
+
+    /*
+      Return a shared reference to the underlying class instance.
+
+      Throw an error if the pointer cannot be upgraded (i.e., it has already
+      been deinitialized)
+    */
+    proc tryUpgrade() throws {
+      var result: (this.internalType? : shared);
+
+      if this.chpl_pn!.strongCount() > 0 {
+        var count = this.chpl_pn;
+        count!.retain();
+        result.chpl_pn = count;
+
+        result.chpl_p = this.chpl_p;
+
+        return try! result : (this.internalType: shared);
+      } else {
+        throw new EmptyWeakPointerError();
+      }
+    }
+
+    /*
+      Test if the ``weakPointer`` can be upgraded to a strong ``shared`` class
+    */
+    proc canUpgrade(): bool {
+      return if this.chpl_pn != nil then this.chpl_pn!.strongCount() > 0 else false;
     }
 
     /*
@@ -816,5 +874,9 @@ module SharedObject {
       if isNonNilableClass(this.type) && isNilableClass(src) then
         compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
     }
+  }
+
+  class EmptyWeakPointerError: Error {
+
   }
 }

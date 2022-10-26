@@ -10,7 +10,7 @@ var mc_wp = new weakPointer(mc);
 writeln(mc_wp, "\t", mc_wp.type:string);
 
 mc.x += 1;
-var mc_shared2 = shared.create(mc_wp);
+var mc_shared2 = shared.fromWeak(mc_wp);
 writeln(mc_shared2, "\t", mc_shared2.type:string);
 
 mc.x += 1;

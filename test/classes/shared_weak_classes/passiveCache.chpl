@@ -12,10 +12,14 @@ class PassiveCache {
         if this.items.contains(key) {
             // we've computed a value for this key before, try to get a strong pointer to it
             var weak_pointer = this.items.getReference(key);
-            var maybe_strong : shared someDataType? = weak_pointer.upgrade();
 
             // if there is a strong pointer, return it; otherwise recompute the item and return
-            return if maybe_strong != nil then maybe_strong:shared else this.buildAndSave(key);
+            var maybe_strong : shared someDataType? = weak_pointer.upgrade();
+            return if maybe_strong != nil then (maybe_strong: shared someDataType) else this.buildAndSave(key);
+
+            // Alternative interfaces for the same behavior:
+            // return if weak_pointer.canUpgrade() then weak_pointer.forceUpgrade() else this.buildAndSave(key);
+            // return if weak_pointer.canUpgrade() then (try! weak_pointer.tryUpgrade()) else this.buildAndSave(key);
         } else {
             // we haven't seen this key before; compute the item and return it
             return this.buildAndSave(key);
