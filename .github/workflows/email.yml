@@ -51,7 +51,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: Chapel Merge  ${{env.MESSAGE}}  
+           subject: Chapel Merge  ${{github.event.pull_request.title}}  
            # Required recipients' addresses:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
