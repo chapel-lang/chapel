@@ -788,11 +788,21 @@ static aligned_t chapel_wrapper(void *arg)
 typedef struct {
     chpl_fn_p fn;
     void *arg;
+    int cpu;
 } comm_task_wrapper_info_t;
 
 static void *comm_task_wrapper(void *arg)
 {
     comm_task_wrapper_info_t *rarg = arg;
+    if (rarg->cpu >= 0) {
+        int rc = chpl_topo_bindCPU(rarg->cpu);
+        if (rc) {
+            char msg[100];
+            snprintf(msg, sizeof(msg),
+                     "binding comm task to CPU %d failed", rarg->cpu);
+            chpl_warning(msg, 0, 0);
+        }
+    }
     (*(chpl_fn_p)(rarg->fn))(rarg->arg);
     return 0;
 }
@@ -826,7 +836,8 @@ void chpl_task_stdModulesInitialized(void)
 }
 
 int chpl_task_createCommTask(chpl_fn_p fn,
-                             void     *arg)
+                             void     *arg,
+                             int      cpu)
 {
     //
     // The wrapper info must be static because it won't be referred to
@@ -837,6 +848,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     static comm_task_wrapper_info_t wrapper_info;
     wrapper_info.fn = fn;
     wrapper_info.arg = arg;
+    wrapper_info.cpu = cpu;
     return pthread_create(&chpl_qthread_comm_pthread,
                           NULL, comm_task_wrapper, &wrapper_info);
 }
