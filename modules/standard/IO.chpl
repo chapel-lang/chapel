@@ -343,6 +343,7 @@ Some of these subclasses commonly used within the I/O implementation include:
  * :class:`OS.EofError` - the end of file was reached
  * :class:`OS.UnexpectedEofError` - a read or write only returned part of the requested data
  * :class:`OS.BadFormatError` - data read did not adhere to the requested format
+ * :class:`OS.InsufficientCapacityError` - a read or write operation required more storage than was available
 
 An error code can be converted to a string using the function
 :proc:`OS.errorToString()`.
@@ -1095,6 +1096,8 @@ private extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
 
 private extern proc qio_channel_get_style(ch:qio_channel_ptr_t, ref style:iostyleInternal);
 private extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:iostyleInternal);
+
+private extern proc qio_channel_get_size(ch: qio_channel_ptr_t):int(64);
 
 private extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
@@ -4914,6 +4917,142 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   return retval;
 }
 
+/*
+  Read the remaining contents of the channel into an instance of the specified type
+
+  :arg t: the type to read into; must be ``string`` or ``bytes``. Defaults to ``bytes`` if not specified.
+  :returns: the contents of the channel as a ``t``
+
+  :throws SystemError: Thrown if data could not be read from the channel
+*/
+proc _channel.readAll(type t=bytes): t throws
+  where t==string || t==bytes
+{
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  var out_var : t;
+
+  if t == bytes {
+    out_var = b"";
+    this.readAll(out_var);
+  } else {
+    out_var = "";
+    this.readAll(out_var);
+  }
+
+  return out_var;
+}
+
+/*
+  Read the remaining contents of the channel into a ``string``.
+
+  Note that any existing contents of the ``string`` are overwritten.
+
+  :arg s: the ``string`` to read into
+  :returns: the number of codepoints that were stored in ``s``
+  :rtype: int
+
+  :throws SystemError: Thrown if data could not be read from the channel
+*/
+proc _channel.readAll(ref s: string): int throws {
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  const (err, lenread) = readBytesOrString(this, s, -1);
+
+  if err != ENOERR && err != EEOF {
+    try this._ch_ioerror(err, "in channel.readAll(ref s: string)");
+  }
+
+  return lenread;
+}
+
+/*
+  Read the remaining contents of the channel into a ``bytes``.
+
+  Note that any existing contents of the ``bytes`` are overwritten.
+
+  :arg b: the ``bytes`` to read into
+  :returns: the number of bytes that were stored in ``b``
+  :rtype: int
+
+  :throws SystemError: Thrown if data could not be read from the channel
+*/
+proc _channel.readAll(ref b: bytes): int throws {
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  const (err, lenread) = readBytesOrString(this, b, -1);
+
+  if err != ENOERR && err != EEOF {
+    try this._ch_ioerror(err, "in channel.readAll(ref b: bytes)");
+  }
+
+  return lenread;
+}
+
+/*
+  Read the remaining contents of the channel into a an array of bytes.
+
+  Note that this routine currently requires a 1D rectangular non-strided array.
+  Additionally, If the remaining contents of the channel exceed the size of
+  ``a``, the first ``a.size`` bytes will be read into ``a``, and then an
+  ``InsufficientCapacityError`` will be thrown.
+
+  :arg a: the array of bytes to read into
+  :returns: the number of bytes that were stored in ``a``
+  :rtype: int
+
+  :throws InsufficientCapacityError: Thrown if the channel's contents do not fit into ``a``
+  :throws SystemError: Thrown if data could not be read from the channel
+*/
+proc _channel.readAll(ref a: [?d] ?t): int throws
+  where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
+{
+  if this.writing then compilerError("attempt to read on write-only channel");
+  var i = d.low;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var got : int;
+
+    while d.contains(i) {
+      // read a byte
+      got = qio_channel_read_byte(false, this._channel_internal);
+
+      if got == -EEOF {
+        // reached EOF, stop reading
+        break;
+      } else if got < 0 {
+        // hit an IO error, throw
+        try this._ch_ioerror((-got):errorCode, "in channel.readAll(ref a: [])");
+      } else {
+        // got a byte, store it
+        a[i] = got:t;
+        i += 1;
+      }
+    }
+
+    // if a is full, but we haven't reached EOF, throw
+    if i-1 == d.high {
+      var has_more = false;
+
+      this._mark();
+      got = qio_channel_read_byte(false, this._channel_internal);
+      has_more = (got >= 0);
+      this._revert();
+
+      if has_more {
+        const sz = qio_channel_get_size(this._channel_internal);
+        const err_msg = "Channel's contents" + (if sz == -1 then " " else " (" + sz:string + " bytes) ") +
+          "exceeded capacity of array argument (" + a.size:string + " bytes) in 'readAll'";
+
+        throw new owned InsufficientCapacityError(err_msg);
+      }
+    }
+  }
+
+  return (i - d.low);
+}
+
 /* read a given number of bytes from a channel
 
    :arg str_out: The string to be read into
@@ -4926,7 +5065,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
-  var err = readBytesOrString(this, str_out, len);
+  var (err, _) = readBytesOrString(this, str_out, len);
 
   if !err {
     return true;
@@ -4950,7 +5089,7 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
-  var err = readBytesOrString(this, bytes_out, len);
+  var (err, _) = readBytesOrString(this, bytes_out, len);
 
   if !err {
     return true;
@@ -4962,12 +5101,14 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   return false;
 }
 
-private proc readBytesOrString(ch: fileReader, ref out_var: ?t,  len: int(64))
-    throws {
+private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
+  throws
+{
 
   var err:errorCode = ENOERR;
+  var lenread:int(64);
+
   on ch._home {
-    var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
     var actlen:int(64);
@@ -5018,7 +5159,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t,  len: int(64))
     }
   }
 
-  return err;
+  return (err, lenread);
 
 }
 

@@ -1,0 +1,6 @@
+InsufficientCapacityError: Channel's contents exceeded capacity of array argument (100 bytes) in 'readAll'
+true
+--Jabberwocky--
+InsufficientCapacityError: Channel's contents (1032 bytes) exceeded capacity of array argument (100 bytes) in 'readAll'
+true
+--Jabberwocky--
