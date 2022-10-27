@@ -573,6 +573,14 @@ class ResolvedVisibilityScope {
   }
 };
 
+/*
+ * Type of visibility statement (use or import)
+ */
+enum VisibilityStmtKind {
+  VIS_USE,
+  VIS_IMPORT,
+};
+
 enum {
   LOOKUP_DECLS = 1,
   LOOKUP_IMPORT_AND_USE = 2,
@@ -708,6 +716,30 @@ class InnermostMatch {
 
 /// \cond DO_NOT_DOCUMENT
 
+template <>
+struct stringify<resolution::VisibilityStmtKind> {
+  void operator()(std::ostream& streamOut, StringifyKind stringKind,
+                  resolution::VisibilityStmtKind kind) const {
+    switch (kind) {
+      case resolution::VisibilityStmtKind::VIS_USE:
+        streamOut << "use";
+        break;
+      case resolution::VisibilityStmtKind::VIS_IMPORT:
+        streamOut << "import";
+        break;
+      default:
+        assert(false && "should not reach this point");
+    }
+  }
+};
+
+template <>
+struct mark<resolution::VisibilityStmtKind> {
+  void operator()(Context* context, resolution::VisibilityStmtKind t) {
+    // No need to mark enums
+  }
+};
+
 /// \endcond
 
 
@@ -716,7 +748,6 @@ class InnermostMatch {
 
 namespace std {
 
-
 /// \cond DO_NOT_DOCUMENT
 template<> struct hash<chpl::resolution::BorrowedIdsWithName>
 {
@@ -724,6 +755,14 @@ template<> struct hash<chpl::resolution::BorrowedIdsWithName>
     return key.hash();
   }
 };
+
+template <>
+struct hash<chpl::resolution::VisibilityStmtKind> {
+  size_t operator()(const chpl::resolution::VisibilityStmtKind& key) const {
+    return (size_t)key;
+  }
+};
+
 /// \endcond
 
 } // end namespace std

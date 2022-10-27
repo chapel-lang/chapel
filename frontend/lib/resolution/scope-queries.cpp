@@ -541,11 +541,6 @@ static bool doLookupInScope(Context* context,
   return result.size() > startSize;
 }
 
-enum VisibilityStmtKind {
-  VIS_USE,    // the expr is the thing being use'd e.g. use A.B
-  VIS_IMPORT, // the expr is the thing being imported e.g. import C.D
-};
-
 // It can return multiple results because that is important for 'import'.
 // 'isFirstPart' is true for A in A.B.C but not for B or C.
 // On return:
@@ -687,7 +682,7 @@ static void errorIfNameNotInScope(Context* context,
                                   const Scope* scope,
                                   const ResolvedVisibilityScope* resolving,
                                   UniqueString name,
-                                  ID idForErr,
+                                  const VisibilityClause* clauseForError,
                                   VisibilityStmtKind useOrImport) {
   NamedScopeSet checkedScopes;
   std::vector<BorrowedIdsWithName> result;
@@ -699,12 +694,8 @@ static void errorIfNameNotInScope(Context* context,
                              checkedScopes, result);
 
   if (got == false || result.size() == 0) {
-    if (useOrImport == VIS_USE) {
-      context->error(idForErr, "could not find '%s' for 'use'", name.c_str());
-    } else {
-      context->error(idForErr, "could not find '%s' for 'import'",
-                     name.c_str());
-    }
+    CHPL_REPORT(context, UseImportUnknownSym, clauseForError, scope, useOrImport,
+                name.c_str());
   }
 }
 
@@ -717,11 +708,11 @@ errorIfAnyLimitationNotInScope(Context* context,
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
       errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                            ident->id(), useOrImport);
+                            clause, useOrImport);
     } else if (auto as = e->toAs()) {
       if (auto ident = as->symbol()->toIdentifier()) {
         errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                              ident->id(), useOrImport);
+                              clause, useOrImport);
       }
     }
   }
@@ -755,18 +746,18 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
       UniqueString name = ident->name();
       ret.push_back(std::make_pair(name, name));
     } else if (auto dot = e->toDot()) {
-      context->error(dot, "dot expression not supported here");
-      continue;
+      CHPL_REPORT(context, DotExprInUseImport, clause,
+                  clause->limitationKind(), dot);
     } else if (auto as = e->toAs()) {
       UniqueString name;
       UniqueString rename;
       auto s = as->symbol();
-      if (auto symId = s->toIdentifier()) {
-        name = symId->name();
-      } else {
-        context->error(s, "expression type not supported for 'as'");
+      auto symId = s->toIdentifier();
+      if (!symId) {
+        CHPL_REPORT(context, UnsupportedAsIdent, as, s);
         continue;
       }
+      name = symId->name();
 
       // Expect an identifier by construction.
       auto ident = as->rename()->toIdentifier();
@@ -786,18 +777,15 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
 // anchor errors.
 // 'isFirstPart' is true for A in A.B.C but not for B or C.
 // Returns nullptr in the event of an error.
-static const Scope* findScopeViz(Context* context,
-                                 const Scope* scope,
+static const Scope* findScopeViz(Context* context, const Scope* scope,
                                  UniqueString nameInScope,
                                  const ResolvedVisibilityScope* resolving,
-                                 ID idForErrs,
-                                 VisibilityStmtKind useOrImport,
+                                 ID idForErrs, VisibilityStmtKind useOrImport,
                                  bool isFirstPart) {
-
   // lookup 'field' in that scope
   std::vector<BorrowedIdsWithName> vec;
-  bool got = lookupInScopeViz(context, scope, resolving,
-                              nameInScope, useOrImport, isFirstPart, vec);
+  bool got = lookupInScopeViz(context, scope, resolving, nameInScope,
+                              useOrImport, isFirstPart, vec);
 
   // We might've discovered the same ID multiple times, via different
   // scopes (i.e., via multiple BorrowedIdsWithName). Delete duplicates by
@@ -824,21 +812,13 @@ static const Scope* findScopeViz(Context* context,
   // scope).
 
   if (got == false || vec.size() == 0) {
-    if (useOrImport == VIS_USE)
-      context->error(idForErrs, "could not find target of 'use'");
-    else
-      context->error(idForErrs, "could not find target of 'import'");
-
-    return nullptr;
-
-  } else if (allIds.size() > 1) {
-    if (useOrImport == VIS_USE)
-      context->error(idForErrs, "ambiguity in finding target of 'use'");
-    else
-      context->error(idForErrs, "ambiguity in finding target of 'import'");
-
+    CHPL_REPORT(context, UseImportUnknownMod, idForErrs, useOrImport,
+                nameInScope.c_str());
     return nullptr;
   }
+
+  // should not encounter ambiguous matches
+  assert(allIds.size() <= 1);
 
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
@@ -847,7 +827,8 @@ static const Scope* findScopeViz(Context* context,
     return scopeForModule(context, foundId);
   }
 
-  context->error(idForErrs, "does not refer to a module");
+  CHPL_REPORT(context, UseImportNotModule, idForErrs, useOrImport,
+              nameInScope.c_str());
   return nullptr;
 }
 
@@ -905,14 +886,13 @@ doResolveUseStmt(Context* context, const Use* use,
 
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
-      if (newIdent != nullptr) {
-        // search for the original name
-        expr = as->symbol();
-        newName = newIdent->name();
-      } else {
-        context->error(expr, "this form of as is not yet supported");
-        continue; // move on to the next visibility clause
+      if (!newIdent) {
+        CHPL_REPORT(context, UnsupportedAsIdent, as, as->rename());
+        continue;
       }
+      // search for the original name
+      expr = as->symbol();
+      newName = newIdent->name();
     }
 
     const Scope* foundScope = findUseImportTarget(context, scope, r,
@@ -936,8 +916,8 @@ doResolveUseStmt(Context* context, const Use* use,
           kind = VisibilitySymbols::CONTENTS_EXCEPT;
           // check that we do not have 'except A as B'
           for (const AstNode* e : clause->limitations()) {
-            if (!e->isIdentifier()) {
-              context->error(e, "'as' cannot be used with 'except'");
+            if (auto as = e->toAs()) {
+              CHPL_REPORT(context, AsWithUseExcept, use, as);
             }
           }
           // add the visibility clause for only/except
@@ -980,14 +960,13 @@ doResolveImportStmt(Context* context, const Import* imp,
 
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
-      if (newIdent != nullptr) {
-        // search for the original name
-        expr = as->symbol();
-        newName = newIdent->name();
-      } else {
-        context->error(expr, "this form of as is not yet supported");
-        continue; // move on to the next visibility clause
+      if (!newIdent) {
+        CHPL_REPORT(context, UnsupportedAsIdent, as, as->rename());
+        continue;
       }
+      // search for the original name
+      expr = as->symbol();
+      newName = newIdent->name();
     }
 
     // For import, because 'import M.f' should handle the case that 'f'
@@ -1019,7 +998,7 @@ doResolveImportStmt(Context* context, const Import* imp,
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
             errorIfNameNotInScope(context, foundScope, r,
-                                  dotName, clause->id(), VIS_IMPORT);
+                                  dotName, clause, VIS_IMPORT);
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
               r->addVisibilityClause(foundScope, kind, isPrivate,

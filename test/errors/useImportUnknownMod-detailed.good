@@ -1,0 +1,8 @@
+─── error in useImportUnknownMod.chpl:6 [UseImportUnknownMod] ───
+  Cannot find module 'X' for 'import'.
+  In the following 'import' statement:
+      |
+    6 |   import X.b;
+      |          ⎺
+      |
+

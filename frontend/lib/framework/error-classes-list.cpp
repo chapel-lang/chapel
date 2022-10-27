@@ -14,14 +14,18 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
+ *
  * limitations under the License.
  */
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/scope-types.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/uast/VisibilityClause.h"
 #include "chpl/types/all-types.h"
 #include <sstream>
+#include <cstring>
 
 namespace chpl {
 
@@ -152,6 +156,87 @@ void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, moduleInclude, "cannot find included submodule");
   wr.code(moduleInclude);
   wr.note(moduleInclude, "expected file at path '", filePath, "'");
+}
+
+void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
+  auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
+  auto symbolName = std::get<std::string>(info);
+  auto searchedScope = std::get<const resolution::Scope*>(info);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+  wr.heading(kind_, type_, locationOnly(visibilityClause),
+             "cannot find symbol '", symbolName, "' for ", useOrImport, ".");
+  wr.message("In the following '", useOrImport, "' statement:");
+  wr.code(visibilityClause, { visibilityClause });
+  // get class name of AstNode that generated scope (probably Module or Enum)
+  // and lowercase it for readability
+  std::string whatIsSearched = tagToString(searchedScope->tag());
+  whatIsSearched[0] = std::tolower(whatIsSearched[0]);
+  wr.message("Searching in the scope of ", whatIsSearched, " '",
+             searchedScope->name(), "':");
+  wr.code(searchedScope->id());
+}
+
+void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto moduleName = std::get<std::string>(info);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+  wr.heading(kind_, type_, id, "cannot find module '", moduleName,
+             "' for '", useOrImport, "'.");
+  wr.message("In the following '", useOrImport, "' statement:");
+  wr.code<ID, ID>(id, { id });
+}
+
+void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto moduleName = std::get<std::string>(info);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+  wr.heading(kind_, type_, id, "cannot '", useOrImport, "' '", moduleName,
+             "', which is not a module.");
+  wr.message("In the following '", useOrImport, "' statement:");
+  wr.code<ID, ID>(id, { id });
+  wr.message("Only modules and enums can be used with '", useOrImport,
+             "' statements.");
+}
+
+void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
+  auto use = std::get<const uast::Use*>(info);
+  auto as = std::get<const uast::As*>(info);
+  wr.heading(kind_, type_, locationOnly(use),
+             "invalid use of 'as' in this 'use' statement.");
+  wr.code(use, { as });
+  wr.message("The 'except' keyword and renaming cannot be used together.");
+}
+
+void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
+  auto dot = std::get<const uast::Dot*>(info);
+  auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
+  auto limitationKind = std::get<const uast::VisibilityClause::LimitationKind>(info);
+  wr.heading(kind_, type_, locationOnly(dot), "cannot use dot expression '",
+             dot, "' in '", limitationKind, "' list.");
+  wr.code(visibilityClause, {dot});
+  wr.message(
+      "Dot expressions are not allowed in the 'except' or 'only' list of a "
+      "'use' "
+      "or 'import'.");
+}
+
+void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
+  auto as = std::get<const uast::As*>(info);
+  auto expectedIdentifier = std::get<const uast::AstNode*>(info);
+  wr.heading(kind_, type_, locationOnly(as),
+             "this form of 'as' is not yet supported.");
+  // determine and report which of the original or new name is invalid
+  std::string whichName;
+  if (expectedIdentifier == as->symbol()) {
+    whichName = "original";
+  } else if (expectedIdentifier == as->rename()) {
+    whichName = "new";
+  } else {
+    assert(false && "should not be reachable");
+  }
+  wr.message("'as' requires the ", whichName,
+             " name to be a simple identifier, but instead got the following:");
+  wr.code(expectedIdentifier, { expectedIdentifier });
 }
 
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
