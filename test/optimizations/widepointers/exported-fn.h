@@ -1,5 +1,5 @@
 
 extern void foo(void);
-static void bar() {
+static void bar(void) {
   foo();
 }
