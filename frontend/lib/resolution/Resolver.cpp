@@ -978,10 +978,13 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
     // if the call resolution result is empty, we need to issue an error
     if (c.mostSpecific().isAmbiguous()) {
       // ambiguity between candidates
-      context->error(astForErr, "Cannot resolve call: ambiguity");
+      context->error(astForErr, "Cannot resolve call to %s: ambiguity",
+                     ci.name().c_str());
     } else {
       // could not find a most specific candidate
-      context->error(astForErr, "Cannot resolve call: no matching candidates");
+      context->error(astForErr,
+                     "Cannot resolve call to %s: no matching candidates",
+                     ci.name().c_str());
     }
   } else {
     context->error(astForErr, "Cannot establish type for call expression");

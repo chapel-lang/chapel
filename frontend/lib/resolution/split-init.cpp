@@ -518,8 +518,8 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
   if (rv.hasAst(callAst)) {
     // Do all of the return-intent-overloads use 'out' intent at all?
     // This filter is intended as an optimization.
-    bool eachCandidateHasAnOutFormal = true;
     const MostSpecificCandidates& candidates = rv.byAst(callAst).mostSpecific();
+    bool eachCandidateHasAnOutFormal = !candidates.isEmpty();
     for (const TypedFnSignature* fn : candidates) {
       if (fn != nullptr) {
         int n = fn->numFormals();

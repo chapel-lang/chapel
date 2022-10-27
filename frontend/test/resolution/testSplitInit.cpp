@@ -513,6 +513,10 @@ static void test26() {
   const char* program =
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
         proc test(r: int) {
           var x;
           if __primitive(">", r, 2) {

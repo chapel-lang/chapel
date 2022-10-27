@@ -1691,11 +1691,13 @@ resolveFunctionByInfoQuery(Context* context,
                                                   sig,
                                                   resolutionById);
     assert(visitor.initResolver.get());
-    if (fn) fn->body()->traverse(visitor);
-    auto newTfsForInitializer = visitor.initResolver->finalize();
+    if (fn) {
+      fn->body()->traverse(visitor);
+      // then, resolve '=' and add any copy init/deinit calls as needed
+      callInitDeinit(visitor);
+    }
 
-    // then, resolve '=' and add any copy init/deinit calls as needed
-    callInitDeinit(visitor);
+    auto newTfsForInitializer = visitor.initResolver->finalize();
 
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
@@ -1754,6 +1756,9 @@ resolveFunctionByInfoQuery(Context* context,
     auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
                                                resolutionById);
     fn->body()->traverse(visitor);
+
+    // then, resolve '=' and add any copy init/deinit calls as needed
+    callInitDeinit(visitor);
 
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);

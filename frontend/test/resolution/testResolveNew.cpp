@@ -415,6 +415,10 @@ static void testGenericRecordUserInitDependentField() {
 
   auto path = TEST_NAME(ctx);
   std::string contents = R""""(
+    operator =(ref lhs: int, rhs: int) {
+      __primitive("=", lhs, rhs);
+    }
+
     record r {
       type f1;
       param f2: int;
@@ -436,10 +440,10 @@ static void testGenericRecordUserInitDependentField() {
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.singleModule();
   assert(mod);
-  assert(mod->numStmts() == 2);
-  auto rec = mod->stmt(0)->toRecord();
+  assert(mod->numStmts() == 3);
+  auto rec = mod->stmt(1)->toRecord();
   assert(rec);
-  auto obj = mod->stmt(1)->toVariable();
+  auto obj = mod->stmt(2)->toVariable();
   assert(obj);
 
   // Resolve the module.
@@ -521,6 +525,10 @@ static void testFieldUseBeforeInit1(void) {
 
   auto path = TEST_NAME(ctx);
   std::string contents = R""""(
+    operator =(ref lhs: int, rhs: int) {
+      __primitive("=", lhs, rhs);
+    }
+
     record r {
       var x: int;
     }
@@ -554,7 +562,7 @@ static void testFieldUseBeforeInit1(void) {
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "'x' is used before it is initialized");
-  assert(msg->location(ctx).firstLine() == 7);
+  assert(msg->location(ctx).firstLine() == 11);
   assert(guard.realizeErrors());
 }
 

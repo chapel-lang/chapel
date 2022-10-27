@@ -291,11 +291,16 @@ static void testReduce() {
   Context* context = getNewContext();
   // Very simple test focusing on scope resolution
   std::string program = R"""(
-var x = 0;
-forall i in 1..10 with (+ reduce x) {
-  x += 1;
-}
-)""";
+
+    operator +=(ref lhs: int, rhs: int) {
+      __primitive("+=", lhs, rhs);
+    }
+
+    var x = 0;
+    forall i in 1..10 with (+ reduce x) {
+      x += 1;
+    }
+    )""";
 
   ErrorGuard guard(context);
 
@@ -303,8 +308,8 @@ forall i in 1..10 with (+ reduce x) {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  auto decl = m->stmt(0);
-  auto forall = m->stmt(1)->toForall();
+  auto decl = m->stmt(1);
+  auto forall = m->stmt(2)->toForall();
   auto reduce = forall->withClause()->expr(0);
   auto plusEq = forall->body()->stmt(0)->toCall();
   auto innerX = plusEq->actual(0);
