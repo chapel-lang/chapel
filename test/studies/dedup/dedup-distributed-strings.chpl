@@ -24,9 +24,9 @@ proc main(args:[] string)
     if isFile(arg) then
       paths.append(arg);
     else if isDir(arg) then
-      // use FileSystem.findfiles to easily enumerate files.
+      // use FileSystem.findFiles to easily enumerate files.
       // A parallel version is available.
-      for path in findfiles(arg, recursive=true) do
+      for path in findFiles(arg, recursive=true) do
         paths.append(path);
   }
 

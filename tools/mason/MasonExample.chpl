@@ -308,7 +308,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
     return exampleNames;
   }
   else if isDir(examplePath) {
-    var examples = findfiles(startdir=examplePath, recursive=true, hidden=false);
+    var examples = findFiles(startdir=examplePath, recursive=true, hidden=false);
     for example in examples {
       if example.endsWith(".chpl") {
         exampleNames.append(getExamplePath(example));

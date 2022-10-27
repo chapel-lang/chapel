@@ -136,7 +136,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
         subTestPath = cwd;
       }
 
-      var tests = findfiles(startdir=subTestPath, recursive=true, hidden=false);
+      var tests = findFiles(startdir=subTestPath, recursive=true, hidden=false);
       for test in tests{
         if test.endsWith(".chpl"){
           if(inProjectDir){
@@ -186,7 +186,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
         var testNames: list(string);
 
         if isDir('.'){
-          var tests = findfiles(startdir='.', recursive=subdir);
+          var tests = findFiles(startdir='.', recursive=subdir);
           for test in tests {
             if test.endsWith(".chpl") {
               testNames.append(test);
@@ -248,7 +248,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
     else {
       try! {
         for dir in dirs {
-          for file in findfiles(startdir = dir, recursive = subdir) {
+          for file in findFiles(startdir = dir, recursive = subdir) {
             if file.endsWith(".chpl") {
               files.append(file);
             }
@@ -391,7 +391,7 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
     }
   }
   else if isDir(testPath) {
-    var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
+    var tests = findFiles(startdir=testPath, recursive=true, hidden=false);
     for test in tests {
       if test.endsWith(".chpl") {
         testNames.append(getTestPath(test));
@@ -554,7 +554,7 @@ proc testFile(file, ref result, show: bool) throws {
 pragma "no doc"
 /*Docs: Todo*/
 proc testDirectory(dir, ref result, show: bool) throws {
-  for file in findfiles(startdir = dir, recursive = subdir) {
+  for file in findFiles(startdir = dir, recursive = subdir) {
     if file.endsWith(".chpl") {
       testFile(file, result, show);
     }

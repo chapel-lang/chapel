@@ -57,9 +57,9 @@ t.start();
 
 var filenamesList: list(string);
 
-// findfiles() returns an iterator so putting all file names in a list
+// findFiles() returns an iterator so putting all file names in a list
 // to enable creating an array of file names.
-for f in findfiles(inputDir) {
+for f in findFiles(inputDir) {
     filenamesList.append(f);
 }
 // Create an array blocked into pieces per locale.

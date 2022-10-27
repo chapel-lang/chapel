@@ -71,7 +71,7 @@ proc main(args:[] string) {
   for arg in files {
     if isDir(arg) {
       // Go through files in directories.
-      for f in findfiles(arg, true) {
+      for f in findFiles(arg, true) {
         todo.append(f);
       }
     } else {

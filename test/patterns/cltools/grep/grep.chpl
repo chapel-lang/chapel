@@ -68,7 +68,7 @@ proc parallelGrep(tofind: string) throws {
 
   // Seaches current working directory ignoring anthing but UTF-8
   // encoded characters
-  var files = FileSystem.findfiles(Path.curDir);
+  var files = FileSystem.findFiles(Path.curDir);
   forall file in files {
     fileGrep(tofind, file);
   }
