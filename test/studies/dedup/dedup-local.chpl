@@ -16,7 +16,7 @@ proc main(args:[] string)
     if isFile(arg) then
       paths.append(arg);
     else if isDir(arg) then
-      for path in findfiles(arg, recursive=true) do
+      for path in findFiles(arg, recursive=true) do
         paths.append(path);
   }
 
