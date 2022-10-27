@@ -201,4 +201,21 @@ struct mark<uast::VisibilityClause::LimitationKind> {
 
 } // end namespace chpl
 
+
+namespace std {
+
+/// \cond DO_NOT_DOCUMENT
+
+template <>
+struct hash<chpl::uast::VisibilityClause::LimitationKind> {
+  size_t operator()(
+      const chpl::uast::VisibilityClause::LimitationKind& key) const {
+    return (size_t)key;
+  }
+};
+
+/// \endcond
+
+} // end namespace std
+
 #endif

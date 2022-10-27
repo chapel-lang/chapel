@@ -748,7 +748,6 @@ struct mark<resolution::VisibilityStmtKind> {
 
 namespace std {
 
-
 /// \cond DO_NOT_DOCUMENT
 template<> struct hash<chpl::resolution::BorrowedIdsWithName>
 {
@@ -756,6 +755,14 @@ template<> struct hash<chpl::resolution::BorrowedIdsWithName>
     return key.hash();
   }
 };
+
+template <>
+struct hash<chpl::resolution::VisibilityStmtKind> {
+  size_t operator()(const chpl::resolution::VisibilityStmtKind& key) const {
+    return (size_t)key;
+  }
+};
+
 /// \endcond
 
 } // end namespace std
