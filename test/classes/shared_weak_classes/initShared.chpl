@@ -35,5 +35,5 @@ writeln("1");
 info(bc1);
 
 proc info(x) {
-    writeln("\tvalue: '", x, "' \ttype: '", x.type:string, "' \tsc: ", x.chpl_pn!.strongCount());
+    writeln("\tvalue: '", x, "' \ttype: '", x.type:string, "' \tsc: ", x.chpl_pn!.strongCount.read());
 }

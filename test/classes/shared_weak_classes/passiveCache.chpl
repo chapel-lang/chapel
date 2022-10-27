@@ -1,5 +1,6 @@
 
 import Map.map;
+use WeakPointer;
 use Barriers;
 
 class PassiveCache {
@@ -17,8 +18,13 @@ class PassiveCache {
             var weak_pointer = this.items.getValue(key);
 
             // if the pointer can be upgraded, return the shared reference, otherwise recompute the item and return it
-            var maybe_strong : shared dataType? = weak_pointer.upgrade();
-            return if maybe_strong != nil then (maybe_strong: shared dataType) else this.buildAndSave(key);
+            var maybe_strong = weak_pointer : shared dataType?;
+            if maybe_strong != nil {
+                return try! (maybe_strong : shared dataType);
+            } else {
+                writeln("recomputing ", key);
+                return this.buildAndSave(key);
+            }
 
             // --- Alternative interfaces for the same behavior ---
             // return if weak_pointer.canUpgrade() then weak_pointer.forceUpgrade() else this.buildAndSave(key);
@@ -95,12 +101,20 @@ proc main() {
         var b = new Barrier(taskGroup.size);
         coforall tid in taskGroup {
             var x = pc.getOrBuild(tid);
-            b.barrier();
 
-            var x_weak = x.downgrade();
-            correct.write(targetStrongCounts[i][x.i] == x_weak.getStrongCount());
-            correct.write(targetWeakCounts[i][x.i] == x_weak.getWeakCount());
+            b.barrier(); // for repeated task ids, two strong pointers should have been created by this point
+
+            const wc = x.chpl_pn!.totalCount.read();
+            const sc = x.chpl_pn!.strongCount.read();
+
+            const strongCountCorrect = targetStrongCounts[i][x.i] == sc;
+            const weakCountCorrect = targetWeakCounts[i][x.i] == wc;
+
+            writeln(i, "\t", tid, "\tsc: ", sc, "\twc:", wc);
+
+            correct.write(strongCountCorrect && weakCountCorrect);
         }
+        writeln("--------------------------");
     }
 
     writeln(correct.read());

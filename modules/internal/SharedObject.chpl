@@ -94,36 +94,38 @@ module SharedObject {
   // reason it couldn't be one class.
   pragma "no doc"
   class ReferenceCount {
-    var strong_count: atomic int;
-    var weak_count: atomic int;
+    var strongCount: atomic int;
+    var totalCount: atomic int; // weakCount + strongCount
 
-    // count should be initialized to 1 in default initializer.
     proc init() {
-      // Want this:      strong_count = 1, weak_count = 0;
       this.complete();
-      strong_count.write(1);
-      weak_count.write(0);
+      strongCount.write(1);
+      totalCount.write(1);
     }
 
-    // strong interface for normal 'shared' classes
     proc retain() {
-      strong_count.add(1);
+      strongCount.add(1);
+      totalCount.add(1);
     }
     proc release() {
-      var oldValue = strong_count.fetchSub(1);
-      return (oldValue - 1, this.weak_count.read());
+      var oldValue = strongCount.fetchSub(1);
+      return (oldValue - 1, this.totalCount.read());
     }
 
-    // weak interface for 'weakPointer's to 'shared' classes
+    proc retainWeak(ref expected: int) {
+      if strongCount.compareExchange(expected, expected + 1) {
+        totalCount.add(1);
+        return true;
+      } else {
+        return false;
+      }
+    }
+    proc releaseWeak() {
+      var oldValue = totalCount.fetchSub(1);
+      return oldValue - 1;
+    }
     proc incrementWeak() {
-      weak_count.add(1);
-    }
-    proc decrementWeak() {
-      var oldValue = weak_count.fetchSub(1);
-      return (this.strong_count.read(), oldValue - 1);
-    }
-    proc strongCount() {
-      return this.strong_count.read();
+      totalCount.add(1);
     }
   }
 
@@ -347,12 +349,12 @@ module SharedObject {
     pragma "no doc"
     proc ref doClear() {
       if chpl_p != nil && chpl_pn != nil {
-        var (strong_count, weak_count) = chpl_pn!.release();
-        if strong_count == 0 {
-          // if i'm the last strong pointer, free the underlying class
+        var (strongCount, totalCount) = chpl_pn!.release();
+        if strongCount == 0 {
+          // this is the last strong pointer, free the underlying class
           delete _to_unmanaged(chpl_p);
-          if weak_count == 0 {
-            // if there are no weak pointers, free the reference counter too
+          if totalCount == 0 {
+            // There are no weak pointers, free the reference counter too
             delete chpl_pn;
           }
         }
@@ -397,34 +399,34 @@ module SharedObject {
       return result;
     }
 
-    /*
-      Create a new ``shared`` class by upgrading a :record:`weakPointer`
+    // /*
+    //   Create a new ``shared`` class by upgrading a :record:`weakPointer`
 
-      If the shared class referenced by the ``weakPointer`` has already been
-      deinitialized, this method will return ``nil``.
+    //   If the shared class referenced by the ``weakPointer`` has already been
+    //   deinitialized, this method will return ``nil``.
 
-      If the shared class is still initialized, this method will return a
-      nilable shared reference to it and increment the shared-reference count
-    */
-    proc type fromWeak(ref w: weakPointer) {
-      var result: (w.internalType? : shared);
+    //   If the shared class is still initialized, this method will return a
+    //   nilable shared reference to it and increment the shared-reference count
+    // */
+    // proc type fromWeak(ref w: weakPointer) {
+    //   var result: (w.internalType? : shared);
 
-      if w.chpl_pn!.strongCount() > 0 {
-        result.chpl_pn = w.chpl_pn;
-        result.chpl_p = w.chpl_p;
-        result.chpl_pn!.retain();
-        return result;
-      } else {
-        return nil;
-      }
-    }
+    //   if w.chpl_pn!.strongCount() > 0 {
+    //     result.chpl_pn = w.chpl_pn;
+    //     result.chpl_p = w.chpl_p;
+    //     result.chpl_pn!.retain();
+    //     return result;
+    //   } else {
+    //     return nil;
+    //   }
+    // }
 
-    /*
-      Create a :record:`weakPointer` to this shared class
-    */
-    proc downgrade() {
-      return new weakPointer(this);
-    }
+    // /*
+    //   Create a :record:`weakPointer` to this shared class
+    // */
+    // proc downgrade() {
+    //   return new weakPointer(this);
+    // }
 
     /*
        The deinitializer for :record:`shared` will destroy the class
@@ -707,197 +709,454 @@ module SharedObject {
   }
 
 
-  record weakPointer {
-    /* the type of the shared class instance referenced by this pointer */
-    type internalType;
+  // record weakPointer {
+  //   /* the type of the shared class instance referenced by this pointer */
+  //   type internalType;
 
-    pragma "no doc"
-    pragma "owned"
-    var chpl_p: __primitive("to nilable class", internalType); // instance pointer
+  //   pragma "no doc"
+  //   pragma "owned"
+  //   var chpl_p: __primitive("to nilable class", internalType); // instance pointer
 
-    pragma "no doc"
-    pragma "owned"
-    var chpl_pn: unmanaged ReferenceCount?; // reference counter
+  //   pragma "no doc"
+  //   pragma "owned"
+  //   var chpl_pn: unmanaged ReferenceCount?; // reference counter
 
-    pragma "no doc"
-    proc init(c : unmanaged) {
-      this.internalType = c.type;
-      compilerError(
-        "cannot initialize a weakPointer from an unmanaged type: '" + c.type:string + "'"
-      );
-    }
+  //   pragma "no doc"
+  //   proc init(c : unmanaged) {
+  //     this.internalType = c.type;
+  //     compilerError(
+  //       "cannot initialize a weakPointer from an unmanaged type: '" + c.type:string + "'"
+  //     );
+  //   }
 
-    pragma "no doc"
-    proc init(c : owned) {
-      this.internalType = c.type;
-      compilerError(
-         "cannot initialize a weakPointer from an owned type: '" + c.type:string + "'"
-      );
-    }
+  //   pragma "no doc"
+  //   proc init(c : owned) {
+  //     this.internalType = c.type;
+  //     compilerError(
+  //        "cannot initialize a weakPointer from an owned type: '" + c.type:string + "'"
+  //     );
+  //   }
 
-    pragma "no doc"
-    proc init(c : borrowed) {
-      this.internalType = c.type;
-      compilerError(
-         "cannot initialize a weakPointer from a borrowed type: '" + c.type:string + "'"
-      );
-    }
+  //   pragma "no doc"
+  //   proc init(c : borrowed) {
+  //     this.internalType = c.type;
+  //     compilerError(
+  //        "cannot initialize a weakPointer from a borrowed type: '" + c.type:string + "'"
+  //     );
+  //   }
 
-    // disallow initialization from all other types
-    pragma "no doc"
-    proc init(c) {
-      this.internalType = c.type;
-      compilerError("cannot initialize a weakPointer from a: '" + c.type:string + "'");
-    }
+  //   // disallow initialization from all other types
+  //   pragma "no doc"
+  //   proc init(c) {
+  //     this.internalType = c.type;
+  //     compilerError("cannot initialize a weakPointer from a: '" + c.type:string + "'");
+  //   }
 
+  //   /*
+  //     Create a new weak pointer from a shared class instance 'c'
+  //   */
+  //   proc init(c : shared) {
+  //     var ptr = c.chpl_p: _to_nilable(_to_unmanaged(c.chpl_t));
+  //     var count = c.chpl_pn;
+  //     if ptr != nil {
+  //       // increment the weak reference count
+  //       count!.incrementWeak();
+  //     } else {
+  //       // don't store a count for the nil pointer
+  //       count = nil;
+  //     }
+
+  //     this.internalType = _to_unmanaged(c.chpl_t);
+  //     this.chpl_p = ptr;
+  //     this.chpl_pn = count;
+  //   }
+
+  //   /*
+  //     Return a nilable shared reference to the underlying class instance.
+
+  //     The return value will be ``nil`` if there are no strong references
+  //     to the class instance remaining (i.e., the underlying class has already
+  //     been deinitialized).
+
+  //     Otherwise, a nilable shared reference to the underlying class will be
+  //     returned, and the strong reference count will be incremented.
+  //   */
+  //   proc upgrade() {
+  //     return _shared.fromWeak(this);
+  //   }
+
+  //   /*
+  //     Return a shared reference to the underlying class instance.
+
+  //     Halt if the pointer cannot be upgraded (i.e., it has already been
+  //     deinitialized)
+  //   */
+  //   proc forceUpgrade() {
+  //     var result: (this.internalType? : shared);
+
+  //     if this.chpl_pn!.strongCount() > 0 {
+  //       var count = this.chpl_pn;
+  //       count!.retain();
+  //       result.chpl_pn = count;
+
+  //       result.chpl_p = this.chpl_p;
+
+  //       return try! result : (this.internalType: shared);
+  //     } else {
+  //       halt("Attempt to upgrade weakPointer of a deinitialized class in 'forceUpgrade'");
+  //     }
+  //   }
+
+  //   /*
+  //     Return a shared reference to the underlying class instance.
+
+  //     Throw an error if the pointer cannot be upgraded (i.e., it has already
+  //     been deinitialized)
+  //   */
+  //   proc tryUpgrade() throws {
+  //     var result: (this.internalType? : shared);
+
+  //     if this.chpl_pn!.strongCount() > 0 {
+  //       var count = this.chpl_pn;
+  //       count!.retain();
+  //       result.chpl_pn = count;
+
+  //       result.chpl_p = this.chpl_p;
+
+  //       return try! result : (this.internalType: shared);
+  //     } else {
+  //       throw new EmptyWeakPointerError();
+  //     }
+  //   }
+
+  //   /*
+  //     Test if the ``weakPointer`` can be upgraded to a strong ``shared`` class
+  //   */
+  //   proc canUpgrade(): bool {
+  //     return if this.chpl_pn != nil then this.chpl_pn!.strongCount() > 0 else false;
+  //   }
+
+  //   proc getStrongCount(): int {
+  //     return this.chpl_pn!.strong_count.read();
+  //   }
+
+  //   proc getWeakCount(): int {
+  //     return this.chpl_pn!.weak_count.read();
+  //   }
+
+  //   /*
+  //     When a :record:`weakPointer` is deinitialized, the underlying classes weak
+  //     reference count will be decremented. This will not cause a deinitialization
+  //     of the underlying class.
+  //   */
+  //   proc deinit() {
+  //     if this.chpl_p != nil && this.chpl_pn != nil {
+  //         var (strong_count, weak_count) = this.chpl_pn!.decrementWeak();
+  //         if weak_count == 0 && strong_count == 0 {
+  //           // if I'm the last weak pointer, and there are no strong pointers, free the ReferenceCounter
+  //           delete this.chpl_pn;
+  //         }
+  //       }
+  //       this.chpl_p = nil;
+  //       this.chpl_pn = nil;
+  //   }
+
+  //   /*
+  //      Copy-initializer. Creates a new :record:`weakPointer`
+  //      that refers to the same class instance as `src`.
+  //      The objects weak reference count will be incremented
+  //    */
+  //   proc init=(pragma "nil from arg" const ref src: weakPointer) {
+  //     this.internalType = src.internalType;
+
+  //     if isCoercible(src.internalType, this.type.internalType) == false then
+  //       compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+
+  //     this.chpl_p = src.chpl_p;
+  //     this.chpl_pn = src.chpl_pn;
+
+  //     this.complete();
+
+  //     if this.chpl_pn != nil then
+  //       this.chpl_pn!.incrementWeak();
+
+  //     if isNonNilableClass(this.type) && isNilableClass(src) then
+  //       compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+  //   }
+  // }
+
+  // proc weakPointer.writeThis(ch) throws {
+  //   if this.chpl_p != nil {
+  //     if this.canUpgrade() {
+  //       ch.write(this.chpl_p);
+  //     } else {
+  //       write("Empty!");
+  //     }
+  //   } else {
+  //     ch.write("nil ptr");
+  //   }
+  // }
+
+  // class EmptyWeakPointerError: Error {
+  //   override proc message() {
+  //     return "Unable to upgrade weakPointer to shared reference; the underlying class has already been deinitialized";
+  //   }
+  // }
+
+
+  /*
+
+  */
+  module WeakPointer {
     /*
-      Create a new weak pointer from a shared class instance 'c'
+        The weak pointer type is used to provide a reference to a shared class
+        object without forcing it to stay allocated.
+
+        A "strong" shared reference to the class instance can be obtained by
+        casting the weakPointer to a `shared t` or a `shared t?`. If the
+        underlying class has already been deinitialized, the cast will either
+        throw a `NilClassError` or return `nil` depending on the specified
+        type.
+
+        Weak pointers are implemented using task-safe reference counting.
     */
-    proc init(c : shared) {
-      var ptr = c.chpl_p: _to_nilable(_to_unmanaged(c.chpl_t));
-      var count = c.chpl_pn;
-      if ptr != nil {
-        // increment the weak reference count
-        count!.incrementWeak();
-      } else {
-        // don't store a count for the nil pointer
-        count = nil;
-      }
+    record weakPointer {
+        /* The shared class type referenced by this pointer */
+        type chpl_t;
 
-      this.internalType = c.chpl_t;
-      this.chpl_p = ptr;
-      this.chpl_pn = count;
-    }
+        pragma "no doc"
+        pragma "owned"
+        var chpl_p: __primitive("to nilable class", _to_unmanaged(chpl_t)); // instance pointer
 
-    /*
-      Return a nilable shared reference to the underlying class instance.
+        pragma "no doc"
+        pragma "owned"
+        var chpl_pn: unmanaged ReferenceCount?; // reference counter
 
-      The return value will be ``nil`` if there are no strong references
-      to the class instance remaining (i.e., the underlying class has already
-      been deinitialized).
+        // ---------------- Initializers ----------------
 
-      Otherwise, a nilable shared reference to the underlying class will be
-      returned, and the strong reference count will be incremented.
-    */
-    proc upgrade() {
-      return _shared.fromWeak(this);
-    }
+        pragma "no doc"
+        proc init(c : unmanaged) {
+        this.chpl_t = c.type;
+        compilerError(
+            "cannot initialize a weakPointer from an unmanaged class: '" + c.type:string + "'"
+        );
+        }
 
-    /*
-      Return a shared reference to the underlying class instance.
+        pragma "no doc"
+        proc init(c : owned) {
+        this.chpl_t = c.type;
+        compilerError(
+            "cannot initialize a weakPointer from an owned class: '" + c.type:string + "'"
+        );
+        }
 
-      Halt if the pointer cannot be upgraded (i.e., it has already been
-      deinitialized)
-    */
-    proc forceUpgrade() {
-      var result: (this.internalType? : shared);
+        pragma "no doc"
+        proc init(c : borrowed) {
+        this.chpl_t = c.type;
+        compilerError(
+            "cannot initialize a weakPointer from a borrowed class: '" + c.type:string + "'"
+        );
+        }
 
-      if this.chpl_pn!.strongCount() > 0 {
-        var count = this.chpl_pn;
-        count!.retain();
-        result.chpl_pn = count;
+        // disallow initialization from all other types
+        pragma "no doc"
+        proc init(c) {
+        this.chpl_t = c.type;
+        compilerError("cannot initialize a weakPointer from: '" + c.type:string + "'");
+        }
 
-        result.chpl_p = this.chpl_p;
+        /*
+            Create a new weak pointer to a shared class instance 'c'
+        */
+        proc init(c : shared) {
+            var ptr = c.chpl_p: _to_nilable(_to_unmanaged(c.chpl_t));
+            var count = c.chpl_pn;
 
-        return try! result : (this.internalType: shared);
-      } else {
-        halt("Attempt to upgrade weakPointer of a deinitialized class in 'forceUpgrade'");
-      }
-    }
+            // increment the weak reference count (or store nil if the class is nil)
+            if ptr != nil then count!.incrementWeak(); else count = nil;
 
-    /*
-      Return a shared reference to the underlying class instance.
+            this.chpl_t = shared c.chpl_t;
+            // this.complete();
 
-      Throw an error if the pointer cannot be upgraded (i.e., it has already
-      been deinitialized)
-    */
-    proc tryUpgrade() throws {
-      var result: (this.internalType? : shared);
+            this.chpl_p = ptr;
+            this.chpl_pn = count;
+        }
 
-      if this.chpl_pn!.strongCount() > 0 {
-        var count = this.chpl_pn;
-        count!.retain();
-        result.chpl_pn = count;
+        /*
+            Copy-initialize a new ``weakPointer`` from an existing ``weakPointer``.
 
-        result.chpl_p = this.chpl_p;
+            Increments the weak-reference count.
+        */
+        proc init=(pragma "nil from arg" const ref src: weakPointer) {
+          this.chpl_t = src.chpl_t;
 
-        return try! result : (this.internalType: shared);
-      } else {
-        throw new EmptyWeakPointerError();
-      }
-    }
-
-    /*
-      Test if the ``weakPointer`` can be upgraded to a strong ``shared`` class
-    */
-    proc canUpgrade(): bool {
-      return if this.chpl_pn != nil then this.chpl_pn!.strongCount() > 0 else false;
-    }
-
-    proc getStrongCount(): int {
-      return this.chpl_pn!.strong_count.read();
-    }
-
-    proc getWeakCount(): int {
-      return this.chpl_pn!.weak_count.read();
-    }
-
-    /*
-      When a :record:`weakPointer` is deinitialized, the underlying classes weak
-      reference count will be decremented. This will not cause a deinitialization
-      of the underlying class.
-    */
-    proc deinit() {
-      if this.chpl_p != nil && this.chpl_pn != nil {
-          var (strong_count, weak_count) = this.chpl_pn!.decrementWeak();
-          if weak_count == 0 && strong_count == 0 {
-            // if I'm the last weak pointer, and there are no strong pointers, free the ReferenceCounter
-            delete this.chpl_pn;
+          if src.chpl_p!= nil {
+            this.chpl_p = src.chpl_p;
+            src.chpl_pn!.incrementWeak();
+            this.chpl_pn = src.chpl_pn;
+          } else {
+            this.chpl_p = nil;
+            this.chpl_pn = nil;
           }
         }
-        this.chpl_p = nil;
-        this.chpl_pn = nil;
+
+        // ---------------- Other ----------------
+
+        /*
+          When a ``weakPointer`` is deinitialized, the weak reference count is
+          decremented.
+
+          If there are no other weak references, the backing pointer is freed.
+        */
+        proc deinit() {
+          writeln("--- deinit ---");
+          this.doClear();
+        }
+
+        pragma "no doc"
+        proc doClear() {
+            if this.chpl_p != nil {
+                const totalCount = this.chpl_pn!.releaseWeak();
+                if totalCount == 0 then delete this.chpl_pn;
+            }
+            this.chpl_p = nil;
+            this.chpl_pn = nil;
+        }
+
+        /*
+          Get the number of ``weakPointers`` currently pointing at the same
+          ``shared`` class as this one.
+        */
+        proc getWeakCount(): int {
+          if const counts = this.chpl_pn
+            then return (counts.totalCount.read() - counts.strongCount.read());
+            else return 0;
+        }
+
+        /*
+          Get the number of shared variables currently pointing at the same
+          ``shared`` class as this ``weakPointer``
+
+          .. Warning
+            this value should not be used to predict whether this pointer
+            can successfully be cast to a ``shared`` class. Even if the value
+            is greater than zero, it is possible for all the other ``shared``
+            references to deinitialize the class instance before this weak
+            pointer can be upgraded.
+        */
+        proc getStrongCount(): int {
+          if const counts = this.chpl_pn
+            then return counts.strongCount.read();
+            else return 0;
+        }
+    }
+
+
+    // ---------------- Cast Operators ----------------
+
+    /*
+        Cast a weak pointer to a nilable class type.
+
+        If the referenced class has already been deinitialized, or is
+        itself ``nil``, this cast will return a ``nil`` value.
+
+        Otherwise it will return a nilable :record:`~SharedObject.shared`
+        ``t``.
+    */
+    inline operator :(const ref x: weakPointer, type t: shared class?)
+    {
+        if x.chpl_p != nil {
+            var result: t;
+            var sc = x.chpl_pn!.strongCount.read();
+            if sc == 0 {
+                // the class value has already been deinitialized
+                writeln("class was deinitialized...");
+                return nil;
+            } else {
+                while !x.chpl_pn!.retainWeak(sc) {
+                    writeln("expected value did not match...");
+                    if sc == 0 {
+                        // the class value was deinitialized while this process
+                        // was trying to increment the strong reference count
+                        return nil;
+                    }
+                }
+                result.chpl_p = x.chpl_p;
+                result.chpl_pn = x.chpl_pn;
+                return result;
+            }
+        } else {
+            // class value itself was nil
+            writeln("class value was nil");
+            return nil;
+        }
     }
 
     /*
-       Copy-initializer. Creates a new :record:`weakPointer`
-       that refers to the same class instance as `src`.
-       The objects weak reference count will be incremented
-     */
-    proc init=(pragma "nil from arg" const ref src: weakPointer) {
-      this.internalType = src.internalType;
+        Cast a weak pointer to a non-nilable class type.
 
-      if isCoercible(src.internalType, this.type.internalType) == false then
-        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+        If the referenced class has already been deinitialized, or is
+        itself ``nil``, this cast will throw a :class:`~Errors.NilClassError`.
 
-      this.chpl_p = src.chpl_p;
-      this.chpl_pn = src.chpl_pn;
-
-      this.complete();
-
-      if this.chpl_pn != nil then
-        this.chpl_pn!.incrementWeak();
-
-      if isNonNilableClass(this.type) && isNilableClass(src) then
-        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+        Otherwise it will return a :record:`~SharedObject.shared` t.
+    */
+    inline operator :(const ref x: weakPointer, type t: shared class) throws
+    {
+        if x.chpl_p != nil {
+            var result: t;
+            var sc = x.chpl_pn!.strongCount.read();
+            if sc == 0 {
+                // the class value has already been deinitialized
+                throw new NilClassError("Illegal cast to a non-nil class from an invalid 'weakPointer'");
+            } else {
+                while !x.chpl_pn!.retainWeak(sc) {
+                    if sc == 0 {
+                        // the class value was deinitialized while this process
+                        // was trying to increment the strong reference count
+                        throw new NilClassError("Illegal cast to a non-nil class from an invalid 'weakPointer'");
+                    }
+                }
+                result.chpl_p = x.chpl_p;
+                result.chpl_pn = x.chpl_pn;
+                return result;
+            }
+        } else {
+            // class value itself was nil
+            throw new NilClassError("Illegal cast to a non-nil class from a nil-valued 'weakPointer'");
+        }
     }
-  }
 
-  proc weakPointer.writeThis(ch) throws {
-    if this.chpl_p != nil {
-      if this.canUpgrade() {
-        ch.write(this.chpl_p);
+    // ---------------- Other Operators ----------------
+
+    /*
+        Assign one existing ``weakPointer`` to an other.
+
+        Decrements the weak-reference count of the ``lhs`` pointer.
+    */
+    operator =(ref lhs: weakPointer, rhs: weakPointer)
+        where !(isNonNilableClass(lhs) && isNilableClass(rhs))
+    {
+        if rhs.chpl_pn != nil then rhs.chpl_pn!.incrementWeak();
+        const chpl_p_tmp = rhs.chpl_p;
+        const chpl_pn_tmp = rhs.chpl_pn;
+
+        lhs.doClear();
+        lhs.chpl_p = chpl_p_tmp;
+        lhs.chpl_pn = chpl_pn_tmp;
+    }
+
+    proc weakPointer.writeThis(ch) throws {
+      if const ptr = this.chpl_p {
+        if this.chpl_pn!.strongCount.read() > 0 {
+          // could be invalidated between /\ and \/ (not worrying about that for now).
+          ch.write(ptr);
+        } else {
+          ch.write("invalid ptr");
+        }
       } else {
-        write("Empty!");
+        ch.write("nil object");
       }
-    } else {
-      ch.write("nil ptr");
     }
-  }
 
-  class EmptyWeakPointerError: Error {
-    override proc message() {
-      return "Unable to upgrade weakPointer to shared reference; the underlying class has already been deinitialized";
-    }
   }
 }
