@@ -4,11 +4,11 @@ use Barriers;
 
 class PassiveCache {
     type dataType; // assuming this type has a an initializer that takes a single int
-    var items: map(int, weakPointer(unmanaged dataType));
+    var items: map(int, weakPointer(shared dataType));
 
     proc init(type dt) {
         this.dataType = dt;
-        this.items = new map(int, weakPointer(unmanaged dt), true);
+        this.items = new map(int, weakPointer(shared dt), true);
     }
 
     proc getOrBuild(key: int) : shared dataType {

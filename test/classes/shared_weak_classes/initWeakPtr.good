@@ -1,18 +1,43 @@
-create a new shared class instance
-		value: '{x = 0}' 	type: 'shared myClass'
-create weak pointer via downgrading
-		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 1, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
-create a new shared from the first
-		value: '{x = 0}' 	type: 'shared myClass'
-		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 2, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
-create a new shared by upgrading a weak pointer
-		value: '{x = 0}' 	type: 'shared myClass'
-		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 3, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
-all shared instances deinitialized here
-		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 0, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
-copy-init a new weak pointer
-		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 0, weak_count = 2})' 	type: 'weakPointer(unmanaged myClass)'
-try to upgrade a weak pointer
-		value: 'nil' 	type: 'shared myClass?'
-second weak pointer deinitialized here
-		value: '(chpl_p = {x = 0}, chpl_pn = {strong_count = 0, weak_count = 1})' 	type: 'weakPointer(unmanaged myClass)'
+1
+	shared: '{x = 1}' 	type: 'shared basicClass' 		sc: 1
+	weak: '{x = 1}' 	type: 'weakPointer(basicClass)' 	sc: 1	 wc: 1
+2
+	shared: '{x = 2}' 	type: 'shared basicClass' 		sc: 2
+	shared: '{x = 2}' 	type: 'shared basicClass' 		sc: 2
+	weak: '{x = 2}' 	type: 'weakPointer(basicClass)' 	sc: 2	 wc: 2
+	weak: '{x = 2}' 	type: 'weakPointer(basicClass)' 	sc: 2	 wc: 2
+3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	weak: '{x = 3}' 	type: 'weakPointer(basicClass)' 	sc: 3	 wc: 3
+	weak: '{x = 3}' 	type: 'weakPointer(basicClass)' 	sc: 3	 wc: 3
+	weak: '{x = 3}' 	type: 'weakPointer(basicClass)' 	sc: 3	 wc: 3
+4
+	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
+	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
+	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
+	shared: '{x = 4}' 	type: 'shared basicClass?' 		sc: 4
+	weak: '{x = 4}' 	type: 'weakPointer(basicClass)' 	sc: 4	 wc: 4
+	weak: '{x = 4}' 	type: 'weakPointer(basicClass)' 	sc: 4	 wc: 4
+	weak: '{x = 4}' 	type: 'weakPointer(basicClass)' 	sc: 4	 wc: 4
+	weak: '{x = 4}' 	type: 'weakPointer(basicClass)' 	sc: 4	 wc: 4
+3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	weak: '{x = 3}' 	type: 'weakPointer(basicClass)' 	sc: 3	 wc: 4
+	weak: '{x = 3}' 	type: 'weakPointer(basicClass)' 	sc: 3	 wc: 4
+	weak: '{x = 3}' 	type: 'weakPointer(basicClass)' 	sc: 3	 wc: 4
+	weak: '{x = 3}' 	type: 'weakPointer(basicClass)' 	sc: 3	 wc: 4
+2
+	shared: '{x = 2}' 	type: 'shared basicClass' 		sc: 2
+	shared: '{x = 2}' 	type: 'shared basicClass' 		sc: 2
+	weak: '{x = 2}' 	type: 'weakPointer(basicClass)' 	sc: 2	 wc: 3
+	weak: '{x = 2}' 	type: 'weakPointer(basicClass)' 	sc: 2	 wc: 3
+	weak: '{x = 2}' 	type: 'weakPointer(basicClass)' 	sc: 2	 wc: 3
+1
+	shared: '{x = 1}' 	type: 'shared basicClass' 		sc: 1
+0
+	weak: 'Empty!' 	type: 'weakPointer(basicClass)' 	sc: 0	 wc: 1
+sc=0, no upgrading allowed: 	nil

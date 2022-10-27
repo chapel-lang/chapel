@@ -1,44 +1,110 @@
-class myClass {
+class basicClass {
     var x :int;
 }
 
-var wmc;
-
+var bc_weak1;
 {
+    writeln("1");
+
+    var bc1 = new shared basicClass(1);
+    info(bc1);
+
+    bc_weak1 = bc1.downgrade();
+    weak_info(bc_weak1);
+
+    var bc_weak2;
     {
-        writeln("create a new shared class instance");
-        var mc = new shared myClass(0);
-        info(mc);
+        bc1.x += 1;
+        writeln("2");
 
-        writeln("create weak pointer via downgrading");
-        wmc = mc.downgrade();
-        info(wmc);
+        var bc2 = shared.create(bc1);
 
-        writeln("create a new shared from the first");
-        var mc2 = shared.create(mc);
-        info(mc);
-        info(wmc);
+        // weak pointer via downgrading
+        bc_weak2 = bc2.downgrade();
 
-        writeln("create a new shared by upgrading a weak pointer");
-        var mc3 = wmc.upgrade() : shared myClass;
-        info(mc3);
-        info(wmc);
+        info(bc1);
+        info(bc2);
+
+        weak_info(bc_weak1);
+        weak_info(bc_weak2);
+
+        var bc_weak3;
+        {
+            bc2.x += 1;
+            writeln("3");
+
+            var bc3 = shared.create(bc1);
+
+            // weak pointer via initializer
+            bc_weak3 = new weakPointer(bc3);
+
+            info(bc1);
+            info(bc2);
+            info(bc3);
+
+            weak_info(bc_weak1);
+            weak_info(bc_weak2);
+            weak_info(bc_weak3);
+
+            var bc_weak4;
+            {
+                bc1.x += 1;
+                writeln("4");
+
+                // copy init weak pointer
+                bc_weak4 = bc_weak2;
+
+                // create shared via upgrading
+                var bc4 = bc_weak1.upgrade();
+
+                info(bc1);
+                info(bc2);
+                info(bc3);
+                info(bc4);
+
+                weak_info(bc_weak1);
+                weak_info(bc_weak2);
+                weak_info(bc_weak3);
+                weak_info(bc_weak4);
+            }
+            bc3.x -= 1;
+            writeln("3");
+
+            info(bc1);
+            info(bc2);
+            info(bc3);
+
+            weak_info(bc_weak1);
+            weak_info(bc_weak2);
+            weak_info(bc_weak3);
+            weak_info(bc_weak4);
+
+        }
+        bc2.x -= 1;
+        writeln("2");
+
+        info(bc1);
+        info(bc2);
+
+        weak_info(bc_weak1);
+        weak_info(bc_weak2);
+        weak_info(bc_weak3);
     }
-    writeln("all shared instances deinitialized here");
-    info(wmc);
+    bc1.x -= 1;
+    writeln("1");
 
-    writeln("copy-init a new weak pointer");
-    var wmc2 = wmc;
-    info(wmc2);
-
-    // upgrades now result in 'nil'
-    writeln("try to upgrade a weak pointer");
-    var wmc_up = wmc.upgrade();
-    info(wmc_up);
+    info(bc1);
 }
-writeln("second weak pointer deinitialized here");
-info(wmc);
+writeln("0");
+weak_info(bc_weak1);
+
+var bc_failed_upgrade = bc_weak1.upgrade();
+writeln("sc=0, no upgrading allowed: \t", bc_failed_upgrade);
 
 proc info(x) {
-    writeln("\t\tvalue: '", x, "' \ttype: '", x.type:string, "'");
+    writeln("\tshared: '", x, "' \ttype: '", x.type:string, "' \t\tsc: ", x.chpl_pn!.strongCount());
+}
+
+proc weak_info(x) {
+    writeln("\tweak: '", x, "' \ttype: '", x.type:string, "' \tsc: ", x.getStrongCount(), "\t wc: ", x.getWeakCount());
 }

@@ -883,6 +883,18 @@ module SharedObject {
     }
   }
 
+  proc weakPointer.writeThis(ch) throws {
+    if this.chpl_p != nil {
+      if this.canUpgrade() {
+        ch.write(this.chpl_p);
+      } else {
+        write("Empty!");
+      }
+    } else {
+      ch.write("nil ptr");
+    }
+  }
+
   class EmptyWeakPointerError: Error {
     override proc message() {
       return "Unable to upgrade weakPointer to shared reference; the underlying class has already been deinitialized";
