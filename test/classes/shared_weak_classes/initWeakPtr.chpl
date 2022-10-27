@@ -96,12 +96,13 @@ var bc_weak1;
     writeln("1");
 
     info(bc1);
+    weak_info(bc_weak1);
 }
 writeln("0");
 weak_info(bc_weak1);
 
-// var bc_failed_upgrade = bc_weak1.upgrade();
-// writeln("sc=0, no upgrading allowed: \t", bc_failed_upgrade);
+var bc_failed_upgrade = bc_weak1 : shared basicClass?;
+writeln("upgrade attempt: ", bc_failed_upgrade);
 
 proc info(x) {
     writeln("\tshared: '", x, "' \ttype: '", x.type:string, "' \t\tsc: ", x.chpl_pn!.strongCount.read());

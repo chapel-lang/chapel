@@ -22,7 +22,7 @@ class PassiveCache {
             if maybe_strong != nil {
                 return try! (maybe_strong : shared dataType);
             } else {
-                writeln("recomputing ", key);
+                writeln("recomputing: ", key);
                 return this.buildAndSave(key);
             }
 
@@ -31,6 +31,7 @@ class PassiveCache {
             // return if weak_pointer.canUpgrade() then (try! weak_pointer.tryUpgrade()) else this.buildAndSave(key);
         } else {
             // we haven't seen this key before; compute the item and return it
+            writeln("computing for first time: ", key);
             return this.buildAndSave(key);
         }
     }
@@ -104,8 +105,12 @@ proc main() {
 
             b.barrier(); // for repeated task ids, two strong pointers should have been created by this point
 
-            const wc = x.chpl_pn!.totalCount.read();
-            const sc = x.chpl_pn!.strongCount.read();
+            var wpx = new weakPointer(x);
+
+            b.barrier();
+
+            const sc = wpx.getStrongCount();
+            const wc = wpx.getWeakCount();
 
             const strongCountCorrect = targetStrongCounts[i][x.i] == sc;
             const weakCountCorrect = targetWeakCounts[i][x.i] == wc;

@@ -109,7 +109,7 @@ module SharedObject {
     }
     proc release() {
       var oldValue = strongCount.fetchSub(1);
-      return (oldValue - 1, this.totalCount.read());
+      return (oldValue - 1, totalCount.fetchSub(1) - 1);
     }
 
     proc retainWeak(ref expected: int) {
@@ -1009,18 +1009,17 @@ module SharedObject {
           If there are no other weak references, the backing pointer is freed.
         */
         proc deinit() {
-          writeln("--- deinit ---");
           this.doClear();
         }
 
         pragma "no doc"
         proc doClear() {
-            if this.chpl_p != nil {
-                const totalCount = this.chpl_pn!.releaseWeak();
-                if totalCount == 0 then delete this.chpl_pn;
-            }
-            this.chpl_p = nil;
-            this.chpl_pn = nil;
+          if this.chpl_p != nil {
+              const totalCount = this.chpl_pn!.releaseWeak();
+              if totalCount == 0 then delete this.chpl_pn;
+          }
+          this.chpl_p = nil;
+          this.chpl_pn = nil;
         }
 
         /*
@@ -1066,7 +1065,6 @@ module SharedObject {
     inline operator :(const ref x: weakPointer, type t: shared class?)
     {
         if x.chpl_p != nil {
-            var result: t;
             var sc = x.chpl_pn!.strongCount.read();
             if sc == 0 {
                 // the class value has already been deinitialized
@@ -1081,6 +1079,8 @@ module SharedObject {
                         return nil;
                     }
                 }
+                // the strong-count was successfully incremented
+                var result: t;
                 result.chpl_p = x.chpl_p;
                 result.chpl_pn = x.chpl_pn;
                 return result;
@@ -1131,7 +1131,9 @@ module SharedObject {
     /*
         Assign one existing ``weakPointer`` to an other.
 
-        Decrements the weak-reference count of the ``lhs`` pointer.
+        Decrements the weak-reference count of the ``lhs`` pointer,
+        deinitializing the backing data, if it is the last reference (weak or
+        strong) to it's class.
     */
     operator =(ref lhs: weakPointer, rhs: weakPointer)
         where !(isNonNilableClass(lhs) && isNilableClass(rhs))
