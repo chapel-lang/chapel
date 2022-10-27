@@ -83,7 +83,7 @@ void Scope::addBuiltin(UniqueString name) {
   // Just refer to empty ID since builtin type declarations don't
   // actually exist in the AST.
   // The resolver knows that the empty ID means a builtin thing.
-  declared_.insert({ name, OwnedIdsWithName(ID(), uast::Decl::PUBLIC) });
+  declared_.emplace(name, OwnedIdsWithName(ID(), uast::Decl::PUBLIC));
 }
 
 const Scope* Scope::moduleScope() const {
