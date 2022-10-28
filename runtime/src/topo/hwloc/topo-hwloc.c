@@ -671,7 +671,7 @@ chpl_topo_reserveCPUPhysical(void) {
   int id = -1;
   CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
   if (okToReserveCPU) {
-    if (topoSupport->cpubind->set_thread_cpubind && (numCPUsPhysAcc > 1)) {
+    if (topoSupport->cpubind->set_thisthread_cpubind && (numCPUsPhysAcc > 1)) {
 
 #ifdef DEBUG
       char buf[1024];
@@ -689,9 +689,7 @@ chpl_topo_reserveCPUPhysical(void) {
 
         // Find the core's object in the topology so we can reserve its PUs.
         hwloc_obj_t pu, core;
-        CHK_ERR_ERRNO(pu = hwloc_get_obj_inside_cpuset_by_type(topology,
-                                                        physAccSet,
-                                                        HWLOC_OBJ_PU, id));
+        CHK_ERR_ERRNO(pu = hwloc_get_pu_obj_by_os_index(topology, id));
         CHK_ERR_ERRNO(core = hwloc_get_ancestor_obj_by_type(topology,
                                                             HWLOC_OBJ_CORE,
                                                             pu));

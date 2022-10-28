@@ -1033,7 +1033,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     }
   }
 
-  // 
+  //
   // Reserve cores for the AM handlers. This has to be done early before
   // calling other routines that use information about the cores, such as
   // pinning the heap.
