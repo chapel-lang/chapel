@@ -203,8 +203,6 @@ void CallInitDeinit::exitScope(const AstNode* ast) {
 }
 
 bool CallInitDeinit::enter(const VarLikeDecl* ast, RV& rv) {
-  printf("ENTER VAR %s\n", ast->id().str().c_str());
-
   enterScope(ast);
 
   return true;
@@ -223,8 +221,6 @@ void CallInitDeinit::exit(const VarLikeDecl* ast, RV& rv) {
 // in InitDeinitState to record required deinit actions
 
 bool CallInitDeinit::enter(const OpCall* ast, RV& rv) {
-  printf("ENTER OP %s\n", ast->id().str().c_str());
-
   if (auto op = ast->toOpCall()) {
     if (op->op() == USTR("=")) {
       // What is the RHS and LHS of the '=' call?
@@ -269,8 +265,6 @@ bool CallInitDeinit::enter(const OpCall* ast, RV& rv) {
       }
 
       if (resolveAssign) {
-        printf("Resolving =\n");
-
         std::vector<CallInfoActual> actuals;
         actuals.push_back(CallInfoActual(lhsType, UniqueString()));
         actuals.push_back(CallInfoActual(rhsType, UniqueString()));
@@ -286,8 +280,6 @@ bool CallInitDeinit::enter(const OpCall* ast, RV& rv) {
         ResolvedExpression& opR = rv.byAst(op);
         resolver.handleResolvedAssociatedCall(opR, op, ci, c);
       } else if (resolveInitAssign) {
-        printf("Resolving init=n");
-
         std::vector<CallInfoActual> actuals;
         actuals.push_back(CallInfoActual(lhsType, USTR("this")));
         actuals.push_back(CallInfoActual(rhsType, UniqueString()));
@@ -335,8 +327,6 @@ void CallInitDeinit::exit(const Call* ast, RV& rv) {
 
 
 bool CallInitDeinit::enter(const AstNode* ast, RV& rv) {
-  printf("ENTER AST %s\n", ast->id().str().c_str());
-
   enterScope(ast);
 
   return true;
@@ -347,8 +337,6 @@ void CallInitDeinit::exit(const AstNode* ast, RV& rv) {
 
 
 void callInitDeinit(Resolver& resolver) {
-  printf("IN CALLINITDEINIT\n");
-
   std::set<ID> splitInitedVars = computeSplitInits(resolver.context,
                                                    resolver.symbol,
                                                    resolver.byPostorder);
@@ -356,6 +344,7 @@ void callInitDeinit(Resolver& resolver) {
                                                        resolver.symbol,
                                                        resolver.byPostorder);
 
+  /*
   printf("\nSplit Init Report:\n");
   for (auto varId : splitInitedVars) {
     auto ast = parsing::idToAst(resolver.context, varId);
@@ -374,6 +363,7 @@ void callInitDeinit(Resolver& resolver) {
            id.str().c_str());
   }
   printf("\n");
+  */
 
 
   CallInitDeinit::process(resolver,

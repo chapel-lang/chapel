@@ -113,6 +113,11 @@ static void test1() {
   testSplitInit("test1",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var x:int = 0;
         }
@@ -125,6 +130,11 @@ static void test2() {
   testSplitInit("test2",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var yes1;
           yes1 = 1;
@@ -138,6 +148,11 @@ static void test3() {
   testSplitInit("test3",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var yes1:int;
           yes1 = 1;
@@ -152,6 +167,11 @@ static void test4() {
   testSplitInit("test4",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var x:int = 0;
           var yes2;
@@ -169,6 +189,11 @@ static void test5() {
   testSplitInit("test5",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var x:int = 0;
           var yes3;
@@ -193,6 +218,11 @@ static void test6() {
   testSplitInit("test6",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var yes5;
           if cond {
@@ -212,6 +242,11 @@ static void test7() {
   testSplitInit("test7",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var no1 = 4;
           no1 = 5;
@@ -225,6 +260,11 @@ static void test8() {
   testSplitInit("test8",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           {
             var no2:int;
@@ -241,6 +281,11 @@ static void test9() {
   testSplitInit("test9",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           {
             var no3:int;
@@ -257,6 +302,11 @@ static void test10() {
   testSplitInit("test10",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         config const cond = false;
         proc test() {
           var x;
@@ -273,11 +323,16 @@ static void test11() {
   testSplitInit("test11",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         config const cond = false;
         proc test() {
           var x;
           if cond then
-            throw g(); // or new Error() once it works
+            throw nil;
           x = 11;
         }
       }
@@ -289,6 +344,11 @@ static void test12() {
   testSplitInit("test12",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var x:int;
           try {
@@ -308,6 +368,11 @@ static void test13() {
   testSplitInit("test13",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var x:int;
           try {
@@ -326,6 +391,11 @@ static void test14() {
   testSplitInit("test14",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var x:int;
           try {
@@ -345,6 +415,11 @@ static void test15() {
   testSplitInit("test15",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test() {
           var x:int;
           try {
@@ -361,6 +436,11 @@ static void test16() {
   testSplitInit("test16",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test(out formal: int) {
           formal = 4;
         }
@@ -373,6 +453,11 @@ static void test17() {
   testSplitInit("test17",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc fOut(out formal: int) { formal = 4; }
         proc test() {
           var x:int;
@@ -387,6 +472,11 @@ static void test18() {
   testSplitInit("test18",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc fOut(out formal: int) { formal = 4; }
         proc test() {
           var x;
@@ -401,6 +491,11 @@ static void test19() {
   testSplitInit("test19",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc int.fOut(out formal: int) { formal = 4; }
         proc test() {
           var myInt = 4;
@@ -417,6 +512,14 @@ static void test20() {
   testSplitInit("test20",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: (int,), rhs: (int,)) {
+          lhs(0) = rhs(0);
+        }
+
         proc fOut(out formals:int...) {
           formals = (4,);
         }
@@ -432,6 +535,15 @@ static void test21() {
   testSplitInit("test21",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: (int,int), rhs: (int,int)) {
+          lhs(0) = rhs(0);
+          lhs(1) = rhs(1);
+        }
+
         proc fOut(out formals:int...) {
           formals = (4,5);
         }
@@ -448,6 +560,14 @@ static void test22() {
   testSplitInit("test22",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: (int,), rhs: (int,)) {
+          lhs(0) = rhs(0);
+        }
+
         proc fOut(out formals...) {
           formals = (4,);
         }
@@ -463,6 +583,15 @@ static void test23() {
   testSplitInit("test23",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: (int,int), rhs: (int,int)) {
+          lhs(0) = rhs(0);
+          lhs(1) = rhs(1);
+        }
+
         proc fOut(out formals...) {
           formals = (4,5);
         }
@@ -479,6 +608,14 @@ static void test23() {
   testSplitInit("test24",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: (int,), rhs: (int,)) {
+          lhs(0) = rhs(0);
+        }
+
         proc fOut(out formals...) {
           formals = (4,);
         }
@@ -494,6 +631,15 @@ static void test25() {
   testSplitInit("test25",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: (int,int), rhs: (int,int)) {
+          lhs(0) = rhs(0);
+          lhs(1) = rhs(1);
+        }
+
         proc fOut(out formals...) {
           formals = (4,5);
         }
@@ -507,9 +653,9 @@ static void test25() {
     {"x", "y"});
 }*/
 
-static void test26() {
+static void test26a() {
   // check that this program generates an error
-  const char* test = "test26";
+  const char* test = "test26a";
   const char* program =
     R""""(
       module M {
@@ -558,10 +704,127 @@ static void test26() {
   guard.realizeErrors();
 }
 
+static void test26b() {
+  // check that this program generates an error
+  const char* test = "test26b";
+  const char* program =
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: int(8), rhs: int(8)) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(r: int) {
+          var x;
+          if __primitive(">", r, 2) {
+            x = 2:int(8);
+          } else {
+            x = 3:int(8);
+          }
+        }
+      }
+    )"""";
+
+  printf("%s\n", test);
+
+  Context ctx;
+  Context* context = &ctx;
+
+  ErrorGuard guard(context);
+
+  std::string testname = test;
+  testname += ".chpl";
+  auto path = UniqueString::get(context, testname);
+  std::string contents = program;
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* M = vec[0]->toModule();
+  assert(M);
+  assert(M->numStmts() >= 1);
+
+  const Function* func = M->stmt(M->numStmts()-1)->toFunction();
+  assert(func);
+
+  // resolve runM1
+  const ResolvedFunction* r = resolveConcreteFunction(context, func->id());
+  assert(r);
+
+  assert(guard.errors().size() > 0);
+  guard.realizeErrors();
+}
+
+static void test26c() {
+  // check that this program generates an error
+  const char* test = "test26c";
+  const char* program =
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: int(8), rhs: int(8)) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(r: int) {
+          var x;
+          if __primitive(">", r, 2) {
+            x = 2;
+          } else {
+            x = 3:int(8);
+          }
+        }
+      }
+    )"""";
+
+  printf("%s\n", test);
+
+  Context ctx;
+  Context* context = &ctx;
+
+  ErrorGuard guard(context);
+
+  std::string testname = test;
+  testname += ".chpl";
+  auto path = UniqueString::get(context, testname);
+  std::string contents = program;
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* M = vec[0]->toModule();
+  assert(M);
+  assert(M->numStmts() >= 1);
+
+  const Function* func = M->stmt(M->numStmts()-1)->toFunction();
+  assert(func);
+
+  // resolve runM1
+  const ResolvedFunction* r = resolveConcreteFunction(context, func->id());
+  assert(r);
+
+  assert(guard.errors().size() > 0);
+  guard.realizeErrors();
+}
+
+
+
 static void test27() {
   testSplitInit("test27",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test(ref arg: int) {
           var x:int;
           on arg {
@@ -577,6 +840,11 @@ static void test28() {
   testSplitInit("test28",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test(ref arg: int) {
           var x:int;
           local {
@@ -592,6 +860,11 @@ static void test29() {
   testSplitInit("test29",
     R""""(
       module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
         proc test(ref arg: int) {
           var x:int;
           serial {
@@ -602,7 +875,6 @@ static void test29() {
     )"""",
     {"x"});
 }
-
 
 int main() {
   test1();
@@ -630,7 +902,9 @@ int main() {
   test23();
   //test24(); TODO
   //test25(); TODO
-  test26();
+  test26a();
+  test26b();
+  test26c();
   test27();
   test28();
   test29();
