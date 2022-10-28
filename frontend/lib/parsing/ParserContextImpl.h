@@ -2439,11 +2439,11 @@ ParserContext::buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
   auto comments = gatherCommentsFromList(commentList, location);
   clearComments(commentList);
 
-  auto stmts = consumeAndFlattenTopLevelBlocks(makeList(block));
+  assert(block.stmt != nullptr && block.stmt->isBlock());
+  Block* bodyBlock = block.stmt->toBlock();
   auto catches = consumeList(handlers);
-
   auto node = Try::build(builder, convertLocation(location),
-                         std::move(stmts),
+                         toOwned(bodyBlock),
                          std::move(catches),
                          isTryBang);
 
