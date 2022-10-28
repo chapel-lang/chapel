@@ -676,7 +676,7 @@ proc fn(param n : int, args...n) {
 )""");
 
   std::vector<const ErrorBase*> errors;
-  auto errMsg = "Cannot resolve call to fn: no matching candidates";
+  auto errMsg = "Cannot resolve call to 'fn': no matching candidates";
 
   auto good = std::string(R"""(var x = fn(3, 1, 2.0, "hello");)""");
   auto gc = customHelper(paramFn + good);
@@ -770,7 +770,7 @@ proc fn(param n : int, args...n, y : int, z : real) {
 }
 )""");
 
-  auto errMsg = "Cannot resolve call to fn: no matching candidates";
+  auto errMsg = "Cannot resolve call to 'fn': no matching candidates";
   std::vector<const ErrorBase*> errors;
 
   auto good = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5.0);)""");
