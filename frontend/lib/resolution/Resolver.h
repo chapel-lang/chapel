@@ -59,7 +59,7 @@ struct Resolver {
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
-  std::set<ID> initedVariables;
+  std::set<ID> splitInitTypeInferredVariables;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopeComputed = false;
   const Scope* savedReceiverScope = nullptr;
@@ -293,7 +293,8 @@ struct Resolver {
   // Also sets lhsExprAst to have this new type.
   void adjustTypesForSplitInit(ID id,
                                const types::QualifiedType& rhsType,
-                               const uast::AstNode* lhsExprAst);
+                               const uast::AstNode* lhsExprAst,
+                               const uast::AstNode* astForErr);
 
   // handles setting types of variables for split init with '='
   void adjustTypesOnAssign(const uast::AstNode* lhsAst,

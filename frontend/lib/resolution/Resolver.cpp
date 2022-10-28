@@ -1031,7 +1031,8 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
 
 void Resolver::adjustTypesForSplitInit(ID id,
                                        const QualifiedType& rhsType,
-                                       const AstNode* lhsExprAst) {
+                                       const AstNode* lhsExprAst,
+                                       const AstNode* astForError) {
   if (id.isEmpty()) {
     return;
   }
@@ -1051,36 +1052,57 @@ void Resolver::adjustTypesForSplitInit(ID id,
   ResolvedExpression& lhs = byPostorder.byId(id);
   QualifiedType lhsType = lhs.type();
 
-  auto g = Type::MAYBE_GENERIC;
-  if (const Type* lhsTypePtr = lhsType.type()) {
-    if (lhsTypePtr->isUnknownType()) {
+  // first, quit early if it is a variable which we haven't inferred
+  // the type yet and we don't need to do so.
+  if (splitInitTypeInferredVariables.count(id) == 0) {
+    // not already inferred, so check to see if it is generic/unknown
+    // (otherwise we do not need to infer anything)
+    auto g = Type::MAYBE_GENERIC;
+    if (const Type* lhsTypePtr = lhsType.type()) {
+      if (lhsTypePtr->isUnknownType()) {
+        g = Type::GENERIC;
+      } else {
+        g = getTypeGenericity(context, lhsTypePtr);
+      }
+    }
+    // also params that don't have a value yet count as generic for this purpose
+    if (lhsType.isParam() && !lhsType.hasParamPtr()) {
       g = Type::GENERIC;
-    } else {
-      g = getTypeGenericity(context, lhsTypePtr);
+    }
+
+    // return if there's nothing to do
+    if (g != Type::GENERIC) {
+      return;
     }
   }
-  // also params that don't have a value yet count as generic for this purpose
-  if (lhsType.isParam() && !lhsType.hasParamPtr()) {
-    g = Type::GENERIC;
-  }
 
-  if (g != Type::GENERIC) {
-    return;
+  const Param* p = rhsType.param();
+  if (lhsType.kind() != QualifiedType::PARAM) {
+    p = nullptr;
   }
+  auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
 
-  auto pair = initedVariables.insert(id);
+  // if we get here, we need to either:
+  //  * infer the type, or
+  //  * check that the type matches a previously inferred type
+  auto pair = splitInitTypeInferredVariables.insert(id);
   if (pair.second) {
     // insertion took place, so update the type
-    const Param* p = rhsType.param();
-    if (lhsType.kind() != QualifiedType::PARAM) {
-      p = nullptr;
-    }
-    auto q = QualifiedType(lhsType.kind(), rhsType.type(), p);
-    lhs.setType(q);
+    lhs.setType(useType);
 
     if (lhsExprAst != nullptr) {
       ResolvedExpression& lhsExpr = byPostorder.byAst(lhsExprAst);
-      lhsExpr.setType(q);
+      lhsExpr.setType(useType);
+    }
+  } else {
+    // insertion did not take place, so check that the type matches exactly,
+    // and issue an error if not.
+    // (we cannot unify the types for split init without causing resolution
+    //  to either go out of order or to produce results that change within
+    //  a function even when there are no errors).
+
+    if (lhsType != useType) {
+      context->error(astForError, "split-init type does not match");
     }
   }
 }
@@ -1098,7 +1120,7 @@ void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
 
   QualifiedType rhsType = byPostorder.byAst(rhsAst).type();
 
-  adjustTypesForSplitInit(id, rhsType, lhsAst);
+  adjustTypesForSplitInit(id, rhsType, lhsAst, rhsAst);
 }
 
 // Update a variable's type if it is generic/unknown
@@ -1139,7 +1161,7 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
         }
       }
       assert(hasFormalType);
-      adjustTypesForSplitInit(id, formalType, actualAst);
+      adjustTypesForSplitInit(id, formalType, actualAst, actualAst);
     }
     actualIdx++;
   }
