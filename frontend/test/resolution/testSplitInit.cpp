@@ -795,6 +795,33 @@ static void test29() {
     {"x"});
 }
 
+static void test30() {
+  testSplitInit("test30",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: int(8), rhs: int(8)) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(r: bool) {
+          var x, y;
+          if r {
+            x = 2;
+            y = 3;
+          } else {
+            y = 5;
+            x = 6;
+          }
+        }
+      }
+    )"""",
+    {"x", "y"}, ERRORS_EXPECTED);
+}
+
 int main() {
   test1();
   test2();
@@ -827,6 +854,7 @@ int main() {
   test27();
   test28();
   test29();
+  test30();
 
   return 0;
 }
