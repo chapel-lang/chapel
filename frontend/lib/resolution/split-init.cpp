@@ -52,6 +52,9 @@ struct SplitInitFrame {
   // being mentioned, throwing or returning?
   std::set<ID> initedVars;
 
+  // Same as initedVars but preserves order
+  std::vector<std::pair<ID, QualifiedType>> initedVarsVec;
+
   // Which variables are mentioned in this scope before
   // being mentioned, throwing or returning?
   std::set<ID> mentionedVars;
@@ -68,7 +71,21 @@ struct SplitInitFrame {
   std::vector<ControlFlowSubBlock> subBlocks;
 
   SplitInitFrame(const AstNode* scopeAst) : scopeAst(scopeAst) { }
+
+  void addMention(ID dstId);
+  void addInit(ID dstId, QualifiedType rhsType);
 };
+
+void SplitInitFrame::addMention(ID dstId) {
+  mentionedVars.insert(dstId);
+}
+void SplitInitFrame::addInit(ID dstId, QualifiedType rhsType) {
+  auto pair = initedVars.insert(dstId);
+  if (pair.second) {
+    // if it was inserted into the set, also record order and type
+    initedVarsVec.emplace_back(dstId, rhsType);
+  }
+}
 
 struct FindSplitInits {
   using RV = ResolvedVisitor<FindSplitInits>;
@@ -77,7 +94,7 @@ struct FindSplitInits {
   Context* context = nullptr;
 
   // result of the process
-  std::set<ID> splitInitedVars;
+  std::set<ID> allSplitInitedVars;
 
   // internal variables
   std::vector<owned<SplitInitFrame>> scopeStack;
@@ -88,7 +105,7 @@ struct FindSplitInits {
   FindSplitInits(Context* context);
 
   void handleMention(ID dstId);
-  void handleInitOrAssign(ID dstId);
+  void handleInitOrAssign(ID dstId, QualifiedType rhsType, RV& rv);
   void handleExitConditional(const uast::Conditional* cond);
   void handleExitTry(const uast::Try* t);
   void handleExitScope(const uast::AstNode* ast);
@@ -157,7 +174,9 @@ void FindSplitInits::handleMention(ID dstId) {
   }
 }
 
-void FindSplitInits::handleInitOrAssign(ID dstId) {
+void FindSplitInits::handleInitOrAssign(ID dstId,
+                                        QualifiedType rhsType,
+                                        RV& rv) {
   if (scopeStack.empty()) return;
 
   bool foundReturnsThrows = false;
@@ -186,8 +205,21 @@ void FindSplitInits::handleInitOrAssign(ID dstId) {
   // if it wasn't already initialized or mentioned, we mark it initialized
   // in this frame.
   if (!foundReturnsThrows && !foundInitedVar && !foundMentionedVar) {
+    // normalize the type -- only consider param value for dstId being param.
+    QualifiedType::Kind kind = QualifiedType::VAR;
+    if (rv.hasId(dstId)) {
+      kind = rv.byId(dstId).type().kind();
+    }
+
+    const Param* p = rhsType.param();
+    if (kind != QualifiedType::PARAM) {
+      p = nullptr;
+    }
+    auto useType = QualifiedType(kind, rhsType.type(), p);
+
+    // add the split init entry to the current frame
     SplitInitFrame* frame = scopeStack.back().get();
-    frame->initedVars.insert(dstId);
+    frame->addInit(dstId, useType);
   }
 }
 
@@ -213,22 +245,22 @@ void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
 
   // save results for vars declared in then/else
   // gather the set of variables to consider
-  std::set<ID> initedVars;
+  std::set<ID> locInitedVars;
   for (auto id : thenFrame->initedVars) {
     if (thenFrame->declaredEligibleVars.count(id) > 0) {
       // variable declared in this scope, so save the result
-      splitInitedVars.insert(id);
+      allSplitInitedVars.insert(id);
     } else {
-      initedVars.insert(id);
+      locInitedVars.insert(id);
     }
   }
   if (elseFrame != nullptr) {
     for (auto id : elseFrame->initedVars) {
       if (elseFrame->declaredEligibleVars.count(id) > 0) {
         // variable declared in this scope, so save the result
-        splitInitedVars.insert(id);
+        allSplitInitedVars.insert(id);
       } else {
-        initedVars.insert(id);
+        locInitedVars.insert(id);
       }
     }
   }
@@ -245,11 +277,13 @@ void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
     elseReturnsThrows = elseReturns || elseThrows;
   }
 
-  // now consider the initialized 'vars' && propogate them
+  std::set<ID> locSplitInitedVars;
+
+  // now consider the initialized 'vars' && propagate them
   // split init is OK if:
   //   both then & else blocks initialize it before mentioning it
   //   one initializes it and the other returns
-  for (auto id : initedVars) {
+  for (auto id : locInitedVars) {
     bool thenInits = thenFrame->initedVars.count(id) > 0;
     bool elseInits = false;
     if (elseFrame) {
@@ -259,11 +293,89 @@ void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
     if ((thenInits         && elseInits) ||
         (thenInits         && elseReturnsThrows) ||
         (thenReturnsThrows && elseInits)) {
-      frame->initedVars.insert(id);
+      locSplitInitedVars.insert(id);
     } else {
       frame->mentionedVars.insert(id);
     }
   }
+
+  // compute set of variables initialized in both branches
+  // (different from locSplitInitedVars because one branch might have
+  //  returned early)
+  // this will be used for error checking
+  std::set<ID> splitInitedInBoth;
+  for (auto id : thenFrame->initedVars) {
+    if (elseFrame && elseFrame->initedVars.count(id) > 0) {
+      splitInitedInBoth.insert(id);
+    }
+  }
+
+  // Compute the then and else orders and RHS types for error checking
+  // Propagate the split-inited variables
+  std::vector<ID> splitInitedBothThenIds;
+  std::vector<ID> splitInitedBothElseIds;
+  std::vector<QualifiedType> splitInitedBothThenTypes;
+  std::vector<QualifiedType> splitInitedBothElseTypes;
+
+  for (auto pair: thenFrame->initedVarsVec) {
+    ID id = pair.first;
+    QualifiedType rhsType = pair.second;
+    if (locSplitInitedVars.count(id) > 0) {
+      frame->addInit(id, rhsType); // propagate
+      if (splitInitedInBoth.count(id) > 0) {
+        splitInitedBothThenIds.push_back(id);
+        splitInitedBothThenTypes.push_back(rhsType);
+      }
+    }
+  }
+  if (elseFrame) {
+    for (auto pair: elseFrame->initedVarsVec) {
+      ID id = pair.first;
+      QualifiedType rhsType = pair.second;
+      if (locSplitInitedVars.count(id) > 0) {
+        frame->addInit(id, rhsType); // propagate
+        if (splitInitedInBoth.count(id) > 0) {
+          splitInitedBothElseIds.push_back(id);
+          splitInitedBothElseTypes.push_back(rhsType);
+        }
+      }
+    }
+  }
+
+  // do error checking
+  // * split-init variables are initialized in the same order
+  //   in the 'then' and 'else' blocks
+  // * split-init variables are initialized with the same type
+  //   in the 'then' and 'else' blocks
+  size_t size = splitInitedBothThenIds.size();
+  assert(splitInitedBothElseIds.size() == size);
+  assert(splitInitedBothThenTypes.size() == size);
+  assert(splitInitedBothElseTypes.size() == size);
+  bool orderOk = true;
+  // first, check the order
+  for (size_t i = 0; i < size; i++) {
+    ID thenId = splitInitedBothThenIds[i];
+    ID elseId = splitInitedBothElseIds[i];
+
+    if (thenId != elseId) {
+      orderOk = false;
+      context->error(cond,
+                     "initialization order in conditional does not match");
+      break;
+    }
+  }
+  // then, check the types
+  if (orderOk) {
+    for (size_t i = 0; i < size; i++) {
+      QualifiedType thenRhsType = splitInitedBothThenTypes[i];
+      QualifiedType elseRhsType = splitInitedBothElseTypes[i];
+      if (thenRhsType != elseRhsType) {
+        context->error(cond,
+                       "types do not match in conditional split init");
+      }
+    }
+  }
+
   // propagate the mentioned variables
   for (auto id : thenFrame->mentionedVars) {
     if (thenFrame->declaredEligibleVars.count(id) == 0) {
@@ -308,7 +420,7 @@ void FindSplitInits::handleExitTry(const uast::Try* t) {
   for (auto id : tryFrame->initedVars) {
     if (tryFrame->declaredEligibleVars.count(id) > 0) {
       // variable declared in the Try scope, so save the result
-      splitInitedVars.insert(id);
+      allSplitInitedVars.insert(id);
     } else {
       // gather variables to be split-inited for parent frames
       // into trySplitInitVars
@@ -334,6 +446,16 @@ void FindSplitInits::handleExitTry(const uast::Try* t) {
     }
   }
 
+  // compute the inited vars types and ordering
+  std::vector<std::pair<ID, QualifiedType>> tryInitedVarsVec;
+  for (auto pair : tryFrame->initedVarsVec) {
+    ID id = pair.first;
+    QualifiedType rhsType = pair.second;
+    if (trySplitInitVars.count(id) > 0) {
+      tryInitedVarsVec.emplace_back(id, rhsType);
+    }
+  }
+
   // now, update mentionedVars with anything at all mentioned in a catch
   for (const auto& sub : tryFrame->subBlocks) {
     SplitInitFrame* subFrame = sub.frame.get();
@@ -346,6 +468,7 @@ void FindSplitInits::handleExitTry(const uast::Try* t) {
   // swap trySplitInitVars / tryMentionedVars into place
   // for use in handleExitScope
   tryFrame->initedVars.swap(trySplitInitVars);
+  tryFrame->initedVarsVec.swap(tryInitedVarsVec);
   tryFrame->mentionedVars.swap(tryMentionedVars);
 }
 
@@ -371,13 +494,15 @@ void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
     }
 
     // propagate initedVars and update global result
-    for (auto id : frame->initedVars) {
+    for (auto pair : frame->initedVarsVec) {
+      ID id = pair.first;
+      QualifiedType rhsType = pair.second;
       if (frame->declaredEligibleVars.count(id) > 0) {
         // variable declared in this scope, so save the result
-        splitInitedVars.insert(id);
+        allSplitInitedVars.insert(id);
       } else if (parent != nullptr) {
         // variable declared in a parent scope, so update parent scope
-        parent->initedVars.insert(id);
+        parent->addInit(id, rhsType);
       }
     }
 
@@ -490,14 +615,13 @@ bool FindSplitInits::enter(const OpCall* ast, RV& rv) {
     // visit the RHS first
     rhsAst->traverse(rv);
 
+    QualifiedType rhsType = rv.byAst(rhsAst).type();
+
     // now consider the LHS
-    ID toId;
-    if (rv.hasAst(lhsAst)) {
-      toId = rv.byAst(lhsAst).toId();
-    }
+    ID toId = rv.byAst(lhsAst).toId();
 
     if (!toId.isEmpty()) {
-      handleInitOrAssign(toId);
+      handleInitOrAssign(toId, rhsType, rv);
     } else {
       // visit the LHS to check for mentions
       lhsAst->traverse(rv);
@@ -557,7 +681,10 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
 
         // compute a vector indicating which actuals are passed to
         // an 'out' formal in all return intent overloads
-        std::vector<int8_t> actualIdxToOut = candidates.computeOutFormals(ci);
+        std::vector<QualifiedType> actualFormalTypes;
+        std::vector<int8_t> actualIdxToOut =
+          candidates.computeOutFormals(context, ci, actualAsts,
+                                       actualFormalTypes);
 
         int actualIdx = 0;
         for (auto actual : ci.actuals()) {
@@ -571,7 +698,7 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
           }
           if (actualIdxToOut[actualIdx] && !toId.isEmpty()) {
             // it is like an assignment to the variable with ID toID
-            handleInitOrAssign(toId);
+            handleInitOrAssign(toId, actualFormalTypes[actualIdx], rv);
           } else {
             // otherwise, visit the actuals to gather mentions
             actualAst->traverse(rv);
@@ -669,7 +796,7 @@ computeSplitInits(Context* context,
   }
 
   // swap the result into place
-  splitInitedVars.swap(uv.splitInitedVars);
+  splitInitedVars.swap(uv.allSplitInitedVars);
 
   return splitInitedVars;
 }

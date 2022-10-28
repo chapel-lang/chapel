@@ -88,6 +88,15 @@ public:
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byPostorder_.byAst(ast);
   }
+  /** Returns if the ResolutionResultByPostorderID has a result for
+      a particular ID */
+  bool hasId(const ID& id) const {
+    return byPostorder_.hasId(id);
+  }
+  /** Return the ResolvedExpression for a particular ID */
+  const ResolvedExpression& byId(const ID& id) const {
+    return byPostorder_.byId(id);
+  }
 
 
   /*
@@ -255,6 +264,16 @@ public:
   ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byPostorder_.byAst(ast);
   }
+  /** Returns if the ResolutionResultByPostorderID has a result for
+      a particular ID */
+  bool hasId(const ID& id) const {
+    return byPostorder_.hasId(id);
+  }
+  /** Return the ResolvedExpression for a particular ID */
+  ResolvedExpression& byId(const ID& id) const {
+    return byPostorder_.byId(id);
+  }
+
 
   /*
    * Visiting a param for-loop has special behavior. The user's visitor

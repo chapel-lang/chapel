@@ -302,7 +302,7 @@ struct Resolver {
 
   // handles setting types of variables for split init with 'out' formals
   void adjustTypesForOutFormals(const CallInfo& ci,
-                                std::vector<const uast::AstNode*>& asts,
+                                const std::vector<const uast::AstNode*>& asts,
                                 const MostSpecificCandidates& fns);
 
   // e.g. (a, b) = mytuple

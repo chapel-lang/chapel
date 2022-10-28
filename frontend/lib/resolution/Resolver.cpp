@@ -1052,28 +1052,24 @@ void Resolver::adjustTypesForSplitInit(ID id,
   ResolvedExpression& lhs = byPostorder.byId(id);
   QualifiedType lhsType = lhs.type();
 
-  // first, quit early if it is a variable which we haven't inferred
-  // the type yet and we don't need to do so.
-  if (splitInitTypeInferredVariables.count(id) == 0) {
-    // not already inferred, so check to see if it is generic/unknown
-    // (otherwise we do not need to infer anything)
-    auto g = Type::MAYBE_GENERIC;
-    if (const Type* lhsTypePtr = lhsType.type()) {
-      if (lhsTypePtr->isUnknownType()) {
-        g = Type::GENERIC;
-      } else {
-        g = getTypeGenericity(context, lhsTypePtr);
-      }
-    }
-    // also params that don't have a value yet count as generic for this purpose
-    if (lhsType.isParam() && !lhsType.hasParamPtr()) {
+  // check to see if it is generic/unknown
+  // (otherwise we do not need to infer anything)
+  auto g = Type::MAYBE_GENERIC;
+  if (const Type* lhsTypePtr = lhsType.type()) {
+    if (lhsTypePtr->isUnknownType()) {
       g = Type::GENERIC;
+    } else {
+      g = getTypeGenericity(context, lhsTypePtr);
     }
+  }
+  // also params that don't have a value yet count as generic for this purpose
+  if (lhsType.isParam() && !lhsType.hasParamPtr()) {
+    g = Type::GENERIC;
+  }
 
-    // return if there's nothing to do
-    if (g != Type::GENERIC) {
-      return;
-    }
+  // return if there's nothing to do
+  if (g != Type::GENERIC) {
+    return;
   }
 
   const Param* p = rhsType.param();
@@ -1082,9 +1078,9 @@ void Resolver::adjustTypesForSplitInit(ID id,
   }
   auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
 
-  // if we get here, we need to either:
-  //  * infer the type, or
-  //  * check that the type matches a previously inferred type
+  // set the type for the 1st split init only
+  // a later traversal will check the type of subsequent split inits
+  // (in the other branch of a conditional, say)
   auto pair = splitInitTypeInferredVariables.insert(id);
   if (pair.second) {
     // insertion took place, so update the type
@@ -1127,10 +1123,12 @@ void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
 // and the variable is initialized by an 'out' formal
 void
 Resolver::adjustTypesForOutFormals(const CallInfo& ci,
-                                   std::vector<const uast::AstNode*>& asts,
+                                   const std::vector<const AstNode*>& asts,
                                    const MostSpecificCandidates& fns) {
 
-  std::vector<int8_t> actualIdxToOut = fns.computeOutFormals(ci);
+  std::vector<QualifiedType> actualFormalTypes;
+  std::vector<int8_t> actualIdxToOut =
+    fns.computeOutFormals(context, ci, asts, actualFormalTypes);
 
   int actualIdx = 0;
   for (auto actual : ci.actuals()) {
@@ -1143,24 +1141,7 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
       id = byPostorder.byAst(actualAst).toId();
     }
     if (actualIdxToOut[actualIdx] && !id.isEmpty()) {
-      bool hasFormalType = false;
-      QualifiedType formalType;
-      // compute the type of the 'out' formal, which must match among
-      // the candidates
-      for (const TypedFnSignature* fn : fns) {
-        if (fn != nullptr) {
-          auto formalActualMap = FormalActualMap(fn, ci);
-          const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
-          assert(fa->formalType().kind() == QualifiedType::OUT);
-          if (!hasFormalType) {
-            formalType = fa->formalType();
-            hasFormalType = true;
-          } else if (formalType != fa->formalType()) {
-            context->error(actualAst, "when using split-init with return intent overloads with 'out' formals, the return intent overloads do not have matching 'out' formal types");
-          }
-        }
-      }
-      assert(hasFormalType);
+      QualifiedType formalType = actualFormalTypes[actualIdx];
       adjustTypesForSplitInit(id, formalType, actualAst, actualAst);
     }
     actualIdx++;

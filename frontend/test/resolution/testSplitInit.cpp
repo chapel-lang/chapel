@@ -194,9 +194,10 @@ static void test5() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test() {
+        proc test(cond: bool) {
           var x:int = 0;
           var yes3;
+          var no: int;
           {
             if cond {
               yes3 = 3;
@@ -207,6 +208,9 @@ static void test5() {
                 yes3 = 3;
               }
             }
+          }
+          if cond {
+            no = 22;
           }
         }
       }
@@ -223,7 +227,7 @@ static void test6() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test() {
+        proc test(cond: bool, otherCond: bool) {
           var yes5;
           if cond {
             yes5 = 5;
@@ -307,8 +311,7 @@ static void test10() {
           __primitive("=", lhs, rhs);
         }
 
-        config const cond = false;
-        proc test() {
+        proc test(cond: bool) {
           var x;
           if cond then
             return;
@@ -328,8 +331,7 @@ static void test11() {
           __primitive("=", lhs, rhs);
         }
 
-        config const cond = false;
-        proc test() {
+        proc test(cond: bool) {
           var x;
           if cond then
             throw nil;

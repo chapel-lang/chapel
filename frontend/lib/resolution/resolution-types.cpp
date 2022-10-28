@@ -699,8 +699,13 @@ void TypedFnSignature::stringify(std::ostream& ss,
   ss << ")";
 }
 
+// TODO: move this to split-init.h/.cpp
 std::vector<int8_t>
-MostSpecificCandidates::computeOutFormals(const CallInfo& ci) const {
+MostSpecificCandidates::computeOutFormals(
+                          Context* context,
+                          const CallInfo& ci,
+                          const std::vector<const AstNode*>& asts,
+                          std::vector<QualifiedType>& actualFormalTypes) const {
 
   int nActuals = ci.numActuals();
   std::vector<int8_t> ret(nActuals, 0);
@@ -718,6 +723,25 @@ MostSpecificCandidates::computeOutFormals(const CallInfo& ci) const {
         const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
         int8_t isOutFormal = fa->formalType().kind() == QualifiedType::OUT;
         ret[actualIdx] += isOutFormal;
+
+        if (isOutFormal) {
+          if ((size_t) actualIdx >= actualFormalTypes.size()) {
+            actualFormalTypes.resize(actualIdx+1);
+          }
+          QualifiedType& aft = actualFormalTypes[actualIdx];
+          if (aft.type() == nullptr && fa->formalType().type() != nullptr) {
+            // no type was yet gathered, so update the type
+            aft = fa->formalType();
+          } else {
+            // check that the type matches
+            if (aft != fa->formalType()) {
+              context->error(asts[actualIdx],
+                  "using return intent overloads with 'out' formals "
+                  "but the return intent overloads do not have matching "
+                  "'out' formal types");
+            }
+          }
+        }
       }
     }
   }
