@@ -558,6 +558,51 @@ static void test26() {
   guard.realizeErrors();
 }
 
+static void test27() {
+  testSplitInit("test27",
+    R""""(
+      module M {
+        proc test(ref arg: int) {
+          var x:int;
+          on arg {
+            x = 52;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test28() {
+  testSplitInit("test28",
+    R""""(
+      module M {
+        proc test(ref arg: int) {
+          var x:int;
+          local {
+            x = 52;
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test29() {
+  testSplitInit("test29",
+    R""""(
+      module M {
+        proc test(ref arg: int) {
+          var x:int;
+          serial {
+            x = 52;
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+
 
 int main() {
   test1();
@@ -586,6 +631,9 @@ int main() {
   //test24(); TODO
   //test25(); TODO
   test26();
+  test27();
+  test28();
+  test29();
 
   return 0;
 }
