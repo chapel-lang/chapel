@@ -112,7 +112,7 @@ module SharedObject {
       return (oldValue - 1, totalCount.fetchSub(1) - 1);
     }
 
-    proc retainWeak(ref expected: int) {
+    proc tryRetainWeek(ref expected: int) {
       if strongCount.compareExchange(expected, expected + 1) {
         totalCount.add(1);
         return true;
@@ -1071,9 +1071,10 @@ module SharedObject {
                 writeln("class was deinitialized...");
                 return nil;
             } else {
-                while !x.chpl_pn!.retainWeak(sc) {
+                while !x.chpl_pn!.tryRetainWeek(sc) {
                     writeln("expected value did not match...");
                     if sc == 0 {
+                        writeln("class was deinitialized after first validity check...");
                         // the class value was deinitialized while this process
                         // was trying to increment the strong reference count
                         return nil;
@@ -1103,19 +1104,19 @@ module SharedObject {
     inline operator :(const ref x: weakPointer, type t: shared class) throws
     {
         if x.chpl_p != nil {
-            var result: t;
             var sc = x.chpl_pn!.strongCount.read();
             if sc == 0 {
                 // the class value has already been deinitialized
                 throw new NilClassError("Illegal cast to a non-nil class from an invalid 'weakPointer'");
             } else {
-                while !x.chpl_pn!.retainWeak(sc) {
+                while !x.chpl_pn!.tryRetainWeek(sc) {
                     if sc == 0 {
                         // the class value was deinitialized while this process
                         // was trying to increment the strong reference count
                         throw new NilClassError("Illegal cast to a non-nil class from an invalid 'weakPointer'");
                     }
                 }
+                var result: t;
                 result.chpl_p = x.chpl_p;
                 result.chpl_pn = x.chpl_pn;
                 return result;
