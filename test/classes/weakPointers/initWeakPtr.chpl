@@ -1,3 +1,6 @@
+// this test does not have any concurrency.
+// it only checks that the various operations on shared classes and weakPointers work correctly together
+
 use WeakPointer;
 
 class basicClass {
@@ -101,6 +104,7 @@ var bc_weak1;
 writeln("0");
 weak_info(bc_weak1);
 
+// can't upgrade because there are no shared references still alive
 var bc_failed_upgrade = bc_weak1 : shared basicClass?;
 writeln("upgrade attempt: ", bc_failed_upgrade);
 

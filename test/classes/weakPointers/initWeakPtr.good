@@ -39,6 +39,5 @@
 	shared: '{x = 1}' 	type: 'shared basicClass' 		sc: 1
 	weak: '{x = 1}' 	type: 'weakPointer(shared basicClass)' 	sc: 1	 wc: 2
 0
-	weak: 'invalid ptr' 	type: 'weakPointer(shared basicClass)' 	sc: 0	 wc: 1
-class was deinitialized...
+	weak: 'invalid-ptr' 	type: 'weakPointer(shared basicClass)' 	sc: 0	 wc: 1
 upgrade attempt: nil

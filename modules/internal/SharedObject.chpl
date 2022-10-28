@@ -1000,6 +1000,16 @@ module SharedObject {
           }
         }
 
+        // type-only constructor for array initialization, etc.
+        pragma "no doc"
+        proc init(type chpl_t: shared) {
+          if !isClass(chpl_t) then
+            compilerError("'weakPointer' only works with shared classes");
+          this.chpl_t = chpl_t;
+          this.chpl_p = nil;
+          this.chpl_pn = nil;
+        }
+
         // ---------------- Other ----------------
 
         /*
@@ -1068,19 +1078,16 @@ module SharedObject {
             var sc = x.chpl_pn!.strongCount.read();
             if sc == 0 {
                 // the class value has already been deinitialized
-                writeln("class was deinitialized...");
                 return nil;
             } else {
                 while !x.chpl_pn!.tryRetainWeek(sc) {
-                    writeln("expected value did not match...");
                     if sc == 0 {
-                        writeln("class was deinitialized after first validity check...");
                         // the class value was deinitialized while this process
                         // was trying to increment the strong reference count
                         return nil;
                     }
                 }
-                // the strong-count was successfully incremented
+                // otherwise, the strong-count was successfully incremented
                 var result: t;
                 result.chpl_p = x.chpl_p;
                 result.chpl_pn = x.chpl_pn;
@@ -1088,7 +1095,6 @@ module SharedObject {
             }
         } else {
             // class value itself was nil
-            writeln("class value was nil");
             return nil;
         }
     }
@@ -1116,6 +1122,7 @@ module SharedObject {
                         throw new NilClassError("Illegal cast to a non-nil class from an invalid 'weakPointer'");
                     }
                 }
+                // otherwise, the strong-count was successfully incremented
                 var result: t;
                 result.chpl_p = x.chpl_p;
                 result.chpl_pn = x.chpl_pn;
@@ -1132,9 +1139,7 @@ module SharedObject {
     /*
         Assign one existing ``weakPointer`` to an other.
 
-        Decrements the weak-reference count of the ``lhs`` pointer,
-        deinitializing the backing data, if it is the last reference (weak or
-        strong) to it's class.
+        Decrements the weak-reference count of the ``lhs`` pointer
     */
     operator =(ref lhs: weakPointer, rhs: weakPointer)
         where !(isNonNilableClass(lhs) && isNilableClass(rhs))
@@ -1151,13 +1156,13 @@ module SharedObject {
     proc weakPointer.writeThis(ch) throws {
       if const ptr = this.chpl_p {
         if this.chpl_pn!.strongCount.read() > 0 {
-          // could be invalidated between /\ and \/ (not worrying about that for now).
+          // ptr could be invalidated between /\ and \/ (not worrying about that for now).
           ch.write(ptr);
         } else {
-          ch.write("invalid ptr");
+          ch.write("invalid-ptr");
         }
       } else {
-        ch.write("nil object");
+        ch.write("nil-object");
       }
     }
 
