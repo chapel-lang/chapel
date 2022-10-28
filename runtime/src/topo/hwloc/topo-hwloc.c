@@ -671,7 +671,7 @@ chpl_topo_reserveCPUPhysical(void) {
   int id = -1;
   CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
   if (okToReserveCPU) {
-    if (topoSupport->cpubind->set_thread_cpubind && (numCPUsPhysAcc > 1)) {
+    if (topoSupport->cpubind->set_thisthread_cpubind && (numCPUsPhysAcc > 1)) {
 
 #ifdef DEBUG
       char buf[1024];
