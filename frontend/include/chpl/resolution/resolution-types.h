@@ -421,7 +421,7 @@ class CallInfo {
                              const ResolutionResultByPostorderID& byPostorder,
                              bool raiseErrors,
                              std::vector<CallInfoActual>& actuals,
-                             const AstNode*& questionArg,
+                             const uast::AstNode*& questionArg,
                              std::vector<const uast::AstNode*>* actualAsts);
 
 
