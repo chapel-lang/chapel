@@ -689,9 +689,7 @@ chpl_topo_reserveCPUPhysical(void) {
 
         // Find the core's object in the topology so we can reserve its PUs.
         hwloc_obj_t pu, core;
-        CHK_ERR_ERRNO(pu = hwloc_get_obj_inside_cpuset_by_type(topology,
-                                                        physAccSet,
-                                                        HWLOC_OBJ_PU, id));
+        CHK_ERR_ERRNO(pu = hwloc_get_pu_obj_by_os_index(topology, id));
         CHK_ERR_ERRNO(core = hwloc_get_ancestor_obj_by_type(topology,
                                                             HWLOC_OBJ_CORE,
                                                             pu));
