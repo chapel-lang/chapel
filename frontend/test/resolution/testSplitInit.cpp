@@ -654,9 +654,9 @@ static void test26a() {
         operator =(ref lhs: int, rhs: int) {
           __primitive("=", lhs, rhs);
         }
-        proc test(r: int) {
+        proc test(r: bool) {
           var x;
-          if __primitive(">", r, 2) {
+          if r {
             x = 2;
           } else {
             x = 3.0i;
@@ -709,10 +709,10 @@ static void test26b() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test(r: int) {
+        proc test(r: bool) {
           var x;
-          if __primitive(">", r, 2) {
-            param myInt8: int(8) = 2;
+          if r {
+            var myInt8: int(8);
             x = myInt8;
           } else {
             x = 3;
@@ -765,12 +765,12 @@ static void test26c() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test(r: int) {
+        proc test(r: bool) {
           var x;
-          if __primitive(">", r, 2) {
+          if r {
             x = 2;
           } else {
-            param myInt8: int(8) = 3;
+            var myInt8: int(8);
             x = myInt8;
           }
         }
