@@ -113,7 +113,10 @@ module SharedObject {
     }
 
     proc tryRetainWeek(ref expected: int) {
-      if strongCount.compareExchange(expected, expected + 1) {
+      writeln("expecting: ", expected);
+      const next = expected + 1;
+      if strongCount.compareExchangeWeak(expected, next) {
+        writeln("updated to: ", next);
         totalCount.add(1);
         return true;
       } else {
@@ -851,11 +854,14 @@ module SharedObject {
     {
         if x.chpl_p != nil {
             var sc = x.chpl_pn!.strongCount.read();
+            writeln("initial strong count: ", sc);
             if sc == 0 {
                 // the class value has already been deinitialized
                 return nil;
             } else {
                 while !x.chpl_pn!.tryRetainWeek(sc) {
+                    sc = x.chpl_pn!.strongCount.read();
+                    writeln("mismatched, got: ", sc);
                     if sc == 0 {
                         // the class value was deinitialized while this process
                         // was trying to increment the strong reference count

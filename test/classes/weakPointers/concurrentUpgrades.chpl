@@ -7,6 +7,8 @@ class basicClass {
     var x :int;
 }
 
+config param verbose = false;
+
 // small scale test:
 {
     var someSharedObjects = [
@@ -43,13 +45,21 @@ class basicClass {
 
             // for the duplicate values, we should have 3 strong pointers and 1 weak
             // for the others, we should have 2 strong pointers and 1 weak
+            const sc = someWeakPointers[tid].getStrongCount();
+            const wc = someWeakPointers[tid].getWeakCount();
+
+            const other_strong_count = sp.chpl_pn!.strongCount.read();
+
+            if verbose then writeln(tid, "\tsc:", sc, "\twc:", wc, "\tosc: ", other_strong_count);
+
             if i == tid {
-                correct.write(someWeakPointers[tid].getStrongCount() == 3);
+                correct.write(correct.read() && sc == 3);
             } else {
-                correct.write(someWeakPointers[tid].getStrongCount() == 2);
+                correct.write(correct.read() && sc == 2);
             }
-            correct.write(someWeakPointers[tid].getWeakCount() == 1);
+            correct.write(correct.read() && wc == 1);
         }
+        if verbose then writeln("-------------------------------");
     }
 
     writeln(correct.read());
@@ -90,13 +100,19 @@ class basicClass {
 
             b.barrier();
 
+            const sc = nWeakPointers[tid].getStrongCount();
+            const wc = nWeakPointers[tid].getWeakCount();
+
+            if verbose then writeln(tid, "\tsc:", sc, "\twc:", wc);
+
             if i == tid {
-                reallyCorrect.write(otherWeak.getStrongCount() == 10);
+                reallyCorrect.write(reallyCorrect.read() && sc == 11);
             } else {
-                reallyCorrect.write(otherWeak.getStrongCount() == 1);
+                reallyCorrect.write(reallyCorrect.read() && sc == 2);
             }
-            reallyCorrect.write(otherWeak.getWeakCount() == 2);
+            reallyCorrect.write(reallyCorrect.read() && wc == 12);
         }
+        if verbose then writeln("-------------------------------");
     }
 
     writeln(reallyCorrect.read());
