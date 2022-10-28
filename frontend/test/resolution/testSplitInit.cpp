@@ -32,16 +32,20 @@
 
 #include "./ErrorGuard.h"
 
+static const bool ERRORS_EXPECTED=true;
+
 // resolves the last function
 // checks that the set of split init variables matches
 // the array of variable names
 static void testSplitInit(const char* test,
                           const char* program,
-                          std::vector<const char*> expectedSplitInits) {
+                          std::vector<const char*> expectedSplitInits,
+                          bool expectErrors=false) {
   printf("%s\n", test);
 
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
   std::string testname = test;
   testname += ".chpl";
@@ -106,6 +110,14 @@ static void testSplitInit(const char* test,
       printf(" rather than type 'int'\n");
     }
     assert(varType.type() == IntType::get(context, 0));
+  }
+
+  size_t errCount = guard.errors().size();
+  guard.realizeErrors();
+  if (expectErrors) {
+    assert(errCount > 0);
+  } else {
+    assert(errCount == 0);
   }
 }
 
@@ -530,7 +542,8 @@ static void test20() {
         }
       }
     )"""",
-    {"x"});
+    {"x"},
+    /* expect errors for now as a temporary workaround */ ERRORS_EXPECTED);
 }
 static void test21() {
   testSplitInit("test21",
@@ -553,7 +566,8 @@ static void test21() {
         }
       }
     )"""",
-    {"x", "y"});
+    {"x", "y"},
+    /* expect errors for now as a temporary workaround */ ERRORS_EXPECTED);
 }
 static void test22() {
   testSplitInit("test22",
@@ -647,9 +661,7 @@ static void test25() {
 }*/
 
 static void test26a() {
-  // check that this program generates an error
-  const char* test = "test26a";
-  const char* program =
+  testSplitInit("test26a",
     R""""(
       module M {
         // this would be in the standard library...
@@ -665,46 +677,19 @@ static void test26a() {
           }
         }
       }
-    )"""";
-
-  printf("%s\n", test);
-
-  Context ctx;
-  Context* context = &ctx;
-
-  ErrorGuard guard(context);
-
-  std::string testname = test;
-  testname += ".chpl";
-  auto path = UniqueString::get(context, testname);
-  std::string contents = program;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-  const Module* M = vec[0]->toModule();
-  assert(M);
-  assert(M->numStmts() >= 1);
-
-  const Function* func = M->stmt(M->numStmts()-1)->toFunction();
-  assert(func);
-
-  // resolve runM1
-  const ResolvedFunction* r = resolveConcreteFunction(context, func->id());
-  assert(r);
-
-  assert(guard.errors().size() > 0);
-  guard.realizeErrors();
+    )"""",
+    {"x"}, ERRORS_EXPECTED);
 }
 
 static void test26b() {
-  // check that this program generates an error
-  const char* test = "test26b";
-  const char* program =
+  testSplitInit("test26b",
     R""""(
       module M {
         // this would be in the standard library...
         operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator =(ref lhs: real, rhs: real) {
           __primitive("=", lhs, rhs);
         }
         operator =(ref lhs: int(8), rhs: int(8)) {
@@ -714,49 +699,18 @@ static void test26b() {
         proc test(r: bool) {
           var x;
           if r {
-            var myInt8: int(8);
-            x = myInt8;
+            x = 1;
           } else {
-            x = 3;
+            x = 3.0;
           }
         }
       }
-    )"""";
-
-  printf("%s\n", test);
-
-  Context ctx;
-  Context* context = &ctx;
-
-  ErrorGuard guard(context);
-
-  std::string testname = test;
-  testname += ".chpl";
-  auto path = UniqueString::get(context, testname);
-  std::string contents = program;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-  const Module* M = vec[0]->toModule();
-  assert(M);
-  assert(M->numStmts() >= 1);
-
-  const Function* func = M->stmt(M->numStmts()-1)->toFunction();
-  assert(func);
-
-  // resolve runM1
-  const ResolvedFunction* r = resolveConcreteFunction(context, func->id());
-  assert(r);
-
-  assert(guard.errors().size() > 0);
-  guard.realizeErrors();
+    )"""",
+    {"x"}, ERRORS_EXPECTED);
 }
 
 static void test26c() {
-  // check that this program generates an error
-  const char* test = "test26c";
-  const char* program =
+  testSplitInit("test26c",
     R""""(
       module M {
         // this would be in the standard library...
@@ -777,39 +731,9 @@ static void test26c() {
           }
         }
       }
-    )"""";
-
-  printf("%s\n", test);
-
-  Context ctx;
-  Context* context = &ctx;
-
-  ErrorGuard guard(context);
-
-  std::string testname = test;
-  testname += ".chpl";
-  auto path = UniqueString::get(context, testname);
-  std::string contents = program;
-  setFileText(context, path, contents);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-  const Module* M = vec[0]->toModule();
-  assert(M);
-  assert(M->numStmts() >= 1);
-
-  const Function* func = M->stmt(M->numStmts()-1)->toFunction();
-  assert(func);
-
-  // resolve runM1
-  const ResolvedFunction* r = resolveConcreteFunction(context, func->id());
-  assert(r);
-
-  assert(guard.errors().size() > 0);
-  guard.realizeErrors();
+    )"""",
+    {"x"}, ERRORS_EXPECTED);
 }
-
-
 
 static void test27() {
   testSplitInit("test27",
