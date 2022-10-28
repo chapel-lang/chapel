@@ -682,9 +682,9 @@ bool FindSplitInits::enter(const FnCall* callAst, RV& rv) {
         // compute a vector indicating which actuals are passed to
         // an 'out' formal in all return intent overloads
         std::vector<QualifiedType> actualFormalTypes;
-        std::vector<int8_t> actualIdxToOut =
-          candidates.computeOutFormals(context, ci, actualAsts,
-                                       actualFormalTypes);
+        std::vector<int8_t> actualIdxToOut;
+        computeOutFormals(context, candidates, ci, actualAsts,
+                          actualIdxToOut, actualFormalTypes);
 
         int actualIdx = 0;
         for (auto actual : ci.actuals()) {
@@ -800,6 +800,64 @@ computeSplitInits(Context* context,
 
   return splitInitedVars;
 }
+
+void
+computeOutFormals(Context* context,
+                  const MostSpecificCandidates& candidates,
+                  const CallInfo& ci,
+                  const std::vector<const AstNode*>& actualAsts,
+                  std::vector<int8_t>& actualIsOut,
+                  std::vector<QualifiedType>& actualFormalTypes) {
+
+  int nActuals = ci.numActuals();
+  actualIsOut.clear();
+  actualIsOut.resize(nActuals);
+
+  int nFns = candidates.numBest();
+  if (nFns == 0) {
+    // return early if there are no actual candidates
+    return;
+  }
+
+  for (const TypedFnSignature* fn : candidates) {
+    if (fn != nullptr) {
+      auto formalActualMap = FormalActualMap(fn, ci);
+      for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
+        int8_t isOutFormal = fa->formalType().kind() == QualifiedType::OUT;
+        actualIsOut[actualIdx] += isOutFormal;
+
+        if (isOutFormal) {
+          if ((size_t) actualIdx >= actualFormalTypes.size()) {
+            actualFormalTypes.resize(actualIdx+1);
+          }
+          QualifiedType& aft = actualFormalTypes[actualIdx];
+          if (aft.type() == nullptr && fa->formalType().type() != nullptr) {
+            // no type was yet gathered, so update the type
+            aft = fa->formalType();
+          } else {
+            // check that the type matches
+            if (aft != fa->formalType()) {
+              context->error(actualAsts[actualIdx],
+                  "using return intent overloads with 'out' formals "
+                  "but the return intent overloads do not have matching "
+                  "'out' formal types");
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+    if (actualIsOut[actualIdx] == nFns) {
+      actualIsOut[actualIdx] = 1;
+    } else {
+      actualIsOut[actualIdx] = 0;
+    }
+  }
+}
+
 
 
 } // end namespace resolution

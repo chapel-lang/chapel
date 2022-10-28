@@ -699,64 +699,6 @@ void TypedFnSignature::stringify(std::ostream& ss,
   ss << ")";
 }
 
-// TODO: move this to split-init.h/.cpp
-std::vector<int8_t>
-MostSpecificCandidates::computeOutFormals(
-                          Context* context,
-                          const CallInfo& ci,
-                          const std::vector<const AstNode*>& asts,
-                          std::vector<QualifiedType>& actualFormalTypes) const {
-
-  int nActuals = ci.numActuals();
-  std::vector<int8_t> ret(nActuals, 0);
-
-  int nFns = numBest();
-  if (nFns == 0) {
-    // return early if there are no actual candidates
-    return ret;
-  }
-
-  for (const TypedFnSignature* fn : *this) {
-    if (fn != nullptr) {
-      auto formalActualMap = FormalActualMap(fn, ci);
-      for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
-        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
-        int8_t isOutFormal = fa->formalType().kind() == QualifiedType::OUT;
-        ret[actualIdx] += isOutFormal;
-
-        if (isOutFormal) {
-          if ((size_t) actualIdx >= actualFormalTypes.size()) {
-            actualFormalTypes.resize(actualIdx+1);
-          }
-          QualifiedType& aft = actualFormalTypes[actualIdx];
-          if (aft.type() == nullptr && fa->formalType().type() != nullptr) {
-            // no type was yet gathered, so update the type
-            aft = fa->formalType();
-          } else {
-            // check that the type matches
-            if (aft != fa->formalType()) {
-              context->error(asts[actualIdx],
-                  "using return intent overloads with 'out' formals "
-                  "but the return intent overloads do not have matching "
-                  "'out' formal types");
-            }
-          }
-        }
-      }
-    }
-  }
-
-  for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
-    if (ret[actualIdx] == nFns) {
-      ret[actualIdx] = 1;
-    } else {
-      ret[actualIdx] = 0;
-    }
-  }
-
-  return ret;
-}
-
 void CallInfoActual::stringify(std::ostream& ss,
                                chpl::StringifyKind stringKind) const {
   if (!byName_.isEmpty()) {

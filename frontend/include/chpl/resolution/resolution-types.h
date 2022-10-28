@@ -921,24 +921,6 @@ class MostSpecificCandidates {
     return emptyDueToAmbiguity;
   }
 
-  /**
-    Compute a vector indicating which actuals are passed to an 'out'
-    formal in all return intent overloads. For actual 'i', the
-    resulting vector element 'i' is 0 or 1; where 1 means all best
-    candidates used an 'out' formal for that actual.
-
-    actualFormalTypes will be set so that for actual 'i',
-    if it is passed to an 'out' formal, actualFormalTypes[i] will be
-    set to the type of the 'out' formal. If these do not match among
-    several return intent overloads, this function will issue an error
-    in the current query.
-   */
-  std::vector<int8_t>
-  computeOutFormals(Context* context,
-                    const CallInfo& ci,
-                    const std::vector<const uast::AstNode*>& asts,
-                    std::vector<types::QualifiedType>& actualFormalTypes) const;
-
   bool operator==(const MostSpecificCandidates& other) const {
     for (int i = 0; i < NUM_INTENTS; i++) {
       if (candidates[i] != other.candidates[i])

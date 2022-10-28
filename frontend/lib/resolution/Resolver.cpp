@@ -19,16 +19,18 @@
 
 #include "Resolver.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/disambiguation.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/split-init.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+
 #include "InitResolver.h"
 
 #include <cstdio>
@@ -1127,8 +1129,9 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
                                    const MostSpecificCandidates& fns) {
 
   std::vector<QualifiedType> actualFormalTypes;
-  std::vector<int8_t> actualIdxToOut =
-    fns.computeOutFormals(context, ci, asts, actualFormalTypes);
+  std::vector<int8_t> actualIdxToOut;
+  computeOutFormals(context, fns, ci, asts,
+                    actualIdxToOut, actualFormalTypes);
 
   int actualIdx = 0;
   for (auto actual : ci.actuals()) {
