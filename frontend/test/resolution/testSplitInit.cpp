@@ -517,7 +517,6 @@ static void test20() {
           __primitive("=", lhs, rhs);
         }
         operator =(ref lhs: (int,), rhs: (int,)) {
-          lhs(0) = rhs(0);
         }
 
         proc fOut(out formals:int...) {
@@ -540,8 +539,6 @@ static void test21() {
           __primitive("=", lhs, rhs);
         }
         operator =(ref lhs: (int,int), rhs: (int,int)) {
-          lhs(0) = rhs(0);
-          lhs(1) = rhs(1);
         }
 
         proc fOut(out formals:int...) {
@@ -565,7 +562,6 @@ static void test22() {
           __primitive("=", lhs, rhs);
         }
         operator =(ref lhs: (int,), rhs: (int,)) {
-          lhs(0) = rhs(0);
         }
 
         proc fOut(out formals...) {
@@ -588,8 +584,6 @@ static void test23() {
           __primitive("=", lhs, rhs);
         }
         operator =(ref lhs: (int,int), rhs: (int,int)) {
-          lhs(0) = rhs(0);
-          lhs(1) = rhs(1);
         }
 
         proc fOut(out formals...) {
@@ -613,7 +607,6 @@ static void test23() {
           __primitive("=", lhs, rhs);
         }
         operator =(ref lhs: (int,), rhs: (int,)) {
-          lhs(0) = rhs(0);
         }
 
         proc fOut(out formals...) {
@@ -636,8 +629,6 @@ static void test25() {
           __primitive("=", lhs, rhs);
         }
         operator =(ref lhs: (int,int), rhs: (int,int)) {
-          lhs(0) = rhs(0);
-          lhs(1) = rhs(1);
         }
 
         proc fOut(out formals...) {
@@ -721,9 +712,10 @@ static void test26b() {
         proc test(r: int) {
           var x;
           if __primitive(">", r, 2) {
-            x = 2:int(8);
+            param myInt8: int(8) = 2;
+            x = myInt8;
           } else {
-            x = 3:int(8);
+            x = 3;
           }
         }
       }
@@ -778,7 +770,8 @@ static void test26c() {
           if __primitive(">", r, 2) {
             x = 2;
           } else {
-            x = 3:int(8);
+            param myInt8: int(8) = 3;
+            x = myInt8;
           }
         }
       }
