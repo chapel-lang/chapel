@@ -1444,7 +1444,10 @@ module ChapelBase {
       // string to a type. Otherwise, we can't resolve chpl_debug_writeln in
       // `range.these`
       { var dummyRange = 1..0; for i in dummyRange {} }
-      return str:t;
+      if t:string == "regex(string)" || t:string == "regex(bytes)" then
+        return compile(str);
+      else
+        return str:t;
     }
   }
   // param s is used for error reporting

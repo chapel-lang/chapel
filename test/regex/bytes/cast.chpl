@@ -13,3 +13,13 @@ writeln(b"contains regular expression".find(rb));
 
 writeln("doesn't contain regular expression".find(rs));
 writeln(b"doesn't contain regular expression".find(rb));
+
+
+var rcs = compile(s);
+var rcb = compile(b);
+
+writeln("contains regular expression".find(rcs));
+writeln(b"contains regular expression".find(rcb));
+
+writeln("doesn't contain regular expression".find(rcs));
+writeln(b"doesn't contain regular expression".find(rcb));

@@ -1,3 +1,9 @@
+cast.chpl:8: warning: Casting strings to regex is deprecated. Use regex.compile(string) instead.
+cast.chpl:9: warning: Casting bytes to regex is deprecated. Use regex.compile(bytes) instead.
+0
+0
+-1
+-1
 0
 0
 -1
