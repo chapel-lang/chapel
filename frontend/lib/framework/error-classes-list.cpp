@@ -555,8 +555,7 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
 void ErrorUnknownPragma::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto pragmaStr = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, "Unknown pragma '",
-             pragmaStr, "'");
+  wr.heading(kind_, type_, loc, "Unknown pragma '", pragmaStr, "'");
 }
 
 void ErrorTypeCannotImplementInterface::write(ErrorWriterBase& wr) const {

@@ -1,0 +1,2 @@
+--detailed-errors # typeCannotImplementInterface-detailed.good
+--no-detailed-errors # typeCannotImplementInterface-brief.good
