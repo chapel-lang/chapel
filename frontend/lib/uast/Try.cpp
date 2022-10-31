@@ -25,24 +25,25 @@ namespace chpl {
 namespace uast {
 
 
-owned<Try> Try::build(Builder* builder, Location loc, AstList stmts,
+owned<Try> Try::build(Builder* builder, Location loc,
+                      owned<Block> body,
                       AstList catches,
                       bool isTryBang) {
   AstList lst;
-  int numBodyStmts = stmts.size();
   int numHandlers = catches.size();
+  bool containsBlock = true;
   bool isExpressionLevel = false;
 
-  for (auto& ast : stmts) {
-    lst.push_back(std::move(ast));
-  }
+  lst.push_back(std::move(body));
 
   for (auto& ast : catches) {
     assert(ast->isCatch());
     lst.push_back(std::move(ast));
   }
 
-  Try* ret = new Try(std::move(lst), numBodyStmts, numHandlers,
+  Try* ret = new Try(std::move(lst),
+                     numHandlers,
+                     containsBlock,
                      isExpressionLevel,
                      isTryBang);
   builder->noteLocation(ret, loc);
@@ -54,12 +55,14 @@ owned<Try> Try::build(Builder* builder, Location loc,
                       bool isTryBang,
                       bool isExpressionLevel) {
   AstList lst;
-  int numBodyStmts = 1;
   int numHandlers = 0;
+  bool containsBlock = false;
 
   lst.push_back(std::move(expr));
 
-  Try* ret = new Try(std::move(lst), numBodyStmts, numHandlers,
+  Try* ret = new Try(std::move(lst),
+                     numHandlers,
+                     containsBlock,
                      isExpressionLevel,
                      isTryBang);
   builder->noteLocation(ret, loc);
