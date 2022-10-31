@@ -8651,10 +8651,38 @@ static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
 
-          USR_FATAL(userCall(call),
+          // TODO <June 23 Release>: this deprecation-specific error message should be removed
+          //                         when the bool-returning-writers deprecation is finalized
+          if (
+            rhsFn->getModule()->modTag != MOD_USER && (
+              // writer methods on channels
+              (rhsFn->isMethod() == 1 &&
+                (
+                    std::strcmp("write", rhsName) == 0 ||
+                    std::strcmp("writeln", rhsName) == 0 ||
+                    std::strcmp("writebits", rhsName) == 0 ||
+                    std::strcmp("writeBytes", rhsName) == 0 ||
+                    std::strcmp("writef", rhsName) == 0
+                )
+              ) ||
+              // or, top-level writef
+              std::strcmp("writef", rhsName) == 0
+            )
+          ) {
+            // emit the write* specific error message:
+            USR_FATAL(userCall(call),
+                    "illegal use of boolean return value from '%s'. "
+                    "Note: this functionality is deprecated; recompile "
+                    "with -sWritersReturnBool=true to continue using the "
+                    "deprecated behavior.",
+                    rhsName);
+          } else {
+            // otherwise, emit the normal error message:
+            USR_FATAL(userCall(call),
                     "illegal use of function that does not "
                     "return a value: '%s'",
                     rhsName);
+          }
         }
       }
     }
