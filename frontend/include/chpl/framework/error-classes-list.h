@@ -90,6 +90,24 @@ ERROR_CLASS(SuperFromTopLevelModule,
     const uast::Module*,
     resolution::VisibilityStmtKind)
 
-/*  parser errors */
+/* parser errors */
 ERROR_CLASS(UnknownPragma, const Location, std::string)
 ERROR_CLASS(TypeCannotImplementInterface, const Location, std::string)
+ERROR_CLASS(PragmasBeforeDeprecation, const Location)
+ERROR_CLASS(CannotAttachPragmas, const Location)
+ERROR_CLASS(PrimCallNamedArgs, const Location)
+ERROR_CLASS(PrimCallNoStrLiteral, const Location)
+ERROR_CLASS(UnknownPrimitive, const Location)
+ERROR_CLASS(SecondaryTypeMethodNoType, const Location)
+ERROR_CLASS(ThisIntentNotMethod, const Location)
+ERROR_CLASS(InvalidIndexExpr, const Location)
+ERROR_CLASS(ClassExportExtern, const Location)
+ERROR_CLASS(UnionExport, const Location)
+ERROR_CLASS(RecordInheritanceNotSupported, const Location)
+ERROR_CLASS(UnionInheritanceNotAllowed, const Location)
+ERROR_CLASS(MultipleInheritance, const Location)
+ERROR_CLASS(InheritInvalidExpr, const Location)
+ERROR_CLASS(InvalidNumericLiteral, const Location, std::string, std::string)
+ERROR_CLASS(MultipleExternalRenaming, const Location)
+ERROR_CLASS(ReduceIntentNoIdent, const Location)
+WARNING_CLASS(PreIncDecOp, const Location, std::string, std::string)

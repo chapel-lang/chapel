@@ -42,7 +42,7 @@ using chpl::owned;
 #define CHPL_PARSER_REPORT(PARSER_CONTEXT__, NAME__, LOC__, EINFO__...) \
   PARSER_CONTEXT__->context()->report(Error##NAME__::get(               \
       PARSER_CONTEXT__->context(),                                      \
-      std::make_tuple(PARSER_CONTEXT__->convertLocation(LOC__), EINFO__)))
+      std::make_tuple(PARSER_CONTEXT__->convertLocation(LOC__), ##EINFO__)))
 
 static const char* kindToString(VisibilityClause::LimitationKind kind) {
   switch (kind) {
@@ -274,17 +274,15 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
       assert(attributeParts.pragmas == nullptr);
       assert(attributeParts.isDeprecated);
       assert(attributeParts.isUnstable);
-      auto msg = "pragma list must come before deprecation statement";
-      noteError(loc, msg);
+      CHPL_PARSER_REPORT(this, PragmasBeforeDeprecation, loc);
     }
 
   } else {
     assert(numAttributesBuilt == 0);
     if(cs.stmt) assert(hasAttributeParts);
-    auto msg = "cannot attach pragmas to this statement";
 
     // TODO: The original builder also states the first pragma.
-    noteError(loc, msg);
+    CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc);
 
     // Clean up the attribute parts.
     resetAttributePartsState();
@@ -647,7 +645,7 @@ AstNode* ParserContext::buildPrimCall(YYLTYPE location,
       anyNames = true;
     }
   }
-  // first argument must be a string literal, might be a cstring tho
+  // first argument must be a string literal, might be a cstring though
   if (actuals.size() > 0) {
     if (auto lit = actuals[0]->toCStringLiteral()) {
       primName = lit->str();
@@ -662,16 +660,16 @@ AstNode* ParserContext::buildPrimCall(YYLTYPE location,
 
   if (anyNames || primName.isEmpty()) {
     if (anyNames)
-      noteError(location, "primitive calls cannot use named arguments");
+      CHPL_PARSER_REPORT(this, PrimCallNamedArgs, location);
     else
-      noteError(location, "primitive calls must start with string literal");
+      CHPL_PARSER_REPORT(this, PrimCallNoStrLiteral, location);
 
     return ErroneousExpression::build(builder, loc).release();
   }
 
   PrimitiveTag tag = primNameToTag(primName.c_str());
   if (tag == PRIM_UNKNOWN) {
-    noteError(location, "unknown primitive");
+    CHPL_PARSER_REPORT(this, UnknownPrimitive, location);
     return ErroneousExpression::build(builder, loc).release();
   }
 
@@ -693,7 +691,7 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
   // may reassign op here to match old parser
   // as in buildPreDecIncWarning
   if (ustrOp == "++") {
-    noteWarning(location, "++ is not a pre-increment");
+    CHPL_PARSER_REPORT(this, PreIncDecOp, location, "++", "increment");
     ustrOp = USTR("+");
     // conver the ++a to +(+a)
     auto innerOp = OpCall::build(builder, convertLocation(location),
@@ -701,7 +699,7 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
     return OpCall::build(builder, convertLocation(location),
                        ustrOp, toOwned(innerOp)).release();
   } else if (ustrOp == "--") {
-    noteWarning(location, "-- is not a pre-decrement");
+    CHPL_PARSER_REPORT(this, PreIncDecOp, location, "--", "decrement");
     ustrOp = USTR("-");
     // convert the --a to -(-a)
     auto innerOp = OpCall::build(builder, convertLocation(location),
@@ -1041,10 +1039,10 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   // TODO: I think we should redundantly store the receiver intent
   // in the function as well as the receiver formal.
   if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
-    const char* msg = fp.thisIntent == Formal::TYPE
-        ? "Missing type for secondary type method"
-        : "'this' intents can only be applied to methods";
-    noteError(location, msg);
+    if (fp.thisIntent == Formal::TYPE)
+      CHPL_PARSER_REPORT(this, SecondaryTypeMethodNoType, location);
+    else
+      CHPL_PARSER_REPORT(this, ThisIntentNotMethod, location);
   }
 
   this->clearComments();
@@ -1260,8 +1258,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                             /*typeExpression*/ nullptr,
                             /*initExpression*/ nullptr);
   } else {
-    const char* msg = "invalid index expression";
-    noteError(location, msg);
+    CHPL_PARSER_REPORT(this, InvalidIndexExpr, location);
     return nullptr;
   }
 }
@@ -1277,8 +1274,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                               ParserExprList* indexExprs) {
   // TODO: We have to handle the possibility of [1..2, 3..4] here.
   if (indexExprs->size() > 1) {
-    const char* msg = "invalid index expression";
-    noteError(location, msg);
+    CHPL_PARSER_REPORT(this, InvalidIndexExpr, location);
     return nullptr;
   } else {
     auto uncastedIndexExpr = consumeList(indexExprs)[0].release();
@@ -1801,7 +1797,7 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     }
 
     if (!err.empty()) {
-      noteError(location, err);
+      CHPL_PARSER_REPORT(this, InvalidNumericLiteral, location, str.str(), err);
       ret = ErroneousExpression::build(builder, loc).release();
     } else if (ull <= 9223372036854775807ull) {
       ret = IntLiteral::build(builder, loc, ull, text).release();
@@ -1813,7 +1809,7 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     if (type == IMAGLITERAL) {
       // Remove the trailing `i` from the noUnderscores number
       if (noUnderscores[noUnderscoresLen-1] != 'i') {
-        err = "invalid imag literal - does not end in i";
+        err = "invalid imaginary literal - does not end in 'i'";
       }
       noUnderscoresLen--;
       noUnderscores[noUnderscoresLen] = '\0';
@@ -1822,7 +1818,7 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     double num = Param::str2double(noUnderscores, noUnderscoresLen, err);
 
     if (!err.empty()) {
-      noteError(location, err);
+      CHPL_PARSER_REPORT(this, InvalidNumericLiteral, location, str.str(), err);
       ret = ErroneousExpression::build(builder, loc).release();
     } else if (type == IMAGLITERAL) {
       ret = ImagLiteral::build(builder, loc, num, text).release();
@@ -1831,7 +1827,7 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     }
 
   } else {
-    assert(false && "Case note handled in buildNumericLiteral");
+    assert(false && "Case not handled in buildNumericLiteral");
   }
 
   free(noUnderscores);
@@ -2101,8 +2097,7 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
       }
 
       if (!isTypeVar) {
-        noteError(locEverything, "external symbol renaming can only be "
-                                 "applied to one symbol at a time");
+        CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
 
@@ -2161,16 +2156,14 @@ void ParserContext::validateExternTypeDeclParts(YYLTYPE location,
                                                 TypeDeclParts& parts) {
   if (parts.tag == asttags::Class) {
     assert(parts.linkage != Decl::DEFAULT_LINKAGE);
-    auto msg = "Cannot declare class types as export or extern";
-    noteError(location, msg);
+    CHPL_PARSER_REPORT(this, ClassExportExtern, location);
 
     // Clear the linkage state for this so that parsing can continue.
     clearTypeDeclPartsLinkage(parts);
   }
 
   if (parts.tag == asttags::Union && parts.linkage == Decl::EXPORT) {
-    auto msg = "Cannot export union types";
-    noteError(location, msg);
+    CHPL_PARSER_REPORT(this, UnionExport, location);
 
     // Clear the linkage state for this so that parsing can continue.
     clearTypeDeclPartsLinkage(parts);
@@ -2202,20 +2195,19 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   owned<Identifier> inheritIdentifier;
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
-      if (parts.tag == asttags::Record) {
-        noteError(inheritLoc, "inheritance is not currently supported for records");
-        noteNote(inheritLoc, "thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851");
+      if (parts.tag == asttags::Record || parts.tag == asttags::Union) {
+        CHPL_PARSER_REPORT(this, RecordInheritanceNotSupported, inheritLoc);
       } else if (parts.tag == asttags::Union) {
-        noteError(inheritLoc, "unions cannot inherit");
+        CHPL_PARSER_REPORT(this, UnionInheritanceNotAllowed, inheritLoc);
       } else {
         if (optInherit->size() > 1)
-          noteError(inheritLoc, "only single inheritance is supported");
+          CHPL_PARSER_REPORT(this, MultipleInheritance, inheritLoc);
         AstNode* ast = (*optInherit)[0];
         if (ast->isIdentifier()) {
           inheritIdentifier = toOwned(ast->toIdentifier());
           (*optInherit)[0] = nullptr;
         } else {
-          noteError(inheritLoc, "non-Identifier expression cannot be inherited");
+          CHPL_PARSER_REPORT(this, InheritInvalidExpr, inheritLoc);
         }
       }
     }
@@ -2299,7 +2291,7 @@ AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
   (void) locOp;
   const Identifier* ident = iterand->toIdentifier();
   if (ident == nullptr) {
-    noteError(location, "Expected identifier for reduce intent name");
+    CHPL_PARSER_REPORT(this, ReduceIntentNoIdent, location);
     auto loc = convertLocation(location);
     return ErroneousExpression::build(builder, loc).release();
   }

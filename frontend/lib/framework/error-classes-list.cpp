@@ -552,17 +552,124 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.code(mod);
 }
 
+/* parser errors */
+
 void ErrorUnknownPragma::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto pragmaStr = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, "Unknown pragma '", pragmaStr, "'");
+  wr.heading(kind_, type_, loc, "unknown pragma '", pragmaStr, "'.");
 }
 
 void ErrorTypeCannotImplementInterface::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto typeName = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, "Type '", typeName,
+  wr.heading(kind_, type_, loc, "type '", typeName,
              "' cannot implement an interface.");
+}
+
+void ErrorPragmasBeforeDeprecation::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "pragma list must come before deprecation statement.");
+}
+
+void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "cannot attach pragmas to this statement.");
+}
+
+void ErrorPrimCallNamedArgs::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "primitive calls cannot use named arguments.");
+}
+
+void ErrorPrimCallNoStrLiteral::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "primitive calls must start with string literal.");
+}
+
+void ErrorUnknownPrimitive::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "unknown primitive.");
+}
+
+void ErrorSecondaryTypeMethodNoType::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "missing type for secondary type method.");
+}
+
+void ErrorThisIntentNotMethod::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "'this' intents can only be applied to methods.");
+}
+
+void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "invalid index expression.");
+}
+
+void ErrorClassExportExtern::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "cannot declare class types as export or extern.");
+}
+
+void ErrorUnionExport::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "cannot export union types.");
+}
+
+void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "inheritance is not currently supported for records.");
+  wr.message(
+      "thoughts on what record inheritance should entail can be added to "
+      "https://github.com/chapel-lang/chapel/issues/6851");
+}
+
+void ErrorUnionInheritanceNotAllowed::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "unions cannot inherit.");
+}
+
+void ErrorMultipleInheritance::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "only single inheritance is supported.");
+}
+
+void ErrorInheritInvalidExpr::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "non-Identifier expression cannot be inherited.");
+}
+
+void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto literalStr = std::get<1>(info);
+  auto errMessage = std::get<2>(info);
+  wr.heading(kind_, type_, loc, "error building numeric literal '", literalStr,
+             "': ", errMessage, ".");
+}
+
+void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(
+      kind_, type_, loc,
+      "external symbol renaming can only be applied to one symbol at a time.");
+}
+
+void ErrorReduceIntentNoIdent::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "expected identifier for reduce intent name.");
+}
+
+void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto opName = std::get<1>(info);
+  auto opSymbol = std::get<2>(info);
+  wr.heading(kind_, type_, loc, "'", opSymbol, "' is not a pre-", opName, ".");
 }
 
 } // end namespace 'chpl'
