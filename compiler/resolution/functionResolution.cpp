@@ -8651,8 +8651,8 @@ static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
 
-          // this deprecation-specific error message should be removed
-          // when the bool-returning-writers deprecation is finalized
+          // TODO <June 23 Release>: this deprecation-specific error message should be removed
+          //                         when the bool-returning-writers deprecation is finalized
           if (
             rhsFn->getModule()->modTag != MOD_USER && (
               // writer methods on channels

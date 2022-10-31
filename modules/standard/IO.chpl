@@ -2065,7 +2065,7 @@ proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws
   This parameter also toggles the new and deprecated variants of the top-level
   :proc:`~ChapelIO.writef` method.
 
-  - When `WritersReturnBool=true` the deprecated variants of the writer methodsare called
+  - When `WritersReturnBool=true` the deprecated variants of the writer methods are called
   - When `WritersReturnBool=false` the new variants of the writer methods are called
 
   .. note::
