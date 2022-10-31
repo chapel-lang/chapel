@@ -528,6 +528,11 @@ static bool interestingModuleInit(FnSymbol* fn) {
   return strcmp(modulename, basename) != 0;
 }
 
+// return values:
+//   -1 = no filename:line# was printed;
+//    0 = they were printed and were not the result of a guess
+//    1 = they were printed but were the result of a guess
+//
 static int printErrorHeader(BaseAST* ast, astlocT astloc) {
 
   if (Expr* expr = toExpr(ast)) {
