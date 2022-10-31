@@ -552,4 +552,11 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.code(mod);
 }
 
+void ErrorUnknownPragma::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto pragmaStr = std::get<std::string>(info);
+  wr.heading(kind_, type_, loc, "Unknown pragma '",
+             pragmaStr, "'");
+}
+
 } // end namespace 'chpl'

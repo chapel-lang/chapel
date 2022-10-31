@@ -89,3 +89,6 @@ ERROR_CLASS(SuperFromTopLevelModule,
     const uast::AstNode*,
     const uast::Module*,
     resolution::VisibilityStmtKind)
+
+/*  parser errors */
+ERROR_CLASS(UnknownPragma, const Location, std::string)

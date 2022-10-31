@@ -21,6 +21,7 @@
 #include "chpl/types/Param.h"
 #include "chpl/uast/Pragma.h"
 #include "chpl/framework/global-strings.h"
+#include "chpl/framework/ErrorBase.h"
 
 #include <cerrno>
 #include <cfloat>
@@ -33,6 +34,15 @@
 
 using chpl::types::Param;
 using chpl::owned;
+
+/**
+  Helper macro to report errors from the parser, which takes care of accessing
+  the global Context from the ParserContext, and converting YYLTYPE locations.
+ */
+#define CHPL_PARSER_REPORT(PARSER_CONTEXT__, NAME__, LOC__, EINFO__...) \
+  PARSER_CONTEXT__->context()->report(Error##NAME__::get(               \
+      PARSER_CONTEXT__->context(),                                      \
+      std::make_tuple(PARSER_CONTEXT__->convertLocation(LOC__), EINFO__)))
 
 static const char* kindToString(VisibilityClause::LimitationKind kind) {
   switch (kind) {
@@ -168,11 +178,7 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
     auto tag = pragmaNameToTag(ret.c_str());
 
     if (tag == PRAGMA_UNKNOWN) {
-      std::string msg;
-      msg += "unknown pragma: \"";
-      msg += ret.c_str();
-      msg += "\"";
-      noteError(loc, msg.c_str());
+      CHPL_PARSER_REPORT(this, UnknownPragma, loc, strLit->str().str());
     }
 
     // Initialize the pragma flags if needed.
