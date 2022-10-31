@@ -34,6 +34,7 @@
 #include "misc.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "llvm/ADT/SmallPtrSet.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
@@ -120,7 +121,7 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
 // Call to insert an instance of the error handler above into the context.
 static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
 
-static int dynoRealizeErrors(void);
+static bool dynoRealizeErrors(void);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -877,21 +878,23 @@ static std::vector<const chpl::ErrorBase*> dynoErrorMessages;
 // Only install one of these for the entire session.
 static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
-int dynoRealizeErrors(void) {
+static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
-  int ret = (int) gDynoErrorHandler->errors().size();
-  if (ret) {
-    for (auto err : gDynoErrorHandler->errors()) {
-      if (fDetailedErrors) {
-        chpl::Context::defaultReportError(gContext, err);
-      } else {
-        // Try to maintain compatibility with the old reporting mechanism
-        dynoDisplayError(gContext, err->toErrorMessage(gContext));
-      }
+  bool hadErrors;
+  llvm::SmallPtrSet<const chpl::ErrorBase*, 10> issuedErrors;
+  for (auto err : gDynoErrorHandler->errors()) {
+    hadErrors = true;
+    // skip issuing errors that have already been issued
+    if (!issuedErrors.insert(err).second) continue;
+    if (fDetailedErrors) {
+      chpl::Context::defaultReportError(gContext, err);
+    } else {
+      // Try to maintain compatibility with the old reporting mechanism
+      dynoDisplayError(gContext, err->toErrorMessage(gContext));
     }
-    gDynoErrorHandler->clear();
   }
-  return ret;
+  gDynoErrorHandler->clear();
+  return hadErrors;
 }
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
