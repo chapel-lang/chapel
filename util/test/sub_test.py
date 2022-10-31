@@ -2005,7 +2005,10 @@ for testname in testsrc:
                 sys.stdout.write('[Executing preexec %s.preexec]\n'%(test_filename))
                 sys.stdout.flush()
                 test_preexec = './{0}.preexec'.format(test_filename)
-                p = py3_compat.Popen([test_preexec, execname, execlog, compiler],
+                p = py3_compat.Popen([test_preexec, execname, execlog, compiler,
+                                     ' '.join(envCompopts)+ ' '+compopts,
+                                     ' '.join(globalExecopts), 
+                                     ' '.join(shlex.split(execopts))],
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 sys.stdout.write(p.communicate()[0])
                 sys.stdout.flush()
