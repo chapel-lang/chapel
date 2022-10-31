@@ -2133,8 +2133,10 @@ For example:
 The default intent for :record:`~OwnedObject.owned` is ``const ref``.
 See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
 
+.. _Owned_Methods:
+
 Methods on `owned` Classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 .. include:: /builtins/OwnedObject.rst
 
@@ -2210,7 +2212,9 @@ See :ref:`about-owned-coercions` for more details and examples.
 The default intent for :record:`~SharedObject.shared` types is ``const ref``.
 See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
 
+.. _Shared_Methods:
+
 Methods on `shared` Classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------
 
 .. include:: /builtins/SharedObject.rst
