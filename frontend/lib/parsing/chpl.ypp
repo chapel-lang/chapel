@@ -1842,10 +1842,7 @@ implements_type_ident:
 | TVOID
 | implements_type_error_ident
   {
-    std::string s = "type ";
-    s += "'"; s += $1.c_str(); s += "'";
-    s += " not allowed to implement an interface";
-    context->noteError(@$, s);
+    CHPL_PARSER_REPORT(context, TypeCannotImplementInterface, @$, $1.c_str());
     $$ = $1;
   }
 ;

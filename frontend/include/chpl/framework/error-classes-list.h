@@ -92,3 +92,4 @@ ERROR_CLASS(SuperFromTopLevelModule,
 
 /*  parser errors */
 ERROR_CLASS(UnknownPragma, const Location, std::string)
+ERROR_CLASS(TypeCannotImplementInterface, const Location, std::string)

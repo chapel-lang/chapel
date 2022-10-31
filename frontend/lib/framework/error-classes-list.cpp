@@ -559,4 +559,11 @@ void ErrorUnknownPragma::write(ErrorWriterBase& wr) const {
              pragmaStr, "'");
 }
 
+void ErrorTypeCannotImplementInterface::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto typeName = std::get<std::string>(info);
+  wr.heading(kind_, type_, loc, "Type '", typeName,
+             "' cannot implement an interface.");
+}
+
 } // end namespace 'chpl'
