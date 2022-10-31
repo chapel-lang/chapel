@@ -77,6 +77,7 @@ class Try final : public AstNode {
   bool contentsMatchInner(const AstNode* other) const override {
     const Try* rhs = other->toTry();
     return this->numHandlers_ == rhs->numHandlers_ &&
+      this->containsBlock_ == rhs->containsBlock_ &&
       this->isExpressionLevel_ == rhs->isExpressionLevel_ &&
       this->isTryBang_ == rhs->isTryBang_;
   }
