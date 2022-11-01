@@ -528,7 +528,12 @@ static bool interestingModuleInit(FnSymbol* fn) {
   return strcmp(modulename, basename) != 0;
 }
 
-static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
+// return values:
+//   -1 = no filename:line# was printed;
+//    0 = they were printed and were not the result of a guess
+//    1 = they were printed but were the result of a guess
+//
+static int printErrorHeader(BaseAST* ast, astlocT astloc) {
 
   if (Expr* expr = toExpr(ast)) {
     Expr* use = findLocationIgnoringInternalInlining(expr);
@@ -609,9 +614,10 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
     }
   }
 
-  bool guess = filename && !have_ast_line;
+  int guess = -1;  // -1=no filename:line# printed; 0=not guessed; 1=guessed
 
   if (filename) {
+    guess = !have_ast_line;
     if (err_fatal && err_user) {
       // save the error location for printsSameLocationAsLastError
       last_error_loc = astlocT(linenum, filename);
@@ -647,7 +653,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
 }
 
 
-static void printErrorFooter(bool guess) {
+static void printErrorFooter(int guess) {
   //
   // For developers, indicate the compiler source location where an
   // internal error was generated.
@@ -660,7 +666,7 @@ static void printErrorFooter(bool guess) {
   // AST was not passed to the INT_FATAL() macro and we relied on the
   // global SET_LINENO() information instead), indicate that.
   //
-  if (guess) {
+  if (guess == 1) {
     print_error("\nNote: This source location is a guess.");
   }
 
@@ -671,9 +677,9 @@ static void printErrorFooter(bool guess) {
     print_error("\n\n"
       "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
       "and we're sorry for the hassle.  We would appreciate your reporting this bug --\n"
-      "please see %s for instructions.  In the meantime,\n"
-      "the filename + line number above may be useful in working around the issue.\n\n",
-      help_url);
+      "please see %s for instructions.%s\n\n", help_url,
+      (guess == -1) ? "" : "  In the meantime,\n"
+      "the filename + line number above may be useful in working around the issue.");
 
     //
     // and exit if it's fatal (isn't it always?)
@@ -854,9 +860,7 @@ static void vhandleError(const BaseAST* ast,
     // now the rest of this function will report the additional error
   }
 
-  bool guess = false;
-
-  guess = printErrorHeader(const_cast<BaseAST*>(ast), astloc);
+  int guess = printErrorHeader(const_cast<BaseAST*>(ast), astloc);
 
   //
   // Only print out the arguments if this is a user error or we're
