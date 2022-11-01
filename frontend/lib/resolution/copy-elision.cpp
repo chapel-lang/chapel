@@ -173,6 +173,9 @@ computeElidedCopies(Context* context,
                                        uv,
                                        byPostorder);
 
+  // Traverse formals and then the body. This is done here rather
+  // than in enter(Function) because nested functions will have
+  // computeElidedCopies called on them separately.
   if (auto fn = symbol->toFunction()) {
     // traverse formals and then traverse the body
     if (auto body = fn->body()) {

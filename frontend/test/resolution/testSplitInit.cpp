@@ -112,8 +112,7 @@ static void testSplitInit(const char* test,
     assert(varType.type() == IntType::get(context, 0));
   }
 
-  size_t errCount = guard.errors().size();
-  guard.realizeErrors();
+  size_t errCount = guard.realizeErrors();
   if (expectErrors) {
     assert(errCount > 0);
   } else {
@@ -614,7 +613,8 @@ static void test23() {
     )"""",
     {"x", "y"});
 }
-/*static void test24() {
+/* Uncomment these tests after we enough tuple support implemented
+static void test24() {
   testSplitInit("test24",
     R""""(
       module M {
@@ -764,7 +764,7 @@ static void test28() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test(ref arg: int) {
+        proc test() {
           var x:int;
           local {
             x = 52;
@@ -784,7 +784,7 @@ static void test29() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test(ref arg: int) {
+        proc test() {
           var x:int;
           serial {
             x = 52;
@@ -822,6 +822,161 @@ static void test30() {
     {"x", "y"}, ERRORS_EXPECTED);
 }
 
+/* Uncomment these tests after we have nested functions implemented
+static void test31() {
+  testSplitInit("test31",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int;
+          inner1();
+          x = 1;
+          proc inner1() {
+            x;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test32() {
+  testSplitInit("test32",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int;
+          proc inner1() {
+            x;
+          }
+          x = 1;
+          inner1();
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test33() {
+  testSplitInit("test33",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int;
+          inner1();
+          x;
+          proc inner1() {
+            x = 44;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test34() {
+  testSplitInit("test34",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int;
+          proc inner1() {
+            x = 44;
+          }
+          x;
+          inner1();
+        }
+      }
+    )"""",
+    {});
+}
+*/
+
+/* Uncomment these tests after we have return intent overloading implemented
+static void test35() {
+  testSplitInit("test35",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        var g: int;
+        proc f(out x: int) const ref { return g; }
+        proc f(    x: int)       ref { return g; }
+        proc test() {
+          var x;
+          f(x);
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test36() {
+  testSplitInit("test36",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        var g: int;
+        proc f(out x: int,     y: int) const ref { return g; }
+        proc f(    x: int, out y: int)       ref { return g; }
+        proc test() {
+          var x, y;
+          f(x, y);
+        }
+      }
+    )"""",
+    {});
+}
+*/
+
+static void test37() {
+  testSplitInit("test37",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(cond: bool) {
+          var x;
+          if cond then
+            return x;
+          x = 11;
+        }
+      }
+    )"""",
+    {});
+}
+
+
 int main() {
   test1();
   test2();
@@ -855,6 +1010,13 @@ int main() {
   test28();
   test29();
   test30();
+  //test31(); TODO
+  //test32(); TODO
+  //test33(); TODO
+  //test34(); TODO
+  //test35(); TODO
+  //test36(); TODO
+  test37();
 
   return 0;
 }

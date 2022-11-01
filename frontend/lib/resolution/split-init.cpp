@@ -56,7 +56,7 @@ struct SplitInitFrame {
   std::vector<std::pair<ID, QualifiedType>> initedVarsVec;
 
   // Which variables are mentioned in this scope before
-  // being mentioned, throwing or returning?
+  // being initialized, throwing or returning?
   std::set<ID> mentionedVars;
 
   // has the block already encountered a return?
@@ -348,6 +348,9 @@ void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
   // * split-init variables are initialized with the same type
   //   in the 'then' and 'else' blocks
   size_t size = splitInitedBothThenIds.size();
+  // these asserts should always be true because the 'both'
+  // set was computed first; and because the vectors are
+  // just the ordering for things in the set.
   assert(splitInitedBothElseIds.size() == size);
   assert(splitInitedBothThenTypes.size() == size);
   assert(splitInitedBothElseTypes.size() == size);
@@ -366,6 +369,25 @@ void FindSplitInits::handleExitConditional(const uast::Conditional* cond) {
   }
   // then, check the types
   if (orderOk) {
+    /* Why do we insist that the types match for split init?
+       Say we are resolving this:
+       {
+          var x;
+
+          if cond {
+            x = 5;
+            compilerWarning('in if branch, x.type is ' + x.type:string);
+          } else {
+            x = 12.0;
+            compilerWarning('in else branch, x.type is ' + x.type:string);
+          }
+        }
+
+        If it succeeds at compiling, the type of 'x' will seem to change
+        as it compiles. It's OK to be temporarily wrong about a type
+        like this if we are going to issue an error, but to do so
+        for correct code seems problematic.
+     */
     for (size_t i = 0; i < size; i++) {
       QualifiedType thenRhsType = splitInitedBothThenTypes[i];
       QualifiedType elseRhsType = splitInitedBothElseTypes[i];
@@ -487,8 +509,7 @@ void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
     if (auto cond = ast->toConditional()) {
       // process then/else blocks to merge into Conditional's frame
       handleExitConditional(cond);
-    }
-    if (auto t = ast->toTry()) {
+    } else if (auto t = ast->toTry()) {
       // process catch blocks to merge into Try's frame
       handleExitTry(t);
     }
@@ -514,12 +535,8 @@ void FindSplitInits::handleExitScope(const uast::AstNode* ast) {
         }
       }
       // propagate return/throw-ness
-      if (frame->returns) {
-        parent->returns = true;
-      }
-      if (frame->throws) {
-        parent->throws = true;
-      }
+      parent->returns |= frame->returns;
+      parent->throws |= frame->throws;
     }
   } else {
     // some kind of scope that does not allow split init
@@ -775,6 +792,9 @@ computeSplitInits(Context* context,
                                      uv,
                                      byPostorder);
 
+  // Traverse formals and then the body. This is done here rather
+  // than in enter(Function) because nested functions will have
+  // computeElidedCopies called on them separately.
   if (auto fn = symbol->toFunction()) {
     // traverse formals and then traverse the body
     if (auto body = fn->body()) {
@@ -850,11 +870,7 @@ computeOutFormals(Context* context,
   }
 
   for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
-    if (actualIsOut[actualIdx] == nFns) {
-      actualIsOut[actualIdx] = 1;
-    } else {
-      actualIsOut[actualIdx] = 0;
-    }
+    actualIsOut[actualIdx] = (actualIsOut[actualIdx] == nFns);
   }
 }
 
