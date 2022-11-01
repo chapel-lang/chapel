@@ -15,6 +15,8 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln("alignment        = ", D.alignment);
   writeln("first            = ", D.first);
   writeln("last             = ", D.last);
+  writeln("low              = ", D.low);
+  writeln("high             = ", D.high);
   writeln("dims()           = ", D.dims());
   writeln("dim(0)           = ", D.dim(0));
   writeln("dim(1)           = ", D.dim(1));
