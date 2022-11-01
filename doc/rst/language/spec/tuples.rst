@@ -1181,8 +1181,8 @@ in the two operand tuples. Otherwise, a compile-time error will result.
 
 .. _Predefined_Functions_and_Methods_on_Tuples:
 
-Predefined Functions and Methods on Tuples
-------------------------------------------
+Predefined Routines on Tuples
+-----------------------------
 
 .. function:: proc tuple.size param
 

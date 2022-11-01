@@ -961,8 +961,8 @@ numbers.
 
 .. _Predefined_Range_Functions:
 
-Predefined Methods on Ranges
-----------------------------
+Predefined Routines on Ranges
+-----------------------------
 
 .. _Range_Type_Accessors:
 

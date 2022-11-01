@@ -172,8 +172,8 @@ codepoint of the argument:
 
 .. _String_Methods:
 
-Predefined Methods on Strings
------------------------------
+Predefined Routines on Strings
+------------------------------
 
 The *string* type:
 

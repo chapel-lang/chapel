@@ -86,8 +86,8 @@ on :ref:`Error Handling <Chapter-Error_Handling>`.
 
 .. _Bytes_Methods:
 
-Predefined Methods on Bytes
----------------------------
+Predefined Routines on Bytes
+----------------------------
 
 The *bytes* type:
 
