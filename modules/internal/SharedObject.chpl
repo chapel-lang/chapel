@@ -926,7 +926,7 @@ module SharedObject {
 
         Otherwise it will return a :record:`~SharedObject.shared` t.
     */
-    inline operator :(const ref x: weakPointer, type t: shared class)
+    inline operator :(const ref x: weakPointer, type t: shared class) throws
       where isSubtype(_to_nonnil(x.chpl_t), t.chpl_t)
     {
         if x.chpl_p != nil {
@@ -956,24 +956,13 @@ module SharedObject {
 
     // ---------------- Other Operators ----------------
 
-    // /*
-    //     Assign one existing ``weakPointer`` to an other.
+    /*
+        Assign one existing ``weakPointer`` to an other.
 
-    //     Decrements the weak-reference count of the ``lhs`` pointer
-    // */
-    // inline operator =(ref lhs: weakPointer, rhs: weakPointer)
-    //   where !(isNonNilableClass(lhs) && isNilableClass(rhs))
-    // {
-    //   if rhs.chpl_pn != nil then rhs.chpl_pn!.incrementWeak();
-    //   const chpl_p_tmp = rhs.chpl_p;
-    //   const chpl_pn_tmp = rhs.chpl_pn;
-
-    //   lhs.doClear();
-    //   lhs.chpl_p = chpl_p_tmp;
-    //   lhs.chpl_pn = chpl_pn_tmp;
-    // }
-
+        Decrements the weak-reference count of the ``lhs`` pointer
+    */
     inline operator =(ref lhs: weakPointer, rhs: weakPointer)
+      where !(isNonNilableClass(lhs) && isNilableClass(rhs))
     {
       if rhs.chpl_pn != nil then rhs.chpl_pn!.incrementWeak();
       const chpl_p_tmp = rhs.chpl_p;
