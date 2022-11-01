@@ -28,6 +28,105 @@ namespace resolution {
 
 using namespace uast;
 
+template <typename ResolvedVisitorImpl>
+static bool resolvedVisitorEnterFor(ResolvedVisitorImpl& v,
+                                    const uast::For* loop) {
+  if (loop->isParam()) {
+    // Enter the param for-loop with the current resolution results, so that
+    // the user-defined visitor can choose to do something custom if it
+    // wants.
+    bool goInto = v.userVisitor().enter(loop, v);
+
+    if (goInto) {
+      const ResolvedExpression& rr = v.byAst(loop);
+      const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
+
+      const AstNode* iterand = loop->iterand();
+      iterand->traverse(v);
+
+      // TODO: Should there be some kind of function the UserVisitor can
+      // implement to observe a new iteration of the loop body?
+      for (auto loopBody : resolvedLoop->loopBodies()) {
+        ResolvedVisitorImpl loopVis(v.context(), loop,
+                                    v.userVisitor(), loopBody);
+
+        for (const AstNode* child : loop->children()) {
+          // Written to visit "all but the iterand" in case we add more
+          // fields/children to the For class later.
+          if (child != iterand) {
+            child->traverse(loopVis);
+          }
+        }
+      }
+    }
+
+    return false;
+  } else {
+    return v.userVisitor().enter(loop, v);
+  }
+}
+
+template <typename ResolvedVisitorImpl>
+static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
+                                    const uast::AstNode* ast) {
+  switch (ast->tag()) {
+    #define CASE_LEAF(NAME) \
+      case asttags::NAME: \
+      { \
+        const NAME* casted = (const NAME*) ast; \
+        v.userVisitor().enter(casted, v); \
+        assert(ast->numChildren() == 0); \
+        v.userVisitor().exit(casted, v); \
+        break; \
+      }
+
+    #define CASE_NODE(NAME) \
+      case asttags::NAME: \
+      { \
+        const NAME* casted = (const NAME*) ast; \
+        bool goInToIt = v.userVisitor().enter(casted, v); \
+        if (goInToIt) { \
+          for (const AstNode* child : ast->children()) { \
+            child->traverse(v); \
+          } \
+        } \
+        v.userVisitor().exit(casted, v); \
+        break; \
+      }
+
+    #define CASE_OTHER(NAME) \
+      case asttags::NAME: \
+      { \
+        assert(false && "this code should never be run"); \
+        break; \
+      }
+
+    #define AST_NODE(NAME) CASE_NODE(NAME)
+    #define AST_LEAF(NAME) CASE_LEAF(NAME)
+    #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
+    #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
+
+    // Apply the above macros to uast-classes-list.h
+    // to fill in the cases
+    #include "chpl/uast/uast-classes-list.h"
+    // and also for NUM_AST_TAGS
+    CASE_OTHER(NUM_AST_TAGS)
+    CASE_OTHER(AST_TAG_UNKNOWN)
+
+    // clear the macros
+    #undef AST_NODE
+    #undef AST_LEAF
+    #undef AST_BEGIN_SUBCLASSES
+    #undef AST_END_SUBCLASSES
+    #undef CASE_LEAF
+    #undef CASE_NODE
+    #undef CASE_OTHER
+  }
+
+  return false;
+
+}
+
 /**
   This class enables visiting resolved uAST nodes.
   It is a kind of adapter that converts untyped visiting (traversing uAST nodes
@@ -40,6 +139,7 @@ using namespace uast;
   */
 template <typename UV>
 class ResolvedVisitor {
+  using UserVisitorType = UV;
   Context* context_ = nullptr;
   const uast::AstNode* ast_ = nullptr;
   UV& userVisitor_;
@@ -112,101 +212,15 @@ public:
    * for-loop.
    */
   bool enter(const uast::For* loop) {
-    if (loop->isParam()) {
-      // Enter the param for-loop with the current resolution results, so that
-      // the user-defined visitor can choose to do something custom if it
-      // wants.
-      bool goInto = userVisitor_.enter(loop, *this);
-
-      if (goInto) {
-        const ResolvedExpression& rr = byPostorder_.byAst(loop);
-        const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
-
-        const AstNode* iterand = loop->iterand();
-        iterand->traverse(*this);
-
-        // TODO: Should there be some kind of function the UserVisitor can
-        // implement to observe a new iteration of the loop body?
-        for (auto loopBody : resolvedLoop->loopBodies()) {
-          ResolvedVisitor<UV> loopVis(context_, loop, userVisitor_, loopBody);
-
-          for (const AstNode* child : loop->children()) {
-            // Written to visit "all but the iterand" in case we add more
-            // fields/children to the For class later.
-            if (child != iterand) {
-              child->traverse(loopVis);
-            }
-          }
-        }
-      }
-
-      return false;
-    } else {
-      return userVisitor_.enter(loop, *this);
-    }
+    return resolvedVisitorEnterFor(*this, loop);
   }
-
   void exit(const uast::For* loop) {
     userVisitor_.exit(loop, *this);
   }
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast) {
-    switch (ast->tag()) {
-      #define CASE_LEAF(NAME) \
-        case asttags::NAME: \
-        { \
-          const NAME* casted = (const NAME*) ast; \
-          userVisitor_.enter(casted, *this); \
-          assert(ast->numChildren() == 0); \
-          userVisitor_.exit(casted, *this); \
-          break; \
-        }
-
-      #define CASE_NODE(NAME) \
-        case asttags::NAME: \
-        { \
-          const NAME* casted = (const NAME*) ast; \
-          bool goInToIt = userVisitor_.enter(casted, *this); \
-          if (goInToIt) { \
-            for (const AstNode* child : ast->children()) { \
-              child->traverse(*this); \
-            } \
-          } \
-          userVisitor_.exit(casted, *this); \
-          break; \
-        }
-
-      #define CASE_OTHER(NAME) \
-        case asttags::NAME: \
-        { \
-          assert(false && "this code should never be run"); \
-          break; \
-        }
-
-      #define AST_NODE(NAME) CASE_NODE(NAME)
-      #define AST_LEAF(NAME) CASE_LEAF(NAME)
-      #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
-      #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
-
-      // Apply the above macros to uast-classes-list.h
-      // to fill in the cases
-      #include "chpl/uast/uast-classes-list.h"
-      // and also for NUM_AST_TAGS
-      CASE_OTHER(NUM_AST_TAGS)
-      CASE_OTHER(AST_TAG_UNKNOWN)
-
-      // clear the macros
-      #undef AST_NODE
-      #undef AST_LEAF
-      #undef AST_BEGIN_SUBCLASSES
-      #undef AST_END_SUBCLASSES
-      #undef CASE_LEAF
-      #undef CASE_NODE
-      #undef CASE_OTHER
-    }
-
-    return false;
+    return resolvedVisitorEnterAst(*this, ast);
   }
   void exit(const uast::AstNode* ast) { };
 };
@@ -216,6 +230,7 @@ public:
  */
 template <typename UV>
 class MutatingResolvedVisitor {
+  using UserVisitorType = UV;
   Context* context_ = nullptr;
   const uast::AstNode* ast_ = nullptr;
   UV& userVisitor_;
@@ -288,38 +303,7 @@ public:
    * for-loop.
    */
   bool enter(const uast::For* loop) {
-    if (loop->isParam()) {
-      // Enter the param for-loop with the current resolution results, so that
-      // the user-defined visitor can choose to do something custom if it
-      // wants.
-      bool goInto = userVisitor_.enter(loop, *this);
-
-      if (goInto) {
-        ResolvedExpression& rr = byPostorder_.byAst(loop);
-        const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
-
-        const AstNode* iterand = loop->iterand();
-        iterand->traverse(*this);
-
-        // TODO: Should there be some kind of function the UserVisitor can
-        // implement to observe a new iteration of the loop body?
-        for (auto loopBody : resolvedLoop->loopBodies()) {
-          MutatingResolvedVisitor<UV> loopVis(context_, loop, userVisitor_, loopBody);
-
-          for (const AstNode* child : loop->children()) {
-            // Written to visit "all but the iterand" in case we add more
-            // fields/children to the For class later.
-            if (child != iterand) {
-              child->traverse(loopVis);
-            }
-          }
-        }
-      }
-
-      return false;
-    } else {
-      return userVisitor_.enter(loop, *this);
-    }
+    return resolvedVisitorEnterFor(*this, loop);
   }
 
   void exit(const uast::For* loop) {
@@ -328,61 +312,7 @@ public:
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast) {
-    switch (ast->tag()) {
-      #define CASE_LEAF(NAME) \
-        case asttags::NAME: \
-        { \
-          const NAME* casted = (const NAME*) ast; \
-          userVisitor_.enter(casted, *this); \
-          assert(ast->numChildren() == 0); \
-          userVisitor_.exit(casted, *this); \
-          break; \
-        }
-
-      #define CASE_NODE(NAME) \
-        case asttags::NAME: \
-        { \
-          const NAME* casted = (const NAME*) ast; \
-          bool goInToIt = userVisitor_.enter(casted, *this); \
-          if (goInToIt) { \
-            for (const AstNode* child : ast->children()) { \
-              child->traverse(*this); \
-            } \
-          } \
-          userVisitor_.exit(casted, *this); \
-          break; \
-        }
-
-      #define CASE_OTHER(NAME) \
-        case asttags::NAME: \
-        { \
-          assert(false && "this code should never be run"); \
-          break; \
-        }
-
-      #define AST_NODE(NAME) CASE_NODE(NAME)
-      #define AST_LEAF(NAME) CASE_LEAF(NAME)
-      #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
-      #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
-
-      // Apply the above macros to uast-classes-list.h
-      // to fill in the cases
-      #include "chpl/uast/uast-classes-list.h"
-      // and also for NUM_AST_TAGS
-      CASE_OTHER(NUM_AST_TAGS)
-      CASE_OTHER(AST_TAG_UNKNOWN)
-
-      // clear the macros
-      #undef AST_NODE
-      #undef AST_LEAF
-      #undef AST_BEGIN_SUBCLASSES
-      #undef AST_END_SUBCLASSES
-      #undef CASE_LEAF
-      #undef CASE_NODE
-      #undef CASE_OTHER
-    }
-
-    return false;
+    return resolvedVisitorEnterAst(*this, ast);
   }
   void exit(const uast::AstNode* ast) { };
 };
