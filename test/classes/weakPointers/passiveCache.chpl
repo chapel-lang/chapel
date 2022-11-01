@@ -6,7 +6,7 @@ use WeakPointer;
 use Barriers;
 
 class PassiveCache {
-    type dataType; // assuming this type has a an initializer that takes a string
+    type dataType; // assuming this type has a an initializer that takes an int
     var items: map(int, weakPointer(shared dataType));
     var lock$: ChapelLocks.chpl_LocalSpinlock;
 
@@ -25,15 +25,20 @@ class PassiveCache {
 
     proc getOrBuild(key: int) : shared dataType {
         lock(); defer unlock();
+
         if this.items.contains(key) {
+            // writeln("have weak: ", key);
             var weak_pointer = this.items.getValue(key);
             var maybe_strong = weak_pointer : shared dataType?;
             if maybe_strong != nil {
+                // writeln("\t upgraded: ", key);
                 return try! (maybe_strong : shared dataType);
             } else {
+                // writeln("\t reconstructing: ", key);
                 return this.buildAndSave(key);
             }
         } else {
+            // writeln("first time: ", key);
             return this.buildAndSave(key);
         }
     }
@@ -46,97 +51,49 @@ class PassiveCache {
     }
 }
 
-// class PersistentCache {
-//     type dataType;
-//     var items: map(int, shared dataType);
-
-//     proc init(type dt) {
-//         this.dataType = dt;
-//         this.items = new map(int, shared dt);
-//     }
-
-//     proc getOrBuild(key: int): shared dataType {
-//         if this.items.contains(key) {
-//            return this.items.getValue(key);
-//         } else {
-//             return this.buildAndSave(key);
-//         }
-//     }
-
-//     proc buildAndSave(key: int): shared dataType {
-//         const item = new shared dataType(key);
-//         this.items.add(key, item);
-//         return item;
-//     }
-// }
-
-class someDataType {
-    var i: int;
+class basicClass {
+    var x: int;
 }
 
-const num_cycles = 5;
-const num_task_ids = 25;
-const num_repeats = 10;
-
-config param verbose = false;
+config const num_cycles = 10;
+config const num_task_ids = 15;
 
 proc main() {
-    var pc = new PassiveCache(someDataType);
-
+    var pc = new PassiveCache(basicClass);
     var correct: atomic bool = true;
 
-    // // hold on to a shared reference to the 0th item the whole time;
-    // var shared_0 = pc.getOrBuild(0);
+    // hold on to an extra shared reference to the 0th for the whole test
+    var shared_0 = pc.getOrBuild(0);
 
-    // for i in 0..#num_cycles {
-    //     var tids: [0..<(num_task_ids+num_repeats)] int;
-    //     for id in 0..<num_task_ids do tids[id] = id;
-    //     for id in n+1..<(n+num_repeats) do tids[id] = i;
-    //     Random.shuffle(tids);
+    for i in 0..#num_cycles {
 
-    //     coforall tid in tids {
-    //         var x = pc.getOrBuild(tid);
+        // create 'num_task_ids' random numbers in the range 0..<num_task_ids
+        var task_ids : [0..<num_task_ids] uint;
+        Random.fillRandom(task_ids);
+        for tid in task_ids {
+            tid %= num_task_ids;
+        }
 
-    //         b.barrier();
-
-    //         var wpx = new weakPointer(x);
-
-    //         b.barrier();
-
-    //         correct.write(if i == tid then wpx.getStrongCount() == num_repeats else wxp.getStrongCount == 2);
-    //     }
-    // }
-
-    for (i, taskGroup) in [
-        (0, [0, 0, 1, 2, 3]),
-        (1, [0, 1, 1, 2, 3]),
-        (2, [0, 1, 2, 2, 3]),
-        (3, [0, 1, 2, 3, 3]),
-    ]
-    {
-        var b = new Barrier(taskGroup.size);
-        coforall tid in taskGroup {
-            var x = pc.getOrBuild(tid);
-
-            b.barrier(); // for repeated task ids, two new strong pointers should have been created by this point
-
-            var wpx = new weakPointer(x);
+        // concurrently construct or upgrade the 'basicClass' associated with each 'tid'
+        //  and ensure that the strong count is correct
+        var b = new Barrier(num_task_ids);
+        coforall tid in task_ids {
+            var shared_tid : shared basicClass = pc.getOrBuild(tid:int);
+            correct.write(correct.read() && shared_tid.x == tid);
 
             b.barrier();
 
-            const sc = wpx.getStrongCount();
-            const wc = wpx.getWeakCount();
+            const this_tid_count = + reduce (task_ids == tid);
+            const sc = shared_tid.chpl_pn!.strongCount.read();
+            // writeln(tid, "\tsc: ", sc, "\texpected: ", this_tid_count);
 
-            const sc_correct = (if i == tid then sc == 2 else sc == 1);
-            const wc_correct = (if i == tid then wc == 3 else wc == 2);
-
-            correct.write(correct.read() && sc_correct && wc_correct);
-
-            if verbose then writeln(tid, "\tsc:", sc, "\twc:", wc);
+            correct.write(
+                correct.read() &&
+                sc == this_tid_count + (if tid == 0 then 1 else 0)
+            );
 
             b.barrier();
         }
-        if verbose then writeln("----------------------------");
     }
 
     writeln(correct.read());

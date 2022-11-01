@@ -17,6 +17,7 @@
 	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
 	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
 	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
+	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
 	weak: '{x = 4}' 	type: 'weakPointer(shared basicClass)' 	sc: 4	 wc: 4
 	weak: '{x = 4}' 	type: 'weakPointer(shared basicClass)' 	sc: 4	 wc: 4
 	weak: '{x = 4}' 	type: 'weakPointer(shared basicClass)' 	sc: 4	 wc: 4

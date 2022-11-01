@@ -462,6 +462,13 @@ module SharedObject {
       }
     }
 
+    /*
+      Return a :record:`~WeakPointer.weakPointer` from to this object.
+    */
+    proc downgrade() {
+      return new WeakPointer.weakPointer(this);
+    }
+
     // = should call retain-release
     // copy-init should call retain
   }
@@ -791,6 +798,36 @@ module SharedObject {
         // ---------------- Other ----------------
 
         /*
+          Attempt to recover a shared object from this `weakPointer`
+
+          If the pointer is valid (i.e., at least one `shared` reference
+          to the data exists), a nilable `shared` object will be returned.
+
+          If the pointer is invalid (or the object itself is `nil`) then a
+          `nil` value will be returned.
+        */
+        proc upgrade(): this.chpl_t? {
+          if this.chpl_p != nil {
+            var sc = this.chpl_pn!.strongCount.read();
+            if sc == 0 {
+                return nil;
+            } else {
+                while !this.chpl_pn!.tryRetainWeek(sc) {
+                    if sc == 0 {
+                        return nil;
+                    }
+                }
+                var result: chpl_t?;
+                result.chpl_p = this.chpl_p;
+                result.chpl_pn = this.chpl_pn;
+                return result;
+            }
+          } else {
+              return nil;
+          }
+        }
+
+        /*
           When a ``weakPointer`` is deinitialized, the weak reference count is
           decremented.
 
@@ -851,6 +888,7 @@ module SharedObject {
         ``t``.
     */
     inline operator :(const ref x: weakPointer, type t: shared class?)
+      where isSubtype(_to_nonnil(x.chpl_t), _to_nonnil(t.chpl_t))
     {
         if x.chpl_p != nil {
             var sc = x.chpl_pn!.strongCount.read();
@@ -860,7 +898,7 @@ module SharedObject {
                 return nil;
             } else {
                 while !x.chpl_pn!.tryRetainWeek(sc) {
-                    sc = x.chpl_pn!.strongCount.read();
+                    // sc = x.chpl_pn!.strongCount.read();
                     // writeln("mismatched, got: ", sc);
                     if sc == 0 {
                         // the class value was deinitialized while this process
@@ -888,7 +926,8 @@ module SharedObject {
 
         Otherwise it will return a :record:`~SharedObject.shared` t.
     */
-    inline operator :(const ref x: weakPointer, type t: shared class) throws
+    inline operator :(const ref x: weakPointer, type t: shared class)
+      where isSubtype(_to_nonnil(x.chpl_t), t.chpl_t)
     {
         if x.chpl_p != nil {
             var sc = x.chpl_pn!.strongCount.read();
@@ -917,21 +956,32 @@ module SharedObject {
 
     // ---------------- Other Operators ----------------
 
-    /*
-        Assign one existing ``weakPointer`` to an other.
+    // /*
+    //     Assign one existing ``weakPointer`` to an other.
 
-        Decrements the weak-reference count of the ``lhs`` pointer
-    */
-    operator =(ref lhs: weakPointer, rhs: weakPointer)
-        where !(isNonNilableClass(lhs) && isNilableClass(rhs))
+    //     Decrements the weak-reference count of the ``lhs`` pointer
+    // */
+    // inline operator =(ref lhs: weakPointer, rhs: weakPointer)
+    //   where !(isNonNilableClass(lhs) && isNilableClass(rhs))
+    // {
+    //   if rhs.chpl_pn != nil then rhs.chpl_pn!.incrementWeak();
+    //   const chpl_p_tmp = rhs.chpl_p;
+    //   const chpl_pn_tmp = rhs.chpl_pn;
+
+    //   lhs.doClear();
+    //   lhs.chpl_p = chpl_p_tmp;
+    //   lhs.chpl_pn = chpl_pn_tmp;
+    // }
+
+    inline operator =(ref lhs: weakPointer, rhs: weakPointer)
     {
-        if rhs.chpl_pn != nil then rhs.chpl_pn!.incrementWeak();
-        const chpl_p_tmp = rhs.chpl_p;
-        const chpl_pn_tmp = rhs.chpl_pn;
+      if rhs.chpl_pn != nil then rhs.chpl_pn!.incrementWeak();
+      const chpl_p_tmp = rhs.chpl_p;
+      const chpl_pn_tmp = rhs.chpl_pn;
 
-        lhs.doClear();
-        lhs.chpl_p = chpl_p_tmp;
-        lhs.chpl_pn = chpl_pn_tmp;
+      lhs.doClear();
+      lhs.chpl_p = chpl_p_tmp;
+      lhs.chpl_pn = chpl_pn_tmp;
     }
 
     proc weakPointer.writeThis(ch) throws {
