@@ -133,6 +133,8 @@ proc main() {
             correct.write(correct.read() && sc_correct && wc_correct);
 
             if verbose then writeln(tid, "\tsc:", sc, "\twc:", wc);
+
+            b.barrier();
         }
         if verbose then writeln("----------------------------");
     }

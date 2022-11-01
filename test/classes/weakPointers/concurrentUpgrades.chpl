@@ -58,6 +58,8 @@ config param verbose = false;
                 correct.write(correct.read() && sc == 2);
             }
             correct.write(correct.read() && wc == 1);
+
+            b.barrier();
         }
         if verbose then writeln("-------------------------------");
     }
@@ -84,13 +86,14 @@ config param verbose = false;
         // create task ids with the ith id duplicated 10 times
         var tids: [0..<(n+10)] int;
         for id in 0..<n do tids[id] = id;
-        for id in n+1..<(n+10) do tids[id] = i;
+        for id in n..<(n+10) do tids[id] = i;
 
         // iterate over them concurrently in a random order
         Random.shuffle(tids);
         var b = new Barrier(n+10);
 
         coforall tid in tids {
+            // upgrade
             var sp = nWeakPointers[tid] : shared basicClass?;
 
             b.barrier();
@@ -102,17 +105,20 @@ config param verbose = false;
 
             const sc = nWeakPointers[tid].getStrongCount();
             const wc = nWeakPointers[tid].getWeakCount();
-
             if verbose then writeln(tid, "\tsc:", sc, "\twc:", wc);
 
             if i == tid {
-                reallyCorrect.write(reallyCorrect.read() && sc == 11);
+                reallyCorrect.write(reallyCorrect.read() && sc == 12);
+                reallyCorrect.write(reallyCorrect.read() && wc == 12);
             } else {
                 reallyCorrect.write(reallyCorrect.read() && sc == 2);
+                reallyCorrect.write(reallyCorrect.read() && wc == 2);
             }
-            reallyCorrect.write(reallyCorrect.read() && wc == 12);
+
+            b.barrier();
         }
         if verbose then writeln("-------------------------------");
+        if !reallyCorrect.read() then break;
     }
 
     writeln(reallyCorrect.read());
