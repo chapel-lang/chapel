@@ -17,7 +17,7 @@ Methods Available in Standard Modules
 
 Besides the functions below, some other modules provide routines that are
 useful for working with strings. The :mod:`IO` module provides
-``IO.string.format`` which creates a string that is the result of
+:proc:`~FormattedIO.string.format` which creates a string that is the result of
 formatting. It also includes functions for reading and writing strings.
 The :mod:`Regex` module also provides some routines for searching
 within strings.
@@ -172,8 +172,8 @@ codepoint of the argument:
 
 .. _String_Methods:
 
-String Methods
---------------
+Predefined Methods on Strings
+-----------------------------
 
 The *string* type:
 
