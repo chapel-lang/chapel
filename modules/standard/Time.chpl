@@ -505,7 +505,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Writes this `date` in ISO 8601 format: YYYY-MM-DD */
   proc date.writeThis(f) throws {
-    f._write(isoFormat());
+    f.write(isoFormat());
   }
 
   // Exists to support some common functionality for `datetime.readThis`
@@ -806,7 +806,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Writes this `time` in ISO format: hh:mm:ss.sss */
   proc time.writeThis(f) throws {
-    f._write(isoFormat());
+    f.write(isoFormat());
   }
 
   // Exists to support some common functionality for `datetime.readThis`
@@ -1418,7 +1418,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Writes this `datetime` in ISO format: YYYY-MM-DDThh:mm:ss.sss */
   proc datetime.writeThis(f) throws {
-    f._write(isoFormat());
+    f.write(isoFormat());
   }
 
   /* Reads this `datetime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */

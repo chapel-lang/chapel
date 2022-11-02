@@ -611,9 +611,9 @@ module Map {
           ref tabEntry = table.table[slot];
           ref key = tabEntry.key;
           ref val = tabEntry.val;
-          if ch.writing then ch._write(key); else key = ch.read(key.type);
+          if ch.writing then ch.write(key); else key = ch.read(key.type);
           rwLiteral(": ");
-          if ch.writing then ch._write(val); else val = ch.read(val.type);
+          if ch.writing then ch.write(val); else val = ch.read(val.type);
         }
       }
       rwLiteral("}");

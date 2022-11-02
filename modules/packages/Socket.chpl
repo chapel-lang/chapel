@@ -236,7 +236,7 @@ inline operator ==(const ref lhs: ipAddr, const ref rhs: ipAddr) {
 
 pragma "no doc"
 proc ipAddr.writeThis(f) throws {
-  f._write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
+  f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
 }
 
 /*
@@ -324,7 +324,7 @@ inline operator ==(const ref lhs: tcpConn,const ref rhs: tcpConn) {
 
 pragma "no doc"
 proc tcpConn.writeThis(f) throws {
-  f._write("(","addr:",this.addr,",fd:",this.socketFd,")");
+  f.write("(","addr:",this.addr,",fd:",this.socketFd,")");
 }
 
 pragma "no doc"
@@ -776,7 +776,7 @@ inline operator ==(const ref lhs: tcpListener,const ref rhs: tcpListener) {
 
 pragma "no doc"
 proc tcpListener.writeThis(f) throws {
-  f._write("(","addr:",this.addr,",fd:",this.socketFd);
+  f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
 pragma "no doc"
@@ -1226,7 +1226,7 @@ inline operator ==(const ref lhs: udpSocket,const ref rhs: udpSocket) {
 
 pragma "no doc"
 proc udpSocket.writeThis(f) throws {
-  f._write("(","addr:",this.addr,",fd:",this.socketFd);
+  f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
 

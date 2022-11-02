@@ -383,7 +383,7 @@ proc copyFile(src: string, dest: string) throws {
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
   while (try srcChnl.readbytes(buf, len=4096)) {
-    try destChnl._write(buf);
+    try destChnl.write(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd

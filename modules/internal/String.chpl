@@ -87,7 +87,7 @@ module String {
     proc init=(i: int) { _bindex = i; }
 
     proc writeThis(f) throws {
-      f._write(_bindex);
+      f.write(_bindex);
     }
 
     operator :(val: byteIndex, type t:string) {
@@ -110,7 +110,7 @@ module String {
     proc init=(cpi: codepointIndex) { _cpindex = cpi._cpindex; }
 
     proc writeThis(f) throws {
-      f._write(_cpindex);
+      f.write(_cpindex);
     }
 
     operator :(val: codepointIndex, type t:string) {

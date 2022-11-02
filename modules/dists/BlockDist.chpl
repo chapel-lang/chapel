@@ -642,14 +642,14 @@ override proc Block.dsiNewSparseDom(param rank: int, type idxType,
 // output distribution
 //
 proc Block.writeThis(x) throws {
-  x._writeln("Block");
-  x._writeln("-------");
-  x._writeln("distributes: ", boundingBox);
-  x._writeln("across locales: ", targetLocales);
-  x._writeln("indexed via: ", targetLocDom);
-  x._writeln("resulting in: ");
+  x.writeln("Block");
+  x.writeln("-------");
+  x.writeln("distributes: ", boundingBox);
+  x.writeln("across locales: ", targetLocales);
+  x.writeln("indexed via: ", targetLocDom);
+  x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x._writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
       " owns chunk: ", locDist(locid).myChunk);
 }
 
@@ -944,7 +944,7 @@ proc BlockDom.dsiDims()        return whole.dims();
 proc BlockDom.dsiGetIndices()  return whole.getIndices();
 proc BlockDom.dsiMember(i)     return whole.contains(i);
 proc BlockDom.doiToString()    return whole:string;
-proc BlockDom.dsiSerialWrite(x) { x._write(whole); }
+proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist()                   return dist;
