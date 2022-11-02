@@ -37,7 +37,7 @@
 //       (for types and params)
 // - [ ] "cannot take a reference to 'this' before this.complete()"
 // - [ ] "cannot initialize a variable from 'this' before this.complete()"
-// - [ ] "cannot pass 'this' to a funciton before calling super.init() "
+// - [ ] "cannot pass 'this' to a function before calling super.init() "
 //       "or this.init()"
 // - [ ] "cannot pass a record to a function before this.complete()"
 //
@@ -224,7 +224,7 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
   return ret;
 }
 
-// TODO: Identifiy cases where we don't need to do anything.
+// TODO: Identify cases where we don't need to do anything.
 const TypedFnSignature* InitResolver::finalize(void) {
   if (fn_ == nullptr) assert(false && "Not handled yet!");
 
