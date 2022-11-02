@@ -59,6 +59,7 @@ struct Resolver {
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
+  std::set<ID> splitInitTypeInferredVariables;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopeComputed = false;
   const Scope* savedReceiverScope = nullptr;
@@ -286,6 +287,23 @@ struct Resolver {
                                     const uast::AstNode* astForErr,
                                     const CallInfo& ci,
                                     const CallResolutionResult& c);
+
+  // If the variable with the passed ID has unknown or generic type,
+  // and it has not yet been initialized, set its type to rhsType.
+  // Also sets lhsExprAst to have this new type.
+  void adjustTypesForSplitInit(ID id,
+                               const types::QualifiedType& rhsType,
+                               const uast::AstNode* lhsExprAst,
+                               const uast::AstNode* astForErr);
+
+  // handles setting types of variables for split init with '='
+  void adjustTypesOnAssign(const uast::AstNode* lhsAst,
+                           const uast::AstNode* rhsAst);
+
+  // handles setting types of variables for split init with 'out' formals
+  void adjustTypesForOutFormals(const CallInfo& ci,
+                                const std::vector<const uast::AstNode*>& asts,
+                                const MostSpecificCandidates& fns);
 
   // e.g. (a, b) = mytuple
   // checks that tuple size matches and that the elements are assignable

@@ -19,7 +19,9 @@ target_sources(libdyno-obj
                PRIVATE
 
                Resolver.cpp
+               call-init-deinit.cpp
                can-pass.cpp
+               copy-elision.cpp
                default-functions.cpp
                disambiguation.cpp
                InitResolver.cpp
@@ -29,5 +31,6 @@ target_sources(libdyno-obj
                resolution-types.cpp
                scope-queries.cpp
                scope-types.cpp
+               split-init.cpp
 
               )

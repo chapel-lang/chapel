@@ -19,16 +19,18 @@
 
 #include "Resolver.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/disambiguation.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/split-init.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+
 #include "InitResolver.h"
 
 #include <cstdio>
@@ -547,7 +549,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       auto sig = typeConstructorInitial(context, baseCt);
 
       // Generate a simple CallInfo for the call
-      auto callInfo = CallInfo(call);
+      auto callInfo = CallInfo::createSimple(call);
       // generate a FormalActualMap
       auto faMap = FormalActualMap(sig, callInfo);
 
@@ -917,14 +919,6 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       typePtr = qt.type();
       paramPtr = qt.param();
     }
-
-    // TODO: handle split init
-
-    if (typePtr == nullptr) {
-      context->error(var, "Cannot establish type for %s",
-                           var->name().c_str());
-      typePtr = ErroneousType::get(context);
-    }
   }
 
   if (typePtr == nullptr) {
@@ -932,9 +926,9 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         qtKind == QualifiedType::MODULE) {
       // OK, type can be null for now
     } else {
-      // type should have been established above
-      context->error(decl, "Cannot establish type");
-      typePtr = ErroneousType::get(context);
+      // typePtr should not be null; it should use UnknownType instead.
+      // it can be UnknownType for a variable that is split inited.
+      typePtr = UnknownType::get(context);
     }
   }
 
@@ -986,10 +980,13 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
     // if the call resolution result is empty, we need to issue an error
     if (c.mostSpecific().isAmbiguous()) {
       // ambiguity between candidates
-      context->error(astForErr, "Cannot resolve call: ambiguity");
+      context->error(astForErr, "Cannot resolve call to '%s': ambiguity",
+                     ci.name().c_str());
     } else {
       // could not find a most specific candidate
-      context->error(astForErr, "Cannot resolve call: no matching candidates");
+      context->error(astForErr,
+                     "Cannot resolve call to '%s': no matching candidates",
+                     ci.name().c_str());
     }
   } else {
     context->error(astForErr, "Cannot establish type for call expression");
@@ -1034,7 +1031,121 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
   }
 }
 
+void Resolver::adjustTypesForSplitInit(ID id,
+                                       const QualifiedType& rhsType,
+                                       const AstNode* lhsExprAst,
+                                       const AstNode* astForError) {
+  if (id.isEmpty()) {
+    return;
+  }
 
+  // what variable does the LHS refer to? is it within the purvue of this
+  // Resolver?
+  bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
+                         id.postOrderId() >= 0);
+
+  // if the the lhs variable has not been initialized and
+  // the type of LHS is generic or unknown, update it based on the RHS type.
+
+  if (!useLocalResult) {
+    return;
+  }
+
+  ResolvedExpression& lhs = byPostorder.byId(id);
+  QualifiedType lhsType = lhs.type();
+
+  // check to see if it is generic/unknown
+  // (otherwise we do not need to infer anything)
+  auto g = Type::MAYBE_GENERIC;
+  if (lhsType.isUnknownKindOrType()) {
+     // includes nullptr type, UnknownType, and param with unknown value
+     g = Type::GENERIC;
+  } else {
+    assert(lhsType.type()); // should not be nullptr b/c of isUnknownKindOrType
+    g = getTypeGenericity(context, lhsType.type());
+  }
+
+  // return if there's nothing to do
+  if (g != Type::GENERIC) {
+    return;
+  }
+
+  const Param* p = rhsType.param();
+  if (lhsType.kind() != QualifiedType::PARAM) {
+    p = nullptr;
+  }
+  auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
+
+  // set the type for the 1st split init only
+  // a later traversal will check the type of subsequent split inits
+  // (in the other branch of a conditional, say)
+  auto pair = splitInitTypeInferredVariables.insert(id);
+  if (pair.second) {
+    // insertion took place, so update the type
+    lhs.setType(useType);
+
+    if (lhsExprAst != nullptr) {
+      ResolvedExpression& lhsExpr = byPostorder.byAst(lhsExprAst);
+      lhsExpr.setType(useType);
+    }
+  } else {
+    // insertion did not take place, so check that the type matches exactly,
+    // and issue an error if not.
+    // (we cannot unify the types for split init without causing resolution
+    //  to either go out of order or to produce results that change within
+    //  a function even when there are no errors).
+
+    if (lhsType != useType) {
+      context->error(astForError, "split-init type does not match");
+    }
+  }
+}
+
+// handle adjusting a variable's type to support split init
+void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
+                                   const AstNode* rhsAst) {
+
+  ResolvedExpression& lhsExpr = byPostorder.byAst(lhsAst);
+
+  ID id = lhsExpr.toId();
+  if (id.isEmpty()) {
+    return;
+  }
+
+  QualifiedType rhsType = byPostorder.byAst(rhsAst).type();
+
+  adjustTypesForSplitInit(id, rhsType, lhsAst, rhsAst);
+}
+
+// Update a variable's type if it is generic/unknown
+// and the variable is initialized by an 'out' formal
+void
+Resolver::adjustTypesForOutFormals(const CallInfo& ci,
+                                   const std::vector<const AstNode*>& asts,
+                                   const MostSpecificCandidates& fns) {
+
+  std::vector<QualifiedType> actualFormalTypes;
+  std::vector<int8_t> actualIdxToOut;
+  computeOutFormals(context, fns, ci, asts,
+                    actualIdxToOut, actualFormalTypes);
+
+  int actualIdx = 0;
+  for (auto actual : ci.actuals()) {
+    (void) actual; // avoid compilation error about unused variable
+
+    // find an actual referring to an ID that is passed to an 'out' formal
+    ID id;
+    const AstNode* actualAst = asts[actualIdx];
+    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
+      id = byPostorder.byAst(actualAst).toId();
+    }
+    if (actualIdxToOut[actualIdx] && !id.isEmpty()) {
+      QualifiedType formalType = actualFormalTypes[actualIdx];
+      adjustTypesForSplitInit(id, formalType, actualAst, actualAst);
+    }
+    actualIdx++;
+  }
+}
 
 void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
                                         const uast::AstNode* astForErr,
@@ -1292,6 +1403,9 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
                                  lhsTuple, lhsType, rhsType);
         return true;
       }
+
+      // Update a generic/unknown type when split-init is used.
+      adjustTypesOnAssign(op->actual(0), op->actual(1));
     }
   } else if (op->op() == USTR("...")) {
     // just leave it unknown -- tuple expansion only makes sense
@@ -1834,9 +1948,8 @@ void Resolver::exit(const MultiDecl* decl) {
     const Type* t = nullptr;
     if (typeExpr == nullptr && initExpr == nullptr) {
       if (lastType == nullptr) {
-        // TODO: allow this when we allow split init
-        context->error(d, "invalid multiple declaration");
-        t = ErroneousType::get(context);
+        // this could be split init
+        t = UnknownType::get(context);
       } else {
         t = lastType;
       }
@@ -2036,152 +2149,10 @@ bool Resolver::enter(const Call* call) {
 void Resolver::prepareCallInfoActuals(const Call* call,
                                       std::vector<CallInfoActual>& actuals,
                                       const AstNode*& questionArg) {
-  const FnCall* fnCall = call->toFnCall();
-
-  // Prepare the actuals of the call.
-  for (int i = 0; i < call->numActuals(); i++) {
-    auto actual = call->actual(i);
-
-    if (isQuestionMark(actual)) {
-      if (questionArg == nullptr) {
-        questionArg = actual;
-      } else {
-        CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
-        // Keep questionArg pointing at the first question argument we found
-      }
-    } else {
-      ResolvedExpression& r = byPostorder.byAst(actual);
-      QualifiedType actualType = r.type();
-      UniqueString byName;
-      if (fnCall && fnCall->isNamedActual(i)) {
-        byName = fnCall->actualName(i);
-      }
-
-      bool handled = false;
-      if (auto op = actual->toOpCall()) {
-        if (op->op() == USTR("...")) {
-          if (op->numActuals() != 1) {
-            context->error(op, "tuple expansion can only accept one argument");
-            actualType = QualifiedType(QualifiedType::VAR,
-                                       ErroneousType::get(context));
-          } else {
-            ResolvedExpression& rr = byPostorder.byAst(op->actual(0));
-            actualType = rr.type();
-          }
-
-          // handle tuple expansion
-          if (!actualType.hasTypePtr() ||
-              actualType.type()->isUnknownType()) {
-            // leave the result unknown
-            actualType = QualifiedType(QualifiedType::VAR,
-                                       UnknownType::get(context));
-          } else if (actualType.type()->isErroneousType()) {
-            // let it stay erroneous type
-          } else if (!actualType.type()->isTupleType()) {
-            CHPL_REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
-            actualType = QualifiedType(QualifiedType::VAR,
-                                       ErroneousType::get(context));
-          } else {
-            if (!byName.isEmpty()) {
-              CHPL_REPORT(context, TupleExpansionNamedArgs, op, fnCall);
-            }
-
-            auto tupleType = actualType.type()->toTupleType();
-            int n = tupleType->numElements();
-            for (int i = 0; i < n; i++) {
-              tupleType->elementType(i);
-              // intentionally use the empty name (to ignore it if it was
-              // set and we issued an error above)
-              actuals.push_back(CallInfoActual(tupleType->elementType(i),
-                                               UniqueString()));
-            }
-            handled = true;
-          }
-        }
-      }
-
-      if (!handled) {
-        actuals.push_back(CallInfoActual(actualType, byName));
-      }
-    }
-  }
-}
-
-CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
-
-  // TODO should we move this to a class method that takes in the
-  // context and call?
-  // Pieces of the CallInfo we need to prepare.
-  UniqueString name;
-  QualifiedType calledType;
-  bool isMethodCall = false;
-  const AstNode* questionArg = nullptr;
-  std::vector<CallInfoActual> actuals;
-
-  // Get the name of the called expression.
-  if (auto op = call->toOpCall()) {
-    name = op->op();
-  } else if (auto called = call->calledExpression()) {
-    if (auto calledIdent = called->toIdentifier()) {
-      name = calledIdent->name();
-    } else if (auto calledDot = called->toDot()) {
-      name = calledDot->field();
-    } else {
-      assert(false && "Unexpected called expression");
-    }
-  }
-
-  // Check for method call, maybe construct a receiver.
-  if (!call->isOpCall()) {
-    if (auto called = call->calledExpression()) {
-      if (auto calledDot = called->toDot()) {
-
-        const AstNode* receiver = calledDot->receiver();
-        ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
-        const QualifiedType& qtReceiver = reReceiver.type();
-
-        // Check to make sure the receiver is a value or type.
-        if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
-            qtReceiver.kind() != QualifiedType::FUNCTION &&
-            qtReceiver.kind() != QualifiedType::MODULE) {
-
-          actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
-          calledType = qtReceiver;
-          isMethodCall = true;
-        }
-      }
-    }
-  }
-
-  // Get the type of the called expression.
-  if (isMethodCall == false) {
-    if (auto calledExpr = call->calledExpression()) {
-      ResolvedExpression& r = byPostorder.byAst(calledExpr);
-      calledType = r.type();
-
-      if (calledType.kind() != QualifiedType::UNKNOWN &&
-          calledType.kind() != QualifiedType::TYPE &&
-          calledType.kind() != QualifiedType::FUNCTION) {
-        // If e.g. x is a value (and not a function)
-        // then x(0) translates to x.this(0)
-        name = USTR("this");
-        // add the 'this' argument as well
-        isMethodCall = true;
-        actuals.push_back(CallInfoActual(calledType, USTR("this")));
-        // and reset calledType
-        calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
-      }
-    }
-  }
-
-  // Prepare the remaining actuals.
-  prepareCallInfoActuals(call, actuals, questionArg);
-
-  auto ret = CallInfo(name, calledType, isMethodCall,
-                      /* hasQuestionArg */ questionArg != nullptr,
-                      /* isParenless */ false, actuals);
-
-  return ret;
+  CallInfo::prepareActuals(context, call, byPostorder,
+                           /* raiseErrors */ true,
+                           actuals, questionArg,
+                           /* actualAsts */ nullptr);
 }
 
 QualifiedType Resolver::typeForTypeOperator(const OpCall* op,
@@ -2234,37 +2205,62 @@ void Resolver::exit(const Call* call) {
     return;
   }
 
-  auto ci = prepareCallInfoNormalCall(call);
+  std::vector<const uast::AstNode*> actualAsts;
+  auto ci = CallInfo::create(context, call, byPostorder,
+                             /* raiseErrors */ true,
+                             &actualAsts);
 
-  // Don't try to resolve a call other than type construction that accepts:
+  // With two exceptions (see below), don't try to resolve a call that accepts:
   //  * an unknown param
   //  * a type that is a generic type unless there are substitutions
   //  * a value of generic type
   //  * UnknownType, ErroneousType
+  // EXCEPT, to handle split-init with an 'out' formal,
+  // the actual argument can have unknown / generic type if it
+  // refers directly to a particular variable.
+  // EXCEPT, type construction can work with unknown or generic types
+
   bool skip = false;
   if (!ci.calledType().isType()) {
+    int actualIdx = 0;
     for (auto actual : ci.actuals()) {
+      ID toId; // does the actual refer directly to a particular variable?
+      const AstNode* actualAst = actualAsts[actualIdx];
+      if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
+        toId = byPostorder.byAst(actualAst).toId();
+      }
       QualifiedType qt = actual.type();
-      if (qt.isParam() && qt.param() == nullptr) {
+      const Type* t = qt.type();
+      if (t != nullptr && t->isErroneousType()) {
+        // always skip if there is an ErroneousType
         skip = true;
-      } else if (qt.isUnknown()) {
-        skip = true;
-      } else if (const Type* t = qt.type()) {
-        auto g = getTypeGenericity(context, t);
-        bool isBuiltinGeneric = (g == Type::GENERIC &&
-                                 (t->isAnyType() || t->isBuiltinType()));
-        if (qt.isType() && isBuiltinGeneric && substitutions == nullptr) {
+      } else if (!toId.isEmpty()) {
+        // don't skip because it could be initialized with 'out' intent
+      } else {
+        if (qt.isParam() && qt.param() == nullptr) {
           skip = true;
-        } else if (t->isErroneousType()) {
+        } else if (qt.isUnknown()) {
           skip = true;
-        } else if (!qt.isType() && g != Type::CONCRETE) {
-          skip = true;
+        } else if (t != nullptr) {
+          auto g = getTypeGenericity(context, t);
+          bool isBuiltinGeneric = (g == Type::GENERIC &&
+                                   (t->isAnyType() || t->isBuiltinType()));
+          if (qt.isType() && isBuiltinGeneric && substitutions == nullptr) {
+            skip = true;
+          } else if (!qt.isType() && g != Type::CONCRETE) {
+            skip = true;
+          }
         }
       }
       if (skip) {
         break;
       }
+      actualIdx++;
     }
+  }
+  // Don't try to resolve calls to '=' until later
+  if (ci.isOpCall() && ci.name() == USTR("=")) {
+    skip = true;
   }
 
   if (!skip) {
@@ -2273,6 +2269,9 @@ void Resolver::exit(const Call* call) {
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
     handleResolvedCall(r, call, ci, c);
+
+    // handle type inference for variables split-inited by 'out' formals
+    adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
   }
 
   inLeafCall = nullptr;
