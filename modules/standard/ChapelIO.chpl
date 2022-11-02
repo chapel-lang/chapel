@@ -721,7 +721,7 @@ module ChapelIO {
   // documented in the arguments version.
   pragma "no doc"
   proc writeln() {
-    try! stdout._writeln();
+    try! stdout.writeln();
   }
 
  /* Equivalent to ``try! stdout.writef``. See

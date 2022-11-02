@@ -54,7 +54,7 @@ proc masonSystem(args: [] string) {
     }
   }
   catch e: MasonError { // likely pkg-config wasn't found on system
-    stderr._writeln(e.message());
+    stderr.writeln(e.message());
     exit(1);
   }
 }
@@ -161,11 +161,11 @@ proc printPkgPc(args) throws {
     }
   }
   catch e: FileNotFoundError {
-    stderr._writeln("Package exists but Mason could not find it's .pc file");
+    stderr.writeln("Package exists but Mason could not find it's .pc file");
     exit(1);
   }
   catch e: MasonError {
-    stderr._writeln(e.message());
+    stderr.writeln(e.message());
     exit(1);
   }
 }
@@ -247,7 +247,7 @@ proc getPCDeps(exDeps: Toml) {
       }
     }
     catch e: MasonError {
-      stderr._writeln(e.message());
+      stderr.writeln(e.message());
       exit(1);
     }
   }
