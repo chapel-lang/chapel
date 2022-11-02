@@ -241,7 +241,7 @@ if [ ! -z "$PREFIX" ]
 then
   myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpl "$PREFIX/bin"
 else
-  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpl "$DEST_DIR/$tmp_bin_dir"
+  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpl "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"
 fi
 
 # copy runtime lib
@@ -363,7 +363,7 @@ if [ ! -z "$PREFIX" ]
 then
   myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$PREFIX/bin"
 else
-  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$DEST_DIR/$tmp_bin_dir"
+  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"
 fi
 
 # copy chplconfig
