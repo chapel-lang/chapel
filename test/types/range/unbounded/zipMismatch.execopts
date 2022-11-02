@@ -1,0 +1,3 @@
+--case=1
+--case=2  # zipMismatch-case2.good
+--case=3  # zipMismatch-case3.good
