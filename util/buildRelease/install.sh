@@ -349,7 +349,7 @@ fi
 # create symlink for chpldoc-legacy
 if [ -f "bin/$CHPL_BIN_SUBDIR/chpldoc" ]
 then
-  # create a symbolic link for chpldoc-legacy
+  # Choose destination depending on installation mode {prefix, home}
   if [ ! -z "$PREFIX" ]
   then
     (cd "$PREFIX/bin" && rm -f chpldoc-legacy && ln -s chpl chpldoc-legacy)
