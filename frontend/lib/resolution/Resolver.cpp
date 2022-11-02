@@ -27,11 +27,11 @@
 #include "chpl/resolution/intents.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
-#include "chpl/resolution/split-init.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
 #include "InitResolver.h"
+#include "VarScopeVisitor.h"
 
 #include <cstdio>
 #include <set>
@@ -1125,9 +1125,9 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
                                    const MostSpecificCandidates& fns) {
 
   std::vector<QualifiedType> actualFormalTypes;
-  std::vector<int8_t> actualIdxToOut;
-  computeOutFormals(context, fns, ci, asts,
-                    actualIdxToOut, actualFormalTypes);
+  std::vector<IntentList> actualIntents;
+  computeActualFormalIntents(context, fns, ci, asts,
+                             actualIntents, actualFormalTypes);
 
   int actualIdx = 0;
   for (auto actual : ci.actuals()) {
@@ -1139,7 +1139,7 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
     if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
       id = byPostorder.byAst(actualAst).toId();
     }
-    if (actualIdxToOut[actualIdx] && !id.isEmpty()) {
+    if (actualIntents[actualIdx] == IntentList::OUT && !id.isEmpty()) {
       QualifiedType formalType = actualFormalTypes[actualIdx];
       adjustTypesForSplitInit(id, formalType, actualAst, actualAst);
     }
