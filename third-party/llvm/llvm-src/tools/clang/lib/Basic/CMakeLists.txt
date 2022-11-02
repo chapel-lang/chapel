@@ -54,6 +54,7 @@ add_clang_library(clangBasic
   IdentifierTable.cpp
   LangOptions.cpp
   LangStandards.cpp
+  MakeSupport.cpp
   Module.cpp
   ObjCRuntime.cpp
   OpenCLOptions.cpp
@@ -63,6 +64,7 @@ add_clang_library(clangBasic
   NoSanitizeList.cpp
   SanitizerSpecialCaseList.cpp
   Sanitizers.cpp
+  Sarif.cpp
   SourceLocation.cpp
   SourceManager.cpp
   Stack.cpp
@@ -75,6 +77,8 @@ add_clang_library(clangBasic
   Targets/ARM.cpp
   Targets/AVR.cpp
   Targets/BPF.cpp
+  Targets/CSKY.cpp
+  Targets/DirectX.cpp
   Targets/Hexagon.cpp
   Targets/Lanai.cpp
   Targets/Le64.cpp

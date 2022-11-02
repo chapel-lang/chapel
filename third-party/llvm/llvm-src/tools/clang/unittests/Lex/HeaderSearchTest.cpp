@@ -186,6 +186,30 @@ TEST_F(HeaderSearchTest, NestedFramework) {
             "Sub/Sub.h");
 }
 
+TEST_F(HeaderSearchTest, HeaderFrameworkLookup) {
+  std::string HeaderPath = "/tmp/Frameworks/Foo.framework/Headers/Foo.h";
+  addSystemFrameworkSearchDir("/tmp/Frameworks");
+  VFS->addFile(
+      HeaderPath, 0, llvm::MemoryBuffer::getMemBufferCopy("", HeaderPath),
+      /*User=*/None, /*Group=*/None, llvm::sys::fs::file_type::regular_file);
+
+  bool IsFrameworkFound = false;
+  auto FoundFile = Search.LookupFile(
+      "Foo/Foo.h", SourceLocation(), /*isAngled=*/true, /*FromDir=*/nullptr,
+      /*CurDir=*/nullptr, /*Includers=*/{}, /*SearchPath=*/nullptr,
+      /*RelativePath=*/nullptr, /*RequestingModule=*/nullptr,
+      /*SuggestedModule=*/nullptr, /*IsMapped=*/nullptr, &IsFrameworkFound);
+
+  EXPECT_TRUE(FoundFile.has_value());
+  EXPECT_TRUE(IsFrameworkFound);
+  auto &FE = FoundFile.value();
+  auto FI = Search.getExistingFileInfo(FE);
+  EXPECT_TRUE(FI);
+  EXPECT_TRUE(FI->IsValid);
+  EXPECT_EQ(FI->Framework.str(), "Foo");
+  EXPECT_EQ(Search.getIncludeNameForHeader(FE), "Foo/Foo.h");
+}
+
 // Helper struct with null terminator character to make MemoryBuffer happy.
 template <class FileTy, class PaddingTy>
 struct NullTerminatedFile : public FileTy {
@@ -245,13 +269,14 @@ TEST_F(HeaderSearchTest, HeaderMapFrameworkLookup) {
       /*SuggestedModule=*/nullptr, &IsMapped,
       /*IsFrameworkFound=*/nullptr);
 
-  EXPECT_TRUE(FoundFile.hasValue());
+  EXPECT_TRUE(FoundFile.has_value());
   EXPECT_TRUE(IsMapped);
-  auto &FE = FoundFile.getValue();
+  auto &FE = FoundFile.value();
   auto FI = Search.getExistingFileInfo(FE);
   EXPECT_TRUE(FI);
   EXPECT_TRUE(FI->IsValid);
   EXPECT_EQ(FI->Framework.str(), "Foo");
+  EXPECT_EQ(Search.getIncludeNameForHeader(FE), "Foo/Foo.h");
 }
 
 } // namespace

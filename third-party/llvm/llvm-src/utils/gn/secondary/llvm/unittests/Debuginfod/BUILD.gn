@@ -7,6 +7,6 @@ unittest("DebuginfodTests") {
   ]
   sources = [
     "DebuginfodTests.cpp",
-    "HTTPClientTests.cpp",
+    "HTTPServerTests.cpp",
   ]
 }

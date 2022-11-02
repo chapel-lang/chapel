@@ -2,10 +2,7 @@ if (DEFINED LLVM_HAVE_TF_AOT OR DEFINED LLVM_HAVE_TF_API)
   include(TensorFlowCompile)
   set(LLVM_RAEVICT_MODEL_PATH_DEFAULT "models/regalloc-eviction")
 
-  # This url points to the most recent most which is known to be compatible with
-  # LLVM. When better models are published, this url should be updated to aid
-  # discoverability.
-  set(LLVM_RAEVICT_MODEL_CURRENT_URL "TO_BE_UPDATED")
+  set(LLVM_RAEVICT_MODEL_CURRENT_URL "<UNSPECIFIED>")
 
   if (DEFINED LLVM_HAVE_TF_AOT)
     tf_find_and_compile(
@@ -35,9 +32,11 @@ add_llvm_component_library(LLVMCodeGen
   BranchRelaxation.cpp
   BreakFalseDeps.cpp
   BasicBlockSections.cpp
+  BasicBlockSectionsProfileReader.cpp
   CalcSpillWeights.cpp
   CallingConvLower.cpp
   CFGuardLongjmp.cpp
+  CFIFixup.cpp
   CFIInstrInserter.cpp
   CodeGen.cpp
   CodeGenCommonISel.cpp
@@ -75,6 +74,7 @@ add_llvm_component_library(LLVMCodeGen
   InterleavedAccessPass.cpp
   InterleavedLoadCombinePass.cpp
   IntrinsicLowering.cpp
+  JMCInstrumenter.cpp
   LatencyPriorityQueue.cpp
   LazyMachineBlockFrequencyInfo.cpp
   LexicalScopes.cpp
@@ -187,12 +187,15 @@ add_llvm_component_library(LLVMCodeGen
   RegUsageInfoPropagate.cpp
   ReplaceWithVeclib.cpp
   ResetMachineFunctionPass.cpp
+  RegisterBank.cpp
+  RegisterBankInfo.cpp
   SafeStack.cpp
   SafeStackLayout.cpp
   ScheduleDAG.cpp
   ScheduleDAGInstrs.cpp
   ScheduleDAGPrinter.cpp
   ScoreboardHazardRecognizer.cpp
+  SelectOptimize.cpp
   ShadowStackGCLowering.cpp
   ShrinkWrap.cpp
   SjLjEHPrepare.cpp

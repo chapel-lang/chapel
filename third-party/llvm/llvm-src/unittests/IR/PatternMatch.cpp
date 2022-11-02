@@ -1717,14 +1717,15 @@ TEST_F(PatternMatchTest, VScale) {
   Value *PtrToInt = IRB.CreatePtrToInt(GEP, DL.getIntPtrType(GEP->getType()));
   EXPECT_TRUE(match(PtrToInt, m_VScale(DL)));
 
-  // Prior to this patch, this case would cause assertion failures when attempting to match m_VScale
+  // This used to cause assertion failures when attempting to match m_VScale.
+  // With opaque pointers the bitcast is no longer present.
   Type *VecTy2 = ScalableVectorType::get(IRB.getInt8Ty(), 2);
   Value *NullPtrVec2 = Constant::getNullValue(VecTy2->getPointerTo());
   Value *BitCast = IRB.CreateBitCast(NullPtrVec2, VecPtrTy);
   Value *GEP2 = IRB.CreateGEP(VecTy, BitCast, IRB.getInt64(1));
   Value *PtrToInt2 =
       IRB.CreatePtrToInt(GEP2, DL.getIntPtrType(GEP2->getType()));
-  EXPECT_FALSE(match(PtrToInt2, m_VScale(DL)));
+  EXPECT_TRUE(match(PtrToInt2, m_VScale(DL)));
 }
 
 TEST_F(PatternMatchTest, NotForbidUndef) {
@@ -1787,6 +1788,20 @@ TYPED_TEST(MutableConstTest, ICmp) {
               .match((InstructionType)IRB.CreateICmp(Pred, L, R)));
   EXPECT_EQ(L, MatchL);
   EXPECT_EQ(R, MatchR);
+}
+
+TEST_F(PatternMatchTest, ConstExpr) {
+  Constant *G =
+      M->getOrInsertGlobal("dummy", PointerType::getUnqual(IRB.getInt32Ty()));
+  Constant *S = ConstantExpr::getPtrToInt(G, IRB.getInt32Ty());
+  Type *VecTy = FixedVectorType::get(IRB.getInt32Ty(), 2);
+  PoisonValue *P = PoisonValue::get(VecTy);
+  Constant *V = ConstantExpr::getInsertElement(P, S, IRB.getInt32(0));
+
+  // The match succeeds on a constant that is a constant expression itself
+  // or a constant that contains a constant expression.
+  EXPECT_TRUE(match(S, m_ConstantExpr()));
+  EXPECT_TRUE(match(V, m_ConstantExpr()));
 }
 
 } // anonymous namespace.

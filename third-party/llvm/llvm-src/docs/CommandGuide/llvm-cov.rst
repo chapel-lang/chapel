@@ -128,7 +128,7 @@ OPTIONS
  Do not output any ``.gcov`` files. Summary information is still
  displayed.
 
-.. option:: -o=<DIR|FILE>, --object-directory=<DIR>, --object-file=<FILE>
+.. option:: -o <DIR|FILE>, --object-directory=<DIR>, --object-file=<FILE>
 
  Find objects in DIR or based on FILE's path. If you specify a particular
  object file, the coverage data files are expected to have the same base name
@@ -150,7 +150,7 @@ OPTIONS
  Only dump files with relative paths or absolute paths with the prefix specified
  by ``-s``.
 
-.. option:: -s=<string>
+.. option:: -s <string>
 
  Source prefix to elide.
 
@@ -348,6 +348,13 @@ OPTIONS
  Map the paths in the coverage data to local source file paths. This allows you
  to generate the coverage data on one machine, and then use llvm-cov on a
  different machine where you have the same files on a different path.
+
+.. option:: -coverage-watermark=<high>,<low>
+
+ Set high and low watermarks for coverage in html format output. This allows you
+ to set the high and low watermark of coverage as desired, green when
+ coverage >= high, red when coverage < low, and yellow otherwise. Both high and
+ low should be between 0-100 and high > low.
 
 .. program:: llvm-cov report
 

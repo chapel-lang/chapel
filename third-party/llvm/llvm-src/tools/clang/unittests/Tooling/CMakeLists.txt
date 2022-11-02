@@ -17,6 +17,7 @@ add_clang_unittest(ToolingTests
   ExecutionTest.cpp
   FixItTest.cpp
   HeaderIncludesTest.cpp
+  StandardLibraryTest.cpp
   LexicallyOrderedRecursiveASTVisitorTest.cpp
   LookupTest.cpp
   QualTypeNamesTest.cpp
@@ -87,6 +88,7 @@ clang_target_link_libraries(ToolingTests
 target_link_libraries(ToolingTests
   PRIVATE
   LLVMTestingSupport
+  clangTesting
 )
 
 add_subdirectory(Syntax)
