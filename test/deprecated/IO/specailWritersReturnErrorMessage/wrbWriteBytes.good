@@ -1,1 +1,1 @@
-wrbWriteBytes.chpl:4: error: illegal use of boolean return value from 'writeBytes'. Note: this functionality is deprecated; recompile with -sWritersReturnBool=true to continue using the deprecated behavior.
+wrbWriteBytes.chpl:4: error: illegal use of return value from 'writeBytes'. Note: if you wish to detect early EOF from a write call, check for an EofError using a try-catch block
