@@ -116,7 +116,7 @@ module MatrixMarket {
             fout.write(blank);
          }
          else {
-            fout._writef("%i %i %i\n", nrows, ncols, nnz);
+            fout.writef("%i %i %i\n", nrows, ncols, nnz);
          }
 
          last_rowno=-1;
@@ -130,7 +130,7 @@ module MatrixMarket {
         fout.flush();
 
          var tfout = fd.writer(region=HEADER_LINE.numBytes..);
-         tfout._writef("%i %i %i", nrows, ncols, nnz);
+         tfout.writef("%i %i %i", nrows, ncols, nnz);
 
          tfout.close();
       }
@@ -142,19 +142,19 @@ module MatrixMarket {
          if T == complex {
            wfmt = wfmt + "%r %r\n";
            for (j,w) in zip(Djvec, jvec) {
-             fout._writef(wfmt, i, j, w.re, w.im);
+             fout.writef(wfmt, i, j, w.re, w.im);
            }
          }
          else if T == int {
            wfmt = wfmt + "%d\n";
            for (j,w) in zip(Djvec, jvec) {
-              if abs(w) > 1e-12 { fout._writef(wfmt, i, j, w); }
+              if abs(w) > 1e-12 { fout.writef(wfmt, i, j, w); }
            }
          }
          else if T == real {
            wfmt = wfmt + "%r\n";
            for (j,w) in zip(Djvec, jvec) {
-              if w > 0 { fout._writef(wfmt, i, j, w); }
+              if w > 0 { fout.writef(wfmt, i, j, w); }
            }
          }
 

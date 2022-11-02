@@ -727,37 +727,16 @@ module ChapelIO {
  /* Equivalent to ``try! stdout.writef``. See
      :proc:`FormattedIO.channel.writef`. */
   proc writef(fmt:?t, const args ...?k)
-      where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
+      where isStringType(t) || isBytesType(t)
   {
-    try! { stdout._writef(fmt, (...args)); }
+    try! { stdout.writef(fmt, (...args)); }
   }
   // documented in string version
   pragma "no doc"
   proc writef(fmt:?t)
-      where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
+      where isStringType(t) || isBytesType(t)
   {
-    try! { stdout._writef(fmt); }
-  }
-
-  deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
-  proc writef(fmt:?t, const args ...?k):bool
-      where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
-  {
-    try! {
-      stdout._writef(fmt, (...args));
-      return true;
-    }
-  }
-  // documented in string version
-  pragma "no doc"
-  deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
-  proc writef(fmt:?t):bool
-      where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
-  {
-    try! {
-      stdout._writef(fmt);
-      return true;
-    }
+    try! { stdout.writef(fmt); }
   }
 
   pragma "no doc"
