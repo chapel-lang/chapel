@@ -241,8 +241,7 @@ if [ ! -z "$PREFIX" ]
 then
   myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpl "$PREFIX/bin"
 else
-  tmp_bin_dir="bin/$CHPL_BIN_SUBDIR"
-  myinstallfile "$tmp_bin_dir"/chpl "$DEST_DIR/$tmp_bin_dir"
+  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpl "$DEST_DIR/$tmp_bin_dir"
 fi
 
 # copy runtime lib
@@ -348,7 +347,7 @@ then
 fi
 
 # create symlink for chpldoc-legacy
-if [ -f "bin/$CHPL_BIN_SUBDIR/chpldoc-legacy" ]
+if [ -f "bin/$CHPL_BIN_SUBDIR/chpldoc" ]
 then
   # create a symbolic link for chpldoc-legacy
   if [ ! -z "$PREFIX" ]
@@ -364,8 +363,7 @@ if [ ! -z "$PREFIX" ]
 then
   myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$PREFIX/bin"
 else
-  tmp_bin_dir="bin/$CHPL_BIN_SUBDIR"
-  myinstallfile "$tmp_bin_dir"/chpldoc "$DEST_DIR/$tmp_bin_dir"
+  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$DEST_DIR/$tmp_bin_dir"
 fi
 
 # copy chplconfig
