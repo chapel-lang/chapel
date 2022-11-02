@@ -68,7 +68,7 @@ writeln();
 // each either match the number of iterations or else be unbounded, as in
 // this example.  When iterating over multidimensional domains and arrays
 // in a zippered iteration, they must match not only in terms of size, but
-// also shape.
+// also shape (i.e., the size in each dimension).
 //
 writeln("Fibonacci Numbers");
 
