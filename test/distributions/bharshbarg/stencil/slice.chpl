@@ -71,9 +71,9 @@ proc test(dom : domain) {
     ref Actual = Data.noFluffView();
     assert(Actual._value.dom.whole == Actual._value.dom.wholeFluff);
 
-    Data[Space.alignedLow] = 42;
+    Data[Space.low] = 42;
     // Ensure that we didn't somehow create a new array with noFluffView
-    assert(Actual[Space.alignedLow] == Data[Space.alignedLow]);
+    assert(Actual[Space.low] == Data[Space.low]);
 
     forall idx in Space {
       var temp = if isTuple(idx) then idx else (idx,);

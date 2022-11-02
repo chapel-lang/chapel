@@ -623,8 +623,8 @@ proc BlockCyclicDom.parSafe param {
 }
 override proc BlockCyclicDom.dsiLow           return whole.lowBound;
 override proc BlockCyclicDom.dsiHigh          return whole.highBound;
-override proc BlockCyclicDom.dsiAlignedLow    return whole.alignedLow;
-override proc BlockCyclicDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc BlockCyclicDom.dsiAlignedLow    return whole.low;
+override proc BlockCyclicDom.dsiAlignedHigh   return whole.high;
 override proc BlockCyclicDom.dsiFirst         return whole.first;
 override proc BlockCyclicDom.dsiLast          return whole.last;
 override proc BlockCyclicDom.dsiStride        return whole.stride;
@@ -810,11 +810,11 @@ proc LocBlockCyclicDom.size {
 }
 
 proc LocBlockCyclicDom.low {
-  return myStarts.alignedLow;
+  return myStarts.low;
 }
 
 proc LocBlockCyclicDom.high {
-  return myStarts.alignedHigh;
+  return myStarts.high;
 }
 
 proc LocBlockCyclicDom._lens {

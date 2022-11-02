@@ -611,22 +611,22 @@ module DefaultRectangular {
 
     override proc dsiAlignedLow {
       if rank == 1 {
-        return ranges(0).alignedLow;
+        return ranges(0).low;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).alignedLow;
+          result(i) = ranges(i).low;
         return result;
       }
     }
 
     override proc dsiAlignedHigh {
       if rank == 1 {
-        return ranges(0).alignedHigh;
+        return ranges(0).high;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).alignedHigh;
+          result(i) = ranges(i).high;
         return result;
       }
     }
@@ -1232,7 +1232,7 @@ module DefaultRectangular {
 
     proc setupFieldsAndAllocate(param initElts) {
       for param dim in 0..rank-1 {
-        off(dim) = dom.dsiDim(dim).alignedLow;
+        off(dim) = dom.dsiDim(dim).low;
         str(dim) = dom.dsiDim(dim).stride;
       }
       if storageOrder == ArrayStorageOrder.RMO {
@@ -1770,7 +1770,7 @@ module DefaultRectangular {
           idx(dim) = j;
 
           recursiveArrayReaderWriter(idx, dim=dim+1,
-                               last=(last || dim == 0) && (j == dom.dsiDim(dim).alignedHigh));
+                               last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
 
           if isjson || ischpl {
             if j != lastIdx {
