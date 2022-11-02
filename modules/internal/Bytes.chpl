@@ -1023,7 +1023,7 @@ module Bytes {
   proc bytes.toLower() : bytes {
     var result: bytes = this;
     if result.isEmpty() then return result;
-    for (i,b) in zip(0.., result.bytes()) {
+    for (b,i) in zip(result.bytes(), 0..) {
       result.buff[i] = byte_toLower(b); //check is done by byte_toLower
     }
     return result;
@@ -1040,7 +1040,7 @@ module Bytes {
   proc bytes.toUpper() : bytes {
     var result: bytes = this;
     if result.isEmpty() then return result;
-    for (i,b) in zip(0.., result.bytes()) {
+    for (b,i) in zip(result.bytes(), 0..) {
       result.buff[i] = byte_toUpper(b); //check is done by byte_toUpper
     }
     return result;
@@ -1061,7 +1061,7 @@ module Bytes {
 
     param UN = 0, LETTER = 1;
     var last = UN;
-    for (i,b) in zip(0.., result.bytes()) {
+    for (b,i) in zip(result.bytes(), 0..) {
       if byte_isAlpha(b) {
         if last == UN {
           last = LETTER;
