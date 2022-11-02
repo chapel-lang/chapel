@@ -9373,7 +9373,7 @@ yyreduce:
   case 426: /* named_formal: opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type formal_var_arg_expr  */
 #line 2605 "chpl.ypp"
   {
-    (yyval.expr) = ERROR((yyloc), "variable-length argument may not be grouped in a tuple");
+    (yyval.expr) = context->raiseError((yyloc), "variable-length argument may not be grouped in a tuple");
   }
 #line 9379 "bison-chpl-lib.cpp"
     break;
@@ -9985,7 +9985,7 @@ yyreduce:
   case 512: /* ret_array_type: TLSBR error TRSBR  */
 #line 2909 "chpl.ypp"
   {
-    (yyval.expr) = ERROR((yyloc), "invalid expression for domain of array return type");
+    (yyval.expr) = context->raiseError((yyloc), "invalid expression for domain of array return type");
   }
 #line 9991 "bison-chpl-lib.cpp"
     break;

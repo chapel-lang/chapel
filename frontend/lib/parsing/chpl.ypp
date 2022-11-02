@@ -2603,7 +2603,7 @@ named_formal:
 | opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP
   opt_colon_formal_type formal_var_arg_expr
   {
-    $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
+    $$ = context->raiseError(@$, "variable-length argument may not be grouped in a tuple");
   }
 ;
 
@@ -2907,7 +2907,7 @@ ret_array_type:
   }
 | TLSBR error TRSBR
   {
-    $$ = ERROR(@$, "invalid expression for domain of array return type");
+    $$ = context->raiseError(@$, "invalid expression for domain of array return type");
   }
 ;
 

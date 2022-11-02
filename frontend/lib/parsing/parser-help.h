@@ -29,11 +29,3 @@
   context->convertLocation(context->makeSpannedLocation(STARTLOC, ENDLOC))
 #define YLOC2(YSTART, YEND) \
   context->makeSpannedLocation(YSTART, YEND)
-
-// ERROR creates an error and returns an error sentinel AstNode
-#define ERROR(LOC,MSG) context->raiseError(LOC, MSG)
-
-#define TODOEXPR(LOC) context->raiseError(LOC, "not implemented yet")
-#define TODOSTMT(LOC) makeCommentsAndStmt(context->gatherComments(LOC), context->raiseError(LOC, "not implemented yet"))
-#define TODOLIST(LOC) context->makeList(context->raiseError(LOC, "not implemented yet"))
-
