@@ -2528,7 +2528,11 @@ expandForLoop(ForLoop* forLoop) {
       // iterator which is presumably the first.
       if (testBlock == NULL) {
         if (!isBoundedIterator(iterFn) && iterators.n > 1) {
-          USR_WARN(forLoop, "The behavior of zippered serial loops whose leader is an unbounded range has changed in this release; to maintain the previous behavior, swap a bounded iterand into the leader position (the first expression in the 'zip(...)').");
+          USR_WARN(forLoop, "The behavior of zippered serial loops driven by "
+                   "unbounded ranges has been fixed in this release to act "
+                   "as though they were conceptually infinite; to maintain "
+                   "the previous behavior, swap a bounded iterand into the "
+                   "first expression of the 'zip(...)'.");
         }
         if (isNotDynIter) {
           // note that we have found the first test
