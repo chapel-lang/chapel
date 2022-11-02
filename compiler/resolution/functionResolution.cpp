@@ -8670,11 +8670,11 @@ static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
             )
           ) {
             // emit the write* specific error message:
+            // (https://github.com/chapel-lang/chapel/pull/20907#pullrequestreview-1155017128)
             USR_FATAL(userCall(call),
-                    "illegal use of boolean return value from '%s'. "
-                    "Note: this functionality is deprecated; recompile "
-                    "with -sWritersReturnBool=true to continue using the "
-                    "deprecated behavior.",
+                    "illegal use of return value from '%s'. "
+                    "Note: if you wish to detect early EOF from a write call, "
+                    "check for an EofError using a try-catch block",
                     rhsName);
           } else {
             // otherwise, emit the normal error message:
