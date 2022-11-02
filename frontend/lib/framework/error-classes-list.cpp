@@ -328,13 +328,13 @@ void ErrorIncompatibleKinds::write(ErrorWriterBase& wr) const {
                "the left of the '=', try using '.type'?");
   } else if (typeToValue) {
     if (initType.type() && initType.type()->isCompositeType()) {
-      auto compsiteType = initType.type()->toCompositeType();
+      auto compositeType = initType.type()->toCompositeType();
       auto initIdent = initExpr->toIdentifier();
-      if (initIdent && initIdent->name() == compsiteType->name()) {
+      if (initIdent && initIdent->name() == compositeType->name()) {
         // There's no aliasing involved, the user is just using the record name.
         wr.message("If you're trying to create a new value of type '",
                    initType.type()->toCompositeType()->name(),
-                   "', try writing 'new ", compsiteType->name(), "()' instead");
+                   "', try writing 'new ", compositeType->name(), "()' instead");
       } else {
         // They are referring to a composite type, but through an alias. Not
         // quite sure how to report this better.
