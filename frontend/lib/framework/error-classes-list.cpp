@@ -210,14 +210,14 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
 void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
   auto dot = std::get<const uast::Dot*>(info);
   auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
-  auto limitationKind = std::get<const uast::VisibilityClause::LimitationKind>(info);
+  auto limitationKind =
+      std::get<const uast::VisibilityClause::LimitationKind>(info);
   wr.heading(kind_, type_, locationOnly(dot), "cannot use dot expression '",
              dot, "' in '", limitationKind, "' list.");
   wr.code(visibilityClause, {dot});
   wr.message(
       "Dot expressions are not allowed in the 'except' or 'only' list of a "
-      "'use' "
-      "or 'import'.");
+      "'use' or 'import'.");
 }
 
 void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
@@ -670,6 +670,93 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
   auto opName = std::get<1>(info);
   auto opSymbol = std::get<2>(info);
   wr.heading(kind_, type_, loc, "'", opSymbol, "' is not a pre-", opName, ".");
+}
+
+void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "type in 'new' expression is missing its argument list.");
+}
+
+void ErrorDotAfterNew::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(
+      kind_, type_, loc,
+      "please use parentheses to disambiguate dot expression after 'new'.");
+}
+
+void ErrorInvalidNewForm::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "invalid form for 'new' expression.");
+}
+
+void ErrorInvalidIterandExpr::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "invalid iterand expression.");
+}
+
+void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto isImport = std::get<const bool>(info);
+  std::string useOrImport = isImport ? "import" : "use";
+  wr.heading(kind_, type_, loc, "'", useOrImport,
+             "' statements must refer to module", (isImport ? "" : " or enum"),
+             " symbols.");
+  wr.message("(e.g., '", useOrImport, " <module>[.<submodule>]*;')");
+}
+
+void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto limitationKind = std::get<const uast::VisibilityClause::LimitationKind>(info);
+  wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
+             "' list, identifier expected.");
+}
+
+void ErrorImportInvalidAs::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(
+      kind_, type_, loc,
+      "incorrect expression in 'import' list rename, identifier expected.");
+}
+
+void ErrorImportInvalidExpr::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "incorrect expression in 'import' for unqualified access, "
+             "identifier expected");
+}
+
+void ErrorDeprecateForwardingStmt::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "can't deprecate a forwarding statement.");
+}
+
+void ErrorSelectMultipleOtherwise::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "select has multiple otherwise clauses.");
+}
+
+void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "can only label for-, while-do- and do-while-statements.");
+}
+
+void ErrorVarargNotGrouped::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "variable-length argument may not be grouped in a tuple.");
+}
+
+void ErrorArrayReturnInvalidDom::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "invalid expression for domain of array return type.");
+}
+
+void ErrorTaskVarNameNotIdent::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "expected identifier for task variable name.");
 }
 
 } // end namespace 'chpl'

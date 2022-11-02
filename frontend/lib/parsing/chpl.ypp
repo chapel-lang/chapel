@@ -2603,7 +2603,7 @@ named_formal:
 | opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP
   opt_colon_formal_type formal_var_arg_expr
   {
-    $$ = context->raiseError(@$, "variable-length argument may not be grouped in a tuple");
+    $$ = CHPL_PARSER_REPORT(context, VarargNotGrouped, @$);
   }
 ;
 
@@ -2907,7 +2907,7 @@ ret_array_type:
   }
 | TLSBR error TRSBR
   {
-    $$ = context->raiseError(@$, "invalid expression for domain of array return type");
+    $$ = CHPL_PARSER_REPORT(context, ArrayReturnInvalidDom, @$);
   }
 ;
 
@@ -3436,8 +3436,7 @@ intent_expr:
                                  toOwned($4));
       $$ = node.release();
     } else {
-      const char* msg = "Expected identifier for task variable name";
-      $$ = context->raiseError(@$, msg);
+      $$ = CHPL_PARSER_REPORT(context, TaskVarNameNotIdent, @$);
     }
   }
 | reduce_scan_op_expr TREDUCE ident_expr

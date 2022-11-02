@@ -38,21 +38,17 @@ using chpl::owned;
 /**
   Helper macro to report errors from the parser, which takes care of accessing
   the global Context from the ParserContext, and converting YYLTYPE locations.
- */
-#define CHPL_PARSER_REPORT(PARSER_CONTEXT__, NAME__, LOC__, EINFO__...) \
-  PARSER_CONTEXT__->context()->report(Error##NAME__::get(               \
-      PARSER_CONTEXT__->context(),                                      \
-      std::make_tuple(PARSER_CONTEXT__->convertLocation(LOC__), ##EINFO__)))
 
-static const char* kindToString(VisibilityClause::LimitationKind kind) {
-  switch (kind) {
-    case VisibilityClause::LimitationKind::ONLY: return "only";
-    case VisibilityClause::LimitationKind::EXCEPT: return "except";
-    case VisibilityClause::LimitationKind::BRACES: assert(false);
-    case VisibilityClause::LimitationKind::NONE: assert(false);
-    default: return "";
-  }
-}
+  Evaluates to an ErroneousExpression error sentinel at the location of the
+  error, which may be used or ignored.
+ */
+#define CHPL_PARSER_REPORT(PARSER_CONTEXT__, NAME__, LOC__, EINFO__...)        \
+  (PARSER_CONTEXT__->context()->report(Error##NAME__::get(                     \
+       PARSER_CONTEXT__->context(),                                            \
+       std::make_tuple(PARSER_CONTEXT__->convertLocation(LOC__), ##EINFO__))), \
+   ErroneousExpression::build(PARSER_CONTEXT__->builder,                       \
+                              PARSER_CONTEXT__->convertLocation(LOC__))        \
+       .release())
 
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
@@ -1298,26 +1294,20 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
                                                  fnCall);
       child.reset(wrappedFn);
       return expr;
-    } else {
-      //something wrong, as below
-      this->raiseError(location, "Invalid form for 'new' expression");
     }
   } else {
     if (expr->isIdentifier() && expr->toIdentifier()->numChildren() == 0) {
       // try to capture case of new A; (new without parens)
-      raiseError(location, "type in 'new' expression is missing its "
-                           "argument list");
+      CHPL_PARSER_REPORT(this, NewWithoutArgs, location);
     } else if (expr->isDot() ) {
       // try to capture case of var z20a = new C().tmeth;
       // and var z20c = new C()?.tmeth;
       if (expr->toDot()->receiver()->isFnCall() ||
           expr->toDot()->receiver()->isOpCall()) {
-        raiseError(location, "Please use parentheses to disambiguate "
-                             "dot expression after new");
+        CHPL_PARSER_REPORT(this, DotAfterNew, location);
       } else {
         // try to capture case of new M.Q;
-        raiseError(location, "type in 'new' expression is missing its "
-                             "argument list");
+        CHPL_PARSER_REPORT(this, NewWithoutArgs, location);
       }
     } else {
       // It's an error for one reason or another. TODO: Specialize these
@@ -1325,7 +1315,7 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
       // the expression 'a.field'; 'new foo' would require an argument
       // list for 'foo'; and something like 'new __primitive()' just
       // doesn't make any sense...
-      this->raiseError(location, "Invalid form for 'new' expression");
+      CHPL_PARSER_REPORT(this, InvalidNewForm, location);
     }
   }
   auto loc = convertLocation(location);
@@ -1485,8 +1475,8 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   AstNode* indexExpr = nullptr;
 
   if (indexExprs->size() > 1) {
-    const char* msg = "Invalid index expression";
-    return { .comments=comments, .stmt=raiseError(locIndex, msg) };
+    return {.comments = comments,
+            .stmt = CHPL_PARSER_REPORT(this, InvalidIndexExpr, locIndex)};
   } else {
     auto uncastedIndexExpr = consumeList(indexExprs)[0].release();
     indexExpr = uncastedIndexExpr;
@@ -1528,8 +1518,8 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   AstNode* iterandExpr = nullptr;
 
   if (iterExprs->size() > 1) {
-    const char* msg = "Invalid iterand expression";
-    return { .comments=comments, .stmt=raiseError(locIterExprs, msg) };
+    return {.comments = comments,
+            .stmt = CHPL_PARSER_REPORT(this, InvalidIterandExpr, locIterExprs)};
   } else {
     auto uncastedIterandExpr = consumeList(iterExprs)[0].release();
     iterandExpr = uncastedIterandExpr;
@@ -1839,21 +1829,12 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
                       VisibilityClause::LimitationKind limitationKind,
                       AstList limitations, bool isImport) {
   if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
-    std::string msg;
-    if (isImport) {
-      msg = "'import' statement paths must start with at least one module "
-            "symbol (e.g., 'import <module>[.<submodule>]*;')";
-    } else {
-      msg = "'use' statements must refer to module or enum symbols (e.g., "
-            "'use <module>[.<submodule>]*;')";
-    }
-    return raiseError(location, msg);
+    return CHPL_PARSER_REPORT(this, UseImportNeedsModule, location, isImport);
   }
 
   for (auto& expr : limitations) {
     auto asExpr = expr->toAs();
-    bool error = false;
-    std::string msg;
+    ErroneousExpression* error = nullptr;
 
     // TODO: Sanitize dot expressions?
     if (expr->isIdentifier() || expr->isDot() || expr->isComment())
@@ -1862,29 +1843,23 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
     if (limitationKind == VisibilityClause::LimitationKind::EXCEPT ||
         limitationKind == VisibilityClause::LimitationKind::ONLY) {
       if (!asExpr) {
-        msg = "incorrect expression in '";
-        msg += kindToString(limitationKind);
-        msg += "' list, identifier expected";
-        error = true;
+        error = CHPL_PARSER_REPORT(this, ExceptOnlyInvalidExpr, location,
+                                   limitationKind);
       }
     } else if (limitationKind == VisibilityClause::LimitationKind::BRACES) {
+      assert(isImport && "braces should only be used with import statements");
       if (asExpr) {
         if (!asExpr->symbol()->isIdentifier() ||
             !asExpr->rename()->isIdentifier()) {
-          msg = "incorrect expression in 'import' list rename, "
-                "identifier expected";
-          error = true;
+          error = CHPL_PARSER_REPORT(this, ImportInvalidAs, location);
         }
       } else {
-        msg = "incorrect expression in 'import' for unqualified "
-              "access, identifier expected";
-        error = true;
+        error = CHPL_PARSER_REPORT(this, ImportInvalidExpr, location);
       }
     }
 
     if (error) {
-      assert(!msg.empty());
-      return raiseError(location, msg);
+      return error;
     }
   }
 
@@ -1912,7 +1887,7 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
 
   auto comments = gatherComments(location);
   if (attributes && attributes->isDeprecated()) {
-    raiseError(location, "Can't deprecate a forwarding statement");
+    CHPL_PARSER_REPORT(this, DeprecateForwardingStmt, location);
   }
   if (limitationKind == VisibilityClause::NONE) {
     auto node = ForwardingDecl::build(builder, convertLocation(location),
@@ -2517,9 +2492,9 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
 
     // TODO: Do we also care about the position of the otherwise?
     if (when->isOtherwise() && numOtherwise++) {
-      const char* msg = "Select has multiple otherwise clauses";
-      auto error = raiseError(location, msg);
-      CommentsAndStmt cs = { .comments=comments, .stmt=error };
+      CommentsAndStmt cs = {
+          .comments = comments,
+          .stmt = CHPL_PARSER_REPORT(this, SelectMultipleOtherwise, location)};
       return cs;
     }
   }
@@ -2713,9 +2688,6 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
                              toOwned(loop));
     return { .comments=comments, .stmt=node.release() };
   } else {
-    const char* msg = "can only label for-, while-do- "
-                      "and do-while-statements";
-    auto err = raiseError(location, msg);
-    return finishStmt(err);
+    return finishStmt(CHPL_PARSER_REPORT(this, LabelIneligibleStmt, location));
   }
 }

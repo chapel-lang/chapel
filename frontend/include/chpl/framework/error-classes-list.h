@@ -111,3 +111,21 @@ ERROR_CLASS(InvalidNumericLiteral, const Location, std::string, std::string)
 ERROR_CLASS(MultipleExternalRenaming, const Location)
 ERROR_CLASS(ReduceIntentNoIdent, const Location)
 WARNING_CLASS(PreIncDecOp, const Location, std::string, std::string)
+ERROR_CLASS(NewWithoutArgs, const Location)
+ERROR_CLASS(DotAfterNew, const Location)
+ERROR_CLASS(InvalidNewForm, const Location)
+ERROR_CLASS(InvalidIterandExpr, const Location)
+ERROR_CLASS(UseImportNeedsModule, const Location, const bool)
+ERROR_CLASS(ExceptOnlyInvalidExpr, const Location,
+            const uast::VisibilityClause::LimitationKind)
+// this error is very similar to InvalidAsIdent, but takes an explicit Location
+// because it is raised during parsing when AstNodes do not have attached
+// locations
+ERROR_CLASS(ImportInvalidAs, const Location)
+ERROR_CLASS(ImportInvalidExpr, const Location)
+ERROR_CLASS(DeprecateForwardingStmt, const Location)
+ERROR_CLASS(SelectMultipleOtherwise, const Location)
+ERROR_CLASS(LabelIneligibleStmt, const Location)
+ERROR_CLASS(VarargNotGrouped, const Location)
+ERROR_CLASS(ArrayReturnInvalidDom, const Location)
+ERROR_CLASS(TaskVarNameNotIdent, const Location)
