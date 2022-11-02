@@ -1688,7 +1688,7 @@ proc file._abspath: string throws {
 }
 
 // internal version of 'file.path' used to generate error messages in other IO methods
-// produces a relative path when avilible
+// produces a relative path when available
 pragma "no doc"
 proc file._tryGetPath() : string {
   try {
