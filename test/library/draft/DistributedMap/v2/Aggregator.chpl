@@ -83,7 +83,7 @@ module Aggregator {
             if (i <= max) {
               if (client.containsUnlocked(arrCopy[i])) {
                 var curVal = try! client.getValueUnlocked(arrCopy[i]);
-                this.updater(arrCopy[i], curVal);
+                this.updater(curVal);
                 client.setUnlocked(arrCopy[i], curVal);
               } else {
                 var newVal = 1;
