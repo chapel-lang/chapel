@@ -109,10 +109,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        fetch-depth: 100000
-    - name: Set ownership
-      run: |
-        chown -R $(id -u):$(id -g) $PWD   
+        fetch-depth: 100000  
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
@@ -122,4 +119,7 @@ jobs:
         CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
     - name: smokeTest lint
       run: |
-        ./util/buildRelease/smokeTest lint
+          if  [./util/buildRelease/smokeTest -ne 0] ; then
+          echo "Encountered issue executing the script"
+          exit 1
+          fi
