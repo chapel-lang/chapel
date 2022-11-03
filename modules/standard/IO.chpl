@@ -5344,7 +5344,7 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
 /*
    Read a specified number of codepoints into a :type:`~String.string`
 
-   This method can result in ``s.size < maxSize`` if EOF is reached before
+   ``s.size`` may be smaller than ``maxSize`` if EOF is reached before
    reading the specified number of codepoints. Additionally, if nothing
    is read from the channel, ``s`` will be set to ``""`` and the method will
    return ``false``.
@@ -5371,7 +5371,7 @@ proc _channel.readBinary(ref s: string, maxSize: int): bool throws {
   s = try! createStringWithOwnedBuffer(tx, length=len);
 
   if (e == EEOF) {
-    return false;
+    return if len > 0 then true else false;
   } else if (e != ENOERR) {
     throw createSystemError(e);
   }
@@ -5381,13 +5381,13 @@ proc _channel.readBinary(ref s: string, maxSize: int): bool throws {
 /*
    Read a specified number of bytes into a :type:`~Bytes.bytes`
 
-   This method can result in ``b.size < maxSize`` if EOF is reached before
-   reading the specified number of codepoints. Additionally, if nothing
-   is read from the channel, ``b`` will be set to ``b""`` and the method will
+   ``b.size`` may be smaller than ``maxSize`` if EOF is reached before
+   reading the specified number of bytes. Additionally, if nothing is read
+   from the channel, ``b`` will be set to ``b""`` and the method will
    return ``false``.
 
    :arg s: the bytes to read into — this value is overwritten
-   :arg maxSize: the number of codepoints to read from the channel
+   :arg maxSize: the number of bytes to read from the channel
    :returns: `false` if EOF is reached before reading anything, `true` otherwise
 
    :throws SystemError: Thrown if an error occurred while reading the channel.
@@ -5403,7 +5403,7 @@ proc _channel.readBinary(ref b: bytes, maxSize: int): bool throws {
   b = try! createBytesWithOwnedBuffer(tx, length=len);
 
   if (e == EEOF) {
-    return false;
+    return if len > 0 then true else false;
   } else if (e != ENOERR) {
     throw createSystemError(e);
   }
