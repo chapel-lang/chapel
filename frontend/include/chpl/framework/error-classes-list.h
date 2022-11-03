@@ -132,3 +132,13 @@ ERROR_CLASS(TaskVarNameNotIdent, const Location)
 
 /* lexer errors */
 ERROR_CLASS(StringLiteralEOL, const Location)
+ERROR_CLASS(NonHexChar, const Location)
+ERROR_CLASS(HexOverflow, const Location, const bool)
+ERROR_CLASS(UnknownHexError, const Location)
+ERROR_CLASS(UniversalCharUnsupported, const Location)
+ERROR_CLASS(OctalEscapeUnsupported, const Location)
+ERROR_CLASS(UnexpectedStrEscape, const Location, const char)
+ERROR_CLASS(StringLiteralEOF, const Location)
+ERROR_CLASS(ExternUnclosedPair, const Location, std::string)
+ERROR_CLASS(ExternCommentNoNewline, const Location)
+ERROR_CLASS(CommentEOF, const Location, const Location, const Location)

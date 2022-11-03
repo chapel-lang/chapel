@@ -197,54 +197,6 @@ struct ParserContext {
     errors.push_back(std::move(error));
   }
 
-  void noteError(ParserError error) {
-    assert(error.kind == ErrorMessage::ERROR);
-    errors.push_back(std::move(error));
-  }
-
-  void noteError(YYLTYPE location, const char* msg) {
-    noteError(ParserError(location, msg, ErrorMessage::ERROR));
-  }
-
-  void noteError(YYLTYPE location, std::string msg) {
-    noteError(ParserError(location, std::move(msg), ErrorMessage::ERROR));
-  }
-
-  void noteWarning(ParserError error) {
-    assert(error.kind == ErrorMessage::WARNING);
-    errors.push_back(std::move(error));
-  }
-
-  void noteWarning(YYLTYPE location, const char* msg) {
-    noteWarning(ParserError(location, msg, ErrorMessage::WARNING));
-  }
-
-  void noteWarning(YYLTYPE location, std::string msg) {
-    noteWarning(ParserError(location, std::move(msg), ErrorMessage::WARNING));
-  }
-
-  void noteNote(YYLTYPE location, std::string msg) {
-    auto err = ParserError(location, std::move(msg), ErrorMessage::NOTE);
-    errors.push_back(std::move(err));
-  }
-
-  ErroneousExpression* raiseError(ParserError error) {
-    assert(error.kind == ErrorMessage::ERROR);
-    Location ll = convertLocation(error.location);
-    // note the error for printing
-    noteError(std::move(error));
-    // return an error sentinel
-    return ErroneousExpression::build(builder, ll).release();
-  }
-
-  ErroneousExpression* raiseError(YYLTYPE location, const char* msg) {
-    return raiseError(ParserError(location, msg, ErrorMessage::ERROR));
-  }
-
-  ErroneousExpression* raiseError(YYLTYPE location, std::string msg) {
-    return raiseError(ParserError(location, msg, ErrorMessage::ERROR));
-  }
-
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
   void clearCommentsBefore(YYLTYPE loc);

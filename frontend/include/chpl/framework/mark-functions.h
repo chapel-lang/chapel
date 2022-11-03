@@ -64,6 +64,12 @@ template<> struct mark<int> {
   }
 };
 
+template<> struct mark<char> {
+  void operator()(Context* context, const char& keep) const {
+    // nothing to do
+  }
+};
+
 template<> struct mark<bool> {
   void operator()(Context* context, const bool& keep) const {
     // nothing to do

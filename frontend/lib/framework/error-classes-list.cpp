@@ -764,7 +764,71 @@ void ErrorTaskVarNameNotIdent::write(ErrorWriterBase& wr) const {
 void ErrorStringLiteralEOL::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   wr.heading(kind_, type_, loc,
-             "end-of-line in a string literal without a preceding backslash");
+             "end-of-line in a string literal without a preceding backslash.");
+}
+
+void ErrorNonHexChar::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "non-hexadecimal character follows \\x.");
+}
+
+void ErrorHexOverflow::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto isUnderflow = std::get<const bool>(info);
+  std::string underflowOrOverflow = (isUnderflow ? "underflow" : "overflow");
+  wr.heading(kind_, type_, loc, underflowOrOverflow, " when reading \\x escape.");
+}
+
+void ErrorUnknownHexError::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "unknown problem when reading \\x escape.");
+}
+
+void ErrorUniversalCharUnsupported::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "universal character name not yet supported in string literal.");
+}
+
+void ErrorOctalEscapeUnsupported::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "octal escape not supported in string literal.");
+}
+
+void ErrorUnexpectedStrEscape::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto escapedChar = std::get<const char>(info);
+  wr.heading(kind_, type_, loc, "unexpected string escape: '\\", escapedChar,
+             "'.");
+}
+
+void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "end-of-file in string literal.");
+}
+
+void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto pairSymbol = std::get<std::string>(info);
+  wr.heading(kind_, type_, loc, "missing closing ", pairSymbol,
+             " symbol in extern block.");
+}
+
+void ErrorExternCommentNoNewline::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "missing newline after extern block // comment.");
+}
+
+void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<0>(info);
+  auto startLoc = std::get<1>(info);
+  auto nestedLoc = std::get<2>(info);
+  wr.heading(kind_, type_, loc, "EOF in comment.");
+  wr.note(startLoc, "Unterminated comment started here:");
+  if (!nestedLoc.isEmpty()) {
+    wr.note(nestedLoc, "Nested comment started here:");
+  }
 }
 
 } // end namespace 'chpl'
