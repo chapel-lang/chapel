@@ -94,39 +94,68 @@ module SharedObject {
   // reason it couldn't be one class.
   pragma "no doc"
   class ReferenceCount {
+    // the number of 'shared' class variables that point to the allocated data
     var strongCount: atomic int;
+    // the number of 'shared' class variables or 'weakPointer's that point to the data
     var totalCount: atomic int; // weakCount + strongCount
 
+    // ---------------- 'shared' interface ----------------
+
+    // a 'ReferenceCount' should only ever be initialized during 'shared' initialization
+    // 'weakPointer's should only get a non-nil 'ReferenceCount' by copying from a 'shared'
     proc init() {
       this.complete();
       strongCount.write(1);
       totalCount.write(1);
     }
 
+    // increment the strong reference count
     proc retain() {
       strongCount.add(1);
       totalCount.add(1);
     }
+
+    // decrement the strong reference count and return the new strong- and total-counts
     proc release() {
       var oldValue = strongCount.fetchSub(1);
       return (oldValue - 1, totalCount.fetchSub(1) - 1);
     }
 
-    proc tryRetainWeek(ref expected: int) {
-      // writeln("expecting: ", expected);
+
+    // ---------------- 'weakPointer' interface ----------------
+
+    /* attempt to atomically increment the strong reference count
+
+     - if the current strong-count does not match 'expected', then 'expected'
+       is updated to whatever the current value is and 'false' is returned
+     - if they do match, the strong-count is incremented, the total-count is
+       incremented and 'true' is returned.
+
+     This method is used to safely upgrade a 'weakPointer' to a 'shared'
+     reference. This is done by calling the method in a while-loop that can
+     either fail if the expected value drops to zero (i.e., the last 'shared'
+     was dropped by someone else during the upgrade attempt), or loop until
+     the value can be incremented safely (s.t. all there are no conflicts
+     between concurrent upgrades)
+    */
+    proc tryRetainWeak(ref expected: int) {
       const next = expected + 1;
+      //TODO: compare performance of compareExchange and compareExchangeWeak
       if strongCount.compareExchangeWeak(expected, next) {
-        // writeln("updated to: ", next);
         totalCount.add(1);
         return true;
       } else {
         return false;
       }
     }
+
+    // decrement the weak-count and return the new total-count
     proc releaseWeak() {
       var oldValue = totalCount.fetchSub(1);
       return oldValue - 1;
     }
+
+    // increment the weak-count
     proc incrementWeak() {
       totalCount.add(1);
     }
@@ -812,7 +841,7 @@ module SharedObject {
             if sc == 0 {
                 return nil;
             } else {
-                while !this.chpl_pn!.tryRetainWeek(sc) {
+                while !this.chpl_pn!.tryRetainWeak(sc) {
                     if sc == 0 {
                         return nil;
                     }
@@ -892,14 +921,11 @@ module SharedObject {
     {
         if x.chpl_p != nil {
             var sc = x.chpl_pn!.strongCount.read();
-            // writeln("initial strong count: ", sc);
             if sc == 0 {
                 // the class value has already been deinitialized
                 return nil;
             } else {
-                while !x.chpl_pn!.tryRetainWeek(sc) {
-                    // sc = x.chpl_pn!.strongCount.read();
-                    // writeln("mismatched, got: ", sc);
+                while !x.chpl_pn!.tryRetainWeak(sc) {
                     if sc == 0 {
                         // the class value was deinitialized while this process
                         // was trying to increment the strong reference count
@@ -935,7 +961,7 @@ module SharedObject {
                 // the class value has already been deinitialized
                 throw new NilClassError("Illegal cast to a non-nil class from an invalid 'weakPointer'");
             } else {
-                while !x.chpl_pn!.tryRetainWeek(sc) {
+                while !x.chpl_pn!.tryRetainWeak(sc) {
                     if sc == 0 {
                         // the class value was deinitialized while this process
                         // was trying to increment the strong reference count
