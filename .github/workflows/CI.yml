@@ -27,6 +27,9 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v3
+    - name: Set ownership
+      run: |
+        chown -R $(id -u):$(id -g) $PWD 
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
@@ -40,6 +43,9 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v3
+    - name: Set ownership
+      run: |
+        chown -R $(id -u):$(id -g) $PWD 
     - name: make frontend-docs
       run: |
         make frontend-docs
@@ -62,6 +68,12 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v3
+    - name: Set ownership
+      run: |
+        chown -R $(id -u):$(id -g) $PWD 
+    - name: Set ownership
+      run: |
+        chown -R $(id -u):$(id -g) $PWD 
     - name: make mason
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
@@ -77,6 +89,9 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v3
+    - name: Set ownership
+      run: |
+        chown -R $(id -u):$(id -g) $PWD 
     - name: make test-dyno-with-asserts
       run: |
         make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
