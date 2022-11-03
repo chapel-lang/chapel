@@ -831,4 +831,10 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorInvalidToken::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto token = std::get<std::string>(info);
+  wr.heading(kind_, type_, loc, "invalid token: ", token);
+}
+
 } // end namespace 'chpl'

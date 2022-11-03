@@ -804,10 +804,7 @@ static int processBlockComment(yyscan_t scanner) {
 
 static void processInvalidToken(yyscan_t scanner) {
   const char* pch = yyget_text(scanner);
-  YYLTYPE* loc = yyget_lloc(scanner);
-  updateLocation(loc, 0, strlen(pch));
-  ParserContext* context = yyget_extra(scanner);
-  yychpl_error(loc, context, "Invalid token");
+  CHPL_LEXER_REPORT(scanner, 0, strlen(pch), InvalidToken, std::string(pch));
 }
 
 static int getNextYYChar(yyscan_t scanner) {
