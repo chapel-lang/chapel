@@ -1,4 +1,5 @@
 use DistributedMap;
+use IO;
 
 var dm1 = new distributedMap(string, int);
 var inputArr = ["John", "Jacob", "Jingleheimer", "Schmidt", "his", "name", "is",
@@ -14,13 +15,10 @@ forall key in inputArr with
 
 // agg.flush(); // agg doesn't live outside the forall so can't flush here
 
+var ch = openwriter("mapOutput.txt");
+
 var first = true;
 for key in dm1.keys() { // won't be great perf but that's okay for now
-  if (!first) {
-    writeln(",");
-  } else {
-    first = false;
-  }
-  write(key, "=", dm1.getValue(key)); // TODO: different syntax for access?
+  ch.writeln(key, "=", dm1.getValue(key)); // TODO: different syntax for access?
 }
-writeln();
+ch.close();
